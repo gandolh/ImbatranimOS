@@ -74,3 +74,32 @@ Fresh clone + `docker compose -f infrastructure/docker-compose.yml up`
 bookmarks, notepad functional and HMR live; docker-desktop and
 service-launcher gone from UI + backend; fork's corpus/CLAUDE/.agents
 removed; upstream commit hash and the terminal finding recorded in log.md.
+
+---
+
+## Outcome (2026-07-16)
+
+DONE. Imported `apps/` + `infrastructure/` from the local fork at upstream
+commit `1a723852278f0b9a737e5a5af8bea3ef8a2445a4` (clean copy, no history —
+fork's own corpus/CLAUDE/.agents/UBIQUITOUS_LANGUAGE dropped). Pruned
+docker-desktop + service-launcher (FE modules + registry entries) and the
+docker + services backend modules; removed the orphaned `dockerode` dep.
+Both apps typecheck + build clean; node-pty native module loads; dev loop
+verified (backend /health + /api/todos respond, DB inits at configured
+path, Vite dev server serves with HMR).
+
+Findings folded into the wiki (see below), three of them load-bearing:
+- **The fork's "terminal" is NOT a live PTY.** The `repl` backend module is
+  an HTTP request/response command-runner (`POST /repl/sessions/:id/input`)
+  over predefined "configs" — node-pty is used server-side but there is no
+  WebSocket, no streaming, no resize. Brief 11 stands as real work; the
+  repl module is a seed, not the finished terminal.
+- **Zero auth in the fork.** No guards, no gateway, CORS-to-frontend only.
+  Brief 10 is fully greenfield; the current exec surface is unauthenticated.
+- **Unusual dependency layout.** Frontend runtime deps are split across
+  `apps/package.json` (hoisted parent: tailwind/xterm/tanstack/…) and
+  `apps/frontend/package.json`; both need `npm install`.
+- Env-configurability already existed (`DB_PATH`/`NOTES_DIR`/`CONFIGS_DIR`
+  zod schema); brief 09 overrides to `/home/imbatranim`.
+- Kept but unbriefed: `notes` (backend, powers notepad) and `file-manager`
+  (frontend) overlap brief 12's files app — reconcile there, don't rebuild.

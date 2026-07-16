@@ -26,13 +26,23 @@ display.
 ## v1 apps
 
 **System apps (new, the soul of the pivot):**
-- **Terminal** — xterm.js ↔ node-pty over WebSocket, real shell as `imbatranim`
-- **Files** — explorer over the real home dir: browse/rename/delete/upload/download
-- **System monitor** — real CPU/RAM/disk/process data from the container
+- **Terminal** — xterm.js ↔ node-pty over WebSocket, real shell as
+  `imbatranim`. Seed exists (fork `repl-interpreter` + `repl` module) but
+  it's an HTTP command-runner, not a live TTY — brief 11 builds the real
+  streaming PTY.
+- **Files** — explorer over the real home dir. Seed exists (fork
+  `file-manager` FE + `files`/`notes` BE modules) — brief 12 extends it.
+- **System monitor** — real CPU/RAM/disk/process data. Seed exists (fork
+  `system` module) — brief 13 extends it.
 
 **Productivity apps (surviving the fork prune):** sticky notes, todo,
-bookmarks, notepad. **Cut from the fork:** docker desktop, service launcher
-(they assume a dev host, not a container).
+bookmarks, notepad. **Cut from the fork (brief 08):** docker desktop,
+service launcher, and the backend `docker` + `services` modules (they
+assume a dev host, not a container).
+
+**Dependency layout quirk (fork):** frontend runtime deps are split across
+`apps/package.json` (hoisted parent) and `apps/frontend/package.json`; both
+need `npm install`. Fork ships zero auth (brief 10 is greenfield).
 
 ## Repo layout (adopted from the fork, 2026-07-16)
 

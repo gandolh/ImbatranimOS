@@ -93,3 +93,16 @@ to mean prod-only; (3) import code only, drop the fork's corpus/CLAUDE/
 first; (4) xterm terminal already exists — brief 08 investigates the
 backend PTY reality and adjusts brief 11's scope, does not rebuild blind.
 Briefs 08 + 09 rewritten with these; architecture.md + decisions.md updated.
+
+## [2026-07-16] done | Brief 08 — fork imported, pruned, dev loop verified
+
+Imported apps/ + infrastructure/ from minimal-web-desktop (upstream
+1a72385, clean copy). Pruned docker-desktop + service-launcher (FE) and the
+docker + services modules (BE) + orphaned dockerode. Both apps typecheck +
+build clean; node-pty native loads; dev loop smoke-tested (backend
+/health + /api/todos, DB inits at configured path, Vite HMR serves).
+Load-bearing findings folded into wiki: fork's "terminal" is an HTTP
+command-runner not a live PTY (brief 11 stays real work, adjusted); fork
+has ZERO auth (brief 10 greenfield); frontend deps split across
+apps/package.json + apps/frontend/package.json; file-manager/notes overlap
+brief 12. Committed to main in 3 commits (pivot corpus, raw import, prune).

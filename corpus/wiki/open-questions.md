@@ -21,6 +21,15 @@ updated: 2026-07-16
   gets a formal revisit.
 - **Registry publishing** (Docker Hub/GHCR) vs build-from-source-only —
   deferred until v1 works; build-from-source is the standing decision.
-- **What breaks in the fork prune?** minimal-web-desktop's docker-desktop
-  and service-launcher apps get cut; unknown how entangled they are with
-  the shared window/file services. Surfaces in brief 08.
+- **Does the config-based `repl` module survive alongside a real terminal?**
+  Brief 08 found the fork's terminal is an HTTP command-runner, not a live
+  PTY. Brief 11 builds the real WS terminal; decide there whether the old
+  repl module is absorbed or kept as a separate "saved commands" feature.
+- **Files app vs existing file-manager + notes modules.** The fork already
+  has a `file-manager` frontend and `files` + `notes` backend modules.
+  Brief 12 must reconcile (extend, don't duplicate) rather than build fresh.
+
+Resolved 2026-07-16 (brief 08): fork prune was clean — docker-desktop and
+service-launcher were not entangled with shared window/file services;
+removing them + the docker/services backend modules + dockerode left both
+apps building green.

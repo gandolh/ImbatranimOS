@@ -7,6 +7,17 @@ desktop containing a real shell on the container, as `imbatranim`, over an
 authenticated WebSocket. Depends on 08 (desktop), 09 (user exists), 10
 (auth gates the socket).
 
+**Seed from brief 08 (verified):** the fork already ships `node-pty`, an
+xterm frontend (`repl-interpreter` module), and a backend `repl` module —
+BUT the repl module is an HTTP request/response command-runner over
+predefined "configs" (`POST /repl/sessions/:id/input`), NOT a live
+interactive TTY. There is no WebSocket, no output streaming, no resize.
+So this brief is real work, not a wrap-and-reskin: reuse node-pty + the
+xterm UI, but REPLACE the HTTP transport with a streaming WebSocket PTY
+bridge (spawn/data/resize/kill). Treat `repl-interpreter` as the app shell
+to evolve, and decide whether the config-based `repl` module survives
+alongside a true terminal or is absorbed by it.
+
 ## Files you OWN
 
 - Backend PTY gateway (node-pty; WS endpoint; spawn/resize/kill; session

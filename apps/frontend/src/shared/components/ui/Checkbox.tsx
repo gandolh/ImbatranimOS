@@ -13,8 +13,8 @@ export function Checkbox({ label, className, id, ...props }: CheckboxProps) {
         id={id}
         className={cn(
           'flex h-4 w-4 shrink-0 items-center justify-center border border-outline-variant bg-surface-container-lowest',
-          'shadow-[inset_1px_1px_0_#c3c6d0,inset_-1px_-1px_0_#ffffff]',
-          'outline-none',
+          'outline-none transition-colors',
+          'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface',
           'data-[checked]:border-primary data-[checked]:bg-primary',
           'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
           className

@@ -1,49 +1,63 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@theme {
-  /* Colors */
-  --color-surface: #faf9f8;
-  --color-surface-dim: #dadad9;
-  --color-surface-bright: #faf9f8;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f4f3f2;
-  --color-surface-container: #eeeeed;
-  --color-surface-container-high: #e9e8e7;
-  --color-surface-container-highest: #e3e2e1;
-  --color-on-surface: #1a1c1c;
-  --color-on-surface-variant: #43474f;
-  --color-inverse-surface: #2f3130;
-  --color-inverse-on-surface: #f1f0f0;
-  --color-outline: #747780;
-  --color-outline-variant: #c3c6d0;
-  --color-surface-tint: #405f8e;
-  --color-primary: #405f8e;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #7b9acc;
-  --color-on-primary-container: #09315d;
-  --color-inverse-primary: #a9c8fc;
-  --color-secondary: #41664f;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #c0eacc;
-  --color-on-secondary-container: #456b53;
-  --color-tertiary: #805253;
-  --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #c08b8b;
-  --color-on-tertiary-container: #4b2627;
-  --color-error: #ba1a1a;
-  --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
-  --color-background: #faf9f8;
-  --color-on-background: #1a1c1c;
-  --color-surface-variant: #e3e2e1;
-  --color-heritage: #008080;
+/*
+ * ImbatranimOS design tokens — Windows-7-classic layout, modern flat, B&W + ONE accent.
+ * Colors are indirected through runtime CSS vars so:
+ *   - the accent is a single parameter (--accent), switchable at runtime
+ *   - light / dark are swapped via [data-theme] on <html>
+ * Dark is the shipped default (on-brand for an OS).
+ */
 
-  /* Fonts */
-  --font-ui: 'Space Grotesk', sans-serif;
-  --font-content: 'Inter', sans-serif;
+@theme {
+  /* Surfaces + text — resolved from the active theme block below */
+  --color-surface: var(--k-surface);
+  --color-surface-dim: var(--k-surface-dim);
+  --color-surface-bright: var(--k-surface-bright);
+  --color-surface-container-lowest: var(--k-surface-container-lowest);
+  --color-surface-container-low: var(--k-surface-container-low);
+  --color-surface-container: var(--k-surface-container);
+  --color-surface-container-high: var(--k-surface-container-high);
+  --color-surface-container-highest: var(--k-surface-container-highest);
+  --color-on-surface: var(--k-on-surface);
+  --color-on-surface-variant: var(--k-on-surface-variant);
+  --color-inverse-surface: var(--k-inverse-surface);
+  --color-inverse-on-surface: var(--k-inverse-on-surface);
+  --color-outline: var(--k-outline);
+  --color-outline-variant: var(--k-outline-variant);
+  --color-background: var(--k-surface);
+  --color-on-background: var(--k-on-surface);
+  --color-surface-variant: var(--k-surface-container-high);
+
+  /* Accent — the single parameterized identity color */
+  --color-surface-tint: var(--accent);
+  --color-primary: var(--accent);
+  --color-on-primary: var(--accent-on);
+  --color-primary-container: var(--accent);
+  --color-on-primary-container: var(--accent-on);
+  --color-inverse-primary: var(--accent);
+  --color-heritage: var(--accent);
+
+  /* Secondary / tertiary collapse to neutral — the palette is B&W + one accent */
+  --color-secondary: var(--k-on-surface-variant);
+  --color-on-secondary: var(--k-surface);
+  --color-secondary-container: var(--k-surface-container-high);
+  --color-on-secondary-container: var(--k-on-surface);
+  --color-tertiary: var(--k-on-surface-variant);
+  --color-on-tertiary: var(--k-surface);
+  --color-tertiary-container: var(--k-surface-container-high);
+  --color-on-tertiary-container: var(--k-on-surface);
+
+  /* Error stays a restrained functional red (usability > purity) */
+  --color-error: var(--k-error);
+  --color-on-error: #ffffff;
+  --color-error-container: var(--k-error-container);
+  --color-on-error-container: var(--k-on-error-container);
+
+  /* Fonts — kept from the fork: Space Grotesk (UI) + Inter (content) */
+  --font-ui: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-content: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
   /* Spacing */
   --spacing-half: 4px;
@@ -51,6 +65,59 @@
   --spacing-double: 16px;
   --spacing-window-padding: 12px;
   --spacing-container-gap: 8px;
+}
+
+/* ── Accent presets: default lives here so first paint is branded ────────────── */
+:root {
+  --accent: #c0263a;      /* crimson — shipped default */
+  --accent-on: #ffffff;   /* white text/icon on accent (>= 4.5:1 for all presets) */
+}
+
+/* ── Dark theme (default) ────────────────────────────────────────────────────── */
+:root,
+:root[data-theme='dark'] {
+  --k-surface: #0d0d0e;
+  --k-surface-dim: #070708;
+  --k-surface-bright: #1b1b1d;
+  --k-surface-container-lowest: #141416;
+  --k-surface-container-low: #171719;
+  --k-surface-container: #1c1c1f;
+  --k-surface-container-high: #232327;
+  --k-surface-container-highest: #2b2b2f;
+  --k-on-surface: #f2f2ef;
+  --k-on-surface-variant: #a4a4aa;
+  --k-inverse-surface: #f2f2ef;
+  --k-inverse-on-surface: #17171a;
+  --k-outline: #55555c;
+  --k-outline-variant: #2e2e33;
+  --k-error: #ff6b6b;
+  --k-error-container: #3a1516;
+  --k-on-error-container: #ffb4ab;
+
+  color-scheme: dark;
+}
+
+/* ── Light theme ─────────────────────────────────────────────────────────────── */
+:root[data-theme='light'] {
+  --k-surface: #f3f3f1;
+  --k-surface-dim: #e0e0dc;
+  --k-surface-bright: #ffffff;
+  --k-surface-container-lowest: #ffffff;
+  --k-surface-container-low: #f8f8f6;
+  --k-surface-container: #efefec;
+  --k-surface-container-high: #e7e7e3;
+  --k-surface-container-highest: #e0e0db;
+  --k-on-surface: #16161a;
+  --k-on-surface-variant: #57575d;
+  --k-inverse-surface: #16161a;
+  --k-inverse-on-surface: #f3f3f1;
+  --k-outline: #9a9a9f;
+  --k-outline-variant: #d1d1cc;
+  --k-error: #ba1a1a;
+  --k-error-container: #ffdad6;
+  --k-on-error-container: #93000a;
+
+  color-scheme: light;
 }
 
 * {
@@ -64,10 +131,29 @@ html, body, #root {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #faf9f8;
-  color: #1a1c1c;
-  font-family: 'Space Grotesk', sans-serif;
+  background-color: var(--k-surface);
+  color: var(--k-on-surface);
+  font-family: var(--font-ui);
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Thin, on-brand scrollbars */
+.custom-scrollbar::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--k-outline-variant);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--k-outline);
+  background-clip: padding-box;
 }

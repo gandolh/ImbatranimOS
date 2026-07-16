@@ -59,29 +59,25 @@ export function DesktopIcon({
       {/* Icon box */}
       <div
         className={cn(
-          'w-12 h-12 flex items-center justify-center border border-outline-variant',
-          'shadow-[inset_-1px_-1px_0_#747780,inset_1px_1px_0_#ffffff]',
-          selected ? 'bg-primary-container' : 'bg-surface-container-low'
+          'w-12 h-12 flex items-center justify-center border transition-colors',
+          selected
+            ? 'border-primary bg-primary text-on-primary'
+            : 'border-outline-variant bg-surface-container-low/80 text-on-surface backdrop-blur-sm'
         )}
       >
-        <Icon
-          size={20}
-          strokeWidth={1.5}
-          className={cn(
-            selected ? 'text-on-primary-container' : 'text-on-surface-variant'
-          )}
-        />
+        <Icon size={22} strokeWidth={1.5} className="text-current" />
       </div>
 
       {/* Label */}
       <span
         className={cn(
           'text-center leading-tight font-ui',
-          'text-[11px] w-full overflow-hidden',
+          'text-[11px] w-full overflow-hidden px-1 py-0.5',
           'line-clamp-2 break-words',
-          selected ? 'text-primary' : 'text-on-surface'
+          selected
+            ? 'bg-primary text-on-primary'
+            : 'text-on-surface [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]'
         )}
-        style={{ fontFamily: 'Space Grotesk, sans-serif' }}
       >
         {app.name}
       </span>

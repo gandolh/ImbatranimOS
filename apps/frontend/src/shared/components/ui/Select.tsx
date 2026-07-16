@@ -27,10 +27,10 @@ export function Select({ label, placeholder = 'Select…', options, className, .
       <BaseSelect.Root {...props}>
         <BaseSelect.Trigger
           className={cn(
-            'flex w-full items-center justify-between border border-outline-variant bg-surface-container-low px-2 py-1',
+            'flex w-full items-center justify-between border border-outline-variant bg-surface-container-low px-2.5 py-1.5',
             'font-ui text-[12px] text-on-surface',
-            'shadow-[inset_-1px_-1px_0_#747780,inset_1px_1px_0_#ffffff]',
-            'cursor-pointer outline-none',
+            'cursor-pointer outline-none transition-colors hover:bg-surface-container-high',
+            'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
             'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
             className
           )}
@@ -44,7 +44,7 @@ export function Select({ label, placeholder = 'Select…', options, className, .
             <BaseSelect.Popup
               className={cn(
                 'z-50 min-w-[8rem] border border-outline-variant bg-surface-container-lowest',
-                'shadow-[2px_2px_0_#c3c6d0]',
+                'shadow-[0_10px_28px_rgba(0,0,0,0.4)]',
                 'py-0.5 outline-none'
               )}
             >

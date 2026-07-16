@@ -19,7 +19,7 @@ export function Tooltip({ content, children, side = 'top' }: TooltipProps) {
               className={cn(
                 'border border-outline-variant bg-inverse-surface px-2 py-1',
                 'font-ui text-[11px] text-inverse-on-surface',
-                'shadow-[1px_1px_0_#747780]'
+                'shadow-[0_6px_18px_rgba(0,0,0,0.4)]'
               )}
             >
               {content}

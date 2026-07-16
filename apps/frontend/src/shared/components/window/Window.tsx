@@ -9,7 +9,7 @@ import {
   type WindowInstance,
   type SnapRegion,
   detectSnapRegion,
-  TOPBAR_HEIGHT,
+  TASKBAR_HEIGHT,
 } from '../../store/windowStore'
 import { SnapOverlay } from './SnapOverlay'
 
@@ -72,7 +72,7 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
       if (!start) return
 
       const maxW = window.innerWidth - start.posX
-      const maxH = window.innerHeight - TOPBAR_HEIGHT - (start.posY - TOPBAR_HEIGHT)
+      const maxH = window.innerHeight - TASKBAR_HEIGHT - start.posY
 
       let newW = start.width
       let newH = start.height
@@ -91,7 +91,7 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
         newX = start.posX + delta
       }
       if (direction.includes('n')) {
-        const minY = TOPBAR_HEIGHT
+        const minY = 0
         const maxDelta = start.posY - minY
         const delta = Math.min(my, start.height - minSize.height)
         const clampedDelta = Math.max(delta, -maxDelta)
@@ -171,8 +171,8 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
       // Move window
       const newX = Math.max(0, Math.min(startPos.x + mx, window.innerWidth - instance.size.width))
       const newY = Math.max(
-        TOPBAR_HEIGHT,
-        Math.min(startPos.y + my, window.innerHeight - 60),
+        0,
+        Math.min(startPos.y + my, window.innerHeight - TASKBAR_HEIGHT - 28),
       )
       updatePosition(instance.id, { x: newX, y: newY })
 
@@ -247,9 +247,10 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
             fontFamily: "'Space Grotesk', sans-serif",
           }}
           className={cn(
-            'border border-outline-variant',
-            'shadow-[inset_-1px_-1px_0_#747780,inset_1px_1px_0_#ffffff]',
-            'overflow-hidden',
+            'overflow-hidden bg-surface-container-low',
+            isFocused
+              ? 'border border-primary shadow-[0_18px_50px_rgba(0,0,0,0.5)]'
+              : 'border border-outline-variant shadow-[0_10px_30px_rgba(0,0,0,0.35)]',
           )}
           onClick={handleWindowClick}
         >
@@ -272,50 +273,48 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
             {...titleBarBind()}
             style={{ touchAction: 'none', userSelect: 'none' }}
             className={cn(
-              'flex items-center justify-between px-2 shrink-0 h-[28px]',
+              'flex items-center justify-between pl-3 pr-1 shrink-0 h-[30px] border-b',
               isFocused
-                ? 'bg-[#7b9acc] text-[#09315d]'
-                : 'bg-[#e9e8e7] text-[#43474f]',
+                ? 'bg-surface-container-high border-outline-variant text-on-surface'
+                : 'bg-surface-container border-outline-variant text-on-surface-variant',
             )}
           >
-            {/* Left: title */}
-            <span className="text-[13px] font-semibold leading-none truncate pr-2 select-none">
-              {instance.title}
+            {/* Left: accent tick + title */}
+            <span className="flex min-w-0 items-center gap-2 pr-2 select-none">
+              <span
+                className={cn(
+                  'h-2.5 w-2.5 shrink-0',
+                  isFocused ? 'bg-primary' : 'bg-outline-variant',
+                )}
+              />
+              <span className="truncate text-[12px] font-semibold leading-none tracking-tight">
+                {instance.title}
+              </span>
             </span>
 
             {/* Right: window controls */}
             <div className="flex items-center gap-[2px] shrink-0" onClick={(e) => e.stopPropagation()}>
-              <TitleBarButton
-                onClick={handleHide}
-                title="Hide"
-                isFocused={isFocused}
-              >
-                <Minus size={10} strokeWidth={2.5} />
+              <TitleBarButton onClick={handleHide} title="Minimize">
+                <Minus size={13} strokeWidth={2} />
               </TitleBarButton>
               <TitleBarButton
                 onClick={handleMaximizeToggle}
                 title={instance.isMaximized ? 'Restore' : 'Maximize'}
-                isFocused={isFocused}
               >
                 {instance.isMaximized ? (
-                  <Copy size={10} strokeWidth={2.5} />
+                  <Copy size={12} strokeWidth={2} />
                 ) : (
-                  <Square size={10} strokeWidth={2.5} />
+                  <Square size={11} strokeWidth={2} />
                 )}
               </TitleBarButton>
-              <TitleBarButton
-                onClick={handleClose}
-                title="Close"
-                isFocused={isFocused}
-                isClose
-              >
-                <X size={10} strokeWidth={2.5} />
+              <TitleBarButton onClick={handleClose} title="Close" isClose>
+                <X size={13} strokeWidth={2} />
               </TitleBarButton>
             </div>
           </div>
 
           {/* Window body */}
-          <div className="flex-1 bg-white overflow-auto min-h-0">
+          <div className="flex-1 bg-surface-container-lowest text-on-surface overflow-auto min-h-0">
             {children}
           </div>
         </motion.div>
@@ -327,25 +326,23 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
 type TitleBarButtonProps = {
   onClick: (e: React.MouseEvent) => void
   title: string
-  isFocused: boolean
   isClose?: boolean
   children: React.ReactNode
 }
 
-function TitleBarButton({ onClick, title, isFocused, isClose = false, children }: TitleBarButtonProps) {
+function TitleBarButton({ onClick, title, isClose = false, children }: TitleBarButtonProps) {
   return (
     <button
       onClick={onClick}
       title={title}
       className={cn(
-        'flex items-center justify-center w-6 h-6',
-        'border-none outline-none cursor-pointer',
+        'flex items-center justify-center w-7 h-7',
+        'border-none outline-none cursor-pointer text-current',
         'transition-colors duration-75',
-        isFocused
-          ? isClose
-            ? 'bg-transparent hover:bg-[#09315d]/20 text-[#09315d]'
-            : 'bg-transparent hover:bg-[#09315d]/20 text-[#09315d]'
-          : 'bg-transparent hover:bg-black/10 text-[#43474f]',
+        isClose
+          ? 'hover:bg-error hover:text-on-error'
+          : 'hover:bg-surface-container-highest',
+        'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
       )}
     >
       {children}

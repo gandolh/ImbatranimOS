@@ -20,7 +20,11 @@ type PreMaximizeState = {
   size: { width: number; height: number }
 }
 
-export const TOPBAR_HEIGHT = 40
+// Windows-7-classic layout: chrome lives in a BOTTOM taskbar, so the usable
+// desktop starts at y=0 and is bounded below by the taskbar. TOPBAR_HEIGHT is
+// kept (=0) for the handful of call sites that still import it.
+export const TOPBAR_HEIGHT = 0
+export const TASKBAR_HEIGHT = 44
 
 // ── Layout persistence ────────────────────────────────────────────────────────
 
@@ -35,7 +39,7 @@ export type PersistedWindow = {
   snapState?: SnapRegion
 }
 
-const LAYOUT_STORAGE_KEY = 'minimal-desktop:window-layout'
+const LAYOUT_STORAGE_KEY = 'imbatranimos:window-layout'
 
 export function saveLayout(windows: WindowInstance[]): void {
   const data: PersistedWindow[] = windows.map((w) => ({
@@ -76,10 +80,10 @@ export function computeSnapGeometry(region: SnapRegion): {
   size: { width: number; height: number }
 } {
   const W = window.innerWidth
-  const H = window.innerHeight - TOPBAR_HEIGHT
+  const H = window.innerHeight - TASKBAR_HEIGHT
   const halfW = Math.floor(W / 2)
   const halfH = Math.floor(H / 2)
-  const top = TOPBAR_HEIGHT
+  const top = 0
 
   switch (region) {
     case 'left':
@@ -114,8 +118,8 @@ export function detectSnapRegion(
   const H = window.innerHeight
   const nearLeft = pointerX <= EDGE_THRESHOLD
   const nearRight = pointerX >= W - EDGE_THRESHOLD
-  const nearTop = pointerY <= TOPBAR_HEIGHT + EDGE_THRESHOLD
-  const nearBottom = pointerY >= H - EDGE_THRESHOLD
+  const nearTop = pointerY <= EDGE_THRESHOLD
+  const nearBottom = pointerY >= H - TASKBAR_HEIGHT - EDGE_THRESHOLD
 
   if (nearTop && nearLeft) return 'tl'
   if (nearTop && nearRight) return 'tr'
@@ -170,21 +174,20 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     let x: number
     let y: number
 
+    const maxY = window.innerHeight - TASKBAR_HEIGHT - minSize.height
+
     if (initialPosition) {
       x = Math.max(0, Math.min(initialPosition.x, window.innerWidth - minSize.width))
-      y = Math.max(TOPBAR_HEIGHT, Math.min(initialPosition.y, window.innerHeight - minSize.height))
+      y = Math.max(0, Math.min(initialPosition.y, maxY))
     } else {
       const centerX = Math.floor((window.innerWidth - defaultSize.width) / 2)
-      const centerY = Math.floor((window.innerHeight - defaultSize.height) / 2)
+      const centerY = Math.floor((window.innerHeight - TASKBAR_HEIGHT - defaultSize.height) / 2)
 
       const offsetX = Math.floor(Math.random() * 201) - 100
       const offsetY = Math.floor(Math.random() * 201) - 100
 
       x = Math.max(0, Math.min(centerX + offsetX, window.innerWidth - minSize.width))
-      y = Math.max(
-        TOPBAR_HEIGHT,
-        Math.min(centerY + offsetY, window.innerHeight - minSize.height),
-      )
+      y = Math.max(0, Math.min(centerY + offsetY, maxY))
     }
 
     const instance: WindowInstance = {
@@ -251,10 +254,10 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
                 ...w,
                 isMaximized: true,
                 snapState: undefined,
-                position: { x: 0, y: TOPBAR_HEIGHT },
+                position: { x: 0, y: 0 },
                 size: {
                   width: window.innerWidth,
-                  height: window.innerHeight - TOPBAR_HEIGHT,
+                  height: window.innerHeight - TASKBAR_HEIGHT,
                 },
               }
             : w,

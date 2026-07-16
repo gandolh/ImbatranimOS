@@ -20,12 +20,11 @@ export function Input({ label, className, id, ...props }: InputProps) {
       <BaseInput
         id={id}
         className={cn(
-          'w-full border border-outline-variant bg-surface-container-lowest px-2 py-1',
+          'w-full border border-outline-variant bg-surface-container-lowest px-2.5 py-1.5',
           'font-content text-[13px] text-on-surface',
-          'shadow-[inset_1px_1px_0_#c3c6d0,inset_-1px_-1px_0_#ffffff]',
-          'outline-none',
+          'outline-none transition-colors',
           'placeholder:text-on-surface-variant',
-          'data-[focused]:border-primary data-[focused]:shadow-[inset_1px_1px_0_#405f8e,inset_-1px_-1px_0_#ffffff]',
+          'data-[focused]:border-primary data-[focused]:ring-2 data-[focused]:ring-primary/40',
           'data-[invalid]:border-error',
           'disabled:cursor-not-allowed disabled:opacity-50',
           className

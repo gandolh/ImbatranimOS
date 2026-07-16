@@ -13,18 +13,18 @@ type ButtonProps = Omit<ComponentProps<typeof BaseButton>, 'variant' | 'size'> &
 const variantClasses: Record<Variant, string> = {
   default:
     'bg-surface-container-low border-outline-variant text-on-surface ' +
-    'shadow-[inset_-1px_-1px_0_#747780,inset_1px_1px_0_#ffffff] ' +
-    'hover:bg-[#f4f1ee] active:shadow-[inset_1px_1px_0_#747780,inset_-1px_-1px_0_#ffffff] active:translate-x-px active:translate-y-px',
+    'hover:bg-surface-container-high active:bg-surface-container ' +
+    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
   primary:
     'bg-primary border-primary text-on-primary ' +
-    'shadow-[inset_-1px_-1px_0_#264774,inset_1px_1px_0_#7b9acc] ' +
-    'hover:brightness-105 active:shadow-[inset_1px_1px_0_#264774,inset_-1px_-1px_0_#7b9acc] active:translate-x-px active:translate-y-px',
+    'hover:brightness-110 active:brightness-95 ' +
+    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface',
   ghost:
     'bg-transparent border-transparent text-on-surface hover:bg-surface-container hover:border-outline-variant',
   destructive:
-    'bg-surface-container-low border-error text-error ' +
-    'shadow-[inset_-1px_-1px_0_#747780,inset_1px_1px_0_#ffffff] ' +
-    'hover:bg-error-container active:translate-x-px active:translate-y-px',
+    'bg-transparent border-error text-error ' +
+    'hover:bg-error hover:text-on-error active:brightness-95 ' +
+    'focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-inset',
 }
 
 const sizeClasses: Record<Size, string> = {

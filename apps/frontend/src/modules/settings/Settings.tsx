@@ -1,121 +1,214 @@
 import { useWallpaperStore, type Wallpaper } from '../../shared/store/wallpaperStore'
-import { Monitor, Check } from 'lucide-react'
+import {
+  useAppearanceStore,
+  ACCENT_PRESETS,
+  type ThemeMode,
+} from '../../shared/store/appearanceStore'
+import { Monitor, Palette, Moon, Sun, Check, Image } from 'lucide-react'
+import { cn } from '../../lib/cn'
+import { SecuritySettings } from '../auth/SecuritySettings'
 
-const WALLPAPERS: { id: Wallpaper; name: string; preview: string }[] = [
+const WALLPAPERS: { id: Wallpaper; name: string; preview: React.CSSProperties }[] = [
   {
     id: 'dots',
     name: 'Dots',
-    preview: 'radial-gradient(#c3c6d0 1px, transparent 1px)',
+    preview: {
+      backgroundImage: 'radial-gradient(var(--k-outline-variant) 1px, transparent 1px)',
+      backgroundSize: '12px 12px',
+      backgroundColor: 'var(--k-surface)',
+    },
   },
   {
     id: 'grid',
     name: 'Grid',
-    preview:
-      'linear-gradient(#c3c6d0 1px, transparent 1px), linear-gradient(90deg, #c3c6d0 1px, transparent 1px)',
+    preview: {
+      backgroundImage:
+        'linear-gradient(var(--k-outline-variant) 1px, transparent 1px), linear-gradient(90deg, var(--k-outline-variant) 1px, transparent 1px)',
+      backgroundSize: '16px 16px',
+      backgroundColor: 'var(--k-surface)',
+    },
   },
   {
     id: 'linen',
-    name: 'Linen',
-    preview: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23faf9f8'/%3E%3Crect width='1' height='1' x='0' y='0' fill='%23c3c6d0' opacity='0.25'/%3E%3Crect width='1' height='1' x='2' y='2' fill='%23c3c6d0' opacity='0.2'/%3E%3C/svg%3E")`,
+    name: 'Fine',
+    preview: {
+      backgroundImage:
+        'radial-gradient(var(--k-outline-variant) 0.5px, transparent 0.5px), radial-gradient(var(--k-outline-variant) 0.5px, var(--k-surface) 0.5px)',
+      backgroundSize: '6px 6px',
+      backgroundPosition: '0 0, 3px 3px',
+      backgroundColor: 'var(--k-surface)',
+    },
   },
 ]
 
+const THEMES: { id: ThemeMode; name: string; icon: typeof Moon }[] = [
+  { id: 'dark', name: 'Dark', icon: Moon },
+  { id: 'light', name: 'Light', icon: Sun },
+]
+
+function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: string }) {
+  return (
+    <div className="mb-5 flex items-center gap-3">
+      <div className="flex h-9 w-9 items-center justify-center border border-outline-variant bg-surface-container text-primary">
+        <Icon size={18} strokeWidth={1.75} />
+      </div>
+      <h2 className="font-ui text-base font-semibold text-on-surface">{title}</h2>
+    </div>
+  )
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-3 font-ui text-[11px] font-semibold uppercase tracking-widest text-on-surface-variant">
+      {children}
+    </p>
+  )
+}
+
 export function Settings() {
-  const { wallpaper: currentWallpaper, setWallpaper } = useWallpaperStore()
+  const { wallpaper, setWallpaper } = useWallpaperStore()
+  const theme = useAppearanceStore((s) => s.theme)
+  const accent = useAppearanceStore((s) => s.accent)
+  const setTheme = useAppearanceStore((s) => s.setTheme)
+  const setAccent = useAppearanceStore((s) => s.setAccent)
 
   return (
-    <div className="flex flex-col h-full bg-surface select-none">
-      <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
-        <header className="mb-10">
-          <h1 className="text-3xl font-bold font-ui text-primary tracking-tight">Settings</h1>
-          <p className="text-sm text-on-surface-variant mt-1">Manage your workspace preferences</p>
+    <div className="flex h-full flex-col bg-surface text-on-surface select-none">
+      <div className="custom-scrollbar flex-1 overflow-y-auto p-7">
+        <header className="mb-8">
+          <h1 className="font-ui text-2xl font-bold tracking-tight text-on-surface">Settings</h1>
+          <p className="mt-1 text-[13px] text-on-surface-variant">Tune the look of ImbatranimOS.</p>
         </header>
 
+        {/* Appearance ─────────────────────────────────────────── */}
         <section className="mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-primary/10 text-primary">
-              <Monitor size={20} />
+          <SectionHeader icon={Palette} title="Appearance" />
+
+          {/* Theme */}
+          <div className="mb-8">
+            <FieldLabel>Theme</FieldLabel>
+            <div className="flex gap-3">
+              {THEMES.map((t) => {
+                const Icon = t.icon
+                const active = theme === t.id
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTheme(t.id)}
+                    className={cn(
+                      'flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 text-[12px] font-medium outline-none transition-colors',
+                      'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
+                      active
+                        ? 'border-primary bg-primary text-on-primary'
+                        : 'border-outline-variant bg-surface-container-low text-on-surface hover:bg-surface-container-high',
+                    )}
+                  >
+                    <Icon size={15} strokeWidth={1.75} />
+                    {t.name}
+                  </button>
+                )
+              })}
             </div>
-            <h2 className="text-xl font-semibold font-ui">Personalization</h2>
           </div>
 
-          <div className="space-y-8">
-            <div>
-              <div className="flex items-baseline justify-between mb-4">
-                <p className="text-sm font-medium text-on-surface">Desktop Wallpaper</p>
-                <p className="text-xs text-on-surface-variant italic">Choose a pattern that fits your style</p>
-              </div>
+          {/* Accent */}
+          <div className="mb-8">
+            <FieldLabel>Accent color</FieldLabel>
+            <div className="flex flex-wrap gap-3">
+              {ACCENT_PRESETS.map((preset) => {
+                const active = accent === preset.id
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => setAccent(preset.id)}
+                    title={preset.name}
+                    aria-label={preset.name}
+                    aria-pressed={active}
+                    className={cn(
+                      'group flex items-center gap-2 border px-2.5 py-2 outline-none transition-colors',
+                      'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
+                      active
+                        ? 'border-primary bg-surface-container-high'
+                        : 'border-outline-variant bg-surface-container-low hover:bg-surface-container',
+                    )}
+                  >
+                    <span
+                      className="flex h-6 w-6 items-center justify-center"
+                      style={{ backgroundColor: preset.hex, color: preset.on }}
+                    >
+                      {active && <Check size={13} strokeWidth={3} />}
+                    </span>
+                    <span className="pr-1 text-[12px] font-medium text-on-surface">{preset.name}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                {WALLPAPERS.map((wp) => (
+          {/* Wallpaper */}
+          <div>
+            <FieldLabel>Desktop pattern</FieldLabel>
+            <div className="grid grid-cols-3 gap-4">
+              {WALLPAPERS.map((wp) => {
+                const active = wallpaper === wp.id
+                return (
                   <button
                     key={wp.id}
                     onClick={() => setWallpaper(wp.id)}
-                    className={`group relative aspect-[16/10] cursor-pointer border-2 transition-all duration-300 ${currentWallpaper === wp.id
-                      ? 'border-primary shadow-[4px_4px_0_rgba(64,95,142,0.2)]'
-                      : 'border-outline-variant hover:border-outline hover:translate-y-[-2px]'
-                      }`}
+                    className={cn(
+                      'group relative overflow-hidden border outline-none transition-colors',
+                      'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
+                      active ? 'border-primary' : 'border-outline-variant hover:border-outline',
+                    )}
                   >
-                    <div
-                      className="absolute inset-0 transition-transform duration-500 group-hover:scale-105"
-                      style={{
-                        backgroundImage: wp.preview,
-                        backgroundSize: wp.id === 'dots' ? '12px 12px' : wp.id === 'grid' ? '16px 16px' : 'repeat',
-                        backgroundColor: '#faf9f8'
-                      }}
-                    />
-
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
-
-                    {currentWallpaper === wp.id && (
-                      <div className="absolute top-3 right-3 bg-primary text-white p-1.5 shadow-md transform scale-110">
-                        <Check size={14} strokeWidth={3} />
+                    <div className="aspect-[16/10] w-full" style={wp.preview} />
+                    {active && (
+                      <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center bg-primary text-on-primary">
+                        <Check size={12} strokeWidth={3} />
                       </div>
                     )}
-
-                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/40 to-transparent">
-                      <span className="text-[12px] font-bold text-white drop-shadow-sm">
-                        {wp.name}
-                      </span>
+                    <div className="flex items-center gap-1.5 border-t border-outline-variant bg-surface-container-low px-2 py-1.5">
+                      <Image size={12} strokeWidth={1.75} className="text-on-surface-variant" />
+                      <span className="text-[11px] font-medium text-on-surface">{wp.name}</span>
                     </div>
                   </button>
-                ))}
-              </div>
+                )
+              })}
             </div>
           </div>
         </section>
 
-        <section className="mb-10 pt-10 border-t border-outline-variant">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-secondary/10 text-secondary">
-              <span className="text-xl font-bold font-ui">i</span>
-            </div>
-            <h2 className="text-xl font-semibold font-ui text-on-surface">System Information</h2>
-          </div>
+        {/* Security ───────────────────────────────────────────── */}
+        <SecuritySettings />
 
-          <div className="grid gap-4">
+        {/* About ──────────────────────────────────────────────── */}
+        <section className="mb-6 border-t border-outline-variant pt-8">
+          <SectionHeader icon={Monitor} title="About this machine" />
+          <div className="grid gap-2">
             {[
-              { label: 'OS', value: 'Minimal Web Desktop' },
-              { label: 'Environment', value: 'Vite + React + Tailwind CSS' },
-              { label: 'Status', value: 'Developer Preview' }
-            ].map(item => (
-              <div key={item.label} className="flex justify-between items-center p-3 bg-surface-container-low border border-outline-variant">
-                <span className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">{item.label}</span>
-                <span className="text-sm font-semibold text-primary font-ui">{item.value}</span>
+              { label: 'OS', value: 'ImbatranimOS' },
+              { label: 'Shell', value: 'React desktop on Alpine' },
+              { label: 'Status', value: 'Developer Preview' },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between border border-outline-variant bg-surface-container-low px-3 py-2.5"
+              >
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant">
+                  {item.label}
+                </span>
+                <span className="font-ui text-[13px] font-semibold text-on-surface">{item.value}</span>
               </div>
             ))}
           </div>
         </section>
       </div>
 
-      <div className="px-8 py-4 bg-surface-container-low border-t border-outline-variant flex justify-between items-center">
-        <div className="flex gap-4">
-          <span className="text-[10px] text-on-surface-variant hover:text-primary cursor-help transition-colors font-bold uppercase tracking-widest">Privacy</span>
-          <span className="text-[10px] text-on-surface-variant hover:text-primary cursor-help transition-colors font-bold uppercase tracking-widest">Terms</span>
-        </div>
-        <p className="text-[10px] text-on-surface-variant font-mono">
-          BUILD // 2024.05.01
-        </p>
+      <div className="flex items-center justify-between border-t border-outline-variant bg-surface-container-low px-7 py-3">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant">
+          ImbatranimOS
+        </span>
+        <span className="font-ui text-[10px] tabular-nums text-on-surface-variant">v0.1 · preview</span>
       </div>
     </div>
   )

@@ -10,22 +10,26 @@ type DesktopProps = {
   wallpaper: Wallpaper
 }
 
+// Theme-aware wallpapers — pattern lines use the active outline token, base uses
+// the active surface token, so both light and dark read correctly.
 const WALLPAPER_STYLES: Record<Wallpaper, React.CSSProperties> = {
   dots: {
-    backgroundImage: 'radial-gradient(#c3c6d0 1px, transparent 1px)',
-    backgroundSize: '20px 20px',
-    backgroundColor: '#faf9f8',
+    backgroundImage: 'radial-gradient(var(--k-outline-variant) 1px, transparent 1px)',
+    backgroundSize: '22px 22px',
+    backgroundColor: 'var(--k-surface)',
   },
   grid: {
     backgroundImage:
-      'linear-gradient(#c3c6d0 1px, transparent 1px), linear-gradient(90deg, #c3c6d0 1px, transparent 1px)',
+      'linear-gradient(var(--k-outline-variant) 1px, transparent 1px), linear-gradient(90deg, var(--k-outline-variant) 1px, transparent 1px)',
     backgroundSize: '32px 32px',
-    backgroundColor: '#faf9f8',
+    backgroundColor: 'var(--k-surface)',
   },
   linen: {
-    backgroundColor: '#faf9f8',
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23faf9f8'/%3E%3Crect width='1' height='1' x='0' y='0' fill='%23c3c6d0' opacity='0.25'/%3E%3Crect width='1' height='1' x='2' y='2' fill='%23c3c6d0' opacity='0.2'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'repeat',
+    backgroundColor: 'var(--k-surface)',
+    backgroundImage:
+      'radial-gradient(var(--k-outline-variant) 0.5px, transparent 0.5px), radial-gradient(var(--k-outline-variant) 0.5px, var(--k-surface) 0.5px)',
+    backgroundSize: '8px 8px',
+    backgroundPosition: '0 0, 4px 4px',
   },
 }
 
@@ -62,7 +66,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
   return (
     <div
       ref={containerRef}
-      className="h-[calc(100vh-40px)] w-full relative overflow-hidden mt-[40px]"
+      className="absolute left-0 top-0 right-0 bottom-[44px] w-full overflow-hidden"
       style={WALLPAPER_STYLES[wallpaper]}
     >
       {/* Desktop icon container - using absolute positioning for children */}

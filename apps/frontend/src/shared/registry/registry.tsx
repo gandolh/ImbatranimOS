@@ -7,14 +7,16 @@ import {
   Settings as SettingsIcon,
   SquareTerminal,
   FolderOpen,
+  Activity,
 } from 'lucide-react'
 import { StickyNotes } from '../../modules/sticky-notes/StickyNotes'
 import { Todo } from '../../modules/todo/Todo'
 import { Bookmarks } from '../../modules/bookmarks/Bookmarks'
 import { Notepad } from '../../modules/notepad/Notepad'
 import { Settings } from '../../modules/settings/Settings'
-import { ReplInterpreter } from '../../modules/repl-interpreter/ReplInterpreter'
+import { Terminal } from '../../modules/repl-interpreter/Terminal'
 import { FileManager } from '../../modules/file-manager/FileManager'
+import { SystemMonitor } from '../../modules/system-monitor/SystemMonitor'
 
 export type AppConfig = {
   id: string
@@ -91,15 +93,15 @@ export const APP_REGISTRY: AppConfig[] = [
     minSize: { width: 360, height: 400 },
   },
   {
-    id: 'repl-interpreter',
-    name: 'REPL Interpreter',
-    description: 'Run interactive REPL programs',
-    meta: ['repl', 'node', 'python', 'shell', 'interpreter'],
+    id: 'terminal',
+    name: 'Terminal',
+    description: 'A real shell on the machine',
+    meta: ['shell', 'terminal', 'bash', 'console', 'command line'],
     icon: SquareTerminal,
-    component: ReplInterpreter,
-    multiInstance: false,
-    defaultSize: { width: 700, height: 520 },
-    minSize: { width: 500, height: 380 },
+    component: Terminal,
+    multiInstance: true,
+    defaultSize: { width: 700, height: 460 },
+    minSize: { width: 400, height: 240 },
   },
   // SWARM:S2 — file manager entry (append only, do not reorder above)
   {
@@ -112,5 +114,16 @@ export const APP_REGISTRY: AppConfig[] = [
     multiInstance: true,
     defaultSize: { width: 680, height: 500 },
     minSize: { width: 480, height: 320 },
+  },
+  {
+    id: 'system-monitor',
+    name: 'System Monitor',
+    description: 'Live CPU, memory, disk, and process stats',
+    meta: ['cpu', 'ram', 'memory', 'disk', 'processes', 'htop', 'monitor', 'activity'],
+    icon: Activity,
+    component: SystemMonitor,
+    multiInstance: false,
+    defaultSize: { width: 560, height: 480 },
+    minSize: { width: 420, height: 360 },
   },
 ]

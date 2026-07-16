@@ -123,3 +123,11 @@ frontend's hoisted node_modules from runtime + stripping native build
 intermediates), over the ~150 MB target and the 200 MB tripwire. Backend-
 language decision (NestJS vs Go) is up for a user revisit; recorded in
 wiki/open-questions.md + status.md, not silently resolved.
+
+## [2026-07-16] decision | Image-size revisit resolved — keep NestJS, retire 150MB target
+
+User revisited the 364 MB prod image (brief 09 tripwire). Decision: keep
+NestJS (fork reuse >> image bytes for a run-once container), retire the
+~150 MB target / 200 MB tripwire as unrealistic for Node+Nest, set a new
+bar of ≤~400 MB image with cold-start + idle RAM as the real "lightweight"
+measure (recorded in brief 15). Amended in wiki/decisions.md.

@@ -11,15 +11,12 @@ landed — the fork is imported/pruned and the dual-mode container image
 builds and runs (desktop + API on one port, unprivileged imbatranim user,
 volume-persisted home). Committed to `main` (local-only, no PR/CI).
 
-**Open decision:** the prod image is **364 MB**, over the ~150 MB target and
-the 200 MB tripwire — the backend-language revisit (keep NestJS / go slim
-with Go) is awaiting a user call. See
-[open-questions.md](open-questions.md).
-
 ## Metrics (recorded)
 
 - Prod image size: **364 MB** (node:22-alpine base ~140 MB + backend
-  node_modules ~130 MB + built app). Cold-start/idle-RAM: TBD in brief 15.
+  node_modules ~130 MB + built app). Accepted 2026-07-16 — NestJS kept, the
+  150 MB target retired as unrealistic; "lightweight" now measured by
+  cold-start + idle RAM (TBD in brief 15). See [decisions.md](decisions.md).
 
 ## Briefs
 

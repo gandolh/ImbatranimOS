@@ -60,8 +60,13 @@ Changing any entry requires an explicit revisit + a `log.md` entry.
   terminal/files/notes unaided.
 - **Distribution: build-from-source** (clone + docker build/compose);
   registry publishing is an open question, not a promise.
-- **Lightweight as identity** — now meaning: slim image, fast cold start,
-  snappy desktop; no dependency bloat without a fight.
+- **Lightweight as identity** — REVISED 2026-07-16 after brief 09 measured
+  the prod image at 364 MB. The old "~150 MB image target / 200 MB tripwire"
+  is retired as unrealistic for Node+Nest (floor ~300 MB). New target:
+  **image ≤ ~400 MB**, and "lightweight" is measured primarily by
+  **cold-start time and idle RAM** (recorded in brief 15), not image bytes.
+  NestJS is kept — the fork reuse it enabled (terminal/files/system/all
+  apps) is worth far more than image bytes for a run-once container.
 
 ## Superseded (ISO era, 2026-07-16 — record only)
 

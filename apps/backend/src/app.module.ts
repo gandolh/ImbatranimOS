@@ -7,8 +7,9 @@ import { TodosModule } from './modules/todos/todos.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
 import { SystemModule } from './modules/system/system.module';
-import { ReplModule } from './modules/repl/repl.module';
+import { PtyModule } from './modules/pty/pty.module';
 import { FilesModule } from './modules/files/files.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 // Prod image only: serve the built frontend from STATIC_ROOT on the API
 // port, with the SPA index.html fallback. API + health are excluded so
@@ -28,12 +29,13 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
     ...staticModules,
     ConfigModule,
     DbModule,
+    AuthModule,
     StickyNotesModule,
     TodosModule,
     NotesModule,
     BookmarksModule,
     SystemModule,
-    ReplModule,
+    PtyModule,
     FilesModule,
   ],
 })

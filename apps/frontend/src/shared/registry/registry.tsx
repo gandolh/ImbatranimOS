@@ -4,8 +4,6 @@ import {
   ListTodo,
   Bookmark,
   FileText,
-  Container,
-  Terminal,
   Settings as SettingsIcon,
   SquareTerminal,
   FolderOpen,
@@ -14,8 +12,6 @@ import { StickyNotes } from '../../modules/sticky-notes/StickyNotes'
 import { Todo } from '../../modules/todo/Todo'
 import { Bookmarks } from '../../modules/bookmarks/Bookmarks'
 import { Notepad } from '../../modules/notepad/Notepad'
-import { DockerDesktop } from '../../modules/docker-desktop/DockerDesktop'
-import { ServiceLauncher } from '../../modules/service-launcher/ServiceLauncher'
 import { Settings } from '../../modules/settings/Settings'
 import { ReplInterpreter } from '../../modules/repl-interpreter/ReplInterpreter'
 import { FileManager } from '../../modules/file-manager/FileManager'
@@ -82,28 +78,6 @@ export const APP_REGISTRY: AppConfig[] = [
     multiInstance: true,
     defaultSize: { width: 600, height: 500 },
     minSize: { width: 400, height: 300 },
-  },
-  {
-    id: 'docker-desktop',
-    name: 'Docker Desktop',
-    description: 'Manage Docker containers',
-    meta: ['containers', 'docker', 'images', 'compose'],
-    icon: Container,
-    component: DockerDesktop,
-    multiInstance: false,
-    defaultSize: { width: 800, height: 560 },
-    minSize: { width: 600, height: 400 },
-  },
-  {
-    id: 'service-launcher',
-    name: 'Service Launcher',
-    description: 'Launch and manage local services',
-    meta: ['terminal', 'services', 'processes', 'run'],
-    icon: Terminal,
-    component: ServiceLauncher,
-    multiInstance: false,
-    defaultSize: { width: 720, height: 520 },
-    minSize: { width: 500, height: 380 },
   },
   {
     id: 'settings',

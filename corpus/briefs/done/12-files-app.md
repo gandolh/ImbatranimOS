@@ -30,3 +30,17 @@ Files created in the browser appear via `ls` in the Terminal app (and
 vice versa); upload/download round-trips a binary file intact; deliberate
 traversal attempts (`../../etc/passwd`, encoded variants, symlinks out)
 are refused with tests proving it; all endpoints require auth.
+
+---
+
+**Outcome (2026-07-17):** DONE. `files` module extended (not duplicated):
+new `home` root (FILES_ROOT env, default os.homedir → /home/imbatranim in
+container) alongside `notes`; REST surface under /api/files (list, stat,
+content, download stream, multipart upload capped 100MB via
+FILES_MAX_UPLOAD_BYTES, mkdir, move, copy, delete). Jail: decode-loop +
+NUL reject + re-root strip + lexical containment + realpath symlink checks
+incl. missing-target ancestor walk — 12 unit + 6 e2e tests prove refusals.
+Frontend file-manager: tree/list panes, root switcher, context menu,
+notepad wire-in via openApp intent (notes root only — home-root notepad is
+future work). Known nit: over-cap upload surfaces as 500 not 413 (brief 15
+fix list).

@@ -7,7 +7,9 @@ Read by the `orchestrate` skill at work-intake. Keep terse.
 - Implement skill: `plan-split-dispatch` (only for briefs with ≥3 independent
   chunks; 1–2 chunk briefs are implemented inline)
 - Review skill: `code-review` (no repo-specific reviewer yet)
-- PR skill: none — local-only project, commits on request, no CI
+- PR skill: none — local-only project, no CI. Commit policy (user,
+  2026-07-17): commit periodically during runs — one commit per completed
+  brief on `main`; don't accumulate uncommitted work
 
 ## Intent table
 

@@ -37,3 +37,15 @@ Unauthenticated requests to any API/WS get 401/refused; first run forces
 password creation; TOTP can be enabled and is then required; brute-force
 attempts get rate-limited/backed off; the HTTPS decision is recorded and
 its recipe verified once end-to-end.
+
+---
+
+**Outcome (2026-07-17):** DONE. Backend `auth` module (argon2id, httpOnly
+`imb_session` cookie sessions, first-run setup, optional TOTP via otplib,
+per-IP throttle with exponential backoff, global `APP_GUARD` +
+`@Public()` opt-outs, `ws-auth.ts` barrel for WS upgrades); frontend
+`auth` module (AuthGate, LockScreen, FirstRunWizard, SecuritySettings).
+HTTPS resolved: reverse-proxy TLS (Caddy recipe in infrastructure/README
++ Caddyfile.example), CSRF = SameSite=Lax + Origin check. 32 unit + 11
+e2e tests green. Docker build on Alpine verified by analogy only (argon2
+native build) — re-check in brief 15.

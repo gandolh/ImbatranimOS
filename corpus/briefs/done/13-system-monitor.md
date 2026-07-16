@@ -30,3 +30,16 @@ Monitor shows live truthful data (spot-check against `top` in the
 Terminal app); killing a process you own works and is scoped (attempting
 another uid's process fails); auth required; the app-install stance is
 recorded.
+
+---
+
+**Outcome (2026-07-17):** DONE. `system` module extended: GET
+/system/stats (CPU delta-cache, /proc/meminfo, statfs on home), GET
+/system/processes (ps via lazy-imported execa), GET /system/about
+(hostname/kernel/uptime/IMAGE_VERSION), POST /system/processes/:pid/kill
+— uid-scoped (reads /proc/<pid>/status Uid; other-uid → 403, gone → 404),
+signal allowlist. Frontend `system-monitor` app: gauges + sortable process
+table with kill + About panel, react-query 1500ms polling. 8 new unit
+tests incl. real /proc self-read. App-install v1 stance recorded in
+decisions.md. Flag: execa is ESM — lazy import works around the CJS jest
+setup (allowlist it if it recurs).

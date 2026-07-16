@@ -25,15 +25,20 @@ display.
 
 ## v1 apps
 
-**System apps (new, the soul of the pivot):**
-- **Terminal** — xterm.js ↔ node-pty over WebSocket, real shell as
-  `imbatranim`. Seed exists (fork `repl-interpreter` + `repl` module) but
-  it's an HTTP command-runner, not a live TTY — brief 11 builds the real
-  streaming PTY.
-- **Files** — explorer over the real home dir. Seed exists (fork
-  `file-manager` FE + `files`/`notes` BE modules) — brief 12 extends it.
-- **System monitor** — real CPU/RAM/disk/process data. Seed exists (fork
-  `system` module) — brief 13 extends it.
+**System apps (built 2026-07-17, briefs 10–13):**
+- **Terminal** — xterm.js ↔ node-pty over an authenticated WS at
+  `/api/pty` (backend `pty` module; session check on upgrade,
+  backpressure, revocation sweep). The fork's HTTP `repl` module is
+  deleted — absorbed.
+- **Files** — explorer over the real home dir (`files` module, `home`
+  root via FILES_ROOT; traversal/symlink jail with tests; upload capped
+  via FILES_MAX_UPLOAD_BYTES, over-cap → 413).
+- **System monitor** — real CPU/RAM/disk/process data from /proc
+  (`system` module) + uid-scoped kill + About panel (IMAGE_VERSION).
+- **Auth** — `auth` module: argon2id, `imb_session` httpOnly cookie,
+  first-run wizard, optional TOTP, per-IP throttle, global APP_GUARD +
+  `@Public()`, `ws-auth.ts` for WS upgrades; security-headers middleware
+  (CSP etc.; HSTS is the reverse proxy's job).
 
 **Productivity apps (surviving the fork prune):** sticky notes, todo,
 bookmarks, notepad. **Cut from the fork (brief 08):** docker desktop,
@@ -42,7 +47,7 @@ assume a dev host, not a container).
 
 **Dependency layout quirk (fork):** frontend runtime deps are split across
 `apps/package.json` (hoisted parent) and `apps/frontend/package.json`; both
-need `npm install`. Fork ships zero auth (brief 10 is greenfield).
+need `npm install` (brief 16 would fix this with npm workspaces).
 
 ## Repo layout (adopted from the fork, 2026-07-16)
 

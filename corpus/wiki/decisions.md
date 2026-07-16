@@ -47,6 +47,26 @@ Changing any entry requires an explicit revisit + a `log.md` entry.
   notepad. Cut: docker desktop, service launcher.
 - **ISO-era code deleted uncommitted** (explicit choice over archiving);
   the corpus log is the record.
+- **HTTPS: reverse-proxy TLS, not built-in** (2026-07-17, brief 10). The
+  container stays plain-HTTP on one port; a documented Caddy recipe
+  (infrastructure/README.md + Caddyfile.example) terminates TLS with
+  automatic Let's Encrypt. Rationale: no cert lifecycle or privileged :443
+  bind inside the unprivileged container; LAN/localhost use needs no TLS.
+  Behind the proxy set `COOKIE_SECURE=true` + `TRUST_PROXY=true`. CSRF
+  stance: SameSite=Lax cookie + Origin check on mutating requests.
+- **App-install story, v1 stance** (2026-07-17, brief 13). The Linux side
+  (packages, binaries) is fixed at image build time — the desktop user has
+  no sudo and no runtime package manager. "Installing an app" in v1 means
+  adding a web-app module to the desktop registry (frontend module +
+  optional backend routes). A sandboxed native-app store is a possible
+  future brief, explicitly out of v1 scope.
+- **The fork's config-based `repl` module is deleted** (2026-07-17, brief
+  11) — absorbed by the real WS terminal, both backend and frontend halves.
+  Its leftover `repl_configs` table drop is on brief 15's fix list.
+- **Reskin calls** (2026-07-17, brief 14): dark variant is the shipped
+  default; fonts kept (Space Grotesk UI + Inter content); accent is one
+  CSS var with 4 Settings presets — crimson `#c0263a` is the PROVISIONAL
+  default, final pick awaits the user (see open-questions.md).
 
 ## Carried over from the ISO era (still binding)
 

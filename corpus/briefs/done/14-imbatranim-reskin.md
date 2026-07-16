@@ -37,3 +37,17 @@ screen. Depends on 08; best after 11–13 exist so the mockups are honest.
 The desktop reads instantly as "Windows-7-classic, but B&W with an
 accent"; start menu/taskbar/tray/desktop icons all function; accent
 decision recorded in decisions.md; no fork-era branding remains visible.
+
+---
+
+**Outcome (2026-07-17):** DONE. Full retokenize (near-black/off-white +
+one `--accent` var, light/dark via `[data-theme]`, dark shipped default);
+Win7-classic chrome: bottom Taskbar (window buttons, tray + clock), start
+button with new geometric hourglass logo, compact StartMenu (apps + Lock/
+Log off); flat B&W window chrome; lock screen + first-run wizard branded;
+xterm themed from tokens; fork TopBar deleted; index.html title →
+ImbatranimOS. Fonts kept (Space Grotesk UI + Inter). Accent: 4 presets in
+Settings (crimson/cobalt/emerald/signal-orange), crimson `#c0263a`
+shipped as PROVISIONAL default — final pick is the user's. Browser-
+verified live. Polish backlog noted (taskbar previews, self-hosted fonts,
+z-index growth).

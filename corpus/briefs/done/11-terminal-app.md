@@ -43,3 +43,14 @@ Open Terminal from the start surface → real prompt as imbatranim; `ls`,
 `top`, `vi` work; resizing the window resizes the TTY; two terminal
 windows are two independent shells; closing the window reaps the process;
 unauthenticated WS connection attempts are refused.
+
+---
+
+**Outcome (2026-07-17):** DONE. New backend `pty` module — `ws` WebSocket
+server attached via HttpAdapterHost (no main.ts change) at `/api/pty`,
+session-cookie auth on upgrade (401), node-pty login shell, resize,
+backpressure (pause ≥1MiB / resume <256KiB), 30s session-revocation sweep.
+Old config-based `repl` module DELETED (absorbed — its `repl_configs`
+table drop is deferred to brief 15). Frontend: `Terminal.tsx` (xterm +
+fit, 5000-line scrollback) in the repl-interpreter dir; registry entry now
+`terminal`, multiInstance. 17 new unit + 3 e2e tests.

@@ -1,0 +1,166 @@
+// In-memory DB + a scratch FILES_ROOT so this e2e never touches real data.
+// Must be set before the modules (and config validation) are imported.
+process.env.DB_PATH = ':memory:';
+// A small upload cap so the 413 over-cap test does not have to push 100 MB.
+// Read once at controller import time, hence set here at the very top.
+process.env.FILES_MAX_UPLOAD_BYTES = '2048';
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
+import request from 'supertest';
+import * as fs from 'fs/promises';
+import * as os from 'os';
+import { join } from 'path';
+import { ConfigModule } from '../src/config/config.module';
+import { DbModule } from '../src/db/db.module';
+import { AuthModule } from '../src/modules/auth/auth.module';
+import { FilesModule } from '../src/modules/files/files.module';
+import { SessionService } from '../src/modules/auth/session.service';
+
+/** superagent parser that yields the raw response bytes as a Buffer. */
+function binaryParser(
+  res: NodeJS.ReadableStream,
+  cb: (err: Error | null, body: Buffer) => void,
+) {
+  const chunks: Buffer[] = [];
+  res.on('data', (c: Buffer) => chunks.push(Buffer.from(c)));
+  res.on('end', () => cb(null, Buffer.concat(chunks)));
+}
+
+describe('Files (e2e) — auth + binary round-trip', () => {
+  let app: INestApplication;
+  let http: ReturnType<typeof request>;
+  let jail: string;
+  let cookie: string;
+
+  beforeAll(async () => {
+    jail = await fs.mkdtemp(join(os.tmpdir(), 'imb-files-e2e-'));
+    process.env.FILES_ROOT = jail;
+
+    // A Test module wiring ONLY the FS surface + auth (no AppModule), so the
+    // global APP_GUARD from AuthModule protects the FilesModule routes.
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [ConfigModule, DbModule, AuthModule, FilesModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
+    app.setGlobalPrefix('api');
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    await app.init();
+    http = request(app.getHttpServer());
+
+    // Mint a session straight through SessionService (exported by AuthModule).
+    const token = app.get(SessionService).issue().token;
+    cookie = `imb_session=${token}`;
+  });
+
+  afterAll(async () => {
+    await app.close();
+    await fs.rm(jail, { recursive: true, force: true });
+  });
+
+  describe('authentication', () => {
+    it('rejects a read route with no session (401)', async () => {
+      await http.get('/api/files?root=home').expect(401);
+    });
+
+    it('rejects a mutating route with no session (401)', async () => {
+      await http.delete('/api/files?root=home&path=x').expect(401);
+    });
+
+    it('allows the read route with a valid session (200)', async () => {
+      await http.get('/api/files?root=home').set('Cookie', cookie).expect(200);
+    });
+  });
+
+  describe('binary upload/download round-trip', () => {
+    const bytes = Buffer.from([0x00, 0x10, 0xff, 0x80, 0x7f, 0x00, 0xde, 0xad]);
+
+    it('uploads a binary file that lands on the real disk', async () => {
+      await http
+        .post('/api/files/upload')
+        .set('Cookie', cookie)
+        .field('root', 'home')
+        .field('path', 'uploads/blob.bin')
+        .attach('file', bytes, 'blob.bin')
+        .expect(201);
+
+      const onDisk = await fs.readFile(join(jail, 'uploads/blob.bin'));
+      expect(onDisk.equals(bytes)).toBe(true);
+    });
+
+    it('downloads the same bytes back intact', async () => {
+      const res = await http
+        .get('/api/files/download?root=home&path=uploads/blob.bin')
+        .set('Cookie', cookie)
+        .buffer(true)
+        .parse(binaryParser)
+        .expect(200);
+      expect((res.body as Buffer).equals(bytes)).toBe(true);
+    });
+  });
+
+  describe('traversal refused over HTTP', () => {
+    it('refuses ../ escape with 400', async () => {
+      await http
+        .get('/api/files?root=home&path=../../etc')
+        .set('Cookie', cookie)
+        .expect(400);
+    });
+
+    it('cannot escape the jail via the multipart filename (originalname)', async () => {
+      // No `path` field, so the controller falls back to file.originalname —
+      // which is attacker-controlled. Two layers keep it safe: busboy strips
+      // the filename to a basename, and resolveSafe would reject anything that
+      // still contained `../`. Either way the invariant is: nothing lands
+      // outside the jail. We assert the invariant, not the specific status.
+      const res = await http
+        .post('/api/files/upload')
+        .set('Cookie', cookie)
+        .field('root', 'home')
+        .attach('file', Buffer.from('pwned'), '../../../../escape.txt');
+      expect([201, 400]).toContain(res.status);
+
+      // Nothing escaped to any ancestor of the jail.
+      await expect(
+        fs.stat(join(jail, '..', '..', '..', '..', 'escape.txt')),
+      ).rejects.toBeTruthy();
+
+      // If it was accepted, the returned path must stay inside the jail.
+      if (res.status === 201) {
+        expect(res.body.path).not.toContain('..');
+        const landed = join(jail, res.body.path as string);
+        expect(landed.startsWith(jail)).toBe(true);
+        await expect(fs.stat(landed)).resolves.toBeTruthy();
+      }
+    });
+  });
+
+  describe('over-cap upload', () => {
+    it('rejects an upload above the size cap with a clean 413', async () => {
+      const tooBig = Buffer.alloc(4096, 0x41); // 4 KiB > 2 KiB cap
+      const res = await http
+        .post('/api/files/upload')
+        .set('Cookie', cookie)
+        .field('root', 'home')
+        .field('path', 'big.bin')
+        .attach('file', tooBig, 'big.bin')
+        .expect(413);
+      expect(res.body.statusCode).toBe(413);
+      // The over-cap file must not have been written.
+      await expect(fs.stat(join(jail, 'big.bin'))).rejects.toBeTruthy();
+    });
+
+    it('still accepts an upload at/under the cap (201)', async () => {
+      await http
+        .post('/api/files/upload')
+        .set('Cookie', cookie)
+        .field('root', 'home')
+        .field('path', 'small.bin')
+        .attach('file', Buffer.alloc(1024, 0x42), 'small.bin')
+        .expect(201);
+    });
+  });
+});

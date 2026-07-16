@@ -48,6 +48,7 @@ type FileListProps = {
   onCopy: (entry: FsEntry) => void
   onCut: (entry: FsEntry) => void
   onDelete: (entry: FsEntry) => void
+  onContextMenu?: (entry: FsEntry, e: React.MouseEvent) => void
   renamingPath: string | null
   renameValue: string
   onRenameChange: (val: string) => void
@@ -65,6 +66,7 @@ export function FileList({
   onCopy,
   onCut,
   onDelete,
+  onContextMenu,
   renamingPath,
   renameValue,
   onRenameChange,
@@ -106,6 +108,12 @@ export function FileList({
               key={entry.path}
               onClick={(e) => onSelect(entry.path, e.ctrlKey || e.metaKey)}
               onDoubleClick={() => onOpen(entry)}
+              onContextMenu={(e) => {
+                if (!onContextMenu) return
+                e.preventDefault()
+                if (!selected.has(entry.path)) onSelect(entry.path, false)
+                onContextMenu(entry, e)
+              }}
               className={cn(
                 'cursor-pointer border-b border-outline-variant/30 transition-colors',
                 isSelected

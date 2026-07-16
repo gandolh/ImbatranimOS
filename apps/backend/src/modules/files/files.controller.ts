@@ -11,6 +11,7 @@ import {
   Query,
   Res,
   UploadedFile,
+  UseFilters,
   UseInterceptors,
   BadRequestException,
 } from '@nestjs/common';
@@ -18,12 +19,20 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { basename } from 'path';
 import { FilesService } from './files.service';
+import { MulterExceptionFilter } from './multer-exception.filter';
 import {
   WriteContentDto,
   CreateDirectoryDto,
   MoveDto,
   CopyDto,
 } from './dto/files.dto';
+
+/**
+ * Upload size cap (bytes). Env-overridable; defaults to 100 MB. Uploads over
+ * this are rejected by multer before they reach the service.
+ */
+const MAX_UPLOAD_BYTES =
+  Number(process.env.FILES_MAX_UPLOAD_BYTES) || 100 * 1024 * 1024;
 
 @Controller('files')
 export class FilesController {
@@ -58,7 +67,7 @@ export class FilesController {
     @Res() res: Response,
   ) {
     if (!root || !path) throw new BadRequestException('root and path required');
-    const stream = this.filesService.readFileStream(root, path);
+    const stream = await this.filesService.readFileStream(root, path);
     const filename = basename(path);
     res.setHeader(
       'Content-Disposition',
@@ -70,7 +79,10 @@ export class FilesController {
 
   /** POST /api/files/upload  multipart: root, path, file → Entry */
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseFilters(MulterExceptionFilter)
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+  )
   upload(
     @UploadedFile() file: { buffer: Buffer; originalname: string },
     @Body('root') root: string,

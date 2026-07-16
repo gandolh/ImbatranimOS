@@ -12,5 +12,6 @@ export type FsRoot = {
 }
 
 export const FS_ROOTS: FsRoot[] = [
+  { id: 'home', label: 'Home' },
   { id: 'notes', label: 'Notes' },
 ]

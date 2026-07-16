@@ -12,12 +12,20 @@ services:
       context: ..
       dockerfile: infrastructure/Dockerfile
       target: prod
-    image: imbatranimos:dev-local
+    image: imbatranimos:1.0
     ports:
       - "8080:8080"
     volumes:
       - imbatranim-home:/home/imbatranim
     restart: unless-stopped
+    # Auth defaults are plain-HTTP-safe (LAN/localhost works as-is). When a
+    # TLS reverse proxy (see Caddyfile.example / README.md) fronts this, enable
+    # secure cookies and proxy trust so the session cookie sticks over HTTPS
+    # and login rate-limiting keys on the real client IP:
+    # environment:
+    #   - COOKIE_SECURE=true
+    #   - TRUST_PROXY=true
+    #   - SESSION_TTL_HOURS=168
 
   # Development: Nest watch + Vite HMR, source bind-mounted, two ports.
   # node_modules are kept from the image via anonymous volumes so the host

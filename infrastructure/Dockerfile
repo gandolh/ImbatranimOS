@@ -53,6 +53,8 @@ RUN cd apps/backend/node_modules \
 # prod — slim runtime: no compiler, runs as the unprivileged imbatranim user
 # ---------------------------------------------------------------------------
 FROM node:22-alpine AS prod
+LABEL org.opencontainers.image.title="ImbatranimOS" \
+      org.opencontainers.image.version="1.0.0"
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 WORKDIR /app
@@ -73,7 +75,8 @@ ENV NODE_ENV=production \
     FRONTEND_URL=http://localhost:8080 \
     DB_PATH=/home/imbatranim/.imbatranim/db.sqlite \
     NOTES_DIR=/home/imbatranim/notes \
-    CONFIGS_DIR=/home/imbatranim/.imbatranim/configs
+    CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
+    IMAGE_VERSION=1.0.0
 VOLUME /home/imbatranim
 EXPOSE 8080
 ENTRYPOINT ["/entrypoint.sh"]

@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
   "author": "",
   "private": true,
@@ -25,14 +25,21 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/serve-static": "^5.0.5",
+    "@types/multer": "^2.2.0",
+    "@types/ws": "^8.18.1",
+    "argon2": "^0.44.0",
     "better-sqlite3": "^12.9.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "cookie-parser": "^1.4.7",
     "execa": "^9.6.1",
     "node-pty": "^1.1.0",
+    "otplib": "^13.4.1",
+    "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "strip-ansi": "^7.2.0",
+    "ws": "^8.21.1",
     "zod": "^4.4.1"
   },
   "devDependencies": {
@@ -42,9 +49,11 @@
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
+    "@types/qrcode": "^1.5.6",
     "@types/supertest": "^7.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
@@ -70,8 +79,22 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "module": "commonjs",
+            "moduleResolution": "node",
+            "resolvePackageJsonExports": false,
+            "allowJs": true,
+            "isolatedModules": true
+          }
+        }
+      ]
     },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(?:otplib|@otplib|@scure|@noble)/)"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

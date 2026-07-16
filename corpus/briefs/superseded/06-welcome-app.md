@@ -1,3 +1,5 @@
+> SUPERSEDED 2026-07-16: project pivoted from installable ISO distro to web-OS-in-a-container (see wiki/decisions.md "The pivot itself" + log.md). ISO-era spec kept for the record.
+
 # Task 06 — Welcome app: QML first-boot tour + system status
 
 ## Context

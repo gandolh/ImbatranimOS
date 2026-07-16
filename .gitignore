@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+*.local
+.env
+.env.*
+*.sqlite
+*.sqlite-journal

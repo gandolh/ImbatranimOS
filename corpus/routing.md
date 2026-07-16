@@ -26,9 +26,9 @@ Read by the `orchestrate` skill at work-intake. Keep terse.
 | Layer | Guidance |
 |---|---|
 | READ | `corpus/index.md`, then ≤2–3 wiki pages by `summary:` triage |
-| READ | build scripts / package lists (once they exist) — they are the truth |
+| READ | `frontend/` + `backend/` code being changed — it is the truth |
 | SKIP | `briefs/` and `todos/` wholesale — `wiki/status.md` has one line per brief |
-| SKIP | `.git`, ISO build artifacts (`*.iso`, chroot dirs — gitignored) |
+| SKIP | `.git`, `node_modules/`, build output (`dist/`, gitignored) |
 
 ## Knowledge routing
 
@@ -37,5 +37,5 @@ Read by the `orchestrate` skill at work-intake. Keep terse.
 | why is it built this way / what did we decide | `wiki/decisions.md`, `wiki/architecture.md` |
 | where do things stand | `wiki/status.md` |
 | what's unresolved | `wiki/open-questions.md` |
-| what does the build actually do | the scripts themselves (code wins over wiki) |
-| structural code questions (who calls X) | no code graph yet — grep; add codegraph layer if/when the repo grows real code |
+| what does the app actually do | the code itself (code wins over wiki) |
+| structural code questions (who calls X) | no code graph yet — grep; add codegraph layer once the fork lands (brief 08+) |

@@ -46,3 +46,50 @@ desktop-experience, 03 identity-theming, 04 app-layer, 05 installer, 06
 welcome-app, 07 v1-release. Dependency order and one-liners in
 [wiki/status.md](wiki/status.md). scaffold-iso-build todo marked promoted
 into brief 01.
+
+## [2026-07-16] done | Brief 01 (partial) — pipeline proven, then superseded mid-flight
+
+Before the pivot landed: the gate smoke test PASSED (debootstrap + chroot
++ mksquashfs inside privileged Docker on WSL2 — durable finding, WSL2 is a
+viable root-build host), Ubuntu 26.04 codename verified as `resolute`,
+nob.h v3.9.0 vendored, build.c compiled clean (-Wall -Wextra), the signed
+shim chain extracted (26.04 quirk: MokManager ships as plain mmx64.efi),
+tool image built, full ISO build started and was interrupted by the pivot.
+Code deleted uncommitted by explicit user choice — this entry is the record.
+
+## [2026-07-16] decision | THE PIVOT — from installable ISO to web-OS-in-a-container
+
+Fourth grilling. ImbatranimOS is now a real Alpine-based Docker container
+whose entire GUI is a React web desktop ("B: real OS, browser = screen" —
+real PTY terminal, real FS, real processes). Locked: Docker runtime;
+NestJS backend (fork reuse over Go's smaller image); fork of
+gandolh/minimal-web-desktop as the frontend/backend base; internet-
+exposable with proper auth day 1 (single user, sessions + password, TOTP
+option); shell as `imbatranim` with NO sudo; volume-backed /home; v1 apps
+= terminal/files/system-monitor + notes/todo/bookmarks/notepad; identity
+carryover (Win7-classic, B&W + accent); friend-run bar replaces
+friend-install bar. ISO-era decisions superseded — compressed record kept
+in [wiki/decisions.md](wiki/decisions.md).
+
+## [2026-07-16] maintenance | Corpus rewritten for the web-OS era
+
+Wiki spine rewritten (overview, architecture, decisions, status,
+open-questions, CLAUDE.md invariants, routing). Briefs 01–07 moved to
+superseded/ with top notes; briefs 08–15 filed covering the whole v1 path:
+fork-bootstrap → container-image → auth → {terminal, files, monitor} →
+reskin → v1-release. ISO-era files deleted from the working tree.
+
+## [2026-07-16] decision | Brief 08 grilled — fork recon + layout/container/metadata calls
+
+Inspected minimal-web-desktop (main): layout apps/frontend + apps/backend
++ infrastructure/, 2 containers (:5173/:3001), bind-mount ../data, and it
+ALREADY ships xterm + a service-launcher, plus its own corpus/CLAUDE.md/
+.agents/UBIQUITOUS_LANGUAGE.md. Grilling resolved: (1) keep fork's apps/
+layout, update our architecture.md to match; (2) container = ONE
+multi-stage Dockerfile, dev target (Nest+Vite HMR, 2 ports) / prod target
+(Nest serves statics, 1 port, slim) — amends decision 09's one-port rule
+to mean prod-only; (3) import code only, drop the fork's corpus/CLAUDE/
+.agents/UBIQUITOUS_LANGUAGE (ours is source of truth), mine for facts
+first; (4) xterm terminal already exists — brief 08 investigates the
+backend PTY reality and adjusts brief 11's scope, does not rebuild blind.
+Briefs 08 + 09 rewritten with these; architecture.md + decisions.md updated.

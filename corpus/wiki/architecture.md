@@ -1,84 +1,57 @@
 ---
-summary: The ImbatranimOS stack — Ubuntu 26.04 base, LXQt 2.3 on X11, SDDM/PipeWire, Flatpak + Discover, Calamares, nob.h C build driver in Docker — and the v2 migration path.
+summary: Web-OS era stack — Alpine + NestJS container exposing one authed port, React/Vite desktop (minimal-web-desktop fork), PTY/FS/monitor system apps, volume-backed home.
 updated: 2026-07-16
 ---
 
 # Architecture
 
-## The stack (v1)
+## The one-sentence version
+
+One Docker container (Alpine + Node) = the computer; one exposed port
+serving both the React desktop and the API/WebSockets; the browser is the
+display.
+
+## Layers
 
 | Layer | Choice |
 |---|---|
-| Base | Ubuntu 26.04 LTS, minimal (debootstrap'd up from a clean base, not a remastered desktop ISO) |
-| Display | X11 for v1 |
-| Desktop | LXQt 2.3 (Qt 6, Openbox WM), Windows-7-classic layout: left start button, taskbar, tray+clock bottom-right, desktop icons, Win-key shortcuts |
-| Login | SDDM with a custom QML theme |
-| Plumbing | PipeWire (audio), NetworkManager (network), ext4 (installer default), zram swap on by default |
-| Apps | Flatpak + Flathub via KDE Discover (Flatpak backend only); snapd stripped; Firefox from Mozilla's apt repo; updates = notify + one-click |
-| Preinstall | ~10 apps: Firefox, VLC, PCManFM-Qt, LXImage-Qt, Ark, FeatherPad, qterminal, Discover, LXQt settings, Welcome app. English-only v1 |
-| Installer | Calamares — dual-boot alongside Windows supported; Secure Boot via Ubuntu's signed shim; hybrid UEFI + legacy BIOS ISO |
-| Theming | Forked Fluent family as skeleton, rendered black & white retro-simple with parameterized accent colors; wallpapers, Plymouth/SDDM look, fonts, ~20 surface icons |
-| Welcome app | Qt Quick / QML first-boot app: tour + system status check |
-| Floor | 2GB RAM min (zram), 4GB recommended, dual-core, ~20GB disk |
+| Image | Alpine-based, Node LTS, single container, one multi-stage Dockerfile with `dev` (Nest+Vite HMR, 2 ports) and `prod` (Nest serves statics, 1 port, slim ~<150MB target) targets |
+| Backend | NestJS (TypeScript) — prod: serves built frontend statics + REST API + WebSockets on ONE port |
+| Frontend | React + Vite + TS + Tailwind v4 + Framer Motion, Base UI, Zustand, TanStack Router+Query, react-hook-form+Zod, xterm — forked from minimal-web-desktop |
+| System user | `imbatranim`, **no sudo by default**; PTY and FS APIs act as this user |
+| Auth | Single user; sessions + password, TOTP optional, rate-limited login; HTTPS via built-in or documented reverse proxy — internet-exposable |
+| Persistence | `/home/imbatranim` is a named Docker volume; the app SQLite DB lives inside it |
+| Desktop UX | Windows-7-classic layout: taskbar, start button/menu, tray, desktop icons — B&W retro-flat + parameterized accent |
 
-## Build system
+## v1 apps
 
-Hand-rolled four-step pipeline, living in this git repo. **Local runs only,
-no CI.**
+**System apps (new, the soul of the pivot):**
+- **Terminal** — xterm.js ↔ node-pty over WebSocket, real shell as `imbatranim`
+- **Files** — explorer over the real home dir: browse/rename/delete/upload/download
+- **System monitor** — real CPU/RAM/disk/process data from the container
 
-```
-1. debootstrap   minimal Ubuntu 26.04 rootfs into a folder
-2. chroot        run versioned .sh step files: install LXQt, strip snapd,
-                 apply themes/branding, install casper
-3. mksquashfs    compress rootfs → filesystem.squashfs
-4. xorriso       assemble squashfs + kernel + GRUB into bootable .iso
-```
+**Productivity apps (surviving the fork prune):** sticky notes, todo,
+bookmarks, notepad. **Cut from the fork:** docker desktop, service launcher
+(they assume a dev host, not a container).
 
-**Driver: `build.c` using tsoding's nob.h** (header-only; the build script
-is a self-rebuilding C program). It owns sequencing, flags (`--clean`,
-`--from-step`), rootfs caching, and error handling; the chroot payloads stay
-as small `.sh` files it copies in and executes.
-
-**Host: privileged Docker container on WSL2** (pinned Ubuntu tool image —
-reproducible, host untouched). The ISO is tested from Windows-side
-VirtualBox/Hyper-V. Fallback if chroot-in-container misbehaves: a dedicated
-Hyper-V Ubuntu VM. Reference implementation to crib from:
-[AnduinOS](https://github.com/Anduin2017/AnduinOS) (same pipeline, bash).
-
-**Distribution: build-from-source.** Friends clone the repo and run the
-build; the ISO lands in gitignored `dist/`. The README and a reproducible
-one-command build are therefore product surface, not internal tooling.
-
-## Planned repo layout
+## Repo layout (adopted from the fork, 2026-07-16)
 
 ```
-build.c            nob.h driver — the whole pipeline
-nob.h              vendored, pinned
-docker/Dockerfile  pinned build-tools image
-steps/NN-*.sh      chroot payload scripts, run in order
-config/packages/   package lists (base.list, desktop.list, apps.list)
-config/rootfs/     overlay tree copied onto the rootfs (panel config,
-                   openbox rc.xml, sddm/plymouth conf, os-release, skel)
-assets/            wallpapers, icons, plymouth + sddm theme sources
-welcome/           QML welcome app
-dist/              build output (gitignored)
+apps/frontend/         Vite app (the desktop)
+apps/backend/          NestJS app (API, WS, PTY, auth; prod serves the build)
+infrastructure/        Dockerfile (dev+prod targets), docker-compose.yml
+corpus/                this knowledge base
 ```
 
-## Update model
+The fork's own `corpus/`, `CLAUDE.md`, `.agents/`, `UBIQUITOUS_LANGUAGE.md`
+are dropped on import — our corpus is the single source of truth.
 
-**ISO releases only.** Installed machines keep receiving Ubuntu package
-updates, but ImbatranimOS customizations are frozen at install time. Version
-drift accepted; a custom apt repo + meta-package can be added later if it
-hurts.
+## Run story (the friend-run bar)
 
-## The v2 path (deliberate, not v1)
+```
+docker run -p 8080:8080 -v imbatranim-home:/home/imbatranim imbatranimos
+```
 
-LXQt's "bring your own compositor" design is the migration route:
-
-1. v1: LXQt on X11/Openbox (Openbox is labwc's direct ancestor).
-2. v2: switch compositor to **labwc (Wayland)** under the same LXQt.
-3. Then replace LXQt components one at a time (panel first, launcher second)
-   with a **custom shell** (Quickshell/QML) — no big-bang rewrite.
-
-The custom shell is the flagship ambition; it was deliberately deferred so v1
-ships in weeks, not months.
+Built from source (clone + docker build / compose) for now — same
+build-from-source distribution philosophy as the ISO era; publishing to a
+registry is an open question.

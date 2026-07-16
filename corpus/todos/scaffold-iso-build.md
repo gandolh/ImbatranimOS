@@ -4,7 +4,8 @@ created: 2026-07-16
 status: promoted
 ---
 
-> Promoted 2026-07-16 → [brief 01](../briefs/todo/01-build-scaffold.md).
+> Promoted 2026-07-16 → [brief 01](../briefs/superseded/01-build-scaffold.md)
+> (since superseded by the web-OS pivot).
 
 # Scaffold the ISO build system
 

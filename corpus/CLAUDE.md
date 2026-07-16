@@ -48,9 +48,15 @@ corpus/
 
 ## Project invariants (load-bearing, checked when grilling briefs)
 
-- **Lightweight is a hard constraint**: no snapd, minimal preinstall, LXQt.
-- **Local-only builds**: no CI/GitHub pipeline; the ISO is built by running
-  the scripted build locally (WSL2 is a flaky live-build host — use a VM or
-  spare Linux box).
-- **v1 is X11**; Wayland/labwc and the custom shell are v2 territory — don't
-  let v2 ambitions leak into v1 briefs.
+- **The OS is real, not simulated**: terminal = real PTY, files = real FS.
+  Anything that fakes the system is off-soul.
+- **The shell user is `imbatranim`, no sudo by default** — no brief may
+  quietly grant root or run the container privileged.
+- **Internet-exposable means auth everywhere**: no route or WebSocket
+  ships without session validation; no default passwords, ever.
+- **Lightweight is identity**: slim image (NestJS trade accepted, ~150MB
+  target), snappy desktop, dependency additions need a reason.
+- **Identity carryover is locked**: Win7-classic layout, B&W + accent —
+  don't relitigate per-brief.
+- **Build-from-source distribution**: clone + docker build/compose; no
+  registry/CI promises without a decisions.md revisit.

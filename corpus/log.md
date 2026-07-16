@@ -106,3 +106,20 @@ command-runner not a live PTY (brief 11 stays real work, adjusted); fork
 has ZERO auth (brief 10 greenfield); frontend deps split across
 apps/package.json + apps/frontend/package.json; file-manager/notes overlap
 brief 12. Committed to main in 3 commits (pivot corpus, raw import, prune).
+
+## [2026-07-16] done | Brief 09 — dual-mode container image (desktop+API on one port)
+
+One multi-stage infrastructure/Dockerfile: deps → builder → proddeps → prod
++ dev targets. Backend gained a conditional ServeStaticModule (prod serves
+the built desktop on the API port, excludes /api + /health, SPA fallback);
+prod frontend built same-origin (VITE_API_URL=/api). imbatranim user uid
+1000 (default node user dropped), volume /home/imbatranim, idempotent
+entrypoint. Verified: one-port desktop+API, unprivileged user, todo
+survives container recreate on the volume, better-sqlite3 + node-pty load
+in-image. Compose: prod service + dev profile (bind-mount + HMR, 2 ports).
+
+REVISIT FLAGGED: prod image is 364 MB (cut from 657 MB by dropping the
+frontend's hoisted node_modules from runtime + stripping native build
+intermediates), over the ~150 MB target and the 200 MB tripwire. Backend-
+language decision (NestJS vs Go) is up for a user revisit; recorded in
+wiki/open-questions.md + status.md, not silently resolved.

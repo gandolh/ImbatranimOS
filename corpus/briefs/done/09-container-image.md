@@ -58,3 +58,38 @@ serves the working desktop on localhost:8080 from a single port; the dev
 profile brings up HMR on its own port; both run as imbatranim (not root);
 data survives container delete + recreate via the volume; prod image size
 recorded.
+
+---
+
+## Outcome (2026-07-16)
+
+DONE (build-wise; size trips the revisit tripwire — see below). Delivered:
+- One multi-stage `infrastructure/Dockerfile` with `deps` → `builder` →
+  `proddeps` → `prod` and `dev` targets. Build context is the repo root.
+- Backend now serves the built frontend in prod: conditional
+  `ServeStaticModule` (gated on `STATIC_ROOT`), excludes `/api/{*path}` +
+  `/health`, SPA index.html fallback. Verified: `/` serves the desktop,
+  deep routes fall back, assets get correct MIME, `/api` + `/health`
+  keep their handlers. Dev leaves `STATIC_ROOT` unset so Vite serves.
+- Prod frontend built with `VITE_API_URL=/api` (same-origin).
+- `imbatranim` user at uid 1000 (default `node` user dropped first);
+  both targets run unprivileged. Volume `/home/imbatranim`; idempotent
+  `entrypoint.sh` ensures DB/notes/configs dirs. DB at
+  `/home/imbatranim/.imbatranim/db.sqlite`.
+- Compose has a default `imbatranimos` (prod) service and a `dev` profile
+  (source bind-mount + node_modules anon volumes + 2 ports for HMR).
+- Verified end-to-end: `docker run -p 8080:8080 -v vol:/home/imbatranim`
+  serves desktop + API on ONE port; runs as imbatranim; a written todo
+  survives container destroy+recreate on the volume; better-sqlite3 and
+  node-pty (real PTY spawn) both load in the image.
+
+### Image size — REVISIT FLAG
+Prod image measured **364 MB** (down from an initial 657 MB after cutting
+the frontend's hoisted node_modules from the runtime and stripping native
+build intermediates). This EXCEEDS the decision's ~150 MB target and its
+>200 MB tripwire, so the backend-language decision (NestJS vs Go) is
+formally up for revisit — pending a user call (see wiki/open-questions.md
++ wiki/decisions.md). Breakdown: ~140 MB node:22-alpine base + ~130 MB
+backend node_modules (node-pty prebuilds ~40 MB, better-sqlite3, rxjs,
+libphonenumber-js via class-validator, zod, lodash, @nestjs) + built app.
+The ~150 MB target is unreachable with Node+Nest; realistic floor ~300 MB.

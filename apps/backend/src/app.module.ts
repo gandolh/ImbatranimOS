@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, type DynamicModule } from '@nestjs/common';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { ConfigModule } from './config/config.module';
 import { DbModule } from './db/db.module';
 import { StickyNotesModule } from './modules/sticky-notes/sticky-notes.module';
@@ -9,8 +10,22 @@ import { SystemModule } from './modules/system/system.module';
 import { ReplModule } from './modules/repl/repl.module';
 import { FilesModule } from './modules/files/files.module';
 
+// Prod image only: serve the built frontend from STATIC_ROOT on the API
+// port, with the SPA index.html fallback. API + health are excluded so
+// they keep their own handlers. In dev STATIC_ROOT is unset and Vite
+// serves the frontend, so this contributes nothing.
+const staticModules: DynamicModule[] = process.env.STATIC_ROOT
+  ? [
+      ServeStaticModule.forRoot({
+        rootPath: process.env.STATIC_ROOT,
+        exclude: ['/api/{*path}', '/health'],
+      }),
+    ]
+  : [];
+
 @Module({
   imports: [
+    ...staticModules,
     ConfigModule,
     DbModule,
     StickyNotesModule,

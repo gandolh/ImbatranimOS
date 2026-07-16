@@ -16,9 +16,17 @@ updated: 2026-07-16
   Owned by the auth brief (10).
 - **Accent color(s) on the B&W identity** — carried over; decided from
   rendered mockups inside the reskin brief (14).
-- **Does the image actually land near 100–150MB with NestJS?** Measured in
-  the image brief (09); if it balloons past ~200MB the Go-backend decision
-  gets a formal revisit.
+- **Backend-language revisit (ANSWERED + open decision).** Brief 09
+  measured the prod image at **364 MB** — over the ~150 MB target and the
+  200 MB tripwire, so per the decision this reopens NestJS-vs-Go. Realistic
+  Node+Nest floor is ~300 MB; the target was optimistic. Options: (a) amend
+  the target, keep NestJS (the reuse it bought — terminal/files/system/apps
+  seeds — is the whole reason it was chosen); (b) squeeze harder (distroless
+  base, drop node-pty's extra prebuilds, trim class-validator's
+  libphonenumber) for maybe ~280 MB, same order of magnitude; (c) rewrite
+  the backend in Go for a ~20–40 MB image, discarding the fork reuse.
+  Awaiting a user call — a locked-decision change needs sign-off + a log
+  entry.
 - **Registry publishing** (Docker Hub/GHCR) vs build-from-source-only —
   deferred until v1 works; build-from-source is the standing decision.
 - **Does the config-based `repl` module survive alongside a real terminal?**

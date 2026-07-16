@@ -1,26 +1,45 @@
+# ImbatranimOS compose. Build context is the repo root (..) because the
+# image needs the whole apps/ tree (split dependency layout).
+#
+#   Prod (the friend-run experience):
+#     docker compose -f infrastructure/docker-compose.yml up imbatranimos
+#   Dev (HMR):
+#     docker compose -f infrastructure/docker-compose.yml --profile dev up
 services:
-  frontend:
+  # Slim single-container product: desktop + API + (future) WS on one port.
+  imbatranimos:
     build:
-      context: ../apps/frontend
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: infrastructure/Dockerfile
+      target: prod
+    image: imbatranimos:dev-local
     ports:
+      - "8080:8080"
+    volumes:
+      - imbatranim-home:/home/imbatranim
+    restart: unless-stopped
+
+  # Development: Nest watch + Vite HMR, source bind-mounted, two ports.
+  # node_modules are kept from the image via anonymous volumes so the host
+  # mount doesn't shadow the container's installed deps.
+  dev:
+    profiles: ["dev"]
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile
+      target: dev
+    ports:
+      - "3001:3001"
       - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:3001/api
-    depends_on:
-      - backend
-
-  backend:
-    build:
-      context: ../apps/backend
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
-    environment:
-      - PORT=3001
-      - FRONTEND_URL=http://localhost:5173
-      - DB_PATH=/data/db.sqlite
-      - NOTES_DIR=/data/notes
-      - CONFIGS_DIR=/data/configs
     volumes:
-      - ../data:/data
+      - ../apps:/app/apps
+      - /app/apps/node_modules
+      - /app/apps/backend/node_modules
+      - /app/apps/frontend/node_modules
+      - imbatranim-home-dev:/home/imbatranim
+
+volumes:
+  imbatranim-home:
+  imbatranim-home-dev:

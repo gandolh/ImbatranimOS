@@ -1,0 +1,24 @@
+# ImbatranimOS — example Caddyfile for internet exposure with automatic HTTPS.
+#
+# Caddy terminates TLS (automatic Let's Encrypt certs + renewal) and proxies
+# to the container's single plain-HTTP port. This is the recommended HTTPS
+# story (Brief 10) — the app itself stays plain-HTTP and unprivileged.
+#
+# Usage:
+#   1. Point your domain's DNS at this host.
+#   2. Replace os.example.com with your domain.
+#   3. Run Caddy alongside the container (same Docker network, or on the host
+#      pointing at localhost:8080).
+#   4. On the imbatranimos service set COOKIE_SECURE=true and TRUST_PROXY=true
+#      (see docker-compose.yml) so the session cookie is marked Secure and the
+#      real client IP is used for login rate-limiting.
+
+os.example.com {
+    # If Caddy runs in the same Docker Compose project, "imbatranimos" is the
+    # service DNS name. On the host instead, use localhost:8080.
+    reverse_proxy imbatranimos:8080
+
+    # Caddy sets X-Forwarded-For / -Proto by default; TRUST_PROXY=true makes
+    # the app honour them.
+    encode gzip
+}

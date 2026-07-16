@@ -54,14 +54,25 @@ export class DbService implements OnModuleInit {
         last_opened DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS repl_configs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        command TEXT NOT NULL,
-        args TEXT NOT NULL DEFAULT '',
-        cwd TEXT NOT NULL DEFAULT '',
-        prompt_prefix TEXT NOT NULL DEFAULT '>',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      -- Auth (Brief 10): single-user credential store. The CHECK (id = 1)
+      -- enforces "single user" at the schema level — at most one row.
+      CREATE TABLE IF NOT EXISTS auth_user (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        password_hash TEXT NOT NULL,
+        totp_secret TEXT,
+        totp_enabled INTEGER NOT NULL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Sessions: cookie carries a raw random token; only its SHA-256 is
+      -- stored, so a DB leak does not yield usable session cookies. Times are
+      -- epoch-millis integers to keep TTL math in JS, not SQLite datetime.
+      CREATE TABLE IF NOT EXISTS auth_sessions (
+        token_hash TEXT PRIMARY KEY,
+        created_at INTEGER NOT NULL,
+        last_seen  INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL
       );
     `);
 

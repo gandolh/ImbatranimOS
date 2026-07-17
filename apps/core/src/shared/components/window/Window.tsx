@@ -6,7 +6,6 @@ import { Minus, Square, X, Copy } from 'lucide-react'
 import { cn } from '../../../lib/cn'
 import {
   useWindowStore,
-  type WindowInstance,
   type SnapRegion,
   detectSnapRegion,
   TASKBAR_HEIGHT,
@@ -16,7 +15,7 @@ import { SnapOverlay } from './SnapOverlay'
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
 type WindowProps = {
-  instance: WindowInstance
+  windowId: string
   minSize: { width: number; height: number }
   children: React.ReactNode
   isFocused: boolean
@@ -31,7 +30,6 @@ type ResizeHandleProps = {
 function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
   const updatePosition = useWindowStore((s) => s.updatePosition)
   const updateSize = useWindowStore((s) => s.updateSize)
-  const windows = useWindowStore((s) => s.windows)
 
   const startRef = useRef<{
     x: number
@@ -46,7 +44,7 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
     ({ first, movement: [mx, my], event }) => {
       event.stopPropagation()
 
-      const win = windows.find((w) => w.id === instanceId)
+      const win = useWindowStore.getState().windows.find((w) => w.id === instanceId)
       if (!win) return
 
       if (first) {
@@ -128,7 +126,13 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
   )
 }
 
-export function Window({ instance, minSize, children, isFocused }: WindowProps) {
+export const Window = React.memo(function Window({
+  windowId,
+  minSize,
+  children,
+  isFocused,
+}: WindowProps) {
+  const instance = useWindowStore((s) => s.windows.find((w) => w.id === windowId))
   const closeWindow = useWindowStore((s) => s.closeWindow)
   const hideWindow = useWindowStore((s) => s.hideWindow)
   const maximizeWindow = useWindowStore((s) => s.maximizeWindow)
@@ -145,6 +149,7 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
     ({ first, last, movement: [mx, my], xy: [px, py], event }) => {
       event.stopPropagation()
 
+      if (!instance) return
       if (instance.isMaximized) return
 
       if (first) {
@@ -181,36 +186,38 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
   )
 
   const handleWindowClick = useCallback(() => {
-    focusWindow(instance.id)
-  }, [focusWindow, instance.id])
+    focusWindow(windowId)
+  }, [focusWindow, windowId])
 
   const handleMaximizeToggle = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
-      if (instance.isMaximized) {
-        restoreWindow(instance.id)
+      if (instance?.isMaximized) {
+        restoreWindow(windowId)
       } else {
-        maximizeWindow(instance.id)
+        maximizeWindow(windowId)
       }
     },
-    [instance.id, instance.isMaximized, maximizeWindow, restoreWindow]
+    [windowId, instance?.isMaximized, maximizeWindow, restoreWindow]
   )
 
   const handleHide = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
-      hideWindow(instance.id)
+      hideWindow(windowId)
     },
-    [hideWindow, instance.id]
+    [hideWindow, windowId]
   )
 
   const handleClose = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
-      closeWindow(instance.id)
+      closeWindow(windowId)
     },
-    [closeWindow, instance.id]
+    [closeWindow, windowId]
   )
+
+  if (!instance) return null
 
   return (
     <>
@@ -313,7 +320,7 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
       </AnimatePresence>
     </>
   )
-}
+})
 
 type TitleBarButtonProps = {
   onClick: (e: React.MouseEvent) => void

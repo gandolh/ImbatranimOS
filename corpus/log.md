@@ -521,3 +521,30 @@ removed on completion; discovered nits captured in
 [add-on-cleanup-nits](todos/add-on-cleanup-nits.md) (dead `zustand` deps,
 notepad native `prompt()`). Human-gated remainder: the in-browser
 walkthrough per the brief's verify bar.
+
+## 2026-07-17 — Full-auto backlog run: briefs 24 + 25 (review-pass todos)
+
+Master-orchestrator run through the deferred review todos (standing
+authorization). Briefs 24 and 25 built in parallel (disjoint file sets),
+verified together, committed separately.
+
+- **Brief 24 (window-render-perf, PERF-1):** one senior agent, indivisible
+  core change. `WindowContainer` subscribes only `{id,appId,zIndex,
+  isVisible}` via `useShallow`; `Window` is `React.memo` reading its own
+  instance via `s.windows.find`; `ResizeHandle` reads `getState()` in its
+  handler. Untouched windows keep object identity + the container's
+  projected list is drag-invariant, so only the moving window's chrome
+  re-renders and no app subtree reconciles. Per-frame store updates kept
+  (snapping byte-identical). No transform-drag (out of scope).
+- **Brief 25 (notes/FilesService dedup, CS-7):** backend `notes` collapsed
+  to `/notes/recent`; Notepad repointed to `/files?root=notes`; removed the
+  8 delegation methods, the FilesService dep, and the file-ops/directory-ops/
+  path-query DTOs. `createFile` is now an upsert (no create-only `/files`
+  endpoint) — accepted for single-user Notepad. `FilesService.ROOTS.notes`
+  kept so File Manager + Notepad share one validated surface.
+
+Gates (both): turbo typecheck 13/13, build ✓, format 14/14, lint 13/13,
+backend 80 unit + 29 e2e green. Human-gated remainders: in-browser drag
+feel (24) and Notepad walkthrough (25). Remaining backlog: CS-3 (26),
+PERF-6 (27), SEC-2 (28), lint-debt (29), add-on polish (30); SEC-9 + SEC-10
+deferred (browser/ISO-gated).

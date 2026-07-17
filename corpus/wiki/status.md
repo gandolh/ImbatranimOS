@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16–23 DONE (incl. the 2026-07-17 post-v1 backlog run — kiosk ISO, office suite, snipping tool, preview pane — and brief 23's shared-addon-kit dedup from the review pass); brief 15's human-gated remainder is all that stands before v1.0.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–25 DONE (incl. the 2026-07-17 post-v1 backlog run, plus the review-pass cleanups: 23 shared-addon-kit, 24 window-render-perf, 25 notes/FilesService dedup); brief 15's human-gated remainder is all that stands before v1.0.
 updated: 2026-07-17
 ---
 
@@ -48,6 +48,8 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 21 | [snipping-tool](../briefs/done/21-snipping-tool.md) | **done** | Flameshot-style capture via html-to-image (spike passed incl. xterm content), dim+crosshair region/Enter/Esc flow, 5 annotation tools + undo, Save to ~/Pictures/Screenshots / Copy / Download; rasterizer lazy |
 | 22 | [file-preview-pane](../briefs/done/22-file-preview-pane.md) | **done** | Explorer-style toggleable preview pane in file-manager: text/images/AV native, metadata-card fallback, 1 MB text cap, persisted width/toggle, auto-collapse; zero new deps |
 | 23 | [shared-addon-kit](../briefs/done/23-shared-addon-kit.md) | **done** | Deduped the office/add-on spine into `@imbatranim/core` (fileBytes/downloadUrl/fileName, `createOpenedFileStore`, `useOpenIntent`/`useSaveHotkey`/`useUnsavedGuard`, `ConfirmDialog`/`useConfirm`); 4 doc add-ons dropped local fileBytes+openedFileStore copies, native `confirm()` gone from add-ons; net −333 LOC, all gates green + 2-finder review. Human-gated: in-browser walkthrough |
+| 24 | [window-render-perf](../briefs/done/24-window-render-perf.md) | **done** | PERF-1: memoized `Window` + per-window store selector + `useShallow` container list + `ResizeHandle` reads `getState()`; only the moving window re-renders during a drag (no app subtree reconciles). Gates green. Human-gated: in-browser drag feel |
+| 25 | [notes-filesservice-dedup](../briefs/done/25-notes-filesservice-dedup.md) | **done** | CS-7: backend `notes` collapsed to `/notes/recent`; Notepad now uses `/files?root=notes`; 3 duplicate DTOs + FilesService delegation removed. `createFile` now upsert. 80 unit + 29 e2e green. Human-gated: Notepad walkthrough |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
 (human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1

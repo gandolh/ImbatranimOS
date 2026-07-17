@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–13 DONE (fork, container, auth, terminal, files, monitor); 14 reskin in flight; 15 v1 next.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16 DONE (…, reskin, turborepo); 15 v1 human-gated remainder; 17 restructure next.
 updated: 2026-07-17
 ---
 
@@ -13,9 +13,9 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 
 ## Metrics (recorded)
 
-- Prod image size: **382 MB** (2026-07-17, brief 15 verify build — was 364
-  before auth/argon2 + system apps; target ≤~400 ✓). See
-  [decisions.md](decisions.md).
+- Prod image size: **385 MB** (2026-07-17, post-brief-16 workspace build —
+  was 382 at brief 15, 364 before auth/argon2 + system apps; target ≤~400
+  ✓). See [decisions.md](decisions.md).
 - Cold start: **1.42 s** (container start → first HTTP 200 on /health,
   fresh volume incl. migration). Idle RAM: **41.3 MiB** (docker stats
   after 60 s). The "lightweight" receipts, 2026-07-17.
@@ -33,12 +33,12 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 13 | [system-monitor](../briefs/done/13-system-monitor.md) | **done** | Live CPU/RAM/disk/processes + About; uid-scoped kill; app-install stance recorded |
 | 14 | [imbatranim-reskin](../briefs/done/14-imbatranim-reskin.md) | **done** | Win7-classic taskbar/start/tray/icons, B&W tokens, dark default, hourglass logo; accent = 4 presets, crimson provisional (user pick pending) |
 | 15 | [v1-release](../briefs/todo/15-v1-release.md) | in progress | Engineering DONE (security pass, 413/headers/repl_configs fixes, README, 1.0.0 stamp, container verified + numbers); human-gated remainder: friend QA, VPS deploy, accent pick, dep bumps, tag |
-| 16 | [turborepo](../briefs/todo/16-turborepo.md) | todo | npm workspaces + turbo; grilled 2026-07-16, spec complete + build-ready; phantom tailwind deps rehomed as part of it |
+| 16 | [turborepo](../briefs/done/16-turborepo.md) | **done** | npm workspaces + turbo 2.10.5, single root lockfile, phantom tailwind deps rehomed; envMode loose + prettier pin 3.8.3 (see log); image 385MB, FULL TURBO ✓ |
 | 17 | [os-restructure](../briefs/todo/17-os-restructure.md) | todo | apps/{backend,core,add-ons/*} split; grilled 2026-07-16, build-ready; package-per-add-on, core=Vite host+manifest, lands AFTER 16 |
 
-Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 → 15.
-Briefs 16/17 (turborepo, restructure) are parked outside this chain —
-16 grilled/deferred, 17 ungrilled.
+Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
+(human-gated remainder). Restructure chain: 16 ✓ → 17 (next up,
+grilled/build-ready).
 
 ## Where things stand
 
@@ -49,4 +49,8 @@ Alpine confirmed, full auth flow over curl, 382 MB / 1.42 s / 41 MiB).
 Remaining before the v1.0 tag, all human-gated: friend-run QA on a clean
 machine, one VPS+HTTPS deploy per the Caddy recipe, the accent final pick
 (crimson is provisional), and the recommended dep bumps
-(@nestjs/platform-express for multer, axios) + npm audit fix.
+(@nestjs/platform-express for multer, axios) — though the brief-16
+lockfile regeneration (2026-07-17) already audits clean (0 vulns).
+Brief 16 (turborepo) landed 2026-07-17: one root install, turbo task
+runner, image 385 MB. It surfaced pre-existing lint/format debt
+(todos/lint-format-debt.md). Next buildable: brief 17 (restructure).

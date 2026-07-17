@@ -1,5 +1,19 @@
 # Task 16 — Integrate Turborepo as the monorepo task runner
 
+> **Outcome (2026-07-17, done):** Landed as specced in commit `15ae437`.
+> All acceptance criteria verified: single root `npm install`, FULL TURBO
+> on second build, prod image 385 MB with zero frontend deps, compose dev
+> profile runs Nest watch + Vite HMR under `npx turbo dev`, e2e green,
+> no stray lockfiles. Two deviations, both recorded in log.md: turbo runs
+> in `envMode: loose` (strict mode filtered DB_PATH/NOTES_DIR out of the
+> dev task — Nest crashed), and prettier is pinned to exactly 3.8.3
+> (regenerating the lockfile pulled 3.9.5, which reformats). Discovered
+> pre-existing debt (frontend eslint errors; backend never prettier-clean)
+> captured in todos/lint-format-debt.md, NOT fixed here (src was
+> off-limits). Dev stage was also missing entrypoint.sh (pre-existing) —
+> fixed in passing since the compose dev acceptance required a running
+> container.
+
 ## Context
 
 The repo has two apps (`apps/backend` NestJS, `apps/frontend` React/Vite) but

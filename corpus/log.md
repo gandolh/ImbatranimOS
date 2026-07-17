@@ -260,3 +260,24 @@ npm audit triage (nothing applied, lockfiles untouched): bump
 runtime); vite/build-chain items dev-only. Brief 15 stays in todo/ —
 remaining acceptance is human-gated: friend-run QA, VPS+HTTPS deploy,
 accent final pick, dep bumps, git tag v1.0.
+
+## 2026-07-17 — Brief 16 (turborepo) landed
+
+npm workspaces + turbo 2.10.5, commit `15ae437`. One root lockfile
+replaces the three per-dir installs; `apps/package.json` deleted —
+tailwindcss + @tailwindcss/vite rehomed to frontend devDeps, the three
+unused deps (react-router, react-hook-form, xterm) dropped as decided.
+Root `npm run build/lint/test/format:check/dev` via turbo; FULL TURBO
+cache hit verified. Dockerfile: one `npm ci` at /app, `npx turbo build`,
+proddeps `npm ci --omit=dev --workspace=backend`; prod image 385 MB
+(zero frontend deps confirmed), health 200 ~1.1 s; compose dev = Nest
+watch + Vite HMR under `npx turbo dev`. Two decisions made while
+landing: (1) turbo `envMode: loose` — strict mode filtered runtime env
+(DB_PATH etc.) from tasks and crashed Nest in the dev container;
+(2) prettier pinned exactly 3.8.3 in both apps — the regenerated
+lockfile pulled 3.9.5 which reformats ~30 files. Found + fixed in
+passing: dev image never copied entrypoint.sh (pre-existing; container
+could not start). Found, NOT fixed (src off-limits): frontend eslint
+errors + backend never prettier-clean → todos/lint-format-debt.md.
+Fresh `npm audit`: 0 vulnerabilities at the new lockfile — the brief-15
+audit-triage item is effectively closed by the dep refresh.

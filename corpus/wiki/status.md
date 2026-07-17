@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16–25 DONE (incl. the 2026-07-17 post-v1 backlog run, plus the review-pass cleanups: 23 shared-addon-kit, 24 window-render-perf, 25 notes/FilesService dedup); brief 15's human-gated remainder is all that stands before v1.0.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–27 DONE (incl. the 2026-07-17 post-v1 backlog run, plus the review-pass cleanups 23–27: shared-addon-kit, window-render-perf, notes/FilesService dedup, FileManager split, docx off-thread); brief 15's human-gated remainder is all that stands before v1.0.
 updated: 2026-07-17
 ---
 
@@ -50,6 +50,8 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 23 | [shared-addon-kit](../briefs/done/23-shared-addon-kit.md) | **done** | Deduped the office/add-on spine into `@imbatranim/core` (fileBytes/downloadUrl/fileName, `createOpenedFileStore`, `useOpenIntent`/`useSaveHotkey`/`useUnsavedGuard`, `ConfirmDialog`/`useConfirm`); 4 doc add-ons dropped local fileBytes+openedFileStore copies, native `confirm()` gone from add-ons; net −333 LOC, all gates green + 2-finder review. Human-gated: in-browser walkthrough |
 | 24 | [window-render-perf](../briefs/done/24-window-render-perf.md) | **done** | PERF-1: memoized `Window` + per-window store selector + `useShallow` container list + `ResizeHandle` reads `getState()`; only the moving window re-renders during a drag (no app subtree reconciles). Gates green. Human-gated: in-browser drag feel |
 | 25 | [notes-filesservice-dedup](../briefs/done/25-notes-filesservice-dedup.md) | **done** | CS-7: backend `notes` collapsed to `/notes/recent`; Notepad now uses `/files?root=notes`; 3 duplicate DTOs + FilesService delegation removed. `createFile` now upsert. 80 unit + 29 e2e green. Human-gated: Notepad walkthrough |
+| 26 | [filemanager-split](../briefs/done/26-filemanager-split.md) | **done** | CS-3: FileManager 752→531 lines; extracted useFileSelection/useFileClipboard/useDeleteFlow (delete states → one union, CS-4 preserved)/usePaneResize/useListKeyboardNav + buildMenuItems. Behavior review clean. Human-gated: walkthrough |
+| 27 | [docx-offthread-unzip](../briefs/done/27-docx-offthread-unzip.md) | **done** | PERF-6 (docx slice): docxNormalize uses fflate async `unzip`/`zip` (off-thread), identical output. Xlsx/ExcelJS worker slice still open in the todo. Human-gated: large-docx open feel |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
 (human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1

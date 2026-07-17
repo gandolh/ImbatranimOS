@@ -548,3 +548,22 @@ backend 80 unit + 29 e2e green. Human-gated remainders: in-browser drag
 feel (24) and Notepad walkthrough (25). Remaining backlog: CS-3 (26),
 PERF-6 (27), SEC-2 (28), lint-debt (29), add-on polish (30); SEC-9 + SEC-10
 deferred (browser/ISO-gated).
+
+## 2026-07-17 — Full-auto backlog: briefs 26 + 27
+
+- **Brief 26 (filemanager-split, CS-3):** one senior agent split the
+  752-line FileManager into a 531-line orchestrator + 6 focused units
+  (useFileSelection / useFileClipboard / useDeleteFlow / usePaneResize /
+  useListKeyboardNav + lib/buildMenuItems.tsx). The two delete states
+  became one discriminated union; the CS-4 partial-failure banner is
+  preserved. "Move, don't rewrite" — no shift-range invented. A sonnet
+  behavior-preservation review traced every unit line-by-line: no drift.
+- **Brief 27 (docx-offthread-unzip, PERF-6 docx slice):** docxNormalize
+  swapped fflate sync `unzipSync`/`zipSync` for async `unzip`/`zip`
+  (off-thread), identical output. The xlsx/ExcelJS worker slice stays open
+  in office-parsing-blocks-ui-thread.md (needs a real worker + browser
+  verification — not headless-verifiable, so out of this pass).
+
+Gates (both): turbo typecheck 13/13, build ✓, format 14/14, lint 13/13.
+Committed separately. Remaining: SEC-2 (28), lint-debt (29), add-on polish
+(30); SEC-9 + SEC-10 stay deferred (browser/ISO-gated).

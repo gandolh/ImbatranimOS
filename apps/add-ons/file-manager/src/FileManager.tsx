@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
   FolderPlus,
   Clipboard,
@@ -6,15 +6,8 @@ import {
   Trash2,
   RefreshCw,
   X,
-  Pencil,
-  Copy,
-  Scissors,
-  Download,
-  FolderOpen,
   PanelRight,
   PanelRightClose,
-  FileSpreadsheet,
-  FileText,
 } from 'lucide-react'
 import { Button } from '@imbatranim/core'
 import { Input } from '@imbatranim/core'
@@ -28,11 +21,12 @@ import { FileList } from './components/FileList'
 import { FolderTree } from './components/FolderTree'
 import { UploadDropzone } from './components/UploadDropzone'
 import { PreviewPane } from './components/PreviewPane'
-import { ContextMenu, type ContextMenuItem } from './components/ContextMenu'
+import { ContextMenu } from './components/ContextMenu'
 import { FS_ROOTS } from './types'
 import type { FsEntry } from './types'
 import { sortEntries } from './lib/fileKind'
-import { resolveOpenApp, openAppLabel } from './lib/openWith'
+import { resolveOpenApp } from './lib/openWith'
+import { buildMenuItems } from './lib/buildMenuItems'
 import {
   makeBlankFile,
   uniqueNewFileName,
@@ -40,6 +34,11 @@ import {
   type NewFileKind,
 } from './lib/newFileTemplates'
 import { usePreviewPaneSettings } from './store/previewPaneStore'
+import { useFileSelection } from './hooks/useFileSelection'
+import { useFileClipboard } from './hooks/useFileClipboard'
+import { useDeleteFlow } from './hooks/useDeleteFlow'
+import { usePaneResize } from './hooks/usePaneResize'
+import { useListKeyboardNav } from './hooks/useListKeyboardNav'
 import {
   useDirectoryQuery,
   useCreateDirectoryMutation,
@@ -49,15 +48,6 @@ import {
   useUploadFileMutation,
 } from './queries/filesQueries'
 import { openApp } from '@imbatranim/core'
-
-// Below this app-window width the preview pane hides regardless of its
-// on/off setting — there just isn't room for tree + list + pane at once.
-const PREVIEW_PANE_COLLAPSE_WIDTH = 640
-
-type ClipboardEntry = {
-  entry: FsEntry
-  mode: 'copy' | 'cut'
-}
 
 type MenuState = {
   x: number
@@ -78,7 +68,6 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const [root, setRoot] = useState(FS_ROOTS[0].id)
   const rootCfg = FS_ROOTS.find((r) => r.id === root) ?? FS_ROOTS[0]
   const [path, setPath] = useState('')
-  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   // Rename state
   const [renamingPath, setRenamingPath] = useState<string | null>(null)
@@ -88,63 +77,21 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
 
-  // Delete confirm dialog
-  const [deleteTarget, setDeleteTarget] = useState<FsEntry | null>(null)
-  const [batchDeletePending, setBatchDeletePending] = useState(false)
-
   // Surfaced error for batch delete/upload failures (no toast system here).
   const [actionError, setActionError] = useState<string | null>(null)
-
-  // Clipboard
-  const [clipboard, setClipboard] = useState<ClipboardEntry | null>(null)
 
   // Right-click context menu
   const [menu, setMenu] = useState<MenuState | null>(null)
 
   // File input ref for upload picker
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const openFilePicker = useCallback(() => fileInputRef.current?.click(), [])
 
   // Preview pane: on/off + width persist across sessions; visibility also
   // collapses at small app-window widths regardless of the persisted setting.
   const previewPane = usePreviewPaneSettings()
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [containerWidth, setContainerWidth] = useState<number | null>(null)
-  const [resizing, setResizing] = useState(false)
-  const fileListRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (entry) setContainerWidth(entry.contentRect.width)
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  const previewPaneVisible =
-    previewPane.open && (containerWidth === null || containerWidth >= PREVIEW_PANE_COLLAPSE_WIDTH)
-
-  function handlePaneResizeStart(e: React.MouseEvent) {
-    e.preventDefault()
-    const startX = e.clientX
-    const startWidth = previewPane.width
-    setResizing(true)
-
-    function onMove(moveEvent: MouseEvent) {
-      // Pane sits to the right of the list; dragging the handle left grows it.
-      const delta = startX - moveEvent.clientX
-      previewPane.setWidth(startWidth + delta)
-    }
-    function onUp() {
-      setResizing(false)
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }
+  const { containerRef, resizing, previewPaneVisible, handlePaneResizeStart } =
+    usePaneResize(previewPane)
 
   const dirQuery = useDirectoryQuery(root, path)
   const createDirMutation = useCreateDirectoryMutation(root, path)
@@ -153,33 +100,26 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const copyMutation = useCopyEntryMutation(root, path)
   const uploadMutation = useUploadFileMutation(root, path)
 
+  const selection = useFileSelection()
+  const { selected, setSelected } = selection
+  const clipboard = useFileClipboard({ path, copyMutation, moveMutation })
+  const deleteFlow = useDeleteFlow({
+    selected,
+    setSelected,
+    deleteMutation,
+    onError: setActionError,
+  })
+
   function switchRoot(nextRoot: string) {
     setRoot(nextRoot)
     setPath('')
-    setSelected(new Set())
-    setClipboard(null)
+    selection.clear()
+    clipboard.clear()
   }
 
   function navigate(nextPath: string) {
     setPath(nextPath)
-    setSelected(new Set())
-  }
-
-  function handleSelect(entryPath: string, multi: boolean) {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (multi) {
-        if (next.has(entryPath)) next.delete(entryPath)
-        else next.add(entryPath)
-      } else {
-        if (next.size === 1 && next.has(entryPath)) next.clear()
-        else {
-          next.clear()
-          next.add(entryPath)
-        }
-      }
-      return next
-    })
+    selection.clear()
   }
 
   function handleOpen(entry: FsEntry) {
@@ -214,66 +154,6 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       moveMutation.mutate({ from: renamingPath, to: newPath })
     }
     setRenamingPath(null)
-  }
-
-  function handleCopy(entry: FsEntry) {
-    setClipboard({ entry, mode: 'copy' })
-  }
-
-  function handleCut(entry: FsEntry) {
-    setClipboard({ entry, mode: 'cut' })
-  }
-
-  function handlePaste() {
-    if (!clipboard) return
-    const name = clipboard.entry.path.split('/').pop() ?? clipboard.entry.name
-    const dest = path ? `${path}/${name}` : name
-    if (clipboard.mode === 'copy') {
-      copyMutation.mutate({ from: clipboard.entry.path, to: dest })
-    } else {
-      moveMutation.mutate({ from: clipboard.entry.path, to: dest })
-      setClipboard(null)
-    }
-  }
-
-  function handleDeleteEntry(entry: FsEntry) {
-    setDeleteTarget(entry)
-    setBatchDeletePending(false)
-  }
-
-  function handleBatchDelete() {
-    if (selected.size === 0) return
-    setBatchDeletePending(true)
-    setDeleteTarget(null)
-  }
-
-  async function handleConfirmDelete() {
-    if (batchDeletePending) {
-      const paths = Array.from(selected)
-      const results = await Promise.allSettled(paths.map((p) => deleteMutation.mutateAsync(p)))
-      // Keep only the items that failed selected; drop the ones we deleted.
-      const failedPaths = paths.filter((_, i) => results[i].status === 'rejected')
-      setSelected(new Set(failedPaths))
-      if (failedPaths.length > 0) {
-        setActionError(
-          `Failed to delete ${failedPaths.length} item${failedPaths.length !== 1 ? 's' : ''}.`
-        )
-      }
-    } else if (deleteTarget) {
-      const target = deleteTarget
-      try {
-        await deleteMutation.mutateAsync(target.path)
-        setSelected((prev) => {
-          const next = new Set(prev)
-          next.delete(target.path)
-          return next
-        })
-      } catch {
-        setActionError(`Failed to delete "${target.name}".`)
-      }
-    }
-    setDeleteTarget(null)
-    setBatchDeletePending(false)
   }
 
   function handleCreateFolder() {
@@ -333,86 +213,29 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     setMenu({ x: e.clientX, y: e.clientY, entry: null })
   }
 
-  const menuItems: ContextMenuItem[] = menu
-    ? menu.entry
-      ? [
-          {
-            label:
-              menu.entry.type === 'directory'
-                ? 'Open'
-                : openAppLabel(resolveOpenApp(root, menu.entry.name)),
-            icon: <FolderOpen size={13} />,
-            onSelect: () => handleOpen(menu.entry!),
-            disabled: menu.entry.type === 'file' && !resolveOpenApp(root, menu.entry.name),
-          },
-          ...(menu.entry.type === 'file'
-            ? [
-                {
-                  label: 'Download',
-                  icon: <Download size={13} />,
-                  onSelect: () => triggerDownload(root, menu.entry!),
-                } as ContextMenuItem,
-              ]
-            : []),
-          { type: 'separator' },
-          {
-            label: 'Rename',
-            icon: <Pencil size={13} />,
-            onSelect: () => handleRename(menu.entry!),
-          },
-          {
-            label: 'Copy',
-            icon: <Copy size={13} />,
-            onSelect: () => handleCopy(menu.entry!),
-          },
-          {
-            label: 'Cut',
-            icon: <Scissors size={13} />,
-            onSelect: () => handleCut(menu.entry!),
-          },
-          { type: 'separator' },
-          {
-            label: 'Delete',
-            icon: <Trash2 size={13} />,
-            danger: true,
-            onSelect: () => handleDeleteEntry(menu.entry!),
-          },
-        ]
-      : [
-          {
-            label: 'New Folder',
-            icon: <FolderPlus size={13} />,
-            onSelect: () => setShowNewFolder(true),
-          },
-          {
-            label: 'New Spreadsheet',
-            icon: <FileSpreadsheet size={13} />,
-            onSelect: () => handleNewOfficeFile('spreadsheet'),
-          },
-          {
-            label: 'New Document',
-            icon: <FileText size={13} />,
-            onSelect: () => handleNewOfficeFile('document'),
-          },
-          {
-            label: 'Upload…',
-            icon: <Upload size={13} />,
-            onSelect: () => fileInputRef.current?.click(),
-          },
-          {
-            label: 'Paste',
-            icon: <Clipboard size={13} />,
-            disabled: !clipboard,
-            onSelect: handlePaste,
-          },
-          { type: 'separator' },
-          {
-            label: 'Refresh',
-            icon: <RefreshCw size={13} />,
-            onSelect: () => dirQuery.refetch(),
-          },
-        ]
+  // `openFilePicker` reads fileInputRef, but only when the Upload item is
+  // clicked (an event handler) — never during render. react-hooks/refs can't
+  // see that through buildMenuItems, so its warning here is a false positive.
+  /* eslint-disable react-hooks/refs */
+  const menuItems = menu
+    ? buildMenuItems({
+        entry: menu.entry,
+        root,
+        hasClipboard: !!clipboard.clipboard,
+        onOpen: handleOpen,
+        onDownload: (entry) => triggerDownload(root, entry),
+        onRename: handleRename,
+        onCopy: clipboard.copy,
+        onCut: clipboard.cut,
+        onDelete: deleteFlow.requestSingle,
+        onNewFolder: () => setShowNewFolder(true),
+        onNewOfficeFile: handleNewOfficeFile,
+        onUpload: openFilePicker,
+        onPaste: clipboard.paste,
+        onRefresh: () => dirQuery.refetch(),
+      })
     : []
+  /* eslint-enable react-hooks/refs */
 
   const entries = dirQuery.data ?? []
   const isLoading = dirQuery.isLoading
@@ -421,44 +244,13 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const orderedEntries = sortEntries(entries)
   const selectedEntries = orderedEntries.filter((e) => selected.has(e.path))
 
-  function handleListKeyDown(e: React.KeyboardEvent) {
-    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter') return
-    if (orderedEntries.length === 0) return
-    // Editing a name inline — let the input handle its own keys.
-    if (renamingPath) return
-
-    if (e.key === 'Enter') {
-      if (selectedEntries.length === 1) {
-        e.preventDefault()
-        handleOpen(selectedEntries[0])
-      }
-      return
-    }
-
-    e.preventDefault()
-    const currentPath = selectedEntries.length === 1 ? selectedEntries[0].path : null
-    const currentIndex = currentPath
-      ? orderedEntries.findIndex((en) => en.path === currentPath)
-      : -1
-    let nextIndex: number
-    if (currentIndex === -1) {
-      nextIndex = e.key === 'ArrowDown' ? 0 : orderedEntries.length - 1
-    } else if (e.key === 'ArrowDown') {
-      nextIndex = Math.min(currentIndex + 1, orderedEntries.length - 1)
-    } else {
-      nextIndex = Math.max(currentIndex - 1, 0)
-    }
-    const next = orderedEntries[nextIndex]
-    setSelected(new Set([next.path]))
-    const row = fileListRef.current?.querySelector(`[data-entry-path="${CSS.escape(next.path)}"]`)
-    row?.scrollIntoView({ block: 'nearest' })
-  }
-
-  const deleteDialogOpen = !!deleteTarget || batchDeletePending
-  const deleteCount = batchDeletePending ? selected.size : 1
-  const deleteLabel = batchDeletePending
-    ? `${selected.size} item${selected.size !== 1 ? 's' : ''}`
-    : deleteTarget?.name
+  const { fileListRef, handleListKeyDown } = useListKeyboardNav({
+    orderedEntries,
+    selectedEntries,
+    renamingPath,
+    onOpen: handleOpen,
+    setSelected,
+  })
 
   return (
     <div ref={containerRef} className="bg-surface-container-lowest flex h-full flex-col">
@@ -494,7 +286,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           variant="default"
           size="sm"
           className="flex items-center gap-1"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={openFilePicker}
         >
           <Upload size={12} />
           Upload
@@ -507,17 +299,18 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           onChange={handleFileInputChange}
         />
 
-        {clipboard && (
+        {clipboard.clipboard && (
           <Button
             variant="default"
             size="sm"
             className="flex items-center gap-1"
-            onClick={handlePaste}
+            onClick={clipboard.paste}
           >
             <Clipboard size={12} />
             Paste{' '}
             <span className="text-on-surface-variant">
-              ({clipboard.mode === 'cut' ? 'move' : 'copy'}: {clipboard.entry.name})
+              ({clipboard.clipboard.mode === 'cut' ? 'move' : 'copy'}:{' '}
+              {clipboard.clipboard.entry.name})
             </span>
           </Button>
         )}
@@ -527,20 +320,15 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             variant="destructive"
             size="sm"
             className="flex items-center gap-1"
-            onClick={handleBatchDelete}
+            onClick={deleteFlow.requestBatch}
           >
             <Trash2 size={12} />
             Delete {selected.size}
           </Button>
         )}
 
-        {clipboard && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-5 w-5 p-0"
-            onClick={() => setClipboard(null)}
-          >
+        {clipboard.clipboard && (
+          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={clipboard.clear}>
             <X size={11} />
           </Button>
         )}
@@ -616,7 +404,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             {!isLoading && !isError && (
               <div
                 ref={fileListRef}
-                onClick={() => setSelected(new Set())}
+                onClick={selection.clear}
                 onContextMenu={openBackgroundMenu}
                 onKeyDown={handleListKeyDown}
                 tabIndex={0}
@@ -626,12 +414,12 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
                   entries={entries}
                   root={root}
                   selected={selected}
-                  onSelect={handleSelect}
+                  onSelect={selection.select}
                   onOpen={handleOpen}
                   onRename={handleRename}
-                  onCopy={handleCopy}
-                  onCut={handleCut}
-                  onDelete={handleDeleteEntry}
+                  onCopy={clipboard.copy}
+                  onCut={clipboard.cut}
+                  onDelete={deleteFlow.requestSingle}
                   onContextMenu={openEntryMenu}
                   renamingPath={renamingPath}
                   renameValue={renameValue}
@@ -669,7 +457,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         <span className="font-ui text-on-surface-variant text-[11px]">
           {entries.length} item{entries.length !== 1 ? 's' : ''}
           {selected.size > 0 && ` · ${selected.size} selected`}
-          {clipboard && ` · Clipboard: ${clipboard.entry.name} (${clipboard.mode})`}
+          {clipboard.clipboard &&
+            ` · Clipboard: ${clipboard.clipboard.entry.name} (${clipboard.clipboard.mode})`}
         </span>
       </div>
 
@@ -711,36 +500,26 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
 
       {/* Delete confirm dialog */}
       <Dialog
-        open={deleteDialogOpen}
+        open={deleteFlow.dialogOpen}
         onOpenChange={(open) => {
-          if (!open) {
-            setDeleteTarget(null)
-            setBatchDeletePending(false)
-          }
+          if (!open) deleteFlow.cancel()
         }}
         title="Confirm Delete"
       >
         <div className="flex flex-col gap-3">
           <p className="font-content text-on-surface text-[13px]">
-            Delete <span className="font-semibold">{deleteLabel}</span>
-            {deleteCount > 1 ? '' : ''}? This cannot be undone.
+            Delete <span className="font-semibold">{deleteFlow.deleteLabel}</span>
+            {deleteFlow.deleteCount > 1 ? '' : ''}? This cannot be undone.
           </p>
           <div className="flex justify-end gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => {
-                setDeleteTarget(null)
-                setBatchDeletePending(false)
-              }}
-            >
+            <Button variant="default" size="sm" onClick={deleteFlow.cancel}>
               Cancel
             </Button>
             <Button
               variant="destructive"
               size="sm"
-              onClick={handleConfirmDelete}
-              disabled={deleteMutation.isPending}
+              onClick={deleteFlow.confirm}
+              disabled={deleteFlow.isPending}
             >
               Delete
             </Button>

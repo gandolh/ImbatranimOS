@@ -1,0 +1,38 @@
+#!/sbin/openrc-run
+# ImbatranimOS backend: NestJS serving the desktop statics + API on :8080,
+# run as the unprivileged imbatranim user (no sudo — project invariant).
+name="imbatranim-backend"
+description="ImbatranimOS backend (desktop + API on localhost:8080)"
+
+_appdir="/usr/lib/imbatranim"
+command="/usr/bin/node"
+command_args="$_appdir/apps/backend/dist/main"
+command_user="imbatranim:imbatranim"
+command_background="yes"
+directory="$_appdir"
+pidfile="/run/$RC_SVCNAME.pid"
+output_log="/var/log/imbatranim-backend.log"
+error_log="/var/log/imbatranim-backend.log"
+
+# Mirror the Docker prod runtime environment (infrastructure/Dockerfile).
+export NODE_ENV="production"
+export PORT="8080"
+export STATIC_ROOT="$_appdir/public"
+export FRONTEND_URL="http://localhost:8080"
+export DB_PATH="/home/imbatranim/.imbatranim/db.sqlite"
+export NOTES_DIR="/home/imbatranim/notes"
+export CONFIGS_DIR="/home/imbatranim/.imbatranim/configs"
+export IMAGE_VERSION="1.0.0"
+
+depend() {
+	need localmount
+	after bootmisc networking
+}
+
+start_pre() {
+	# tmpfs home is empty on every diskless boot; recreate the data dirs.
+	checkpath -d -o imbatranim:imbatranim /home/imbatranim/.imbatranim
+	checkpath -d -o imbatranim:imbatranim /home/imbatranim/.imbatranim/configs
+	checkpath -d -o imbatranim:imbatranim /home/imbatranim/notes
+	checkpath -f -o imbatranim:imbatranim /var/log/imbatranim-backend.log
+}

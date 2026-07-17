@@ -1,0 +1,58 @@
+#!/bin/sh
+# The kiosk session: one fullscreen chromium, nothing else, rendering the
+# local ImbatranimOS web UI. Launched by greetd as the imbatranim user.
+#
+# This script must NEVER exit: if it did, greetd would fall back to a text
+# greeter (a "login:" prompt) — breaking the "no console, no shell" invariant.
+# So every step is best-effort and the whole thing loops forever.
+
+URL="http://localhost:8080"
+
+# wlroots/cage need an XDG_RUNTIME_DIR. With no elogind, /run/user/<uid> is not
+# pre-created and the unprivileged user cannot mkdir it — fall back to a dir it
+# owns. (700, on tmpfs, per the XDG spec.)
+XDG_RUNTIME_DIR="/run/user/$(id -u)"
+if ! mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null; then
+	XDG_RUNTIME_DIR="/tmp/xdg-$(id -u)"
+	mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null || true
+fi
+chmod 700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
+export XDG_RUNTIME_DIR
+export LIBSEAT_BACKEND=seatd            # seatd (we are in the `seat` group)
+export WLR_RENDERER_ALLOW_SOFTWARE=1    # llvmpipe fallback for VMs / old GPUs
+export MOZ_ENABLE_WAYLAND=1
+
+# Chromium kiosk flags (Alpine signage recipe): fullscreen, no chrome, no
+# prompts, cache to tmpfs, Wayland/ozone backend. --no-sandbox: Alpine often
+# ships with unprivileged user namespaces disabled, which breaks chromium's
+# sandbox for a non-root kiosk user; acceptable here (single-purpose appliance,
+# unprivileged user, localhost-only content).
+CHROMIUM_FLAGS="
+	--kiosk
+	--no-sandbox
+	--no-first-run
+	--incognito
+	--noerrdialogs
+	--disable-translate
+	--disable-infobars
+	--disable-features=TranslateUI
+	--disk-cache-dir=/tmp/chromium-cache
+	--ozone-platform=wayland
+	--start-fullscreen
+"
+
+# Wait for the backend to answer before showing the browser (avoids a
+# connection-refused flash on a cold boot).
+i=0
+while [ "$i" -lt 60 ]; do
+	if wget -q -O /dev/null "$URL" 2>/dev/null; then break; fi
+	i=$((i + 1))
+	sleep 1
+done
+
+# cage runs exactly one app fullscreen and exits when it does. Loop forever so
+# the session is self-healing AND greetd never sees it exit.
+while true; do
+	cage -- chromium $CHROMIUM_FLAGS "$URL" 2>/tmp/cage.log || true
+	sleep 2
+done

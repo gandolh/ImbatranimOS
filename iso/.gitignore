@@ -1,0 +1,6 @@
+# Build driver binary (bootstrap with: cc -o build build.c)
+/build
+# Finished ISOs + checksums
+/out/
+# Pristine HEAD snapshot the build exports to feed the container
+/.cleanrepo/

@@ -1,0 +1,31 @@
+#!/bin/sh
+# Runs during the boot-time `apk add` (initramfs), before OpenRC starts, so
+# the users exist by the time the backend service and greetd session launch.
+set -e
+
+# seatd runs as `seatd -g seat`; the seat group gates the seatd socket.
+addgroup -S seat 2>/dev/null || true
+
+# greetd's OpenRC start_pre resolves the greetd user's homedir.
+addgroup -S greetd 2>/dev/null || true
+adduser -S -D -H -h /var/lib/greetd -s /sbin/nologin -G greetd greetd 2>/dev/null || true
+
+# The unprivileged app + session user. NO sudo/doas is ever granted (project
+# invariant). It runs both the backend service and the cage/chromium session.
+addgroup -g 1000 imbatranim 2>/dev/null || true
+adduser -D -u 1000 -G imbatranim -h /home/imbatranim -s /bin/sh imbatranim 2>/dev/null || true
+# Lock the password: greetd autologin opens the session without one, and no
+# getty exists to offer a shell login. Keeps "no default password" honest.
+passwd -u imbatranim 2>/dev/null || true
+usermod -p '*' imbatranim 2>/dev/null || sed -i 's/^imbatranim:[^:]*:/imbatranim:*:/' /etc/shadow 2>/dev/null || true
+
+# Seat/GPU/input access for the wayland session.
+for g in video input audio seat tty; do
+	addgroup imbatranim "$g" 2>/dev/null || true
+done
+
+# Home + backend data dirs (tmpfs at runtime; recreated every boot).
+mkdir -p /home/imbatranim/.imbatranim/configs /home/imbatranim/notes
+chown -R imbatranim:imbatranim /home/imbatranim
+
+exit 0

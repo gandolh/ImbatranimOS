@@ -1,0 +1,52 @@
+# Contributor: ImbatranimOS
+# Maintainer: ImbatranimOS
+#
+# The ImbatranimOS kiosk payload as a native Alpine package:
+#   - the built backend (apps/backend/dist) + desktop statics (public)
+#   - production node_modules with native addons compiled for THIS Alpine's
+#     musl + nodejs ABI (better-sqlite3, node-pty, argon2)
+#   - the OpenRC service that runs the backend as the imbatranim user
+#   - the greetd config + cage/chromium kiosk launcher
+#
+# Everything ships from a pre-staged tree ($_stagingroot, assembled by
+# build-payload.sh) so this build does no network I/O — abuild just packages
+# and signs it. depends= pulls the entire kiosk runtime, keeping the ISO
+# profile's world down to alpine-base + imbatranim-os.
+pkgname=imbatranim-os
+pkgver=1.0.0
+pkgrel=0
+pkgdesc="ImbatranimOS kiosk payload (backend + desktop + cage/chromium session)"
+url="https://github.com/gandolh/ImbatranimOS"
+arch="x86_64"
+license="UNLICENSED"
+# Runtime graph: node to run the app, the wayland kiosk stack, GPU/input,
+# fonts, and wget (used by the launcher to wait for the backend).
+depends="
+	nodejs
+	chromium
+	cage
+	seatd
+	greetd
+	eudev
+	dbus
+	mesa-dri-gallium
+	mesa-gbm
+	font-dejavu
+	ttf-dejavu
+	wget
+	"
+# No compiler etc. in the final image — native addons are prebuilt in staging.
+# !strip: the payload is JS + prebuilt .node addons (some npm packages bundle
+# foreign-arch prebuilds that abuild's strip can't parse); nothing here needs
+# stripping. The other flags skip abuild's C-package assumptions.
+options="!check !fhs !tracedeps !archcheck !strip"
+install="$pkgname.post-install"
+source=""
+
+package() {
+	# $_stagingroot is exported by build-payload.sh and holds the complete
+	# on-disk layout to install (usr/lib/imbatranim, etc/, usr/local/bin, ...).
+	[ -n "$_stagingroot" ] || { error "_stagingroot not set"; return 1; }
+	mkdir -p "$pkgdir"
+	cp -a "$_stagingroot"/. "$pkgdir"/
+}

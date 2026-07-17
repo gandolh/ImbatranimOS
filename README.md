@@ -66,6 +66,19 @@ was rejected — lives in [infrastructure/README.md](infrastructure/README.md).
 Don't expose the plain-HTTP port directly to the internet; put the proxy in
 front of it first.
 
+## Bare-metal kiosk ISO (experimental, post-v1)
+
+Docker is the way to run ImbatranimOS — everything above is the supported
+path. If you instead want it as an **appliance that boots straight into the
+OS on real hardware or a VM**, there's a separate bootable Alpine-based ISO
+under [`iso/`](iso/README.md). It boots with no desktop and no console —
+just one fullscreen browser showing the same ImbatranimOS login, backed by
+the same server running locally. Build it with `cd iso && cc -o build
+build.c && ./build iso` (needs Docker). It's an occasional VM/bare-metal
+extra; it changes nothing about the container workflow above and adds no new
+prerequisites to it. See [`iso/README.md`](iso/README.md) for the build,
+verification, and design decisions.
+
 ## Data & backup
 
 Everything that makes the container "yours" — your password hash, your

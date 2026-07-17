@@ -1,0 +1,22 @@
+# greetd autologin for the kiosk.
+#
+# IMPORTANT — this is a Linux-session autologin, NOT a web-app login. greetd
+# opens an unprivileged graphical session as `imbatranim` and execs the kiosk
+# launcher (cage + chromium). The ImbatranimOS web UI inside that browser
+# still demands its own auth on every route, every boot (project invariant:
+# no kiosk auto-login into the web UI).
+#
+# initial_session runs once at boot with no greeter, so there is no login
+# manager UI and no shell — only the browser ever reaches the screen.
+
+[terminal]
+vt = 1
+
+[default_session]
+# Fallback if the kiosk session ever exits (the launcher itself also loops).
+command = "/usr/local/bin/imbatranim-kiosk"
+user = "imbatranim"
+
+[initial_session]
+command = "/usr/local/bin/imbatranim-kiosk"
+user = "imbatranim"

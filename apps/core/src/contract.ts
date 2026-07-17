@@ -1,4 +1,4 @@
-import { type ComponentType } from 'react'
+import { type ComponentType, type LazyExoticComponent } from 'react'
 import type { CommandSource } from './shared/commands/CommandSourcesRegistry'
 
 /**
@@ -13,7 +13,9 @@ export type AppConfig = {
   description: string
   meta: string[]
   icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
-  component: ComponentType<{ windowId: string }>
+  component:
+    | ComponentType<{ windowId: string }>
+    | LazyExoticComponent<ComponentType<{ windowId: string }>>
   multiInstance: boolean
   defaultSize: { width: number; height: number }
   minSize: { width: number; height: number }

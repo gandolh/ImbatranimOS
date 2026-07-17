@@ -5,10 +5,7 @@ import { CaptureOverlay } from './components/CaptureOverlay'
 import { AnnotationStage } from './components/AnnotationStage'
 import { captureRegion } from './capture/rasterize'
 import type { Selection } from './types'
-
-/** Must match the manifest `name` — used to filter the tool's own taskbar
- * button out of the rasterized shot. */
-export const APP_NAME = 'Snipping Tool'
+import { APP_NAME } from './appName'
 
 type Phase = 'selecting' | 'capturing' | 'annotating'
 

@@ -6,6 +6,7 @@
  * Adding an app to the OS = one import + one array entry here. Nothing else
  * in core changes.
  */
+import { lazy } from 'react'
 import { Settings as SettingsIcon } from 'lucide-react'
 import { manifest as stickyNotes } from '@imbatranim/sticky-notes'
 import { manifest as todo } from '@imbatranim/todo'
@@ -21,7 +22,6 @@ import { manifest as sheets } from '@imbatranim/sheets'
 import { manifest as docs } from '@imbatranim/docs'
 import type { AddonManifest, AppConfig } from './contract'
 import { COMMAND_SOURCES, registerCommandSource } from './shared/commands/CommandSourcesRegistry'
-import { Settings } from './modules/settings/Settings'
 
 // Settings is core (shell + auth + settings roster), not an add-on — it is
 // declared here directly rather than imported as a package.
@@ -31,7 +31,9 @@ const settings: AddonManifest = {
   description: 'System settings and appearance',
   meta: ['config', 'appearance', 'background', 'wallpaper', 'theme'],
   icon: SettingsIcon,
-  component: Settings,
+  component: lazy(() =>
+    import('./modules/settings/Settings').then((m) => ({ default: m.Settings }))
+  ),
   multiInstance: false,
   defaultSize: { width: 440, height: 500 },
   minSize: { width: 360, height: 400 },

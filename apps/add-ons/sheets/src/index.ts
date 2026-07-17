@@ -1,6 +1,6 @@
+import { lazy } from 'react'
 import { Table } from 'lucide-react'
 import type { AddonManifest } from '@imbatranim/core'
-import { Sheets } from './Sheets'
 
 export const manifest: AddonManifest = {
   id: 'sheets',
@@ -8,7 +8,7 @@ export const manifest: AddonManifest = {
   description: 'Edit spreadsheets (xlsx)',
   meta: ['sheets', 'spreadsheet', 'excel', 'xlsx', 'grid', 'table', 'formula'],
   icon: Table,
-  component: Sheets,
+  component: lazy(() => import('./Sheets').then((m) => ({ default: m.Sheets }))),
   multiInstance: true,
   defaultSize: { width: 900, height: 640 },
   minSize: { width: 480, height: 360 },

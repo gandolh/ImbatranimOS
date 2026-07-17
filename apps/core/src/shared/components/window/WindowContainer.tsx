@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Suspense, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useWindowStore } from '../../store/windowStore'
 import { Window } from './Window'
@@ -34,7 +34,15 @@ export function WindowContainer() {
             isFocused={w.zIndex === maxZIndex && w.isVisible}
           >
             {AppComponent ? (
-              <AppComponent windowId={w.id} />
+              <Suspense
+                fallback={
+                  <div className="text-on-surface-variant flex h-full items-center justify-center p-3 text-sm">
+                    Loading…
+                  </div>
+                }
+              >
+                <AppComponent windowId={w.id} />
+              </Suspense>
             ) : (
               <div className="text-on-surface-variant p-3 text-sm">Unknown app: {w.appId}</div>
             )}

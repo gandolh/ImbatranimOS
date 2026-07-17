@@ -1,6 +1,6 @@
+import { lazy } from 'react'
 import { Bookmark } from 'lucide-react'
 import type { AddonManifest } from '@imbatranim/core'
-import { Bookmarks } from './Bookmarks'
 import { bookmarksSource } from './commandSource'
 
 export const manifest: AddonManifest = {
@@ -9,7 +9,7 @@ export const manifest: AddonManifest = {
   description: 'Save and organize links',
   meta: ['links', 'favorites', 'urls'],
   icon: Bookmark,
-  component: Bookmarks,
+  component: lazy(() => import('./Bookmarks').then((m) => ({ default: m.Bookmarks }))),
   multiInstance: false,
   defaultSize: { width: 480, height: 520 },
   minSize: { width: 320, height: 400 },

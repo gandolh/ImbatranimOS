@@ -1,6 +1,7 @@
+import { lazy } from 'react'
 import { Scissors } from 'lucide-react'
 import type { AddonManifest } from '@imbatranim/core'
-import { SnippingTool, APP_NAME } from './SnippingTool'
+import { APP_NAME } from './appName'
 
 export const manifest: AddonManifest = {
   id: 'snipping-tool',
@@ -8,7 +9,7 @@ export const manifest: AddonManifest = {
   description: 'Capture, annotate, and save a screenshot of the desktop',
   meta: ['screenshot', 'capture', 'snip', 'grab', 'annotate', 'redact', 'pixelate'],
   icon: Scissors,
-  component: SnippingTool,
+  component: lazy(() => import('./SnippingTool').then((m) => ({ default: m.SnippingTool }))),
   // Single-instance: only one capture session at a time.
   multiInstance: false,
   // The window is hidden immediately; size only matters for its store record.

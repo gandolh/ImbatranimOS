@@ -7,5 +7,20 @@ build/
 .env.*
 *.sqlite
 *.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 # Local dev state: sqlite db + notes/configs created by `npm run dev`
 /data/
+
+# Personal / local / identifiable data — never commit
+*.bak
+*.bak.*
+*.log
+logs/
+# OS + editor cruft (machine-identifiable)
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo

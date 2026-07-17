@@ -1,20 +1,28 @@
-# Lint + format debt (pre-existing, surfaced by brief 16)
+# Lint debt: backend type-safety errors (pre-existing)
 
-Captured 2026-07-17 while landing turborepo (brief 16). Not caused by the
-workspace move — verified against identical plugin/prettier versions.
+Captured 2026-07-17 while landing turborepo (brief 16); updated same day
+after brief 17 paid down most of it. Corrections to the original capture:
+backend lint never actually passed (the "backend lint passes" claim
+misread a turbo failure summary), and the "30 unformatted files" were
+real — the fork never had prettier-clean sources.
 
-- `npm run lint` fails on **frontend**: ~25+ real errors —
-  `@typescript-eslint/no-unused-vars` on `_`-prefixed vars (the eslint
-  config has no `argsIgnorePattern: '^_'`), several
-  `react-hooks` "setState synchronously in effect" errors, a
-  `react-refresh/only-export-components` error. Backend lint passes
-  (it runs with `--fix`).
-- `npm run format:check` fails on **backend**: 30 files were never
-  prettier-clean (the script didn't exist before brief 16; only
-  write-mode `format` did, and it was never run).
+**Paid (2026-07-17, briefs 16/17 + sweep commit `934619f`):**
+- Formatting: prettier 3.8.3 sweep across backend/core/add-ons;
+  `npm run format:check` green 9/9. Root pins prettier 3.8.3 so
+  backend's eslint-plugin-prettier can't resolve a newer hoisted copy.
+- Frontend-side eslint errors: `_`-prefix convention codified
+  (argsIgnorePattern in the new core/add-on configs), 6 real
+  setState-in-effect errors fixed, dead code removed. Core + all 7
+  add-ons lint green.
 
-Options when promoting to a brief: add `argsIgnorePattern`/
-`varsIgnorePattern: '^_'` to the frontend eslint config (kills most
-errors legitimately), fix the handful of real hook issues, run
-`npm run format -w backend` once, and consider wiring format:check +
-lint as a pre-tag gate for v1.0 (brief 15).
+**Still open — backend#lint (~40 errors), keeps root `npm run lint` red:**
+- `@typescript-eslint/no-unsafe-*` across raw better-sqlite3 call sites
+  (bookmarks/notes/todos services type query results as `any`) — wants
+  typed row shapes or `.get<T>()`-style casts per repository.
+- A few unused imports (e.g. `HttpAdapterHost`, `HttpException`,
+  `HttpStatus` in `main.ts`).
+
+Promoting to a brief: type the sqlite repositories, drop dead imports,
+then consider lint+format:check as a pre-tag gate for v1.0 (brief 15).
+Backend `src/**` was untouchable during brief 17, which is why this
+remains.

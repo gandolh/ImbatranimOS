@@ -134,7 +134,7 @@ measure (recorded in brief 15). Amended in wiki/decisions.md.
 
 ## [2026-07-16] todo | Brief 16 filed — Turborepo integration
 
-Filed [briefs/todo/16-turborepo.md](briefs/todo/16-turborepo.md): convert the
+Filed [briefs/done/16-turborepo.md](briefs/done/16-turborepo.md): convert the
 repo to a real npm workspace (root package.json + single lockfile; today there
 are THREE independent npm ci roots — apps/, apps/backend, apps/frontend — and
 apps/package.json looks vestigial from the fork), add turbo.json pipeline
@@ -154,7 +154,7 @@ complete spec; build deferred.
 
 ## [2026-07-16] todo | Brief 17 filed — backend / core / add-ons restructure
 
-Filed [briefs/todo/17-os-restructure.md](briefs/todo/17-os-restructure.md):
+Filed [briefs/done/17-os-restructure.md](briefs/done/17-os-restructure.md):
 user-requested split into backend, core (desktop + main OS functions), and
 add-ons with one directory per app. Flags an explicit revisit of the locked
 "keep the fork's repo layout" decision (amend decisions.md when it lands)
@@ -281,3 +281,38 @@ could not start). Found, NOT fixed (src off-limits): frontend eslint
 errors + backend never prettier-clean → todos/lint-format-debt.md.
 Fresh `npm audit`: 0 vulnerabilities at the new lockfile — the brief-15
 audit-triage item is effectively closed by the dep refresh.
+
+## 2026-07-17 — Brief 17 (restructure) landed
+
+apps/{backend, core, add-ons/*}, commit `63876e9`. apps/frontend became
+apps/core (shell + auth + settings + Vite host, published as
+@imbatranim/core via a deliberate public-surface barrel); SEVEN windowed
+apps extracted to workspace packages under apps/add-ons/ (the grilled six
+plus system-monitor, which landed via brief 13 after the spec was
+written — the roster decision covers it). The dependency direction is
+inverted for real: add-ons export manifests (AppConfig + optional
+commandSources), core/src/manifest.ts is the single composition root
+that may import @imbatranim/* (eslint no-restricted-imports enforced in
+BOTH directions, proven by deliberate violations), and the old
+registry.tsx is a re-export shim so shell consumers didn't churn.
+bookmarks/recent-files palette sources moved into their add-ons;
+recent-files now delivers the opened path as an intent via openApp (the
+shell-owned version opened an empty window). Verified end-to-end in a
+real browser (agent-driven): wizard → login → all 8 apps open, live PTY,
+add-on bookmark results in the palette; built CSS byte-identical.
+
+Two significant finds: (1) REAL BUG, pre-existing — the taskbar Tray
+typed /api/system/stats as {cpu: number, ramUsedGb…} but the API returns
+{cpu:{percent,cores}, memory:{…}}; the desktop white-screened after
+login on every deploy since the brief 13/14 seam. curl-based verify
+(brief 15) could never see it — a browser-level check now exists as the
+bar. Fixed in core. (2) The "backend was never prettier-clean" debt got
+paid: formatting sweep `934619f` (89 files, verified neutral: tests +
+byte-identical CSS), after root-pinning prettier 3.8.3 so backend's
+eslint-plugin-prettier stops resolving whatever npm hoists. Root lint is
+green for core + all 7 add-ons; backend#lint stays red on pre-existing
+unsafe-any in raw sqlite code (out of scope for 17; still in
+todos/lint-format-debt.md). Also fixed while acceptance demanded green
+lint on the moved surface: 6 pre-existing react-hooks setState-in-effect
+errors (render-time adjustment pattern) and dead ReplInterpreter.tsx
+deleted.

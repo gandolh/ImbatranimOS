@@ -1,6 +1,6 @@
 ---
-summary: Web-OS era stack — Alpine + NestJS container exposing one authed port, React/Vite desktop (minimal-web-desktop fork), PTY/FS/monitor system apps, volume-backed home.
-updated: 2026-07-16
+summary: Web-OS era stack — Alpine + NestJS container, one authed port, React/Vite desktop split into @imbatranim/core + add-on packages (npm workspaces + turbo), PTY/FS/monitor apps, volume-backed home.
+updated: 2026-07-17
 ---
 
 # Architecture
@@ -17,7 +17,7 @@ display.
 |---|---|
 | Image | Alpine-based, Node LTS, single container, one multi-stage Dockerfile with `dev` (Nest+Vite HMR, 2 ports) and `prod` (Nest serves statics, 1 port, slim ~<150MB target) targets |
 | Backend | NestJS (TypeScript) — prod: serves built frontend statics + REST API + WebSockets on ONE port |
-| Frontend | React + Vite + TS + Tailwind v4 + Framer Motion, Base UI, Zustand, TanStack Router+Query, react-hook-form+Zod, xterm — forked from minimal-web-desktop |
+| Frontend | React + Vite + TS + Tailwind v4 + Framer Motion, Base UI, Zustand, TanStack Query, @xterm/xterm — forked from minimal-web-desktop, restructured (brief 17) into `@imbatranim/core` + add-on packages |
 | System user | `imbatranim`, **no sudo by default**; PTY and FS APIs act as this user |
 | Auth | Single user; sessions + password, TOTP optional, rate-limited login; HTTPS via built-in or documented reverse proxy — internet-exposable |
 | Persistence | `/home/imbatranim` is a named Docker volume; the app SQLite DB lives inside it |
@@ -45,18 +45,33 @@ bookmarks, notepad. **Cut from the fork (brief 08):** docker desktop,
 service launcher, and the backend `docker` + `services` modules (they
 assume a dev host, not a container).
 
-**Dependency layout quirk (fork):** frontend runtime deps are split across
-`apps/package.json` (hoisted parent) and `apps/frontend/package.json`; both
-need `npm install` (brief 16 would fix this with npm workspaces).
+## Repo layout (briefs 16 + 17, 2026-07-17)
 
-## Repo layout (adopted from the fork, 2026-07-16)
+npm workspaces + Turborepo: one root `npm install`, one lockfile, root
+scripts (`build`/`lint`/`typecheck`/`test`/`dev`/`format:check`) fan out
+via turbo.
 
 ```
-apps/frontend/         Vite app (the desktop)
-apps/backend/          NestJS app (API, WS, PTY, auth; prod serves the build)
+apps/core/             the desktop OS: shell, window manager, command
+                       palette, auth, settings; Vite host. Published to
+                       add-ons as @imbatranim/core (public-surface barrel
+                       src/index.ts). src/manifest.ts is the ONLY file
+                       that may import add-on packages (eslint-enforced).
+apps/add-ons/<app>/    one workspace package per windowed app
+                       (@imbatranim/<app>): bookmarks, file-manager,
+                       notepad, repl-interpreter (Terminal), sticky-notes,
+                       system-monitor, todo. Each exports a manifest
+                       (AppConfig + optional command-palette sources);
+                       add-ons import core's public surface only.
+apps/backend/          NestJS app (API, WS, PTY, auth; prod serves the
+                       build). Keeps its own modules/ tree — the add-on ↔
+                       backend seam is the HTTP API.
 infrastructure/        Dockerfile (dev+prod targets), docker-compose.yml
 corpus/                this knowledge base
 ```
+
+Adding a desktop app = new package under `apps/add-ons/` + one line in
+`apps/core/src/manifest.ts` (how-to in the root README).
 
 The fork's own `corpus/`, `CLAUDE.md`, `.agents/`, `UBIQUITOUS_LANGUAGE.md`
 are dropped on import — our corpus is the single source of truth.

@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16 DONE (…, reskin, turborepo); 15 v1 human-gated remainder; 17 restructure next.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16 + 17 DONE (…, turborepo, core/add-ons restructure); brief 15's human-gated remainder is all that stands before v1.0.
 updated: 2026-07-17
 ---
 
@@ -34,11 +34,11 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 14 | [imbatranim-reskin](../briefs/done/14-imbatranim-reskin.md) | **done** | Win7-classic taskbar/start/tray/icons, B&W tokens, dark default, hourglass logo; accent = 4 presets, crimson provisional (user pick pending) |
 | 15 | [v1-release](../briefs/todo/15-v1-release.md) | in progress | Engineering DONE (security pass, 413/headers/repl_configs fixes, README, 1.0.0 stamp, container verified + numbers); human-gated remainder: friend QA, VPS deploy, accent pick, dep bumps, tag |
 | 16 | [turborepo](../briefs/done/16-turborepo.md) | **done** | npm workspaces + turbo 2.10.5, single root lockfile, phantom tailwind deps rehomed; envMode loose + prettier pin 3.8.3 (see log); image 385MB, FULL TURBO ✓ |
-| 17 | [os-restructure](../briefs/todo/17-os-restructure.md) | todo | apps/{backend,core,add-ons/*} split; grilled 2026-07-16, build-ready; package-per-add-on, core=Vite host+manifest, lands AFTER 16 |
+| 17 | [os-restructure](../briefs/done/17-os-restructure.md) | **done** | apps/{backend,core,add-ons/*}; 7 add-on packages, manifest.ts composition root, eslint-enforced boundary; browser-verified (found+fixed Tray stats crash); backend lint debt remains |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
-(human-gated remainder). Restructure chain: 16 ✓ → 17 (next up,
-grilled/build-ready).
+(human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. No build-ready
+briefs remain; captures live in todos/ (lint debt, ISO scaffold).
 
 ## Where things stand
 
@@ -51,6 +51,12 @@ machine, one VPS+HTTPS deploy per the Caddy recipe, the accent final pick
 (crimson is provisional), and the recommended dep bumps
 (@nestjs/platform-express for multer, axios) — though the brief-16
 lockfile regeneration (2026-07-17) already audits clean (0 vulns).
-Brief 16 (turborepo) landed 2026-07-17: one root install, turbo task
-runner, image 385 MB. It surfaced pre-existing lint/format debt
-(todos/lint-format-debt.md). Next buildable: brief 17 (restructure).
+Briefs 16 + 17 landed 2026-07-17: npm workspaces + turbo (one root
+install, image 385 MB), then the core/add-ons restructure (7 add-on
+packages, inverted registry, eslint-enforced boundary). Brief 17's
+browser verification caught and fixed a shipping bug: the taskbar Tray
+mis-typed /api/system/stats and white-screened the desktop after login —
+a browser-level check is now part of the verify bar. Formatting debt is
+paid (format:check 9/9 green); backend type-safety lint debt remains
+(todos/lint-format-debt.md) and keeps root `npm run lint` red on
+backend#lint only.

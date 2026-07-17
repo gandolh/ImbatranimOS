@@ -26,9 +26,17 @@ Changing any entry requires an explicit revisit + a `log.md` entry.
   ~100–150MB instead of ~20MB. Single port serves statics + API + WS.
 - **Frontend: fork minimal-web-desktop** (React/Vite/TS, Tailwind v4,
   Framer Motion, NestJS patterns) and evolve it into ImbatranimOS.
-- **Keep the fork's repo layout** (`apps/frontend`, `apps/backend`,
-  `infrastructure/`); import code only and DROP the fork's own
-  corpus/CLAUDE.md/.agents/UBIQUITOUS_LANGUAGE.md. [brief 08 grilling]
+- **Repo layout: `apps/backend` + `apps/core` + `apps/add-ons/<app>`**
+  (SUPERSEDES 2026-07-17, brief 17, user-requested revisit of the
+  brief-08 "keep the fork's layout" entry). Core = shell + auth +
+  settings + Vite host, published to add-ons as `@imbatranim/core`
+  (public-surface barrel `src/index.ts`); every windowed app is a
+  workspace package `@imbatranim/<app>` under `apps/add-ons/` exporting
+  a manifest; `apps/core/src/manifest.ts` is the ONLY file allowed to
+  import add-on packages (eslint-enforced both directions). Backend
+  keeps its own `modules/` tree — the add-on/backend seam is the HTTP
+  API. The fork-import scoping from brief 08 (drop the fork's own
+  corpus/CLAUDE.md/.agents) remains in force.
 - **Dual-mode container, one multi-stage Dockerfile**: `dev` target runs
   Nest + Vite HMR (2 ports); `prod` target = Nest serves built statics on
   1 port, slim. The "one port / serve statics" rule describes PROD; HMR is

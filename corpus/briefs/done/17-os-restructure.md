@@ -1,5 +1,23 @@
 # Task 17 — Restructure: backend / core / add-ons
 
+> **Outcome (2026-07-17, done):** Landed in commit `63876e9` (+ formatting
+> sweep `934619f`). SEVEN add-ons, not six — system-monitor landed via
+> brief 13 after this spec was written, and the locked roster decision
+> ("everything that opens in a window is an add-on") covers it. All
+> acceptance criteria verified, including a real browser run: first-run
+> wizard → login → all 8 apps open, PTY terminal live, command palette
+> serving add-on-registered bookmark results; boundary rules proven by
+> deliberate violation (eslint fires both directions); built CSS
+> byte-identical pre/post restructure. Found + fixed along the way: the
+> Tray typed /api/system/stats wrong ({cpu: number} vs the real
+> {cpu:{percent,cores}}) and white-screened the whole desktop after login
+> — pre-existing since the brief 13/14 seam, invisible to curl-based
+> verification. decisions.md layout entry amended. Deviation: root
+> `npm run lint` is green for core + all add-ons but still red on
+> backend#lint (pre-existing unsafe-any debt in raw sqlite code, out of
+> scope here — apps/backend/src untouchable); tracked in
+> todos/lint-format-debt.md.
+
 ## Context
 
 User-requested restructure (2026-07-16): organize the codebase as

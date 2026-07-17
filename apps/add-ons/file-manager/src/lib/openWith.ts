@@ -39,6 +39,10 @@ export const EXTENSION_APP_MAP: Record<string, OpenWithRule> = {
   pdf: { appId: 'pdf-viewer' },
   pptx: { appId: 'slides' },
   ppt: { appId: 'slides' },
+  // Office editors → Sheets / Docs (any root; root-aware like the viewers)
+  xlsx: { appId: 'sheets' },
+  xls: { appId: 'sheets' },
+  docx: { appId: 'docs' },
 }
 
 /**
@@ -61,6 +65,10 @@ export function openAppLabel(appId: string | null): string {
       return 'Open in PDF Viewer'
     case 'slides':
       return 'Open in Slides'
+    case 'sheets':
+      return 'Open in Sheets'
+    case 'docs':
+      return 'Open in Docs'
     default:
       return 'Open'
   }

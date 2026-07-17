@@ -17,6 +17,8 @@ import { manifest as systemMonitor } from '@imbatranim/system-monitor'
 import { manifest as snippingTool } from '@imbatranim/snipping-tool'
 import { manifest as pdfViewer } from '@imbatranim/pdf-viewer'
 import { manifest as slides } from '@imbatranim/slides'
+import { manifest as sheets } from '@imbatranim/sheets'
+import { manifest as docs } from '@imbatranim/docs'
 import type { AddonManifest, AppConfig } from './contract'
 import { COMMAND_SOURCES, registerCommandSource } from './shared/commands/CommandSourcesRegistry'
 import { Settings } from './modules/settings/Settings'
@@ -47,6 +49,8 @@ const MANIFESTS: AddonManifest[] = [
   snippingTool,
   pdfViewer,
   slides,
+  sheets,
+  docs,
 ]
 
 export const APP_REGISTRY: AppConfig[] = MANIFESTS

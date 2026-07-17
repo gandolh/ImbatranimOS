@@ -13,6 +13,8 @@ import {
   FolderOpen,
   PanelRight,
   PanelRightClose,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-react'
 import { Button } from '@imbatranim/core'
 import { Input } from '@imbatranim/core'
@@ -31,6 +33,12 @@ import type { FsEntry } from './types'
 import { downloadUrl } from './api/filesApi'
 import { sortEntries } from './lib/fileKind'
 import { resolveOpenApp, openAppLabel } from './lib/openWith'
+import {
+  makeBlankFile,
+  uniqueNewFileName,
+  editorAppId,
+  type NewFileKind,
+} from './lib/newFileTemplates'
 import { usePreviewPaneSettings } from './store/previewPaneStore'
 import {
   useDirectoryQuery,
@@ -263,6 +271,19 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     })
   }
 
+  function handleNewOfficeFile(kind: NewFileKind) {
+    // Born in the file manager: write a blank template at the current directory
+    // under a non-colliding name, then open it straight into the editor.
+    const existing = (dirQuery.data ?? []).map((e) => e.name)
+    const name = uniqueNewFileName(kind, existing)
+    const filePath = path ? `${path}/${name}` : name
+    const file = makeBlankFile(kind, name)
+    uploadMutation.mutate(
+      { path: filePath, file },
+      { onSuccess: () => openApp(editorAppId(kind), { openPath: filePath, root }) }
+    )
+  }
+
   function handleUploadFiles(files: File[]) {
     files.forEach((file) => {
       const filePath = path ? `${path}/${file.name}` : file.name
@@ -337,6 +358,16 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             label: 'New Folder',
             icon: <FolderPlus size={13} />,
             onSelect: () => setShowNewFolder(true),
+          },
+          {
+            label: 'New Spreadsheet',
+            icon: <FileSpreadsheet size={13} />,
+            onSelect: () => handleNewOfficeFile('spreadsheet'),
+          },
+          {
+            label: 'New Document',
+            icon: <FileText size={13} />,
+            onSelect: () => handleNewOfficeFile('document'),
           },
           {
             label: 'Upload…',

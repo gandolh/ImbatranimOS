@@ -134,6 +134,10 @@ type WindowStore = {
   windows: WindowInstance[]
   preMaximizeStates: Record<string, PreMaximizeState>
   preSnapStates: Record<string, PreMaximizeState>
+  // A window may veto its own close (e.g. an editor with unsaved changes). The
+  // guard returns true to allow the close, false to abort it. Kept generic — the
+  // store never knows *why* a close is vetoed; the window supplies the policy.
+  closeGuards: Record<string, () => boolean>
   nextZIndex: number
 
   openWindow: (
@@ -144,6 +148,11 @@ type WindowStore = {
     initialPosition?: { x: number; y: number }
   ) => string
   closeWindow: (id: string) => void
+  /** Live-update a window's title bar / taskbar label (e.g. filename + dirty •). */
+  updateTitle: (id: string, title: string) => void
+  /** Register a veto consulted by closeWindow; returns true to allow the close. */
+  registerCloseGuard: (id: string, guard: () => boolean) => void
+  unregisterCloseGuard: (id: string) => void
   hideWindow: (id: string) => void
   showWindow: (id: string) => void
   maximizeWindow: (id: string) => void
@@ -162,6 +171,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   windows: [],
   preMaximizeStates: {},
   preSnapStates: {},
+  closeGuards: {},
   nextZIndex: 1,
 
   openWindow: (appId, title, defaultSize, minSize, initialPosition) => {
@@ -207,14 +217,39 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   },
 
   closeWindow: (id) => {
+    // Consult the window's close guard first (unsaved-changes prompt, etc.).
+    // A guard that returns false aborts the close for every caller — the title
+    // bar X and the Ctrl+W hotkey both funnel through here, so neither can
+    // bypass it.
+    const guard = get().closeGuards[id]
+    if (guard && !guard()) return
     set((state) => {
       const { [id]: _removedPre, ...remainingPreMax } = state.preMaximizeStates
       const { [id]: _removedSnap, ...remainingPreSnap } = state.preSnapStates
+      const { [id]: _removedGuard, ...remainingGuards } = state.closeGuards
       return {
         windows: state.windows.filter((w) => w.id !== id),
         preMaximizeStates: remainingPreMax,
         preSnapStates: remainingPreSnap,
+        closeGuards: remainingGuards,
       }
+    })
+  },
+
+  updateTitle: (id, title) => {
+    set((state) => ({
+      windows: state.windows.map((w) => (w.id === id ? { ...w, title } : w)),
+    }))
+  },
+
+  registerCloseGuard: (id, guard) => {
+    set((state) => ({ closeGuards: { ...state.closeGuards, [id]: guard } }))
+  },
+
+  unregisterCloseGuard: (id) => {
+    set((state) => {
+      const { [id]: _removed, ...rest } = state.closeGuards
+      return { closeGuards: rest }
     })
   },
 

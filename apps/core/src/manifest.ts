@@ -14,6 +14,7 @@ import { manifest as notepad } from '@imbatranim/notepad'
 import { manifest as terminal } from '@imbatranim/repl-interpreter'
 import { manifest as fileManager } from '@imbatranim/file-manager'
 import { manifest as systemMonitor } from '@imbatranim/system-monitor'
+import { manifest as snippingTool } from '@imbatranim/snipping-tool'
 import type { AddonManifest, AppConfig } from './contract'
 import { COMMAND_SOURCES, registerCommandSource } from './shared/commands/CommandSourcesRegistry'
 import { Settings } from './modules/settings/Settings'
@@ -41,6 +42,7 @@ const MANIFESTS: AddonManifest[] = [
   terminal,
   fileManager,
   systemMonitor,
+  snippingTool,
 ]
 
 export const APP_REGISTRY: AppConfig[] = MANIFESTS

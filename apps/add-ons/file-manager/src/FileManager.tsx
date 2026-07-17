@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   FolderPlus,
   Clipboard,
@@ -11,20 +11,26 @@ import {
   Scissors,
   Download,
   FolderOpen,
+  PanelRight,
+  PanelRightClose,
 } from 'lucide-react'
 import { Button } from '@imbatranim/core'
 import { Input } from '@imbatranim/core'
 import { Dialog } from '@imbatranim/core'
 import { ScrollArea } from '@imbatranim/core'
+import { Tooltip } from '@imbatranim/core'
 import { cn } from '@imbatranim/core'
 import { Breadcrumb } from './components/Breadcrumb'
 import { FileList } from './components/FileList'
 import { FolderTree } from './components/FolderTree'
 import { UploadDropzone } from './components/UploadDropzone'
+import { PreviewPane } from './components/PreviewPane'
 import { ContextMenu, type ContextMenuItem } from './components/ContextMenu'
 import { FS_ROOTS } from './types'
 import type { FsEntry } from './types'
 import { downloadUrl } from './api/filesApi'
+import { sortEntries } from './lib/fileKind'
+import { usePreviewPaneSettings } from './store/previewPaneStore'
 import {
   useDirectoryQuery,
   useCreateDirectoryMutation,
@@ -34,6 +40,10 @@ import {
   useUploadFileMutation,
 } from './queries/filesQueries'
 import { openApp } from '@imbatranim/core'
+
+// Below this app-window width the preview pane hides regardless of its
+// on/off setting — there just isn't room for tree + list + pane at once.
+const PREVIEW_PANE_COLLAPSE_WIDTH = 640
 
 type ClipboardEntry = {
   entry: FsEntry
@@ -101,6 +111,48 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
 
   // File input ref for upload picker
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Preview pane: on/off + width persist across sessions; visibility also
+  // collapses at small app-window widths regardless of the persisted setting.
+  const previewPane = usePreviewPaneSettings()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState<number | null>(null)
+  const [resizing, setResizing] = useState(false)
+  const fileListRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) setContainerWidth(entry.contentRect.width)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  const previewPaneVisible =
+    previewPane.open && (containerWidth === null || containerWidth >= PREVIEW_PANE_COLLAPSE_WIDTH)
+
+  function handlePaneResizeStart(e: React.MouseEvent) {
+    e.preventDefault()
+    const startX = e.clientX
+    const startWidth = previewPane.width
+    setResizing(true)
+
+    function onMove(moveEvent: MouseEvent) {
+      // Pane sits to the right of the list; dragging the handle left grows it.
+      const delta = startX - moveEvent.clientX
+      previewPane.setWidth(startWidth + delta)
+    }
+    function onUp() {
+      setResizing(false)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
 
   const dirQuery = useDirectoryQuery(root, path)
   const createDirMutation = useCreateDirectoryMutation(root, path)
@@ -326,6 +378,42 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const isLoading = dirQuery.isLoading
   const isError = dirQuery.isError
 
+  const orderedEntries = sortEntries(entries)
+  const selectedEntries = orderedEntries.filter((e) => selected.has(e.path))
+
+  function handleListKeyDown(e: React.KeyboardEvent) {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter') return
+    if (orderedEntries.length === 0) return
+    // Editing a name inline — let the input handle its own keys.
+    if (renamingPath) return
+
+    if (e.key === 'Enter') {
+      if (selectedEntries.length === 1) {
+        e.preventDefault()
+        handleOpen(selectedEntries[0])
+      }
+      return
+    }
+
+    e.preventDefault()
+    const currentPath = selectedEntries.length === 1 ? selectedEntries[0].path : null
+    const currentIndex = currentPath
+      ? orderedEntries.findIndex((en) => en.path === currentPath)
+      : -1
+    let nextIndex: number
+    if (currentIndex === -1) {
+      nextIndex = e.key === 'ArrowDown' ? 0 : orderedEntries.length - 1
+    } else if (e.key === 'ArrowDown') {
+      nextIndex = Math.min(currentIndex + 1, orderedEntries.length - 1)
+    } else {
+      nextIndex = Math.max(currentIndex - 1, 0)
+    }
+    const next = orderedEntries[nextIndex]
+    setSelected(new Set([next.path]))
+    const row = fileListRef.current?.querySelector(`[data-entry-path="${CSS.escape(next.path)}"]`)
+    row?.scrollIntoView({ block: 'nearest' })
+  }
+
   const deleteDialogOpen = !!deleteTarget || batchDeletePending
   const deleteCount = batchDeletePending ? selected.size : 1
   const deleteLabel = batchDeletePending
@@ -333,7 +421,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     : deleteTarget?.name
 
   return (
-    <div className="bg-surface-container-lowest flex h-full flex-col">
+    <div ref={containerRef} className="bg-surface-container-lowest flex h-full flex-col">
       {/* Toolbar */}
       <div className="border-outline-variant bg-surface-container-low flex items-center gap-1 border-b px-2 py-1">
         {/* Root switcher */}
@@ -427,6 +515,17 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         >
           <RefreshCw size={12} className={cn(dirQuery.isFetching && 'animate-spin')} />
         </Button>
+
+        <Tooltip content={previewPane.open ? 'Hide preview pane' : 'Show preview pane'}>
+          <Button
+            variant={previewPane.open ? 'primary' : 'ghost'}
+            size="sm"
+            className="h-5 w-5 p-0"
+            onClick={previewPane.toggle}
+          >
+            {previewPane.open ? <PanelRightClose size={12} /> : <PanelRight size={12} />}
+          </Button>
+        </Tooltip>
       </div>
 
       {/* Breadcrumb */}
@@ -461,9 +560,12 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             )}
             {!isLoading && !isError && (
               <div
+                ref={fileListRef}
                 onClick={() => setSelected(new Set())}
                 onContextMenu={openBackgroundMenu}
-                className="min-h-full"
+                onKeyDown={handleListKeyDown}
+                tabIndex={0}
+                className="min-h-full outline-none"
               >
                 <FileList
                   entries={entries}
@@ -486,6 +588,25 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             )}
           </ScrollArea>
         </UploadDropzone>
+
+        {/* Resize handle + preview pane */}
+        {previewPaneVisible && (
+          <>
+            <div
+              onMouseDown={handlePaneResizeStart}
+              className={cn(
+                'bg-outline-variant hover:bg-primary w-1 shrink-0 cursor-col-resize transition-colors',
+                resizing && 'bg-primary'
+              )}
+            />
+            <div
+              style={{ width: previewPane.width }}
+              className="border-outline-variant bg-surface-container-low shrink-0 border-l"
+            >
+              <PreviewPane root={root} selectedEntries={selectedEntries} className="h-full" />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Status bar */}

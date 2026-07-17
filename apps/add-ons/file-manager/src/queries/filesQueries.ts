@@ -5,6 +5,7 @@ import {
   deleteEntry,
   listDirectory,
   moveEntry,
+  readContent,
   uploadFile,
   writeContent,
 } from '../api/filesApi'
@@ -17,6 +18,25 @@ export function useDirectoryQuery(root: string, path: string) {
   return useQuery({
     queryKey: fsListKey(root, path),
     queryFn: () => listDirectory(root, path),
+  })
+}
+
+export function fsPreviewContentKey(root: string, path: string) {
+  return ['fs-preview-content', root, path] as const
+}
+
+/**
+ * Text/code preview content. Keyed per-path so switching the selection never
+ * shows another file's content — react-query just resolves the previous
+ * in-flight request into its own (now-inactive) cache entry instead of
+ * overwriting what's on screen.
+ */
+export function usePreviewContentQuery(root: string, path: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: fsPreviewContentKey(root, path ?? ''),
+    queryFn: () => readContent(root, path as string),
+    enabled: enabled && path !== null,
+    staleTime: 30_000,
   })
 }
 

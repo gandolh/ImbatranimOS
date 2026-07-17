@@ -16,6 +16,7 @@ import { Tooltip } from '@imbatranim/core'
 import { Button } from '@imbatranim/core'
 import type { FsEntry } from '../types'
 import { downloadUrl } from '../api/filesApi'
+import { sortEntries } from '../lib/fileKind'
 import dayjs from 'dayjs'
 
 function formatSize(bytes: number): string {
@@ -74,10 +75,7 @@ export function FileList({
   onRenameCommit,
   onRenameCancel,
 }: FileListProps) {
-  const sorted = [...entries].sort((a, b) => {
-    if (a.type !== b.type) return a.type === 'directory' ? -1 : 1
-    return a.name.localeCompare(b.name)
-  })
+  const sorted = sortEntries(entries)
 
   if (sorted.length === 0) {
     return (
@@ -107,7 +105,14 @@ export function FileList({
           return (
             <tr
               key={entry.path}
-              onClick={(e) => onSelect(entry.path, e.ctrlKey || e.metaKey)}
+              data-entry-path={entry.path}
+              onClick={(e) => {
+                // Stop the click from bubbling to the background container's
+                // "clear selection" handler — otherwise every row click
+                // selects then immediately deselects in the same tick.
+                e.stopPropagation()
+                onSelect(entry.path, e.ctrlKey || e.metaKey)
+              }}
               onDoubleClick={() => onOpen(entry)}
               onContextMenu={(e) => {
                 if (!onContextMenu) return

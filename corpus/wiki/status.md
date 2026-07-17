@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16–29 DONE (incl. the 2026-07-17 post-v1 backlog run, plus the review-pass cleanups 23–29: shared-addon-kit, window-render-perf, notes/FilesService dedup, FileManager split, docx off-thread, opt-in setup token, backend lint debt paid — root lint now green); brief 15's human-gated remainder is all that stands before v1.0.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–30 DONE (incl. the 2026-07-17 post-v1 backlog run, plus the review-pass cleanup wave 23–30: shared-addon-kit, window-render-perf, notes/FilesService dedup, FileManager split, docx off-thread, opt-in setup token, backend lint debt paid, add-on polish); brief 15's human-gated remainder is all that stands before v1.0. Open todos: xlsx-worker (PERF-6 tail), SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated).
 updated: 2026-07-17
 ---
 
@@ -54,6 +54,7 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 27 | [docx-offthread-unzip](../briefs/done/27-docx-offthread-unzip.md) | **done** | PERF-6 (docx slice): docxNormalize uses fflate async `unzip`/`zip` (off-thread), identical output. Xlsx/ExcelJS worker slice still open in the todo. Human-gated: large-docx open feel |
 | 28 | [first-run-setup-token](../briefs/done/28-first-run-setup-token.md) | **done** | SEC-2: opt-in `SETUP_TOKEN` (default-off no-op) gates first-run claim with a constant-time compare; `/auth/status` advertises it, wizard asks when required. 80 unit + 34 e2e. Human-gated: token deploy |
 | 29 | [backend-lint-typing](../briefs/done/29-backend-lint-typing.md) | **done** | Paid the backend `no-unsafe-*` lint debt (typed sqlite rows + pty/main/test typing). **`backend#lint` + root `npm run lint` now green (0/0)** — the last standing lint red is gone |
+| 30 | [addon-polish](../briefs/done/30-addon-polish.md) | **done** | Notepad StrictMode-safe intent drain; new core `PromptDialog`/`usePrompt` replaces native `prompt()`; dropped 4 dead `zustand` deps (+ lockfile). Human-gated: notepad walkthrough |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
 (human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1

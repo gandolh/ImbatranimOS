@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FileText, Folder, ArrowLeft, Plus, FolderPlus, Trash2, Clock } from 'lucide-react'
-import { ScrollArea, useConfirm } from '@imbatranim/core'
+import { ScrollArea, useConfirm, usePrompt } from '@imbatranim/core'
 import {
   useCreateDirectoryMutation,
   useCreateFileMutation,
@@ -21,17 +21,18 @@ export function FileBrowser({ onOpenFile }: { onOpenFile: (path: string) => void
   const deleteFile = useDeleteFileMutation()
   const deleteDir = useDeleteDirectoryMutation()
   const { confirm, confirmDialog } = useConfirm()
+  const { prompt: promptName, promptDialog } = usePrompt()
 
-  function handleCreateFile() {
-    const name = prompt('File name (.md):')
+  async function handleCreateFile() {
+    const name = await promptName({ title: 'New file', placeholder: 'File name (.md)' })
     if (name) {
       const path = currentPath ? `${currentPath}/${name}` : name
       createFile.mutate({ path })
     }
   }
 
-  function handleCreateDir() {
-    const name = prompt('Directory name:')
+  async function handleCreateDir() {
+    const name = await promptName({ title: 'New folder', placeholder: 'Directory name' })
     if (name) {
       const path = currentPath ? `${currentPath}/${name}` : name
       createDir.mutate(path)
@@ -95,14 +96,14 @@ export function FileBrowser({ onOpenFile }: { onOpenFile: (path: string) => void
             <span className="text-on-surface-variant text-[11px] font-bold uppercase">Files</span>
             <div className="flex gap-1">
               <button
-                onClick={handleCreateFile}
+                onClick={() => void handleCreateFile()}
                 className="hover:bg-surface-container-high p-1"
                 title="New File"
               >
                 <Plus size={14} />
               </button>
               <button
-                onClick={handleCreateDir}
+                onClick={() => void handleCreateDir()}
                 className="hover:bg-surface-container-high p-1"
                 title="New Folder"
               >
@@ -143,6 +144,7 @@ export function FileBrowser({ onOpenFile }: { onOpenFile: (path: string) => void
         </div>
       </div>
       {confirmDialog}
+      {promptDialog}
     </div>
   )
 }

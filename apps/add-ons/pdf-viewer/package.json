@@ -18,8 +18,7 @@
   "dependencies": {
     "@imbatranim/core": "*",
     "lucide-react": "^1.14.0",
-    "pdfjs-dist": "^6.1.200",
-    "zustand": "^5.0.12"
+    "pdfjs-dist": "^6.1.200"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.100.7",

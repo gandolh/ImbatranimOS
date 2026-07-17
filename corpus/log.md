@@ -589,3 +589,22 @@ Parallel wave (auth-feature vs backend-lint lanes), combined-verified.
 Gates: turbo typecheck 13/13, build ✓, format 14/14, lint 13/13, backend
 80 unit + 34 e2e. Remaining: B30 add-on polish; SEC-9 + SEC-10 deferred
 (browser/ISO-gated).
+
+## 2026-07-17 — Full-auto backlog: brief 30 (add-on polish) + run close
+
+- **Brief 30 (addon-polish):** (1) Notepad's open-intent now drains in a
+  ref-guarded effect (StrictMode-safe) instead of a render selector; (2) new
+  `PromptDialog`/`usePrompt` in core (sibling of ConfirmDialog, same
+  re-entrancy/unmount safety) replaces notepad's native `window.prompt`;
+  (3) dropped the dead `zustand` dependency from docs/sheets/slides/pdf-viewer
+  and regenerated the root lockfile. Gates: typecheck 13/13, build ✓,
+  format 14/14, lint 13/13.
+
+**Full-auto review-cleanup wave complete (briefs 23–30).** Realized todos
+removed on completion; the promoted-but-historical captures kept. **Still
+open:** the xlsx/ExcelJS Web-Worker slice of PERF-6
+(office-parsing-blocks-ui-thread.md), and the two browser/ISO-gated security
+items — SEC-9 CSP `ws:` scoping (csp-connect-src-ws-wildcard.md, risks the
+terminal on some browsers) and SEC-10 kiosk `--no-sandbox`
+(kiosk-no-sandbox.md, needs Alpine userns + a QEMU boot test). Every shipped
+brief carries a human-gated in-browser verification remainder.

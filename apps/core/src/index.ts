@@ -51,3 +51,4 @@ export { useUnsavedGuard } from './shared/hooks/useUnsavedGuard'
 
 // Shared add-on kit — confirm dialog
 export { ConfirmDialog, useConfirm } from './shared/components/ui/ConfirmDialog'
+export { PromptDialog, usePrompt } from './shared/components/ui/PromptDialog'

@@ -12,6 +12,12 @@ import type { SuperDoc as SuperDocClass } from '@harbour-enterprises/superdoc'
 export type DocEngine = {
   /** Export the current document back to docx bytes. */
   exportDocx: () => Promise<ArrayBuffer>
+  /**
+   * Monotonic count of every editor update. Save records this before exporting
+   * and only clears dirty if it is unchanged once the upload resolves — so edits
+   * made mid-save aren't silently clobbered.
+   */
+  editCount: () => number
   /** Tear down the editor and release its resources. */
   destroy: () => void
 }
@@ -38,6 +44,7 @@ export async function createDocEngine(opts: CreateDocEngineOptions): Promise<Doc
   ])
 
   let readyFired = false
+  let editCount = 0
   const superdoc: SuperDocClass = new SuperDoc({
     selector: opts.editor,
     toolbar: opts.toolbar,
@@ -49,7 +56,10 @@ export async function createDocEngine(opts: CreateDocEngineOptions): Promise<Doc
         opts.onReady()
       }
     },
-    onEditorUpdate: () => opts.onEdit(),
+    onEditorUpdate: () => {
+      editCount++
+      opts.onEdit()
+    },
     // Only a genuine content/parse failure is fatal. `onException` fires for a
     // range of internal, often-benign conditions (incl. during export), so it is
     // logged, not surfaced as an "open failed" error.
@@ -62,6 +72,7 @@ export async function createDocEngine(opts: CreateDocEngineOptions): Promise<Doc
       const blob = await superdoc.export({ exportType: ['docx'], triggerDownload: false })
       return blob.arrayBuffer()
     },
+    editCount: () => editCount,
     destroy: () => {
       try {
         superdoc.destroy()

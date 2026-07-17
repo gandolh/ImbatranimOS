@@ -53,21 +53,28 @@ export function Slides({ windowId }: { windowId: string }) {
     if (!stage || !scroll) return
 
     let cancelled = false
+    // Each render owns a FRESH detached node and only commits it into the shared
+    // stage if it is still the current render when it resolves. A slower, stale
+    // render (e.g. open deck A then deck B in the same window) writes into its
+    // own discarded node and can never clobber or interleave the newer deck.
+    const renderTarget = document.createElement('div')
     ;(async () => {
       try {
         const bytes = await fetchFileBytes(source.root, source.path)
         if (cancelled) return
         const width = Math.max(320, scroll.clientWidth - SLIDE_GUTTER)
         const height = Math.round(width * SLIDE_ASPECT)
-        await renderPptx(stage, bytes, { width, height })
+        await renderPptx(renderTarget, bytes, { width, height })
         if (cancelled) return
         // pptx-preview resolves even when it can't reconstruct a deck (it leaves
-        // an empty container). Detect a no-op render — the stage holds only the
+        // an empty container). Detect a no-op render — the node holds only the
         // renderer's empty wrapper, no slide elements — and fall back to the
         // Download hint rather than a blank window. (Element counts are used, not
         // innerText: the stage is display:none while loading, so text isn't
         // measurable yet, but the DOM is.)
-        const renderedAnything = stage.querySelector('svg, img, p, span, table, li') !== null
+        const renderedAnything = renderTarget.querySelector('svg, img, p, span, table, li') !== null
+        // Commit: this render is current, so it owns the stage now.
+        stage.replaceChildren(renderTarget)
         if (!renderedAnything) {
           setError('This presentation could not be previewed. Download it to open in PowerPoint.')
         }

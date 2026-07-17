@@ -7,12 +7,16 @@ import { api } from '@imbatranim/core'
  */
 const SCREENSHOTS_DIR = 'Pictures/Screenshots'
 
-/** `screenshot-YYYY-MM-DD-HHMMSS.png` in local time. */
+/**
+ * `screenshot-YYYY-MM-DD-HHMMSS-mmm.png` in local time. The millisecond suffix
+ * keeps two saves within the same second from silently overwriting each other.
+ */
 export function screenshotFilename(now: Date = new Date()): string {
   const p = (n: number) => String(n).padStart(2, '0')
+  const ms = String(now.getMilliseconds()).padStart(3, '0')
   const stamp =
     `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}` +
-    `-${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}`
+    `-${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}-${ms}`
   return `screenshot-${stamp}.png`
 }
 

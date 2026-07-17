@@ -26,6 +26,12 @@ export type SheetEngine = {
   snapshot: () => IWorkbookData | null
   /** Fire `cb` the first time the user mutates the sheet (for dirty tracking). */
   onEdit: (cb: () => void) => void
+  /**
+   * Monotonic count of every user edit since the current workbook was loaded.
+   * Save records this at snapshot time and only clears dirty if it is unchanged
+   * once the upload resolves — so edits made mid-save aren't silently clobbered.
+   */
+  editCount: () => number
   /** Tear down Univer and release its render resources. */
   destroy: () => void
 }
@@ -58,6 +64,10 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
   let workbook: UniverWorkbook | null = null
   let editListeners: Array<() => void> = []
   let notifiedThisLoad = false
+  // Counts EVERY user edit since the last load (not just the first). The onEdit
+  // callback stays one-shot for cheap dirty latching, but the counter keeps
+  // ticking so a save can tell whether edits landed while it was in flight.
+  let editCount = 0
   // Suppress edit notifications while a workbook is being loaded — building the
   // model can emit mutations that would otherwise register as a user edit.
   let suppressEdits = true
@@ -71,11 +81,13 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
     if (
       typeof command.id === 'string' &&
       command.id.startsWith('sheet.command.') &&
-      !suppressEdits &&
-      !notifiedThisLoad
+      !suppressEdits
     ) {
-      notifiedThisLoad = true
-      editListeners.forEach((cb) => cb())
+      editCount++
+      if (!notifiedThisLoad) {
+        notifiedThisLoad = true
+        editListeners.forEach((cb) => cb())
+      }
     }
   })
 
@@ -83,6 +95,7 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
     loadWorkbook: (data) => {
       workbook?.dispose()
       notifiedThisLoad = false
+      editCount = 0
       suppressEdits = true
       workbook = univerAPI.createWorkbook(data)
       // Release suppression once the load's synchronous + immediate-async
@@ -95,6 +108,7 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
     onEdit: (cb) => {
       editListeners.push(cb)
     },
+    editCount: () => editCount,
     destroy: () => {
       editListeners = []
       commandSub.dispose()

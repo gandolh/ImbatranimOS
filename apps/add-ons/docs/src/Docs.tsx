@@ -148,12 +148,16 @@ export function Docs({ windowId }: { windowId: string }) {
   const handleSave = useCallback(async () => {
     const engine = engineRef.current
     if (!engine || !source || saving) return
+    // Record the edit counter before exporting. If the user edits while the
+    // export+upload is in flight the counter advances, so we must NOT clear
+    // dirty on resolve — those edits aren't in the bytes we uploaded.
+    const savedAtEditCount = engine.editCount()
     setSaving(true)
     setError(null)
     try {
       const bytes = await engine.exportDocx()
       await uploadFileBytes(source.root, source.path, bytes, fileName(source.path))
-      setDirty(false)
+      if (engine.editCount() === savedAtEditCount) setDirty(false)
     } catch (err) {
       if (err instanceof UploadTooLargeError) {
         setError(err.message)

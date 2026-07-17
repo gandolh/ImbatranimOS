@@ -59,8 +59,14 @@ function cellValueToUniver(cell: ExcelJS.Cell): Pick<ICellData, 'v' | 'f'> {
   if (v == null) return {}
   if (typeof v === 'object') {
     if ('formula' in v || 'sharedFormula' in v) {
-      const formula = 'formula' in v ? v.formula : v.sharedFormula
-      const out: Pick<ICellData, 'v' | 'f'> = { f: '=' + formula }
+      // Read formulas through the cell-level getter, which covers BOTH masters
+      // and shared-formula followers. For a follower, `v.sharedFormula` holds
+      // the MASTER CELL'S ADDRESS (e.g. "B2"), not a formula — only
+      // `cell.formula` materializes the translated formula (=A2*2, =A3*2, …).
+      // Reading `v.sharedFormula` raw would round-trip fill-down/-right cells as
+      // self-referential literals (f: "=B2") — silent data corruption.
+      const formula = cell.formula
+      const out: Pick<ICellData, 'v' | 'f'> = formula ? { f: '=' + formula } : {}
       const result = (v as { result?: unknown }).result
       if (result != null && typeof result !== 'object') {
         out.v = result as string | number | boolean

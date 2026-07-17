@@ -16,7 +16,7 @@ addgroup -g 1000 imbatranim 2>/dev/null || true
 adduser -D -u 1000 -G imbatranim -h /home/imbatranim -s /bin/sh imbatranim 2>/dev/null || true
 # Lock the password: greetd autologin opens the session without one, and no
 # getty exists to offer a shell login. Keeps "no default password" honest.
-passwd -u imbatranim 2>/dev/null || true
+passwd -l imbatranim 2>/dev/null || true
 usermod -p '*' imbatranim 2>/dev/null || sed -i 's/^imbatranim:[^:]*:/imbatranim:*:/' /etc/shadow 2>/dev/null || true
 
 # Seat/GPU/input access for the wayland session.

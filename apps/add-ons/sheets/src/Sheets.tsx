@@ -111,12 +111,16 @@ export function Sheets({ windowId }: { windowId: string }) {
     if (!engine || !source || saving) return
     const snapshot = engine.snapshot()
     if (!snapshot) return
+    // Record the edit counter at snapshot time. If the user edits while the
+    // serialize+upload is in flight the counter advances, so we must NOT clear
+    // dirty on resolve — those edits aren't in the bytes we uploaded.
+    const savedAtEditCount = engine.editCount()
     setSaving(true)
     setError(null)
     try {
       const bytes = await univerToXlsx(snapshot)
       await uploadFileBytes(source.root, source.path, bytes, fileName(source.path))
-      setDirty(false)
+      if (engine.editCount() === savedAtEditCount) setDirty(false)
     } catch (err) {
       if (err instanceof UploadTooLargeError) {
         setError(err.message)

@@ -60,7 +60,13 @@ describe('FilesService (jail + real filesystem)', () => {
       const bytes = Buffer.from([
         0x00, 0x01, 0x02, 0xff, 0xfe, 0x80, 0x7f, 0x00, 0xab, 0xcd,
       ]);
-      await service.uploadFile('home', 'bin/blob.dat', bytes);
+      // uploadFile now consumes an on-disk temp file (multer diskStorage), so
+      // stage the bytes in a temp path — the service moves it into the jail.
+      const tmpSrc = join(outside, 'upload-src.dat');
+      await fs.writeFile(tmpSrc, bytes);
+      await service.uploadFile('home', 'bin/blob.dat', tmpSrc);
+      // The temp file is removed after a successful move.
+      await expect(fs.stat(tmpSrc)).rejects.toThrow();
 
       const stream = await service.readFileStream('home', 'bin/blob.dat');
       const out = await collect(stream);

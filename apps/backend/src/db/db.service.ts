@@ -48,6 +48,10 @@ export class DbService implements OnModuleInit {
         icon TEXT
       );
 
+      -- Speeds up the per-group link lookup and the ON DELETE CASCADE fan-out.
+      CREATE INDEX IF NOT EXISTS idx_bookmark_links_group
+        ON bookmark_links(group_id);
+
       CREATE TABLE IF NOT EXISTS recent_files (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         path TEXT NOT NULL UNIQUE,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Taskbar } from './shared/components/taskbar'
 import { Desktop } from './shared/components/desktop'
 import { useWallpaperStore } from './shared/store/wallpaperStore'
@@ -33,10 +33,46 @@ export default function App() {
     restoreLayout()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist layout whenever windows change
+  // Persist layout whenever windows change. Drag/resize mints a new `windows`
+  // array ~60x/sec, so writing synchronously on every change would run a
+  // JSON.stringify + localStorage.setItem per frame and jank the drag. Debounce
+  // to at most one write per 500ms (trailing). Serialization is unchanged —
+  // persistLayout() still writes the exact same schema.
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
   useEffect(() => {
-    persistLayout()
+    if (persistTimer.current !== undefined) clearTimeout(persistTimer.current)
+    persistTimer.current = setTimeout(() => {
+      persistTimer.current = undefined
+      persistLayout()
+    }, 500)
+
+    return () => {
+      if (persistTimer.current !== undefined) clearTimeout(persistTimer.current)
+    }
   }, [windows]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Flush any pending debounced write when the tab is hidden or unloaded so the
+  // final drag/resize position is never lost. Registered once for the app's life.
+  useEffect(() => {
+    const flush = () => {
+      if (persistTimer.current !== undefined) {
+        clearTimeout(persistTimer.current)
+        persistTimer.current = undefined
+      }
+      persistLayout()
+    }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    window.addEventListener('beforeunload', flush)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      window.removeEventListener('beforeunload', flush)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 4c: keyboard window management (Alt+Tab, Mod+W, Mod+M, Mod+Enter)
   useWindowHotkeys()

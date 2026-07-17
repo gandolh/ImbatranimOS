@@ -29,8 +29,8 @@ export async function logout(): Promise<void> {
   await api.post('/auth/logout')
 }
 
-export async function enrollTotp(): Promise<TotpEnrollment> {
-  const res = await api.post<TotpEnrollment>('/auth/totp/enroll')
+export async function enrollTotp(password: string): Promise<TotpEnrollment> {
+  const res = await api.post<TotpEnrollment>('/auth/totp/enroll', { password })
   return res.data
 }
 

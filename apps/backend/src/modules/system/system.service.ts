@@ -72,6 +72,11 @@ const ALLOWED_KILL_SIGNALS: NodeJS.Signals[] = [
   'SIGHUP',
 ];
 
+// Cap the process list returned per poll: the UI only renders a sorted table,
+// so returning the whole `ps` output just bloats every payload. Top-N by CPU
+// keeps the most relevant rows.
+const MAX_PROCESSES = 200;
+
 @Injectable()
 export class SystemService {
   private readonly logger = new Logger(SystemService.name);
@@ -199,7 +204,8 @@ export class SystemService {
             name: nameParts.join(' '),
           };
         })
-        .sort((a, b) => b.cpuPercent - a.cpuPercent);
+        .sort((a, b) => b.cpuPercent - a.cpuPercent)
+        .slice(0, MAX_PROCESSES);
     } catch (err) {
       this.logger.error(`ps failed: ${(err as Error).message}`);
       return [];

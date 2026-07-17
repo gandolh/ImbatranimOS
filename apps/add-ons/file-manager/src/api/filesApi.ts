@@ -3,7 +3,6 @@ import type { FsEntry } from '../types'
 
 // S2 — wired against S1 FilesService contract:
 // GET    /api/files?root=&path=
-// GET    /api/files/stat?root=&path=
 // GET    /api/files/content?root=&path=
 // GET    /api/files/download?root=&path=
 // POST   /api/files/upload          (multipart: root, path, file)
@@ -15,11 +14,6 @@ import type { FsEntry } from '../types'
 
 export async function listDirectory(root: string, path: string): Promise<FsEntry[]> {
   const res = await api.get<FsEntry[]>('/files', { params: { root, path } })
-  return res.data
-}
-
-export async function statEntry(root: string, path: string): Promise<FsEntry> {
-  const res = await api.get<FsEntry>('/files/stat', { params: { root, path } })
   return res.data
 }
 

@@ -20,6 +20,12 @@ export interface BookmarkGroup {
   links: BookmarkLink[];
 }
 
+/** A bookmark_groups row as stored (no joined links). */
+type BookmarkGroupRow = Omit<BookmarkGroup, 'links'>;
+
+/** Values bag for a dynamic UPDATE — only bound param types, never `any`. */
+type UpdateValues = Record<string, string | number | null>;
+
 @Injectable()
 export class BookmarksService {
   constructor(private readonly db: DbService) {}
@@ -27,15 +33,24 @@ export class BookmarksService {
   findAllGroups(): BookmarkGroup[] {
     const groups = this.db.db
       .prepare('SELECT * FROM bookmark_groups ORDER BY id ASC')
-      .all() as any[];
+      .all() as BookmarkGroupRow[];
 
     const links = this.db.db
       .prepare('SELECT * FROM bookmark_links ORDER BY id ASC')
       .all() as BookmarkLink[];
 
+    // Bucket links by group in one pass (O(g + l)) instead of filtering the
+    // full link list per group (O(g × l)).
+    const linksByGroup = new Map<number, BookmarkLink[]>();
+    for (const link of links) {
+      const bucket = linksByGroup.get(link.group_id);
+      if (bucket) bucket.push(link);
+      else linksByGroup.set(link.group_id, [link]);
+    }
+
     return groups.map((group) => ({
       ...group,
-      links: links.filter((link) => link.group_id === group.id),
+      links: linksByGroup.get(group.id) ?? [],
     }));
   }
 
@@ -47,7 +62,7 @@ export class BookmarksService {
     return {
       ...(this.db.db
         .prepare('SELECT * FROM bookmark_groups WHERE id = ?')
-        .get(info.lastInsertRowid) as any),
+        .get(info.lastInsertRowid) as BookmarkGroupRow),
       links: [],
     };
   }
@@ -61,7 +76,7 @@ export class BookmarksService {
     }
 
     const fields: string[] = [];
-    const values: any = { id };
+    const values: UpdateValues = { id };
 
     if (dto.name !== undefined) {
       fields.push('name = @name');
@@ -82,7 +97,7 @@ export class BookmarksService {
 
     const group = this.db.db
       .prepare('SELECT * FROM bookmark_groups WHERE id = ?')
-      .get(id) as any;
+      .get(id) as BookmarkGroupRow;
     const links = this.db.db
       .prepare('SELECT * FROM bookmark_links WHERE group_id = ?')
       .all(id) as BookmarkLink[];
@@ -134,7 +149,7 @@ export class BookmarksService {
     }
 
     const fields: string[] = [];
-    const values: any = { id };
+    const values: UpdateValues = { id };
 
     if (dto.title !== undefined) {
       fields.push('title = @title');

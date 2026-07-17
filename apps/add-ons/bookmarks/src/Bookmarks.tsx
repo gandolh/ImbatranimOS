@@ -28,6 +28,16 @@ function LinkRow({
   const [title, setTitle] = useState(link.title)
   const [href, setHref] = useState(link.href)
 
+  // Resync the edit buffers when the row is bound to a different link — state
+  // adjustment during render, not an effect (mirrors StickyNotes' prevId sync).
+  // Guarding on id means an in-progress edit isn't clobbered on every refetch.
+  const [prevLinkId, setPrevLinkId] = useState(link.id)
+  if (link.id !== prevLinkId) {
+    setPrevLinkId(link.id)
+    setTitle(link.title)
+    setHref(link.href)
+  }
+
   function handleSave() {
     onUpdate(link.id, { title, href })
     setEditing(false)
@@ -118,6 +128,15 @@ function GroupSection({
   const [addingLink, setAddingLink] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newHref, setNewHref] = useState('')
+
+  // Resync the name buffer when bound to a different group — state adjustment
+  // during render, not an effect (mirrors StickyNotes' prevId sync). Guarding
+  // on id means an in-progress rename isn't clobbered on every refetch.
+  const [prevGroupId, setPrevGroupId] = useState(group.id)
+  if (group.id !== prevGroupId) {
+    setPrevGroupId(group.id)
+    setName(group.name)
+  }
 
   function handleSaveGroup() {
     onUpdateGroup(group.id, { name })

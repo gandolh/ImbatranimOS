@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Post,
   Put,
   Query,
@@ -16,8 +15,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 import type { Response } from 'express';
 import { basename } from 'path';
+import { tmpdir } from 'os';
 import { FilesService } from './files.service';
 import { MulterExceptionFilter } from './multer-exception.filter';
 import {
@@ -25,6 +26,8 @@ import {
   CreateDirectoryDto,
   MoveDto,
   CopyDto,
+  ListQueryDto,
+  RootPathQueryDto,
 } from './dto/files.dto';
 
 /**
@@ -40,36 +43,25 @@ export class FilesController {
 
   /** GET /api/files?root=&path=  → Entry[] */
   @Get()
-  list(@Query('root') root: string, @Query('path') path?: string) {
-    if (!root) throw new BadRequestException('root is required');
-    return this.filesService.list(root, path ?? '');
-  }
-
-  /** GET /api/files/stat?root=&path= → Entry */
-  @Get('stat')
-  stat(@Query('root') root: string, @Query('path') path: string) {
-    if (!root || !path) throw new BadRequestException('root and path required');
-    return this.filesService.stat(root, path);
+  list(@Query() q: ListQueryDto) {
+    return this.filesService.list(q.root, q.path ?? '');
   }
 
   /** GET /api/files/content?root=&path= → { path, content } (text) */
   @Get('content')
-  content(@Query('root') root: string, @Query('path') path: string) {
-    if (!root || !path) throw new BadRequestException('root and path required');
-    return this.filesService.readFile(root, path);
+  content(@Query() q: RootPathQueryDto) {
+    return this.filesService.readFile(q.root, q.path);
   }
 
   /** GET /api/files/download?root=&path= → raw binary stream */
   @Get('download')
-  async download(
-    @Query('root') root: string,
-    @Query('path') path: string,
-    @Res() res: Response,
-  ) {
-    if (!root || !path) throw new BadRequestException('root and path required');
-    const stream = await this.filesService.readFileStream(root, path);
-    const filename = basename(path);
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  async download(@Query() q: RootPathQueryDto, @Res() res: Response) {
+    const stream = await this.filesService.readFileStream(q.root, q.path);
+    const filename = basename(q.path);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${sanitizeHeaderFilename(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
     res.setHeader('Content-Type', 'application/octet-stream');
     stream.pipe(res);
   }
@@ -78,16 +70,21 @@ export class FilesController {
   @Post('upload')
   @UseFilters(MulterExceptionFilter)
   @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+    FileInterceptor('file', {
+      // Stream the upload straight to a temp file on disk instead of buffering
+      // the whole thing in the heap; the service moves it into the jail.
+      storage: diskStorage({ destination: tmpdir() }),
+      limits: { fileSize: MAX_UPLOAD_BYTES },
+    }),
   )
   upload(
-    @UploadedFile() file: { buffer: Buffer; originalname: string },
+    @UploadedFile() file: { path: string; originalname: string },
     @Body('root') root: string,
     @Body('path') path: string,
   ) {
     if (!root || !file) throw new BadRequestException('root and file required');
     const virtualPath = path || file.originalname;
-    return this.filesService.uploadFile(root, virtualPath, file.buffer);
+    return this.filesService.uploadFile(root, virtualPath, file.path);
   }
 
   /** PUT /api/files/content  body: { root, path, content } → Entry */
@@ -117,8 +114,18 @@ export class FilesController {
   /** DELETE /api/files?root=&path= → 204 */
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteItem(@Query('root') root: string, @Query('path') path: string) {
-    if (!root || !path) throw new BadRequestException('root and path required');
-    await this.filesService.delete(root, path);
+  async deleteItem(@Query() q: RootPathQueryDto) {
+    await this.filesService.delete(q.root, q.path);
   }
+}
+
+/**
+ * Make a filename safe to embed in the quoted `filename=` parameter: drop
+ * characters that would break the quoting or inject header structure. The
+ * unrestricted UTF-8 name still travels in the `filename*=` parameter, which
+ * modern browsers prefer.
+ */
+function sanitizeHeaderFilename(name: string): string {
+  // eslint-disable-next-line no-control-regex
+  return name.replace(/[\"\\\x00-\x1f]/g, '_');
 }

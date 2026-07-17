@@ -30,7 +30,7 @@ function formatBytes(bytes: number): string {
 export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
   const [tab, setTab] = useState<Tab>('overview')
   const statsQuery = useSystemStats()
-  const processesQuery = useSystemProcesses()
+  const processesQuery = useSystemProcesses(tab === 'processes')
   const aboutQuery = useSystemAbout()
 
   const stats = statsQuery.data

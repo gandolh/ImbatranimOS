@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { AddressInfo } from 'net';
 import { WebSocket } from 'ws';
 import { PtyGateway } from '../src/modules/pty/pty.gateway';
@@ -31,6 +32,13 @@ describe('PtyGateway (e2e)', () => {
       providers: [
         PtyGateway,
         { provide: SessionService, useValue: sessionsMock },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: (key: string) =>
+              key === 'FRONTEND_URL' ? 'http://localhost:5173' : undefined,
+          },
+        },
       ],
     }).compile();
 

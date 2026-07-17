@@ -101,13 +101,20 @@ export class AuthService {
    * Begin TOTP enrollment: generate a fresh secret, store it as PENDING
    * (totp_enabled stays 0), and return the otpauth URI + a QR data-URL for the
    * settings screen. TOTP is not required at login until {@link confirmTotp}.
+   *
+   * Requires the current password (step-up auth): rotating the secret clears
+   * `totp_enabled`, so without this gate a stolen session alone could silently
+   * drop 2FA — the same reason {@link disableTotp} demands the password.
    */
-  async beginTotpEnroll(): Promise<{
+  async beginTotpEnroll(password: string): Promise<{
     secret: string;
     uri: string;
     qrDataUrl: string;
   }> {
     if (!this.isSetup()) throw new BadRequestException('Not set up');
+    if (!(await this.verifyPassword(password))) {
+      throw new UnauthorizedException('Invalid password');
+    }
     const secret = generateSecret();
     const uri = generateURI({ issuer: TOTP_ISSUER, label: TOTP_LABEL, secret });
     this.db.db

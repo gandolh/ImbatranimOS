@@ -19,9 +19,12 @@ export const envSchema = z.object({
   // the same port as the API. Unset in dev — Vite serves the frontend.
   STATIC_ROOT: z.string().optional(),
   // --- Auth (Brief 10) ---------------------------------------------------
-  // Marks the session cookie Secure. Leave false for plain-HTTP LAN use;
-  // set true when a TLS-terminating reverse proxy (or built-in HTTPS) fronts
-  // the app, otherwise browsers drop the cookie over http://.
+  // Forces the session cookie Secure. Leave false for plain-HTTP LAN use;
+  // set true to require Secure even for requests the server sees as http.
+  // Note: the cookie is ALSO marked Secure automatically whenever the request
+  // arrives over HTTPS (req.secure, which honours X-Forwarded-Proto once
+  // TRUST_PROXY is on) — so behind a TLS proxy you get Secure cookies without
+  // flipping this. Browsers drop Secure cookies over http://, hence the default.
   COOKIE_SECURE: envBool(false),
   // Trust X-Forwarded-* from a front proxy so req.ip / protocol are real
   // (needed for correct rate-limit keying and secure-cookie behaviour behind

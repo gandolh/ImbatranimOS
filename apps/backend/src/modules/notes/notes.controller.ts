@@ -11,19 +11,23 @@ import { NotesService } from './notes.service';
 import { UpsertRecentDto } from './dto/upsert-recent.dto';
 import { CreateFileDto, UpdateFileDto } from './dto/file-ops.dto';
 import { CreateDirectoryDto } from './dto/directory-ops.dto';
+import {
+  OptionalPathQueryDto,
+  RequiredPathQueryDto,
+} from './dto/path-query.dto';
 
 @Controller('notes')
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
   @Get()
-  list(@Query('path') path?: string) {
-    return this.notesService.list(path);
+  list(@Query() q: OptionalPathQueryDto) {
+    return this.notesService.list(q.path);
   }
 
   @Get('file')
-  readFile(@Query('path') path: string) {
-    return this.notesService.readFile(path);
+  readFile(@Query() q: RequiredPathQueryDto) {
+    return this.notesService.readFile(q.path);
   }
 
   @Post('file')
@@ -37,8 +41,8 @@ export class NotesController {
   }
 
   @Delete('file')
-  deleteFile(@Query('path') path: string) {
-    return this.notesService.deleteFile(path);
+  deleteFile(@Query() q: RequiredPathQueryDto) {
+    return this.notesService.deleteFile(q.path);
   }
 
   @Post('directory')
@@ -47,8 +51,8 @@ export class NotesController {
   }
 
   @Delete('directory')
-  deleteDirectory(@Query('path') path: string) {
-    return this.notesService.deleteDirectory(path);
+  deleteDirectory(@Query() q: RequiredPathQueryDto) {
+    return this.notesService.deleteDirectory(q.path);
   }
 
   @Get('recent')

@@ -13,6 +13,18 @@ export const PTY_PATH = '/api/pty';
 export const DEFAULT_COLS = 80;
 export const DEFAULT_ROWS = 24;
 
+/** Upper bounds on terminal geometry — a client can't request more than this. */
+export const MAX_COLS = 1000;
+export const MAX_ROWS = 1000;
+
+/**
+ * Max concurrent terminal sessions. Each accepted upgrade spawns a real login
+ * shell, so this caps fork/PID/memory blast radius from a client (or hijacked
+ * session) opening sockets in a loop. Single-user appliance — a handful of
+ * open terminals is generous.
+ */
+export const MAX_SESSIONS = 12;
+
 /**
  * Socket send-buffer thresholds (bytes). When a program floods stdout (think
  * `yes`) faster than the socket drains, we pause the pty at HIGH_WATER and

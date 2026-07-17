@@ -95,10 +95,11 @@ describe('Auth (e2e)', () => {
   });
 
   it('enforces TOTP once enabled', async () => {
-    // Enroll + confirm TOTP (authenticated).
+    // Enroll + confirm TOTP (authenticated; enroll requires step-up password).
     const enroll = await http
       .post('/api/auth/totp/enroll')
       .set('Cookie', sessionCookie)
+      .send({ password: PASSWORD })
       .expect(200);
     const secret: string = enroll.body.secret;
     await http

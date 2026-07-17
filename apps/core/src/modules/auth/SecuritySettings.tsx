@@ -31,7 +31,8 @@ export function SecuritySettings() {
     setBusy(true)
     setError(null)
     try {
-      setEnrollment(await enrollTotp())
+      setEnrollment(await enrollTotp(password))
+      setPassword('')
     } catch (err) {
       setError(errMessage(err, 'Could not start enrollment'))
     } finally {
@@ -106,9 +107,19 @@ export function SecuritySettings() {
           </div>
 
           {!totpEnabled && !enrollment && (
-            <Button variant="primary" onClick={startEnroll} disabled={busy}>
-              <LockKeyhole size={14} /> Enable two-factor
-            </Button>
+            <div className="space-y-3">
+              <Input
+                id="enroll-totp-password"
+                label="Confirm password to enable"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <Button variant="primary" onClick={startEnroll} disabled={busy || !password}>
+                <LockKeyhole size={14} /> Enable two-factor
+              </Button>
+            </div>
           )}
 
           {!totpEnabled && enrollment && (

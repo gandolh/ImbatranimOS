@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { XCircle } from 'lucide-react'
 import type { ProcessInfo } from '../api/systemApi'
 import { useKillProcessMutation } from '../queries/systemQueries'
@@ -27,11 +27,15 @@ export function ProcessTable({ processes }: { processes: ProcessInfo[] }) {
     }
   }
 
-  const sorted = [...processes].sort((a, b) => {
-    const dir = sortDir === 'desc' ? -1 : 1
-    if (sortKey === 'name') return a.name.localeCompare(b.name) * dir
-    return (a[sortKey] - b[sortKey]) * dir
-  })
+  const sorted = useMemo(
+    () =>
+      [...processes].sort((a, b) => {
+        const dir = sortDir === 'desc' ? -1 : 1
+        if (sortKey === 'name') return a.name.localeCompare(b.name) * dir
+        return (a[sortKey] - b[sortKey]) * dir
+      }),
+    [processes, sortKey, sortDir]
+  )
 
   function handleKill(pid: number) {
     setFailedPid(null)

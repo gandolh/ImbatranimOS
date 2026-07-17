@@ -26,6 +26,10 @@ type PreMaximizeState = {
 export const TOPBAR_HEIGHT = 0
 export const TASKBAR_HEIGHT = 44
 
+// New windows cascade around the desktop center by a random ± offset so stacked
+// opens don't perfectly overlap. Jitter spans [-CASCADE_JITTER_PX, +CASCADE_JITTER_PX].
+export const CASCADE_JITTER_PX = 100
+
 // ── Layout persistence ────────────────────────────────────────────────────────
 
 export type PersistedWindow = {
@@ -190,8 +194,8 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       const centerX = Math.floor((window.innerWidth - defaultSize.width) / 2)
       const centerY = Math.floor((window.innerHeight - TASKBAR_HEIGHT - defaultSize.height) / 2)
 
-      const offsetX = Math.floor(Math.random() * 201) - 100
-      const offsetY = Math.floor(Math.random() * 201) - 100
+      const offsetX = Math.floor(Math.random() * (CASCADE_JITTER_PX * 2 + 1)) - CASCADE_JITTER_PX
+      const offsetY = Math.floor(Math.random() * (CASCADE_JITTER_PX * 2 + 1)) - CASCADE_JITTER_PX
 
       x = Math.max(0, Math.min(centerX + offsetX, window.innerWidth - minSize.width))
       y = Math.max(0, Math.min(centerY + offsetY, maxY))

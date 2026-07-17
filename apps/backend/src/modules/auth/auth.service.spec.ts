@@ -64,7 +64,7 @@ describe('AuthService', () => {
       await auth.setup('correct-horse-battery');
       expect(auth.totpEnabled()).toBe(false);
 
-      const { secret } = await auth.beginTotpEnroll();
+      const { secret } = await auth.beginTotpEnroll('correct-horse-battery');
       expect(auth.totpEnabled()).toBe(false); // pending, not yet confirmed
 
       auth.confirmTotp(generateSync({ secret }));
@@ -73,7 +73,7 @@ describe('AuthService', () => {
 
     it('verifies valid codes and rejects invalid ones once enabled', async () => {
       await auth.setup('correct-horse-battery');
-      const { secret } = await auth.beginTotpEnroll();
+      const { secret } = await auth.beginTotpEnroll('correct-horse-battery');
       auth.confirmTotp(generateSync({ secret }));
 
       expect(auth.verifyTotp(generateSync({ secret }))).toBe(true);
@@ -82,7 +82,7 @@ describe('AuthService', () => {
 
     it('can be disabled with the correct password', async () => {
       await auth.setup('correct-horse-battery');
-      const { secret } = await auth.beginTotpEnroll();
+      const { secret } = await auth.beginTotpEnroll('correct-horse-battery');
       auth.confirmTotp(generateSync({ secret }));
 
       await auth.disableTotp('correct-horse-battery');
@@ -91,9 +91,14 @@ describe('AuthService', () => {
 
     it('returns a QR data URL on enroll', async () => {
       await auth.setup('correct-horse-battery');
-      const enroll = await auth.beginTotpEnroll();
+      const enroll = await auth.beginTotpEnroll('correct-horse-battery');
       expect(enroll.qrDataUrl.startsWith('data:image/png;base64,')).toBe(true);
       expect(enroll.uri.startsWith('otpauth://totp/')).toBe(true);
+    });
+
+    it('requires the current password to enroll (step-up auth)', async () => {
+      await auth.setup('correct-horse-battery');
+      await expect(auth.beginTotpEnroll('wrong-password')).rejects.toThrow();
     });
   });
 });

@@ -23,6 +23,13 @@ export class TotpTokenDto {
   token: string;
 }
 
+// Enrolling (like disabling) requires re-proving the current password, so a
+// stolen session alone cannot rotate the TOTP secret / silently drop 2FA.
+export class EnrollTotpDto {
+  @IsString()
+  password: string;
+}
+
 export class DisableTotpDto {
   @IsString()
   password: string;

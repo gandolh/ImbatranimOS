@@ -2,6 +2,8 @@ import {
   BACKPRESSURE_HIGH_WATER,
   BACKPRESSURE_LOW_WATER,
   BACKPRESSURE_POLL_MS,
+  MAX_COLS,
+  MAX_ROWS,
 } from './pty.constants';
 
 /** Minimal disposable, matching node-pty's IDisposable. */
@@ -36,6 +38,9 @@ export interface SocketLike {
 /** WebSocket.OPEN — inlined so tests need no `ws` import. */
 const WS_OPEN = 1;
 
+/** Handle returned by the backpressure poll timer (real or injected fake). */
+type TimerHandle = ReturnType<typeof setInterval>;
+
 /** Client → server control frames. Keystrokes travel as `input`. */
 type ClientMessage =
   | { type: 'input'; data: string }
@@ -45,8 +50,8 @@ export interface PtySessionOptions {
   highWater?: number;
   lowWater?: number;
   pollMs?: number;
-  setIntervalFn?: (fn: () => void, ms: number) => any;
-  clearIntervalFn?: (handle: any) => void;
+  setIntervalFn?: (fn: () => void, ms: number) => TimerHandle;
+  clearIntervalFn?: (handle: TimerHandle) => void;
 }
 
 /**
@@ -65,11 +70,11 @@ export class PtySession {
   private readonly highWater: number;
   private readonly lowWater: number;
   private readonly pollMs: number;
-  private readonly setIntervalFn: (fn: () => void, ms: number) => any;
-  private readonly clearIntervalFn: (handle: any) => void;
+  private readonly setIntervalFn: (fn: () => void, ms: number) => TimerHandle;
+  private readonly clearIntervalFn: (handle: TimerHandle) => void;
 
   private readonly disposables: Disposable[] = [];
-  private drainTimer: any = null;
+  private drainTimer: TimerHandle | null = null;
   private paused = false;
   private disposed = false;
 
@@ -150,8 +155,8 @@ export class PtySession {
         /* pty may have exited; onExit will tear down */
       }
     } else {
-      const cols = Math.max(1, Math.floor(msg.cols));
-      const rows = Math.max(1, Math.floor(msg.rows));
+      const cols = Math.min(MAX_COLS, Math.max(1, Math.floor(msg.cols)));
+      const rows = Math.min(MAX_ROWS, Math.max(1, Math.floor(msg.rows)));
       try {
         this.pty.resize(cols, rows);
       } catch {
@@ -169,23 +174,28 @@ export class PtySession {
       text = String(raw);
     else return null;
 
-    let parsed: any;
+    let parsed: unknown;
     try {
       parsed = JSON.parse(text);
     } catch {
       return null;
     }
     if (!parsed || typeof parsed !== 'object') return null;
+    const msg = parsed as Record<string, unknown>;
 
-    if (parsed.type === 'input' && typeof parsed.data === 'string') {
-      return { type: 'input', data: parsed.data };
+    if (msg.type === 'input' && typeof msg.data === 'string') {
+      return { type: 'input', data: msg.data };
     }
     if (
-      parsed.type === 'resize' &&
-      Number.isFinite(parsed.cols) &&
-      Number.isFinite(parsed.rows)
+      msg.type === 'resize' &&
+      Number.isFinite(msg.cols) &&
+      Number.isFinite(msg.rows)
     ) {
-      return { type: 'resize', cols: parsed.cols, rows: parsed.rows };
+      return {
+        type: 'resize',
+        cols: msg.cols as number,
+        rows: msg.rows as number,
+      };
     }
     return null;
   }

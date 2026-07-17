@@ -17,11 +17,14 @@ export function useSystemStats() {
   })
 }
 
-export function useSystemProcesses() {
+export function useSystemProcesses(enabled = true) {
   return useQuery({
     queryKey: systemProcessesKey,
     queryFn: fetchProcesses,
-    refetchInterval: POLL_MS,
+    // Only poll while the processes tab is visible; otherwise the backend
+    // spawns a `ps` child process every POLL_MS for a list nobody's viewing.
+    refetchInterval: enabled ? POLL_MS : false,
+    enabled,
   })
 }
 

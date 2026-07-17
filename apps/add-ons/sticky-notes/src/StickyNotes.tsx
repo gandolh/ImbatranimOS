@@ -13,6 +13,10 @@ import {
 import { useStickyNoteEditorStore } from './stickyNoteEditorStore'
 import type { StickyNote } from './types'
 
+// Debounce before persisting an edit, and how long the "Saved" flash lingers.
+const SAVE_DEBOUNCE_MS = 800
+const SAVED_FLASH_MS = 1500
+
 // ---------------------------------------------------------------------------
 // openStickyNote — helper; called by list rows and "New Note" button
 // ---------------------------------------------------------------------------
@@ -60,11 +64,11 @@ function NoteEditor({ noteId, windowId }: { noteId: number; windowId: string }) 
           {
             onSuccess: () => {
               setSavedAt(Date.now())
-              setTimeout(() => setSavedAt(null), 1500)
+              setTimeout(() => setSavedAt(null), SAVED_FLASH_MS)
             },
           }
         )
-      }, 800)
+      }, SAVE_DEBOUNCE_MS)
     },
     [noteId, updateMutation]
   )
@@ -116,9 +120,13 @@ function NoteList({ windowId }: { windowId: string }) {
   const setEditor = useStickyNoteEditorStore((s) => s.setEditor)
 
   const handleNewNote = async () => {
-    const note = await createStickyNote({ content: '', pos_x: 100, pos_y: 100 })
-    // open editor in THIS window
-    setEditor(windowId, note.id)
+    try {
+      const note = await createStickyNote({ content: '', pos_x: 100, pos_y: 100 })
+      // open editor in THIS window
+      setEditor(windowId, note.id)
+    } catch (err) {
+      console.error('Failed to create sticky note', err)
+    }
   }
 
   if (isLoading) {
@@ -129,7 +137,8 @@ function NoteList({ windowId }: { windowId: string }) {
     )
   }
 
-  const empty = !notes || notes.length === 0
+  const noteList = notes ?? []
+  const empty = noteList.length === 0
 
   return (
     <div className="bg-surface-container-lowest flex h-full flex-col">
@@ -147,7 +156,7 @@ function NoteList({ windowId }: { windowId: string }) {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
-          {notes!.map((note) => (
+          {noteList.map((note) => (
             <NoteRow
               key={note.id}
               note={note}

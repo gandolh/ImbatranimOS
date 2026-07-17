@@ -2,12 +2,22 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  PayloadTooLargeException,
 } from '@nestjs/common';
 import { join, resolve, relative, basename, dirname, sep } from 'path';
 import * as fs from 'fs/promises';
 import { createReadStream } from 'fs';
 import * as os from 'os';
 import type { Readable } from 'stream';
+
+/**
+ * Cap for the text-content endpoint. Reading into a UTF-8 string materialises
+ * the whole file (plus its JSON-encoded copy) in the heap, so a huge file would
+ * spike memory / stall the event loop. Large files should go through the
+ * streaming download path instead. Env-overridable; defaults to 5 MB.
+ */
+const MAX_TEXT_FILE_BYTES =
+  Number(process.env.FILES_MAX_TEXT_BYTES) || 5 * 1024 * 1024;
 
 export interface FileEntry {
   name: string;
@@ -176,12 +186,6 @@ export class FilesService {
     );
   }
 
-  async stat(root: string, virtualPath: string): Promise<FileEntry> {
-    const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
-    if (!(await this.exists(abs))) throw new NotFoundException('Not found');
-    return this.toEntry(rootDir, abs);
-  }
-
   async readFile(
     root: string,
     virtualPath: string,
@@ -192,6 +196,11 @@ export class FilesService {
     const stat = await fs.stat(abs);
     if (stat.isDirectory())
       throw new BadRequestException('Path is a directory');
+    if (stat.size > MAX_TEXT_FILE_BYTES) {
+      throw new PayloadTooLargeException(
+        `File is too large to open as text (max ${MAX_TEXT_FILE_BYTES} bytes); download it instead`,
+      );
+    }
     const content = await fs.readFile(abs, 'utf-8');
     return { path: virtualPath, content };
   }
@@ -229,15 +238,27 @@ export class FilesService {
     return this.toEntry(rootDir, abs);
   }
 
+  /**
+   * Move an already-on-disk upload (multer diskStorage temp file) into the
+   * jail. Copying from the temp path avoids ever holding the whole upload in the
+   * JS heap. The temp file is always removed, even if the destination path is
+   * rejected by the jail.
+   */
   async uploadFile(
     root: string,
     virtualPath: string,
-    buffer: Buffer,
+    tmpPath: string,
   ): Promise<FileEntry> {
-    const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
-    await fs.mkdir(dirname(abs), { recursive: true });
-    await fs.writeFile(abs, buffer);
-    return this.toEntry(rootDir, abs);
+    try {
+      const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
+      await fs.mkdir(dirname(abs), { recursive: true });
+      // copyFile (not rename) so it works when tmp and data are on different
+      // mounts; it streams in-kernel without buffering in the heap.
+      await fs.copyFile(tmpPath, abs);
+      return this.toEntry(rootDir, abs);
+    } finally {
+      await fs.rm(tmpPath, { force: true });
+    }
   }
 
   async createDirectory(root: string, virtualPath: string): Promise<FileEntry> {

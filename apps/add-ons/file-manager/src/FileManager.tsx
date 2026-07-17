@@ -92,6 +92,9 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const [deleteTarget, setDeleteTarget] = useState<FsEntry | null>(null)
   const [batchDeletePending, setBatchDeletePending] = useState(false)
 
+  // Surfaced error for batch delete/upload failures (no toast system here).
+  const [actionError, setActionError] = useState<string | null>(null)
+
   // Clipboard
   const [clipboard, setClipboard] = useState<ClipboardEntry | null>(null)
 
@@ -244,18 +247,30 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     setDeleteTarget(null)
   }
 
-  function handleConfirmDelete() {
+  async function handleConfirmDelete() {
     if (batchDeletePending) {
       const paths = Array.from(selected)
-      paths.forEach((p) => deleteMutation.mutate(p))
-      setSelected(new Set())
+      const results = await Promise.allSettled(paths.map((p) => deleteMutation.mutateAsync(p)))
+      // Keep only the items that failed selected; drop the ones we deleted.
+      const failedPaths = paths.filter((_, i) => results[i].status === 'rejected')
+      setSelected(new Set(failedPaths))
+      if (failedPaths.length > 0) {
+        setActionError(
+          `Failed to delete ${failedPaths.length} item${failedPaths.length !== 1 ? 's' : ''}.`
+        )
+      }
     } else if (deleteTarget) {
-      deleteMutation.mutate(deleteTarget.path)
-      setSelected((prev) => {
-        const next = new Set(prev)
-        next.delete(deleteTarget.path)
-        return next
-      })
+      const target = deleteTarget
+      try {
+        await deleteMutation.mutateAsync(target.path)
+        setSelected((prev) => {
+          const next = new Set(prev)
+          next.delete(target.path)
+          return next
+        })
+      } catch {
+        setActionError(`Failed to delete "${target.name}".`)
+      }
     }
     setDeleteTarget(null)
     setBatchDeletePending(false)
@@ -284,11 +299,21 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     )
   }
 
-  function handleUploadFiles(files: File[]) {
-    files.forEach((file) => {
-      const filePath = path ? `${path}/${file.name}` : file.name
-      uploadMutation.mutate({ path: filePath, file })
-    })
+  async function handleUploadFiles(files: File[]) {
+    const results = await Promise.allSettled(
+      files.map((file) => {
+        const filePath = path ? `${path}/${file.name}` : file.name
+        return uploadMutation.mutateAsync({ path: filePath, file })
+      })
+    )
+    const failed = files.filter((_, i) => results[i].status === 'rejected')
+    if (failed.length > 0) {
+      setActionError(
+        `Failed to upload ${failed.length} file${failed.length !== 1 ? 's' : ''}: ${failed
+          .map((f) => f.name)
+          .join(', ')}.`
+      )
+    }
   }
 
   function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -545,6 +570,21 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
 
       {/* Breadcrumb */}
       <Breadcrumb root={root} rootLabel={rootCfg.label} path={path} onNavigate={navigate} />
+
+      {/* Action error banner (batch delete / upload failures) */}
+      {actionError && (
+        <div className="border-outline-variant bg-surface-container-low flex items-center gap-2 border-b px-2 py-1">
+          <span className="font-ui text-error flex-1 text-[12px]">{actionError}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 w-5 p-0"
+            onClick={() => setActionError(null)}
+          >
+            <X size={11} />
+          </Button>
+        </div>
+      )}
 
       {/* Body: tree pane | list pane */}
       <div className="flex min-h-0 flex-1">

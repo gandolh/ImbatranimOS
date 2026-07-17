@@ -148,7 +148,7 @@ describe('PtySession', () => {
       let drainFn: (() => void) | null = null;
       const setIntervalFn = jest.fn((fn: () => void) => {
         drainFn = fn;
-        return 1;
+        return 1 as unknown as ReturnType<typeof setInterval>;
       });
       const clearIntervalFn = jest.fn();
       new PtySession(pty, socket, {

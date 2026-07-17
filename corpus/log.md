@@ -316,3 +316,168 @@ todos/lint-format-debt.md). Also fixed while acceptance demanded green
 lint on the moved surface: 6 pre-existing react-hooks setState-in-effect
 errors (render-time adjustment pattern) and dead ReplInterpreter.tsx
 deleted.
+
+## [2026-07-17] todo | Brief 18 filed — Alpine kiosk ISO, researched
+
+Filed briefs/todo/18-alpine-kiosk-iso.md: the post-v1 bare-metal
+variant — a bootable Alpine ISO whose whole interface is one fullscreen
+chromium (cage Wayland kiosk) rendering the web UI served by a local
+backend. Research done inline and folded into the brief: cage 0.2.0 +
+chromium 142 (263 MiB installed) are in Alpine 3.22 community;
+greetd/agetty autologin recipes exist and are proven (~235 MB X11
+signage image as prior art); cog/wpewebkit not packaged, ruled out.
+Build = aports mkimage.sh custom profile (mkimg.imbatranim.sh +
+genapkovl-imbatranim.sh) driven by build.c + vendored nob.h in Docker,
+per the user's spec — same pipeline shape as the superseded ISO era.
+Diskless run-from-RAM model; est. 1.5–2 GB RAM floor, to be measured.
+Docker stays the primary dev/test loop; doesn't flip the "bootable is
+not v1" decision.
+
+## 2026-07-17 — Office suite grilled: todo promoted to briefs 19 + 20
+
+Grilled todos/office-suite-addon.md into two post-v1 briefs. Locked:
+client-side JS engines only (no OnlyOffice/Collabora server, no
+LibreOffice in the image — slim-container identity holds). Four
+packages, Google-flavored names: PDF Viewer (react-pdf, view-only),
+Slides (best-effort pptx renderer, view-only, spike-gated), Sheets
+(Univer Apache-2.0 + SheetJS CE xlsx bridge, editing, spike-gated),
+Docs (SuperDoc, real docx round-trip editing). SuperDoc is AGPL-3.0 —
+user approved relicensing the repo AGPL-3.0-only (source stays public
+on GitHub, no sale plans); the relicense lands in brief 20. UX locked:
+explicit Save only (Ctrl+S, overwrite in place, dirty `•`, no autosave
+despite the notepad precedent), new documents via file-manager
+right-click → New → Spreadsheet/Document (editors stay dialog-free).
+Brief 19 = viewers + file-manager ext→app map; brief 20 = editors +
+LICENSE. Both queued after brief 15 (v1), non-gating. Brief number 18
+was already taken by the kiosk ISO.
+
+## 2026-07-17 — Snipping Tool + preview pane grilled: briefs 21 + 22
+
+Grilled todos/screenshot-tool-addon.md and todos/file-preview-pane.md.
+Brief 21 (Snipping Tool, @imbatranim/snipping-tool — the Win7-era
+name): capture = DOM rasterization, spike-gated (getDisplayMedia
+rejected — permission dialog breaks the OS illusion; server-side
+rendering rejected — slim-image invariant). One flow: dim + crosshair
+overlay via body portal (covers taskbar), drag region / Enter = full
+desktop; annotation kit arrow/rect/text/pixelate/freehand + undo +
+color; exits = Save to ~/Pictures/Screenshots (primary) + Copy
+(clipboard, secure-context best-effort) + Download. Per-window capture
+and keybinds deferred. Brief 22 (preview pane): extends the existing
+file-manager (no new package) with an Explorer-style toggleable pane —
+text/images/audio/video via native rendering, zero new deps, metadata
+card fallback; PDF/markdown previews deferred (removes any dep on
+brief 19). Both post-v1, non-gating, independent.
+
+## 2026-07-17 — Brief 18 done: Alpine kiosk ISO boots into the browser
+
+Built the post-v1 bare-metal variant under `iso/` (own lane, no
+`apps/**` or `infrastructure/**` touched). `./build iso` = a C driver on
+vendored nob.h v3.10.0 that exports a clean `git archive HEAD` snapshot,
+builds an Alpine 3.22 Docker toolbox, and runs the official aports
+`mkimage.sh` **unprivileged (fakeroot)** — the WSL2 smoke test passed on
+the first try (no privileged fallback needed; that durable ISO-era
+finding still holds, now for mkimage too).
+
+Decisions (open questions resolved, rationale in `iso/README.md`):
+- **App delivery = custom signed `.apk`** (not tarball-in-overlay). The
+  payload — backend dist + core statics + prod node_modules with
+  better-sqlite3/node-pty/argon2 compiled for Alpine's musl+nodejs ABI —
+  ships as `imbatranim-os`, served to mkimage from a local signed repo.
+  Its `depends=` drags in the whole kiosk stack so the apkovl world is two
+  lines (alpine-base + imbatranim-os) and the overlay stays tiny (~950 B),
+  which matters for diskless RAM. Feasible, so the fallback wasn't needed.
+- **Autologin = greetd** (not agetty+profile): `initial_session` execs the
+  kiosk launcher as `imbatranim` with no greeter and no getty on any VT →
+  satisfies "no console / no shell flash" cleanly. seatd for seat mgmt,
+  XDG_RUNTIME_DIR set by the launcher (no elogind, lighter).
+- **Kernel lts**, **stateless tmpfs** (fresh setup each boot — invariant-
+  clean; lbu persistence is the later path), **browser knob** deferred.
+
+Verification (QEMU/VirtualBox binaries absent, but `/dev/kvm` present, so
+booted qemu inside Docker with `--device /dev/kvm`): the ISO **boots via
+BIOS straight into fullscreen chromium showing the ImbatranimOS first-run
+login** — hourglass logo, "Set up this computer" password form, crimson
+theme, no console, no window chrome, no shell. Screenshot-verified. Two
+bugs found+fixed this way: (1) the launcher couldn't `mkdir /run/user/<uid>`
+(no elogind) → fall back to a `/tmp` runtime dir; (2) when the session
+failed greetd showed a fallback `login:` prompt → launcher now never exits
+(loops forever) so the browser always owns the screen. Measured: ISO
+**580 MiB**, RAM floor **2 GB** (1 GB reaches OpenRC but the run-from-RAM
+install exhausts tmpfs), boot-to-login **< ~2 min** under emulation.
+
+Human-gated remainder (couldn't do headless): UEFI *live* boot (the ISO
+has the UEFI El Torito image + bootx64.efi structurally, and BIOS boot
+works), VirtualBox/Hyper-V, real/old hardware, and the interactive
+type-password → terminal/files walkthrough. Docker dev loop untouched;
+root README gained one `iso/` pointer (docker stays the headline).
+
+## 2026-07-17 — Briefs 22 + 21 done: preview pane and Snipping Tool
+
+Wave 1 of the post-v1 backlog run (orchestrated: plan-split-dispatch in
+waves, one commit per brief). Brief 22 (`2b014b2`): Explorer-style
+toggleable preview pane inside file-manager — text/images/AV native,
+metadata card for everything else (never an error), 1 MB text cap,
+debounced selection with stale-fetch protection, drag-resizable width +
+toggle persisted in localStorage, auto-collapse below 640 px, zero new
+deps. Found + fixed a pre-existing FileList bug: row clicks bubbled to
+the background clear-selection handler, so mouse click-to-select had
+never worked. Brief 21 (`acfe862`): Snipping Tool on html-to-image
+(spike passed — xterm v6 runs the DOM renderer here, so terminal
+content rasterizes as real DOM), dim+crosshair portal overlay, 5
+annotation tools + undo, Save/Copy/Download exits; rasterizer a lazy
+chunk; tray icon + PrintScreen deliberately skipped (scope latitude,
+rationale in the brief outcome).
+
+## 2026-07-17 — Brief 19 done: PDF Viewer + Slides, ext→app open map
+
+Commit `685012c`. Spike PASSED on a real 11-slide deck → Slides ships
+(pptx-preview; synthetic pptxgenjs decks render empty, so a "nothing
+rendered → Download" fallback covers unparseables). Deviation: PDF
+engine is pdfjs-dist direct instead of react-pdf (cleaner lazy
+loading). The shared plumbing both office briefs need landed here:
+file-manager `lib/openWith.ts` extension→app map driving double-click,
+Enter, and context menu. Durable pattern for all document apps: latch
+the open-intent in a ref-guarded effect (notepad's render-selector
+consume is StrictMode-unsafe — captured as
+todos/notepad-intent-strictmode.md), fetch bytes via core's authed
+client, keep engines behind dynamic import (verified separate chunks).
+
+## 2026-07-17 — Brief 20 done: Sheets + Docs, AGPL relicense; sheets engine REVISED
+
+Commits `b9fe0fa` (relicense) + `3531b41` (editors). The SheetJS CE ↔
+Univer spike FAILED the locked formatting bar: SheetJS CE's writer
+strips fonts/fills/borders on save (Pro-only) — confirmed with a pure
+read→write→read, independent of the bridge. User re-decided same day:
+**ExcelJS (MIT) is the xlsx bridge** (decisions.md revised); its spike
+passed the full bar (values, formulas, number formats, bold, colors,
+fills, multi-sheet; verified via independent openpyxl read). Docs hit a
+second landmine: SuperDoc 1.45 export silently returns the ORIGINAL
+bytes when a docx lacks styles.xml / document.xml.rels / custom.xml
+(unguarded `convertedXml[...].elements[0]` reads, throw swallowed) —
+root-caused and fixed with `normalizeDocx()` injecting minimal parts on
+open; round-trip then verified on disk. Repo is now AGPL-3.0-only
+(SuperDoc requirement, approved at grilling). Core windowStore gained
+generic `updateTitle` + close-guard hooks (the brief's "one manifest
+line" core assumption was wrong; controller-authorized). Explicit-Save
+UX per spec: Ctrl+S, dirty •, close warning, New → Spreadsheet/Document
+from embedded blank templates.
+
+## 2026-07-17 — Review pass over the backlog run: 6 findings fixed
+
+Three scoped sonnet finders (integration/wiring, new-module logic,
+security/invariants) swept the cumulative diff; integration finder came
+back clean. Six confirmed findings fixed in `b46f64e`: (1) xlsx bridge
+read `value.sharedFormula` — the master ADDRESS, not a formula — for
+fill-down followers, corrupting every shared formula on save; now reads
+the translated `cell.formula` (round-trip-proven). (2+3) both editors
+cleared the dirty flag after an in-flight save even when edits arrived
+during the upload (close-guard then silent → data loss); fixed with an
+edit-counter snapshot. (4) Slides stale renders could interleave two
+decks in the shared stage node; renders now own detached targets
+committed only if current. (5) screenshot filenames collided within the
+same second; ms suffix. (6) ISO post-install ran `passwd -u` (unlock)
+under a "lock the password" comment — the belt-and-braces `*` line made
+the end state safe incidentally; now `passwd -l`. Reuse debt (4×
+duplicated fileBytes/openedFileStore helpers, hand-rolled download
+URLs) deliberately NOT refactored at the tail of the run — captured as
+todos/office-addon-shared-helpers.md for a core-contract brief.

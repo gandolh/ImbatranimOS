@@ -1,6 +1,6 @@
 ---
-summary: Locked choices of the web-OS era (2026-07-16 pivot grilling) plus a compressed record of the superseded ISO-era decisions — do not relitigate without an explicit revisit and a log entry.
-updated: 2026-07-16
+summary: Locked choices of the web-OS era (2026-07-16 pivot grilling) plus the 2026-07-17 office-suite/post-v1 set and a compressed record of the superseded ISO-era decisions — do not relitigate without an explicit revisit and a log entry.
+updated: 2026-07-17
 ---
 
 # Decisions (locked)
@@ -20,7 +20,10 @@ Changing any entry requires an explicit revisit + a `log.md` entry.
   just an app platform: the terminal is a real PTY, the file explorer walks
   the real filesystem, the monitor shows real processes.
 - **Runtime: Docker container.** `docker run -p 8080:8080 -v …` is the
-  product. Bootable/kiosk variants are explicitly not v1.
+  product. Bootable/kiosk variants are explicitly not v1. [2026-07-17,
+  brief 18: the post-v1 kiosk ISO variant now exists as its own artifact
+  under `iso/` (Alpine + cage/chromium, aports mkimage); docker remains
+  the product and the primary dev/test loop.]
 - **Backend: NestJS/Node** — familiarity + code reuse from
   minimal-web-desktop beats Go's smaller image; accepted trade: image
   ~100–150MB instead of ~20MB. Single port serves statics + API + WS.
@@ -75,6 +78,35 @@ Changing any entry requires an explicit revisit + a `log.md` entry.
   default; fonts kept (Space Grotesk UI + Inter content); accent is one
   CSS var with 4 Settings presets — crimson `#c0263a` is the PROVISIONAL
   default, final pick awaits the user (see open-questions.md).
+
+## Office suite + post-v1 apps (2026-07-17 grilling; built same day)
+
+- **Client-side JS engines only** for office documents — no
+  OnlyOffice/Collabora server, no LibreOffice in the image (slim-container
+  identity holds). Viewers: pdfjs-dist (PDF Viewer), pptx-preview
+  (Slides, best-effort + Download escape hatch). Editors: Univer grid
+  (Sheets), SuperDoc (Docs).
+- **Sheets xlsx bridge: ExcelJS (MIT)** — REVISED 2026-07-17 from the
+  grilled "SheetJS CE ↔ Univer bridge" after the spike gate failed:
+  SheetJS CE's *writer* strips fonts/fills/borders on save (Pro-only),
+  destroying styling on every round-trip. User-approved revisit the same
+  day; ExcelJS passed the full bar (values, formulas, number formats,
+  bold, colors, fills, multi-sheet), verified via independent openpyxl
+  read.
+- **License: AGPL-3.0-only, repo-wide** (executed 2026-07-17 with brief
+  20, approved with the office grilling): required by SuperDoc (AGPL);
+  source is public and stays public, no plans to sell.
+- **Editor UX: explicit Save only** (Ctrl+S + toolbar, overwrite in
+  place, dirty `•`, close-guard warning) — no autosave, no Save As (v1).
+  New documents are born in the file-manager (right-click → New →
+  Spreadsheet/Document), editors stay dialog-free.
+- **Opening files from Files: extension→app map** in the file-manager
+  (`lib/openWith.ts`) drives double-click/Enter/context-menu; heavy
+  engines are lazy dynamic-import chunks — the desktop boot bundle must
+  not grow when apps are added.
+- **Screenshot capture = DOM rasterization** (html-to-image), not
+  getDisplayMedia (permission dialog breaks the OS illusion) and not
+  server-side rendering (slim-image invariant).
 
 ## Carried over from the ISO era (still binding)
 

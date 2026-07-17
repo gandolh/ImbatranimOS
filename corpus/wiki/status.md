@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16 + 17 DONE (…, turborepo, core/add-ons restructure); brief 15's human-gated remainder is all that stands before v1.0.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–22 DONE (incl. the 2026-07-17 post-v1 backlog run — kiosk ISO, office suite, snipping tool, preview pane); brief 15's human-gated remainder is all that stands before v1.0.
 updated: 2026-07-17
 ---
 
@@ -19,6 +19,13 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 - Cold start: **1.42 s** (container start → first HTTP 200 on /health,
   fresh volume incl. migration). Idle RAM: **41.3 MiB** (docker stats
   after 60 s). The "lightweight" receipts, 2026-07-17.
+- **Kiosk ISO (brief 18, post-v1):** `imbatranimos-1.0.0-x86_64.iso` =
+  **580 MiB** (hybrid BIOS+UEFI, diskless). RAM floor **2 GB** (measured:
+  2 GB boots fully to the kiosk login; 1 GB reaches OpenRC but the diskless
+  tmpfs can't hold the ~1 GB run-from-RAM install, so the stack never comes
+  up — 4 GB comfortable). Boot-to-login **under ~2 min** under KVM emulation
+  (each boot re-installs ~250 pkgs into tmpfs). Built unprivileged in Docker
+  on WSL2 (fakeroot). 2026-07-17.
 
 ## Briefs
 
@@ -35,10 +42,20 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 15 | [v1-release](../briefs/todo/15-v1-release.md) | in progress | Engineering DONE (security pass, 413/headers/repl_configs fixes, README, 1.0.0 stamp, container verified + numbers); human-gated remainder: friend QA, VPS deploy, accent pick, dep bumps, tag |
 | 16 | [turborepo](../briefs/done/16-turborepo.md) | **done** | npm workspaces + turbo 2.10.5, single root lockfile, phantom tailwind deps rehomed; envMode loose + prettier pin 3.8.3 (see log); image 385MB, FULL TURBO ✓ |
 | 17 | [os-restructure](../briefs/done/17-os-restructure.md) | **done** | apps/{backend,core,add-ons/*}; 7 add-on packages, manifest.ts composition root, eslint-enforced boundary; browser-verified (found+fixed Tray stats crash); backend lint debt remains |
+| 18 | [alpine-kiosk-iso](../briefs/done/18-alpine-kiosk-iso.md) | **done** (QEMU-verified) | Post-v1 kiosk ISO: `./build iso` (nob.h build.c → Docker → mkimage, unprivileged/fakeroot) makes a 580 MiB hybrid BIOS+UEFI diskless ISO. App ships as a signed custom `.apk` (musl-compiled native addons); greetd autologin → cage + chromium --kiosk → the web UI off the local backend. **KVM-booted into the fullscreen first-run login, no console/shell** (screenshot-verified); RAM floor 2 GB. Human-gated: UEFI live boot + VirtualBox/Hyper-V + real HW + interactive terminal/files walkthrough |
+| 19 | [office-viewers](../briefs/done/19-office-viewers.md) | **done** | PDF Viewer (pdfjs-dist) + Slides (pptx-preview — spike passed on a real 11-slide deck); file-manager ext→app map (lib/openWith.ts) drives double-click/Enter/context menu; engines lazy chunks |
+| 20 | [office-editors](../briefs/done/20-office-editors.md) | **done** | Sheets (Univer + ExcelJS bridge — SheetJS CE failed the styling spike, user-approved engine revisit) + Docs (SuperDoc + docx normalizer fixing a silent-save-loss defect); AGPL-3.0 relicense landed; explicit Save, dirty •, close guard, New→Spreadsheet/Document |
+| 21 | [snipping-tool](../briefs/done/21-snipping-tool.md) | **done** | Flameshot-style capture via html-to-image (spike passed incl. xterm content), dim+crosshair region/Enter/Esc flow, 5 annotation tools + undo, Save to ~/Pictures/Screenshots / Copy / Download; rasterizer lazy |
+| 22 | [file-preview-pane](../briefs/done/22-file-preview-pane.md) | **done** | Explorer-style toggleable preview pane in file-manager: text/images/AV native, metadata-card fallback, 1 MB text cap, persisted width/toggle, auto-collapse; zero new deps |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
-(human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. No build-ready
-briefs remain; captures live in todos/ (lint debt, ISO scaffold).
+(human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1
+backlog (18 kiosk ISO, 19 → 20 office suite, 21 snipping tool, 22
+preview pane) all landed 2026-07-17 in one orchestrated run — waves
+{21 ‖ 22 ‖ 18-long-lane} → 19 → 20, one commit per brief, plus a
+3-finder review pass whose confirmed findings were fixed and committed.
+Captures in todos/: lint debt, office shared-helpers reuse debt,
+notepad StrictMode intent bug.
 
 ## Where things stand
 
@@ -60,3 +77,18 @@ a browser-level check is now part of the verify bar. Formatting debt is
 paid (format:check 9/9 green); backend type-safety lint debt remains
 (todos/lint-format-debt.md) and keeps root `npm run lint` red on
 backend#lint only.
+
+The 2026-07-17 backlog run landed the whole post-v1 slate in one
+orchestrated session: preview pane (22), Snipping Tool (21), kiosk ISO
+(18, KVM-boot-verified), office viewers (19), and office editors (20)
+— the last after two mid-flight re-decisions: the Sheets engine moved
+to an ExcelJS bridge when SheetJS CE failed the styling spike, and a
+SuperDoc export defect (silent original-bytes save on docx missing
+optional OOXML parts) was root-caused and fixed with an open-time
+normalizer. The repo is now AGPL-3.0-only (SuperDoc). A three-finder
+review pass over the cumulative diff confirmed and fixed a
+shared-formula corruption in the xlsx bridge, a dirty-flag race in
+both editors, a Slides stale-render interleave, a screenshot filename
+collision, and an ISO post-install passwd comment/behavior mismatch.
+The desktop now has 13 apps; the boot bundle is unchanged (all five
+document engines are lazy chunks).

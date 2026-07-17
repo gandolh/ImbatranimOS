@@ -1,36 +1,32 @@
 # ImbatranimOS — one dual-mode image. Build context is the REPO ROOT
-# (the fork splits deps across apps/ and apps/{frontend,backend}, so the
-# whole apps/ tree must be in context).
+# (npm workspace: one root lockfile covers apps/backend + apps/frontend).
 #
 #   prod (default):  slim, Nest serves the built desktop + API on one port
-#   dev:             Nest (watch) + Vite (HMR), two ports, for development
+#   dev:             Nest (watch) + Vite (HMR) via `turbo dev`, two ports
 #
 # Native modules (better-sqlite3, node-pty) are compiled in stages that
 # carry build tools; the final prod image copies the built node_modules and
 # ships without a compiler.
 
 # ---------------------------------------------------------------------------
-# deps — full dependency install (dev + prod), with native build toolchain
+# deps — full workspace install (dev + prod), with native build toolchain
 # ---------------------------------------------------------------------------
 FROM node:22-alpine AS deps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
-# Hoisted parent deps shared by the frontend.
-COPY apps/package.json apps/package-lock.json ./apps/
-RUN cd apps && npm ci
-COPY apps/backend/package.json apps/backend/package-lock.json ./apps/backend/
-RUN cd apps/backend && npm ci
-COPY apps/frontend/package.json apps/frontend/package-lock.json ./apps/frontend/
-RUN cd apps/frontend && npm ci
+# Manifests first for layer caching: one root lockfile, one npm ci.
+COPY package.json package-lock.json turbo.json ./
+COPY apps/backend/package.json ./apps/backend/
+COPY apps/frontend/package.json ./apps/frontend/
+RUN npm ci
 
 # ---------------------------------------------------------------------------
 # builder — compile backend (nest) and frontend (vite, same-origin API)
 # ---------------------------------------------------------------------------
 FROM deps AS builder
 COPY apps ./apps
-RUN cd apps/backend && npm run build
-# Prod frontend talks to the API same-origin at /api.
-RUN cd apps/frontend && VITE_API_URL=/api npm run build
+# Prod frontend talks to the API same-origin at /api; backend ignores the var.
+RUN VITE_API_URL=/api npx turbo build
 
 # ---------------------------------------------------------------------------
 # proddeps — production-only node_modules (native modules compiled here)
@@ -38,16 +34,21 @@ RUN cd apps/frontend && VITE_API_URL=/api npm run build
 FROM node:22-alpine AS proddeps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
-COPY apps/backend/package.json apps/backend/package-lock.json ./apps/backend/
-RUN cd apps/backend && npm ci --omit=dev
+COPY package.json package-lock.json ./
+COPY apps/backend/package.json ./apps/backend/
+COPY apps/frontend/package.json ./apps/frontend/
+# Backend runtime deps only — the frontend is prebuilt to static files, so
+# none of its packages (react etc.) may reach the prod image.
+RUN npm ci --omit=dev --workspace=backend
 # Strip native build intermediates now that the .node binaries are compiled:
 # object files, gyp obj.target dirs, and the C sources for node-pty +
 # better-sqlite3 (~60MB). The runtime only needs build/Release/*.node.
-RUN cd apps/backend/node_modules \
+# Hoisting puts everything in /app/node_modules.
+RUN cd node_modules \
  && find . -name '*.o' -delete \
  && find . -type d -name obj.target -prune -exec rm -rf {} + \
  && rm -rf better-sqlite3/deps better-sqlite3/src node-pty/src node-pty/deps \
- && true
+ && mkdir -p /app/apps/backend/node_modules
 
 # ---------------------------------------------------------------------------
 # prod — slim runtime: no compiler, runs as the unprivileged imbatranim user
@@ -58,11 +59,12 @@ LABEL org.opencontainers.image.title="ImbatranimOS" \
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 WORKDIR /app
-# Only the backend's runtime deps ship — the frontend is prebuilt to static
-# files, so its hoisted deps in apps/node_modules are not needed at runtime.
+# Hoisted runtime deps + any backend-nested overrides (may be empty).
+COPY --from=proddeps /app/node_modules ./node_modules
 COPY --from=proddeps /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/apps/frontend/dist ./public
+COPY package.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY infrastructure/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
@@ -83,7 +85,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "apps/backend/dist/main"]
 
 # ---------------------------------------------------------------------------
-# dev — source-mounted development: Nest watch + Vite HMR, two ports
+# dev — source-mounted development: `turbo dev` = Nest watch + Vite HMR
 # (docker compose dev profile bind-mounts apps/ over this; node_modules stay
 # from the image via anonymous volumes)
 # ---------------------------------------------------------------------------
@@ -92,7 +94,9 @@ RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 WORKDIR /app
 COPY apps ./apps
-RUN mkdir -p /home/imbatranim && chown -R imbatranim:imbatranim /home/imbatranim /app
+COPY infrastructure/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+ && mkdir -p /home/imbatranim && chown -R imbatranim:imbatranim /home/imbatranim /app
 USER imbatranim
 ENV PORT=3001 \
     FRONTEND_URL=http://localhost:5173 \
@@ -101,4 +105,4 @@ ENV PORT=3001 \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs
 EXPOSE 3001 5173
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["sh", "-c", "cd apps/backend && npm run start:dev & cd apps/frontend && npm run dev -- --host 0.0.0.0 & wait"]
+CMD ["npx", "turbo", "dev"]

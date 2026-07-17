@@ -1,5 +1,6 @@
 # ImbatranimOS compose. Build context is the repo root (..) because the
-# image needs the whole apps/ tree (split dependency layout).
+# image needs the workspace root (package.json, lockfile, turbo.json) plus
+# the apps/ tree.
 #
 #   Prod (the friend-run experience):
 #     docker compose -f infrastructure/docker-compose.yml up imbatranimos
@@ -43,7 +44,6 @@ services:
       - VITE_API_URL=http://localhost:3001/api
     volumes:
       - ../apps:/app/apps
-      - /app/apps/node_modules
       - /app/apps/backend/node_modules
       - /app/apps/frontend/node_modules
       - imbatranim-home-dev:/home/imbatranim

@@ -118,6 +118,25 @@ volume up first if you want to keep your files (see Data & backup above).
 *(Drop your own PNGs into `docs/screenshots/` with these filenames and
 they'll show up here.)*
 
+## Developing
+
+The repo is an npm workspace (`apps/backend`, `apps/frontend`) with
+[Turborepo](https://turborepo.dev) as the task runner — one install, one
+lockfile, one entry point for every task:
+
+```bash
+npm install        # once, at the repo root — installs both apps
+npm run dev        # Nest watch (:3001) + Vite HMR (:5173), in parallel
+npm run build      # builds both apps (cached — a second run is instant)
+npm run lint       # lints both apps
+npm run test       # backend test suite
+npm run format:check
+```
+
+The same works containerized: the compose dev profile
+(`docker compose -f infrastructure/docker-compose.yml --profile dev up`)
+runs `turbo dev` inside the image with your `apps/` bind-mounted for HMR.
+
 ## Project knowledge
 
 Architecture, locked decisions, and work briefs live in

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "envMode": "loose",
+  "tasks": {
+    "build": {
+      "env": ["VITE_API_URL"],
+      "outputs": ["dist/**"]
+    },
+    "lint": {},
+    "test": {},
+    "format:check": {},
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

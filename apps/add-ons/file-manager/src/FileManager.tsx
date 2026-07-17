@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import {
   FolderPlus,
   Clipboard,
@@ -16,6 +16,7 @@ import { ScrollArea } from '@imbatranim/core'
 import { Tooltip } from '@imbatranim/core'
 import { cn } from '@imbatranim/core'
 import { downloadUrl } from '@imbatranim/core'
+import { useVirtualList } from '@imbatranim/core'
 import { Breadcrumb } from './components/Breadcrumb'
 import { FileList } from './components/FileList'
 import { FolderTree } from './components/FolderTree'
@@ -244,12 +245,39 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const orderedEntries = sortEntries(entries)
   const selectedEntries = orderedEntries.filter((e) => selected.has(e.path))
 
-  const { fileListRef, handleListKeyDown } = useListKeyboardNav({
+  // The scroll container is the ScrollArea viewport that wraps the list; we get
+  // it directly via `viewportRef` (no reliance on library-internal DOM attrs).
+  // The virtualizer is created here so both the list rendering and keyboard nav
+  // share one instance — the latter needs `scrollToIndex` to reveal off-screen
+  // rows. `listContainerRef` points at the list wrapper for header measurement.
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const listContainerRef = useRef<HTMLDivElement>(null)
+
+  // FileList keeps its (non-virtualized) <thead> inside the same scroll
+  // container, so the rows start `headerHeight` px down. Feeding that as
+  // `scrollMargin` keeps scrollToIndex and the row offsets accurate.
+  const [headerHeight, setHeaderHeight] = useState(0)
+  const showList = !isLoading && !isError && orderedEntries.length > 0
+  useLayoutEffect(() => {
+    if (!showList) return
+    const thead = listContainerRef.current?.querySelector('thead')
+    if (thead) setHeaderHeight(thead.getBoundingClientRect().height)
+  }, [showList])
+
+  const rowVirtualizer = useVirtualList<HTMLTableRowElement>({
+    count: orderedEntries.length,
+    getScrollElement: () => viewportRef.current,
+    estimateSize: () => 29,
+    scrollMargin: headerHeight,
+  })
+
+  const { handleListKeyDown } = useListKeyboardNav({
     orderedEntries,
     selectedEntries,
     renamingPath,
     onOpen: handleOpen,
     setSelected,
+    scrollToIndex: rowVirtualizer.scrollToIndex,
   })
 
   return (
@@ -390,7 +418,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
 
         {/* Right: file listing */}
         <UploadDropzone onFiles={handleUploadFiles} className="min-w-0 flex-1 overflow-hidden">
-          <ScrollArea className="h-full w-full">
+          <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
             {isLoading && (
               <div className="text-on-surface-variant font-ui flex items-center justify-center py-12 text-[12px]">
                 Loading…
@@ -403,7 +431,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             )}
             {!isLoading && !isError && (
               <div
-                ref={fileListRef}
+                ref={listContainerRef}
                 onClick={selection.clear}
                 onContextMenu={openBackgroundMenu}
                 onKeyDown={handleListKeyDown}
@@ -412,6 +440,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
               >
                 <FileList
                   entries={entries}
+                  virtualizer={rowVirtualizer}
                   root={root}
                   selected={selected}
                   onSelect={selection.select}

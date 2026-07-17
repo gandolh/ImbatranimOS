@@ -48,6 +48,8 @@ export type { OpenedFile } from './shared/store/createOpenedFileStore'
 export { useOpenIntent } from './shared/hooks/useOpenIntent'
 export { useSaveHotkey } from './shared/hooks/useSaveHotkey'
 export { useUnsavedGuard } from './shared/hooks/useUnsavedGuard'
+export { useVirtualList } from './shared/hooks/useVirtualList'
+export type { VirtualList } from './shared/hooks/useVirtualList'
 
 // Shared add-on kit — confirm dialog
 export { ConfirmDialog, useConfirm } from './shared/components/ui/ConfirmDialog'

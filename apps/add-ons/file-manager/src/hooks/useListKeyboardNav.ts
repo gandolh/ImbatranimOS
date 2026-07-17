@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback } from 'react'
 import type { FsEntry } from '../types'
 
 type UseListKeyboardNavArgs = {
@@ -7,14 +7,20 @@ type UseListKeyboardNavArgs = {
   renamingPath: string | null
   onOpen: (entry: FsEntry) => void
   setSelected: React.Dispatch<React.SetStateAction<Set<string>>>
+  /**
+   * Brings a row into view by index. Must go through the virtualizer: a row
+   * scrolled out of the window is unmounted, so a DOM `scrollIntoView` would
+   * find nothing and the focused row would stay off-screen (and unmounted).
+   */
+  scrollToIndex: (index: number) => void
 }
 
 /**
- * ArrowUp/ArrowDown/Enter navigation for the file list. Owns the list ref so it
- * can scroll the newly selected row into view. Key handling is unchanged from
- * the inline version: Enter opens a lone selection; arrows move a single-row
- * selection (starting from top/bottom when nothing is selected) and never fire
- * while an inline rename input is focused.
+ * ArrowUp/ArrowDown/Enter navigation for the file list. Key handling is
+ * unchanged from the inline version: Enter opens a lone selection; arrows move
+ * a single-row selection (starting from top/bottom when nothing is selected)
+ * and never fire while an inline rename input is focused. After a move it asks
+ * the virtualizer to scroll the newly selected index into view.
  */
 export function useListKeyboardNav({
   orderedEntries,
@@ -22,9 +28,8 @@ export function useListKeyboardNav({
   renamingPath,
   onOpen,
   setSelected,
+  scrollToIndex,
 }: UseListKeyboardNavArgs) {
-  const fileListRef = useRef<HTMLDivElement>(null)
-
   const handleListKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter') return
@@ -55,11 +60,10 @@ export function useListKeyboardNav({
       }
       const next = orderedEntries[nextIndex]
       setSelected(new Set([next.path]))
-      const row = fileListRef.current?.querySelector(`[data-entry-path="${CSS.escape(next.path)}"]`)
-      row?.scrollIntoView({ block: 'nearest' })
+      scrollToIndex(nextIndex)
     },
-    [orderedEntries, selectedEntries, renamingPath, onOpen, setSelected]
+    [orderedEntries, selectedEntries, renamingPath, onOpen, setSelected, scrollToIndex]
   )
 
-  return { fileListRef, handleListKeyDown }
+  return { handleListKeyDown }
 }

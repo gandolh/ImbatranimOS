@@ -17,6 +17,7 @@ import { cn } from '@imbatranim/core'
 import { Tooltip } from '@imbatranim/core'
 import { Button } from '@imbatranim/core'
 import { downloadUrl } from '@imbatranim/core'
+import type { VirtualList } from '@imbatranim/core'
 import type { FsEntry } from '../types'
 import { sortEntries } from '../lib/fileKind'
 import dayjs from 'dayjs'
@@ -50,6 +51,8 @@ function getFileIcon(entry: FsEntry) {
 
 type FileListProps = {
   entries: FsEntry[]
+  /** Row virtualizer created in FileManager (shared with keyboard nav). */
+  virtualizer: VirtualList<HTMLTableRowElement>
   root: string
   selected: Set<string>
   onSelect: (path: string, multi: boolean) => void
@@ -68,6 +71,7 @@ type FileListProps = {
 
 export function FileList({
   entries,
+  virtualizer,
   root,
   selected,
   onSelect,
@@ -84,6 +88,19 @@ export function FileList({
   onRenameCancel,
 }: FileListProps) {
   const sorted = sortEntries(entries)
+
+  // Virtual window over `sorted`. Only these rows are mounted; the gap above
+  // and below is held open by two spacer <tr>s so the scroll height and the
+  // thumb stay correct (the padding-spacer technique, table-friendly). Offsets
+  // are shifted by scrollMargin (the header that precedes the rows in the same
+  // scroll container) so they measure from the top of <tbody>.
+  const virtualRows = virtualizer.getVirtualItems()
+  const scrollMargin = virtualizer.options.scrollMargin
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start - scrollMargin : 0
+  const paddingBottom =
+    virtualRows.length > 0
+      ? virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1].end - scrollMargin)
+      : 0
 
   if (sorted.length === 0) {
     return (
@@ -106,14 +123,22 @@ export function FileList({
         </tr>
       </thead>
       <tbody>
-        {sorted.map((entry) => {
+        {paddingTop > 0 && (
+          <tr aria-hidden>
+            <td colSpan={5} style={{ height: paddingTop, padding: 0 }} />
+          </tr>
+        )}
+        {virtualRows.map((vr) => {
+          const entry = sorted[vr.index]
           const isSelected = selected.has(entry.path)
           const isRenaming = renamingPath === entry.path
 
           return (
             <tr
               key={entry.path}
+              data-index={vr.index}
               data-entry-path={entry.path}
+              ref={virtualizer.measureElement}
               onClick={(e) => {
                 // Stop the click from bubbling to the background container's
                 // "clear selection" handler — otherwise every row click
@@ -218,6 +243,11 @@ export function FileList({
             </tr>
           )
         })}
+        {paddingBottom > 0 && (
+          <tr aria-hidden>
+            <td colSpan={5} style={{ height: paddingBottom, padding: 0 }} />
+          </tr>
+        )}
       </tbody>
     </table>
   )

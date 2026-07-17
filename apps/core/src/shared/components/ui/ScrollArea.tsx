@@ -1,17 +1,28 @@
 import { ScrollArea as BaseScrollArea } from '@base-ui/react/scroll-area'
-import { type ReactNode } from 'react'
+import { type ReactNode, type Ref } from 'react'
 import { cn } from '../../../lib/cn'
 
 type ScrollAreaProps = {
   children: ReactNode
   className?: string
   orientation?: 'vertical' | 'horizontal' | 'both'
+  /**
+   * Ref to the scrolling viewport element. Needed by consumers that virtualize
+   * their content (the virtualizer reads scrollTop/height off this node) so
+   * they don't have to reach for the library's internal DOM attributes.
+   */
+  viewportRef?: Ref<HTMLDivElement>
 }
 
-export function ScrollArea({ children, className, orientation = 'vertical' }: ScrollAreaProps) {
+export function ScrollArea({
+  children,
+  className,
+  orientation = 'vertical',
+  viewportRef,
+}: ScrollAreaProps) {
   return (
     <BaseScrollArea.Root className={cn('overflow-hidden', className)}>
-      <BaseScrollArea.Viewport className="h-full w-full">
+      <BaseScrollArea.Viewport ref={viewportRef} className="h-full w-full">
         <BaseScrollArea.Content>{children}</BaseScrollArea.Content>
       </BaseScrollArea.Viewport>
 

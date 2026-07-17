@@ -7,3 +7,5 @@ build/
 .env.*
 *.sqlite
 *.sqlite-journal
+# Local dev state: sqlite db + notes/configs created by `npm run dev`
+/data/

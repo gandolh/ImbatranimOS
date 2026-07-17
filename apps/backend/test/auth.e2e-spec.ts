@@ -4,6 +4,7 @@ process.env.DB_PATH = ':memory:';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { Server } from 'http';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { generateSync } from 'otplib';
@@ -11,8 +12,16 @@ import { AppModule } from './../src/app.module';
 
 const PASSWORD = 'correct-horse-battery-staple';
 
+/** Shapes of the two response bodies this spec reads fields off of. */
+interface EnrollResponse {
+  secret: string;
+}
+interface AuthStatusResponse {
+  totpEnabled: boolean;
+}
+
 describe('Auth (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication<Server>;
   let http: ReturnType<typeof request>;
 
   beforeAll(async () => {
@@ -41,6 +50,8 @@ describe('Auth (e2e)', () => {
       needsSetup: true,
       authenticated: false,
       totpEnabled: false,
+      // Default-off: no SETUP_TOKEN configured => never required.
+      setupTokenRequired: false,
     });
   });
 
@@ -101,7 +112,7 @@ describe('Auth (e2e)', () => {
       .set('Cookie', sessionCookie)
       .send({ password: PASSWORD })
       .expect(200);
-    const secret: string = enroll.body.secret;
+    const secret = (enroll.body as EnrollResponse).secret;
     await http
       .post('/api/auth/totp/enable')
       .set('Cookie', sessionCookie)
@@ -109,7 +120,7 @@ describe('Auth (e2e)', () => {
       .expect(200);
 
     const status = await http.get('/api/auth/status').expect(200);
-    expect(status.body.totpEnabled).toBe(true);
+    expect((status.body as AuthStatusResponse).totpEnabled).toBe(true);
 
     // Password alone no longer logs in.
     await http.post('/api/auth/login').send({ password: PASSWORD }).expect(401);

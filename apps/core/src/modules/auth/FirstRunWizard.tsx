@@ -11,15 +11,23 @@ const MIN_LENGTH = 10
  * There is no default password anywhere — the account does not exist until
  * this succeeds. Setup auto-issues a session, so onDone lands on the desktop.
  */
-export function FirstRunWizard({ onDone }: { onDone: () => void }) {
+export function FirstRunWizard({
+  tokenRequired = false,
+  onDone,
+}: {
+  tokenRequired?: boolean
+  onDone: () => void
+}) {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [token, setToken] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const tooShort = password.length > 0 && password.length < MIN_LENGTH
   const mismatch = confirm.length > 0 && confirm !== password
-  const canSubmit = password.length >= MIN_LENGTH && confirm === password && !busy
+  const tokenMissing = tokenRequired && token.length === 0
+  const canSubmit = password.length >= MIN_LENGTH && confirm === password && !tokenMissing && !busy
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -27,7 +35,7 @@ export function FirstRunWizard({ onDone }: { onDone: () => void }) {
     setBusy(true)
     setError(null)
     try {
-      await setupPassword(password)
+      await setupPassword(password, tokenRequired ? token : undefined)
       onDone()
     } catch (err) {
       const msg =
@@ -60,6 +68,16 @@ export function FirstRunWizard({ onDone }: { onDone: () => void }) {
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
         />
+        {tokenRequired && (
+          <Input
+            id="setup-token"
+            label="Setup token"
+            type="password"
+            autoComplete="off"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+          />
+        )}
         <p className="font-content text-on-surface-variant text-[11px]">
           Use at least {MIN_LENGTH} characters. Choose something strong — this computer can be
           reached from the internet.

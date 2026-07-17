@@ -7,6 +7,8 @@ interface AuthState {
   authenticated: boolean
   needsSetup: boolean
   totpEnabled: boolean
+  /** True when first-run setup must present the operator's SETUP_TOKEN. */
+  setupTokenRequired: boolean
   /** Re-fetch auth status from the backend (source of truth). */
   refresh: () => Promise<void>
   /** Optimistically flip authentication (e.g. on a 401 => back to lock). */
@@ -18,6 +20,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   authenticated: false,
   needsSetup: false,
   totpEnabled: false,
+  setupTokenRequired: false,
   refresh: async () => {
     try {
       const status = await getStatus()
@@ -26,6 +29,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         authenticated: status.authenticated,
         needsSetup: status.needsSetup,
         totpEnabled: status.totpEnabled,
+        setupTokenRequired: status.setupTokenRequired,
       })
     } catch {
       // Backend unreachable: show the lock screen rather than the desktop.

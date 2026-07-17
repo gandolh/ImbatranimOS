@@ -32,6 +32,12 @@ export const envSchema = z.object({
   TRUST_PROXY: envBool(false),
   // Session lifetime; sliding — validation refreshes last_seen but not expiry.
   SESSION_TTL_HOURS: z.coerce.number().default(168), // 7 days
+  // --- First-run claim protection (Brief 28) -----------------------------
+  // Set to a random secret (printed to your deploy logs / passed to the
+  // operator) to require it at first-run setup; leave unset for trusted
+  // networks. When set, POST /auth/setup must present a matching token or is
+  // rejected; when unset, first-run behaviour is exactly as before.
+  SETUP_TOKEN: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

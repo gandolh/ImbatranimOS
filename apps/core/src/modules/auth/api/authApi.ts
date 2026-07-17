@@ -4,6 +4,8 @@ export interface AuthStatus {
   needsSetup: boolean
   authenticated: boolean
   totpEnabled: boolean
+  /** True when the operator set SETUP_TOKEN and the box is still unclaimed. */
+  setupTokenRequired: boolean
 }
 
 export interface TotpEnrollment {
@@ -17,8 +19,8 @@ export async function getStatus(): Promise<AuthStatus> {
   return res.data
 }
 
-export async function setupPassword(password: string): Promise<void> {
-  await api.post('/auth/setup', { password })
+export async function setupPassword(password: string, token?: string): Promise<void> {
+  await api.post('/auth/setup', { password, ...(token ? { token } : {}) })
 }
 
 export async function login(password: string, token?: string): Promise<void> {

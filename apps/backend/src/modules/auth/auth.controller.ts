@@ -10,6 +10,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash, timingSafeEqual } from 'crypto';
 import type { Request, Response } from 'express';
 import type { Env } from '../../config/env.schema';
 import { AuthService } from './auth.service';
@@ -44,6 +45,10 @@ export class AuthController {
       needsSetup: !this.auth.isSetup(),
       authenticated: !!this.sessions.validateFromRequest(req),
       totpEnabled: this.auth.totpEnabled(),
+      // Only meaningful pre-claim: tells the wizard to ask for the operator's
+      // out-of-band token. False once claimed or when SETUP_TOKEN is unset.
+      setupTokenRequired:
+        !this.auth.isSetup() && !!this.config.get('SETUP_TOKEN'),
     };
   }
 
@@ -56,6 +61,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
+    this.assertSetupToken(dto.token);
     await this.auth.setup(dto.password);
     this.issueSessionCookie(req, res);
     return { ok: true };
@@ -123,6 +129,32 @@ export class AuthController {
   }
 
   // ---- helpers ----------------------------------------------------------
+
+  /**
+   * Gate first-run claim behind the operator's out-of-band SETUP_TOKEN.
+   *
+   * When SETUP_TOKEN is unset/empty the check is skipped entirely — behaviour
+   * is byte-for-byte identical to before Brief 28. When it is set, `dto.token`
+   * must match it exactly or the claim is refused with 401 (thrown BEFORE any
+   * account is created).
+   *
+   * The compare is constant-time: both sides are SHA-256'd first so
+   * `timingSafeEqual` always sees two equal-length (32-byte) buffers — it never
+   * throws on a length mismatch, and the comparison time does not leak the
+   * length of, or difference in, the provided token. A missing token hashes to
+   * a value that cannot match a non-empty secret, so it fails like any other
+   * wrong token. The secret itself is never logged.
+   */
+  private assertSetupToken(provided: string | undefined): void {
+    const expected = this.config.get('SETUP_TOKEN', { infer: true });
+    if (!expected) return; // opt-in: unset => no gate, identical to today.
+    const digest = (s: string): Buffer =>
+      createHash('sha256').update(s, 'utf8').digest();
+    const ok = timingSafeEqual(digest(provided ?? ''), digest(expected));
+    if (!ok) {
+      throw new UnauthorizedException('Invalid setup token');
+    }
+  }
 
   /**
    * Mark the cookie Secure when COOKIE_SECURE is set OR the request itself

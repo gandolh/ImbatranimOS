@@ -6,6 +6,11 @@ export class SetupDto {
   @IsString()
   @MinLength(10, { message: 'Password must be at least 10 characters' })
   password: string;
+
+  // Present only when the operator set SETUP_TOKEN; gates first-run claim.
+  @IsOptional()
+  @IsString()
+  token?: string;
 }
 
 export class LoginDto {

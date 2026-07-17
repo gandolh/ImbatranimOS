@@ -11,6 +11,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const ready = useAuthStore((s) => s.ready)
   const authenticated = useAuthStore((s) => s.authenticated)
   const needsSetup = useAuthStore((s) => s.needsSetup)
+  const setupTokenRequired = useAuthStore((s) => s.setupTokenRequired)
   const refresh = useAuthStore((s) => s.refresh)
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated)
 
@@ -33,7 +34,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     )
   }
   if (needsSetup) {
-    return <FirstRunWizard onDone={() => void refresh()} />
+    return <FirstRunWizard tokenRequired={setupTokenRequired} onDone={() => void refresh()} />
   }
   if (!authenticated) {
     return <LockScreen onUnlock={() => void refresh()} />

@@ -1,0 +1,59 @@
+/**
+ * The composition root — the ONLY file in core allowed to import
+ * `@imbatranim/*` add-on packages (enforced by eslint no-restricted-imports;
+ * the exception lives in eslint.config.js, not tribal knowledge).
+ *
+ * Adding an app to the OS = one import + one array entry here. Nothing else
+ * in core changes.
+ */
+import { Settings as SettingsIcon } from 'lucide-react'
+import { manifest as stickyNotes } from '@imbatranim/sticky-notes'
+import { manifest as todo } from '@imbatranim/todo'
+import { manifest as bookmarks } from '@imbatranim/bookmarks'
+import { manifest as notepad } from '@imbatranim/notepad'
+import { manifest as terminal } from '@imbatranim/repl-interpreter'
+import { manifest as fileManager } from '@imbatranim/file-manager'
+import { manifest as systemMonitor } from '@imbatranim/system-monitor'
+import type { AddonManifest, AppConfig } from './contract'
+import {
+  COMMAND_SOURCES,
+  registerCommandSource,
+} from './shared/commands/CommandSourcesRegistry'
+import { Settings } from './modules/settings/Settings'
+
+// Settings is core (shell + auth + settings roster), not an add-on — it is
+// declared here directly rather than imported as a package.
+const settings: AddonManifest = {
+  id: 'settings',
+  name: 'Settings',
+  description: 'System settings and appearance',
+  meta: ['config', 'appearance', 'background', 'wallpaper', 'theme'],
+  icon: SettingsIcon,
+  component: Settings,
+  multiInstance: false,
+  defaultSize: { width: 440, height: 500 },
+  minSize: { width: 360, height: 400 },
+}
+
+const MANIFESTS: AddonManifest[] = [
+  stickyNotes,
+  todo,
+  bookmarks,
+  notepad,
+  settings,
+  terminal,
+  fileManager,
+  systemMonitor,
+]
+
+export const APP_REGISTRY: AppConfig[] = MANIFESTS
+
+// Register add-on command-palette sources once (guard against HMR
+// double-registration, same as the palette's own sources).
+for (const m of MANIFESTS) {
+  for (const source of m.commandSources ?? []) {
+    if (!COMMAND_SOURCES.find((s) => s.group === source.group)) {
+      registerCommandSource(source)
+    }
+  }
+}

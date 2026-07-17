@@ -5,16 +5,19 @@
   "packageManager": "npm@11.11.0",
   "workspaces": [
     "apps/backend",
-    "apps/frontend"
+    "apps/core",
+    "apps/add-ons/*"
   ],
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "test": "turbo test",
+    "typecheck": "turbo typecheck",
     "format:check": "turbo format:check"
   },
   "devDependencies": {
+    "prettier": "3.8.3",
     "turbo": "^2.10.5"
   }
 }

@@ -120,15 +120,22 @@ they'll show up here.)*
 
 ## Developing
 
-The repo is an npm workspace (`apps/backend`, `apps/frontend`) with
-[Turborepo](https://turborepo.dev) as the task runner — one install, one
-lockfile, one entry point for every task:
+The repo is an npm workspace with [Turborepo](https://turborepo.dev) as the
+task runner — one install, one lockfile, one entry point for every task:
+
+```
+apps/
+  backend/      NestJS API + PTY/FS/system endpoints (its own modules tree)
+  core/         the desktop: shell, window manager, auth, settings (@imbatranim/core)
+  add-ons/      one package per desktop app (@imbatranim/<name>)
+```
 
 ```bash
-npm install        # once, at the repo root — installs both apps
+npm install        # once, at the repo root — installs everything
 npm run dev        # Nest watch (:3001) + Vite HMR (:5173), in parallel
-npm run build      # builds both apps (cached — a second run is instant)
-npm run lint       # lints both apps
+npm run build      # builds backend + desktop (cached — a second run is instant)
+npm run lint       # lints every package
+npm run typecheck  # typechecks every package
 npm run test       # backend test suite
 npm run format:check
 ```
@@ -136,6 +143,28 @@ npm run format:check
 The same works containerized: the compose dev profile
 (`docker compose -f infrastructure/docker-compose.yml --profile dev up`)
 runs `turbo dev` inside the image with your `apps/` bind-mounted for HMR.
+
+### Adding a desktop app (add-on)
+
+Apps that open in a window are workspace packages under `apps/add-ons/`,
+kept apart from the OS so they can be added/removed without touching core:
+
+1. Create `apps/add-ons/<name>/` with a `package.json` (name it
+   `@imbatranim/<name>`, copy an existing add-on's scripts/devDeps), a
+   `tsconfig.json` extending `../tsconfig.base.json`, and an
+   `eslint.config.js` (copy one — it carries the import-boundary rules).
+2. Put your app in `src/`, importing anything it needs from
+   `@imbatranim/core` only (UI kit, `api`, stores, `openApp` — the public
+   surface in core's `src/index.ts`).
+3. Export a `manifest: AddonManifest` from `src/index.ts` — id, name, icon,
+   component, window sizes, plus optional `commandSources` for the command
+   palette.
+4. Register it in the ONE place core knows about add-ons:
+   `apps/core/src/manifest.ts` (one import + one array entry), and
+   `npm install` to link the workspace.
+
+Nothing else in core changes; the boundary (add-ons → core only, core
+imports add-ons only in `manifest.ts`) is enforced by eslint.
 
 ## Project knowledge
 

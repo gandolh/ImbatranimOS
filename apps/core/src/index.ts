@@ -1,0 +1,34 @@
+/**
+ * @imbatranim/core — the public surface add-ons may import.
+ *
+ * Everything an add-on needs crosses this barrel; deep imports into core
+ * internals are forbidden (enforced by eslint no-restricted-imports in the
+ * add-on packages). Keep this surface deliberate: adding an export here is
+ * an API decision, not a convenience.
+ */
+
+// Add-on contract
+export type { AppConfig, AddonManifest } from './contract'
+export type { CommandSource, CommandItem } from './shared/commands/CommandSourcesRegistry'
+
+// HTTP + query plumbing
+export { api } from './lib/axios'
+export { queryClient } from './lib/queryClient'
+
+// Styling helper
+export { cn } from './lib/cn'
+
+// UI kit
+export { Button } from './shared/components/ui/Button'
+export { Checkbox } from './shared/components/ui/Checkbox'
+export { Dialog } from './shared/components/ui/Dialog'
+export { Input } from './shared/components/ui/Input'
+export { ScrollArea } from './shared/components/ui/ScrollArea'
+export { Select } from './shared/components/ui/Select'
+export { Separator } from './shared/components/ui/Separator'
+export { Tooltip } from './shared/components/ui/Tooltip'
+
+// Desktop shell access
+export { openApp } from './shared/intents/openApp'
+export { useIntentStore } from './shared/store/intentStore'
+export { useWindowStore } from './shared/store/windowStore'

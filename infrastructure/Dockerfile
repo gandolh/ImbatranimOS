@@ -1,5 +1,6 @@
 # ImbatranimOS — one dual-mode image. Build context is the REPO ROOT
-# (npm workspace: one root lockfile covers apps/backend + apps/frontend).
+# (npm workspace: one root lockfile covers apps/backend, apps/core and the
+# apps/add-ons/* packages).
 #
 #   prod (default):  slim, Nest serves the built desktop + API on one port
 #   dev:             Nest (watch) + Vite (HMR) via `turbo dev`, two ports
@@ -17,15 +18,23 @@ WORKDIR /app
 # Manifests first for layer caching: one root lockfile, one npm ci.
 COPY package.json package-lock.json turbo.json ./
 COPY apps/backend/package.json ./apps/backend/
-COPY apps/frontend/package.json ./apps/frontend/
+COPY apps/core/package.json ./apps/core/
+COPY apps/add-ons/bookmarks/package.json ./apps/add-ons/bookmarks/
+COPY apps/add-ons/file-manager/package.json ./apps/add-ons/file-manager/
+COPY apps/add-ons/notepad/package.json ./apps/add-ons/notepad/
+COPY apps/add-ons/repl-interpreter/package.json ./apps/add-ons/repl-interpreter/
+COPY apps/add-ons/sticky-notes/package.json ./apps/add-ons/sticky-notes/
+COPY apps/add-ons/system-monitor/package.json ./apps/add-ons/system-monitor/
+COPY apps/add-ons/todo/package.json ./apps/add-ons/todo/
 RUN npm ci
 
 # ---------------------------------------------------------------------------
-# builder — compile backend (nest) and frontend (vite, same-origin API)
+# builder — compile backend (nest) and the desktop (core vite build, which
+# bundles the add-on packages via workspace resolution)
 # ---------------------------------------------------------------------------
 FROM deps AS builder
 COPY apps ./apps
-# Prod frontend talks to the API same-origin at /api; backend ignores the var.
+# Prod desktop talks to the API same-origin at /api; backend ignores the var.
 RUN VITE_API_URL=/api npx turbo build
 
 # ---------------------------------------------------------------------------
@@ -36,8 +45,15 @@ RUN apk add --no-cache python3 make g++
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
-COPY apps/frontend/package.json ./apps/frontend/
-# Backend runtime deps only — the frontend is prebuilt to static files, so
+COPY apps/core/package.json ./apps/core/
+COPY apps/add-ons/bookmarks/package.json ./apps/add-ons/bookmarks/
+COPY apps/add-ons/file-manager/package.json ./apps/add-ons/file-manager/
+COPY apps/add-ons/notepad/package.json ./apps/add-ons/notepad/
+COPY apps/add-ons/repl-interpreter/package.json ./apps/add-ons/repl-interpreter/
+COPY apps/add-ons/sticky-notes/package.json ./apps/add-ons/sticky-notes/
+COPY apps/add-ons/system-monitor/package.json ./apps/add-ons/system-monitor/
+COPY apps/add-ons/todo/package.json ./apps/add-ons/todo/
+# Backend runtime deps only — the desktop is prebuilt to static files, so
 # none of its packages (react etc.) may reach the prod image.
 RUN npm ci --omit=dev --workspace=backend
 # Strip native build intermediates now that the .node binaries are compiled:
@@ -63,7 +79,7 @@ WORKDIR /app
 COPY --from=proddeps /app/node_modules ./node_modules
 COPY --from=proddeps /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
-COPY --from=builder /app/apps/frontend/dist ./public
+COPY --from=builder /app/apps/core/dist ./public
 COPY package.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY infrastructure/entrypoint.sh /entrypoint.sh

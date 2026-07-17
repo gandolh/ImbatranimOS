@@ -1,0 +1,51 @@
+import { ChevronRight } from 'lucide-react'
+import { cn } from '@imbatranim/core'
+
+type BreadcrumbProps = {
+  root: string
+  rootLabel: string
+  path: string
+  onNavigate: (path: string) => void
+}
+
+export function Breadcrumb({ root: _root, rootLabel, path, onNavigate }: BreadcrumbProps) {
+  const parts = path ? path.split('/').filter(Boolean) : []
+
+  const segments: { label: string; path: string }[] = [
+    { label: rootLabel, path: '' },
+    ...parts.map((part, idx) => ({
+      label: part,
+      path: parts.slice(0, idx + 1).join('/'),
+    })),
+  ]
+
+  return (
+    <div className="flex items-center gap-0 border-b border-outline-variant bg-surface-container-low px-2 py-1">
+      {segments.map((seg, idx) => {
+        const isLast = idx === segments.length - 1
+        return (
+          <div key={seg.path} className="flex items-center">
+            {idx > 0 && (
+              <ChevronRight
+                size={12}
+                strokeWidth={2}
+                className="mx-0.5 shrink-0 text-on-surface-variant"
+              />
+            )}
+            <button
+              onClick={() => !isLast && onNavigate(seg.path)}
+              className={cn(
+                'font-ui text-[12px] px-1 py-0.5',
+                isLast
+                  ? 'cursor-default text-on-surface font-semibold'
+                  : 'cursor-pointer text-on-surface-variant hover:text-primary hover:bg-surface-container',
+              )}
+            >
+              {seg.label}
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}

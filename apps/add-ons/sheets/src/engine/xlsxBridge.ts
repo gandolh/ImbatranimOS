@@ -1,9 +1,13 @@
 /**
  * Lazy bridge between xlsx bytes and Univer's workbook model, backed by
- * **ExcelJS** (MIT). ExcelJS is heavy and only pulled in on first open/save via
- * dynamic import, so it becomes its own build chunk and never lands in the
- * desktop boot bundle. Nothing here is imported at module top level (the
- * `import type` lines are erased at build time).
+ * **ExcelJS** (MIT). The entire ExcelJS round-trip — load + cell→Univer mapping
+ * on parse, Univer→cell + writeBuffer on serialize — runs in a dedicated Web
+ * Worker (`./xlsxWorker.ts`), so the CPU-bound per-cell iteration never blocks
+ * the desktop's UI thread. Because the worker is the only thing that imports
+ * ExcelJS, the heavy `exceljs` chunk lands entirely in the worker chunk and
+ * never in the desktop boot bundle or the main sheets entry chunk. The worker
+ * is created lazily on first open/save (same as the old dynamic import) and
+ * reused across every subsequent open/save.
  *
  * SheetJS Community Edition was the original pick but its writer silently drops
  * cell styles (bold/fills/colors) — proven in the brief-20 spike — so it fails
@@ -11,183 +15,80 @@
  * fonts, fills, number formats and formulas, which the spike verified via an
  * independent openpyxl round-trip. This bridge maps the intersection Univer can
  * render: values, formulas, number formats, bold/italic, font color, and solid
- * cell fills.
+ * cell fills. The mapping code itself lives in the worker (moved verbatim, not
+ * rewritten) so fidelity is unchanged — this module only owns the threading.
  */
-import type ExcelJS from 'exceljs'
-import type { IWorkbookData, ICellData, IStyleData, IWorksheetData } from '@univerjs/presets'
+import type { IWorkbookData } from '@univerjs/presets'
+import type { WorkerReply, WorkerRequest } from './xlsxWorker'
 
-// exceljs is CJS; grab whichever shape the interop hands back.
-async function loadExcelJS(): Promise<typeof ExcelJS> {
-  const mod = (await import('exceljs')) as unknown as {
-    default?: typeof ExcelJS
-  } & typeof ExcelJS
-  return mod.default ?? mod
-}
+// One worker instance, created lazily on first use and cached like pdf.js's
+// `pdfjsPromise`: repeated opens/saves reuse the same worker. Each request gets
+// an incrementing id so parse and serialize replies can't cross wires.
+let worker: Worker | null = null
+let nextId = 0
+const pending = new Map<
+  number,
+  { resolve: (value: unknown) => void; reject: (reason: Error) => void }
+>()
 
-// ── Color helpers ──────────────────────────────────────────────────────────
-// ExcelJS speaks 8-digit ARGB; Univer speaks CSS-ish hex. Normalize between.
-function argbToHex(argb?: string | null): string | undefined {
-  if (!argb) return undefined
-  const h = argb.replace(/^#/, '')
-  return '#' + h.slice(-6).toUpperCase()
-}
-function hexToArgb(hex?: string | null): string | undefined {
-  if (!hex) return undefined
-  return 'FF' + hex.replace(/^#/, '').slice(-6).toUpperCase()
-}
-
-// ── ExcelJS cell → Univer ──────────────────────────────────────────────────
-function cellToUniverStyle(cell: ExcelJS.Cell): IStyleData | undefined {
-  const st: IStyleData = {}
-  const font = cell.font
-  if (font?.bold) st.bl = 1
-  if (font?.italic) st.it = 1
-  const fontColor = argbToHex(font?.color?.argb)
-  if (fontColor) st.cl = { rgb: fontColor }
-  const fill = cell.fill
-  if (fill && fill.type === 'pattern' && fill.pattern === 'solid') {
-    const bg = argbToHex(fill.fgColor?.argb)
-    if (bg) st.bg = { rgb: bg }
-  }
-  const nf = cell.numFmt
-  if (nf && nf !== 'General') st.n = { pattern: nf }
-  return Object.keys(st).length ? st : undefined
-}
-
-function cellValueToUniver(cell: ExcelJS.Cell): Pick<ICellData, 'v' | 'f'> {
-  const v = cell.value
-  if (v == null) return {}
-  if (typeof v === 'object') {
-    if ('formula' in v || 'sharedFormula' in v) {
-      // Read formulas through the cell-level getter, which covers BOTH masters
-      // and shared-formula followers. For a follower, `v.sharedFormula` holds
-      // the MASTER CELL'S ADDRESS (e.g. "B2"), not a formula — only
-      // `cell.formula` materializes the translated formula (=A2*2, =A3*2, …).
-      // Reading `v.sharedFormula` raw would round-trip fill-down/-right cells as
-      // self-referential literals (f: "=B2") — silent data corruption.
-      const formula = cell.formula
-      const out: Pick<ICellData, 'v' | 'f'> = formula ? { f: '=' + formula } : {}
-      const result = (v as { result?: unknown }).result
-      if (result != null && typeof result !== 'object') {
-        out.v = result as string | number | boolean
+function getWorker(): Worker {
+  if (!worker) {
+    worker = new Worker(new URL('./xlsxWorker.ts', import.meta.url), { type: 'module' })
+    worker.onmessage = (ev: MessageEvent<WorkerReply>) => {
+      const reply = ev.data
+      const entry = pending.get(reply.id)
+      if (!entry) return
+      pending.delete(reply.id)
+      if ('error' in reply) {
+        // Reject with a real Error so Sheets.tsx's catch fires on a corrupt or
+        // unsupported file instead of the promise hanging forever.
+        entry.reject(new Error(reply.error))
+      } else {
+        entry.resolve(reply.result)
       }
-      return out
     }
-    if ('richText' in v && Array.isArray(v.richText)) {
-      return { v: v.richText.map((r) => r.text).join('') }
+    // A worker-level failure (module load error, uncaught crash) sends no
+    // id-tagged reply, so fail every in-flight request rather than hang, and
+    // drop the instance so the next call spawns a fresh worker.
+    const failAll = (message: string) => {
+      for (const entry of pending.values()) entry.reject(new Error(message))
+      pending.clear()
+      worker = null
     }
-    if ('text' in v) return { v: String((v as { text: unknown }).text) }
-    if ('hyperlink' in v) return { v: String((v as { hyperlink: unknown }).hyperlink) }
-    if (v instanceof Date) return { v: v.toISOString() }
-    return {}
+    worker.onerror = (ev) => failAll(ev.message || 'xlsx worker crashed')
+    worker.onmessageerror = () => failAll('xlsx worker received an uncloneable message')
   }
-  return { v: v as string | number | boolean }
+  return worker
+}
+
+// Distributive Omit so `bytes`/`snapshot` survive the union (a plain
+// `Omit<WorkerRequest, 'id'>` collapses to the members' common keys).
+type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never
+
+// Post a request and await the reply correlated by id. `transfer` neuters the
+// listed buffers, so callers must not touch them again after handing them over.
+function request<T>(
+  msg: DistributiveOmit<WorkerRequest, 'id'>,
+  transfer: Transferable[] = []
+): Promise<T> {
+  const w = getWorker()
+  const id = nextId++
+  return new Promise<T>((resolve, reject) => {
+    pending.set(id, { resolve: resolve as (value: unknown) => void, reject })
+    w.postMessage({ ...msg, id }, transfer)
+  })
 }
 
 /** Parse xlsx bytes into a Univer workbook snapshot. */
-export async function xlsxToUniver(bytes: ArrayBuffer): Promise<Partial<IWorkbookData>> {
-  const ExcelJSLib = await loadExcelJS()
-  const wb = new ExcelJSLib.Workbook()
-  await wb.xlsx.load(bytes)
-
-  const sheets: Record<string, Partial<IWorksheetData>> = {}
-  const sheetOrder: string[] = []
-
-  wb.eachSheet((ws, sheetIndex) => {
-    const id = `sheet-${sheetIndex}`
-    sheetOrder.push(id)
-    const cellData: Record<number, Record<number, ICellData>> = {}
-    let maxCol = 0
-
-    ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-        const r = rowNumber - 1
-        const c = colNumber - 1
-        const uc: ICellData = { ...cellValueToUniver(cell) }
-        const style = cellToUniverStyle(cell)
-        if (style) uc.s = style
-        if (uc.v !== undefined || uc.f !== undefined || uc.s !== undefined) {
-          ;(cellData[r] ||= {})[c] = uc
-          if (c > maxCol) maxCol = c
-        }
-      })
-    })
-
-    sheets[id] = {
-      id,
-      name: ws.name,
-      cellData,
-      columnCount: Math.max(maxCol + 1, 20),
-    }
-  })
-
-  // A truly empty workbook still needs one sheet for Univer to mount.
-  if (sheetOrder.length === 0) {
-    sheets['sheet-1'] = { id: 'sheet-1', name: 'Sheet1', cellData: {} }
-    sheetOrder.push('sheet-1')
-  }
-
-  return { id: 'imbatranim-sheets', name: 'Workbook', sheetOrder, sheets }
-}
-
-// ── Univer → ExcelJS ────────────────────────────────────────────────────────
-function resolveStyle(
-  raw: ICellData['s'],
-  styles: IWorkbookData['styles'] | undefined
-): IStyleData | undefined {
-  if (!raw) return undefined
-  if (typeof raw === 'string') return (styles?.[raw] as IStyleData) ?? undefined
-  return raw
-}
-
-function applyUniverStyle(cell: ExcelJS.Cell, st: IStyleData | undefined): void {
-  if (!st) return
-  const font: Partial<ExcelJS.Font> = {}
-  if (st.bl) font.bold = true
-  if (st.it) font.italic = true
-  const clRgb = st.cl && typeof st.cl === 'object' ? (st.cl.rgb as string | undefined) : undefined
-  const cl = hexToArgb(clRgb)
-  if (cl) font.color = { argb: cl }
-  if (Object.keys(font).length) cell.font = font
-  const bgRgb = st.bg && typeof st.bg === 'object' ? (st.bg.rgb as string | undefined) : undefined
-  const bgArgb = hexToArgb(bgRgb)
-  if (bgArgb) {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } }
-  }
-  if (st.n && typeof st.n === 'object' && st.n.pattern) cell.numFmt = st.n.pattern
+export function xlsxToUniver(bytes: ArrayBuffer): Promise<Partial<IWorkbookData>> {
+  // Transfer the input buffer into the worker (neuters `bytes` here — the caller
+  // does not read it again after this call).
+  return request<Partial<IWorkbookData>>({ kind: 'parse', bytes }, [bytes])
 }
 
 /** Serialize a Univer workbook snapshot back to xlsx bytes. */
-export async function univerToXlsx(snapshot: IWorkbookData): Promise<ArrayBuffer> {
-  const ExcelJSLib = await loadExcelJS()
-  const wb = new ExcelJSLib.Workbook()
-
-  for (const sheetId of snapshot.sheetOrder) {
-    const sd = snapshot.sheets[sheetId]
-    if (!sd) continue
-    const ws = wb.addWorksheet(sd.name || sheetId)
-    const cellData = sd.cellData ?? {}
-    for (const rowKey of Object.keys(cellData)) {
-      const r = Number(rowKey)
-      const rowCells = cellData[Number(rowKey)] as Record<number, ICellData>
-      for (const colKey of Object.keys(rowCells)) {
-        const c = Number(colKey)
-        const uc = rowCells[Number(colKey)]
-        if (!uc) continue
-        const cell = ws.getCell(r + 1, c + 1)
-        if (uc.f) {
-          cell.value = {
-            formula: String(uc.f).replace(/^=/, ''),
-            result: (uc.v ?? undefined) as string | number | boolean | undefined,
-          }
-        } else if (uc.v !== undefined && uc.v !== null) {
-          cell.value = uc.v as string | number | boolean
-        }
-        applyUniverStyle(cell, resolveStyle(uc.s, snapshot.styles))
-      }
-    }
-  }
-
-  const buffer = await wb.xlsx.writeBuffer()
-  return buffer as ArrayBuffer
+export function univerToXlsx(snapshot: IWorkbookData): Promise<ArrayBuffer> {
+  // The snapshot is a plain structured-cloneable object — post it as-is; the
+  // worker transfers the freshly-written buffer back to us.
+  return request<ArrayBuffer>({ kind: 'serialize', snapshot })
 }

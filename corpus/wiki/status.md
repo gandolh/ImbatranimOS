@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16–30 DONE (incl. the 2026-07-17 post-v1 backlog run, plus the review-pass cleanup wave 23–30: shared-addon-kit, window-render-perf, notes/FilesService dedup, FileManager split, docx off-thread, opt-in setup token, backend lint debt paid, add-on polish); brief 15's human-gated remainder is all that stands before v1.0. Open todos: xlsx-worker (PERF-6 tail), SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated).
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–30 DONE (incl. the 2026-07-17 post-v1 backlog run, plus the review-pass cleanup wave 23–30: shared-addon-kit, window-render-perf, notes/FilesService dedup, FileManager split, docx off-thread, opt-in setup token, backend lint debt paid, add-on polish); brief 15's human-gated remainder is all that stands before v1.0. Brief 31 (virtualize long lists, TanStack Virtual) is the first daily-driver-expansion brief queued. Open todos: xlsx-worker (PERF-6 tail), SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated), plus a 2026-07-17 daily-driver app backlog (see below).
 updated: 2026-07-17
 ---
 
@@ -55,6 +55,7 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 28 | [first-run-setup-token](../briefs/done/28-first-run-setup-token.md) | **done** | SEC-2: opt-in `SETUP_TOKEN` (default-off no-op) gates first-run claim with a constant-time compare; `/auth/status` advertises it, wizard asks when required. 80 unit + 34 e2e. Human-gated: token deploy |
 | 29 | [backend-lint-typing](../briefs/done/29-backend-lint-typing.md) | **done** | Paid the backend `no-unsafe-*` lint debt (typed sqlite rows + pty/main/test typing). **`backend#lint` + root `npm run lint` now green (0/0)** — the last standing lint red is gone |
 | 30 | [addon-polish](../briefs/done/30-addon-polish.md) | **done** | Notepad StrictMode-safe intent drain; new core `PromptDialog`/`usePrompt` replaces native `prompt()`; dropped 4 dead `zustand` deps (+ lockfile). Human-gated: notepad walkthrough |
+| 31 | [virtualize-long-lists](../briefs/todo/31-virtualize-long-lists.md) | **todo** | PERF: virtualize ProcessTable (re-renders every 1.5s) + FileList (large dirs) with `@tanstack/react-virtual`, centralized in core via a `useVirtualList` helper. Grilled 2026-07-17. Query already well-configured — untouched |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
 (human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1
@@ -114,3 +115,23 @@ window-drag render perf (PERF-1), office parsing off-thread (PERF-6),
 FileManager split (CS-3), notes/FilesService dedup (CS-7), first-run setup
 hardening (SEC-2), CSP ws scoping (SEC-9), kiosk `--no-sandbox` (SEC-10),
 the notepad StrictMode intent bug, lint debt, and add-on cleanup nits.
+
+## 2026-07-17 — Daily-driver expansion backlog
+
+A test-run + research pass ("what to build next for a daily driver — normal
+users + web/low-level programmers, no gaming") captured a batch of app/platform
+todos in `todos/`. All gates were green at the time (80 unit tests, typecheck
+13/13, lint 0/0, clean build 9.1 s).
+
+- **Promoted to briefs:** virtualize-long-lists → **brief 31** (TanStack
+  Virtual on ProcessTable + FileList; grilled — dep centralized in core).
+- **Captured, awaiting promotion:** developer apps (code-editor-monaco,
+  git-gui-addon, rest-api-client-addon, markdown-previewer-addon); normal-user
+  apps (calculator, archive-manager, image-viewer, media-player, clock,
+  calendar); platform (notification-center, global-search-launcher,
+  addon-manager).
+- **Held (decided, do NOT promote yet):** `eager-bundle-lazy-load` — the eager
+  login chunk is 397 KB gzip in one bundle (zero `React.lazy` boundaries; every
+  app shell is eager). Splitting is premature at current cold-start numbers;
+  **trigger to promote = when a heavy app (Monaco) lands in the eager bundle**,
+  and then with no hard size target (measure before/after).

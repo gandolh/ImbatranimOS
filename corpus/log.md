@@ -518,8 +518,8 @@ exact; its findings (`useConfirm` re-entrancy + unmount promise-hang, a
 param-shadow, a sheets fallback drift `workbook.xlsx`) were fixed.
 Promoted todos office-addon-shared-helpers + destructive-action-confirm-ux
 removed on completion; discovered nits captured in
-[add-on-cleanup-nits](todos/add-on-cleanup-nits.md) (dead `zustand` deps,
-notepad native `prompt()`). Human-gated remainder: the in-browser
+add-on-cleanup-nits (dead `zustand` deps, notepad native `prompt()` — both
+since resolved in brief 30). Human-gated remainder: the in-browser
 walkthrough per the brief's verify bar.
 
 ## 2026-07-17 — Full-auto backlog run: briefs 24 + 25 (review-pass todos)
@@ -608,3 +608,28 @@ items — SEC-9 CSP `ws:` scoping (csp-connect-src-ws-wildcard.md, risks the
 terminal on some browsers) and SEC-10 kiosk `--no-sandbox`
 (kiosk-no-sandbox.md, needs Alpine userns + a QEMU boot test). Every shipped
 brief carries a human-gated in-browser verification remainder.
+
+## 2026-07-17 — Daily-driver expansion: research capture + brief 31
+
+- **Test run:** all gates green on brief 30 (`format:check` 9/9, `typecheck`
+  13/13 FULL TURBO, `lint` 0/0, `test` 80/80, clean `--force` build 9.1 s).
+  Bundle finding: eager login chunk = 1.30 MB raw / 397 KB gzip in ONE chunk;
+  root cause = zero `React.lazy` (every add-on `component` is a static import in
+  `manifest.ts`); office engines split, app shells don't.
+- **Research capture:** "what to build next for a daily driver (normal users +
+  web/low-level programmers, no gaming)" pass captured 14 todos — dev apps
+  (Monaco code editor, git GUI, REST client, markdown preview), normal-user apps
+  (calculator, archive mgr, image viewer, media player, clock, calendar),
+  platform (notification center, global search, addon manager), and the
+  eager-bundle-lazy-load perf/tooling item.
+- **TanStack question:** confirmed Query is already the data layer and well
+  configured (nothing to add); the gap is virtualization.
+- **Brief 31 (virtualize-long-lists):** promoted after grilling — TanStack
+  Virtual on ProcessTable + FileList, dep centralized in `@imbatranim/core` via
+  a `useVirtualList` helper, always-virtualize; keyboard-nav `scrollToIndex` and
+  scroll-stable-across-refetch called out as the integration risks.
+- **eager-bundle-lazy-load:** grilled → **held as a todo, not promoted.** Trigger
+  to promote = when a heavy app (Monaco) lands in the eager bundle; no hard size
+  target then. A draft brief for it was written and removed per this decision;
+  brief number 31 was reassigned to the virtualization work (draft never
+  committed).

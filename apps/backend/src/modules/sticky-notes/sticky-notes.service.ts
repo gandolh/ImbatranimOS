@@ -64,9 +64,7 @@ export class StickyNotesService {
     fields.push('updated_at = CURRENT_TIMESTAMP');
 
     this.db.db
-      .prepare(
-        `UPDATE sticky_notes SET ${fields.join(', ')} WHERE id = @id`,
-      )
+      .prepare(`UPDATE sticky_notes SET ${fields.join(', ')} WHERE id = @id`)
       .run(values);
 
     return this.db.db

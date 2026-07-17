@@ -46,13 +46,13 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   return (
     <div
       ref={ref}
-      className="fixed z-50 min-w-40 border border-outline-variant bg-surface-container-lowest py-1 shadow-md"
+      className="border-outline-variant bg-surface-container-lowest fixed z-50 min-w-40 border py-1 shadow-md"
       style={{ top: y, left: x }}
       onContextMenu={(e) => e.preventDefault()}
     >
       {items.map((item, i) =>
         item.type === 'separator' ? (
-          <div key={i} className="my-1 border-t border-outline-variant/50" />
+          <div key={i} className="border-outline-variant/50 my-1 border-t" />
         ) : (
           <button
             key={i}
@@ -62,18 +62,18 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
               onClose()
             }}
             className={cn(
-              'flex w-full items-center gap-2 px-3 py-1 text-left font-ui text-[12px]',
+              'font-ui flex w-full items-center gap-2 px-3 py-1 text-left text-[12px]',
               item.disabled
-                ? 'cursor-not-allowed text-on-surface-variant/50'
+                ? 'text-on-surface-variant/50 cursor-not-allowed'
                 : item.danger
                   ? 'text-error hover:bg-error-container'
-                  : 'text-on-surface hover:bg-surface-container',
+                  : 'text-on-surface hover:bg-surface-container'
             )}
           >
             {item.icon && <span className="flex w-3.5 shrink-0 justify-center">{item.icon}</span>}
             <span className="flex-1">{item.label}</span>
           </button>
-        ),
+        )
       )}
     </div>
   )

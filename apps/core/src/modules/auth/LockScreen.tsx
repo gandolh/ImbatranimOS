@@ -62,7 +62,12 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
           />
         )}
         {error && <FieldHint>{error}</FieldHint>}
-        <Button type="submit" variant="primary" disabled={busy || !password} className="justify-center py-2">
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={busy || !password}
+          className="justify-center py-2"
+        >
           {busy ? 'Unlocking…' : 'Unlock'}
         </Button>
       </form>

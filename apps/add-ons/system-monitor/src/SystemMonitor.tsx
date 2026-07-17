@@ -37,8 +37,8 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
   const processes = processesQuery.data ?? []
 
   return (
-    <div className="flex h-full select-none flex-col bg-surface-container-lowest">
-      <div className="flex items-center gap-0.5 border-b border-outline-variant bg-surface-container-low px-1 py-1">
+    <div className="bg-surface-container-lowest flex h-full flex-col select-none">
+      <div className="border-outline-variant bg-surface-container-low flex items-center gap-0.5 border-b px-1 py-1">
         {TABS.map((t) => {
           const Icon = t.icon
           const active = tab === t.id
@@ -46,10 +46,10 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 border px-3 py-1 font-ui text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+              className={`font-ui flex items-center gap-1.5 border px-3 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors ${
                 active
                   ? 'border-primary bg-primary text-on-primary'
-                  : 'border-transparent text-on-surface-variant hover:border-outline-variant hover:text-on-surface'
+                  : 'text-on-surface-variant hover:border-outline-variant hover:text-on-surface border-transparent'
               }`}
             >
               <Icon size={12} />
@@ -59,7 +59,7 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
         })}
         <div className="flex-1" />
         {tab === 'processes' && (
-          <span className="pr-2 font-mono text-[10px] text-on-surface-variant">
+          <span className="text-on-surface-variant pr-2 font-mono text-[10px]">
             {processes.length} procs
           </span>
         )}
@@ -69,10 +69,12 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
         {tab === 'overview' && (
           <div className="flex flex-col gap-5">
             {!stats && !statsQuery.isError && (
-              <p className="font-ui text-[12px] text-on-surface-variant">Loading live stats…</p>
+              <p className="font-ui text-on-surface-variant text-[12px]">Loading live stats…</p>
             )}
             {statsQuery.isError && (
-              <p className="font-ui text-[12px] text-error">Failed to reach the system stats endpoint.</p>
+              <p className="font-ui text-error text-[12px]">
+                Failed to reach the system stats endpoint.
+              </p>
             )}
             {stats && (
               <>
@@ -99,10 +101,10 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
         {tab === 'processes' && (
           <>
             {processesQuery.isLoading && (
-              <p className="font-ui text-[12px] text-on-surface-variant">Loading processes…</p>
+              <p className="font-ui text-on-surface-variant text-[12px]">Loading processes…</p>
             )}
             {processesQuery.isError && (
-              <p className="font-ui text-[12px] text-error">Failed to load process list.</p>
+              <p className="font-ui text-error text-[12px]">Failed to load process list.</p>
             )}
             {!processesQuery.isLoading && !processesQuery.isError && (
               <ProcessTable processes={processes} />
@@ -113,10 +115,10 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
         {tab === 'about' && (
           <>
             {aboutQuery.isLoading && (
-              <p className="font-ui text-[12px] text-on-surface-variant">Loading…</p>
+              <p className="font-ui text-on-surface-variant text-[12px]">Loading…</p>
             )}
             {aboutQuery.isError && (
-              <p className="font-ui text-[12px] text-error">Failed to load system identity.</p>
+              <p className="font-ui text-error text-[12px]">Failed to load system identity.</p>
             )}
             {aboutQuery.data && <AboutPanel about={aboutQuery.data} />}
           </>

@@ -24,7 +24,9 @@ describe('Auth (e2e)', () => {
     // Mirror main.ts bootstrap (createNestApplication does not run it).
     app.use(cookieParser());
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
     http = request(app.getHttpServer());
   });
@@ -35,7 +37,11 @@ describe('Auth (e2e)', () => {
 
   it('starts in needs-setup, unauthenticated state', async () => {
     const res = await http.get('/api/auth/status').expect(200);
-    expect(res.body).toEqual({ needsSetup: true, authenticated: false, totpEnabled: false });
+    expect(res.body).toEqual({
+      needsSetup: true,
+      authenticated: false,
+      totpEnabled: false,
+    });
   });
 
   it('blocks protected routes before setup (401)', async () => {
@@ -49,7 +55,10 @@ describe('Auth (e2e)', () => {
   let sessionCookie: string;
 
   it('first-run setup creates the user and issues a session', async () => {
-    const res = await http.post('/api/auth/setup').send({ password: PASSWORD }).expect(201);
+    const res = await http
+      .post('/api/auth/setup')
+      .send({ password: PASSWORD })
+      .expect(201);
     const setCookie = res.headers['set-cookie'];
     expect(setCookie).toBeDefined();
     sessionCookie = ([] as string[]).concat(setCookie)[0];
@@ -66,13 +75,22 @@ describe('Auth (e2e)', () => {
   });
 
   it('logout clears the session', async () => {
-    await http.post('/api/auth/logout').set('Cookie', sessionCookie).expect(200);
+    await http
+      .post('/api/auth/logout')
+      .set('Cookie', sessionCookie)
+      .expect(200);
     await http.get('/api/todos').set('Cookie', sessionCookie).expect(401);
   });
 
   it('login rejects a wrong password (401) and accepts the right one', async () => {
-    await http.post('/api/auth/login').send({ password: 'wrong-password-xx' }).expect(401);
-    const res = await http.post('/api/auth/login').send({ password: PASSWORD }).expect(200);
+    await http
+      .post('/api/auth/login')
+      .send({ password: 'wrong-password-xx' })
+      .expect(401);
+    const res = await http
+      .post('/api/auth/login')
+      .send({ password: PASSWORD })
+      .expect(200);
     sessionCookie = ([] as string[]).concat(res.headers['set-cookie'])[0];
   });
 
@@ -104,7 +122,9 @@ describe('Auth (e2e)', () => {
   it('rate-limits repeated failed logins (eventually 429)', async () => {
     let saw429 = false;
     for (let i = 0; i < 12; i++) {
-      const res = await http.post('/api/auth/login').send({ password: 'nope-nope-nope' });
+      const res = await http
+        .post('/api/auth/login')
+        .send({ password: 'nope-nope-nope' });
       if (res.status === 429) {
         saw429 = true;
         break;

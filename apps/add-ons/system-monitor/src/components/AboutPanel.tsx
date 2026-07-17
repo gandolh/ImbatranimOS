@@ -25,12 +25,12 @@ export function AboutPanel({ about }: { about: AboutInfo }) {
       {rows.map(([label, value]) => (
         <div
           key={label}
-          className="flex items-center justify-between border border-outline-variant bg-surface-container-low px-3 py-2"
+          className="border-outline-variant bg-surface-container-low flex items-center justify-between border px-3 py-2"
         >
-          <span className="font-ui text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">
+          <span className="font-ui text-on-surface-variant text-[10px] font-semibold tracking-wider uppercase">
             {label}
           </span>
-          <span className="font-mono text-[12px] text-on-surface">{value}</span>
+          <span className="text-on-surface font-mono text-[12px]">{value}</span>
         </div>
       ))}
     </div>

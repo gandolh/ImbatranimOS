@@ -59,9 +59,14 @@ describe('PtyGateway (e2e)', () => {
     const ws = new WebSocket(url, { headers: { cookie: 'imb_session=good' } });
     const output = await new Promise<string>((resolve, reject) => {
       let buf = '';
-      const timer = setTimeout(() => reject(new Error(`no echo; got: ${buf}`)), 8000);
+      const timer = setTimeout(
+        () => reject(new Error(`no echo; got: ${buf}`)),
+        8000,
+      );
       ws.on('open', () => {
-        ws.send(JSON.stringify({ type: 'input', data: 'echo IMBATRANIM_OK\r' }));
+        ws.send(
+          JSON.stringify({ type: 'input', data: 'echo IMBATRANIM_OK\r' }),
+        );
       });
       ws.on('message', (data) => {
         buf += data.toString();

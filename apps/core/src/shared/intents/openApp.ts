@@ -36,7 +36,7 @@ export function openApp(appId: string, payload?: unknown): string {
     appId,
     appConfig.name,
     appConfig.defaultSize,
-    appConfig.minSize,
+    appConfig.minSize
   )
 
   // Stash payload if provided

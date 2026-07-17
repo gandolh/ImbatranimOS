@@ -17,13 +17,15 @@ import type { StickyNote } from './types'
 // openStickyNote — helper; called by list rows and "New Note" button
 // ---------------------------------------------------------------------------
 function openStickyNote(note: StickyNote) {
-  const windowId = useWindowStore.getState().openWindow(
-    'sticky-notes',
-    `Note #${note.id}`,
-    { width: 320, height: 280 },
-    { width: 240, height: 200 },
-    { x: note.pos_x, y: note.pos_y },
-  )
+  const windowId = useWindowStore
+    .getState()
+    .openWindow(
+      'sticky-notes',
+      `Note #${note.id}`,
+      { width: 320, height: 280 },
+      { width: 240, height: 200 },
+      { x: note.pos_x, y: note.pos_y }
+    )
   useStickyNoteEditorStore.getState().setEditor(windowId, note.id)
 }
 
@@ -60,11 +62,11 @@ function NoteEditor({ noteId, windowId }: { noteId: number; windowId: string }) 
               setSavedAt(Date.now())
               setTimeout(() => setSavedAt(null), 1500)
             },
-          },
+          }
         )
       }, 800)
     },
-    [noteId, updateMutation],
+    [noteId, updateMutation]
   )
 
   useEffect(() => {
@@ -76,22 +78,17 @@ function NoteEditor({ noteId, windowId }: { noteId: number; windowId: string }) 
   const showSaved = savedAt !== null
 
   return (
-    <div className="flex h-full flex-col bg-surface-container-lowest">
+    <div className="bg-surface-container-lowest flex h-full flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between border-b border-outline-variant px-2 py-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1"
-          onClick={() => clearEditor(windowId)}
-        >
+      <div className="border-outline-variant flex items-center justify-between border-b px-2 py-1">
+        <Button variant="ghost" size="sm" className="gap-1" onClick={() => clearEditor(windowId)}>
           <ArrowLeft size={12} strokeWidth={2} />
           <span>Back</span>
         </Button>
         <span
           className={cn(
-            'font-ui text-[11px] text-on-surface-variant transition-opacity duration-300',
-            showSaved ? 'opacity-100' : 'opacity-0',
+            'font-ui text-on-surface-variant text-[11px] transition-opacity duration-300',
+            showSaved ? 'opacity-100' : 'opacity-0'
           )}
         >
           Saved
@@ -100,7 +97,7 @@ function NoteEditor({ noteId, windowId }: { noteId: number; windowId: string }) 
 
       {/* Textarea */}
       <textarea
-        className="font-content flex-1 resize-none bg-transparent p-3 text-[14px] text-on-surface outline-none placeholder:text-on-surface-variant"
+        className="font-content text-on-surface placeholder:text-on-surface-variant flex-1 resize-none bg-transparent p-3 text-[14px] outline-none"
         value={content}
         onChange={(e) => handleChange(e.target.value)}
         placeholder="Start typing…"
@@ -126,7 +123,7 @@ function NoteList({ windowId }: { windowId: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center font-ui text-[12px] text-on-surface-variant">
+      <div className="font-ui text-on-surface-variant flex h-full items-center justify-center text-[12px]">
         Loading…
       </div>
     )
@@ -135,9 +132,9 @@ function NoteList({ windowId }: { windowId: string }) {
   const empty = !notes || notes.length === 0
 
   return (
-    <div className="flex h-full flex-col bg-surface-container-lowest">
+    <div className="bg-surface-container-lowest flex h-full flex-col">
       {/* Toolbar */}
-      <div className="flex items-center border-b border-outline-variant px-2 py-1.5">
+      <div className="border-outline-variant flex items-center border-b px-2 py-1.5">
         <Button variant="primary" size="sm" onClick={handleNewNote}>
           + New Note
         </Button>
@@ -145,7 +142,7 @@ function NoteList({ windowId }: { windowId: string }) {
 
       {/* Body */}
       {empty ? (
-        <div className="flex flex-1 items-center justify-center font-ui text-[12px] text-on-surface-variant">
+        <div className="font-ui text-on-surface-variant flex flex-1 items-center justify-center text-[12px]">
           No sticky notes yet
         </div>
       ) : (
@@ -181,15 +178,15 @@ function NoteRow({
 
   return (
     <div
-      className="group flex cursor-pointer items-center gap-2 border-b border-outline-variant px-3 py-2 hover:bg-surface-container-low"
+      className="group border-outline-variant hover:bg-surface-container-low flex cursor-pointer items-center gap-2 border-b px-3 py-2"
       onClick={onOpen}
     >
       <div className="min-w-0 flex-1">
-        <p className="font-content truncate text-[13px] text-on-surface">{preview}</p>
-        <p className="font-ui mt-0.5 text-[11px] text-on-surface-variant">{date}</p>
+        <p className="font-content text-on-surface truncate text-[13px]">{preview}</p>
+        <p className="font-ui text-on-surface-variant mt-0.5 text-[11px]">{date}</p>
       </div>
       <button
-        className="shrink-0 p-1 text-on-surface-variant opacity-0 transition-opacity group-hover:opacity-100 hover:text-error"
+        className="text-on-surface-variant hover:text-error shrink-0 p-1 opacity-0 transition-opacity group-hover:opacity-100"
         onClick={onDelete}
         title="Delete note"
         type="button"

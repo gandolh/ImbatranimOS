@@ -34,9 +34,9 @@ describe('SessionAuthGuard', () => {
   });
 
   it('rejects a protected route with no session (401)', () => {
-    expect(() => guard.canActivate(ctxFor({ method: 'GET', headers: {} }))).toThrow(
-      UnauthorizedException,
-    );
+    expect(() =>
+      guard.canActivate(ctxFor({ method: 'GET', headers: {} })),
+    ).toThrow(UnauthorizedException);
   });
 
   it('allows a protected route with a valid session cookie', () => {
@@ -50,7 +50,9 @@ describe('SessionAuthGuard', () => {
 
   it('allows a @Public route with no session', () => {
     isPublic = true;
-    expect(guard.canActivate(ctxFor({ method: 'POST', headers: {} }))).toBe(true);
+    expect(guard.canActivate(ctxFor({ method: 'POST', headers: {} }))).toBe(
+      true,
+    );
   });
 
   it('attaches the validated session to the request', () => {
@@ -93,7 +95,9 @@ describe('SessionAuthGuard', () => {
 
     it('allows a GET with no Origin header', () => {
       isPublic = true;
-      expect(guard.canActivate(ctxFor({ method: 'GET', headers: {} }))).toBe(true);
+      expect(guard.canActivate(ctxFor({ method: 'GET', headers: {} }))).toBe(
+        true,
+      );
     });
   });
 });

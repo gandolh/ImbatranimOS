@@ -27,8 +27,13 @@ export function useCreateStickyNoteMutation() {
 
 export function useUpdateStickyNoteMutation() {
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<{ content: string; pos_x: number; pos_y: number }> }) =>
-      updateStickyNote(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: Partial<{ content: string; pos_x: number; pos_y: number }>
+    }) => updateStickyNote(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
     },

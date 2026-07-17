@@ -61,18 +61,18 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       aria-label="Start menu"
       className={cn(
         'absolute bottom-full left-0 z-[9001] mb-1 flex w-[280px] flex-col',
-        'border border-outline-variant bg-surface-container-low',
-        'shadow-[0_-8px_32px_rgba(0,0,0,0.45)]',
+        'border-outline-variant bg-surface-container-low border',
+        'shadow-[0_-8px_32px_rgba(0,0,0,0.45)]'
       )}
     >
       {/* Brand header */}
-      <div className="flex items-center gap-2.5 border-b border-outline-variant bg-surface-container px-4 py-3">
+      <div className="border-outline-variant bg-surface-container flex items-center gap-2.5 border-b px-4 py-3">
         <Logo size={26} className="text-on-surface" />
         <div className="leading-tight">
-          <div className="text-[13px] font-bold tracking-tight text-on-surface">
+          <div className="text-on-surface text-[13px] font-bold tracking-tight">
             Imbatranim<span className="text-primary">OS</span>
           </div>
-          <div className="text-[10px] text-on-surface-variant">Signed in</div>
+          <div className="text-on-surface-variant text-[10px]">Signed in</div>
         </div>
       </div>
 
@@ -91,15 +91,15 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
               className={cn(
                 'group flex items-center gap-3 px-4 py-1.5 text-left outline-none',
                 'hover:bg-primary hover:text-on-primary',
-                'focus-visible:bg-primary focus-visible:text-on-primary',
+                'focus-visible:bg-primary focus-visible:text-on-primary'
               )}
             >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center border border-outline-variant bg-surface-container-lowest group-hover:border-transparent group-hover:bg-white/15">
+              <span className="border-outline-variant bg-surface-container-lowest flex h-7 w-7 shrink-0 items-center justify-center border group-hover:border-transparent group-hover:bg-white/15">
                 <Icon size={16} strokeWidth={1.75} />
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-[12px] font-medium">{app.name}</span>
-                <span className="block truncate text-[10px] text-on-surface-variant group-hover:text-on-primary/80">
+                <span className="text-on-surface-variant group-hover:text-on-primary/80 block truncate text-[10px]">
                   {app.description}
                 </span>
               </span>
@@ -109,26 +109,26 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       </div>
 
       {/* Session actions */}
-      <div className="flex items-stretch border-t border-outline-variant bg-surface-container">
+      <div className="border-outline-variant bg-surface-container flex items-stretch border-t">
         <button
           role="menuitem"
           onClick={handleLock}
-          className="flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-[11px] font-medium text-on-surface outline-none hover:bg-surface-container-high focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+          className="text-on-surface hover:bg-surface-container-high focus-visible:ring-primary flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-[11px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <Lock size={14} strokeWidth={1.75} />
           Lock
         </button>
-        <div className="w-px bg-outline-variant" />
+        <div className="bg-outline-variant w-px" />
         <button
           role="menuitem"
           onClick={handleLogout}
-          className="flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-[11px] font-medium text-on-surface outline-none hover:bg-error hover:text-on-error focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+          className="text-on-surface hover:bg-error hover:text-on-error focus-visible:ring-primary flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-[11px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <LogOut size={14} strokeWidth={1.75} />
           Log off
         </button>
       </div>
-      <div className="flex items-center justify-between border-t border-outline-variant px-4 py-1.5 text-[9px] uppercase tracking-widest text-on-surface-variant">
+      <div className="border-outline-variant text-on-surface-variant flex items-center justify-between border-t px-4 py-1.5 text-[9px] tracking-widest uppercase">
         <span>ImbatranimOS</span>
         <Power size={11} strokeWidth={1.75} className="opacity-60" />
       </div>

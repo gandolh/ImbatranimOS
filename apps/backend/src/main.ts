@@ -26,9 +26,12 @@ async function bootstrap() {
 
   // Health check outside global prefix
   const httpAdapter = app.getHttpAdapter();
-  httpAdapter.get('/health', (_req: unknown, res: { json: (data: unknown) => void }) => {
-    res.json({ status: 'ok' });
-  });
+  httpAdapter.get(
+    '/health',
+    (_req: unknown, res: { json: (data: unknown) => void }) => {
+      res.json({ status: 'ok' });
+    },
+  );
 
   await app.listen(config.get('PORT'));
 }

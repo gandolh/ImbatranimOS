@@ -90,7 +90,8 @@ export class AuthService {
     if (!u || !u.totp_secret) return false;
     try {
       // epochTolerance allows ±30s of clock drift (one adjacent step).
-      return verifySync({ token, secret: u.totp_secret, epochTolerance: 30 }).valid;
+      return verifySync({ token, secret: u.totp_secret, epochTolerance: 30 })
+        .valid;
     } catch {
       return false;
     }
@@ -101,7 +102,11 @@ export class AuthService {
    * (totp_enabled stays 0), and return the otpauth URI + a QR data-URL for the
    * settings screen. TOTP is not required at login until {@link confirmTotp}.
    */
-  async beginTotpEnroll(): Promise<{ secret: string; uri: string; qrDataUrl: string }> {
+  async beginTotpEnroll(): Promise<{
+    secret: string;
+    uri: string;
+    qrDataUrl: string;
+  }> {
     if (!this.isSetup()) throw new BadRequestException('Not set up');
     const secret = generateSecret();
     const uri = generateURI({ issuer: TOTP_ISSUER, label: TOTP_LABEL, secret });

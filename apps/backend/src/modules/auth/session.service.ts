@@ -46,7 +46,9 @@ export class SessionService {
       .get(hash) as SessionRecord | undefined;
     if (!row) return null;
     if (row.expires_at <= Date.now()) {
-      this.db.db.prepare('DELETE FROM auth_sessions WHERE token_hash = ?').run(hash);
+      this.db.db
+        .prepare('DELETE FROM auth_sessions WHERE token_hash = ?')
+        .run(hash);
       return null;
     }
     this.db.db
@@ -81,6 +83,8 @@ export class SessionService {
 
   /** Best-effort cleanup of expired rows. */
   purgeExpired(): void {
-    this.db.db.prepare('DELETE FROM auth_sessions WHERE expires_at <= ?').run(Date.now());
+    this.db.db
+      .prepare('DELETE FROM auth_sessions WHERE expires_at <= ?')
+      .run(Date.now());
   }
 }

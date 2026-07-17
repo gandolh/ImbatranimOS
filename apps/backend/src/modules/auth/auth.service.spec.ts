@@ -24,7 +24,9 @@ describe('AuthService', () => {
 
     it('stores an argon2id hash, never the plaintext', async () => {
       await auth.setup('correct-horse-battery');
-      const row = db.db.prepare('SELECT password_hash FROM auth_user WHERE id = 1').get() as {
+      const row = db.db
+        .prepare('SELECT password_hash FROM auth_user WHERE id = 1')
+        .get() as {
         password_hash: string;
       };
       expect(row.password_hash.startsWith('$argon2id$')).toBe(true);
@@ -33,11 +35,15 @@ describe('AuthService', () => {
 
     it('refuses a second setup (no silent password reset)', async () => {
       await auth.setup('correct-horse-battery');
-      await expect(auth.setup('another-password')).rejects.toBeInstanceOf(ConflictException);
+      await expect(auth.setup('another-password')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
     });
 
     it('rejects weak passwords', async () => {
-      await expect(auth.setup('short')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(auth.setup('short')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
   });
 

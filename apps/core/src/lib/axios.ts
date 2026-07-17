@@ -19,5 +19,5 @@ api.interceptors.response.use(
       window.dispatchEvent(new CustomEvent('auth:unauthorized'))
     }
     return Promise.reject(err)
-  },
+  }
 )

@@ -21,7 +21,12 @@ describe('authorizeUpgrade', () => {
   const req = { headers: { cookie: 'imb_session=tok' } };
 
   it('returns the session when validation succeeds', () => {
-    const record = { token_hash: 'h', created_at: 0, last_seen: 0, expires_at: 1 };
+    const record = {
+      token_hash: 'h',
+      created_at: 0,
+      last_seen: 0,
+      expires_at: 1,
+    };
     const sessions = { validateFromRequest: jest.fn().mockReturnValue(record) };
     expect(authorizeUpgrade(req, sessions)).toBe(record);
     expect(sessions.validateFromRequest).toHaveBeenCalledWith(req);

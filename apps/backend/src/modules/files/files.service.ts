@@ -187,7 +187,8 @@ export class FilesService {
     virtualPath: string,
   ): Promise<{ path: string; content: string }> {
     const { abs } = await this.resolveSafe(root, virtualPath);
-    if (!(await this.exists(abs))) throw new NotFoundException('File not found');
+    if (!(await this.exists(abs)))
+      throw new NotFoundException('File not found');
     const stat = await fs.stat(abs);
     if (stat.isDirectory())
       throw new BadRequestException('Path is a directory');
@@ -197,7 +198,8 @@ export class FilesService {
 
   async readFileStream(root: string, virtualPath: string): Promise<Readable> {
     const { abs } = await this.resolveSafe(root, virtualPath);
-    if (!(await this.exists(abs))) throw new NotFoundException('File not found');
+    if (!(await this.exists(abs)))
+      throw new NotFoundException('File not found');
     const stat = await fs.stat(abs);
     if (stat.isDirectory())
       throw new BadRequestException('Path is a directory');

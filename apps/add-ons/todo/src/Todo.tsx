@@ -50,7 +50,7 @@ function TodoRow({
         setDragOffset(0)
       }
     },
-    { filterTaps: true },
+    { filterTaps: true }
   )
 
   function commitEdit() {
@@ -72,8 +72,8 @@ function TodoRow({
   return (
     <div
       className={cn(
-        'group relative flex h-9 items-center gap-1.5 border-b border-outline-variant px-2',
-        dragging && 'z-10 bg-surface-container-low opacity-90',
+        'group border-outline-variant relative flex h-9 items-center gap-1.5 border-b px-2',
+        dragging && 'bg-surface-container-low z-10 opacity-90'
       )}
       style={{ transform: dragging ? `translateY(${dragOffset}px)` : undefined }}
     >
@@ -94,13 +94,18 @@ function TodoRow({
           'flex h-4 w-4 shrink-0 items-center justify-center border',
           completed
             ? 'border-primary-container bg-primary-container'
-            : 'border-outline-variant bg-transparent',
+            : 'border-outline-variant bg-transparent'
         )}
         aria-label={completed ? 'Mark incomplete' : 'Mark complete'}
       >
         {completed && (
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-            <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
+            <path
+              d="M1 4L3.5 6.5L9 1"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="square"
+            />
           </svg>
         )}
       </button>
@@ -109,7 +114,7 @@ function TodoRow({
       {editing ? (
         <input
           ref={inputRef}
-          className="font-content min-w-0 flex-1 bg-transparent text-[13px] text-on-surface outline-none"
+          className="font-content text-on-surface min-w-0 flex-1 bg-transparent text-[13px] outline-none"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commitEdit}
@@ -121,8 +126,8 @@ function TodoRow({
       ) : (
         <span
           className={cn(
-            'font-content min-w-0 flex-1 cursor-text truncate text-[13px] text-on-surface',
-            completed && 'opacity-50 line-through',
+            'font-content text-on-surface min-w-0 flex-1 cursor-text truncate text-[13px]',
+            completed && 'line-through opacity-50'
           )}
           onClick={() => setEditing(true)}
         >
@@ -134,7 +139,7 @@ function TodoRow({
       <button
         type="button"
         onClick={() => onDelete(todo.id)}
-        className="shrink-0 p-0.5 text-on-surface-variant opacity-0 group-hover:opacity-100 hover:text-error"
+        className="text-on-surface-variant hover:text-error shrink-0 p-0.5 opacity-0 group-hover:opacity-100"
         aria-label="Delete task"
       >
         <X size={13} />
@@ -189,18 +194,17 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
   const tabs: Filter[] = ['all', 'active', 'completed']
 
   return (
-    <div className="flex h-full flex-col bg-surface-container-lowest">
+    <div className="bg-surface-container-lowest flex h-full flex-col">
       {/* Filter tabs */}
-      <div className="flex h-8 items-center border-b border-outline-variant">
+      <div className="border-outline-variant flex h-8 items-center border-b">
         {tabs.map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setFilter(tab)}
             className={cn(
-              'font-ui flex h-full items-center px-3 text-[12px] text-on-surface-variant capitalize',
-              filter === tab &&
-                'border-b-2 border-primary font-semibold text-on-surface',
+              'font-ui text-on-surface-variant flex h-full items-center px-3 text-[12px] capitalize',
+              filter === tab && 'border-primary text-on-surface border-b-2 font-semibold'
             )}
           >
             {tab}
@@ -211,7 +215,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
       {/* Task list */}
       <ScrollArea className="flex-1">
         {items.length === 0 ? (
-          <div className="flex h-20 items-center justify-center font-ui text-[12px] text-on-surface-variant">
+          <div className="font-ui text-on-surface-variant flex h-20 items-center justify-center text-[12px]">
             {emptyMessages[filter]}
           </div>
         ) : (
@@ -230,9 +234,9 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
       </ScrollArea>
 
       {/* Add task input */}
-      <div className="flex h-9 items-center border-t border-outline-variant bg-surface-container-low px-2">
+      <div className="border-outline-variant bg-surface-container-low flex h-9 items-center border-t px-2">
         <input
-          className="font-content min-w-0 flex-1 bg-transparent text-[13px] text-on-surface outline-none placeholder:text-on-surface-variant"
+          className="font-content text-on-surface placeholder:text-on-surface-variant min-w-0 flex-1 bg-transparent text-[13px] outline-none"
           placeholder="Add a task…"
           value={addText}
           onChange={(e) => setAddText(e.target.value)}

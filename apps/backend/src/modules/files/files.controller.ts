@@ -69,10 +69,7 @@ export class FilesController {
     if (!root || !path) throw new BadRequestException('root and path required');
     const stream = await this.filesService.readFileStream(root, path);
     const filename = basename(path);
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${filename}"`,
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Type', 'application/octet-stream');
     stream.pipe(res);
   }

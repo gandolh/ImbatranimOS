@@ -39,7 +39,10 @@ describe('FilesService (jail + real filesystem)', () => {
       await service.createFile('home', 'projects/readme.txt', 'hi');
 
       // Confirm on the ACTUAL disk, not just via the API.
-      const onDisk = await fs.readFile(join(jail, 'projects/readme.txt'), 'utf-8');
+      const onDisk = await fs.readFile(
+        join(jail, 'projects/readme.txt'),
+        'utf-8',
+      );
       expect(onDisk).toBe('hi');
 
       const listing = await service.list('home', 'projects');

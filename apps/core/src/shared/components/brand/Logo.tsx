@@ -28,7 +28,12 @@ export function Logo({ size = 20, className, mono = false, title = 'ImbatranimOS
       {/* lower triangle — accent, points up to the waist */}
       <path d="M12 12 L20 20.5 H4 Z" fill={mono ? 'currentColor' : 'var(--accent)'} />
       {/* end caps for an hourglass read */}
-      <path d="M3.5 3.5 H20.5 M3.5 20.5 H20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
+      <path
+        d="M3.5 3.5 H20.5 M3.5 20.5 H20.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="square"
+      />
     </svg>
   )
 }

@@ -71,7 +71,7 @@ export function useWindowHotkeys(): void {
         }
       },
     }),
-    [focusWindow, closeWindow, hideWindow, maximizeWindow, restoreWindow],
+    [focusWindow, closeWindow, hideWindow, maximizeWindow, restoreWindow]
   )
 
   useGlobalHotkeys(bindings)

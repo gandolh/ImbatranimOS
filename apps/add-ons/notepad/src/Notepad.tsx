@@ -25,7 +25,7 @@ export function Notepad({ windowId }: { windowId: string }) {
 
   function handleOpenFile(path: string, inNewWindow: boolean = true) {
     upsertRecent.mutate(path)
-    
+
     if (inNewWindow) {
       const newWindowId = openWindow(
         'notepad',

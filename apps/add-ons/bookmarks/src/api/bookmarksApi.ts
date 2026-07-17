@@ -13,7 +13,7 @@ export async function createGroup(data: { name: string; icon?: string }): Promis
 
 export async function updateGroup(
   id: number,
-  data: { name?: string; icon?: string },
+  data: { name?: string; icon?: string }
 ): Promise<BookmarkGroup> {
   const res = await api.patch<BookmarkGroup>(`/bookmarks/groups/${id}`, data)
   return res.data
@@ -35,7 +35,7 @@ export async function createLink(data: {
 
 export async function updateLink(
   id: number,
-  data: { title?: string; href?: string; icon?: string },
+  data: { title?: string; href?: string; icon?: string }
 ): Promise<BookmarkLink> {
   const res = await api.patch<BookmarkLink>(`/bookmarks/links/${id}`, data)
   return res.data

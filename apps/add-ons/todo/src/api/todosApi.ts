@@ -13,7 +13,7 @@ export async function createTodo(text: string): Promise<Todo> {
 
 export async function updateTodo(
   id: number,
-  data: { text?: string; completed?: boolean },
+  data: { text?: string; completed?: boolean }
 ): Promise<Todo> {
   const res = await api.patch<Todo>(`/todos/${id}`, data)
   return res.data

@@ -36,8 +36,7 @@ export default defineConfig([
           patterns: [
             {
               group: ['@imbatranim/*'],
-              message:
-                'Only src/manifest.ts (the composition root) may import add-on packages.',
+              message: 'Only src/manifest.ts (the composition root) may import add-on packages.',
             },
           ],
         },

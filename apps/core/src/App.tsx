@@ -43,7 +43,7 @@ export default function App() {
   // ── /SWARM:S4 layout restore boot ──────────────────────────────────────────
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-surface">
+    <div className="bg-surface relative h-screen w-screen overflow-hidden">
       <Desktop wallpaper={wallpaper} />
       <Taskbar />
       {/* SWARM:S3 command palette mount */}

@@ -12,7 +12,15 @@ type DialogProps = {
   className?: string
 }
 
-export function Dialog({ open, onOpenChange, trigger, title, description, children, className }: DialogProps) {
+export function Dialog({
+  open,
+  onOpenChange,
+  trigger,
+  title,
+  description,
+  children,
+  className,
+}: DialogProps) {
   return (
     <BaseDialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <BaseDialog.Trigger>{trigger}</BaseDialog.Trigger>}
@@ -21,25 +29,25 @@ export function Dialog({ open, onOpenChange, trigger, title, description, childr
         <BaseDialog.Popup
           className={cn(
             'fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
-            'min-w-[320px] border border-outline-variant bg-surface-container-lowest',
+            'border-outline-variant bg-surface-container-lowest min-w-[320px] border',
             'shadow-[0_24px_60px_rgba(0,0,0,0.55)]',
             'outline-none',
             className
           )}
         >
           {title && (
-            <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-high px-3 py-1.5">
-              <BaseDialog.Title className="font-ui text-[13px] font-semibold text-on-surface">
+            <div className="border-outline-variant bg-surface-container-high flex items-center justify-between border-b px-3 py-1.5">
+              <BaseDialog.Title className="font-ui text-on-surface text-[13px] font-semibold">
                 {title}
               </BaseDialog.Title>
-              <BaseDialog.Close className="flex h-5 w-5 cursor-pointer items-center justify-center border border-outline-variant bg-surface-container-low font-ui text-[12px] text-on-surface hover:bg-error hover:text-on-error">
+              <BaseDialog.Close className="border-outline-variant bg-surface-container-low font-ui text-on-surface hover:bg-error hover:text-on-error flex h-5 w-5 cursor-pointer items-center justify-center border text-[12px]">
                 ×
               </BaseDialog.Close>
             </div>
           )}
-          <div className="p-3 font-content text-[13px] text-on-surface">
+          <div className="font-content text-on-surface p-3 text-[13px]">
             {description && (
-              <BaseDialog.Description className="mb-3 text-on-surface-variant">
+              <BaseDialog.Description className="text-on-surface-variant mb-3">
                 {description}
               </BaseDialog.Description>
             )}

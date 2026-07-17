@@ -49,17 +49,17 @@ const THEMES: { id: ThemeMode; name: string; icon: typeof Moon }[] = [
 function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: string }) {
   return (
     <div className="mb-5 flex items-center gap-3">
-      <div className="flex h-9 w-9 items-center justify-center border border-outline-variant bg-surface-container text-primary">
+      <div className="border-outline-variant bg-surface-container text-primary flex h-9 w-9 items-center justify-center border">
         <Icon size={18} strokeWidth={1.75} />
       </div>
-      <h2 className="font-ui text-base font-semibold text-on-surface">{title}</h2>
+      <h2 className="font-ui text-on-surface text-base font-semibold">{title}</h2>
     </div>
   )
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-3 font-ui text-[11px] font-semibold uppercase tracking-widest text-on-surface-variant">
+    <p className="font-ui text-on-surface-variant mb-3 text-[11px] font-semibold tracking-widest uppercase">
       {children}
     </p>
   )
@@ -73,11 +73,11 @@ export function Settings() {
   const setAccent = useAppearanceStore((s) => s.setAccent)
 
   return (
-    <div className="flex h-full flex-col bg-surface text-on-surface select-none">
+    <div className="bg-surface text-on-surface flex h-full flex-col select-none">
       <div className="custom-scrollbar flex-1 overflow-y-auto p-7">
         <header className="mb-8">
-          <h1 className="font-ui text-2xl font-bold tracking-tight text-on-surface">Settings</h1>
-          <p className="mt-1 text-[13px] text-on-surface-variant">Tune the look of ImbatranimOS.</p>
+          <h1 className="font-ui text-on-surface text-2xl font-bold tracking-tight">Settings</h1>
+          <p className="text-on-surface-variant mt-1 text-[13px]">Tune the look of ImbatranimOS.</p>
         </header>
 
         {/* Appearance ─────────────────────────────────────────── */}
@@ -96,11 +96,11 @@ export function Settings() {
                     key={t.id}
                     onClick={() => setTheme(t.id)}
                     className={cn(
-                      'flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 text-[12px] font-medium outline-none transition-colors',
-                      'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
+                      'flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 text-[12px] font-medium transition-colors outline-none',
+                      'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
                       active
                         ? 'border-primary bg-primary text-on-primary'
-                        : 'border-outline-variant bg-surface-container-low text-on-surface hover:bg-surface-container-high',
+                        : 'border-outline-variant bg-surface-container-low text-on-surface hover:bg-surface-container-high'
                     )}
                   >
                     <Icon size={15} strokeWidth={1.75} />
@@ -125,11 +125,11 @@ export function Settings() {
                     aria-label={preset.name}
                     aria-pressed={active}
                     className={cn(
-                      'group flex items-center gap-2 border px-2.5 py-2 outline-none transition-colors',
-                      'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
+                      'group flex items-center gap-2 border px-2.5 py-2 transition-colors outline-none',
+                      'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
                       active
                         ? 'border-primary bg-surface-container-high'
-                        : 'border-outline-variant bg-surface-container-low hover:bg-surface-container',
+                        : 'border-outline-variant bg-surface-container-low hover:bg-surface-container'
                     )}
                   >
                     <span
@@ -138,7 +138,9 @@ export function Settings() {
                     >
                       {active && <Check size={13} strokeWidth={3} />}
                     </span>
-                    <span className="pr-1 text-[12px] font-medium text-on-surface">{preset.name}</span>
+                    <span className="text-on-surface pr-1 text-[12px] font-medium">
+                      {preset.name}
+                    </span>
                   </button>
                 )
               })}
@@ -156,20 +158,20 @@ export function Settings() {
                     key={wp.id}
                     onClick={() => setWallpaper(wp.id)}
                     className={cn(
-                      'group relative overflow-hidden border outline-none transition-colors',
-                      'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
-                      active ? 'border-primary' : 'border-outline-variant hover:border-outline',
+                      'group relative overflow-hidden border transition-colors outline-none',
+                      'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
+                      active ? 'border-primary' : 'border-outline-variant hover:border-outline'
                     )}
                   >
                     <div className="aspect-[16/10] w-full" style={wp.preview} />
                     {active && (
-                      <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center bg-primary text-on-primary">
+                      <div className="bg-primary text-on-primary absolute top-2 right-2 flex h-5 w-5 items-center justify-center">
                         <Check size={12} strokeWidth={3} />
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5 border-t border-outline-variant bg-surface-container-low px-2 py-1.5">
+                    <div className="border-outline-variant bg-surface-container-low flex items-center gap-1.5 border-t px-2 py-1.5">
                       <Image size={12} strokeWidth={1.75} className="text-on-surface-variant" />
-                      <span className="text-[11px] font-medium text-on-surface">{wp.name}</span>
+                      <span className="text-on-surface text-[11px] font-medium">{wp.name}</span>
                     </div>
                   </button>
                 )
@@ -182,7 +184,7 @@ export function Settings() {
         <SecuritySettings />
 
         {/* About ──────────────────────────────────────────────── */}
-        <section className="mb-6 border-t border-outline-variant pt-8">
+        <section className="border-outline-variant mb-6 border-t pt-8">
           <SectionHeader icon={Monitor} title="About this machine" />
           <div className="grid gap-2">
             {[
@@ -192,23 +194,27 @@ export function Settings() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="flex items-center justify-between border border-outline-variant bg-surface-container-low px-3 py-2.5"
+                className="border-outline-variant bg-surface-container-low flex items-center justify-between border px-3 py-2.5"
               >
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant">
+                <span className="text-on-surface-variant text-[10px] font-semibold tracking-widest uppercase">
                   {item.label}
                 </span>
-                <span className="font-ui text-[13px] font-semibold text-on-surface">{item.value}</span>
+                <span className="font-ui text-on-surface text-[13px] font-semibold">
+                  {item.value}
+                </span>
               </div>
             ))}
           </div>
         </section>
       </div>
 
-      <div className="flex items-center justify-between border-t border-outline-variant bg-surface-container-low px-7 py-3">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant">
+      <div className="border-outline-variant bg-surface-container-low flex items-center justify-between border-t px-7 py-3">
+        <span className="text-on-surface-variant text-[10px] font-semibold tracking-widest uppercase">
           ImbatranimOS
         </span>
-        <span className="font-ui text-[10px] tabular-nums text-on-surface-variant">v0.1 · preview</span>
+        <span className="font-ui text-on-surface-variant text-[10px] tabular-nums">
+          v0.1 · preview
+        </span>
       </div>
     </div>
   )

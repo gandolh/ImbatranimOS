@@ -23,7 +23,10 @@ export async function statEntry(root: string, path: string): Promise<FsEntry> {
   return res.data
 }
 
-export async function readContent(root: string, path: string): Promise<{ path: string; content: string }> {
+export async function readContent(
+  root: string,
+  path: string
+): Promise<{ path: string; content: string }> {
   const res = await api.get<{ path: string; content: string }>('/files/content', {
     params: { root, path },
   })

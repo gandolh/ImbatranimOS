@@ -18,7 +18,9 @@ describe('AppModule (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.use(cookieParser());
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
   });
 

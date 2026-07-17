@@ -27,8 +27,8 @@ function MiniCalendar() {
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
 
   return (
-    <div className="p-3 font-ui" style={{ minWidth: 208 }}>
-      <div className="mb-2 text-center text-[12px] font-semibold text-on-surface">
+    <div className="font-ui p-3" style={{ minWidth: 208 }}>
+      <div className="text-on-surface mb-2 text-center text-[12px] font-semibold">
         {today.format('MMMM YYYY')}
       </div>
       <table className="w-full border-collapse text-[11px]">
@@ -37,7 +37,7 @@ function MiniCalendar() {
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
               <th
                 key={d}
-                className="pb-1 text-center font-medium text-on-surface-variant"
+                className="text-on-surface-variant pb-1 text-center font-medium"
                 style={{ width: '14.28%' }}
               >
                 {d}
@@ -54,9 +54,9 @@ function MiniCalendar() {
                   className={cn(
                     'py-0.5 text-center',
                     day === today.date()
-                      ? 'bg-primary font-semibold text-on-primary'
+                      ? 'bg-primary text-on-primary font-semibold'
                       : 'text-on-surface',
-                    !day && 'opacity-0',
+                    !day && 'opacity-0'
                   )}
                 >
                   {day ?? ''}
@@ -92,7 +92,7 @@ export function Tray() {
     <div className="flex h-full items-center gap-1 pr-1">
       {stats && (
         <span
-          className="hidden px-2 text-[11px] tabular-nums text-on-surface-variant sm:inline"
+          className="text-on-surface-variant hidden px-2 text-[11px] tabular-nums sm:inline"
           style={{ whiteSpace: 'nowrap' }}
           title="CPU / RAM"
         >
@@ -101,24 +101,24 @@ export function Tray() {
         </span>
       )}
 
-      <div className="h-5 w-px bg-outline-variant" />
+      <div className="bg-outline-variant h-5 w-px" />
 
       <Popover.Root>
         <Popover.Trigger
           className={cn(
             'flex h-full cursor-pointer flex-col items-end justify-center px-3 leading-tight outline-none',
             'text-on-surface hover:bg-surface-container-high',
-            'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
+            'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
           )}
         >
           <span className="text-[12px] font-semibold tabular-nums">{now.format('HH:mm')}</span>
-          <span className="text-[10px] text-on-surface-variant tabular-nums">
+          <span className="text-on-surface-variant text-[10px] tabular-nums">
             {now.format('ddd, DD MMM')}
           </span>
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Positioner side="top" align="end" sideOffset={6}>
-            <Popover.Popup className="border border-outline-variant bg-surface-container-low shadow-[0_-6px_24px_rgba(0,0,0,0.35)]">
+            <Popover.Popup className="border-outline-variant bg-surface-container-low border shadow-[0_-6px_24px_rgba(0,0,0,0.35)]">
               <MiniCalendar />
             </Popover.Popup>
           </Popover.Positioner>

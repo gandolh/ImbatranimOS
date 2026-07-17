@@ -28,7 +28,9 @@ export class SessionAuthGuard implements CanActivate {
   ) {}
 
   canActivate(ctx: ExecutionContext): boolean {
-    const req = ctx.switchToHttp().getRequest<Request & { session?: unknown }>();
+    const req = ctx
+      .switchToHttp()
+      .getRequest<Request & { session?: unknown }>();
 
     // CSRF defence runs before the public check so login/setup are covered too.
     this.checkOrigin(req);

@@ -46,7 +46,20 @@ type MenuState = {
   entry: FsEntry | null
 }
 
-const TEXT_EXTENSIONS = new Set(['md', 'txt', 'log', 'json', 'ts', 'tsx', 'js', 'jsx', 'css', 'html', 'sh', 'py'])
+const TEXT_EXTENSIONS = new Set([
+  'md',
+  'txt',
+  'log',
+  'json',
+  'ts',
+  'tsx',
+  'js',
+  'jsx',
+  'css',
+  'html',
+  'sh',
+  'py',
+])
 
 function isTextFile(name: string): boolean {
   const ext = name.split('.').pop()?.toLowerCase() ?? ''
@@ -248,8 +261,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             icon: <FolderOpen size={13} />,
             onSelect: () => handleOpen(menu.entry!),
             disabled:
-              menu.entry.type === 'file' &&
-              !(root === 'notes' && isTextFile(menu.entry.name)),
+              menu.entry.type === 'file' && !(root === 'notes' && isTextFile(menu.entry.name)),
           },
           ...(menu.entry.type === 'file'
             ? [
@@ -321,9 +333,9 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     : deleteTarget?.name
 
   return (
-    <div className="flex h-full flex-col bg-surface-container-lowest">
+    <div className="bg-surface-container-lowest flex h-full flex-col">
       {/* Toolbar */}
-      <div className="flex items-center gap-1 border-b border-outline-variant bg-surface-container-low px-2 py-1">
+      <div className="border-outline-variant bg-surface-container-low flex items-center gap-1 border-b px-2 py-1">
         {/* Root switcher */}
         <div className="mr-1 flex items-center gap-0.5">
           {FS_ROOTS.map((r) => (
@@ -338,7 +350,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           ))}
         </div>
 
-        <div className="mx-1 h-4 w-px bg-outline-variant" />
+        <div className="bg-outline-variant mx-1 h-4 w-px" />
 
         <Button
           variant="default"
@@ -418,17 +430,12 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       </div>
 
       {/* Breadcrumb */}
-      <Breadcrumb
-        root={root}
-        rootLabel={rootCfg.label}
-        path={path}
-        onNavigate={navigate}
-      />
+      <Breadcrumb root={root} rootLabel={rootCfg.label} path={path} onNavigate={navigate} />
 
       {/* Body: tree pane | list pane */}
       <div className="flex min-h-0 flex-1">
         {/* Left: folder tree */}
-        <div className="w-52 shrink-0 border-r border-outline-variant bg-surface-container-low">
+        <div className="border-outline-variant bg-surface-container-low w-52 shrink-0 border-r">
           <ScrollArea className="h-full w-full">
             <FolderTree
               root={root}
@@ -440,18 +447,15 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         </div>
 
         {/* Right: file listing */}
-        <UploadDropzone
-          onFiles={handleUploadFiles}
-          className="min-w-0 flex-1 overflow-hidden"
-        >
+        <UploadDropzone onFiles={handleUploadFiles} className="min-w-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full w-full">
             {isLoading && (
-              <div className="flex items-center justify-center py-12 text-on-surface-variant font-ui text-[12px]">
+              <div className="text-on-surface-variant font-ui flex items-center justify-center py-12 text-[12px]">
                 Loading…
               </div>
             )}
             {isError && (
-              <div className="flex items-center justify-center py-12 text-error font-ui text-[12px]">
+              <div className="text-error font-ui flex items-center justify-center py-12 text-[12px]">
                 Failed to load directory.
               </div>
             )}
@@ -485,8 +489,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       </div>
 
       {/* Status bar */}
-      <div className="flex items-center border-t border-outline-variant bg-surface-container-low px-2 py-0.5">
-        <span className="font-ui text-[11px] text-on-surface-variant">
+      <div className="border-outline-variant bg-surface-container-low flex items-center border-t px-2 py-0.5">
+        <span className="font-ui text-on-surface-variant text-[11px]">
           {entries.length} item{entries.length !== 1 ? 's' : ''}
           {selected.size > 0 && ` · ${selected.size} selected`}
           {clipboard && ` · Clipboard: ${clipboard.entry.name} (${clipboard.mode})`}
@@ -495,20 +499,11 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
 
       {/* Right-click context menu */}
       {menu && (
-        <ContextMenu
-          x={menu.x}
-          y={menu.y}
-          items={menuItems}
-          onClose={() => setMenu(null)}
-        />
+        <ContextMenu x={menu.x} y={menu.y} items={menuItems} onClose={() => setMenu(null)} />
       )}
 
       {/* New folder dialog */}
-      <Dialog
-        open={showNewFolder}
-        onOpenChange={setShowNewFolder}
-        title="New Folder"
-      >
+      <Dialog open={showNewFolder} onOpenChange={setShowNewFolder} title="New Folder">
         <div className="flex flex-col gap-3">
           <Input
             label="Folder Name"
@@ -550,9 +545,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         title="Confirm Delete"
       >
         <div className="flex flex-col gap-3">
-          <p className="font-content text-[13px] text-on-surface">
-            Delete{' '}
-            <span className="font-semibold">{deleteLabel}</span>
+          <p className="font-content text-on-surface text-[13px]">
+            Delete <span className="font-semibold">{deleteLabel}</span>
             {deleteCount > 1 ? '' : ''}? This cannot be undone.
           </p>
           <div className="flex justify-end gap-2">

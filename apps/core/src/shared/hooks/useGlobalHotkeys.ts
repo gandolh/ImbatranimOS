@@ -94,7 +94,7 @@ export function useGlobalHotkeys(bindings: HotkeyBinding): void {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bindingsKey],
+    [bindingsKey]
   )
 
   useEffect(() => {

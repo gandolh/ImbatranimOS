@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+} from 'class-validator';
 
 export class CreateLinkDto {
   @IsNumber()

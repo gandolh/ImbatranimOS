@@ -13,15 +13,7 @@ import {
 } from '../../store/windowStore'
 import { SnapOverlay } from './SnapOverlay'
 
-type ResizeDirection =
-  | 'n'
-  | 's'
-  | 'e'
-  | 'w'
-  | 'ne'
-  | 'nw'
-  | 'se'
-  | 'sw'
+type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
 type WindowProps = {
   instance: WindowInstance
@@ -102,7 +94,7 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
       updateSize(instanceId, { width: newW, height: newH })
       updatePosition(instanceId, { x: newX, y: newY })
     },
-    { filterTaps: true },
+    { filterTaps: true }
   )
 
   const cursorMap: Record<ResizeDirection, string> = {
@@ -170,10 +162,7 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
 
       // Move window
       const newX = Math.max(0, Math.min(startPos.x + mx, window.innerWidth - instance.size.width))
-      const newY = Math.max(
-        0,
-        Math.min(startPos.y + my, window.innerHeight - TASKBAR_HEIGHT - 28),
-      )
+      const newY = Math.max(0, Math.min(startPos.y + my, window.innerHeight - TASKBAR_HEIGHT - 28))
       updatePosition(instance.id, { x: newX, y: newY })
 
       // Detect snap region from pointer position
@@ -188,7 +177,7 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
         dragStartWindowPos.current = null
       }
     },
-    { filterTaps: true },
+    { filterTaps: true }
   )
 
   const handleWindowClick = useCallback(() => {
@@ -204,7 +193,7 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
         maximizeWindow(instance.id)
       }
     },
-    [instance.id, instance.isMaximized, maximizeWindow, restoreWindow],
+    [instance.id, instance.isMaximized, maximizeWindow, restoreWindow]
   )
 
   const handleHide = useCallback(
@@ -212,7 +201,7 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
       e.stopPropagation()
       hideWindow(instance.id)
     },
-    [hideWindow, instance.id],
+    [hideWindow, instance.id]
   )
 
   const handleClose = useCallback(
@@ -220,7 +209,7 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
       e.stopPropagation()
       closeWindow(instance.id)
     },
-    [closeWindow, instance.id],
+    [closeWindow, instance.id]
   )
 
   return (
@@ -247,10 +236,10 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
             fontFamily: "'Space Grotesk', sans-serif",
           }}
           className={cn(
-            'overflow-hidden bg-surface-container-low',
+            'bg-surface-container-low overflow-hidden',
             isFocused
-              ? 'border border-primary shadow-[0_18px_50px_rgba(0,0,0,0.5)]'
-              : 'border border-outline-variant shadow-[0_10px_30px_rgba(0,0,0,0.35)]',
+              ? 'border-primary border shadow-[0_18px_50px_rgba(0,0,0,0.5)]'
+              : 'border-outline-variant border shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
           )}
           onClick={handleWindowClick}
         >
@@ -273,10 +262,10 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
             {...titleBarBind()}
             style={{ touchAction: 'none', userSelect: 'none' }}
             className={cn(
-              'flex items-center justify-between pl-3 pr-1 shrink-0 h-[30px] border-b',
+              'flex h-[30px] shrink-0 items-center justify-between border-b pr-1 pl-3',
               isFocused
                 ? 'bg-surface-container-high border-outline-variant text-on-surface'
-                : 'bg-surface-container border-outline-variant text-on-surface-variant',
+                : 'bg-surface-container border-outline-variant text-on-surface-variant'
             )}
           >
             {/* Left: accent tick + title */}
@@ -284,16 +273,19 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
               <span
                 className={cn(
                   'h-2.5 w-2.5 shrink-0',
-                  isFocused ? 'bg-primary' : 'bg-outline-variant',
+                  isFocused ? 'bg-primary' : 'bg-outline-variant'
                 )}
               />
-              <span className="truncate text-[12px] font-semibold leading-none tracking-tight">
+              <span className="truncate text-[12px] leading-none font-semibold tracking-tight">
                 {instance.title}
               </span>
             </span>
 
             {/* Right: window controls */}
-            <div className="flex items-center gap-[2px] shrink-0" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="flex shrink-0 items-center gap-[2px]"
+              onClick={(e) => e.stopPropagation()}
+            >
               <TitleBarButton onClick={handleHide} title="Minimize">
                 <Minus size={13} strokeWidth={2} />
               </TitleBarButton>
@@ -314,7 +306,7 @@ export function Window({ instance, minSize, children, isFocused }: WindowProps) 
           </div>
 
           {/* Window body */}
-          <div className="flex-1 bg-surface-container-lowest text-on-surface overflow-auto min-h-0">
+          <div className="bg-surface-container-lowest text-on-surface min-h-0 flex-1 overflow-auto">
             {children}
           </div>
         </motion.div>
@@ -336,13 +328,11 @@ function TitleBarButton({ onClick, title, isClose = false, children }: TitleBarB
       onClick={onClick}
       title={title}
       className={cn(
-        'flex items-center justify-center w-7 h-7',
-        'border-none outline-none cursor-pointer text-current',
+        'flex h-7 w-7 items-center justify-center',
+        'cursor-pointer border-none text-current outline-none',
         'transition-colors duration-75',
-        isClose
-          ? 'hover:bg-error hover:text-on-error'
-          : 'hover:bg-surface-container-highest',
-        'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
+        isClose ? 'hover:bg-error hover:text-on-error' : 'hover:bg-surface-container-highest',
+        'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
       )}
     >
       {children}

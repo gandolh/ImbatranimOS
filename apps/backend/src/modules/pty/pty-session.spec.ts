@@ -83,13 +83,19 @@ describe('PtySession', () => {
 
   it('accepts Buffer message frames', () => {
     new PtySession(pty, socket);
-    socket.emit('message', Buffer.from(JSON.stringify({ type: 'input', data: 'x' })));
+    socket.emit(
+      'message',
+      Buffer.from(JSON.stringify({ type: 'input', data: 'x' })),
+    );
     expect(pty.write).toHaveBeenCalledWith('x');
   });
 
   it('resizes the pty (SIGWINCH) on a resize frame', () => {
     new PtySession(pty, socket);
-    socket.emit('message', JSON.stringify({ type: 'resize', cols: 120, rows: 40 }));
+    socket.emit(
+      'message',
+      JSON.stringify({ type: 'resize', cols: 120, rows: 40 }),
+    );
     expect(pty.resize).toHaveBeenCalledWith(120, 40);
   });
 
@@ -98,7 +104,10 @@ describe('PtySession', () => {
     socket.emit('message', 'not json');
     socket.emit('message', JSON.stringify({ type: 'bogus' }));
     socket.emit('message', JSON.stringify({ type: 'input' })); // missing data
-    socket.emit('message', JSON.stringify({ type: 'resize', cols: 'x', rows: 1 }));
+    socket.emit(
+      'message',
+      JSON.stringify({ type: 'resize', cols: 'x', rows: 1 }),
+    );
     expect(pty.write).not.toHaveBeenCalled();
     expect(pty.resize).not.toHaveBeenCalled();
   });
@@ -112,7 +121,9 @@ describe('PtySession', () => {
   it('notifies and closes the socket when the pty exits', () => {
     new PtySession(pty, socket);
     pty.emitExit(0);
-    expect(socket.send).toHaveBeenCalledWith(expect.stringContaining('process exited'));
+    expect(socket.send).toHaveBeenCalledWith(
+      expect.stringContaining('process exited'),
+    );
     expect(socket.close).toHaveBeenCalledTimes(1);
   });
 

@@ -28,7 +28,9 @@ describe('Security hardening (e2e)', () => {
     app.use(securityHeaders);
     app.use(cookieParser());
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     // Re-create the /health handler main.ts registers outside the api prefix.
     app
       .getHttpAdapter()

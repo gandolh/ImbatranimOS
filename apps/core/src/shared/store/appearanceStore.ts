@@ -42,8 +42,8 @@ export const useAppearanceStore = create<AppearanceStore>()(
       setTheme: (theme) => set({ theme }),
       setAccent: (accent) => set({ accent }),
     }),
-    { name: 'imbatranimos:appearance' },
-  ),
+    { name: 'imbatranimos:appearance' }
+  )
 )
 
 /** Push the active theme + accent onto the document root so CSS vars resolve. */

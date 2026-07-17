@@ -12,7 +12,7 @@ export function Input({ label, className, id, ...props }: InputProps) {
       {label && (
         <label
           htmlFor={id}
-          className="font-ui text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase"
+          className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase"
         >
           {label}
         </label>
@@ -20,11 +20,11 @@ export function Input({ label, className, id, ...props }: InputProps) {
       <BaseInput
         id={id}
         className={cn(
-          'w-full border border-outline-variant bg-surface-container-lowest px-2.5 py-1.5',
-          'font-content text-[13px] text-on-surface',
-          'outline-none transition-colors',
+          'border-outline-variant bg-surface-container-lowest w-full border px-2.5 py-1.5',
+          'font-content text-on-surface text-[13px]',
+          'transition-colors outline-none',
           'placeholder:text-on-surface-variant',
-          'data-[focused]:border-primary data-[focused]:ring-2 data-[focused]:ring-primary/40',
+          'data-[focused]:border-primary data-[focused]:ring-primary/40 data-[focused]:ring-2',
           'data-[invalid]:border-error',
           'disabled:cursor-not-allowed disabled:opacity-50',
           className

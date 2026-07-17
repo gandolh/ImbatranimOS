@@ -92,7 +92,7 @@ export function CommandPalette({ open, onClose }: Props) {
         onClose()
       }
     },
-    [items, selectedIndex, onClose],
+    [items, selectedIndex, onClose]
   )
 
   // Scroll selected item into view
@@ -109,22 +109,27 @@ export function CommandPalette({ open, onClose }: Props) {
   }, {})
 
   return (
-    <BaseDialog.Root open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
+    <BaseDialog.Root
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose()
+      }}
+    >
       <BaseDialog.Portal>
-        <BaseDialog.Backdrop className="fixed inset-0 z-[900] bg-inverse-surface/20" />
+        <BaseDialog.Backdrop className="bg-inverse-surface/20 fixed inset-0 z-[900]" />
         <BaseDialog.Popup
           className={cn(
-            'fixed left-1/2 top-[20%] z-[901] -translate-x-1/2',
+            'fixed top-[20%] left-1/2 z-[901] -translate-x-1/2',
             'w-[600px] max-w-[calc(100vw-32px)]',
-            'border-2 border-outline bg-surface-container-lowest',
+            'border-outline bg-surface-container-lowest border-2',
             'outline-none',
-            'font-[Space_Grotesk,sans-serif]',
+            'font-[Space_Grotesk,sans-serif]'
           )}
           onKeyDown={handleKeyDown}
         >
           {/* Search input row */}
-          <div className="flex items-center gap-2 border-b-2 border-outline-variant bg-surface-container-low px-3 py-2">
-            <Search size={14} className="shrink-0 text-on-surface-variant" />
+          <div className="border-outline-variant bg-surface-container-low flex items-center gap-2 border-b-2 px-3 py-2">
+            <Search size={14} className="text-on-surface-variant shrink-0" />
             <input
               ref={inputRef}
               type="text"
@@ -133,13 +138,13 @@ export function CommandPalette({ open, onClose }: Props) {
               placeholder="Search apps, files, bookmarks…"
               className={cn(
                 'flex-1 bg-transparent outline-none',
-                'font-[Space_Grotesk,sans-serif] text-[13px] text-on-surface',
-                'placeholder:text-on-surface-variant',
+                'text-on-surface font-[Space_Grotesk,sans-serif] text-[13px]',
+                'placeholder:text-on-surface-variant'
               )}
               autoComplete="off"
               spellCheck={false}
             />
-            <kbd className="border border-outline-variant bg-surface-container px-1 py-0.5 font-[Space_Grotesk,sans-serif] text-[11px] text-on-surface-variant">
+            <kbd className="border-outline-variant bg-surface-container text-on-surface-variant border px-1 py-0.5 font-[Space_Grotesk,sans-serif] text-[11px]">
               ESC
             </kbd>
           </div>
@@ -147,13 +152,13 @@ export function CommandPalette({ open, onClose }: Props) {
           {/* Results */}
           <div className="max-h-[360px] overflow-y-auto">
             {loading && items.length === 0 && (
-              <div className="px-3 py-4 text-center font-[Space_Grotesk,sans-serif] text-[12px] text-on-surface-variant">
+              <div className="text-on-surface-variant px-3 py-4 text-center font-[Space_Grotesk,sans-serif] text-[12px]">
                 Searching…
               </div>
             )}
 
             {!loading && items.length === 0 && (
-              <div className="px-3 py-4 text-center font-[Space_Grotesk,sans-serif] text-[12px] text-on-surface-variant">
+              <div className="text-on-surface-variant px-3 py-4 text-center font-[Space_Grotesk,sans-serif] text-[12px]">
                 {query ? 'No results.' : 'Type to search.'}
               </div>
             )}
@@ -165,7 +170,7 @@ export function CommandPalette({ open, onClose }: Props) {
                   return (
                     <li key={group} role="presentation">
                       {/* Group header */}
-                      <div className="border-b border-outline-variant bg-surface-container px-3 py-1 font-[Space_Grotesk,sans-serif] text-[10px] font-semibold tracking-widest text-on-surface-variant uppercase">
+                      <div className="border-outline-variant bg-surface-container text-on-surface-variant border-b px-3 py-1 font-[Space_Grotesk,sans-serif] text-[10px] font-semibold tracking-widest uppercase">
                         {group}
                       </div>
                       {/* Group items */}
@@ -179,10 +184,10 @@ export function CommandPalette({ open, onClose }: Props) {
                             aria-selected={isSelected}
                             className={cn(
                               'flex cursor-pointer flex-col gap-0.5 px-3 py-2',
-                              'border-b border-outline-variant/40',
+                              'border-outline-variant/40 border-b',
                               isSelected
                                 ? 'bg-primary text-on-primary'
-                                : 'text-on-surface hover:bg-surface-container-low',
+                                : 'text-on-surface hover:bg-surface-container-low'
                             )}
                             onMouseEnter={() => setSelectedIndex(globalIdx)}
                             onClick={() => {
@@ -190,14 +195,14 @@ export function CommandPalette({ open, onClose }: Props) {
                               onClose()
                             }}
                           >
-                            <span className="font-[Space_Grotesk,sans-serif] text-[13px] font-medium leading-none">
+                            <span className="font-[Space_Grotesk,sans-serif] text-[13px] leading-none font-medium">
                               {item.label}
                             </span>
                             {item.subtitle && (
                               <span
                                 className={cn(
                                   'font-[Space_Grotesk,sans-serif] text-[11px] leading-none',
-                                  isSelected ? 'text-on-primary/70' : 'text-on-surface-variant',
+                                  isSelected ? 'text-on-primary/70' : 'text-on-surface-variant'
                                 )}
                               >
                                 {item.subtitle}

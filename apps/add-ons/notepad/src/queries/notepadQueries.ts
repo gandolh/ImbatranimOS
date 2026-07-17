@@ -36,7 +36,8 @@ export function useRecentFilesQuery() {
 
 export function useCreateFileMutation() {
   return useMutation({
-    mutationFn: ({ path, content }: { path: string; content?: string }) => createFile(path, content),
+    mutationFn: ({ path, content }: { path: string; content?: string }) =>
+      createFile(path, content),
     onSuccess: (_) => {
       queryClient.invalidateQueries({ queryKey: ['notes', 'list'] })
     },

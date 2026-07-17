@@ -17,7 +17,7 @@ export async function createStickyNote(data: {
 
 export async function updateStickyNote(
   id: number,
-  data: Partial<{ content: string; pos_x: number; pos_y: number }>,
+  data: Partial<{ content: string; pos_x: number; pos_y: number }>
 ): Promise<StickyNote> {
   const res = await api.patch<StickyNote>(`/sticky-notes/${id}`, data)
   return res.data

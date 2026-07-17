@@ -34,7 +34,9 @@ export class TodosService {
     const position = (maxRow.max_pos ?? 0) + 1;
 
     const info = this.db.db
-      .prepare('INSERT INTO todos (text, completed, position) VALUES (@text, 0, @position)')
+      .prepare(
+        'INSERT INTO todos (text, completed, position) VALUES (@text, 0, @position)',
+      )
       .run({ text: dto.text, position });
 
     return this.db.db

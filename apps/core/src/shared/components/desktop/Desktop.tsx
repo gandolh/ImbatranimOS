@@ -66,12 +66,12 @@ export function Desktop({ wallpaper }: DesktopProps) {
   return (
     <div
       ref={containerRef}
-      className="absolute left-0 top-0 right-0 bottom-[44px] w-full overflow-hidden"
+      className="absolute top-0 right-0 bottom-[44px] left-0 w-full overflow-hidden"
       style={WALLPAPER_STYLES[wallpaper]}
     >
       {/* Desktop icon container - using absolute positioning for children */}
       <div className="absolute inset-0 p-4">
-        {APP_REGISTRY.filter(app => app.id !== 'settings').map((app) => {
+        {APP_REGISTRY.filter((app) => app.id !== 'settings').map((app) => {
           const pos = iconPositions[app.id]
           if (!pos) return null
           return (

@@ -81,7 +81,8 @@ export class PtySession {
     this.highWater = opts.highWater ?? BACKPRESSURE_HIGH_WATER;
     this.lowWater = opts.lowWater ?? BACKPRESSURE_LOW_WATER;
     this.pollMs = opts.pollMs ?? BACKPRESSURE_POLL_MS;
-    this.setIntervalFn = opts.setIntervalFn ?? ((fn, ms) => setInterval(fn, ms));
+    this.setIntervalFn =
+      opts.setIntervalFn ?? ((fn, ms) => setInterval(fn, ms));
     this.clearIntervalFn = opts.clearIntervalFn ?? ((h) => clearInterval(h));
 
     this.disposables.push(this.pty.onData((d) => this.onPtyData(d)));

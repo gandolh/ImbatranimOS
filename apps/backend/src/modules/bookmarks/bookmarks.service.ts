@@ -74,7 +74,9 @@ export class BookmarksService {
 
     if (fields.length > 0) {
       this.db.db
-        .prepare(`UPDATE bookmark_groups SET ${fields.join(', ')} WHERE id = @id`)
+        .prepare(
+          `UPDATE bookmark_groups SET ${fields.join(', ')} WHERE id = @id`,
+        )
         .run(values);
     }
 
@@ -149,7 +151,9 @@ export class BookmarksService {
 
     if (fields.length > 0) {
       this.db.db
-        .prepare(`UPDATE bookmark_links SET ${fields.join(', ')} WHERE id = @id`)
+        .prepare(
+          `UPDATE bookmark_links SET ${fields.join(', ')} WHERE id = @id`,
+        )
         .run(values);
     }
 

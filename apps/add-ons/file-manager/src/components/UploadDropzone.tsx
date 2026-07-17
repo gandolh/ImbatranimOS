@@ -46,9 +46,9 @@ export function UploadDropzone({ onFiles, children, className }: UploadDropzoneP
     >
       {children}
       {isDragging && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-primary bg-surface-container-lowest/90">
+        <div className="border-primary bg-surface-container-lowest/90 absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 border-2 border-dashed">
           <Upload size={32} strokeWidth={1.5} className="text-primary" />
-          <span className="font-ui text-[13px] font-semibold text-primary">
+          <span className="font-ui text-primary text-[13px] font-semibold">
             Drop files to upload
           </span>
         </div>

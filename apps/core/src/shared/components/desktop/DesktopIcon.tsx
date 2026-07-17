@@ -50,7 +50,7 @@ export function DesktopIcon({
       initial={false}
       animate={{ x: position.x, y: position.y }}
       whileDrag={{ scale: 1.05, zIndex: 10 }}
-      className="flex flex-col items-center gap-1 cursor-default select-none outline-none w-[64px] absolute top-0 left-0"
+      className="absolute top-0 left-0 flex w-[64px] cursor-default flex-col items-center gap-1 outline-none select-none"
       tabIndex={0}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
@@ -59,7 +59,7 @@ export function DesktopIcon({
       {/* Icon box */}
       <div
         className={cn(
-          'w-12 h-12 flex items-center justify-center border transition-colors',
+          'flex h-12 w-12 items-center justify-center border transition-colors',
           selected
             ? 'border-primary bg-primary text-on-primary'
             : 'border-outline-variant bg-surface-container-low/80 text-on-surface backdrop-blur-sm'
@@ -71,8 +71,8 @@ export function DesktopIcon({
       {/* Label */}
       <span
         className={cn(
-          'text-center leading-tight font-ui',
-          'text-[11px] w-full overflow-hidden px-1 py-0.5',
+          'font-ui text-center leading-tight',
+          'w-full overflow-hidden px-1 py-0.5 text-[11px]',
           'line-clamp-2 break-words',
           selected
             ? 'bg-primary text-on-primary'

@@ -18,24 +18,22 @@ export function ScrollArea({ children, className, orientation = 'vertical' }: Sc
       {(orientation === 'vertical' || orientation === 'both') && (
         <BaseScrollArea.Scrollbar
           orientation="vertical"
-          className="flex w-2 touch-none border-l border-outline-variant bg-surface-container p-px"
+          className="border-outline-variant bg-surface-container flex w-2 touch-none border-l p-px"
         >
-          <BaseScrollArea.Thumb className="w-full bg-outline-variant hover:bg-outline" />
+          <BaseScrollArea.Thumb className="bg-outline-variant hover:bg-outline w-full" />
         </BaseScrollArea.Scrollbar>
       )}
 
       {(orientation === 'horizontal' || orientation === 'both') && (
         <BaseScrollArea.Scrollbar
           orientation="horizontal"
-          className="flex h-2 touch-none border-t border-outline-variant bg-surface-container p-px"
+          className="border-outline-variant bg-surface-container flex h-2 touch-none border-t p-px"
         >
-          <BaseScrollArea.Thumb className="h-full bg-outline-variant hover:bg-outline" />
+          <BaseScrollArea.Thumb className="bg-outline-variant hover:bg-outline h-full" />
         </BaseScrollArea.Scrollbar>
       )}
 
-      {orientation === 'both' && (
-        <BaseScrollArea.Corner className="bg-surface-container" />
-      )}
+      {orientation === 'both' && <BaseScrollArea.Corner className="bg-surface-container" />}
     </BaseScrollArea.Root>
   )
 }

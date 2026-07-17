@@ -35,32 +35,31 @@ export function ProcessTable({ processes }: { processes: ProcessInfo[] }) {
 
   function handleKill(pid: number) {
     setFailedPid(null)
-    killMutation.mutate(
-      { pid },
-      { onError: () => setFailedPid(pid) },
-    )
+    killMutation.mutate({ pid }, { onError: () => setFailedPid(pid) })
   }
 
   return (
     <table className="w-full border-collapse font-mono text-[11px]">
-      <thead className="sticky top-0 bg-surface-container-low">
-        <tr className="border-b border-outline-variant text-on-surface-variant">
+      <thead className="bg-surface-container-low sticky top-0">
+        <tr className="border-outline-variant text-on-surface-variant border-b">
           {COLUMNS.map((col) => (
             <th
               key={col.key}
-              className={`cursor-pointer select-none px-2 py-1 text-left font-ui font-semibold uppercase tracking-wider hover:text-primary ${col.className ?? ''}`}
+              className={`font-ui hover:text-primary cursor-pointer px-2 py-1 text-left font-semibold tracking-wider uppercase select-none ${col.className ?? ''}`}
               onClick={() => toggleSort(col.key)}
             >
               {col.label}
               {sortKey === col.key && (sortDir === 'desc' ? ' ▼' : ' ▲')}
             </th>
           ))}
-          <th className="w-14 px-2 py-1 text-right font-ui font-semibold uppercase tracking-wider">Kill</th>
+          <th className="font-ui w-14 px-2 py-1 text-right font-semibold tracking-wider uppercase">
+            Kill
+          </th>
         </tr>
       </thead>
       <tbody>
         {sorted.map((p) => (
-          <tr key={p.pid} className="border-b border-outline-variant/50 hover:bg-surface-container">
+          <tr key={p.pid} className="border-outline-variant/50 hover:bg-surface-container border-b">
             <td className="px-2 py-0.5">{p.pid}</td>
             <td className="max-w-[200px] truncate px-2 py-0.5" title={p.name}>
               {p.name}
@@ -71,20 +70,20 @@ export function ProcessTable({ processes }: { processes: ProcessInfo[] }) {
               <button
                 onClick={() => handleKill(p.pid)}
                 disabled={killMutation.isPending && killMutation.variables?.pid === p.pid}
-                className="text-on-surface-variant transition-colors hover:text-error disabled:opacity-40"
+                className="text-on-surface-variant hover:text-error transition-colors disabled:opacity-40"
                 title={`Send SIGTERM to pid ${p.pid}`}
               >
                 <XCircle size={13} />
               </button>
               {failedPid === p.pid && (
-                <div className="mt-0.5 whitespace-nowrap text-[9px] text-error">not permitted</div>
+                <div className="text-error mt-0.5 text-[9px] whitespace-nowrap">not permitted</div>
               )}
             </td>
           </tr>
         ))}
         {sorted.length === 0 && (
           <tr>
-            <td colSpan={5} className="px-2 py-6 text-center font-ui text-on-surface-variant">
+            <td colSpan={5} className="font-ui text-on-surface-variant px-2 py-6 text-center">
               No processes
             </td>
           </tr>

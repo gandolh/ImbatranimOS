@@ -23,10 +23,7 @@ export function SnapOverlay({ region }: SnapOverlayProps) {
         zIndex: 9998,
         pointerEvents: 'none',
       }}
-      className={cn(
-        'border-2 border-primary',
-        'bg-primary/10',
-      )}
+      className={cn('border-primary border-2', 'bg-primary/10')}
     />
   )
 }

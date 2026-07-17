@@ -20,7 +20,7 @@ export function Breadcrumb({ root: _root, rootLabel, path, onNavigate }: Breadcr
   ]
 
   return (
-    <div className="flex items-center gap-0 border-b border-outline-variant bg-surface-container-low px-2 py-1">
+    <div className="border-outline-variant bg-surface-container-low flex items-center gap-0 border-b px-2 py-1">
       {segments.map((seg, idx) => {
         const isLast = idx === segments.length - 1
         return (
@@ -29,16 +29,16 @@ export function Breadcrumb({ root: _root, rootLabel, path, onNavigate }: Breadcr
               <ChevronRight
                 size={12}
                 strokeWidth={2}
-                className="mx-0.5 shrink-0 text-on-surface-variant"
+                className="text-on-surface-variant mx-0.5 shrink-0"
               />
             )}
             <button
               onClick={() => !isLast && onNavigate(seg.path)}
               className={cn(
-                'font-ui text-[12px] px-1 py-0.5',
+                'font-ui px-1 py-0.5 text-[12px]',
                 isLast
-                  ? 'cursor-default text-on-surface font-semibold'
-                  : 'cursor-pointer text-on-surface-variant hover:text-primary hover:bg-surface-container',
+                  ? 'text-on-surface cursor-default font-semibold'
+                  : 'text-on-surface-variant hover:text-primary hover:bg-surface-container cursor-pointer'
               )}
             >
               {seg.label}

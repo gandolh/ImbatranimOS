@@ -1,12 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { queryClient } from '@imbatranim/core'
-import {
-  createTodo,
-  deleteTodo,
-  fetchTodos,
-  reorderTodos,
-  updateTodo,
-} from '../api/todosApi'
+import { createTodo, deleteTodo, fetchTodos, reorderTodos, updateTodo } from '../api/todosApi'
 import type { Filter, Todo } from '../types'
 
 const todosKey = (filter: Filter) => ['todos', filter] as const
@@ -42,8 +36,8 @@ export function useUpdateTodoMutation() {
                 ...(data.text !== undefined ? { text: data.text } : {}),
                 ...(data.completed !== undefined ? { completed: data.completed ? 1 : 0 } : {}),
               }
-            : t,
-        ),
+            : t
+        )
       )
       return { snapshots }
     },
@@ -63,7 +57,7 @@ export function useDeleteTodoMutation() {
       await queryClient.cancelQueries({ queryKey: ['todos'] })
       const snapshots = queryClient.getQueriesData<Todo[]>({ queryKey: ['todos'] })
       queryClient.setQueriesData<Todo[]>({ queryKey: ['todos'] }, (old) =>
-        old?.filter((t) => t.id !== id),
+        old?.filter((t) => t.id !== id)
       )
       return { snapshots }
     },

@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
-@import "tailwindcss";
-@plugin "@tailwindcss/typography";
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
 /* Add-on packages live outside core's auto-detection root — scan them too. */
-@source "../../add-ons";
+@source '../../add-ons';
 
 /*
  * ImbatranimOS design tokens — Windows-7-classic layout, modern flat, B&W + ONE accent.
@@ -71,8 +71,8 @@
 
 /* ── Accent presets: default lives here so first paint is branded ────────────── */
 :root {
-  --accent: #c0263a;      /* crimson — shipped default */
-  --accent-on: #ffffff;   /* white text/icon on accent (>= 4.5:1 for all presets) */
+  --accent: #c0263a; /* crimson — shipped default */
+  --accent-on: #ffffff; /* white text/icon on accent (>= 4.5:1 for all presets) */
 }
 
 /* ── Dark theme (default) ────────────────────────────────────────────────────── */
@@ -127,7 +127,9 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   width: 100%;
   height: 100%;
   margin: 0;

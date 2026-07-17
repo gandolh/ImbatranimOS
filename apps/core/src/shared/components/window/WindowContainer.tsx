@@ -5,10 +5,7 @@ import { APP_REGISTRY } from '../../registry/registry'
 
 export function WindowContainer() {
   const windows = useWindowStore((s) => s.windows)
-  const orderedWindows = useMemo(
-    () => [...windows].sort((a, b) => a.zIndex - b.zIndex),
-    [windows],
-  )
+  const orderedWindows = useMemo(() => [...windows].sort((a, b) => a.zIndex - b.zIndex), [windows])
   const maxZIndex = windows.length > 0 ? Math.max(...windows.map((w) => w.zIndex)) : 0
 
   return (
@@ -28,7 +25,7 @@ export function WindowContainer() {
             {AppComponent ? (
               <AppComponent windowId={instance.id} />
             ) : (
-              <div className="p-3 text-sm text-on-surface-variant">
+              <div className="text-on-surface-variant p-3 text-sm">
                 Unknown app: {instance.appId}
               </div>
             )}

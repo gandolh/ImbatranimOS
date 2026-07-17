@@ -26,7 +26,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }, [setAuthenticated])
 
   if (!ready) {
-    return <AuthShell title="Starting up…" subtitle="Waking the machine.">{null}</AuthShell>
+    return (
+      <AuthShell title="Starting up…" subtitle="Waking the machine.">
+        {null}
+      </AuthShell>
+    )
   }
   if (needsSetup) {
     return <FirstRunWizard onDone={() => void refresh()} />

@@ -52,8 +52,8 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
   ) {}
 
   onApplicationBootstrap(): void {
-    const server: HttpServer | undefined = this.adapterHost.httpAdapter
-      ?.getHttpServer?.();
+    const server: HttpServer | undefined =
+      this.adapterHost.httpAdapter?.getHttpServer?.();
     if (!server) {
       this.logger.error('No HTTP server available; terminal WS not attached');
       return;
@@ -93,7 +93,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         cols,
         rows,
         cwd: resolveHome(),
-        env: process.env as Record<string, string>,
+        env: process.env,
       });
     } catch (err) {
       this.logger.error(`Failed to spawn shell: ${(err as Error).message}`);
@@ -107,7 +107,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     }
 
     const entry: LiveSession = {
-      session: new PtySession(ptyProcess, ws as unknown as SocketLike),
+      session: new PtySession(ptyProcess, ws),
       rawToken: readSessionCookie(req),
     };
     this.live.add(entry);
@@ -141,7 +141,10 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 }
 
 /** Read optional `cols`/`rows` from the upgrade URL query string. */
-function parseGeometry(url: string | undefined): { cols: number; rows: number } {
+function parseGeometry(url: string | undefined): {
+  cols: number;
+  rows: number;
+} {
   let cols = DEFAULT_COLS;
   let rows = DEFAULT_ROWS;
   const q = url?.includes('?') ? url.slice(url.indexOf('?') + 1) : '';

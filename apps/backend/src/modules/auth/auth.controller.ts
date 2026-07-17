@@ -17,7 +17,12 @@ import { SessionService } from './session.service';
 import { ThrottleService } from './throttle.service';
 import { Public } from './public.decorator';
 import { SESSION_COOKIE_NAME, readSessionCookie } from './auth.constants';
-import { DisableTotpDto, LoginDto, SetupDto, TotpTokenDto } from './dto/auth.dto';
+import {
+  DisableTotpDto,
+  LoginDto,
+  SetupDto,
+  TotpTokenDto,
+} from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {

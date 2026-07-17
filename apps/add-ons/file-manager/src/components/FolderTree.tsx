@@ -15,21 +15,16 @@ type FolderTreeProps = {
  * Windows-explorer-style left pane: a lazily-expanding tree of folders.
  * Only directories are shown; files live in the right-hand list pane.
  */
-export function FolderTree({
-  root,
-  rootLabel,
-  currentPath,
-  onNavigate,
-}: FolderTreeProps) {
+export function FolderTree({ root, rootLabel, currentPath, onNavigate }: FolderTreeProps) {
   return (
-    <div className="flex h-full flex-col gap-0.5 py-1 font-ui text-[12px]">
+    <div className="font-ui flex h-full flex-col gap-0.5 py-1 text-[12px]">
       <button
         onClick={() => onNavigate('')}
         className={cn(
           'flex items-center gap-1 px-2 py-0.5 text-left',
           currentPath === ''
             ? 'bg-primary-container text-on-primary-container'
-            : 'text-on-surface hover:bg-surface-container',
+            : 'text-on-surface hover:bg-surface-container'
         )}
       >
         <HardDrive size={14} strokeWidth={1.5} className="shrink-0" />
@@ -54,22 +49,13 @@ type TreeChildrenProps = {
   onNavigate: (path: string) => void
 }
 
-function TreeChildren({
-  root,
-  parentPath,
-  depth,
-  currentPath,
-  onNavigate,
-}: TreeChildrenProps) {
+function TreeChildren({ root, parentPath, depth, currentPath, onNavigate }: TreeChildrenProps) {
   const query = useDirectoryQuery(root, parentPath)
   const dirs = (query.data ?? []).filter((e) => e.type === 'directory')
 
   if (query.isLoading) {
     return (
-      <div
-        className="px-2 py-0.5 text-on-surface-variant"
-        style={{ paddingLeft: depth * 14 }}
-      >
+      <div className="text-on-surface-variant px-2 py-0.5" style={{ paddingLeft: depth * 14 }}>
         …
       </div>
     )
@@ -102,19 +88,11 @@ type TreeNodeProps = {
   onNavigate: (path: string) => void
 }
 
-function TreeNode({
-  root,
-  entry,
-  depth,
-  currentPath,
-  onNavigate,
-}: TreeNodeProps) {
+function TreeNode({ root, entry, depth, currentPath, onNavigate }: TreeNodeProps) {
   const [expanded, setExpanded] = useState(false)
   const isActive = currentPath === entry.path
   // Keep the ancestor chain of the active path visually open.
-  const onActivePath =
-    currentPath === entry.path ||
-    currentPath.startsWith(entry.path + '/')
+  const onActivePath = currentPath === entry.path || currentPath.startsWith(entry.path + '/')
   const open = expanded || onActivePath
 
   return (
@@ -124,7 +102,7 @@ function TreeNode({
           'flex items-center gap-0.5',
           isActive
             ? 'bg-primary-container text-on-primary-container'
-            : 'text-on-surface hover:bg-surface-container',
+            : 'text-on-surface hover:bg-surface-container'
         )}
         style={{ paddingLeft: depth * 14 - 8 }}
       >
@@ -133,7 +111,7 @@ function TreeNode({
             e.stopPropagation()
             setExpanded((v) => !v)
           }}
-          className="flex h-5 w-4 shrink-0 items-center justify-center text-on-surface-variant"
+          className="text-on-surface-variant flex h-5 w-4 shrink-0 items-center justify-center"
           aria-label={open ? 'Collapse' : 'Expand'}
         >
           <ChevronRight
@@ -147,9 +125,9 @@ function TreeNode({
           className="flex min-w-0 flex-1 items-center gap-1 py-0.5 text-left"
         >
           {open ? (
-            <FolderOpen size={14} strokeWidth={1.5} className="shrink-0 text-primary-container" />
+            <FolderOpen size={14} strokeWidth={1.5} className="text-primary-container shrink-0" />
           ) : (
-            <Folder size={14} strokeWidth={1.5} className="shrink-0 text-primary-container" />
+            <Folder size={14} strokeWidth={1.5} className="text-primary-container shrink-0" />
           )}
           <span className="truncate">{entry.name}</span>
         </button>

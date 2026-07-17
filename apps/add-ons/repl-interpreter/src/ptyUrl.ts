@@ -12,16 +12,16 @@
  * geometry before the first resize frame arrives.
  */
 export function buildPtyUrl(cols: number, rows: number): string {
-  const query = `?cols=${cols}&rows=${rows}`;
-  const base = import.meta.env.VITE_API_URL as string | undefined;
+  const query = `?cols=${cols}&rows=${rows}`
+  const base = import.meta.env.VITE_API_URL as string | undefined
 
   if (base) {
-    const u = new URL(base, window.location.href);
-    const scheme = u.protocol === 'https:' ? 'wss:' : 'ws:';
-    const path = u.pathname.replace(/\/+$/, ''); // strip trailing slash
-    return `${scheme}//${u.host}${path}/pty${query}`;
+    const u = new URL(base, window.location.href)
+    const scheme = u.protocol === 'https:' ? 'wss:' : 'ws:'
+    const path = u.pathname.replace(/\/+$/, '') // strip trailing slash
+    return `${scheme}//${u.host}${path}/pty${query}`
   }
 
-  const scheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${scheme}//${window.location.host}/api/pty${query}`;
+  const scheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${scheme}//${window.location.host}/api/pty${query}`
 }

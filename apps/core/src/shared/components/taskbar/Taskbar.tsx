@@ -46,7 +46,7 @@ export function Taskbar() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-[9000] flex items-stretch border-t border-outline-variant bg-surface-container-low font-ui"
+      className="border-outline-variant bg-surface-container-low font-ui fixed inset-x-0 bottom-0 z-[9000] flex items-stretch border-t"
       style={{ height: TASKBAR_HEIGHT }}
     >
       {/* Start button */}
@@ -58,21 +58,21 @@ export function Taskbar() {
         aria-label="Start"
         className={cn(
           'group relative flex items-center gap-2 px-4 outline-none',
-          'border-r border-outline-variant',
+          'border-outline-variant border-r',
           'hover:bg-surface-container-high',
-          'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
-          startOpen && 'bg-surface-container-high',
+          'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
+          startOpen && 'bg-surface-container-high'
         )}
       >
         {/* accent edge when open */}
         <span
           className={cn(
-            'absolute inset-x-0 top-0 h-[2px] bg-primary transition-opacity',
-            startOpen ? 'opacity-100' : 'opacity-0',
+            'bg-primary absolute inset-x-0 top-0 h-[2px] transition-opacity',
+            startOpen ? 'opacity-100' : 'opacity-0'
           )}
         />
         <Logo size={22} className="text-on-surface" />
-        <span className="text-[13px] font-bold tracking-tight text-on-surface">
+        <span className="text-on-surface text-[13px] font-bold tracking-tight">
           Imbatranim<span className="text-primary">OS</span>
         </span>
       </button>
@@ -98,21 +98,21 @@ export function Taskbar() {
               onClick={() => handleTaskClick(win.id)}
               title={win.title}
               className={cn(
-                'relative flex h-[34px] min-w-[44px] max-w-[168px] shrink-0 items-center gap-2 px-2.5 outline-none',
+                'relative flex h-[34px] max-w-[168px] min-w-[44px] shrink-0 items-center gap-2 px-2.5 outline-none',
                 'border border-transparent text-[12px]',
-                'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
+                'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
                 isFocused
                   ? 'border-outline-variant bg-surface-container-high text-on-surface'
                   : minimized
                     ? 'text-on-surface-variant hover:bg-surface-container'
-                    : 'text-on-surface hover:bg-surface-container',
+                    : 'text-on-surface hover:bg-surface-container'
               )}
             >
               {/* focus indicator — accent bar along the bottom */}
               <span
                 className={cn(
-                  'absolute inset-x-0 bottom-0 h-[2px] bg-primary transition-opacity',
-                  isFocused ? 'opacity-100' : 'opacity-0',
+                  'bg-primary absolute inset-x-0 bottom-0 h-[2px] transition-opacity',
+                  isFocused ? 'opacity-100' : 'opacity-0'
                 )}
               />
               {Icon && (
@@ -129,7 +129,7 @@ export function Taskbar() {
       </div>
 
       {/* System tray */}
-      <div className="flex items-stretch border-l border-outline-variant">
+      <div className="border-outline-variant flex items-stretch border-l">
         <Tray />
       </div>
     </div>

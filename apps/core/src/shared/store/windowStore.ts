@@ -110,10 +110,7 @@ export function computeSnapGeometry(region: SnapRegion): {
 
 const EDGE_THRESHOLD = 32 // px from edge to trigger snap
 
-export function detectSnapRegion(
-  pointerX: number,
-  pointerY: number,
-): SnapRegion | null {
+export function detectSnapRegion(pointerX: number, pointerY: number): SnapRegion | null {
   const W = window.innerWidth
   const H = window.innerHeight
   const nearLeft = pointerX <= EDGE_THRESHOLD
@@ -144,7 +141,7 @@ type WindowStore = {
     title: string,
     defaultSize: { width: number; height: number },
     minSize: { width: number; height: number },
-    initialPosition?: { x: number; y: number },
+    initialPosition?: { x: number; y: number }
   ) => string
   closeWindow: (id: string) => void
   hideWindow: (id: string) => void
@@ -231,7 +228,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     const { nextZIndex } = get()
     set((state) => ({
       windows: state.windows.map((w) =>
-        w.id === id ? { ...w, isVisible: true, zIndex: nextZIndex } : w,
+        w.id === id ? { ...w, isVisible: true, zIndex: nextZIndex } : w
       ),
       nextZIndex: state.nextZIndex + 1,
     }))
@@ -260,7 +257,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
                   height: window.innerHeight - TASKBAR_HEIGHT,
                 },
               }
-            : w,
+            : w
         ),
         preMaximizeStates,
       }
@@ -284,7 +281,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
                 position: saved.position,
                 size: saved.size,
               }
-            : w,
+            : w
         ),
         preMaximizeStates: remainingPreMax,
       }
@@ -340,7 +337,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
                 position,
                 size,
               }
-            : w,
+            : w
         ),
         preSnapStates,
       }
@@ -354,9 +351,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       if (!win || !saved) {
         // Just clear snapState
         return {
-          windows: state.windows.map((w) =>
-            w.id === id ? { ...w, snapState: undefined } : w,
-          ),
+          windows: state.windows.map((w) => (w.id === id ? { ...w, snapState: undefined } : w)),
         }
       }
 
@@ -371,7 +366,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
                 position: saved.position,
                 size: saved.size,
               }
-            : w,
+            : w
         ),
         preSnapStates: remainingPreSnap,
       }

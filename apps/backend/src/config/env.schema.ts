@@ -1,11 +1,13 @@
-import { z } from 'zod'
+import { z } from 'zod';
 
 // Env booleans arrive as strings ("true"/"1"). Coerce leniently; unset -> default.
 const envBool = (def: boolean) =>
   z
     .string()
     .optional()
-    .transform((v) => (v === undefined || v === '' ? def : v === 'true' || v === '1'))
+    .transform((v) =>
+      v === undefined || v === '' ? def : v === 'true' || v === '1',
+    );
 
 export const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
@@ -27,6 +29,6 @@ export const envSchema = z.object({
   TRUST_PROXY: envBool(false),
   // Session lifetime; sliding — validation refreshes last_seen but not expiry.
   SESSION_TTL_HOURS: z.coerce.number().default(168), // 7 days
-})
+});
 
-export type Env = z.infer<typeof envSchema>
+export type Env = z.infer<typeof envSchema>;

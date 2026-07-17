@@ -38,7 +38,9 @@ describe('SessionService', () => {
     const s = new SessionService(db, expired);
     const { token } = s.issue();
     expect(s.validate(token)).toBeNull();
-    const count = db.db.prepare('SELECT COUNT(*) c FROM auth_sessions').get() as { c: number };
+    const count = db.db
+      .prepare('SELECT COUNT(*) c FROM auth_sessions')
+      .get() as { c: number };
     expect(count.c).toBe(0);
   });
 
@@ -46,7 +48,9 @@ describe('SessionService', () => {
     sessions.issue();
     sessions.issue();
     sessions.destroyAll();
-    const count = db.db.prepare('SELECT COUNT(*) c FROM auth_sessions').get() as { c: number };
+    const count = db.db
+      .prepare('SELECT COUNT(*) c FROM auth_sessions')
+      .get() as { c: number };
     expect(count.c).toBe(0);
   });
 

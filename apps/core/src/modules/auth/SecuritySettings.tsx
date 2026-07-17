@@ -3,13 +3,7 @@ import { AxiosError } from 'axios'
 import { ShieldCheck, LockKeyhole, LogOut } from 'lucide-react'
 import { Button, Input } from '../../shared/components/ui'
 import { useAuthStore } from './store/authStore'
-import {
-  disableTotp,
-  enableTotp,
-  enrollTotp,
-  logout,
-  type TotpEnrollment,
-} from './api/authApi'
+import { disableTotp, enableTotp, enrollTotp, logout, type TotpEnrollment } from './api/authApi'
 
 function errMessage(err: unknown, fallback: string): string {
   if (err instanceof AxiosError) {
@@ -80,29 +74,31 @@ export function SecuritySettings() {
   }
 
   return (
-    <section className="mb-10 border-t border-outline-variant pt-10">
+    <section className="border-outline-variant mb-10 border-t pt-10">
       <div className="mb-6 flex items-center gap-3">
-        <div className="bg-secondary/10 p-2 text-secondary">
+        <div className="bg-secondary/10 text-secondary p-2">
           <ShieldCheck size={20} />
         </div>
-        <h2 className="font-ui text-xl font-semibold text-on-surface">Security</h2>
+        <h2 className="font-ui text-on-surface text-xl font-semibold">Security</h2>
       </div>
 
       <div className="space-y-6">
         {/* Two-factor authentication */}
-        <div className="border border-outline-variant bg-surface-container-low p-4">
+        <div className="border-outline-variant bg-surface-container-low border p-4">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-on-surface">Two-factor authentication</p>
-              <p className="mt-0.5 font-content text-[11px] text-on-surface-variant">
+              <p className="text-on-surface text-sm font-medium">Two-factor authentication</p>
+              <p className="font-content text-on-surface-variant mt-0.5 text-[11px]">
                 {totpEnabled
                   ? 'Enabled — a code from your authenticator app is required at login.'
                   : 'Add a time-based code (TOTP) required at every unlock.'}
               </p>
             </div>
             <span
-              className={`px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wider ${
-                totpEnabled ? 'bg-secondary/15 text-secondary' : 'bg-surface-container text-on-surface-variant'
+              className={`font-ui px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
+                totpEnabled
+                  ? 'bg-secondary/15 text-secondary'
+                  : 'bg-surface-container text-on-surface-variant'
               }`}
             >
               {totpEnabled ? 'On' : 'Off'}
@@ -117,18 +113,19 @@ export function SecuritySettings() {
 
           {!totpEnabled && enrollment && (
             <div className="space-y-3">
-              <p className="font-content text-[12px] text-on-surface-variant">
+              <p className="font-content text-on-surface-variant text-[12px]">
                 Scan this with your authenticator app, then enter the 6-digit code to confirm.
               </p>
               <img
                 src={enrollment.qrDataUrl}
                 alt="TOTP QR code"
-                className="border border-outline-variant"
+                className="border-outline-variant border"
                 width={160}
                 height={160}
               />
-              <p className="font-content text-[11px] break-all text-on-surface-variant">
-                Or enter this secret manually: <span className="font-mono">{enrollment.secret}</span>
+              <p className="font-content text-on-surface-variant text-[11px] break-all">
+                Or enter this secret manually:{' '}
+                <span className="font-mono">{enrollment.secret}</span>
               </p>
               <Input
                 id="totp-confirm"
@@ -172,14 +169,14 @@ export function SecuritySettings() {
             </div>
           )}
 
-          {error && <p className="mt-2 font-content text-[11px] text-error">{error}</p>}
+          {error && <p className="font-content text-error mt-2 text-[11px]">{error}</p>}
         </div>
 
         {/* Session */}
-        <div className="flex items-center justify-between border border-outline-variant bg-surface-container-low p-4">
+        <div className="border-outline-variant bg-surface-container-low flex items-center justify-between border p-4">
           <div>
-            <p className="text-sm font-medium text-on-surface">Lock this computer</p>
-            <p className="mt-0.5 font-content text-[11px] text-on-surface-variant">
+            <p className="text-on-surface text-sm font-medium">Lock this computer</p>
+            <p className="font-content text-on-surface-variant mt-0.5 text-[11px]">
               End your session and return to the lock screen.
             </p>
           </div>

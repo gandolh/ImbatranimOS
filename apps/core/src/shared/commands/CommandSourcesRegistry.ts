@@ -40,9 +40,7 @@ export function registerCommandSource(source: CommandSource): void {
  * Sources that error are silently skipped.
  */
 export async function searchAllSources(query: string): Promise<CommandItem[]> {
-  const results = await Promise.allSettled(
-    COMMAND_SOURCES.map((s) => s.search(query)),
-  )
+  const results = await Promise.allSettled(COMMAND_SOURCES.map((s) => s.search(query)))
 
   return results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []))
 }

@@ -37,10 +37,7 @@ export class TodosController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateTodoDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTodoDto) {
     return this.todosService.update(id, dto);
   }
 

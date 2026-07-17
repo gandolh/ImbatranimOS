@@ -15,10 +15,7 @@ import { manifest as terminal } from '@imbatranim/repl-interpreter'
 import { manifest as fileManager } from '@imbatranim/file-manager'
 import { manifest as systemMonitor } from '@imbatranim/system-monitor'
 import type { AddonManifest, AppConfig } from './contract'
-import {
-  COMMAND_SOURCES,
-  registerCommandSource,
-} from './shared/commands/CommandSourcesRegistry'
+import { COMMAND_SOURCES, registerCommandSource } from './shared/commands/CommandSourcesRegistry'
 import { Settings } from './modules/settings/Settings'
 
 // Settings is core (shell + auth + settings roster), not an add-on — it is

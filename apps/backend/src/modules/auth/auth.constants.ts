@@ -44,6 +44,8 @@ export function readSessionCookie(req: {
 }): string | null {
   const fromParsed = req.cookies?.[SESSION_COOKIE_NAME];
   if (fromParsed) return fromParsed;
-  const fromHeader = parseCookieHeader(req.headers?.cookie)[SESSION_COOKIE_NAME];
+  const fromHeader = parseCookieHeader(req.headers?.cookie)[
+    SESSION_COOKIE_NAME
+  ];
   return fromHeader ?? null;
 }

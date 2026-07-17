@@ -12,9 +12,13 @@ parse and serialize documents synchronously on the main thread, so a
 large file freezes the entire desktop for hundreds of milliseconds to
 seconds.
 
-Docs uses fflate's synchronous zip APIs —
-`apps/add-ons/docs/src/engine/docxNormalize.ts:54` (`unzipSync`) and
-`:90` (`zipSync`) — both blocking. Sheets uses ExcelJS, whose
+> **Docs slice DONE** (2026-07-17,
+> [brief 27](../briefs/done/27-docx-offthread-unzip.md)): `docxNormalize.ts`
+> now uses fflate's async `unzip`/`zip` (off-thread worker pool), identical
+> output. **Xlsx slice below is still open.**
+
+Docs used fflate's synchronous zip APIs (now async, see brief 27). Sheets
+uses ExcelJS, whose
 `load`/`writeBuffer` are async
 (`apps/add-ons/sheets/src/engine/xlsxBridge.ts:91` and `:191`), but the
 per-cell iteration between them is CPU-bound and still runs on the main

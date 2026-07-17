@@ -46,12 +46,24 @@ const CUSTOM_REL =
  * original bytes untouched if nothing was missing; otherwise a repacked zip.
  */
 export async function normalizeDocx(bytes: ArrayBuffer): Promise<Uint8Array> {
-  const { unzipSync, zipSync, strToU8, strFromU8 } = await import('fflate')
+  const { unzip, zip, strToU8, strFromU8 } = await import('fflate')
   const original = new Uint8Array(bytes)
+
+  // fflate's async unzip/zip run off the main thread (its worker pool), so a
+  // large docx doesn't freeze the desktop while it's unpacked/repacked. Output
+  // is identical to the sync variants.
+  const unzipAsync = (data: Uint8Array) =>
+    new Promise<Record<string, Uint8Array>>((resolve, reject) =>
+      unzip(data, (err, out) => (err ? reject(err) : resolve(out)))
+    )
+  const zipAsync = (files: Record<string, Uint8Array>) =>
+    new Promise<Uint8Array>((resolve, reject) =>
+      zip(files, (err, out) => (err ? reject(err) : resolve(out)))
+    )
 
   let files: Record<string, Uint8Array>
   try {
-    files = unzipSync(original)
+    files = await unzipAsync(original)
   } catch {
     // Not a readable zip — hand the bytes back and let SuperDoc surface the error.
     return original
@@ -87,5 +99,5 @@ export async function normalizeDocx(bytes: ArrayBuffer): Promise<Uint8Array> {
     }
   }
 
-  return zipSync(files)
+  return zipAsync(files)
 }

@@ -633,3 +633,35 @@ brief carries a human-gated in-browser verification remainder.
   target then. A draft brief for it was written and removed per this decision;
   brief number 31 was reassigned to the virtualization work (draft never
   committed).
+
+## 2026-07-17 — Full-auto backlog run (PAUSED near quota; see HANDOFF.md)
+
+User: "go full auto with the remaining todos" via the `orchestrate` skill; scope
+"everything actionable" (excl. human-gated SEC-9/SEC-10 + brief 15 remainder).
+Ran as a controller + dispatched-subagent loop, one commit per brief. **Paused
+mid-run for quota; resume point captured in `corpus/HANDOFF.md`.**
+
+Shipped + committed on `main` (all gates green at each commit):
+- **Brief 31 (virtualize-long-lists)** `e8652b5` — TanStack Virtual on
+  ProcessTable + FileList via core `useVirtualList`; core `ScrollArea` gained a
+  `viewportRef` so the virtualizer reads the scroll node directly (no reliance on
+  Base UI internal DOM attrs).
+- **Brief 32 (xlsx-offthread-worker, PERF-6 xlsx slice)** `e37bdd3` — ExcelJS
+  round-trip moved into a lazy module Web Worker; `xlsxToUniver`/`univerToXlsx`
+  signatures unchanged (Sheets.tsx untouched); id-correlated requests, buffer
+  transfer, and an onerror/onmessageerror backstop; exceljs now bundles into the
+  worker chunk, off the main thread.
+- **Brief 33 (eager-bundle-lazy-load)** `0341230` — the held todo's trigger fired
+  (Monaco is landing this run), so every app component became `React.lazy` +
+  `<Suspense>` in WindowContainer. Eager index gzip **399.6 KB → 121.5 KB
+  (−69.6%)**; contract widened to accept lazy components; snipping-tool `APP_NAME`
+  moved to a sibling module so a static metadata import stopped defeating its
+  split.
+
+Bookkeeping still owed (first resume task): move briefs 31/32/33 to `done/` with
+outcome notes, add status rows, mark source todos promoted. Remaining waves
+(34 notification-center → light apps 35-40 → heavy/backend 41-44 → platform
+45-46) are fully specced in HANDOFF.md.
+
+Note: turbo `core:build` cache key omits add-on `src` — use
+`npm run build -- --force` when measuring bundle output.

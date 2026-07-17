@@ -2,6 +2,7 @@
 
 Start here. Triage on the summary lines; open at most 2–3 pages.
 
+- [HANDOFF.md](HANDOFF.md) — **RESUME HERE** — paused full-auto backlog run (2026-07-17): what shipped (briefs 31–33), what's owed, and the remaining wave plan (briefs 34–46)
 - [CLAUDE.md](CLAUDE.md) — the rules and conventions for this corpus
 - [routing.md](routing.md) — intent/knowledge routing for work-intake
 - [log.md](log.md) — chronological record of meaningful changes

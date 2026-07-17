@@ -1,13 +1,14 @@
-import { NestFactory, HttpAdapterHost } from '@nestjs/core';
-import { ValidationPipe, HttpException, HttpStatus } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { securityHeaders } from './security-headers';
 import type { Env } from './config/env.schema';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService<Env, true>);
 
   // Behind a TLS-terminating reverse proxy, trust X-Forwarded-* so req.ip
@@ -35,4 +36,4 @@ async function bootstrap() {
 
   await app.listen(config.get('PORT'));
 }
-bootstrap();
+void bootstrap();

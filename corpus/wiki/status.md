@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16–27 DONE (incl. the 2026-07-17 post-v1 backlog run, plus the review-pass cleanups 23–27: shared-addon-kit, window-render-perf, notes/FilesService dedup, FileManager split, docx off-thread); brief 15's human-gated remainder is all that stands before v1.0.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–29 DONE (incl. the 2026-07-17 post-v1 backlog run, plus the review-pass cleanups 23–29: shared-addon-kit, window-render-perf, notes/FilesService dedup, FileManager split, docx off-thread, opt-in setup token, backend lint debt paid — root lint now green); brief 15's human-gated remainder is all that stands before v1.0.
 updated: 2026-07-17
 ---
 
@@ -52,6 +52,8 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 25 | [notes-filesservice-dedup](../briefs/done/25-notes-filesservice-dedup.md) | **done** | CS-7: backend `notes` collapsed to `/notes/recent`; Notepad now uses `/files?root=notes`; 3 duplicate DTOs + FilesService delegation removed. `createFile` now upsert. 80 unit + 29 e2e green. Human-gated: Notepad walkthrough |
 | 26 | [filemanager-split](../briefs/done/26-filemanager-split.md) | **done** | CS-3: FileManager 752→531 lines; extracted useFileSelection/useFileClipboard/useDeleteFlow (delete states → one union, CS-4 preserved)/usePaneResize/useListKeyboardNav + buildMenuItems. Behavior review clean. Human-gated: walkthrough |
 | 27 | [docx-offthread-unzip](../briefs/done/27-docx-offthread-unzip.md) | **done** | PERF-6 (docx slice): docxNormalize uses fflate async `unzip`/`zip` (off-thread), identical output. Xlsx/ExcelJS worker slice still open in the todo. Human-gated: large-docx open feel |
+| 28 | [first-run-setup-token](../briefs/done/28-first-run-setup-token.md) | **done** | SEC-2: opt-in `SETUP_TOKEN` (default-off no-op) gates first-run claim with a constant-time compare; `/auth/status` advertises it, wizard asks when required. 80 unit + 34 e2e. Human-gated: token deploy |
+| 29 | [backend-lint-typing](../briefs/done/29-backend-lint-typing.md) | **done** | Paid the backend `no-unsafe-*` lint debt (typed sqlite rows + pty/main/test typing). **`backend#lint` + root `npm run lint` now green (0/0)** — the last standing lint red is gone |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
 (human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1

@@ -7,6 +7,7 @@ process.env.FILES_MAX_UPLOAD_BYTES = '2048';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { Server } from 'http';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import * as fs from 'fs/promises';
@@ -17,6 +18,14 @@ import { DbModule } from '../src/db/db.module';
 import { AuthModule } from '../src/modules/auth/auth.module';
 import { FilesModule } from '../src/modules/files/files.module';
 import { SessionService } from '../src/modules/auth/session.service';
+
+/** Shapes of the response bodies this spec reads fields off of. */
+interface UploadResponse {
+  path: string;
+}
+interface HttpErrorResponse {
+  statusCode: number;
+}
 
 /** superagent parser that yields the raw response bytes as a Buffer. */
 function binaryParser(
@@ -29,7 +38,7 @@ function binaryParser(
 }
 
 describe('Files (e2e) — auth + binary round-trip', () => {
-  let app: INestApplication;
+  let app: INestApplication<Server>;
   let http: ReturnType<typeof request>;
   let jail: string;
   let cookie: string;
@@ -132,8 +141,9 @@ describe('Files (e2e) — auth + binary round-trip', () => {
 
       // If it was accepted, the returned path must stay inside the jail.
       if (res.status === 201) {
-        expect(res.body.path).not.toContain('..');
-        const landed = join(jail, res.body.path as string);
+        const uploadBody = res.body as UploadResponse;
+        expect(uploadBody.path).not.toContain('..');
+        const landed = join(jail, uploadBody.path);
         expect(landed.startsWith(jail)).toBe(true);
         await expect(fs.stat(landed)).resolves.toBeTruthy();
       }
@@ -150,7 +160,7 @@ describe('Files (e2e) — auth + binary round-trip', () => {
         .field('path', 'big.bin')
         .attach('file', tooBig, 'big.bin')
         .expect(413);
-      expect(res.body.statusCode).toBe(413);
+      expect((res.body as HttpErrorResponse).statusCode).toBe(413);
       // The over-cap file must not have been written.
       await expect(fs.stat(join(jail, 'big.bin'))).rejects.toBeTruthy();
     });

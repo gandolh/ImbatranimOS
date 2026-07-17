@@ -127,5 +127,5 @@ export class FilesController {
  */
 function sanitizeHeaderFilename(name: string): string {
   // eslint-disable-next-line no-control-regex
-  return name.replace(/[\"\\\x00-\x1f]/g, '_');
+  return name.replace(/["\\\x00-\x1f]/g, '_');
 }

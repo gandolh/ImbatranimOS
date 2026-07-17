@@ -4,6 +4,7 @@ process.env.DB_PATH = ':memory:';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { Server } from 'http';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
@@ -15,7 +16,7 @@ import { securityHeaders } from '../src/security-headers';
  * /api paths, the public /health handler).
  */
 describe('Security hardening (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication<Server>;
   let http: ReturnType<typeof request>;
 
   beforeAll(async () => {

@@ -567,3 +567,25 @@ deferred (browser/ISO-gated).
 Gates (both): turbo typecheck 13/13, build ✓, format 14/14, lint 13/13.
 Committed separately. Remaining: SEC-2 (28), lint-debt (29), add-on polish
 (30); SEC-9 + SEC-10 stay deferred (browser/ISO-gated).
+
+## 2026-07-17 — Full-auto backlog: briefs 28 + 29
+
+Parallel wave (auth-feature vs backend-lint lanes), combined-verified.
+
+- **Brief 28 (first-run-setup-token, SEC-2):** opt-in `SETUP_TOKEN`,
+  default-OFF (byte-identical to before when unset). Set → `/auth/status`
+  advertises `setupTokenRequired` and `/auth/setup` demands a matching token
+  (constant-time: `timingSafeEqual` over SHA-256 of both sides) before any
+  account is created. Wizard shows the field via the existing status path.
+  New auth-setup-token e2e; 80 unit + 34 e2e green. Localhost-bind
+  alternative deliberately not taken (would break remote first-run).
+- **Brief 29 (backend-lint-typing):** paid the backend `no-unsafe-*` debt —
+  typed the raw better-sqlite3 sites + pty/main/test `any`. `backend#lint`
+  and root `npm run lint` are now **green (0/0)** — the last lint red is
+  gone. Types only, zero behavior change. Two auth-lane leftovers
+  (auth.guard + spec) that fell between the 28/29 lanes were fixed by the
+  orchestrator at the combined verify.
+
+Gates: turbo typecheck 13/13, build ✓, format 14/14, lint 13/13, backend
+80 unit + 34 e2e. Remaining: B30 add-on polish; SEC-9 + SEC-10 deferred
+(browser/ISO-gated).

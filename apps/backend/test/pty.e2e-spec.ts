@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { AddressInfo } from 'net';
+import type { AddressInfo, Server } from 'net';
 import { WebSocket } from 'ws';
 import { PtyGateway } from '../src/modules/pty/pty.gateway';
 import { SessionService } from '../src/modules/auth/session.service';
@@ -12,7 +12,7 @@ import { SessionService } from '../src/modules/auth/session.service';
  * token "good" is valid, everything else is rejected.
  */
 describe('PtyGateway (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication<Server>;
   let url: string;
 
   const fakeSession = {
@@ -77,6 +77,11 @@ describe('PtyGateway (e2e)', () => {
         );
       });
       ws.on('message', (data) => {
+        // ws's `RawData` union includes `ArrayBuffer`, which falls back to
+        // Object's default toString(); this test server only ever sends
+        // text frames (Buffer), so the runtime value is always meaningfully
+        // stringified even though the type can't express that narrowing.
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
         buf += data.toString();
         if (buf.includes('IMBATRANIM_OK')) {
           clearTimeout(timer);
@@ -99,6 +104,9 @@ describe('PtyGateway (e2e)', () => {
           ws.send(JSON.stringify({ type: 'input', data: 'echo PID=$$\r' })),
         );
         ws.on('message', (d) => {
+          // Same rationale as the echo test above: RawData's ArrayBuffer
+          // member has no custom toString, but this server only sends text.
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
           buf += d.toString();
           const m = buf.match(/PID=(\d+)/);
           if (m) {

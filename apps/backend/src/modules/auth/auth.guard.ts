@@ -60,7 +60,7 @@ export class SessionAuthGuard implements CanActivate {
     if (!MUTATING_METHODS.has(req.method)) return;
     const origin = req.headers.origin;
     if (!origin) return; // no Origin => not a cross-site browser form post
-    const frontend = this.config.get('FRONTEND_URL');
+    const frontend = this.config.get('FRONTEND_URL', { infer: true });
     let originHost: string;
     try {
       originHost = new URL(origin).host;

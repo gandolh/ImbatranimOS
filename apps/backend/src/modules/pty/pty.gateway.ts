@@ -58,8 +58,12 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
   ) {}
 
   onApplicationBootstrap(): void {
-    const server: HttpServer | undefined =
-      this.adapterHost.httpAdapter?.getHttpServer?.();
+    // getHttpServer() is typed `any` on the base HttpAdapterHost<AbstractHttpAdapter>
+    // generic (TServer defaults to `any`); the concrete adapter Nest wires up
+    // here is always the Node http/https server this gateway attaches to.
+    const server = this.adapterHost.httpAdapter?.getHttpServer?.() as
+      | HttpServer
+      | undefined;
     if (!server) {
       this.logger.error('No HTTP server available; terminal WS not attached');
       return;

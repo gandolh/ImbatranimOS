@@ -57,7 +57,11 @@ describe('SessionAuthGuard', () => {
 
   it('attaches the validated session to the request', () => {
     const { token } = sessions.issue();
-    const req: any = {
+    const req: {
+      method: string;
+      headers: Record<string, string>;
+      session?: unknown;
+    } = {
       method: 'GET',
       headers: { cookie: `${SESSION_COOKIE_NAME}=${token}` },
     };

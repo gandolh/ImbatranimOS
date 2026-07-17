@@ -44,7 +44,7 @@ function makeFakeSocket() {
     readyState: number;
     send: jest.Mock;
     close: jest.Mock;
-    emit(event: string, ...args: any[]): void;
+    emit(event: string, ...args: unknown[]): void;
   } = {
     bufferedAmount: 0,
     readyState: WS_OPEN,

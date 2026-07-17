@@ -170,9 +170,20 @@ export class PtySession {
     let text: string;
     if (typeof raw === 'string') text = raw;
     else if (raw instanceof Buffer) text = raw.toString('utf8');
-    else if (raw && typeof (raw as any).toString === 'function')
+    else if (
+      raw &&
+      typeof (raw as { toString?: unknown }).toString === 'function'
+    ) {
+      // Catch-all for exotic WS payload shapes (e.g. ArrayBuffer) that are
+      // neither `string` nor `Buffer`. `raw` is `unknown` here and its
+      // constituents can't be narrowed further without changing which
+      // payload shapes this accepts, so a genuinely-custom-toString type
+      // can't be expressed. A default `[object X]` stringification just
+      // fails the JSON.parse below and the frame is dropped as malformed —
+      // same as today.
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
       text = String(raw);
-    else return null;
+    } else return null;
 
     let parsed: unknown;
     try {

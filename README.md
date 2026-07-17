@@ -184,3 +184,12 @@ imports add-ons only in `manifest.ts`) is enforced by eslint.
 Architecture, locked decisions, and work briefs live in
 [corpus/](corpus/index.md), including the pivot history from this repo's
 earlier ISO-based era.
+
+## License
+
+ImbatranimOS is licensed under the **GNU Affero General Public License v3.0
+only** (AGPL-3.0-only) — see [LICENSE](LICENSE). The Docs editor is built on
+[SuperDoc](https://github.com/Harbour-Enterprises/SuperDoc), which is AGPL-3.0;
+the whole repository adopts the same license so the combined work stays
+compliant. In short: the source is public and stays public, and if you run a
+modified version as a network service you must offer its source to users.

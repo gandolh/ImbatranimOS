@@ -15,6 +15,8 @@ import { manifest as terminal } from '@imbatranim/repl-interpreter'
 import { manifest as fileManager } from '@imbatranim/file-manager'
 import { manifest as systemMonitor } from '@imbatranim/system-monitor'
 import { manifest as snippingTool } from '@imbatranim/snipping-tool'
+import { manifest as pdfViewer } from '@imbatranim/pdf-viewer'
+import { manifest as slides } from '@imbatranim/slides'
 import type { AddonManifest, AppConfig } from './contract'
 import { COMMAND_SOURCES, registerCommandSource } from './shared/commands/CommandSourcesRegistry'
 import { Settings } from './modules/settings/Settings'
@@ -43,6 +45,8 @@ const MANIFESTS: AddonManifest[] = [
   fileManager,
   systemMonitor,
   snippingTool,
+  pdfViewer,
+  slides,
 ]
 
 export const APP_REGISTRY: AppConfig[] = MANIFESTS

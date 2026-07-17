@@ -5,6 +5,7 @@ import {
   FileImage,
   FileArchive,
   FileCode,
+  Presentation,
   Download,
   Pencil,
   Copy,
@@ -31,6 +32,9 @@ function getFileIcon(entry: FsEntry) {
   const ext = entry.name.split('.').pop()?.toLowerCase() ?? ''
   if (['md', 'txt', 'log'].includes(ext))
     return <FileText size={16} strokeWidth={1.5} className="text-on-surface-variant" />
+  if (ext === 'pdf') return <FileText size={16} strokeWidth={1.5} className="text-error" />
+  if (['pptx', 'ppt'].includes(ext))
+    return <Presentation size={16} strokeWidth={1.5} className="text-tertiary" />
   if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext))
     return <FileImage size={16} strokeWidth={1.5} className="text-secondary" />
   if (['zip', 'tar', 'gz', 'bz2', '7z'].includes(ext))

@@ -30,6 +30,7 @@ import { FS_ROOTS } from './types'
 import type { FsEntry } from './types'
 import { downloadUrl } from './api/filesApi'
 import { sortEntries } from './lib/fileKind'
+import { resolveOpenApp, openAppLabel } from './lib/openWith'
 import { usePreviewPaneSettings } from './store/previewPaneStore'
 import {
   useDirectoryQuery,
@@ -54,26 +55,6 @@ type MenuState = {
   x: number
   y: number
   entry: FsEntry | null
-}
-
-const TEXT_EXTENSIONS = new Set([
-  'md',
-  'txt',
-  'log',
-  'json',
-  'ts',
-  'tsx',
-  'js',
-  'jsx',
-  'css',
-  'html',
-  'sh',
-  'py',
-])
-
-function isTextFile(name: string): boolean {
-  const ext = name.split('.').pop()?.toLowerCase() ?? ''
-  return TEXT_EXTENSIONS.has(ext)
 }
 
 function triggerDownload(root: string, entry: FsEntry) {
@@ -195,11 +176,12 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       navigate(entry.path)
       return
     }
-    // Notepad reads the Notes root, so only hand text files off to it from
-    // there. (Opening arbitrary Home files in Notepad needs a root-aware
-    // Notepad — future work, outside this lane.)
-    if (root === 'notes' && isTextFile(entry.name)) {
-      openApp('notepad', { openPath: entry.path })
+    // Extension → app routing lives in ./lib/openWith (shared by double-click
+    // and Enter). Viewers are root-aware and get `{ root }`; Notepad ignores it
+    // (Notes root only, enforced by the map's onlyRoots).
+    const appId = resolveOpenApp(root, entry.name)
+    if (appId) {
+      openApp(appId, { openPath: entry.path, root })
     }
   }
 
@@ -309,11 +291,13 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     ? menu.entry
       ? [
           {
-            label: menu.entry.type === 'directory' ? 'Open' : 'Open in Notepad',
+            label:
+              menu.entry.type === 'directory'
+                ? 'Open'
+                : openAppLabel(resolveOpenApp(root, menu.entry.name)),
             icon: <FolderOpen size={13} />,
             onSelect: () => handleOpen(menu.entry!),
-            disabled:
-              menu.entry.type === 'file' && !(root === 'notes' && isTextFile(menu.entry.name)),
+            disabled: menu.entry.type === 'file' && !resolveOpenApp(root, menu.entry.name),
           },
           ...(menu.entry.type === 'file'
             ? [

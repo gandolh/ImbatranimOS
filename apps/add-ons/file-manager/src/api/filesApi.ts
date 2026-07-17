@@ -27,11 +27,6 @@ export async function readContent(
   return res.data
 }
 
-export function downloadUrl(root: string, path: string): string {
-  const base = import.meta.env.VITE_API_URL as string
-  return `${base}/files/download?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}`
-}
-
 export async function writeContent(root: string, path: string, content: string): Promise<FsEntry> {
   const res = await api.put<FsEntry>('/files/content', { root, path, content })
   return res.data

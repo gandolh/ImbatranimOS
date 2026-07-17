@@ -1,40 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FileText, Loader2, Save } from 'lucide-react'
-import { Button, Tooltip, useIntentStore, useWindowStore } from '@imbatranim/core'
-import { fetchFileBytes, uploadFileBytes, UploadTooLargeError } from './api/fileBytes'
+import {
+  Button,
+  Tooltip,
+  fetchFileBytes,
+  uploadFileBytes,
+  UploadTooLargeError,
+  fileName,
+  useOpenIntent,
+  useSaveHotkey,
+  useUnsavedGuard,
+} from '@imbatranim/core'
 import { createDocEngine, type DocEngine } from './engine/superdoc'
 import { normalizeDocx } from './engine/docxNormalize'
-import { useOpenedFileStore } from './store/openedFileStore'
-
-type OpenPayload = { openPath?: string; root?: string }
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
-function fileName(path: string): string {
-  return path.split('/').pop() || 'document.docx'
-}
-
-/** True when this window is the top-most visible one (owns global Ctrl+S). */
-function isTopWindow(windowId: string): boolean {
-  const { windows } = useWindowStore.getState()
-  const top = windows.filter((w) => w.isVisible).sort((a, b) => b.zIndex - a.zIndex)[0]
-  return top?.id === windowId
-}
-
 export function Docs({ windowId }: { windowId: string }) {
-  // One-shot open intent → per-window store, drained exactly once in a
-  // ref-guarded effect (never in a render selector — StrictMode double-renders).
-  const source = useOpenedFileStore((s) => s.fileMap[windowId]) ?? null
-  const setFile = useOpenedFileStore((s) => s.setFile)
-  const consumedRef = useRef(false)
-  useEffect(() => {
-    if (consumedRef.current) return
-    consumedRef.current = true
-    const intent = useIntentStore.getState().consumeIntent(windowId) as OpenPayload | undefined
-    if (intent?.openPath && intent?.root) {
-      setFile(windowId, { root: intent.root, path: intent.openPath })
-    }
-  }, [windowId, setFile])
+  // One-shot open intent, drained by the shared hook (StrictMode-safe).
+  const source = useOpenIntent(windowId)
 
   const editorWrapRef = useRef<HTMLDivElement>(null)
   const toolbarWrapRef = useRef<HTMLDivElement>(null)
@@ -43,31 +27,12 @@ export function Docs({ windowId }: { windowId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
-  const dirtyRef = useRef(false)
-  useEffect(() => {
-    dirtyRef.current = dirty
-  }, [dirty])
 
-  const name = source ? fileName(source.path) : ''
+  const name = source ? fileName(source.path, 'document.docx') : ''
 
-  // Reflect filename + dirty marker in the window title (and taskbar label).
-  useEffect(() => {
-    if (!source) return
-    useWindowStore.getState().updateTitle(windowId, `${name}${dirty ? ' •' : ''}`)
-  }, [windowId, name, dirty, source])
-
-  // Warn before closing with unsaved changes. The guard reads a ref so the
-  // registered closure always sees the latest dirty state.
-  useEffect(() => {
-    const store = useWindowStore.getState()
-    store.registerCloseGuard(windowId, () => {
-      if (!dirtyRef.current) return true
-      return window.confirm(
-        `"${name || 'This document'}" has unsaved changes. Close without saving?`
-      )
-    })
-    return () => store.unregisterCloseGuard(windowId)
-  }, [windowId, name])
+  // Reflect filename + dirty marker in the window title and warn before closing
+  // with unsaved changes.
+  useUnsavedGuard(windowId, dirty, name)
 
   // Boot SuperDoc and load the docx. Each run mounts into FRESH host nodes
   // (not the persistent wrappers) so React StrictMode's mount→cleanup→mount and
@@ -101,7 +66,9 @@ export function Docs({ windowId }: { windowId: string }) {
         // re-serializes edits instead of silently re-emitting the original.
         const normalized = await normalizeDocx(bytes)
         if (cancelled) return
-        const file = new File([normalized as BlobPart], fileName(source.path), { type: DOCX_MIME })
+        const file = new File([normalized as BlobPart], fileName(source.path, 'document.docx'), {
+          type: DOCX_MIME,
+        })
         engine = await createDocEngine({
           editor: editorHost,
           toolbar: `#${toolbarId}`,
@@ -156,7 +123,7 @@ export function Docs({ windowId }: { windowId: string }) {
     setError(null)
     try {
       const bytes = await engine.exportDocx()
-      await uploadFileBytes(source.root, source.path, bytes, fileName(source.path))
+      await uploadFileBytes(source.root, source.path, bytes, fileName(source.path, 'document.docx'))
       if (engine.editCount() === savedAtEditCount) setDirty(false)
     } catch (err) {
       if (err instanceof UploadTooLargeError) {
@@ -171,17 +138,7 @@ export function Docs({ windowId }: { windowId: string }) {
   }, [source, saving])
 
   // Ctrl/Cmd+S saves — but only for the top-most window.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-        if (!isTopWindow(windowId)) return
-        e.preventDefault()
-        void handleSave()
-      }
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [windowId, handleSave])
+  useSaveHotkey(windowId, handleSave)
 
   if (!source) {
     return (

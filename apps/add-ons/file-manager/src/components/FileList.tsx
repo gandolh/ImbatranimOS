@@ -16,8 +16,8 @@ import {
 import { cn } from '@imbatranim/core'
 import { Tooltip } from '@imbatranim/core'
 import { Button } from '@imbatranim/core'
+import { downloadUrl } from '@imbatranim/core'
 import type { FsEntry } from '../types'
-import { downloadUrl } from '../api/filesApi'
 import { sortEntries } from '../lib/fileKind'
 import dayjs from 'dayjs'
 

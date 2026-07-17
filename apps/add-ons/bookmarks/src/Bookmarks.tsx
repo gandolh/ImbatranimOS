@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Folder, Link2, Plus, Trash2, Edit2, ExternalLink, X, Check } from 'lucide-react'
-import { ScrollArea } from '@imbatranim/core'
+import { ScrollArea, useConfirm } from '@imbatranim/core'
 import {
   useBookmarkGroupsQuery,
   useCreateGroupMutation,
@@ -248,6 +248,7 @@ export function Bookmarks({ windowId: _windowId }: { windowId: string }) {
   const createLink = useCreateLinkMutation()
   const updateLink = useUpdateLinkMutation()
   const deleteLink = useDeleteLinkMutation()
+  const { confirm, confirmDialog } = useConfirm()
 
   const [addingGroup, setAddingGroup] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
@@ -287,14 +288,30 @@ export function Bookmarks({ windowId: _windowId }: { windowId: string }) {
             key={group.id}
             group={group}
             onUpdateGroup={(id, data) => updateGroup.mutate({ id, data })}
-            onDeleteGroup={(id) => {
-              if (confirm('Delete group and all its links?')) {
+            onDeleteGroup={async (id) => {
+              if (
+                await confirm({
+                  title: 'Delete group',
+                  message: 'Delete group and all its links?',
+                  destructive: true,
+                })
+              ) {
                 deleteGroup.mutate(id)
               }
             }}
             onCreateLink={(groupId, data) => createLink.mutate({ group_id: groupId, ...data })}
             onUpdateLink={(id, data) => updateLink.mutate({ id, data })}
-            onDeleteLink={(id) => deleteLink.mutate(id)}
+            onDeleteLink={async (id) => {
+              if (
+                await confirm({
+                  title: 'Delete link',
+                  message: 'Delete this link?',
+                  destructive: true,
+                })
+              ) {
+                deleteLink.mutate(id)
+              }
+            }}
           />
         ))}
 
@@ -337,6 +354,8 @@ export function Bookmarks({ windowId: _windowId }: { windowId: string }) {
           </div>
         )}
       </ScrollArea>
+
+      {confirmDialog}
     </div>
   )
 }

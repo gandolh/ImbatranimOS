@@ -481,3 +481,43 @@ the end state safe incidentally; now `passwd -l`. Reuse debt (4×
 duplicated fileBytes/openedFileStore helpers, hand-rolled download
 URLs) deliberately NOT refactored at the tail of the run — captured as
 todos/office-addon-shared-helpers.md for a core-contract brief.
+
+## 2026-07-17 — Full review pass + brief 23 (shared-addon-kit)
+
+Ran a 3-reviewer + verifier sweep (security / performance / code-smell,
+each opus; opus verifier to drop false positives) over the whole
+codebase. 30 findings survived verification (no outright false positives;
+one dedup, a few line corrections). Applied + committed the **safe
+subset**: the genuinely dangerous security items (session cookie
+auto-Secure from req protocol, TOTP enroll step-up password, WS terminal
+Origin check, PTY concurrency cap + geometry clamp, throttle global
+backstop, `/files/content` size cap, Content-Disposition sanitize) plus
+perf/code-quality wins (debounced layout persist, tab-gated system-monitor
+poll + row cap, streamed uploads, bookmarks index/typing, query-DTO
+validation, dead-code + magic-number cleanup, PTY types). Backend 80 unit
++ 29 e2e green; monorepo typecheck/format clean; backend#lint debt
+unchanged (pre-existing, [lint-format-debt](todos/lint-format-debt.md)).
+Deferred the larger refactors + product-decision security items as todos.
+Two commits on `main`.
+
+Then built **brief 23** via plan-split-dispatch (1 senior core surface +
+8 consumer chunks). Collapsed the duplicated add-on spine into
+`@imbatranim/core`: `fetchFileBytes`/`uploadFileBytes`/`UploadTooLargeError`/
+`downloadUrl`/`fileName`, `createOpenedFileStore`,
+`useOpenIntent`/`useSaveHotkey`/`useUnsavedGuard`, `ConfirmDialog`/
+`useConfirm`. All four document add-ons deleted their local
+`api/fileBytes.ts` + `store/openedFileStore.ts` (8 files) and adopted the
+hooks; download buttons route through core `downloadUrl`;
+bookmarks/sticky-notes/notepad dropped native `confirm()` for the themed
+dialog (file-manager kept its already-correct themed delete Dialog — a
+deliberate scope trim). Net −333 LOC. Gates: turbo typecheck 13/13,
+format 14/14, lint 13/13, build ✓. A 2-finder review (opus integration +
+sonnet core-logic) confirmed the single shared opened-file store is a safe
+singleton (uuid windowIds, multiInstance) and hook behavior parity is
+exact; its findings (`useConfirm` re-entrancy + unmount promise-hang, a
+param-shadow, a sheets fallback drift `workbook.xlsx`) were fixed.
+Promoted todos office-addon-shared-helpers + destructive-action-confirm-ux
+removed on completion; discovered nits captured in
+[add-on-cleanup-nits](todos/add-on-cleanup-nits.md) (dead `zustand` deps,
+notepad native `prompt()`). Human-gated remainder: the in-browser
+walkthrough per the brief's verify bar.

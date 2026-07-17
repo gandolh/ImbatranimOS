@@ -32,3 +32,22 @@ export { Tooltip } from './shared/components/ui/Tooltip'
 export { openApp } from './shared/intents/openApp'
 export { useIntentStore } from './shared/store/intentStore'
 export { useWindowStore } from './shared/store/windowStore'
+
+// Shared add-on kit — file bytes over the authed api client
+export {
+  fetchFileBytes,
+  uploadFileBytes,
+  UploadTooLargeError,
+  downloadUrl,
+  fileName,
+} from './lib/fileBytes'
+
+// Shared add-on kit — opened-file store + editor hooks
+export { createOpenedFileStore } from './shared/store/createOpenedFileStore'
+export type { OpenedFile } from './shared/store/createOpenedFileStore'
+export { useOpenIntent } from './shared/hooks/useOpenIntent'
+export { useSaveHotkey } from './shared/hooks/useSaveHotkey'
+export { useUnsavedGuard } from './shared/hooks/useUnsavedGuard'
+
+// Shared add-on kit — confirm dialog
+export { ConfirmDialog, useConfirm } from './shared/components/ui/ConfirmDialog'

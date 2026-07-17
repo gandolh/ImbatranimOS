@@ -1,37 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { Presentation, Download, Loader2, Info } from 'lucide-react'
-import { Button, Tooltip, useIntentStore } from '@imbatranim/core'
-import { fetchFileBytes } from './api/fileBytes'
+import {
+  Button,
+  Tooltip,
+  fetchFileBytes,
+  downloadUrl,
+  fileName,
+  useOpenIntent,
+} from '@imbatranim/core'
 import { renderPptx } from './engine/pptx'
-import { useOpenedFileStore } from './store/openedFileStore'
-
-type OpenPayload = { openPath?: string; root?: string }
 
 // 16:9 slide, sized to the available width. pptx-preview scales its content to
 // this box; the host div scrolls when the stack of slides overflows.
 const SLIDE_ASPECT = 9 / 16
 const SLIDE_GUTTER = 32
 
-function fileName(path: string): string {
-  return path.split('/').pop() || 'presentation.pptx'
-}
-
 export function Slides({ windowId }: { windowId: string }) {
-  // The one-shot open intent is consumed exactly once, in a ref-guarded effect,
-  // and latched into a zustand store (not React state). Consuming in a
-  // render-phase selector is unsafe under StrictMode's double render; the ref
-  // also survives StrictMode's effect double-fire so we never double-consume.
-  const source = useOpenedFileStore((s) => s.fileMap[windowId]) ?? null
-  const setFile = useOpenedFileStore((s) => s.setFile)
-  const consumedRef = useRef(false)
-  useEffect(() => {
-    if (consumedRef.current) return
-    consumedRef.current = true
-    const intent = useIntentStore.getState().consumeIntent(windowId) as OpenPayload | undefined
-    if (intent?.openPath && intent?.root) {
-      setFile(windowId, { root: intent.root, path: intent.openPath })
-    }
-  }, [windowId, setFile])
+  // One-shot open intent, drained by the shared hook (StrictMode-safe).
+  const source = useOpenIntent(windowId)
 
   // Starts true: the render effect runs as soon as a source is latched and only
   // flips these in async paths (avoids synchronous setState-in-effect).
@@ -95,11 +81,10 @@ export function Slides({ windowId }: { windowId: string }) {
 
   function triggerDownload() {
     if (!source) return
-    const base = import.meta.env.VITE_API_URL as string
-    const url = `${base}/files/download?root=${encodeURIComponent(source.root)}&path=${encodeURIComponent(source.path)}`
+    const url = downloadUrl(source.root, source.path)
     const a = document.createElement('a')
     a.href = url
-    a.download = fileName(source.path)
+    a.download = fileName(source.path, 'presentation.pptx')
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -123,7 +108,7 @@ export function Slides({ windowId }: { windowId: string }) {
           Best-effort preview — layout may differ from PowerPoint.
         </span>
         <span className="font-ui text-on-surface-variant ml-1 max-w-[160px] truncate text-[11px]">
-          {fileName(source.path)}
+          {fileName(source.path, 'presentation.pptx')}
         </span>
         <div className="flex-1" />
         <Tooltip content="Download original">

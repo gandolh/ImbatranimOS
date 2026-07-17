@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FileText, Folder, ArrowLeft, Plus, FolderPlus, Trash2, Clock } from 'lucide-react'
-import { ScrollArea } from '@imbatranim/core'
+import { ScrollArea, useConfirm } from '@imbatranim/core'
 import {
   useCreateDirectoryMutation,
   useCreateFileMutation,
@@ -20,6 +20,7 @@ export function FileBrowser({ onOpenFile }: { onOpenFile: (path: string) => void
   const createDir = useCreateDirectoryMutation()
   const deleteFile = useDeleteFileMutation()
   const deleteDir = useDeleteDirectoryMutation()
+  const { confirm, confirmDialog } = useConfirm()
 
   function handleCreateFile() {
     const name = prompt('File name (.md):')
@@ -118,8 +119,14 @@ export function FileBrowser({ onOpenFile }: { onOpenFile: (path: string) => void
                   if (entry.type === 'directory') setCurrentPath(entry.path)
                   else onOpenFile(entry.path)
                 }}
-                onDelete={() => {
-                  if (confirm(`Delete ${entry.name}?`)) {
+                onDelete={async () => {
+                  if (
+                    await confirm({
+                      title: 'Delete',
+                      message: `Delete ${entry.name}?`,
+                      destructive: true,
+                    })
+                  ) {
                     if (entry.type === 'directory') deleteDir.mutate(entry.path)
                     else deleteFile.mutate(entry.path)
                   }
@@ -135,6 +142,7 @@ export function FileBrowser({ onOpenFile }: { onOpenFile: (path: string) => void
           </ScrollArea>
         </div>
       </div>
+      {confirmDialog}
     </div>
   )
 }
@@ -146,7 +154,7 @@ function EntryRow({
 }: {
   entry: NoteEntry
   onOpen: () => void
-  onDelete: () => void
+  onDelete: () => Promise<void>
 }) {
   return (
     <div
@@ -162,7 +170,7 @@ function EntryRow({
       <button
         onClick={(e) => {
           e.stopPropagation()
-          onDelete()
+          void onDelete()
         }}
         className="hover:text-error p-1 opacity-0 transition-opacity group-hover:opacity-100"
       >

@@ -1,4 +1,4 @@
-import { api } from '@imbatranim/core'
+import { api } from './axios'
 
 /** True when an error carries an HTTP status (axios-style), matching `status`. */
 function hasHttpStatus(err: unknown, status: number): boolean {
@@ -44,7 +44,7 @@ export async function uploadFileBytes(
   root: string,
   path: string,
   bytes: ArrayBuffer | Uint8Array,
-  fileName: string
+  name: string
 ): Promise<void> {
   const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
   // Copy into a standalone ArrayBuffer so the Blob owns contiguous bytes.
@@ -54,7 +54,7 @@ export async function uploadFileBytes(
   const form = new FormData()
   form.append('root', root)
   form.append('path', path)
-  form.append('file', blob, fileName)
+  form.append('file', blob, name)
   try {
     await api.post('/files/upload', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -65,4 +65,19 @@ export async function uploadFileBytes(
     }
     throw err
   }
+}
+
+/**
+ * Build the direct download URL for a file. Note: this is a bare URL (used for
+ * `<a href>`-style downloads), NOT an authed api-client request — reach for
+ * {@link fetchFileBytes} when the bytes must cross the authenticated client.
+ */
+export function downloadUrl(root: string, path: string): string {
+  const base = import.meta.env.VITE_API_URL as string
+  return `${base}/files/download?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}`
+}
+
+/** Last path segment (the file's own name), or `fallback` when the path is empty. */
+export function fileName(path: string, fallback = 'file'): string {
+  return path.split('/').pop() || fallback
 }

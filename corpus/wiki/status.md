@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16–22 DONE (incl. the 2026-07-17 post-v1 backlog run — kiosk ISO, office suite, snipping tool, preview pane); brief 15's human-gated remainder is all that stands before v1.0.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–23 DONE (incl. the 2026-07-17 post-v1 backlog run — kiosk ISO, office suite, snipping tool, preview pane — and brief 23's shared-addon-kit dedup from the review pass); brief 15's human-gated remainder is all that stands before v1.0.
 updated: 2026-07-17
 ---
 
@@ -47,6 +47,7 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 20 | [office-editors](../briefs/done/20-office-editors.md) | **done** | Sheets (Univer + ExcelJS bridge — SheetJS CE failed the styling spike, user-approved engine revisit) + Docs (SuperDoc + docx normalizer fixing a silent-save-loss defect); AGPL-3.0 relicense landed; explicit Save, dirty •, close guard, New→Spreadsheet/Document |
 | 21 | [snipping-tool](../briefs/done/21-snipping-tool.md) | **done** | Flameshot-style capture via html-to-image (spike passed incl. xterm content), dim+crosshair region/Enter/Esc flow, 5 annotation tools + undo, Save to ~/Pictures/Screenshots / Copy / Download; rasterizer lazy |
 | 22 | [file-preview-pane](../briefs/done/22-file-preview-pane.md) | **done** | Explorer-style toggleable preview pane in file-manager: text/images/AV native, metadata-card fallback, 1 MB text cap, persisted width/toggle, auto-collapse; zero new deps |
+| 23 | [shared-addon-kit](../briefs/done/23-shared-addon-kit.md) | **done** | Deduped the office/add-on spine into `@imbatranim/core` (fileBytes/downloadUrl/fileName, `createOpenedFileStore`, `useOpenIntent`/`useSaveHotkey`/`useUnsavedGuard`, `ConfirmDialog`/`useConfirm`); 4 doc add-ons dropped local fileBytes+openedFileStore copies, native `confirm()` gone from add-ons; net −333 LOC, all gates green + 2-finder review. Human-gated: in-browser walkthrough |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
 (human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1
@@ -92,3 +93,17 @@ both editors, a Slides stale-render interleave, a screenshot filename
 collision, and an ISO post-install passwd comment/behavior mismatch.
 The desktop now has 13 apps; the boot bundle is unchanged (all five
 document engines are lazy chunks).
+
+**2026-07-17 review + brief 23.** A 3-reviewer + verifier pass (security /
+perf / code-smell) over the whole codebase produced 30 verified findings:
+the safe subset — the dangerous security fixes (auto-Secure cookie, TOTP
+step-up, WS Origin check, PTY session cap, throttle backstop, file-content
+memory cap) plus perf/code-quality wins — was applied and committed
+(backend 80 unit + 29 e2e green); the larger refactors were captured as
+todos. The first of those, **brief 23 (shared-addon-kit)**, then shipped:
+the office/add-on duplication (CS-1/2/8) and inconsistent confirm UX (CS-12)
+are gone, deduped into `@imbatranim/core`. Still open as todos:
+window-drag render perf (PERF-1), office parsing off-thread (PERF-6),
+FileManager split (CS-3), notes/FilesService dedup (CS-7), first-run setup
+hardening (SEC-2), CSP ws scoping (SEC-9), kiosk `--no-sandbox` (SEC-10),
+the notepad StrictMode intent bug, lint debt, and add-on cleanup nits.

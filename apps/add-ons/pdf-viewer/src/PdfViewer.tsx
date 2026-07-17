@@ -9,39 +9,24 @@ import {
   Download,
   Loader2,
 } from 'lucide-react'
-import { Button, Tooltip, useIntentStore } from '@imbatranim/core'
-import { fetchFileBytes } from './api/fileBytes'
+import {
+  Button,
+  Tooltip,
+  fetchFileBytes,
+  downloadUrl,
+  fileName,
+  useOpenIntent,
+} from '@imbatranim/core'
 import { loadPdfDocument, type LoadedPdf, type PDFDocumentProxy } from './engine/pdf'
-import { useOpenedFileStore } from './store/openedFileStore'
-
-type OpenPayload = { openPath?: string; root?: string }
 
 const MIN_ZOOM = 0.25
 const MAX_ZOOM = 4
 const ZOOM_STEP = 0.25
 const PAGE_GUTTER = 32 // horizontal breathing room used when fitting to width
 
-function fileName(path: string): string {
-  return path.split('/').pop() || 'document.pdf'
-}
-
 export function PdfViewer({ windowId }: { windowId: string }) {
-  // The one-shot open intent is consumed exactly once, in an effect guarded by a
-  // ref, and latched into a zustand store (not React state). Consuming inside a
-  // render-phase selector is unsafe: StrictMode double-invokes render, which
-  // would drain the intent before the first paint. The ref survives StrictMode's
-  // mount→cleanup→mount effect double-fire, so we never double-consume either.
-  const source = useOpenedFileStore((s) => s.fileMap[windowId]) ?? null
-  const setFile = useOpenedFileStore((s) => s.setFile)
-  const consumedRef = useRef(false)
-  useEffect(() => {
-    if (consumedRef.current) return
-    consumedRef.current = true
-    const intent = useIntentStore.getState().consumeIntent(windowId) as OpenPayload | undefined
-    if (intent?.openPath && intent?.root) {
-      setFile(windowId, { root: intent.root, path: intent.openPath })
-    }
-  }, [windowId, setFile])
+  // One-shot open intent, drained by the shared hook (StrictMode-safe).
+  const source = useOpenIntent(windowId)
 
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
   const [numPages, setNumPages] = useState(0)
@@ -165,11 +150,10 @@ export function PdfViewer({ windowId }: { windowId: string }) {
 
   function triggerDownload() {
     if (!source) return
-    const base = import.meta.env.VITE_API_URL as string
-    const url = `${base}/files/download?root=${encodeURIComponent(source.root)}&path=${encodeURIComponent(source.path)}`
+    const url = downloadUrl(source.root, source.path)
     const a = document.createElement('a')
     a.href = url
-    a.download = fileName(source.path)
+    a.download = fileName(source.path, 'document.pdf')
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -259,7 +243,7 @@ export function PdfViewer({ windowId }: { windowId: string }) {
         <div className="flex-1" />
 
         <span className="font-ui text-on-surface-variant mr-1 max-w-[160px] truncate text-[11px]">
-          {fileName(source.path)}
+          {fileName(source.path, 'document.pdf')}
         </span>
         <Tooltip content="Download">
           <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={triggerDownload}>

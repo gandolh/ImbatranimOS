@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2 } from 'lucide-react'
 import { cn } from '@imbatranim/core'
 import { Button } from '@imbatranim/core'
 import { useWindowStore } from '@imbatranim/core'
+import { useConfirm } from '@imbatranim/core'
 import { createStickyNote } from './api/stickyNotesApi'
 import {
   useDeleteStickyNoteMutation,
@@ -118,6 +119,19 @@ function NoteList({ windowId }: { windowId: string }) {
   const { data: notes, isLoading } = useStickyNotesQuery()
   const deleteMutation = useDeleteStickyNoteMutation()
   const setEditor = useStickyNoteEditorStore((s) => s.setEditor)
+  const { confirm, confirmDialog } = useConfirm()
+
+  const handleDelete = async (noteId: number) => {
+    if (
+      await confirm({
+        title: 'Delete note',
+        message: 'Delete this sticky note?',
+        destructive: true,
+      })
+    ) {
+      deleteMutation.mutate(noteId)
+    }
+  }
 
   const handleNewNote = async () => {
     try {
@@ -163,12 +177,13 @@ function NoteList({ windowId }: { windowId: string }) {
               onOpen={() => openStickyNote(note)}
               onDelete={(e) => {
                 e.stopPropagation()
-                deleteMutation.mutate(note.id)
+                void handleDelete(note.id)
               }}
             />
           ))}
         </div>
       )}
+      {confirmDialog}
     </div>
   )
 }

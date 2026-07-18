@@ -691,6 +691,41 @@ react-refresh/static-components. Gates green (typecheck 13/13, lint 14/14,
 format, build); eager index gzip 121.5 → 125.1 KB (+3.6 KB shell cost). First
 callers will be clock alarms (36) + calendar reminders (40). Next: Wave C.
 
+## 2026-07-18 — Wave D: heavy/backend apps (briefs 41–44) shipped + security-reviewed
+
+Built by a **4-agent opus batch** (each scoped to its own module/package dir),
+integrated serially by the controller (app.module.ts for 3 backend modules,
+manifest.ts + openWith.ts + file-manager context menu, one `npm install` adding
+monaco). Then — per the user's "all 4 with extra security review" choice — **3
+adversarial security-review subagents** (git-arg-injection/jail-escape, SSRF,
+zip-slip) ran over the backend modules. **No exploitable finding in any module.**
+Four hardening findings were fixed (with tests) before commit. Landed as one Wave
+D commit `4be1777`.
+
+- **41 code-editor (Monaco)** — self-hosted (no CDN; `loader.config({ monaco })`
+  + Vite `?worker` chunks), fully lazy → eager `index-*.js` gzip unchanged.
+  Multi-tab, find/replace, real-FS save. Deps monaco-editor + @monaco-editor/react
+  (justified: lazy). Code exts rerouted from notepad. The lone `cdn.jsdelivr.net`
+  string is the library's inert default (bypassed; CSP blocks it anyway).
+- **42 git-gui** — backend git module: `execa` array-args, no shell, `--`
+  pathspec guard, `GIT_LITERAL_PATHSPECS=1`, jailed `cwd` via `resolveSafe`,
+  work-tree + (hardening) `--show-toplevel`-within-jail check. 20 tests. LOW
+  ancestor-`.git` finding closed.
+- **43 rest-api-client** — owner-authed HTTP proxy; scheme allowlist per redirect
+  hop, size/timeout/redirect caps, no cookie/auth leak (+ cross-host strip
+  hardening). SSRF stance recorded in decisions.md. 13 tests. Reviewer: safe as-is.
+- **44 archive-manager** — zip (fflate) + tar.gz (tar via execFile) with per-entry
+  `resolveSafe` (zip-slip-proof), temp+realpath symlink walk, ratio-bounded caps
+  fixing a **Medium forged-header amplification DoS** (387 B → 512 MiB), + a
+  hardlink guard. 13 tests (incl. amplification regression). Used `execFile` (not
+  execa: ESM/CJS) — same no-shell guarantee.
+
+Desktop now **23 apps**; backend has git/http-proxy/archive modules, all authed
++ jailed. Gates: frontend typecheck 23/23 + lint 24/24 + build (Monaco lazy,
+eager unchanged); backend build + **tests 126/126** + lint + format. No new
+backend dependency. Next: Wave E platform surfaces (45 global-search-launcher,
+46 addon-manager).
+
 ## 2026-07-18 — Wave C: six daily-driver apps (briefs 35–40) shipped
 
 Built as a **6-agent parallel batch** (sonnet build subagents, each scoped to

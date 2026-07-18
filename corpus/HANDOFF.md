@@ -36,7 +36,25 @@ All gates were green at each commit (`turbo typecheck` 13/13, `lint` 14/14,
   bookkeeping in the following `docs(corpus)`). Six daily-driver apps built by a
   6-agent parallel batch, integrated serially. Desktop now 19 apps. Clock +
   calendar are the first notification-center callers.
-- **Next task: Wave D — heavy/backend apps (briefs 41–44).** These need real
+- **Wave D (briefs 41–44) — DONE + committed** (`4be1777` code; corpus
+  bookkeeping in the following `docs(corpus)`). Monaco code-editor + three authed
+  backend modules (git / http-proxy / archive), built by a 4-agent opus batch,
+  then 3 adversarial security reviews (no exploit) + 4 hardening fixes. Desktop
+  now 23 apps, 126 backend tests. SSRF stance recorded in decisions.md.
+- **Next task: Wave E — platform surfaces (briefs 45–46).** Both are CORE:
+  - **45 global-search-launcher** — extend the command palette's
+    `CommandSourcesRegistry` (do NOT fork it); a backend FS file/content search
+    endpoint (jailed via `resolveSafe`, authed; decide live-grep vs index).
+    Anchor near the Start button.
+  - **46 addon-manager** — CORE; per-user enable/disable of bundled apps,
+    persisted; filter `APP_REGISTRY` in ONE place (Start/palette/openWith). Some
+    apps non-disable-able (Settings/Files/Terminal). Pairs with brief-33 lazy-load
+    (disabled apps cost nothing).
+  After Wave E the whole "everything actionable" scope is complete except the
+  human-gated exclusions (SEC-9, SEC-10, brief-15 v1 remainder).
+
+### (superseded) original Wave D plan
+- **Was: Wave D — heavy/backend apps (briefs 41–44).** These need real
   care (senior/opus for the hard slices):
   - **41 code-editor (Monaco)** — HARD. Monaco MUST stay a lazy chunk (its own
     dynamic import inside the already-lazy shell). Multi-tab/file, find/replace,

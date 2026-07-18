@@ -1,6 +1,6 @@
 ---
-summary: Locked choices of the web-OS era (2026-07-16 pivot grilling) plus the 2026-07-17 office-suite/post-v1 set and a compressed record of the superseded ISO-era decisions — do not relitigate without an explicit revisit and a log entry.
-updated: 2026-07-17
+summary: Locked choices of the web-OS era (2026-07-16 pivot grilling) plus the 2026-07-17 office-suite/post-v1 set, the 2026-07-18 REST-client SSRF stance, and a compressed record of the superseded ISO-era decisions — do not relitigate without an explicit revisit and a log entry.
+updated: 2026-07-18
 ---
 
 # Decisions (locked)
@@ -127,6 +127,27 @@ Changing any entry requires an explicit revisit + a `log.md` entry.
   **cold-start time and idle RAM** (recorded in brief 15), not image bytes.
   NestJS is kept — the fork reuse it enabled (terminal/files/system/all
   apps) is worth far more than image bytes for a run-once container.
+- **REST-client backend proxy — SSRF stance** (2026-07-18, brief 43). The REST
+  API client sends outbound HTTP through an authed backend proxy (`POST
+  /api/http/request`) because the SPA's CSP (`connect-src` same-origin) + CORS
+  block direct browser fetches. It sits behind the global `SessionAuthGuard` —
+  **only the single logged-in owner can call it; that owner-auth is the primary
+  control.** It is the owner's own `curl`, not an open relay, so it **MAY reach
+  LAN/localhost/private ranges by design** — we deliberately do NOT hard-block
+  private IP ranges (that would gut the tool, and the caller is already trusted).
+  The guardrails that bound blast radius (NOT a public-safe SSRF filter):
+  (1) scheme allowlist http/https only, re-checked on every redirect hop, never
+  downgrading to a non-http(s) scheme; (2) response caps — 10 MB streamed body
+  (aborts + `truncated`) and a 30 s timeout; (3) redirect cap 5, manual, scheme
+  re-validated per hop; (4) header hygiene — hop-by-hop + `proxy-*` stripped,
+  only user-set headers sent, and the user's own Authorization/Cookie dropped on
+  a cross-host redirect; (5) no credential reflection — the OS session cookie /
+  Authorization are never forwarded (outbound headers built solely from user
+  input); CRLF rejected in URL + header values. Enforced in
+  `apps/backend/src/modules/http-proxy/http-proxy.service.ts`; 13 unit tests +
+  an adversarial security review confirmed it. Backend git/archive modules from
+  the same wave (42/44) reuse `FilesService.resolveSafe` for their FS jail and
+  run subprocesses with array args / no shell.
 
 ## Superseded (ISO era, 2026-07-16 — record only)
 

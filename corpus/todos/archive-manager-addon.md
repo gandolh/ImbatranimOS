@@ -1,7 +1,7 @@
 ---
 title: Archive manager add-on (zip + tar.gz)
 created: 2026-07-17
-status: captured
+status: promoted
 tags: [add-on, files, normal-user]
 ---
 

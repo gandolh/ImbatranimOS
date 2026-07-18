@@ -1,7 +1,7 @@
 ---
 title: Code editor add-on (Monaco / VS Code-style)
 created: 2026-07-17
-status: captured
+status: promoted
 tags: [add-on, developer, editor]
 ---
 

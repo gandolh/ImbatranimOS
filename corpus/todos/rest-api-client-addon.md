@@ -1,7 +1,7 @@
 ---
 title: REST/API client add-on (Postman/Hoppscotch-style)
 created: 2026-07-17
-status: captured
+status: promoted
 tags: [add-on, developer, web]
 ---
 

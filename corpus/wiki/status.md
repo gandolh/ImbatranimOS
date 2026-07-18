@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16–40 DONE (incl. the 2026-07-17 post-v1 backlog run, the review-pass cleanup wave 23–30, the daily-driver perf trio 31–33 which cut the eager bundle −69.6%, the CORE notification center 34, and Wave C's six daily-driver apps 35–40: calculator, clock, image-viewer, media-player, markdown-editor, calendar — desktop now 19 apps); brief 15's human-gated remainder is all that stands before v1.0. Full-auto backlog continues at Wave D (briefs 41–44 heavy/backend: monaco code-editor, git-gui, rest-api-client, archive-manager) then Wave E (45–46 platform). Held human-gated: SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated), brief 15 v1-release remainder.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–44 DONE (incl. the 2026-07-17 post-v1 backlog run, the review-pass cleanup wave 23–30, the daily-driver perf trio 31–33 which cut the eager bundle −69.6%, the CORE notification center 34, Wave C's six daily-driver apps 35–40, and Wave D's four heavy/backend apps 41–44: Monaco code-editor, git-gui, REST client, archive-manager — the latter three added authed+jailed backend modules, security-reviewed + hardened; desktop now 23 apps, 126 backend tests). Brief 15's human-gated remainder is all that stands before v1.0. Full-auto backlog is now at Wave E (45 global-search-launcher, 46 addon-manager). Held human-gated: SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated), brief 15 v1-release remainder.
 updated: 2026-07-18
 ---
 
@@ -65,6 +65,10 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 38 | [media-player](../briefs/done/38-media-player.md) | **done** | Wave C. Native `<audio>`/`<video>` range-streamed via `downloadUrl` (no buffering), custom transport, folder queue + auto-advance, remount-per-track (no leaks). Registered 8 audio + 6 video exts. No new deps. Human-gated: playback/seek/queue |
 | 39 | [markdown-editor](../briefs/done/39-markdown-previewer.md) | **done** | Wave C. Split-view md editor (react-markdown + remark-gfm, **no rehype-raw** = XSS-safe), full save flow (open intent / save hotkey / unsaved guard). `md`+`markdown` reroute from notepad (any root). No new deps. Human-gated: open/edit/save |
 | 40 | [calendar](../briefs/done/40-calendar.md) | **done** | Wave C. Month + week views, persisted events (own store, no backend), reminders → `notify()` (second caller), "only while open" note. Todo coupling deferred. No new deps. Human-gated: CRUD/nav/reminder |
+| 41 | [code-editor](../briefs/done/41-code-editor-monaco.md) | **done** | Wave D. Monaco, self-hosted (no CDN, workers via Vite `?worker`), fully lazy — eager bundle unchanged; multi-tab, find/replace, real-FS save. Code exts reroute here (notepad keeps txt/log). Deps: monaco-editor + @monaco-editor/react (lazy). Human-gated: open/tabs/save |
+| 42 | [git-gui](../briefs/done/42-git-gui.md) | **done** | Wave D. Backend git module: execa array-args (no shell, `--` guard, LITERAL_PATHSPECS, jailed cwd, work-tree + top-level-in-jail check), status/stage/commit/diff/log; authed. 20 tests. **Security-reviewed** (no exploit; LOW ancestor-.git closed). No new dep. Human-gated: real repo ops |
+| 43 | [rest-api-client](../briefs/done/43-rest-api-client.md) | **done** | Wave D. Owner-authed backend HTTP proxy — scheme allowlist per redirect hop, size/timeout/redirect caps, cookie/auth never leaked (+cross-host strip). Collections in home FS. 13 tests. **Security-reviewed** (safe as-is). SSRF stance in decisions.md. No new dep. Human-gated: send/persist |
+| 44 | [archive-manager](../briefs/done/44-archive-manager.md) | **done** | Wave D. zip (fflate) + tar.gz (tar/execFile) extract/compress, every entry re-validated via `resolveSafe` (zip-slip-proof), temp+realpath walk, ratio-bounded caps (amplification-DoS fix) + hardlink guard; file-manager context menu. 13 tests. **Security-reviewed** (Medium+Low fixed). No new dep. Human-gated: extract/compress |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
 (human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1
@@ -137,13 +141,13 @@ todos in `todos/`. All gates were green at the time (80 unit tests, typecheck
   by Monaco landing this run — the held eager-bundle-lazy-load → **brief 33**
   (eager gzip 399.6 → 121.5 KB). All three committed, gates green.
 - **In progress (full-auto backlog, briefs 34–46):** notification-center (34,
-  CORE) **done**; Wave C light apps (35 calculator, 36 clock, 37 image-viewer,
-  38 media-player, 39 markdown-editor, 40 calendar) **done** — built as a
-  6-agent parallel batch, integrated serially (manifest.ts + openWith.ts + one
-  `npm install`), landed as one Wave C commit; desktop now has **19 apps**. Next
-  Wave D heavy/backend (41 code-editor-monaco, 42 git-gui, 43 rest-api-client,
-  44 archive-manager), then Wave E platform (45 global-search-launcher, 46
-  addon-manager).
+  CORE) **done**; Wave C light apps (35–40) **done** (6-agent parallel batch,
+  one commit `a7632ab`); Wave D heavy/backend (41 code-editor-monaco, 42 git-gui,
+  43 rest-api-client, 44 archive-manager) **done** (4-agent opus batch + 3
+  adversarial security reviews + 4 hardening fixes, commit `4be1777`). Desktop
+  now **23 apps**; backend gained git / http-proxy / archive modules (all authed,
+  jailed, tested — 126 backend tests). Next: Wave E platform (45
+  global-search-launcher, 46 addon-manager).
 - **Excluded from the auto-run (human-gated, do NOT build autonomously):** SEC-9
   (`csp-connect-src-ws-wildcard`), SEC-10 (`kiosk-no-sandbox`), and brief 15's
   v1-release remainder.

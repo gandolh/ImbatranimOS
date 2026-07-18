@@ -24,12 +24,19 @@ All gates were green at each commit (`turbo typecheck` 13/13, `lint` 14/14,
 `format:check`, `build`). Working tree is clean except untracked corpus docs
 (the brief specs below + this file).
 
-## First resume task — DONE (2026-07-18)
+## Resume progress (2026-07-18)
 
-Briefs 31/32/33 moved to `briefs/done/` with Outcome notes; `wiki/status.md`
-rows + summary refreshed; `log.md` entry appended; source todos marked
-`promoted`; index regenerated; corpus lint OK. Committed as `docs(corpus)`.
-**Next task is brief 34 (notification-center).**
+- **Briefs 31/32/33 bookkeeping — DONE.** Moved to `done/` with Outcome notes,
+  status rows + summary refreshed, log appended, todos marked `promoted`, index
+  regenerated, corpus lint OK. Committed `docs(corpus)` (`89f0a01`).
+- **Brief 34 notification-center — DONE + committed** (`82c635b` code; corpus
+  bookkeeping in the following `docs(corpus)`). CORE surface: `notify()` on the
+  public barrel, tray bell + history popover, bottom-right toasts, DnD.
+- **Next task: Wave C** — briefs 35 calculator, 36 clock (alarms → notify),
+  37 image-viewer, 38 media-player, 39 markdown-previewer, 40 calendar
+  (reminders → notify). Independent client-side add-ons, parallelizable; the
+  controller serializes the shared-file integration (manifest.ts / openWith.ts /
+  package-lock / index.ts).
 
 ## REMAINING WORK (not started)
 

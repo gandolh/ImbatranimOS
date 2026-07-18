@@ -1,9 +1,12 @@
 ---
 title: Notification center
 created: 2026-07-17
-status: captured
+status: promoted
 tags: [core, platform, ux]
 ---
+
+<!-- Promoted → brief 34 (2026-07-18); shipped. -->
+
 
 # Notification center
 

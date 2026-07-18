@@ -58,6 +58,7 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 31 | [virtualize-long-lists](../briefs/done/31-virtualize-long-lists.md) | **done** | PERF: virtualized ProcessTable (re-renders every 1.5s) + FileList (large dirs) with `@tanstack/react-virtual`, centralized in core via a `useVirtualList` helper + `ScrollArea` `viewportRef`; keyboard nav `scrollToIndex`, scroll stable across refetch. Human-gated: kiosk feel-check |
 | 32 | [xlsx-offthread-worker](../briefs/done/32-xlsx-offthread-worker.md) | **done** | PERF-6 (xlsx tail): whole ExcelJS round-trip moved into a lazy Vite module worker (`sheets/src/engine/xlsxWorker.ts`), request-id correlation + transferable buffers; bridge signatures unchanged so `Sheets.tsx` untouched; exceljs now off the main thread's module graph. Human-gated: large-xlsx responsiveness |
 | 33 | [eager-bundle-lazy-load](../briefs/done/33-eager-bundle-lazy-load.md) | **done** | PERF: every app shell + Settings now a `React.lazy` boundary, `<Suspense>` in WindowContainer, contract widened; eager `index-*.js` gzip **399.6 KB → 121.5 KB (−69.6%)**, app code emits as per-app chunks. Trigger for Monaco. Human-gated: open-flash/first-paint |
+| 34 | [notification-center](../briefs/done/34-notification-center.md) | **done** | CORE platform surface: persist-backed notification store + public `notify()` on `@imbatranim/core`, bottom-right auto-dismiss toasts (errors sticky), tray bell + unread badge + history popover (mark-all-read / clear-all / DnD). Session-only toasts, history bounded 100, no new deps. First callers = clock alarms (36) + calendar reminders (40). Human-gated: walkthrough |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
 (human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1
@@ -130,9 +131,9 @@ todos in `todos/`. All gates were green at the time (80 unit tests, typecheck
   by Monaco landing this run — the held eager-bundle-lazy-load → **brief 33**
   (eager gzip 399.6 → 121.5 KB). All three committed, gates green.
 - **In progress (full-auto backlog, briefs 34–46):** notification-center (34,
-  CORE) first, then Wave C light apps (calculator, clock, image-viewer,
-  media-player, markdown-previewer, calendar), Wave D heavy/backend
-  (code-editor-monaco, git-gui, rest-api-client, archive-manager), Wave E
+  CORE) **done**; next Wave C light apps (calculator, clock, image-viewer,
+  media-player, markdown-previewer, calendar), then Wave D heavy/backend
+  (code-editor-monaco, git-gui, rest-api-client, archive-manager), then Wave E
   platform (global-search-launcher, addon-manager).
 - **Excluded from the auto-run (human-gated, do NOT build autonomously):** SEC-9
   (`csp-connect-src-ws-wildcard`), SEC-10 (`kiosk-no-sandbox`), and brief 15's

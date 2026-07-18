@@ -676,3 +676,17 @@ added, summary + daily-driver section refreshed), and source todos marked
 — both docx+xlsx slices now shipped; `eager-bundle-lazy-load` — trigger met).
 Verified typecheck 13/13 green before recording. Committed as `docs(corpus)`.
 Continuing into Wave B tail: brief 34 notification-center.
+
+## 2026-07-18 — Brief 34 (notification-center) shipped
+
+CORE platform surface (commit `82c635b`). Persist-backed `notificationStore`
+(zustand + `persist`, partialized so live toasts never resurrect on reload;
+history bounded 100); public `notify(input) => id` + `useNotificationStore` +
+types on `@imbatranim/core`. `ToastHost` = bottom-right auto-dismiss stack above
+the taskbar (errors sticky, pointer-events scoped, cap 5), mounted in App.
+`NotificationPanel` = tray-bell popover with unread badge, history list, mark-all
+-read / clear-all / DnD, click-to-open. Level visual is icon + accent/error token
+only (no new palette); `LevelIcon` + `levelStyle` split to satisfy
+react-refresh/static-components. Gates green (typecheck 13/13, lint 14/14,
+format, build); eager index gzip 121.5 → 125.1 KB (+3.6 KB shell cost). First
+callers will be clock alarms (36) + calendar reminders (40). Next: Wave C.

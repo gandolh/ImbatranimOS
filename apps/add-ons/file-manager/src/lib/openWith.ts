@@ -20,10 +20,16 @@ export type OpenWithRule = {
 }
 
 const NOTEPAD_ONLY_NOTES: OpenWithRule = { appId: 'notepad', onlyRoots: ['notes'] }
+const IMAGE_VIEWER: OpenWithRule = { appId: 'image-viewer' }
+const MEDIA_PLAYER: OpenWithRule = { appId: 'media-player' }
+const MARKDOWN_EDITOR: OpenWithRule = { appId: 'markdown-editor' }
 
 export const EXTENSION_APP_MAP: Record<string, OpenWithRule> = {
+  // Markdown → Markdown Editor (root-aware, live preview; upgrades the old
+  // notes-only Notepad route for `md`).
+  md: MARKDOWN_EDITOR,
+  markdown: MARKDOWN_EDITOR,
   // Text / code → Notepad (Notes root only)
-  md: NOTEPAD_ONLY_NOTES,
   txt: NOTEPAD_ONLY_NOTES,
   log: NOTEPAD_ONLY_NOTES,
   json: NOTEPAD_ONLY_NOTES,
@@ -43,6 +49,31 @@ export const EXTENSION_APP_MAP: Record<string, OpenWithRule> = {
   xlsx: { appId: 'sheets' },
   xls: { appId: 'sheets' },
   docx: { appId: 'docs' },
+  // Images → Image Viewer (any root; root-aware)
+  png: IMAGE_VIEWER,
+  jpg: IMAGE_VIEWER,
+  jpeg: IMAGE_VIEWER,
+  gif: IMAGE_VIEWER,
+  webp: IMAGE_VIEWER,
+  bmp: IMAGE_VIEWER,
+  svg: IMAGE_VIEWER,
+  avif: IMAGE_VIEWER,
+  ico: IMAGE_VIEWER,
+  // Audio/Video → Media Player (any root; native range-streamed)
+  mp3: MEDIA_PLAYER,
+  wav: MEDIA_PLAYER,
+  ogg: MEDIA_PLAYER,
+  oga: MEDIA_PLAYER,
+  flac: MEDIA_PLAYER,
+  m4a: MEDIA_PLAYER,
+  aac: MEDIA_PLAYER,
+  opus: MEDIA_PLAYER,
+  mp4: MEDIA_PLAYER,
+  webm: MEDIA_PLAYER,
+  ogv: MEDIA_PLAYER,
+  mov: MEDIA_PLAYER,
+  m4v: MEDIA_PLAYER,
+  mkv: MEDIA_PLAYER,
 }
 
 /**
@@ -69,6 +100,12 @@ export function openAppLabel(appId: string | null): string {
       return 'Open in Sheets'
     case 'docs':
       return 'Open in Docs'
+    case 'markdown-editor':
+      return 'Open in Markdown Editor'
+    case 'image-viewer':
+      return 'Open in Image Viewer'
+    case 'media-player':
+      return 'Open in Media Player'
     default:
       return 'Open'
   }

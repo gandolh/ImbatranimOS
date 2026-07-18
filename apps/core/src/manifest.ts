@@ -20,6 +20,12 @@ import { manifest as pdfViewer } from '@imbatranim/pdf-viewer'
 import { manifest as slides } from '@imbatranim/slides'
 import { manifest as sheets } from '@imbatranim/sheets'
 import { manifest as docs } from '@imbatranim/docs'
+import { manifest as calculator } from '@imbatranim/calculator'
+import { manifest as clock } from '@imbatranim/clock'
+import { manifest as calendar } from '@imbatranim/calendar'
+import { manifest as imageViewer } from '@imbatranim/image-viewer'
+import { manifest as mediaPlayer } from '@imbatranim/media-player'
+import { manifest as markdownEditor } from '@imbatranim/markdown-editor'
 import type { AddonManifest, AppConfig } from './contract'
 import { COMMAND_SOURCES, registerCommandSource } from './shared/commands/CommandSourcesRegistry'
 
@@ -53,6 +59,12 @@ const MANIFESTS: AddonManifest[] = [
   slides,
   sheets,
   docs,
+  calculator,
+  clock,
+  calendar,
+  imageViewer,
+  mediaPlayer,
+  markdownEditor,
 ]
 
 export const APP_REGISTRY: AppConfig[] = MANIFESTS

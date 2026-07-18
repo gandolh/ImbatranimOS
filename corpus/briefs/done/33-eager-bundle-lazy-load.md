@@ -86,3 +86,19 @@ Vendor-chunk tuning / `manualChunks` beyond what falls out naturally, i18n
 locale chunk strategy (note if it looks wrong, don't fix here), and the runtime
 [addon-manager](../../todos/addon-manager.md) (separate brief; this brief just
 makes disabled apps free later).
+
+## Outcome (2026-07-17) — commit `0341230`
+
+Shipped as specified, and the trigger fired as planned (Monaco lands this run,
+so shells were split first). Every add-on `index.ts` now sets
+`component: lazy(() => import('./X').then((m) => ({ default: m.X })))` (named
+exports, so the `.then` shim) with icon + metadata left eager; Settings (core)
+lazy the same way; `WindowContainer` wraps `<AppComponent>` in `<Suspense>` with
+a minimal token-based centered fallback. `AppConfig.component` in `contract.ts`
+widened to accept `LazyExoticComponent<…>`. Measured result: eager `index-*.js`
+gzip **399.6 KB → 121.5 KB (−69.6%)**; app/office component code now emits as
+per-app chunks. snipping-tool's `APP_NAME` was extracted to `appName.ts` so the
+manifest metadata stays eager while the component splits. Office engines remain
+lazy (separate axis, untouched). All gates green (measured with
+`npm run build -- --force` due to the known turbo add-on-src cache-key gap).
+Human-gated first-paint/open-flash check open.

@@ -1,9 +1,12 @@
 ---
 title: Lazy-load built-in app shells + build/architecture review
 created: 2026-07-17
-status: captured
+status: promoted
 tags: [perf, core, tooling, architecture]
 ---
+
+<!-- Promoted → brief 33 (2026-07-17); trigger (Monaco landing) met. Eager gzip 399.6 → 121.5 KB. -->
+
 
 # Lazy-load built-in app shells (PERF) + build/architecture review
 

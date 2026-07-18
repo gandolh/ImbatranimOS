@@ -665,3 +665,14 @@ outcome notes, add status rows, mark source todos promoted. Remaining waves
 
 Note: turbo `core:build` cache key omits add-on `src` — use
 `npm run build -- --force` when measuring bundle output.
+
+## 2026-07-18 — Resume full-auto backlog run; 31/32/33 bookkeeping settled
+
+Resumed the paused run (see `HANDOFF.md`). Cleared the owed first-resume task:
+briefs **31/32/33** moved to `briefs/done/` with Outcome notes (commits
+`e8652b5`/`e37bdd3`/`0341230`), `wiki/status.md` rows updated (31→done, 32/33
+added, summary + daily-driver section refreshed), and source todos marked
+`promoted` (`virtualize-long-lists` already was; `office-parsing-blocks-ui-thread`
+— both docx+xlsx slices now shipped; `eager-bundle-lazy-load` — trigger met).
+Verified typecheck 13/13 green before recording. Committed as `docs(corpus)`.
+Continuing into Wave B tail: brief 34 notification-center.

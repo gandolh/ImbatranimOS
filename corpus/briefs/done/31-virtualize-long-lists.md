@@ -91,3 +91,18 @@ single version.
 TanStack **Table** (defer to a future DB-client brief — pairs with Virtual then),
 TanStack **Router** (N/A — window-manager desktop, not URL-routed), Sheets
 (Univer virtualizes itself), and `FolderTree`.
+
+## Outcome (2026-07-17) — commit `e8652b5`
+
+Shipped as specified. `@tanstack/react-virtual` added to `@imbatranim/core`
+only; a thin `useVirtualList` helper (overscan 8, `estimateSize`/
+`getScrollElement` params) is exported from `apps/core/src/index.ts` and consumed
+by both add-ons via `@imbatranim/core` — the eslint import-boundary rule stays
+intact, single version. `ScrollArea` gained a `viewportRef` so add-ons can hand
+the virtualizer the real scroll element. ProcessTable and FileList now render
+only the visible window (CSS-grid rows, header outside the virtualized body,
+translateY spacers); file-manager `useListKeyboardNav` calls
+`scrollToIndex(activeIndex)` so arrow-key selection stays mounted. Scroll
+position is stable across the 1.5 s process refetch (react-query keeps prior
+data; no scroller remount). All gates green (typecheck 13/13, lint, format,
+build). Human-gated feel-check on the 2 GB kiosk still open.

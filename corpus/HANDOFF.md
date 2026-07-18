@@ -24,13 +24,12 @@ All gates were green at each commit (`turbo typecheck` 13/13, `lint` 14/14,
 `format:check`, `build`). Working tree is clean except untracked corpus docs
 (the brief specs below + this file).
 
-## Brief specs written (untracked in `corpus/briefs/todo/`)
+## First resume task — DONE (2026-07-18)
 
-- `32-xlsx-offthread-worker.md`, `33-eager-bundle-lazy-load.md` — these describe
-  work already DONE. **First resume task:** move 31/32/33 to `briefs/done/` with
-  outcome notes, add their rows to `wiki/status.md`, append a `log.md` entry,
-  and mark the source todos promoted (`office-parsing-blocks-ui-thread.md` xlsx
-  slice, `eager-bundle-lazy-load.md`). Then commit as `docs(corpus): ...`.
+Briefs 31/32/33 moved to `briefs/done/` with Outcome notes; `wiki/status.md`
+rows + summary refreshed; `log.md` entry appended; source todos marked
+`promoted`; index regenerated; corpus lint OK. Committed as `docs(corpus)`.
+**Next task is brief 34 (notification-center).**
 
 ## REMAINING WORK (not started)
 

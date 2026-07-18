@@ -1,9 +1,12 @@
 ---
 title: Office docx/xlsx parsing blocks the UI thread
 created: 2026-07-17
-status: captured
+status: promoted
 tags: [add-on, perf, debt]
 ---
+
+<!-- Both slices shipped: docx → brief 27 (2026-07-17), xlsx → brief 32 (2026-07-17). -->
+
 
 # Office docx/xlsx parsing runs on the main thread
 

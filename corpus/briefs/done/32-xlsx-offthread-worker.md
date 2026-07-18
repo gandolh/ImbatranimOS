@@ -84,3 +84,18 @@ adding no boot cost.
 
 Univer's own virtualization (it handles that), the docx slice (done, brief 27),
 and any change to the Sheets UI or save flow.
+
+## Outcome (2026-07-17) — commit `e37bdd3`
+
+Shipped as specified. The whole ExcelJS round-trip moved into a Vite-native
+module worker at `apps/add-ons/sheets/src/engine/xlsxWorker.ts` — the ExcelJS
+import and the full cell-mapping code (`cellToUniverStyle`, `cellValueToUniver`,
+color/number-format helpers, the write mapping) live in the worker, moved
+verbatim (no fidelity change). `xlsxBridge.ts`'s `xlsxToUniver`/`univerToXlsx`
+keep their exact signatures, so `Sheets.tsx` is untouched; internally they now
+post to a single lazily-created, reused worker with a request-id correlation and
+transfer the input/output `ArrayBuffer`s. Worker errors propagate as
+`{ id, error }` and reject the bridge promise with a real `Error`; added an
+`onerror`/`onmessageerror` backstop so a worker crash surfaces rather than hangs.
+exceljs stays a lazy chunk, now inside the worker chunk — off the main thread's
+module graph. All gates green. Human-gated large-xlsx responsiveness check open.

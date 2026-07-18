@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Popover } from '@base-ui/react/popover'
+import { Bell } from 'lucide-react'
 import dayjs from 'dayjs'
 import { cn } from '../../../lib/cn'
 import { api } from '../../../lib/axios'
+import { useNotificationStore } from '../../store/notificationStore'
+import { NotificationPanel } from '../notifications/NotificationPanel'
 
 // Mirrors the backend's /api/system/stats response (system.service.ts).
 type SystemStats = {
@@ -73,6 +76,44 @@ function MiniCalendar() {
   )
 }
 
+function NotificationBell() {
+  const [open, setOpen] = useState(false)
+  const unread = useNotificationStore((s) =>
+    s.notifications.reduce((n, x) => n + (x.read ? 0 : 1), 0)
+  )
+  const dnd = useNotificationStore((s) => s.dnd)
+
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger
+        aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ''}`}
+        className={cn(
+          'relative flex h-full cursor-pointer items-center px-2.5 outline-none',
+          'text-on-surface hover:bg-surface-container-high',
+          'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
+        )}
+      >
+        <Bell size={15} strokeWidth={1.75} className={cn(dnd && 'opacity-50')} />
+        {unread > 0 && (
+          <span
+            className="bg-primary text-on-primary absolute top-1.5 right-1 flex h-3.5 min-w-3.5 items-center justify-center px-0.5 text-[9px] leading-none font-semibold tabular-nums"
+            aria-hidden
+          >
+            {unread > 99 ? '99+' : unread}
+          </span>
+        )}
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner side="top" align="end" sideOffset={6}>
+          <Popover.Popup className="border-outline-variant bg-surface-container-low border shadow-[0_-6px_24px_rgba(0,0,0,0.35)]">
+            <NotificationPanel onClose={() => setOpen(false)} />
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
+
 export function Tray() {
   const [now, setNow] = useState(() => dayjs())
 
@@ -100,6 +141,10 @@ export function Tray() {
           {toGb(stats.memory.totalBytes)} GB
         </span>
       )}
+
+      <div className="bg-outline-variant h-5 w-px" />
+
+      <NotificationBell />
 
       <div className="bg-outline-variant h-5 w-px" />
 

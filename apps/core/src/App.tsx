@@ -5,6 +5,7 @@ import { useWallpaperStore } from './shared/store/wallpaperStore'
 import { useWindowStore } from './shared/store/windowStore'
 import { useAppearanceStore, applyAppearance } from './shared/store/appearanceStore'
 import { CommandPalette } from './shared/components/CommandPalette'
+import { ToastHost } from './shared/components/notifications'
 import { useGlobalHotkeys } from './shared/hooks/useGlobalHotkeys'
 import { useWindowHotkeys } from './shared/hooks/useWindowHotkeys'
 
@@ -82,6 +83,8 @@ export default function App() {
     <div className="bg-surface relative h-screen w-screen overflow-hidden">
       <Desktop wallpaper={wallpaper} />
       <Taskbar />
+      {/* Notification toasts (bottom-right, above the taskbar) */}
+      <ToastHost />
       {/* SWARM:S3 command palette mount */}
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       {/* SWARM:S4 layout restore boot */}

@@ -33,6 +33,14 @@ export { openApp } from './shared/intents/openApp'
 export { useIntentStore } from './shared/store/intentStore'
 export { useWindowStore } from './shared/store/windowStore'
 
+// Notifications — imperative `notify(...)` + the store hook for reactive reads
+export { notify, useNotificationStore } from './shared/store/notificationStore'
+export type {
+  NotificationItem,
+  NotifyInput,
+  NotificationLevel,
+} from './shared/store/notificationStore'
+
 // Shared add-on kit — file bytes over the authed api client
 export {
   fetchFileBytes,

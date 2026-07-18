@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Taskbar } from './shared/components/taskbar'
 import { Desktop } from './shared/components/desktop'
 import { useWallpaperStore } from './shared/store/wallpaperStore'
 import { useWindowStore } from './shared/store/windowStore'
+import { usePaletteStore } from './shared/store/paletteStore'
 import { useAppearanceStore, applyAppearance } from './shared/store/appearanceStore'
 import { CommandPalette } from './shared/components/CommandPalette'
 import { ToastHost } from './shared/components/notifications'
@@ -13,7 +14,9 @@ export default function App() {
   const wallpaper = useWallpaperStore((s) => s.wallpaper)
   const theme = useAppearanceStore((s) => s.theme)
   const accent = useAppearanceStore((s) => s.accent)
-  const [paletteOpen, setPaletteOpen] = useState(false)
+  const paletteOpen = usePaletteStore((s) => s.open)
+  const setPaletteOpen = usePaletteStore((s) => s.setOpen)
+  const openPalette = usePaletteStore((s) => s.openPalette)
 
   // Reflect the persisted theme + accent onto <html> so the CSS vars resolve.
   useEffect(() => {
@@ -21,7 +24,7 @@ export default function App() {
   }, [theme, accent])
 
   useGlobalHotkeys({
-    'mod+k': () => setPaletteOpen(true),
+    'mod+k': () => openPalette(),
   })
 
   // SWARM:S4 layout restore boot ──────────────────────────────────────────────

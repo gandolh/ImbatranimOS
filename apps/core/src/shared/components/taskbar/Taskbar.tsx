@@ -1,6 +1,8 @@
 import { useState, useRef, useMemo } from 'react'
+import { Search } from 'lucide-react'
 import { cn } from '../../../lib/cn'
 import { useWindowStore } from '../../store/windowStore'
+import { usePaletteStore } from '../../store/paletteStore'
 import { APP_REGISTRY } from '../../registry/registry'
 import { Logo } from '../brand/Logo'
 import { StartMenu } from './StartMenu'
@@ -14,6 +16,7 @@ export function Taskbar() {
   const showWindow = useWindowStore((s) => s.showWindow)
   const hideWindow = useWindowStore((s) => s.hideWindow)
   const focusWindow = useWindowStore((s) => s.focusWindow)
+  const openPalette = usePaletteStore((s) => s.openPalette)
 
   const [startOpen, setStartOpen] = useState(false)
   const startBtnRef = useRef<HTMLButtonElement>(null)
@@ -84,6 +87,21 @@ export function Taskbar() {
           onOpenApp={openApp}
         />
       )}
+
+      {/* Search launcher — opens the command palette (also Mod+K) */}
+      <button
+        onClick={openPalette}
+        aria-label="Search"
+        title="Search (Ctrl+K)"
+        className={cn(
+          'group relative flex items-center gap-2 px-3 outline-none',
+          'border-outline-variant border-r',
+          'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high',
+          'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
+        )}
+      >
+        <Search size={16} strokeWidth={1.75} className="shrink-0" />
+      </button>
 
       {/* Running-window buttons */}
       <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">

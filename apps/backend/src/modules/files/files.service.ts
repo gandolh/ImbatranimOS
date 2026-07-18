@@ -7,6 +7,7 @@ import {
 import { join, resolve, relative, basename, dirname, sep } from 'path';
 import * as fs from 'fs/promises';
 import { createReadStream } from 'fs';
+import type { Dirent } from 'fs';
 import * as os from 'os';
 import type { Readable } from 'stream';
 
@@ -26,6 +27,25 @@ export interface FileEntry {
   size: number;
   modifiedAt: string;
 }
+
+/** One hit from {@link FilesService.search}. `path` is root-relative. */
+export interface SearchHit {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+}
+
+export interface SearchResult {
+  items: SearchHit[];
+  /** True when any bound (results/entries/depth/time) stopped the walk early. */
+  truncated: boolean;
+}
+
+/**
+ * Directories the search walk never descends into. `node_modules`/`.git` are
+ * huge + never interesting; dot-directories are skipped separately by prefix.
+ */
+const SEARCH_SKIP_DIRS = new Set(['node_modules', '.git']);
 
 /**
  * Static roots: name → absolute directory. The `home` root is resolved
@@ -184,6 +204,150 @@ export class FilesService {
     return Promise.all(
       entries.map((e) => this.toEntry(rootDir, join(abs, e.name))),
     );
+  }
+
+  /**
+   * Bounds for the search walk. Read per-call (not module-level consts) so tests
+   * can dial them down via env without a module reload — the same idiom as
+   * {@link FilesService.homeRoot}. Defaults keep a single search from walking the
+   * whole disk or stalling the event loop.
+   */
+  private searchBounds() {
+    return {
+      // Hard cap on returned hits — the UI shows a bounded list anyway.
+      maxResults: Number(process.env.FILES_SEARCH_MAX_RESULTS) || 100,
+      // Ceiling on total dirents visited (the real DoS bound on tree size).
+      maxEntries: Number(process.env.FILES_SEARCH_MAX_ENTRIES) || 20000,
+      // Deepest directory level the walk will descend to.
+      maxDepth: Number(process.env.FILES_SEARCH_MAX_DEPTH) || 12,
+      // Wall-clock budget; past it we return partial results + truncated.
+      budgetMs: Number(process.env.FILES_SEARCH_BUDGET_MS) || 3000,
+      // Per-file size cap for the content grep; larger files are skipped.
+      maxContentBytes:
+        Number(process.env.FILES_SEARCH_MAX_CONTENT_BYTES) || 256 * 1024,
+    };
+  }
+
+  /**
+   * Jailed, bounded, live filename/content search under a root.
+   *
+   * Jail: the root is resolved through {@link resolveSafe} (lexical + symlink
+   * containment). The walk starts at that real root and only ever `join`s
+   * dirent names onto the current dir — no `..`, and symlinks are never
+   * followed — so every emitted `path` (relative to the root) provably stays
+   * inside the jail without a per-hit re-check.
+   *
+   * Bounds: results/entries/depth/time caps (see {@link searchBounds}); hitting
+   * any returns the partial list with `truncated: true`. `node_modules`, `.git`
+   * and dot-directories are always skipped.
+   */
+  async search(
+    root: string,
+    query: string,
+    opts: { content?: boolean } = {},
+  ): Promise<SearchResult> {
+    // Jail the root exactly like every other endpoint (throws on escape).
+    const { rootDir } = await this.resolveSafe(root, '');
+
+    const needle = query.toLowerCase();
+    const wantContent = opts.content === true;
+    const bounds = this.searchBounds();
+    const deadline = Date.now() + bounds.budgetMs;
+
+    const items: SearchHit[] = [];
+    let scanned = 0;
+    let truncated = false;
+
+    // An empty needle would match everything; the DTO forbids it, but guard the
+    // direct-call path too rather than dumping the whole tree.
+    if (needle.length === 0) return { items, truncated };
+
+    const capHit = (): boolean => {
+      if (
+        items.length >= bounds.maxResults ||
+        scanned >= bounds.maxEntries ||
+        Date.now() > deadline
+      ) {
+        truncated = true;
+        return true;
+      }
+      return false;
+    };
+
+    const walk = async (absDir: string, depth: number): Promise<void> => {
+      if (truncated || depth > bounds.maxDepth) return;
+
+      let entries: Dirent[];
+      try {
+        entries = await fs.readdir(absDir, { withFileTypes: true });
+      } catch {
+        return; // unreadable dir — skip it, don't abort the whole search
+      }
+
+      for (const entry of entries) {
+        if (capHit()) return;
+
+        const name = entry.name;
+        // Never follow symlinks: keeps the walk inside the jail and cycle-free.
+        if (entry.isSymbolicLink()) continue;
+
+        const isDir = entry.isDirectory();
+        // Always skip heavy/noisy dirs and any dot-directory.
+        if (isDir && (SEARCH_SKIP_DIRS.has(name) || name.startsWith('.'))) {
+          continue;
+        }
+
+        scanned++;
+        const abs = join(absDir, name);
+        const type: 'file' | 'directory' = isDir ? 'directory' : 'file';
+
+        let matched = name.toLowerCase().includes(needle);
+        if (!matched && wantContent && entry.isFile()) {
+          matched = await this.contentMatches(
+            abs,
+            needle,
+            bounds.maxContentBytes,
+          );
+        }
+
+        if (matched) {
+          items.push({ name, path: relative(rootDir, abs), type });
+          if (capHit()) return;
+        }
+
+        if (isDir) {
+          await walk(abs, depth + 1);
+          if (truncated) return;
+        }
+      }
+    };
+
+    await walk(rootDir, 0);
+    return { items, truncated };
+  }
+
+  /**
+   * Cheap text-content grep for the search walk: skips oversized files and any
+   * file that looks binary (a NUL byte in the sniff window). Reads at most one
+   * file into the heap at a time. Any error → no match (never throws upward).
+   */
+  private async contentMatches(
+    abs: string,
+    needle: string,
+    maxBytes: number,
+  ): Promise<boolean> {
+    try {
+      const stat = await fs.stat(abs);
+      if (!stat.isFile() || stat.size > maxBytes) return false;
+      const buf = await fs.readFile(abs);
+      const sniff = Math.min(buf.length, 8192);
+      for (let i = 0; i < sniff; i++) {
+        if (buf[i] === 0) return false; // NUL ⇒ treat as binary, skip
+      }
+      return buf.toString('utf-8').toLowerCase().includes(needle);
+    } catch {
+      return false;
+    }
   }
 
   async readFile(

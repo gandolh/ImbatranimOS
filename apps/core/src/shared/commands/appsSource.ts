@@ -1,4 +1,5 @@
 import { APP_REGISTRY } from '../registry/registry'
+import { getEnabledApps } from '../registry/enabledApps'
 import { useWindowStore } from '../store/windowStore'
 import type { CommandSource, CommandItem } from './CommandSourcesRegistry'
 
@@ -22,15 +23,17 @@ export const appsSource: CommandSource = {
   group: GROUP,
 
   async search(query: string): Promise<CommandItem[]> {
-    return APP_REGISTRY.filter((app) => {
-      const haystack = [app.name, app.description, ...app.meta].join(' ')
-      return fuzzyMatch(query, haystack)
-    }).map((app) => ({
-      id: `app:${app.id}`,
-      label: app.name,
-      subtitle: app.description,
-      group: GROUP,
-    }))
+    return getEnabledApps()
+      .filter((app) => {
+        const haystack = [app.name, app.description, ...app.meta].join(' ')
+        return fuzzyMatch(query, haystack)
+      })
+      .map((app) => ({
+        id: `app:${app.id}`,
+        label: app.name,
+        subtitle: app.description,
+        group: GROUP,
+      }))
   },
 
   activate(item: CommandItem): void {

@@ -28,6 +28,7 @@ import {
   CopyDto,
   ListQueryDto,
   RootPathQueryDto,
+  SearchQueryDto,
 } from './dto/files.dto';
 
 /**
@@ -45,6 +46,17 @@ export class FilesController {
   @Get()
   list(@Query() q: ListQueryDto) {
     return this.filesService.list(q.root, q.path ?? '');
+  }
+
+  /**
+   * GET /api/files/search?root=&query=&content= → { items, truncated }
+   *
+   * Authed by the global SessionAuthGuard (no `@Public()`). Jailed + bounded in
+   * the service — see {@link FilesService.search}.
+   */
+  @Get('search')
+  search(@Query() q: SearchQueryDto) {
+    return this.filesService.search(q.root, q.query, { content: q.content });
   }
 
   /** GET /api/files/content?root=&path= → { path, content } (text) */

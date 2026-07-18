@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { DesktopIcon } from './DesktopIcon'
 import { APP_REGISTRY } from '../../registry/registry'
+import { useEnabledApps } from '../../registry/enabledApps'
 import { useWindowStore } from '../../store/windowStore'
 import { useDesktopStore } from '../../store/desktopStore'
 import type { Wallpaper } from '../../store/wallpaperStore'
@@ -40,6 +41,7 @@ const PADDING = 16
 
 export function Desktop({ wallpaper }: DesktopProps) {
   const openWindow = useWindowStore((s) => s.openWindow)
+  const enabledApps = useEnabledApps()
   const { iconPositions, updateIconPosition } = useDesktopStore()
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -71,20 +73,22 @@ export function Desktop({ wallpaper }: DesktopProps) {
     >
       {/* Desktop icon container - using absolute positioning for children */}
       <div className="absolute inset-0 p-4">
-        {APP_REGISTRY.filter((app) => app.id !== 'settings').map((app) => {
-          const pos = iconPositions[app.id]
-          if (!pos) return null
-          return (
-            <DesktopIcon
-              key={app.id}
-              app={app}
-              onOpen={() => handleOpen(app.id)}
-              position={pos}
-              onPositionChange={(newPos) => updateIconPosition(app.id, newPos)}
-              dragConstraints={containerRef}
-            />
-          )
-        })}
+        {enabledApps
+          .filter((app) => app.id !== 'settings')
+          .map((app) => {
+            const pos = iconPositions[app.id]
+            if (!pos) return null
+            return (
+              <DesktopIcon
+                key={app.id}
+                app={app}
+                onOpen={() => handleOpen(app.id)}
+                position={pos}
+                onPositionChange={(newPos) => updateIconPosition(app.id, newPos)}
+                dragConstraints={containerRef}
+              />
+            )
+          })}
       </div>
 
       <WindowContainer />

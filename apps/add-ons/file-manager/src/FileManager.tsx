@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   FolderPlus,
   Clipboard,
@@ -49,6 +49,7 @@ import {
   useUploadFileMutation,
 } from './queries/filesQueries'
 import { openApp } from '@imbatranim/core'
+import { useIntentStore } from '@imbatranim/core'
 
 type MenuState = {
   x: number
@@ -65,10 +66,32 @@ function triggerDownload(root: string, entry: FsEntry) {
   a.remove()
 }
 
-export function FileManager({ windowId: _windowId }: { windowId: string }) {
+export function FileManager({ windowId }: { windowId: string }) {
   const [root, setRoot] = useState(FS_ROOTS[0].id)
   const rootCfg = FS_ROOTS.find((r) => r.id === root) ?? FS_ROOTS[0]
   const [path, setPath] = useState('')
+
+  // Drain a one-shot navigate intent (from the command palette's file search)
+  // exactly once — ref-guarded so StrictMode's double-mount can't consume twice.
+  // `navigatePath` is separate from the editor apps' `openPath` intent: it moves
+  // *this* window to a directory rather than opening a file elsewhere. An empty
+  // navigatePath ('') means the root itself, so guard on `!== undefined`.
+  const navConsumedRef = useRef(false)
+  useEffect(() => {
+    if (navConsumedRef.current) return
+    navConsumedRef.current = true
+    const intent = useIntentStore.getState().consumeIntent(windowId) as
+      | { navigatePath?: string; root?: string }
+      | undefined
+    if (intent?.navigatePath !== undefined && intent.root) {
+      // Draining a one-shot open-intent on mount is the intended "sync from an
+      // external system" use of an effect; it runs at most once (ref-guarded).
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setRoot(intent.root)
+      setPath(intent.navigatePath)
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+  }, [windowId])
 
   // Rename state
   const [renamingPath, setRenamingPath] = useState<string | null>(null)

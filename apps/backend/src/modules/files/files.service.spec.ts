@@ -184,4 +184,128 @@ describe('FilesService (jail + real filesystem)', () => {
       expect(abs.startsWith(jail)).toBe(true);
     });
   });
+
+  describe('search (jailed + bounded)', () => {
+    // Env caps are read per-call by searchBounds(); snapshot/restore so a cap
+    // test can dial one down without leaking into the next test.
+    const capEnvKeys = [
+      'FILES_SEARCH_MAX_RESULTS',
+      'FILES_SEARCH_MAX_ENTRIES',
+      'FILES_SEARCH_MAX_DEPTH',
+      'FILES_SEARCH_BUDGET_MS',
+      'FILES_SEARCH_MAX_CONTENT_BYTES',
+    ];
+    const capEnvSnapshot: Record<string, string | undefined> = {};
+    beforeEach(() => {
+      for (const k of capEnvKeys) capEnvSnapshot[k] = process.env[k];
+    });
+    afterEach(() => {
+      for (const k of capEnvKeys) {
+        if (capEnvSnapshot[k] === undefined) delete process.env[k];
+        else process.env[k] = capEnvSnapshot[k];
+      }
+    });
+
+    it('finds a file by case-insensitive filename substring', async () => {
+      await service.createDirectory('home', 'docs');
+      await service.createFile('home', 'docs/Report-2026.txt', 'body');
+      await service.createFile('home', 'docs/notes.md', 'body');
+
+      const { items, truncated } = await service.search('home', 'report');
+      expect(truncated).toBe(false);
+      expect(items.map((i) => i.name)).toEqual(['Report-2026.txt']);
+      expect(items[0].path).toBe(join('docs', 'Report-2026.txt'));
+      expect(items[0].type).toBe('file');
+    });
+
+    it('matches directory names too and returns type directory', async () => {
+      await service.createDirectory('home', 'my-secret-folder');
+      const { items } = await service.search('home', 'secret');
+      expect(items).toEqual([
+        {
+          name: 'my-secret-folder',
+          path: 'my-secret-folder',
+          type: 'directory',
+        },
+      ]);
+    });
+
+    it('content grep finds a string inside a text file (content flag)', async () => {
+      await service.createFile('home', 'a.txt', 'hello WORLD inside');
+      await service.createFile('home', 'b.txt', 'nothing here');
+
+      // Without content: no filename match for "world".
+      const plain = await service.search('home', 'world');
+      expect(plain.items).toEqual([]);
+
+      // With content: case-insensitive body hit.
+      const grep = await service.search('home', 'world', { content: true });
+      expect(grep.items.map((i) => i.name)).toEqual(['a.txt']);
+    });
+
+    it('content grep skips binary files (NUL byte) and oversized files', async () => {
+      // Binary file whose bytes happen to spell the needle around a NUL.
+      await fs.writeFile(
+        join(jail, 'blob.bin'),
+        Buffer.from([0x6e, 0x65, 0x65, 0x64, 0x00, 0x6c, 0x65]), // "need\0le"
+      );
+      const bin = await service.search('home', 'need', { content: true });
+      expect(bin.items).toEqual([]);
+
+      // Oversized text file is skipped by the per-file content cap.
+      process.env.FILES_SEARCH_MAX_CONTENT_BYTES = '8';
+      await service.createFile('home', 'big.txt', 'this is a long needle line');
+      const big = await service.search('home', 'needle', { content: true });
+      expect(big.items).toEqual([]);
+    });
+
+    it('jail holds: an unknown root is rejected via resolveSafe', async () => {
+      await expect(service.search('nope', 'x')).rejects.toThrow(
+        /unknown root/i,
+      );
+    });
+
+    it('jail holds: a symlink out of the jail is never followed', async () => {
+      // A matching file lives OUTSIDE the jail; a symlink inside points at it.
+      await fs.writeFile(join(outside, 'target-secret.txt'), 'x');
+      await fs.symlink(outside, join(jail, 'escape'), 'dir');
+
+      const { items } = await service.search('home', 'secret');
+      // The symlink dir is not descended, so the outside file never surfaces.
+      expect(items).toEqual([]);
+    });
+
+    it('result cap trips → truncated, list bounded', async () => {
+      process.env.FILES_SEARCH_MAX_RESULTS = '3';
+      for (let i = 0; i < 10; i++) {
+        await service.createFile('home', `match-${i}.txt`, 'x');
+      }
+      const { items, truncated } = await service.search('home', 'match');
+      expect(items).toHaveLength(3);
+      expect(truncated).toBe(true);
+    });
+
+    it('entry-scan cap trips → truncated', async () => {
+      process.env.FILES_SEARCH_MAX_ENTRIES = '2';
+      for (let i = 0; i < 10; i++) {
+        await service.createFile('home', `file-${i}.txt`, 'x');
+      }
+      const { truncated } = await service.search('home', 'zzz-no-match');
+      expect(truncated).toBe(true);
+    });
+
+    it('skips node_modules, .git and dot-directories', async () => {
+      await service.createDirectory('home', 'node_modules');
+      await service.createFile('home', 'node_modules/match.txt', 'x');
+      await service.createDirectory('home', '.git');
+      await service.createFile('home', '.git/match.txt', 'x');
+      await service.createDirectory('home', '.hidden');
+      await service.createFile('home', '.hidden/match.txt', 'x');
+      await service.createFile('home', 'match.txt', 'x');
+
+      const { items } = await service.search('home', 'match');
+      // Only the top-level file; the heavy/dot dirs are never descended.
+      expect(items.map((i) => i.path)).toEqual(['match.txt']);
+    });
+  });
 });

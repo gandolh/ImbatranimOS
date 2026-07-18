@@ -4,8 +4,12 @@ import {
   ACCENT_PRESETS,
   type ThemeMode,
 } from '../../shared/store/appearanceStore'
-import { Monitor, Palette, Moon, Sun, Check, Image } from 'lucide-react'
+import { Monitor, Palette, Moon, Sun, Check, Image, LayoutGrid } from 'lucide-react'
 import { cn } from '../../lib/cn'
+import { Checkbox } from '../../shared/components/ui'
+import { APP_REGISTRY } from '../../shared/registry/registry'
+import { NON_DISABLEABLE } from '../../shared/registry/enabledApps'
+import { useAddonStore } from '../../shared/store/addonStore'
 import { SecuritySettings } from '../auth/SecuritySettings'
 
 const WALLPAPERS: { id: Wallpaper; name: string; preview: React.CSSProperties }[] = [
@@ -71,6 +75,8 @@ export function Settings() {
   const accent = useAppearanceStore((s) => s.accent)
   const setTheme = useAppearanceStore((s) => s.setTheme)
   const setAccent = useAppearanceStore((s) => s.setAccent)
+  const disabledApps = useAddonStore((s) => s.disabled)
+  const toggleApp = useAddonStore((s) => s.toggle)
 
   return (
     <div className="bg-surface text-on-surface flex h-full flex-col select-none">
@@ -177,6 +183,51 @@ export function Settings() {
                 )
               })}
             </div>
+          </div>
+        </section>
+
+        {/* Apps ────────────────────────────────────────────────── */}
+        <section className="mb-10">
+          <SectionHeader icon={LayoutGrid} title="Apps" />
+          <p className="text-on-surface-variant mb-5 text-[12px]">
+            Turn add-ons on or off. Disabled apps disappear from Start, search, and the desktop —
+            their code never loads. Core apps stay on so you can't lock yourself out.
+          </p>
+          <div className="grid gap-2">
+            {APP_REGISTRY.map((app) => {
+              const AppIcon = app.icon
+              const required = NON_DISABLEABLE.has(app.id)
+              const enabled = required || !disabledApps.includes(app.id)
+              return (
+                <div
+                  key={app.id}
+                  className="border-outline-variant bg-surface-container-low flex items-center gap-3 border px-3 py-2.5"
+                >
+                  <span className="border-outline-variant bg-surface-container-lowest text-on-surface flex h-7 w-7 shrink-0 items-center justify-center border">
+                    <AppIcon size={15} strokeWidth={1.75} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="font-ui text-on-surface block truncate text-[13px] font-medium">
+                      {app.name}
+                    </span>
+                    <span className="text-on-surface-variant block truncate text-[11px]">
+                      {app.description}
+                    </span>
+                  </span>
+                  {required && (
+                    <span className="text-on-surface-variant text-[9px] font-semibold tracking-widest uppercase">
+                      Required
+                    </span>
+                  )}
+                  <Checkbox
+                    aria-label={`Enable ${app.name}`}
+                    checked={enabled}
+                    disabled={required}
+                    onCheckedChange={() => toggleApp(app.id)}
+                  />
+                </div>
+              )
+            })}
           </div>
         </section>
 

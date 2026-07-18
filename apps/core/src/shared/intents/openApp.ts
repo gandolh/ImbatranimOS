@@ -1,6 +1,8 @@
 import { useWindowStore } from '../store/windowStore'
 import { useIntentStore } from '../store/intentStore'
 import { APP_REGISTRY } from '../registry/registry'
+import { NON_DISABLEABLE } from '../registry/enabledApps'
+import { useAddonStore } from '../store/addonStore'
 
 /**
  * Opens an app window with optional payload.
@@ -11,6 +13,13 @@ import { APP_REGISTRY } from '../registry/registry'
  * @returns The window ID of the opened/focused window
  */
 export function openApp(appId: string, payload?: unknown): string {
+  // A disabled add-on can't be launched (file routing / commands can't open a
+  // hidden app). Non-disableable core apps always open. Existing open windows
+  // are unaffected — they render/close via the full registry elsewhere.
+  if (useAddonStore.getState().isDisabled(appId) && !NON_DISABLEABLE.has(appId)) {
+    return ''
+  }
+
   const appConfig = APP_REGISTRY.find((app) => app.id === appId)
   if (!appConfig) {
     throw new Error(`App "${appId}" not found in registry`)

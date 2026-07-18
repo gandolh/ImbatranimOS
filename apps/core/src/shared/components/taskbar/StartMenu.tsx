@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Lock, LogOut, Power } from 'lucide-react'
 import { cn } from '../../../lib/cn'
-import { APP_REGISTRY } from '../../registry/registry'
+import { useEnabledApps } from '../../registry/enabledApps'
 import { Logo } from '../brand/Logo'
 import { useAuthStore } from '../../../modules/auth/store/authStore'
 import { logout as logoutApi } from '../../../modules/auth/api/authApi'
@@ -16,6 +16,7 @@ type StartMenuProps = {
 export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null)
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated)
+  const enabledApps = useEnabledApps()
 
   useEffect(() => {
     function onPointerDown(e: MouseEvent) {
@@ -78,7 +79,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
 
       {/* App list */}
       <div className="flex max-h-[52vh] flex-col overflow-y-auto py-1">
-        {APP_REGISTRY.map((app) => {
+        {enabledApps.map((app) => {
           const Icon = app.icon
           return (
             <button

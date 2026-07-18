@@ -691,6 +691,37 @@ react-refresh/static-components. Gates green (typecheck 13/13, lint 14/14,
 format, build); eager index gzip 121.5 → 125.1 KB (+3.6 KB shell cost). First
 callers will be clock alarms (36) + calendar reminders (40). Next: Wave C.
 
+## 2026-07-18 — Wave E: platform surfaces (45–46) shipped; full-auto backlog COMPLETE
+
+Two CORE surfaces, built by a 2-agent parallel batch (disjoint file sets, no
+conflicts), integrated + gated, commit `3e72333`:
+- **45 global-search-launcher** — jailed + bounded backend FS search
+  (`GET /api/files/search`: filename + opt-in content grep; root via
+  `resolveSafe`, walk joins only dirent names, symlinks never followed, caps on
+  results/entries/depth/time → `truncated`, skips node_modules/.git/dotdirs;
+  content grep size-capped + binary-sniff; 9 tests). Frontend: a "Files" command
+  source, a `paletteStore` (App.tsx refactored so Mod+K + a new Taskbar Search
+  button share open-state), and a file-manager `{navigatePath}` intent to reveal
+  a hit's folder. Extends `CommandSourcesRegistry` — no fork.
+- **46 addon-manager** — persisted per-user disabled-set (`imbatranimos:addons`)
+  + a single `enabledApps` filter for the launchers (Start/palette/Desktop),
+  an `openApp` guard, and a Settings "Apps" section; runtime (Taskbar running
+  windows, WindowContainer render) stays on the full registry;
+  settings/file-manager/terminal are non-disableable.
+
+Gates: FE typecheck 23/23 + lint 24/24 + build; BE build + **tests 135/135** +
+lint. No new dependency. The search endpoint was self-reviewed (read-only, jailed
+via the proven `resolveSafe`, symlink-skip, bounded) rather than given a full
+adversarial subagent pass like Wave D's exec/proxy surfaces.
+
+**The full-auto daily-driver backlog (briefs 34–46) is now COMPLETE.** Across the
+run: 1 CORE notification center, 6 light apps, 4 heavy/backend apps (3 backend
+modules, adversarially security-reviewed + hardened), 2 CORE platform surfaces —
+13 briefs, each committed with green gates, plus a `docs(corpus)` per wave and
+the SSRF decision recorded. Desktop = 23 apps; backend = 135 tests. What remains
+before v1.0 is only the human-gated set the run explicitly excluded (SEC-9,
+SEC-10, brief 15 remainder) + per-brief human walkthroughs. `HANDOFF.md` retired.
+
 ## 2026-07-18 — Wave D: heavy/backend apps (briefs 41–44) shipped + security-reviewed
 
 Built by a **4-agent opus batch** (each scoped to its own module/package dir),

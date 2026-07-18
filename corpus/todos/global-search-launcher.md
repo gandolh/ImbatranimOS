@@ -1,7 +1,7 @@
 ---
 title: Global search launcher (Win-style, near Start)
 created: 2026-07-17
-status: captured
+status: promoted
 tags: [core, platform, search, ux]
 ---
 

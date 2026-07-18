@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16–44 DONE (incl. the 2026-07-17 post-v1 backlog run, the review-pass cleanup wave 23–30, the daily-driver perf trio 31–33 which cut the eager bundle −69.6%, the CORE notification center 34, Wave C's six daily-driver apps 35–40, and Wave D's four heavy/backend apps 41–44: Monaco code-editor, git-gui, REST client, archive-manager — the latter three added authed+jailed backend modules, security-reviewed + hardened; desktop now 23 apps, 126 backend tests). Brief 15's human-gated remainder is all that stands before v1.0. Full-auto backlog is now at Wave E (45 global-search-launcher, 46 addon-manager). Held human-gated: SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated), brief 15 v1-release remainder.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–46 DONE. The 2026-07-18 full-auto daily-driver backlog (34–46) is COMPLETE: CORE notification center (34), Wave C's six light apps (35–40), Wave D's four heavy/backend apps (41–44: Monaco code-editor + git-gui + REST client + archive-manager, the backend three authed+jailed, adversarially security-reviewed + hardened), and Wave E's two CORE platform surfaces (45 global search launcher, 46 add-on manager). Desktop = 23 apps; 135 backend tests. Only human-gated items remain before v1.0: SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated), brief 15's v1-release remainder, and per-brief human walkthroughs.
 updated: 2026-07-18
 ---
 
@@ -69,6 +69,8 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 42 | [git-gui](../briefs/done/42-git-gui.md) | **done** | Wave D. Backend git module: execa array-args (no shell, `--` guard, LITERAL_PATHSPECS, jailed cwd, work-tree + top-level-in-jail check), status/stage/commit/diff/log; authed. 20 tests. **Security-reviewed** (no exploit; LOW ancestor-.git closed). No new dep. Human-gated: real repo ops |
 | 43 | [rest-api-client](../briefs/done/43-rest-api-client.md) | **done** | Wave D. Owner-authed backend HTTP proxy — scheme allowlist per redirect hop, size/timeout/redirect caps, cookie/auth never leaked (+cross-host strip). Collections in home FS. 13 tests. **Security-reviewed** (safe as-is). SSRF stance in decisions.md. No new dep. Human-gated: send/persist |
 | 44 | [archive-manager](../briefs/done/44-archive-manager.md) | **done** | Wave D. zip (fflate) + tar.gz (tar/execFile) extract/compress, every entry re-validated via `resolveSafe` (zip-slip-proof), temp+realpath walk, ratio-bounded caps (amplification-DoS fix) + hardlink guard; file-manager context menu. 13 tests. **Security-reviewed** (Medium+Low fixed). No new dep. Human-gated: extract/compress |
+| 45 | [global-search-launcher](../briefs/done/45-global-search-launcher.md) | **done** | Wave E. CORE. Jailed+bounded backend FS search (`/api/files/search`, no symlink follow, caps + truncated, content grep opt-in), 9 tests; palette "Files" source + Taskbar Search button (palette store) + file-manager navigate-intent. Extends the palette, no fork. No new dep. Human-gated: search/reveal |
+| 46 | [addon-manager](../briefs/done/46-addon-manager.md) | **done** | Wave E. CORE. Persisted per-user disabled-set + single `enabledApps` filter (Start/palette/Desktop), `openApp` guard, Settings "Apps" section; runtime keeps full registry; Settings/Files/Terminal non-disableable. No new dep. Human-gated: disable/enable/reload |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
 (human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1
@@ -140,14 +142,21 @@ todos in `todos/`. All gates were green at the time (80 unit tests, typecheck
   office-parsing-blocks-ui-thread (PERF-6) → **brief 32**; and — its trigger met
   by Monaco landing this run — the held eager-bundle-lazy-load → **brief 33**
   (eager gzip 399.6 → 121.5 KB). All three committed, gates green.
-- **In progress (full-auto backlog, briefs 34–46):** notification-center (34,
-  CORE) **done**; Wave C light apps (35–40) **done** (6-agent parallel batch,
-  one commit `a7632ab`); Wave D heavy/backend (41 code-editor-monaco, 42 git-gui,
-  43 rest-api-client, 44 archive-manager) **done** (4-agent opus batch + 3
-  adversarial security reviews + 4 hardening fixes, commit `4be1777`). Desktop
-  now **23 apps**; backend gained git / http-proxy / archive modules (all authed,
-  jailed, tested — 126 backend tests). Next: Wave E platform (45
-  global-search-launcher, 46 addon-manager).
+- **Full-auto daily-driver backlog (briefs 34–46): COMPLETE (2026-07-18).**
+  34 notification-center (CORE); Wave C light apps 35–40 (6-agent batch,
+  `a7632ab`); Wave D heavy/backend 41–44 (4-agent opus batch + 3 adversarial
+  security reviews + 4 hardening fixes, `4be1777`); Wave E platform 45–46
+  (2-agent batch, `3e72333`). Desktop is **23 apps** (Wave E added CORE surfaces
+  — a palette search source + a Settings "Apps" section — not new app windows);
+  backend gained git / http-proxy / archive / files-search surface (all authed +
+  jailed, **135 backend tests**). Every gate green at each commit; one commit per wave + a
+  `docs(corpus)` per wave. The entire "everything actionable" scope the run was
+  chartered with is now shipped.
+- **Remaining = the human-gated exclusions only** (never in the auto-run's
+  scope): SEC-9 `csp-connect-src-ws-wildcard`, SEC-10 `kiosk-no-sandbox`
+  (browser/ISO-gated), and brief 15's v1-release remainder (friend QA, VPS
+  deploy, accent pick, dep bumps, tag). Plus the per-brief human walkthroughs
+  noted in each row above.
 - **Excluded from the auto-run (human-gated, do NOT build autonomously):** SEC-9
   (`csp-connect-src-ws-wildcard`), SEC-10 (`kiosk-no-sandbox`), and brief 15's
   v1-release remainder.

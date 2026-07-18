@@ -1,7 +1,7 @@
 ---
 title: Add-on manager (enable/disable add-ons)
 created: 2026-07-17
-status: captured
+status: promoted
 tags: [core, platform, add-on]
 ---
 

@@ -32,11 +32,30 @@ All gates were green at each commit (`turbo typecheck` 13/13, `lint` 14/14,
 - **Brief 34 notification-center — DONE + committed** (`82c635b` code; corpus
   bookkeeping in the following `docs(corpus)`). CORE surface: `notify()` on the
   public barrel, tray bell + history popover, bottom-right toasts, DnD.
-- **Next task: Wave C** — briefs 35 calculator, 36 clock (alarms → notify),
-  37 image-viewer, 38 media-player, 39 markdown-previewer, 40 calendar
-  (reminders → notify). Independent client-side add-ons, parallelizable; the
-  controller serializes the shared-file integration (manifest.ts / openWith.ts /
-  package-lock / index.ts).
+- **Wave C (briefs 35–40) — DONE + committed** (`a7632ab` code; corpus
+  bookkeeping in the following `docs(corpus)`). Six daily-driver apps built by a
+  6-agent parallel batch, integrated serially. Desktop now 19 apps. Clock +
+  calendar are the first notification-center callers.
+- **Next task: Wave D — heavy/backend apps (briefs 41–44).** These need real
+  care (senior/opus for the hard slices):
+  - **41 code-editor (Monaco)** — HARD. Monaco MUST stay a lazy chunk (its own
+    dynamic import inside the already-lazy shell). Multi-tab/file, find/replace,
+    real FS via the shared kit. LSP out of scope.
+  - **42 git-gui** — HARD. NEW NestJS backend module running `git` as
+    unprivileged `imbatranim` inside the home-FS jail; authed like every route.
+    Scope: status/stage/commit/diff/log for one repo; push/pull later.
+  - **43 rest-api-client** — HARD. Backend proxy route (authed, **SSRF-aware** —
+    see wiki/decisions.md security posture); collections/history in FS. Lazy.
+  - **44 archive-manager** — Medium-hard. zip + tar.gz extract/compress inside
+    the home-FS jail; wire into file-manager context menu; heavy work off-thread
+    (worker or backend real `tar`/`unzip`).
+  Two of these (42, 43) add BACKEND surface → auth on every route/WS is
+  load-bearing; the controller owns backend module wiring + gates (backend has
+  80 unit + e2e jest tests — keep them green). Conflict rule still applies:
+  manifest.ts / openWith.ts / package-lock / backend app module are
+  controller-serialized.
+- **Note:** `npm install` shows 4 moderate audit advisories (pre-existing
+  transitive dev deps); not gating, flagged for a later audit pass.
 
 ## REMAINING WORK (not started)
 

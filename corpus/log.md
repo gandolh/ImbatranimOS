@@ -690,3 +690,38 @@ only (no new palette); `LevelIcon` + `levelStyle` split to satisfy
 react-refresh/static-components. Gates green (typecheck 13/13, lint 14/14,
 format, build); eager index gzip 121.5 → 125.1 KB (+3.6 KB shell cost). First
 callers will be clock alarms (36) + calendar reminders (40). Next: Wave C.
+
+## 2026-07-18 — Wave C: six daily-driver apps (briefs 35–40) shipped
+
+Built as a **6-agent parallel batch** (sonnet build subagents, each scoped to
+one `apps/add-ons/<app>/` dir, no shared-file edits), then integrated serially
+by the controller (manifest.ts 6 imports+entries, openWith.ts image+media exts
+and md/markdown reroute + labels, one `npm install`). Landed as **one Wave C
+commit `a7632ab`** — a deliberate deviation from strict one-commit-per-brief:
+the six were a cohesive parallel wave sharing manifest.ts / openWith.ts /
+package-lock, each brief is named in the commit body + has an outcome note, and
+the tree gates green so nothing is left uncommitted. Apps:
+
+- **35 calculator** — Basic (shunting-yard, no `eval`) + Programmer (BigInt
+  64-bit, HEX/DEC/OCT/BIN + bitwise/shift). Own lazy chunk 3.82 KB gz.
+- **36 clock** — world clocks (Intl, no tz lib), stopwatch, timer, alarms;
+  timestamp-driven; alarm/timer → `notify()`. 4.52 KB gz.
+- **37 image-viewer** — root-aware `<img>` via `downloadUrl`, zoom/fit/rotate,
+  folder prev/next; registered 9 image exts. 2.68 KB gz.
+- **38 media-player** — native `<audio>`/`<video>` range-streamed (no buffering,
+  memory-cap posture), custom transport, folder queue; registered 14 AV exts.
+  4.00 KB gz.
+- **39 markdown-editor** — split-view react-markdown + remark-gfm, **no
+  rehype-raw** (XSS-safe), full save flow; `md`+`markdown` reroute from notepad.
+  1.81 KB gz (renderer shared).
+- **40 calendar** — month/week, persisted events (own store), reminders →
+  `notify()`. 3.98 KB gz.
+
+Clock (36) + calendar (40) are the first real notification-center callers. No
+new dependencies (all hoisted). Desktop now **19 apps**; every new app is its
+own lazy chunk, eager `index-*.js` gzip unchanged (~125 KB). Gates: typecheck
+19/19, lint 20/20, format, build all green. `npm install` reports 4 moderate
+audit findings — pre-existing transitive dev-dep advisories, not introduced by
+these client-only apps (no runtime dep added); flagged for a later audit pass,
+not gating this wave. Next: Wave D (heavy/backend — Monaco, git-gui,
+rest-api-client, archive-manager).

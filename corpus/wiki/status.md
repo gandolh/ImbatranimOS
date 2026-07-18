@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16–33 DONE (incl. the 2026-07-17 post-v1 backlog run, the review-pass cleanup wave 23–30, and the daily-driver perf trio 31–33: list virtualization, xlsx off-thread worker, and app-shell lazy-load which cut the eager bundle −69.6%); brief 15's human-gated remainder is all that stands before v1.0. A full-auto daily-driver app backlog is mid-run (briefs 34–46: notification-center → light apps → heavy/backend apps → platform surfaces). Held human-gated: SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated), brief 15 v1-release remainder.
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–40 DONE (incl. the 2026-07-17 post-v1 backlog run, the review-pass cleanup wave 23–30, the daily-driver perf trio 31–33 which cut the eager bundle −69.6%, the CORE notification center 34, and Wave C's six daily-driver apps 35–40: calculator, clock, image-viewer, media-player, markdown-editor, calendar — desktop now 19 apps); brief 15's human-gated remainder is all that stands before v1.0. Full-auto backlog continues at Wave D (briefs 41–44 heavy/backend: monaco code-editor, git-gui, rest-api-client, archive-manager) then Wave E (45–46 platform). Held human-gated: SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated), brief 15 v1-release remainder.
 updated: 2026-07-18
 ---
 
@@ -59,6 +59,12 @@ volume-persisted home). Committed to `main` (local-only, no PR/CI).
 | 32 | [xlsx-offthread-worker](../briefs/done/32-xlsx-offthread-worker.md) | **done** | PERF-6 (xlsx tail): whole ExcelJS round-trip moved into a lazy Vite module worker (`sheets/src/engine/xlsxWorker.ts`), request-id correlation + transferable buffers; bridge signatures unchanged so `Sheets.tsx` untouched; exceljs now off the main thread's module graph. Human-gated: large-xlsx responsiveness |
 | 33 | [eager-bundle-lazy-load](../briefs/done/33-eager-bundle-lazy-load.md) | **done** | PERF: every app shell + Settings now a `React.lazy` boundary, `<Suspense>` in WindowContainer, contract widened; eager `index-*.js` gzip **399.6 KB → 121.5 KB (−69.6%)**, app code emits as per-app chunks. Trigger for Monaco. Human-gated: open-flash/first-paint |
 | 34 | [notification-center](../briefs/done/34-notification-center.md) | **done** | CORE platform surface: persist-backed notification store + public `notify()` on `@imbatranim/core`, bottom-right auto-dismiss toasts (errors sticky), tray bell + unread badge + history popover (mark-all-read / clear-all / DnD). Session-only toasts, history bounded 100, no new deps. First callers = clock alarms (36) + calendar reminders (40). Human-gated: walkthrough |
+| 35 | [calculator](../briefs/done/35-calculator.md) | **done** | Wave C. Basic (shunting-yard, no `eval`) + Programmer mode (BigInt 64-bit, HEX/DEC/OCT/BIN + bitwise/shift). Keyboard, window-scoped. Own lazy chunk. No new deps. Human-gated: feel-check |
+| 36 | [clock](../briefs/done/36-clock.md) | **done** | Wave C. World clocks (Intl), stopwatch, timer, alarms; timestamp-driven (no drift), persisted. Alarm/timer → `notify()` (first notification caller), "only while open" note. No new deps. Human-gated: accuracy/fire |
+| 37 | [image-viewer](../briefs/done/37-image-viewer.md) | **done** | Wave C. Root-aware `<img>` via `downloadUrl`, zoom/fit/rotate, folder prev/next (own `listDir`), keyboard. Registered png/jpg/jpeg/gif/webp/bmp/svg/avif/ico → openWith. No new deps. Human-gated: open/next/zoom |
+| 38 | [media-player](../briefs/done/38-media-player.md) | **done** | Wave C. Native `<audio>`/`<video>` range-streamed via `downloadUrl` (no buffering), custom transport, folder queue + auto-advance, remount-per-track (no leaks). Registered 8 audio + 6 video exts. No new deps. Human-gated: playback/seek/queue |
+| 39 | [markdown-editor](../briefs/done/39-markdown-previewer.md) | **done** | Wave C. Split-view md editor (react-markdown + remark-gfm, **no rehype-raw** = XSS-safe), full save flow (open intent / save hotkey / unsaved guard). `md`+`markdown` reroute from notepad (any root). No new deps. Human-gated: open/edit/save |
+| 40 | [calendar](../briefs/done/40-calendar.md) | **done** | Wave C. Month + week views, persisted events (own store, no backend), reminders → `notify()` (second caller), "only while open" note. Todo coupling deferred. No new deps. Human-gated: CRUD/nav/reminder |
 
 Dependency order: 08 ✓ → 09 ✓ → 10 ✓ → {11 ✓, 12 ✓, 13 ✓} → 14 ✓ → 15
 (human-gated remainder). Restructure chain: 16 ✓ → 17 ✓. The post-v1
@@ -131,10 +137,13 @@ todos in `todos/`. All gates were green at the time (80 unit tests, typecheck
   by Monaco landing this run — the held eager-bundle-lazy-load → **brief 33**
   (eager gzip 399.6 → 121.5 KB). All three committed, gates green.
 - **In progress (full-auto backlog, briefs 34–46):** notification-center (34,
-  CORE) **done**; next Wave C light apps (calculator, clock, image-viewer,
-  media-player, markdown-previewer, calendar), then Wave D heavy/backend
-  (code-editor-monaco, git-gui, rest-api-client, archive-manager), then Wave E
-  platform (global-search-launcher, addon-manager).
+  CORE) **done**; Wave C light apps (35 calculator, 36 clock, 37 image-viewer,
+  38 media-player, 39 markdown-editor, 40 calendar) **done** — built as a
+  6-agent parallel batch, integrated serially (manifest.ts + openWith.ts + one
+  `npm install`), landed as one Wave C commit; desktop now has **19 apps**. Next
+  Wave D heavy/backend (41 code-editor-monaco, 42 git-gui, 43 rest-api-client,
+  44 archive-manager), then Wave E platform (45 global-search-launcher, 46
+  addon-manager).
 - **Excluded from the auto-run (human-gated, do NOT build autonomously):** SEC-9
   (`csp-connect-src-ws-wildcard`), SEC-10 (`kiosk-no-sandbox`), and brief 15's
   v1-release remainder.

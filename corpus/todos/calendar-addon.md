@@ -1,7 +1,7 @@
 ---
 title: Calendar add-on
 created: 2026-07-17
-status: captured
+status: promoted
 tags: [add-on, normal-user]
 ---
 

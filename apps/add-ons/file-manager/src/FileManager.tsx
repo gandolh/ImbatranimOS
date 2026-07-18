@@ -234,6 +234,22 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         onUpload: openFilePicker,
         onPaste: clipboard.paste,
         onRefresh: () => dirQuery.refetch(),
+        onExtract: (entry) =>
+          openApp('archive-manager', { action: 'extract', root, path: entry.path }),
+        onCompress: (entry) => {
+          const paths =
+            selected.has(entry.path) && selected.size > 1
+              ? orderedEntries.filter((e) => selected.has(e.path)).map((e) => e.path)
+              : [entry.path]
+          const base = paths.length > 1 ? 'archive' : entry.name
+          openApp('archive-manager', {
+            action: 'compress',
+            root,
+            paths,
+            dest: `${base}.zip`,
+            format: 'zip',
+          })
+        },
       })
     : []
   /* eslint-enable react-hooks/refs */

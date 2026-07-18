@@ -11,6 +11,8 @@ import {
   FolderOpen,
   FileSpreadsheet,
   FileText,
+  FileArchive,
+  Package,
 } from 'lucide-react'
 import type { ContextMenuItem } from '../components/ContextMenu'
 import type { FsEntry } from '../types'
@@ -34,7 +36,14 @@ export type BuildMenuItemsCtx = {
   onUpload: () => void
   onPaste: () => void
   onRefresh: () => void
+  /** Extract an archive file (Archive Manager). */
+  onExtract: (entry: FsEntry) => void
+  /** Compress the current selection (or this entry) to a .zip (Archive Manager). */
+  onCompress: (entry: FsEntry) => void
 }
+
+/** Archive files the "Extract here" item is offered for. */
+const ARCHIVE_RE = /\.(zip|tar\.gz|tgz|tar)$/i
 
 /**
  * Pure builder for the right-click context menu descriptor tree. Same two-mode
@@ -58,6 +67,8 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
     onUpload,
     onPaste,
     onRefresh,
+    onExtract,
+    onCompress,
   } = ctx
 
   if (!entry) {
@@ -113,6 +124,20 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
           } as ContextMenuItem,
         ]
       : []),
+    ...(entry.type === 'file' && ARCHIVE_RE.test(entry.name)
+      ? [
+          {
+            label: 'Extract here',
+            icon: <FileArchive size={13} />,
+            onSelect: () => onExtract(entry),
+          } as ContextMenuItem,
+        ]
+      : []),
+    {
+      label: 'Compress to .zip',
+      icon: <Package size={13} />,
+      onSelect: () => onCompress(entry),
+    },
     { type: 'separator' },
     {
       label: 'Rename',

@@ -23,24 +23,41 @@ const NOTEPAD_ONLY_NOTES: OpenWithRule = { appId: 'notepad', onlyRoots: ['notes'
 const IMAGE_VIEWER: OpenWithRule = { appId: 'image-viewer' }
 const MEDIA_PLAYER: OpenWithRule = { appId: 'media-player' }
 const MARKDOWN_EDITOR: OpenWithRule = { appId: 'markdown-editor' }
+const CODE_EDITOR: OpenWithRule = { appId: 'code-editor' }
 
 export const EXTENSION_APP_MAP: Record<string, OpenWithRule> = {
   // Markdown → Markdown Editor (root-aware, live preview; upgrades the old
   // notes-only Notepad route for `md`).
   md: MARKDOWN_EDITOR,
   markdown: MARKDOWN_EDITOR,
-  // Text / code → Notepad (Notes root only)
+  // Plain text → Notepad (Notes root only)
   txt: NOTEPAD_ONLY_NOTES,
   log: NOTEPAD_ONLY_NOTES,
-  json: NOTEPAD_ONLY_NOTES,
-  ts: NOTEPAD_ONLY_NOTES,
-  tsx: NOTEPAD_ONLY_NOTES,
-  js: NOTEPAD_ONLY_NOTES,
-  jsx: NOTEPAD_ONLY_NOTES,
-  css: NOTEPAD_ONLY_NOTES,
-  html: NOTEPAD_ONLY_NOTES,
-  sh: NOTEPAD_ONLY_NOTES,
-  py: NOTEPAD_ONLY_NOTES,
+  // Code → Code Editor (Monaco; root-aware, any root — upgrades the old
+  // notes-only Notepad route for these).
+  json: CODE_EDITOR,
+  ts: CODE_EDITOR,
+  tsx: CODE_EDITOR,
+  js: CODE_EDITOR,
+  jsx: CODE_EDITOR,
+  css: CODE_EDITOR,
+  html: CODE_EDITOR,
+  sh: CODE_EDITOR,
+  py: CODE_EDITOR,
+  c: CODE_EDITOR,
+  cpp: CODE_EDITOR,
+  h: CODE_EDITOR,
+  hpp: CODE_EDITOR,
+  go: CODE_EDITOR,
+  rs: CODE_EDITOR,
+  java: CODE_EDITOR,
+  rb: CODE_EDITOR,
+  php: CODE_EDITOR,
+  yaml: CODE_EDITOR,
+  yml: CODE_EDITOR,
+  toml: CODE_EDITOR,
+  xml: CODE_EDITOR,
+  sql: CODE_EDITOR,
   // Documents → viewers (any root)
   pdf: { appId: 'pdf-viewer' },
   pptx: { appId: 'slides' },
@@ -102,6 +119,8 @@ export function openAppLabel(appId: string | null): string {
       return 'Open in Docs'
     case 'markdown-editor':
       return 'Open in Markdown Editor'
+    case 'code-editor':
+      return 'Open in Code Editor'
     case 'image-viewer':
       return 'Open in Image Viewer'
     case 'media-player':

@@ -26,6 +26,10 @@ import { manifest as calendar } from '@imbatranim/calendar'
 import { manifest as imageViewer } from '@imbatranim/image-viewer'
 import { manifest as mediaPlayer } from '@imbatranim/media-player'
 import { manifest as markdownEditor } from '@imbatranim/markdown-editor'
+import { manifest as codeEditor } from '@imbatranim/code-editor'
+import { manifest as gitGui } from '@imbatranim/git-gui'
+import { manifest as restApiClient } from '@imbatranim/rest-api-client'
+import { manifest as archiveManager } from '@imbatranim/archive-manager'
 import type { AddonManifest, AppConfig } from './contract'
 import { COMMAND_SOURCES, registerCommandSource } from './shared/commands/CommandSourcesRegistry'
 
@@ -65,6 +69,10 @@ const MANIFESTS: AddonManifest[] = [
   imageViewer,
   mediaPlayer,
   markdownEditor,
+  codeEditor,
+  gitGui,
+  restApiClient,
+  archiveManager,
 ]
 
 export const APP_REGISTRY: AppConfig[] = MANIFESTS

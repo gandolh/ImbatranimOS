@@ -10,6 +10,9 @@ import { SystemModule } from './modules/system/system.module';
 import { PtyModule } from './modules/pty/pty.module';
 import { FilesModule } from './modules/files/files.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { GitModule } from './modules/git/git.module';
+import { HttpProxyModule } from './modules/http-proxy/http-proxy.module';
+import { ArchiveModule } from './modules/archive/archive.module';
 
 // Prod image only: serve the built frontend from STATIC_ROOT on the API
 // port, with the SPA index.html fallback. API + health are excluded so
@@ -37,6 +40,9 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
     SystemModule,
     PtyModule,
     FilesModule,
+    GitModule,
+    HttpProxyModule,
+    ArchiveModule,
   ],
 })
 export class AppModule {}

@@ -58,9 +58,12 @@ describe('Security hardening (e2e)', () => {
       // Google Fonts must be permitted (CDN @import in the bundled stylesheet).
       expect(csp).toContain('https://fonts.googleapis.com');
       expect(csp).toContain('https://fonts.gstatic.com');
-      // Terminal WebSocket must be reachable.
+      // connect-src is scoped to same-origin only (SEC-9): 'self' covers the
+      // terminal ws/wss on the page's own origin per CSP3, and the bare
+      // ws:/wss: wildcards are gone so an XSS can't open a socket off-origin.
       expect(csp).toContain('connect-src');
-      expect(csp).toMatch(/connect-src[^;]*ws:/);
+      expect(csp).toMatch(/connect-src 'self'(;|$)/);
+      expect(csp).not.toMatch(/connect-src[^;]*\bwss?:/);
     });
 
     it('does NOT set HSTS in-app (that is the reverse proxy job)', async () => {

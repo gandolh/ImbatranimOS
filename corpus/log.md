@@ -791,3 +791,58 @@ audit findings — pre-existing transitive dev-dep advisories, not introduced by
 these client-only apps (no runtime dep added); flagged for a later audit pass,
 not gating this wave. Next: Wave D (heavy/backend — Monaco, git-gui,
 rest-api-client, archive-manager).
+
+## [2026-07-19] qa | First human walkthrough of v1 — findings + fixes
+
+A real person drove the desktop (docker-compose run) and reported issues; this
+session triaged and fixed the writable ones. Fixed:
+
+- **Media Player seek** (backend). `GET /api/files/download` piped the whole
+  file with 200 and no `Accept-Ranges`, so the media element could never seek
+  to an unbuffered position (auto-advance worked because it just plays to the
+  end). Added HTTP Range support: `statFile`/`openRange` in FilesService,
+  206 + `Content-Range`/`Content-Length` + `Accept-Ranges: bytes` +
+  416-on-unsatisfiable in the controller (`parseRangeHeader`), range-less GET
+  still 200. 3 new e2e tests; files e2e 11/11.
+- **Global search scroll-reset** (core). CommandPalette auto-scrolled the
+  active row into view on *every* selectedIndex change, and hover set the
+  selection — so wheel-scrolling dragged the pointer across rows, reselected,
+  and yanked the list back. Now only keyboard nav (`keyboardNavRef`) triggers
+  scrollIntoView, and it queries the real `[aria-selected]` row (the old
+  `children[selectedIndex]` indexed group `<li>` wrappers, not rows).
+- **Git GUI crash** (core). `Select` placed `BaseSelect.Label` *outside*
+  `BaseSelect.Root` → "SelectRootContext is missing" whenever a `label` prop
+  was passed (only git-gui does). Moved Label inside Root; fixes the crash +
+  the nested-`<button>` warning for every Select consumer. core typecheck green.
+- **SEC-9** — CSP `connect-src` tightened from `'self' ws: wss:` to `'self'`
+  (CSP3 covers same-origin ws/wss). Removes the XSS exfiltration wildcard;
+  **needs cross-browser terminal re-verify** (the reason it was left broad).
+
+Decisions this session: **crimson accent CONFIRMED** as the default; the 4
+presets stay selectable in Settings. **VPS+HTTPS deploy dropped from the v1
+bar** (deferred, recipe stays documented). **git tag dropped** — version lives
+in package.json (already 1.0.0 across all 25 workspaces + Dockerfile
+LABEL/IMAGE_VERSION + ISO init; About panel reads it). **Kiosk ISO deferred**
+until the OS is feature-complete. **Code-editor VS-Code-style File menu**
+(open / open-recent) → **v1.\*** (post-1.0).
+
+Not done / needs a decision:
+
+- **Clock timer off-by-one** (05:00 flashes 05:01 at Start — stale `useNow`
+  tick makes `endAt - now` momentarily exceed durationMs and round up). Fix is
+  a one-line clamp to `durationMs`; **BLOCKED — `apps/add-ons/clock/src` is
+  read-only** (owned by `imbatranim`, group `imbdev` has no write; same for
+  git-gui/calendar/media-player/code-editor/… — every Wave C/D add-on source
+  dir, created with a restrictive umask during the autonomous run). Patch saved
+  to scratchpad `clock-timer-fix.patch`. Unblock: `sudo chmod -R g+w
+  apps/add-ons/*/src` (needs the sudo password this session doesn't have).
+- **uuid advisories** — `npm audit` now shows 6 moderate (uuid `<11.1.1`,
+  bounds-check-on-`buf`) via `exceljs` (Sheets) + `pptx-preview` (Slides). NOT
+  exploitable here (both use random `v4`, never `buf`). The brief-15 "dep
+  bumps" (`@nestjs/platform-express`, multer) are already at latest (11.1.28 /
+  multer 2.2.0); **axios is not a dependency at all**. The clean surgical fix
+  (root `overrides` → uuid `^11.1.1`) is **silently ignored by npm here** (never
+  written to the lockfile even via `--package-lock-only`); it only takes with a
+  full `rm -rf node_modules` reinstall, not run unattended given native modules
+  (argon2/better-sqlite3/node-pty) and no way to smoke-test Sheets/Slides.
+  Left at baseline (6 moderate, lockfile unchanged) pending a decision.

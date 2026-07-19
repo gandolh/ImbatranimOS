@@ -110,6 +110,31 @@ describe('Files (e2e) — auth + binary round-trip', () => {
         .parse(binaryParser)
         .expect(200);
       expect((res.body as Buffer).equals(bytes)).toBe(true);
+      // Range-less GET still advertises range support so a media element knows
+      // it can seek (this is what makes the Media Player scrubber work).
+      expect(res.headers['accept-ranges']).toBe('bytes');
+    });
+
+    it('serves a byte range as 206 Partial Content (media seek)', async () => {
+      // bytes=2-5 → the inclusive middle slice [0xff, 0x80, 0x7f, 0x00].
+      const res = await http
+        .get('/api/files/download?root=home&path=uploads/blob.bin')
+        .set('Cookie', cookie)
+        .set('Range', 'bytes=2-5')
+        .buffer(true)
+        .parse(binaryParser)
+        .expect(206);
+      expect(res.headers['content-range']).toBe(`bytes 2-5/${bytes.length}`);
+      expect(res.headers['content-length']).toBe('4');
+      expect((res.body as Buffer).equals(bytes.subarray(2, 6))).toBe(true);
+    });
+
+    it('answers 416 for a range past the end of the file', async () => {
+      await http
+        .get('/api/files/download?root=home&path=uploads/blob.bin')
+        .set('Cookie', cookie)
+        .set('Range', `bytes=${bytes.length}-${bytes.length + 10}`)
+        .expect(416);
     });
   });
 

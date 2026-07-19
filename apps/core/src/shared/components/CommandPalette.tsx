@@ -34,6 +34,11 @@ export function CommandPalette({ open, onClose }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Only keyboard navigation should auto-scroll the active row into view.
+  // Mouse hover also moves the selection (onMouseEnter below), and if that
+  // scrolled too, wheel-scrolling — which drags the pointer across rows —
+  // would yank the list back to the hovered item and cancel the user's scroll.
+  const keyboardNavRef = useRef(false)
 
   // Reset query + selection when the palette opens — state adjustment during
   // render instead of an effect (react.dev/you-might-not-need-an-effect)
@@ -81,9 +86,11 @@ export function CommandPalette({ open, onClose }: Props) {
     (e: React.KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
+        keyboardNavRef.current = true
         setSelectedIndex((i) => Math.min(i + 1, items.length - 1))
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
+        keyboardNavRef.current = true
         setSelectedIndex((i) => Math.max(i - 1, 0))
       } else if (e.key === 'Enter') {
         e.preventDefault()
@@ -99,10 +106,15 @@ export function CommandPalette({ open, onClose }: Props) {
     [items, selectedIndex, onClose]
   )
 
-  // Scroll selected item into view
+  // Scroll the selected row into view, but ONLY when the selection was moved
+  // by the keyboard — never on mouse-hover selection, or wheel-scrolling would
+  // fight itself. Query the actual selected option: the <ul>'s direct children
+  // are per-group <li> wrappers, not the individual rows, so indexing children
+  // by selectedIndex would scroll the wrong element.
   useEffect(() => {
-    if (!listRef.current) return
-    const el = listRef.current.children[selectedIndex] as HTMLElement | undefined
+    if (!keyboardNavRef.current) return
+    keyboardNavRef.current = false
+    const el = listRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')
     el?.scrollIntoView({ block: 'nearest' })
   }, [selectedIndex])
 

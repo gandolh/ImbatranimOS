@@ -13,10 +13,13 @@ import type { Request, Response, NextFunction } from 'express';
  *                                the bundled stylesheet, so fonts.googleapis.com
  *                                must be an allowed style source.
  *  - font-src   fonts.gstatic.com — where Google Fonts serves the woff2 files.
- *  - connect-src 'self' ws: wss: — same-origin API (XHR) plus the terminal
- *                                WebSocket (/api/pty). ws:/wss: kept explicit so
- *                                the terminal works across browsers regardless
- *                                of how each treats 'self' for WebSocket.
+ *  - connect-src 'self'        — same-origin API (XHR) plus the terminal
+ *                                WebSocket (/api/pty). Per CSP3, 'self' covers
+ *                                ws://wss:// on the page's own origin, so the
+ *                                bare ws:/wss: wildcards (SEC-9) are dropped —
+ *                                an XSS can no longer open a socket to an
+ *                                attacker host. Re-verify the terminal connects
+ *                                on each target browser after this tightening.
  *  - frame-ancestors 'none'    — clickjacking defence (pairs with X-Frame-Options).
  *
  * HSTS is intentionally NOT set here — TLS is terminated by the reverse proxy
@@ -33,7 +36,7 @@ const CSP = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "script-src 'self'",
-  "connect-src 'self' ws: wss:",
+  "connect-src 'self'",
 ].join('; ');
 
 /**

@@ -24,13 +24,13 @@ export function Select({
   ...props
 }: SelectProps) {
   return (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <BaseSelect.Label className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
-          {label}
-        </BaseSelect.Label>
-      )}
-      <BaseSelect.Root {...props}>
+    <BaseSelect.Root {...props}>
+      <div className="flex flex-col gap-1">
+        {label && (
+          <BaseSelect.Label className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
+            {label}
+          </BaseSelect.Label>
+        )}
         <BaseSelect.Trigger
           className={cn(
             'border-outline-variant bg-surface-container-low flex w-full items-center justify-between border px-2.5 py-1.5',
@@ -74,7 +74,7 @@ export function Select({
             </BaseSelect.Popup>
           </BaseSelect.Positioner>
         </BaseSelect.Portal>
-      </BaseSelect.Root>
-    </div>
+      </div>
+    </BaseSelect.Root>
   )
 }

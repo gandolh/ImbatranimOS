@@ -369,14 +369,35 @@ export class FilesService {
     return { path: virtualPath, content };
   }
 
-  async readFileStream(root: string, virtualPath: string): Promise<Readable> {
+  /**
+   * Resolve a file inside the jail and return its absolute path + size,
+   * validated (exists, not a directory). Used by the download route to build
+   * Range responses without a second resolve/stat when it opens the stream.
+   */
+  async statFile(
+    root: string,
+    virtualPath: string,
+  ): Promise<{ abs: string; size: number }> {
     const { abs } = await this.resolveSafe(root, virtualPath);
     if (!(await this.exists(abs)))
       throw new NotFoundException('File not found');
     const stat = await fs.stat(abs);
     if (stat.isDirectory())
       throw new BadRequestException('Path is a directory');
+    return { abs, size: stat.size };
+  }
+
+  async readFileStream(root: string, virtualPath: string): Promise<Readable> {
+    const { abs } = await this.statFile(root, virtualPath);
     return createReadStream(abs);
+  }
+
+  /**
+   * Open a byte range of an already-jailed absolute path (from `statFile`).
+   * `start`/`end` are inclusive, as HTTP Range semantics require.
+   */
+  openRange(abs: string, start: number, end: number): Readable {
+    return createReadStream(abs, { start, end });
   }
 
   async writeFile(

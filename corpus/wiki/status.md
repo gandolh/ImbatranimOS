@@ -1,7 +1,18 @@
 ---
 summary: Dated snapshot — web-OS era; briefs 08–14 + 16–46 DONE. The 2026-07-18 full-auto daily-driver backlog (34–46) is COMPLETE: CORE notification center (34), Wave C's six light apps (35–40), Wave D's four heavy/backend apps (41–44: Monaco code-editor + git-gui + REST client + archive-manager, the backend three authed+jailed, adversarially security-reviewed + hardened), and Wave E's two CORE platform surfaces (45 global search launcher, 46 add-on manager). Desktop = 23 apps; 135 backend tests. Only human-gated items remain before v1.0: SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated), brief 15's v1-release remainder, and per-brief human walkthroughs.
-updated: 2026-07-18
+updated: 2026-07-19
 ---
+
+> **2026-07-19 — first human walkthrough.** Fixed from real QA: Media Player
+> seek (backend HTTP Range support, +3 e2e), global-search scroll-reset and
+> Git GUI Select crash (both core), SEC-9 CSP tightened to `'self'`. Decided:
+> crimson accent confirmed (presets stay), VPS deploy + git tag dropped from
+> the v1 bar (version lives in package.json, already 1.0.0), kiosk ISO +
+> code-editor File menu deferred post-1.0. Open: Clock timer off-by-one fix is
+> written but BLOCKED on read-only `apps/add-ons/*/src` perms (patch in
+> scratchpad); 6 non-exploitable moderate `uuid` audit findings await a
+> decision (npm `overrides` is ignored in this workspace). Full detail in
+> [../log.md](../log.md) 2026-07-19 + [decisions.md](decisions.md) 2026-07-19.
 
 # Status — 2026-07-17
 

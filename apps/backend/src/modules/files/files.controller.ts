@@ -8,6 +8,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   Res,
   UploadedFile,
   UseFilters,
@@ -16,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { basename } from 'path';
 import { tmpdir } from 'os';
 import { FilesService } from './files.service';
@@ -65,17 +66,45 @@ export class FilesController {
     return this.filesService.readFile(q.root, q.path);
   }
 
-  /** GET /api/files/download?root=&path= → raw binary stream */
+  /**
+   * GET /api/files/download?root=&path= → raw binary stream.
+   *
+   * Honors HTTP Range requests (206 Partial Content + Content-Range) so the
+   * media player can seek: without this the browser only ever receives the
+   * whole file from byte 0 and can't jump to an unbuffered position. The Files
+   * "Download" button issues a plain (range-less) GET and still gets a 200.
+   */
   @Get('download')
-  async download(@Query() q: RootPathQueryDto, @Res() res: Response) {
-    const stream = await this.filesService.readFileStream(q.root, q.path);
+  async download(
+    @Query() q: RootPathQueryDto,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const { abs, size } = await this.filesService.statFile(q.root, q.path);
     const filename = basename(q.path);
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="${sanitizeHeaderFilename(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
     );
     res.setHeader('Content-Type', 'application/octet-stream');
-    stream.pipe(res);
+    res.setHeader('Accept-Ranges', 'bytes');
+
+    const range = parseRangeHeader(req.headers.range, size);
+    if (range === 'unsatisfiable') {
+      res.setHeader('Content-Range', `bytes */${size}`);
+      res.status(416).end();
+      return;
+    }
+    if (range) {
+      res.status(206);
+      res.setHeader('Content-Range', `bytes ${range.start}-${range.end}/${size}`);
+      res.setHeader('Content-Length', range.end - range.start + 1);
+      this.filesService.openRange(abs, range.start, range.end).pipe(res);
+      return;
+    }
+
+    res.setHeader('Content-Length', size);
+    (await this.filesService.readFileStream(q.root, q.path)).pipe(res);
   }
 
   /** POST /api/files/upload  multipart: root, path, file → Entry */
@@ -140,4 +169,38 @@ export class FilesController {
 function sanitizeHeaderFilename(name: string): string {
   // eslint-disable-next-line no-control-regex
   return name.replace(/["\\\x00-\x1f]/g, '_');
+}
+
+/**
+ * Parse a single-range `Range: bytes=…` header against a known file size.
+ * Returns the inclusive byte range to serve, `null` when there is no usable
+ * range (serve the whole file with 200), or `'unsatisfiable'` when the range
+ * is syntactically valid but outside the file (answer 416). Multi-range
+ * requests are intentionally ignored (treated as no range) — the media player
+ * only ever asks for one.
+ */
+function parseRangeHeader(
+  header: string | undefined,
+  size: number,
+): { start: number; end: number } | 'unsatisfiable' | null {
+  if (!header) return null;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+  if (!match) return null;
+  const [, startStr, endStr] = match;
+  if (startStr === '' && endStr === '') return null;
+
+  let start: number;
+  let end: number;
+  if (startStr === '') {
+    // Suffix form `bytes=-N`: the last N bytes.
+    const suffix = Number(endStr);
+    if (suffix <= 0) return 'unsatisfiable';
+    start = Math.max(0, size - suffix);
+    end = size - 1;
+  } else {
+    start = Number(startStr);
+    end = endStr === '' ? size - 1 : Math.min(Number(endStr), size - 1);
+  }
+  if (start > end || start >= size || start < 0) return 'unsatisfiable';
+  return { start, end };
 }

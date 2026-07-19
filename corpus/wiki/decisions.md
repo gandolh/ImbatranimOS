@@ -149,6 +149,26 @@ Changing any entry requires an explicit revisit + a `log.md` entry.
   the same wave (42/44) reuse `FilesService.resolveSafe` for their FS jail and
   run subprocesses with array args / no shell.
 
+## 2026-07-19 — v1 finish-line decisions (first human walkthrough)
+
+Locked during the first real human QA pass of the desktop:
+
+- **Crimson accent is the confirmed default** (was provisional since brief 14).
+  The other 3 presets stay user-selectable in Settings — not dropped.
+- **VPS + HTTPS deploy is NOT a v1 gate.** Deferred; the Caddy reverse-proxy
+  recipe stays documented for whoever deploys. Brief 15's acceptance is
+  relaxed accordingly.
+- **No git tags.** The release version lives in `package.json` (already 1.0.0
+  across all 25 workspaces) + Dockerfile `LABEL`/`IMAGE_VERSION` + ISO init;
+  the About panel reads it at runtime. "Tag v1.0" in brief 15 is void.
+- **Kiosk ISO deferred until the OS is feature-complete** — do not treat the
+  ISO (brief 18) or its SEC-10 `--no-sandbox` as v1 work.
+- **Code-editor VS-Code-style File menu** (open / open-recent) → **v1.\***,
+  post-1.0. Not a 1.0 blocker.
+- **SEC-9 acted on**: CSP `connect-src` tightened to `'self'` (dropped the
+  `ws:`/`wss:` wildcards). Carries a manual cross-browser terminal re-verify
+  before it's considered proven — that browser check is the remaining gate.
+
 ## Superseded (ISO era, 2026-07-16 — record only)
 
 Ubuntu 26.04 + LXQt/X11 install-on-hardware distro; hand-rolled

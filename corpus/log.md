@@ -846,3 +846,26 @@ Not done / needs a decision:
   full `rm -rf node_modules` reinstall, not run unattended given native modules
   (argon2/better-sqlite3/node-pty) and no way to smoke-test Sheets/Slides.
   Left at baseline (6 moderate, lockfile unchanged) pending a decision.
+
+## [2026-07-19] design | OS-layering grilling — the compositor seam
+
+Grilled the `os-architecture-layering-research` todo end-to-end (grill-me).
+Drivers resolved as (b) SSH-session feel + (c) app isolation + (d) soul — not
+app-layer pain. Locked a three-layer model (kernel/userland ↔ compositor/display
+↔ apps) with the app↔OS seam as an **injected `system` capability handle**
+(mechanism B, not narrowed imports — so the transport can swap from direct calls
+to sandboxed-iframe postMessage later without rewriting apps). Bisected the
+`@imbatranim/core` barrel by "can it cross postMessage?": components/hooks →
+`@imbatranim/ui` (library), data/effects → `system.{fs,http,window,intents,
+notify,on}`. New session/dotfile split: ephemeral per-tab window layout (fixes
+the shared-`localStorage` stomp bug) + durable `$HOME` dotfiles for user config.
+Kill-list: no runtime package manager, no session-manager daemon, no D-Bus. App
+isolation = per-window error boundaries now (first-party threat model); hard
+sandboxing gated on third-party apps arriving. DOM stays the substrate;
+canvas/WebGPU (raw-surface primitive + effects overlay) parked, not rejected.
+**Notable: this reopened no locked decision — it reinforces the client-rendered
+desktop and first-party/build-from-source locks.** Recorded in
+[wiki/decisions.md](wiki/decisions.md) + new page
+[wiki/os-layering.md](wiki/os-layering.md); todo promoted to briefs 47
+(per-window error boundaries) + 48 (the protocol seam) + 49 (ephemeral per-tab
+session + durable server-side dotfiles); todo removed.

@@ -169,6 +169,30 @@ Locked during the first real human QA pass of the desktop:
   `ws:`/`wss:` wildcards). Carries a manual cross-browser terminal re-verify
   before it's considered proven — that browser check is the remaining gate.
 
+## 2026-07-19 — OS layering / the compositor seam
+
+Architecture-direction grilling. Canonical design: [os-layering.md](os-layering.md);
+locked calls only below. **Reinforces existing locks — reopens none** (confirms
+client-rendered desktop; single-container/build-from-source/no-sudo/first-party untouched).
+
+- **Three-layer model:** kernel+userland (backend = syscall/init bridge) ↔
+  compositor+display (browser tab = display, core window-manager = compositor,
+  client **by necessity** — no server-side compositor/pixel-streaming) ↔ apps.
+- **Seam = injected `system` capability handle (mechanism B), not narrowed
+  imports** — app imports nothing from core, `SystemHandle` is the protocol spec,
+  transport swaps (direct-call → iframe postMessage) without app rewrites. Barrel
+  bisects by "can it cross postMessage?": components/hooks → `@imbatranim/ui`
+  (library); data/effects → `system.{fs,http,window,intents,notify,on}`
+  (`system.http` = lone escape hatch, per-app restrictable later).
+- **Session vs dotfile split:** session = ephemeral per-tab in-memory window layout
+  (fixes the shared-`localStorage` stomp bug); user config (wallpaper, accent, icon
+  positions, pinned taskbar) = durable `$HOME` dotfiles, shared; tmux reattach = future.
+- **Isolation = per-window error boundaries now (brief 47)** (first-party threat
+  = buggy, not malicious); hard sandboxing = the transport swap, gated on
+  third-party apps. **Kill-list (NOT built):** runtime package manager
+  (`manifest.ts` is it), session-manager daemon, app-to-app IPC/D-Bus. **DOM
+  stays substrate; canvas/WebGPU parked.** Specs: briefs 47 (first), 48, 49.
+
 ## Superseded (ISO era, 2026-07-16 — record only)
 
 Ubuntu 26.04 + LXQt/X11 install-on-hardware distro; hand-rolled

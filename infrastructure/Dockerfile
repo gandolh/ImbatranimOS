@@ -12,7 +12,7 @@
 # ---------------------------------------------------------------------------
 # deps — full workspace install (dev + prod), with native build toolchain
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS deps
+FROM node:24.14.1-alpine AS deps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
 # Manifests first for layer caching: one root lockfile, one npm ci.
@@ -40,7 +40,7 @@ RUN VITE_API_URL=/api npx turbo build
 # ---------------------------------------------------------------------------
 # proddeps — production-only node_modules (native modules compiled here)
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS proddeps
+FROM node:24.14.1-alpine AS proddeps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -69,7 +69,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 # prod — slim runtime: no compiler, runs as the unprivileged imbatranim user
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS prod
+FROM node:24.14.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
       org.opencontainers.image.version="1.0.0"
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \

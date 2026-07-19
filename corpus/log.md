@@ -869,3 +869,32 @@ desktop and first-party/build-from-source locks.** Recorded in
 [wiki/os-layering.md](wiki/os-layering.md); todo promoted to briefs 47
 (per-window error boundaries) + 48 (the protocol seam) + 49 (ephemeral per-tab
 session + durable server-side dotfiles); todo removed.
+
+## [2026-07-19] research+grill | Web browser (Tier-2 proxy) + containerized dev pipeline
+
+Researched the "add a web navigator" ask (2026 MV3 landscape, service-worker
+proxies) and grilled it end-to-end (grill-me). It is **not** a Chrome add-on —
+it's a Browser desktop app for ImbatranimOS, which is itself a React desktop in
+a tab. Resolved the tree: **Tier 2 proxied-interactive** (real sites, not
+reader/headless); engine = **Scramjet** (Mercury Workshop, service-worker +
+WASM rewriter + Wisp backend, AGPL-3.0, consumed as **prebuilt dist** — no
+Rust); the "without iframes" idea dropped (blocker was `X-Frame-Options`/CSP,
+not iframes; the sandboxed iframe is the point). Housing = **OS capability**
+(backend Wisp module + core SW registration + `<ProxyView>` via the barrel;
+thin add-on) rather than a self-contained add-on. **Egress = auth-gate + SSRF
+filter that blocks private ranges — deliberately the OPPOSITE of brief 43's
+REST-client stance** (there the owner types every URL; here arbitrary
+third-party JS drives the proxy, so an XSS = SSRF cannon). Profile = **OS-level,
+synced, encrypted** cookie jar in the home volume/db (follows the container,
+not the laptop). v1 = **thin MVP** (URL bar + back/fwd/reload, prove Google +
+YouTube; reuse Bookmarks via `openApp`); DRM/Widevine out of scope. → **brief
+50**. Mid-grill the user also asked to containerize dev: `npm run dev` →
+**`docker compose --profile dev watch`** (sync `apps/**`, ignore node_modules —
+kills the stale hand-listed anonymous volumes), plus **de-staling the Dockerfile
+`deps`/`proddeps` manifest lists** (same 7-of-24 rot — the real blocker to
+"contained"), host tooling reduced to Node/npm via `npm install
+--ignore-scripts` (Dev Containers rejected). → **brief 51**. **Notable: reopened
+no locked decision** — reinforces auth-everywhere, lightweight, build-from-
+source; adds a second (stricter) SSRF stance to record alongside brief 43's.
+Both briefs land in `briefs/todo/`; decisions to be recorded in
+`wiki/decisions.md` when the work executes (per the brief-43 pattern).

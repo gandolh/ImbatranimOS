@@ -171,3 +171,20 @@ todos in `todos/`. All gates were green at the time (80 unit tests, typecheck
 - **Excluded from the auto-run (human-gated, do NOT build autonomously):** SEC-9
   (`csp-connect-src-ws-wildcard`), SEC-10 (`kiosk-no-sandbox`), and brief 15's
   v1-release remainder.
+
+## 2026-07-19 — Web browser + containerized dev pipeline (grilled)
+
+Two briefs from a research+grill session ("add a web navigator"). Both **todo**.
+
+- **Brief 50 — web browser (proxied-interactive): todo.** HARD. Tier-2 proxy
+  via **Scramjet** (prebuilt dist, AGPL, no Rust); OS-capability housing
+  (backend Wisp module + core SW/`<ProxyView>` + thin add-on); **auth-gate +
+  SSRF filter** (blocks private ranges — the stricter opposite of brief 43);
+  OS-level encrypted profile sync; thin MVP (prove Google + YouTube, reuse
+  Bookmarks via `openApp`); DRM out of scope. Forces scoped CSP additions
+  (intersects SEC-9). Depends on 51. Security-reviewed before commit.
+- **Brief 51 — containerized dev pipeline + Dockerfile de-stale: todo.** MEDIUM.
+  `npm run dev` → `docker compose --profile dev watch` (sync `apps/**`, ignore
+  node_modules); de-stale the `deps`/`proddeps` manifest lists (7-of-24 rot —
+  the real "contained" blocker); host tooling = Node/npm via `npm install
+  --ignore-scripts`. Prod path unchanged. Unblocks brief 50.

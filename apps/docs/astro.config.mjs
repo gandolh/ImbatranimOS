@@ -36,11 +36,20 @@ export default defineConfig({
           label: 'Start here',
           items: [
             { label: 'Overview', link: '/' },
+            { label: 'A tour of the desktop', link: '/tour/' },
             { label: 'Architecture at a glance', link: '/architecture/' },
           ],
         },
         {
-          label: 'Design & architecture',
+          label: 'Understand the OS',
+          items: [
+            { label: 'The ideas that empower it', link: '/ideas/' },
+            { label: 'The technology', link: '/stack/' },
+            { label: 'Patterns & techniques', link: '/patterns/' },
+          ],
+        },
+        {
+          label: 'Deep dive — from the corpus',
           items: [
             { label: 'What it is', link: '/wiki/overview/' },
             { label: 'Architecture', link: '/wiki/architecture/' },

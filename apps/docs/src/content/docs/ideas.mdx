@@ -1,0 +1,136 @@
+---
+title: The ideas that empower it
+description: Six load-bearing ideas — real not simulated, one container one port, data not pixels, no sudo, lightweight as identity, and a versioned seam — that every decision in the project is measured against.
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
+
+ImbatranimOS is small on purpose. It has no unique algorithm and no giant
+feature list — what holds it together is a handful of ideas that every decision
+gets measured against. When a choice is hard, one of these settles it. They are
+the project's *soul*: break one and it stops being this project.
+
+## 1 · Real, not simulated
+
+The Terminal is a real shell (`node-pty`) running as an unprivileged user inside
+the container. Files browses the container's **actual** home directory. System
+Monitor reads the **actual** `/proc`. Nothing is a mock of a terminal or a
+pretty fake of a filesystem.
+
+> **The invariant:** the OS is real, not simulated. Anything that fakes the
+> system is *off-soul* and gets rejected in review — no matter how convenient.
+
+This is the idea that makes the whole thing worth building. A simulated desktop
+is a UI demo; a real one is a computer you reach through a browser tab.
+
+## 2 · One container is the computer
+
+`docker run` one thing and you have a whole machine: its own filesystem, its own
+shell, its own process table. There is no orchestration, no sidecar, no external
+database — the SQLite app DB lives inside the same `/home/imbatranim` volume as
+your files. Delete the container, keep your computer: the named volume is what
+persists.
+
+<Aside type="tip" title="The friend-run bar">
+  The finish line is a person, not a checklist: a tech-tolerant friend with
+  Docker runs **one** documented command, opens a browser, logs in, and uses the
+  terminal, files, and notes — with no help from you. If that needs a second
+  step, it isn't done.
+</Aside>
+
+## 3 · The server streams data, never pixels
+
+The browser tab is the **display** — pixels, GPU, input. The window manager is
+the **compositor**, and it lives client-side *by physical necessity*: rendering
+happens in the browser. The authoritative server streams **data** — PTY bytes,
+filesystem entries, `/proc` samples — and never a single rendered frame.
+
+The alternative, a server-side compositor, means VNC or pixel-streaming. That
+would blow the slim-image budget and throw away the real DOM (text selection,
+accessibility, IME). So it's ruled out — not as a preference, but because it
+contradicts idea #5.
+
+<CardGrid>
+  <Card title="Because data, not pixels…" icon="approve-check">
+    the image stays slim, the DOM stays real, and one authenticated port carries
+    the whole system.
+  </Card>
+  <Card title="It also means…" icon="information">
+    every capability an app has is a **data call** to the kernel bridge — which
+    is exactly what makes the seam (idea #6) possible.
+  </Card>
+</CardGrid>
+
+## 4 · No sudo, ever
+
+Everything — the shell you get in Terminal, the process serving the desktop —
+runs as `imbatranim`, an unprivileged user. There is no sudo by default and the
+container is never meant to run as root. Because instances are
+**internet-exposable by design**, auth is real from day one: a single owner, an
+argon2id-hashed password (no default password, *ever*), optional TOTP, per-IP
+login throttling with exponential backoff, and an Origin check on every mutating
+request. No route and no WebSocket ships without session validation.
+
+## 5 · Lightweight is identity
+
+"Lightweight" isn't a nice-to-have; it's how the project knows itself. But it's
+measured honestly — **cold-start time and idle RAM**, not just image bytes
+(NestJS puts the floor around 300 MB, and the reuse it buys is worth far more
+than the bytes). A new dependency needs a *reason*. That single rule is why the
+office suite runs on client-side JS engines instead of a LibreOffice server, and
+why nearly every app across the daily-driver backlog shipped with **zero new
+dependencies**.
+
+import Metrics from '../../components/Metrics.astro'
+
+<Metrics
+  items={[
+    { v: '385', unit: 'MB', k: 'prod image' },
+    { v: '1.42', unit: 's', k: 'cold start' },
+    { v: '41', unit: 'MiB', k: 'idle RAM' },
+    { v: '23', k: 'desktop apps' },
+    { v: '135', k: 'backend tests' },
+  ]}
+/>
+
+## 6 · The seam is a protocol, not a habit
+
+An OS is defined by the line between the system and the programs that run on it.
+Here that line is deliberate: each app receives an injected `system` handle at
+mount and **imports nothing from core** — like a Wayland client connection or VS
+Code's `ExtensionContext`. Because the handle is just an object passed in, the
+same app code works whether it's backed by direct calls (today) or `postMessage`
+to a sandboxed iframe (later). The `SystemHandle` TypeScript interface **is** the
+protocol spec.
+
+This is what keeps the project from collapsing into "one big React app that does
+everything." See exactly how it works in
+[Patterns & techniques](/patterns/#the-seam) and
+[OS layering](/wiki/os-layering/).
+
+## The corollary: what we refuse to build
+
+Ideas cut both ways. Because the six above are load-bearing, a matching
+**kill-list** is too — real-Linux concepts that would be cargo-cult here:
+
+<CardGrid>
+  <Card title="No runtime package manager" icon="close">
+    Single user, build-from-source. `manifest.ts` **is** the package system until
+    apps come from outside the repo.
+  </Card>
+  <Card title="No session-manager daemon" icon="close">
+    Auth plus the per-tab ephemeral session **is** the session manager. Don't
+    build a second thing.
+  </Card>
+  <Card title="No app-to-app IPC bus" icon="close">
+    Star topology: apps talk to the compositor and the kernel, never to each
+    other. No D-Bus analog.
+  </Card>
+</CardGrid>
+
+<Aside>
+  These ideas are enforced, not just aspired to. The locked, dated record —
+  including every choice that was revisited and why — lives in
+  [Decisions](/wiki/decisions/); the layering design is in
+  [OS layering](/wiki/os-layering/).
+</Aside>

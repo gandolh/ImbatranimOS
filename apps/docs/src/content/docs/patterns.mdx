@@ -1,0 +1,236 @@
+---
+title: Patterns & techniques
+description: The recurring engineering moves behind ImbatranimOS — the add-on seam, the FS jail, the bounded SSRF proxy, off-thread workers, lazy-loading, virtualization, and the auth stack — with the numbers and rationale that back each one.
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
+
+Most of ImbatranimOS is the same handful of techniques applied over and over.
+Learn these seven and the codebase stops having surprises — a new app, a new
+backend module, a new perf fix all fall into a shape you've already seen. Each
+pattern below is load-bearing, shipped, and measured.
+
+---
+
+## The seam — apps receive a capability handle
+
+**Problem:** if every app imports freely from core, "core" becomes a junk drawer
+and there is no line between the OS and the programs on it. You can never
+sandbox an app because it's wired into everything.
+
+**The technique:** the compositor hands each app a `system` handle at mount. The
+app **imports nothing from core** — it only receives this object. The
+`SystemHandle` TypeScript interface *is* the protocol.
+
+```ts
+// An app is a function of its capabilities — nothing more.
+function StickyNotes({ system }: { system: SystemHandle }) {
+  const text = await system.fs.read('~/notes/sticky.txt')
+  system.window.setTitle('Sticky Notes')
+  system.on('close-request', save)
+}
+```
+
+The barrel bisects by one objective rule — **can it cross `postMessage`?**
+
+<CardGrid>
+  <Card title="No → it's a library" icon="puzzle">
+    A component or render hook (`Button`, `Dialog`, `useVirtualList`) → lives in
+    `@imbatranim/ui`, a build-time import. Like linking libc. Never crosses the
+    seam.
+  </Card>
+  <Card title="Yes → it's a capability" icon="random">
+    A data call or effect → a namespace on the handle:
+    `system.{fs, http, window, intents, notify, on}`. This is what could travel
+    to a sandboxed iframe unchanged.
+  </Card>
+</CardGrid>
+
+**Why it pays off:** swap the transport (direct call → iframe `postMessage`) and
+no app is rewritten. Hard sandboxing is then just an implementation of the same
+interface — gated on third-party apps actually arriving, not built
+speculatively. `system.http` is the single escape hatch (an app calling its own
+backend), deliberately designed to become a per-app permission later.
+
+<Aside>
+  Full design: [OS layering — the compositor seam](/wiki/os-layering/). The
+  interface shows up in the [Core reference](/reference/core/) the moment it
+  lands.
+</Aside>
+
+---
+
+## The add-on pattern — a package plus one line
+
+**Problem:** apps should be addable and removable without touching the OS, and
+the boundary must not rot the moment someone's in a hurry.
+
+**The technique:** every windowed app is a workspace package under
+`apps/add-ons/<name>/` that exports a `manifest`. Core learns about it in exactly
+**one** file:
+
+```ts
+// apps/core/src/manifest.ts — the ONLY file allowed to import add-ons.
+import { manifest as stickyNotes } from '@imbatranim/sticky-notes'
+export const apps = [/* … */, stickyNotes]   // one import + one array entry
+```
+
+The boundary is **eslint-enforced in both directions**: add-ons may import only
+core's public surface (`@imbatranim/core`), and nothing but `manifest.ts` may
+import an add-on. `manifest.ts` *is* the package system — which is precisely why
+[the kill-list](/ideas/#the-corollary-what-we-refuse-to-build) has no runtime
+package manager. A star topology falls out of this: apps talk to the compositor
+and the kernel, never to each other.
+
+---
+
+## The FS jail — resolve, then re-validate
+
+**Problem:** any backend that touches the filesystem on behalf of a browser is
+one `../../../etc/passwd` away from disaster — and symlinks, zip entries, and tar
+paths are all sneakier versions of the same attack.
+
+**The technique:** one function, `FilesService.resolveSafe`, resolves a
+requested path against the jail root and refuses anything that escapes it
+(traversal *and* symlink). Every FS-touching module reuses it — Files, global
+search, git, and the archive manager all go through the same door.
+
+<Aside type="caution" title="The subtle part: re-validate per entry">
+  Archive extraction can't validate the archive once — a malicious zip carries
+  its traversal **inside** each entry name. So the archive manager re-runs
+  `resolveSafe` on **every** entry (zip-slip-proof), walks temp + realpath, bounds
+  the decompression ratio (an amplification-DoS fix), and guards against
+  hardlinks. 13 tests and an adversarial security review back it.
+</Aside>
+
+The same discipline shows up in the backend git and archive modules: subprocesses
+run with **array args and no shell**, a `--` guard, literal pathspecs, and a
+jailed working directory.
+
+---
+
+## The bounded proxy — trusted owner, bounded blast radius
+
+**Problem:** the REST API Client needs to make arbitrary outbound HTTP, but the
+SPA's CSP (`connect-src 'self'`) and CORS block direct browser fetches. So it
+goes through the backend — which is the textbook setup for an SSRF hole.
+
+**The technique — and the key insight:** the proxy sits behind the global
+`SessionAuthGuard`, so **only the single logged-in owner can call it**. That
+owner-auth is the *primary* control. It's the owner's own `curl`, not an open
+relay — so it deliberately **may** reach LAN/localhost by design (hard-blocking
+private ranges would gut the tool). What's bounded is the *blast radius*, not the
+destinations:
+
+| Guardrail | What it does |
+|---|---|
+| Scheme allowlist | http/https only, re-checked on **every** redirect hop, never downgrading |
+| Response caps | 10 MB streamed body (then abort + `truncated`), 30 s timeout |
+| Redirect cap | 5 hops, manual, scheme re-validated per hop |
+| Header hygiene | hop-by-hop + `proxy-*` stripped; the owner's Authorization/Cookie dropped on cross-host redirect |
+| No credential reflection | the OS session cookie is **never** forwarded; CRLF rejected in URL + headers |
+
+<Aside>
+  The reverse case is instructive: the *web browser* brief (post-v1) uses the
+  **stricter opposite** — it blocks private ranges — because it proxies untrusted
+  remote pages, not the owner's deliberate requests. Same mechanism, opposite
+  policy, chosen by who's trusted. Full stance:
+  [Decisions → SSRF](/wiki/decisions/).
+</Aside>
+
+---
+
+## Keep the main thread free — lazy chunks + off-thread workers
+
+Two independent moves, one goal: the desktop boots fast and never janks.
+
+**Lazy everything heavy.** Every app shell and Settings is a `React.lazy`
+boundary behind a `<Suspense>` in the window container. Adding an app — even one
+carrying Monaco — must not grow the boot bundle. It works:
+
+import Metrics from '../../components/Metrics.astro'
+
+<Metrics
+  items={[
+    { v: '399.6', unit: 'KB', k: 'eager bundle before' },
+    { v: '121.5', unit: 'KB', k: 'after (gzip)' },
+    { v: '-69.6', unit: '%', k: 'boot payload' },
+  ]}
+/>
+
+**Move the CPU off the UI thread.** Anything that would freeze the desktop gets a
+worker. The whole ExcelJS xlsx round-trip runs in a lazy Vite module worker
+(request-id correlation + transferable buffers), so `exceljs` isn't even on the
+main thread's module graph. Docx unzip/zip uses `fflate`'s async API, off-thread,
+with byte-identical output. The app code above the bridge never changes.
+
+---
+
+## Only re-render what moved — selectors, memo, and `getState()`
+
+**Problem:** a live desktop re-renders constantly — a dragged window, a process
+table refreshing every 1.5 s, a directory of thousands of files. Naïvely, each of
+those reconciles far too much.
+
+**The technique** is the same three moves each time:
+
+<CardGrid>
+  <Card title="Memoize + select narrowly" icon="setting">
+    A memoized `Window`, a per-window store selector, and `useShallow` on the
+    container list — during a drag, only the moving window re-renders; no app
+    subtree reconciles.
+  </Card>
+  <Card title="Read, don't subscribe" icon="random">
+    The `ResizeHandle` reads `store.getState()` in its move handler instead of
+    subscribing — high-frequency events don't trigger React at all.
+  </Card>
+  <Card title="Virtualize the long lists" icon="list-format">
+    The process table and large file lists use `@tanstack/react-virtual` through a
+    shared `useVirtualList` helper — with `scrollToIndex` keyboard nav and scroll
+    that stays stable across refetch.
+  </Card>
+</CardGrid>
+
+---
+
+## Auth as a property of every edge
+
+**Problem:** the OS is internet-exposable, so security can't be a feature you add
+to some routes — it has to be the default that a route must explicitly opt out
+of.
+
+**The technique:** a global `APP_GUARD` validates the session on every HTTP
+route; `@Public()` is the *explicit* exception (setup, health, login). WebSocket
+upgrades run the same check via `ws-auth.ts` — the Terminal PTY is authed on
+upgrade, with backpressure and a revocation sweep. The building blocks:
+
+- **argon2id** password hashing; the `imb_session` cookie is `httpOnly` +
+  `SameSite=Lax`, auto-`Secure` behind the proxy.
+- **First-run wizard, not a login** — one-time account claim, optionally gated by
+  a constant-time `SETUP_TOKEN` compare; it refuses to run again while an account
+  exists (no silent reset).
+- **Optional TOTP** with step-up, **per-IP throttle** with exponential backoff
+  and a global backstop, an **Origin check** on mutating requests, and a
+  security-headers middleware (CSP et al.; HSTS is the proxy's job).
+
+<Aside type="tip">
+  Notice the shape repeating: **default-secure, explicit exception.** Same idea as
+  the eslint-enforced add-on boundary and the FS jail — make the safe path the one
+  you get for free, and the unsafe path the one you have to write out loud.
+</Aside>
+
+---
+
+## The through-line
+
+Read those seven together and one habit runs through all of them: **make the
+right thing the default and the risky thing explicit.** A capability you don't
+receive, you can't call. A route you don't mark `@Public()` is guarded. A path
+that doesn't pass `resolveSafe` doesn't resolve. That single reflex — not any one
+clever trick — is what keeps a 23-app desktop honest.
+
+<Aside>
+  Every claim here traces to a locked decision or a shipped brief — see
+  [Decisions](/wiki/decisions/) and the [status snapshot](/wiki/status/). Code
+  shape is in the generated [API reference](/reference/).
+</Aside>

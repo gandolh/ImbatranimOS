@@ -1,0 +1,160 @@
+---
+title: The technology
+description: The full stack of ImbatranimOS — Alpine + NestJS in one container, a React/Vite/Tailwind desktop, an npm-workspaces + Turborepo monorepo, and the client-side document engines — with the reason each was chosen.
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
+
+Every technology here earned its place against one rule:
+[lightweight is identity](/ideas/#5--lightweight-is-identity), and a new
+dependency needs a reason. What follows is the whole stack, layer by layer, with
+the *why* — because the reasons are the interesting part.
+
+## At a glance
+
+| Layer | Choice | Why this one |
+|---|---|---|
+| Image | Alpine + Node LTS, one multi-stage Dockerfile | slim base; `dev` + `prod` targets from one file |
+| Backend | **NestJS** (TypeScript) | familiarity + fork reuse beat Go's smaller image |
+| Frontend | **React + Vite + TypeScript** | fast HMR, real DOM, the fork's foundation |
+| Styling | **Tailwind v4** + **Framer Motion** | utility CSS + motion without a component framework |
+| State | **Zustand** + **TanStack Query** | tiny client store; server-state caching done right |
+| Terminal | **@xterm/xterm** ↔ **node-pty** | a real PTY, not an emulator |
+| Persistence | **SQLite** in the home volume | zero-service DB; lives beside your files |
+| Monorepo | **npm workspaces** + **Turborepo** | one install, one lockfile, cached fan-out |
+
+## The container — one image, two modes
+
+A single multi-stage Dockerfile produces both a `dev` target (Nest watch + Vite
+HMR on two ports) and a `prod` target (Nest serves the built statics + API + WS
+on **one** port, slim). The "one port, serve statics" rule describes prod; HMR is
+a dev-only convenience. The prod image lands at **385 MB** — and that number is a
+story worth telling.
+
+<Aside type="note" title="Why NestJS, when Go would be ~20 MB">
+  The image floor for Node + Nest is ~300 MB; Go could ship at ~20 MB. That trade
+  was made **on purpose**: NestJS let the project fork an existing web desktop and
+  reuse its terminal, files, system, and auth code wholesale. For a run-once
+  personal container, the reuse is worth far more than the bytes — so "lightweight"
+  was redefined to mean **cold start (1.42 s)** and **idle RAM (41 MiB)**, which
+  are excellent, rather than image size, which is merely fine.
+</Aside>
+
+## The backend — NestJS as the syscall bridge
+
+In the [three-layer model](/wiki/os-layering/) the backend isn't "the API" — it's
+the **kernel bridge**, the only path to touch the real machine. It keeps its own
+`modules/` tree, each module owning one capability:
+
+<CardGrid>
+  <Card title="pty" icon="seti:powershell">
+    node-pty over an authed WebSocket at `/api/pty` — session check on upgrade,
+    backpressure, revocation sweep.
+  </Card>
+  <Card title="files" icon="seti:folder">
+    the real home dir behind `resolveSafe` (traversal + symlink jail); also serves
+    global search and range-streamed media.
+  </Card>
+  <Card title="system" icon="seti:clock">
+    real `/proc` — CPU, RAM, disk, processes — with uid-scoped kill.
+  </Card>
+  <Card title="auth" icon="approve-check">
+    argon2id, `imb_session` cookie, first-run wizard, TOTP, throttle, the global
+    guard, and `ws-auth` for upgrades.
+  </Card>
+  <Card title="git / archive" icon="seti:git">
+    shell-free subprocesses (array args, `--` guard, jailed cwd) for the Git GUI
+    and Archive Manager.
+  </Card>
+  <Card title="http-proxy" icon="random">
+    the owner-authed outbound HTTP proxy behind the REST client — bounded, not
+    open (see [Patterns](/patterns/#the-bounded-proxy--trusted-owner-bounded-blast-radius)).
+  </Card>
+</CardGrid>
+
+## The frontend — a desktop, split in two
+
+The React desktop is a fork of the user's own
+[minimal-web-desktop](https://github.com/gandolh/minimal-web-desktop), evolved
+and restructured into two kinds of package:
+
+- **`@imbatranim/core`** — the shell: window manager (the compositor), command
+  palette, auth, settings, and the public-surface barrel (`src/index.ts`) that
+  add-ons import. Zustand holds the window/notification/intent stores; TanStack
+  Query caches server state.
+- **`apps/add-ons/<app>`** — one package per window, each exporting a manifest.
+  Framer Motion drives window and menu motion; Tailwind v4 carries the
+  Windows-7-classic-but-flat look with a single accent CSS variable (crimson
+  `#c81236`, one of four Settings presets).
+
+The `@xterm/xterm` terminal talks to `node-pty`; everything else talks to the
+backend modules over HTTP/WS. The boot bundle stays small because every app is a
+[lazy chunk](/patterns/#keep-the-main-thread-free--lazy-chunks--off-thread-workers).
+
+## The document engines — all client-side
+
+The office and media apps are the sharpest test of "lightweight is identity":
+there is **no** OnlyOffice/Collabora server and **no** LibreOffice in the image.
+Everything renders in the browser.
+
+| App | Engine | License note |
+|---|---|---|
+| PDF Viewer | pdfjs-dist | — |
+| Slides | pptx-preview | best-effort + Download escape hatch |
+| Sheets | Univer grid + **ExcelJS** bridge | ExcelJS (MIT) after SheetJS CE failed the styling spike |
+| Docs | **SuperDoc** | AGPL — and the reason the whole repo is AGPL-3.0 |
+| Markdown | react-markdown + remark-gfm | **no** rehype-raw → XSS-safe by construction |
+| Code | **Monaco**, self-hosted | workers via Vite `?worker`, no CDN |
+
+<Aside type="caution" title="Two decisions the spikes forced">
+  Engine choices weren't taken on faith. The Sheets engine **moved** from a
+  SheetJS CE bridge to ExcelJS mid-flight when the spike proved SheetJS CE's free
+  writer strips fonts, fills, and borders on save. And a SuperDoc export defect —
+  silently saving the original bytes for docx missing optional OOXML parts — was
+  root-caused and fixed with an open-time normalizer. Verified engines, not
+  hopeful ones.
+</Aside>
+
+Adopting SuperDoc (AGPL) made the whole repository **AGPL-3.0-only** so the
+combined work stays compliant — a deliberate, recorded call, since the source is
+public and there are no plans to sell it.
+
+## The monorepo — one install, cached everything
+
+The repo is an npm-workspaces monorepo with **Turborepo** as the task runner: one
+root `npm install`, one lockfile, and root scripts (`build`, `lint`, `typecheck`,
+`test`, `dev`, `format:check`, `docs`) that fan out across all 25 workspaces with
+caching — a second `build` is instant (`FULL TURBO`). The same `turbo dev` runs
+inside the container's compose dev profile with `apps/` bind-mounted for HMR.
+
+```
+apps/
+  backend/      NestJS — the syscall bridge (its own modules/ tree)
+  core/         the desktop: shell, window manager, auth, settings
+  add-ons/*     one workspace package per windowed app
+  docs/         this site — corpus-rendered narrative + code-generated reference
+infrastructure/ Dockerfile (dev+prod), docker-compose.yml
+corpus/         the LLM-maintained wiki this site's narrative is built from
+```
+
+<Aside type="tip">
+  This very docs site is part of that monorepo: `npm run docs` syncs the corpus
+  narrative, generates the API reference from TypeScript (TypeDoc for core,
+  Compodoc for the backend), and builds the site — so the reference
+  [can't drift](/reference/) from the code it documents.
+</Aside>
+
+## The distribution — build from source
+
+There is no image registry to trust. You clone the repo and `docker build` /
+`docker compose` — the same build-from-source philosophy carried over from the
+project's brief ISO era. Publishing to a registry is an
+[open question](/wiki/open-questions/), not a promise. The container speaks plain
+HTTP on one port; TLS is terminated by a documented Caddy reverse proxy in front
+of it (automatic Let's Encrypt, `COOKIE_SECURE` + `TRUST_PROXY` flipped) — never
+inside the unprivileged container.
+
+<Aside>
+  Every choice above is a locked, dated entry in [Decisions](/wiki/decisions/),
+  most with the alternative that was rejected and why.
+</Aside>

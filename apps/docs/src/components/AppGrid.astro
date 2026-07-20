@@ -1,0 +1,100 @@
+---
+// A showcase grid of desktop apps, grouped by category. Light-themed, no deps.
+// Usage:
+//   <AppGrid groups={[{ name: 'System', tag: 'real', apps: [
+//     { name: 'Terminal', note: 'a real PTY over an authed WS' }, ... ] }]} />
+interface App {
+  name: string
+  note: string
+}
+interface Group {
+  name: string
+  tag?: string
+  apps: App[]
+}
+const { groups } = Astro.props as { groups: Group[] }
+---
+
+<div class="appgrid not-content">
+  {
+    groups.map((g) => (
+      <section class="grp">
+        <header>
+          <h3>{g.name}</h3>
+          {g.tag && <span class="tag">{g.tag}</span>}
+        </header>
+        <div class="apps">
+          {g.apps.map((a) => (
+            <div class="app">
+              <strong>{a.name}</strong>
+              <span>{a.note}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .appgrid {
+    margin: 1.5rem 0 2rem;
+    display: grid;
+    gap: 1.25rem;
+  }
+  .grp header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    border-bottom: 1px solid #ececef;
+    padding-bottom: 0.3rem;
+    margin-bottom: 0.75rem;
+  }
+  .grp h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+  }
+  .grp .tag {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #c81236;
+    background: rgba(200, 18, 54, 0.07);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+  }
+  .apps {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+    gap: 0.6rem;
+  }
+  .app {
+    border: 1px solid #e6e6ea;
+    border-left: 3px solid #d7d7de;
+    border-radius: 9px;
+    padding: 0.6rem 0.75rem;
+    background: #fff;
+    transition:
+      border-color 0.12s ease,
+      transform 0.12s ease;
+  }
+  .app:hover {
+    border-left-color: #c81236;
+    transform: translateY(-1px);
+  }
+  .app strong {
+    display: block;
+    font-size: 0.9rem;
+    color: #17171a;
+  }
+  .app span {
+    display: block;
+    font-size: 0.76rem;
+    line-height: 1.35;
+    color: #6a6a72;
+    margin-top: 0.2rem;
+    font-family: var(--sl-font-mono, monospace);
+  }
+</style>

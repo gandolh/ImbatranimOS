@@ -1,0 +1,128 @@
+---
+title: A tour of the desktop
+description: What you can actually do in ImbatranimOS — 23 windowed apps across system, productivity, documents, media, and developer tools, plus the platform surfaces that tie them together.
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
+import AppGrid from '../../components/AppGrid.astro'
+
+You log in to a Windows-7-classic desktop — taskbar, start menu, tray, desktop
+icons — rendered modern-flat in black & white with a crimson accent. Behind the
+retro chrome is a real Alpine machine. Here's everything on it.
+
+**23 windowed apps** ship in v1, plus a set of platform surfaces (search,
+notifications, app management) woven into the shell itself. Every heavy engine
+loads as a lazy chunk, so none of this weighs down the boot bundle.
+
+## The apps
+
+<AppGrid
+  groups={[
+    {
+      name: 'System — the real machine',
+      tag: 'not simulated',
+      apps: [
+        { name: 'Terminal', note: 'a real shell via node-pty over an authed WebSocket — an actual PTY, not xterm pointed at nothing' },
+        { name: 'Files', note: 'browses and edits the real home dir; traversal + symlink jailed, upload-capped' },
+        { name: 'System Monitor', note: 'live CPU / RAM / disk / processes from real /proc, with uid-scoped kill' },
+        { name: 'Settings', note: 'theme, accent (4 presets), and TOTP enrollment; app enable/disable' },
+      ],
+    },
+    {
+      name: 'Productivity — the small stuff that makes it yours',
+      tag: 'no new deps',
+      apps: [
+        { name: 'Sticky Notes', note: 'the desk-corner scratchpad' },
+        { name: 'Todo', note: 'a plain, persistent task list' },
+        { name: 'Bookmarks', note: 'saved links, reused by the browser work later' },
+        { name: 'Notepad', note: 'plain-text editor backed by ~/notes' },
+        { name: 'Calculator', note: 'basic (shunting-yard, no eval) + programmer mode: 64-bit BigInt, HEX/DEC/OCT/BIN, bitwise' },
+        { name: 'Clock', note: 'world clocks, stopwatch, timer, alarms — timestamp-driven so it never drifts' },
+        { name: 'Calendar', note: 'month + week views, persisted events, reminders that fire notifications' },
+      ],
+    },
+    {
+      name: 'Documents & media',
+      tag: 'client-side engines',
+      apps: [
+        { name: 'PDF Viewer', note: 'pdfjs-dist — renders in the browser, nothing server-side' },
+        { name: 'Slides', note: 'pptx-preview, best-effort, with a Download escape hatch' },
+        { name: 'Sheets', note: 'Univer grid + an ExcelJS bridge that round-trips values, formulas, formats, styling' },
+        { name: 'Docs', note: 'SuperDoc, with an open-time normalizer fixing a silent-save-loss defect in real docx' },
+        { name: 'Markdown Editor', note: 'split-view preview (react-markdown, no rehype-raw = XSS-safe)' },
+        { name: 'Image Viewer', note: 'zoom / fit / rotate, folder prev-next; 9 image formats' },
+        { name: 'Media Player', note: 'native audio/video, range-streamed from the backend — seek without buffering' },
+      ],
+    },
+    {
+      name: 'Developer tools',
+      tag: 'authed + jailed',
+      apps: [
+        { name: 'Code Editor', note: 'Monaco, self-hosted (no CDN), multi-tab, find/replace, saves to the real FS' },
+        { name: 'Git GUI', note: 'status / stage / commit / diff / log over a shell-free, jailed backend git module' },
+        { name: 'REST API Client', note: 'sends through an owner-authed backend proxy — the SPA CSP blocks direct fetches' },
+        { name: 'Archive Manager', note: 'zip + tar.gz extract/compress, every entry re-validated (zip-slip-proof)' },
+        { name: 'Snipping Tool', note: 'Flameshot-style capture via DOM rasterization; region select + 5 annotation tools' },
+      ],
+    },
+  ]}
+/>
+
+## The platform surfaces
+
+Not every capability is a window. Three of them live in the shell itself — which
+is what makes the collection feel like *one* desktop rather than a folder of
+apps.
+
+<CardGrid>
+  <Card title="Global search launcher" icon="magnifier">
+    A command palette plus a taskbar Search button, backed by a jailed, bounded
+    backend file search (`/api/files/search` — no symlink follow, result-capped,
+    opt-in content grep). Find a file, hit Enter, it reveals in Files.
+  </Card>
+  <Card title="Notification center" icon="bell">
+    A persist-backed store with a public `notify()` on `@imbatranim/core`,
+    bottom-right auto-dismiss toasts (errors stay sticky), and a tray bell with an
+    unread badge and history. Clock alarms and calendar reminders are its first
+    callers.
+  </Card>
+  <Card title="Add-on manager" icon="puzzle">
+    A Settings "Apps" section backed by a per-user disabled-set — one
+    `enabledApps` filter across Start menu, palette, and desktop, with an
+    `openApp` guard. Settings, Files, and Terminal are non-disableable on purpose.
+  </Card>
+  <Card title="File preview pane" icon="document">
+    An explorer-style toggleable pane in Files: text, images, and A/V preview
+    natively, with a metadata-card fallback. Width and toggle are remembered.
+  </Card>
+</CardGrid>
+
+## What ties it together
+
+Two conveniences make the apps feel like a system instead of silos:
+
+- **Open-with, by extension.** Double-click a file in Files and the right app
+  opens it — an extension→app map routes `.md` to the Markdown Editor, code
+  extensions to Monaco, images to the Image Viewer, and so on. New documents are
+  born in Files too (right-click → New → Spreadsheet / Document).
+- **Explicit-save everywhere.** Every editor shares one Save discipline: Ctrl+S,
+  a dirty `•` marker, and a close-guard warning — no autosave surprises, no
+  "Save As" maze.
+
+<Aside type="tip">
+  Everything here runs as the unprivileged `imbatranim` user, over a single
+  authenticated port. The apps stream **data**, never pixels — see
+  [the ideas that empower it](/ideas/) for why that one choice shapes all of the
+  above.
+</Aside>
+
+## Try it
+
+```bash
+docker run -p 8080:8080 -v imbatranim-home:/home/imbatranim imbatranimos
+```
+
+Open **http://localhost:8080**, pick a password (the first screen is a setup
+wizard, never a login — there is no default password), and you're on the
+desktop. Full run, backup, and HTTPS instructions are in the
+[project README](https://github.com/gandolh/ImbatranimOS#readme).

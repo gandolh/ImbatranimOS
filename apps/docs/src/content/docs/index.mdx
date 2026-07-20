@@ -5,12 +5,16 @@ template: splash
 hero:
   tagline: One <code>docker run</code>. A real Alpine Linux userland — its own filesystem, shell, and process table — with a React desktop as its screen.
   actions:
-    - text: Architecture
-      link: /architecture/
+    - text: Take the tour
+      link: /tour/
       icon: right-arrow
       variant: primary
-    - text: Status & roadmap
-      link: /wiki/status/
+    - text: The ideas behind it
+      link: /ideas/
+      icon: open-book
+      variant: secondary
+    - text: Architecture
+      link: /architecture/
       icon: document
       variant: minimal
 ---
@@ -28,7 +32,7 @@ import Metrics from '../../components/Metrics.astro'
   ]}
 />
 
-## Four ideas, no more
+## The ideas, in one breath
 
 <CardGrid>
   <Card title="Real, not simulated" icon="laptop">
@@ -45,13 +49,41 @@ import Metrics from '../../components/Metrics.astro'
   </Card>
 </CardGrid>
 
-## Docs in two halves
+The [full six](/ideas/) — and the matching kill-list of what this project
+*refuses* to build — are what every decision is measured against.
+
+## Start here
 
 <CardGrid>
-  <Card title="Narrative — rendered" icon="open-book">
-    Architecture, decisions, status, roadmap: rendered from the [`corpus/`](/wiki/overview/) wiki. Intent is authored, never reverse-engineered.
+  <Card title="A tour of the desktop" icon="laptop">
+    The [23 apps](/tour/) and platform surfaces — what you can actually *do* on
+    the machine, from a real shell to a client-side spreadsheet.
   </Card>
-  <Card title="Reference — generated" icon="seti:typescript">
-    The [API reference](/reference/) is generated from the TypeScript every build — Compodoc (backend) + TypeDoc (core). It can't drift.
+  <Card title="The ideas that empower it" icon="open-book">
+    The [six load-bearing ideas](/ideas/) — real-not-simulated, data-not-pixels,
+    the versioned seam — that give the project its soul.
+  </Card>
+  <Card title="Patterns & techniques" icon="puzzle">
+    The [seven recurring moves](/patterns/) — the seam, the FS jail, the bounded
+    proxy, lazy chunks, virtualization — with the numbers behind each.
+  </Card>
+  <Card title="The technology" icon="seti:typescript">
+    The [whole stack](/stack/), layer by layer, with the reason each piece was
+    chosen — and each one it beat.
+  </Card>
+</CardGrid>
+
+## Kept honest by construction
+
+<CardGrid>
+  <Card title="Narrative — rendered from the corpus" icon="document">
+    The deep-dive pages — [architecture](/wiki/architecture/),
+    [decisions](/wiki/decisions/), [status](/wiki/status/) — render straight from
+    the project's [`corpus/`](/wiki/overview/) wiki. Intent is authored, never
+    reverse-engineered.
+  </Card>
+  <Card title="Reference — generated from the code" icon="seti:typescript">
+    The [API reference](/reference/) is generated from the TypeScript every build —
+    Compodoc (backend) + TypeDoc (core). It can't drift.
   </Card>
 </CardGrid>

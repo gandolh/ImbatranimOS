@@ -1,0 +1,46 @@
+---
+title: Architecture at a glance
+description: The container is the computer; the browser is the display. Three layers, one seam.
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
+import LayerStack from '../../components/LayerStack.astro'
+
+**One container is the computer. One port serves the desktop + API. The browser is the display.**
+
+<LayerStack />
+
+<Aside type="tip" title="The load-bearing idea">
+  The compositor is client-side by necessity — rendering happens in the browser. The server streams **data** (PTY bytes, FS, `/proc`), never pixels. A server-side compositor would mean VNC, which breaks the slim-image, real-DOM soul.
+</Aside>
+
+## The seam
+
+Each app gets an injected `system` handle at mount and **imports nothing from core** — like a Wayland client connection or VS Code's `ExtensionContext`. Same app code, whether the handle is backed by direct calls (today) or a sandboxed iframe (later). The `SystemHandle` interface **is** the protocol — and once it lands (brief 48) it appears in the [Core reference](/reference/core/).
+
+<CardGrid>
+  <Card title="Can't cross postMessage" icon="puzzle">
+    A component or hook → it's a **library** (`@imbatranim/ui`). Build-time import, not a capability.
+  </Card>
+  <Card title="Can cross postMessage" icon="random">
+    A data call or effect → a **capability** on the handle: `fs`, `http`, `window`, `intents`, `notify`, `on`.
+  </Card>
+</CardGrid>
+
+## We deliberately don't build
+
+<CardGrid>
+  <Card title="No package manager" icon="close">
+    `manifest.ts` is the package system until apps come from outside the repo.
+  </Card>
+  <Card title="No session daemon" icon="close">
+    Auth + the per-tab ephemeral session **is** the session manager.
+  </Card>
+  <Card title="No app-to-app IPC" icon="close">
+    Star topology: apps talk to the compositor and the kernel, never each other.
+  </Card>
+</CardGrid>
+
+<Aside>
+  Full detail: [Architecture](/wiki/architecture/) · [OS layering](/wiki/os-layering/) · [Decisions](/wiki/decisions/).
+</Aside>

@@ -12,6 +12,15 @@ build/
 # Local dev state: sqlite db + notes/configs created by `npm run dev`
 /data/
 
+# Generated docs artifacts (apps/docs) — narrative synced from corpus,
+# reference generated from source; both rebuilt by `npm run docs`.
+apps/docs/dist/
+apps/docs/.astro/
+apps/docs/public/reference/
+apps/docs/src/content/docs/wiki/
+.compodoc/
+documentation/
+
 # Personal / local / identifiable data — never commit
 *.bak
 *.bak.*

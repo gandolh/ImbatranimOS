@@ -1,0 +1,57 @@
+---
+title: ImbatranimOS
+description: A real little computer whose screen is a browser tab.
+template: splash
+hero:
+  tagline: One <code>docker run</code>. A real Alpine Linux userland — its own filesystem, shell, and process table — with a React desktop as its screen.
+  actions:
+    - text: Architecture
+      link: /architecture/
+      icon: right-arrow
+      variant: primary
+    - text: Status & roadmap
+      link: /wiki/status/
+      icon: document
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components'
+import Metrics from '../../components/Metrics.astro'
+
+<Metrics
+  items={[
+    { v: '385', unit: 'MB', k: 'image size' },
+    { v: '1.42', unit: 's', k: 'cold start' },
+    { v: '41', unit: 'MiB', k: 'idle RAM' },
+    { v: '23', k: 'desktop apps' },
+    { v: '135', k: 'backend tests' },
+  ]}
+/>
+
+## Four ideas, no more
+
+<CardGrid>
+  <Card title="Real, not simulated" icon="laptop">
+    Terminal = a real PTY. Files = the real FS. Monitor = real `/proc`. Faking the system is off-soul.
+  </Card>
+  <Card title="One container, one port" icon="seti:docker">
+    Alpine + Node serve the desktop and API on one authenticated port. The server streams **data**, never pixels.
+  </Card>
+  <Card title="No sudo, ever" icon="approve-check">
+    Runs as the `imbatranim` user. argon2id password, optional TOTP, internet-exposable behind a proxy.
+  </Card>
+  <Card title="Lightweight is identity" icon="rocket">
+    A slim image and a snappy desktop. A new dependency needs a reason.
+  </Card>
+</CardGrid>
+
+## Docs in two halves
+
+<CardGrid>
+  <Card title="Narrative — rendered" icon="open-book">
+    Architecture, decisions, status, roadmap: rendered from the [`corpus/`](/wiki/overview/) wiki. Intent is authored, never reverse-engineered.
+  </Card>
+  <Card title="Reference — generated" icon="seti:typescript">
+    The [API reference](/reference/) is generated from the TypeScript every build — Compodoc (backend) + TypeDoc (core). It can't drift.
+  </Card>
+</CardGrid>

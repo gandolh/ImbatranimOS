@@ -1,0 +1,33 @@
+---
+title: How the reference is generated
+description: Code-derived API docs — Compodoc for the backend, TypeDoc for the core surface — regenerated on every build.
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
+
+**Nothing here is hand-written.** The reference is generated from the TypeScript on every build, so it can't drift.
+
+<CardGrid>
+  <Card title="Backend — Compodoc" icon="seti:nginx">
+    Modules, controllers, routes, the DI graph, and a coverage report for `apps/backend`.
+
+    [Open →](/reference/backend/)
+  </Card>
+  <Card title="Core — TypeDoc" icon="seti:typescript">
+    Every export crossing the `@imbatranim/core` barrel. `SystemHandle` (brief 48) will appear here automatically.
+
+    [Open →](/reference/core/)
+  </Card>
+</CardGrid>
+
+## Regenerate
+
+```bash
+npm run docs      # from repo root — turbo: sync corpus + generate reference + build
+```
+
+<Aside type="note" title="Kept honest">
+  TypeDoc flags every undocumented `@imbatranim/core` export as a build warning (flip `treatWarningsAsErrors` in `typedoc.json` to hard-fail). Compodoc runs `--coverageTest 35`; ratchet it up as coverage climbs.
+</Aside>
+
+**Intent is rendered from the [corpus](/wiki/decisions/); code shape is generated from the source. Neither is ever typed twice.**

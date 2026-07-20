@@ -1,0 +1,25 @@
+{
+  "name": "@imbatranim/docs-site",
+  "version": "1.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "description": "ImbatranimOS documentation site — narrative rendered from corpus/, reference generated from the TypeScript.",
+  "scripts": {
+    "sync-corpus": "node scripts/sync-corpus.mjs",
+    "ref:core": "typedoc",
+    "ref:backend": "compodoc -p ../backend/tsconfig.json -d public/reference/backend -n \"ImbatranimOS Backend API\" --hideGenerator --coverageTest 35 --theme material",
+    "ref": "npm run ref:core && npm run ref:backend",
+    "predev": "npm run sync-corpus",
+    "dev": "astro dev",
+    "docs": "npm run sync-corpus && npm run ref && astro build",
+    "preview": "astro preview"
+  },
+  "devDependencies": {
+    "@astrojs/starlight": "^0.41.3",
+    "@compodoc/compodoc": "^2.0.0",
+    "astro": "^7.1.1",
+    "sharp": "^0.34.4",
+    "typedoc": "^0.28.20"
+  }
+}

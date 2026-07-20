@@ -1,0 +1,130 @@
+---
+// The ImbatranimOS three-layer diagram, as light-themed HTML/CSS (no deps).
+// Server (kernel) at the base, the client layers stacked above, the seam
+// between apps and the compositor called out.
+---
+
+<div class="stack not-content">
+  <div class="lane">
+    <span class="side">browser tab<br /><em>pixels · input</em></span>
+    <div class="layer client">
+      <span class="tag">Layer 2 · client</span>
+      <strong>Compositor + Display</strong>
+      <p>window manager · z-order · focus · input routing · taskbar</p>
+    </div>
+  </div>
+
+  <div class="seam"><span>▲ <code>system</code> handle — the seam (brief 48)</span></div>
+
+  <div class="lane">
+    <span class="side">first-party<br /><em>23 apps</em></span>
+    <div class="layer client apps">
+      <span class="tag">Layer 3 · client + routes</span>
+      <strong>Apps</strong>
+      <p>import nothing from core · receive a capability handle at mount</p>
+    </div>
+  </div>
+
+  <div class="seam data"><span>▼ HTTP / WS — <em>data, never pixels</em></span></div>
+
+  <div class="lane">
+    <span class="side">the machine<br /><em>Alpine Linux</em></span>
+    <div class="layer server">
+      <span class="tag">Layer 1 · server</span>
+      <strong>Kernel + Userland</strong>
+      <p>NestJS = the syscall bridge · FS · PTY · /proc · git · http-proxy</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  .stack {
+    margin: 1.5rem 0 2rem;
+    --crimson: #c81236;
+  }
+  .lane {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  .side {
+    align-self: center;
+    text-align: right;
+    font-size: 0.72rem;
+    line-height: 1.25;
+    color: #8a8a92;
+    font-family: var(--sl-font-mono, monospace);
+  }
+  .side em {
+    color: #6a6a72;
+    font-style: normal;
+  }
+  .layer {
+    border: 1px solid #e6e6ea;
+    border-left: 4px solid #c9c9d0;
+    border-radius: 12px;
+    padding: 0.85rem 1.1rem;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .layer.client {
+    border-left-color: var(--crimson);
+  }
+  .layer.server {
+    border-left-color: #111;
+    background: #f6f6f7;
+  }
+  .layer .tag {
+    display: inline-block;
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--crimson);
+    margin-bottom: 0.15rem;
+  }
+  .layer.server .tag {
+    color: #444;
+  }
+  .layer strong {
+    display: block;
+    font-size: 1.05rem;
+    color: #17171a;
+  }
+  .layer p {
+    margin: 0.25rem 0 0;
+    font-size: 0.82rem;
+    color: #6a6a72;
+    font-family: var(--sl-font-mono, monospace);
+  }
+  .seam {
+    margin: 0.45rem 0 0.45rem 92px;
+    padding-left: 0.75rem;
+  }
+  .seam span {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 0.72rem;
+    color: var(--crimson);
+    font-weight: 600;
+  }
+  .seam.data span {
+    color: var(--sl-color-gray-3);
+  }
+  .seam code {
+    background: rgba(200, 18, 54, 0.08);
+    padding: 0.05rem 0.3rem;
+    border-radius: 4px;
+  }
+  @media (max-width: 520px) {
+    .lane {
+      grid-template-columns: 1fr;
+    }
+    .side {
+      text-align: left;
+    }
+    .seam {
+      margin-left: 0;
+    }
+  }
+</style>

@@ -1,5 +1,5 @@
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip'
-import { type ReactNode } from 'react'
+import { type ReactElement, type ReactNode } from 'react'
 import { cn } from '../../../lib/cn'
 
 type TooltipProps = {
@@ -12,7 +12,7 @@ export function Tooltip({ content, children, side = 'top' }: TooltipProps) {
   return (
     <BaseTooltip.Provider delay={400}>
       <BaseTooltip.Root>
-        <BaseTooltip.Trigger>{children}</BaseTooltip.Trigger>
+        <BaseTooltip.Trigger render={children as ReactElement} />
         <BaseTooltip.Portal>
           <BaseTooltip.Positioner side={side} sideOffset={4}>
             <BaseTooltip.Popup

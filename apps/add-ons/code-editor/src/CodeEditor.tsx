@@ -301,11 +301,76 @@ export function CodeEditor({ windowId }: { windowId: string }) {
     setError(null)
     try {
       await uploadFileBytes(target.root, target.path, encoder.encode(text), target.name)
-      savedVersionRef.current.set(id, uploadedVersion)
       if (tab.root == null || tab.path == null) {
-        setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, ...target } : t)))
+        // Untitled → real file: migrate this tab's identity onto the real
+        // path so a later open of the same file recognizes it as already
+        // open instead of duplicating the tab/model, and picks up syntax
+        // highlighting + an MRU entry.
+        const newId = tabId(target.root, target.path)
+        const language = languageForPath(target.path)
+        const alreadyOpenElsewhere = openedIdsRef.current.has(newId)
+        openedIdsRef.current.delete(id)
+
+        if (alreadyOpenElsewhere) {
+          // DONE_WITH_CONCERNS: another tab already owns `newId` (this exact
+          // file was already open elsewhere). We avoid two tabs fighting
+          // over one model id, but this tab keeps its own separate model
+          // under the old untitled id — two open buffers for the same file
+          // until one tab is closed. Refocusing the existing tab instead
+          // would be the ideal fix; left as a follow-up.
+          setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, ...target, language } : t)))
+          recomputeDirty(id)
+        } else {
+          openedIdsRef.current.add(newId)
+          const monaco = monacoRef.current
+          if (monaco) {
+            // Monaco model URIs are immutable — recreate under the real-file
+            // URI (same construction the tab-activation effect uses) and
+            // swap the editor onto it so the buffer survives the migration.
+            const viewState = editorRef.current?.saveViewState() ?? null
+            const newModel = monaco.editor.createModel(
+              model.getValue(),
+              language,
+              monaco.Uri.parse(newId)
+            )
+            modelsRef.current.set(newId, newModel)
+            modelsRef.current.delete(id)
+
+            // Edits made while the upload was in flight advance the old
+            // model past `uploadedVersion` — carry that "still dirty" signal
+            // to the new model since its version numbering starts fresh.
+            const editedMidFlight = model.getAlternativeVersionId() !== uploadedVersion
+            savedVersionRef.current.set(
+              newId,
+              editedMidFlight ? NaN : newModel.getAlternativeVersionId()
+            )
+            savedVersionRef.current.delete(id)
+
+            listenersRef.current.get(id)?.dispose()
+            listenersRef.current.set(
+              newId,
+              newModel.onDidChangeContent(() => recomputeDirty(newId))
+            )
+            listenersRef.current.delete(id)
+            viewStatesRef.current.delete(id)
+
+            editorRef.current?.setModel(newModel)
+            if (viewState) editorRef.current?.restoreViewState(viewState)
+            model.dispose()
+            lastActiveRef.current = newId
+          }
+
+          setActiveId(newId)
+          setTabs((prev) =>
+            prev.map((t) => (t.id === id ? { ...t, ...target, id: newId, language } : t))
+          )
+          recomputeDirty(newId)
+        }
+        addRecent(target)
+      } else {
+        savedVersionRef.current.set(id, uploadedVersion)
+        recomputeDirty(id)
       }
-      recomputeDirty(id)
     } catch (err) {
       if (err instanceof UploadTooLargeError) {
         setError(err.message)
@@ -316,7 +381,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
     } finally {
       setSaving(false)
     }
-  }, [activeId, tabs, saving, recomputeDirty, prompt])
+  }, [activeId, tabs, saving, recomputeDirty, prompt, addRecent])
 
   // Ctrl/Cmd+S saves the active tab — only for the top-most window.
   useSaveHotkey(windowId, handleSave)

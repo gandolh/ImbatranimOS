@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '../../../lib/cn'
+import { clampIconPosition } from '../../../lib/desktopBounds'
 import type { AppConfig } from '../../registry/registry'
 
 type DesktopIconProps = {
@@ -42,10 +43,14 @@ export function DesktopIcon({
       dragMomentum={false}
       dragElastic={0}
       onDragEnd={(_, info) => {
-        onPositionChange({
-          x: position.x + info.offset.x,
-          y: position.y + info.offset.y,
-        })
+        // info.offset is framer-motion's raw, UNCONSTRAINED pointer delta —
+        // clamp the stored position so it can't persist under the taskbar.
+        onPositionChange(
+          clampIconPosition({
+            x: position.x + info.offset.x,
+            y: position.y + info.offset.y,
+          })
+        )
       }}
       initial={false}
       animate={{ x: position.x, y: position.y }}

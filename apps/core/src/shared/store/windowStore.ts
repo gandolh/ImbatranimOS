@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
+import { clampWindowRect } from '../../lib/desktopBounds'
 
 export type SnapRegion = 'left' | 'right' | 'top' | 'tl' | 'tr' | 'bl' | 'br'
 
@@ -178,18 +179,16 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   closeGuards: {},
   nextZIndex: 1,
 
-  openWindow: (appId, title, defaultSize, minSize, initialPosition) => {
+  openWindow: (appId, title, defaultSize, _minSize, initialPosition) => {
     const id = uuidv4()
     const { nextZIndex } = get()
 
     let x: number
     let y: number
 
-    const maxY = window.innerHeight - TASKBAR_HEIGHT - minSize.height
-
     if (initialPosition) {
-      x = Math.max(0, Math.min(initialPosition.x, window.innerWidth - minSize.width))
-      y = Math.max(0, Math.min(initialPosition.y, maxY))
+      x = initialPosition.x
+      y = initialPosition.y
     } else {
       const centerX = Math.floor((window.innerWidth - defaultSize.width) / 2)
       const centerY = Math.floor((window.innerHeight - TASKBAR_HEIGHT - defaultSize.height) / 2)
@@ -197,9 +196,14 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       const offsetX = Math.floor(Math.random() * (CASCADE_JITTER_PX * 2 + 1)) - CASCADE_JITTER_PX
       const offsetY = Math.floor(Math.random() * (CASCADE_JITTER_PX * 2 + 1)) - CASCADE_JITTER_PX
 
-      x = Math.max(0, Math.min(centerX + offsetX, window.innerWidth - minSize.width))
-      y = Math.max(0, Math.min(centerY + offsetY, maxY))
+      x = centerX + offsetX
+      y = centerY + offsetY
     }
+
+    // Clamp default size + position to the desktop: caps height to
+    // vh − TASKBAR_HEIGHT (so e.g. Calculator's `=` row is never clipped) and
+    // keeps the window from opening under the taskbar / off-screen.
+    const { position, size } = clampWindowRect({ x, y }, defaultSize)
 
     const instance: WindowInstance = {
       id,
@@ -207,8 +211,8 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       title,
       isVisible: true,
       isMaximized: false,
-      position: { x, y },
-      size: { width: defaultSize.width, height: defaultSize.height },
+      position,
+      size,
       zIndex: nextZIndex,
     }
 

@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { DesktopIcon } from './DesktopIcon'
 import { APP_REGISTRY } from '../../registry/registry'
 import { useEnabledApps } from '../../registry/enabledApps'
-import { useWindowStore } from '../../store/windowStore'
+import { useWindowStore, TASKBAR_HEIGHT } from '../../store/windowStore'
 import { useDesktopStore } from '../../store/desktopStore'
+import { ICON_WIDTH, ICON_HEIGHT, GRID_GAP, DESKTOP_PADDING } from '../../../lib/desktopBounds'
 import type { Wallpaper } from '../../store/wallpaperStore'
 import { WindowContainer } from '../window/WindowContainer'
 
@@ -34,30 +35,48 @@ const WALLPAPER_STYLES: Record<Wallpaper, React.CSSProperties> = {
   },
 }
 
-const ICON_WIDTH = 64
-const ICON_HEIGHT = 80
-const GRID_GAP = 16
-const PADDING = 16
+const PADDING = DESKTOP_PADDING
 
 export function Desktop({ wallpaper }: DesktopProps) {
   const openWindow = useWindowStore((s) => s.openWindow)
   const enabledApps = useEnabledApps()
-  const { iconPositions, updateIconPosition } = useDesktopStore()
+  const iconPositions = useDesktopStore((s) => s.iconPositions)
+  const updateIconPosition = useDesktopStore((s) => s.updateIconPosition)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    // Initialize positions if missing
+  // Lay the icon grid out from the LIVE container height (no hardcoded row
+  // count) and re-clamp on resize, so no row ever falls under the taskbar.
+  // Column-major fill order is preserved; existing (dragged) positions are kept
+  // but re-clamped into the current bounds.
+  const layoutIcons = useCallback(() => {
+    const el = containerRef.current
+    const height = el ? el.clientHeight : window.innerHeight - TASKBAR_HEIGHT
+    const rowsPerColumn = Math.max(1, Math.floor((height - PADDING) / (ICON_HEIGHT + GRID_GAP)))
+    const { iconPositions: positions, updateIconPosition } = useDesktopStore.getState()
     APP_REGISTRY.forEach((app, index) => {
-      if (!iconPositions[app.id]) {
-        const col = Math.floor(index / 8)
-        const row = index % 8
-        updateIconPosition(app.id, {
-          x: PADDING + col * (ICON_WIDTH + GRID_GAP),
-          y: PADDING + row * (ICON_HEIGHT + GRID_GAP),
-        })
+      const existing = positions[app.id]
+      if (existing) {
+        // updateIconPosition clamps on write — pulls any out-of-bounds icon back in.
+        updateIconPosition(app.id, existing)
+        return
       }
+      const col = Math.floor(index / rowsPerColumn)
+      const row = index % rowsPerColumn
+      updateIconPosition(app.id, {
+        x: PADDING + col * (ICON_WIDTH + GRID_GAP),
+        y: PADDING + row * (ICON_HEIGHT + GRID_GAP),
+      })
     })
-  }, [iconPositions, updateIconPosition])
+  }, [])
+
+  useEffect(() => {
+    layoutIcons()
+    const el = containerRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => layoutIcons())
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [layoutIcons])
 
   function handleOpen(appId: string) {
     const app = APP_REGISTRY.find((a) => a.id === appId)

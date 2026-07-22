@@ -10,6 +10,7 @@ import {
   detectSnapRegion,
   TASKBAR_HEIGHT,
 } from '../../store/windowStore'
+import { clampWindowRect } from '../../../lib/desktopBounds'
 import { SnapOverlay } from './SnapOverlay'
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
@@ -165,10 +166,12 @@ export const Window = React.memo(function Window({
       const startPos = dragStartWindowPos.current
       if (!startPos) return
 
-      // Move window
-      const newX = Math.max(0, Math.min(startPos.x + mx, window.innerWidth - instance.size.width))
-      const newY = Math.max(0, Math.min(startPos.y + my, window.innerHeight - TASKBAR_HEIGHT - 28))
-      updatePosition(instance.id, { x: newX, y: newY })
+      // Move window — clamp so it can't be dragged under the taskbar / off-screen.
+      const { position } = clampWindowRect(
+        { x: startPos.x + mx, y: startPos.y + my },
+        instance.size
+      )
+      updatePosition(instance.id, position)
 
       // Detect snap region from pointer position
       const detected = detectSnapRegion(px, py)

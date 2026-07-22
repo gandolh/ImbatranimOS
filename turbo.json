@@ -3,7 +3,7 @@
   "envMode": "loose",
   "tasks": {
     "build": {
-      "env": ["VITE_API_URL"],
+      "env": ["VITE_API_URL", "VITE_BASE"],
       "outputs": ["dist/**"]
     },
     "lint": {},

@@ -13,12 +13,23 @@ services:
       context: ..
       dockerfile: infrastructure/Dockerfile
       target: prod
+      # Sub-path build args (default root / same-origin). A Caddy sub-path
+      # deploy exports VITE_BASE + VITE_API_URL before `docker compose build`.
+      args:
+        VITE_BASE: ${VITE_BASE:-/}
+        VITE_API_URL: ${VITE_API_URL:-/api}
     image: imbatranimos:1.0
     ports:
       - "8080:8080"
     volumes:
       - imbatranim-home:/home/imbatranim
     restart: unless-stopped
+    # Fronted by a Caddy reverse proxy (plain HTTP, no domain yet), so trust its
+    # X-Forwarded-* headers → login rate-limiting keys on the real client IP.
+    # COOKIE_SECURE stays false (there is no HTTPS yet); flip it to true once a
+    # TLS front-end exists.
+    environment:
+      - TRUST_PROXY=true
     # Auth defaults are plain-HTTP-safe (LAN/localhost works as-is). When a
     # TLS reverse proxy (see Caddyfile.example / README.md) fronts this, enable
     # secure cookies and proxy trust so the session cookie sticks over HTTPS

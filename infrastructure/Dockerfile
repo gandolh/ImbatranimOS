@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1-labs
 # ImbatranimOS — one dual-mode image. Build context is the REPO ROOT
 # (npm workspace: one root lockfile covers apps/backend, apps/core and the
 # apps/add-ons/* packages).
@@ -19,13 +20,10 @@ WORKDIR /app
 COPY package.json package-lock.json turbo.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/core/package.json ./apps/core/
-COPY apps/add-ons/bookmarks/package.json ./apps/add-ons/bookmarks/
-COPY apps/add-ons/file-manager/package.json ./apps/add-ons/file-manager/
-COPY apps/add-ons/notepad/package.json ./apps/add-ons/notepad/
-COPY apps/add-ons/repl-interpreter/package.json ./apps/add-ons/repl-interpreter/
-COPY apps/add-ons/sticky-notes/package.json ./apps/add-ons/sticky-notes/
-COPY apps/add-ons/system-monitor/package.json ./apps/add-ons/system-monitor/
-COPY apps/add-ons/todo/package.json ./apps/add-ons/todo/
+# ALL add-on manifests (--parents preserves each add-on's dir), so `npm ci`
+# links every workspace core/src/manifest.ts imports. Globbed so newly-added
+# add-ons are picked up automatically — no per-add-on COPY line to keep in sync.
+COPY --parents apps/add-ons/*/package.json ./
 RUN npm ci
 
 # ---------------------------------------------------------------------------
@@ -34,8 +32,15 @@ RUN npm ci
 # ---------------------------------------------------------------------------
 FROM deps AS builder
 COPY apps ./apps
-# Prod desktop talks to the API same-origin at /api; backend ignores the var.
-RUN VITE_API_URL=/api npx turbo build
+# Sub-path build args. Default to root / same-origin (the standalone container
+# reached at its own port). A Caddy sub-path deploy passes
+# VITE_BASE=/imbatranim-os/ + VITE_API_URL=/imbatranim-os/api so the desktop's
+# assets, REST (axios), and pty WebSocket all resolve under the prefix; Caddy's
+# handle_path strips it back to the container's native / and /api. The backend
+# ignores VITE_* — it serves whatever static files the build emitted.
+ARG VITE_BASE=/
+ARG VITE_API_URL=/api
+RUN VITE_BASE=$VITE_BASE VITE_API_URL=$VITE_API_URL npx turbo build
 
 # ---------------------------------------------------------------------------
 # proddeps — production-only node_modules (native modules compiled here)
@@ -46,13 +51,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/core/package.json ./apps/core/
-COPY apps/add-ons/bookmarks/package.json ./apps/add-ons/bookmarks/
-COPY apps/add-ons/file-manager/package.json ./apps/add-ons/file-manager/
-COPY apps/add-ons/notepad/package.json ./apps/add-ons/notepad/
-COPY apps/add-ons/repl-interpreter/package.json ./apps/add-ons/repl-interpreter/
-COPY apps/add-ons/sticky-notes/package.json ./apps/add-ons/sticky-notes/
-COPY apps/add-ons/system-monitor/package.json ./apps/add-ons/system-monitor/
-COPY apps/add-ons/todo/package.json ./apps/add-ons/todo/
+# All add-on manifests (see the deps stage) so the workspace tree resolves.
+COPY --parents apps/add-ons/*/package.json ./
 # Backend runtime deps only — the desktop is prebuilt to static files, so
 # none of its packages (react etc.) may reach the prod image.
 RUN npm ci --omit=dev --workspace=backend
@@ -83,7 +83,7 @@ COPY --from=builder /app/apps/core/dist ./public
 COPY package.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY infrastructure/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh \
+RUN chmod 0755 /entrypoint.sh \
  && mkdir -p /home/imbatranim \
  && chown -R imbatranim:imbatranim /home/imbatranim /app
 USER imbatranim
@@ -111,7 +111,7 @@ RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
 WORKDIR /app
 COPY apps ./apps
 COPY infrastructure/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh \
+RUN chmod 0755 /entrypoint.sh \
  && mkdir -p /home/imbatranim && chown -R imbatranim:imbatranim /home/imbatranim /app
 USER imbatranim
 ENV PORT=3001 \

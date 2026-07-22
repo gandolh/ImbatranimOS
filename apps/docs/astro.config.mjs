@@ -9,9 +9,12 @@ import starlight from '@astrojs/starlight'
 //   • Reference  → generated into public/reference/ by TypeDoc (core) and
 //                  Compodoc (backend); served as static sub-sites.
 //
-// Change the `site`/`base` below if you deploy under a sub-path (e.g. a Caddy
-// route like /docs). Left at root for `astro preview` and local use.
+// Sub-path base for a Caddy sub-path deploy (e.g. /imbatranim-os-docs/). Left at
+// "/" for `astro preview` and local use; the vps-deploy build sets DOCS_BASE.
+const base = process.env.DOCS_BASE ?? '/'
+
 export default defineConfig({
+  base,
   integrations: [
     starlight({
       title: 'ImbatranimOS',

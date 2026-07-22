@@ -898,3 +898,48 @@ no locked decision** — reinforces auth-everywhere, lightweight, build-from-
 source; adds a second (stricter) SSRF stance to record alongside brief 43's.
 Both briefs land in `briefs/todo/`; decisions to be recorded in
 `wiki/decisions.md` when the work executes (per the brief-43 pattern).
+
+## [2026-07-23] build | Briefs 52–54 shipped — desktop-bounds clamp, Tooltip fix, in-app Open/New
+
+Ran orchestrate → plan-split-dispatch on the three ready Tier-1 briefs. Wave 1
+(3 opus subagents, disjoint files): 53, 52, and brief 54's CORE OpenFilePicker.
+Wave 2 (3 sonnet subagents): brief 54's per-app wiring. Gates green at every
+commit (typecheck 25/25, lint 26/26, format 26/26, build, backend 135 + new core
+vitest 8 + pdfcore 70). A 2-finder review pass (sonnet) over the cumulative diff
+surfaced fixes, applied below.
+
+- **Brief 53 — Tooltip nested `<button>`.** Root cause was NOT file-manager: core
+  `Tooltip` rendered `BaseTooltip.Trigger` without Base UI's `render` prop, so it
+  wrapped its child in its own `<button>` → `<button><button>` OS-wide (32
+  sites). Fixed by rendering the trigger AS its child. **Known limitation:**
+  tooltips on *disabled* buttons no longer open (a disabled button receives no
+  pointer events); the enabled case is unaffected. Recovering it means wrapper
+  `<span>`s across 32 sites — deferred to the human walkthrough. Commit 8fbee09.
+- **Brief 52 — clamp desktop bounds.** New core-internal `lib/desktopBounds.ts`;
+  Desktop reflows rows-per-column from live viewport height (was hardcoded /8) +
+  ResizeObserver; DesktopIcon persists the clamped drop (framer-motion
+  `info.offset` was unconstrained); desktopStore self-heals bad persisted
+  positions on hydration; windowStore/Window clamp open+drag. Added vitest to
+  core (in-family). Commit 32df634. Review follow-up (c827bb3): clampWindowRect
+  now floors at `minSize` (was ignored → could shrink a window below its own
+  chrome) and `restoreLayout` clamps restored windows.
+- **Brief 54 — in-app Open / New.** New CORE `OpenFilePicker`
+  (`useOpenFilePicker`) over the files API; Open… wired into 8 apps via their
+  existing open-intent path; New added to markdown-editor, sheets, code-editor;
+  Code Editor gained a File menu + Open-Recent MRU (zustand persist). **Slides has
+  no New** (view-only pptx-preview, no edit model — out of scope). Built against
+  the current core barrel; picker carries a `TODO(brief 48)` for the SystemHandle
+  seam. Commit 97d9788. Review follow-up (daaf734): Save-As now migrates the tab
+  id / Monaco model / language + pushes MRU (was leaving an `untitled:` id →
+  duplicate-tab / silent-overwrite on re-open). Residual: a file already open in
+  another tab stays a separate buffer until closed.
+
+Also cleared a pre-existing repo-wide `format:check` red (backend
+files.controller.ts + 16 pdfcore-engine files, committed unformatted before this
+run) in a separate chore commit (21e4097) so the gate is green.
+
+**Human-gated (not done this run):** the per-brief browser walkthroughs — incl.
+the Tooltip-on-disabled limitation, Calculator `=` reachability at 1280×577,
+two-tab behaviour, and each app's Open…/New flow. Brief 55 (marketplace) stays in
+`todo/` — blocked on briefs 48/51 + a `decisions.md` revisit. Corpus changes left
+uncommitted pending the user's review.

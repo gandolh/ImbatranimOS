@@ -1,7 +1,21 @@
 ---
 summary: Dated snapshot — web-OS era; briefs 08–14 + 16–46 DONE. The 2026-07-18 full-auto daily-driver backlog (34–46) is COMPLETE: CORE notification center (34), Wave C's six light apps (35–40), Wave D's four heavy/backend apps (41–44: Monaco code-editor + git-gui + REST client + archive-manager, the backend three authed+jailed, adversarially security-reviewed + hardened), and Wave E's two CORE platform surfaces (45 global search launcher, 46 add-on manager). Desktop = 23 apps; 135 backend tests. Only human-gated items remain before v1.0: SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated), brief 15's v1-release remainder, and per-brief human walkthroughs.
-updated: 2026-07-19
+updated: 2026-07-23
 ---
+
+> **2026-07-23 — Tier-1 walkthrough-bug briefs shipped (52–54).** Via
+> orchestrate → plan-split-dispatch: **52** clamp desktop icons + windows to
+> bounds (self-heal persisted positions; fixes icons/`=` unreachable under the
+> taskbar), **53** core Tooltip renders its trigger as the child (kills the
+> OS-wide nested-`<button>`; known limit: no tooltip on *disabled* buttons),
+> **54** in-app **Open…** across 8 apps + **New** in markdown/sheets/code-editor
+> + a Code Editor File menu & Open-Recent MRU (Slides has no New — view-only).
+> New CORE `OpenFilePicker`. A 2-finder review added minSize/restore-clamp +
+> Save-As tab-identity fixes. All gates green (typecheck/lint/format/build,
+> backend 135 + core 8 + pdfcore 70). Commits
+> 21e4097·8fbee09·32df634·97d9788·c827bb3·daaf734 (corpus not committed). Human
+> walkthroughs pending; brief 55 still todo (blocked on 48/51). Detail:
+> [../log.md](../log.md) 2026-07-23.
 
 > **2026-07-19 — first human walkthrough.** Fixed from real QA: Media Player
 > seek (backend HTTP Range support, +3 e2e), global-search scroll-reset and

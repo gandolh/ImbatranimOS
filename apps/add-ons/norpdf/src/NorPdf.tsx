@@ -1,0 +1,185 @@
+/**
+ * norPDF — the reader application (PART A). Top-level composition of the reader
+ * shell: owns the shared {@link ReaderController} (via context) and lays out the
+ * console, side panel and main area. File I/O (OS open-intent + manual picker +
+ * drag-drop) lives here.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  PART B MOUNT POINTS (all marked; not built in PART A)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  1. Annotate toolbar  → pass a node as `<TopBar toolbarSlot={…} />` (renders a
+ *                         second console row, `data-slot="annotate-toolbar"`).
+ *  2. Forms panel       → add a tab via `<SidePanel extraTabs={[…]} />`
+ *                         ({ id, label, icon: <lucide comp>, render }).
+ *  3. Organize view     → render in the `mode === 'organize'` branch of the main
+ *                         area (swap out <Reader/>); toggle via `setMode('organize')`.
+ *  4. Sign / dialogs    → mount alongside the shell (e.g. a signature dialog),
+ *                         driving `doc.sign` then `bumpRenderEpoch()`.
+ *  5. Per-page overlay  → PageView marks an annotation-overlay slot keyed to the
+ *                         page's `vp` (PageViewport).
+ *
+ *  After a mutating edit (both actions are on the controller from useReader()):
+ *   • in-place annotation add/update/delete → `bumpRenderEpoch()`
+ *   • structural change (reorder/insert/delete) or `await doc.save()` →
+ *     `await reloadDocument()`
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { JSX } from 'react'
+// The pdf.js worker: hand the engine the bundled worker URL up front (the
+// documented escape hatch). Runs once when this lazy chunk first loads.
+import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import { configureWorker } from '@pdfcore/engine'
+import { fetchFileBytes, fileName, notify, useOpenIntent, useSaveHotkey } from '@imbatranim/core'
+import { Download } from 'lucide-react'
+import { ReaderContext } from './app/context'
+import { useReaderController } from './app/useReaderController'
+import { EmptyState } from './app/EmptyState'
+import { TopBar } from './shell/TopBar'
+import { SidePanel } from './shell/SidePanel'
+import { Reader } from './reader/Reader'
+import './norpdf.css'
+
+configureWorker(workerUrl)
+
+export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
+  const ctrl = useReaderController()
+  // One-shot open intent, drained by the shared hook (StrictMode-safe).
+  const source = useOpenIntent(windowId)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [dragging, setDragging] = useState(false)
+  const [fetching, setFetching] = useState(false)
+  const dragDepth = useRef(0)
+
+  // Ctrl/Cmd+S → download the current (possibly edited) bytes.
+  useSaveHotkey(windowId, () => void ctrl.save())
+
+  /* ── Open the OS-provided file once the intent latches ─────────────────── */
+  const openBytes = ctrl.openBytes
+  useEffect(() => {
+    if (!source) return
+    let cancelled = false
+    void (async () => {
+      setFetching(true)
+      try {
+        const buf = await fetchFileBytes(source.root, source.path)
+        if (cancelled) return
+        await openBytes(new Uint8Array(buf), fileName(source.path, 'document.pdf'))
+      } catch (err) {
+        if (!cancelled) {
+          notify({
+            title: 'Could not open PDF',
+            body: err instanceof Error ? err.message : String(err),
+            level: 'error',
+            appId: 'norpdf',
+          })
+        }
+      } finally {
+        if (!cancelled) setFetching(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [source, openBytes])
+
+  /* ── Manual open (picker + drag-drop) ──────────────────────────────────── */
+  const pickFile = useCallback(() => fileInputRef.current?.click(), [])
+
+  const takeFile = useCallback(
+    (file: File | undefined | null) => {
+      if (file) void ctrl.openFile(file)
+    },
+    [ctrl]
+  )
+
+  const onDragEnter = useCallback((e: React.DragEvent) => {
+    if (!Array.from(e.dataTransfer.types).includes('Files')) return
+    e.preventDefault()
+    dragDepth.current += 1
+    setDragging(true)
+  }, [])
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    if (Array.from(e.dataTransfer.types).includes('Files')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+    }
+  }, [])
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    dragDepth.current = Math.max(0, dragDepth.current - 1)
+    if (dragDepth.current === 0) setDragging(false)
+  }, [])
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      dragDepth.current = 0
+      setDragging(false)
+      const file = Array.from(e.dataTransfer.files).find(
+        (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name)
+      )
+      takeFile(file)
+    },
+    [takeFile]
+  )
+
+  return (
+    <ReaderContext.Provider value={ctrl}>
+      <div
+        className="bg-surface-container-lowest relative flex h-full min-h-0 flex-col"
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          hidden
+          onChange={(e) => {
+            takeFile(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
+
+        {/* 1. PART B annotate toolbar mounts via `toolbarSlot` when a doc is open. */}
+        <TopBar onOpenClick={pickFile} />
+
+        <div className="flex min-h-0 flex-1">
+          {/* 2. PART B forms tab appends to the side panel via `extraTabs`. */}
+          {ctrl.doc && ctrl.panelOpen && <SidePanel />}
+
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+            {!ctrl.doc ? (
+              <EmptyState
+                onOpenClick={pickFile}
+                error={ctrl.error}
+                loading={ctrl.loading || fetching}
+              />
+            ) : ctrl.mode === 'organize' ? (
+              /* 3. PART B organize view replaces the reader here. */
+              <div className="min-h-0 flex-1" data-slot="organize-view" />
+            ) : (
+              <Reader />
+            )}
+          </main>
+        </div>
+
+        {/* 4. PART B: mount signature / editor dialogs alongside the shell here. */}
+
+        {dragging && (
+          <div
+            className="border-primary bg-surface/80 pointer-events-none absolute inset-2 z-50 grid place-items-center border-2 border-dashed backdrop-blur-sm"
+            aria-hidden="true"
+          >
+            <div className="text-on-surface flex flex-col items-center gap-2">
+              <Download size={34} strokeWidth={1.5} />
+              <p className="font-ui text-[13px]">Drop a PDF to open</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </ReaderContext.Provider>
+  )
+}

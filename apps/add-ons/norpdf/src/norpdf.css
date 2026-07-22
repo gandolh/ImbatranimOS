@@ -1,0 +1,27 @@
+/*
+ * norPDF — the few non-utility bits that can't be expressed as Tailwind classes
+ * because they target elements the engine's `buildTextLayer` generates at
+ * runtime (the selectable text spans + search-highlight marks). Everything else
+ * in the add-on uses OS token utility classes directly in JSX.
+ *
+ * `var(--accent)` is the OS's single parameterized identity colour (defined on
+ * :root in core's index.css), so highlights track the active accent + theme.
+ */
+
+/* Selection over the (transparent) text layer glyphs. */
+.pdfcore-text-layer ::selection {
+  background: color-mix(in srgb, var(--accent) 42%, transparent);
+}
+
+/* Base search highlight — every hit on a page (engine-driven highlightRects). */
+.pdfcore-text-highlight {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  mix-blend-mode: multiply;
+}
+
+/* The focused search hit — a filled marker with an accent ring. */
+.norpdf-hit-active {
+  background: color-mix(in srgb, var(--accent) 34%, transparent);
+  box-shadow: 0 0 0 1.5px var(--accent);
+  mix-blend-mode: multiply;
+}

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { createCanvas } from "@napi-rs/canvas";
-import { PdfDoc, loadPdf, NotImplemented } from "../index.node.js";
+import { loadPdf, NotImplemented } from "../index.node.js";
 import type { RenderTarget } from "../index.node.js";
 
 const MARKER = "PDFCORE_ROUNDTRIP_42";

@@ -33,10 +33,13 @@ import type { Point, Rect } from "../../api/types.js";
  * cryptographic signature. The mark is a visible overlay only.
  */
 export class SignAdapter implements Sign {
-  constructor(
-    private readonly annotate: Annotate,
-    private readonly forms: Forms,
-  ) {}
+  private readonly annotate: Annotate;
+  private readonly forms: Forms;
+
+  constructor(annotate: Annotate, forms: Forms) {
+    this.annotate = annotate;
+    this.forms = forms;
+  }
 
   place(opts: PlaceSignatureOptions): void {
     this.#placeMark(opts.page, opts.rect, opts.mark);

@@ -15,7 +15,11 @@ import { copyPagesInto, subsetToBytes } from "./util.js";
  * to reconcile.
  */
 export class PdfLibAssemble implements Assemble {
-  constructor(private readonly doc: PdfLibDocument) {}
+  private readonly doc: PdfLibDocument;
+
+  constructor(doc: PdfLibDocument) {
+    this.doc = doc;
+  }
 
   async merge(...sources: PdfBytes[]): Promise<void> {
     const dest = this.doc.pdfLibDocument;

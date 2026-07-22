@@ -42,10 +42,13 @@ export class PdfLibAnnotate implements Annotate {
   /** Model id → the PDF object backing it, for later rewrite/removal. */
   readonly #refs = new Map<string, { ref: PDFRef; pageIndex: number }>();
 
-  constructor(
-    private readonly doc: PdfLibDocument,
-    private readonly model: AnnotationModel,
-  ) {}
+  private readonly doc: PdfLibDocument;
+  private readonly model: AnnotationModel;
+
+  constructor(doc: PdfLibDocument, model: AnnotationModel) {
+    this.doc = doc;
+    this.model = model;
+  }
 
   add(spec: AnnotationSpec): string {
     this.#ensureSeeded();

@@ -1,21 +1,7 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.addon.tsbuildinfo",
-
-    // `@pdfcore/engine` ships raw TypeScript (its package `exports.types`
-    // points at src/*.ts, there is no built .d.ts), so tsc pulls the engine's
-    // own sources into this program and re-checks them. The engine is authored
-    // under `packages/tsconfig.base.json`, which does NOT enable these three
-    // flags — its adapters use constructor parameter-properties and carry a few
-    // internal unused locals. The add-ons base turns the flags on, so without
-    // these overrides the engine's sources (not ours) fail the build. We relax
-    // them ONLY here; our own unused-var hygiene is still enforced by ESLint's
-    // `@typescript-eslint/no-unused-vars`, and this add-on uses no enum /
-    // namespace / parameter-property syntax. See the PART A handoff note.
-    "erasableSyntaxOnly": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.addon.tsbuildinfo"
   },
   "include": ["src"]
 }

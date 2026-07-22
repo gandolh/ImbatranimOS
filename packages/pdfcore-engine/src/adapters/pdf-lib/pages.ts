@@ -17,7 +17,11 @@ const DEFAULT_PAGE_SIZE: readonly [number, number] = [612, 792];
  * current one (see {@link subsetToBytes} in `./util.ts`).
  */
 export class PdfLibPages implements Pages {
-  constructor(private readonly doc: PdfLibDocument) {}
+  private readonly doc: PdfLibDocument;
+
+  constructor(doc: PdfLibDocument) {
+    this.doc = doc;
+  }
 
   rotate(page: number, degreesToAdd: 90 | 180 | 270 | -90 | -180 | -270): void {
     const p = this.getPage(page, "Pages.rotate");

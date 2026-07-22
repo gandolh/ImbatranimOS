@@ -56,10 +56,13 @@ export class PdfLibForms implements Forms {
   /** pdf.js-sourced widget geometry, populated by {@link primeGeometry}. */
   #geometry: Map<string, WidgetGeometry[]> | undefined;
 
-  constructor(
-    private readonly doc: PdfLibDocument,
-    private readonly model: FormModel,
-  ) {}
+  private readonly doc: PdfLibDocument;
+  private readonly model: FormModel;
+
+  constructor(doc: PdfLibDocument, model: FormModel) {
+    this.doc = doc;
+    this.model = model;
+  }
 
   list(): FieldInfo[] {
     return this.#form()

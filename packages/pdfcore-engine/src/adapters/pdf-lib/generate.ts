@@ -13,7 +13,7 @@ import type { PdfLibDocument } from "./document.js";
  * creation is fleshed out when a consumer needs it. Throws {@link NotImplemented}.
  */
 export class PdfLibGenerate implements Generate {
-  constructor(private readonly doc: PdfLibDocument) {}
+  constructor(_doc: PdfLibDocument) {}
 
   createDoc(_opts?: CreateDocOptions): void {
     throw new NotImplemented("Generate.createDoc", "not yet implemented");

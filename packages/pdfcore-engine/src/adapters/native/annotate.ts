@@ -27,7 +27,11 @@ import type { PdfLibDocument } from "../pdf-lib/document.js";
  * operators can be written in the same page coordinates as the spec.
  */
 export class NativeAnnotationWriter {
-  constructor(private readonly doc: PdfLibDocument) {}
+  private readonly doc: PdfLibDocument;
+
+  constructor(doc: PdfLibDocument) {
+    this.doc = doc;
+  }
 
   /**
    * Emit `ann` as a real PDF annotation object on its page and return the new

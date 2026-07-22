@@ -7,8 +7,11 @@ import {
   cn,
   fetchFileBytes,
   fileName,
+  notify,
   uploadFileBytes,
+  useOpenFilePicker,
   useOpenIntent,
+  usePrompt,
   useSaveHotkey,
   useUnsavedGuard,
   UploadTooLargeError,
@@ -16,7 +19,9 @@ import {
 // Side-effect: point @monaco-editor/react at the bundled Monaco and wire the
 // same-origin web workers. MUST run before the editor first renders.
 import './monacoSetup'
+import { FileMenu } from './FileMenu'
 import { languageForPath } from './language'
+import { useRecentFilesStore, type RecentFile } from './recentFilesStore'
 
 // Types are derived from the OnMount callback so we never deep-import Monaco's
 // own type modules here — Monaco stays a runtime-only, lazily-loaded dependency.
@@ -29,10 +34,18 @@ type Disposable = ReturnType<TextModel['onDidChangeContent']>
 type Tab = {
   /** Stable per-file id — also the Monaco model URI. Unique across roots. */
   id: string
-  root: string
-  path: string
+  /** Null until a "New" tab has been saved for the first time (untitled). */
+  root: string | null
+  path: string | null
   name: string
   language: string
+}
+
+/** A blank "New" tab's model URI — its own scheme, never collides with `tabId`. */
+let untitledCounter = 0
+function untitledId(): string {
+  untitledCounter += 1
+  return `untitled:Untitled-${untitledCounter}`
 }
 
 const decoder = new TextDecoder()
@@ -47,6 +60,13 @@ function tabId(root: string, path: string): string {
 export function CodeEditor({ windowId }: { windowId: string }) {
   // One-shot open intent, drained by the shared hook (StrictMode-safe).
   const source = useOpenIntent(windowId)
+
+  const recent = useRecentFilesStore((s) => s.recent)
+  const addRecent = useRecentFilesStore((s) => s.addRecent)
+  const removeRecent = useRecentFilesStore((s) => s.removeRecent)
+  const clearRecent = useRecentFilesStore((s) => s.clearRecent)
+  const { pickFile, filePicker } = useOpenFilePicker()
+  const { prompt, promptDialog } = usePrompt()
 
   const [tabs, setTabs] = useState<Tab[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -160,46 +180,82 @@ export function CodeEditor({ windowId }: { windowId: string }) {
     editor.focus()
   }, [activeId, ready, tabs, recomputeDirty])
 
-  // Open the file delivered by the launch intent (StrictMode-safe via the id guard).
-  useEffect(() => {
-    if (!source) return
-    const id = tabId(source.root, source.path)
-    if (openedIdsRef.current.has(id)) {
-      setActiveId(id)
-      return
-    }
-    openedIdsRef.current.add(id)
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-    ;(async () => {
+  // The one open path every entry point (launch intent, the picker, and the
+  // "Open Recent" MRU) funnels through — a file always lands in a new tab
+  // exactly like a File-Manager double-click, and every success is an MRU hit.
+  const openInTab = useCallback(
+    async (root: string, path: string, opts?: { silent?: boolean }): Promise<boolean> => {
+      const id = tabId(root, path)
+      if (openedIdsRef.current.has(id)) {
+        setActiveId(id)
+        return true
+      }
+      openedIdsRef.current.add(id)
+      setLoading(true)
+      setError(null)
       try {
-        const bytes = await fetchFileBytes(source.root, source.path)
-        if (cancelled) return
+        const bytes = await fetchFileBytes(root, path)
         pendingContentRef.current.set(id, decoder.decode(bytes))
-        const tab: Tab = {
-          id,
-          root: source.root,
-          path: source.path,
-          name: fileName(source.path, 'untitled'),
-          language: languageForPath(source.path),
-        }
+        const name = fileName(path, 'untitled')
+        const tab: Tab = { id, root, path, name, language: languageForPath(path) }
         setTabs((prev) => (prev.some((t) => t.id === id) ? prev : [...prev, tab]))
         setActiveId(id)
+        addRecent({ root, path, name })
+        return true
       } catch (err) {
-        if (!cancelled) {
-          openedIdsRef.current.delete(id)
-          console.error('[code-editor] failed to open', err)
-          setError('Could not open this file.')
-        }
+        openedIdsRef.current.delete(id)
+        console.error('[code-editor] failed to open', err)
+        if (!opts?.silent) setError('Could not open this file.')
+        return false
       } finally {
-        if (!cancelled) setLoading(false)
+        setLoading(false)
       }
+    },
+    [addRecent]
+  )
+
+  // Open the file delivered by the launch intent (StrictMode-safe: the
+  // `openedIdsRef` guard inside `openInTab` makes a duplicate effect run a no-op).
+  useEffect(() => {
+    if (!source) return
+    ;(async () => {
+      await openInTab(source.root, source.path)
     })()
-    return () => {
-      cancelled = true
-    }
-  }, [source])
+  }, [source, openInTab])
+
+  const handleOpenPicker = useCallback(async () => {
+    const file = await pickFile({ title: 'Open file' })
+    if (!file) return
+    await openInTab(file.root, file.path)
+  }, [pickFile, openInTab])
+
+  const handleOpenRecent = useCallback(
+    async (entry: RecentFile) => {
+      // MRU opens fail silently in the toolbar's error slot — a missing file
+      // just drops off the list with a toast instead of a raw error banner.
+      const ok = await openInTab(entry.root, entry.path, { silent: true })
+      if (!ok) {
+        removeRecent(entry.root, entry.path)
+        notify({
+          title: 'Could not open file',
+          body: `"${entry.name}" is no longer available.`,
+          appId: 'code-editor',
+          level: 'warning',
+        })
+      }
+    },
+    [openInTab, removeRecent]
+  )
+
+  const handleNew = useCallback(() => {
+    const id = untitledId()
+    const name = id.slice('untitled:'.length)
+    pendingContentRef.current.set(id, '')
+    openedIdsRef.current.add(id)
+    const tab: Tab = { id, root: null, path: null, name, language: 'plaintext' }
+    setTabs((prev) => [...prev, tab])
+    setActiveId(id)
+  }, [])
 
   // Dispose every model + listener when the window closes.
   useEffect(() => {
@@ -218,6 +274,25 @@ export function CodeEditor({ windowId }: { windowId: string }) {
     const tab = tabs.find((t) => t.id === id)
     const model = id ? modelsRef.current.get(id) : undefined
     if (!id || !tab || !model || saving) return
+
+    // An untitled "New" tab has no destination yet — ask for a filename (same
+    // prompt primitive every other add-on uses) and save it into Home.
+    let target: { root: string; path: string; name: string }
+    if (tab.root != null && tab.path != null) {
+      target = { root: tab.root, path: tab.path, name: tab.name }
+    } else {
+      const entered = await prompt({
+        title: 'Save As',
+        message: 'Save this file into Home.',
+        placeholder: 'untitled.txt',
+        initialValue: `${tab.name}.txt`,
+        confirmLabel: 'Save',
+      })
+      const path = entered?.trim().replace(/^\/+/, '')
+      if (!path) return
+      target = { root: 'home', path, name: fileName(path, path) }
+    }
+
     // Snapshot the version being uploaded; if the user edits mid-flight the
     // version advances and the tab stays dirty (those edits aren't on disk yet).
     const uploadedVersion = model.getAlternativeVersionId()
@@ -225,8 +300,11 @@ export function CodeEditor({ windowId }: { windowId: string }) {
     setSaving(true)
     setError(null)
     try {
-      await uploadFileBytes(tab.root, tab.path, encoder.encode(text), tab.name)
+      await uploadFileBytes(target.root, target.path, encoder.encode(text), target.name)
       savedVersionRef.current.set(id, uploadedVersion)
+      if (tab.root == null || tab.path == null) {
+        setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, ...target } : t)))
+      }
       recomputeDirty(id)
     } catch (err) {
       if (err instanceof UploadTooLargeError) {
@@ -238,7 +316,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
     } finally {
       setSaving(false)
     }
-  }, [activeId, tabs, saving, recomputeDirty])
+  }, [activeId, tabs, saving, recomputeDirty, prompt])
 
   // Ctrl/Cmd+S saves the active tab — only for the top-most window.
   useSaveHotkey(windowId, handleSave)
@@ -285,8 +363,15 @@ export function CodeEditor({ windowId }: { windowId: string }) {
 
   return (
     <div className="bg-surface-container-lowest flex h-full flex-col">
-      {/* App toolbar (Save) */}
+      {/* App toolbar (File menu + Save) */}
       <div className="border-outline-variant bg-surface-container-low flex items-center gap-1 border-b px-2 py-1">
+        <FileMenu
+          recent={recent}
+          onNew={handleNew}
+          onOpenPicker={() => void handleOpenPicker()}
+          onOpenRecent={(entry) => void handleOpenRecent(entry)}
+          onClearRecent={clearRecent}
+        />
         <Tooltip content="Save (Ctrl+S)">
           <Button
             variant="default"
@@ -331,7 +416,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
                     ? 'bg-surface-container-lowest text-on-surface'
                     : 'text-on-surface-variant hover:bg-surface-container-high'
                 )}
-                title={tab.path}
+                title={tab.path ?? tab.name}
               >
                 <span className="truncate">{tab.name}</span>
                 <button
@@ -383,10 +468,15 @@ export function CodeEditor({ windowId }: { windowId: string }) {
         {!hasTabs && !loading && (
           <div className="bg-surface-container-lowest text-on-surface-variant absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
             <FileCode2 size={40} strokeWidth={1} />
-            <span className="font-ui text-[12px]">Open a code file from Files</span>
+            <span className="font-ui text-[12px]">
+              Open a code file from Files, or use File → Open…
+            </span>
           </div>
         )}
       </div>
+
+      {filePicker}
+      {promptDialog}
     </div>
   )
 }

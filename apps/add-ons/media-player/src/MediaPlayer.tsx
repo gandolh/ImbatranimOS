@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { PlayCircle } from 'lucide-react'
-import { useOpenIntent } from '@imbatranim/core'
+import { PlayCircle, FolderOpen } from 'lucide-react'
+import { Button, openApp, useOpenFilePicker, useOpenIntent } from '@imbatranim/core'
 import { listFolderTracks, mediaKind, type Track } from './api/listDir'
 import { TrackStage } from './components/TrackStage'
 import { Playlist } from './components/Playlist'
@@ -20,6 +20,7 @@ export function MediaPlayer({ windowId }: { windowId: string }) {
   // this window's root; the active track within that root can still change
   // as the user browses the queue.
   const source = useOpenIntent(windowId)
+  const { pickFile, filePicker } = useOpenFilePicker()
 
   // `null` until the user picks a track explicitly (queue click, prev/next,
   // or auto-advance) — before that, the active track falls back to the
@@ -78,10 +79,33 @@ export function MediaPlayer({ windowId }: { windowId: string }) {
   }, [])
 
   if (!source) {
+    // Opens the shared in-app picker, then re-launches this app with the pick
+    // — the same intent path a File-Manager double-click uses (multi-instance,
+    // so this opens a new window rather than reloading the current one).
+    const handleOpen = async () => {
+      const file = await pickFile({
+        title: 'Open media',
+        accept: (f) =>
+          /\.(mp3|wav|ogg|oga|flac|m4a|aac|opus|mp4|webm|ogv|mov|m4v|mkv)$/i.test(f.name),
+      })
+      if (!file) return
+      openApp('media-player', { root: file.root, openPath: file.path })
+    }
+
     return (
       <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 text-center">
         <PlayCircle size={40} strokeWidth={1} />
+        <Button
+          variant="primary"
+          size="sm"
+          className="mt-1 flex items-center gap-1.5"
+          onClick={handleOpen}
+        >
+          <FolderOpen size={13} />
+          Open…
+        </Button>
         <span className="font-ui text-[12px]">Open a file from Files</span>
+        {filePicker}
       </div>
     )
   }

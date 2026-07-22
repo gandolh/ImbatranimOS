@@ -7,6 +7,7 @@ import {
   ZoomOut,
   Maximize,
   Download,
+  FolderOpen,
   Loader2,
 } from 'lucide-react'
 import {
@@ -15,6 +16,8 @@ import {
   fetchFileBytes,
   downloadUrl,
   fileName,
+  openApp,
+  useOpenFilePicker,
   useOpenIntent,
 } from '@imbatranim/core'
 import { loadPdfDocument, type LoadedPdf, type PDFDocumentProxy } from './engine/pdf'
@@ -27,6 +30,7 @@ const PAGE_GUTTER = 32 // horizontal breathing room used when fitting to width
 export function PdfViewer({ windowId }: { windowId: string }) {
   // One-shot open intent, drained by the shared hook (StrictMode-safe).
   const source = useOpenIntent(windowId)
+  const { pickFile, filePicker } = useOpenFilePicker()
 
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
   const [numPages, setNumPages] = useState(0)
@@ -163,10 +167,29 @@ export function PdfViewer({ windowId }: { windowId: string }) {
   const zoomLabel = fitWidth ? 'Fit' : `${Math.round(zoom * 100)}%`
 
   if (!source) {
+    // Opens the shared in-app picker, then re-launches this app with the pick
+    // — the same intent path a File-Manager double-click uses (multi-instance,
+    // so this opens a new window rather than reloading the current one).
+    const handleOpen = async () => {
+      const file = await pickFile({ title: 'Open PDF', accept: (f) => /\.pdf$/i.test(f.name) })
+      if (!file) return
+      openApp('pdf-viewer', { root: file.root, openPath: file.path })
+    }
+
     return (
       <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 text-center">
         <FileText size={40} strokeWidth={1} />
+        <Button
+          variant="primary"
+          size="sm"
+          className="mt-1 flex items-center gap-1.5"
+          onClick={handleOpen}
+        >
+          <FolderOpen size={13} />
+          Open…
+        </Button>
         <span className="font-ui text-[12px]">Open a file from Files</span>
+        {filePicker}
       </div>
     )
   }

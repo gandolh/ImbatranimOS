@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, Save, Sheet as SheetIcon } from 'lucide-react'
+import { FilePlus, FolderOpen, Loader2, Save, Sheet as SheetIcon } from 'lucide-react'
 import {
   Button,
   Tooltip,
@@ -7,16 +7,24 @@ import {
   uploadFileBytes,
   UploadTooLargeError,
   fileName,
+  openApp,
+  useOpenFilePicker,
   useOpenIntent,
+  usePrompt,
   useSaveHotkey,
   useUnsavedGuard,
+  type PickedFile,
 } from '@imbatranim/core'
 import { createSheetEngine, type SheetEngine } from './engine/univer'
 import { univerToXlsx, xlsxToUniver } from './engine/xlsxBridge'
 
+const acceptSpreadsheet = (f: PickedFile) => /\.xlsx?$/i.test(f.name)
+
 export function Sheets({ windowId }: { windowId: string }) {
   // One-shot open intent, drained by the shared hook (StrictMode-safe).
   const source = useOpenIntent(windowId)
+  const { pickFile, filePicker } = useOpenFilePicker()
+  const { prompt, promptDialog } = usePrompt()
 
   const containerRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<SheetEngine | null>(null)
@@ -24,16 +32,29 @@ export function Sheets({ windowId }: { windowId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
+  // True once "New" is chosen from the empty state: a blank, editable workbook
+  // with no file behind it yet — the first Save prompts for a name.
+  const [isNew, setIsNew] = useState(false)
+  // The name chosen for a New workbook on its first save. Once set, later
+  // saves write straight back to it, same as an opened file.
+  const [savedPath, setSavedPath] = useState<{ root: string; path: string } | null>(null)
 
-  const name = source ? fileName(source.path, 'workbook.xlsx') : ''
+  const active = source ?? savedPath
+  const name = active ? fileName(active.path, 'workbook.xlsx') : 'Untitled Workbook.xlsx'
+
+  async function handleOpen() {
+    const file = await pickFile({ title: 'Open spreadsheet', accept: acceptSpreadsheet })
+    if (file) openApp('sheets', { root: file.root, openPath: file.path })
+  }
 
   // Reflect filename + dirty marker in the window title and warn before closing
   // with unsaved changes.
   useUnsavedGuard(windowId, dirty, name)
 
-  // Boot Univer, fetch the file, map it through the ExcelJS bridge into the grid.
+  // Boot Univer, then either fetch+map an opened file through the ExcelJS
+  // bridge or, for a New doc, load a blank workbook straight away.
   useEffect(() => {
-    if (!source) return
+    if (!source && !isNew) return
     const container = containerRef.current
     if (!container) return
     let cancelled = false
@@ -49,11 +70,16 @@ export function Sheets({ windowId }: { windowId: string }) {
         }
         engineRef.current = engine
         engine.onEdit(() => setDirty(true))
-        const bytes = await fetchFileBytes(source.root, source.path)
-        if (cancelled) return
-        const workbookData = await xlsxToUniver(bytes)
-        if (cancelled) return
-        engine.loadWorkbook(workbookData)
+        if (source) {
+          const bytes = await fetchFileBytes(source.root, source.path)
+          if (cancelled) return
+          const workbookData = await xlsxToUniver(bytes)
+          if (cancelled) return
+          engine.loadWorkbook(workbookData)
+        } else {
+          // New doc — Univer fills in sensible defaults for an empty snapshot.
+          engine.loadWorkbook({})
+        }
         setDirty(false)
       } catch (err) {
         if (!cancelled) {
@@ -69,23 +95,38 @@ export function Sheets({ windowId }: { windowId: string }) {
       engineRef.current = null
       engine?.destroy()
     }
-  }, [source])
+  }, [source, isNew])
 
   const handleSave = useCallback(async () => {
     const engine = engineRef.current
-    if (!engine || !source || saving) return
+    if (!engine || saving) return
     const snapshot = engine.snapshot()
     if (!snapshot) return
     // Record the edit counter at snapshot time. If the user edits while the
     // serialize+upload is in flight the counter advances, so we must NOT clear
     // dirty on resolve — those edits aren't in the bytes we uploaded.
     const savedAtEditCount = engine.editCount()
+    let target = active
+    if (!target) {
+      // A New workbook's first save needs a name — the same themed prompt
+      // other core flows use, not a bespoke save-as picker.
+      const chosen = await prompt({
+        title: 'Save spreadsheet',
+        message: 'Name this file to save it.',
+        placeholder: 'Untitled Workbook.xlsx',
+        initialValue: 'Untitled Workbook.xlsx',
+        confirmLabel: 'Save',
+      })
+      if (!chosen) return
+      target = { root: 'home', path: /\.xlsx?$/i.test(chosen) ? chosen : `${chosen}.xlsx` }
+    }
     setSaving(true)
     setError(null)
     try {
       const bytes = await univerToXlsx(snapshot)
-      await uploadFileBytes(source.root, source.path, bytes, fileName(source.path, 'workbook.xlsx'))
+      await uploadFileBytes(target.root, target.path, bytes, fileName(target.path, 'workbook.xlsx'))
       if (engine.editCount() === savedAtEditCount) setDirty(false)
+      if (!active) setSavedPath(target)
     } catch (err) {
       if (err instanceof UploadTooLargeError) {
         setError(err.message)
@@ -96,16 +137,39 @@ export function Sheets({ windowId }: { windowId: string }) {
     } finally {
       setSaving(false)
     }
-  }, [source, saving])
+  }, [active, saving, prompt])
 
   // Ctrl/Cmd+S saves — but only for the top-most window.
   useSaveHotkey(windowId, handleSave)
 
-  if (!source) {
+  if (!source && !isNew) {
     return (
-      <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 text-center">
+      <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-3 text-center">
         <SheetIcon size={40} strokeWidth={1} />
         <span className="font-ui text-[12px]">Open a file from Files</span>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => void handleOpen()}
+          >
+            <FolderOpen size={12} />
+            Open…
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => {
+              setIsNew(true)
+            }}
+          >
+            <FilePlus size={12} />
+            New
+          </Button>
+        </div>
+        {filePicker}
       </div>
     )
   }
@@ -150,6 +214,7 @@ export function Sheets({ windowId }: { windowId: string }) {
           </div>
         )}
       </div>
+      {promptDialog}
     </div>
   )
 }

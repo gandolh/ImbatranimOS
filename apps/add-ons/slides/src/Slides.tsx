@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { Presentation, Download, Loader2, Info } from 'lucide-react'
+import { Presentation, Download, FolderOpen, Loader2, Info } from 'lucide-react'
 import {
   Button,
   Tooltip,
   fetchFileBytes,
   downloadUrl,
   fileName,
+  openApp,
+  useOpenFilePicker,
   useOpenIntent,
+  type PickedFile,
 } from '@imbatranim/core'
 import { renderPptx } from './engine/pptx'
 
@@ -15,9 +18,17 @@ import { renderPptx } from './engine/pptx'
 const SLIDE_ASPECT = 9 / 16
 const SLIDE_GUTTER = 32
 
+const acceptPresentation = (f: PickedFile) => /\.pptx?$/i.test(f.name)
+
 export function Slides({ windowId }: { windowId: string }) {
   // One-shot open intent, drained by the shared hook (StrictMode-safe).
   const source = useOpenIntent(windowId)
+  const { pickFile, filePicker } = useOpenFilePicker()
+
+  async function handleOpen() {
+    const file = await pickFile({ title: 'Open presentation', accept: acceptPresentation })
+    if (file) openApp('slides', { root: file.root, openPath: file.path })
+  }
 
   // Starts true: the render effect runs as soon as a source is latched and only
   // flips these in async paths (avoids synchronous setState-in-effect).
@@ -92,9 +103,19 @@ export function Slides({ windowId }: { windowId: string }) {
 
   if (!source) {
     return (
-      <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 text-center">
+      <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-3 text-center">
         <Presentation size={40} strokeWidth={1} />
         <span className="font-ui text-[12px]">Open a file from Files</span>
+        <Button
+          variant="default"
+          size="sm"
+          className="flex items-center gap-1"
+          onClick={() => void handleOpen()}
+        >
+          <FolderOpen size={12} />
+          Open…
+        </Button>
+        {filePicker}
       </div>
     )
   }

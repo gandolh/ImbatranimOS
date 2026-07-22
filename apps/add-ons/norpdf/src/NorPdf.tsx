@@ -30,7 +30,15 @@ import type { JSX } from 'react'
 // documented escape hatch). Runs once when this lazy chunk first loads.
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { configureWorker } from '@pdfcore/engine'
-import { fetchFileBytes, fileName, notify, useOpenIntent, useSaveHotkey } from '@imbatranim/core'
+import {
+  fetchFileBytes,
+  fileName,
+  notify,
+  openApp,
+  useOpenFilePicker,
+  useOpenIntent,
+  useSaveHotkey,
+} from '@imbatranim/core'
 import { Download, FileText } from 'lucide-react'
 import { ReaderContext } from './app/context'
 import { useReaderController } from './app/useReaderController'
@@ -52,6 +60,7 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
   const ctrl = useReaderController()
   // One-shot open intent, drained by the shared hook (StrictMode-safe).
   const source = useOpenIntent(windowId)
+  const { pickFile, filePicker } = useOpenFilePicker()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [fetching, setFetching] = useState(false)
@@ -89,8 +98,17 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
     }
   }, [source, openBytes])
 
-  /* ── Manual open (picker + drag-drop) ──────────────────────────────────── */
-  const pickFile = useCallback(() => fileInputRef.current?.click(), [])
+  /* ── Manual open (native file dialog + drag-drop) ──────────────────────── */
+  const pickLocalFile = useCallback(() => fileInputRef.current?.click(), [])
+
+  // Empty-state Open…: the shared in-app picker over the Files FS, re-launched
+  // through this app's own open-intent path (same as a File-Manager
+  // double-click would use) rather than the local-disk file dialog above.
+  const handleOpenFromFiles = useCallback(async () => {
+    const file = await pickFile({ title: 'Open PDF', accept: (f) => /\.pdf$/i.test(f.name) })
+    if (!file) return
+    openApp('norpdf', { root: file.root, openPath: file.path })
+  }, [pickFile])
 
   const takeFile = useCallback(
     (file: File | undefined | null) => {
@@ -159,7 +177,10 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
           />
 
           {/* 1. PART B annotate toolbar mounts via `toolbarSlot` when a doc is open. */}
-          <TopBar onOpenClick={pickFile} toolbarSlot={ctrl.doc ? <AnnotateToolbar /> : undefined} />
+          <TopBar
+            onOpenClick={pickLocalFile}
+            toolbarSlot={ctrl.doc ? <AnnotateToolbar /> : undefined}
+          />
 
           <div className="flex min-h-0 flex-1">
             {/* 2. PART B forms tab appends to the side panel via `extraTabs`. */}
@@ -168,7 +189,7 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
             <main className="flex min-h-0 min-w-0 flex-1 flex-col">
               {!ctrl.doc ? (
                 <EmptyState
-                  onOpenClick={pickFile}
+                  onOpenClick={handleOpenFromFiles}
                   error={ctrl.error}
                   loading={ctrl.loading || fetching}
                 />
@@ -185,6 +206,8 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
 
           {/* 4. PART B: signature capture pad (Sign tool + form signature fields). */}
           <SignatureDialog />
+
+          {filePicker}
 
           {dragging && (
             <div

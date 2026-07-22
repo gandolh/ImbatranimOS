@@ -10,9 +10,18 @@ import {
   RotateCcw,
   RotateCw,
   Download,
+  FolderOpen,
   Loader2,
 } from 'lucide-react'
-import { Button, Tooltip, downloadUrl, fileName, useOpenIntent } from '@imbatranim/core'
+import {
+  Button,
+  Tooltip,
+  downloadUrl,
+  fileName,
+  openApp,
+  useOpenFilePicker,
+  useOpenIntent,
+} from '@imbatranim/core'
 import { listDir } from './api/listDir'
 import type { FsEntry } from './api/types'
 import { isImagePath, parentDir, clamp } from './lib/imagePath'
@@ -29,6 +38,7 @@ export function ImageViewer({ windowId }: { windowId: string }) {
   // the file the window was opened with; folder navigation below only ever
   // moves a local `index` over the sibling list — it never re-drains an intent.
   const source = useOpenIntent(windowId)
+  const { pickFile, filePicker } = useOpenFilePicker()
 
   // Sibling image files in the same folder, name-sorted. `null` = not resolved
   // yet (or the listing failed) — prev/next stay disabled and the opened file
@@ -187,6 +197,18 @@ export function ImageViewer({ windowId }: { windowId: string }) {
     a.remove()
   }
 
+  // Opens the shared in-app picker, then re-launches this app with the pick —
+  // the same intent path a File-Manager double-click uses (multi-instance, so
+  // this opens a new window rather than reloading the current one).
+  async function handleOpen() {
+    const file = await pickFile({
+      title: 'Open image',
+      accept: (f) => /\.(png|jpg|jpeg|gif|webp|bmp|svg|avif|ico)$/i.test(f.name),
+    })
+    if (!file) return
+    openApp('image-viewer', { root: file.root, openPath: file.path })
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     switch (e.key) {
       case 'ArrowLeft':
@@ -228,7 +250,17 @@ export function ImageViewer({ windowId }: { windowId: string }) {
     return (
       <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 text-center">
         <ImageIcon size={40} strokeWidth={1} />
+        <Button
+          variant="primary"
+          size="sm"
+          className="mt-1 flex items-center gap-1.5"
+          onClick={handleOpen}
+        >
+          <FolderOpen size={13} />
+          Open…
+        </Button>
         <span className="font-ui text-[12px]">Open a file from Files</span>
+        {filePicker}
       </div>
     )
   }

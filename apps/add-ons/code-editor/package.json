@@ -16,10 +16,12 @@
     "format:check": "prettier --check src"
   },
   "dependencies": {
+    "@base-ui/react": "^1.4.1",
     "@imbatranim/core": "*",
     "@monaco-editor/react": "^4.7.0",
     "lucide-react": "^1.14.0",
-    "monaco-editor": "^0.54.0"
+    "monaco-editor": "^0.54.0",
+    "zustand": "^5.0.12"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.100.7",

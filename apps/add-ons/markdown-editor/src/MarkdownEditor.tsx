@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, Save } from 'lucide-react'
+import { FilePlus, FolderOpen, Loader2, Save } from 'lucide-react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -9,20 +9,28 @@ import {
   cn,
   fetchFileBytes,
   fileName,
+  openApp,
   uploadFileBytes,
+  useOpenFilePicker,
   useOpenIntent,
+  usePrompt,
   useSaveHotkey,
   useUnsavedGuard,
   UploadTooLargeError,
+  type PickedFile,
 } from '@imbatranim/core'
 import { VIEW_MODE_OPTIONS, type ViewMode } from './viewMode'
 
 const decoder = new TextDecoder()
 const encoder = new TextEncoder()
 
+const acceptMarkdown = (f: PickedFile) => /\.(md|markdown)$/i.test(f.name)
+
 export function MarkdownEditor({ windowId }: { windowId: string }) {
   // One-shot open intent, drained by the shared hook (StrictMode-safe).
   const source = useOpenIntent(windowId)
+  const { pickFile, filePicker } = useOpenFilePicker()
+  const { prompt, promptDialog } = usePrompt()
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -30,6 +38,12 @@ export function MarkdownEditor({ windowId }: { windowId: string }) {
   const [text, setText] = useState('')
   const [savedText, setSavedText] = useState('')
   const [mode, setMode] = useState<ViewMode>('split')
+  // True once "New" is chosen from the empty state: a blank, editable doc with
+  // no file behind it yet — the first Save prompts for a name.
+  const [isNew, setIsNew] = useState(false)
+  // The name chosen for a New doc on its first save. Once set, later saves
+  // write straight back to it, same as an opened file.
+  const [savedPath, setSavedPath] = useState<{ root: string; path: string } | null>(null)
   // Tracks the latest `text` for the async save flow below, without pulling
   // `text` into that callback's dependencies (kept in sync via effect, never
   // written during render).
@@ -38,8 +52,14 @@ export function MarkdownEditor({ windowId }: { windowId: string }) {
     textRef.current = text
   }, [text])
 
-  const name = source ? fileName(source.path, 'untitled.md') : ''
+  const active = source ?? savedPath
+  const name = active ? fileName(active.path, 'untitled.md') : 'Untitled.md'
   const dirty = text !== savedText
+
+  async function handleOpen() {
+    const file = await pickFile({ title: 'Open markdown file', accept: acceptMarkdown })
+    if (file) openApp('markdown-editor', { root: file.root, openPath: file.path })
+  }
 
   // Reflect filename + dirty marker in the window title and warn before closing
   // with unsaved changes.
@@ -73,16 +93,36 @@ export function MarkdownEditor({ windowId }: { windowId: string }) {
   }, [source])
 
   const handleSave = useCallback(async () => {
-    if (!source || saving) return
+    if (saving || (!active && !isNew)) return
     // Record the exact text being uploaded. If the user edits while the
     // upload is in flight, `textRef.current` moves on — only clear dirty when
     // no further edits landed, so those in-flight edits aren't clobbered.
     const uploadedText = text
+    let target = active
+    if (!target) {
+      // A New doc's first save needs a name — the same themed prompt other
+      // core flows use, not a bespoke save-as picker.
+      const chosen = await prompt({
+        title: 'Save markdown file',
+        message: 'Name this file to save it.',
+        placeholder: 'untitled.md',
+        initialValue: 'untitled.md',
+        confirmLabel: 'Save',
+      })
+      if (!chosen) return
+      target = { root: 'home', path: /\.(md|markdown)$/i.test(chosen) ? chosen : `${chosen}.md` }
+    }
     setSaving(true)
     setError(null)
     try {
-      await uploadFileBytes(source.root, source.path, encoder.encode(uploadedText), name)
+      await uploadFileBytes(
+        target.root,
+        target.path,
+        encoder.encode(uploadedText),
+        fileName(target.path, 'untitled.md')
+      )
       if (textRef.current === uploadedText) setSavedText(uploadedText)
+      if (!active) setSavedPath(target)
     } catch (err) {
       if (err instanceof UploadTooLargeError) {
         setError(err.message)
@@ -93,15 +133,39 @@ export function MarkdownEditor({ windowId }: { windowId: string }) {
     } finally {
       setSaving(false)
     }
-  }, [source, saving, text, name])
+  }, [active, isNew, saving, text, prompt])
 
   // Ctrl/Cmd+S saves — but only for the top-most window.
   useSaveHotkey(windowId, handleSave)
 
-  if (!source) {
+  if (!source && !isNew) {
     return (
-      <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 text-center">
+      <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-3 text-center">
         <span className="font-ui text-[12px]">Open a .md file from Files</span>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => void handleOpen()}
+          >
+            <FolderOpen size={12} />
+            Open…
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => {
+              setIsNew(true)
+              setLoading(false)
+            }}
+          >
+            <FilePlus size={12} />
+            New
+          </Button>
+        </div>
+        {filePicker}
       </div>
     )
   }
@@ -210,6 +274,7 @@ export function MarkdownEditor({ windowId }: { windowId: string }) {
           </>
         )}
       </div>
+      {promptDialog}
     </div>
   )
 }

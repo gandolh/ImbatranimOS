@@ -75,6 +75,22 @@ describe('clampWindowRect (window open/drag)', () => {
     expect(position.x).toBeGreaterThanOrEqual(0)
     expect(position.y).toBeGreaterThanOrEqual(0)
   })
+
+  it('never shrinks below minSize, even when minSize exceeds the available bounds', () => {
+    // Usable area is 1280×533; a minSize bigger than that on both axes must
+    // still be honored in full, not clamped down to the viewport.
+    const minSize = { width: 1400, height: 700 }
+    const { position, size } = clampWindowRect(
+      { x: 480, y: 300 },
+      { width: 320, height: 900 },
+      minSize
+    )
+    expect(size.width).toBe(minSize.width)
+    expect(size.height).toBe(minSize.height)
+    // Overflow is accepted, but the top-left corner must stay in-bounds.
+    expect(position.x).toBe(0)
+    expect(position.y).toBe(0)
+  })
 })
 
 describe('desktopStore hydration', () => {

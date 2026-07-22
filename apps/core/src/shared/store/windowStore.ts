@@ -179,7 +179,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   closeGuards: {},
   nextZIndex: 1,
 
-  openWindow: (appId, title, defaultSize, _minSize, initialPosition) => {
+  openWindow: (appId, title, defaultSize, minSize, initialPosition) => {
     const id = uuidv4()
     const { nextZIndex } = get()
 
@@ -202,8 +202,9 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
 
     // Clamp default size + position to the desktop: caps height to
     // vh − TASKBAR_HEIGHT (so e.g. Calculator's `=` row is never clipped) and
-    // keeps the window from opening under the taskbar / off-screen.
-    const { position, size } = clampWindowRect({ x, y }, defaultSize)
+    // keeps the window from opening under the taskbar / off-screen. minSize is
+    // floored so a short viewport can't shrink the window past its own chrome.
+    const { position, size } = clampWindowRect({ x, y }, defaultSize, minSize)
 
     const instance: WindowInstance = {
       id,
@@ -427,17 +428,24 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
 
     const maxZ = persisted.reduce((acc, w) => Math.max(acc, w.zIndex), 0)
 
-    const windows: WindowInstance[] = persisted.map((p) => ({
-      id: uuidv4(), // regenerate — do NOT persist uuid
-      appId: p.appId,
-      title: p.title,
-      position: p.position,
-      size: p.size,
-      isMaximized: p.isMaximized,
-      isVisible: p.isVisible,
-      zIndex: p.zIndex,
-      snapState: p.snapState,
-    }))
+    const windows: WindowInstance[] = persisted.map((p) => {
+      // Self-heal: a layout saved on a bigger screen must not restore under
+      // the taskbar / off-screen. The persisted blob carries no minSize, so
+      // this just fits the rect to bounds (no floor) — same as pre-restore
+      // opens got before minSize was threaded through.
+      const { position, size } = clampWindowRect(p.position, p.size)
+      return {
+        id: uuidv4(), // regenerate — do NOT persist uuid
+        appId: p.appId,
+        title: p.title,
+        position,
+        size,
+        isMaximized: p.isMaximized,
+        isVisible: p.isVisible,
+        zIndex: p.zIndex,
+        snapState: p.snapState,
+      }
+    })
 
     set({
       windows,

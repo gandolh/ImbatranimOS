@@ -60,14 +60,30 @@ export function healIconPositions(
 /**
  * Clamp a window's position + size to the desktop: never taller/wider than the
  * usable region, never opened or dragged under the taskbar / off-screen.
+ *
+ * `minSize`, when given, floors the shrunk size so a window is never clamped
+ * below the size its own chrome needs (e.g. Calculator's `=` row). If the
+ * floor is bigger than the available bounds, the window keeps minSize and
+ * accepts overflow — anchored so its top-left corner stays on-screen.
  */
 export function clampWindowRect(
   position: { x: number; y: number },
-  size: { width: number; height: number }
+  size: { width: number; height: number },
+  minSize?: { width: number; height: number }
 ): { position: { x: number; y: number }; size: { width: number; height: number } } {
-  const r = clampRectToBounds(
-    { x: position.x, y: position.y, width: size.width, height: size.height },
-    getDesktopBounds(0)
-  )
-  return { position: { x: r.x, y: r.y }, size: { width: r.width, height: r.height } }
+  const bounds = getDesktopBounds(0)
+  const boundsWidth = bounds.right - bounds.left
+  const boundsHeight = bounds.bottom - bounds.top
+
+  let width = Math.min(size.width, boundsWidth)
+  let height = Math.min(size.height, boundsHeight)
+  if (minSize) {
+    width = Math.max(minSize.width, width)
+    height = Math.max(minSize.height, height)
+  }
+
+  const x = Math.max(bounds.left, Math.min(position.x, bounds.right - width))
+  const y = Math.max(bounds.top, Math.min(position.y, bounds.bottom - height))
+
+  return { position: { x, y }, size: { width, height } }
 }

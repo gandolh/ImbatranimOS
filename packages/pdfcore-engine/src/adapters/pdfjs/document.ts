@@ -1,0 +1,55 @@
+import type { PDFDocumentProxy } from "pdfjs-dist";
+import type { PdfBytes } from "../../api/types.js";
+
+/**
+ * pdf.js backend resolution.
+ *
+ * In Node the modern `pdfjs-dist` build references browser globals (`DOMMatrix`
+ * etc.) at import time and warns to use the legacy build; in the browser the
+ * modern build (with a real worker) is what we want. We pick the build at
+ * runtime, but with **literal** dynamic-import specifiers in each branch — a
+ * *variable* specifier leaves a bare module id that a browser bundler (Vite)
+ * can't statically analyse, so it survives to runtime and fails to resolve for
+ * every browser consumer of Render/Text/Outline. Literal specifiers let the
+ * bundler emit a real chunk. The surfaces are identical, so both branches cast
+ * to the modern build's types (the legacy subpath ships no types of its own).
+ *
+ * The import is memoised so every adapter (Render, Text, Outline) shares one
+ * module instance — important so the browser worker configuration set on
+ * `GlobalWorkerOptions` applies to documents loaded here.
+ */
+type Pdfjs = typeof import("pdfjs-dist");
+
+let backendPromise: Promise<Pdfjs> | undefined;
+
+function isNodeEnvironment(): boolean {
+  const hasWindow = "window" in globalThis;
+  return (
+    !hasWindow && typeof process !== "undefined" && !!process.versions?.node
+  );
+}
+
+export function getPdfjs(): Promise<Pdfjs> {
+  if (!backendPromise) {
+    backendPromise = isNodeEnvironment()
+      ? // Node: the legacy build avoids browser globals at import time.
+        // @ts-ignore -- legacy subpath ships no type declarations; surface matches modern
+        (import("pdfjs-dist/legacy/build/pdf.mjs") as Promise<Pdfjs>)
+      : // Browser: modern build; literal specifier so Vite bundles it into a chunk.
+        (import("pdfjs-dist") as Promise<Pdfjs>);
+  }
+  return backendPromise;
+}
+
+/**
+ * Parse PDF bytes into a pdf.js document proxy. Shared by the Render, Text and
+ * Outline adapters. `getDocument` transfers/detaches its input buffer, so we
+ * hand it a fresh copy to leave the caller's bytes intact.
+ */
+export async function loadPdfjsDocument(
+  bytes: PdfBytes,
+): Promise<PDFDocumentProxy> {
+  const { getDocument } = await getPdfjs();
+  const data = new Uint8Array(bytes);
+  return getDocument({ data }).promise;
+}

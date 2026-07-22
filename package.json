@@ -12,7 +12,8 @@
     "apps/backend",
     "apps/core",
     "apps/add-ons/*",
-    "apps/docs"
+    "apps/docs",
+    "packages/*"
   ],
   "scripts": {
     "build": "turbo build",

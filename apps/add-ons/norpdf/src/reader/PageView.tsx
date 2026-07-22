@@ -19,6 +19,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { JSX } from 'react'
 import { buildTextLayer, layoutHighlightRects } from '@pdfcore/engine'
+import { PageAnnotateLayer } from '../editor/PageAnnotateLayer'
 import type {
   DomDocumentLike,
   DomElementLike,
@@ -166,7 +167,8 @@ export function PageView({
             />
           ))}
         </div>
-        {/* PART B: annotation overlay slot — mount a <PageAnnotateLayer page={pageNumber} vp={vp}/> here. */}
+        {/* PART B: per-page annotation overlay, keyed to the same viewport as the text layer. */}
+        {vp && <PageAnnotateLayer page={pageNumber} vp={vp} />}
         {failed && (
           <div className="bg-surface-container text-on-surface-variant absolute inset-0 grid place-items-center text-[12px]">
             Could not render this page.

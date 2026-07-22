@@ -31,13 +31,19 @@ import type { JSX } from 'react'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { configureWorker } from '@pdfcore/engine'
 import { fetchFileBytes, fileName, notify, useOpenIntent, useSaveHotkey } from '@imbatranim/core'
-import { Download } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
 import { ReaderContext } from './app/context'
 import { useReaderController } from './app/useReaderController'
 import { EmptyState } from './app/EmptyState'
 import { TopBar } from './shell/TopBar'
 import { SidePanel } from './shell/SidePanel'
+import type { SidePanelTab } from './shell/SidePanel'
 import { Reader } from './reader/Reader'
+import { EditorProvider } from './editor/EditorProvider'
+import { AnnotateToolbar } from './editor/AnnotateToolbar'
+import { SignatureDialog } from './editor/SignatureDialog'
+import { FormsPanel } from './forms/FormsPanel'
+import { OrganizeView } from './organize/OrganizeView'
 import './norpdf.css'
 
 configureWorker(workerUrl)
@@ -123,63 +129,76 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
     [takeFile]
   )
 
+  // PART B: the Forms side-panel tab (appended to the reader's rail).
+  const formsTab: SidePanelTab = {
+    id: 'forms',
+    label: 'Forms',
+    icon: FileText,
+    render: () => <FormsPanel />,
+  }
+
   return (
     <ReaderContext.Provider value={ctrl}>
-      <div
-        className="bg-surface-container-lowest relative flex h-full min-h-0 flex-col"
-        onDragEnter={onDragEnter}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/pdf"
-          hidden
-          onChange={(e) => {
-            takeFile(e.target.files?.[0])
-            e.target.value = ''
-          }}
-        />
+      <EditorProvider>
+        <div
+          className="bg-surface-container-lowest relative flex h-full min-h-0 flex-col"
+          onDragEnter={onDragEnter}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            hidden
+            onChange={(e) => {
+              takeFile(e.target.files?.[0])
+              e.target.value = ''
+            }}
+          />
 
-        {/* 1. PART B annotate toolbar mounts via `toolbarSlot` when a doc is open. */}
-        <TopBar onOpenClick={pickFile} />
+          {/* 1. PART B annotate toolbar mounts via `toolbarSlot` when a doc is open. */}
+          <TopBar onOpenClick={pickFile} toolbarSlot={ctrl.doc ? <AnnotateToolbar /> : undefined} />
 
-        <div className="flex min-h-0 flex-1">
-          {/* 2. PART B forms tab appends to the side panel via `extraTabs`. */}
-          {ctrl.doc && ctrl.panelOpen && <SidePanel />}
+          <div className="flex min-h-0 flex-1">
+            {/* 2. PART B forms tab appends to the side panel via `extraTabs`. */}
+            {ctrl.doc && ctrl.panelOpen && <SidePanel extraTabs={[formsTab]} />}
 
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {!ctrl.doc ? (
-              <EmptyState
-                onOpenClick={pickFile}
-                error={ctrl.error}
-                loading={ctrl.loading || fetching}
-              />
-            ) : ctrl.mode === 'organize' ? (
-              /* 3. PART B organize view replaces the reader here. */
-              <div className="min-h-0 flex-1" data-slot="organize-view" />
-            ) : (
-              <Reader />
-            )}
-          </main>
-        </div>
-
-        {/* 4. PART B: mount signature / editor dialogs alongside the shell here. */}
-
-        {dragging && (
-          <div
-            className="border-primary bg-surface/80 pointer-events-none absolute inset-2 z-50 grid place-items-center border-2 border-dashed backdrop-blur-sm"
-            aria-hidden="true"
-          >
-            <div className="text-on-surface flex flex-col items-center gap-2">
-              <Download size={34} strokeWidth={1.5} />
-              <p className="font-ui text-[13px]">Drop a PDF to open</p>
-            </div>
+            <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+              {!ctrl.doc ? (
+                <EmptyState
+                  onOpenClick={pickFile}
+                  error={ctrl.error}
+                  loading={ctrl.loading || fetching}
+                />
+              ) : ctrl.mode === 'organize' ? (
+                /* 3. PART B organize view replaces the reader here. */
+                <div className="min-h-0 flex-1" data-slot="organize-view">
+                  <OrganizeView />
+                </div>
+              ) : (
+                <Reader />
+              )}
+            </main>
           </div>
-        )}
-      </div>
+
+          {/* 4. PART B: signature capture pad (Sign tool + form signature fields). */}
+          <SignatureDialog />
+
+          {dragging && (
+            <div
+              className="border-primary bg-surface/80 pointer-events-none absolute inset-2 z-50 grid place-items-center border-2 border-dashed backdrop-blur-sm"
+              aria-hidden="true"
+            >
+              <div className="text-on-surface flex flex-col items-center gap-2">
+                <Download size={34} strokeWidth={1.5} />
+                <p className="font-ui text-[13px]">Drop a PDF to open</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </EditorProvider>
     </ReaderContext.Provider>
   )
 }

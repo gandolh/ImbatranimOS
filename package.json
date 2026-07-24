@@ -17,7 +17,9 @@
   ],
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev",
+    "dev": "docker compose -f infrastructure/docker-compose.yml --profile dev watch",
+    "dev:local": "turbo dev",
+    "install:tooling": "npm install --ignore-scripts",
     "lint": "turbo lint",
     "test": "turbo test",
     "typecheck": "turbo typecheck",

@@ -20,10 +20,14 @@ WORKDIR /app
 COPY package.json package-lock.json turbo.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/core/package.json ./apps/core/
+COPY apps/docs/package.json ./apps/docs/
 # ALL add-on manifests (--parents preserves each add-on's dir), so `npm ci`
 # links every workspace core/src/manifest.ts imports. Globbed so newly-added
 # add-ons are picked up automatically — no per-add-on COPY line to keep in sync.
 COPY --parents apps/add-ons/*/package.json ./
+# Same rationale for packages/* (currently pdfcore-engine): globbed so new
+# packages are picked up automatically.
+COPY --parents packages/*/package.json ./
 RUN npm ci
 
 # ---------------------------------------------------------------------------
@@ -51,8 +55,11 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/core/package.json ./apps/core/
+COPY apps/docs/package.json ./apps/docs/
 # All add-on manifests (see the deps stage) so the workspace tree resolves.
 COPY --parents apps/add-ons/*/package.json ./
+# Same rationale for packages/* (see the deps stage).
+COPY --parents packages/*/package.json ./
 # Backend runtime deps only — the desktop is prebuilt to static files, so
 # none of its packages (react etc.) may reach the prod image.
 RUN npm ci --omit=dev --workspace=backend

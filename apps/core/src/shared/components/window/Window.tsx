@@ -12,6 +12,7 @@ import {
 } from '../../store/windowStore'
 import { clampWindowRect } from '../../../lib/desktopBounds'
 import { SnapOverlay } from './SnapOverlay'
+import { AppErrorBoundary } from '../AppErrorBoundary'
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
@@ -145,6 +146,10 @@ export const Window = React.memo(function Window({
 
   const dragStartWindowPos = useRef<{ x: number; y: number } | null>(null)
   const [snapPreview, setSnapPreview] = useState<SnapRegion | null>(null)
+  // Bumped on Reload from the crashed-app panel — remounting the boundary
+  // under this key remounts the app content fresh and clears the boundary's
+  // caught-error state in one move.
+  const [reloadKey, setReloadKey] = useState(0)
 
   const titleBarBind = useDrag(
     ({ first, last, movement: [mx, my], xy: [px, py], event }) => {
@@ -219,6 +224,14 @@ export const Window = React.memo(function Window({
     },
     [closeWindow, windowId]
   )
+
+  const handleAppClose = useCallback(() => {
+    closeWindow(windowId)
+  }, [closeWindow, windowId])
+
+  const handleAppReload = useCallback(() => {
+    setReloadKey((k) => k + 1)
+  }, [])
 
   if (!instance) return null
 
@@ -317,7 +330,15 @@ export const Window = React.memo(function Window({
 
           {/* Window body */}
           <div className="bg-surface-container-lowest text-on-surface min-h-0 flex-1 overflow-auto">
-            {children}
+            <AppErrorBoundary
+              key={reloadKey}
+              appId={instance.appId}
+              appName={instance.title}
+              onReload={handleAppReload}
+              onClose={handleAppClose}
+            >
+              {children}
+            </AppErrorBoundary>
           </div>
         </motion.div>
       </AnimatePresence>

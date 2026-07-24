@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react'
 import { useAuthStore } from './store/authStore'
 import { LockScreen } from './LockScreen'
 import { FirstRunWizard, AuthShell } from './FirstRunWizard'
+import { resetPrefs } from '../../lib/prefs'
 
 /**
  * Gates the entire desktop. Unauthenticated visitors see only the first-run
@@ -20,8 +21,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }, [refresh])
 
   // A 401 on any protected route (session expired/revoked) re-locks the UI.
+  // The session is already gone server-side, so drop the prefs cache too —
+  // otherwise a stale timer could fire a write-through for the wrong user
+  // after the next login.
   useEffect(() => {
-    const onUnauthorized = () => setAuthenticated(false)
+    const onUnauthorized = () => {
+      resetPrefs()
+      setAuthenticated(false)
+    }
     window.addEventListener('auth:unauthorized', onUnauthorized)
     return () => window.removeEventListener('auth:unauthorized', onUnauthorized)
   }, [setAuthenticated])

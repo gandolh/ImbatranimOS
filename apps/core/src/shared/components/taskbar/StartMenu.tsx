@@ -6,6 +6,7 @@ import { useEnabledApps } from '../../registry/enabledApps'
 import { Logo } from '../brand/Logo'
 import { useAuthStore } from '../../../modules/auth/store/authStore'
 import { logout as logoutApi } from '../../../modules/auth/api/authApi'
+import { flushPendingPrefs, resetPrefs } from '../../../lib/prefs'
 
 type StartMenuProps = {
   onClose: () => void
@@ -42,12 +43,17 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
     onClose()
   }
 
-  // Log off: end the session on the backend, then re-lock.
+  // Log off: end the session on the backend, then re-lock. Flush any
+  // debounced pref writes first (they'd otherwise be dropped by resetPrefs
+  // below), and reset the cache only after logout completes so no leftover
+  // timer can fire a write for the next user.
   async function handleLogout() {
     onClose()
+    flushPendingPrefs()
     try {
       await logoutApi()
     } finally {
+      resetPrefs()
       setAuthenticated(false)
     }
   }

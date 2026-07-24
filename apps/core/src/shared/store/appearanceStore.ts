@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import { createPrefsStorage } from '../../lib/prefs'
 
 export type ThemeMode = 'dark' | 'light'
 export type AccentId = 'crimson' | 'cobalt' | 'emerald' | 'signal'
@@ -42,7 +43,10 @@ export const useAppearanceStore = create<AppearanceStore>()(
       setTheme: (theme) => set({ theme }),
       setAccent: (accent) => set({ accent }),
     }),
-    { name: 'imbatranimos:appearance' }
+    {
+      name: 'appearance',
+      storage: createJSONStorage(() => createPrefsStorage('appearance')),
+    }
   )
 )
 

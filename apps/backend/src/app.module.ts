@@ -6,6 +6,7 @@ import { StickyNotesModule } from './modules/sticky-notes/sticky-notes.module';
 import { TodosModule } from './modules/todos/todos.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
+import { PrefsModule } from './modules/prefs/prefs.module';
 import { SystemModule } from './modules/system/system.module';
 import { PtyModule } from './modules/pty/pty.module';
 import { FilesModule } from './modules/files/files.module';
@@ -37,6 +38,7 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
     TodosModule,
     NotesModule,
     BookmarksModule,
+    PrefsModule,
     SystemModule,
     PtyModule,
     FilesModule,

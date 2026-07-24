@@ -31,52 +31,10 @@ export const TASKBAR_HEIGHT = 44
 // opens don't perfectly overlap. Jitter spans [-CASCADE_JITTER_PX, +CASCADE_JITTER_PX].
 export const CASCADE_JITTER_PX = 100
 
-// ── Layout persistence ────────────────────────────────────────────────────────
-
-export type PersistedWindow = {
-  appId: string
-  title: string
-  position: { x: number; y: number }
-  size: { width: number; height: number }
-  isMaximized: boolean
-  isVisible: boolean
-  zIndex: number
-  snapState?: SnapRegion
-}
-
-const LAYOUT_STORAGE_KEY = 'imbatranimos:window-layout'
-
-export function saveLayout(windows: WindowInstance[]): void {
-  const data: PersistedWindow[] = windows.map((w) => ({
-    appId: w.appId,
-    title: w.title,
-    position: w.position,
-    size: w.size,
-    isMaximized: w.isMaximized,
-    isVisible: w.isVisible,
-    zIndex: w.zIndex,
-    snapState: w.snapState,
-  }))
-  try {
-    localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(data))
-  } catch {
-    // quota exceeded or private mode — silently skip
-  }
-}
-
-export function loadLayout(): PersistedWindow[] {
-  try {
-    const raw = localStorage.getItem(LAYOUT_STORAGE_KEY)
-    if (!raw) return []
-    return JSON.parse(raw) as PersistedWindow[]
-  } catch {
-    return []
-  }
-}
-
-export function clearLayout(): void {
-  localStorage.removeItem(LAYOUT_STORAGE_KEY)
-}
+// Window layout is intentionally ephemeral: it lives only in this store's
+// in-memory state for the lifetime of the tab. Two tabs never share or restore
+// a layout, so there is no localStorage/server persistence here (durable config
+// lives in the server-backed prefs stores instead).
 
 // ── Snap geometry helpers ─────────────────────────────────────────────────────
 
@@ -168,8 +126,6 @@ type WindowStore = {
   getOrderedWindows: () => WindowInstance[]
   snapWindow: (id: string, region: SnapRegion) => void
   unsnap: (id: string) => void
-  persistLayout: () => void
-  restoreLayout: () => void
 }
 
 export const useWindowStore = create<WindowStore>((set, get) => ({
@@ -414,44 +370,6 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
         ),
         preSnapStates: remainingPreSnap,
       }
-    })
-  },
-
-  persistLayout: () => {
-    const { windows } = get()
-    saveLayout(windows)
-  },
-
-  restoreLayout: () => {
-    const persisted = loadLayout()
-    if (persisted.length === 0) return
-
-    const maxZ = persisted.reduce((acc, w) => Math.max(acc, w.zIndex), 0)
-
-    const windows: WindowInstance[] = persisted.map((p) => {
-      // Self-heal: a layout saved on a bigger screen must not restore under
-      // the taskbar / off-screen. The persisted blob carries no minSize, so
-      // this just fits the rect to bounds (no floor) — same as pre-restore
-      // opens got before minSize was threaded through.
-      const { position, size } = clampWindowRect(p.position, p.size)
-      return {
-        id: uuidv4(), // regenerate — do NOT persist uuid
-        appId: p.appId,
-        title: p.title,
-        position,
-        size,
-        isMaximized: p.isMaximized,
-        isVisible: p.isVisible,
-        zIndex: p.zIndex,
-        snapState: p.snapState,
-      }
-    })
-
-    set({
-      windows,
-      nextZIndex: maxZ + 1,
-      preMaximizeStates: {},
-      preSnapStates: {},
     })
   },
 }))

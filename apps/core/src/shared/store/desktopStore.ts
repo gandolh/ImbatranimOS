@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 import { clampIconPosition, healIconPositions } from '../../lib/desktopBounds'
+import { createPrefsStorage } from '../../lib/prefs'
 
 type IconPosition = {
   x: number
@@ -26,7 +27,8 @@ export const useDesktopStore = create<DesktopStore>()(
         })),
     }),
     {
-      name: 'desktop-storage',
+      name: 'desktop',
+      storage: createJSONStorage(() => createPrefsStorage('desktop')),
       // Self-heal on hydration: re-clamp every persisted position into the
       // current bounds so existing (possibly out-of-bounds) blobs recover.
       merge: (persisted, current) => {

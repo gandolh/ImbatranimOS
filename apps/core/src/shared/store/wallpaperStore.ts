@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import { createPrefsStorage } from '../../lib/prefs'
 
 export type Wallpaper = 'dots' | 'grid' | 'linen'
 
@@ -15,7 +16,8 @@ export const useWallpaperStore = create<WallpaperStore>()(
       setWallpaper: (w) => set({ wallpaper: w }),
     }),
     {
-      name: 'wallpaper-storage',
+      name: 'wallpaper',
+      storage: createJSONStorage(() => createPrefsStorage('wallpaper')),
     }
   )
 )

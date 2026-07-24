@@ -1,14 +1,14 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { Taskbar } from './shared/components/taskbar'
 import { Desktop } from './shared/components/desktop'
 import { useWallpaperStore } from './shared/store/wallpaperStore'
-import { useWindowStore } from './shared/store/windowStore'
 import { usePaletteStore } from './shared/store/paletteStore'
 import { useAppearanceStore, applyAppearance } from './shared/store/appearanceStore'
 import { CommandPalette } from './shared/components/CommandPalette'
 import { ToastHost } from './shared/components/notifications'
 import { useGlobalHotkeys } from './shared/hooks/useGlobalHotkeys'
 import { useWindowHotkeys } from './shared/hooks/useWindowHotkeys'
+import { usePrefsBoot } from './lib/usePrefsBoot'
 
 export default function App() {
   const wallpaper = useWallpaperStore((s) => s.wallpaper)
@@ -18,7 +18,14 @@ export default function App() {
   const setPaletteOpen = usePaletteStore((s) => s.setOpen)
   const openPalette = usePaletteStore((s) => s.openPalette)
 
-  // Reflect the persisted theme + accent onto <html> so the CSS vars resolve.
+  // Hydrate the server-backed prefs once (this component mounts only after auth
+  // is established). Gate the themed shell until it resolves so accent/theme/
+  // wallpaper never flash their defaults and then swap.
+  const prefsReady = usePrefsBoot()
+
+  // Reflect the active theme + accent onto <html> so the CSS vars resolve. The
+  // initial correct values are applied imperatively inside usePrefsBoot before
+  // the gate opens; this keeps them in sync with live changes afterwards.
   useEffect(() => {
     applyAppearance(theme, accent)
   }, [theme, accent])
@@ -27,60 +34,13 @@ export default function App() {
     'mod+k': () => openPalette(),
   })
 
-  // SWARM:S4 layout restore boot ──────────────────────────────────────────────
-  const restoreLayout = useWindowStore((s) => s.restoreLayout)
-  const persistLayout = useWindowStore((s) => s.persistLayout)
-  const windows = useWindowStore((s) => s.windows)
-
-  // Restore persisted layout on first mount
-  useEffect(() => {
-    restoreLayout()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Persist layout whenever windows change. Drag/resize mints a new `windows`
-  // array ~60x/sec, so writing synchronously on every change would run a
-  // JSON.stringify + localStorage.setItem per frame and jank the drag. Debounce
-  // to at most one write per 500ms (trailing). Serialization is unchanged —
-  // persistLayout() still writes the exact same schema.
-  const persistTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-
-  useEffect(() => {
-    if (persistTimer.current !== undefined) clearTimeout(persistTimer.current)
-    persistTimer.current = setTimeout(() => {
-      persistTimer.current = undefined
-      persistLayout()
-    }, 500)
-
-    return () => {
-      if (persistTimer.current !== undefined) clearTimeout(persistTimer.current)
-    }
-  }, [windows]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Flush any pending debounced write when the tab is hidden or unloaded so the
-  // final drag/resize position is never lost. Registered once for the app's life.
-  useEffect(() => {
-    const flush = () => {
-      if (persistTimer.current !== undefined) {
-        clearTimeout(persistTimer.current)
-        persistTimer.current = undefined
-      }
-      persistLayout()
-    }
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') flush()
-    }
-    window.addEventListener('beforeunload', flush)
-    document.addEventListener('visibilitychange', onVisibilityChange)
-
-    return () => {
-      window.removeEventListener('beforeunload', flush)
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 4c: keyboard window management (Alt+Tab, Mod+W, Mod+M, Mod+Enter)
+  // Keyboard window management (Alt+Tab, Mod+W, Mod+M, Mod+Enter)
   useWindowHotkeys()
-  // ── /SWARM:S4 layout restore boot ──────────────────────────────────────────
+
+  if (!prefsReady) {
+    // Neutral placeholder while prefs hydrate — no themed content to flash.
+    return <div className="bg-surface h-screen w-screen overflow-hidden" />
+  }
 
   return (
     <div className="bg-surface relative h-screen w-screen overflow-hidden">
@@ -88,9 +48,7 @@ export default function App() {
       <Taskbar />
       {/* Notification toasts (bottom-right, above the taskbar) */}
       <ToastHost />
-      {/* SWARM:S3 command palette mount */}
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      {/* SWARM:S4 layout restore boot */}
     </div>
   )
 }

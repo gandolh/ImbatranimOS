@@ -93,34 +93,37 @@ describe('clampWindowRect (window open/drag)', () => {
   })
 })
 
-describe('desktopStore hydration', () => {
-  it('self-heals an out-of-bounds persisted blob on load', async () => {
-    const backing: Record<string, string> = {
-      'desktop-storage': JSON.stringify({
-        state: { iconPositions: { calculator: { x: 99999, y: 99999 } } },
-        version: 0,
-      }),
-    }
-    // zustand's default persist storage reads `window.localStorage`.
-    vi.stubGlobal('window', {
-      innerWidth: VW,
-      innerHeight: VH,
-      localStorage: {
-        getItem: (k: string) => backing[k] ?? null,
-        setItem: (k: string, v: string) => {
-          backing[k] = v
-        },
-        removeItem: (k: string) => {
-          delete backing[k]
-        },
-      },
-    })
-
+describe('desktopStore hydration (server-backed prefs)', () => {
+  it('self-heals an out-of-bounds server blob on rehydrate', async () => {
+    // Serve a desktop pref carrying an out-of-bounds icon position. Rehydrating
+    // from the server-seeded prefs cache must re-run the store's self-heal.
     vi.resetModules()
+    vi.doMock('./axios', () => ({
+      api: {
+        get: vi.fn().mockResolvedValue({
+          data: {
+            desktop: {
+              state: { iconPositions: { calculator: { x: 99999, y: 99999 } } },
+              version: 0,
+            },
+          },
+        }),
+        put: vi.fn().mockResolvedValue({}),
+        delete: vi.fn().mockResolvedValue({}),
+      },
+    }))
+
+    const { loadPrefs } = await import('./prefs')
     const { useDesktopStore } = await import('../shared/store/desktopStore')
+
+    await loadPrefs()
+    await useDesktopStore.persist.rehydrate()
+
     const pos = useDesktopStore.getState().iconPositions.calculator
     expect(pos).toBeDefined()
     expect(pos.x + ICON_WIDTH).toBeLessThanOrEqual(VW - DESKTOP_PADDING)
     expect(pos.y + ICON_HEIGHT).toBeLessThanOrEqual(VH - TASKBAR - DESKTOP_PADDING)
+
+    vi.doUnmock('./axios')
   })
 })

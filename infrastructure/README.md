@@ -11,55 +11,35 @@ covers running it and the **HTTPS / auth exposure** story (Brief 10).
 docker compose -f infrastructure/docker-compose.yml up imbatranimos
 
 # Dev (HMR): Nest watch + Vite, two ports (3001 API, 5173 desktop)
-npm run dev
+npm run dev     # = docker compose --profile dev watch
 ```
 
 First visit forces a password (no default password ever exists). After that
 it is a lock screen. TOTP is opt-in from **Settings → Security**.
 
-## Dev workflow (containerized, Compose watch)
+## Developing (contained — brief 51)
 
-Contributing needs only Docker (+ Node/npm on the host for editor
-IntelliSense — nothing has to compile there).
+`npm run dev` runs **`docker compose … --profile dev watch`**: install, build,
+watch and serve all happen in the container, and compose `watch` syncs your
+edits from `apps/` and `packages/` into the container's own filesystem
+(node_modules excluded — the container owns its deps). Dependency changes
+(`package-lock.json`, root `package.json`, `turbo.json`, the Dockerfile)
+trigger an image rebuild instead of a sync. There are no bind mounts and no
+per-add-on volume list to keep in sync — adding an add-on needs no
+infrastructure edit.
+
+The host needs **Docker plus Node/npm for editor IntelliSense only**:
 
 ```bash
-npm run dev
+npm run install:tooling   # npm install --ignore-scripts — no python3/make/g++
 ```
 
-runs `docker compose -f infrastructure/docker-compose.yml --profile dev
-watch`. This builds the `dev` target once, starts it, then keeps it in sync:
-
-- **`sync`**: edits under `apps/` (excluding `node_modules`) are pushed into
-  the running container's `/app/apps` — no bind mount, so there is no
-  per-add-on `node_modules` volume list to keep in sync as add-ons are added
-  or removed. `npx turbo dev` (Nest watch + Vite HMR) picks the change up
-  from inside the container, as unprivileged `imbatranim`.
-- **`rebuild`**: a change to `package-lock.json`, `package.json`, or
-  `infrastructure/Dockerfile` tears down and rebuilds the image instead of
-  syncing — e.g. installing a new add-on's dependency, or adding a whole new
-  add-on package, updates the lockfile and triggers this, so the new
-  dependency is genuinely installed in the image (this is what a future
-  "new add-on installs in the image" workflow relies on).
-
-Other scripts:
-
-- **`npm run dev:local`** → `turbo dev`. Host escape hatch that runs the dev
-  servers directly on the host instead of in the container. Requires a real
-  `npm install` (with scripts) on the host first, since it needs the
-  compiled native modules (`better-sqlite3`, `node-pty`).
-- **`npm run install:tooling`** → `npm install --ignore-scripts`. Installs
-  just enough on the host for editor IntelliSense (TypeScript, ESLint, etc.)
-  without compiling `better-sqlite3` or `node-pty` — no `python3`/`make`/`g++`
-  needed on the host. **Caveat**: this is IntelliSense-only. Any host-run
-  path that actually executes the native modules — `dev:local`, or running
-  backend Jest tests on the host — still needs a real `npm install` (with
-  scripts) first; `--ignore-scripts` skips the native builds those paths
-  depend on.
-
-**WSL2 note**: if `docker compose watch` syncs a file change but Vite HMR
-stays quiet, this is a known WSL2/inotify quirk. It is documented here only —
-not enabled — as an option: set `server.watch.usePolling: true` in the
-Vite config for `apps/core` if it happens.
+`--ignore-scripts` skips the native compilation of `better-sqlite3`/`node-pty`,
+so the host never needs a C toolchain; all JS and `.d.ts` still install, which
+is what the editor, eslint and tsc read. Caveat: host-run paths that _execute_
+those modules (`npm run dev:local`, `backend`'s tests) need the real compile
+— `install:tooling` is editor-only. `npm run dev:local` (`turbo dev` on the
+host) remains as the escape hatch for a host with the full toolchain.
 
 ## HTTPS decision: reverse-proxy TLS (not built-in)
 

@@ -1,84 +1,94 @@
-import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DbService } from '../../db/db.service';
-import type { PrefsMap } from './dto/prefs.dto';
-
-interface PrefRow {
-  key: string;
-  value: string;
-}
+import type { PrefEntryDto, PrefsMap } from './dto/prefs.dto';
 
 /**
- * Server-side "dotfiles": a tiny single-user key/value store so frontend
- * stores can persist durable config across devices/reinstalls. Values are
- * arbitrary JSON, stored as TEXT and parsed/serialized at the boundary.
+ * Durable user config — the dotfiles half of brief 49's split.
+ *
+ * The layering grill settled the model as SSH: a **session** is per-tab and dies
+ * with the tab, while **user config** belongs to the account and follows you to
+ * any browser, the way `.bashrc` follows you to any login. Wallpaper, accent,
+ * icon positions and the disabled-app set were in `localStorage`, which is
+ * neither — tied to one browser, lost on a different device or cleared storage,
+ * and shared between tabs that should not share anything.
+ *
+ * **The value is opaque here on purpose.** The server stores whatever JSON a
+ * store hands it and never parses or validates the shape. Giving the backend a
+ * schema for every client store would mean a backend change every time a store
+ * gains a field, and a version skew bug the first time the two disagreed. The
+ * client owns the meaning; this owns durability and access control.
  */
 @Injectable()
-export class PrefsService implements OnModuleInit {
+export class PrefsService {
   constructor(private readonly db: DbService) {}
 
-  // Table lives here rather than in the shared db.service.ts migration list —
-  // create-if-not-exists on this service's own init, same effect, self-contained.
-  onModuleInit() {
-    this.db.db.exec(`
-      CREATE TABLE IF NOT EXISTS prefs (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-    `);
+  /** Every dotfile, key → serialised JSON. */
+  all(): PrefsMap {
+    const rows = this.db.db.prepare('SELECT key, value FROM prefs').all() as {
+      key: string;
+      value: string;
+    }[];
+    const out: PrefsMap = {};
+    for (const row of rows) out[row.key] = row.value;
+    return out;
   }
 
-  findAll(): PrefsMap {
-    const rows = this.db.db
-      .prepare('SELECT key, value FROM prefs')
-      .all() as PrefRow[];
-
-    // Object.create(null) rather than {}: a stored key literally named
-    // `__proto__` would otherwise set the object's prototype instead of
-    // becoming an own property, silently vanishing from the response.
-    const result: Record<string, unknown> = Object.create(null) as Record<
-      string,
-      unknown
-    >;
-    for (const row of rows) {
-      try {
-        result[row.key] = JSON.parse(row.value);
-      } catch {
-        // A single corrupt row shouldn't 500 the whole GET; skip it and keep
-        // serving the rest of the map.
-        continue;
-      }
-    }
-    return result;
+  get(key: string): string | null {
+    const row = this.db.db
+      .prepare('SELECT value FROM prefs WHERE key = ?')
+      .get(key) as { value: string } | undefined;
+    return row?.value ?? null;
   }
 
-  upsertMany(body: PrefsMap): void {
-    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
-      throw new BadRequestException(
-        'Body must be a JSON object of key/value pairs',
-      );
-    }
-
-    const entries = Object.entries(body);
-    if (entries.length === 0) return;
-
-    const stmt = this.db.db.prepare(
-      `INSERT INTO prefs (key, value, updated_at) VALUES (@key, @value, @updated_at)
-       ON CONFLICT(key) DO UPDATE SET value = @value, updated_at = @updated_at`,
+  /**
+   * Upsert a batch, in one transaction.
+   *
+   * One transaction rather than a loop of writes because a desktop change often
+   * touches two stores at once (switching theme rewrites appearance; dragging an
+   * icon rewrites the desktop layout) and a half-applied batch would leave the
+   * next boot hydrating an inconsistent pair.
+   *
+   * The response echoes each key's `updated_at` (brief 109). The column already
+   * existed and the client ignored it; returning it gives a two-browser
+   * conflict a timestamp to reason with. Whole-key last-writer-wins stays the
+   * merge rule — this is durability information, not a version check.
+   */
+  put(entries: PrefEntryDto[]): {
+    written: number;
+    updatedAt: Record<string, string>;
+  } {
+    const upsert = this.db.db.prepare(
+      `INSERT INTO prefs (key, value, updated_at)
+       VALUES (@key, @value, CURRENT_TIMESTAMP)
+       ON CONFLICT(key) DO UPDATE
+         SET value = excluded.value, updated_at = CURRENT_TIMESTAMP`,
     );
-
-    const upsertAll = this.db.db.transaction((pairs: [string, unknown][]) => {
-      const now = Date.now();
-      for (const [key, value] of pairs) {
-        stmt.run({ key, value: JSON.stringify(value), updated_at: now });
+    this.db.db.transaction((batch: PrefEntryDto[]) => {
+      // Destructured, NOT passed straight through. The global ValidationPipe
+      // runs with `transform: true`, so what arrives here is a `PrefEntryDto`
+      // *instance*, and better-sqlite3 refuses a class instance for named
+      // parameters ("Named parameters can only be passed within plain
+      // objects"). The first version of this handed `entry` over directly and
+      // 500'd on every real request while the unit test — which built plain
+      // object literals — passed. There is a test for the instance now.
+      for (const entry of batch) {
+        upsert.run({ key: entry.key, value: entry.value });
       }
-    });
+    })(entries);
 
-    upsertAll(entries);
+    const updatedAt: Record<string, string> = {};
+    if (entries.length > 0) {
+      const read = this.db.db.prepare(
+        'SELECT updated_at AS updatedAt FROM prefs WHERE key = ?',
+      );
+      for (const entry of entries) {
+        const row = read.get(entry.key) as { updatedAt?: string } | undefined;
+        if (row?.updatedAt) updatedAt[entry.key] = row.updatedAt;
+      }
+    }
+    return { written: entries.length, updatedAt };
   }
 
-  // Idempotent by design: this backs an optional migration cleanup, so a
-  // caller retrying (or deleting an already-absent key) should not error.
   remove(key: string): void {
     this.db.db.prepare('DELETE FROM prefs WHERE key = ?').run(key);
   }

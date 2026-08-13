@@ -48,6 +48,31 @@ export class SearchQueryDto {
   @Transform(({ value }) => value === true || value === 'true' || value === '1')
   @IsBoolean()
   content?: boolean;
+
+  /**
+   * Optional folder to search under, relative to the root (brief 112).
+   *
+   * Additive: omitting it keeps the whole-root walk every existing consumer
+   * (the command palette) gets today. Jailed through the same `resolveSafe`
+   * as every other path, and emitted hit paths stay ROOT-relative either way,
+   * so the response shape does not change with the scope.
+   */
+  @IsOptional()
+  @IsString()
+  path?: string;
+
+  /**
+   * Ask for the matching line numbers and text on content hits (brief 113).
+   *
+   * Opt-in on top of `content`, and additive: without it the response is the
+   * one every existing consumer already gets. The editor's find-in-files panel
+   * needs something to group under; the palette and the file manager do not,
+   * and should not pay for it.
+   */
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @IsBoolean()
+  matches?: boolean;
 }
 
 export class WriteContentDto {

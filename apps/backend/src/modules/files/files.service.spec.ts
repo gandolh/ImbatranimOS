@@ -49,6 +49,30 @@ describe('FilesService (jail + real filesystem)', () => {
       expect(listing.map((e) => e.name).sort()).toEqual(['readme.txt']);
     });
 
+    it('addresses a real file whose name contains a percent-escape literal', async () => {
+      // `a%2Bb.txt` and `report%20v2.txt` are LITERAL names. The old decoder
+      // unwrapped them to `a+b.txt` / `report v2.txt`, making the real files
+      // unaddressable. They must round-trip verbatim.
+      await service.createFile('home', 'a%2Bb.txt', 'plus');
+      await service.createFile('home', 'report%20v2.txt', 'space');
+
+      expect(await fs.readFile(join(jail, 'a%2Bb.txt'), 'utf-8')).toBe('plus');
+      expect(await fs.readFile(join(jail, 'report%20v2.txt'), 'utf-8')).toBe(
+        'space',
+      );
+
+      expect((await service.readFile('home', 'a%2Bb.txt')).content).toBe(
+        'plus',
+      );
+      expect((await service.readFile('home', 'report%20v2.txt')).content).toBe(
+        'space',
+      );
+
+      const names = (await service.list('home')).map((e) => e.name);
+      expect(names).toContain('a%2Bb.txt');
+      expect(names).toContain('report%20v2.txt');
+    });
+
     it('a file created directly on disk shows up via list (and vice versa)', async () => {
       await fs.writeFile(join(jail, 'external.txt'), 'made outside the api');
       const listing = await service.list('home');
@@ -109,17 +133,29 @@ describe('FilesService (jail + real filesystem)', () => {
       expect(abs).toBe(join(jail, 'etc/passwd'));
     });
 
-    it('refuses percent-encoded traversal (%2e%2e) including double-encoding', async () => {
+    it('refuses percent-encoded traversal (%2e%2e)', async () => {
+      // Single-encoded traversal still unwraps all the way to `..` and is
+      // rejected by the jail — whether the separators are literal or encoded.
       await expect(
         service.resolveSafe('home', '%2e%2e/%2e%2e/etc/passwd'),
       ).rejects.toThrow(/traversal/i);
       await expect(
         service.resolveSafe('home', '%2e%2e%2f%2e%2e%2fetc%2fpasswd'),
       ).rejects.toThrow(/traversal/i);
-      // Double-encoded: %252e decodes to %2e decodes to '.'
-      await expect(
-        service.resolveSafe('home', '%252e%252e/%252e%252e/etc'),
-      ).rejects.toThrow(/traversal/i);
+    });
+
+    it('treats double-encoded %252e as a safe in-jail literal (no over-decode)', async () => {
+      // The decoder stops unwrapping once a pass reveals no new separator/`..`,
+      // so `%252e%252e` stays a literal directory name rather than being
+      // decoded twice into `..`. That is SAFE: it resolves INSIDE the jail and
+      // never becomes traversal. Over-decoding it was the same bug that made a
+      // real file named `a%2Bb.txt` unaddressable.
+      const { abs } = await service.resolveSafe(
+        'home',
+        '%252e%252e/%252e%252e/etc',
+      );
+      expect(abs.startsWith(jail + '/')).toBe(true);
+      expect(abs).toBe(join(jail, '%252e%252e/%252e%252e/etc'));
     });
 
     it('refuses NUL byte injection', async () => {
@@ -185,6 +221,55 @@ describe('FilesService (jail + real filesystem)', () => {
     });
   });
 
+  describe('delete acts on the link itself (never the target)', () => {
+    it('removes a BROKEN symlink instead of 404ing', async () => {
+      // resolveSafe followed the link → the missing target read as "not found",
+      // so the UI could never clear a dangling link.
+      await fs.symlink('does-not-exist', join(jail, 'broken'));
+      await expect(service.delete('home', 'broken')).resolves.toBeUndefined();
+      await expect(fs.lstat(join(jail, 'broken'))).rejects.toThrow();
+    });
+
+    it('removes an OUT-OF-JAIL symlink without touching its target', async () => {
+      // resolveSafe realpathed the leaf out of the jail → 400, so the UI could
+      // never remove such a link. Delete must unlink the link and leave the
+      // outside target intact.
+      await fs.writeFile(join(outside, 'secret.txt'), 'top secret');
+      await fs.symlink(join(outside, 'secret.txt'), join(jail, 'escape'));
+
+      await expect(service.delete('home', 'escape')).resolves.toBeUndefined();
+      await expect(fs.lstat(join(jail, 'escape'))).rejects.toThrow();
+      // The target outside the jail is untouched.
+      expect(await fs.readFile(join(outside, 'secret.txt'), 'utf-8')).toBe(
+        'top secret',
+      );
+    });
+
+    it('still 404s a path that simply does not exist', async () => {
+      await expect(service.delete('home', 'nope.txt')).rejects.toThrow(
+        /not found/i,
+      );
+    });
+  });
+
+  describe('move/copy reject nesting a folder into itself (400, not 500)', () => {
+    beforeEach(async () => {
+      await service.createDirectory('home', 'a');
+    });
+
+    it('move a → a/b is a 400', async () => {
+      await expect(service.move('home', 'a', 'a/b')).rejects.toThrow(
+        /into itself/i,
+      );
+    });
+
+    it('copy a → a/b is a 400', async () => {
+      await expect(service.copy('home', 'a', 'a/b')).rejects.toThrow(
+        /into itself/i,
+      );
+    });
+  });
+
   describe('search (jailed + bounded)', () => {
     // Env caps are read per-call by searchBounds(); snapshot/restore so a cap
     // test can dial one down without leaking into the next test.
@@ -194,6 +279,8 @@ describe('FilesService (jail + real filesystem)', () => {
       'FILES_SEARCH_MAX_DEPTH',
       'FILES_SEARCH_BUDGET_MS',
       'FILES_SEARCH_MAX_CONTENT_BYTES',
+      'FILES_SEARCH_MAX_MATCHES',
+      'FILES_SEARCH_MAX_MATCH_CHARS',
     ];
     const capEnvSnapshot: Record<string, string | undefined> = {};
     beforeEach(() => {
@@ -306,6 +393,296 @@ describe('FilesService (jail + real filesystem)', () => {
       const { items } = await service.search('home', 'match');
       // Only the top-level file; the heavy/dot dirs are never descended.
       expect(items.map((i) => i.path)).toEqual(['match.txt']);
+    });
+
+    // Brief 112: the optional `path` scope. Additive — omitting it keeps the
+    // whole-root walk the palette has always had.
+    describe('folder scope', () => {
+      beforeEach(async () => {
+        await service.createDirectory('home', 'docs');
+        await service.createDirectory('home', 'docs/sub');
+        await service.createFile('home', 'docs/report-a.md', 'x');
+        await service.createFile('home', 'docs/sub/report-c.md', 'x');
+        await service.createFile('home', 'report-b.md', 'x');
+      });
+
+      it('searches only under the scope', async () => {
+        const { items } = await service.search('home', 'report', {
+          path: 'docs',
+        });
+        expect(items.map((i) => i.path).sort()).toEqual([
+          'docs/report-a.md',
+          'docs/sub/report-c.md',
+        ]);
+      });
+
+      it('emits ROOT-relative paths, not scope-relative ones', async () => {
+        const { items } = await service.search('home', 'report-a', {
+          path: 'docs',
+        });
+        // `docs/report-a.md`, NOT `report-a.md` — a scoped response is shaped
+        // exactly like an unscoped one, so no consumer has to know which it is.
+        expect(items.map((i) => i.path)).toEqual(['docs/report-a.md']);
+      });
+
+      it('omitting the scope still walks the whole root', async () => {
+        const { items } = await service.search('home', 'report');
+        expect(items.map((i) => i.path).sort()).toEqual([
+          'docs/report-a.md',
+          'docs/sub/report-c.md',
+          'report-b.md',
+        ]);
+      });
+
+      it('an empty scope is the same as no scope', async () => {
+        const scoped = await service.search('home', 'report', { path: '' });
+        const unscoped = await service.search('home', 'report');
+        expect(scoped).toEqual(unscoped);
+      });
+
+      it('rejects a traversal scope — the jail applies to it too', async () => {
+        await expect(
+          service.search('home', 'report', { path: '../..' }),
+        ).rejects.toThrow(/traversal/i);
+      });
+
+      it('still honours the caps inside a scope', async () => {
+        process.env.FILES_SEARCH_MAX_RESULTS = '1';
+        const { items, truncated } = await service.search('home', 'report', {
+          path: 'docs',
+        });
+        expect(items).toHaveLength(1);
+        expect(truncated).toBe(true);
+      });
+
+      it('scopes the content grep as well', async () => {
+        await service.createFile('home', 'docs/has.txt', 'needle here');
+        await service.createFile('home', 'outside.txt', 'needle here');
+
+        const { items } = await service.search('home', 'needle', {
+          content: true,
+          path: 'docs',
+        });
+        expect(items.map((i) => i.path)).toEqual(['docs/has.txt']);
+      });
+    });
+
+    // Brief 113: per-match line data, opt-in on top of `content`.
+    describe('match lines', () => {
+      beforeEach(async () => {
+        await service.createFile(
+          'home',
+          'code.ts',
+          [
+            'const a = 1',
+            'function needle() {}',
+            'const b = 2',
+            '  needle()  ',
+          ].join('\n'),
+        );
+      });
+
+      it('reports 1-based line numbers and the trimmed line text', async () => {
+        const { items } = await service.search('home', 'needle', {
+          content: true,
+          matches: true,
+        });
+        const hit = items.find((i) => i.path === 'code.ts');
+        expect(hit?.matches).toEqual([
+          { line: 2, text: 'function needle() {}' },
+          { line: 4, text: 'needle()' },
+        ]);
+      });
+
+      it('omits `matches` entirely unless asked for — the palette shape is untouched', async () => {
+        const withContent = await service.search('home', 'needle', {
+          content: true,
+        });
+        expect(withContent.items[0]).not.toHaveProperty('matches');
+
+        const nameOnly = await service.search('home', 'code');
+        expect(nameOnly.items[0]).not.toHaveProperty('matches');
+      });
+
+      it('is byte-identical to the pre-brief-113 response when not opted in', async () => {
+        const { items } = await service.search('home', 'needle', {
+          content: true,
+        });
+        expect(items).toEqual([
+          { name: 'code.ts', path: 'code.ts', type: 'file' },
+        ]);
+      });
+
+      it('caps the matches reported per file', async () => {
+        process.env.FILES_SEARCH_MAX_MATCHES = '2';
+        await service.createFile(
+          'home',
+          'many.txt',
+          ['needle', 'needle', 'needle', 'needle'].join('\n'),
+        );
+        const { items } = await service.search('home', 'needle', {
+          content: true,
+          matches: true,
+        });
+        const hit = items.find((i) => i.path === 'many.txt');
+        expect(hit?.matches).toHaveLength(2);
+        expect(hit?.matches?.map((m) => m.line)).toEqual([1, 2]);
+      });
+
+      it('caps the length of a single previewed line', async () => {
+        process.env.FILES_SEARCH_MAX_MATCH_CHARS = '20';
+        await service.createFile(
+          'home',
+          'long.txt',
+          `needle${'x'.repeat(500)}`,
+        );
+        const { items } = await service.search('home', 'needle', {
+          content: true,
+          matches: true,
+        });
+        const hit = items.find((i) => i.path === 'long.txt');
+        expect(hit?.matches?.[0].text).toHaveLength(20);
+      });
+
+      it('matches case-insensitively, like the rest of the search', async () => {
+        await service.createFile('home', 'case.txt', 'NEEDLE in caps');
+        const { items } = await service.search('home', 'needle', {
+          content: true,
+          matches: true,
+        });
+        const hit = items.find((i) => i.path === 'case.txt');
+        expect(hit?.matches).toEqual([{ line: 1, text: 'NEEDLE in caps' }]);
+      });
+
+      it('skips binary files without reporting lines', async () => {
+        await service.createFile('home', 'bin.dat', 'needle\u0000needle');
+        const { items } = await service.search('home', 'needle', {
+          content: true,
+          matches: true,
+        });
+        expect(items.map((i) => i.path)).not.toContain('bin.dat');
+      });
+
+      it('still returns a name hit with no lines when only the NAME matches', async () => {
+        await service.createFile('home', 'needle-named.txt', 'nothing inside');
+        const { items } = await service.search('home', 'needle', {
+          content: true,
+          matches: true,
+        });
+        const hit = items.find((i) => i.path === 'needle-named.txt');
+        expect(hit).toBeDefined();
+        expect(hit?.matches).toBeUndefined();
+      });
+    });
+  });
+
+  describe('uploadFile is atomic (brief 66)', () => {
+    /** A multer-style on-disk temp file. */
+    async function stageTmp(content: string): Promise<string> {
+      const dir = await fs.mkdtemp(join(os.tmpdir(), 'imb-up-'));
+      const p = join(dir, 'upload.bin');
+      await fs.writeFile(p, content);
+      return p;
+    }
+
+    // Failures are provoked with real filesystem conditions rather than by
+    // mocking `fs`: `fs/promises` exports are non-configurable in Node 24, and a
+    // test that cannot spy on the module is a better test anyway — these are
+    // failures that actually happen.
+
+    it('replaces an existing file with the new bytes', async () => {
+      await service.createFile('home', 'doc.txt', 'old contents');
+      await service.uploadFile(
+        'home',
+        'doc.txt',
+        await stageTmp('new contents'),
+      );
+      expect(await fs.readFile(join(jail, 'doc.txt'), 'utf-8')).toBe(
+        'new contents',
+      );
+    });
+
+    it('leaves the original intact when the source vanishes mid-upload', async () => {
+      // The bug this replaces: `copyFile` onto the destination TRUNCATES it
+      // first, so any failure after that point left the user's file empty and
+      // the original bytes gone. Every save in the OS goes through this method.
+      await service.createFile('home', 'important.txt', 'the only copy');
+      const tmp = await stageTmp('replacement');
+      await fs.rm(tmp);
+
+      await expect(
+        service.uploadFile('home', 'important.txt', tmp),
+      ).rejects.toThrow();
+
+      expect(await fs.readFile(join(jail, 'important.txt'), 'utf-8')).toBe(
+        'the only copy',
+      );
+      expect(await fs.readdir(jail)).toEqual(['important.txt']);
+    });
+
+    it('leaves the original intact when the commit itself fails', async () => {
+      // A directory in the destination's place makes the RENAME fail — i.e. after
+      // the staged copy has already succeeded, which is the half-written window
+      // the old code could not survive.
+      await service.createDirectory('home', 'blocked');
+      await service.createFile('home', 'blocked/keep.txt', 'still here');
+
+      await expect(
+        service.uploadFile('home', 'blocked', await stageTmp('replacement')),
+      ).rejects.toThrow();
+
+      // The directory and its contents survive, and no staging file is left.
+      expect(await fs.readFile(join(jail, 'blocked/keep.txt'), 'utf-8')).toBe(
+        'still here',
+      );
+      expect(await fs.readdir(jail)).toEqual(['blocked']);
+    });
+
+    it('removes the multer temp file on success', async () => {
+      // Otherwise every save slowly fills the temp directory.
+      const tmp = await stageTmp('hello');
+      await service.uploadFile('home', 'new.bin', tmp);
+      await expect(fs.access(tmp)).rejects.toThrow();
+    });
+
+    it('removes the multer temp file when the commit fails', async () => {
+      await service.createDirectory('home', 'blocked');
+      const tmp = await stageTmp('replacement');
+      await expect(
+        service.uploadFile('home', 'blocked', tmp),
+      ).rejects.toThrow();
+      await expect(fs.access(tmp)).rejects.toThrow();
+    });
+
+    it('creates a file that did not exist yet, including its parents', async () => {
+      await service.uploadFile(
+        'home',
+        'nested/new.bin',
+        await stageTmp('hello'),
+      );
+      expect(await fs.readFile(join(jail, 'nested/new.bin'), 'utf-8')).toBe(
+        'hello',
+      );
+    });
+
+    it('preserves the existing file mode across the rename', async () => {
+      // A rename carries the STAGED file's mode. Without copying the previous
+      // mode across, saving a 0600 file would quietly widen it to the temp's.
+      await service.createFile('home', 'secret.txt', 'old');
+      await fs.chmod(join(jail, 'secret.txt'), 0o600);
+      await service.uploadFile('home', 'secret.txt', await stageTmp('new'));
+
+      const mode = (await fs.stat(join(jail, 'secret.txt'))).mode & 0o777;
+      expect(mode).toBe(0o600);
+    });
+
+    it('still refuses to escape the jail', async () => {
+      await expect(
+        service.uploadFile('home', '../escape.bin', await stageTmp('nope')),
+      ).rejects.toThrow();
+      await expect(
+        fs.access(join(outside, '..', 'escape.bin')),
+      ).rejects.toThrow();
     });
   });
 });

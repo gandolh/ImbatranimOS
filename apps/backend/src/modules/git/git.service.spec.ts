@@ -52,8 +52,22 @@ jest.mock('execa', () => {
   };
 });
 
-import { GitService } from './git.service';
+import { GitService, isBinaryMissing } from './git.service';
 import { FilesService } from '../files/files.service';
+import { DbService } from '../../db/db.service';
+
+/**
+ * A real in-memory DbService for the recent-repos table (brief 76). GitService
+ * takes one now; a stub would let the recents SQL rot untested, and an in-memory
+ * database costs nothing.
+ */
+function testDb(): DbService {
+  const db = new DbService({
+    get: () => ':memory:',
+  } as unknown as ConstructorParameters<typeof DbService>[0]);
+  db.onModuleInit();
+  return db;
+}
 
 /**
  * These run REAL git in a REAL temp repo that IS the `home` jail for the test
@@ -74,7 +88,7 @@ describe('GitService (real git in a jailed temp repo)', () => {
   beforeEach(async () => {
     jail = await fs.mkdtemp(join(os.tmpdir(), 'imb-git-'));
     process.env.FILES_ROOT = jail;
-    service = new GitService(new FilesService());
+    service = new GitService(new FilesService(), testDb());
 
     const repo = repoAbs();
     await fs.mkdir(repo);
@@ -270,7 +284,7 @@ describe('GitService (real git in a jailed temp repo)', () => {
 });
 
 describe('GitService parsers (pure)', () => {
-  const service = new GitService(new FilesService());
+  const service = new GitService(new FilesService(), testDb());
 
   it('parseStatus handles staged/unstaged/untracked and NUL-separated names', () => {
     // porcelain=v1 -z: `XY path\0` records; names may contain spaces.
@@ -330,5 +344,69 @@ describe('GitService parsers (pure)', () => {
       subject: 'first',
     });
     expect(commits[0].date).toBe(new Date(1700000000 * 1000).toISOString());
+  });
+});
+
+describe('isBinaryMissing — the git-not-in-image guard', () => {
+  // Shape observed from execa v9 under plain Node ESM, i.e. production.
+  it('detects the top-level ENOENT code', () => {
+    expect(
+      isBinaryMissing({
+        code: 'ENOENT',
+        failed: true,
+        exitCode: undefined,
+        stderr: '',
+        shortMessage:
+          'Command failed with ENOENT: git status\nspawn git ENOENT',
+      }),
+    ).toBe(true);
+  });
+
+  it('detects ENOENT nested under cause', () => {
+    expect(isBinaryMissing({ failed: true, cause: { code: 'ENOENT' } })).toBe(
+      true,
+    );
+  });
+
+  it('detects ENOENT reported only in the message', () => {
+    expect(
+      isBinaryMissing({ failed: true, originalMessage: 'spawn git ENOENT' }),
+    ).toBe(true);
+  });
+
+  it('does NOT fire on git’s ordinary non-zero exits', () => {
+    // "nothing to commit" and friends must keep flowing through as results.
+    expect(
+      isBinaryMissing({
+        exitCode: 1,
+        failed: true,
+        stdout: '',
+        stderr: 'nothing to commit, working tree clean',
+      }),
+    ).toBe(false);
+    expect(isBinaryMissing({ exitCode: 0, failed: false })).toBe(false);
+    expect(isBinaryMissing(null)).toBe(false);
+    expect(isBinaryMissing(undefined)).toBe(false);
+  });
+
+  it('does not mistake a file-not-found inside git output for a missing git', () => {
+    // stderr is deliberately not searched: a git error mentioning ENOENT for a
+    // path must not be reported as "git is not installed".
+    expect(
+      isBinaryMissing({
+        exitCode: 128,
+        failed: true,
+        stderr: "fatal: could not open 'x': ENOENT",
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('GitService.exec — git present', () => {
+  it('runs and reports a zero exit', async () => {
+    const service = new GitService(new FilesService(), testDb());
+    const result = await service.exec(process.cwd(), ['--version']);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toMatch(/^git version/);
   });
 });

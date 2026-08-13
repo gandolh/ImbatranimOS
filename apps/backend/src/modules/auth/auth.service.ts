@@ -15,6 +15,7 @@ interface AuthUserRow {
   password_hash: string;
   totp_secret: string | null;
   totp_enabled: number;
+  totp_last_step: number | null;
 }
 
 // argon2id — memory-hard, side-channel resistant, and the current OWASP
@@ -85,15 +86,52 @@ export class AuthService {
     }
   }
 
+  /**
+   * Verify a TOTP code for authentication (login + the changePassword step-up),
+   * enforcing single-use replay protection per RFC 6238 §5.2.
+   *
+   * A valid code identifies its time step; if that step was already accepted
+   * (step <= the stored `totp_last_step`) the code is a replay and is rejected,
+   * so the same 6 digits cannot be used twice within their window. On success
+   * the accepted step is recorded.
+   *
+   * Enrollment confirmation ({@link confirmTotp}) deliberately does NOT go
+   * through here — it uses the pure {@link totpMatch} so confirming enrollment
+   * does not burn the step the user is about to log in with.
+   */
   verifyTotp(token: string): boolean {
     const u = this.getUser();
     if (!u || !u.totp_secret) return false;
+    const match = this.totpMatch(token, u.totp_secret);
+    if (!match) return false;
+    if (u.totp_last_step !== null && match.step <= u.totp_last_step) {
+      return false; // replay of an already-accepted code
+    }
+    this.db.db
+      .prepare('UPDATE auth_user SET totp_last_step = ? WHERE id = 1')
+      .run(match.step);
+    return true;
+  }
+
+  /**
+   * Pure TOTP validity check (no replay bookkeeping): returns the matched time
+   * step or null. The step is derived from the library's `timeStep` when it
+   * exposes it, else from `Math.floor(Date.now()/1000/30)`.
+   */
+  private totpMatch(token: string, secret: string): { step: number } | null {
     try {
       // epochTolerance allows ±30s of clock drift (one adjacent step).
-      return verifySync({ token, secret: u.totp_secret, epochTolerance: 30 })
-        .valid;
+      const res = verifySync({ token, secret, epochTolerance: 30 });
+      if (!res.valid) return null;
+      // `verifySync`'s union covers HOTP too, so `timeStep` is only present on
+      // the TOTP result — narrow with `in`, else derive the RFC 6238 step.
+      const step =
+        'timeStep' in res && typeof res.timeStep === 'number'
+          ? res.timeStep
+          : Math.floor(Date.now() / 1000 / 30);
+      return { step };
     } catch {
-      return false;
+      return null;
     }
   }
 
@@ -132,7 +170,9 @@ export class AuthService {
     if (!u || !u.totp_secret) {
       throw new BadRequestException('No pending TOTP enrollment');
     }
-    if (!this.verifyTotp(token)) {
+    // Pure validity check (not verifyTotp): confirming enrollment must not burn
+    // the replay step the user is about to log in with.
+    if (!this.totpMatch(token, u.totp_secret)) {
       throw new UnauthorizedException('Invalid code');
     }
     this.db.db
@@ -152,6 +192,70 @@ export class AuthService {
         'UPDATE auth_user SET totp_secret = NULL, totp_enabled = 0, updated_at = CURRENT_TIMESTAMP WHERE id = 1',
       )
       .run();
+  }
+
+  /**
+   * Rotate the password.
+   *
+   * The OS had no way to do this at all: a password typed once at first-run could
+   * never be changed, and a password you suspected was compromised could only be
+   * replaced by deleting the database and losing the account. For a system the
+   * README recommends exposing behind a reverse proxy, that is a real gap.
+   *
+   * Four things have to be true, and each is a deliberate choice:
+   *
+   * 1. **The current password is re-proved**, even though the caller already holds
+   *    a valid session. A session cookie is a bearer token; if one leaks, the
+   *    thief must not be able to lock the owner out of their own machine by
+   *    changing the password. This is the same step-up `disableTotp` demands.
+   * 2. **A current TOTP code is required when TOTP is enabled.** Rotating the
+   *    password is at least as sensitive as turning 2FA off, which already asks.
+   *    Without it, a stolen session plus a phished password would be enough.
+   * 3. **The new password meets the same minimum as first-run.** One rule, one
+   *    place — a weaker bar for rotation would make rotating a downgrade.
+   * 4. **The old hash is replaced with a fresh argon2id hash** using the same
+   *    parameters, so a rotated password is exactly as costly to attack as a new
+   *    install's.
+   *
+   * Session invalidation is the caller's job (the controller), because only it can
+   * re-issue the cookie. See the route for why every session dies rather than all
+   * but the caller's.
+   */
+  async changePassword(
+    currentPassword: string,
+    nextPassword: string,
+    totpToken?: string,
+  ): Promise<void> {
+    if (!this.isSetup()) throw new BadRequestException('Not set up');
+
+    // Order matters: verify BEFORE validating the new password's strength. The
+    // reverse would let an attacker with a session probe the strength rule (and
+    // get a distinguishable error) without knowing the current password at all.
+    if (!(await this.verifyPassword(currentPassword))) {
+      throw new UnauthorizedException('Invalid password');
+    }
+    if (this.totpEnabled() && !(totpToken && this.verifyTotp(totpToken))) {
+      throw new UnauthorizedException('Invalid code');
+    }
+
+    this.assertStrongPassword(nextPassword);
+    // Refusing a no-op change is not pedantry: silently "succeeding" while
+    // invalidating every other session would look like a rotation that did not
+    // actually rotate anything.
+    if (await this.verifyPassword(nextPassword)) {
+      throw new BadRequestException(
+        'The new password must differ from the current one',
+      );
+    }
+
+    const hash = await argon2.hash(nextPassword, ARGON2_OPTS);
+    this.db.db
+      .prepare(
+        'UPDATE auth_user SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1',
+      )
+      .run(hash);
+    // TOTP is deliberately untouched: a password change must not silently drop
+    // the second factor.
   }
 
   private assertStrongPassword(password: string): void {

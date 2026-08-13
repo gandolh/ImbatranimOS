@@ -4,9 +4,7 @@ import { ConfigModule } from './config/config.module';
 import { DbModule } from './db/db.module';
 import { StickyNotesModule } from './modules/sticky-notes/sticky-notes.module';
 import { TodosModule } from './modules/todos/todos.module';
-import { NotesModule } from './modules/notes/notes.module';
 import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
-import { PrefsModule } from './modules/prefs/prefs.module';
 import { SystemModule } from './modules/system/system.module';
 import { PtyModule } from './modules/pty/pty.module';
 import { FilesModule } from './modules/files/files.module';
@@ -14,6 +12,12 @@ import { AuthModule } from './modules/auth/auth.module';
 import { GitModule } from './modules/git/git.module';
 import { HttpProxyModule } from './modules/http-proxy/http-proxy.module';
 import { ArchiveModule } from './modules/archive/archive.module';
+import { ClockModule } from './modules/clock/clock.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
+import { ScheduleModule } from './modules/schedule/schedule.module';
+import { BackupModule } from './modules/backup/backup.module';
+import { LogsModule } from './modules/logs/logs.module';
+import { PrefsModule } from './modules/prefs/prefs.module';
 
 // Prod image only: serve the built frontend from STATIC_ROOT on the API
 // port, with the SPA index.html fallback. API + health are excluded so
@@ -33,18 +37,22 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
     ...staticModules,
     ConfigModule,
     DbModule,
+    LogsModule,
+    PrefsModule,
     AuthModule,
     StickyNotesModule,
     TodosModule,
-    NotesModule,
     BookmarksModule,
-    PrefsModule,
     SystemModule,
     PtyModule,
     FilesModule,
     GitModule,
     HttpProxyModule,
     ArchiveModule,
+    ClockModule,
+    CalendarModule,
+    ScheduleModule,
+    BackupModule,
   ],
 })
 export class AppModule {}

@@ -1,6 +1,6 @@
 # Brief 49 — Ephemeral per-tab session + durable server-side dotfiles
 
-Status: **todo** · From the 2026-07-19 OS-layering grilling (the (b) SSH-session
+Status: **done 2026-08-06** · From the 2026-07-19 OS-layering grilling (the (b) SSH-session
 driver). CORE frontend + a small backend module. Independent of briefs 47/48 —
 can ship in any order. Design:
 [wiki/os-layering.md](../../wiki/os-layering.md#sessions-vs-dotfiles-the-one-new-decision).
@@ -96,22 +96,112 @@ test (the headline (b) fix); set wallpaper/accent/icon-positions, hard-reload +
 open a second tab, confirm they carry; confirm a fresh tab starts with no windows
 open; confirm nothing reads/writes prefs while logged out.
 
----
+## Outcome — done 2026-08-06
 
-## Outcome (2026-07-24, moved to done/)
+The grilled split shipped: **session is per-tab, config belongs to the account.**
+Two of the brief's implementation instructions were changed, both because the
+brief's own reasoning points somewhere better once you look at the code.
 
-Shipped as commit `fef9826`. Backend: new auth-guarded `prefs` module
-(GET /api/prefs → Record<string,unknown>; PUT bulk 204; DELETE /:key 204;
-table created in onModuleInit; 8 specs). Frontend: `lib/prefs.ts` in-memory
-cache + sync zustand StateStorage + ~500ms debounced write-through;
-windowStore layout fully ephemeral (all localStorage layout code deleted);
-4 dotfile stores swapped to `createPrefsStorage`; `usePrefsBoot` hydrates
-after auth then applies appearance before first themed paint. Review fixes:
-proto-safe GET accumulator, corrupt-row tolerance, `flushPendingPrefs()`
-(keepalive fetch) on visibilitychange/pagehide + before logout,
-`resetPrefs()` on logout/auth:unauthorized, one-time localStorage→server
-seed when server map is empty. Known limits: lock screen + pre-hydration
-placeholder use default theme (accepted per brief); dev StrictMode double-GET;
-no server-side quota (single-user, ~100kb default body limit is the cap).
-Human-gated remainder: two-tab stomp test, settings carry across
-reload/second tab, logged-out no-prefs-traffic check.
+### `sessionStorage`, not "delete the persistence"
+
+The brief says to drop layout persistence entirely and hold each session in
+memory. That ends the two-tab stomp — but it also throws away reload survival for
+the overwhelmingly common single-tab case: refresh, and your entire arrangement
+is gone. Under the brief's own SSH analogy that is the wrong cut. **Closing the
+tab is logging out; reloading is the terminal redrawing.**
+
+`sessionStorage` is exactly that boundary, and it satisfies every acceptance
+criterion the brief lists — per-tab, fresh on a new tab, gone when the tab closes
+— with no server state, no reattach and no GC, because the browser drops it. One
+word changed and the whole class of bug went with it: `localStorage` is shared by
+every tab of an origin, which is why two desktops fought over one key and the
+last writer decided what both saw.
+
+It also **preserves brief 85** rather than reverting it. Workspace assignment
+belongs to the layout; it now rides in the same per-tab store, which is
+simultaneously the answer to "a reload must not collapse four workspaces onto
+one" and "two tabs must not fight over which workspace is showing".
+
+### Server as source of truth, localStorage as a first-paint cache
+
+The brief says to replace each dotfile store's `persist(localStorage)` with a
+server-backed adapter. For three stores that is right. For **appearance it is
+structurally impossible**: `main.tsx` applies theme and accent *synchronously,
+before React mounts*, so the very first paint — the lock screen — is branded. That
+paint happens **before authentication**, and `/api/prefs` is behind the session
+guard, as it must be. There is no server to read at the moment the value is
+needed.
+
+So: paint from the local mirror immediately, hydrate from the server once there is
+a session, re-apply, and keep the mirror fresh. A browser that has never seen this
+machine shows the default behind the lock and picks up the real values on sign-in
+— which is correct, because your wallpaper lives behind your password.
+
+The mirror is also why the adapter is **synchronous**. An async `StateStorage`
+makes zustand hydrate on a later tick, and every store that drives a visual would
+flash its default first.
+
+### The step that is easy to miss, and did not work without it
+
+`persist` hydrates **once, at store creation** — at import time, long before
+there is a session. Filling the cache afterwards therefore changes nothing on its
+own: the stores are still sitting on what they read at import. `rehydrate()` on
+each dotfile store after the fetch is what makes the server's copy take effect.
+Without it the feature *appeared* to work in the tab that made the change (its
+store was updated locally) and silently did nothing in a fresh browser — which is
+the only case the feature exists for. Caught by the probe, not by reasoning.
+
+### The bug the unit test could not see
+
+`PrefsService.put` passed the DTO straight to better-sqlite3, and every real
+request 500'd with "Named parameters can only be passed within plain objects" —
+while the spec was green. The global `ValidationPipe` runs with
+`transform: true`, so the controller receives a **class instance**, and
+better-sqlite3 refuses one for named parameters. A spec naturally writes object
+literals, so it exercised a shape production never produces. Fixed by
+destructuring, and there is now a test that constructs a real `PrefEntryDto`.
+
+### Smaller decisions
+
+- **The value is opaque to the server.** It stores whatever JSON a store hands it
+  and never parses it. A backend that knew each client store's schema would need
+  changing every time a store gained a field, and would produce a version-skew bug
+  the first time the two disagreed. The client owns meaning; the server owns
+  durability and access control.
+- **The migration is the hydrate.** A key the server does not have keeps its local
+  value and is pushed up — "the server has not got it yet" and "this is a legacy
+  local value" are the same condition, so this is a line rather than a migration
+  step.
+- **Writes are debounced and coalesced**, and flushed on `visibilitychange` and
+  `beforeunload`: a wallpaper changed two hundred milliseconds before the tab
+  closes should not be the one change that does not stick.
+- **A store that is not a dotfile is refused at the adapter**, so window layout
+  can never reach the server by accident. Tested.
+- **A failed fetch keeps the desktop running on the mirror.** A desktop that
+  refused to render because it could not read a wallpaper would be a far worse
+  failure than a wrong wallpaper.
+- **The route is authed** — not because a wallpaper is secret, but because a
+  writable one lets a stranger rearrange someone's desktop from the internet.
+
+### Verified in a browser, with two real tabs
+
+```
+PASS 401 on GET and PUT /api/prefs without a session
+PASS tab A has two windows; a NEW TAB opens to a fresh desktop
+PASS tab B opens its own window and TAB A IS UNTOUCHED  ← the (b) acceptance
+PASS reloading tab A keeps ITS two windows; tab B still has exactly its one
+PASS changing theme + accent in tab A reaches the server as a dotfile
+PASS the window layout does NOT reach the server — it is session state
+PASS a browser that has never seen this machine gets the theme (light) and
+     the accent (#0f7a40) after signing in
+PASS …but no windows: a new browser is a new session
+PASS closing tab B leaves tab A untouched
+PASS NO prefs request is made while the lock screen is showing
+page errors: none
+```
+
+Tests: backend unit **385 → 408** (12 prefs + the DTO-instance regression, plus
+brief 85's suite carried forward). Frontend vitest **1071 → 1147**. Backend e2e
+unchanged at 141. All 115 turbo tasks green. Zero new dependencies.
+
+**Unblocks briefs 81 and 82**, which both need a durable place for user config.

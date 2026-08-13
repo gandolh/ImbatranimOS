@@ -1,6 +1,6 @@
 ---
-summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build. Briefs 47 (error boundaries) + 49 (session/dotfile split) shipped 2026-07-24; brief 48 (the seam itself) is the remaining step.
-updated: 2026-07-24
+summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build. BUILT 2026-08-06 (brief 48) — the seam is live in all 26 apps and eslint-enforced.
+updated: 2026-08-06
 ---
 
 # OS layering — the compositor seam
@@ -44,6 +44,19 @@ slim-image + real-DOM soul. The authoritative server streams **data** (PTY
 bytes, FS, `/proc`), never pixels.
 
 ## The seam — an injected `system` capability handle
+
+**DONE 2026-08-06** — [brief 48](../briefs/done/48-protocol-seam-system-handle.md),
+whose outcome note carries the full detail. The load-bearing refinements: the
+protocol spec lives in the **SDK** (`packages/ui/src/system.ts`, so both sides
+resolve one context and the eslint rule is absolute — zero value imports from
+core, type-only allowed); the file dialog became a **portal capability**
+(`system.fs.pick*`, xdg-desktop-portal style — 17 apps' `{fileDialog}` render
+line deleted); three namespaces were added as API decisions (`shortcuts`,
+`appearance`, `schedule`) plus `ctx` on `CommandSource.search`; `notify` lost
+its appId field (the handle stamps it), which pushed recents-recording for
+launched files into core's `openApp`; and windowless handles serve background
+services, layers and widgets. Boot bundle byte-identical across the flip; all
+29 apps verified opening clean in a production build.
 
 The mechanism (grilled option **B**, not "narrowed imports"): the compositor
 hands each app a **`system` handle** at mount. The app **imports nothing from
@@ -90,10 +103,26 @@ it becomes the per-app permission you gate in the manifest.
 
 ## Sessions vs dotfiles (the one new decision) — brief 49
 
-- **Session = ephemeral, per-tab, in-memory window layout.** Pure-SSH: new tab =
+**DONE 2026-08-06** — [brief](../briefs/done/49-ephemeral-session-durable-dotfiles.md).
+One refinement to the decision below, made while building and recorded here
+because the wiki is where the design lives: the session is **per-tab
+`sessionStorage`, not in-memory**. Same boundary, one more property. Under this
+page's own SSH analogy, closing the tab is logging out and reloading is the
+terminal redrawing — so a refresh should not lose the arrangement, and
+`sessionStorage` is exactly that line. It is still per-tab, still fresh on a new
+tab, still gone with the tab, and still needs no server state, no reattach and no
+GC. "In-memory" would have cost the single-tab user their whole layout on every
+refresh to fix a two-tab problem.
+
+The dotfile half gained one too: the server is the source of truth, with
+`localStorage` kept as a **first-paint cache**. `main.tsx` brands the very first
+paint — the lock screen — synchronously, and that happens *before* authentication,
+so there is no server to read at the moment the value is needed.
+
+- **Session = ephemeral, per-tab window layout.** Pure-SSH: new tab =
   fresh desktop; close tab = its windows are gone; no server-side session
   persistence, no reattach/GC. This kills the shared-`localStorage` bug — each
-  tab holds its own in-memory session, nothing shared. (tmux-style
+  tab holds its own session, nothing shared. (tmux-style
   detach/reattach is explicitly a *possible future* brief, not v1.)
 - **User config = durable dotfiles.** Wallpaper, accent, desktop icon positions,
   pinned taskbar items are **not** session state — they're `$HOME` dotfiles:
@@ -122,6 +151,16 @@ Apps are **first-party for the foreseeable future** (in-repo, build-time,
 loop), **not** a *malicious* one. That is cheaply contained with **per-window
 React error boundaries + main-thread hygiene** — brief 47. No iframes today.
 
+**Brief 47 is DONE (2026-08-06)** —
+[brief](../briefs/done/47-per-window-error-boundaries.md). The boundary sits
+*inside* the window frame, so a crashed app keeps a title bar that drags and a
+close button that works; Reload is a **key change**, not a state reset, because
+clearing the error in place re-renders the state that just threw. Crash toasts
+are deduped per app so a render loop cannot bury the one message that matters.
+The half it explicitly does **not** solve is unchanged and still true: an
+error boundary catches throws, not hangs, and a spinning app still freezes the
+tab. That needs the transport swap below, not a watchdog.
+
 Hard sandboxing (sandboxed iframes / workers, real crash + security isolation)
 is the **transport swap** of the `system` handle, and is **gated on third-party
 apps actually arriving** — not built speculatively. The seam is designed so that
@@ -141,10 +180,8 @@ swap needs no app rewrites.
 
 ## Migration sequence (briefs 47–48)
 
-1. **Error boundaries first** (brief 47, standalone) — banks the (c) win at
-   near-zero cost, no API change, independent of the seam. **Shipped
-   2026-07-24** (commit `0d32fbf`); the (b) session/dotfile split (brief 49)
-   shipped the same run (`fef9826`).
+1. ~~**Error boundaries first** (brief 47, standalone) — banks the (c) win at
+   near-zero cost, no API change, independent of the seam.~~ **Done 2026-08-06.**
 2. **Extract `@imbatranim/ui`** — mechanical move of the ~70 component/hook
    exports; apps re-point imports.
 3. **`SystemHandle` + in-process impl + `SystemProvider`** at each app mount +

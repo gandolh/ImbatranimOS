@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { createPrefsStorage } from '../../lib/prefs'
+import { prefsStorage } from '../../lib/prefs'
 
 type AddonStore = {
   /** App ids the user has disabled. Non-disableable ids are ignored at read time. */
@@ -27,8 +27,13 @@ export const useAddonStore = create<AddonStore>()(
       isDisabled: (id) => get().disabled.includes(id),
     }),
     {
-      name: 'addons',
-      storage: createJSONStorage(() => createPrefsStorage('addons')),
+      name: 'imbatranimos:addons',
+      /**
+       * Server-backed dotfile (brief 49): durable user config that belongs to the
+       * account, not to one browser. `prefsStorage` mirrors to localStorage for
+       * the pre-auth first paint and writes through to `/api/prefs`.
+       */
+      storage: createJSONStorage(() => prefsStorage),
     }
   )
 )

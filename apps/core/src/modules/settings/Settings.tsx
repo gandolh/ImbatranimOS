@@ -1,15 +1,36 @@
+import { useCallback, useState } from 'react'
 import { useWallpaperStore, type Wallpaper } from '../../shared/store/wallpaperStore'
 import {
   useAppearanceStore,
   ACCENT_PRESETS,
   type ThemeMode,
 } from '../../shared/store/appearanceStore'
-import { Monitor, Palette, Moon, Sun, Check, Image, LayoutGrid } from 'lucide-react'
-import { cn, Checkbox } from '@imbatranim/ui'
+import {
+  Monitor,
+  Palette,
+  Moon,
+  Sun,
+  Check,
+  Image,
+  LayoutGrid,
+  Keyboard,
+  HardDrive,
+  DatabaseBackup,
+  FileCog,
+  Power,
+} from 'lucide-react'
+import { cn } from '../../lib/cn'
+import { Checkbox } from '../../shared/components/ui'
 import { APP_REGISTRY } from '../../shared/registry/registry'
 import { NON_DISABLEABLE } from '../../shared/registry/enabledApps'
 import { useAddonStore } from '../../shared/store/addonStore'
+import { ShortcutList } from '../../shared/components/shortcuts/ShortcutsOverlay'
+import { StorageSettings } from './StorageSettings'
+import { BackupSettings } from './BackupSettings'
+import { DefaultAppsSettings } from './DefaultAppsSettings'
+import { StartupSettings } from './StartupSettings'
 import { SecuritySettings } from '../auth/SecuritySettings'
+import { AboutMachine } from './AboutMachine'
 
 const WALLPAPERS: { id: Wallpaper; name: string; preview: React.CSSProperties }[] = [
   {
@@ -69,6 +90,11 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function Settings() {
+  // Lifted so the footer and the About panel show the same version from one fetch,
+  // rather than either hardcoding it or fetching twice.
+  const [imageVersion, setImageVersion] = useState<string | null>(null)
+  const onVersion = useCallback((v: string) => setImageVersion(v), [])
+
   const { wallpaper, setWallpaper } = useWallpaperStore()
   const theme = useAppearanceStore((s) => s.theme)
   const accent = useAppearanceStore((s) => s.accent)
@@ -230,31 +256,47 @@ export function Settings() {
           </div>
         </section>
 
+        {/* Storage ────────────────────────────────────────────── */}
+        <section className="mb-10">
+          <SectionHeader icon={HardDrive} title="Storage" />
+          <StorageSettings />
+        </section>
+
+        {/* Default apps ───────────────────────────────────────── */}
+        <section className="mb-10">
+          <SectionHeader icon={FileCog} title="Default apps" />
+          <DefaultAppsSettings />
+        </section>
+
+        {/* Startup ────────────────────────────────────────────── */}
+        <section className="mb-10">
+          <SectionHeader icon={Power} title="Startup" />
+          <StartupSettings />
+        </section>
+
+        {/* Backup ─────────────────────────────────────────────── */}
+        <section className="mb-10">
+          <SectionHeader icon={DatabaseBackup} title="Backup" />
+          <BackupSettings />
+        </section>
+
+        {/* Keyboard ───────────────────────────────────────────── */}
+        <section className="mb-10">
+          <SectionHeader icon={Keyboard} title="Keyboard shortcuts" />
+          <p className="font-ui text-on-surface-variant mb-3 text-[11px]">
+            Press <span className="text-on-surface font-semibold">?</span> anywhere on the desktop
+            to open this list.
+          </p>
+          <ShortcutList />
+        </section>
+
         {/* Security ───────────────────────────────────────────── */}
         <SecuritySettings />
 
         {/* About ──────────────────────────────────────────────── */}
         <section className="border-outline-variant mb-6 border-t pt-8">
           <SectionHeader icon={Monitor} title="About this machine" />
-          <div className="grid gap-2">
-            {[
-              { label: 'OS', value: 'ImbatranimOS' },
-              { label: 'Shell', value: 'React desktop on Alpine' },
-              { label: 'Status', value: 'Developer Preview' },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="border-outline-variant bg-surface-container-low flex items-center justify-between border px-3 py-2.5"
-              >
-                <span className="text-on-surface-variant text-[10px] font-semibold tracking-widest uppercase">
-                  {item.label}
-                </span>
-                <span className="font-ui text-on-surface text-[13px] font-semibold">
-                  {item.value}
-                </span>
-              </div>
-            ))}
-          </div>
+          <AboutMachine onVersion={onVersion} />
         </section>
       </div>
 
@@ -262,8 +304,10 @@ export function Settings() {
         <span className="text-on-surface-variant text-[10px] font-semibold tracking-widest uppercase">
           ImbatranimOS
         </span>
+        {/* Driven by IMAGE_VERSION, not a literal. This said "v0.1 · preview" while
+            package.json was at 1.0.0 — the OS reporting a version it was not. */}
         <span className="font-ui text-on-surface-variant text-[10px] tabular-nums">
-          v0.1 · preview
+          {imageVersion ? `v${imageVersion}` : '—'}
         </span>
       </div>
     </div>

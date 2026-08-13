@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { createPrefsStorage } from '../../lib/prefs'
+import { prefsStorage } from '../../lib/prefs'
 
 export type ThemeMode = 'dark' | 'light'
 export type AccentId = 'crimson' | 'cobalt' | 'emerald' | 'signal'
@@ -44,8 +44,13 @@ export const useAppearanceStore = create<AppearanceStore>()(
       setAccent: (accent) => set({ accent }),
     }),
     {
-      name: 'appearance',
-      storage: createJSONStorage(() => createPrefsStorage('appearance')),
+      name: 'imbatranimos:appearance',
+      /**
+       * Server-backed dotfile (brief 49): durable user config that belongs to the
+       * account, not to one browser. `prefsStorage` mirrors to localStorage for
+       * the pre-auth first paint and writes through to `/api/prefs`.
+       */
+      storage: createJSONStorage(() => prefsStorage),
     }
   )
 )

@@ -1,4 +1,6 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
+import { isTextEntry } from './shortcutRegistry'
+import { isShellSuspended } from '../../modules/auth/store/authStore'
 
 /**
  * Maps a key string like "mod+k", "esc", "alt+tab", "mod+`", "mod+w", "mod+m"
@@ -21,7 +23,7 @@ interface ParsedKey {
   key: string
 }
 
-function parseBinding(binding: string): ParsedKey {
+export function parseBinding(binding: string): ParsedKey {
   const parts = binding.toLowerCase().split('+')
   const key = parts[parts.length - 1]
   const mod = parts.includes('mod')
@@ -31,13 +33,19 @@ function parseBinding(binding: string): ParsedKey {
   return { mod, alt, shift, ctrl, key }
 }
 
-function eventMatchesBinding(e: KeyboardEvent, parsed: ParsedKey): boolean {
+/** Exported for the spec — the matcher is where the modifier subtleties live. */
+export function eventMatchesBinding(e: KeyboardEvent, parsed: ParsedKey): boolean {
   const mac = isMac()
 
   // mod = Cmd on mac, Ctrl elsewhere
   const modPressed = mac ? e.metaKey : e.ctrlKey
   if (parsed.mod && !modPressed) return false
-  if (!parsed.mod && modPressed) return false
+  // `!parsed.ctrl` is load-bearing, and its absence was a real bug: off a mac,
+  // `mod` IS ctrl, so an explicit `ctrl+…` binding was rejected here by the
+  // very key it asked for. Every `ctrl+` binding was therefore dead on Linux
+  // and Windows — invisible until brief 85 wanted `ctrl+alt+left`, because
+  // until then every binding in the OS used `mod`.
+  if (!parsed.mod && !parsed.ctrl && modPressed) return false
 
   // explicit ctrl (not mod alias)
   if (parsed.ctrl && !e.ctrlKey) return false
@@ -63,7 +71,15 @@ function eventMatchesBinding(e: KeyboardEvent, parsed: ParsedKey): boolean {
   }
 
   const normalized = keyMap[evKey] ?? evKey
-  return normalized === parsed.key
+  if (normalized === parsed.key) return true
+
+  // Digit bindings also match on the physical key (brief 103): Shift+1
+  // produces `!` in e.key (and layout-dependent characters elsewhere), so a
+  // `ctrl+alt+shift+1` binding would never fire on e.key alone. e.code is
+  // layout-independent for the top digit row.
+  if (/^[0-9]$/.test(parsed.key) && e.code === `Digit${parsed.key}`) return true
+
+  return false
 }
 
 /**
@@ -77,30 +93,37 @@ function eventMatchesBinding(e: KeyboardEvent, parsed: ParsedKey): boolean {
  *   useGlobalHotkeys({ 'mod+k': () => openPalette(), 'esc': () => closePalette() })
  */
 export function useGlobalHotkeys(bindings: HotkeyBinding): void {
-  const stableBindings = bindings
-  // Re-bind only when the SET of hotkeys changes; handler identity churn per
-  // render is deliberately ignored (callers pass inline closures).
-  const bindingsKey = JSON.stringify(Object.keys(stableBindings))
-
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      for (const [bindingStr, handler] of Object.entries(stableBindings)) {
-        const parsed = parseBinding(bindingStr)
-        if (eventMatchesBinding(e, parsed)) {
-          e.preventDefault()
-          handler()
-          return
-        }
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bindingsKey]
-  )
+  // Keep the latest bindings in a ref, refreshed every render, and let a single
+  // permanent listener read `ref.current`. The old code memoized the handler on
+  // the key SET only, so a handler closing over changing state was frozen at its
+  // first-render value and fired stale — the same bug `useSaveHotkey` avoids with
+  // a ref.
+  const bindingsRef = useRef(bindings)
+  useEffect(() => {
+    bindingsRef.current = bindings
+  })
 
   useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // A covered screen eats no keys (brief 101): the desktop stays mounted
+      // beneath the lock overlay, and typing a password must not fire mod+K.
+      if (isShellSuspended()) return
+      for (const [bindingStr, handler] of Object.entries(bindingsRef.current)) {
+        const parsed = parseBinding(bindingStr)
+        if (!eventMatchesBinding(e, parsed)) continue
+        // A bare (or shift-only) key must not be stolen from a text field: while
+        // the user is typing, `space`/`m`/`f`/arrows belong to the input. Modifier
+        // combos (Ctrl/⌘/Alt) are real shortcuts and still fire everywhere.
+        const bare = !parsed.mod && !parsed.ctrl && !parsed.alt
+        if (bare && isTextEntry(e.target)) continue
+        e.preventDefault()
+        handler()
+        return
+      }
+    }
     window.addEventListener('keydown', handleKeyDown)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [handleKeyDown])
+  }, [])
 }

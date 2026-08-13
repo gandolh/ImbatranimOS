@@ -1,43 +1,100 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { clampIconPosition, healIconPositions } from '../../lib/desktopBounds'
-import { createPrefsStorage } from '../../lib/prefs'
+import { prefsStorage } from '../../lib/prefs'
 
 type IconPosition = {
   x: number
   y: number
+  /**
+   * True once the user has dragged this icon. Pinned icons keep their exact
+   * coordinates forever; auto-placed icons are free to reflow when the viewport
+   * changes or the app roster changes. Without this distinction the layout has
+   * no way to tell "the user put it here" from "we computed this once at a
+   * different window size", which is how stale coordinates ended up colliding
+   * with freshly computed ones and icons drew on top of each other.
+   */
+  pinned?: boolean
 }
 
 type DesktopStore = {
   iconPositions: Record<string, IconPosition>
-  updateIconPosition: (appId: string, position: IconPosition) => void
+  /** A user drag — pins the icon. */
+  updateIconPosition: (appId: string, position: { x: number; y: number }) => void
+  /** An auto-layout placement — does not pin, and never overwrites a pin. */
+  setAutoPositions: (positions: Record<string, { x: number; y: number }>) => void
+  /**
+   * Auto-arrange (brief 106): forget every user pin so the next layout pass
+   * places all icons on the grid. Same persisted shape — un-pinning is the
+   * whole verb, no "arranged" mode flag to keep in sync.
+   */
+  clearPins: () => void
 }
 
 export const useDesktopStore = create<DesktopStore>()(
   persist(
     (set) => ({
       iconPositions: {},
+
       updateIconPosition: (appId, position) =>
         set((state) => ({
           iconPositions: {
             ...state.iconPositions,
-            // Clamp on write so no drag/init can persist an off-desktop icon.
-            [appId]: clampIconPosition(position),
+            [appId]: { ...position, pinned: true },
           },
         })),
+
+      setAutoPositions: (positions) =>
+        set((state) => {
+          const next = { ...state.iconPositions }
+          let changed = false
+          for (const [appId, pos] of Object.entries(positions)) {
+            const prev = next[appId]
+            if (prev?.pinned) continue
+            if (prev && prev.x === pos.x && prev.y === pos.y) continue
+            next[appId] = { ...pos, pinned: false }
+            changed = true
+          }
+          // Returning the identical state keeps the store from notifying
+          // subscribers when the layout has not moved. Without this, a
+          // re-render that recomputes the same positions would publish a new
+          // object every time.
+          return changed ? { iconPositions: next } : state
+        }),
+
+      clearPins: () =>
+        set((state) => {
+          const next: Record<string, IconPosition> = {}
+          let changed = false
+          for (const [appId, pos] of Object.entries(state.iconPositions)) {
+            next[appId] = pos.pinned ? { ...pos, pinned: false } : pos
+            if (pos.pinned) changed = true
+          }
+          return changed ? { iconPositions: next } : state
+        }),
     }),
     {
-      name: 'desktop',
-      storage: createJSONStorage(() => createPrefsStorage('desktop')),
-      // Self-heal on hydration: re-clamp every persisted position into the
-      // current bounds so existing (possibly out-of-bounds) blobs recover.
-      merge: (persisted, current) => {
-        const prev = (persisted ?? {}) as Partial<DesktopStore>
-        return {
-          ...current,
-          ...prev,
-          iconPositions: healIconPositions(prev.iconPositions ?? {}),
+      name: 'desktop-storage',
+      /**
+       * Server-backed dotfile (brief 49): durable user config that belongs to the
+       * account, not to one browser. `prefsStorage` mirrors to localStorage for
+       * the pre-auth first paint and writes through to `/api/prefs`.
+       */
+      storage: createJSONStorage(() => prefsStorage),
+      version: 1,
+      /**
+       * v0 stored bare `{x, y}` with no notion of pinning. Those coordinates
+       * were produced by the old fixed 8-row layout, not by the user, so they
+       * are treated as auto-placed and allowed to reflow — which is what
+       * clears the pre-existing overlaps.
+       */
+      migrate: (persisted, version) => {
+        const state = persisted as DesktopStore | undefined
+        if (!state || version >= 1) return state as DesktopStore
+        const iconPositions: Record<string, IconPosition> = {}
+        for (const [appId, pos] of Object.entries(state.iconPositions ?? {})) {
+          iconPositions[appId] = { x: pos.x, y: pos.y, pinned: false }
         }
+        return { ...state, iconPositions }
       },
     }
   )

@@ -1,163 +1,180 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createSystemHandle } from './createSystemHandle'
 import { useWindowStore } from '../shared/store/windowStore'
 import { useIntentStore } from '../shared/store/intentStore'
+import { useNotificationStore } from '../shared/store/notificationStore'
+import { useShortcutStore } from '../shared/hooks/shortcutRegistry'
 
-const SIZE = { width: 400, height: 300 }
-const MIN = { width: 200, height: 150 }
+/**
+ * Brief 48 — the in-process transport of the protocol.
+ *
+ * The assertions that matter are the SCOPING ones: a handle is minted for one
+ * app in one window, and nothing on it may reach further. That is the security
+ * model of the seam, so it gets pinned harder than the plumbing.
+ */
 
-// windowStore geometry reads window.innerWidth/innerHeight; markDirty's guard
-// reads window.confirm. Stub a minimal window for the Node test environment.
-let confirmResult = true
-
-beforeEach(() => {
-  confirmResult = true
-  vi.stubGlobal('window', {
-    innerWidth: 1280,
-    innerHeight: 800,
-    confirm: () => confirmResult,
-  })
-  useWindowStore.setState({
-    windows: [],
-    preMaximizeStates: {},
-    preSnapStates: {},
-    closeGuards: {},
-    nextZIndex: 1,
-  })
-  useIntentStore.setState({ intents: new Map() })
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
-
-/** Open two windows; return their ids in open order (b is on top). */
-function openTwo(): { a: string; b: string } {
-  const store = useWindowStore.getState()
-  const a = store.openWindow('app-a', 'A', SIZE, MIN)
-  const b = store.openWindow('app-b', 'B', SIZE, MIN)
-  return { a, b }
+function openTestWindow(appId: string): string {
+  return useWindowStore
+    .getState()
+    .openWindow(appId, appId, { width: 400, height: 300 }, { width: 200, height: 150 })
 }
 
-const find = (id: string) => useWindowStore.getState().windows.find((w) => w.id === id)
-
-describe('createSystemHandle — window scoping', () => {
-  it('targets only its own window for setTitle / resize / minimize / focus', () => {
-    const { a, b } = openTwo()
-    const system = createSystemHandle(a)
-
-    system.window.setTitle('Renamed')
-    expect(find(a)?.title).toBe('Renamed')
-    expect(find(b)?.title).toBe('B')
-
-    system.window.resize(640, 480)
-    expect(find(a)?.size).toEqual({ width: 640, height: 480 })
-    expect(find(b)?.size).toEqual(SIZE)
-
-    system.window.minimize()
-    expect(find(a)?.isVisible).toBe(false)
-    expect(find(b)?.isVisible).toBe(true)
-
-    system.window.focus()
-    const top = Math.max(...useWindowStore.getState().windows.map((w) => w.zIndex))
-    expect(find(a)?.zIndex).toBe(top)
-  })
-
-  it('requestClose closes only its own window', () => {
-    const { a, b } = openTwo()
-    createSystemHandle(a).window.requestClose()
-    expect(find(a)).toBeUndefined()
-    expect(find(b)).toBeDefined()
-  })
-
-  it('markDirty scopes the unsaved-changes close guard to its own window', () => {
-    const { a, b } = openTwo()
-    const system = createSystemHandle(a)
-
-    system.window.markDirty(true)
-    confirmResult = false
-    // A dirty window vetoes its own close via the confirm...
-    useWindowStore.getState().closeWindow(a)
-    expect(find(a)).toBeDefined()
-    // ...but never blocks a different window.
-    useWindowStore.getState().closeWindow(b)
-    expect(find(b)).toBeUndefined()
-
-    // Clearing dirty removes the guard.
-    system.window.markDirty(false)
-    useWindowStore.getState().closeWindow(a)
-    expect(find(a)).toBeUndefined()
-  })
+beforeEach(() => {
+  useWindowStore.setState({ windows: [], nextZIndex: 1, closeGuards: {} })
+  useIntentStore.setState({ intents: new Map() })
+  useNotificationStore.setState({ notifications: [] })
+  useShortcutStore.setState({ shortcuts: {} })
 })
 
-describe('createSystemHandle — on(event) lifecycle', () => {
-  it('focus: seeds only when active, fires on becoming active, stops after unsubscribe', () => {
-    const { a } = openTwo() // b is on top, so a is NOT active
-    const system = createSystemHandle(a)
+describe('window scoping', () => {
+  it('window.* acts on the OWN window, never another', () => {
+    const mine = openTestWindow('notepad')
+    const theirs = openTestWindow('calculator')
+    const system = createSystemHandle('notepad', mine)
 
-    const cb = vi.fn()
-    const off = system.on('focus', cb)
-    expect(cb).not.toHaveBeenCalled() // a is not active at subscribe time
+    system.window.setTitle('mine.txt')
+    const wins = useWindowStore.getState().windows
+    expect(wins.find((w) => w.id === mine)?.title).toBe('mine.txt')
+    expect(wins.find((w) => w.id === theirs)?.title).toBe('calculator')
 
-    useWindowStore.getState().focusWindow(a) // a becomes active
-    expect(cb).toHaveBeenCalledTimes(1)
+    system.window.hide()
+    expect(useWindowStore.getState().windows.find((w) => w.id === mine)?.isVisible).toBe(false)
+    expect(useWindowStore.getState().windows.find((w) => w.id === theirs)?.isVisible).toBe(true)
+  })
 
-    off()
-    useWindowStore.getState().focusWindow(useWindowStore.getState().windows[1]!.id)
+  it('isFocused tracks the compositor, not a cached snapshot', () => {
+    const a = openTestWindow('notepad')
+    const b = openTestWindow('calculator')
+    const sysA = createSystemHandle('notepad', a)
+    expect(sysA.window.isFocused()).toBe(false)
     useWindowStore.getState().focusWindow(a)
-    expect(cb).toHaveBeenCalledTimes(1) // no further calls after unsubscribe
+    expect(sysA.window.isFocused()).toBe(true)
+    useWindowStore.getState().focusWindow(b)
+    expect(sysA.window.isFocused()).toBe(false)
   })
 
-  it('blur: seeds immediately when already inactive', () => {
-    const { a } = openTwo()
-    const cb = vi.fn()
-    createSystemHandle(a).on('blur', cb)
-    expect(cb).toHaveBeenCalledTimes(1)
+  it('requestClose consults the close guard, same as the title-bar X', () => {
+    const id = openTestWindow('notepad')
+    const system = createSystemHandle('notepad', id)
+    let allow = false
+    system.window.onCloseRequest(() => allow)
+
+    system.window.requestClose()
+    expect(useWindowStore.getState().windows).toHaveLength(1)
+
+    allow = true
+    system.window.requestClose()
+    expect(useWindowStore.getState().windows).toHaveLength(0)
   })
 
-  it('visibilitychange: fires on minimize/restore, not on subscribe', () => {
-    const { a } = openTwo()
-    const cb = vi.fn()
-    const off = createSystemHandle(a).on('visibilitychange', cb)
-    expect(cb).not.toHaveBeenCalled()
-
-    useWindowStore.getState().hideWindow(a)
-    expect(cb).toHaveBeenCalledTimes(1)
-    useWindowStore.getState().showWindow(a)
-    expect(cb).toHaveBeenCalledTimes(2)
-
-    off()
-    useWindowStore.getState().hideWindow(a)
-    expect(cb).toHaveBeenCalledTimes(2)
-  })
-
-  it('close-request: subscription is a no-op stub that unsubscribes cleanly', () => {
-    const { a } = openTwo()
-    const cb = vi.fn()
-    const off = createSystemHandle(a).on('close-request', cb)
-    useWindowStore.getState().closeWindow(a)
-    expect(cb).not.toHaveBeenCalled()
-    expect(() => off()).not.toThrow()
+  it('a windowless handle degrades instead of crashing', () => {
+    const system = createSystemHandle('clock', null)
+    expect(system.windowId).toBeNull()
+    expect(() => system.window.setTitle('x')).not.toThrow()
+    expect(system.window.isFocused()).toBe(false)
+    expect(system.window.isVisible()).toBe(false)
+    expect(() => system.window.onCloseRequest(() => true)()).not.toThrow()
   })
 })
 
-describe('createSystemHandle — intents.onOpen', () => {
-  it('delivers the pending launch payload then later re-deliveries', () => {
-    const { a } = openTwo()
-    useIntentStore.getState().setIntent(a, { openPath: 'first' })
+describe('notify is stamped', () => {
+  it('carries the handle app id — an app cannot toast in another name', () => {
+    const system = createSystemHandle('sticky-notes', null)
+    system.notify({ title: 'saved', level: 'success' })
+    const items = useNotificationStore.getState().notifications
+    expect(items).toHaveLength(1)
+    expect(items[0].appId).toBe('sticky-notes')
+  })
+})
 
-    const system = createSystemHandle(a)
-    const handler = vi.fn()
-    const off = system.intents.onOpen(handler)
+describe('intents', () => {
+  it('onIntent delivers a pending payload immediately, then re-deliveries', () => {
+    const id = openTestWindow('archive-manager')
+    const system = createSystemHandle('archive-manager', id)
+    useIntentStore.getState().setIntent(id, { openPath: 'a.zip', root: 'home' })
 
-    expect(handler).toHaveBeenCalledWith({ openPath: 'first' })
+    const seen: unknown[] = []
+    const off = system.intents.onIntent((p) => seen.push(p))
+    expect(seen).toEqual([{ openPath: 'a.zip', root: 'home' }])
 
-    useIntentStore.getState().setIntent(a, { openPath: 'second' })
-    expect(handler).toHaveBeenCalledWith({ openPath: 'second' })
-    expect(handler).toHaveBeenCalledTimes(2)
+    // Re-delivery to the already-open window (single-instance focus path).
+    useIntentStore.getState().setIntent(id, { openPath: 'b.zip', root: 'home' })
+    expect(seen).toHaveLength(2)
 
     off()
-    useIntentStore.getState().setIntent(a, { openPath: 'third' })
-    expect(handler).toHaveBeenCalledTimes(2)
+    useIntentStore.getState().setIntent(id, { openPath: 'c.zip', root: 'home' })
+    expect(seen).toHaveLength(2)
+  })
+
+  it('consume drains once and only for the own window', () => {
+    const mine = openTestWindow('notepad')
+    const theirs = openTestWindow('paint')
+    useIntentStore.getState().setIntent(mine, { openPath: 'x.txt', root: 'home' })
+    useIntentStore.getState().setIntent(theirs, { openPath: 'y.png', root: 'home' })
+
+    const system = createSystemHandle('notepad', mine)
+    expect(system.intents.consume()).toEqual({ openPath: 'x.txt', root: 'home' })
+    expect(system.intents.consume()).toBeUndefined()
+    // The other window's intent is untouched.
+    expect(useIntentStore.getState().intents.get(theirs)).toEqual({
+      openPath: 'y.png',
+      root: 'home',
+    })
+  })
+})
+
+describe('shortcuts', () => {
+  it('register binds AND documents; unregister removes both', () => {
+    const system = createSystemHandle('games', null)
+    let fired = 0
+    const off = system.shortcuts.register([
+      {
+        id: 'games.test',
+        keys: 'mod+9',
+        description: 'test',
+        scope: 'Global',
+        handler: () => fired++,
+      },
+    ])
+    expect(useShortcutStore.getState().shortcuts['games.test']).toBeDefined()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '9', ctrlKey: true }))
+    expect(fired).toBe(1)
+
+    off()
+    expect(useShortcutStore.getState().shortcuts['games.test']).toBeUndefined()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '9', ctrlKey: true }))
+    expect(fired).toBe(1)
+  })
+})
+
+describe('events', () => {
+  it('visibility fires on minimise and restore, with the new value', () => {
+    const id = openTestWindow('media-player')
+    const system = createSystemHandle('media-player', id)
+    const seen: boolean[] = []
+    const off = system.on('visibility', (v) => seen.push(v))
+
+    useWindowStore.getState().hideWindow(id)
+    useWindowStore.getState().showWindow(id)
+    expect(seen).toEqual([false, true])
+    off()
+  })
+
+  it('focus/blur fire on transitions only', () => {
+    const a = openTestWindow('notepad')
+    const b = openTestWindow('calculator')
+    const system = createSystemHandle('notepad', a)
+    let focus = 0
+    let blur = 0
+    system.on('focus', () => focus++)
+    system.on('blur', () => blur++)
+
+    useWindowStore.getState().focusWindow(a)
+    useWindowStore.getState().focusWindow(b)
+    useWindowStore.getState().focusWindow(a)
+    expect(focus).toBe(2)
+    expect(blur).toBe(1)
   })
 })

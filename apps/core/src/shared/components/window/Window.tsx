@@ -3,16 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { useDrag } from '@use-gesture/react'
 import { Minus, Square, X, Copy } from 'lucide-react'
-import { cn } from '@imbatranim/ui'
+import { cn } from '../../../lib/cn'
 import {
   useWindowStore,
   type SnapRegion,
   detectSnapRegion,
   TASKBAR_HEIGHT,
+  TITLEBAR_MIN_VISIBLE,
 } from '../../store/windowStore'
-import { clampWindowRect } from '../../../lib/desktopBounds'
 import { SnapOverlay } from './SnapOverlay'
-import { AppErrorBoundary } from '../AppErrorBoundary'
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
@@ -21,6 +20,11 @@ type WindowProps = {
   minSize: { width: number; height: number }
   children: React.ReactNode
   isFocused: boolean
+  /**
+   * False when this window lives on a workspace that is not on screen. It is
+   * still mounted — see the `display` rule below.
+   */
+  onActiveWorkspace?: boolean
 }
 
 type ResizeHandleProps = {
@@ -133,6 +137,7 @@ export const Window = React.memo(function Window({
   minSize,
   children,
   isFocused,
+  onActiveWorkspace = true,
 }: WindowProps) {
   const instance = useWindowStore((s) => s.windows.find((w) => w.id === windowId))
   const closeWindow = useWindowStore((s) => s.closeWindow)
@@ -146,10 +151,6 @@ export const Window = React.memo(function Window({
 
   const dragStartWindowPos = useRef<{ x: number; y: number } | null>(null)
   const [snapPreview, setSnapPreview] = useState<SnapRegion | null>(null)
-  // Bumped on Reload from the crashed-app panel — remounting the boundary
-  // under this key remounts the app content fresh and clears the boundary's
-  // caught-error state in one move.
-  const [reloadKey, setReloadKey] = useState(0)
 
   const titleBarBind = useDrag(
     ({ first, last, movement: [mx, my], xy: [px, py], event }) => {
@@ -171,12 +172,13 @@ export const Window = React.memo(function Window({
       const startPos = dragStartWindowPos.current
       if (!startPos) return
 
-      // Move window — clamp so it can't be dragged under the taskbar / off-screen.
-      const { position } = clampWindowRect(
-        { x: startPos.x + mx, y: startPos.y + my },
-        instance.size
+      // Move window
+      const newX = Math.max(0, Math.min(startPos.x + mx, window.innerWidth - instance.size.width))
+      const newY = Math.max(
+        0,
+        Math.min(startPos.y + my, window.innerHeight - TASKBAR_HEIGHT - TITLEBAR_MIN_VISIBLE)
       )
-      updatePosition(instance.id, position)
+      updatePosition(instance.id, { x: newX, y: newY })
 
       // Detect snap region from pointer position
       const detected = detectSnapRegion(px, py)
@@ -225,14 +227,6 @@ export const Window = React.memo(function Window({
     [closeWindow, windowId]
   )
 
-  const handleAppClose = useCallback(() => {
-    closeWindow(windowId)
-  }, [closeWindow, windowId])
-
-  const handleAppReload = useCallback(() => {
-    setReloadKey((k) => k + 1)
-  }, [])
-
   if (!instance) return null
 
   return (
@@ -254,7 +248,10 @@ export const Window = React.memo(function Window({
             width: instance.size.width,
             height: instance.size.height,
             zIndex: instance.zIndex,
-            display: instance.isVisible ? 'flex' : 'none',
+            // Hidden, not unmounted, for a window that is minimised OR on
+            // another workspace — same mechanism, same reason: the app keeps
+            // its sockets, its buffers and its scroll position.
+            display: instance.isVisible && onActiveWorkspace ? 'flex' : 'none',
             flexDirection: 'column',
             fontFamily: "'Space Grotesk', sans-serif",
           }}
@@ -265,6 +262,11 @@ export const Window = React.memo(function Window({
               : 'border-outline-variant border shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
           )}
           onClick={handleWindowClick}
+          // Addressable from the outside. Every UI probe so far has had to guess
+          // at a window by its text; the compositor knowing its own id costs a
+          // string and is not part of any app's API.
+          data-window-id={instance.id}
+          data-app-id={instance.appId}
         >
           {/* Resize handles — only when not maximized */}
           {!instance.isMaximized && (
@@ -280,9 +282,11 @@ export const Window = React.memo(function Window({
             </>
           )}
 
-          {/* Title bar */}
+          {/* Title bar — double-click toggles maximize/restore (brief 103),
+              the reflex every desktop user carries. */}
           <div
             {...titleBarBind()}
+            onDoubleClick={handleMaximizeToggle}
             style={{ touchAction: 'none', userSelect: 'none' }}
             className={cn(
               'flex h-[30px] shrink-0 items-center justify-between border-b pr-1 pl-3',
@@ -308,6 +312,9 @@ export const Window = React.memo(function Window({
             <div
               className="flex shrink-0 items-center gap-[2px]"
               onClick={(e) => e.stopPropagation()}
+              // A fast double-press on Minimize must not ALSO toggle maximize
+              // via the title bar's dblclick — stop it like click above.
+              onDoubleClick={(e) => e.stopPropagation()}
             >
               <TitleBarButton onClick={handleHide} title="Minimize">
                 <Minus size={13} strokeWidth={2} />
@@ -330,15 +337,7 @@ export const Window = React.memo(function Window({
 
           {/* Window body */}
           <div className="bg-surface-container-lowest text-on-surface min-h-0 flex-1 overflow-auto">
-            <AppErrorBoundary
-              key={reloadKey}
-              appId={instance.appId}
-              appName={instance.title}
-              onReload={handleAppReload}
-              onClose={handleAppClose}
-            >
-              {children}
-            </AppErrorBoundary>
+            {children}
           </div>
         </motion.div>
       </AnimatePresence>

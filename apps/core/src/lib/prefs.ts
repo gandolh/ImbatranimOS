@@ -2,215 +2,338 @@ import type { StateStorage } from 'zustand/middleware'
 import { api } from './axios'
 
 /**
- * Server-backed "dotfile" prefs client.
+ * Server-backed dotfiles, with a local mirror for the first paint (brief 49).
  *
- * The four durable config surfaces (appearance, wallpaper, desktop icons,
- * disabled add-ons) persist to `GET/PUT /api/prefs` instead of localStorage so
- * they follow the user across tabs and devices. Each store keeps its zustand
- * `persist` middleware but swaps the storage backend for {@link createPrefsStorage},
- * a synchronous `StateStorage` over an in-memory cache. The cache is seeded once
- * at boot by {@link loadPrefs} (a single `GET /api/prefs`), after which every
- * store is re-hydrated. Writes are optimistic (local first) with a debounced
- * write-through `PUT`; the server wins on the next load.
+ * ## Why not server-only, as the brief says
+ *
+ * The brief says to replace each store's `persist(localStorage)` with a
+ * server-backed adapter. For three of the four stores that is exactly right. For
+ * **appearance it cannot be**, and the reason is structural rather than a
+ * preference: `main.tsx` applies the theme and accent *synchronously, before
+ * React mounts*, so that the very first paint — the lock screen — is branded.
+ * That paint happens **before the user has authenticated**, and `/api/prefs` is
+ * behind the session guard, as it must be. There is no server to read at the
+ * moment the value is needed.
+ *
+ * So the model is **server as source of truth, localStorage as a first-paint
+ * cache**: paint immediately from the cache, hydrate from the server once
+ * authenticated, re-apply if they differ, and keep the cache updated. A browser
+ * that has never seen this machine paints the default behind the lock and picks
+ * up the real values on sign-in, which is correct — your wallpaper lives behind
+ * your password.
+ *
+ * The cache is also what makes the write path cheap: a change updates memory and
+ * localStorage at once, and the server write is debounced behind it.
  */
 
-export type PrefKey = 'appearance' | 'wallpaper' | 'desktop' | 'addons'
+/** Debounce for the write-through. Long enough to coalesce a drag, short enough to survive a close. */
+const WRITE_DEBOUNCE_MS = 400
 
-const PREFS_URL = '/prefs'
-const FLUSH_DELAY_MS = 500
+/** Backoff for a failed flush: 5s, doubling, capped (brief 109). */
+const RETRY_BASE_MS = 5_000
+const RETRY_MAX_MS = 60_000
 
-// Raw persisted JSON strings (the zustand `{state, version}` envelope) keyed by
-// pref key. Seeded by loadPrefs(); read synchronously by createPrefsStorage.
-const cache = new Map<PrefKey, string>()
+/**
+ * Keys that live on the server. Anything not in here is not a dotfile.
+ *
+ * Adding a store to this list is **not optional bookkeeping** — `writePref`
+ * silently drops anything absent, so a store wired to `prefsStorage` without an
+ * entry here persists to localStorage only and looks like it works right up
+ * until you sign in from a second browser. Brief 81's file associations shipped
+ * that way for exactly as long as it took to check the server copy.
+ */
+export const DOTFILE_KEYS = [
+  'imbatranimos:appearance',
+  'wallpaper-storage',
+  'desktop-storage',
+  'imbatranimos:addons',
+  'imbatranimos:file-associations',
+  'imbatranimos:startup',
+] as const
 
-// One trailing-debounced flush timer per key so a burst of setItem calls
-// (e.g. dragging the theme slider) coalesces into a single PUT.
-const flushTimers = new Map<PrefKey, ReturnType<typeof setTimeout>>()
+type Cache = Map<string, string>
 
+/** The in-memory mirror. Populated from localStorage at import, server on login. */
+const cache: Cache = new Map()
+const pendingWrites = new Map<string, string>()
+let writeTimer: ReturnType<typeof setTimeout> | undefined
 let hydrated = false
+let hydrating: Promise<void> | null = null
 
-/** True once the boot-time GET /api/prefs has resolved at least once. */
-export function isPrefsHydrated(): boolean {
+// Durability state (brief 109). A batch stays queued until the server confirms
+// it, so a blip cannot silently discard a change the UI already shows.
+let inFlight = false
+let flushAgain = false
+let retryTimer: ReturnType<typeof setTimeout> | undefined
+let retryDelay = RETRY_BASE_MS
+/** True after a 401: the writes are fine, the session is not. Wait for re-auth. */
+let waitingForAuth = false
+
+function readLocal(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function writeLocal(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Quota or private mode. The server copy is the real one; losing the
+    // first-paint cache costs a flash on the next boot, not any data.
+  }
+}
+
+// Seed the mirror from localStorage at import time, so the synchronous
+// first-paint read in main.tsx has something before any network call.
+for (const key of DOTFILE_KEYS) {
+  const local = readLocal(key)
+  if (local !== null) cache.set(key, local)
+}
+
+/** True once the server's copy has been merged in. */
+export function prefsHydrated(): boolean {
   return hydrated
 }
 
 /**
- * Fetch every stored pref once and seed the in-memory cache. Must run only when
- * authenticated — `/api/prefs` 401s when logged out. Safe to call repeatedly
- * (e.g. after a re-login); it replaces the cache wholesale.
+ * Fetch the dotfiles and merge them over the local mirror.
+ *
+ * Call **after** authentication — the route is guarded, and calling it from the
+ * lock screen would be a guaranteed 401 on every boot. Idempotent and
+ * de-duplicated, so two callers racing at startup make one request.
+ *
+ * A key the server does not know keeps its local value **and is pushed up**:
+ * that is the migration for anyone who configured this machine before dotfiles
+ * existed, and it is a one-liner rather than a separate migration step because
+ * "the server has not got it yet" and "this is a legacy local value" are the
+ * same condition.
  */
-export async function loadPrefs(): Promise<void> {
-  const res = await api.get<Record<string, unknown>>(PREFS_URL)
-  const data = res.data ?? {}
-  cache.clear()
-  for (const [key, value] of Object.entries(data)) {
-    // The server stores JSON-parsed values; re-stringify so the StateStorage
-    // hands zustand's createJSONStorage the exact envelope string it expects.
-    cache.set(key as PrefKey, JSON.stringify(value))
-  }
-  if (Object.keys(data).length === 0) {
-    await seedFromLegacyLocalStorage()
-  }
-  hydrated = true
+export function hydratePrefs(): Promise<void> {
+  if (hydrated) return Promise.resolve()
+  if (hydrating) return hydrating
+  hydrating = api
+    .get<Record<string, string>>('/prefs')
+    .then((res) => {
+      const server = res.data ?? {}
+      const toSeed: { key: string; value: string }[] = []
+      for (const key of DOTFILE_KEYS) {
+        const remote = server[key]
+        if (typeof remote === 'string') {
+          cache.set(key, remote)
+          writeLocal(key, remote)
+        } else {
+          const local = cache.get(key)
+          if (local !== undefined) toSeed.push({ key, value: local })
+        }
+      }
+      hydrated = true
+      if (toSeed.length > 0) {
+        void api.put('/prefs', { entries: toSeed }).catch(() => undefined)
+      }
+    })
+    .catch(() => {
+      // Unreachable or unauthenticated: keep running on the local mirror. A
+      // desktop that refuses to render because it could not read a wallpaper
+      // would be a much worse failure than a wrong wallpaper.
+      hydrated = false
+    })
+    .finally(() => {
+      hydrating = null
+    })
+  return hydrating
+}
+
+/** Read a dotfile from the mirror. Synchronous by design — see the note above. */
+export function readPref(key: string): string | null {
+  return cache.get(key) ?? null
+}
+
+/** Write a dotfile: mirror immediately, server on a debounce. */
+export function writePref(key: string, value: string): void {
+  cache.set(key, value)
+  writeLocal(key, value)
+  // Only push what the server is the owner of. A store that is not a dotfile
+  // has no business in this table.
+  if (!(DOTFILE_KEYS as readonly string[]).includes(key)) return
+  pendingWrites.set(key, value)
+  if (writeTimer !== undefined) clearTimeout(writeTimer)
+  writeTimer = setTimeout(flushPrefs, WRITE_DEBOUNCE_MS)
+}
+
+/** HTTP status of a rejected axios call, when there is one. */
+function statusOf(err: unknown): number | undefined {
+  return (err as { response?: { status?: number } } | undefined)?.response?.status
+}
+
+/** Report an unrecoverable save failure once, without importing the store eagerly. */
+function reportSaveFailure(): void {
+  void import('../shared/store/notificationStore').then(({ useNotificationStore }) => {
+    useNotificationStore.getState().notify({
+      title: "Couldn't save your settings",
+      body: 'The server refused the change. It has been discarded — try again.',
+      level: 'error',
+    })
+  })
 }
 
 /**
- * Drop the cache and any pending flushes. Call on logout so a subsequent login
- * re-fetches from the server rather than serving a stale user's prefs.
+ * Push any pending writes now.
+ *
+ * Called on a debounce, and again when the tab is hidden or unloading — a
+ * wallpaper changed two hundred milliseconds before closing the tab should not
+ * be the one change that does not stick.
+ *
+ * Durability (brief 109): the batch is NOT cleared before the request. It used
+ * to be, and the rejection was swallowed, so one blip lost the write forever —
+ * and worse, `hydratePrefs` merges server-over-local, so the change looked
+ * applied (the localStorage mirror lied) until the next sign-in snapped it back
+ * to the stale server copy. Entries now leave the queue only on confirmation,
+ * and only if no newer value arrived meanwhile (newest write always wins).
  */
-export function resetPrefs(): void {
-  cache.clear()
-  for (const timer of flushTimers.values()) clearTimeout(timer)
-  flushTimers.clear()
-  hydrated = false
-}
-
-// Legacy localStorage keys used before the four dotfile stores moved to
-// server-backed prefs, mapped to their current PrefKey. One-time migration
-// target for {@link loadPrefs}; see the doc comment there.
-const LEGACY_KEYS: Record<string, PrefKey> = {
-  'imbatranimos:appearance': 'appearance',
-  'wallpaper-storage': 'wallpaper',
-  'desktop-storage': 'desktop',
-  'imbatranimos:addons': 'addons',
-}
-
-/**
- * One-time migration: an empty server prefs map means either a fresh account
- * or one that predates server-backed prefs, in which case the legacy zustand
- * `persist` envelopes may still be sitting in localStorage under their old
- * keys. Adopt whatever parses onto the server in one bulk PUT, seed the
- * in-memory cache with the same values, then clear the legacy keys so this
- * never re-runs. Only called when findAll() came back empty, so an existing
- * (even partial) server map always wins and this never clobbers real data.
- */
-async function seedFromLegacyLocalStorage(): Promise<void> {
-  if (typeof localStorage === 'undefined') return
-
-  const found: string[] = []
-  const seeded: Partial<Record<PrefKey, unknown>> = {}
-  for (const [legacyKey, prefKey] of Object.entries(LEGACY_KEYS) as [string, PrefKey][]) {
-    const raw = localStorage.getItem(legacyKey)
-    if (raw == null) continue
-    found.push(legacyKey)
-    try {
-      seeded[prefKey] = JSON.parse(raw)
-    } catch {
-      // Corrupt legacy envelope: leave that store on its defaults, but still
-      // clear the key below so it isn't retried forever.
-    }
+export function flushPrefs(): void {
+  if (writeTimer !== undefined) {
+    clearTimeout(writeTimer)
+    writeTimer = undefined
   }
-  if (found.length === 0) return
-
-  if (Object.keys(seeded).length > 0) {
-    try {
-      await api.put(PREFS_URL, seeded)
-    } catch {
-      return // Leave localStorage untouched; retry migration on next boot.
-    }
-    for (const [prefKey, value] of Object.entries(seeded)) {
-      cache.set(prefKey as PrefKey, JSON.stringify(value))
-    }
+  if (retryTimer !== undefined) {
+    clearTimeout(retryTimer)
+    retryTimer = undefined
   }
-  for (const legacyKey of found) localStorage.removeItem(legacyKey)
-}
+  if (pendingWrites.size === 0) return
+  // Keeping entries queued during the request means a second flush could
+  // double-send; this guard replaces the accidental protection the old
+  // clear-before-PUT provided.
+  if (inFlight) {
+    flushAgain = true
+    return
+  }
 
-function scheduleFlush(key: PrefKey, value: string): void {
-  const existing = flushTimers.get(key)
-  if (existing !== undefined) clearTimeout(existing)
-  flushTimers.set(
-    key,
-    setTimeout(() => {
-      flushTimers.delete(key)
-      let parsed: unknown
-      try {
-        parsed = JSON.parse(value)
-      } catch {
+  const sent = new Map(pendingWrites)
+  const entries = [...sent].map(([key, value]) => ({ key, value }))
+  inFlight = true
+  waitingForAuth = false
+
+  void api
+    .put('/prefs', { entries })
+    .then(() => {
+      // Only retire what was actually sent: a key rewritten mid-flight keeps
+      // its newer value queued for the next flush.
+      for (const [key, value] of sent) {
+        if (pendingWrites.get(key) === value) pendingWrites.delete(key)
+      }
+      retryDelay = RETRY_BASE_MS
+    })
+    .catch((err: unknown) => {
+      const status = statusOf(err)
+      if (status === 401) {
+        // Not a bad write — a dead session. Hold the batch; re-auth re-flushes
+        // (AuthGate calls flushPrefs on the authenticated transition).
+        waitingForAuth = true
         return
       }
-      // Bulk-upsert a single key; the server merges rather than replaces.
-      void api.put(PREFS_URL, { [key]: parsed }).catch(() => {
-        // Best-effort write-through: a lost write recovers on next load, and a
-        // 401 is surfaced by the axios interceptor's auth:unauthorized event.
-      })
-    }, FLUSH_DELAY_MS)
-  )
+      if (status !== undefined && status >= 400 && status < 500) {
+        // The server saying no permanently. Retrying a malformed batch would
+        // loop forever, so drop it and say so once.
+        for (const [key, value] of sent) {
+          if (pendingWrites.get(key) === value) pendingWrites.delete(key)
+        }
+        reportSaveFailure()
+        return
+      }
+      // 5xx or network: keep the batch and back off.
+      retryTimer = setTimeout(flushPrefs, retryDelay)
+      retryDelay = Math.min(retryDelay * 2, RETRY_MAX_MS)
+    })
+    .finally(() => {
+      inFlight = false
+      if (flushAgain) {
+        flushAgain = false
+        flushPrefs()
+      }
+    })
 }
 
 /**
- * Synchronously drain every pending debounced flush: cancel each timer and
- * fire its PUT immediately via `fetch(..., { keepalive: true })` instead of
- * axios, so the request survives the tab closing/refreshing right after this
- * call returns. Must not `await` anything — by the time a promise settles the
- * page may already be gone. Call on tab hide/unload and before logout.
+ * The unload flush.
+ *
+ * `beforeunload` + a plain XHR was an aspiration, not a behaviour: browsers
+ * routinely abort in-flight XHR as the page goes away. `fetch(..., {keepalive:
+ * true})` is the one transport the browser promises to finish. (Not
+ * `sendBeacon`: it is POST-only, and reshaping a PUT API for a transport quirk
+ * is backwards.) Keepalive caps in-flight bodies at 64 KiB — dotfile batches
+ * are small JSON, comfortably inside it.
+ *
+ * Entries stay queued regardless: the page cannot observe the outcome, and a
+ * bfcache resurrection simply retries.
  */
-export function flushPendingPrefs(): void {
-  if (flushTimers.size === 0) return
-
-  const pending = Array.from(flushTimers.entries())
-  flushTimers.clear()
-
-  const url = `${api.defaults?.baseURL ?? ''}${PREFS_URL}`
-  for (const [key, timer] of pending) {
-    clearTimeout(timer)
-    const value = cache.get(key)
-    if (value === undefined) continue
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(value)
-    } catch {
-      continue
-    }
-    fetch(url, {
+export function flushPrefsKeepalive(): void {
+  if (pendingWrites.size === 0) return
+  const entries = [...pendingWrites].map(([key, value]) => ({ key, value }))
+  try {
+    void fetch(`${import.meta.env.VITE_API_URL}/prefs`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       keepalive: true,
-      body: JSON.stringify({ [key]: parsed }),
-    }).catch(() => {
-      // Best-effort, same as the debounced path: a lost write recovers on
-      // next load.
-    })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entries }),
+    }).catch(() => undefined)
+  } catch {
+    // Nothing useful to do while the page is going away.
   }
 }
 
-// Register once per module instance: a tab going hidden or unloading is the
-// only way the 500ms debounce window can lose a write, so drain it eagerly
-// on both signals (pagehide covers Safari, which doesn't fire visibilitychange
-// reliably on unload).
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') flushPendingPrefs()
-  })
-  window.addEventListener('pagehide', () => flushPendingPrefs())
-}
-
-function scheduleDelete(key: PrefKey): void {
-  const existing = flushTimers.get(key)
-  if (existing !== undefined) {
-    clearTimeout(existing)
-    flushTimers.delete(key)
-  }
-  void api.delete(`${PREFS_URL}/${key}`).catch(() => {})
+/** True while a batch is held back waiting for the session to come back. */
+export function prefsWaitingForAuth(): boolean {
+  return waitingForAuth
 }
 
 /**
- * A synchronous `StateStorage` bound to one pref key. Reads come from the cache
- * seeded by {@link loadPrefs}; writes update the cache immediately (optimistic)
- * and schedule a debounced server write-through. Pass through
- * `createJSONStorage(() => createPrefsStorage(key))` so zustand still owns the
- * envelope/versioning/migration for each store.
+ * The zustand `StateStorage` the dotfile stores persist through.
+ *
+ * Synchronous, which matters: an async storage makes `persist` hydrate on a
+ * later tick, and every store that drives a visual would flash its default
+ * first. Reading the mirror is synchronous, and the server catches up
+ * underneath.
  */
-export function createPrefsStorage(key: PrefKey): StateStorage {
-  return {
-    getItem: () => cache.get(key) ?? null,
-    setItem: (_name, value) => {
-      cache.set(key, value)
-      scheduleFlush(key, value)
-    },
-    removeItem: () => {
-      cache.delete(key)
-      scheduleDelete(key)
-    },
-  }
+export const prefsStorage: StateStorage = {
+  getItem: (name) => readPref(name),
+  setItem: (name, value) => writePref(name, value),
+  removeItem: (name) => {
+    cache.delete(name)
+    try {
+      localStorage.removeItem(name)
+    } catch {
+      /* nothing to do */
+    }
+    void api.delete(`/prefs/${encodeURIComponent(name)}`).catch(() => undefined)
+  },
+}
+
+/** Test seam: forget everything, as a fresh browser would have it. */
+export function resetPrefsForTest(): void {
+  cache.clear()
+  pendingWrites.clear()
+  hydrated = false
+  hydrating = null
+  if (writeTimer !== undefined) clearTimeout(writeTimer)
+  writeTimer = undefined
+  if (retryTimer !== undefined) clearTimeout(retryTimer)
+  retryTimer = undefined
+  inFlight = false
+  flushAgain = false
+  retryDelay = RETRY_BASE_MS
+  waitingForAuth = false
+}
+
+/** Test seam: what is still queued for the server. */
+export function pendingPrefsForTest(): Record<string, string> {
+  return Object.fromEntries(pendingWrites)
+}
+
+/** Test seam: what the mirror currently holds. */
+export function prefsCacheForTest(): Record<string, string> {
+  return Object.fromEntries(cache)
 }

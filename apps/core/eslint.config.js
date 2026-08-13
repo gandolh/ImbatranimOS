@@ -29,8 +29,9 @@ export default defineConfig([
       ],
       // Core must not depend on the apps that plug into it. Exactly one file
       // — src/manifest.ts, the composition root — may import add-on
-      // packages; the override below grants it. Shared libraries are exempt:
-      // @imbatranim/ui is the pure UI kit core legitimately consumes (brief 48).
+      // packages; the override below grants it. The one exception is the SDK:
+      // @imbatranim/ui sits BELOW core (brief 48), so core links against it
+      // the same way every app does.
       'no-restricted-imports': [
         'error',
         {

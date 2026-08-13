@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Dialog as BaseDialog } from '@base-ui/react/dialog'
 import { Search } from 'lucide-react'
-import { cn } from '@imbatranim/ui'
+import { cn } from '../../lib/cn'
 import {
   searchAllSources,
   activateItem,
@@ -9,16 +9,20 @@ import {
 } from '../commands/CommandSourcesRegistry'
 import { appsSource } from '../commands/appsSource'
 import { filesSource } from '../commands/filesSource'
+import { recentFilesSource } from '../commands/recentFilesSource'
 import { registerCommandSource, COMMAND_SOURCES } from '../commands/CommandSourcesRegistry'
 
 // Register the core-owned sources once (guard against HMR double-registration).
-// App-owned sources (bookmarks, notepad recent files) come from the add-on
-// manifests and are registered by src/manifest.ts.
+// App-owned sources (bookmarks) come from the add-on manifests and are
+// registered by src/manifest.ts.
 if (!COMMAND_SOURCES.find((s) => s.group === appsSource.group)) {
   registerCommandSource(appsSource)
 }
 if (!COMMAND_SOURCES.find((s) => s.group === filesSource.group)) {
   registerCommandSource(filesSource)
+}
+if (!COMMAND_SOURCES.find((s) => s.group === recentFilesSource.group)) {
+  registerCommandSource(recentFilesSource)
 }
 
 type Props = {
@@ -34,6 +38,9 @@ export function CommandPalette({ open, onClose }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Monotonic id for the in-flight search. A slow earlier query must not overwrite
+  // a newer one when it finally resolves out of order.
+  const reqIdRef = useRef(0)
   // Only keyboard navigation should auto-scroll the active row into view.
   // Mouse hover also moves the selection (onMouseEnter below), and if that
   // scrolled too, wheel-scrolling — which drags the pointer across rows —
@@ -66,13 +73,16 @@ export function CommandPalette({ open, onClose }: Props) {
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
     debounceRef.current = setTimeout(async () => {
+      const reqId = ++reqIdRef.current
       setLoading(true)
       try {
         const results = await searchAllSources(query)
+        // Ignore a result that a newer query has already superseded.
+        if (reqId !== reqIdRef.current) return
         setItems(results)
         setSelectedIndex(0)
       } finally {
-        setLoading(false)
+        if (reqId === reqIdRef.current) setLoading(false)
       }
     }, 80)
 

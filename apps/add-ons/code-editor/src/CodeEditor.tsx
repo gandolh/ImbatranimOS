@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FileCode2, Loader2, Save, X } from 'lucide-react'
 import Editor, { type OnMount } from '@monaco-editor/react'
+import { Button, Tooltip, cn, usePrompt } from '@imbatranim/ui'
 import {
-  Button,
-  Tooltip,
-  cn,
   fetchFileBytes,
   fileName,
   notify,
   uploadFileBytes,
   useOpenFilePicker,
   useOpenIntent,
-  usePrompt,
   useSaveHotkey,
   useUnsavedGuard,
   UploadTooLargeError,

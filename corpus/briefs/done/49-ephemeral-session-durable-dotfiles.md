@@ -95,3 +95,23 @@ the prefs round-trip; full backend suite green. **Human-gated:** two-tab stomp
 test (the headline (b) fix); set wallpaper/accent/icon-positions, hard-reload +
 open a second tab, confirm they carry; confirm a fresh tab starts with no windows
 open; confirm nothing reads/writes prefs while logged out.
+
+---
+
+## Outcome (2026-07-24, moved to done/)
+
+Shipped as commit `fef9826`. Backend: new auth-guarded `prefs` module
+(GET /api/prefs → Record<string,unknown>; PUT bulk 204; DELETE /:key 204;
+table created in onModuleInit; 8 specs). Frontend: `lib/prefs.ts` in-memory
+cache + sync zustand StateStorage + ~500ms debounced write-through;
+windowStore layout fully ephemeral (all localStorage layout code deleted);
+4 dotfile stores swapped to `createPrefsStorage`; `usePrefsBoot` hydrates
+after auth then applies appearance before first themed paint. Review fixes:
+proto-safe GET accumulator, corrupt-row tolerance, `flushPendingPrefs()`
+(keepalive fetch) on visibilitychange/pagehide + before logout,
+`resetPrefs()` on logout/auth:unauthorized, one-time localStorage→server
+seed when server map is empty. Known limits: lock screen + pre-hydration
+placeholder use default theme (accepted per brief); dev StrictMode double-GET;
+no server-side quota (single-user, ~100kb default body limit is the cap).
+Human-gated remainder: two-tab stomp test, settings carry across
+reload/second tab, logged-out no-prefs-traffic check.

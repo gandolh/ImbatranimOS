@@ -35,6 +35,14 @@ RUN npm ci
 # bundles the add-on packages via workspace resolution)
 # ---------------------------------------------------------------------------
 FROM deps AS builder
+# packages/ BEFORE apps/: the deps stage copied only packages/*/package.json (so
+# `npm ci` could link the workspaces), which leaves node_modules/@imbatranim/ui and
+# node_modules/@pdfcore/engine symlinked to manifest-only dirs. Without the source,
+# `tsc -b` fails with TS2307 "Cannot find module '@imbatranim/ui'" in every add-on
+# that imports them — and the resulting untyped imports cascade into hundreds of
+# TS7006 implicit-any errors. packages/ also changes less often than apps/, so
+# copying it first keeps an apps/ edit from busting this layer.
+COPY packages ./packages
 COPY apps ./apps
 # Sub-path build args. Default to root / same-origin (the standalone container
 # reached at its own port). A Caddy sub-path deploy passes
@@ -116,6 +124,10 @@ FROM deps AS dev
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 WORKDIR /app
+# Same manifest-only-symlink problem as the builder stage — `turbo dev` needs the
+# real packages/ source. Note the compose dev profile's `develop: watch:` syncs
+# only ../apps → /app/apps, so edits under packages/ need a rebuild to show up.
+COPY packages ./packages
 COPY apps ./apps
 COPY infrastructure/entrypoint.sh /entrypoint.sh
 RUN chmod 0755 /entrypoint.sh \

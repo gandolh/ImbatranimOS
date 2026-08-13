@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from 'react'
 import { Search } from 'lucide-react'
-import { cn } from '../../../lib/cn'
+import { cn } from '@imbatranim/ui'
 import { useWindowStore } from '../../store/windowStore'
 import { usePaletteStore } from '../../store/paletteStore'
 import { APP_REGISTRY } from '../../registry/registry'

@@ -1,6 +1,6 @@
 ---
-summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build.
-updated: 2026-07-19
+summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build. Briefs 47 (error boundaries) + 49 (session/dotfile split) shipped 2026-07-24; brief 48 (the seam itself) is the remaining step.
+updated: 2026-07-24
 ---
 
 # OS layering — the compositor seam
@@ -142,7 +142,9 @@ swap needs no app rewrites.
 ## Migration sequence (briefs 47–48)
 
 1. **Error boundaries first** (brief 47, standalone) — banks the (c) win at
-   near-zero cost, no API change, independent of the seam.
+   near-zero cost, no API change, independent of the seam. **Shipped
+   2026-07-24** (commit `0d32fbf`); the (b) session/dotfile split (brief 49)
+   shipped the same run (`fef9826`).
 2. **Extract `@imbatranim/ui`** — mechanical move of the ~70 component/hook
    exports; apps re-point imports.
 3. **`SystemHandle` + in-process impl + `SystemProvider`** at each app mount +

@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { JSX } from 'react'
 import type { PdfDoc } from '@pdfcore/engine'
-import { Button, Separator } from '@imbatranim/core'
+import { Button, Separator } from '@imbatranim/ui'
 import {
   Plus,
   Combine,

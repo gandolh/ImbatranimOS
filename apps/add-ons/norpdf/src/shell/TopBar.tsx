@@ -24,7 +24,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react'
-import { Button, Separator, Tooltip } from '@imbatranim/core'
+import { Button, Separator, Tooltip } from '@imbatranim/ui'
 import { useReader } from '../app/context'
 import { ToolButton } from './ToolButton'
 

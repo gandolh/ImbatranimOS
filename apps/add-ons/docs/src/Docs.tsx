@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FileText, Loader2, Save } from 'lucide-react'
+import { Button, Tooltip } from '@imbatranim/ui'
 import {
-  Button,
-  Tooltip,
   fetchFileBytes,
   uploadFileBytes,
   UploadTooLargeError,

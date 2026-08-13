@@ -5,8 +5,7 @@ import {
   type ThemeMode,
 } from '../../shared/store/appearanceStore'
 import { Monitor, Palette, Moon, Sun, Check, Image, LayoutGrid } from 'lucide-react'
-import { cn } from '../../lib/cn'
-import { Checkbox } from '../../shared/components/ui'
+import { cn, Checkbox } from '@imbatranim/ui'
 import { APP_REGISTRY } from '../../shared/registry/registry'
 import { NON_DISABLEABLE } from '../../shared/registry/enabledApps'
 import { useAddonStore } from '../../shared/store/addonStore'

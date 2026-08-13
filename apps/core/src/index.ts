@@ -15,18 +15,28 @@ export type { CommandSource, CommandItem } from './shared/commands/CommandSource
 export { api } from './lib/axios'
 export { queryClient } from './lib/queryClient'
 
-// Styling helper
-export { cn } from './lib/cn'
-
-// UI kit
-export { Button } from './shared/components/ui/Button'
-export { Checkbox } from './shared/components/ui/Checkbox'
-export { Dialog } from './shared/components/ui/Dialog'
-export { Input } from './shared/components/ui/Input'
-export { ScrollArea } from './shared/components/ui/ScrollArea'
-export { Select } from './shared/components/ui/Select'
-export { Separator } from './shared/components/ui/Separator'
-export { Tooltip } from './shared/components/ui/Tooltip'
+// compat re-exports from @imbatranim/ui — removed when add-ons migrate (brief 48)
+// The pure UI kit now lives in @imbatranim/ui; add-ons still import these from
+// '@imbatranim/core', so re-export them here until a later wave re-points the
+// add-ons and prunes this block.
+export {
+  cn,
+  Button,
+  Checkbox,
+  Dialog,
+  Input,
+  ScrollArea,
+  Select,
+  Separator,
+  Tooltip,
+  ConfirmDialog,
+  useConfirm,
+  PromptDialog,
+  usePrompt,
+  createOpenedFileStore,
+  useVirtualList,
+} from '@imbatranim/ui'
+export type { OpenedFile, VirtualList } from '@imbatranim/ui'
 
 // Desktop shell access
 export { openApp } from './shared/intents/openApp'
@@ -50,19 +60,26 @@ export {
   fileName,
 } from './lib/fileBytes'
 
-// Shared add-on kit — opened-file store + editor hooks
-export { createOpenedFileStore } from './shared/store/createOpenedFileStore'
-export type { OpenedFile } from './shared/store/createOpenedFileStore'
-export { useOpenIntent } from './shared/hooks/useOpenIntent'
-export { useSaveHotkey } from './shared/hooks/useSaveHotkey'
-export { useUnsavedGuard } from './shared/hooks/useUnsavedGuard'
-export { useVirtualList } from './shared/hooks/useVirtualList'
-export type { VirtualList } from './shared/hooks/useVirtualList'
+// System seam (brief 48). The versioned SystemHandle protocol + per-window
+// context live in @imbatranim/ui (avoids a core↔ui type cycle); core owns the
+// in-process implementation, injected per window by the compositor. Add-ons get
+// the handle as a `system` prop; `useSystem()` is offered for deep-tree reads.
+export { SystemProvider, useSystem, PROTOCOL_VERSION } from '@imbatranim/ui'
+export type {
+  SystemHandle,
+  SystemFs,
+  SystemHttp,
+  SystemWindow,
+  SystemIntents,
+  SystemEvent,
+  FsEntry,
+  FsEntryType,
+} from '@imbatranim/ui'
 
-// Shared add-on kit — confirm dialog
-export { ConfirmDialog, useConfirm } from './shared/components/ui/ConfirmDialog'
-export { PromptDialog, usePrompt } from './shared/components/ui/PromptDialog'
-
-// Shared add-on kit — reusable modal file picker over the home FS
-export { OpenFilePicker, useOpenFilePicker } from './shared/components/ui/OpenFilePicker'
-export type { PickedFile, OpenFilePickerOptions } from './shared/components/ui/OpenFilePicker'
+// Shared add-on kit — editor hooks + modal file picker. These now live in
+// @imbatranim/ui, implemented over the injected `system` handle; re-exported
+// here so existing add-ons keep importing them from '@imbatranim/core'
+// unchanged (they render inside the per-window SystemProvider).
+export { useOpenIntent, useSaveHotkey, useUnsavedGuard } from '@imbatranim/ui'
+export { OpenFilePicker, useOpenFilePicker } from '@imbatranim/ui'
+export type { PickedFile, OpenFilePickerOptions } from '@imbatranim/ui'

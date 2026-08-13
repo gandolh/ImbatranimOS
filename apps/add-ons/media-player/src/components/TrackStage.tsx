@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, Download, Music } from 'lucide-react'
-import { Button, downloadUrl, fileName } from '@imbatranim/core'
+import { Button } from '@imbatranim/ui'
+import { downloadUrl, fileName } from '@imbatranim/core'
 import type { MediaKind } from '../api/listDir'
 import { describeMediaError } from '../lib/mediaError'
 import { TransportBar } from './TransportBar'

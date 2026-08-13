@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Lock, LogOut, Power } from 'lucide-react'
-import { cn } from '../../../lib/cn'
+import { cn } from '@imbatranim/ui'
 import { useEnabledApps } from '../../registry/enabledApps'
 import { Logo } from '../brand/Logo'
 import { useAuthStore } from '../../../modules/auth/store/authStore'

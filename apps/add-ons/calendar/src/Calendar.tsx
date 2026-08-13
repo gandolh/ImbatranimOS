@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import dayjs, { type Dayjs } from 'dayjs'
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react'
-import { Button, cn } from '@imbatranim/core'
+import { Button, cn } from '@imbatranim/ui'
 import { useCalendarStore } from './calendarStore'
 import { useCalendarReminders } from './reminders'
 import { buildWeekDays } from './dateUtils'

@@ -1,6 +1,6 @@
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip'
 import { type ReactElement, type ReactNode } from 'react'
-import { cn } from '../../../lib/cn'
+import { cn } from '../lib/cn'
 
 type TooltipProps = {
   content: ReactNode

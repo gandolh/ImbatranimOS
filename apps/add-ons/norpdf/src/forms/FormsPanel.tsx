@@ -14,7 +14,7 @@
 import { useCallback, useState } from 'react'
 import type { JSX } from 'react'
 import type { FieldInfo, FieldValue } from '@pdfcore/engine'
-import { Button, Checkbox, Input, Select } from '@imbatranim/core'
+import { Button, Checkbox, Input, Select } from '@imbatranim/ui'
 import { Check, Layers, Signature } from 'lucide-react'
 import { useReader } from '../app/context'
 import { useEditor } from '../editor/context'

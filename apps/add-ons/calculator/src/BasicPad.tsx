@@ -1,5 +1,5 @@
 import { useCallback, useReducer } from 'react'
-import { Button, cn } from '@imbatranim/core'
+import { Button, cn } from '@imbatranim/ui'
 import {
   INITIAL_BASIC_STATE,
   applyPercent,

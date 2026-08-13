@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { XCircle } from 'lucide-react'
-import { useVirtualList } from '@imbatranim/core'
+import { useVirtualList } from '@imbatranim/ui'
 import type { ProcessInfo } from '../api/systemApi'
 import { useKillProcessMutation } from '../queries/systemQueries'
 

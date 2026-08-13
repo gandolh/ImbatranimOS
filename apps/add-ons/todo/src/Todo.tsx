@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { GripVertical, X } from 'lucide-react'
 import { useDrag } from '@use-gesture/react'
-import { cn } from '@imbatranim/core'
-import { ScrollArea } from '@imbatranim/core'
+import { cn } from '@imbatranim/ui'
+import { ScrollArea } from '@imbatranim/ui'
 import {
   useCreateTodoMutation,
   useDeleteTodoMutation,

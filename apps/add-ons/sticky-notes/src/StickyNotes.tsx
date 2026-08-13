@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import dayjs from 'dayjs'
 import { ArrowLeft, Trash2 } from 'lucide-react'
-import { cn } from '@imbatranim/core'
-import { Button } from '@imbatranim/core'
+import { cn } from '@imbatranim/ui'
+import { Button } from '@imbatranim/ui'
 import { useWindowStore } from '@imbatranim/core'
-import { useConfirm } from '@imbatranim/core'
+import { useConfirm } from '@imbatranim/ui'
 import { createStickyNote } from './api/stickyNotesApi'
 import {
   useDeleteStickyNoteMutation,

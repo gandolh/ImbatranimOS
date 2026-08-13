@@ -107,3 +107,22 @@ of the default `dev` entry.
 
 VS Code Dev Containers config (rejected), CI, image registry, changing the
 prod runtime or ports, and the Browser add-on itself (brief 50).
+
+---
+
+## Outcome (2026-07-24, moved to done/)
+
+Shipped as commit `56e7650`. `npm run dev` → compose `--profile dev watch`
+(sync `../apps`→`/app/apps` ignoring node_modules; rebuild on lockfile/root
+package.json/Dockerfile — watch paths are relative to infrastructure/, a
+first-draft bug caught by `docker compose config`). Bind mount + the stale
+9-entry anonymous-volume list deleted. The brief's add-on COPY blocker had
+already been fixed in-repo (`COPY --parents apps/add-ons/*/package.json`),
+but a REAL gap existed for `apps/docs` + `packages/*` manifests — npm ci
+would fail — now COPYed in both deps and proddeps. Added `dev:local` and
+`install:tooling` (--ignore-scripts) with the host-run caveat documented in
+infrastructure/README.md (+ WSL2 usePolling fallback, documented only).
+Human-gated remainder: an actual `npm run dev` watch session (HMR on a
+non-old-7 add-on, e.g. calculator), `install:tooling` on a Node-only host,
+and a prod `docker compose up imbatranimos` rebuild — only
+`docker compose config` was validated this run.

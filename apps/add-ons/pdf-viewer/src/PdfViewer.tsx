@@ -10,9 +10,8 @@ import {
   FolderOpen,
   Loader2,
 } from 'lucide-react'
+import { Button, Tooltip } from '@imbatranim/ui'
 import {
-  Button,
-  Tooltip,
   fetchFileBytes,
   downloadUrl,
   fileName,

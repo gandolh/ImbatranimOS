@@ -7,7 +7,8 @@ import {
   GitCommitVertical,
   AlertTriangle,
 } from 'lucide-react'
-import { Button, Input, Select, ScrollArea, cn, notify } from '@imbatranim/core'
+import { Button, Input, Select, ScrollArea, cn } from '@imbatranim/ui'
+import { notify } from '@imbatranim/core'
 import {
   commit as apiCommit,
   fetchDiff,

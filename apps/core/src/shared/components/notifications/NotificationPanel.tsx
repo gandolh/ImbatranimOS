@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { BellOff, CheckCheck, Trash2, X } from 'lucide-react'
-import { cn } from '../../../lib/cn'
-import { ScrollArea } from '../ui/ScrollArea'
+import { cn, ScrollArea } from '@imbatranim/ui'
 import { openApp } from '../../intents/openApp'
 import { useNotificationStore, type NotificationItem } from '../../store/notificationStore'
 import { LevelIcon } from './LevelIcon'

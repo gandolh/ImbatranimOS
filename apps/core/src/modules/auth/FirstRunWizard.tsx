@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { AxiosError } from 'axios'
-import { Button, Input } from '../../shared/components/ui'
+import { Button, Input } from '@imbatranim/ui'
 import { Logo } from '../../shared/components/brand/Logo'
 import { setupPassword } from './api/authApi'
 

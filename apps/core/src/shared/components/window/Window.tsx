@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { useDrag } from '@use-gesture/react'
 import { Minus, Square, X, Copy } from 'lucide-react'
-import { cn } from '../../../lib/cn'
+import { cn } from '@imbatranim/ui'
 import {
   useWindowStore,
   type SnapRegion,

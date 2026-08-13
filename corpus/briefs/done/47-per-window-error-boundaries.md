@@ -73,3 +73,15 @@ that a child throwing renders the fallback (not a thrown-through unmount) and
 that Reload remounts. **Human-gated:** deliberately break one app (temporary
 `throw` in an add-on's render), confirm only its window shows the error panel,
 Reload recovers it, and the rest of the desktop stayed live.
+
+---
+
+## Outcome (2026-07-24, moved to done/)
+
+Shipped as commit `0d32fbf`. `AppErrorBoundary` (class, dedup-notified) +
+`AppErrorFallback` wrap only `{children}` inside Window.tsx's body div;
+Reload = `reloadKey` state bump keying the boundary (remount also clears
+error state), Close = existing `closeWindow`. Added `@testing-library/react`
++ `jsdom` (dev-only) with per-file `@vitest-environment jsdom`; 5 new tests
+(fallback render, sibling isolation, reload remount, close, notify dedup).
+Human-gated remainder: deliberate-throw walkthrough in the browser.

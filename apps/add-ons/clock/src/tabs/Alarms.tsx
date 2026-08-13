@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Plus, Trash2, Info } from 'lucide-react'
-import { Button, Checkbox, Input } from '@imbatranim/core'
+import { Button, Checkbox, Input } from '@imbatranim/ui'
 import { useClockStore } from '../clockStore'
 import type { Alarm } from '../clockStore'
 

@@ -38,7 +38,11 @@ export default defineConfig([
               message: "Import only the public surface: '@imbatranim/core'.",
             },
             {
-              group: ['@imbatranim/!(core)', '@imbatranim/!(core)/*'],
+              group: ['@imbatranim/ui/*'],
+              message: "Import only the public surface: '@imbatranim/ui'.",
+            },
+            {
+              group: ['@imbatranim/!(core|ui)', '@imbatranim/!(core|ui)/*'],
               message: 'Add-ons must not import other add-ons.',
             },
             {

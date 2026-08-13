@@ -1,6 +1,6 @@
 import { Menu } from '@base-ui/react/menu'
 import { ChevronRight, FilePlus, FolderOpen, History } from 'lucide-react'
-import { cn } from '@imbatranim/core'
+import { cn } from '@imbatranim/ui'
 import type { RecentFile } from './recentFilesStore'
 
 // VS-Code-style File menu, built on the same @base-ui/react primitive Dialog

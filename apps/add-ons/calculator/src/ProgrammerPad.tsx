@@ -1,5 +1,5 @@
 import { useCallback, useReducer } from 'react'
-import { Button, cn } from '@imbatranim/core'
+import { Button, cn } from '@imbatranim/ui'
 import { validDigitsForBase, type Base } from './engine/programmer'
 import {
   INITIAL_PROGRAMMER_STATE,

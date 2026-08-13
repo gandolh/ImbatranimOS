@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { File, Folder, FileImage, FileAudio, FileVideo, FileText, Files } from 'lucide-react'
-import { cn } from '@imbatranim/core'
+import { cn } from '@imbatranim/ui'
 import { downloadUrl } from '@imbatranim/core'
 import dayjs from 'dayjs'
 import type { FsEntry } from '../types'

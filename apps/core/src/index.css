@@ -3,6 +3,9 @@
 @plugin '@tailwindcss/typography';
 /* Add-on packages live outside core's auto-detection root — scan them too. */
 @source '../../add-ons';
+/* The pure UI kit moved to @imbatranim/ui (brief 48) — scan it so the moved
+   components' utility classes stay in the build. */
+@source '../../../packages/ui';
 
 /*
  * ImbatranimOS design tokens — Windows-7-classic layout, modern flat, B&W + ONE accent.

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Clock4, Timer as TimerIcon, AlarmClock, Hourglass } from 'lucide-react'
-import { cn } from '@imbatranim/core'
+import { cn } from '@imbatranim/ui'
 import { ClockTab } from './tabs/ClockTab'
 import { Stopwatch } from './tabs/Stopwatch'
 import { Timer } from './tabs/Timer'

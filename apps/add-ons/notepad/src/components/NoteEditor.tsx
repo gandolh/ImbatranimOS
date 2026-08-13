@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { ArrowLeft, Eye, Edit3, Save } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { cn } from '@imbatranim/core'
-import { ScrollArea } from '@imbatranim/core'
+import { cn } from '@imbatranim/ui'
+import { ScrollArea } from '@imbatranim/ui'
 import { useNoteFileQuery, useUpdateFileMutation } from '../queries/notepadQueries'
 
 export function NoteEditor({ path, onBack }: { path: string; onBack: () => void }) {

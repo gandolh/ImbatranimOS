@@ -1,5 +1,5 @@
 import { Play, Pause, SkipBack, SkipForward, Volume2, Volume1, VolumeX } from 'lucide-react'
-import { Button, Tooltip, cn } from '@imbatranim/core'
+import { Button, Tooltip, cn } from '@imbatranim/ui'
 import { formatTime } from '../lib/formatTime'
 
 type TransportBarProps = {

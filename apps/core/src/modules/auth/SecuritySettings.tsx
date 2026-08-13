@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AxiosError } from 'axios'
 import { ShieldCheck, LockKeyhole, LogOut } from 'lucide-react'
-import { Button, Input } from '../../shared/components/ui'
+import { Button, Input } from '@imbatranim/ui'
 import { useAuthStore } from './store/authStore'
 import { disableTotp, enableTotp, enrollTotp, logout, type TotpEnrollment } from './api/authApi'
 

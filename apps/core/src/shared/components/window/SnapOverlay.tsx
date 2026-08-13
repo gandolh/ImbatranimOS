@@ -1,5 +1,5 @@
 import { type SnapRegion, computeSnapGeometry, TOPBAR_HEIGHT } from '../../store/windowStore'
-import { cn } from '../../../lib/cn'
+import { cn } from '@imbatranim/ui'
 
 type SnapOverlayProps = {
   region: SnapRegion

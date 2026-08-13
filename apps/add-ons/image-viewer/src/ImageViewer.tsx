@@ -13,15 +13,8 @@ import {
   FolderOpen,
   Loader2,
 } from 'lucide-react'
-import {
-  Button,
-  Tooltip,
-  downloadUrl,
-  fileName,
-  openApp,
-  useOpenFilePicker,
-  useOpenIntent,
-} from '@imbatranim/core'
+import { Button, Tooltip } from '@imbatranim/ui'
+import { downloadUrl, fileName, openApp, useOpenFilePicker, useOpenIntent } from '@imbatranim/core'
 import { listDir } from './api/listDir'
 import type { FsEntry } from './api/types'
 import { isImagePath, parentDir, clamp } from './lib/imagePath'

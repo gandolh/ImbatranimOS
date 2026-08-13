@@ -943,3 +943,42 @@ the Tooltip-on-disabled limitation, Calculator `=` reachability at 1280×577,
 two-tab behaviour, and each app's Open…/New flow. Brief 55 (marketplace) stays in
 `todo/` — blocked on briefs 48/51 + a `decisions.md` revisit. Corpus changes left
 uncommitted pending the user's review.
+
+## [2026-07-24] build | Briefs 47, 49, 51 shipped — error boundaries, sessions/dotfiles, compose watch
+
+Ran orchestrate → plan-split-dispatch on the three ready briefs as one
+parallel wave (disjoint file lanes): 47 (sonnet), 49a backend prefs (sonnet),
+49b frontend session/dotfiles (opus), 51 infra (sonnet); then a 2-finder
+review (frontend lens + backend/infra lens, sonnet) and one fix agent.
+Gates green at every commit: turbo typecheck/lint/format/build 82/82,
+backend 143 (135+8), core 24 (13+11), pdfcore 70.
+
+- **Brief 47 — per-window error boundaries.** A throw in one app's render
+  collapses only that window into an in-chrome Reload/Close panel; chrome
+  stays live (boundary wraps `{children}` only). Deduped `notify` per crash.
+  Core gained RTL+jsdom (dev-only, per-file env). Commit 0d32fbf.
+- **Brief 49 — ephemeral sessions + server dotfiles.** The (b) SSH-session
+  model: window layout is per-tab in-memory (no shared localStorage key —
+  the cross-tab stomp is structurally gone); appearance/wallpaper/desktop/
+  addons are now rows in an auth-guarded backend `prefs` module, hydrated
+  once after auth (no themed FOUC; lock screen stays default theme, accepted
+  per brief). Review hardened it: proto-safe GET, corrupt-row tolerance,
+  keepalive flush on tab-hide/unload + logout, resetPrefs on session end,
+  one-time localStorage→server seed (existing settings carry over). Commit
+  fef9826.
+- **Brief 51 — containerized dev.** `npm run dev` = compose watch (sync +
+  rebuild triggers); rotting per-add-on volume list deleted. The predicted
+  Dockerfile add-on staleness was already fixed in-repo, but agents found a
+  real npm-ci-breaking gap instead: `apps/docs` + `packages/*` manifests
+  were never COPYed in deps/proddeps — fixed. `dev:local` + `install:tooling`
+  added; README documents the --ignore-scripts caveat + WSL2 polling
+  fallback. Prod service/stage untouched. Logged pivot: default `dev` entry
+  is now containerized (no decisions.md revisit needed per the brief).
+  Commit 56e7650.
+
+**Human-gated (not done this run):** 47 deliberate-crash walkthrough; 49
+two-tab stomp test + settings-carry + logged-out no-prefs-traffic; 51 real
+watch session (HMR on calculator), Node-only-host `install:tooling`, prod
+compose rebuild. **Next ready:** brief 48 (protocol seam — ship now that 47
+landed); brief 50 unblocked by 51; brief 55 still needs 48. Corpus changes
+left uncommitted per convention.

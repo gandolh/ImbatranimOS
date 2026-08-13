@@ -1,5 +1,5 @@
 import { Music, Video, ListMusic } from 'lucide-react'
-import { ScrollArea, cn } from '@imbatranim/core'
+import { ScrollArea, cn } from '@imbatranim/ui'
 import type { Track } from '../api/listDir'
 
 type PlaylistProps = {

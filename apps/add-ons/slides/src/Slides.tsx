@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Presentation, Download, FolderOpen, Loader2, Info } from 'lucide-react'
+import { Button, Tooltip } from '@imbatranim/ui'
 import {
-  Button,
-  Tooltip,
   fetchFileBytes,
   downloadUrl,
   fileName,

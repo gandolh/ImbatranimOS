@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Dialog as BaseDialog } from '@base-ui/react/dialog'
 import { Search } from 'lucide-react'
-import { cn } from '../../lib/cn'
+import { cn } from '@imbatranim/ui'
 import {
   searchAllSources,
   activateItem,

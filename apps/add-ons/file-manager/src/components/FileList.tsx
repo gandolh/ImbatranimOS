@@ -13,11 +13,11 @@ import {
   Scissors,
   Trash2,
 } from 'lucide-react'
-import { cn } from '@imbatranim/core'
-import { Tooltip } from '@imbatranim/core'
-import { Button } from '@imbatranim/core'
+import { cn } from '@imbatranim/ui'
+import { Tooltip } from '@imbatranim/ui'
+import { Button } from '@imbatranim/ui'
 import { downloadUrl } from '@imbatranim/core'
-import type { VirtualList } from '@imbatranim/core'
+import type { VirtualList } from '@imbatranim/ui'
 import type { FsEntry } from '../types'
 import { sortEntries } from '../lib/fileKind'
 import dayjs from 'dayjs'

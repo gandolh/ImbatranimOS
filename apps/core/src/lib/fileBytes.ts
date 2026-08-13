@@ -1,4 +1,11 @@
+import { UploadTooLargeError } from '@imbatranim/ui'
 import { api } from './axios'
+
+// Re-exported so existing `@imbatranim/core` importers keep working; the ONE
+// class definition lives in the protocol package (@imbatranim/ui) so
+// `instanceof UploadTooLargeError` holds across the seam no matter which side
+// threw it.
+export { UploadTooLargeError }
 
 /** True when an error carries an HTTP status (axios-style), matching `status`. */
 function hasHttpStatus(err: unknown, status: number): boolean {
@@ -24,14 +31,6 @@ export async function fetchFileBytes(root: string, path: string): Promise<ArrayB
     responseType: 'arraybuffer',
   })
   return res.data
-}
-
-/** Raised when the backend refuses an over-cap upload (413). */
-export class UploadTooLargeError extends Error {
-  constructor(message = 'File exceeds the maximum upload size.') {
-    super(message)
-    this.name = 'UploadTooLargeError'
-  }
 }
 
 /**

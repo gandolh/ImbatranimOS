@@ -1,4 +1,4 @@
-import { Button, Input, Select, cn } from '@imbatranim/core'
+import { Button, Input, Select, cn } from '@imbatranim/ui'
 import { Plus, Save, Send, Trash2 } from 'lucide-react'
 import type { HeaderRow, HttpMethod } from '../types'
 import { METHOD_OPTIONS, emptyHeaderRow } from '../lib/ui'

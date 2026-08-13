@@ -1,32 +1,38 @@
 ---
-summary: Dated snapshot — web-OS era; briefs 08–14 + 16–46 DONE. The 2026-07-18 full-auto daily-driver backlog (34–46) is COMPLETE: CORE notification center (34), Wave C's six light apps (35–40), Wave D's four heavy/backend apps (41–44: Monaco code-editor + git-gui + REST client + archive-manager, the backend three authed+jailed, adversarially security-reviewed + hardened), and Wave E's two CORE platform surfaces (45 global search launcher, 46 add-on manager). Desktop = 23 apps; 135 backend tests. Only human-gated items remain before v1.0: SEC-9 CSP + SEC-10 kiosk sandbox (browser/ISO-gated), brief 15's v1-release remainder, and per-brief human walkthroughs.
-updated: 2026-07-23
+summary: Dated snapshot — web-OS era; briefs 08–14 + 16–47 + 49 + 51–54 DONE. 2026-07-24 run shipped the OS-layering trio's ready slice — 47 per-window error boundaries (a crashing app can't take down the desktop), 49 ephemeral per-tab sessions + server-side dotfile prefs (new auth-guarded backend prefs module; cross-tab stomp gone), 51 containerized dev via compose watch (npm run dev fully in-container; docs/packages npm-ci gap fixed). Desktop = 23 apps; 143 backend + 24 core tests. Remaining todo: 48 protocol seam (now unblocked-by-preference), 50 browser (unblocked by 51), 55 marketplace (needs 48), 15's human-gated v1 remainder + per-brief walkthroughs.
+updated: 2026-07-24
 ---
 
+> **2026-07-24 — OS-layering ready slice shipped (47, 49, 51).** Via
+> orchestrate → plan-split-dispatch, one parallel wave + 2-finder review +
+> fix agent: **47** per-window error boundaries (in-chrome Reload/Close
+> panel, deduped notify; chrome stays live — core gained RTL+jsdom tests),
+> **49** ephemeral per-tab window sessions + durable server dotfiles (new
+> backend `prefs` module behind SessionAuthGuard; appearance/wallpaper/
+> desktop/addons hydrate post-auth with no themed FOUC; keepalive flush +
+> logout reset + one-time localStorage seed from review), **51** dev
+> pipeline containerized (`npm run dev` = compose watch; per-add-on volume
+> list deleted; real deps/proddeps gap for apps/docs + packages/* fixed;
+> `dev:local` + `install:tooling` escape hatches). Gates green: 82/82 turbo
+> tasks, backend 143, core 24, pdfcore 70. Commits 0d32fbf·fef9826·56e7650
+> (corpus not committed). Human walkthroughs pending (crash test, two-tab
+> test, real watch session). Next: briefs 48 → 50 → 55. Detail:
+> [../log.md](../log.md) 2026-07-24.
+
 > **2026-07-23 — Tier-1 walkthrough-bug briefs shipped (52–54).** Via
-> orchestrate → plan-split-dispatch: **52** clamp desktop icons + windows to
-> bounds (self-heal persisted positions; fixes icons/`=` unreachable under the
-> taskbar), **53** core Tooltip renders its trigger as the child (kills the
-> OS-wide nested-`<button>`; known limit: no tooltip on *disabled* buttons),
-> **54** in-app **Open…** across 8 apps + **New** in markdown/sheets/code-editor
-> + a Code Editor File menu & Open-Recent MRU (Slides has no New — view-only).
-> New CORE `OpenFilePicker`. A 2-finder review added minSize/restore-clamp +
-> Save-As tab-identity fixes. All gates green (typecheck/lint/format/build,
-> backend 135 + core 8 + pdfcore 70). Commits
-> 21e4097·8fbee09·32df634·97d9788·c827bb3·daaf734 (corpus not committed). Human
-> walkthroughs pending; brief 55 still todo (blocked on 48/51). Detail:
-> [../log.md](../log.md) 2026-07-23.
+> **52** desktop/window bounds clamp + self-heal, **53** Tooltip renders its
+> trigger as child (OS-wide nested-`<button>` fix; no tooltip on disabled
+> buttons), **54** in-app Open…/New across apps + Code Editor File menu/MRU +
+> CORE `OpenFilePicker`. Commits 21e4097…daaf734. Walkthroughs pending.
+> Detail: [../log.md](../log.md) 2026-07-23.
 
 > **2026-07-19 — first human walkthrough.** Fixed from real QA: Media Player
-> seek (backend HTTP Range support, +3 e2e), global-search scroll-reset and
-> Git GUI Select crash (both core), SEC-9 CSP tightened to `'self'`. Decided:
-> crimson accent confirmed (presets stay), VPS deploy + git tag dropped from
-> the v1 bar (version lives in package.json, already 1.0.0), kiosk ISO +
-> code-editor File menu deferred post-1.0. Open: Clock timer off-by-one fix is
-> written but BLOCKED on read-only `apps/add-ons/*/src` perms (patch in
-> scratchpad); 6 non-exploitable moderate `uuid` audit findings await a
-> decision (npm `overrides` is ignored in this workspace). Full detail in
-> [../log.md](../log.md) 2026-07-19 + [decisions.md](decisions.md) 2026-07-19.
+> seek (HTTP Range), global-search scroll-reset, Git GUI Select crash, SEC-9
+> CSP → `'self'`. Decided: crimson confirmed; VPS deploy + git tag dropped
+> from the v1 bar; kiosk ISO + code-editor File menu deferred post-1.0 (File
+> menu since shipped, brief 54). Open: Clock timer fix blocked on read-only
+> add-on perms; 6 moderate `uuid` findings await decision. Detail:
+> [../log.md](../log.md) 2026-07-19 + [decisions.md](decisions.md).
 
 # Status — 2026-07-17
 
@@ -142,19 +148,14 @@ collision, and an ISO post-install passwd comment/behavior mismatch.
 The desktop now has 13 apps; the boot bundle is unchanged (all five
 document engines are lazy chunks).
 
-**2026-07-17 review + brief 23.** A 3-reviewer + verifier pass (security /
-perf / code-smell) over the whole codebase produced 30 verified findings:
-the safe subset — the dangerous security fixes (auto-Secure cookie, TOTP
-step-up, WS Origin check, PTY session cap, throttle backstop, file-content
-memory cap) plus perf/code-quality wins — was applied and committed
-(backend 80 unit + 29 e2e green); the larger refactors were captured as
-todos. The first of those, **brief 23 (shared-addon-kit)**, then shipped:
-the office/add-on duplication (CS-1/2/8) and inconsistent confirm UX (CS-12)
-are gone, deduped into `@imbatranim/core`. Still open as todos:
-window-drag render perf (PERF-1), office parsing off-thread (PERF-6),
-FileManager split (CS-3), notes/FilesService dedup (CS-7), first-run setup
-hardening (SEC-2), CSP ws scoping (SEC-9), kiosk `--no-sandbox` (SEC-10),
-the notepad StrictMode intent bug, lint debt, and add-on cleanup nits.
+**2026-07-17 review + brief 23.** A 3-reviewer + verifier pass over the
+whole codebase produced 30 verified findings; the safe subset (security
+fixes + perf/code-quality wins) was applied and committed, the larger
+refactors captured as todos — since worked through as briefs 24–33.
+**Brief 23 (shared-addon-kit)** deduped the office/add-on spine into
+`@imbatranim/core`. Still open from that pass: SEC-9 CSP ws scoping,
+SEC-10 kiosk `--no-sandbox` (both human-gated), lint debt, cleanup nits.
+Detail: [../log.md](../log.md) 2026-07-17.
 
 ## 2026-07-17 — Daily-driver expansion backlog
 
@@ -177,14 +178,10 @@ todos in `todos/`. All gates were green at the time (80 unit tests, typecheck
   jailed, **135 backend tests**). Every gate green at each commit; one commit per wave + a
   `docs(corpus)` per wave. The entire "everything actionable" scope the run was
   chartered with is now shipped.
-- **Remaining = the human-gated exclusions only** (never in the auto-run's
-  scope): SEC-9 `csp-connect-src-ws-wildcard`, SEC-10 `kiosk-no-sandbox`
-  (browser/ISO-gated), and brief 15's v1-release remainder (friend QA, VPS
-  deploy, accent pick, dep bumps, tag). Plus the per-brief human walkthroughs
-  noted in each row above.
-- **Excluded from the auto-run (human-gated, do NOT build autonomously):** SEC-9
-  (`csp-connect-src-ws-wildcard`), SEC-10 (`kiosk-no-sandbox`), and brief 15's
-  v1-release remainder.
+- **Human-gated exclusions (do NOT build autonomously):** SEC-9
+  `csp-connect-src-ws-wildcard`, SEC-10 `kiosk-no-sandbox` (browser/ISO-gated),
+  and brief 15's v1-release remainder (friend QA, dep bumps — VPS deploy/tag
+  dropped 2026-07-19). Plus the per-brief human walkthroughs noted above.
 
 ## 2026-07-19 — Web browser + containerized dev pipeline (grilled)
 
@@ -196,9 +193,11 @@ Two briefs from a research+grill session ("add a web navigator"). Both **todo**.
   SSRF filter** (blocks private ranges — the stricter opposite of brief 43);
   OS-level encrypted profile sync; thin MVP (prove Google + YouTube, reuse
   Bookmarks via `openApp`); DRM out of scope. Forces scoped CSP additions
-  (intersects SEC-9). Depends on 51. Security-reviewed before commit.
-- **Brief 51 — containerized dev pipeline + Dockerfile de-stale: todo.** MEDIUM.
-  `npm run dev` → `docker compose --profile dev watch` (sync `apps/**`, ignore
-  node_modules); de-stale the `deps`/`proddeps` manifest lists (7-of-24 rot —
-  the real "contained" blocker); host tooling = Node/npm via `npm install
-  --ignore-scripts`. Prod path unchanged. Unblocks brief 50.
+  (intersects SEC-9). Depends on 51 (**now done** — 50 is unblocked).
+  Security-reviewed before commit.
+- **Brief 51 — containerized dev pipeline: DONE 2026-07-24** (commit
+  `56e7650`). `npm run dev` = compose watch; volume-list rot deleted; the
+  real npm-ci gap turned out to be missing `apps/docs` + `packages/*`
+  manifests (add-on globs had already been fixed in-repo) — both stages
+  patched. `dev:local` + `install:tooling` added. Prod path unchanged.
+  See [../briefs/done/51-containerized-dev-pipeline.md](../briefs/done/51-containerized-dev-pipeline.md).

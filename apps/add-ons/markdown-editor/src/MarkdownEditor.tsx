@@ -2,18 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { FilePlus, FolderOpen, Loader2, Save } from 'lucide-react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { Button, ScrollArea, Tooltip, cn, usePrompt } from '@imbatranim/ui'
 import {
-  Button,
-  ScrollArea,
-  Tooltip,
-  cn,
   fetchFileBytes,
   fileName,
   openApp,
   uploadFileBytes,
   useOpenFilePicker,
   useOpenIntent,
-  usePrompt,
   useSaveHotkey,
   useUnsavedGuard,
   UploadTooLargeError,

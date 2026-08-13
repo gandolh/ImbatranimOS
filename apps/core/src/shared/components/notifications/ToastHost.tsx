@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
-import { cn } from '../../../lib/cn'
+import { cn } from '@imbatranim/ui'
 import { TASKBAR_HEIGHT } from '../taskbar/Taskbar'
 import { useNotificationStore, type NotificationItem } from '../../store/notificationStore'
 import { LevelIcon } from './LevelIcon'

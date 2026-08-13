@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
-import { Button, Checkbox, Dialog, Input, Select, useConfirm } from '@imbatranim/core'
+import { Button, Checkbox, Dialog, Input, Select, useConfirm } from '@imbatranim/ui'
 import type { CalendarEvent, CalendarEventInput, EventDialogState } from './types'
 
 const REMINDER_OPTIONS = [

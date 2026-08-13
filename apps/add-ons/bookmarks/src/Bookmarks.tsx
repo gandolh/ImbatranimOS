@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Folder, Link2, Plus, Trash2, Edit2, ExternalLink, X, Check } from 'lucide-react'
-import { ScrollArea, useConfirm } from '@imbatranim/core'
+import { ScrollArea, useConfirm } from '@imbatranim/ui'
 import {
   useBookmarkGroupsQuery,
   useCreateGroupMutation,

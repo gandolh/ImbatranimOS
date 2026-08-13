@@ -8,7 +8,8 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
-import { cn, notify, useIntentStore, useWindowStore } from '@imbatranim/core'
+import { cn } from '@imbatranim/ui'
+import { notify, useIntentStore, useWindowStore } from '@imbatranim/core'
 import {
   basename,
   compressPaths,

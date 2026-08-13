@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FileText, Folder, ArrowLeft, Plus, FolderPlus, Trash2, Clock } from 'lucide-react'
-import { ScrollArea, useConfirm, usePrompt } from '@imbatranim/core'
+import { ScrollArea, useConfirm, usePrompt } from '@imbatranim/ui'
 import {
   useCreateDirectoryMutation,
   useCreateFileMutation,

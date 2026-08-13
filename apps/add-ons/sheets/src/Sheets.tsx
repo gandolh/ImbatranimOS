@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FilePlus, FolderOpen, Loader2, Save, Sheet as SheetIcon } from 'lucide-react'
+import { Button, Tooltip, usePrompt } from '@imbatranim/ui'
 import {
-  Button,
-  Tooltip,
   fetchFileBytes,
   uploadFileBytes,
   UploadTooLargeError,
@@ -10,7 +9,6 @@ import {
   openApp,
   useOpenFilePicker,
   useOpenIntent,
-  usePrompt,
   useSaveHotkey,
   useUnsavedGuard,
   type PickedFile,

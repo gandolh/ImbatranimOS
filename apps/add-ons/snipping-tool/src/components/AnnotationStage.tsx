@@ -11,7 +11,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react'
-import { cn } from '@imbatranim/core'
+import { cn } from '@imbatranim/ui'
 import type { Annotation, Point, Tool } from '../types'
 import { saveScreenshot, screenshotFilename } from '../api/screenshotApi'
 

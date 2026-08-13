@@ -19,15 +19,26 @@
     "build": "turbo build",
     "dev": "docker compose -f infrastructure/docker-compose.yml --profile dev watch",
     "dev:local": "turbo dev",
-    "install:tooling": "npm install --ignore-scripts",
     "lint": "turbo lint",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "format:check": "turbo format:check",
-    "docs": "turbo run docs"
+    "docs": "turbo run docs",
+    "install:tooling": "npm install --ignore-scripts"
   },
   "devDependencies": {
     "prettier": "3.8.3",
     "turbo": "^2.10.5"
+  },
+  "allowScripts": {
+    "argon2": true,
+    "better-sqlite3": true,
+    "esbuild": true,
+    "fsevents": true,
+    "node-pty": true,
+    "protobufjs": true,
+    "sharp": true,
+    "unrs-resolver": true,
+    "vue-demi": true
   }
 }

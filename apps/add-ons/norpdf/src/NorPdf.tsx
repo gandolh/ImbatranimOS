@@ -31,16 +31,16 @@ import type { JSX } from 'react'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { configureWorker } from '@pdfcore/engine'
 import {
-  fetchFileBytes,
   fileName,
-  notify,
-  openApp,
-  useOpenFilePicker,
+  installMapGetOrInsert,
+  useFileDialog,
   useOpenIntent,
-  useSaveHotkey,
-} from '@imbatranim/core'
+  useSystem,
+  useUnsavedGuard,
+} from '@imbatranim/ui'
 import { Download, FileText } from 'lucide-react'
-import { ReaderContext } from './app/context'
+import { ReaderContext, useReader } from './app/context'
+import { useEditor } from './editor/context'
 import { useReaderController } from './app/useReaderController'
 import { EmptyState } from './app/EmptyState'
 import { TopBar } from './shell/TopBar'
@@ -54,20 +54,36 @@ import { FormsPanel } from './forms/FormsPanel'
 import { OrganizeView } from './organize/OrganizeView'
 import './norpdf.css'
 
+// pdf.js 6.1 calls Map.prototype.getOrInsertComputed on every render; without
+// it every page is blank on Chrome 141 and earlier (brief 91). Installed here,
+// at module scope of this lazy chunk, so it is in place before the first render.
+installMapGetOrInsert()
 configureWorker(workerUrl)
 
-export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
+/**
+ * The unsaved-close guard, as a component INSIDE both providers: the dialog's
+ * Save-and-close button needs the editor's `saveToDisk` (write-back, or a
+ * download for a homeless document — either clears dirty), which
+ * `useReaderController` itself cannot reach from outside `EditorProvider`.
+ */
+function UnsavedCloseGuard(): JSX.Element {
+  const { dirty, docName } = useReader()
+  const { saveToDisk } = useEditor()
+  const unsavedDialog = useUnsavedGuard(dirty, docName, saveToDisk)
+  return <>{unsavedDialog}</>
+}
+
+export function NorPdf({ windowId: _windowId }: { windowId: string }): JSX.Element {
+  const system = useSystem()
   const ctrl = useReaderController()
   // One-shot open intent, drained by the shared hook (StrictMode-safe).
-  const source = useOpenIntent(windowId)
-  const { pickFile, filePicker } = useOpenFilePicker()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const source = useOpenIntent()
   const [dragging, setDragging] = useState(false)
   const [fetching, setFetching] = useState(false)
   const dragDepth = useRef(0)
 
-  // Ctrl/Cmd+S → download the current (possibly edited) bytes.
-  useSaveHotkey(windowId, () => void ctrl.save())
+  // Ctrl/Cmd+S (write-back Save) is registered in TopBar, which lives inside
+  // EditorProvider and can reach the editor's save-and-reload path.
 
   /* ── Open the OS-provided file once the intent latches ─────────────────── */
   const openBytes = ctrl.openBytes
@@ -77,16 +93,20 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
     void (async () => {
       setFetching(true)
       try {
-        const buf = await fetchFileBytes(source.root, source.path)
+        const buf = await system.fs.read(source.root, source.path)
         if (cancelled) return
-        await openBytes(new Uint8Array(buf), fileName(source.path, 'document.pdf'))
+        // Retain the source as the write-back target: Save writes back here,
+        // rather than only offering a download.
+        await openBytes(new Uint8Array(buf), fileName(source.path, 'document.pdf'), {
+          root: source.root,
+          path: source.path,
+        })
       } catch (err) {
         if (!cancelled) {
-          notify({
+          system.notify({
             title: 'Could not open PDF',
             body: err instanceof Error ? err.message : String(err),
             level: 'error',
-            appId: 'norpdf',
           })
         }
       } finally {
@@ -96,19 +116,19 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
     return () => {
       cancelled = true
     }
-  }, [source, openBytes])
+  }, [source, openBytes, system])
 
-  /* ── Manual open (native file dialog + drag-drop) ──────────────────────── */
-  const pickLocalFile = useCallback(() => fileInputRef.current?.click(), [])
-
-  // Empty-state Open…: the shared in-app picker over the Files FS, re-launched
-  // through this app's own open-intent path (same as a File-Manager
-  // double-click would use) rather than the local-disk file dialog above.
-  const handleOpenFromFiles = useCallback(async () => {
-    const file = await pickFile({ title: 'Open PDF', accept: (f) => /\.pdf$/i.test(f.name) })
-    if (!file) return
-    openApp('norpdf', { root: file.root, openPath: file.path })
-  }, [pickFile])
+  /* ── Manual open (OS picker + drag-drop) ───────────────────────────────── */
+  // The OS's own Open dialog, browsing the CONTAINER's filesystem. It used to be
+  // a native `<input type="file">`, which reads the *host* machine — the one
+  // thing brief 54 rules out by name, because "the computer is the container"
+  // and a dialog that browses the user's laptop instead of their home directory
+  // is actively wrong here. The pick latches into the same store `useOpenIntent`
+  // reads, so it runs the identical load path a File Manager double-click does.
+  const { openFile: pickFromOs } = useFileDialog()
+  const pickFile = useCallback(() => {
+    void pickFromOs({ extensions: ['pdf'] })
+  }, [pickFromOs])
 
   const takeFile = useCallback(
     (file: File | undefined | null) => {
@@ -158,6 +178,7 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
   return (
     <ReaderContext.Provider value={ctrl}>
       <EditorProvider>
+        <UnsavedCloseGuard />
         <div
           className="bg-surface-container-lowest relative flex h-full min-h-0 flex-col"
           onDragEnter={onDragEnter}
@@ -165,22 +186,8 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf"
-            hidden
-            onChange={(e) => {
-              takeFile(e.target.files?.[0])
-              e.target.value = ''
-            }}
-          />
-
           {/* 1. PART B annotate toolbar mounts via `toolbarSlot` when a doc is open. */}
-          <TopBar
-            onOpenClick={pickLocalFile}
-            toolbarSlot={ctrl.doc ? <AnnotateToolbar /> : undefined}
-          />
+          <TopBar onOpenClick={pickFile} toolbarSlot={ctrl.doc ? <AnnotateToolbar /> : undefined} />
 
           <div className="flex min-h-0 flex-1">
             {/* 2. PART B forms tab appends to the side panel via `extraTabs`. */}
@@ -189,7 +196,7 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
             <main className="flex min-h-0 min-w-0 flex-1 flex-col">
               {!ctrl.doc ? (
                 <EmptyState
-                  onOpenClick={handleOpenFromFiles}
+                  onOpenClick={pickFile}
                   error={ctrl.error}
                   loading={ctrl.loading || fetching}
                 />
@@ -206,8 +213,6 @@ export function NorPdf({ windowId }: { windowId: string }): JSX.Element {
 
           {/* 4. PART B: signature capture pad (Sign tool + form signature fields). */}
           <SignatureDialog />
-
-          {filePicker}
 
           {dragging && (
             <div

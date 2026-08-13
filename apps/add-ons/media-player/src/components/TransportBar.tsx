@@ -1,6 +1,25 @@
-import { Play, Pause, SkipBack, SkipForward, Volume2, Volume1, VolumeX } from 'lucide-react'
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  RotateCcw,
+  RotateCw,
+  Volume2,
+  Volume1,
+  VolumeX,
+  Shuffle,
+  Repeat,
+  Repeat1,
+  Maximize2,
+  Captions,
+  CaptionsOff,
+} from 'lucide-react'
 import { Button, Tooltip, cn } from '@imbatranim/ui'
 import { formatTime } from '../lib/formatTime'
+import { Timebar } from './Timebar'
+import { SKIP_SECONDS, PLAYBACK_RATES } from '../lib/transport'
+import type { RepeatMode } from '../lib/queueOrder'
 
 type TransportBarProps = {
   isPlaying: boolean
@@ -17,6 +36,21 @@ type TransportBarProps = {
   onToggleMute: () => void
   onPrev: () => void
   onNext: () => void
+  /** Buffered ranges as [start, end] pairs. */
+  buffered: [number, number][]
+  playbackRate: number
+  onRateChange: (rate: number) => void
+  /** Relative skip in seconds; negative goes back. */
+  onSkip: (seconds: number) => void
+  repeat: RepeatMode
+  onCycleRepeat: () => void
+  shuffle: boolean
+  onToggleShuffle: () => void
+  /** Only offered for video. */
+  onFullscreen: (() => void) | null
+  /** `null` when the file has no sidecar subtitle. */
+  subtitlesOn: boolean | null
+  onToggleSubtitles: () => void
 }
 
 // Native range inputs, stripped of the browser's default (rounded) chrome and
@@ -50,24 +84,30 @@ export function TransportBar({
   onToggleMute,
   onPrev,
   onNext,
+  buffered,
+  playbackRate,
+  onRateChange,
+  onSkip,
+  repeat,
+  onCycleRepeat,
+  shuffle,
+  onToggleShuffle,
+  onFullscreen,
+  subtitlesOn,
+  onToggleSubtitles,
 }: TransportBarProps) {
-  const seekableMax = duration > 0 ? duration : 0
   return (
     <div className="border-outline-variant bg-surface-container-low flex shrink-0 flex-col gap-1.5 border-t px-2 py-1.5">
       <div className="flex items-center gap-2">
         <span className="font-ui text-on-surface-variant w-9 shrink-0 text-right text-[10px] tabular-nums">
           {formatTime(currentTime)}
         </span>
-        <input
-          type="range"
-          aria-label="Seek"
-          className={cn(RANGE_CLASSES, 'w-full flex-1')}
-          min={0}
-          max={seekableMax}
-          step="any"
-          value={Math.min(currentTime, seekableMax)}
-          disabled={disabled || seekableMax <= 0}
-          onChange={(e) => onSeek(Number(e.target.value))}
+        <Timebar
+          currentTime={currentTime}
+          duration={duration}
+          buffered={buffered}
+          disabled={disabled}
+          onSeek={onSeek}
         />
         <span className="font-ui text-on-surface-variant w-9 shrink-0 text-[10px] tabular-nums">
           {formatTime(duration)}
@@ -80,28 +120,55 @@ export function TransportBar({
             variant="ghost"
             size="sm"
             className="h-6 w-6 shrink-0 p-0"
+            aria-label="Previous track"
             onClick={onPrev}
             disabled={disabled || !canPrev}
           >
             <SkipBack size={13} />
           </Button>
         </Tooltip>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 shrink-0 p-0"
+          onClick={() => onSkip(-SKIP_SECONDS)}
+          disabled={disabled}
+          title={`Back ${SKIP_SECONDS}s`}
+          aria-label={`Back ${SKIP_SECONDS} seconds`}
+        >
+          <RotateCcw size={13} />
+        </Button>
         <Tooltip content={isPlaying ? 'Pause' : 'Play'}>
           <Button
             variant="primary"
             size="sm"
             className="h-7 w-7 shrink-0 p-0"
+            // Icon-only, so the tooltip is not enough: a tooltip is not an accessible name
+            // and never reaches a screen reader.
+            aria-label={isPlaying ? 'Pause' : 'Play'}
             onClick={onTogglePlay}
             disabled={disabled}
           >
             {isPlaying ? <Pause size={14} /> : <Play size={14} />}
           </Button>
         </Tooltip>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 shrink-0 p-0"
+          onClick={() => onSkip(SKIP_SECONDS)}
+          disabled={disabled}
+          title={`Forward ${SKIP_SECONDS}s`}
+          aria-label={`Forward ${SKIP_SECONDS} seconds`}
+        >
+          <RotateCw size={13} />
+        </Button>
         <Tooltip content="Next track">
           <Button
             variant="ghost"
             size="sm"
             className="h-6 w-6 shrink-0 p-0"
+            aria-label="Next track"
             onClick={onNext}
             disabled={disabled || !canNext}
           >
@@ -109,13 +176,79 @@ export function TransportBar({
           </Button>
         </Tooltip>
 
+        <Tooltip content={shuffle ? 'Shuffle is on' : 'Shuffle'}>
+          <Button
+            variant={shuffle ? 'primary' : 'ghost'}
+            size="sm"
+            className="ml-1 h-6 w-6 shrink-0 p-0"
+            aria-label="Shuffle"
+            aria-pressed={shuffle}
+            onClick={onToggleShuffle}
+          >
+            <Shuffle size={13} />
+          </Button>
+        </Tooltip>
+        <Tooltip
+          content={
+            repeat === 'off'
+              ? 'Repeat: off'
+              : repeat === 'all'
+                ? 'Repeat: whole queue'
+                : 'Repeat: this track'
+          }
+        >
+          <Button
+            variant={repeat === 'off' ? 'ghost' : 'primary'}
+            size="sm"
+            className="h-6 w-6 shrink-0 p-0"
+            // Three states, so `aria-pressed` cannot carry it: the mode goes in the label
+            // instead, which is what a screen reader reads out.
+            aria-label={`Repeat: ${repeat}`}
+            onClick={onCycleRepeat}
+          >
+            {repeat === 'one' ? <Repeat1 size={13} /> : <Repeat size={13} />}
+          </Button>
+        </Tooltip>
+
         <div className="flex-1" />
+
+        {subtitlesOn !== null && (
+          <Tooltip content={subtitlesOn ? 'Hide subtitles' : 'Show subtitles'}>
+            <Button
+              variant={subtitlesOn ? 'primary' : 'ghost'}
+              size="sm"
+              className="h-6 w-6 shrink-0 p-0"
+              aria-label="Subtitles"
+              aria-pressed={subtitlesOn}
+              onClick={onToggleSubtitles}
+            >
+              {subtitlesOn ? <Captions size={13} /> : <CaptionsOff size={13} />}
+            </Button>
+          </Tooltip>
+        )}
+
+        <select
+          aria-label="Playback speed"
+          title="Playback speed"
+          className="border-outline-variant bg-surface-container-lowest font-ui text-on-surface-variant h-6 shrink-0 border px-1 text-[11px] tabular-nums outline-none"
+          value={playbackRate}
+          disabled={disabled}
+          onChange={(e) => onRateChange(Number(e.target.value))}
+        >
+          {PLAYBACK_RATES.map((r) => (
+            <option key={r} value={r}>
+              {r}×
+            </option>
+          ))}
+        </select>
 
         <Tooltip content={muted ? 'Unmute' : 'Mute'}>
           <Button
             variant="ghost"
             size="sm"
             className="h-6 w-6 shrink-0 p-0"
+            aria-label={muted ? 'Unmute' : 'Mute'}
+            aria-pressed={muted}
             onClick={onToggleMute}
             disabled={disabled}
           >
@@ -133,6 +266,20 @@ export function TransportBar({
           disabled={disabled}
           onChange={(e) => onVolumeChange(Number(e.target.value))}
         />
+
+        {onFullscreen && (
+          <Tooltip content="Fullscreen (F)">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 shrink-0 p-0"
+              aria-label="Fullscreen"
+              onClick={onFullscreen}
+            >
+              <Maximize2 size={13} />
+            </Button>
+          </Tooltip>
+        )}
       </div>
     </div>
   )

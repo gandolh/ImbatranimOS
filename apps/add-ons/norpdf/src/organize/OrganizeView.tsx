@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { JSX } from 'react'
 import type { PdfDoc } from '@pdfcore/engine'
-import { Button, Separator } from '@imbatranim/ui'
+import { Button, Separator, useSystem } from '@imbatranim/ui'
 import {
   Plus,
   Combine,
@@ -34,6 +34,8 @@ import { useEditor } from '../editor/context'
 
 const CARD_W = 150
 
+const msgOf = (err: unknown): string => (err instanceof Error ? err.message : String(err))
+
 function download(bytes: Uint8Array, filename: string): void {
   const buf = bytes.slice().buffer
   const blob = new Blob([buf], { type: 'application/pdf' })
@@ -48,6 +50,7 @@ function download(bytes: Uint8Array, filename: string): void {
 }
 
 export function OrganizeView(): JSX.Element {
+  const system = useSystem()
   const ctrl = useReader()
   const { doc, docName, pageCount, pageDims, renderEpoch, setMode } = ctrl
   const { syncRaster, addedIds, busy } = useEditor()
@@ -56,7 +59,6 @@ export function OrganizeView(): JSX.Element {
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const [everyN, setEveryN] = useState('1')
-  const mergeInputRef = useRef<HTMLInputElement>(null)
 
   const base = (docName || 'document').replace(/\.pdf$/i, '')
 
@@ -91,10 +93,18 @@ export function OrganizeView(): JSX.Element {
     if (addedIds.size) await syncRaster()
   }
 
+  // Every structural op goes through here. It catches — `syncRaster`/the op can
+  // reject (a save or reload failure), and an un-awaited rejection would show
+  // nothing at all: the grid would just not change and the user would not know
+  // why (M6).
   const run = async (op: () => void | Promise<void>) => {
-    await flushPending()
-    await op()
-    await syncRaster()
+    try {
+      await flushPending()
+      await op()
+      await syncRaster()
+    } catch (err) {
+      system.notify({ level: 'error', title: 'Edit failed', body: msgOf(err) })
+    }
   }
 
   const rotate = (index0: number, deg: 90 | -90) =>
@@ -118,25 +128,48 @@ export function OrganizeView(): JSX.Element {
     void run(() => doc.pages.reorder(from, target))
   }
 
-  const mergeFile = async (file: File | undefined) => {
-    if (!file) return
-    const bytes = new Uint8Array(await file.arrayBuffer())
+  // Merge another PDF's pages. Reads through the OS filesystem (the OS pick
+  // portal + fs.read), NOT a native `<input type=file>` — that browses the
+  // HOST machine, the exact pattern brief 65 removed from Open. The raw
+  // `pickOpen` on purpose (not the SDK `useFileDialog`): this picks a SECOND
+  // PDF to merge into the open one, and `useFileDialog` latches every choice
+  // into the open-intent store, which would REPLACE the current document
+  // instead of merging into it.
+  const mergeFromOs = async () => {
+    const choice = await system.fs.pickOpen({ title: 'Merge a PDF', extensions: ['pdf'] })
+    if (!choice) return
+    let bytes: Uint8Array
+    try {
+      const buf = await system.fs.read(choice.root, choice.path)
+      bytes = new Uint8Array(buf)
+    } catch (err) {
+      system.notify({ level: 'error', title: 'Could not read PDF', body: msgOf(err) })
+      return
+    }
     await run(() => doc.assemble.merge(bytes))
   }
 
   const extractSelected = async () => {
     if (!selectedPages1.length) return
-    await flushPending()
-    const bytes = await doc.pages.extract(selectedPages1)
-    download(bytes, `${base}-extract.pdf`)
+    try {
+      await flushPending()
+      const bytes = await doc.pages.extract(selectedPages1)
+      download(bytes, `${base}-extract.pdf`)
+    } catch (err) {
+      system.notify({ level: 'error', title: 'Extract failed', body: msgOf(err) })
+    }
   }
 
   const splitEvery = async () => {
     const n = parseInt(everyN, 10)
     if (!Number.isInteger(n) || n < 1) return
-    await flushPending()
-    const parts = await doc.assemble.split({ every: n })
-    parts.forEach((p, i) => download(p, `${base}-part-${i + 1}.pdf`))
+    try {
+      await flushPending()
+      const parts = await doc.assemble.split({ every: n })
+      parts.forEach((p, i) => download(p, `${base}-part-${i + 1}.pdf`))
+    } catch (err) {
+      system.notify({ level: 'error', title: 'Split failed', body: msgOf(err) })
+    }
   }
 
   return (
@@ -158,23 +191,13 @@ export function OrganizeView(): JSX.Element {
           variant="default"
           size="sm"
           className="flex items-center gap-1"
-          onClick={() => mergeInputRef.current?.click()}
+          onClick={() => void mergeFromOs()}
           disabled={busy}
           title="Append another PDF's pages"
         >
           <Combine size={15} />
           Merge PDF…
         </Button>
-        <input
-          ref={mergeInputRef}
-          type="file"
-          accept="application/pdf"
-          hidden
-          onChange={(e) => {
-            void mergeFile(e.target.files?.[0] ?? undefined)
-            e.target.value = ''
-          }}
-        />
 
         <Separator orientation="vertical" className="mx-1 h-5" />
 

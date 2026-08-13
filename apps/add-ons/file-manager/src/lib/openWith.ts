@@ -1,131 +1,47 @@
-import { getExtension } from './fileKind'
+import type { OpenerResolution, SystemIntents } from '@imbatranim/ui'
+
+/** The association slice of the handle — what this adapter resolves against. */
+export type Associations = SystemIntents['associations']
 
 /**
- * Which desktop app opens which file type, by lowercase extension.
+ * File routing, now a thin adapter over core's association registry (brief 81).
  *
- * This is the single source of truth for double-click / Enter routing in the
- * file manager. Brief 20 (Sheets/Docs editors) extends it by adding entries
- * here — nothing else in the file manager needs to change.
+ * The 100-line `EXTENSION_APP_MAP` that used to live here is gone. It was the
+ * single source of truth for what opens what, which meant **adding an app
+ * required editing this file** — the coupling `manifest.ts` exists to avoid, and
+ * the reason brief 65's PDF mismatch went unnoticed for so long. Apps now declare
+ * `opens` in their own manifests and core derives the table, so this file only
+ * translates the result into the labels the menu shows.
  *
- * `onlyRoots` gates an entry to specific FS roots. Notepad reads the Notes root
- * only (it is not root-aware), so text files route to it just from `notes`.
- * The viewers (PDF Viewer, Slides) are root-aware — they receive `{ root }` in
- * the open payload and fetch bytes via the authed download endpoint — so they
- * carry no `onlyRoots` and open from any root.
+ * The `onlyRoots` gate is gone too, and its absence is deliberate: it existed for
+ * the pre-brief-59 Notepad, which could read only the notes root. Every app that
+ * declares `opens` today is root-aware and receives `{ root }` in the payload.
  */
-export type OpenWithRule = {
-  appId: string
-  /** If set, this rule only applies when the file lives under one of these roots. */
-  onlyRoots?: string[]
-}
+export type Resolution = OpenerResolution
 
-const NOTEPAD_ONLY_NOTES: OpenWithRule = { appId: 'notepad', onlyRoots: ['notes'] }
-const IMAGE_VIEWER: OpenWithRule = { appId: 'image-viewer' }
-const MEDIA_PLAYER: OpenWithRule = { appId: 'media-player' }
-const MARKDOWN_EDITOR: OpenWithRule = { appId: 'markdown-editor' }
-const CODE_EDITOR: OpenWithRule = { appId: 'code-editor' }
-
-export const EXTENSION_APP_MAP: Record<string, OpenWithRule> = {
-  // Markdown → Markdown Editor (root-aware, live preview; upgrades the old
-  // notes-only Notepad route for `md`).
-  md: MARKDOWN_EDITOR,
-  markdown: MARKDOWN_EDITOR,
-  // Plain text → Notepad (Notes root only)
-  txt: NOTEPAD_ONLY_NOTES,
-  log: NOTEPAD_ONLY_NOTES,
-  // Code → Code Editor (Monaco; root-aware, any root — upgrades the old
-  // notes-only Notepad route for these).
-  json: CODE_EDITOR,
-  ts: CODE_EDITOR,
-  tsx: CODE_EDITOR,
-  js: CODE_EDITOR,
-  jsx: CODE_EDITOR,
-  css: CODE_EDITOR,
-  html: CODE_EDITOR,
-  sh: CODE_EDITOR,
-  py: CODE_EDITOR,
-  c: CODE_EDITOR,
-  cpp: CODE_EDITOR,
-  h: CODE_EDITOR,
-  hpp: CODE_EDITOR,
-  go: CODE_EDITOR,
-  rs: CODE_EDITOR,
-  java: CODE_EDITOR,
-  rb: CODE_EDITOR,
-  php: CODE_EDITOR,
-  yaml: CODE_EDITOR,
-  yml: CODE_EDITOR,
-  toml: CODE_EDITOR,
-  xml: CODE_EDITOR,
-  sql: CODE_EDITOR,
-  // Documents → viewers (any root)
-  pdf: { appId: 'pdf-viewer' },
-  pptx: { appId: 'slides' },
-  ppt: { appId: 'slides' },
-  // Office editors → Sheets / Docs (any root; root-aware like the viewers)
-  xlsx: { appId: 'sheets' },
-  xls: { appId: 'sheets' },
-  docx: { appId: 'docs' },
-  // Images → Image Viewer (any root; root-aware)
-  png: IMAGE_VIEWER,
-  jpg: IMAGE_VIEWER,
-  jpeg: IMAGE_VIEWER,
-  gif: IMAGE_VIEWER,
-  webp: IMAGE_VIEWER,
-  bmp: IMAGE_VIEWER,
-  svg: IMAGE_VIEWER,
-  avif: IMAGE_VIEWER,
-  ico: IMAGE_VIEWER,
-  // Audio/Video → Media Player (any root; native range-streamed)
-  mp3: MEDIA_PLAYER,
-  wav: MEDIA_PLAYER,
-  ogg: MEDIA_PLAYER,
-  oga: MEDIA_PLAYER,
-  flac: MEDIA_PLAYER,
-  m4a: MEDIA_PLAYER,
-  aac: MEDIA_PLAYER,
-  opus: MEDIA_PLAYER,
-  mp4: MEDIA_PLAYER,
-  webm: MEDIA_PLAYER,
-  ogv: MEDIA_PLAYER,
-  mov: MEDIA_PLAYER,
-  m4v: MEDIA_PLAYER,
-  mkv: MEDIA_PLAYER,
+/** Which app should open this file, and why. Never a silent nothing for text. */
+export function resolveOpen(assoc: Associations, fileName: string): Resolution {
+  return assoc.resolveOpener(fileName)
 }
 
 /**
- * The app id that should open `fileName` from `root`, or null if nothing is
- * registered (or the registered app isn't available from this root).
+ * The app id that should open `fileName`, or null when even the fallback declines.
+ *
+ * `root` is accepted and ignored: it was only ever used by the `onlyRoots` gate
+ * above. Kept in the signature so the call sites read the same.
  */
-export function resolveOpenApp(root: string, fileName: string): string | null {
-  const rule = EXTENSION_APP_MAP[getExtension(fileName)]
-  if (!rule) return null
-  if (rule.onlyRoots && !rule.onlyRoots.includes(root)) return null
-  return rule.appId
+export function resolveOpenApp(
+  assoc: Associations,
+  _root: string,
+  fileName: string
+): string | null {
+  const { appId } = assoc.resolveOpener(fileName)
+  return appId === '' ? null : appId
 }
 
-/** Human label for the "Open" context-menu item, given the resolved app id. */
-export function openAppLabel(appId: string | null): string {
-  switch (appId) {
-    case 'notepad':
-      return 'Open in Notepad'
-    case 'pdf-viewer':
-      return 'Open in PDF Viewer'
-    case 'slides':
-      return 'Open in Slides'
-    case 'sheets':
-      return 'Open in Sheets'
-    case 'docs':
-      return 'Open in Docs'
-    case 'markdown-editor':
-      return 'Open in Markdown Editor'
-    case 'code-editor':
-      return 'Open in Code Editor'
-    case 'image-viewer':
-      return 'Open in Image Viewer'
-    case 'media-player':
-      return 'Open in Media Player'
-    default:
-      return 'Open'
-  }
+/** Human label for the "Open" context-menu item, from the registry's own names. */
+export function openAppLabel(assoc: Associations, appId: string | null): string {
+  if (!appId) return 'Open'
+  const name = assoc.openerName(appId)
+  return name ? `Open in ${name}` : 'Open'
 }

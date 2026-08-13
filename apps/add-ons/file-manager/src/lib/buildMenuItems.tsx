@@ -1,5 +1,7 @@
 import {
+  FileDiff,
   FolderPlus,
+  Palette,
   Clipboard,
   Upload,
   Trash2,
@@ -8,42 +10,69 @@ import {
   Copy,
   Scissors,
   Download,
+  AppWindow,
   FolderOpen,
   FileSpreadsheet,
   FileText,
   FileArchive,
   Package,
+  FilePlus,
+  Info,
 } from 'lucide-react'
-import type { ContextMenuItem } from '../components/ContextMenu'
+import type { ContextMenuItem } from '@imbatranim/ui'
 import type { FsEntry } from '../types'
-import { resolveOpenApp, openAppLabel } from './openWith'
+import { resolveOpenApp, openAppLabel, type Associations } from './openWith'
 import type { NewFileKind } from './newFileTemplates'
 
 export type BuildMenuItemsCtx = {
   /** The right-clicked entry, or null for the empty-background menu. */
   entry: FsEntry | null
   root: string
+  /** The handle's association registry — menus resolve labels against it. */
+  assoc: Associations
   /** Whether the clipboard holds something (gates the Paste item). */
   hasClipboard: boolean
+  /**
+   * How many entries the row verbs will act on (brief 111): 1 for a lone row,
+   * the selection size when the clicked row is part of a multi-selection. The
+   * labels say so — "Copy 3 items" — because a Copy that silently takes four
+   * more files than the one you right-clicked is a trap.
+   */
+  verbCount?: number
   onOpen: (entry: FsEntry) => void
   onDownload: (entry: FsEntry) => void
   onRename: (entry: FsEntry) => void
   onCopy: (entry: FsEntry) => void
   onCut: (entry: FsEntry) => void
   onDelete: (entry: FsEntry) => void
+  onNewFile: () => void
   onNewFolder: () => void
+  onProperties: (entry: FsEntry) => void
   onNewOfficeFile: (kind: NewFileKind) => void
   onUpload: () => void
   onPaste: () => void
   onRefresh: () => void
+  /** Show the "Open with" chooser for this entry (brief 81). */
+  onOpenWith: (entry: FsEntry) => void
   /** Extract an archive file (Archive Manager). */
   onExtract: (entry: FsEntry) => void
   /** Compress the current selection (or this entry) to a .zip (Archive Manager). */
   onCompress: (entry: FsEntry) => void
+  /**
+   * Compare the two selected files in the Diff tool (brief 99). Non-null only
+   * when exactly two files are selected and the clicked entry is one of them —
+   * the builder shows the item exactly when the action can mean something.
+   */
+  onCompare: (() => void) | null
+  /** Open a bitmap in Paint (brief 95) — an Edit verb beside the viewer's Open. */
+  onEditInPaint: (entry: FsEntry) => void
 }
 
 /** Archive files the "Extract here" item is offered for. */
 const ARCHIVE_RE = /\.(zip|tar\.gz|tgz|tar)$/i
+
+/** Bitmaps Paint can edit (brief 95) — the viewer keeps the double-click. */
+const PAINTABLE_RE = /\.(png|jpe?g|gif|webp|bmp)$/i
 
 /**
  * Pure builder for the right-click context menu descriptor tree. Same two-mode
@@ -61,18 +90,29 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
     onRename,
     onCopy,
     onCut,
+    verbCount = 1,
     onDelete,
+    onNewFile,
     onNewFolder,
+    onProperties,
     onNewOfficeFile,
     onUpload,
     onPaste,
     onRefresh,
+    onOpenWith,
     onExtract,
+    onCompare,
+    onEditInPaint,
     onCompress,
   } = ctx
 
   if (!entry) {
     return [
+      {
+        label: 'New File…',
+        icon: <FilePlus size={13} />,
+        onSelect: onNewFile,
+      },
       {
         label: 'New Folder',
         icon: <FolderPlus size={13} />,
@@ -110,17 +150,49 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
 
   return [
     {
-      label: entry.type === 'directory' ? 'Open' : openAppLabel(resolveOpenApp(root, entry.name)),
+      label:
+        entry.type === 'directory'
+          ? 'Open'
+          : openAppLabel(ctx.assoc, resolveOpenApp(ctx.assoc, root, entry.name)),
       icon: <FolderOpen size={13} />,
       onSelect: () => onOpen(entry),
-      disabled: entry.type === 'file' && !resolveOpenApp(root, entry.name),
+      // Never disabled for a file any more (brief 81): resolution always ends
+      // somewhere, and when it genuinely cannot, `onOpen` shows the chooser
+      // rather than nothing happening.
     },
+    ...(entry.type === 'file'
+      ? [
+          {
+            label: 'Open with…',
+            icon: <AppWindow size={13} />,
+            onSelect: () => onOpenWith(entry),
+          } as ContextMenuItem,
+        ]
+      : []),
     ...(entry.type === 'file'
       ? [
           {
             label: 'Download',
             icon: <Download size={13} />,
             onSelect: () => onDownload(entry),
+          } as ContextMenuItem,
+        ]
+      : []),
+    ...(entry.type === 'file' && PAINTABLE_RE.test(entry.name)
+      ? [
+          {
+            label: 'Edit in Paint',
+            icon: <Palette size={13} />,
+            onSelect: () => onEditInPaint(entry),
+          } as ContextMenuItem,
+        ]
+      : []),
+    ...(entry.type === 'file' && onCompare
+      ? [
+          {
+            label: 'Compare',
+            icon: <FileDiff size={13} />,
+            onSelect: onCompare,
           } as ContextMenuItem,
         ]
       : []),
@@ -145,14 +217,20 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
       onSelect: () => onRename(entry),
     },
     {
-      label: 'Copy',
+      label: verbCount > 1 ? `Copy ${verbCount} items` : 'Copy',
       icon: <Copy size={13} />,
       onSelect: () => onCopy(entry),
     },
     {
-      label: 'Cut',
+      label: verbCount > 1 ? `Cut ${verbCount} items` : 'Cut',
       icon: <Scissors size={13} />,
       onSelect: () => onCut(entry),
+    },
+    { type: 'separator' },
+    {
+      label: 'Properties',
+      icon: <Info size={13} />,
+      onSelect: () => onProperties(entry),
     },
     { type: 'separator' },
     {

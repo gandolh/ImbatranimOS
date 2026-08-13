@@ -13,10 +13,10 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "format:check": "prettier --check src"
+    "format:check": "prettier --check src",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@base-ui/react": "^1.4.1",
     "@imbatranim/core": "*",
     "@imbatranim/ui": "*",
     "@monaco-editor/react": "^4.7.0",
@@ -39,6 +39,7 @@
     "prettier": "3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.58.2"
+    "typescript-eslint": "^8.58.2",
+    "vitest": "^4.1.10"
   }
 }

@@ -1,7 +1,7 @@
 /**
  * The reader console — the top control bar. Identity + document title, file I/O,
  * search, zoom/fit and the panel toggle. Rebuilt in the OS design language
- * (Tailwind tokens + `@imbatranim/core` UI); the AtelierPDF chrome is gone.
+ * (Tailwind tokens + `@imbatranim/ui` components); the AtelierPDF chrome is gone.
  *
  * ── PART B SEAM ────────────────────────────────────────────────────────────
  * `toolbarSlot` renders a second console row. Part B mounts the **annotate
@@ -9,12 +9,13 @@
  * appears when the slot is non-empty and carries `data-slot="annotate-toolbar"`
  * for direct targeting.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { JSX, ReactNode } from 'react'
 import {
   FilePen,
   FolderOpen,
   Download,
+  Save as SaveIcon,
   Search,
   ZoomIn,
   ZoomOut,
@@ -24,8 +25,9 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react'
-import { Button, Separator, Tooltip } from '@imbatranim/ui'
+import { Button, Separator, Tooltip, useSaveHotkey, useTopWindowKeydown } from '@imbatranim/ui'
 import { useReader } from '../app/context'
+import { useEditor } from '../editor/context'
 import { ToolButton } from './ToolButton'
 
 const ACTUAL = 96 / 72
@@ -50,13 +52,15 @@ export function TopBar({ onOpenClick, toolbarSlot }: TopBarProps): JSX.Element {
     setFitMode,
     panelOpen,
     togglePanel,
-    save,
+    exportCopy,
+    dirty,
     search,
     runSearch,
     clearSearch,
     nextHit,
     prevHit,
   } = useReader()
+  const { saveToDisk, busy } = useEditor()
 
   const [query, setQuery] = useState('')
   const [pageInput, setPageInput] = useState(() => String(currentPage))
@@ -77,20 +81,24 @@ export function TopBar({ onOpenClick, toolbarSlot }: TopBarProps): JSX.Element {
     if (!search.query) setQuery('')
   }
 
-  // Cmd/Ctrl+F focuses search.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
-        if (doc) {
-          e.preventDefault()
-          searchRef.current?.focus()
-          searchRef.current?.select()
-        }
+  // Ctrl/Cmd+S writes the document back to its file (the save spine), and
+  // Ctrl/Cmd+F focuses search — both scoped to the TOP window via the SDK
+  // seams, so a background norPDF window never fires them and they never steal
+  // the keystroke from another app. Registered here (inside EditorProvider) so
+  // Save can reach the editor's write-back-and-reload path. `ignoreTextEntry:
+  // false` on Find so it still works while a field (the search box itself, the
+  // page jump) is focused.
+  useSaveHotkey(() => void saveToDisk())
+  useTopWindowKeydown(
+    (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f' && doc) {
+        e.preventDefault()
+        searchRef.current?.focus()
+        searchRef.current?.select()
       }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [doc])
+    },
+    { ignoreTextEntry: false }
+  )
 
   const pct = Math.round((scale / ACTUAL) * 100)
   const hasHits = search.hits.length > 0
@@ -212,15 +220,27 @@ export function TopBar({ onOpenClick, toolbarSlot }: TopBarProps): JSX.Element {
 
         {/* Actions */}
         <ToolButton icon={FolderOpen} label="Open PDF" onClick={onOpenClick} />
-        <Tooltip content="Download the current document">
+        <Tooltip content="Export a copy (download)">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => void exportCopy()}
+            disabled={!doc}
+            aria-label="Export a copy"
+          >
+            <Download size={12} />
+          </Button>
+        </Tooltip>
+        <Tooltip content="Save (Ctrl+S) — write changes back to the file">
           <Button
             variant="default"
             size="sm"
             className="flex items-center gap-1"
-            onClick={() => void save()}
-            disabled={!doc}
+            onClick={() => void saveToDisk()}
+            disabled={!doc || busy || !dirty}
           >
-            <Download size={12} />
+            <SaveIcon size={12} />
             Save
           </Button>
         </Tooltip>

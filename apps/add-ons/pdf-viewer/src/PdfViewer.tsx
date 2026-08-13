@@ -7,18 +7,17 @@ import {
   ZoomOut,
   Maximize,
   Download,
-  FolderOpen,
   Loader2,
 } from 'lucide-react'
-import { Button, Tooltip } from '@imbatranim/ui'
 import {
-  fetchFileBytes,
-  downloadUrl,
+  Button,
+  Tooltip,
   fileName,
-  openApp,
-  useOpenFilePicker,
+  useElementSize,
+  useFileDialog,
   useOpenIntent,
-} from '@imbatranim/core'
+  useSystem,
+} from '@imbatranim/ui'
 import { loadPdfDocument, type LoadedPdf, type PDFDocumentProxy } from './engine/pdf'
 
 const MIN_ZOOM = 0.25
@@ -26,11 +25,17 @@ const MAX_ZOOM = 4
 const ZOOM_STEP = 0.25
 const PAGE_GUTTER = 32 // horizontal breathing room used when fitting to width
 
-export function PdfViewer({ windowId }: { windowId: string }) {
-  // One-shot open intent, drained by the shared hook (StrictMode-safe).
-  const source = useOpenIntent(windowId)
-  const { pickFile, filePicker } = useOpenFilePicker()
+export function PdfViewer({ windowId: _windowId }: { windowId: string }) {
+  const system = useSystem()
 
+  // One-shot open intent, drained by the shared hook (StrictMode-safe).
+  const source = useOpenIntent()
+
+  // Lets the app open a file on its own instead of dead-ending on
+  // "open one from Files". The pick latches into the same store
+  // useOpenIntent reads, so the existing load path runs unchanged.
+  const { openFile } = useFileDialog()
+  const pickFile = () => void openFile({ extensions: ['pdf'] })
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
   const [numPages, setNumPages] = useState(0)
   const [pageNum, setPageNum] = useState(1)
@@ -41,21 +46,18 @@ export function PdfViewer({ windowId }: { windowId: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const scrollRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [containerWidth, setContainerWidth] = useState<number | null>(null)
 
   // Track the scroll viewport width so "fit width" stays honest across resizes.
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (entry) setContainerWidth(entry.contentRect.width)
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+  //
+  // Via core's `useElementSize`, which is a ref callback. The mount effect this
+  // replaces never bound at all: the component early-returns an "Nothing open"
+  // tree until the open intent is drained, so the pane did not exist on the first
+  // commit and `[]` deps meant no retry. `containerWidth` stayed null, which made
+  // `fitWidth && containerWidth` falsy — so **"Fit width" silently rendered at
+  // 100% zoom** for the app's whole life. See that hook's doc.
+  const [pane, attachScroll] = useElementSize()
+  const containerWidth = pane.width > 0 ? pane.width : null
 
   // Load + parse the PDF once a source is latched. The document is destroyed on
   // unmount / source change so pdf.js releases its worker-side buffers.
@@ -65,7 +67,7 @@ export function PdfViewer({ windowId }: { windowId: string }) {
     let loaded: LoadedPdf | null = null
     ;(async () => {
       try {
-        const bytes = await fetchFileBytes(source.root, source.path)
+        const bytes = await system.fs.read(source.root, source.path)
         const pdf = await loadPdfDocument(bytes)
         if (cancelled) {
           pdf.destroy()
@@ -88,7 +90,7 @@ export function PdfViewer({ windowId }: { windowId: string }) {
       cancelled = true
       if (loaded) loaded.destroy()
     }
-  }, [source])
+  }, [source, system])
 
   // Render the current page whenever it, the zoom, or the fit target changes.
   // A stale render is cancelled before a new one starts (rapid paging / zoom).
@@ -153,7 +155,7 @@ export function PdfViewer({ windowId }: { windowId: string }) {
 
   function triggerDownload() {
     if (!source) return
-    const url = downloadUrl(source.root, source.path)
+    const url = system.fs.downloadUrl(source.root, source.path)
     const a = document.createElement('a')
     a.href = url
     a.download = fileName(source.path, 'document.pdf')
@@ -166,29 +168,13 @@ export function PdfViewer({ windowId }: { windowId: string }) {
   const zoomLabel = fitWidth ? 'Fit' : `${Math.round(zoom * 100)}%`
 
   if (!source) {
-    // Opens the shared in-app picker, then re-launches this app with the pick
-    // — the same intent path a File-Manager double-click uses (multi-instance,
-    // so this opens a new window rather than reloading the current one).
-    const handleOpen = async () => {
-      const file = await pickFile({ title: 'Open PDF', accept: (f) => /\.pdf$/i.test(f.name) })
-      if (!file) return
-      openApp('pdf-viewer', { root: file.root, openPath: file.path })
-    }
-
     return (
       <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 text-center">
         <FileText size={40} strokeWidth={1} />
-        <Button
-          variant="primary"
-          size="sm"
-          className="mt-1 flex items-center gap-1.5"
-          onClick={handleOpen}
-        >
-          <FolderOpen size={13} />
-          Open…
+        <span className="font-ui text-[12px]">Nothing open</span>
+        <Button size="sm" variant="primary" onClick={pickFile}>
+          Open a PDF
         </Button>
-        <span className="font-ui text-[12px]">Open a file from Files</span>
-        {filePicker}
       </div>
     )
   }
@@ -275,7 +261,7 @@ export function PdfViewer({ windowId }: { windowId: string }) {
       </div>
 
       {/* Page surface */}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
+      <div ref={attachScroll} className="min-h-0 flex-1 overflow-auto">
         {loading && (
           <div className="text-on-surface-variant font-ui flex h-full items-center justify-center gap-2 text-[12px]">
             <Loader2 size={16} className="animate-spin" />

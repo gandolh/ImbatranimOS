@@ -1,23 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  AlertTriangle,
+  ArrowLeft,
   ArrowUpRight,
   Copy,
   Download,
   Grid2x2,
+  Palette,
   Pencil,
   Save,
   Square,
+  SquareSlash,
   Type,
   Undo2,
   X,
 } from 'lucide-react'
-import { cn } from '@imbatranim/ui'
+import { cn, useSystem } from '@imbatranim/ui'
 import type { Annotation, Point, Tool } from '../types'
 import { saveScreenshot, screenshotFilename } from '../api/screenshotApi'
+import { isWorthKeeping, normalizeRect, pixelateBlockSize } from '../lib/annotationGeometry'
 
 type Props = {
   /** The cropped base image, at device-pixel resolution. */
   image: HTMLCanvasElement
+  /** What the capture may have missed, or null when the region was clean. */
+  notice: string | null
+  /** Back to the launcher, keeping the app open. */
+  onBack: () => void
   onClose: () => void
 }
 
@@ -27,9 +36,19 @@ const TOOLS: { id: Tool; label: string; Icon: typeof Square }[] = [
   { id: 'arrow', label: 'Arrow', Icon: ArrowUpRight },
   { id: 'rect', label: 'Rectangle', Icon: Square },
   { id: 'text', label: 'Text', Icon: Type },
-  { id: 'pixelate', label: 'Pixelate (redact)', Icon: Grid2x2 },
+  // Two redaction tools, in the order you should reach for them. Black out destroys the
+  // pixels; pixelate only scrambles them, and a fine mosaic of *text* is recoverable.
+  {
+    id: 'blackout',
+    label: 'Black out (destroys the pixels — use this for secrets)',
+    Icon: SquareSlash,
+  },
+  { id: 'pixelate', label: 'Pixelate (scrambles; recoverable on small text)', Icon: Grid2x2 },
   { id: 'freehand', label: 'Freehand', Icon: Pencil },
 ]
+
+/** The one fixed colour in the app: a redaction is not a styling choice. */
+const BLACKOUT_FILL = '#0b0b0d'
 
 const canCopy =
   typeof window !== 'undefined' &&
@@ -43,7 +62,8 @@ function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   })
 }
 
-export function AnnotationStage({ image, onClose }: Props) {
+export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
+  const system = useSystem()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const ratio = window.devicePixelRatio || 1
   const stroke = Math.max(2, Math.round(3 * ratio))
@@ -62,6 +82,7 @@ export function AnnotationStage({ image, onClose }: Props) {
   } | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [noticeOpen, setNoticeOpen] = useState(true)
 
   const draggingRef = useRef(false)
 
@@ -123,12 +144,24 @@ export function AnnotationStage({ image, onClose }: Props) {
           ctx.stroke()
           break
         }
+        case 'blackout': {
+          // A flat fill on the same canvas the export reads, so the pixels underneath are
+          // gone from the moment it is drawn — there is no layer to peel off in the PNG.
+          ctx.fillStyle = BLACKOUT_FILL
+          ctx.fillRect(
+            Math.min(a.x, a.x + a.w),
+            Math.min(a.y, a.y + a.h),
+            Math.abs(a.w),
+            Math.abs(a.h)
+          )
+          break
+        }
         case 'pixelate': {
           const x = Math.round(Math.min(a.x, a.x + a.w))
           const y = Math.round(Math.min(a.y, a.y + a.h))
           const w = Math.max(1, Math.round(Math.abs(a.w)))
           const h = Math.max(1, Math.round(Math.abs(a.h)))
-          const bs = Math.max(4, Math.round(8 * ratio))
+          const bs = pixelateBlockSize(ratio)
           const tmp = document.createElement('canvas')
           tmp.width = Math.max(1, Math.floor(w / bs))
           tmp.height = Math.max(1, Math.floor(h / bs))
@@ -191,6 +224,7 @@ export function AnnotationStage({ image, onClose }: Props) {
     draggingRef.current = true
     if (tool === 'rect') setDraft({ type: 'rect', x, y, w: 0, h: 0, color })
     else if (tool === 'pixelate') setDraft({ type: 'pixelate', x, y, w: 0, h: 0 })
+    else if (tool === 'blackout') setDraft({ type: 'blackout', x, y, w: 0, h: 0 })
     else if (tool === 'arrow') setDraft({ type: 'arrow', x1: x, y1: y, x2: x, y2: y, color })
     else if (tool === 'freehand') setDraft({ type: 'freehand', points: [{ x, y }], color })
   }
@@ -200,37 +234,37 @@ export function AnnotationStage({ image, onClose }: Props) {
     const { x, y } = toCanvasCoords(e)
     setDraft((d) => {
       if (!d) return d
-      if (d.type === 'rect' || d.type === 'pixelate') return { ...d, w: x - d.x, h: y - d.y }
+      if (d.type === 'rect' || d.type === 'pixelate' || d.type === 'blackout') {
+        return { ...d, w: x - d.x, h: y - d.y }
+      }
       if (d.type === 'arrow') return { ...d, x2: x, y2: y }
       if (d.type === 'freehand') return { ...d, points: [...d.points, { x, y }] }
       return d
     })
   }
 
+  // The two setStates run SEQUENTIALLY, never one nested in the other's updater.
+  // Calling `setAnnotations` inside the `setDraft`/`setTextDraft` updater meant
+  // that under StrictMode — which double-invokes updaters to surface impurity —
+  // the annotation was committed twice. Reading the current draft and then
+  // issuing each update once keeps every commit exactly once.
   function commitDraft() {
     draggingRef.current = false
-    setDraft((d) => {
-      if (!d) return null
-      let keep = true
-      if (d.type === 'rect' || d.type === 'pixelate') keep = Math.abs(d.w) > 3 && Math.abs(d.h) > 3
-      else if (d.type === 'arrow') keep = Math.hypot(d.x2 - d.x1, d.y2 - d.y1) > 4
-      else if (d.type === 'freehand') keep = d.points.length > 1
-      if (keep) setAnnotations((prev) => [...prev, normalizeRect(d)])
-      return null
-    })
+    const d = draft
+    if (d && isWorthKeeping(d)) setAnnotations((prev) => [...prev, normalizeRect(d)])
+    setDraft(null)
   }
 
   function commitText() {
-    setTextDraft((t) => {
-      if (t && t.value.trim()) {
-        const value = t.value
-        setAnnotations((prev) => [
-          ...prev,
-          { type: 'text', x: t.cx, y: t.cy, text: value, color, size: fontSize },
-        ])
-      }
-      return null
-    })
+    const t = textDraft
+    if (t && t.value.trim()) {
+      const value = t.value
+      setAnnotations((prev) => [
+        ...prev,
+        { type: 'text', x: t.cx, y: t.cy, text: value, color, size: fontSize },
+      ])
+    }
+    setTextDraft(null)
   }
 
   function undo() {
@@ -254,7 +288,7 @@ export function AnnotationStage({ image, onClose }: Props) {
   const onSave = () =>
     doExit(async () => {
       const blob = await toBlob(canvasRef.current!)
-      const path = await saveScreenshot(blob)
+      const path = await saveScreenshot(system.fs, blob)
       return `Saved to ~/${path}`
     })
 
@@ -263,6 +297,13 @@ export function AnnotationStage({ image, onClose }: Props) {
       const blob = await toBlob(canvasRef.current!)
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
       return 'Copied to clipboard'
+    })
+
+  // Brief 95: the two apps are a pipeline — annotate here, edit properly there.
+  const onEditInPaint = () =>
+    doExit(() => {
+      system.intents.openApp('paint', { dataUrl: canvasRef.current!.toDataURL('image/png') })
+      return Promise.resolve('Opened in Paint')
     })
 
   const onDownload = () =>
@@ -282,7 +323,7 @@ export function AnnotationStage({ image, onClose }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (textDraft) return
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onBack()
       else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault()
         undo()
@@ -290,7 +331,7 @@ export function AnnotationStage({ image, onClose }: Props) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [textDraft, onClose])
+  }, [textDraft, onBack])
 
   const tbBtn =
     'flex h-8 w-8 items-center justify-center border outline-none transition-colors ' +
@@ -386,6 +427,14 @@ export function AnnotationStage({ image, onClose }: Props) {
             <Copy size={14} strokeWidth={1.75} /> Copy
           </button>
           <button
+            title="Edit in Paint"
+            onClick={onEditInPaint}
+            disabled={busy}
+            className={cn(tbBtn, 'w-auto gap-1.5 px-2.5 text-[12px] font-semibold')}
+          >
+            <Palette size={14} strokeWidth={1.75} /> Edit in Paint
+          </button>
+          <button
             title="Download to this device"
             onClick={onDownload}
             disabled={busy}
@@ -394,7 +443,16 @@ export function AnnotationStage({ image, onClose }: Props) {
             <Download size={14} strokeWidth={1.75} /> Download
           </button>
           <button
-            title="Cancel (Esc)"
+            title="Back to capture modes (Esc)"
+            aria-label="Back"
+            onClick={onBack}
+            className={cn(tbBtn)}
+          >
+            <ArrowLeft size={15} strokeWidth={1.75} />
+          </button>
+          <button
+            title="Close the tool"
+            aria-label="Close"
             onClick={onClose}
             className={cn(tbBtn, 'hover:bg-error hover:text-on-error')}
           >
@@ -402,6 +460,21 @@ export function AnnotationStage({ image, onClose }: Props) {
           </button>
         </div>
       </div>
+
+      {notice && noticeOpen && (
+        <div className="border-outline-variant bg-surface-container text-on-surface flex shrink-0 items-start gap-2 border-b px-3 py-2 text-[11px]">
+          <AlertTriangle size={14} className="text-primary mt-px shrink-0" strokeWidth={1.75} />
+          <span className="flex-1">{notice}</span>
+          <button
+            type="button"
+            aria-label="Dismiss warning"
+            className="text-on-surface-variant hover:text-on-surface shrink-0 underline"
+            onClick={() => setNoticeOpen(false)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* canvas stage */}
       <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-auto p-4">
@@ -411,8 +484,12 @@ export function AnnotationStage({ image, onClose }: Props) {
           onPointerMove={handlePointerMove}
           onPointerUp={commitDraft}
           style={{
-            maxWidth: '92vw',
-            maxHeight: 'calc(100vh - 140px)',
+            // Sized against the flex parent, not the viewport. The old
+            // `calc(100vh - 140px)` hardcoded the toolbar height — and this toolbar wraps,
+            // so at narrow widths it is two or three rows tall and the canvas ran off the
+            // bottom of its own stage.
+            maxWidth: '100%',
+            maxHeight: '100%',
             cursor: tool === 'text' ? 'text' : 'crosshair',
             touchAction: 'none',
             boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
@@ -461,18 +538,4 @@ export function AnnotationStage({ image, onClose }: Props) {
       </div>
     </div>
   )
-}
-
-/** Store rect/pixelate with positive width/height so later math is simple. */
-function normalizeRect(a: Annotation): Annotation {
-  if (a.type === 'rect' || a.type === 'pixelate') {
-    return {
-      ...a,
-      x: Math.min(a.x, a.x + a.w),
-      y: Math.min(a.y, a.y + a.h),
-      w: Math.abs(a.w),
-      h: Math.abs(a.h),
-    }
-  }
-  return a
 }

@@ -21,10 +21,28 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // Codified convention: a leading underscore marks intentionally unused.
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+      // The SDK sits BELOW the OS: it is what apps link against, so it may
+      // depend on nothing above itself. An import from core here would drag
+      // the whole compositor into every app bundle and dissolve the seam.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@imbatranim/core', '@imbatranim/core/*'],
+              message:
+                'The SDK must not depend on the OS. Capabilities reach apps through the injected system handle; the handle implementation lives in core.',
+            },
+          ],
+        },
       ],
     },
   },

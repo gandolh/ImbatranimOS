@@ -1,6 +1,6 @@
 import { Button as BaseButton } from '@base-ui/react/button'
 import { type ComponentProps } from 'react'
-import { cn } from '../lib/cn'
+import { cn } from '../cn'
 
 type Variant = 'default' | 'primary' | 'ghost' | 'destructive'
 type Size = 'sm' | 'md'

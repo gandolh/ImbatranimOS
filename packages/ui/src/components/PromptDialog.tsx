@@ -89,7 +89,11 @@ export function usePrompt(): {
   prompt: (opts: PromptOptions) => Promise<string | null>
   promptDialog: ReactNode
 } {
-  const [state, setState] = useState<PromptState>({ open: false, title: '', value: '' })
+  const [state, setState] = useState<PromptState>({
+    open: false,
+    title: '',
+    value: '',
+  })
   const resolverRef = useRef<((value: string | null) => void) | null>(null)
 
   const prompt = useCallback((opts: PromptOptions) => {

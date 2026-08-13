@@ -1,5 +1,5 @@
 import type { PdfBytes, Rect } from "../../api/types.js";
-import { loadPdfjsDocument } from "./document.js";
+import { withPdfjsDoc } from "./document.js";
 
 /**
  * The geometry of a single form-field widget: the 1-based page it sits on and
@@ -33,30 +33,31 @@ export interface WidgetGeometry {
 export async function readFormGeometry(
   bytes: PdfBytes,
 ): Promise<Map<string, WidgetGeometry[]>> {
-  const doc = await loadPdfjsDocument(bytes);
-  const byField = new Map<string, WidgetGeometry[]>();
+  return withPdfjsDoc(bytes, async (doc) => {
+    const byField = new Map<string, WidgetGeometry[]>();
 
-  for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
-    const page = await doc.getPage(pageNumber);
-    const annotations = await page.getAnnotations();
-    for (const annot of annotations) {
-      const a = annot as {
-        subtype?: string;
-        fieldName?: string;
-        rect?: number[];
-      };
-      if (a.subtype !== "Widget") continue;
-      if (typeof a.fieldName !== "string" || a.fieldName === "") continue;
-      const rect = normalizeRect(a.rect);
-      if (!rect) continue;
-      const list = byField.get(a.fieldName);
-      const geom: WidgetGeometry = { page: pageNumber, rect };
-      if (list) list.push(geom);
-      else byField.set(a.fieldName, [geom]);
+    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
+      const page = await doc.getPage(pageNumber);
+      const annotations = await page.getAnnotations();
+      for (const annot of annotations) {
+        const a = annot as {
+          subtype?: string;
+          fieldName?: string;
+          rect?: number[];
+        };
+        if (a.subtype !== "Widget") continue;
+        if (typeof a.fieldName !== "string" || a.fieldName === "") continue;
+        const rect = normalizeRect(a.rect);
+        if (!rect) continue;
+        const list = byField.get(a.fieldName);
+        const geom: WidgetGeometry = { page: pageNumber, rect };
+        if (list) list.push(geom);
+        else byField.set(a.fieldName, [geom]);
+      }
     }
-  }
 
-  return byField;
+    return byField;
+  });
 }
 
 /** Coerce a pdf.js `rect` ([x1,y1,x2,y2]) into a canonical lower-left→upper-right {@link Rect}. */

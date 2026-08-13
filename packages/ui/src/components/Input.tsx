@@ -1,6 +1,6 @@
 import { Input as BaseInput } from '@base-ui/react/input'
 import { type ComponentProps } from 'react'
-import { cn } from '../lib/cn'
+import { cn } from '../cn'
 
 type InputProps = ComponentProps<typeof BaseInput> & {
   label?: string

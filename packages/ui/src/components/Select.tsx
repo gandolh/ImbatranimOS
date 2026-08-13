@@ -1,6 +1,6 @@
 import { Select as BaseSelect } from '@base-ui/react/select'
 import { type ComponentProps } from 'react'
-import { cn } from '../lib/cn'
+import { cn } from '../cn'
 
 type SelectRootProps = ComponentProps<typeof BaseSelect.Root>
 
@@ -41,15 +41,34 @@ export function Select({
             className
           )}
         >
-          <BaseSelect.Value placeholder={placeholder} />
+          {/*
+            The trigger must show the option's LABEL, not its value.
+            `<Select.Value>` with no children renders the raw value, because base-ui
+            can only look a label up when `Select.Root` is given an `items` map. So
+            every Select in the OS whose value differs from its label displayed the
+            value — found by measurement in brief 75, where a folder picker read "6"
+            instead of "Work / Specs". `git-gui`'s root picker and Calendar's reminder
+            offsets had the same defect.
+
+            The lookup is by `String(value)` because a caller may pass a number even
+            though `SelectOption.value` is typed as a string, and a mismatch here would
+            silently fall back to the placeholder.
+          */}
+          <BaseSelect.Value placeholder={placeholder}>
+            {(value: unknown) =>
+              options.find((option) => option.value === String(value))?.label ?? placeholder
+            }
+          </BaseSelect.Value>
           <BaseSelect.Icon className="text-on-surface-variant ml-2">▾</BaseSelect.Icon>
         </BaseSelect.Trigger>
 
         <BaseSelect.Portal>
-          <BaseSelect.Positioner sideOffset={1}>
+          {/* z-index on the Positioner (the fixed element): overlays must clear the
+              window band, whose zIndex grows unboundedly. */}
+          <BaseSelect.Positioner sideOffset={1} className="z-[1000]">
             <BaseSelect.Popup
               className={cn(
-                'border-outline-variant bg-surface-container-lowest z-50 min-w-[8rem] border',
+                'border-outline-variant bg-surface-container-lowest min-w-[8rem] border',
                 'shadow-[0_10px_28px_rgba(0,0,0,0.4)]',
                 'py-0.5 outline-none'
               )}

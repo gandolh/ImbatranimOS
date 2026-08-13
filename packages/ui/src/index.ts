@@ -1,15 +1,21 @@
 /**
- * @imbatranim/ui — the pure UI library shared across the web OS.
+ * @imbatranim/ui — the app SDK (brief 48).
  *
- * Everything here is client-only: components, hooks, and stores that render or
- * manage local state with no dependency on the authed api client, the desktop
- * shell, or any @imbatranim/core store. Extracted from core in brief 48 (the
- * protocol seam) so add-ons and future system/ protocol code can consume the
- * kit without pulling in the desktop runtime.
+ * The library half of the old `@imbatranim/core` barrel, split by one objective
+ * rule: **can it travel over postMessage?** Nothing in here can — it is
+ * components, render hooks and pure functions, linked into the app bundle the
+ * way GTK or libc is linked into a process. Anything that *is* a data call or an
+ * effect on the OS (files, HTTP, windows, intents, notifications) is a
+ * capability on the injected `system` handle instead — see `./system` for the
+ * protocol, which this package also owns.
+ *
+ * The dependency rule is absolute and enforced by eslint: this package imports
+ * NOTHING from `@imbatranim/core`. The OS depends on the SDK, never the other
+ * way around.
  */
 
 // Styling helper
-export { cn } from './lib/cn'
+export { cn } from './cn'
 
 // UI kit
 export { Button } from './components/Button'
@@ -20,51 +26,80 @@ export { ScrollArea } from './components/ScrollArea'
 export { Select } from './components/Select'
 export { Separator } from './components/Separator'
 export { Tooltip } from './components/Tooltip'
-
-// Confirm / prompt dialogs (+ imperative hooks)
 export { ConfirmDialog, useConfirm } from './components/ConfirmDialog'
-export type { ConfirmOptions } from './components/ConfirmDialog'
+export { UnsavedChangesDialog } from './components/UnsavedChangesDialog'
+export { ContextMenu, type ContextMenuItem } from './components/ContextMenu'
 export { PromptDialog, usePrompt } from './components/PromptDialog'
-export type { PromptOptions } from './components/PromptDialog'
 
-// Opened-file store (zustand)
-export { createOpenedFileStore } from './store/createOpenedFileStore'
-export type { OpenedFile } from './store/createOpenedFileStore'
-
-// Virtual list hook
+// Pure hooks
 export { useVirtualList } from './hooks/useVirtualList'
 export type { VirtualList } from './hooks/useVirtualList'
+export { useElementSize, type ElementSize, type ElementSizeRef } from './hooks/useElementSize'
 
-// ── System seam (brief 48: the protocol seam) ────────────────────────────────
-// The versioned capability protocol between the compositor and an app, the
-// per-window context, and the app-side hooks + picker implemented over it.
+// Pure utilities
+export { installMapGetOrInsert } from './lib/mapGetOrInsert'
+export { isTextEntry } from './lib/textEntry'
+export { fileName, UploadTooLargeError } from './lib/files'
+export { describeFileFailure, type FileFailureOptions } from './lib/fileFailureText'
 
-// Protocol: the SystemHandle spec + its data types (values: version + error)
-export { PROTOCOL_VERSION, UploadTooLargeError } from './system/protocol'
+// Backend log contract (pure types + a pure projection)
+export { toSignIns } from './lib/systemLog'
+export type { LogEntry, LogLevel, LogSource, SignIn } from './lib/systemLog'
+
+// The shared react-query client. A library concern, not a capability: in a
+// future sandboxed world each app bundles its own; in-process everyone shares
+// this one, exactly as before the split.
+export { queryClient } from './queryClient'
+
+// ── The protocol (brief 48) ──────────────────────────────────────────────────
+// `system.ts` is the spec; the provider/context pair is how the compositor
+// injects a handle and how apps + SDK hooks reach it.
+export { PROTOCOL_VERSION } from './system'
 export type {
-  SystemHandle,
-  SystemFs,
-  SystemHttp,
-  SystemWindow,
-  SystemIntents,
+  FileChoice,
+  OpenerCandidate,
+  OpenerResolution,
+  PickOpenOptions,
+  PickSaveOptions,
+  ScheduleDomain,
+  ShortcutBinding,
+  ShortcutDoc,
+  ShortcutScope,
+  SystemAppearance,
+  SystemAppearanceState,
   SystemEvent,
-  FsEntry,
-  FsEntryType,
-  HttpRequestConfig,
-  HttpResponse,
-  NotifyInput,
-  NotifyLevel,
-  OpenPayload,
-} from './system/protocol'
+  SystemEventMap,
+  SystemFs,
+  SystemHandle,
+  SystemHttp,
+  SystemHttpRequestConfig,
+  SystemHttpResponse,
+  SystemIntents,
+  SystemNotifyInput,
+  SystemNotifyLevel,
+  SystemSchedule,
+  SystemShortcuts,
+  SystemWindow,
+} from './system'
+export { SystemProvider, useSystem } from './systemContext'
 
-// Per-window context
-export { SystemProvider, useSystem } from './system/SystemContext'
-
-// App-side hooks over useSystem()
-export { useOpenIntent } from './system/useOpenIntent'
-export { useSaveHotkey } from './system/useSaveHotkey'
-export { useUnsavedGuard } from './system/useUnsavedGuard'
-
-// Modal file picker over the injected FS capability
-export { OpenFilePicker, useOpenFilePicker } from './components/OpenFilePicker'
-export type { PickedFile, OpenFilePickerOptions } from './components/OpenFilePicker'
+// Capability-consuming SDK hooks — the old core hooks, re-homed onto the
+// handle. No windowId arguments: the handle already knows its window.
+export {
+  reportFileFailure,
+  reportFileRefusal,
+  useDocumentedShortcuts,
+  useRegisteredHotkeys,
+  useSaveHotkey,
+  useSystemAppearance,
+  useTopWindowKeydown,
+  useUnsavedGuard,
+  useWindowVisible,
+  type TopWindowKeydownOptions,
+} from './hooks/systemHooks'
+export {
+  useFileDialog,
+  useOpenIntent,
+  resetOpenedFilesForTest,
+  type OpenedFile,
+} from './hooks/openIntent'

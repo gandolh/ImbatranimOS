@@ -1,4 +1,4 @@
-import type { PDFDocumentProxy } from "pdfjs-dist";
+import type { PDFDocumentProxy, PDFDocumentLoadingTask } from "pdfjs-dist";
 import type { PdfBytes } from "../../api/types.js";
 
 /**
@@ -24,9 +24,13 @@ let backendPromise: Promise<Pdfjs> | undefined;
 
 function isNodeEnvironment(): boolean {
   const hasWindow = "window" in globalThis;
-  return (
-    !hasWindow && typeof process !== "undefined" && !!process.versions?.node
-  );
+  // Via globalThis, not the bare `process` global: this file is type-checked by
+  // BROWSER packages (norpdf's tsc walks into it), whose tsconfig deliberately
+  // has no @types/node. The bare identifier only ever resolved through an
+  // incidental type-graph leak that brief 48's barrel shrink closed.
+  const proc = (globalThis as { process?: { versions?: { node?: string } } })
+    .process;
+  return !hasWindow && !!proc?.versions?.node;
 }
 
 export function getPdfjs(): Promise<Pdfjs> {
@@ -49,7 +53,35 @@ export function getPdfjs(): Promise<Pdfjs> {
 export async function loadPdfjsDocument(
   bytes: PdfBytes,
 ): Promise<PDFDocumentProxy> {
+  return (await loadPdfjsTask(bytes)).promise;
+}
+
+/**
+ * Like {@link loadPdfjsDocument} but returns the loading TASK, whose
+ * `.destroy()` (the proxy has none) releases the worker-side parse. Adapters
+ * hold the task so they can dispose it; read the proxy via `task.promise`.
+ */
+export async function loadPdfjsTask(
+  bytes: PdfBytes,
+): Promise<PDFDocumentLoadingTask> {
   const { getDocument } = await getPdfjs();
   const data = new Uint8Array(bytes);
-  return getDocument({ data }).promise;
+  return getDocument({ data });
+}
+
+/**
+ * Run `fn` against a freshly parsed pdf.js document and ALWAYS destroy it
+ * afterward — for one-shot reads (form geometry, annotation seeding) that
+ * would otherwise orphan a worker-side document on every call.
+ */
+export async function withPdfjsDoc<T>(
+  bytes: PdfBytes,
+  fn: (doc: PDFDocumentProxy) => Promise<T>,
+): Promise<T> {
+  const task = await loadPdfjsTask(bytes);
+  try {
+    return await fn(await task.promise);
+  } finally {
+    void task.destroy();
+  }
 }

@@ -26,6 +26,7 @@ const PAGES = [
   { src: 'wiki/overview.md', slug: 'overview' },
   { src: 'wiki/architecture.md', slug: 'architecture' },
   { src: 'wiki/os-layering.md', slug: 'os-layering' },
+  { src: 'wiki/glossary.md', slug: 'glossary' },
   { src: 'wiki/decisions.md', slug: 'decisions' },
   { src: 'wiki/open-questions.md', slug: 'open-questions' },
   { src: 'wiki/status.md', slug: 'status' },

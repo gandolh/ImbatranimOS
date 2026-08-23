@@ -57,6 +57,7 @@ export default defineConfig({
             { label: 'What it is', link: '/wiki/overview/' },
             { label: 'Architecture', link: '/wiki/architecture/' },
             { label: 'OS layering — the compositor seam', link: '/wiki/os-layering/' },
+            { label: 'Glossary', link: '/wiki/glossary/' },
             { label: 'Decisions (locked)', link: '/wiki/decisions/' },
             { label: 'Open questions', link: '/wiki/open-questions/' },
           ],

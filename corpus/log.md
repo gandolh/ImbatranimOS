@@ -3857,3 +3857,103 @@ deliberate exception to the never-renumber rule: the number was not free on
 both sides, so keeping 55 would have overwritten unrelated shipped work.
 
 The `.claude/` skills directory came across with the tree.
+
+## [2026-08-23] maintenance | Corpus realigned to personal-skills 0.29.0
+
+The skills library at `~/projects/my-personal-skills` moved 0.23.0 → **0.29.0**
+(a marketplace plugin now; the vendored copy under `.claude/` was deleted from
+this repo the same day). The corpus was written against the old roster, so:
+
+- **`routing.md` rewritten** to the current `orchestrate` template — the
+  `**Implement/Review/PR skill:**` header block, an intent table covering the
+  new skills (`improve` for audits, `impeccable` + the taste presets for design,
+  `web-design-guidelines`, `writing-guidelines`/`unslop`, `diagram-design`,
+  `thermo-nuclear-review`, `corpus-docs-site`, `bootstrap-vps-deploy`,
+  `corpus-flow` §9 for vocabulary), the knowledge-routing table, and a per-task
+  READ/SKIP/SKILLS table using the real tree (`apps/core`, `apps/add-ons/*`,
+  `apps/backend`, `packages/ui`, `infrastructure/`, `iso/`, `apps/docs`) —
+  the old one still said `frontend/` + `backend/`. Dropped the route to
+  `web-research`, a skill 0.29.0 pruned; research is now inline and **gated**.
+  Added the standing note that **the identity lock overrides the design
+  skills** — they work inside Win7-classic/B&W/one-accent/zero-radius, never
+  propose a replacement for it.
+- **`wiki/glossary.md` created** (corpus-flow §9's domain-modeling layer): the
+  add-on/manifest/composition-root/registry/widget/desktop-layer/background-service
+  vocabulary, the seam terms (`system` handle, capability vs library, kit,
+  syscall bridge, compositor, intent, association), state and identity
+  (dotfile, session, accent, token, friend-run bar, real-not-simulated), each
+  with the synonyms it displaces — plus the three words that carry **two live
+  meanings** here: *core* (type-only package vs the shell directory), *session*
+  (browser tab vs the `imb_session` auth cookie) and *manifest* (the exported
+  object vs `apps/core/src/manifest.ts`). Registered in the docs site
+  (`apps/docs/scripts/sync-corpus.mjs` + the Starlight sidebar).
+- **`CLAUDE.md`** gained the two-graph rule (corpus = why, grep/eslint/tests =
+  what, no code graph here yet), the domain-modeling section with the
+  three-part test a decision must pass to be recorded, and the
+  TodoWrite-vs-corpus and one-commit-per-corpus-change conventions.
+- **`wiki/ui-conventions.md` §1 corrected.** It still told add-ons to import
+  values from `@imbatranim/core` and listed a surface that brief 48 deleted on
+  2026-08-06 — the rule is now `@imbatranim/ui` for the kit and the injected
+  `system` handle for everything that touches the OS, with `@imbatranim/core`
+  type-only and eslint-enforced. Rule 4's "still missing" list lost the two
+  items that have since shipped (the file-open picker, `useTopWindowKeydown`).
+  Verified against `packages/ui/src/index.ts` and
+  `apps/add-ons/calculator/eslint.config.js`.
+
+`bash corpus/lint.sh` passes; `index.md` regenerated. **Not done, needs a
+decision:** the `codegraph` layer (corpus-flow §0b) is still unbootstrapped, so
+structural questions fall back to grep.
+
+## [2026-08-23] maintenance | Code-graph layer bootstrapped (corpus-flow §0b)
+
+The *what* layer now exists alongside the corpus's *why*. `routing.md` had sent
+every structural question to grep since the pivot.
+
+**Wired:** `@colbymchenry/codegraph@1.5.0`, installed globally and **pinned**
+(MIT but effectively single-maintainer — a supply-chain surface even offline);
+telemetry off, which it defaults on. `.codegraph/` gitignored at the root; the
+tool writes its own inner ignore too, but the anchored rule is the committed
+statement. **`.mcp.json` committed** with an env-overridable path
+(`${CODEGRAPH_INDEX_PATH:-.}`) rather than a per-dev `codegraph install` — a
+manual per-dev step never gets run and the layer dies silently, the exact
+failure §0b exists to prevent. Verified the server over a real stdio handshake:
+it initializes and advertises `codegraph_explore`; the other seven tools exist
+but are unlisted behind `CODEGRAPH_MCP_TOOLS`, so the CLI is the primary
+interface here. `npm run codegraph:init` / `codegraph:sync` added. Index: 808
+files, 9,290 nodes, 27,643 edges, ~35 MB, ~3s full rebuild, 0.3s sync, on the
+native `node:sqlite` backend (not the 5–10× slower WASM path).
+
+**Benchmarked, because the vendor's numbers only hold where the tool is good**
+(details + method in [wiki/code-graph.md](wiki/code-graph.md)):
+
+- **100% caller recall on imported functions** — `useSystem` (53 files),
+  `useFileDialog` (16), `useSaveHotkey`, `useUnsavedGuard`, `useOpenIntent`. The
+  cross-package barrel through `@imbatranim/ui` resolves correctly; `impact
+  useSystem` returns 219 symbols across 78 files. This is the query grep is
+  worst at and the graph is genuinely good at.
+- **~35% on anything called through the `system` handle.** 35 of `notify`'s 42
+  caller files write `system.notify(...)`, and the resolver does not connect a
+  member expression to the SDK definition. Since brief 48 that *is* the app↔OS
+  surface, so **the graph is weakest exactly where this project is most
+  interesting.** Rule: anything with a dot before it goes to grep.
+- **0% on `manifest`** — "No callers found" while `apps/core/src/manifest.ts`
+  imports 25 of them. **26 export names collide across add-on packages**
+  (`manifest` ×25, `APP_NAME` ×5, `formatBytes`/`errorMessage`/`ViewMode` ×3,
+  plus 21 two-way); parallel packages with parallel roles produce parallel
+  names, and the resolver conflates them. Scope those by path or don't ask.
+- Two mechanical traps worth writing down: `callers`/`callees` **default to 20
+  results** and print `(20)` as though it were the total; and the `kind:"file"`
+  entries must be counted, because a call inside an anonymous callback (a test
+  body, an inline arrow prop) produces no named caller node. Three symbols read
+  as 33–50% recall until those were counted, then 100%.
+
+**Written:** [wiki/code-graph.md](wiki/code-graph.md) (the numbers, in the
+corpus) and `.claude/skills/codegraph/SKILL.md` (the operating rules, in the
+**project** — the envelope is per-repo and cannot be written once and reused).
+`routing.md`'s knowledge table now splits structural questions three ways:
+graph for impact and named-function callers, grep for `system.*` and for
+duplicated names, `grep -rnw` for rename completeness.
+
+Not filed as a `decisions.md` entry: the install is reversible (`codegraph
+uninit`) and the load-bearing rationale — committed `.mcp.json` over per-dev
+install, pinned over floating — is recorded above and in the wiki page.

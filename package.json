@@ -24,7 +24,9 @@
     "typecheck": "turbo typecheck",
     "format:check": "turbo format:check",
     "docs": "turbo run docs",
-    "install:tooling": "npm install --ignore-scripts"
+    "install:tooling": "npm install --ignore-scripts",
+    "codegraph:init": "codegraph init",
+    "codegraph:sync": "codegraph sync"
   },
   "devDependencies": {
     "prettier": "3.8.3",

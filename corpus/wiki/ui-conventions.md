@@ -1,29 +1,31 @@
 ---
-summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-08-07 for brief 102 (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for briefs 74-75: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
-updated: 2026-08-07
+summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for brief 102 (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for briefs 74-75: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
+updated: 2026-08-23
 ---
 
 # ImbatranimOS UI conventions — the house style, as rules
 
 Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic layout, B&W tokens + ONE accent (crimson), dark-first, zero border radius. Implement inside it.
 
-**Copy `apps/add-ons/clock`** — the best-behaved app: pure core kit, correct tokens, honest `minSize`, `notify()` for async events. `file-manager` is the richest but violates §8. `sticky-notes` **was** the inherited counter-example; brief 74 (2026-08-05) rewrote it to the rules below, so it is now safe to read — and it is the only worked example of a **desktop layer** (§47).
+**Copy `apps/add-ons/clock`** — the best-behaved app: pure SDK kit, correct tokens, honest `minSize`, `notify()` for async events. `file-manager` is the richest but violates §8. `sticky-notes` **was** the inherited counter-example; brief 74 (2026-08-05) rewrote it to the rules below, so it is now safe to read — and it is the only worked example of a **desktop layer** (§47).
 
 ## 1. The import rule
 
-1. Import **only** `@imbatranim/core`, `lucide-react`, `react`, `@tanstack/react-query`, and your own declared deps. `apps/add-ons/calculator/eslint.config.js:32-50` blocks
-   `@imbatranim/core/*` deep paths, sibling add-ons, and `../../core/*` escapes.
-2. Never re-implement anything on the surface (`apps/core/src/index.ts:11-64`): types `AppConfig`/`AddonManifest`/`CommandSource`/`CommandItem`; plumbing `api`, `queryClient`,
-   `cn`; kit `Button`, `Checkbox`, `Dialog`, `Input`, `ScrollArea`, `Select`, `Separator`, `Tooltip`, `ConfirmDialog`/`useConfirm`, `PromptDialog`/`usePrompt`; shell
-   `openApp`, `useIntentStore`, `useWindowStore`; `notify`, `useNotificationStore`; files `fetchFileBytes`, `uploadFileBytes`, `UploadTooLargeError`, `downloadUrl`,
-   `fileName`; spine `createOpenedFileStore`, `useOpenIntent`, `useSaveHotkey`, `useUnsavedGuard`, `useVirtualList`.
-3. One import statement per specifier: `import { Button, Input, cn } from '@imbatranim/core'` (`calculator/src/BasicPad.tsx:2` right; `file-manager/src/FileManager.tsx:12-19`
+1. Import **only** `@imbatranim/ui`, `lucide-react`, `react`, `@tanstack/react-query`, and your own declared deps. Since **brief 48** the split is absolute
+   (`apps/add-ons/calculator/eslint.config.js:37-61`): `@imbatranim/core` is **type-only** — a value import from it is an eslint error, since values are what would couple an app
+   bundle to the OS; in practice you import it once, for `AddonManifest`/`AppConfig`. Deep paths, sibling add-ons and `../../core/*` escapes are blocked too.
+2. Never re-implement anything on the SDK surface — **read `packages/ui/src/index.ts`**, don't trust a copy of the list: `cn`; the kit (`Button`, `Checkbox`, `Dialog`, `Input`,
+   `ScrollArea`, `Select`, `Separator`, `Tooltip`, `ContextMenu`, `ConfirmDialog`/`useConfirm`, `PromptDialog`/`usePrompt`, `UnsavedChangesDialog`); pure hooks
+   (`useVirtualList`, `useElementSize`); the shared `queryClient`; the save/open spine (`useSaveHotkey`, `useUnsavedGuard`, `useOpenIntent`, `useFileDialog`,
+   `useTopWindowKeydown`, `useDocumentedShortcuts`, `useRegisteredHotkeys`, `useWindowVisible`, `useSystemAppearance`); file helpers (`fileName`, `UploadTooLargeError`,
+   `describeFileFailure`, `reportFileFailure`). **Anything that touches the OS comes off the injected handle instead**, never an import: `const system = useSystem()`, then
+   `system.fs` / `.http` / `.window` / `.intents` / `.shortcuts` / `.appearance` / `.schedule` / `.notify()` / `.on()`. `packages/ui/src/system.ts` **is** the protocol spec —
+   read it before inventing a call; [glossary.md](glossary.md) has capability vs library.
+3. One import statement per specifier: `import { Button, Input, cn } from '@imbatranim/ui'` (`calculator/src/BasicPad.tsx:2` right; `file-manager/src/FileManager.tsx:12-19`
    wrong — nine statements, same specifier).
-4. **Missing from the kit** — propose adding to core, don't grow a private copy. (**ContextMenu shipped**: brief 105 promoted it to `@imbatranim/ui`; see §27.) Still missing:
-   **Tabs** (hand-rolled 3×: `calculator/src/Calculator.tsx:31-52`, `clock/src/Clock.tsx:67-81`,
-   `markdown-editor/src/MarkdownEditor.tsx:129-147`); an **EmptyState**; a **file-open picker** (every viewer just says "Open a file from Files", `MarkdownEditor.tsx:104`); a
-   **top-window keydown hook** (`calculator/src/hooks/useTopWindowKeydown.ts:16` duplicates the private `isTopWindow` in `apps/core/src/shared/hooks/useSaveHotkey.ts:5`); a
-   `Tooltip` that can render as a non-button (§8).
+4. **Missing from the kit** — propose adding it to `@imbatranim/ui`, don't grow a private copy. (**Shipped since**: `ContextMenu`, brief 105 → §27; the file-open picker as the
+   `system.fs.pick*` portal capability + `useFileDialog`, brief 48; `useTopWindowKeydown`, now an SDK hook.) Still missing: **Tabs** (hand-rolled 3×: `Calculator.tsx:31-52`,
+   `clock/src/Clock.tsx:67-81`, `markdown-editor/src/MarkdownEditor.tsx:129-147`); an **EmptyState**; a `Tooltip` that can render as a non-button (§8).
 
 ## 2. Tokens and colour
 

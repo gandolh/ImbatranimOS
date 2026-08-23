@@ -41,3 +41,9 @@ Thumbs.db
 
 # TypeScript incremental build cache (e.g. backend tsc --noEmit -p ... with incremental:true)
 *.tsbuildinfo
+
+# Generated code-graph index (@colbymchenry/codegraph). Disposable, machine-local
+# and rebuilt by `npm run codegraph:init` — never a source of truth. The tool
+# writes its own .codegraph/.gitignore too; this anchored rule is the committed
+# statement so the index never lands even if that file is deleted.
+/.codegraph/

@@ -18,7 +18,6 @@ import { DbService } from '../../db/db.service';
 import { FilesService } from '../files/files.service';
 import { TRASH_DIR } from '../files/trash.service';
 import { ArchiveService, parseTarListLine } from '../archive/archive.service';
-import { SessionService } from '../auth/session.service';
 import { LogService } from '../logs/log.service';
 import type {
   BackupInfo,
@@ -155,7 +154,6 @@ export class BackupService {
     private readonly files: FilesService,
     private readonly archive: ArchiveService,
     private readonly db: DbService,
-    private readonly sessions: SessionService,
     private readonly logs: LogService,
   ) {}
 
@@ -577,9 +575,15 @@ export class BackupService {
    *
    * By this point the restored `.imbatranim/` is in place and — because a backup
    * excludes the live database — has no `db.sqlite` of its own, only the
-   * snapshot. Every session is then revoked: the restored database carries the
-   * *backup's* credentials, so whoever is holding this session is no longer
-   * necessarily the owner of the password that now guards the machine.
+   * snapshot.
+   *
+   * **No sessions are revoked, and that is a consequence of the Ward cutover
+   * rather than an omission.** This used to call `sessions.destroyAll()`,
+   * because the restored database carried the *backup's* credentials and
+   * whoever held a session was no longer necessarily the owner of the password
+   * now guarding the machine. Credentials are Ward's now and are not in this
+   * database, so a restore cannot change who may sign in — there is nothing
+   * left for a revocation here to protect against.
    */
   private async installDatabase(
     home: string,
@@ -593,7 +597,6 @@ export class BackupService {
     }
     this.db.replaceWith(snapshotAbs);
     await fs.rm(join(home, STAGING_REL), { recursive: true, force: true });
-    this.sessions.destroyAll();
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────

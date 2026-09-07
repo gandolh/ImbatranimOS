@@ -8,9 +8,8 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
-import { AuthModule } from '../src/modules/auth/auth.module';
+import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
 import { ScheduleModule } from '../src/modules/schedule/schedule.module';
-import { SessionService } from '../src/modules/auth/session.service';
 
 describe('Schedule claims (e2e) — brief 93', () => {
   let app: INestApplication<Server>;
@@ -19,7 +18,7 @@ describe('Schedule claims (e2e) — brief 93', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, AuthModule, ScheduleModule],
+      imports: [ConfigModule, DbModule, WardTestModule, ScheduleModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -30,7 +29,7 @@ describe('Schedule claims (e2e) — brief 93', () => {
     );
     await app.init();
     http = request(app.getHttpServer());
-    cookie = `imb_session=${app.get(SessionService).issue().token}`;
+    cookie = TEST_COOKIE;
   });
 
   afterEach(async () => {

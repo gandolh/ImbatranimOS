@@ -50,44 +50,70 @@ describe('isOriginAllowed', () => {
 });
 
 describe('authorizeUpgrade', () => {
-  const req = { headers: { cookie: 'imb_session=tok' } };
+  const req = { headers: { cookie: 'ward_session=tok' } };
 
-  it('returns the session when validation succeeds', () => {
-    const record = {
-      token_hash: 'h',
-      created_at: 0,
-      last_seen: 0,
-      expires_at: 1,
+  const session = (grants: Record<string, string[]>) => ({
+    active: true as const,
+    subject: 'subject_owner',
+    username: 'owner',
+    grants,
+    sid: 'sid_1',
+  });
+
+  it('returns the session when it is live and holds an imbatranimos grant', async () => {
+    const live = session({ imbatranimos: ['owner'] });
+    const ward = { authenticate: jest.fn().mockResolvedValue(live) };
+
+    await expect(authorizeUpgrade(req, ward, FRONTEND)).resolves.toBe(live);
+    expect(ward.authenticate).toHaveBeenCalledWith('ward_session=tok');
+  });
+
+  /**
+   * The assertion that matters most in this file.
+   *
+   * prm's registration is open to the public, so a live Ward session held by a
+   * complete stranger is an ordinary thing to receive here. Authenticating
+   * without checking the grant would hand that stranger a shell on the machine.
+   */
+  it('returns null for a live session that holds no imbatranimos grant', async () => {
+    const ward = {
+      authenticate: jest.fn().mockResolvedValue(session({ prm: ['user'] })),
     };
-    const sessions = { validateFromRequest: jest.fn().mockReturnValue(record) };
-    expect(authorizeUpgrade(req, sessions, FRONTEND)).toBe(record);
-    expect(sessions.validateFromRequest).toHaveBeenCalledWith(req);
+    await expect(authorizeUpgrade(req, ward, FRONTEND)).resolves.toBeNull();
   });
 
-  it('returns null when validation fails (unauthenticated)', () => {
-    const sessions = { validateFromRequest: jest.fn().mockReturnValue(null) };
-    expect(authorizeUpgrade(req, sessions, FRONTEND)).toBeNull();
-  });
-
-  it('returns null (not throw) when the validator throws', () => {
-    const sessions = {
-      validateFromRequest: jest.fn(() => {
-        throw new Error('db down');
-      }),
+  it('returns null when there is no live session', async () => {
+    const ward = {
+      authenticate: jest.fn().mockRejectedValue(new Error('not active')),
     };
-    expect(authorizeUpgrade(req, sessions, FRONTEND)).toBeNull();
+    await expect(authorizeUpgrade(req, ward, FRONTEND)).resolves.toBeNull();
   });
 
-  it('returns null on a cross-site Origin without even validating', () => {
-    const sessions = { validateFromRequest: jest.fn().mockReturnValue({}) };
+  /**
+   * Ward being unreachable collapses into the same `null`, and for a WebSocket
+   * that is the right answer: there is no status code to distinguish with, and
+   * failing closed is the only safe outcome.
+   */
+  it('returns null (not throw) when Ward cannot be reached', async () => {
+    const ward = {
+      authenticate: jest.fn(() => Promise.reject(new Error('ward is down'))),
+    };
+    await expect(authorizeUpgrade(req, ward, FRONTEND)).resolves.toBeNull();
+  });
+
+  it('returns null on a cross-site Origin without even asking Ward', async () => {
+    const ward = { authenticate: jest.fn() };
     const crossReq = {
       headers: {
-        cookie: 'imb_session=tok',
+        cookie: 'ward_session=tok',
         origin: 'https://evil.example',
         host: 'box.local',
       },
     };
-    expect(authorizeUpgrade(crossReq, sessions, FRONTEND)).toBeNull();
-    expect(sessions.validateFromRequest).not.toHaveBeenCalled();
+
+    await expect(
+      authorizeUpgrade(crossReq, ward, FRONTEND),
+    ).resolves.toBeNull();
+    expect(ward.authenticate).not.toHaveBeenCalled();
   });
 });

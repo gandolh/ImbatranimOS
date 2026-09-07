@@ -15,9 +15,8 @@ import * as os from 'os';
 import { join } from 'path';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
-import { AuthModule } from '../src/modules/auth/auth.module';
+import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
 import { FilesModule } from '../src/modules/files/files.module';
-import { SessionService } from '../src/modules/auth/session.service';
 
 /** Shapes of the response bodies this spec reads fields off of. */
 interface UploadResponse {
@@ -58,9 +57,9 @@ describe('Files (e2e) — auth + binary round-trip', () => {
     process.env.FILES_ROOT = jail;
 
     // A Test module wiring ONLY the FS surface + auth (no AppModule), so the
-    // global APP_GUARD from AuthModule protects the FilesModule routes.
+    // global APP_GUARD from WardTestModule protects the FilesModule routes.
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, AuthModule, FilesModule],
+      imports: [ConfigModule, DbModule, WardTestModule, FilesModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -72,9 +71,8 @@ describe('Files (e2e) — auth + binary round-trip', () => {
     await app.init();
     http = request(app.getHttpServer());
 
-    // Mint a session straight through SessionService (exported by AuthModule).
-    const token = app.get(SessionService).issue().token;
-    cookie = `imb_session=${token}`;
+    // The fixture's session, which the REAL guard then evaluates.
+    cookie = TEST_COOKIE;
   });
 
   afterAll(async () => {

@@ -13,9 +13,8 @@ import * as os from 'os';
 import { join } from 'path';
 import { ConfigModule } from '../../config/config.module';
 import { DbModule } from '../../db/db.module';
-import { AuthModule } from '../auth/auth.module';
+import { WardTestModule, TEST_COOKIE } from '../ward/testing';
 import { FilesModule } from './files.module';
-import { SessionService } from '../auth/session.service';
 
 /**
  * T0-4: Express defaults JSON bodies to a 100 KB cap, which 413s Notepad saves
@@ -35,7 +34,7 @@ describe('Files body-size cap (T0-4)', () => {
     process.env.FILES_ROOT = jail;
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, AuthModule, FilesModule],
+      imports: [ConfigModule, DbModule, WardTestModule, FilesModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -49,7 +48,7 @@ describe('Files body-size cap (T0-4)', () => {
     await app.init();
     http = request(app.getHttpServer());
 
-    cookie = `imb_session=${app.get(SessionService).issue().token}`;
+    cookie = TEST_COOKIE;
   });
 
   afterAll(async () => {

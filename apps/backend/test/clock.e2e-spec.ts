@@ -8,9 +8,8 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
-import { AuthModule } from '../src/modules/auth/auth.module';
+import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
 import { ClockModule } from '../src/modules/clock/clock.module';
-import { SessionService } from '../src/modules/auth/session.service';
 import type { Alarm, WorldClock } from '../src/modules/clock/clock.service';
 
 describe('Clock (e2e) — persisted world clocks and alarms', () => {
@@ -22,7 +21,7 @@ describe('Clock (e2e) — persisted world clocks and alarms', () => {
     // A fresh app per test so the in-memory DB starts empty — the import
     // endpoint's whole contract is "only into an empty table".
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, AuthModule, ClockModule],
+      imports: [ConfigModule, DbModule, WardTestModule, ClockModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -33,7 +32,7 @@ describe('Clock (e2e) — persisted world clocks and alarms', () => {
     );
     await app.init();
     http = request(app.getHttpServer());
-    cookie = `imb_session=${app.get(SessionService).issue().token}`;
+    cookie = TEST_COOKIE;
   });
 
   afterEach(async () => {

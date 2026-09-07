@@ -8,7 +8,6 @@ import Database from 'better-sqlite3';
 import { FilesService } from '../files/files.service';
 import { ArchiveService } from '../archive/archive.service';
 import { DbService } from '../../db/db.service';
-import { SessionService } from '../auth/session.service';
 import { LogService } from '../logs/log.service';
 import {
   BACKUP_METADATA,
@@ -39,7 +38,6 @@ describe('BackupService — brief 80', () => {
   let files: FilesService;
   let archive: ArchiveService;
   let db: DbService;
-  let sessions: SessionService;
   let service: BackupService;
   const prevRoot = process.env.FILES_ROOT;
 
@@ -65,14 +63,13 @@ describe('BackupService — brief 80', () => {
     files = new FilesService();
     archive = new ArchiveService(files);
     db = makeDb(join(home, '.imbatranim', 'db.sqlite'));
-    sessions = new SessionService(db, {
-      get: () => 24,
-    } as unknown as ConfigService<never, true>);
     // A real LogService, initialised against the test home: brief 84 wired an
     // audit line into restore, and a stub would hide it breaking.
     const logs = new LogService();
     await logs.onModuleInit();
-    service = new BackupService(files, archive, db, sessions, logs);
+    // No SessionService: a restore no longer revokes anything, because
+    // credentials are Ward's and are not in the database being swapped.
+    service = new BackupService(files, archive, db, logs);
   });
 
   afterEach(async () => {
@@ -520,17 +517,36 @@ describe('BackupService — brief 80', () => {
       expect(rows.map((r) => r.text)).toEqual(['from the backup']);
     });
 
-    it('revokes every session — the restored database has different credentials', async () => {
-      const { token } = sessions.issue();
-      expect(sessions.validate(token)).not.toBeNull();
-
+    /**
+     * The inverse of what this test used to assert.
+     *
+     * It checked that a restore revoked every session, because the restored
+     * database carried the *backup's* credentials and whoever held a session
+     * was no longer necessarily the owner of the password now guarding the
+     * machine. Since identity moved to Ward there are no credentials in this
+     * database at all, so a restore cannot change who may sign in — and a
+     * restore that signed somebody out of the whole estate as a side effect
+     * would be this app overreaching.
+     *
+     * Asserted rather than deleted: "a restore does not touch the session" is a
+     * real property now, and a future change that reintroduced a revocation
+     * here should have to argue with a failing test.
+     */
+    it('does not touch the session — credentials are not in this database', async () => {
       const tarball = await takeBackup();
       const upload = join(outside, 'u4.tar.gz');
       await fs.copyFile(tarball, upload);
       const preview = await service.inspect(upload);
-      await service.apply(preview.id);
+      const result = await service.apply(preview.id);
 
-      expect(sessions.validate(token)).toBeNull();
+      expect(result).toBeDefined();
+      // Nothing in the restored database describes a user, a password or a
+      // session — the tables simply are not there to be swapped.
+      const tables = db.db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+        .all() as { name: string }[];
+      expect(tables.map((t) => t.name)).not.toContain('sessions');
+      expect(tables.map((t) => t.name)).not.toContain('users');
     });
 
     it('leaves a file created AFTER the backup alone, and says which names it touched', async () => {

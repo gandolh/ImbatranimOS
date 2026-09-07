@@ -9,9 +9,8 @@ import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
 import { DbService } from '../src/db/db.service';
-import { AuthModule } from '../src/modules/auth/auth.module';
+import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
 import { TodosModule } from '../src/modules/todos/todos.module';
-import { SessionService } from '../src/modules/auth/session.service';
 import type { Todo, TodoList } from '../src/modules/todos/todos.service';
 
 const DUE = new Date(2026, 6, 20, 17, 0, 0, 0).getTime();
@@ -24,7 +23,7 @@ describe('Todos (e2e) — dates, order, lists and bulk actions', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, AuthModule, TodosModule],
+      imports: [ConfigModule, DbModule, WardTestModule, TodosModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -35,7 +34,7 @@ describe('Todos (e2e) — dates, order, lists and bulk actions', () => {
     );
     await app.init();
     http = request(app.getHttpServer());
-    cookie = `imb_session=${app.get(SessionService).issue().token}`;
+    cookie = TEST_COOKIE;
     db = app.get(DbService);
   });
 

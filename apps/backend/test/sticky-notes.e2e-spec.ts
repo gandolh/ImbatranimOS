@@ -9,9 +9,8 @@ import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
 import { DbService } from '../src/db/db.service';
-import { AuthModule } from '../src/modules/auth/auth.module';
+import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
 import { StickyNotesModule } from '../src/modules/sticky-notes/sticky-notes.module';
-import { SessionService } from '../src/modules/auth/session.service';
 import type { StickyNote } from '../src/modules/sticky-notes/sticky-notes.service';
 
 describe('Sticky notes (e2e) — the desktop surface', () => {
@@ -22,7 +21,7 @@ describe('Sticky notes (e2e) — the desktop surface', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, AuthModule, StickyNotesModule],
+      imports: [ConfigModule, DbModule, WardTestModule, StickyNotesModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -33,7 +32,7 @@ describe('Sticky notes (e2e) — the desktop surface', () => {
     );
     await app.init();
     http = request(app.getHttpServer());
-    cookie = `imb_session=${app.get(SessionService).issue().token}`;
+    cookie = TEST_COOKIE;
     db = app.get(DbService);
   });
 

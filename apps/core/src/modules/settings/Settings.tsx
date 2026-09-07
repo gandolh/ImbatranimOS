@@ -29,7 +29,7 @@ import { StorageSettings } from './StorageSettings'
 import { BackupSettings } from './BackupSettings'
 import { DefaultAppsSettings } from './DefaultAppsSettings'
 import { StartupSettings } from './StartupSettings'
-import { SecuritySettings } from '../auth/SecuritySettings'
+import { wardAccountUrl } from '../auth/api/authApi'
 import { AboutMachine } from './AboutMachine'
 
 const WALLPAPERS: { id: Wallpaper; name: string; preview: React.CSSProperties }[] = [
@@ -291,7 +291,25 @@ export function Settings() {
         </section>
 
         {/* Security ───────────────────────────────────────────── */}
-        <SecuritySettings />
+        <section className="border-outline-variant mb-6 border-t pt-8">
+          <SectionHeader icon={Monitor} title="Security" />
+          {/*
+            The password and two-factor controls lived here and are gone. They
+            are not missing — they moved: identity is the estate's now, so
+            changing a password or enrolling TOTP happens once at Ward and
+            applies everywhere, rather than once per app. Reimplementing them
+            here would give this machine a second, divergent answer to "what is
+            your password".
+          */}
+          <p className="font-content text-on-surface-variant text-[12px]">
+            Your password, two-factor authentication and sign-in history are managed for every app
+            at once.{' '}
+            <a className="underline" href={wardAccountUrl()}>
+              Open your account
+            </a>
+            .
+          </p>
+        </section>
 
         {/* About ──────────────────────────────────────────────── */}
         <section className="border-outline-variant mb-6 border-t pt-8">

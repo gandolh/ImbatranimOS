@@ -8,9 +8,8 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
-import { AuthModule } from '../src/modules/auth/auth.module';
+import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
 import { CalendarModule } from '../src/modules/calendar/calendar.module';
-import { SessionService } from '../src/modules/auth/session.service';
 import type { CalendarEvent } from '../src/modules/calendar/calendar.service';
 
 /** 2026-07-06T09:00 local, as the frontend would send it. */
@@ -26,7 +25,7 @@ describe('Calendar (e2e) — events, recurrence rules and import', () => {
     // Fresh app per test so the in-memory DB starts empty — the migration guard's
     // whole contract is "only into an empty table".
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, AuthModule, CalendarModule],
+      imports: [ConfigModule, DbModule, WardTestModule, CalendarModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -37,7 +36,7 @@ describe('Calendar (e2e) — events, recurrence rules and import', () => {
     );
     await app.init();
     http = request(app.getHttpServer());
-    cookie = `imb_session=${app.get(SessionService).issue().token}`;
+    cookie = TEST_COOKIE;
   });
 
   afterEach(async () => {

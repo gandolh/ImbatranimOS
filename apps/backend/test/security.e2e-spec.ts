@@ -48,7 +48,12 @@ describe('Security hardening (e2e)', () => {
 
   describe('security headers', () => {
     it('sets nosniff / frame-deny / referrer / CSP on responses', async () => {
-      const res = await http.get('/api/auth/status').expect(200);
+      // `/health` rather than the old `/api/auth/status`: that route went with
+      // the auth controller when identity moved to Ward, and the headers under
+      // test are set by middleware that runs before any route, so any 200 will
+      // do. `/health` is the one endpoint guaranteed to be reachable with no
+      // session at all.
+      const res = await http.get('/health').expect(200);
       expect(res.headers['x-content-type-options']).toBe('nosniff');
       expect(res.headers['x-frame-options']).toBe('DENY');
       expect(res.headers['referrer-policy']).toBe('no-referrer');
@@ -71,7 +76,7 @@ describe('Security hardening (e2e)', () => {
     });
 
     it('does NOT set HSTS in-app (that is the reverse proxy job)', async () => {
-      const res = await http.get('/api/auth/status').expect(200);
+      const res = await http.get('/health').expect(200);
       expect(res.headers['strict-transport-security']).toBeUndefined();
     });
   });
@@ -93,7 +98,7 @@ describe('Security hardening (e2e)', () => {
     it('keeps /health free of the api guard even with a bogus cookie', async () => {
       await http
         .get('/health')
-        .set('Cookie', 'imb_session=garbage')
+        .set('Cookie', 'ward_session=garbage')
         .expect(200);
     });
   });

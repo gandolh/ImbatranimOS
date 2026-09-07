@@ -9,9 +9,8 @@ import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
 import { DbService } from '../src/db/db.service';
-import { AuthModule } from '../src/modules/auth/auth.module';
+import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
 import { BookmarksModule } from '../src/modules/bookmarks/bookmarks.module';
-import { SessionService } from '../src/modules/auth/session.service';
 import type {
   BookmarkGroup,
   BookmarkLink,
@@ -25,7 +24,7 @@ describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, AuthModule, BookmarksModule],
+      imports: [ConfigModule, DbModule, WardTestModule, BookmarksModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -36,7 +35,7 @@ describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
     );
     await app.init();
     http = request(app.getHttpServer());
-    cookie = `imb_session=${app.get(SessionService).issue().token}`;
+    cookie = TEST_COOKIE;
     db = app.get(DbService);
     db.db.exec('DELETE FROM bookmark_links; DELETE FROM bookmark_groups;');
   });

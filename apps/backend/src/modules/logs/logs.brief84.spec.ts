@@ -3,7 +3,6 @@ import * as os from 'os';
 import { join } from 'path';
 import { LogService } from './log.service';
 import { LogsController } from './logs.controller';
-import { ThrottleService } from '../auth/throttle.service';
 import { FilesService } from '../files/files.service';
 import { TrashService } from '../files/trash.service';
 import {
@@ -386,23 +385,14 @@ describe('audit call sites — brief 84', () => {
     await fs.rm(home, { recursive: true, force: true });
   });
 
-  it('THE LOCKOUT IS RECORDED, once, on the transition into it', async () => {
-    const throttle = new ThrottleService(logs);
-    for (let i = 0; i < throttle.FAIL_THRESHOLD + 3; i++) {
-      throttle.recordFailure('10.0.0.9');
-    }
-    await logs.flush();
-    const lines = (await fs.readFile(logPath(), 'utf8'))
-      .trim()
-      .split('\n')
-      .map((l) => parseEntry(l));
-    const lockouts = lines.filter((l) => l.event === 'auth.throttle.locked');
-    // Once, not once per failure past the threshold — otherwise a sustained
-    // attack pushes its own beginning out of the rotation window.
-    expect(lockouts).toHaveLength(1);
-    expect(lockouts[0].meta?.ip).toBe('10.0.0.9');
-  });
-
+  /*
+   * Two throttle tests lived here and are gone with `ThrottleService`: the
+   * login lockout was removed rather than retuned when identity moved to Ward,
+   * because there is no credential in this app to brute-force any more. Ward
+   * has its own lockout, with its own budget, on the one login page the estate
+   * shares — the right place for it, since a per-app counter guarded one of six
+   * front doors to the same accounts.
+   */
   it('a permanent delete records the ORIGINAL path, not the trash id', async () => {
     const files = new FilesService();
     const trash = new TrashService(files, logs);
@@ -441,13 +431,5 @@ describe('audit call sites — brief 84', () => {
       .map((l) => parseEntry(l))
       .find((l) => l.event === 'files.trash.emptied');
     expect(entry?.meta?.items).toBe(2);
-  });
-
-  it('the throttle still works with no logger attached', () => {
-    const throttle = new ThrottleService();
-    for (let i = 0; i < throttle.FAIL_THRESHOLD + 1; i++) {
-      throttle.recordFailure('10.0.0.1');
-    }
-    expect(() => throttle.assertNotLocked('10.0.0.1')).toThrow();
   });
 });

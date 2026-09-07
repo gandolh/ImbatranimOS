@@ -2,8 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useAuthStore } from './store/authStore'
 import { flushPrefs, flushPrefsKeepalive, hydratePrefs } from '../../lib/prefs'
 import { rehydrateDotfileStores } from '../../shared/store/dotfiles'
-import { LockScreen } from './LockScreen'
-import { FirstRunWizard, AuthShell } from './FirstRunWizard'
+import { AuthShell } from './AuthShell'
+import { IdentityUnavailableScreen, ScreenCover, SignedOutScreen } from './SessionScreens'
 
 /**
  * Gates the entire desktop, in two regimes (brief 101):
@@ -31,8 +31,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const authenticated = useAuthStore((s) => s.authenticated)
   const locked = useAuthStore((s) => s.locked)
   const everAuthenticated = useAuthStore((s) => s.everAuthenticated)
-  const needsSetup = useAuthStore((s) => s.needsSetup)
-  const setupTokenRequired = useAuthStore((s) => s.setupTokenRequired)
+  const unavailable = useAuthStore((s) => s.unavailable)
   const refresh = useAuthStore((s) => s.refresh)
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated)
   const unlock = useAuthStore((s) => s.unlock)
@@ -99,13 +98,18 @@ export function AuthGate({ children }: { children: ReactNode }) {
       </AuthShell>
     )
   }
-  if (needsSetup) {
-    return <FirstRunWizard tokenRequired={setupTokenRequired} onDone={() => void refresh()} />
+  /*
+   * Ward is unreachable, so this machine cannot tell who anybody is. Checked
+   * BEFORE the signed-out branch: offering "sign in" here would send somebody
+   * to a page served by the service that is not answering.
+   */
+  if (unavailable && !everAuthenticated) {
+    return <IdentityUnavailableScreen onRetry={() => void refresh()} />
   }
   // Pre-desktop: this tab has never been signed in, so there is nothing to
-  // keep alive — the full-screen lock is the only thing that exists.
+  // keep alive — the sign-in hand-off is the only thing that exists.
   if (!authenticated && !everAuthenticated) {
-    return <LockScreen onUnlock={() => void refresh()} />
+    return <SignedOutScreen />
   }
   if (!prefsReady) {
     return (
@@ -132,15 +136,25 @@ export function AuthGate({ children }: { children: ReactNode }) {
       </div>
       {suspended && (
         <div className="fixed inset-0 z-[9999]">
-          <LockScreen
-            onUnlock={() => {
-              // Unlock covers both suspensions: a plain lock (session still
-              // valid — login renewed it in place) and a hard-expired session
-              // (login minted a fresh one). refresh() re-syncs either way.
-              unlock()
-              void refresh()
-            }}
-          />
+          {authenticated ? (
+            <ScreenCover
+              onDismiss={() => {
+                // The session is still live; this only uncovers the screen.
+                // `refresh` re-syncs in case it died while the cover was up.
+                unlock()
+                void refresh()
+              }}
+            />
+          ) : (
+            /*
+             * The session ended while the desktop was mounted. Uncovering
+             * cannot help — there is nothing to uncover *to* — so this offers
+             * the hand-off to Ward instead. The desktop stays mounted behind
+             * it, so signing back in returns to a live terminal rather than a
+             * fresh boot, which is the whole point of the overlay model.
+             */
+            <SignedOutScreen />
+          )}
         </div>
       )}
     </>

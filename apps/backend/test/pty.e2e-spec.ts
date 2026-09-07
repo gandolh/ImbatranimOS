@@ -4,11 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import type { AddressInfo, Server } from 'net';
 import { WebSocket } from 'ws';
 import { PtyGateway } from '../src/modules/pty/pty.gateway';
-import { SessionService } from '../src/modules/auth/session.service';
+import { WardService } from '../src/modules/ward/ward.service';
 
 /**
  * End-to-end proof of the terminal gateway against a REAL http server and a
- * REAL pty (login shell). SessionService is mocked so no DB is needed: the
+ * REAL pty (login shell). Ward is faked so no DB and no network are needed: the
  * token "good" is valid, everything else is rejected.
  */
 describe('PtyGateway (e2e)', () => {
@@ -16,22 +16,32 @@ describe('PtyGateway (e2e)', () => {
   let url: string;
 
   const fakeSession = {
-    token_hash: 'h',
-    created_at: 0,
-    last_seen: 0,
-    expires_at: Date.now() + 60_000,
+    active: true as const,
+    subject: 'subject_owner',
+    username: 'owner',
+    grants: { imbatranimos: ['owner'] },
+    sid: 'sid_good',
   };
-  const sessionsMock = {
-    validateFromRequest: (req: { headers?: { cookie?: string } }) =>
-      req.headers?.cookie?.includes('imb_session=good') ? fakeSession : null,
-    validate: (t: string) => (t === 'good' ? fakeSession : null),
+  /**
+   * A Ward that recognises one cookie and grants `imbatranimos` for it.
+   *
+   * The grant is part of the fixture rather than an afterthought:
+   * `authorizeUpgrade` checks it, and a fake that returned a session without
+   * one would make every test here fail for the right reason and the wrong
+   * one.
+   */
+  const wardMock = {
+    authenticate: (cookieHeader: string | undefined) =>
+      cookieHeader?.includes('ward_session=good')
+        ? Promise.resolve(fakeSession)
+        : Promise.reject(new Error('session is not active')),
   };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         PtyGateway,
-        { provide: SessionService, useValue: sessionsMock },
+        { provide: WardService, useValue: wardMock },
         {
           provide: ConfigService,
           useValue: {
@@ -64,7 +74,7 @@ describe('PtyGateway (e2e)', () => {
   });
 
   it('opens a real shell for an authenticated upgrade and echoes input', async () => {
-    const ws = new WebSocket(url, { headers: { cookie: 'imb_session=good' } });
+    const ws = new WebSocket(url, { headers: { cookie: 'ward_session=good' } });
     const output = await new Promise<string>((resolve, reject) => {
       let buf = '';
       const timer = setTimeout(
@@ -119,8 +129,8 @@ describe('PtyGateway (e2e)', () => {
       });
     }
     const [a, b] = await Promise.all([
-      shellPid('imb_session=good'),
-      shellPid('imb_session=good'),
+      shellPid('ward_session=good'),
+      shellPid('ward_session=good'),
     ]);
     expect(a).not.toBe(b); // two distinct shell processes
   }, 20000);

@@ -17,7 +17,6 @@ import { diskStorage } from 'multer';
 import { tmpdir } from 'os';
 import type { Request, Response } from 'express';
 import { MulterExceptionFilter } from '../files/multer-exception.filter';
-import { SESSION_COOKIE_NAME } from '../auth/auth.constants';
 import { BackupService } from './backup.service';
 import { RestoreApplyDto } from './dto/backup.dto';
 
@@ -114,15 +113,20 @@ export class BackupController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.backup.apply(dto.id);
-    // Every session was revoked with the database swap. Clearing the cookie here
-    // means the browser is not left holding a token that now belongs to nothing,
-    // and the UI can send the user straight to the lock screen.
-    res.clearCookie(SESSION_COOKIE_NAME, {
-      httpOnly: true,
-      secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
-      sameSite: 'lax',
-      path: '/',
-    });
-    return { ...result, signedOut: true };
+    /*
+     * The cookie is left alone, and `signedOut` is now always false.
+     *
+     * This used to revoke every session with the database swap and clear the
+     * cookie, because the restored database carried the backup's credentials.
+     * Credentials are Ward's now and live nowhere in this database, so a
+     * restore cannot change who may sign in — and clearing Ward's cookie from
+     * here would be this app signing somebody out of the whole estate as a side
+     * effect of a restore, which it has no business doing.
+     *
+     * The field is kept rather than removed so the frontend's response shape
+     * does not change in the same release as the behaviour; it should be
+     * dropped once the UI stops reading it.
+     */
+    return { ...result, signedOut: false };
   }
 }

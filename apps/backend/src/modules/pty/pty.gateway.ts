@@ -11,7 +11,7 @@ import type { Duplex } from 'stream';
 import { WebSocketServer, type WebSocket } from 'ws';
 import * as pty from 'node-pty';
 import type { Env } from '../../config/env.schema';
-import { SessionService, readSessionCookie } from '../auth/ws-auth';
+import { WardService } from '../auth/ws-auth';
 import { PtySession } from './pty-session';
 import { isPtyUpgrade, authorizeUpgrade } from './pty-upgrade';
 import {
@@ -25,20 +25,35 @@ import {
   resolveShell,
 } from './pty.constants';
 
-/** How often to re-check that each live session's cookie is still valid. */
+/**
+ * How often to re-check that each live terminal's session is still valid.
+ *
+ * Thirty seconds, and it now lines up exactly with Ward's introspection cache
+ * window — so a sweep costs at most one request per session per window rather
+ * than one per check, and a revoked session closes the shell within the same
+ * 30 seconds it stops working everywhere else in the estate.
+ */
 const REVOKE_SWEEP_MS = 30_000;
 
 interface LiveSession {
   session: PtySession;
-  /** Raw session token, re-validated by the revocation sweep. */
-  rawToken: string | null;
+  /**
+   * The raw `Cookie` header the upgrade arrived with, re-checked by the
+   * revocation sweep.
+   *
+   * The whole header rather than a parsed token: which cookie Ward uses is
+   * `ward.client.ts`'s business, and a second copy of that knowledge here is
+   * how the terminal ends up honouring a session the REST guard refuses.
+   */
+  cookie: string | undefined;
 }
 
 /**
  * Terminal WebSocket gateway. Attaches a raw `ws` server to Nest's underlying
  * HTTP server via the `upgrade` event (`noServer: true`) — no change to
- * main.ts required. Every upgrade is authenticated with the shared
- * SessionService before a pty is spawned as the current process user.
+ * main.ts required. Every upgrade is authenticated through the shared
+ * `WardService` — the same client the REST guard uses — and must also carry an
+ * `imbatranimos` grant before a pty is spawned as the current process user.
  */
 @Injectable()
 export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
@@ -53,7 +68,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
   constructor(
     private readonly adapterHost: HttpAdapterHost,
-    private readonly sessions: SessionService,
+    private readonly ward: WardService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -76,34 +91,46 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
       // pipeline (there are none today, but don't destroy sockets we don't own).
       if (!isPtyUpgrade(req.url)) return;
 
-      const record = authorizeUpgrade(
-        req,
-        this.sessions,
-        this.config.get('FRONTEND_URL'),
-      );
-      if (!record) {
-        this.logger.warn('Rejected unauthorized terminal upgrade');
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-        socket.destroy();
-        return;
-      }
+      /*
+       * Authorization is asynchronous now — liveness is a call to Ward — so
+       * this handler starts a promise rather than deciding inline. The socket
+       * is held open meanwhile, which is what an upgrade already does; nothing
+       * is spawned until the answer arrives.
+       */
+      void (async () => {
+        const record = await authorizeUpgrade(
+          req,
+          this.ward,
+          this.config.get('FRONTEND_URL'),
+        );
+        if (!record) {
+          this.logger.warn('Rejected unauthorized terminal upgrade');
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
 
-      // Cap concurrent shells so a client can't exhaust PIDs/memory by opening
-      // sockets in a loop. Reject the handshake before spawning anything.
-      if (this.live.size >= MAX_SESSIONS) {
-        this.logger.warn(`Terminal session cap reached (${MAX_SESSIONS})`);
-        socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
-        socket.destroy();
-        return;
-      }
+        // Cap concurrent shells so a client can't exhaust PIDs/memory by
+        // opening sockets in a loop. Reject the handshake before spawning
+        // anything.
+        if (this.live.size >= MAX_SESSIONS) {
+          this.logger.warn(`Terminal session cap reached (${MAX_SESSIONS})`);
+          socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+          socket.destroy();
+          return;
+        }
 
-      this.wss!.handleUpgrade(req, socket, head, (ws) => {
-        this.onConnection(ws, req);
-      });
+        this.wss!.handleUpgrade(req, socket, head, (ws) => {
+          this.onConnection(ws, req);
+        });
+      })();
     };
     server.on('upgrade', this.upgradeHandler);
 
-    this.revokeTimer = setInterval(() => this.sweepRevoked(), REVOKE_SWEEP_MS);
+    this.revokeTimer = setInterval(
+      () => void this.sweepRevoked(),
+      REVOKE_SWEEP_MS,
+    );
     this.logger.log(`Terminal WS listening on ${PTY_PATH}`);
   }
 
@@ -131,7 +158,10 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
     const entry: LiveSession = {
       session: new PtySession(ptyProcess, ws),
-      rawToken: readSessionCookie(req),
+      // The whole cookie header, not a parsed token: `authenticate` owns the
+      // knowledge of which cookie Ward uses, and this file must not acquire a
+      // second copy of it.
+      cookie: req.headers.cookie,
     };
     this.live.add(entry);
     ws.on('close', () => this.live.delete(entry));
@@ -143,12 +173,28 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
    * expired). Complements the socket-close path so a revoked session can't
    * keep a shell alive.
    */
-  private sweepRevoked(): void {
-    // `validate` deliberately never renews expiry (brief 101): this sweep runs
-    // every 30 s per live terminal, and a renewing validate here would let any
-    // open shell immortalize its own session. Only the HTTP guard slides.
-    for (const entry of this.live) {
-      if (!entry.rawToken || !this.sessions.validate(entry.rawToken)) {
+  /**
+   * Close any shell whose session has stopped being valid.
+   *
+   * This is what makes revocation reach a terminal that is already open — an
+   * HTTP guard only runs on requests, and a shell makes none. It is also why
+   * the old code was careful that validation here never *renewed* expiry: an
+   * open shell must not be able to immortalize its own session by existing.
+   * That hazard is gone rather than guarded against, because Ward's tokens do
+   * not slide on introspection at all; nothing this sweep does can extend a
+   * session's life.
+   *
+   * A grant revoked in Ward's console closes the shell too, not just a signed-out
+   * session: `authorizeUpgrade` checks the grant, and so does this.
+   */
+  private async sweepRevoked(): Promise<void> {
+    for (const entry of [...this.live]) {
+      const still = await authorizeUpgrade(
+        { headers: { cookie: entry.cookie } },
+        this.ward,
+        this.config.get('FRONTEND_URL'),
+      );
+      if (!still) {
         entry.session.dispose(4401, 'session-revoked');
         this.live.delete(entry);
       }

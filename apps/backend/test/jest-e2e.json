@@ -1,5 +1,9 @@
 {
-  "moduleFileExtensions": ["js", "json", "ts"],
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
@@ -18,6 +22,9 @@
     ]
   },
   "transformIgnorePatterns": [
-    "/node_modules/(?!(?:otplib|@otplib|@scure|@noble|strip-ansi|ansi-regex)/)"
+    "/node_modules/(?!(?:otplib|@otplib|@scure|@noble|strip-ansi|ansi-regex|jose)/)"
+  ],
+  "setupFiles": [
+    "<rootDir>/../test-setup.ts"
   ]
 }

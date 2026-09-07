@@ -20,7 +20,13 @@ services:
         VITE_API_URL: ${VITE_API_URL:-/api}
     image: imbatranimos:1.0
     ports:
-      - "8080:8080"
+      # Bound to LOOPBACK, not 0.0.0.0: on the VPS this container sits behind
+      # Caddy (handle_path /imbatranim-os/* → localhost:8080), and publishing on
+      # every interface made the app reachable over plain HTTP on :8080,
+      # bypassing TLS and the reverse proxy entirely. Only the proxy (and other
+      # processes on the box) can reach it now. For a LAN/localhost run this is
+      # still what you want; drop the prefix only to expose it deliberately.
+      - "127.0.0.1:8080:8080"
     volumes:
       - imbatranim-home:/home/imbatranim
     restart: unless-stopped
@@ -31,11 +37,11 @@ services:
       interval: 30s
       timeout: 3s
       start_period: 10s
-    # This service publishes 8080 directly (no reverse proxy in front), so
-    # TRUST_PROXY MUST stay at its safe default (false). With it on, a direct
-    # client could forge X-Forwarded-For and defeat IP-based login
-    # rate-limiting. Only enable it behind a trusted TLS proxy that overwrites
-    # X-Forwarded-* — see the commented block below.
+    # TRUST_PROXY MUST stay at its safe default (false) unless the proxy in
+    # front is known to OVERWRITE X-Forwarded-* rather than append to it: a
+    # client that forges the header would otherwise defeat IP-based login
+    # rate-limiting. Caddy's reverse_proxy appends, so the forged prefix
+    # survives — leave this alone until the Caddyfile resets the header.
     # Auth defaults are plain-HTTP-safe (LAN/localhost works as-is). When a
     # TLS reverse proxy (see Caddyfile.example / README.md) fronts this, enable
     # secure cookies and proxy trust so the session cookie sticks over HTTPS

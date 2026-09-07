@@ -6,7 +6,7 @@ import { useEnabledApps } from '../../registry/enabledApps'
 import { Logo } from '../brand/Logo'
 import { useAuthStore } from '../../../modules/auth/store/authStore'
 import { clearLayout, useWindowStore } from '../../store/windowStore'
-import { logout as logoutApi } from '../../../modules/auth/api/authApi'
+import { wardAccountUrl } from '../../../modules/auth/api/authApi'
 import { clearRecentFiles, useRecentFilesQuery } from '../../../lib/recentFiles'
 import { openApp } from '../../intents/openApp'
 
@@ -81,19 +81,25 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
     onClose()
   }
 
-  // Log off: end the session on the backend and tear the desktop down for
-  // real. Walking away on purpose means the screen owes you nothing — the
-  // window store AND the per-tab layout are cleared, so signing back in
-  // starts fresh (the deliberate contrast to lock).
-  async function handleLogout() {
+  /**
+   * Signing out is Ward's, so this navigates rather than calling an endpoint.
+   *
+   * The local teardown still happens first, and the order matters: the browser
+   * leaves this page for Ward's account screen, and whatever this tab is
+   * holding — open windows, the saved layout — should not be waiting when
+   * somebody signs back in. That was already the deliberate contrast with the
+   * screen cover, and it survives.
+   *
+   * This app must not fake a sign-out of its own: the session belongs to the
+   * estate, so ending it here while atrium and prm still honoured it would be a
+   * lie the cookie contradicts on the next request.
+   */
+  function handleLogout() {
     onClose()
-    try {
-      await logoutApi()
-    } finally {
-      useWindowStore.setState({ windows: [] })
-      clearLayout()
-      resetToLoggedOut()
-    }
+    useWindowStore.setState({ windows: [] })
+    clearLayout()
+    resetToLoggedOut()
+    window.location.assign(wardAccountUrl())
   }
 
   return (
@@ -215,7 +221,11 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
           className="text-on-surface hover:bg-surface-container-high focus-visible:ring-primary flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-[11px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <Lock size={14} strokeWidth={1.75} />
-          Lock
+          {/* "Cover", not "Lock": since identity moved to Ward there is no
+              local password to re-prove, so this hides the screen without
+              protecting it. Calling it Lock would be a claim the app cannot
+              honour — see `SessionScreens.tsx`. */}
+          Cover screen
         </button>
         <div className="bg-outline-variant w-px" />
         <button

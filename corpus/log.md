@@ -3957,3 +3957,98 @@ duplicated names, `grep -rnw` for rename completeness.
 Not filed as a `decisions.md` entry: the install is reversible (`codegraph
 uninit`) and the load-bearing rationale — committed `.mcp.json` over per-dev
 install, pinned over floating — is recorded above and in the wiki page.
+
+## [2026-09-06] change | imbatranimOS moves to Ward; the lock screen becomes an honest privacy screen
+
+Identity is Ward's. Deleted: the `imb_session` cookie and its server-side
+session store, the sliding-expiry renewal, the argon2 password check, the login
+throttle, TOTP enrolment, the first-run setup wizard and its `SETUP_TOKEN`, and
+the whole `modules/auth` service layer. `WardModule` registers the global guard
+in `AuthModule`'s place.
+
+**The `@Public()` convention and the CSRF Origin check both survived intact.**
+They were the good parts: authenticated-by-default with an explicit opt-out, and
+an Origin check on state-changing requests that deliberately runs *before* the
+public check, because a public route that mutates is the one an attacker picks.
+
+**The most interesting casualty is the lock screen, and it needed a real
+decision rather than a port.** Brief 101's lock covered the desktop while
+keeping everything mounted — PTY sockets open, dirty editor buffers alive — and
+unlocking re-proved the local password. There is no local password now, and
+re-proving Ward's means navigating to Ward, which tears the desktop down and
+destroys the exact property the lock existed to protect.
+
+So the cover was kept and **the claim was dropped**: it obscures the screen, and
+dismissing it asks only that the Ward session is still live. That is a
+screensaver, not a lock. It is worth keeping — walking away from a shared room
+and returning to a live shell is the real use — but calling it "Lock" would be a
+claim this app can no longer honour, so the Start menu now says **"Cover
+screen"** and the panel says so in words. A genuine lock would need something
+Ward does not offer: a re-authentication that does not leave the page.
+
+**Two consequences fell out that are worth naming.**
+
+*A restore no longer revokes anything.* `BackupService` called
+`sessions.destroyAll()` because the restored database carried the **backup's**
+credentials, so whoever held a session was no longer necessarily the owner of
+the password now guarding the machine. Credentials are not in this database at
+all now, so a restore cannot change who may sign in — and a restore that signed
+somebody out of the whole estate as a side effect would be this app
+overreaching. The test that asserted the revocation was **inverted rather than
+deleted**: "a restore does not touch the session" is a real property now, and a
+future change reintroducing one should have to argue with a failing test.
+
+*The login lockout was removed, not retuned.* Tightening it on exposure would
+have solved a problem this app no longer has: there is no credential here to
+brute-force. Ward has its own lockout on the one login page the estate shares —
+the right place for it, since a per-app counter guarded one of six front doors
+to the same accounts.
+
+**The WebSocket path got the check it needed.** `authorizeUpgrade` now
+authenticates *and* requires an `imbatranimos` grant. Both halves are load-bearing:
+prm's registration is open to the public, so a live Ward session held by a
+complete stranger is an ordinary thing to receive at this handshake, and
+authenticating without the grant check would hand that stranger a shell. The
+30-second revocation sweep now lines up exactly with Ward's introspection cache,
+so a revoked grant closes an already-open terminal within the same window it
+stops working everywhere else.
+
+**Tests use a fake Ward client, not stubbed guards** (`modules/ward/testing.ts`),
+so the real guard still decides — otherwise every "rejects without a session"
+test in the repo would be tautological. Two mechanical notes for the next
+person: `jose` is ESM-only and had to be added to Jest's
+`transformIgnorePatterns` (there was already a precedent), and `test-setup.ts`
+supplies the three required `WARD_*` variables rather than defaulting them in
+the schema — the production guarantee that a missing one stops the boot is worth
+more than three lines of test setup.
+
+403 unit tests, 116 e2e, 272 frontend — all passing; typecheck clean. Nothing has
+been run against a real browser or a deployed Ward.
+
+## [2026-09-06] change | The docs moved to `/imbatranim-os/docs`, and gained an archify diagram
+
+**The URL changed; nothing on disk did.** The estate adopted a
+`/<project>/docs` convention, so these docs moved from the sibling prefix
+`/imbatranim-os-docs` to `/imbatranim-os/docs`. A clean cut — the old prefix is
+gone, not redirected. The served directory (`/var/www/imbatranim-os-docs`) is
+what the convention produces anyway, so nothing was copied or renamed.
+
+The new path is **nested inside the app's own `/imbatranim-os/*`**, which used to
+be the one thing this pair was carefully avoiding: the old comment in
+`vps-deploy/stacks/imbatranim-os.ts` explained that the two prefixes were disjoint
+only because Caddy matches literally and the character after `/imbatranim-os` was
+`-` rather than `/`. That coincidence is no longer what protects the docs — the
+docs route is now written *above* the app route, pinned by the `DocsSite`
+construct's route order, and the synthesizer fails the render if it is ever
+violated. `astro.config.mjs`'s stale comment was updated to say so.
+
+**One archify diagram added** — one container, one port, the browser is the
+display — sitting beside the existing hand-built `LayerStack`. The two do
+different jobs: the stack shows the shape, the diagram shows the wiring, and the
+diagram's right-hand column is the project's central claim made visible (a real
+PTY, a real filesystem, a real home volume, not simulations of them). Sources are
+typed JSON in `apps/docs/diagrams/`, compiled by `scripts/build-diagrams.mjs` and
+validated before they ship; the rendered artifact is committed because archify is
+a per-machine agent skill rather than an npm dependency.
+
+Docs build clean: 16 pages.

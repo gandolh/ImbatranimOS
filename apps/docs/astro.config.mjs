@@ -2,16 +2,17 @@
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 
-// ImbatranimOS documentation site.
+// The deployed base path, baked in rather than injected at deploy time.
 //
-//   • Narrative  → synced from corpus/ by scripts/sync-corpus.mjs into
-//                  src/content/docs/wiki/ (do not edit those by hand).
-//   • Reference  → generated into public/reference/ by TypeDoc (core) and
-//                  Compodoc (backend); served as static sub-sites.
+// vps-deploy ships what this repo already built and VERIFIES this base — it does
+// not set it. That is the estate's rule for the case that matters most (Ward's
+// UI does the same, see vps-deploy/stacks/ward.ts): a variable the deploy passes
+// that changes nothing is a variable that can silently disagree, whereas a value
+// baked here and checked there cannot. Build with `npm run docs`; a wrong base
+// fails the deploy by name instead of shipping a page whose every asset 404s.
 //
-// Sub-path base for a Caddy sub-path deploy (e.g. /imbatranim-os-docs/). Left at
-// "/" for `astro preview` and local use; the vps-deploy build sets DOCS_BASE.
-const base = process.env.DOCS_BASE ?? '/'
+// DOCS_BASE still overrides it, for building a copy to serve from somewhere else.
+const base = process.env.DOCS_BASE ?? '/imbatranim-os/docs/'
 
 export default defineConfig({
   base,

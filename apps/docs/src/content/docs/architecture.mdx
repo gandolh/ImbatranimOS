@@ -5,10 +5,18 @@ description: The container is the computer; the browser is the display. Three la
 
 import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
 import LayerStack from '../../components/LayerStack.astro'
+import Diagram from '../../components/Diagram.astro'
 
 **One container is the computer. One port serves the desktop + API. The browser is the display.**
 
 <LayerStack />
+
+<Diagram
+  name="architecture"
+  title="ImbatranimOS — one container, one port, the browser is the display"
+  caption="The layer stack above is the shape; this is the wiring. Note that the three things on the right are real — a real PTY, a real filesystem, a real home volume — which is the claim the whole project rests on"
+  height={800}
+/>
 
 <Aside type="tip" title="The load-bearing idea">
   The compositor is client-side by necessity — rendering happens in the browser. The server streams **data** (PTY bytes, FS, `/proc`), never pixels. A server-side compositor would mean VNC, which breaks the slim-image, real-DOM soul.

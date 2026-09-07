@@ -10,10 +10,11 @@
     "ref:core": "typedoc",
     "ref:backend": "compodoc -p ../backend/tsconfig.json -d public/reference/backend -n \"ImbatranimOS Backend API\" --hideGenerator --coverageTest 35 --theme material",
     "ref": "npm run ref:core && npm run ref:backend",
-    "predev": "npm run sync-corpus",
+    "predev": "npm run sync-corpus && npm run diagrams",
     "dev": "astro dev",
-    "docs": "npm run sync-corpus && npm run ref && astro build",
-    "preview": "astro preview"
+    "docs": "npm run sync-corpus && npm run diagrams && npm run ref && astro build",
+    "preview": "astro preview",
+    "diagrams": "node scripts/build-diagrams.mjs"
   },
   "devDependencies": {
     "@astrojs/starlight": "^0.41.3",

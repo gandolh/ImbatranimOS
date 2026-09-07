@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ImbatranimOS — one container, one port, the browser is the display",
+    "viewBox": [
+      1160,
+      760
+    ],
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "one-port",
+        "label": "One exposed port",
+        "focus": [
+          "browser",
+          "caddy",
+          "nest",
+          "desktop"
+        ],
+        "note": "In prod NestJS serves the built desktop AND the API on a single port."
+      },
+      {
+        "id": "real-machinery",
+        "label": "The real machinery",
+        "focus": [
+          "nest",
+          "pty",
+          "fs",
+          "home"
+        ],
+        "note": "A real PTY, a real filesystem, a real home volume — not simulations of them."
+      },
+      {
+        "id": "privilege",
+        "label": "How it is contained",
+        "focus": [
+          "caddy",
+          "nest",
+          "home"
+        ],
+        "note": "Rootless dockerd under an unprivileged account; container root maps to a host subuid."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "external",
+      "label": "Browser",
+      "sublabel": "the display",
+      "pos": [
+        30,
+        350
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "caddy",
+      "type": "cloud",
+      "label": "Caddy",
+      "sublabel": "gandolh.ro :443",
+      "pos": [
+        250,
+        350
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "nest",
+      "type": "backend",
+      "label": "NestJS",
+      "sublabel": "one port: statics + REST + WS",
+      "tag": "prod target",
+      "pos": [
+        490,
+        350
+      ],
+      "size": [
+        200,
+        60
+      ]
+    },
+    {
+      "id": "desktop",
+      "type": "frontend",
+      "label": "React desktop",
+      "sublabel": "@imbatranim/core + add-ons",
+      "pos": [
+        490,
+        130
+      ],
+      "size": [
+        200,
+        60
+      ]
+    },
+    {
+      "id": "pty",
+      "type": "backend",
+      "label": "PTY",
+      "sublabel": "a real shell",
+      "pos": [
+        860,
+        200
+      ],
+      "size": [
+        160,
+        60
+      ]
+    },
+    {
+      "id": "fs",
+      "type": "backend",
+      "label": "Filesystem + /proc",
+      "sublabel": "real, not simulated",
+      "pos": [
+        860,
+        350
+      ],
+      "size": [
+        160,
+        60
+      ]
+    },
+    {
+      "id": "home",
+      "type": "database",
+      "label": "Home volume",
+      "sublabel": "named, survives rebuilds",
+      "pos": [
+        860,
+        500
+      ],
+      "size": [
+        160,
+        60
+      ]
+    },
+    {
+      "id": "ward",
+      "type": "security",
+      "label": "Ward",
+      "sublabel": "identity + grants",
+      "pos": [
+        470,
+        600
+      ],
+      "size": [
+        200,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "one Alpine container — rootless dockerd",
+      "wraps": [
+        "nest",
+        "desktop",
+        "pty",
+        "fs",
+        "home"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "b-c",
+      "from": "browser",
+      "to": "caddy",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-n",
+      "from": "caddy",
+      "to": "nest",
+      "label": "/imbatranim-os",
+      "variant": "emphasis"
+    },
+    {
+      "id": "n-d",
+      "from": "nest",
+      "to": "desktop",
+      "label": "serves the built statics",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "n-pty",
+      "from": "nest",
+      "to": "pty",
+      "label": "/api/pty over WS",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "labelAt": [
+        775,
+        290
+      ]
+    },
+    {
+      "id": "n-fs",
+      "from": "nest",
+      "to": "fs",
+      "label": "read + write",
+      "route": "straight"
+    },
+    {
+      "id": "n-home",
+      "from": "nest",
+      "to": "home",
+      "label": "mounted at $HOME",
+      "fromSide": "right",
+      "toSide": "top",
+      "labelAt": [
+        775,
+        470
+      ]
+    },
+    {
+      "id": "n-ward",
+      "from": "nest",
+      "to": "ward",
+      "label": "verify + grant check",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        590,
+        470
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "One container, one port",
+      "items": [
+        "In prod NestJS serves the built desktop, the REST API and the WebSockets together",
+        "The dev target splits into two ports for Vite HMR; prod does not",
+        "So 'is it up' is one health check, not a matrix of them"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "The machinery is real",
+      "items": [
+        "A real PTY behind /api/pty, not a fake terminal",
+        "A real filesystem and a real /proc, so the monitor reads actual numbers",
+        "A named home volume, so a rebuild does not wipe what you made"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Least privilege, structurally",
+      "items": [
+        "Rootless dockerd under an unprivileged services account",
+        "The docker group is root-equivalent, so membership was refused",
+        "Container root maps to an unprivileged host subuid"
+      ]
+    }
+  ]
+}

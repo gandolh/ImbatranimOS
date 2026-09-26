@@ -1,4 +1,22 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  "compilerOptions": {
+    // Pinned, not inferred. TypeScript otherwise derives the root from the
+    // common ancestor of everything it emits, so ONE stray .ts file beside
+    // src/ silently moves every output down a level: `dist/main.js` becomes
+    // `dist/src/main.js`, the Dockerfile's `node apps/backend/dist/main` stops
+    // resolving, and the image still builds clean because the COPY finds a
+    // dist/ either way. Stating the root makes that a compile error here
+    // instead of a crash loop in production.
+    "rootDir": "./src",
+    // Keep the incremental state INSIDE dist. Setting rootDir moves TypeScript's
+    // default .tsbuildinfo location out to the workspace root, and there it
+    // outlives `deleteOutDir` — so the next build sees "nothing changed",
+    // emits nothing, and exits 0 with an empty dist. Same crash, no error.
+    // Inside dist, the one thing that clears outputs clears the state too.
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
+  },
+  // test-setup.ts is Jest's (package.json setupFilesAfterEnv + test/jest-e2e.json)
+  // and lives beside src/, so it is the exact file described above.
+  "exclude": ["node_modules", "test", "dist", "test-setup.ts", "**/*spec.ts"]
 }

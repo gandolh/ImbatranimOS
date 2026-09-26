@@ -27,6 +27,20 @@ services:
       # processes on the box) can reach it now. For a LAN/localhost run this is
       # still what you want; drop the prefix only to expose it deliberately.
       - "127.0.0.1:8080:8080"
+    # Runtime configuration, when there is any. vps-deploy's `server` phase
+    # writes this file (0600) with the app's Ward credentials —
+    # WARD_PUBLIC_ORIGIN, WARD_API_BASE_PATH and WARD_APP_KEY — all three of
+    # which the backend's config schema REQUIRES, so without this line Nest
+    # boots and immediately dies on "Invalid environment variables". The file
+    # was being written correctly all along; nothing was reading it.
+    #
+    # `required: false` keeps the standalone run in the README working: a
+    # friend cloning this repo has no .env, and compose treats a missing
+    # env_file as fatal unless told otherwise. The app's own defaults cover
+    # everything except Ward, which a local run does not use.
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - imbatranim-home:/home/imbatranim
     restart: unless-stopped

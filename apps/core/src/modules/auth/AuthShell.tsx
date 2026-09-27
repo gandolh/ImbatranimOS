@@ -7,7 +7,7 @@ import { Logo } from '../../shared/components/brand/Logo'
  * Moved here verbatim from `FirstRunWizard.tsx`, which went with the local
  * password. There is no first run to wizard through any more — a machine is not
  * claimed by whoever reaches it first, because an account gets an
- * `imbatranimos` grant from Ward's console, which is a deliberate act by an
+ * `imbatranim-os` grant from Ward's console, which is a deliberate act by an
  * operator rather than a race.
  */
 // Branded ImbatranimOS lock/setup surface — B&W with the single accent.

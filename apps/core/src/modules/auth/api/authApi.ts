@@ -8,14 +8,22 @@ import { api } from '../../../lib/axios'
  * There is no `login`, `setupPassword`, `logout`, `changePassword` or TOTP
  * enrolment here. All of it is Ward's, at one login page for the estate. The
  * first-run wizard is gone with them: a machine is not claimed by whoever
- * reaches it first any more — an account gets an `imbatranimos` **grant** from
+ * reaches it first any more — an account gets an `imbatranim-os` **grant** from
  * Ward's console, which is a deliberate act by an operator rather than a race.
  *
  * What is left is one read and two URLs.
  */
 
-/** The estate's root for this app. Where Ward returns people to. */
-const APP_ROOT = '/os/'
+/**
+ * Where Ward returns people to: this app's root, from the build.
+ *
+ * `BASE_URL` is Vite's `base` — `/imbatranim-os/` in the deploy, and in local
+ * dev when `VITE_BASE` says so. It used to be the literal `/os/`, which is not an
+ * estate root, so Ward dropped it and landed people on `/` (brief 137). Ward's
+ * `?next=` allowlist matches whole first segments, so this has to be the path the
+ * app is really served under.
+ */
+const APP_ROOT = import.meta.env.BASE_URL
 
 export interface Session {
   /** Ward's opaque subject — stable, never recycled. */
@@ -36,6 +44,13 @@ export interface AuthStatus {
    * rejected password.
    */
   unavailable: boolean
+  /**
+   * True for a live Ward session holding no `imbatranim-os` grant: the guard's
+   * 403. **Not "signed out"** — the person is signed in, and sending them back
+   * through Ward's login only returns them here, which reads as a rejected
+   * password. Only an operator issuing a grant resolves it.
+   */
+  forbidden: boolean
 }
 
 /**
@@ -46,17 +61,18 @@ export interface AuthStatus {
  * to render a username. The backend translates and answers narrowly.
  */
 export async function getStatus(): Promise<AuthStatus> {
+  const outcome = { authenticated: false, session: null, unavailable: false, forbidden: false }
   try {
     const res = await api.get<{ user: Session }>('/me')
-    return { authenticated: true, session: res.data.user, unavailable: false }
+    return { ...outcome, authenticated: true, session: res.data.user }
   } catch (err) {
     const status = (err as { response?: { status?: number } }).response?.status
-    // 503 is the guard failing closed on an unreachable Ward. 401 and 403 are
-    // both "you cannot use this app"; the 403 case is a live session with no
-    // grant, and it is the backend's log — not this screen — that distinguishes
-    // them, because the person can do nothing different about either.
-    if (status === 503) return { authenticated: false, session: null, unavailable: true }
-    return { authenticated: false, session: null, unavailable: false }
+    // The guard's three refusals are three different things to tell somebody:
+    // 503 is Ward not answering (retry), 403 is a live session without a grant
+    // (ask for access, or switch account), and anything else is signed out.
+    if (status === 503) return { ...outcome, unavailable: true }
+    if (status === 403) return { ...outcome, forbidden: true }
+    return outcome
   }
 }
 

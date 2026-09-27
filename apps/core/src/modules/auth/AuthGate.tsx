@@ -3,7 +3,12 @@ import { useAuthStore } from './store/authStore'
 import { flushPrefs, flushPrefsKeepalive, hydratePrefs } from '../../lib/prefs'
 import { rehydrateDotfileStores } from '../../shared/store/dotfiles'
 import { AuthShell } from './AuthShell'
-import { IdentityUnavailableScreen, ScreenCover, SignedOutScreen } from './SessionScreens'
+import {
+  IdentityUnavailableScreen,
+  NoAccessScreen,
+  ScreenCover,
+  SignedOutScreen,
+} from './SessionScreens'
 
 /**
  * Gates the entire desktop, in two regimes (brief 101):
@@ -32,6 +37,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const locked = useAuthStore((s) => s.locked)
   const everAuthenticated = useAuthStore((s) => s.everAuthenticated)
   const unavailable = useAuthStore((s) => s.unavailable)
+  const forbidden = useAuthStore((s) => s.forbidden)
   const refresh = useAuthStore((s) => s.refresh)
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated)
   const unlock = useAuthStore((s) => s.unlock)
@@ -106,6 +112,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (unavailable && !everAuthenticated) {
     return <IdentityUnavailableScreen onRetry={() => void refresh()} />
   }
+  /*
+   * Signed in, but without a grant for this system (brief 137). Also checked
+   * before the signed-out branch: the hand-off to Ward would return straight
+   * here, a loop that reads as a rejected password.
+   */
+  if (forbidden && !everAuthenticated) {
+    return <NoAccessScreen />
+  }
   // Pre-desktop: this tab has never been signed in, so there is nothing to
   // keep alive — the sign-in hand-off is the only thing that exists.
   if (!authenticated && !everAuthenticated) {
@@ -145,14 +159,18 @@ export function AuthGate({ children }: { children: ReactNode }) {
                 void refresh()
               }}
             />
+          ) : /*
+           * The session ended while the desktop was mounted. Uncovering
+           * cannot help — there is nothing to uncover *to* — so this offers
+           * the hand-off to Ward instead. The desktop stays mounted behind
+           * it, so signing back in returns to a live terminal rather than a
+           * fresh boot, which is the whole point of the overlay model. A grant
+           * withdrawn meanwhile is the no-access screen instead, for the same
+           * no-loop reason as before the desktop.
+           */
+          forbidden ? (
+            <NoAccessScreen />
           ) : (
-            /*
-             * The session ended while the desktop was mounted. Uncovering
-             * cannot help — there is nothing to uncover *to* — so this offers
-             * the hand-off to Ward instead. The desktop stays mounted behind
-             * it, so signing back in returns to a live terminal rather than a
-             * fresh boot, which is the whole point of the overlay model.
-             */
             <SignedOutScreen />
           )}
         </div>

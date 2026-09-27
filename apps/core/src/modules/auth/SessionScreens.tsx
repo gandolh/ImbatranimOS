@@ -4,7 +4,7 @@ import { wardAccountUrl, wardLoginUrl } from './api/authApi'
 import { useAuthStore } from './store/authStore'
 
 /**
- * The three pre-desktop states, all rendered in the same panel.
+ * The four pre-desktop states, all rendered in the same panel.
  *
  * None of them is a form. imbatranimOS has no password to take, so every way
  * forward from here is a navigation to Ward — and that is the visible shape of
@@ -66,6 +66,38 @@ export function SignedOutScreen() {
       >
         Continue to sign in
       </Button>
+    </AuthShell>
+  )
+}
+
+/**
+ * Signed in to Ward, but this account holds no grant for this system (brief 137).
+ *
+ * Deliberately **not** the sign-in hand-off. The person is already signed in:
+ * Ward's login page has no already-signed-in shortcut, so it would take their
+ * password, send them straight back here, and loop — reading as a rejected
+ * password when the truth is a missing grant. What can actually change things
+ * is an operator issuing the grant, or signing in as someone else, which lives
+ * on Ward's account page.
+ */
+export function NoAccessScreen() {
+  const session = useAuthStore((s) => s.session)
+
+  return (
+    <AuthShell
+      title="No access"
+      subtitle={
+        session
+          ? `Signed in as ${session.username}, but this account has no access to this system. Ask whoever runs it for a grant.`
+          : 'This account has no access to this system. Ask whoever runs it for a grant.'
+      }
+    >
+      <a
+        className="font-content text-on-surface-variant text-center text-[11px] underline"
+        href={wardAccountUrl()}
+      >
+        Use a different account
+      </a>
     </AuthShell>
   )
 }

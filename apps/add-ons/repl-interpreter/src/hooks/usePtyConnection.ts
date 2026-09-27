@@ -116,17 +116,19 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
      * `socket.destroy()`, which reaches script as an anonymous 1006 — exactly what
      * a dead backend produces. Without this the terminal would say "disconnected"
      * when the truth is "you are signed out".
+     *
+     * Probes `/me`, the desktop's own session read (brief 137), whose status
+     * codes are the answer: 200 means the session is fine and the refusal was
+     * something else; 401 is signed out; 403 is signed in without a grant.
      */
     const describeAuthFailure = async (): Promise<string | null> => {
       try {
         const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api'
-        const res = await fetch(`${base}/auth/status`, { credentials: 'include' })
-        if (!res.ok) return null
-        const body = (await res.json()) as { authenticated?: boolean }
-        if (body.authenticated === false) {
-          return 'Not signed in — unlock the desktop and try again.'
-        }
-        return null
+        const res = await fetch(`${base}/me`, { credentials: 'include' })
+        if (res.ok) return null
+        if (res.status === 401) return 'Signed out — sign in again from the desktop.'
+        if (res.status === 403) return 'This account has no access to this system.'
+        return 'The backend is not reachable.'
       } catch {
         // The API is unreachable too, which is its own answer.
         return 'The backend is not reachable.'

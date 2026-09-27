@@ -31,6 +31,8 @@ interface AuthState {
   session: Session | null
   /** True when the backend could not reach Ward — see `AuthStatus.unavailable`. */
   unavailable: boolean
+  /** Signed in to Ward, but no grant for this app — see `AuthStatus.forbidden`. */
+  forbidden: boolean
   /**
    * The screen is covered. Distinct from `!authenticated` on purpose: covering
    * must not end anything — the desktop stays mounted, PTY sockets stay open,
@@ -59,6 +61,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   authenticated: false,
   session: null,
   unavailable: false,
+  forbidden: false,
   locked: false,
   everAuthenticated: false,
   refresh: async () => {
@@ -68,6 +71,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       authenticated: status.authenticated,
       session: status.session,
       unavailable: status.unavailable,
+      forbidden: status.forbidden,
       // Latches: once this tab has seen the desktop, it keeps the overlay model
       // until an explicit sign-out. `refresh` leaves `locked` alone — a status
       // poll must never uncover the screen.
@@ -82,7 +86,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   lock: () => set({ locked: true }),
   unlock: () => set({ locked: false }),
   resetToLoggedOut: () =>
-    set({ authenticated: false, session: null, locked: false, everAuthenticated: false }),
+    set({
+      authenticated: false,
+      session: null,
+      forbidden: false,
+      locked: false,
+      everAuthenticated: false,
+    }),
 }))
 
 /**

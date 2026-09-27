@@ -1,5 +1,6 @@
 import { isPtyUpgrade, authorizeUpgrade, isOriginAllowed } from './pty-upgrade';
 import { PTY_PATH } from './pty.constants';
+import { IMBATRANIMOS_APP_SLUG } from '../ward/ward.types';
 
 const FRONTEND = 'http://localhost:5173';
 
@@ -60,8 +61,8 @@ describe('authorizeUpgrade', () => {
     sid: 'sid_1',
   });
 
-  it('returns the session when it is live and holds an imbatranimos grant', async () => {
-    const live = session({ imbatranimos: ['owner'] });
+  it('returns the session when it is live and holds a grant for this app', async () => {
+    const live = session({ [IMBATRANIMOS_APP_SLUG]: ['owner'] });
     const ward = { authenticate: jest.fn().mockResolvedValue(live) };
 
     await expect(authorizeUpgrade(req, ward, FRONTEND)).resolves.toBe(live);
@@ -75,7 +76,7 @@ describe('authorizeUpgrade', () => {
    * complete stranger is an ordinary thing to receive here. Authenticating
    * without checking the grant would hand that stranger a shell on the machine.
    */
-  it('returns null for a live session that holds no imbatranimos grant', async () => {
+  it('returns null for a live session that holds no grant for this app', async () => {
     const ward = {
       authenticate: jest.fn().mockResolvedValue(session({ prm: ['user'] })),
     };

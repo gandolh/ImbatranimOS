@@ -5,6 +5,7 @@ import type { AddressInfo, Server } from 'net';
 import { WebSocket } from 'ws';
 import { PtyGateway } from '../src/modules/pty/pty.gateway';
 import { WardService } from '../src/modules/ward/ward.service';
+import { IMBATRANIMOS_APP_SLUG } from '../src/modules/ward/ward.types';
 
 /**
  * End-to-end proof of the terminal gateway against a REAL http server and a
@@ -19,11 +20,11 @@ describe('PtyGateway (e2e)', () => {
     active: true as const,
     subject: 'subject_owner',
     username: 'owner',
-    grants: { imbatranimos: ['owner'] },
+    grants: { [IMBATRANIMOS_APP_SLUG]: ['owner'] },
     sid: 'sid_good',
   };
   /**
-   * A Ward that recognises one cookie and grants `imbatranimos` for it.
+   * A Ward that recognises one cookie and grants this app's slug for it.
    *
    * The grant is part of the fixture rather than an afterthought:
    * `authorizeUpgrade` checks it, and a fake that returned a session without

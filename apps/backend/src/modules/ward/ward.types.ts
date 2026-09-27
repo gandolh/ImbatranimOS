@@ -48,8 +48,16 @@ export const INTROSPECTION_CACHE_TTL_MS = 30_000;
 /** Ward's app-key header. The value is `WARD_APP_KEY`, a server-side secret. */
 export const APP_KEY_HEADER = 'x-ward-app-key';
 
-/** imbatranimOS's slug in Ward's `apps` table, and the key into a grant map. */
-export const IMBATRANIMOS_APP_SLUG = 'imbatranimos';
+/**
+ * imbatranimOS's slug in Ward's `apps` table, and the key into a grant map.
+ *
+ * Ward's own list is the source of truth (`wzd_auth/ui/src/lib/estate.ts`), and
+ * so is vps-deploy's stack name, which Ward's `register-app-keys` uses as the
+ * slug. This used to read `imbatranimos`, so every grant lookup missed and a
+ * granted account was refused (brief 137). Keep this the only place the string
+ * lives; `ward.types.spec.ts` pins it.
+ */
+export const IMBATRANIMOS_APP_SLUG = 'imbatranim-os';
 
 /**
  * The verified claim set.
@@ -135,7 +143,7 @@ export class WardAuthenticationError extends Error {
 /**
  * A live session that may not use this app. A **403**, and distinct from the
  * 401 above on purpose: signing in again will not help, because the account is
- * genuinely signed in and simply holds no imbatranimos grant.
+ * genuinely signed in and simply holds no imbatranim-os grant.
  */
 export class WardForbiddenError extends Error {
   override readonly name: string = 'WardForbiddenError';

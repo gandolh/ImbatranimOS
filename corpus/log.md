@@ -4052,3 +4052,29 @@ validated before they ship; the rendered artifact is committed because archify i
 a per-machine agent skill rather than an npm dependency.
 
 Docs build clean: 16 pages.
+
+## [2026-09-27] done | Brief 137 — Ward sign-in reaches the desktop; local dev signs in through a local Ward
+
+Brief 137 in full: `GET /api/me`, the grant slug corrected to `imbatranim-os` (the
+old `imbatranimos` matched nothing Ward issues, so every granted account was
+refused), `APP_ROOT` from the build's base instead of the literal `/os/` Ward
+rejected, a no-access screen for a 403 instead of a sign-in loop, and the
+Terminal's refusal diagnosis on `/me`. Outcome note on the brief.
+
+Alongside it, on the owner's call for every Ward app at once, local dev runs a
+real Ward in Docker (`wzd_auth/infrastructure/local`). `apps/core/vite.config.ts`
+now serves the desktop under `VITE_BASE` in dev too (read through `loadEnv`, so
+`.env.development` can set it while the container build's own value still wins)
+and proxies `<base>api` (WebSockets included, the base stripped as Caddy's
+`handle_path` does) and `/ward` + `/ward-api` to `WARD_PUBLIC_ORIGIN` from the
+repo-root `.env`. Local `.env.development`: `VITE_BASE=/imbatranim-os/`,
+`VITE_API_URL=/imbatranim-os/api`. The proxy rewrites `Origin` to Ward's only for
+requests from a page on the dev server, which Ward's same-origin check on
+`/refresh` and `/logout` needs.
+
+That answers the **local development** half of brief 152 (it was option D there),
+not the standalone, friend-run or kiosk half, so 152 stays open for those. Still
+true and brief 144's: the session is not refreshed, so the desktop drops to the
+sign-in cover about 15 minutes after sign-in. Also unchanged: `npm run dev` (the
+compose `watch` profile) runs the backend in a container, where `localhost:8792`
+is not Ward; `npm run dev:local` is the path that works.

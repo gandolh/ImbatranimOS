@@ -136,3 +136,33 @@ no tests at all.
 - Refreshing the 15-minute access token — brief 144. Until it lands, expect the
   desktop to drop to the sign-in cover about 15 minutes after sign-in.
 - A standalone or development identity — brief 152.
+
+## Outcome (2026-09-27)
+
+All five defects fixed as specified.
+
+1. `GET /api/me` is `MeController`, registered in `WardModule` and guarded like
+   every route: `{ user: { subject, username } }`, never the grants.
+2. `IMBATRANIMOS_APP_SLUG` is `'imbatranim-os'`, checked against the local Ward's
+   `apps` table (the production host was not reachable from here; its slug comes
+   from the same `register-app-keys` stack-name rule). Three tests that encoded the
+   old literal now use the constant: `pty.e2e-spec.ts`, `pty-upgrade.spec.ts`, and
+   the new pin in `ward.types.spec.ts`.
+3. `APP_ROOT` is `import.meta.env.BASE_URL`.
+4. `getStatus` returns `forbidden` for a 403, and `AuthGate` shows a new
+   `NoAccessScreen` (in `AuthShell`, linking to `wardAccountUrl()`) both before the
+   desktop and in the overlay. 503 keeps `IdentityUnavailableScreen`.
+5. The Terminal's `describeAuthFailure` probes `${base}/me` with the brief's four
+   messages.
+
+Tests: `test/ward-session.e2e-spec.ts` (WardModule with only `WardService` swapped
+for `FakeWardService`: 200 without grants, 401, 403, 503), the slug pin, and
+`authApi.test.ts` + `AuthGate.test.tsx` in core. Typecheck 30/30, `npm test`
+28/28 tasks, backend e2e 120/120, `format:check` clean.
+
+Browser check against a **local Ward** (`wzd_auth/infrastructure/local`), dev
+server on a scratch `DB_PATH`/`NOTES_DIR`/`CONFIGS_DIR`/`FILES_ROOT`: a signed-out
+visitor went to `/ward/login?next=/imbatranim-os/` and came back to the desktop
+there; with the grant revoked the page showed the no-access screen with no loop;
+the pty WebSocket through the dev proxy answered 401 without a session and 101
+with one.

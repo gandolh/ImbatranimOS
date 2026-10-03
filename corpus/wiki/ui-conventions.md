@@ -15,9 +15,9 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
    (`apps/add-ons/calculator/eslint.config.js:37-61`): `@imbatranim/core` is **type-only** — a value import from it is an eslint error, since values are what would couple an app
    bundle to the OS; in practice you import it once, for `AddonManifest`/`AppConfig`. Deep paths, sibling add-ons and `../../core/*` escapes are blocked too.
 2. Never re-implement anything on the SDK surface — **read `packages/ui/src/index.ts`**, don't trust a copy of the list: `cn`; the kit (`Button`, `Checkbox`, `Dialog`, `Input`,
-   `ScrollArea`, `Select`, `Separator`, `Tooltip`, `ContextMenu`, `ConfirmDialog`/`useConfirm`, `PromptDialog`/`usePrompt`, `UnsavedChangesDialog`); pure hooks
+   `ScrollArea`, `Select`, `Separator`, `Tooltip`, `ContextMenu`, `ConfirmDialog`/`useConfirm`, `PromptDialog`/`usePrompt`, `UnsavedChangesDialog`, `FileConflictDialog`/`useFileConflict`); pure hooks
    (`useVirtualList`, `useElementSize`); the shared `queryClient`; the save/open spine (`useSaveHotkey`, `useUnsavedGuard`, `useOpenIntent`, `useFileDialog`,
-   `useTopWindowKeydown`, `useDocumentedShortcuts`, `useRegisteredHotkeys`, `useWindowVisible`, `useSystemAppearance`); file helpers (`fileName`, `UploadTooLargeError`,
+   `useTopWindowKeydown`, `useDocumentedShortcuts`, `useRegisteredHotkeys`, `useWindowVisible`, `useSystemAppearance`); file helpers (`fileName`, `UploadTooLargeError`, `FileConflictError`,
    `describeFileFailure`, `reportFileFailure`). **Anything that touches the OS comes off the injected handle instead**, never an import: `const system = useSystem()`, then
    `system.fs` / `.http` / `.window` / `.intents` / `.shortcuts` / `.appearance` / `.schedule` / `.notify()` / `.on()`. `packages/ui/src/system.ts` **is** the protocol spec —
    read it before inventing a call; [glossary.md](glossary.md) has capability vs library.
@@ -109,7 +109,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
     Mirror it in your toolbar as `{name}{dirty ? ' •' : ''}` at `text-[11px] text-on-surface-variant` (`MarkdownEditor.tsx:156-159`).
 30. **File/save spine**, in this order (`markdown-editor/src/MarkdownEditor.tsx:25-99`): `const source = useOpenIntent(windowId)` → `const name = source ? fileName(source.path, 'untitled.md') : ''` → `await fetchFileBytes(source.root, source.path)` → `await uploadFileBytes(source.root, source.path, out, name)` (catch
     `UploadTooLargeError`) → `useSaveHotkey(windowId, handleSave)` + `useUnsavedGuard(windowId, dirty, name)`. `downloadUrl()` is unauthed by design, only for a real `<a download>` (`lib/fileBytes.ts:75`); every in-app byte read goes through `fetchFileBytes` (:21). Per-window state → `createOpenedFileStore()`. Cross-app handoff →
-    `openApp(appId, { openPath, root })` (`FileManager.tsx:159`).
+    `openApp(appId, { openPath, root })` (`FileManager.tsx:159`). **A save over the file you opened sends the version you read** (brief 155): `system.fs.readWithVersion`, keep the token with your saved baseline (not the latest refetch), `upload(..., { expected })`; on `FileConflictError` ask with `useFileConflict()` (Overwrite = upload without `expected`, Reload from disk, Cancel). Save As elsewhere sends none. The office editors do not do this yet.
 31. **Form** → `Input` with the `label` prop (renders the house label and wires `htmlFor` to your `id`; `ui/Input.tsx:9-19`); `Select` with `options={[{value,label}]} value onValueChange placeholder` (`clock/src/tabs/ClockTab.tsx:23-29`); `Checkbox` with `label`. **`Select` now shows the option's `label` on its trigger** — until brief 75 it
     rendered the raw `value`, because base-ui can only look a label up when `Select.Root` is given an `items` map, so every Select whose value differed from its label (an id,
     a minute offset, a timezone) displayed the value. Fixed once in `ui/Select.tsx` for all callers; the lookup is by `String(value)`, so a numeric `value` still resolves.

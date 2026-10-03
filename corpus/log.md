@@ -4142,3 +4142,7 @@ Found while landing brief 154: `openBackupStream` wrote its `backup.taken` audit
 ## [2026-10-03] done | Brief 151 — delete what the Ward cutover orphaned
 
 The cutover's leftovers are gone: argon2, otplib, qrcode and cookie-parser (35 packages out of the lockfile), the auth DTOs, the password-change helper, sign-in history and the `auth.*` log labels, a dead notes service, and every comment describing a login, a first-run wizard or `SessionAuthGuard`. The prod image went from 264 MB to 260 MB with no `argon2` inside. All gates green.
+
+## [2026-10-03] done | Brief 155 — saves ask when the file changed on disk
+
+A line appended in the Terminal while Notepad had the file open was destroyed by the next Ctrl+S. Every file write now accepts the version the editor read (mtime + size) and answers 409 when the file has moved on. Notepad, Code Editor and Markdown Editor then ask Overwrite / Reload from disk / Cancel, through a new kit dialog. Writes without a token behave as before; the office editors are not in this cut. The browser walk of the Notepad + Terminal scenario is owed, because Ward was down for this run.

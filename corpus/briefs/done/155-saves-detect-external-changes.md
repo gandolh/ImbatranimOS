@@ -66,3 +66,50 @@ the Terminal's line is silently destroyed.
   does what it says.
 - In the browser: the Notepad + Terminal scenario above asks instead of
   overwriting.
+
+## Outcome (2026-10-03)
+
+Done as proposed, in one code commit. **Not grilled:** the brief asked for a grill
+on the buttons and the first cut, and the run took the proposed decisions as they
+stand.
+- **Backend:**
+  - The token is `${trunc(mtimeMs)}-${size}` (`versionOf`). `FileEntry`, the content
+    read and the upload response carry `version`, and the download sends
+    `X-File-Version`.
+  - `writeFile` and `uploadFile` take an optional `expected`. A mismatch, including
+    a file that is gone, is a 409 `{ current }` (`null` when gone), and nothing is
+    written. Without a token, nothing changes.
+  - The check runs just before the atomic write, not under a lock. Two writers in
+    the same millisecond can still race, which is fine for a precondition aimed at
+    a human-speed Terminal.
+- **Protocol** (additions only, so `PROTOCOL_VERSION` stays 2):
+  - `fs.readWithVersion` and an `upload(..., { expected })` option; `upload` now
+    resolves `{ version }`.
+  - `FileConflictError` (with `current`).
+  - Kit: `FileConflictDialog` and `useFileConflict()`, whose `ask(name)` resolves
+    `'overwrite' | 'reload' | 'cancel'`. Cancel has the focus, and Esc means Cancel.
+- **Editors:** each keeps the token of its *saved baseline*, not of the latest
+  read, because a refetch Notepad declines to adopt over unsaved edits must not move
+  it.
+  - Overwrite re-sends without a token.
+  - Reload re-reads, and the next save builds on that version.
+  - Code Editor's reload is a `pushEditOperations` edit, so Ctrl+Z gets the
+    discarded text back. Notepad and Markdown Editor replace the text outright.
+  - Save As onto another path sends no token: choosing a target is the decision.
+  - Notepad's query comment now says what is true: no focus refetch, and the
+    precondition is the guard.
+
+**Acceptance:**
+- Backend: 6 service specs and 2 e2e (stale token is 409 and the file is
+  unchanged; an upload with a stale token is 409; the download header matches the
+  upload's version). Backend totals: unit 464, e2e 124.
+- One jsdom test per editor drives a real 409 through the dialog: the save sends
+  the read version, each button does what it says, and a save after a save sends
+  the version the first save wrote. Code Editor runs against a fake Monaco.
+  - Notepad 45, Code Editor 22, Markdown Editor 113.
+  - Core `fileBytes` 7: the header, the `expected` field, 409 → `FileConflictError`,
+    and 413 still → `UploadTooLargeError`.
+- Repo typecheck, lint and `format:check` 90/90; `npm test` 30/30.
+- **Browser check owed.** Ward's container was down at the time of the run
+  (nothing on :8792), so the desktop could not sign in. The Notepad + Terminal
+  scenario still has to be walked once.

@@ -7,7 +7,7 @@ import App from './App.tsx'
 import { AuthGate } from './modules/auth/AuthGate'
 import { useAppearanceStore, applyAppearance } from './shared/store/appearanceStore'
 
-// Brand the very first paint (lock screen / first-run wizard) with the
+// Brand the very first paint (the start-up and sign-in screens) with the
 // persisted theme + accent, before React mounts.
 {
   const { theme, accent } = useAppearanceStore.getState()

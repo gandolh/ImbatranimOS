@@ -5,7 +5,6 @@ process.env.DB_PATH = ':memory:';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import type { Server } from 'http';
-import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { WardModule } from '../src/modules/ward/ward.module';
@@ -36,7 +35,6 @@ describe('GET /api/me (e2e) — brief 137', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.use(cookieParser());
     app.setGlobalPrefix('api');
     await app.init();
     http = request(app.getHttpServer());

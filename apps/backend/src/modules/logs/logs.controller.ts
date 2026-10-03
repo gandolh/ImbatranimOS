@@ -13,7 +13,7 @@ import { ClientErrorDto, LogQueryDto } from './dto/logs.dto';
 /**
  * Read the system log, and let the browser report its own crashes (brief 84).
  *
- * Authed by the global `SessionAuthGuard`; neither route carries `@Public()`.
+ * Authed by the global `WardAuthGuard`; neither route carries `@Public()`.
  * That is not boilerplate here — **log content is as sensitive as the events it
  * records**. It names the IPs that tried to log in, which files were deleted and
  * when the machine was restored, so an unauthenticated read would be a

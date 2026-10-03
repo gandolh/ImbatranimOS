@@ -13,7 +13,7 @@
 /**
  * Key names whose values never reach the log.
  *
- * `hash` is here as well as `password`: an argon2 hash is not a plaintext
+ * `hash` is here as well as `password`: a password hash is not a plaintext
  * password, but it is the input to an offline cracking attempt, and a log file
  * is a much easier thing to end up in a bug report than the database is.
  */

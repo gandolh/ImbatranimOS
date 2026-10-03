@@ -76,7 +76,7 @@ describe('LogService — brief 84', () => {
         sessionToken: 'abc',
         cookie: 'sid=1',
         authorization: 'Bearer x',
-        passwordHash: '$argon2id$...',
+        passwordHash: 'a-password-hash',
         salt: 'nacl',
       }) as Record<string, unknown>;
       for (const value of Object.values(out)) expect(value).toBe(REDACTED);

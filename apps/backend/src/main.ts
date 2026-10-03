@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import cookieParser from 'cookie-parser';
 import { json } from 'express';
 import { AppModule } from './app.module';
 import { securityHeaders } from './security-headers';
@@ -20,7 +19,6 @@ async function bootstrap() {
   }
 
   app.use(securityHeaders);
-  app.use(cookieParser());
   // Raise Express's 100 KB default JSON body cap. Registered here (before
   // listen/init) so it runs ahead of Nest's built-in body parser and sets
   // req._body first, which makes the built-in 100 KB parser skip. Without this,

@@ -3,12 +3,13 @@ import { SetMetadata } from '@nestjs/common';
 export const IS_PUBLIC_KEY = 'isPublic';
 
 /**
- * Opt a route (or a whole controller) out of the global {@link SessionAuthGuard}.
- * Use ONLY for login / first-run setup / status. Everything else is
- * authenticated by default.
+ * Opt a route (or a whole controller) out of the global `WardAuthGuard`.
+ * Nothing carries it today: signing in is Ward's, so there is no login or
+ * setup route here to open up. Keep it for a genuinely public endpoint (a
+ * health probe), never for anything that reads or changes the user's data.
  *
  *   @Public()
- *   @Post('login')
- *   login() { ... }
+ *   @Get('health')
+ *   health() { ... }
  */
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);

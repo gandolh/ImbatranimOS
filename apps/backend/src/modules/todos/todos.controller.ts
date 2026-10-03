@@ -19,7 +19,7 @@ import { ReorderTodosDto } from './dto/reorder-todos.dto';
 import { CreateListDto, UpdateListDto } from './dto/list.dto';
 
 /**
- * Session-guarded by the global `SessionAuthGuard`, as it always has been —
+ * Guarded by the global `WardAuthGuard`, as every route is —
  * nothing here is `@Public()`.
  *
  * Route order matters: `lists` and `clear-completed` are declared **before**

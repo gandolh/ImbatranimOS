@@ -4,7 +4,7 @@ import { CompressDto, ExtractDto, ListDto } from './dto/archive.dto';
 
 /**
  * Archive extract/compress, run server-side inside the FS jail. Authenticated
- * by the global {@link SessionAuthGuard} (no `@Public()`); mutating POSTs also
+ * by the global `WardAuthGuard` (no `@Public()`); mutating POSTs also
  * pass the guard's Origin/CSRF check.
  */
 @Controller('archive')

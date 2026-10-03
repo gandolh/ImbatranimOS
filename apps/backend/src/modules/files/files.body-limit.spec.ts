@@ -5,7 +5,6 @@ process.env.DB_PATH = ':memory:';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import type { Server } from 'http';
-import cookieParser from 'cookie-parser';
 import { json } from 'express';
 import request from 'supertest';
 import * as fs from 'fs/promises';
@@ -38,7 +37,6 @@ describe('Files body-size cap (T0-4)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.use(cookieParser());
     // The fix under test — same limit and placement as main.ts.
     app.use(json({ limit: '16mb' }));
     app.setGlobalPrefix('api');

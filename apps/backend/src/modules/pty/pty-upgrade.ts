@@ -47,7 +47,7 @@ export function isOriginAllowed(
  *
  * Returns the session on success, or null to reject — the caller destroys the
  * socket. Reads Ward's `ward_session` cookie straight off the raw upgrade
- * request; no cookie-parser is involved.
+ * request; no cookie middleware is involved.
  *
  * **Both halves are required and neither is optional.** `authenticate`
  * establishes that the session is live; the grant check establishes that this

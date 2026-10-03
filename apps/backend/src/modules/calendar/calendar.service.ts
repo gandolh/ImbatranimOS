@@ -17,7 +17,7 @@ import {
  * here, and it deliberately copies the shape brief 71 landed for Clock rather than
  * inventing a second mechanism: a typed table per domain, camelCase mapped at the
  * service boundary, class-validator DTOs at the door, and the global
- * `SessionAuthGuard` covering the controller.
+ * `WardAuthGuard` covering the controller.
  *
  * **Recurrence is stored as a rule, never as materialised instances.** A weekly
  * standup is one row. Expanding it into 520 rows is the mistake that makes editing

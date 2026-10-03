@@ -19,7 +19,7 @@ import {
 
 /**
  * Calendar events. Session-guarded like every other route — the global
- * `SessionAuthGuard` covers this controller, and nothing here is `@Public()`.
+ * `WardAuthGuard` covers this controller, and nothing here is `@Public()`.
  */
 @Controller('calendar')
 export class CalendarController {

@@ -14,7 +14,7 @@
  *
  * `upgradeReq` is the raw Node `http.IncomingMessage` from the upgrade event;
  * `authenticate` reads the `ward_session` cookie straight off its headers (no
- * cookie-parser needed). **This is the SAME code path the REST guard uses**, so
+ * cookie middleware needed). **This is the SAME code path the REST guard uses**, so
  * REST and WS never diverge on what a valid session is — the property this file
  * has always existed to hold, and the one thing about it the Ward cutover did
  * not change.

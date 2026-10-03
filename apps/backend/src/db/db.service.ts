@@ -549,7 +549,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    *
    * Nothing has read `auth_user` or `auth_sessions` since the Ward cutover
    * (2026-09-06), but every install from before it still held the owner's
-   * argon2id hash and TOTP secret there, and every backup (a `VACUUM INTO` of
+   * password hash and TOTP secret there, and every backup (a `VACUUM INTO` of
    * this file) carried them off the machine. A restored old backup is migrated
    * by `replaceWith`, so it is scrubbed too. Steps 1 and 5 still create and
    * alter the tables: the ledger replays history, and rewriting old steps

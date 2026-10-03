@@ -22,7 +22,7 @@
     ]
   },
   "transformIgnorePatterns": [
-    "/node_modules/(?!(?:otplib|@otplib|@scure|@noble|strip-ansi|ansi-regex|jose)/)"
+    "/node_modules/(?!(?:strip-ansi|ansi-regex|jose)/)"
   ],
   "setupFiles": [
     "<rootDir>/../test-setup.ts"

@@ -19,9 +19,9 @@ import {
 /**
  * Gates the entire desktop, in two regimes (brief 101):
  *
- * **Before this tab's first login** it behaves as it always has — only the
- * first-run wizard or the full-screen lock exists; nothing desktop-shaped
- * mounts or fetches.
+ * **Before this tab's first sign-in** only the start-up, sign-in hand-off,
+ * no-access and Ward-unavailable screens exist; nothing desktop-shaped mounts
+ * or fetches.
  *
  * **After** (`everAuthenticated`), locking and session loss become an OPAQUE
  * OVERLAY over the still-mounted desktop instead of a teardown. That is the

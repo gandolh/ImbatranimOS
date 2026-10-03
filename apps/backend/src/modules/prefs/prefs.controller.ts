@@ -14,7 +14,7 @@ import { PutPrefsDto } from './dto/prefs.dto';
 /**
  * The dotfile store (brief 49).
  *
- * Authed by the global `SessionAuthGuard`; no `@Public()`. Your wallpaper is not
+ * Authed by the global `WardAuthGuard`; no `@Public()`. Your wallpaper is not
  * a secret, but the disabled-app set and icon layout describe how the machine is
  * used, and a route that lets an unauthenticated caller **write** them could
  * rearrange someone's desktop from across the internet.

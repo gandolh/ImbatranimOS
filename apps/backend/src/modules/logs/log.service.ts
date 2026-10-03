@@ -39,7 +39,7 @@ export interface LogEntry {
   /** ISO timestamp. */
   t: string;
   level: LogLevel;
-  /** Stable dotted event name, e.g. `auth.login.failed`. */
+  /** Stable dotted event name, e.g. `backup.restored`. */
   event: string;
   /**
    * Who observed it. A `client` line was **reported by the browser** and is

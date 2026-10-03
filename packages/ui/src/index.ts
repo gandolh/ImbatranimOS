@@ -42,9 +42,8 @@ export { isTextEntry } from './lib/textEntry'
 export { fileName, UploadTooLargeError } from './lib/files'
 export { describeFileFailure, type FileFailureOptions } from './lib/fileFailureText'
 
-// Backend log contract (pure types + a pure projection)
-export { toSignIns } from './lib/systemLog'
-export type { LogEntry, LogLevel, LogSource, SignIn } from './lib/systemLog'
+// Backend log contract (pure types)
+export type { LogEntry, LogLevel, LogSource } from './lib/systemLog'
 
 // The shared react-query client. A library concern, not a capability: in a
 // future sandboxed world each app bundles its own; in-process everyone shares

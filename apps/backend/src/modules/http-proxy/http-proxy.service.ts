@@ -14,7 +14,7 @@ import type {
 // SSRF stance (recorded decision — see wiki/decisions.md).
 //
 // This proxy is a deliberate outbound tool for the *single logged-in owner*
-// (it sits behind the global SessionAuthGuard — owner-only). It is the owner's
+// (it sits behind the global WardAuthGuard — grant-holders only). It is the owner's
 // own `curl`, not an open relay, so reaching LAN / localhost / private ranges
 // is INTENTIONAL and NOT blocked — blocking them would gut the tool (a dev
 // testing a local service) and the caller is already the trusted owner.

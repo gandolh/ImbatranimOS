@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { toSignIns, type LogEntry } from '@imbatranim/ui'
+import type { LogEntry } from '@imbatranim/ui'
 import { eventLabel, formatWhen, knownEvents, relativeTime, summarise } from './logFormat'
 
 const entry = (over: Partial<LogEntry> = {}): LogEntry => ({
   t: '2026-08-06T10:00:00.000Z',
   level: 'info',
-  event: 'auth.login.ok',
+  event: 'backup.taken',
   source: 'server',
-  msg: 'Signed in',
+  msg: 'A backup was downloaded',
   ...over,
 })
 
 describe('event labels', () => {
   it('reads as English, not as a dotted key', () => {
-    expect(eventLabel('auth.login.failed')).toBe('Sign-in failed')
+    expect(eventLabel('files.trash.emptied')).toBe('Trash emptied')
     expect(eventLabel('files.deleted')).toBe('File deleted for good')
   })
 
@@ -24,9 +24,13 @@ describe('event labels', () => {
   it('covers every event the backend writes today', () => {
     // If a call site is added without a label the row still renders (above),
     // but this is the nudge to add one.
-    expect(knownEvents()).toContain('auth.throttle.locked')
+    expect(knownEvents()).toContain('files.trash.emptied')
     expect(knownEvents()).toContain('backup.restored')
     expect(knownEvents()).toContain('app.crashed')
+  })
+
+  it('carries no sign-in events: sign-in is Ward’s, and nothing here logs it (brief 151)', () => {
+    expect(knownEvents().filter((e) => e.startsWith('auth.'))).toEqual([])
   })
 })
 
@@ -58,8 +62,8 @@ describe('timestamps', () => {
 
 describe('row summaries', () => {
   it('pulls the one fact that answers the row’s own question', () => {
-    expect(summarise(entry({ msg: 'Signed in', meta: { ip: '10.0.0.4' } }))).toBe(
-      'Signed in — 10.0.0.4'
+    expect(summarise(entry({ msg: 'Backup downloaded', meta: { ip: '10.0.0.4' } }))).toBe(
+      'Backup downloaded — 10.0.0.4'
     )
     expect(
       summarise(
@@ -79,25 +83,5 @@ describe('row summaries', () => {
 
   it('ignores a non-string value rather than printing [object Object]', () => {
     expect(summarise(entry({ msg: 'Killed', meta: { name: { nested: true } } }))).toBe('Killed')
-  })
-})
-
-describe('sign-in history', () => {
-  it('keeps only sign-in events, and marks which failed', () => {
-    const rows = toSignIns([
-      entry({ event: 'auth.login.ok', meta: { ip: '10.0.0.4' } }),
-      entry({ event: 'auth.login.failed', meta: { ip: '203.0.113.7' } }),
-      entry({ event: 'files.deleted', meta: { originalPath: 'a' } }),
-      entry({ event: 'auth.logout', meta: { ip: '10.0.0.4' } }),
-    ])
-    expect(rows).toEqual([
-      { t: '2026-08-06T10:00:00.000Z', ip: '10.0.0.4', ok: true },
-      { t: '2026-08-06T10:00:00.000Z', ip: '203.0.113.7', ok: false },
-    ])
-  })
-
-  it('says "unknown" rather than dropping a row with no address', () => {
-    const rows = toSignIns([entry({ event: 'auth.login.ok', meta: {} })])
-    expect(rows[0].ip).toBe('unknown')
   })
 })

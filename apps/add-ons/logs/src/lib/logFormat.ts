@@ -6,20 +6,10 @@ export type { LogEntry, LogLevel, LogSource } from '@imbatranim/ui'
  * Turn a dotted event name into something a person reads without a decoder ring.
  *
  * The log is for the owner of a single-user machine, not for an SRE grepping a
- * fleet, so `auth.login.failed` is shown as "Sign-in failed". The raw event is
+ * fleet, so `files.trash.emptied` is shown as "Trash emptied". The raw event is
  * still in the expanded JSON — this replaces the *label*, never the record.
  */
 const EVENT_LABELS: Record<string, string> = {
-  'auth.setup': 'Machine claimed',
-  'auth.login.ok': 'Signed in',
-  'auth.login.failed': 'Sign-in failed',
-  'auth.logout': 'Signed out',
-  'auth.throttle.locked': 'Address locked out',
-  'auth.throttle.locked.global': 'Sign-in locked app-wide',
-  'auth.password.changed': 'Password changed',
-  'auth.password.failed': 'Password change refused',
-  'auth.totp.enabled': 'Two-factor turned on',
-  'auth.totp.disabled': 'Two-factor turned off',
   'process.killed': 'Process killed',
   'files.deleted': 'File deleted for good',
   'files.trash.emptied': 'Trash emptied',

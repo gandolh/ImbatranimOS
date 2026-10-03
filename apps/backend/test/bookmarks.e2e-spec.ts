@@ -4,7 +4,6 @@ process.env.DB_PATH = ':memory:';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import type { Server } from 'http';
-import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
@@ -28,7 +27,6 @@ describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.use(cookieParser());
     app.setGlobalPrefix('api');
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, transform: true }),

@@ -8,7 +8,6 @@ process.env.FILES_MAX_UPLOAD_BYTES = '2048';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import type { Server } from 'http';
-import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import * as fs from 'fs/promises';
 import * as os from 'os';
@@ -63,7 +62,6 @@ describe('Files (e2e) — auth + binary round-trip', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.use(cookieParser());
     app.setGlobalPrefix('api');
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, transform: true }),

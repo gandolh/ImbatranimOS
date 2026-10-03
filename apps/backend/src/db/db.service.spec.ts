@@ -66,7 +66,7 @@ describe('DbService migration ledger — brief 110', () => {
 
   it('a fresh database ends stamped at the newest version', () => {
     const svc = openService(join(dir, 'fresh.sqlite'));
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(6);
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(7);
     expect(svc.migrationFailure).toBeNull();
     svc.onModuleDestroy();
   });
@@ -110,7 +110,7 @@ describe('DbService migration ledger — brief 110', () => {
 
     expect(migrated.migrationFailure).toBeNull();
     expect(Number(migrated.db.pragma('user_version', { simple: true }))).toBe(
-      6,
+      7,
     );
     // The whole point: a migrated database is indistinguishable from a fresh one.
     expect(schemaDump(migrated.db)).toBe(schemaDump(fresh.db));
@@ -141,12 +141,12 @@ describe('DbService migration ledger — brief 110', () => {
     // expected-skips are what make that safe.
     first.migrate();
     expect(first.migrationFailure).toBeNull();
-    expect(Number(first.db.pragma('user_version', { simple: true }))).toBe(6);
+    expect(Number(first.db.pragma('user_version', { simple: true }))).toBe(7);
     expect(schemaDump(first.db)).toBe(before);
 
     // A second run is a single PRAGMA read: nothing left above the stamp.
     first.migrate();
-    expect(Number(first.db.pragma('user_version', { simple: true }))).toBe(6);
+    expect(Number(first.db.pragma('user_version', { simple: true }))).toBe(7);
     first.onModuleDestroy();
   });
 
@@ -183,7 +183,7 @@ describe('DbService migration ledger — brief 110', () => {
     svc.db.pragma('user_version = 0');
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(6);
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(7);
     expect(new StorageHealthGuard(svc).canActivate()).toBe(true);
     svc.onModuleDestroy();
   });
@@ -198,6 +198,73 @@ describe('DbService migration ledger — brief 110', () => {
       Number(svc.db.pragma('user_version', { simple: true })),
     );
     copy.close();
+    svc.onModuleDestroy();
+  });
+});
+
+describe('DbService — pre-Ward credential tables are dropped (brief 150)', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'imb-b150-'));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  const tables = (db: Database.Database) =>
+    (
+      db
+        .prepare(`SELECT name FROM sqlite_master WHERE type = 'table'`)
+        .all() as { name: string }[]
+    ).map((t) => t.name);
+
+  it('a pre-ledger database holding a password hash migrates to 7 without either table', () => {
+    const path = join(dir, 'upgraded.sqlite');
+    // What every install from before 2026-09-06 has: the owner's password hash,
+    // TOTP secret and sessions, at user_version 0.
+    const old = new Database(path);
+    old.exec(`
+      CREATE TABLE auth_user (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        username TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        totp_secret TEXT,
+        totp_enabled INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE TABLE auth_sessions (
+        token TEXT PRIMARY KEY,
+        created_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL
+      );
+      INSERT INTO auth_user (id, username, password_hash, totp_secret, totp_enabled)
+        VALUES (1, 'owner', 'hash-of-the-owners-password', 'JBSWY3DPEHPK3PXP', 1);
+      INSERT INTO auth_sessions VALUES ('tok', datetime('now'), datetime('now', '+1 day'));
+    `);
+    old.close();
+
+    const svc = openService(path);
+    expect(svc.migrationFailure).toBeNull();
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(7);
+    expect(tables(svc.db)).not.toContain('auth_user');
+    expect(tables(svc.db)).not.toContain('auth_sessions');
+
+    // And a backup taken now carries neither.
+    const snap = join(dir, 'snap.sqlite');
+    svc.snapshotTo(snap);
+    const copy = new Database(snap, { readonly: true });
+    expect(tables(copy)).not.toContain('auth_user');
+    expect(tables(copy)).not.toContain('auth_sessions');
+    copy.close();
+    svc.onModuleDestroy();
+  });
+
+  it('a fresh database ends without them too', () => {
+    const svc = openService(join(dir, 'fresh.sqlite'));
+    expect(tables(svc.db)).not.toContain('auth_user');
+    expect(tables(svc.db)).not.toContain('auth_sessions');
     svc.onModuleDestroy();
   });
 });

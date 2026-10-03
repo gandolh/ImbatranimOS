@@ -148,6 +148,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         run: () => this.stepTotpLastStep(),
       },
       { toVersion: 6, name: 'backfills', run: () => this.stepBackfills() },
+      {
+        toVersion: 7,
+        name: 'drop-pre-ward-auth',
+        run: () => this.stepDropPreWardAuth(),
+      },
     ];
 
     const current = Number(this.db.pragma('user_version', { simple: true }));
@@ -326,7 +331,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       -- layering grill settled on: your window layout is the session and dies
       -- with the tab, but your wallpaper and accent are dotfiles -- they belong
       -- to the account and follow you to any browser. Single user, so no owner
-      -- column; the global SessionAuthGuard is the whole access story.
+      -- column; the global WardAuthGuard is the whole access story.
       CREATE TABLE IF NOT EXISTS prefs (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
@@ -494,6 +499,24 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     } catch (err) {
       if (!isAlreadyApplied(err, DUPLICATE_COLUMN)) throw err;
     }
+  }
+
+  /**
+   * Step 7 — drop the pre-Ward credential tables (brief 150).
+   *
+   * Nothing has read `auth_user` or `auth_sessions` since the Ward cutover
+   * (2026-09-06), but every install from before it still held the owner's
+   * argon2id hash and TOTP secret there, and every backup (a `VACUUM INTO` of
+   * this file) carried them off the machine. A restored old backup is migrated
+   * by `replaceWith`, so it is scrubbed too. Steps 1 and 5 still create and
+   * alter the tables: the ledger replays history, and rewriting old steps
+   * would make fresh and migrated databases diverge (brief 110). No catch:
+   * `IF EXISTS` is the whole expected-skip.
+   */
+  private stepDropPreWardAuth() {
+    this.db.exec(
+      'DROP TABLE IF EXISTS auth_sessions; DROP TABLE IF EXISTS auth_user;',
+    );
   }
 
   /** Step 6 — the one-time repairs. Their recurring causes are fixed in the services. */

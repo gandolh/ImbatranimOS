@@ -4130,3 +4130,7 @@ Ledger step 7 drops `auth_user` and `auth_sessions`. Upgraded installs no longer
 ## [2026-10-03] done | Brief 149 — restore stops asking for a password that no longer exists
 
 Backup settings still said a restore signs you out because the backup brings its own password, and it put the desktop behind the sign-in cover. A restore now reloads the desktop and leaves the session alone, with copy that says so. The apply route drops `signedOut` and the two unused parameters that kept backend eslint red. Browser-checked with a real backup and restore.
+
+## [2026-10-03] done | Brief 154 — a restore that cannot open its database puts everything back
+
+A corrupt `db.sqlite` in a backup used to be swapped in, fail to open, take the pre-restore tree with it, and crash-loop the next boot. The snapshot is now checked (`quick_check`, ledger version) before anything moves. A failed install undoes the swap and reopens the old database. `replaceWith` keeps the old file until the new one opens, and an unopenable database at boot means degraded mode (503), not a crash.

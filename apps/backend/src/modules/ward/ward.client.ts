@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 
 import {
   ACCESS_TOKEN_ALG,
@@ -91,6 +91,27 @@ export interface WardClient {
  */
 const ACCESS_COOKIE_NAME = 'ward_session';
 
+/**
+ * The jose error codes that mean **this token** is bad (brief 146). Anything
+ * else out of `jwtVerify` (a key set that could not be fetched, timed out,
+ * answered non-200 or was not a key set, or a fetch `TypeError`) is Ward being
+ * unreachable, and must fail closed as 503, never as "signed out".
+ *
+ * An allowlist on purpose: an error this list does not know is treated as an
+ * outage. Calling an outage "signed out" sends the user to a login page served
+ * by the service that is down; calling a bad token an outage only delays a 401.
+ */
+const TOKEN_INVALID_CODES = new Set([
+  'ERR_JWT_EXPIRED',
+  'ERR_JWT_CLAIM_VALIDATION_FAILED',
+  'ERR_JWS_SIGNATURE_VERIFICATION_FAILED',
+  'ERR_JWS_INVALID',
+  'ERR_JWT_INVALID',
+  'ERR_JOSE_ALG_NOT_ALLOWED',
+  'ERR_JWKS_NO_MATCHING_KEY',
+  'ERR_JWKS_MULTIPLE_MATCHING_KEYS',
+]);
+
 function readCookie(
   header: string | string[] | undefined,
   name: string,
@@ -136,6 +157,9 @@ export function createWardClient(options: WardClientOptions): WardClient {
   );
 
   const keyStore = createRemoteJWKSet(jwksEndpoint, {
+    // The same injectable fetch as introspection, so tests can serve the key
+    // set and a deploy can route both the same way.
+    [customFetch]: fetchImpl,
     timeoutDuration: options.jwksTimeoutMs ?? 5_000,
     cacheMaxAge: options.jwksCacheMaxAgeMs ?? 10 * 60_000,
     // The floor that stops a burst of tokens signed by an unknown key from
@@ -169,7 +193,15 @@ export function createWardClient(options: WardClientOptions): WardClient {
       });
       return payload as unknown as AccessTokenClaims;
     } catch (cause) {
-      throw new WardAuthenticationError('access token is not valid', { cause });
+      const code = (cause as { code?: unknown } | null)?.code;
+      if (typeof code === 'string' && TOKEN_INVALID_CODES.has(code)) {
+        throw new WardAuthenticationError('access token is not valid', {
+          cause,
+        });
+      }
+      throw new WardUnavailableError("could not verify against Ward's keys", {
+        cause,
+      });
     }
   }
 

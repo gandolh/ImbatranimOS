@@ -49,3 +49,16 @@ complete.
   chunk, and asserts: the tar child is killed, `backupInFlight` is false, the
   staging directory is gone, and a second `GET /api/backup` succeeds.
 - Existing brief-80 specs green.
+
+## Outcome (2026-10-03)
+
+Done, in `download` only; `openBackupStream` is unchanged.
+- `await Promise.all([pipeline(backup.stream, res), backup.done])`. A client abort rejects `pipeline`, which also destroys tar's stdout, and `finally` → `dispose()` kills a tar that is still running.
+- A tar failure rejects `done` → `res.destroy()` as before, so a partial gzip still fails its CRC.
+- `Promise.all` handles whichever promise rejects second, so neither leaks as unhandled.
+
+**Test** (`backup.download.spec.ts`, new): a real HTTP server around the real controller and service, real `tar`, and a home with 8 MB of random bytes so tar is still writing. The client destroys its request after the first chunk. Then tar exits, the staging directory is removed, `backupInFlight` is false, and a second `GET` answers 200 with the full archive.
+- On the old `.pipe()` code it fails at "timed out waiting for tar to exit".
+- The tar child is observed through a `jest.mock('child_process')` wrapper, because builtin exports cannot be spied on in Node 24.
+
+Backend unit 412/412, e2e 121/121, typecheck clean. `npx eslint` flags two unused parameters (`req`, `res`) in `apply`, the restore path brief 149 owns; they predate this change.

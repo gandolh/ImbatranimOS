@@ -4094,3 +4094,7 @@ A client resetting the connection while Ward was being asked crashed the whole b
 ## [2026-10-03] done | Brief 141 — relaunching a minimized app shows it
 
 `openApp` focused an open single-instance window but never showed it, so every launcher that funnels through it (desktop, taskbar, Start menu, notifications, Files) did nothing visible for a minimized app. It now shows the window after focusing it. An unknown id is refused with `''` instead of throwing, as the protocol documents. Browser-checked with Todo against the local Ward. Notepad, the brief's example, is multi-instance and never takes this path.
+
+## [2026-10-03] done | Brief 142 — an interrupted backup download frees the backup slot
+
+A browser that disconnected mid-backup left tar blocked on a paused pipe, so the slot never freed and every later backup answered 409 until a restart. The download now awaits `pipeline` together with tar's exit, and whichever side fails first reaches `dispose()`. A real-HTTP spec aborts after the first chunk and sees tar killed, the staging copy removed and the next backup succeed.

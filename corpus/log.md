@@ -4118,3 +4118,7 @@ The terminal sweep re-checked the cookie the WebSocket opened with, so every ter
 ## [2026-10-03] done | Brief 146 — the Ward client fails closed on a key-set outage, and is tested
 
 A key-set fetch failure (Ward down after a restart, or past the 10-minute JWKS cache) read as "signed out", a 401. Only jose's token-validity codes are authentication errors now; everything else is a 503. The client's injectable `fetch` serves the key set too, so the reference client's tests could be ported (25 cases). The same fix is owed upstream in Ward's reference client.
+
+## [2026-10-03] done | Brief 148 — extracting a tarball never deletes existing files
+
+A second "Extract here" of the same tarball `rm -rf`'d the first extraction's folders, edits included. The default destination is now `name (2)`… when `name` exists. An explicit destination is merged file by file, for zip and tar, and a folder in the way of an archive file answers 409.

@@ -65,3 +65,22 @@ Real desktops never do this: extracting into an existing name creates
   does not contain. Extracting into an explicit existing destination keeps files
   absent from the archive and overwrites same-path files — for zip and tar.
 - Backend unit + e2e green.
+
+## Outcome (2026-10-03)
+
+Done, in `archive.service.ts`: `extract`, a new `freeDest`, and `mergeTree`. `stageTarExtraction` and every guard are untouched.
+- With no `dest`, `freeDest` takes the first free of `name`, `name (2)`, `name (3)`… (the Trash's convention). Applies to zip and tar.
+- `mergeTree` walks the staged tree:
+  - an existing directory is merged into;
+  - a missing path, or a file where the archive has a folder, gets the staged entry renamed in;
+  - a same-path file is replaced by `rename`.
+  - Nothing is `rm -rf`'d. A file in the archive where a **folder** exists answers 409 naming it. That edge was unhandled before (`rm -rf` took the folder).
+- Step 3 needed no change. archive-manager's completion and toast already show the response's `dest`, and the file manager's "Extract here" sends no `dest`, so it gets the new default.
+
+**Specs** (`archive.brief148.spec.ts`):
+- For tar.gz and zip, extracting twice with no destination goes to `project (2)` and then `project (3)`, and `project/`, edits and new files included, stays byte-identical.
+- Extracting into an explicit existing destination overwrites same-path files and keeps every other one, at the top level and nested.
+- No staging directory is left.
+- On the old code, both derived cases and the tar merge failed; the zip merge already behaved.
+
+Archive specs 50/50 (brief 44's and 78's included).

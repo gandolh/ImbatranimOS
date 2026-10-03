@@ -1,6 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useAuthStore } from './store/authStore'
-import { flushPrefs, flushPrefsKeepalive, hydratePrefs } from '../../lib/prefs'
+import { flushPrefs, flushPrefsKeepalive, hydratePrefs, prefsWaitingForAuth } from '../../lib/prefs'
+import {
+  WARD_REFRESHED_EVENT,
+  noteSessionFresh,
+  startProactiveRefresh,
+} from '../../lib/wardSession'
 import { rehydrateDotfileStores } from '../../shared/store/dotfiles'
 import { AuthShell } from './AuthShell'
 import {
@@ -70,6 +75,30 @@ export function AuthGate({ children }: { children: ReactNode }) {
     }
   }, [authenticated])
 
+  // Keep the Ward session alive while signed in (brief 144): refresh about a
+  // minute before the access token expires instead of meeting a 401 every 15
+  // minutes. The probe that just succeeded is the freshest fact there is; the
+  // cookie's real expiry is HttpOnly, so the first schedule is an estimate and
+  // every refresh after it uses Ward's own answer.
+  useEffect(() => {
+    if (!authenticated) return
+    noteSessionFresh()
+    return startProactiveRefresh()
+  }, [authenticated])
+
+  // A refresh that succeeds after something gave up: prefs held back by a 401
+  // (brief 109) go now, and a desktop already behind the sign-in cover comes
+  // back without a page load. Re-probing rather than flipping `authenticated`
+  // keeps `/me` the one source of truth.
+  useEffect(() => {
+    const onRefreshed = () => {
+      if (prefsWaitingForAuth()) flushPrefs()
+      if (!useAuthStore.getState().authenticated) void refresh()
+    }
+    window.addEventListener(WARD_REFRESHED_EVENT, onRefreshed)
+    return () => window.removeEventListener(WARD_REFRESHED_EVENT, onRefreshed)
+  }, [refresh])
+
   // A change made just before the tab closes should still reach the server —
   // over keepalive, because an ordinary XHR is routinely aborted on unload
   // (brief 109). `pagehide` rather than `beforeunload`: it also covers bfcache
@@ -87,7 +116,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // A 401 on any protected route (session expired/revoked) suspends the UI.
+  // A 401 the interceptor could not refresh away (session revoked, refresh
+  // family dead) suspends the UI.
   // With `everAuthenticated` latched this now means "overlay", not "unmount" —
   // buffers survive; the shell process honestly does not (the pty revoke sweep
   // reaps invalid sessions server-side, which is a security behaviour).

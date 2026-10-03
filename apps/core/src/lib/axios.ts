@@ -1,4 +1,5 @@
-import axios from 'axios'
+import axios, { type InternalAxiosRequestConfig } from 'axios'
+import { refreshWardSession } from './wardSession'
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -8,16 +9,42 @@ export const api = axios.create({
   withCredentials: true,
 })
 
-// When a protected route rejects with 401 the session has expired or was
-// revoked — signal the app to drop back to the lock screen. Auth endpoints
-// (login failures etc.) are excluded; those are handled locally by the caller.
+/** Marks a request already replayed after a refresh, so it is never retried twice. */
+type RetriableConfig = InternalAxiosRequestConfig & { wardRetried?: boolean }
+
+const signalUnauthorized = () => window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+
+/*
+ * A 401 is usually just the 15-minute access token expiring (brief 144). Refresh
+ * the Ward session and replay the request once; only a dead refresh family, or a
+ * request that fails again after a refresh, covers the desktop with the sign-in
+ * screen. A refresh that cannot reach Ward signals nothing: an unreachable
+ * identity service is not a sign-out, and the caller sees the original 401.
+ *
+ * `system.http` is this instance, so every add-on's request gets this too.
+ */
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    const url = String(err?.config?.url ?? '')
-    if (err?.response?.status === 401 && !url.includes('/auth/')) {
-      window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+  async (err: unknown) => {
+    const config = (err as { config?: RetriableConfig }).config
+    const status = (err as { response?: { status?: number } }).response?.status
+    if (status !== 401 || !config) return Promise.reject(err)
+    if (config.wardRetried) {
+      signalUnauthorized()
+      return Promise.reject(err)
     }
-    return Promise.reject(err)
+
+    let refreshed: boolean
+    try {
+      refreshed = await refreshWardSession()
+    } catch {
+      return Promise.reject(err)
+    }
+    if (!refreshed) {
+      signalUnauthorized()
+      return Promise.reject(err)
+    }
+    config.wardRetried = true
+    return api.request(config)
   }
 )

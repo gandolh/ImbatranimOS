@@ -685,4 +685,45 @@ describe('FilesService (jail + real filesystem)', () => {
       ).rejects.toThrow();
     });
   });
+
+  describe('writeFile is atomic too (brief 140)', () => {
+    // The injected mid-write failure, which needs a mocked `fs/promises`, is in
+    // files.service.write.spec.ts so the mock stays out of this file.
+
+    it('replaces an existing file and leaves no staging file', async () => {
+      await service.createFile('home', 'note.txt', 'old contents');
+      await service.writeFile('home', 'note.txt', 'new contents');
+      expect(await fs.readFile(join(jail, 'note.txt'), 'utf-8')).toBe(
+        'new contents',
+      );
+      expect(await fs.readdir(jail)).toEqual(['note.txt']);
+    });
+
+    it('creates a file that did not exist yet, including its parents', async () => {
+      await service.writeFile('home', 'a/b/new.txt', 'hello');
+      expect(await fs.readFile(join(jail, 'a/b/new.txt'), 'utf-8')).toBe(
+        'hello',
+      );
+    });
+
+    it('preserves the existing file mode', async () => {
+      await service.createFile('home', 'secret.txt', 'old');
+      await fs.chmod(join(jail, 'secret.txt'), 0o600);
+      await service.writeFile('home', 'secret.txt', 'new');
+      const mode = (await fs.stat(join(jail, 'secret.txt'))).mode & 0o777;
+      expect(mode).toBe(0o600);
+    });
+
+    it('leaves a directory in the way untouched, with no staging file', async () => {
+      await service.createDirectory('home', 'blocked');
+      await service.createFile('home', 'blocked/keep.txt', 'still here');
+      await expect(
+        service.writeFile('home', 'blocked', 'replacement'),
+      ).rejects.toThrow();
+      expect(await fs.readFile(join(jail, 'blocked/keep.txt'), 'utf-8')).toBe(
+        'still here',
+      );
+      expect(await fs.readdir(jail)).toEqual(['blocked']);
+    });
+  });
 });

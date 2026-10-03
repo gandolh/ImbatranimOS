@@ -631,10 +631,12 @@ export class FilesService {
     content: string,
   ): Promise<FileEntry> {
     const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
-    await withDiskSpaceCheck(async () => {
-      await fs.mkdir(dirname(abs), { recursive: true });
-      await fs.writeFile(abs, content, 'utf-8');
-    });
+    await withDiskSpaceCheck(() => fs.mkdir(dirname(abs), { recursive: true }));
+    // Atomic like an upload (brief 140): `fs.writeFile` onto `abs` truncated it
+    // first, so a full disk mid-save left Notepad's file empty.
+    await this.writeAtomically(abs, (staged) =>
+      fs.writeFile(staged, content, 'utf-8'),
+    );
     return this.toEntry(rootDir, abs);
   }
 
@@ -667,45 +669,55 @@ export class FilesService {
         await fs.mkdir(dirname(abs), { recursive: true });
       });
 
-      // Stage beside the destination, then rename over it.
-      //
-      // `copyFile` straight onto `abs` TRUNCATES it before writing, so a failure
-      // part-way through — a full disk, an OOM kill, a container restart — left
-      // the user's file truncated and the original bytes gone. Every save in the
-      // OS goes through here (Docs, Sheets, Slides, Notepad, Code Editor,
-      // norPDF, images), so that was one interruption away from destroying a
-      // document for any of them.
-      //
-      // `rename` within the same directory is atomic on POSIX: either the new
-      // bytes are fully in place or the old file is untouched. Staging in the
-      // destination's own directory rather than the OS temp dir is what makes
-      // that guarantee hold — a rename across filesystems is not atomic and
-      // would fall back to a copy.
-      //
-      // The multer temp file is still copied rather than renamed, because it
-      // genuinely can be on another mount.
-      const staged = join(
-        dirname(abs),
-        `.${basename(abs)}.imbatranim-${randomUUID()}.part`,
-      );
-      try {
-        await withDiskSpaceCheck(() => fs.copyFile(tmpPath, staged));
-        // A rename carries the staged file's mode, not the destination's, so an
-        // existing file's permissions would silently reset to the temp's. Copy
-        // them across first; a failure here is not worth losing the save over.
-        const previous = await fs.stat(abs).catch(() => null);
-        if (previous) {
-          await fs.chmod(staged, previous.mode).catch(() => undefined);
-        }
-        await withDiskSpaceCheck(() => fs.rename(staged, abs));
-      } catch (err) {
-        // Leave the original exactly as it was.
-        await fs.rm(staged, { force: true });
-        throw err;
-      }
+      // The multer temp file is copied rather than renamed into place, because
+      // it genuinely can be on another mount.
+      await this.writeAtomically(abs, (staged) => fs.copyFile(tmpPath, staged));
       return this.toEntry(rootDir, abs);
     } finally {
       await fs.rm(tmpPath, { force: true });
+    }
+  }
+
+  /**
+   * Write `abs` by staging beside it and renaming over it.
+   *
+   * Writing straight onto `abs` (`fs.writeFile`, `copyFile`) TRUNCATES it before
+   * writing, so a failure part-way through — a full disk, an OOM kill, a
+   * container restart — left the user's file truncated and the original bytes
+   * gone. Both save paths come through here: `writeFile` (`PUT /files/content`:
+   * Notepad, the file manager's text writes, the REST client's collections) and
+   * `uploadFile` (Docs, Sheets, Slides, Code Editor, Markdown Editor, norPDF,
+   * images).
+   *
+   * `rename` within the same directory is atomic on POSIX: either the new bytes
+   * are fully in place or the old file is untouched. Staging in the
+   * destination's own directory rather than the OS temp dir is what makes that
+   * guarantee hold — a rename across filesystems is not atomic and would fall
+   * back to a copy. The cost: a save needs write permission on the directory,
+   * not just the file.
+   */
+  private async writeAtomically(
+    abs: string,
+    write: (stagedPath: string) => Promise<void>,
+  ): Promise<void> {
+    const staged = join(
+      dirname(abs),
+      `.${basename(abs)}.imbatranim-${randomUUID()}.part`,
+    );
+    try {
+      await withDiskSpaceCheck(() => write(staged));
+      // A rename carries the staged file's mode, not the destination's, so an
+      // existing file's permissions would silently reset to the default. Copy
+      // them across first; a failure here is not worth losing the save over.
+      const previous = await fs.stat(abs).catch(() => null);
+      if (previous) {
+        await fs.chmod(staged, previous.mode).catch(() => undefined);
+      }
+      await withDiskSpaceCheck(() => fs.rename(staged, abs));
+    } catch (err) {
+      // Leave the original exactly as it was.
+      await fs.rm(staged, { force: true });
+      throw err;
     }
   }
 

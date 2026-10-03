@@ -78,3 +78,34 @@ effect, but only the Terminal add-on keeps it fresh, and it adds a route.
 - In the browser against a real Ward: a Terminal running
   `while true; do date; sleep 30; done` keeps printing for 40 minutes, and
   signing out at Ward closes it within about a minute.
+
+## Outcome (2026-10-03)
+
+Done with the recommended design, a freshness registry. **The grill did not happen**; the heartbeat alternative stays rejected for the brief's reasons.
+
+- **`modules/ward/ward-freshness.ts` (new, `WardFreshness`):**
+  - `note(sid, cookie)`, `latest(sid)`, and `evict(keep)`, which drops entries with no live shell once older than the 15-minute token lifetime.
+  - It is provided and exported by `WardModule`, and by `WardTestModule` in `testing.ts`.
+- `WardAuthGuard` calls `note(session.sid, req.headers.cookie)` after the grant check passes.
+- **`pty.gateway.ts`:** each live shell records its `sid`. `sweepRevoked` asks Ward with `freshness.latest(sid) ?? entry.cookie`, keeps whichever cookie worked as the shell's fallback, and evicts at the end of each sweep.
+  - The upgrade handler from brief 138 is untouched.
+  - The sweep only chooses which cookie to ask with, so it still never extends a session.
+
+**Tests** (`pty.gateway.spec.ts`, against a fake Ward keyed by cookie; the sweep is called directly, because fake timers would also freeze `ws` and the PTY session):
+- (a) token A expired, registry has B → still open;
+- (b) Ward says inactive → 4401;
+- (c) grant removed → 4401;
+- (d) expired with nothing fresher → 4401;
+- (e) the 13th shell → 503;
+- (f) `pty.spawn` throws → 1011;
+- eviction drops an old session with no shell and keeps a recent one.
+- (a) and eviction fail on the old sweep.
+- `ward-session.e2e-spec.ts` asserts the guard records a cookie only when it passes: not on a 403, and once on a 200.
+- Backend unit 419/419, e2e 122/122.
+
+**Browser check against the local Ward container** (dev backend on scratch roots, `while true; do date +TICK-…; sleep 30; done`):
+- **First run (17:30): the shell closed before 17:48, a real gap.** After a page load, the desktop's first proactive refresh (brief 144) was scheduled from load time + 14 minutes, later than the true expiry of a token minted a minute before the load. Until the next request carried the new cookie, the sweep had only the expired one, which is case (d) by timing. Two more gaps had the same shape: the timer skipped hidden tabs, and a hidden tab makes no other request.
+  - Fixed on the desktop side: refresh once on sign-in, refresh two minutes ahead and in hidden tabs, and re-probe `/me` after every refresh so the guard records the new cookie at once.
+- **Second run (17:48–18:35): 47 minutes** in the same terminal element, about three token lifetimes, ticking through the idle screensaver (`textContent`, because the cover sets `visibility: hidden`).
+- **Revocation:** ending that session in Ward's console at 18:38:39 stopped the ticks within one sweep (the last was 18:38:30), and the desktop showed the sign-in cover by +45 s.
+  - Ward's own **Sign out** (`POST /ward-api/logout` 204) revoked nothing, and the shell kept ticking. That is the known Ward bug (the refresh cookie is scoped to `/ward-api/refresh` and never reaches `/logout`), not this brief.

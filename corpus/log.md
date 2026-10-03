@@ -4110,3 +4110,7 @@ A turbo `test:e2e` task, with the root `npm test` running `turbo test test:e2e`,
 ## [2026-10-03] done | Brief 144 — the Ward session outlives its 15-minute access token
 
 Nothing refreshed Ward's session, so the desktop dropped behind the sign-in cover every 15 minutes and the way back cost a page load. The axios interceptor now refreshes on a 401 and replays once. A timer refreshes a minute before expiry. An unreachable Ward is never read as a sign-out. Taken on the brief's recommendation without the step-3 grill. Checked against the local Ward: a corrupted access cookie heals silently, and 20 idle minutes leave an unsaved Notepad buffer and the session alive.
+
+## [2026-10-03] done | Brief 145 — open terminals survive access-token rotation
+
+The terminal sweep re-checked the cookie the WebSocket opened with, so every terminal closed 15 minutes in. The REST guard now records the newest cookie per Ward session (`WardFreshness`), and the sweep asks Ward with that one. Browser testing found a timing gap in brief 144's first proactive refresh, closed by refreshing on sign-in and re-probing `/me` after each refresh. A terminal then ran 47 minutes across three token lifetimes, and ending its session in Ward's console closed it within one sweep. Ward's own Sign out still revokes nothing (its known bug).

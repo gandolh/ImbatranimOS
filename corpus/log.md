@@ -4086,3 +4086,7 @@ A client resetting the connection while Ward was being asked crashed the whole b
 ## [2026-10-03] done | Brief 139 — the REST client never overwrites collections it failed to read
 
 `loadData` turned every failure into empty data, so after a 401, a 503 or a typo in `collections.json` the next Send saved one history entry over every saved request. Loads now report `ok`, `missing` (404 only) or `failed`, and every write is refused until one succeeds, behind a banner with Retry. Malformed JSON is never overwritten and Notepad is offered for the repair. The add-on's first component test (jsdom, no testing library) covers it.
+
+## [2026-10-03] done | Brief 140 — text saves are atomic
+
+`PUT /files/content` (Notepad, file-manager text writes, the REST client's collections) wrote in place, and a full disk mid-save emptied the file. `uploadFile`'s stage-then-rename became a shared `writeAtomically` helper that `writeFile` now uses too. A mocked mid-write ENOSPC proves the original survives with no staging file left. A save now needs write permission on the directory, as uploads already did.

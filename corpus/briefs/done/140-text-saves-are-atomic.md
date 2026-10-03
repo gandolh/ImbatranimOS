@@ -62,3 +62,18 @@ Code Editor and Markdown Editor use `system.fs.upload` and are already safe.
 ## Out of scope
 
 - Detecting that the file changed on disk since it was opened — brief 155.
+
+## Outcome (2026-10-03)
+
+Done, in `files.service.ts`.
+- `uploadFile`'s stage-then-rename block is now the private `writeAtomically(abs, write)`. It stages `.<name>.imbatranim-<uuid>.part` in the destination's directory, copies an existing file's mode across, renames over the destination, and removes the staged file on any failure, with both steps inside `withDiskSpaceCheck`.
+- `writeFile` stages with `fs.writeFile`, `uploadFile` with `fs.copyFile`.
+- The helper's comment names both entry points and the apps behind each. That replaces `uploadFile`'s claim that every save went through it.
+- `createFile` is unchanged.
+
+**One behaviour change, accepted:** a save now needs write permission on the directory, not just the file, as uploads already did. Directories in the home volume belong to the shell user, so nothing in the OS hits this.
+
+**Tests:**
+- `files.service.spec.ts` gains "writeFile is atomic too" (real filesystem): replace with no `.part` left, create with parents, mode 0600 preserved, and a directory in the way left untouched with no `.part`.
+- The injected failure is in a new `files.service.write.spec.ts`. It mocks `fs/promises` (the module's exports cannot be spied on in Node 24) with a `writeFile` that writes four bytes and then throws ENOSPC. The original bytes survive, no `.part` remains, and the error is the disk-full 503. It fails on the old code; the mode test passes there too, since an in-place write keeps the mode.
+- Backend unit 411/411, e2e 121/121, typecheck and eslint clean.

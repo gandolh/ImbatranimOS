@@ -4126,3 +4126,7 @@ A second "Extract here" of the same tarball `rm -rf`'d the first extraction's fo
 ## [2026-10-03] done | Brief 150 — scrub the pre-Ward credential tables
 
 Ledger step 7 drops `auth_user` and `auth_sessions`. Upgraded installs no longer keep the owner's argon2id hash and TOTP secret, so backups stop carrying them, and a restored old backup is scrubbed when it migrates. **Backups downloaded before this change still contain them** on installs older than 2026-09-06.
+
+## [2026-10-03] done | Brief 149 — restore stops asking for a password that no longer exists
+
+Backup settings still said a restore signs you out because the backup brings its own password, and it put the desktop behind the sign-in cover. A restore now reloads the desktop and leaves the session alone, with copy that says so. The apply route drops `signedOut` and the two unused parameters that kept backend eslint red. Browser-checked with a real backup and restore.

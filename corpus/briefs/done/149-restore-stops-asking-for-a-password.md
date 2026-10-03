@@ -55,3 +55,22 @@ comment (`:35`) also still cites the deleted `SessionAuthGuard`.
   browser check) confirms a successful restore does not call
   `setAuthenticated(false)`.
 - Nothing in `apps/core/src` says a password comes from a backup.
+
+## Outcome (2026-10-03)
+
+Done.
+- **Backend:** `apply(@Body() dto)` returns `this.backup.apply(dto.id)`, which is `{ restored, createdAt, totalBytes }`. `signedOut`, `req`, `res` and the `Req`/`Request` imports are gone. The header names `WardAuthGuard` and no longer claims the database holds a credential hash (brief 150 dropped those tables).
+- **Desktop:** `BackupSettings.tsx` no longer imports the auth store.
+  - The intro says "settings" instead of "passwords".
+  - The restore copy says the desktop reloads afterwards and you stay signed in.
+  - The button is "Restore and reload", not "Restore and sign out"; the browser check caught that leftover.
+  - Success shows a toast, then `location.reload()` after 1.5 s.
+
+**For brief 153** (README "Data & backup"): a restore replaces the folders the backup contains, leaves everything else, and reloads the desktop. Nobody is signed out, and a backup carries no credentials (brief 150).
+
+**Tests:** the brief-80 spec gains a controller-level case asserting the response keys are exactly `createdAt`, `restored` and `totalBytes`. `npx eslint "{src,test}/**/*.ts"` in `apps/backend` reports no errors from this controller (the two it named are fixed). The remaining errors that run reported were in the brief-154 spec staged at the same time, and that spec is clean once 154 lands. Core typecheck is clean.
+
+**Browser check** (dev desktop, local Ward, scratch home):
+1. Backup → "Download backup" saved a `.tar.gz`.
+2. `marker.txt` was changed, then the backup uploaded, `RESTORE` typed, and "Restore and reload" clicked.
+3. The page reloaded, `marker.txt` held its pre-backup content again, and the desktop came back signed in (`/me` 200, no sign-in cover).

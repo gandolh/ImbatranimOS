@@ -37,11 +37,13 @@ import {
   useOpenIntent,
   useSystem,
   useUnsavedGuard,
+  type OpenedFile,
 } from '@imbatranim/ui'
 import { Download, FileText } from 'lucide-react'
 import { ReaderContext, useReader } from './app/context'
 import { useEditor } from './editor/context'
 import { useReaderController } from './app/useReaderController'
+import { useReplaceGate, type ReplaceLoad } from './app/useReplaceGate'
 import { EmptyState } from './app/EmptyState'
 import { TopBar } from './shell/TopBar'
 import { SidePanel } from './shell/SidePanel'
@@ -74,8 +76,31 @@ function UnsavedCloseGuard(): JSX.Element {
 }
 
 export function NorPdf({ windowId: _windowId }: { windowId: string }): JSX.Element {
-  const system = useSystem()
   const ctrl = useReaderController()
+  return (
+    <ReaderContext.Provider value={ctrl}>
+      <EditorProvider>
+        <UnsavedCloseGuard />
+        <NorPdfShell />
+      </EditorProvider>
+    </ReaderContext.Provider>
+  )
+}
+
+/**
+ * The shell, INSIDE both providers: every path that replaces the open document
+ * goes through `requestReplace`, whose Save button needs the editor's
+ * `saveToDisk` (brief 143) — the same reason `UnsavedCloseGuard` lives here.
+ */
+function NorPdfShell(): JSX.Element {
+  const system = useSystem()
+  const ctrl = useReader()
+  const { saveToDisk } = useEditor()
+  const { requestReplace, dialog: replaceDialog } = useReplaceGate(
+    ctrl.dirty,
+    ctrl.docName,
+    saveToDisk
+  )
   // One-shot open intent, drained by the shared hook (StrictMode-safe).
   const source = useOpenIntent()
   const [dragging, setDragging] = useState(false)
@@ -85,38 +110,44 @@ export function NorPdf({ windowId: _windowId }: { windowId: string }): JSX.Eleme
   // Ctrl/Cmd+S (write-back Save) is registered in TopBar, which lives inside
   // EditorProvider and can reach the editor's save-and-reload path.
 
-  /* ── Open the OS-provided file once the intent latches ─────────────────── */
+  /* ── Open an OS-provided file ──────────────────────────────────────────── */
   const openBytes = ctrl.openBytes
-  useEffect(() => {
-    if (!source) return
-    let cancelled = false
-    void (async () => {
+  const loadSource = useCallback(
+    async (file: OpenedFile) => {
       setFetching(true)
       try {
-        const buf = await system.fs.read(source.root, source.path)
-        if (cancelled) return
+        const buf = await system.fs.read(file.root, file.path)
         // Retain the source as the write-back target: Save writes back here,
         // rather than only offering a download.
-        await openBytes(new Uint8Array(buf), fileName(source.path, 'document.pdf'), {
-          root: source.root,
-          path: source.path,
+        await openBytes(new Uint8Array(buf), fileName(file.path, 'document.pdf'), {
+          root: file.root,
+          path: file.path,
         })
       } catch (err) {
-        if (!cancelled) {
-          system.notify({
-            title: 'Could not open PDF',
-            body: err instanceof Error ? err.message : String(err),
-            level: 'error',
-          })
-        }
+        system.notify({
+          title: 'Could not open PDF',
+          body: err instanceof Error ? err.message : String(err),
+          level: 'error',
+        })
       } finally {
-        if (!cancelled) setFetching(false)
+        setFetching(false)
       }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [source, openBytes, system])
+    },
+    [openBytes, system]
+  )
+
+  // Each latched intent is handled once, whatever the answer: Cancel keeps the
+  // current document, and the same intent must not ask again on the next render
+  // (`requestReplace` changes identity as nothing else here does, but `dirty`
+  // flipping re-runs this effect).
+  const handledSource = useRef<OpenedFile | null>(null)
+  const latestSource = useRef<OpenedFile | null>(null)
+  useEffect(() => {
+    latestSource.current = source
+    if (!source || handledSource.current === source) return
+    handledSource.current = source
+    requestReplace(() => loadSource(source))
+  }, [source, requestReplace, loadSource])
 
   /* ── Manual open (OS picker + drag-drop) ───────────────────────────────── */
   // The OS's own Open dialog, browsing the CONTAINER's filesystem. It used to be
@@ -127,14 +158,25 @@ export function NorPdf({ windowId: _windowId }: { windowId: string }): JSX.Eleme
   // reads, so it runs the identical load path a File Manager double-click does.
   const { openFile: pickFromOs } = useFileDialog()
   const pickFile = useCallback(() => {
-    void pickFromOs({ extensions: ['pdf'] })
-  }, [pickFromOs])
+    void (async () => {
+      const before = latestSource.current
+      const choice = await pickFromOs({ extensions: ['pdf'] })
+      // Picking the file that is already latched (the open one, or one whose
+      // replace was cancelled) does not change the latch, so the effect above
+      // never sees it. Ask directly instead.
+      if (choice && before && choice.root === before.root && choice.path === before.path) {
+        requestReplace(() => loadSource(choice))
+      }
+    })()
+  }, [pickFromOs, requestReplace, loadSource])
 
   const takeFile = useCallback(
     (file: File | undefined | null) => {
-      if (file) void ctrl.openFile(file)
+      if (!file) return
+      const load: ReplaceLoad = () => ctrl.openFile(file)
+      requestReplace(load)
     },
-    [ctrl]
+    [ctrl, requestReplace]
   )
 
   const onDragEnter = useCallback((e: React.DragEvent) => {
@@ -176,57 +218,55 @@ export function NorPdf({ windowId: _windowId }: { windowId: string }): JSX.Eleme
   }
 
   return (
-    <ReaderContext.Provider value={ctrl}>
-      <EditorProvider>
-        <UnsavedCloseGuard />
-        <div
-          className="bg-surface-container-lowest relative flex h-full min-h-0 flex-col"
-          onDragEnter={onDragEnter}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
-          onDrop={onDrop}
-        >
-          {/* 1. PART B annotate toolbar mounts via `toolbarSlot` when a doc is open. */}
-          <TopBar onOpenClick={pickFile} toolbarSlot={ctrl.doc ? <AnnotateToolbar /> : undefined} />
+    <>
+      {replaceDialog}
+      <div
+        className="bg-surface-container-lowest relative flex h-full min-h-0 flex-col"
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        {/* 1. PART B annotate toolbar mounts via `toolbarSlot` when a doc is open. */}
+        <TopBar onOpenClick={pickFile} toolbarSlot={ctrl.doc ? <AnnotateToolbar /> : undefined} />
 
-          <div className="flex min-h-0 flex-1">
-            {/* 2. PART B forms tab appends to the side panel via `extraTabs`. */}
-            {ctrl.doc && ctrl.panelOpen && <SidePanel extraTabs={[formsTab]} />}
+        <div className="flex min-h-0 flex-1">
+          {/* 2. PART B forms tab appends to the side panel via `extraTabs`. */}
+          {ctrl.doc && ctrl.panelOpen && <SidePanel extraTabs={[formsTab]} />}
 
-            <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-              {!ctrl.doc ? (
-                <EmptyState
-                  onOpenClick={pickFile}
-                  error={ctrl.error}
-                  loading={ctrl.loading || fetching}
-                />
-              ) : ctrl.mode === 'organize' ? (
-                /* 3. PART B organize view replaces the reader here. */
-                <div className="min-h-0 flex-1" data-slot="organize-view">
-                  <OrganizeView />
-                </div>
-              ) : (
-                <Reader />
-              )}
-            </main>
-          </div>
-
-          {/* 4. PART B: signature capture pad (Sign tool + form signature fields). */}
-          <SignatureDialog />
-
-          {dragging && (
-            <div
-              className="border-primary bg-surface/80 pointer-events-none absolute inset-2 z-50 grid place-items-center border-2 border-dashed backdrop-blur-sm"
-              aria-hidden="true"
-            >
-              <div className="text-on-surface flex flex-col items-center gap-2">
-                <Download size={34} strokeWidth={1.5} />
-                <p className="font-ui text-[13px]">Drop a PDF to open</p>
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+            {!ctrl.doc ? (
+              <EmptyState
+                onOpenClick={pickFile}
+                error={ctrl.error}
+                loading={ctrl.loading || fetching}
+              />
+            ) : ctrl.mode === 'organize' ? (
+              /* 3. PART B organize view replaces the reader here. */
+              <div className="min-h-0 flex-1" data-slot="organize-view">
+                <OrganizeView />
               </div>
-            </div>
-          )}
+            ) : (
+              <Reader />
+            )}
+          </main>
         </div>
-      </EditorProvider>
-    </ReaderContext.Provider>
+
+        {/* 4. PART B: signature capture pad (Sign tool + form signature fields). */}
+        <SignatureDialog />
+
+        {dragging && (
+          <div
+            className="border-primary bg-surface/80 pointer-events-none absolute inset-2 z-50 grid place-items-center border-2 border-dashed backdrop-blur-sm"
+            aria-hidden="true"
+          >
+            <div className="text-on-surface flex flex-col items-center gap-2">
+              <Download size={34} strokeWidth={1.5} />
+              <p className="font-ui text-[13px]">Drop a PDF to open</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }

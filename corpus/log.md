@@ -4078,3 +4078,7 @@ true and brief 144's: the session is not refreshed, so the desktop drops to the
 sign-in cover about 15 minutes after sign-in. Also unchanged: `npm run dev` (the
 compose `watch` profile) runs the backend in a container, where `localhost:8792`
 is not Ward; `npm run dev:local` is the path that works.
+
+## [2026-10-03] done | Brief 138 — terminal upgrades: no crash on reset, no held sockets, no Ward secrets in the shell
+
+A client resetting the connection while Ward was being asked crashed the whole backend: Node drops its own socket `'error'` listener before `'upgrade'`. The handler now listens until `handleUpgrade`, and drops a socket that left mid-authentication. Upgrades to other paths get a 404 instead of being held open. Shells start with the backend's environment minus every `WARD_*` name (a denylist, reason in the code). New `pty.gateway.spec.ts` plus an e2e environment round-trip; both fail on the old code. Found while closing it: the git module does not scrub its environment as the brief assumed (todo captured).

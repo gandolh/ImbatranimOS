@@ -91,3 +91,18 @@ Three defects in the raw `'upgrade'` handler and the spawn path of
 - Terminals being closed at token expiry — brief 145.
 - A process-wide `uncaughtException` handler. The fix belongs at the source; a
   global swallow would hide the next one.
+
+## Outcome (2026-10-03)
+
+Done, in `pty.gateway.ts` only. `sweepRevoked` and `pty-upgrade.ts` are untouched.
+
+1. The PTY branch attaches `onSocketError` first (debug log, `destroy()`) and removes it immediately before `handleUpgrade`. A socket already destroyed when Ward answers is dropped there, with no refusal written and no shell spawned.
+2. A non-PTY upgrade gets `HTTP/1.1 404 Not Found` and is destroyed. The comment says a future WebSocket endpoint is dispatched from this handler.
+3. `shellEnv(process.env)` is a copy without any `WARD_*` name. It is a **denylist**: the terminal is the user's workspace, and an allowlist would also strip what the image or operator set (`EDITOR`, locale, tool paths). The cost is that a new secret has to be added to it.
+
+**Tests:**
+- `pty.gateway.spec.ts` (new) runs a real HTTP server with a fake Ward whose answer the test holds. An RST (`resetAndDestroy`) during authentication, then release: a terminal still opens and echoes. An upgrade to `/api/nope` gets a 404 status line and is closed. On the old handler both fail; the first with `read ECONNRESET`.
+- `pty.e2e-spec.ts` round-trips the environment: `WARD_APP_KEY` is empty in the shell, `HOME` and `PATH` are set, and the backend's own `process.env` keeps the key. It fails with `env: process.env`.
+- Backend unit 406/406, e2e 121/121, typecheck and `npx eslint` clean on the touched files.
+
+**Found, not fixed:** this brief's context says the git module spawns with a scrubbed environment. It does not: `git.service.ts` passes `extendEnv: true`, so git and every hook in a user's repository inherit `WARD_APP_KEY`. Captured as [todos/git-env-inherits-ward-secret.md](../../todos/git-env-inherits-ward-secret.md).

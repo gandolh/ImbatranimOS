@@ -80,3 +80,20 @@ Implement inline, or as two chunks (the fix; the test port).
 - Rejecting duplicate `ward_session` cookies, and evicting stale introspection
   cache entries — both on the watch list; decide them with Ward, since the
   reference client behaves the same way.
+
+## Outcome (2026-10-03)
+
+Done, in `ward.client.ts` and a new `ward.client.spec.ts`.
+- `verify()` maps only the allowlisted jose codes (the brief's eight) to `WardAuthenticationError`. Everything else, including an error with no `code`, becomes `WardUnavailableError`.
+- `createRemoteJWKSet` now gets `[customFetch]: fetchImpl` (jose 6.2.10), so the key set goes through the client's injectable `fetch` like introspection does. Without it no test could serve or break the key set.
+
+**Tests** (25, one injectable `fetch` serving both the JWKS and `/introspect`, with a local Ed25519 pair):
+- `alg: none`, HS256 signed with the SPKI bytes, a foreign key under the same `kid`, a wrong `iss` or `aud`, a missing `sid` and an expired token are all authentication errors.
+- **A refused connection, a 500, a body that is not a key set, and a timeout on the key set are `WardUnavailableError`.**
+- The key set is fetched once and reused.
+- Introspection is cached for 30 s and then asked again; 50 concurrent cold calls make one request; a Ward 401 is `WardConfigurationError` and is not cached; a 500, bad JSON, an active session with no subject and a refused connection are unavailable.
+- `readAccessCookie` handles an absent header, an empty value, several cookies, and an array header.
+- `authenticate` returns the caller with the token's `sid`, and an inactive session is an authentication error.
+- On the old client 6 failed: the key-set cases, plus two that need a served key set.
+
+Backend unit green, and the spec runs under plain `npm test`. **Owed upstream:** Ward's reference client (`wzd_auth/client/src/verify.ts`) has the same catch-all; atrium's brief 61 noted the same.

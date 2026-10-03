@@ -4114,3 +4114,7 @@ Nothing refreshed Ward's session, so the desktop dropped behind the sign-in cove
 ## [2026-10-03] done | Brief 145 — open terminals survive access-token rotation
 
 The terminal sweep re-checked the cookie the WebSocket opened with, so every terminal closed 15 minutes in. The REST guard now records the newest cookie per Ward session (`WardFreshness`), and the sweep asks Ward with that one. Browser testing found a timing gap in brief 144's first proactive refresh, closed by refreshing on sign-in and re-probing `/me` after each refresh. A terminal then ran 47 minutes across three token lifetimes, and ending its session in Ward's console closed it within one sweep. Ward's own Sign out still revokes nothing (its known bug).
+
+## [2026-10-03] done | Brief 146 — the Ward client fails closed on a key-set outage, and is tested
+
+A key-set fetch failure (Ward down after a restart, or past the 10-minute JWKS cache) read as "signed out", a 401. Only jose's token-validity codes are authentication errors now; everything else is a 503. The client's injectable `fetch` serves the key set too, so the reference client's tests could be ported (25 cases). The same fix is owed upstream in Ward's reference client.

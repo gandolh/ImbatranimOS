@@ -4082,3 +4082,7 @@ is not Ward; `npm run dev:local` is the path that works.
 ## [2026-10-03] done | Brief 138 — terminal upgrades: no crash on reset, no held sockets, no Ward secrets in the shell
 
 A client resetting the connection while Ward was being asked crashed the whole backend: Node drops its own socket `'error'` listener before `'upgrade'`. The handler now listens until `handleUpgrade`, and drops a socket that left mid-authentication. Upgrades to other paths get a 404 instead of being held open. Shells start with the backend's environment minus every `WARD_*` name (a denylist, reason in the code). New `pty.gateway.spec.ts` plus an e2e environment round-trip; both fail on the old code. Found while closing it: the git module does not scrub its environment as the brief assumed (todo captured).
+
+## [2026-10-03] done | Brief 139 — the REST client never overwrites collections it failed to read
+
+`loadData` turned every failure into empty data, so after a 401, a 503 or a typo in `collections.json` the next Send saved one history entry over every saved request. Loads now report `ok`, `missing` (404 only) or `failed`, and every write is refused until one succeeds, behind a banner with Retry. Malformed JSON is never overwritten and Notepad is offered for the repair. The add-on's first component test (jsdom, no testing library) covers it.

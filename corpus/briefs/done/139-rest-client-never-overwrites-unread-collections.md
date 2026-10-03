@@ -71,3 +71,23 @@ clicking Save before a slow initial load resolves.
 
 - Detecting a concurrent change to `collections.json` from another window —
   brief 155's pattern could be applied here later.
+
+## Outcome (2026-10-03)
+
+Done.
+
+**Change:**
+- `loadData` returns `{ status: 'ok', data }`, `{ status: 'missing' }` (a 404 only) or `{ status: 'failed', error, malformed }`. A JSON error keeps V8's message, which names line and column for a real file.
+- `RestApiClient` holds the load state, and `persist` refuses (returns false) unless it is `ok` or `missing`. This covers Send's history, Save, delete, clear history, the environment picker and editor, and "add missing vars".
+- Send still works. Save says "Not saved", with the reason: still loading, or unavailable.
+- A failed load shows `Saved requests are unavailable: <reason>` in the `bg-error-container` banner (git-gui's pattern) with Retry. When the JSON is malformed, it also offers **Open in Notepad** (`openApp('notepad', { openPath, root })`, the file manager's payload).
+- Refusing was chosen over queueing, as the brief recommends.
+
+**Tests:**
+- `collectionsApi.test.ts`: 404 → `missing`; 401, 500, 503 and a network error → `failed`; malformed → `failed` with line and column; valid → `ok`, normalised.
+- `RestApiClient.test.tsx` (jsdom docblock, `react-dom/client` + `act`, as in apps/core): a failed load plus Send makes no `http.put`; Save while the load is pending makes none; Retry then Save writes the loaded collection plus the new one; malformed JSON is never written and Notepad is offered; a 404 still starts empty and the first Save creates the file.
+- The first four fail on the old code.
+- The add-on gains dev dependencies on `jsdom`, `react-dom` and `@types/react-dom` (versions already in the lockfile), and its vitest config includes `.test.tsx`.
+- 119/119 tests; typecheck, lint and `format:check` clean.
+
+**Not done:** no browser walkthrough of the banner. It reuses git-gui's banner classes and the kit `Button`.

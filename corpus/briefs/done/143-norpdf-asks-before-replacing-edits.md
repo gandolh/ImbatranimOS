@@ -57,3 +57,24 @@ Image Viewer for previous/next.
   runs before the load; a clean document loads with no dialog.
 - Typecheck, lint and the new vitest run green.
 - In the browser: annotate, drop another PDF onto the window — you are asked.
+
+## Outcome (2026-10-03)
+
+Done.
+- **`src/app/useReplaceGate.tsx` (new):** `requestReplace(load)` loads at once when clean. When dirty it opens the kit's `UnsavedChangesDialog`, and a request made while it is up replaces the pending load.
+  - Save runs `saveToDisk`, then loads only if `dirty` cleared. `saveToDisk` reports its own failure and leaves `dirty` set, so the verdict is the committed flag, as in `useUnsavedGuard`. The effect only resolves the promise the handler awaits, which keeps `setState` out of it.
+  - Don't Save loads; Cancel keeps the document, still dirty.
+- **`NorPdf.tsx`:** the file intake (intent effect, picker, drop) moved into a `NorPdfShell` inside both providers, because the gate needs the editor's `saveToDisk`.
+  - Each latched intent is handled once, whatever the answer.
+  - The picker also covers a case the brief did not name: `useOpenIntent` ignores a re-latch of the same path. Re-picking the open file, or one whose replace was cancelled, therefore asks directly rather than doing nothing.
+- `useReaderController.ts` and `TopBar.tsx` needed no change.
+
+**Tests:** norPDF gains `vitest.config.ts`, `"test": "vitest run"`, and dev dependencies on `jsdom` and `@types/react-dom`.
+- `useReplaceGate.test.tsx` (jsdom, `react-dom/client` + `act`) covers: clean → loads with no dialog; dirty → asks, and Cancel keeps it dirty; Don't Save → loads; Save → `save` then `load`, in that order; a failed Save → no load, still dirty.
+- The tests drive the gate directly. The drop, intent and picker wiring was checked in the browser.
+- Typecheck, lint, prettier and 5/5 green.
+
+**Browser check** (dev server, local Ward, scratch roots):
+1. Opened `first.pdf` through Open PDF and drew a rectangle (title `first.pdf •`).
+2. Dropped `second.pdf` onto the window: "Do you want to save changes to first.pdf?" Cancel kept `first.pdf •`.
+3. Open PDF → `second.pdf` asked again, and Don't Save loaded `second.pdf`, clean.

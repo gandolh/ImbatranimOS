@@ -15,6 +15,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { tmpdir } from 'os';
+import { pipeline } from 'stream/promises';
 import type { Request, Response } from 'express';
 import { MulterExceptionFilter } from '../files/multer-exception.filter';
 import { BackupService } from './backup.service';
@@ -71,9 +72,14 @@ export class BackupController {
     // streaming design exists to avoid.
     res.setHeader('X-Accel-Buffering', 'no');
 
-    backup.stream.pipe(res);
+    // `pipeline`, not `.pipe()` (brief 142). A client that disconnected left
+    // `.pipe()` unpiped and tar's stdout paused: tar blocked on a full pipe
+    // forever, `done` never settled, and `dispose()` never ran, so every later
+    // backup answered 409 until a restart. Whichever side fails first now
+    // reaches `finally`, and `dispose()` kills a still-running tar. `Promise.all`
+    // also handles the other promise's later rejection.
     try {
-      await backup.done;
+      await Promise.all([pipeline(backup.stream, res), backup.done]);
     } catch {
       // Headers are already out, so the status cannot be changed. Destroying the
       // socket truncates the gzip stream, which fails its own CRC at the client

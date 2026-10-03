@@ -16,6 +16,7 @@ import {
   topLevelOf,
   validateManifest,
 } from './backup.service';
+import { BackupController } from './backup.controller';
 
 const execFileAsync = promisify(execFile);
 const tar = async (args: string[]): Promise<void> => {
@@ -547,6 +548,24 @@ describe('BackupService — brief 80', () => {
         .all() as { name: string }[];
       expect(tables.map((t) => t.name)).not.toContain('sessions');
       expect(tables.map((t) => t.name)).not.toContain('users');
+    });
+
+    it('answers the restore with what was restored, and no signedOut (brief 149)', async () => {
+      const tarball = await takeBackup();
+      const upload = join(outside, 'u149.tar.gz');
+      await fs.copyFile(tarball, upload);
+      const preview = await service.inspect(upload);
+
+      const res = await new BackupController(service).apply({
+        id: preview.id,
+        confirm: 'RESTORE',
+      });
+
+      expect(Object.keys(res).sort()).toEqual([
+        'createdAt',
+        'restored',
+        'totalBytes',
+      ]);
     });
 
     it('leaves a file created AFTER the backup alone, and says which names it touched', async () => {

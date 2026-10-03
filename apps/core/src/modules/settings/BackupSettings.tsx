@@ -5,7 +5,6 @@ import { api } from '../../lib/axios'
 import { Button, Input } from '../../shared/components/ui'
 import { formatBytes } from '../../lib/formatBytes'
 import { notify } from '../../shared/store/notificationStore'
-import { useAuthStore } from '../auth/store/authStore'
 
 type BackupInfo = {
   homeBytes: number
@@ -54,8 +53,6 @@ function errMessage(err: unknown, fallback: string): string {
  * what is deliberately left out of it.
  */
 export function BackupSettings() {
-  const setAuthenticated = useAuthStore((s) => s.setAuthenticated)
-
   const [info, setInfo] = useState<BackupInfo | null>(null)
   const [downloading, setDownloading] = useState(false)
 
@@ -132,14 +129,15 @@ export function BackupSettings() {
       await api.post('/backup/restore/apply', { id: preview.id, confirm: CONFIRM_WORD })
       notify({
         title: 'Restore complete',
-        body: 'Your home directory was replaced. Sign in again with the password from that backup.',
+        body: 'The folders from the backup are back in place. The desktop reloads to pick up its settings.',
         level: 'success',
         appId: 'settings',
       })
-      // The restored database carries the backup's credentials, so this session
-      // is gone on the server. Drop to the lock screen rather than letting the
-      // desktop 401 its way there one request at a time.
-      setAuthenticated(false)
+      // A restore cannot sign anybody out (brief 149): credentials are Ward's
+      // and not in the restored database. What did change underneath the
+      // desktop is every dotfile — wallpaper, accent, window preferences — so
+      // read them again from a fresh load. A short pause lets the toast show.
+      window.setTimeout(() => window.location.reload(), 1500)
     } catch (err) {
       const message = errMessage(err, 'The restore failed')
       setError(message)
@@ -149,7 +147,7 @@ export function BackupSettings() {
       setApplying(false)
       setConfirmText('')
     }
-  }, [preview, confirmText, setAuthenticated])
+  }, [preview, confirmText])
 
   return (
     <div className="space-y-8">
@@ -159,7 +157,7 @@ export function BackupSettings() {
           Back up
         </p>
         <p className="text-on-surface-variant mb-4 max-w-prose text-[12px]">
-          Everything that makes this machine yours — your files, notes, passwords and app data — in
+          Everything that makes this machine yours — your files, notes, settings and app data — in
           one <span className="font-mono">.tar.gz</span> you can download and keep. No host shell
           required.
         </p>
@@ -201,7 +199,7 @@ export function BackupSettings() {
         </p>
         <p className="text-on-surface-variant mb-4 max-w-prose text-[12px]">
           Replaces the folders the backup contains. Anything you have created since is left alone.
-          You will be signed out afterwards, because the backup brings its own password with it.
+          The desktop reloads afterwards to pick up the restored settings; you stay signed in.
         </p>
 
         <input
@@ -297,7 +295,7 @@ export function BackupSettings() {
                   ) : (
                     <RotateCcw size={14} strokeWidth={1.75} />
                   )}
-                  Restore and sign out
+                  Restore and reload
                 </Button>
                 <Button
                   variant="ghost"

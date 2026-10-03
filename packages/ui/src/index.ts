@@ -28,6 +28,7 @@ export { Separator } from './components/Separator'
 export { Tooltip } from './components/Tooltip'
 export { ConfirmDialog, useConfirm } from './components/ConfirmDialog'
 export { UnsavedChangesDialog } from './components/UnsavedChangesDialog'
+export { FileConflictDialog, type FileConflictDialogProps } from './components/FileConflictDialog'
 export { ContextMenu, type ContextMenuItem } from './components/ContextMenu'
 export { PromptDialog, usePrompt } from './components/PromptDialog'
 
@@ -39,7 +40,7 @@ export { useElementSize, type ElementSize, type ElementSizeRef } from './hooks/u
 // Pure utilities
 export { installMapGetOrInsert } from './lib/mapGetOrInsert'
 export { isTextEntry } from './lib/textEntry'
-export { fileName, UploadTooLargeError } from './lib/files'
+export { fileName, FileConflictError, UploadTooLargeError } from './lib/files'
 export { describeFileFailure, type FileFailureOptions } from './lib/fileFailureText'
 
 // Backend log contract (pure types)
@@ -79,6 +80,8 @@ export type {
   SystemSchedule,
   SystemShortcuts,
   SystemWindow,
+  UploadOptions,
+  VersionedBytes,
 } from './system'
 export { SystemProvider, useSystem } from './systemContext'
 
@@ -96,6 +99,11 @@ export {
   useWindowVisible,
   type TopWindowKeydownOptions,
 } from './hooks/systemHooks'
+export {
+  useFileConflict,
+  type FileConflict,
+  type FileConflictChoice,
+} from './hooks/useFileConflict'
 export {
   useFileDialog,
   useOpenIntent,

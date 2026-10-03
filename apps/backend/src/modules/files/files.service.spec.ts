@@ -1,3 +1,4 @@
+import { ConflictException } from '@nestjs/common';
 import { FilesService } from './files.service';
 import * as fs from 'fs/promises';
 import * as os from 'os';
@@ -724,6 +725,91 @@ describe('FilesService (jail + real filesystem)', () => {
         'still here',
       );
       expect(await fs.readdir(jail)).toEqual(['blocked']);
+    });
+  });
+
+  describe('saves detect external changes (brief 155)', () => {
+    const tmpUpload = async (content: string) => {
+      const dir = await fs.mkdtemp(join(os.tmpdir(), 'imb-155-'));
+      const p = join(dir, 'up.bin');
+      await fs.writeFile(p, content);
+      return p;
+    };
+
+    it('reports a version on read and on every entry', async () => {
+      const entry = await service.writeFile('home', 'a.txt', 'one');
+      const read = await service.readFile('home', 'a.txt');
+      expect(read.version).toBe(entry.version);
+      expect(read.version).toMatch(/^\d+-3$/);
+    });
+
+    it('writes when the expected version still matches, and returns the new one', async () => {
+      const first = await service.writeFile('home', 'a.txt', 'one');
+      const second = await service.writeFile(
+        'home',
+        'a.txt',
+        'two!',
+        first.version,
+      );
+      expect(await fs.readFile(join(jail, 'a.txt'), 'utf-8')).toBe('two!');
+      expect(second.version).not.toBe(first.version);
+    });
+
+    it('refuses a stale version with 409 and the current token, writing nothing', async () => {
+      const opened = await service.writeFile('home', 'notes.txt', 'mine');
+      // The Terminal appends a line meanwhile.
+      await fs.appendFile(join(jail, 'notes.txt'), '\nfrom the terminal');
+      const err = (await service
+        .writeFile('home', 'notes.txt', 'mine plus one', opened.version)
+        .catch((e: unknown) => e)) as ConflictException;
+      expect(err).toBeInstanceOf(ConflictException);
+      const body = err.getResponse() as { current: string | null };
+      expect(body.current).toBe(
+        (await service.readFile('home', 'notes.txt')).version,
+      );
+      expect(await fs.readFile(join(jail, 'notes.txt'), 'utf-8')).toBe(
+        'mine\nfrom the terminal',
+      );
+    });
+
+    it('a file deleted meanwhile is a conflict with current null', async () => {
+      const opened = await service.writeFile('home', 'gone.txt', 'x');
+      await fs.rm(join(jail, 'gone.txt'));
+      const err = (await service
+        .writeFile('home', 'gone.txt', 'y', opened.version)
+        .catch((e: unknown) => e)) as ConflictException;
+      expect((err.getResponse() as { current: unknown }).current).toBeNull();
+    });
+
+    it('no expected token is the old blind overwrite', async () => {
+      await service.writeFile('home', 'a.txt', 'one');
+      await fs.appendFile(join(jail, 'a.txt'), ' changed');
+      await service.writeFile('home', 'a.txt', 'overwrite');
+      expect(await fs.readFile(join(jail, 'a.txt'), 'utf-8')).toBe('overwrite');
+    });
+
+    it('uploads honour the same precondition', async () => {
+      const opened = await service.writeFile('home', 'doc.bin', 'v1');
+      await fs.writeFile(join(jail, 'doc.bin'), 'v1 edited elsewhere');
+      await expect(
+        service.uploadFile(
+          'home',
+          'doc.bin',
+          await tmpUpload('v2'),
+          opened.version,
+        ),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(await fs.readFile(join(jail, 'doc.bin'), 'utf-8')).toBe(
+        'v1 edited elsewhere',
+      );
+      const current = (await service.readFile('home', 'doc.bin')).version;
+      await service.uploadFile(
+        'home',
+        'doc.bin',
+        await tmpUpload('v2'),
+        current,
+      );
+      expect(await fs.readFile(join(jail, 'doc.bin'), 'utf-8')).toBe('v2');
     });
   });
 });

@@ -101,7 +101,12 @@ export class FilesController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const { abs, size } = await this.filesService.statFile(q.root, q.path);
+    const { abs, size, version } = await this.filesService.statFile(
+      q.root,
+      q.path,
+    );
+    // The token a save sends back as `expected` (brief 155).
+    res.setHeader('X-File-Version', version);
     const filename = basename(q.path);
     res.setHeader(
       'Content-Disposition',
@@ -155,6 +160,7 @@ export class FilesController {
     @UploadedFile() file: { path: string; originalname: string },
     @Body('root') root: string,
     @Body('path') path: string,
+    @Body('expected') expected?: string,
   ) {
     if (!root || !file) {
       // The early throw skips uploadFile's finally cleanup, so multer's temp
@@ -163,13 +169,23 @@ export class FilesController {
       throw new BadRequestException('root and file required');
     }
     const virtualPath = path || file.originalname;
-    return this.filesService.uploadFile(root, virtualPath, file.path);
+    return this.filesService.uploadFile(
+      root,
+      virtualPath,
+      file.path,
+      expected || undefined,
+    );
   }
 
   /** PUT /api/files/content  body: { root, path, content } → Entry */
   @Put('content')
   writeContent(@Body() dto: WriteContentDto) {
-    return this.filesService.writeFile(dto.root, dto.path, dto.content);
+    return this.filesService.writeFile(
+      dto.root,
+      dto.path,
+      dto.content,
+      dto.expected,
+    );
   }
 
   /** POST /api/files/directory  body: { root, path } → Entry */

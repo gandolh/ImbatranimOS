@@ -5,9 +5,11 @@ import remarkGfm from 'remark-gfm'
 import {
   Button,
   cn,
+  FileConflictError,
   fileName,
   reportFileFailure,
   ScrollArea,
+  useFileConflict,
   useSaveHotkey,
   useSystem,
   useUnsavedGuard,
@@ -52,11 +54,15 @@ export function NoteEditor({
 }) {
   const system = useSystem()
   const { root, path } = doc
-  const { data: file, isLoading, isError } = useNoteFileQuery(root, path)
+  const { data: file, isLoading, isError, refetch } = useNoteFileQuery(root, path)
   const updateMutation = useUpdateFileMutation()
 
   const [content, setContent] = useState('')
   const [savedContent, setSavedContent] = useState('')
+  // The version of `savedContent` on disk, sent with every save (brief 155).
+  // Tied to the baseline, not to the latest read: a refetch that is not adopted
+  // (unsaved edits) must not move it, or the next save would overwrite blind.
+  const [savedVersion, setSavedVersion] = useState<string | null>(null)
   const [mode, setMode] = useState<'edit' | 'preview'>('edit')
   const [wrap, setWrap] = useState(true)
   const [caret, setCaret] = useState(0)
@@ -81,35 +87,52 @@ export function NoteEditor({
       setLoadedKey(key)
       setContent(file.content)
       setSavedContent(file.content)
+      setSavedVersion(file.version)
     } else if (savedContent !== file.content && content === savedContent) {
       // The file changed on disk and the user has no unsaved edits, so adopting it
       // is safe. With unsaved edits it is deliberately NOT adopted — silently
       // replacing what someone is typing is the worst possible resolution.
       setContent(file.content)
       setSavedContent(file.content)
+      setSavedVersion(file.version)
     }
   }
 
   const dirty = content !== savedContent
+  const { ask: askConflict, dialog: conflictDialog } = useFileConflict()
 
   const save = useCallback(async () => {
     if (!dirty || updateMutation.isPending) return
     const snapshot = content
+    const name = fileName(path, 'note')
     setError(null)
-    try {
-      await updateMutation.mutateAsync({ root, path, content: snapshot })
+    const write = async (expected: string | undefined) => {
+      const written = await updateMutation.mutateAsync({ root, path, content: snapshot, expected })
       // Only what was actually written becomes the new baseline. If the user typed
       // during the request, `content` has moved on and the document stays dirty.
       setSavedContent(snapshot)
-    } catch (err) {
-      setError(
-        reportFileFailure(system, 'save', err, {
-          noun: 'note',
-          name: fileName(path, 'note'),
-        })
-      )
+      setSavedVersion(written.version)
     }
-  }, [dirty, updateMutation, content, root, path, system])
+    try {
+      try {
+        await write(savedVersion ?? undefined)
+      } catch (err) {
+        if (!(err instanceof FileConflictError)) throw err
+        const choice = await askConflict(name)
+        if (choice === 'overwrite') await write(undefined)
+        if (choice === 'reload') {
+          const { data: fresh } = await refetch({ throwOnError: true })
+          if (fresh) {
+            setContent(fresh.content)
+            setSavedContent(fresh.content)
+            setSavedVersion(fresh.version)
+          }
+        }
+      }
+    } catch (err) {
+      setError(reportFileFailure(system, 'save', err, { noun: 'note', name }))
+    }
+  }, [dirty, updateMutation, content, root, path, system, savedVersion, askConflict, refetch])
 
   // The window and taskbar titles carry the filename and the dirty marker, and
   // closing with unsaved changes asks Save / Don't Save / Cancel — the same
@@ -426,6 +449,7 @@ export function NoteEditor({
       </div>
 
       {unsavedDialog}
+      {conflictDialog}
     </div>
   )
 }

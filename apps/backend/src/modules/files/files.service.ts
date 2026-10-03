@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -22,6 +23,16 @@ import type { Readable } from 'stream';
 const MAX_TEXT_FILE_BYTES =
   Number(process.env.FILES_MAX_TEXT_BYTES) || 5 * 1024 * 1024;
 
+/**
+ * A cheap "has this file changed" token (brief 155): the modification time in
+ * whole milliseconds and the size. Content hashes would mean reading large
+ * files on every listing; two writes inside one millisecond with the same size
+ * are the accepted blind spot.
+ */
+export function versionOf(stat: Pick<Stats, 'mtimeMs' | 'size'>): string {
+  return `${Math.trunc(stat.mtimeMs)}-${stat.size}`;
+}
+
 export interface FileEntry {
   name: string;
   path: string;
@@ -34,6 +45,8 @@ export interface FileEntry {
   mode: string;
   /** True when the entry itself is a symlink (type reflects its target). */
   isSymlink: boolean;
+  /** {@link versionOf} the file (its target, for a symlink). Send it back as `expected`. */
+  version: string;
 }
 
 /** One line inside a file that matched a `content=1` search (brief 113). */
@@ -311,11 +324,13 @@ export class FilesService {
     // falling back to the link itself if the target is broken.
     let type: 'file' | 'directory' = stat.isDirectory() ? 'directory' : 'file';
     let size = stat.size;
+    let version = versionOf(stat);
     if (stat.isSymbolicLink()) {
       try {
         const t = await fs.stat(absPath);
         type = t.isDirectory() ? 'directory' : 'file';
         size = t.size;
+        version = versionOf(t);
       } catch {
         type = 'file';
       }
@@ -329,6 +344,7 @@ export class FilesService {
       createdAt: stat.ctime.toISOString(),
       mode: (stat.mode & 0o777).toString(8).padStart(3, '0'),
       isSymlink: stat.isSymbolicLink(),
+      version,
     };
   }
 
@@ -570,7 +586,7 @@ export class FilesService {
   async readFile(
     root: string,
     virtualPath: string,
-  ): Promise<{ path: string; content: string }> {
+  ): Promise<{ path: string; content: string; version: string }> {
     const { abs } = await this.resolveSafe(root, virtualPath);
     if (!(await this.exists(abs)))
       throw new NotFoundException('File not found');
@@ -583,7 +599,7 @@ export class FilesService {
       );
     }
     const content = await fs.readFile(abs, 'utf-8');
-    return { path: virtualPath, content };
+    return { path: virtualPath, content, version: versionOf(stat) };
   }
 
   /**
@@ -594,14 +610,14 @@ export class FilesService {
   async statFile(
     root: string,
     virtualPath: string,
-  ): Promise<{ abs: string; size: number }> {
+  ): Promise<{ abs: string; size: number; version: string }> {
     const { abs } = await this.resolveSafe(root, virtualPath);
     if (!(await this.exists(abs)))
       throw new NotFoundException('File not found');
     const stat = await fs.stat(abs);
     if (stat.isDirectory())
       throw new BadRequestException('Path is a directory');
-    return { abs, size: stat.size };
+    return { abs, size: stat.size, version: versionOf(stat) };
   }
 
   async readFileStream(root: string, virtualPath: string): Promise<Readable> {
@@ -629,8 +645,10 @@ export class FilesService {
     root: string,
     virtualPath: string,
     content: string,
+    expected?: string,
   ): Promise<FileEntry> {
     const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
+    await this.assertVersion(abs, expected);
     await withDiskSpaceCheck(() => fs.mkdir(dirname(abs), { recursive: true }));
     // Atomic like an upload (brief 140): `fs.writeFile` onto `abs` truncated it
     // first, so a full disk mid-save left Notepad's file empty.
@@ -662,9 +680,11 @@ export class FilesService {
     root: string,
     virtualPath: string,
     tmpPath: string,
+    expected?: string,
   ): Promise<FileEntry> {
     try {
       const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
+      await this.assertVersion(abs, expected);
       await withDiskSpaceCheck(async () => {
         await fs.mkdir(dirname(abs), { recursive: true });
       });
@@ -676,6 +696,26 @@ export class FilesService {
     } finally {
       await fs.rm(tmpPath, { force: true });
     }
+  }
+
+  /**
+   * The save precondition (brief 155). With no `expected` token this is
+   * today's blind overwrite, so every existing caller is unchanged. With one,
+   * the file must still be the version the editor read: a `git checkout` in
+   * the Terminal or a second window that wrote it meanwhile answers 409 with
+   * the current token (`null` when the file is gone), and nothing is written.
+   */
+  private async assertVersion(abs: string, expected?: string): Promise<void> {
+    if (expected === undefined) return;
+    const stat = await fs.stat(abs).catch(() => null);
+    const current = stat ? versionOf(stat) : null;
+    if (current === expected) return;
+    throw new ConflictException({
+      statusCode: 409,
+      error: 'Conflict',
+      message: 'The file changed on disk since it was opened',
+      current,
+    });
   }
 
   /**

@@ -29,8 +29,10 @@ export function useNoteFileQuery(root: NotepadRoot, path: string | undefined) {
     queryKey: ['notes', 'file', root, path],
     queryFn: () => readFile(system.http, root, path!),
     enabled: !!path,
-    // Never served stale: the file may have changed on disk (the Terminal is right
-    // there), and re-reading on focus is what makes an explicit-save editor safe.
+    // Re-read whenever the editor mounts. That does not catch a change made
+    // while it is open: the shared client never refetches on focus, and "focus"
+    // there would mean the browser tab, not this desktop window. What keeps a
+    // save from destroying such a change is its version precondition (brief 155).
     staleTime: 0,
   })
 }
@@ -65,8 +67,18 @@ export function useCreateFileMutation() {
 export function useUpdateFileMutation() {
   const system = useSystem()
   return useMutation({
-    mutationFn: ({ root, path, content }: { root: NotepadRoot; path: string; content: string }) =>
-      updateFile(system.http, root, path, content),
+    mutationFn: ({
+      root,
+      path,
+      content,
+      expected,
+    }: {
+      root: NotepadRoot
+      path: string
+      content: string
+      /** The version this save builds on; absent overwrites blindly. */
+      expected?: string
+    }) => updateFile(system.http, root, path, content, expected),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(['notes', 'file', variables.root, data.path], data)
     },

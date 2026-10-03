@@ -3,11 +3,13 @@ import { FileCode2, Loader2, Save, X } from 'lucide-react'
 import Editor, { type OnMount } from '@monaco-editor/react'
 import {
   Button,
+  FileConflictError,
   Tooltip,
   UploadTooLargeError,
   cn,
   fileName,
   useConfirm,
+  useFileConflict,
   useFileDialog,
   useOpenIntent,
   usePrompt,
@@ -103,6 +105,9 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
   const listenersRef = useRef<Map<string, Disposable>>(new Map())
   // Alternative-version-id captured at last save; drives an undo-aware dirty flag.
   const savedVersionRef = useRef<Map<string, number>>(new Map())
+  // The file's version on disk as of the last read or save (brief 155), keyed
+  // by tab id. Sent with each save, so a file changed underneath asks first.
+  const diskVersionRef = useRef<Map<string, string | null>>(new Map())
   // Decoded file contents awaiting model creation (once the editor is mounted).
   const pendingContentRef = useRef<Map<string, string>>(new Map())
   const openedIdsRef = useRef<Set<string>>(new Set())
@@ -273,8 +278,9 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
       setError(null)
       for (const t of toLoad) {
         try {
-          const bytes = await system.fs.read(t.root, t.path)
+          const { bytes, version } = await system.fs.readWithVersion(t.root, t.path)
           pendingContentRef.current.set(t.id, decoder.decode(bytes))
+          diskVersionRef.current.set(t.id, version)
           const tab: Tab = {
             id: t.id,
             root: t.root,
@@ -345,10 +351,17 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
     }
   }, [])
 
+  const { ask: askConflict, dialog: conflictDialog } = useFileConflict()
+
   /**
    * Write one tab's buffer to `{root, path}`. Runs format-on-save first when it
    * is enabled, and only then reads the text — formatting after the read would
    * store the unformatted bytes and leave the buffer looking modified.
+   *
+   * A save over the tab's own file sends the version it read; if the file
+   * changed on disk since, the user picks Overwrite, Reload from disk or Cancel
+   * (brief 155). Save As onto another path is a deliberate overwrite and sends
+   * none.
    */
   const writeTab = useCallback(
     async (id: string, root: string, path: string, name: string): Promise<boolean> => {
@@ -366,7 +379,34 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
         // advances and the tab stays dirty (those edits aren't on disk yet).
         const uploadedVersion = model.getAlternativeVersionId()
         const text = model.getValue()
-        await system.fs.upload(root, path, encoder.encode(text), name)
+        const target = tabId(root, path)
+        const upload = (expected?: string) =>
+          system.fs.upload(root, path, encoder.encode(text), name, { expected })
+        let written: { version: string | null }
+        try {
+          written = await upload(
+            target === id ? (diskVersionRef.current.get(id) ?? undefined) : undefined
+          )
+        } catch (err) {
+          if (!(err instanceof FileConflictError)) throw err
+          const choice = await askConflict(name)
+          if (choice === 'cancel') return false
+          if (choice === 'reload') {
+            const fresh = await system.fs.readWithVersion(root, path)
+            // An edit, not setValue: Ctrl+Z still brings the discarded text back.
+            model.pushEditOperations(
+              [],
+              [{ range: model.getFullModelRange(), text: decoder.decode(fresh.bytes) }],
+              () => null
+            )
+            diskVersionRef.current.set(id, fresh.version)
+            savedVersionRef.current.set(id, model.getAlternativeVersionId())
+            recomputeDirty(id)
+            return false
+          }
+          written = await upload()
+        }
+        diskVersionRef.current.set(target, written.version)
         savedVersionRef.current.set(id, uploadedVersion)
         recomputeDirty(id)
         return true
@@ -382,7 +422,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
         setSaving(false)
       }
     },
-    [recomputeDirty, system]
+    [recomputeDirty, system, askConflict]
   )
 
   const handleSaveAs = useCallback(async () => {
@@ -418,6 +458,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
     modelsRef.current.delete(oldId)
     viewStatesRef.current.delete(oldId)
     savedVersionRef.current.delete(oldId)
+    diskVersionRef.current.delete(oldId)
     pendingContentRef.current.delete(oldId)
     openedIdsRef.current.delete(oldId)
     openedIdsRef.current.add(newId)
@@ -593,6 +634,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
       modelsRef.current.delete(id)
       viewStatesRef.current.delete(id)
       savedVersionRef.current.delete(id)
+      diskVersionRef.current.delete(id)
       pendingContentRef.current.delete(id)
       openedIdsRef.current.delete(id)
       if (lastActiveRef.current === id) lastActiveRef.current = null
@@ -839,6 +881,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
       {confirmDialog}
       {promptDialog}
       {unsavedDialog}
+      {conflictDialog}
     </div>
   )
 }

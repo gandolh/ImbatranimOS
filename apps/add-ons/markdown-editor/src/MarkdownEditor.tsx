@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2, PanelLeft, Save, Unlink2, Link2 } from 'lucide-react'
 import {
   Button,
+  FileConflictError,
   ScrollArea,
   Tooltip,
   UploadTooLargeError,
   cn,
   fileName,
   useElementSize,
+  useFileConflict,
   useFileDialog,
   useOpenIntent,
   useSaveHotkey,
@@ -81,6 +83,8 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
   useEffect(() => {
     textRef.current = text
   }, [text])
+  // The file's version on disk as of the last read or save (brief 155).
+  const diskVersionRef = useRef<string | null>(null)
 
   const name = source ? fileName(source.path, 'untitled.md') : ''
   const docDir = source ? dirOf(source.path) : ''
@@ -97,9 +101,10 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
       setLoading(true)
       setError(null)
       try {
-        const bytes = await system.fs.read(source.root, source.path)
+        const { bytes, version } = await system.fs.readWithVersion(source.root, source.path)
         if (cancelled) return
         const decoded = decoder.decode(bytes)
+        diskVersionRef.current = version
         setText(decoded)
         setSavedText(decoded)
       } catch (err) {
@@ -116,6 +121,8 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
     }
   }, [source, system])
 
+  const { ask: askConflict, dialog: conflictDialog } = useFileConflict()
+
   const handleSave = useCallback(async () => {
     if (!source || saving) return
     // Record the exact text being uploaded. If the user edits while the upload is in
@@ -124,9 +131,33 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
     const uploadedText = text
     setSaving(true)
     setError(null)
-    try {
-      await system.fs.upload(source.root, source.path, encoder.encode(uploadedText), name)
+    const upload = async (expected?: string) => {
+      const written = await system.fs.upload(
+        source.root,
+        source.path,
+        encoder.encode(uploadedText),
+        name,
+        { expected }
+      )
+      diskVersionRef.current = written.version
       if (textRef.current === uploadedText) setSavedText(uploadedText)
+    }
+    try {
+      try {
+        await upload(diskVersionRef.current ?? undefined)
+      } catch (err) {
+        // The file changed on disk since it was read: ask, never overwrite blind.
+        if (!(err instanceof FileConflictError)) throw err
+        const choice = await askConflict(name)
+        if (choice === 'overwrite') await upload()
+        if (choice === 'reload') {
+          const fresh = await system.fs.readWithVersion(source.root, source.path)
+          const decoded = decoder.decode(fresh.bytes)
+          diskVersionRef.current = fresh.version
+          setText(decoded)
+          setSavedText(decoded)
+        }
+      }
     } catch (err) {
       if (err instanceof UploadTooLargeError) {
         setError(err.message)
@@ -137,7 +168,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
     } finally {
       setSaving(false)
     }
-  }, [source, saving, system, text, name])
+  }, [source, saving, system, text, name, askConflict])
 
   // Ctrl/Cmd+S saves — but only for the top-most window.
   useSaveHotkey(handleSave)
@@ -571,6 +602,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
       </div>
 
       {unsavedDialog}
+      {conflictDialog}
     </div>
   )
 }

@@ -87,6 +87,11 @@ export class WriteContentDto {
   @IsString()
   @IsNotEmpty()
   content: string;
+
+  /** The `version` the editor read; a mismatch answers 409 (brief 155). */
+  @IsOptional()
+  @IsString()
+  expected?: string;
 }
 
 export class CreateDirectoryDto {

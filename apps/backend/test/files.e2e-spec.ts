@@ -206,4 +206,64 @@ describe('Files (e2e) — auth + binary round-trip', () => {
         .expect(201);
     });
   });
+
+  describe('saves detect external changes (brief 155)', () => {
+    it('a stale expected token is 409 with the current one; the file is unchanged', async () => {
+      const first = await http
+        .put('/api/files/content')
+        .set('Cookie', cookie)
+        .send({ root: 'home', path: 'conflict.txt', content: 'mine' })
+        .expect(200);
+      const opened = (first.body as { version: string }).version;
+      await fs.appendFile(join(jail, 'conflict.txt'), '\nterminal');
+
+      const res = await http
+        .put('/api/files/content')
+        .set('Cookie', cookie)
+        .send({
+          root: 'home',
+          path: 'conflict.txt',
+          content: 'mine!',
+          expected: opened,
+        })
+        .expect(409);
+      const read = await http
+        .get('/api/files/content?root=home&path=conflict.txt')
+        .set('Cookie', cookie)
+        .expect(200);
+      expect((res.body as { current: string }).current).toBe(
+        (read.body as { version: string }).version,
+      );
+      expect(await fs.readFile(join(jail, 'conflict.txt'), 'utf-8')).toBe(
+        'mine\nterminal',
+      );
+    });
+
+    it('an upload with a stale token is 409; a download names the current token', async () => {
+      await http
+        .post('/api/files/upload')
+        .set('Cookie', cookie)
+        .field('root', 'home')
+        .field('path', 'conflict.bin')
+        .field('expected', 'stale-0')
+        .attach('file', Buffer.from('new'), 'conflict.bin')
+        .expect(409);
+      const up = await http
+        .post('/api/files/upload')
+        .set('Cookie', cookie)
+        .field('root', 'home')
+        .field('path', 'conflict.bin')
+        .attach('file', Buffer.from('new'), 'conflict.bin')
+        .expect(201);
+      const dl = await http
+        .get('/api/files/download?root=home&path=conflict.bin')
+        .set('Cookie', cookie)
+        .buffer(true)
+        .parse(binaryParser)
+        .expect(200);
+      expect(dl.headers['x-file-version']).toBe(
+        (up.body as { version: string }).version,
+      );
+    });
+  });
 });

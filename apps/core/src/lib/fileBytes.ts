@@ -1,4 +1,4 @@
-import { UploadTooLargeError } from '@imbatranim/ui'
+import { FileConflictError, UploadTooLargeError, type VersionedBytes } from '@imbatranim/ui'
 import { api } from './axios'
 
 /** True when an error carries an HTTP status (axios-style), matching `status`. */
@@ -27,6 +27,26 @@ export async function fetchFileBytes(root: string, path: string): Promise<ArrayB
   return res.data
 }
 
+/** The backend's version token for the bytes it streamed (brief 155). */
+const VERSION_HEADER = 'x-file-version'
+
+function versionFrom(headers: unknown): string | null {
+  const value = (headers as Record<string, unknown> | undefined)?.[VERSION_HEADER]
+  return typeof value === 'string' && value !== '' ? value : null
+}
+
+/** {@link fetchFileBytes} plus the `X-File-Version` the download carries. */
+export async function fetchFileBytesWithVersion(
+  root: string,
+  path: string
+): Promise<VersionedBytes> {
+  const res = await api.get<ArrayBuffer>('/files/download', {
+    params: { root, path },
+    responseType: 'arraybuffer',
+  })
+  return { bytes: res.data, version: versionFrom(res.headers) }
+}
+
 // UploadTooLargeError moved to @imbatranim/ui (brief 48): the class is part of
 // the protocol — apps `instanceof` against it, so it ships with the SDK and the
 // capability implementation here throws the SDK's class.
@@ -42,8 +62,9 @@ export async function uploadFileBytes(
   root: string,
   path: string,
   bytes: ArrayBuffer | Uint8Array,
-  name: string
-): Promise<void> {
+  name: string,
+  opts: { expected?: string } = {}
+): Promise<{ version: string | null }> {
   const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
   // Copy into a standalone ArrayBuffer so the Blob owns contiguous bytes.
   const blob = new Blob([view.slice()], {
@@ -52,17 +73,29 @@ export async function uploadFileBytes(
   const form = new FormData()
   form.append('root', root)
   form.append('path', path)
+  if (opts.expected !== undefined) form.append('expected', opts.expected)
   form.append('file', blob, name)
   try {
-    await api.post('/files/upload', form, {
+    const res = await api.post<{ version?: unknown }>('/files/upload', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
+    const version = res.data?.version
+    return { version: typeof version === 'string' ? version : null }
   } catch (err) {
     if (hasHttpStatus(err, 413)) {
       throw new UploadTooLargeError()
     }
+    if (hasHttpStatus(err, 409)) {
+      throw new FileConflictError(conflictCurrent(err))
+    }
     throw err
   }
+}
+
+/** The 409 body's `current` token (null when the file is gone). */
+function conflictCurrent(err: unknown): string | null {
+  const current = (err as { response?: { data?: { current?: unknown } } }).response?.data?.current
+  return typeof current === 'string' ? current : null
 }
 
 /**

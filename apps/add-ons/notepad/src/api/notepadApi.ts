@@ -1,4 +1,4 @@
-import type { SystemHttp } from '@imbatranim/ui'
+import { FileConflictError, type SystemHttp } from '@imbatranim/ui'
 import type { NoteEntry, NoteFile } from '../types'
 import type { NotepadRoot } from '../lib/notepadRoot'
 
@@ -28,8 +28,11 @@ export async function readFile(
   root: NotepadRoot,
   path: string
 ): Promise<NoteFile> {
-  const res = await http.get<NoteFile>('/files/content', { params: { root, path } })
-  return res.data
+  const res = await http.get<{ path: string; content: string; version?: string }>(
+    '/files/content',
+    { params: { root, path } }
+  )
+  return { path: res.data.path, content: res.data.content, version: res.data.version ?? null }
 }
 
 export async function createFile(
@@ -39,17 +42,33 @@ export async function createFile(
   content: string = ''
 ): Promise<NoteFile> {
   const res = await http.put<NoteEntry>('/files/content', { root, path, content })
-  return { path: res.data.path, content }
+  return { path: res.data.path, content, version: res.data.version ?? null }
 }
 
+/**
+ * Save over `path`. With `expected` (the version the editor read), a file that
+ * changed on disk since throws {@link FileConflictError} and nothing is written
+ * (brief 155); without it, the write is a blind overwrite.
+ */
 export async function updateFile(
   http: SystemHttp,
   root: NotepadRoot,
   path: string,
-  content: string
+  content: string,
+  expected?: string
 ): Promise<NoteFile> {
-  const res = await http.put<NoteEntry>('/files/content', { root, path, content })
-  return { path: res.data.path, content }
+  try {
+    const res = await http.put<NoteEntry>('/files/content', { root, path, content, expected })
+    return { path: res.data.path, content, version: res.data.version ?? null }
+  } catch (err) {
+    const response = (err as { response?: { status?: number; data?: { current?: unknown } } })
+      .response
+    if (response?.status === 409) {
+      const current = response.data?.current
+      throw new FileConflictError(typeof current === 'string' ? current : null)
+    }
+    throw err
+  }
 }
 
 export async function deleteFile(http: SystemHttp, root: NotepadRoot, path: string): Promise<void> {

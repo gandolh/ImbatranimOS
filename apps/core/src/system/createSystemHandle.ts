@@ -11,7 +11,12 @@ import {
   type SystemWindow,
 } from '@imbatranim/ui'
 import { api } from '../lib/axios'
-import { fetchFileBytes, uploadFileBytes, downloadUrl } from '../lib/fileBytes'
+import {
+  fetchFileBytes,
+  fetchFileBytesWithVersion,
+  uploadFileBytes,
+  downloadUrl,
+} from '../lib/fileBytes'
 import { recordRecentFile, removeRecentFile } from '../lib/recentFiles'
 import { claimScheduleOccurrence, type ScheduleDomain } from '../lib/scheduleClaim'
 import { notify } from '../shared/store/notificationStore'
@@ -154,7 +159,8 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
 
     fs: {
       read: (root, path) => fetchFileBytes(root, path),
-      upload: (root, path, bytes, name) => uploadFileBytes(root, path, bytes, name),
+      readWithVersion: (root, path) => fetchFileBytesWithVersion(root, path),
+      upload: (root, path, bytes, name, opts) => uploadFileBytes(root, path, bytes, name, opts),
       downloadUrl: (root, path) => downloadUrl(root, path),
       pickOpen: (opts = {}) =>
         requestPick({

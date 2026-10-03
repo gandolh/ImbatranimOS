@@ -23,3 +23,19 @@ export class UploadTooLargeError extends Error {
     this.name = 'UploadTooLargeError'
   }
 }
+
+/**
+ * Raised when a save's `expected` version no longer matches the file on disk
+ * (409, brief 155): something else wrote it since this editor read it. Nothing
+ * was written. `current` is the file's version now, or null when it is gone.
+ *
+ * Part of the protocol for the same reason as {@link UploadTooLargeError}.
+ */
+export class FileConflictError extends Error {
+  readonly current: string | null
+  constructor(current: string | null, message = 'The file changed on disk since it was opened.') {
+    super(message)
+    this.name = 'FileConflictError'
+    this.current = current
+  }
+}

@@ -39,6 +39,18 @@ export type PickOpenOptions = {
 
 export type PickSaveOptions = PickOpenOptions & { suggestedName?: string }
 
+/** A file's bytes and its version token (brief 155). */
+export type VersionedBytes = { bytes: ArrayBuffer; version: string | null }
+
+export type UploadOptions = {
+  /**
+   * The version token from the read this save builds on. Absent = overwrite
+   * whatever is there (a fresh Save as, an export). A file that is gone counts
+   * as changed.
+   */
+  expected?: string
+}
+
 /**
  * `system.fs` — the file syscalls, plus the OS file portal.
  *
@@ -52,10 +64,25 @@ export interface SystemFs {
   /** Fetch a file's raw bytes. Rejects with an HTTP-shaped error on failure. */
   read(root: string, path: string): Promise<ArrayBuffer>
   /**
-   * Write bytes to a path (overwrites; creates parent directories). Throws
-   * `UploadTooLargeError` when the backend refuses an over-cap body.
+   * {@link read}, plus the file's version token (brief 155). An editor keeps the
+   * token and hands it back on save, so a save over a file that changed on disk
+   * since asks instead of overwriting. `version` is null when the backend sent
+   * none.
    */
-  upload(root: string, path: string, bytes: ArrayBuffer | Uint8Array, name: string): Promise<void>
+  readWithVersion(root: string, path: string): Promise<VersionedBytes>
+  /**
+   * Write bytes to a path (overwrites; creates parent directories). Throws
+   * `UploadTooLargeError` when the backend refuses an over-cap body, and
+   * `FileConflictError` when `opts.expected` no longer matches the file on
+   * disk (nothing is written then). Resolves the new version token.
+   */
+  upload(
+    root: string,
+    path: string,
+    bytes: ArrayBuffer | Uint8Array,
+    name: string,
+    opts?: UploadOptions
+  ): Promise<{ version: string | null }>
   /** Bare URL for `<a href>`-style downloads (browser-native, cookie-authed). */
   downloadUrl(root: string, path: string): string
   /** OS Open dialog. Resolves the choice, or null on cancel. */

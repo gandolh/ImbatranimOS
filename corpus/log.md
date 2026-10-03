@@ -4090,3 +4090,7 @@ A client resetting the connection while Ward was being asked crashed the whole b
 ## [2026-10-03] done | Brief 140 — text saves are atomic
 
 `PUT /files/content` (Notepad, file-manager text writes, the REST client's collections) wrote in place, and a full disk mid-save emptied the file. `uploadFile`'s stage-then-rename became a shared `writeAtomically` helper that `writeFile` now uses too. A mocked mid-write ENOSPC proves the original survives with no staging file left. A save now needs write permission on the directory, as uploads already did.
+
+## [2026-10-03] done | Brief 141 — relaunching a minimized app shows it
+
+`openApp` focused an open single-instance window but never showed it, so every launcher that funnels through it (desktop, taskbar, Start menu, notifications, Files) did nothing visible for a minimized app. It now shows the window after focusing it. An unknown id is refused with `''` instead of throwing, as the protocol documents. Browser-checked with Todo against the local Ward. Notepad, the brief's example, is multi-instance and never takes this path.

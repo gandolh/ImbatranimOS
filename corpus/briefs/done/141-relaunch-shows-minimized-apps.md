@@ -56,3 +56,16 @@ Status: **todo** · From the 2026-09-26 improvements sweep. EASY · CORE
 - Core vitest, typecheck and lint green.
 - In the browser: minimize Notepad, double-click its desktop icon — it
   reappears.
+
+## Outcome (2026-10-03)
+
+Done, in `openApp.ts` only.
+- The existing-window branch calls `focusWindow` (which switches workspace), then `showWindow` when the window is hidden.
+- An unknown id is `console.warn`ed and refused with `''`.
+- `NotificationPanel.tsx` needed no guard, because `openApp` no longer throws. `windowStore` is untouched.
+
+**Tests** (`openApp.test.ts`, jsdom): a minimized single-instance window becomes visible, above another window, with the intent delivered; a window on workspace 3 switches to it; an unknown id returns `''` without throwing or opening anything; a disabled add-on returns `''`. The first and third fail on the old code. Core vitest 286/286, typecheck, eslint and prettier clean.
+
+**Fixture correction:** the brief's browser step used Notepad, but Notepad is `multiInstance: true`. Relaunching it opens a second window by design and never reaches this branch. The tests and the browser check use **Todo** (single-instance, disableable).
+
+**Browser check** (dev server against the local Ward container; `FILES_ROOT`, `DB_PATH`, `NOTES_DIR` and `CONFIGS_DIR` on a scratch directory): opened Todo from its desktop icon, minimized it, and double-clicked the icon again. The window reappeared on top, still a single taskbar entry.

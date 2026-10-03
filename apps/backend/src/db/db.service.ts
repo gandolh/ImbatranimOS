@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Database from 'better-sqlite3';
-import { renameSync, rmSync } from 'fs';
+import { existsSync, renameSync, rmSync } from 'fs';
 import type { Env } from '../config/env.schema';
 import { LogService } from '../modules/logs/log.service';
 
@@ -28,6 +28,9 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
   return pattern.test(err instanceof Error ? err.message : String(err));
 }
 
+/** The newest schema this build knows; a restore refuses anything newer. */
+export const LEDGER_VERSION = 7;
+
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
   db: Database.Database;
@@ -46,9 +49,34 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
+    // A database that cannot even be opened (not a SQLite file, a torn copy)
+    // is STATE like a failed migration, not a crash (brief 154): throwing here
+    // escaped Nest's bootstrap and crash-looped the container, the outcome
+    // brief 110's degraded mode exists to avoid. `StorageHealthGuard` then
+    // answers 503 and `/health` says degraded.
+    try {
+      this.open();
+    } catch (err) {
+      this.migrationFailure = `the database could not be opened: ${err instanceof Error ? err.message : String(err)}`;
+      console.error(`[db] ${this.migrationFailure}`);
+    }
+  }
+
+  /** Open `DB_PATH` in WAL mode and bring it to the newest schema. */
+  private open(): void {
     this.db = new Database(this.config.get('DB_PATH'));
     this.db.pragma('journal_mode = WAL');
     this.migrate();
+  }
+
+  /**
+   * Close and reopen `DB_PATH`. A restore that put the previous tree back
+   * (brief 154) calls this: the old connection may point at a file that has
+   * since moved.
+   */
+  reopen(): void {
+    if (this.db?.open) this.db.close();
+    this.open();
   }
 
   /** Where the database file lives. Backup and restore both need this. */
@@ -90,20 +118,35 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    */
   replaceWith(sourcePath: string): void {
     const target = this.path();
+    // The previous database is kept aside until the new one has opened and
+    // migrated (brief 154). Renaming the snapshot straight over it meant a
+    // snapshot that would not open left no database at all.
+    const previous = `${target}.previous`;
     this.db.close();
+    const hadPrevious = existsSync(target);
+    for (const suffix of ['-wal', '-shm']) {
+      rmSync(target + suffix, { force: true });
+    }
+    if (hadPrevious) renameSync(target, previous);
     try {
       renameSync(sourcePath, target);
-      for (const suffix of ['-wal', '-shm']) {
+      this.open();
+      if (this.migrationFailure) throw new Error(this.migrationFailure);
+    } catch (err) {
+      if (this.db?.open) this.db.close();
+      for (const suffix of ['', '-wal', '-shm']) {
         rmSync(target + suffix, { force: true });
       }
-    } finally {
-      // Reopen no matter what: a failed swap must not leave the process without
-      // a database, or every subsequent request 500s including the login that
-      // would let the user try again.
-      this.db = new Database(target);
-      this.db.pragma('journal_mode = WAL');
-      this.migrate();
+      if (hadPrevious) {
+        renameSync(previous, target);
+        this.open();
+      }
+      // With nothing to go back to, the caller reopens once it has put its own
+      // tree back (BackupService.apply); opening here would create an empty
+      // database inside the tree it is about to remove.
+      throw err;
     }
+    if (hadPrevious) rmSync(previous, { force: true });
   }
 
   /**

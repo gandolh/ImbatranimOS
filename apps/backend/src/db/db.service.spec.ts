@@ -1,9 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import Database from 'better-sqlite3';
-import { mkdtempSync, rmSync } from 'fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { DbService } from './db.service';
+import { DbService, LEDGER_VERSION } from './db.service';
 import { StorageHealthGuard } from './storage-health.guard';
 import type { Env } from '../config/env.schema';
 
@@ -265,6 +265,59 @@ describe('DbService — pre-Ward credential tables are dropped (brief 150)', () 
     const svc = openService(join(dir, 'fresh.sqlite'));
     expect(tables(svc.db)).not.toContain('auth_user');
     expect(tables(svc.db)).not.toContain('auth_sessions');
+    svc.onModuleDestroy();
+  });
+});
+
+describe('DbService — a database that will not open (brief 154)', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'imb-b154-db-'));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('boots degraded instead of throwing when the file is not a database', () => {
+    const path = join(dir, 'corrupt.sqlite');
+    writeFileSync(path, Buffer.alloc(8192, 7));
+    const svc = new DbService(configFor(path));
+    const error = console.error;
+    console.error = () => undefined;
+    try {
+      expect(() => svc.onModuleInit()).not.toThrow();
+    } finally {
+      console.error = error;
+    }
+    expect(svc.migrationFailure).toMatch(/could not be opened/);
+    const guard = new StorageHealthGuard(svc);
+    expect(() => guard.canActivate()).toThrow();
+    svc.onModuleDestroy();
+  });
+
+  it('replaceWith puts the previous database back when the new one will not open', () => {
+    const svc = openService(join(dir, 'live.sqlite'));
+    svc.db.prepare("INSERT INTO todos (text) VALUES ('keep me')").run();
+    const bad = join(dir, 'incoming.sqlite');
+    writeFileSync(bad, Buffer.alloc(8192, 7));
+
+    expect(() => svc.replaceWith(bad)).toThrow();
+
+    const rows = svc.db.prepare('SELECT text FROM todos').all() as {
+      text: string;
+    }[];
+    expect(rows.map((r) => r.text)).toEqual(['keep me']);
+    expect(svc.migrationFailure).toBeNull();
+    svc.onModuleDestroy();
+  });
+
+  it('the exported ledger version is the one a fresh database ends at', () => {
+    const svc = openService(join(dir, 'fresh.sqlite'));
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
+      LEDGER_VERSION,
+    );
     svc.onModuleDestroy();
   });
 });

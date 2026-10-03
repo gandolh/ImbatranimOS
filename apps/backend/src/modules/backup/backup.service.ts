@@ -14,7 +14,8 @@ import { tmpdir } from 'os';
 import { join, relative, sep } from 'path';
 import type { Readable } from 'stream';
 import { promisify } from 'util';
-import { DbService } from '../../db/db.service';
+import Database from 'better-sqlite3';
+import { DbService, LEDGER_VERSION } from '../../db/db.service';
 import { FilesService } from '../files/files.service';
 import { TRASH_DIR } from '../files/trash.service';
 import { ArchiveService, parseTarListLine } from '../archive/archive.service';
@@ -482,12 +483,35 @@ export class BackupService {
           'That backup carries no database snapshot and cannot be restored',
         );
       }
+      // And that it opens, BEFORE anything moves (brief 154). A snapshot that
+      // only exists used to be swapped in, fail to open, and take the
+      // moved-aside pre-restore tree with it.
+      this.validateSnapshot(snapshotStaged);
 
       await fs.mkdir(rollbackAbs, { recursive: true });
-      const restored = await this.swapIn(home, stagingAbs, rollbackAbs, names);
+      const { restored, undo } = await this.swapIn(
+        home,
+        stagingAbs,
+        rollbackAbs,
+        names,
+      );
 
       // The database last, and only once the tree it belongs to is in place.
-      await this.installDatabase(home, upload.manifest);
+      // If it cannot be installed, the swap is undone before the `finally`
+      // below deletes the pre-restore copy, and the old database reopened.
+      try {
+        await this.installDatabase(home, upload.manifest);
+      } catch (err) {
+        await this.runUndo(undo);
+        try {
+          this.db.reopen();
+        } catch (reopenErr) {
+          this.logger.error(
+            `Restore rollback could not reopen the database: ${String(reopenErr)}`,
+          );
+        }
+        throw err;
+      }
 
       // Recorded AFTER the swap, so the line exists only if it really happened
       // — and it lands in the log the restore just brought in, which is the
@@ -532,7 +556,7 @@ export class BackupService {
     stagingAbs: string,
     rollbackAbs: string,
     names: string[],
-  ): Promise<string[]> {
+  ): Promise<{ restored: string[]; undo: (() => Promise<void>)[] }> {
     // The undo list records ONE ENTRY PER COMPLETED RENAME, not one per name.
     // Recording per name would lose the case that matters: a failure between
     // moving the live entry aside and moving the new one in, which leaves that
@@ -552,21 +576,59 @@ export class BackupService {
         undo.push(() => fs.rename(live, staged));
         restored.push(name);
       }
-      return restored;
+      // The caller keeps the undo list: a failure AFTER the swap (installing
+      // the database) must be able to put the tree back too (brief 154).
+      return { restored, undo };
     } catch (err) {
-      // Undo in reverse. Each step is the exact inverse of a rename that already
-      // succeeded, on the same filesystem, so the recovery cannot itself run out
-      // of space or cross a device boundary.
-      for (const step of [...undo].reverse()) {
-        try {
-          await step();
-        } catch (rollbackErr) {
-          this.logger.error(
-            `Restore rollback step failed: ${String(rollbackErr)}`,
-          );
-        }
-      }
+      await this.runUndo(undo);
       throw err;
+    }
+  }
+
+  /**
+   * Undo a swap in reverse. Each step is the exact inverse of a rename that
+   * already succeeded, on the same filesystem, so the recovery cannot itself
+   * run out of space or cross a device boundary.
+   */
+  private async runUndo(undo: (() => Promise<void>)[]): Promise<void> {
+    for (const step of [...undo].reverse()) {
+      try {
+        await step();
+      } catch (rollbackErr) {
+        this.logger.error(
+          `Restore rollback step failed: ${String(rollbackErr)}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Refuse a snapshot that is not a usable database, before anything moves
+   * (brief 154): it must open, pass `quick_check`, and not come from a build
+   * newer than this one, whose migrations this build does not know.
+   */
+  private validateSnapshot(snapshotAbs: string): void {
+    let snapshot: Database.Database | undefined;
+    try {
+      snapshot = new Database(snapshotAbs, {
+        readonly: true,
+        fileMustExist: true,
+      });
+      const check = snapshot.pragma('quick_check', { simple: true });
+      if (check !== 'ok') throw new Error(String(check));
+      const version = Number(snapshot.pragma('user_version', { simple: true }));
+      if (version > LEDGER_VERSION) {
+        throw new BadRequestException(
+          `That backup's database comes from a newer ImbatranimOS (schema ${version}, this one knows ${LEDGER_VERSION}) and cannot be restored here`,
+        );
+      }
+    } catch (err) {
+      if (err instanceof BadRequestException) throw err;
+      throw new BadRequestException(
+        `That backup's database is damaged and cannot be restored: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      snapshot?.close();
     }
   }
 

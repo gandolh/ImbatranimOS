@@ -4134,3 +4134,7 @@ Backup settings still said a restore signs you out because the backup brings its
 ## [2026-10-03] done | Brief 154 — a restore that cannot open its database puts everything back
 
 A corrupt `db.sqlite` in a backup used to be swapped in, fail to open, take the pre-restore tree with it, and crash-loop the next boot. The snapshot is now checked (`quick_check`, ledger version) before anything moves. A failed install undoes the swap and reopens the old database. `replaceWith` keeps the old file until the new one opens, and an unopenable database at boot means degraded mode (503), not a crash.
+
+## [2026-10-03] fix | The backup audit line no longer races tar
+
+Found while landing brief 154: `openBackupStream` wrote its `backup.taken` audit line into `.imbatranim/logs` just after spawning tar. GNU tar then failed the backup about one run in three ("file changed as we read it"), and the brief-80 spec flaked inside `npm test`. The line is now recorded and flushed before the spawn. Writes from other requests during a backup could still trip GNU tar. The Alpine image uses busybox tar, which does not check for that.

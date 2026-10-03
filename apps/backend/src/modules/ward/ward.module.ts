@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
 import { MeController } from './me.controller';
+import { WardFreshness } from './ward-freshness';
 import { WardAuthGuard } from './ward.guard';
 import { WardService } from './ward.service';
 
@@ -23,7 +24,11 @@ import { WardService } from './ward.service';
 @Global()
 @Module({
   controllers: [MeController],
-  providers: [WardService, { provide: APP_GUARD, useClass: WardAuthGuard }],
-  exports: [WardService],
+  providers: [
+    WardService,
+    WardFreshness,
+    { provide: APP_GUARD, useClass: WardAuthGuard },
+  ],
+  exports: [WardService, WardFreshness],
 })
 export class WardModule {}

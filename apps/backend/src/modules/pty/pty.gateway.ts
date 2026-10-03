@@ -12,6 +12,7 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import * as pty from 'node-pty';
 import type { Env } from '../../config/env.schema';
 import { WardService } from '../auth/ws-auth';
+import { WardFreshness } from '../ward/ward-freshness';
 import { PtySession } from './pty-session';
 import { isPtyUpgrade, authorizeUpgrade } from './pty-upgrade';
 import {
@@ -37,9 +38,12 @@ const REVOKE_SWEEP_MS = 30_000;
 
 interface LiveSession {
   session: PtySession;
+  /** The Ward session the shell was opened under. */
+  sid: string;
   /**
-   * The raw `Cookie` header the upgrade arrived with, re-checked by the
-   * revocation sweep.
+   * The newest cookie header known to authenticate this shell's session: the
+   * upgrade's, then whatever a later sweep authorized with. The sweep prefers
+   * the freshness registry's cookie and falls back to this one.
    *
    * The whole header rather than a parsed token: which cookie Ward uses is
    * `ward.client.ts`'s business, and a second copy of that knowledge here is
@@ -70,6 +74,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     private readonly adapterHost: HttpAdapterHost,
     private readonly ward: WardService,
     private readonly config: ConfigService<Env, true>,
+    private readonly freshness: WardFreshness,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -144,7 +149,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
         socket.off('error', onSocketError);
         this.wss!.handleUpgrade(req, socket, head, (ws) => {
-          this.onConnection(ws, req);
+          this.onConnection(ws, req, record.sid);
         });
       })();
     };
@@ -157,7 +162,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.logger.log(`Terminal WS listening on ${PTY_PATH}`);
   }
 
-  private onConnection(ws: WebSocket, req: IncomingMessage): void {
+  private onConnection(ws: WebSocket, req: IncomingMessage, sid: string): void {
     const { cols, rows } = parseGeometry(req.url);
     let ptyProcess: pty.IPty;
     try {
@@ -181,6 +186,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
     const entry: LiveSession = {
       session: new PtySession(ptyProcess, ws),
+      sid,
       // The whole cookie header, not a parsed token: `authenticate` owns the
       // knowledge of which cookie Ward uses, and this file must not acquire a
       // second copy of it.
@@ -192,36 +198,37 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
   }
 
   /**
-   * Kill any pty whose session cookie is no longer valid (logged out or
-   * expired). Complements the socket-close path so a revoked session can't
-   * keep a shell alive.
-   */
-  /**
    * Close any shell whose session has stopped being valid.
    *
    * This is what makes revocation reach a terminal that is already open — an
-   * HTTP guard only runs on requests, and a shell makes none. It is also why
-   * the old code was careful that validation here never *renewed* expiry: an
-   * open shell must not be able to immortalize its own session by existing.
-   * That hazard is gone rather than guarded against, because Ward's tokens do
-   * not slide on introspection at all; nothing this sweep does can extend a
-   * session's life.
+   * HTTP guard only runs on requests, and a shell makes none. A grant revoked
+   * in Ward's console closes the shell too, not just a signed-out session:
+   * `authorizeUpgrade` checks the grant, and so does this.
    *
-   * A grant revoked in Ward's console closes the shell too, not just a signed-out
-   * session: `authorizeUpgrade` checks the grant, and so does this.
+   * It asks with the newest cookie the REST guard has seen for the shell's Ward
+   * session (brief 145), not the one the WebSocket opened with: that one holds
+   * a 15-minute access token, and re-checking it closed every terminal 15
+   * minutes in. The sweep still only reads. Ward's tokens do not slide on
+   * introspection, so nothing here can extend a session's life; a terminal
+   * outlives its first token only while a signed-in tab keeps the browser's
+   * token rotating.
    */
   private async sweepRevoked(): Promise<void> {
     for (const entry of [...this.live]) {
+      const cookie = this.freshness.latest(entry.sid) ?? entry.cookie;
       const still = await authorizeUpgrade(
-        { headers: { cookie: entry.cookie } },
+        { headers: { cookie } },
         this.ward,
         this.config.get('FRONTEND_URL'),
       );
       if (!still) {
         entry.session.dispose(4401, 'session-revoked');
         this.live.delete(entry);
+      } else {
+        entry.cookie = cookie;
       }
     }
+    this.freshness.evict(new Set([...this.live].map((e) => e.sid)));
   }
 
   onModuleDestroy(): void {

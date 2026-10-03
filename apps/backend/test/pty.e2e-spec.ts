@@ -5,6 +5,7 @@ import type { AddressInfo, Server } from 'net';
 import { WebSocket } from 'ws';
 import { PtyGateway } from '../src/modules/pty/pty.gateway';
 import { WardService } from '../src/modules/ward/ward.service';
+import { WardFreshness } from '../src/modules/ward/ward-freshness';
 import { IMBATRANIMOS_APP_SLUG } from '../src/modules/ward/ward.types';
 
 /**
@@ -42,6 +43,7 @@ describe('PtyGateway (e2e)', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         PtyGateway,
+        WardFreshness,
         { provide: WardService, useValue: wardMock },
         {
           provide: ConfigService,

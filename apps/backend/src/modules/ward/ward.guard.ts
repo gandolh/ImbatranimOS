@@ -13,6 +13,7 @@ import type { Request } from 'express';
 
 import type { Env } from '../../config/env.schema';
 import { IS_PUBLIC_KEY } from '../auth/public.decorator';
+import { WardFreshness } from './ward-freshness';
 import { WardService } from './ward.service';
 import {
   IMBATRANIMOS_APP_SLUG,
@@ -71,6 +72,7 @@ export class WardAuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly ward: WardService,
     private readonly config: ConfigService<Env, true>,
+    private readonly freshness: WardFreshness,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -127,6 +129,9 @@ export class WardAuthGuard implements CanActivate {
     }
 
     req.ward = session;
+    // The terminal sweep checks open shells against this (brief 145): a
+    // WebSocket keeps the cookie it opened with, which expires in 15 minutes.
+    this.freshness.note(session.sid, req.headers.cookie);
     return true;
   }
 

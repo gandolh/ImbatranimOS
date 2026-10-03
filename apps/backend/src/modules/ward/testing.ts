@@ -4,6 +4,7 @@ import type { ConfigService } from '@nestjs/config';
 
 import { DbService } from '../../db/db.service';
 import type { Env } from '../../config/env.schema';
+import { WardFreshness } from './ward-freshness';
 import { WardAuthGuard } from './ward.guard';
 import { WardService } from './ward.service';
 import {
@@ -118,9 +119,10 @@ export class FakeWardService extends WardService {
 @Module({
   providers: [
     { provide: WardService, useClass: FakeWardService },
+    WardFreshness,
     { provide: APP_GUARD, useClass: WardAuthGuard },
   ],
-  exports: [WardService],
+  exports: [WardService, WardFreshness],
 })
 export class WardTestModule {}
 

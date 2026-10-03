@@ -10,6 +10,7 @@ import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { WardModule } from '../src/modules/ward/ward.module';
 import { WardService } from '../src/modules/ward/ward.service';
+import { WardFreshness } from '../src/modules/ward/ward-freshness';
 import { FakeWardService, TEST_COOKIE } from '../src/modules/ward/testing';
 import { WardUnavailableError } from '../src/modules/ward/ward.types';
 
@@ -54,6 +55,19 @@ describe('GET /api/me (e2e) — brief 137', () => {
     expect(res.body).toEqual({
       user: { subject: 'subject_test', username: 'subject_test' },
     });
+  });
+
+  it('records the cookie for the terminal sweep only when it passes (brief 145)', async () => {
+    const freshness = app.get(WardFreshness);
+    ward.signIn('no-grant', 'subject_nogrant', { atrium: ['admin'] });
+    await http
+      .get('/api/me')
+      .set('Cookie', 'ward_session=no-grant')
+      .expect(403);
+    expect(freshness.size).toBe(0);
+
+    await http.get('/api/me').set('Cookie', TEST_COOKIE).expect(200);
+    expect(freshness.size).toBe(1);
   });
 
   it('is 401 with no session', async () => {

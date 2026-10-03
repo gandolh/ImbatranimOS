@@ -157,11 +157,12 @@ apps/
 
 ```bash
 npm install        # once, at the repo root — installs everything
-npm run dev        # Nest watch (:3001) + Vite HMR (:5173), in parallel
+npm run dev:local  # Nest watch (:3001) + Vite HMR (:5173), in parallel
+npm run dev        # the same inside the compose dev profile (see below)
 npm run build      # builds backend + desktop (cached — a second run is instant)
 npm run lint       # lints every package
 npm run typecheck  # typechecks every package
-npm run test       # backend test suite
+npm run test       # every package's tests, plus the backend e2e suite
 npm run format:check
 ```
 

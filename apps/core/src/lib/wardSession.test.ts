@@ -78,7 +78,7 @@ describe('refreshWardSession', () => {
 })
 
 describe('proactive refresh', () => {
-  it("refreshes a minute before Ward's stated expiry", async () => {
+  it("refreshes two minutes before Ward's stated expiry", async () => {
     vi.useFakeTimers()
     const now = Date.now()
     fetchMock.mockResolvedValue(
@@ -87,15 +87,27 @@ describe('proactive refresh', () => {
     const stop = startProactiveRefresh()
     noteSessionFresh(now + 5 * 60_000)
 
-    await vi.advanceTimersByTimeAsync(4 * 60_000 - 1_000)
+    await vi.advanceTimersByTimeAsync(3 * 60_000 - 1_000)
     expect(fetchMock).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(2_000)
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
-    // The refresh's own expiry schedules the next one 14 minutes later.
-    await vi.advanceTimersByTimeAsync(14 * 60_000 + 1_000)
+    // The refresh's own expiry (now + 15 min) schedules the next at now + 13.
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
     expect(fetchMock).toHaveBeenCalledTimes(2)
     stop()
+  })
+
+  it('still refreshes in a hidden tab (an open Terminal needs it, brief 145)', async () => {
+    vi.useFakeTimers()
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    fetchMock.mockResolvedValue(answer(200))
+    const stop = startProactiveRefresh()
+    noteSessionFresh(Date.now() + 3 * 60_000)
+    await vi.advanceTimersByTimeAsync(61_000)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    stop()
+    visibility.mockRestore()
   })
 
   it('does nothing once stopped', async () => {

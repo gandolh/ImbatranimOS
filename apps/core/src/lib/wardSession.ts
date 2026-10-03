@@ -16,8 +16,13 @@
 
 /** Origin-absolute on purpose: Ward is mounted beside the app, not under `VITE_API_URL`. */
 const REFRESH_PATH = '/ward-api/refresh'
-/** Refresh this long before the access token expires. */
-const LEAD_MS = 60_000
+/**
+ * Refresh this long before the access token expires. Two minutes, not one: a
+ * hidden tab's timers can run up to a minute late, and the terminal sweep
+ * (brief 145) needs the new cookie recorded by the backend before the old one
+ * expires.
+ */
+const LEAD_MS = 2 * 60_000
 /**
  * The access token's lifetime when nothing better is known. A page load cannot
  * read the HttpOnly cookie's expiry; a refresh response says it outright.
@@ -91,8 +96,8 @@ function schedule(): void {
 }
 
 function proactive(): void {
-  // A hidden tab's timers are throttled anyway; it catches up when shown.
-  if (document.visibilityState === 'hidden') return
+  // Runs in a hidden tab too: an open Terminal there still needs the session
+  // kept fresh, and a throttled timer is late, not lost.
   refreshWardSession().catch(() => {
     // Ward unreachable: no verdict. Try again soon; a 401 meanwhile is still
     // handled by the interceptor.

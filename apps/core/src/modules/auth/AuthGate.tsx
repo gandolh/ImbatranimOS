@@ -4,6 +4,7 @@ import { flushPrefs, flushPrefsKeepalive, hydratePrefs, prefsWaitingForAuth } fr
 import {
   WARD_REFRESHED_EVENT,
   noteSessionFresh,
+  refreshWardSession,
   startProactiveRefresh,
 } from '../../lib/wardSession'
 import { rehydrateDotfileStores } from '../../shared/store/dotfiles'
@@ -82,7 +83,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
   // every refresh after it uses Ward's own answer.
   useEffect(() => {
     if (!authenticated) return
+    // Refresh once now rather than guess: the cookie's real expiry is HttpOnly,
+    // and a guess made at page load runs late by however old the token already
+    // was. Late is what closed terminals (brief 145): between the old token
+    // expiring and the next request carrying the new one, the backend's sweep
+    // only had the expired cookie to check. A failed refresh falls back to the
+    // estimate; the interceptor still covers any 401.
     noteSessionFresh()
+    refreshWardSession().catch(() => undefined)
     return startProactiveRefresh()
   }, [authenticated])
 
@@ -93,7 +101,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     const onRefreshed = () => {
       if (prefsWaitingForAuth()) flushPrefs()
-      if (!useAuthStore.getState().authenticated) void refresh()
+      // Always re-probe, not only when covered: the probe is also what tells
+      // the backend about the new cookie, which an open Terminal's revocation
+      // sweep checks against (brief 145). A hidden tab makes no other request.
+      void refresh()
     }
     window.addEventListener(WARD_REFRESHED_EVENT, onRefreshed)
     return () => window.removeEventListener(WARD_REFRESHED_EVENT, onRefreshed)

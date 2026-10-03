@@ -87,9 +87,28 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.wss = new WebSocketServer({ noServer: true });
 
     this.upgradeHandler = (req, socket, head) => {
-      // Only claim our own path — leave any other upgrade to the rest of the
-      // pipeline (there are none today, but don't destroy sockets we don't own).
-      if (!isPtyUpgrade(req.url)) return;
+      // Once any 'upgrade' listener exists, Node stops answering upgrades
+      // itself, so an unclaimed one would pin its socket until the peer gave
+      // up. Refuse it. A future WebSocket endpoint must be dispatched from this
+      // handler, not from a second 'upgrade' listener, or the two would each
+      // refuse the other's path.
+      if (!isPtyUpgrade(req.url)) {
+        socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+
+      // Node removes its own socket 'error' listener before emitting
+      // 'upgrade'. Without this one, a client that resets the connection while
+      // Ward is being asked emits ECONNRESET with no listener, which throws and
+      // takes the whole backend down (brief 138). `handleUpgrade` installs its
+      // own, so this is removed just before it; the refusals keep it until
+      // `destroy()`.
+      const onSocketError = (err: Error) => {
+        this.logger.debug(`Terminal upgrade socket error: ${err.message}`);
+        socket.destroy();
+      };
+      socket.on('error', onSocketError);
 
       /*
        * Authorization is asynchronous now — liveness is a call to Ward — so
@@ -103,6 +122,9 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
           this.ward,
           this.config.get('FRONTEND_URL'),
         );
+        // The client left while Ward was answering: nothing to refuse and
+        // nobody to spawn a shell for.
+        if (socket.destroyed) return;
         if (!record) {
           this.logger.warn('Rejected unauthorized terminal upgrade');
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
@@ -120,6 +142,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
           return;
         }
 
+        socket.off('error', onSocketError);
         this.wss!.handleUpgrade(req, socket, head, (ws) => {
           this.onConnection(ws, req);
         });
@@ -143,7 +166,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         cols,
         rows,
         cwd: resolveHome(),
-        env: process.env,
+        env: shellEnv(process.env),
       });
     } catch (err) {
       this.logger.error(`Failed to spawn shell: ${(err as Error).message}`);
@@ -210,6 +233,29 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.live.clear();
     this.wss?.close();
   }
+}
+
+/**
+ * The environment a terminal starts with: the backend's own, minus Ward's.
+ *
+ * `WARD_APP_KEY` is a secret the config schema says never leaves the server,
+ * and a shell inheriting `process.env` handed it to anyone with a terminal
+ * (`echo $WARD_APP_KEY`). Every `WARD_*` name goes, not just the key: none of
+ * them is the shell's business.
+ *
+ * A denylist rather than an allowlist on purpose. The terminal is the user's
+ * workspace on a real system, and an allowlist would also strip whatever the
+ * image or the operator set for them (`EDITOR`, locale, tool paths). The cost
+ * is that a future secret must be added here; the schema marks each one.
+ *
+ * A copy: `process.env` itself is never touched.
+ */
+export function shellEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const out: NodeJS.ProcessEnv = {};
+  for (const [name, value] of Object.entries(env)) {
+    if (!name.startsWith('WARD_')) out[name] = value;
+  }
+  return out;
 }
 
 /** Read optional `cols`/`rows` from the upgrade URL query string. */

@@ -135,4 +135,50 @@ describe('PtyGateway (e2e)', () => {
     ]);
     expect(a).not.toBe(b); // two distinct shell processes
   }, 20000);
+
+  it("keeps Ward's secret out of the shell's environment (brief 138)", async () => {
+    const before = process.env.WARD_APP_KEY;
+    process.env.WARD_APP_KEY = 'e2e-secret-app-key';
+    try {
+      const ws = new WebSocket(url, {
+        headers: { cookie: 'ward_session=good' },
+      });
+      // The typed line is echoed back too; `%s` keeps it from matching.
+      const m = await new Promise<RegExpMatchArray>((resolve, reject) => {
+        let buf = '';
+        const timer = setTimeout(
+          () => reject(new Error(`no output; got: ${buf}`)),
+          8000,
+        );
+        ws.on('open', () =>
+          ws.send(
+            JSON.stringify({
+              type: 'input',
+              data: `printf 'K=[%s] H=%s P=%s\\n' "$WARD_APP_KEY" "\${HOME:+set}" "\${PATH:+set}"\r`,
+            }),
+          ),
+        );
+        ws.on('message', (d) => {
+          // This server only sends text frames.
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+          buf += d.toString();
+          const found = buf.match(/K=\[([^\]%]*)\] H=(\w+) P=(\w+)/);
+          if (found) {
+            clearTimeout(timer);
+            ws.close();
+            resolve(found);
+          }
+        });
+        ws.on('error', reject);
+      });
+      expect(m[1]).toBe('');
+      expect(m[2]).toBe('set');
+      expect(m[3]).toBe('set');
+      // Scrubbed from the shell, not from the backend.
+      expect(process.env.WARD_APP_KEY).toBe('e2e-secret-app-key');
+    } finally {
+      if (before === undefined) delete process.env.WARD_APP_KEY;
+      else process.env.WARD_APP_KEY = before;
+    }
+  }, 15000);
 });

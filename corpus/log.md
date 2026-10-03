@@ -4106,3 +4106,7 @@ Open PDF, an intent from Files and a drop each replaced an annotated document wi
 ## [2026-10-03] done | Brief 147 — `npm test` runs the backend e2e suite
 
 A turbo `test:e2e` task, with the root `npm test` running `turbo test test:e2e`, so the HTTP-level guard tests (11 suites / 122 tests now) gate the default command. A deliberately broken e2e assertion made it exit 1. The README's command list was corrected on the way: `dev:local`, not `dev`, is Nest watch + Vite.
+
+## [2026-10-03] done | Brief 144 — the Ward session outlives its 15-minute access token
+
+Nothing refreshed Ward's session, so the desktop dropped behind the sign-in cover every 15 minutes and the way back cost a page load. The axios interceptor now refreshes on a 401 and replays once. A timer refreshes a minute before expiry. An unreachable Ward is never read as a sign-out. Taken on the brief's recommendation without the step-3 grill. Checked against the local Ward: a corrupted access cookie heals silently, and 20 idle minutes leave an unsaved Notepad buffer and the session alive.

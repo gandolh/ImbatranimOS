@@ -92,3 +92,26 @@ one interceptor covers every add-on's HTTP. The only raw `fetch` callers are
 - The Terminal WebSocket's revocation sweep — brief 145.
 - Ward's `integrating.md` does not mention that clients must refresh. Worth
   raising in the Ward repo; not this brief.
+
+## Outcome (2026-10-03)
+
+Done. **The step-3 grill did not happen.** The brief's recommendation (proactive refresh) was taken without the owner, the way atrium's brief 72 was; revisit if the owner disagrees.
+
+- **`lib/wardSession.ts` (new):**
+  - `refreshWardSession()` is single-flight `fetch('/ward-api/refresh', { method: 'POST', credentials: 'include' })`. 2xx → `true` (and an `auth:refreshed` event); 401, 403 or 404 → `false`; a 5xx or a network error throws.
+  - The proactive timer refreshes a minute before Ward's own `accessTokenExpiresAt` from the refresh response, or at the sign-in probe + 14 minutes when that is unknown. A hidden tab catches up on `visibilitychange`. A refresh that cannot reach Ward retries in 30 s, and a `false` from the timer does nothing: the session ends at its own expiry, not a minute early.
+- **`lib/axios.ts`:** on a 401, refresh and replay the request once, flagged so it is never replayed twice.
+  - A refused refresh, or a 401 after a refresh, dispatches `auth:unauthorized`.
+  - A refresh that throws dispatches nothing, and the caller sees the original 401.
+  - The dead `/auth/` exclusion is gone.
+- **`AuthGate.tsx`:** starts the timer while authenticated. On `auth:refreshed` it re-flushes prefs held by a 401 (brief 109) and re-probes `/me` if the desktop is behind the cover.
+  - `prefs.ts` and `authStore.ts` needed no change: prefs writes go through the interceptor, so a 401 reaching them means the refresh already failed.
+- Step 5 is moot: since brief 137, local dev proxies `/ward-api` to the local Ward, so refresh works there too. A 404 still reads as "cannot refresh".
+
+**Tests** (`wardSession.test.ts`, jsdom): ten concurrent callers → one request; 401/403/404 → `false`; 502 or a network error throws; the timer fires a minute before the stated expiry and re-arms from the refresh's own expiry; nothing after stop. The interceptor: 401 → refresh → one replay → 200; a refused refresh → `auth:unauthorized`; a second 401 is not replayed again; a refresh network error signs nobody out; a 500 passes straight through. Core vitest 300/300, typecheck, eslint and prettier clean.
+
+**Browser check against the local Ward container:**
+1. An overwritten `ward_session` cookie: the next app request answered 401 → `POST /ward-api/refresh` 200 → replay 200. Ward's fresh HttpOnly cookie replaced it, with no cover.
+2. Notepad with an unsaved line, idle from 17:27 to 17:47: no sign-in cover, a proactive `POST /ward-api/refresh` 200 in the network log, and the buffer intact.
+   - The idle **screensaver** (`useIdleLock`, "Screen covered") was up, as designed. Uncover asked `/me`, which answered 200, so it opened at once.
+   - Saving then wrote the line to disk (`PUT /files/content` 200).

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
   PayloadTooLargeException,
@@ -442,8 +443,11 @@ export class ArchiveService {
     }
 
     // Destination: caller-supplied, else a sibling folder named after the
-    // archive (foo.tar.gz -> foo). Always re-jailed.
-    const destVirtual = dest ?? this.deriveDest(path);
+    // archive (foo.tar.gz -> foo), or `foo (2)`… when that exists: extracting
+    // the same archive twice must never land on the first copy (brief 148).
+    // Always re-jailed.
+    const destVirtual =
+      dest ?? (await this.freeDest(root, this.deriveDest(path)));
     const { abs: destAbs } = await this.files.resolveSafe(root, destVirtual);
 
     const format = this.detectFormat(path);
@@ -838,26 +842,70 @@ export class ArchiveService {
     return total;
   }
 
-  /** Move the top-level children of `fromAbs` into `toAbs`. Returns file count. */
+  /**
+   * Move the staged tree into `toAbs`, file by file. Returns the file count.
+   *
+   * It used to `rm -rf` each top-level destination entry and rename the staged
+   * one into its place, so extracting an archive into a folder that already
+   * held its `project/` deleted every edit and every new file inside it, with
+   * no prompt and no Trash (brief 148). Now an existing directory is merged
+   * into, a same-path file is replaced by `rename` (atomic), and nothing that
+   * the archive does not contain is touched.
+   */
   private async mergeTree(fromAbs: string, toAbs: string): Promise<number> {
     let files = 0;
-    const countFiles = async (abs: string): Promise<void> => {
-      const dirents = await fs.readdir(abs, { withFileTypes: true });
-      for (const d of dirents) {
-        if (d.isDirectory()) await countFiles(join(abs, d.name));
-        else files++;
+    const merge = async (from: string, to: string): Promise<void> => {
+      for (const d of await fs.readdir(from, { withFileTypes: true })) {
+        const src = join(from, d.name);
+        const dst = join(to, d.name);
+        const existing = await fs.lstat(dst).catch(() => null);
+        if (d.isDirectory()) {
+          if (existing?.isDirectory()) {
+            await merge(src, dst);
+            continue;
+          }
+          // Nothing there, or a file where the archive has a folder: the
+          // archive's folder wins, as a same-path file would.
+          files += await countFiles(src);
+          if (existing) await fs.rm(dst);
+          await fs.rename(src, dst);
+          continue;
+        }
+        if (existing?.isDirectory()) {
+          throw new ConflictException(
+            `"${d.name}" is a folder here, but a file in the archive; nothing under it was changed`,
+          );
+        }
+        await fs.rename(src, dst);
+        files++;
       }
     };
-    await countFiles(fromAbs);
-
-    const top = await fs.readdir(fromAbs);
-    for (const name of top) {
-      const src = join(fromAbs, name);
-      const dst = join(toAbs, name);
-      await fs.rm(dst, { recursive: true, force: true });
-      await fs.rename(src, dst);
-    }
+    const countFiles = async (abs: string): Promise<number> => {
+      let n = 0;
+      for (const d of await fs.readdir(abs, { withFileTypes: true })) {
+        n += d.isDirectory() ? await countFiles(join(abs, d.name)) : 1;
+      }
+      return n;
+    };
+    await merge(fromAbs, toAbs);
     return files;
+  }
+
+  /**
+   * `wanted`, or the first of `wanted (2)`, `wanted (3)`… that does not exist —
+   * the Trash's naming convention, so a second extraction sits beside the
+   * first instead of on top of it.
+   */
+  private async freeDest(root: string, wanted: string): Promise<string> {
+    for (let n = 1; ; n++) {
+      const candidate = n === 1 ? wanted : `${wanted} (${n})`;
+      const { abs } = await this.files.resolveSafe(root, candidate);
+      const taken = await fs.lstat(abs).then(
+        () => true,
+        () => false,
+      );
+      if (!taken) return candidate;
+    }
   }
 
   // ── compress ─────────────────────────────────────────────────────────────

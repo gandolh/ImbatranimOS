@@ -88,3 +88,28 @@ regenerate the lockfile; rebuild the image once to confirm `argon2` is gone.
 - `docker compose -f infrastructure/docker-compose.yml build imbatranimos`
   succeeds and the image has no `node_modules/argon2`. Record the image size
   before and after in the brief's outcome note.
+
+## Outcome (2026-10-03)
+
+Done, everything listed, one commit.
+- **Dependencies:**
+  - `argon2`, `otplib`, `qrcode` and `cookie-parser`, with `@types/cookie-parser` and `@types/qrcode`, are out of `apps/backend/package.json`.
+  - `allowScripts.argon2` and the `otplib|@otplib|@scure|@noble` Jest transform exceptions are gone from both configs; `jose` is kept, and so are e2e's `strip-ansi|ansi-regex`.
+  - `cookieParser()` is gone from `main.ts` and from the eleven test files that mirrored it.
+  - Calendar's `zustand` and logs' `dayjs` are gone.
+  - `npm install` removed 35 packages.
+- **Dead code:**
+  - `auth/dto/auth.dto.ts`, `passwordChange.ts` and its test, and `notes/notes.service.ts` are deleted. `notes/dto/upsert-recent.dto.ts` stays: the recent-files route uses it.
+  - `toSignIns` and `SignIn` are gone from `packages/ui` (and from its index and core's re-export).
+  - The ten `auth.*` labels are gone from the logs add-on. Its test now asserts no `auth.*` event is known.
+- **Prose:**
+  - Every listed `SessionAuthGuard` now names `WardAuthGuard`, and "owner-only" became "grant-holders only".
+  - `public.decorator.ts` now says nothing carries `@Public()` today.
+  - `AuthGate.tsx`'s docstring (first-run wizard/lock), `main.tsx` (lock screen/first-run wizard), `useIdleLock.ts` ("re-proves the password (+TOTP)"), `systemLog.ts` (Settings → Security sign-in history) and `app.e2e-spec.ts` (`auth.e2e-spec`) all describe what exists now.
+  - The grep would also have caught `ws-auth.ts`, `pty-upgrade.ts` ("no cookie-parser"), `redact.ts` ("an argon2 hash"), `log.service.ts` (`auth.login.failed` as the example event), a brief-84 spec fixture and a brief-150 comment, so those were reworded too.
+
+**Acceptance:**
+- The brief's grep returns only `ward.guard.ts`'s historical note.
+- Repo typecheck 30/30; backend `eslint "{src,test}/**/*.ts"` without `--fix` is clean; `npm test` is 30/30 tasks (backend unit 458, e2e 122, every vitest suite); `format:check` 30/30.
+- **Image** (`docker compose -f infrastructure/docker-compose.yml build imbatranimos`, Docker now available): **264 MB before, 260 MB after**. `node_modules` went from 85.6 MB to 79.4 MB, and `node_modules/argon2`, `otplib`, `qrcode` and `cookie-parser` are absent.
+- The image was not booted: it still refuses to start without the three `WARD_*` variables, which is brief 152.

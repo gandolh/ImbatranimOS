@@ -4138,3 +4138,7 @@ A corrupt `db.sqlite` in a backup used to be swapped in, fail to open, take the 
 ## [2026-10-03] fix | The backup audit line no longer races tar
 
 Found while landing brief 154: `openBackupStream` wrote its `backup.taken` audit line into `.imbatranim/logs` just after spawning tar. GNU tar then failed the backup about one run in three ("file changed as we read it"), and the brief-80 spec flaked inside `npm test`. The line is now recorded and flushed before the spawn. Writes from other requests during a backup could still trip GNU tar. The Alpine image uses busybox tar, which does not check for that.
+
+## [2026-10-03] done | Brief 151 — delete what the Ward cutover orphaned
+
+The cutover's leftovers are gone: argon2, otplib, qrcode and cookie-parser (35 packages out of the lockfile), the auth DTOs, the password-change helper, sign-in history and the `auth.*` log labels, a dead notes service, and every comment describing a login, a first-run wizard or `SessionAuthGuard`. The prod image went from 264 MB to 260 MB with no `argon2` inside. All gates green.

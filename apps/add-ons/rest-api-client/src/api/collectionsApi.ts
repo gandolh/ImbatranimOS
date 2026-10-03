@@ -41,20 +41,64 @@ function normalize(raw: unknown): RestClientData {
   return { collections, history: history.slice(0, MAX_HISTORY), environments, activeEnvId }
 }
 
+/** Where the doc lives, for the "open it in Notepad" repair path. */
+export const DATA_FILE = { root: ROOT, path: PATH } as const
+
 /**
- * Load collections + history. A missing file (first run) yields empty data —
- * the 404 from the files API is expected, not an error to surface.
+ * What `loadData` found. Only `ok` and `missing` may be written over: `missing` is
+ * a first run, where empty data is the truth, and anything else is data the user
+ * has not seen, which a whole-file save would replace (brief 139).
  */
-export async function loadData(http: SystemHttp): Promise<RestClientData> {
+export type LoadResult =
+  | { status: 'ok'; data: RestClientData }
+  | { status: 'missing' }
+  | { status: 'failed'; error: string; malformed: boolean }
+
+/** The HTTP status of an axios-style error, if it carries one. */
+function httpStatus(err: unknown): number | undefined {
+  const status = (err as { response?: { status?: unknown } })?.response?.status
+  return typeof status === 'number' ? status : undefined
+}
+
+/**
+ * Load collections + history.
+ *
+ * Before brief 139 every failure here degraded to empty data: a 401, a 503, a
+ * network blip and a hand-edited file with a typo all looked like a first run, and
+ * the next Send then saved that empty doc over the user's collections. Now only a
+ * 404 means "start empty"; everything else is reported, and the caller refuses to
+ * persist until a load succeeds.
+ */
+export async function loadData(http: SystemHttp): Promise<LoadResult> {
+  let content: string
   try {
     const res = await http.get<{ path: string; content: string }>('/files/content', {
       params: { root: ROOT, path: PATH },
     })
-    return normalize(JSON.parse(res.data.content))
-  } catch {
-    // A missing file (first run) or a malformed one both degrade to empty rather
-    // than crashing the app — the regression surface brief 77 names.
-    return EMPTY_DATA
+    content = res.data.content
+  } catch (err) {
+    const status = httpStatus(err)
+    if (status === 404) return { status: 'missing' }
+    const message = (err as { message?: unknown })?.message
+    return {
+      status: 'failed',
+      error: status
+        ? `the files service answered ${status}`
+        : typeof message === 'string' && message
+          ? message
+          : 'the file could not be read',
+      malformed: false,
+    }
+  }
+  try {
+    return { status: 'ok', data: normalize(JSON.parse(content)) }
+  } catch (err) {
+    // V8's message already carries the position ("… at position 42 (line 3 column 5)").
+    return {
+      status: 'failed',
+      error: `collections.json is not valid JSON: ${(err as Error).message}`,
+      malformed: true,
+    }
   }
 }
 

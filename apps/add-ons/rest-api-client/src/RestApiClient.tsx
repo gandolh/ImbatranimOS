@@ -1,4 +1,5 @@
-import { useSystem } from '@imbatranim/ui'
+import { Button, useSystem } from '@imbatranim/ui'
+import { AlertTriangle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RequestBuilder } from './components/RequestBuilder'
 import { ResponseViewer } from './components/ResponseViewer'
@@ -7,7 +8,7 @@ import { EnvironmentDialog } from './components/EnvironmentDialog'
 import { CurlDialog } from './components/CurlDialog'
 import { AuthDialog } from './components/AuthDialog'
 import { sendProxyRequest } from './api/httpProxyApi'
-import { EMPTY_DATA, loadData, saveData } from './api/collectionsApi'
+import { DATA_FILE, EMPTY_DATA, loadData, saveData, type LoadResult } from './api/collectionsApi'
 import type {
   BodyMode,
   FormField,
@@ -25,6 +26,10 @@ import { activeFields, buildMultipart, bytesToBase64, contentTypeFor } from './l
 
 type BuilderTab = 'headers' | 'body'
 type OpenDialog = 'env' | 'curl-import' | 'curl-export' | 'auth' | null
+type LoadState = { status: 'loading' } | LoadResult
+
+/** Whether a whole-file save may replace what is on disk: only what was read, or nothing. */
+const canWrite = (load: LoadState) => load.status === 'ok' || load.status === 'missing'
 
 /** Pull a readable message out of an axios-style error without importing axios. */
 function extractError(err: unknown): string {
@@ -58,22 +63,52 @@ export function RestApiClient(_props: { windowId: string }) {
     dataRef.current = data
   }, [data])
 
+  /*
+   * Every write saves the whole doc, so nothing may be written until the doc has
+   * been read (brief 139). A failed load used to look like a first run, and the
+   * next Send replaced every saved request with one history entry. Send itself
+   * still works while this is anything but writable: it is a proxy call.
+   */
+  const [load, setLoad] = useState<LoadState>({ status: 'loading' })
+  const loadRef = useRef(load)
   useEffect(() => {
-    let alive = true
-    void loadData(system.http).then((loaded) => {
-      if (alive) setData(loaded)
+    loadRef.current = load
+  }, [load])
+  const loadSeq = useRef(0)
+
+  /** Read the doc; only its answer touches state, and only if it is still the latest. */
+  const fetchLoad = useCallback(() => {
+    const seq = ++loadSeq.current
+    void loadData(system.http).then((result) => {
+      if (seq !== loadSeq.current) return
+      if (result.status === 'ok') setData(result.data)
+      setLoad(result)
     })
-    return () => {
-      alive = false
-    }
   }, [system])
 
+  useEffect(() => {
+    fetchLoad()
+    const seqRef = loadSeq
+    return () => {
+      // Drop an answer that lands after unmount.
+      seqRef.current++
+    }
+  }, [fetchLoad])
+
+  const retryLoad = useCallback(() => {
+    setLoad({ status: 'loading' })
+    fetchLoad()
+  }, [fetchLoad])
+
+  /** Save `next`, or refuse and return false while the doc has not been read. */
   const persist = useCallback(
-    (next: RestClientData) => {
+    (next: RestClientData): boolean => {
+      if (!canWrite(loadRef.current)) return false
       setData(next)
       void saveData(system.http, next).catch((err) =>
         system.notify({ level: 'error', title: 'Save failed', body: extractError(err) })
       )
+      return true
     },
     [system]
   )
@@ -216,8 +251,18 @@ export function RestApiClient(_props: { windowId: string }) {
       form,
       filePath: filePath || undefined,
     }
-    persist({ ...dataRef.current, collections: [...dataRef.current.collections, saved] })
-    system.notify({ level: 'success', title: 'Saved to collection' })
+    if (persist({ ...dataRef.current, collections: [...dataRef.current.collections, saved] })) {
+      system.notify({ level: 'success', title: 'Saved to collection' })
+    } else {
+      system.notify({
+        level: 'warning',
+        title: 'Not saved',
+        body:
+          loadRef.current.status === 'loading'
+            ? 'Saved requests are still loading. Try again in a moment.'
+            : 'Saved requests are unavailable, so nothing can be added to them.',
+      })
+    }
   }, [method, url, headers, body, bodyMode, form, filePath, persist, system])
 
   /** Load a request into the builder — every field, so nothing is left over. */
@@ -298,94 +343,121 @@ export function RestApiClient(_props: { windowId: string }) {
   }, [])
 
   return (
-    <div className="bg-surface text-on-surface font-content flex h-full min-h-0 w-full">
-      <Sidebar
-        data={data}
-        onOpenSaved={openSaved}
-        onDeleteSaved={deleteSaved}
-        onOpenHistory={openHistory}
-        onClearHistory={clearHistory}
-      />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <RequestBuilder
-          method={method}
-          url={url}
-          headers={headers}
-          body={body}
-          bodyMode={bodyMode}
-          form={form}
-          filePath={filePath}
-          tab={builderTab}
-          loading={loading}
-          environments={data.environments}
-          activeEnvId={data.activeEnvId}
-          previewUrl={preview.url}
-          issueText={issueText}
-          sendBlocked={sendBlocked}
-          missingVars={missingVars}
-          onMethodChange={setMethod}
-          onUrlChange={setUrl}
-          onHeadersChange={setHeaders}
-          onBodyChange={setBody}
-          onBodyModeChange={setBodyMode}
-          onFormChange={setForm}
-          onFilePathChange={setFilePath}
-          onTabChange={setBuilderTab}
-          onSend={() => void handleSend()}
-          onSave={handleSave}
-          onSelectEnv={(id) => persist({ ...dataRef.current, activeEnvId: id })}
-          onEditEnvs={() => setDialog('env')}
-          onImportCurl={() => setDialog('curl-import')}
-          onExportCurl={() => setDialog('curl-export')}
-          onAddAuth={() => setDialog('auth')}
-          onAddMissingVars={() => {
-            const target = activeEnvironment(dataRef.current)
-            if (!target) {
+    <div className="bg-surface text-on-surface font-content flex h-full min-h-0 w-full flex-col">
+      {load.status === 'failed' && (
+        <div
+          role="alert"
+          className="bg-error-container text-on-error-container flex shrink-0 items-center gap-2 px-3 py-1.5 text-[12px]"
+        >
+          <AlertTriangle size={13} className="shrink-0" />
+          <span className="min-w-0 flex-1">Saved requests are unavailable: {load.error}</span>
+          {load.malformed && (
+            <Button
+              size="sm"
+              onClick={() =>
+                system.intents.openApp('notepad', {
+                  openPath: DATA_FILE.path,
+                  root: DATA_FILE.root,
+                })
+              }
+            >
+              Open in Notepad
+            </Button>
+          )}
+          <Button size="sm" onClick={retryLoad}>
+            Retry
+          </Button>
+        </div>
+      )}
+      <div className="flex min-h-0 w-full flex-1">
+        <Sidebar
+          data={data}
+          onOpenSaved={openSaved}
+          onDeleteSaved={deleteSaved}
+          onOpenHistory={openHistory}
+          onClearHistory={clearHistory}
+        />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <RequestBuilder
+            method={method}
+            url={url}
+            headers={headers}
+            body={body}
+            bodyMode={bodyMode}
+            form={form}
+            filePath={filePath}
+            tab={builderTab}
+            loading={loading}
+            environments={data.environments}
+            activeEnvId={data.activeEnvId}
+            previewUrl={preview.url}
+            issueText={issueText}
+            sendBlocked={sendBlocked}
+            missingVars={missingVars}
+            onMethodChange={setMethod}
+            onUrlChange={setUrl}
+            onHeadersChange={setHeaders}
+            onBodyChange={setBody}
+            onBodyModeChange={setBodyMode}
+            onFormChange={setForm}
+            onFilePathChange={setFilePath}
+            onTabChange={setBuilderTab}
+            onSend={() => void handleSend()}
+            onSave={handleSave}
+            onSelectEnv={(id) => persist({ ...dataRef.current, activeEnvId: id })}
+            onEditEnvs={() => setDialog('env')}
+            onImportCurl={() => setDialog('curl-import')}
+            onExportCurl={() => setDialog('curl-export')}
+            onAddAuth={() => setDialog('auth')}
+            onAddMissingVars={() => {
+              const target = activeEnvironment(dataRef.current)
+              if (!target) {
+                setDialog('env')
+                return
+              }
+              const known = new Set(target.vars.map((v) => v.name.trim()))
+              const additions = missingVars
+                .filter((n) => !known.has(n))
+                .map((n) => ({
+                  id: newId(),
+                  name: n,
+                  value: '',
+                  secret: /token|secret|key|password/i.test(n),
+                }))
+              persist({
+                ...dataRef.current,
+                environments: dataRef.current.environments.map((e) =>
+                  e.id === target.id ? { ...e, vars: [...e.vars, ...additions] } : e
+                ),
+              })
               setDialog('env')
-              return
-            }
-            const known = new Set(target.vars.map((v) => v.name.trim()))
-            const additions = missingVars
-              .filter((n) => !known.has(n))
-              .map((n) => ({
-                id: newId(),
-                name: n,
-                value: '',
-                secret: /token|secret|key|password/i.test(n),
-              }))
-            persist({
-              ...dataRef.current,
-              environments: dataRef.current.environments.map((e) =>
-                e.id === target.id ? { ...e, vars: [...e.vars, ...additions] } : e
-              ),
-            })
-            setDialog('env')
-          }}
-        />
-        <ResponseViewer response={response} error={error} loading={loading} />
-      </div>
+            }}
+          />
+          <ResponseViewer response={response} error={error} loading={loading} />
+        </div>
 
-      {dialog === 'env' && (
-        <EnvironmentDialog
-          environments={data.environments}
-          activeEnvId={data.activeEnvId}
-          onChange={(environments, activeEnvId) =>
-            persist({ ...dataRef.current, environments, activeEnvId })
-          }
-          onClose={() => setDialog(null)}
-        />
-      )}
-      {(dialog === 'curl-import' || dialog === 'curl-export') && (
-        <CurlDialog
-          mode={dialog === 'curl-import' ? 'import' : 'export'}
-          request={{ method, url, headers, body }}
-          onImport={(parsed) => loadRequest(parsed)}
-          onClose={() => setDialog(null)}
-        />
-      )}
-      {dialog === 'auth' && (
-        <AuthDialog environment={env} onApply={applyAuthHeader} onClose={() => setDialog(null)} />
-      )}
+        {dialog === 'env' && (
+          <EnvironmentDialog
+            environments={data.environments}
+            activeEnvId={data.activeEnvId}
+            onChange={(environments, activeEnvId) =>
+              persist({ ...dataRef.current, environments, activeEnvId })
+            }
+            onClose={() => setDialog(null)}
+          />
+        )}
+        {(dialog === 'curl-import' || dialog === 'curl-export') && (
+          <CurlDialog
+            mode={dialog === 'curl-import' ? 'import' : 'export'}
+            request={{ method, url, headers, body }}
+            onImport={(parsed) => loadRequest(parsed)}
+            onClose={() => setDialog(null)}
+          />
+        )}
+        {dialog === 'auth' && (
+          <AuthDialog environment={env} onApply={applyAuthHeader} onClose={() => setDialog(null)} />
+        )}
+      </div>
     </div>
   )
 }

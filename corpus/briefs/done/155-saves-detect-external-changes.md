@@ -110,6 +110,12 @@ stand.
   - Core `fileBytes` 7: the header, the `expected` field, 409 → `FileConflictError`,
     and 413 still → `UploadTooLargeError`.
 - Repo typecheck, lint and `format:check` 90/90; `npm test` 30/30.
-- **Browser check owed.** Ward's container was down at the time of the run
-  (nothing on :8792), so the desktop could not sign in. The Notepad + Terminal
-  scenario still has to be walked once.
+- **Browser check (done later the same day, once Ward was back):** signed in
+  through the local Ward and opened `notes.txt` in Notepad. A line was appended
+  from outside, by a shell writing the same `FILES_ROOT`; the precondition cannot
+  tell that from the Terminal app.
+  - Typing and Save asked the question, and the disk kept the outside line.
+  - **Reload from disk** showed both lines, with Save disabled.
+  - A save with no outside change went straight through.
+  - A second outside append, then Save → **Overwrite**, wrote my text.
+  - Cancel was not walked in the browser; the unit tests cover it.

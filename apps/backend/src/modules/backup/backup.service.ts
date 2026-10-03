@@ -297,6 +297,15 @@ export class BackupService {
         'utf8',
       );
 
+      // Recorded, and flushed, BEFORE tar starts reading. Written after the
+      // spawn, this line landed in `.imbatranim/logs` while tar was reading it,
+      // and GNU tar then exits 1 ("file changed as we read it"), failing the
+      // backup about one run in three in the specs.
+      this.logs.audit('backup.taken', 'A backup was downloaded', {
+        excluded: excluded.length,
+      });
+      await this.logs.flush();
+
       const args = [
         '-czf',
         '-',
@@ -333,9 +342,6 @@ export class BackupService {
         });
       });
 
-      this.logs.audit('backup.taken', 'A backup was downloaded', {
-        excluded: excluded.length,
-      });
       return {
         filename: this.filename(),
         stream: stdout,

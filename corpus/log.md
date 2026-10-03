@@ -4122,3 +4122,7 @@ A key-set fetch failure (Ward down after a restart, or past the 10-minute JWKS c
 ## [2026-10-03] done | Brief 148 — extracting a tarball never deletes existing files
 
 A second "Extract here" of the same tarball `rm -rf`'d the first extraction's folders, edits included. The default destination is now `name (2)`… when `name` exists. An explicit destination is merged file by file, for zip and tar, and a folder in the way of an archive file answers 409.
+
+## [2026-10-03] done | Brief 150 — scrub the pre-Ward credential tables
+
+Ledger step 7 drops `auth_user` and `auth_sessions`. Upgraded installs no longer keep the owner's argon2id hash and TOTP secret, so backups stop carrying them, and a restored old backup is scrubbed when it migrates. **Backups downloaded before this change still contain them** on installs older than 2026-09-06.

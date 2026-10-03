@@ -55,3 +55,18 @@ backup is migrated by `replaceWith`, so it is scrubbed too.
 
 - Backups downloaded before this lands are the user's files. Mention them in
   the log entry, so the owner knows older archives still carry the hash.
+
+## Outcome (2026-10-03)
+
+Done.
+- Ledger step 7, `drop-pre-ward-auth`, runs `DROP TABLE IF EXISTS auth_sessions; DROP TABLE IF EXISTS auth_user;` with no catch (`IF EXISTS` is the whole expected-skip).
+- Steps 1 and 5 still create and alter the tables, and were left alone so the ledger keeps replaying history.
+- The comment at the `prefs` table now names `WardAuthGuard`.
+
+**Specs** (`db.service.spec.ts`):
+- A version-0 database holding a populated `auth_user` (a hash string and a TOTP secret) and `auth_sessions` migrates to 7 without either table, and a `VACUUM INTO` snapshot taken afterwards contains neither.
+- A fresh database ends without them too.
+- The brief-110 specs now expect version 7.
+- Backend unit and e2e green, apart from the specs staged for briefs 149 and 154, which landed next.
+
+**For the owner: backups downloaded before 2026-10-03 still carry the hash and TOTP secret** of any install that predates the cutover. They are your files: delete them, or keep them offline.

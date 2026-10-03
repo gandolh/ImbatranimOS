@@ -36,3 +36,15 @@ which also undersells the ~1,450 frontend tests the same command runs.
   116 tests at the time of writing) alongside the unit and frontend suites.
 - A deliberately broken e2e assertion makes `npm test` exit non-zero (revert it
   afterwards).
+
+## Outcome (2026-10-03)
+
+Done with option (a).
+- `turbo.json` has a `test:e2e` task (no outputs), and the root `"test"` is `turbo test test:e2e`, so `turbo test` alone is still the unit-only run.
+- The backend's `test:e2e` script already existed, so `apps/backend/package.json` is unchanged.
+- The README's Developing list now says `npm run test` runs every package's tests plus the backend e2e suite. It also corrects `npm run dev`: since brief 137 the Nest watch + Vite pair is `npm run dev:local`, and `dev` is the compose watch profile.
+
+**Verified:**
+- A clean root `npm test` ran 30/30 tasks, including `backend#test:e2e` at **11 suites / 122 tests**. That is up from 10 / 116 when the brief was written: briefs 138, 140 and 145 added to it the same day.
+- Changing one e2e expectation (`/api/me` without a session to expect 418) made `npm test` exit 1 with `backend:test:e2e … 1 failed`. The file was restored, and `git diff` is clean.
+- The task id is `backend#test:e2e`: the backend package is named `backend`, not `@imbatranim/backend`.

@@ -4102,3 +4102,7 @@ A browser that disconnected mid-backup left tar blocked on a paused pipe, so the
 ## [2026-10-03] done | Brief 143 — norPDF asks before replacing an edited document
 
 Open PDF, an intent from Files and a drop each replaced an annotated document without asking. All three now go through `useReplaceGate` (Save / Don't Save / Cancel, Save loading only if it landed), and the file intake moved inside the providers to reach `saveToDisk`. norPDF has a test runner now. Browser-checked: a drop and a pick onto an annotated PDF both ask, and Cancel keeps the edits.
+
+## [2026-10-03] done | Brief 147 — `npm test` runs the backend e2e suite
+
+A turbo `test:e2e` task, with the root `npm test` running `turbo test test:e2e`, so the HTTP-level guard tests (11 suites / 122 tests now) gate the default command. A deliberately broken e2e assertion made it exit 1. The README's command list was corrected on the way: `dev:local`, not `dev`, is Nest watch + Vite.

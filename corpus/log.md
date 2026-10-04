@@ -4154,3 +4154,7 @@ Git ran with `extendEnv`, so a repository's own hooks, pager or credential helpe
 ## [2026-10-04] decide | Owner answers: local sign-in returns, the ISO is a server, 50 and 120 go ahead
 
 Asked directly, recorded in the new [decisions-estate-era.md](wiki/decisions-estate-era.md), which also finally records the 2026-09-06 Ward move as a decision. **Brief 152: option C.** With Ward unconfigured, a single-user local sign-in returns, so the friend-run bar stands again; inside the estate Ward still owns identity. **The kiosk is dropped:** the ISO becomes a plain Alpine image with the web server's packages pre-installed, reached from the LAN over HTTPS, so the `--no-sandbox` todo is removed as moot. **Brief 15 is parked** on its owner-run QA and deploy. **Briefs 50 and 120 go ahead.** **Old backups holding the deleted login's hash are deleted**, starting fresh. **Briefs 144, 145 and 155** get their grill after the fact.
+
+## [2026-10-04] maintenance | Brief 18 superseded by the server-ISO decision
+
+The kiosk ISO brief moves from done/ to superseded/ with a one-line note: the owner dropped the kiosk, and the ISO becomes a LAN server OS ([decisions-estate-era.md](wiki/decisions-estate-era.md)). A note prepended to it earlier today was taken back out (done briefs are immutable), and index.md was regenerated rather than hand-edited.

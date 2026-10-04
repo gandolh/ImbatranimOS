@@ -1,7 +1,5 @@
 # Task 18 — Alpine kiosk ISO: boot straight into the browser
 
-> **Superseded 2026-10-04:** the kiosk is dropped. The ISO becomes a plain Alpine server OS reached from the LAN over HTTPS ([decisions-estate-era.md](../../wiki/decisions-estate-era.md)).
-
 > **Outcome (2026-07-17, done):** Landed in commit `bac2b99` (+ a passwd
 > `-u`→`-l` review fix in `b46f64e`). `./build iso` works unprivileged
 > (fakeroot) in Docker on WSL2, first try. Open questions resolved: app
@@ -179,3 +177,5 @@ Sources: [Alpine wiki: custom ISO with mkimage](https://wiki.alpinelinux.org/wik
   commit vs stateless).
 - **Browser knob**: where the chromium/firefox switch lives when the
   expansion comes (profile variable, most likely).
+
+> **Superseded 2026-10-04:** the kiosk is dropped; the ISO becomes a plain Alpine server OS reached from the LAN over HTTPS ([decisions-estate-era.md](../../wiki/decisions-estate-era.md)).

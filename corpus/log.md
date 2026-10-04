@@ -4172,3 +4172,7 @@ With no `WARD_*` set, the backend now runs its own single-owner sign-in behind t
 - a restore that ends local sessions again.
 
 The desktop shows its own setup and sign-in screens, and Settings changes the password. The README's `docker run` boots again: a no-environment run of the image came up in local mode, where it used to die at config validation. Walked in a browser: claim, terminal, log off, wrong and right password. Brief 153 rewrote the README, infrastructure docs, architecture and glossary from that. status.md was split: history to 2026-08-06 went to status-history.md, and status is a current snapshot. The two stale todos are closed, and same-origin exposure inside the estate is now an open question.
+
+## [2026-10-04] decide | The server ISO waits; work stays in the Docker container
+
+Asked how the ISO should install, serve HTTPS and be found, the owner chose install-to-disk, Caddy's internal CA, and the IP shown on the console. Then they deferred the ISO itself: for now imbatranimOS is developed and used only in the Docker container. The choices are kept in [decisions-estate-era.md](wiki/decisions-estate-era.md) as the plan for when the brief is written; status.md marks it deferred.

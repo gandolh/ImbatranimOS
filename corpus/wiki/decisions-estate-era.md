@@ -46,7 +46,23 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
     **HTTPS**. There is no local display, no Chromium and no kiosk session, so
     the `--no-sandbox` todo is moot.
   - It signs people in with the local sign-in above.
-  - How the LAN certificate is issued is for the brief that builds it.
+  - **It installs to disk** (owner, 2026-10-04). The ISO is an installer:
+    on the console it asks which disk to use, wipes it, and installs Alpine
+    plus ImbatranimOS as an ordinary system that then boots from disk.
+    Rejected: running from RAM with a separate data partition, and RAM-only
+    (data lost on every reboot, a demo, not a server).
+  - **HTTPS from Caddy's internal CA.** Caddy issues and renews its own
+    certificate. Browsers warn until its root is trusted once, and the
+    console says how to get it. Rejected: a per-machine self-signed
+    certificate (nothing to trust once for all devices), and bring-your-own
+    (nothing works until you do).
+  - **Found by its IP, shown on the console.** No mDNS. The console shows
+    the address and URL at boot, and the router lists it too.
+  - **Not built yet** (owner, 2026-10-04): "for now, we'll keep it only in
+    docker containers for the development and we'll work with it in the
+    docker container." Development and day-to-day use stay in the Docker
+    container (`npm run dev`, the compose dev profile). The three choices
+    above are the plan for when the ISO brief is written.
 - **v1.0 (brief 15) is parked.** Its bar needs a friend's install and a real
   VPS deploy, which only the owner can do. Its desk-side parts (security pass,
   `npm audit` triage, size and boot numbers) may still run.

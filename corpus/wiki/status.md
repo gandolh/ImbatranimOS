@@ -1,5 +1,5 @@
 ---
-summary: Current snapshot (2026-10-04) — identity is Ward's in the estate and a local single-owner sign-in without it (brief 152); briefs to 155 done bar 15 (parked), 50 and 120 (go-ahead given), plus a new server-ISO brief to write; owner-run items listed. History to 2026-08-06 is in status-history.md.
+summary: Current snapshot (2026-10-04) — identity is Ward's in the estate and a local single-owner sign-in without it (brief 152); briefs to 155 done bar 15 (parked), 50 and 120 (go-ahead given), plus a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
 updated: 2026-10-04
 ---
 
@@ -91,7 +91,7 @@ notepad StrictMode intent bug.
 | 15 | [v1-release](../briefs/todo/15-v1-release.md) | **parked** by the owner (2026-10-04): needs a friend's install and a real deploy |
 | 50 | [web-browser-proxied](../briefs/todo/50-web-browser-proxied.md) | **go-ahead** (2026-10-04); security review before commit |
 | 120 | [app-marketplace-install-from-url](../briefs/todo/120-app-marketplace-install-from-url.md) | **go-ahead** (2026-10-04); security review before commit |
-| — | the server ISO | **to write**: a plain Alpine image with the server pre-installed, reached from the LAN over HTTPS; replaces the kiosk ([brief 18](../briefs/superseded/18-alpine-kiosk-iso.md), superseded) |
+| — | the server ISO | **deferred** by the owner (2026-10-04): work stays in the Docker container for now. When written: a plain Alpine image with the server pre-installed, reached from the LAN over HTTPS; replaces the kiosk ([brief 18](../briefs/superseded/18-alpine-kiosk-iso.md), superseded) |
 
 ## Owed by the owner
 

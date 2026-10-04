@@ -1,5 +1,7 @@
 # Task 18 — Alpine kiosk ISO: boot straight into the browser
 
+> **Superseded 2026-10-04:** the kiosk is dropped. The ISO becomes a plain Alpine server OS reached from the LAN over HTTPS ([decisions-estate-era.md](../../wiki/decisions-estate-era.md)).
+
 > **Outcome (2026-07-17, done):** Landed in commit `bac2b99` (+ a passwd
 > `-u`→`-l` review fix in `b46f64e`). `./build iso` works unprivileged
 > (fakeroot) in Docker on WSL2, first try. Open questions resolved: app

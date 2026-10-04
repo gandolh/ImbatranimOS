@@ -22,6 +22,12 @@ housekeeping, not a revisit. They are the foundational pivot-era set: the
 single-container shape, the add-on contract, the locked identity, the app roster,
 and the Office-suite scope.
 
+## The estate era (Ward, 2026-09-06 onward)
+
+In [decisions-estate-era.md](decisions-estate-era.md): identity is Ward's
+inside the estate, a local sign-in returns when Ward is absent, the ISO is a
+LAN server OS, and the owner's 2026-10-04 answers.
+
 ## Inherited from the ISO era
 
 Moved to [decisions-iso-era.md](decisions-iso-era.md) — the carried-over
@@ -42,8 +48,9 @@ Locked during the first real human QA pass of the desktop:
 - **No git tags.** The release version lives in `package.json` (already 1.0.0
   across all 25 workspaces) + Dockerfile `LABEL`/`IMAGE_VERSION` + ISO init;
   the About panel reads it at runtime. "Tag v1.0" in brief 15 is void.
-- **Kiosk ISO deferred until the OS is feature-complete** — do not treat the
-  ISO (brief 18) or its SEC-10 `--no-sandbox` as v1 work.
+- ~~**Kiosk ISO deferred until the OS is feature-complete**~~ **Superseded
+  2026-10-04:** the kiosk is dropped; the ISO is a LAN server OS
+  ([decisions-estate-era.md](decisions-estate-era.md)).
 - **Code-editor VS-Code-style File menu** (open / open-recent) → **v1.\***,
   post-1.0. Not a 1.0 blocker.
 - **SEC-9 acted on**: CSP `connect-src` tightened to `'self'` (dropped the

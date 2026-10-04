@@ -1,5 +1,7 @@
 # Task 15 — v1.0: hardening, README-as-product, friend-run QA
 
+> **Parked 2026-10-04 by the owner.** Its bar needs a friend's install and a real VPS deploy, which only the owner can run. Desk-side parts (security pass, audit triage, size and boot numbers) may still be done. See [decisions-estate-era.md](../../wiki/decisions-estate-era.md).
+
 ## Context
 
 The finish line (decisions: friend-run bar, build-from-source

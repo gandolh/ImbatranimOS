@@ -4150,3 +4150,7 @@ A line appended in the Terminal while Notepad had the file open was destroyed by
 ## [2026-10-04] fix | The Git app no longer hands Ward's secret to git hooks
 
 Git ran with `extendEnv`, so a repository's own hooks, pager or credential helper could read `WARD_APP_KEY`; brief 138 had only closed the terminal. Its scrub is now a shared `childEnv()` (`apps/backend/src/child-env.ts`), used by the terminal, git (with `extendEnv: false`), backup's tar and every archive tar call. Fixed directly from the todo, with the owner's go-ahead; a test checks git gets no `WARD_*` name.
+
+## [2026-10-04] decide | Owner answers: local sign-in returns, the ISO is a server, 50 and 120 go ahead
+
+Asked directly, recorded in the new [decisions-estate-era.md](wiki/decisions-estate-era.md), which also finally records the 2026-09-06 Ward move as a decision. **Brief 152: option C.** With Ward unconfigured, a single-user local sign-in returns, so the friend-run bar stands again; inside the estate Ward still owns identity. **The kiosk is dropped:** the ISO becomes a plain Alpine image with the web server's packages pre-installed, reached from the LAN over HTTPS, so the `--no-sandbox` todo is removed as moot. **Brief 15 is parked** on its owner-run QA and deploy. **Briefs 50 and 120 go ahead.** **Old backups holding the deleted login's hash are deleted**, starting fresh. **Briefs 144, 145 and 155** get their grill after the fact.

@@ -1,5 +1,7 @@
 # Brief 152 — Decide the standalone and local-development identity story
 
+> **Decided 2026-10-04 by the owner: option C** (restore a single-user local sign-in when `WARD_*` is unset), recorded in [decisions-estate-era.md](../../wiki/decisions-estate-era.md). The grill this brief asked for is done; it is now a build brief. The ISO half changes too: there is no kiosk any more, the ISO is a LAN server OS reached over HTTPS.
+
 Status: **todo** · From the 2026-09-26 improvements sweep. **GRILL FIRST** —
 the code now contradicts a locked decision (the friend-run bar). HARD if option
 C is chosen, MEDIUM otherwise · BACKEND + CORE + `infrastructure/` + `iso/` +

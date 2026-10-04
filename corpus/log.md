@@ -4158,3 +4158,7 @@ Asked directly, recorded in the new [decisions-estate-era.md](wiki/decisions-est
 ## [2026-10-04] maintenance | Brief 18 superseded by the server-ISO decision
 
 The kiosk ISO brief moves from done/ to superseded/ with a one-line note: the owner dropped the kiosk, and the ISO becomes a LAN server OS ([decisions-estate-era.md](wiki/decisions-estate-era.md)). A note prepended to it earlier today was taken back out (done briefs are immutable), and index.md was regenerated rather than hand-edited.
+
+## [2026-10-04] decide | Briefs 144, 145 and 155 grilled after the fact: all kept
+
+Asked directly, the owner confirmed every call the runs took: 144's proactive refresh plus a refresh-and-replay on 401, 145's freshness registry over a heartbeat route, 155's Overwrite / Reload / Cancel dialog, and its first cut of the three text editors. The office editors' turn is captured as a todo.

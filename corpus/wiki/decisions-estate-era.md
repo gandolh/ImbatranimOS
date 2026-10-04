@@ -54,6 +54,16 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
   Both keep their grilled decisions and their security review before commit.
 - **Old backups that still hold the deleted login's password hash are
   deleted.** Start fresh rather than scrub them.
-- **Briefs 144, 145 and 155 get their grill after the fact.** They were built
-  without the interview their briefs asked for. The owner wants to review the
-  calls made, each of which is in its brief's outcome.
+- **Briefs 144, 145 and 155: grilled after the fact, all confirmed as built.**
+  They were built without the interview their briefs asked for; asked the same
+  day, the owner kept every call:
+  - **144:** proactive refresh about two minutes before expiry (and on a tab
+    becoming visible), plus one refresh-and-replay on a 401. Rejected:
+    refresh-on-401 only, and letting the session lapse to the sign-in cover.
+  - **145:** a freshness registry keyed by Ward `sid` feeds the terminal sweep
+    the newest cookie. Rejected: a Terminal heartbeat route.
+  - **155:** the dialog offers Overwrite, Reload from disk and Cancel (Cancel
+    focused, Esc cancels). Rejected: a fourth "save as copy" button, and a
+    diff view first. First cut: Notepad, Code Editor and Markdown Editor; the
+    office editors follow later
+    ([todo](../todos/office-editors-save-conflict.md)).

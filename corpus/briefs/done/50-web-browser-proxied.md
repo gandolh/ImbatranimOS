@@ -149,3 +149,59 @@ source preserved (Scramjet vendored/npm dist, AGPL-compatible).
 
 Tabs, session history, new-tab/start page, downloads manager, DRM/Widevine
 sites, ad-blocking, extensions, multi-profile, and Tier-3 headless streaming.
+
+## Outcome (2026-10-04)
+
+Built in f00b78d. The decisions the build added or changed are in
+[decisions-estate-era.md](../../wiki/decisions-estate-era.md#brief-50-the-browser-2026-10-04).
+The biggest: proxied pages run on **their own origin** (a second backend port),
+not under a `/proxy/` scope on the desktop's, and the add-on frames that origin
+itself, so core exports nothing.
+
+**Security review (adversarial, before commit):**
+- SSRF: addresses are judged after resolution on every DNS answer. The socket
+  dials the judged address, so rebinding has no window. IPv4-mapped,
+  IPv4-compatible, NAT64 and 6to4 forms of private addresses are refused, and
+  so are numeric spellings like `2130706433`. Redirects are new streams and
+  are filtered again.
+- WebSocket auth: session, grant and Origin, swept every 30 seconds. Its e2e
+  spec refuses: no cookie, a forged cookie, a foreign Origin, the desktop's
+  Origin.
+- Jar: never written plaintext by us. It reaches the backend only from the
+  desktop's origin and is stored AES-256-GCM, with the key left out of
+  backups.
+- Service worker scope: a different origin, so it cannot see desktop traffic.
+- CSP: one origin added, as `frame-src` only.
+- Found and fixed during the review: the relay socket's read queue was
+  unbounded while a page stopped reading.
+- **Residual, accepted:**
+  - a page that escapes Scramjet's rewriter owns the proxy origin, and with it
+    every proxied site's cookies (true of any Scramjet deployment);
+  - cookies are host-scoped, not port-scoped, so it could also overwrite the
+    desktop's session cookie (a sign-out, not a takeover; it cannot read the
+    httpOnly cookie).
+
+**Verified:**
+- unit tests: egress (35), relay socket, profile crypto;
+- e2e: `test/browser.e2e-spec.ts`, 7 tests (listener, file list, raw-path
+  traversal, relay auth, private destinations through a real Wisp
+  connection, profile);
+- all 125 turbo tasks;
+- in the Docker dev container with Chromium:
+  - booting the desktop registers no service worker, makes no request to the
+    proxy port and has no frame;
+  - example.com and Wikipedia load, a link click and Back work;
+  - a YouTube video played to the end;
+  - after a container restart, in a fresh browser profile, YouTube remembered
+    its cookie choice (the jar came back from the machine);
+  - `169.254.169.254` and `localhost:3001` were refused.
+
+**Left for a human:**
+- Search: Google and DuckDuckGo both answered the headless browser with a
+  CAPTCHA (which loaded and worked through the proxy); an agent does not
+  solve those.
+- Audio, which a headless browser cannot hear.
+- A real sign-in to a site, then a restart.
+
+**Size:** about 2.4 MB of browser assets, plus wisp-js and ipaddr.js on the
+server. Nothing loads until the Browser opens.

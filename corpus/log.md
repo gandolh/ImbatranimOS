@@ -4176,3 +4176,7 @@ The desktop shows its own setup and sign-in screens, and Settings changes the pa
 ## [2026-10-04] decide | The server ISO waits; work stays in the Docker container
 
 Asked how the ISO should install, serve HTTPS and be found, the owner chose install-to-disk, Caddy's internal CA, and the IP shown on the console. Then they deferred the ISO itself: for now imbatranimOS is developed and used only in the Docker container. The choices are kept in [decisions-estate-era.md](wiki/decisions-estate-era.md) as the plan for when the brief is written; status.md marks it deferred.
+
+## [2026-10-04] done | Brief 50 — the Browser, on an origin of its own
+
+Real websites through the machine: Scramjet in the viewing browser and a Wisp relay in the backend. The brief put the proxy under a `/proxy/` scope on the desktop's origin. It runs on a second backend port instead, because Scramjet runs pages on whatever origin serves them, and on the desktop's one rewriter escape would hold the session and the terminal. The relay allows only public unicast addresses on web ports, checked on every DNS answer and dialled by address. That is the stricter stance, opposite to the REST client's (brief 43) on purpose. Site cookies are kept by the machine, AES-GCM encrypted, with the key left out of backups. Verified in the Docker dev container: pages, click-through, a YouTube video, cookies surviving a restart in a fresh browser, metadata refused, nothing loaded before the Browser opens. Search engines answered the headless browser with CAPTCHAs; that check and audio are the owner's.

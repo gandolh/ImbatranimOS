@@ -1,5 +1,5 @@
 ---
-summary: Decisions since imbatranimOS joined the Ward estate (2026-09-06) — identity, the local sign-in that comes back when Ward is absent, the ISO as a LAN server OS instead of a kiosk, and the owner's 2026-10-04 answers on briefs 15, 50, 120, 144/145/155 and old backups. Split out of decisions.md, which has a 200-line cap.
+summary: Decisions since imbatranimOS joined the Ward estate (2026-09-06) — identity, the local sign-in that comes back when Ward is absent, the ISO as a LAN server OS instead of a kiosk (deferred; work stays in Docker), the owner's 2026-10-04 answers on briefs 15, 50, 120, 144/145/155 and old backups, and brief 50's build calls (proxy on its own origin, the strict egress stance, the encrypted profile).
 updated: 2026-10-04
 ---
 
@@ -83,3 +83,68 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
     diff view first. First cut: Notepad, Code Editor and Markdown Editor; the
     office editors follow later
     ([todo](../todos/office-editors-save-conflict.md)).
+
+## Brief 50: the Browser (2026-10-04)
+
+Built from the 2026-07-19 grill. The calls the build had to add or change:
+
+- **Proxied pages run on their own origin: a second backend port**
+  (`BROWSER_PROXY_PORT`; compose uses 8081 for prod and 3002 for dev). The brief
+  had Scramjet's service worker on the desktop's origin under a `/proxy/`
+  scope. But Scramjet runs every proxied page on the origin that serves it, so
+  one rewriter escape there would hold the session cookie and could open the
+  terminal over the same-origin WebSocket. A path scope does not separate
+  origins.
+  - On a separate origin the desktop's guards hold: its Origin check refuses the
+    proxy origin's mutating requests, CORS hides responses, and the terminal's
+    upgrade checks Origin.
+  - Cost: one more port to publish, and behind a TLS proxy its own site
+    (`BROWSER_PROXY_ORIGIN`).
+  - Rejected: same origin with a path-scoped service worker (above); a
+    subdomain (needs DNS that a localhost or LAN install does not have).
+- **The add-on frames the proxy origin itself; core gains nothing.** Since
+  brief 48, core's barrel is type-only, so the brief's `<ProxyView>` export
+  from core no longer fits the seam. On a separate origin the service worker
+  is not core's either. Lazy loading comes for free: nothing proxy-related
+  exists until the Browser window mounts its frame, and the desktop origin
+  never registers a worker.
+- **Egress, the stricter stance (opposite to brief 43's, on purpose).** The
+  REST client may reach the LAN because it sends only URLs the owner typed.
+  The relay carries traffic for pages whose own scripts drive it.
+  - Allowed: public unicast addresses only (ipaddr.js range `unicast`, minus
+    the IPv4-compatible `::/96`), on ports 80, 443, 8080 and 8443.
+  - The check runs on every DNS answer, and the socket dials the checked
+    address with no second lookup, so DNS rebinding has no window.
+  - It is our socket class handed to wisp-js. wisp-js's own filter is not
+    relied on: it checks one answer, lets `::ffff:127.0.0.1` through, and
+    re-resolves before connecting.
+  - UDP is off.
+- **Profile key: a random per-machine file, not derived from an account
+  secret.** In the estate there is no password to derive from, and the local
+  sign-in's can change.
+  - The jar is AES-256-GCM encrypted in `browser_profile` (ledger step 9).
+  - The key is `.imbatranim/browser-profile.key` (0600). Backups exclude it,
+    so a backup carries only ciphertext. A lost key reads as an empty profile:
+    the Browser is signed out of every site, nothing worse.
+- **The jar never rests in the viewing browser.** Scramjet writes it to
+  IndexedDB in plaintext on one path and fails to read it back after a worker
+  restart. Our worker intercepts that path. It pushes every change to the
+  desktop, which saves it encrypted. After a restart the worker asks the host
+  page for the jar before it answers proxied requests.
+- **Scramjet 1.1.0 (MIT now, no longer AGPL), wisp-js 0.5.0 (LGPL), bare-mux
+  2.1.9 and epoxy-transport 2.1.28 (AGPL) are pinned exactly.** Not
+  epoxy-transport 3.x: it targets the newer proxy-transports interface, and
+  under bare-mux 2 every request failed with "headers is not iterable". `sw.js` relies
+  on Scramjet's cookie-store and message internals, which a minor version may
+  change.
+  - About 2.4 MB of browser assets ship in the image, served from the
+    packages' prebuilt `dist/` (no Rust toolchain).
+  - This is the first accepted heavyweight subsystem. The cost is disk only:
+    nothing runs or loads until the Browser opens.
+- **The host page's CSP allows `'unsafe-eval'`.** Scramjet's controller
+  compiles code from strings and refused to start without it. That costs
+  little on an origin where every proxied site's own scripts run by design.
+  The policy is there for `frame-ancestors`: only the desktop may frame it.
+- **Bookmarks opens links in the Browser when it is set up,** and in a tab
+  otherwise. The command palette still opens a tab: its `activate` has no
+  `system` handle.

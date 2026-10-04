@@ -47,6 +47,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const refresh = useAuthStore((s) => s.refresh)
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated)
   const unlock = useAuthStore((s) => s.unlock)
+  const wardMode = useAuthStore((s) => s.identity?.mode !== 'local')
 
   const [prefsReady, setPrefsReady] = useState(false)
 
@@ -82,7 +83,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
   // cookie's real expiry is HttpOnly, so the first schedule is an estimate and
   // every refresh after it uses Ward's own answer.
   useEffect(() => {
-    if (!authenticated) return
+    // The local sign-in (brief 152) has a 30-day cookie and nothing to refresh.
+    if (!authenticated || !wardMode) return
     // Refresh once now rather than guess: the cookie's real expiry is HttpOnly,
     // and a guess made at page load runs late by however old the token already
     // was. Late is what closed terminals (brief 145): between the old token
@@ -92,7 +94,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     noteSessionFresh()
     refreshWardSession().catch(() => undefined)
     return startProactiveRefresh()
-  }, [authenticated])
+  }, [authenticated, wardMode])
 
   // A refresh that succeeds after something gave up: prefs held back by a 401
   // (brief 109) go now, and a desktop already behind the sign-in cover comes

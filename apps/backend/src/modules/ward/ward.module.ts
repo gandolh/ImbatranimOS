@@ -1,13 +1,17 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
+import { LocalIdentityController } from '../local-identity/local-identity.controller';
+import { LocalIdentityService } from '../local-identity/local-identity.service';
 import { MeController } from './me.controller';
 import { WardFreshness } from './ward-freshness';
 import { WardAuthGuard } from './ward.guard';
 import { WardService } from './ward.service';
 
 /**
- * Ward — the estate's identity service, as this app consumes it.
+ * Ward — the estate's identity service, as this app consumes it — or, when no
+ * WARD_* variables are set, the machine's own single-owner sign-in, behind the
+ * same `WardService.authenticate` (brief 152, option C).
  *
  * Registers the global {@link WardAuthGuard} so every route is authenticated by
  * default, and exports {@link WardService} so a WebSocket gateway can validate
@@ -23,12 +27,13 @@ import { WardService } from './ward.service';
  */
 @Global()
 @Module({
-  controllers: [MeController],
+  controllers: [MeController, LocalIdentityController],
   providers: [
     WardService,
     WardFreshness,
+    LocalIdentityService,
     { provide: APP_GUARD, useClass: WardAuthGuard },
   ],
-  exports: [WardService, WardFreshness],
+  exports: [WardService, WardFreshness, LocalIdentityService],
 })
 export class WardModule {}

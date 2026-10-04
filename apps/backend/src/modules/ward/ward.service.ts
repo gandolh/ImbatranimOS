@@ -1,7 +1,12 @@
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import type { Env } from '../../config/env.schema';
+import {
+  identityModeOf,
+  type Env,
+  type IdentityMode,
+} from '../../config/env.schema';
+import { LocalIdentityService } from '../local-identity/local-identity.service';
 import { createWardClient, type WardClient } from './ward.client';
 import type { WardCaller } from './ward.types';
 
@@ -33,15 +38,31 @@ import type { WardCaller } from './ward.types';
 export class WardService implements OnModuleInit {
   private readonly logger = new Logger(WardService.name);
   private client!: WardClient;
+  /** Ward when it is configured; otherwise the machine's own sign-in (brief 152). */
+  mode: IdentityMode = 'ward';
 
-  constructor(private readonly config: ConfigService<Env, true>) {}
+  constructor(
+    private readonly config: ConfigService<Env, true>,
+    private readonly local: LocalIdentityService,
+  ) {}
 
   onModuleInit(): void {
-    const publicOrigin = this.config
-      .get('WARD_PUBLIC_ORIGIN', { infer: true })
-      .replace(/\/+$/, '');
-    const apiBasePath = this.config.get('WARD_API_BASE_PATH', { infer: true });
-    const appKey = this.config.get('WARD_APP_KEY', { infer: true });
+    const origin = this.config.get('WARD_PUBLIC_ORIGIN', { infer: true });
+    this.mode = identityModeOf({ WARD_PUBLIC_ORIGIN: origin });
+    if (this.mode === 'local') {
+      // Every request goes to the local sign-in instead. Said loudly, because
+      // inside the estate this line means the WARD_* variables went missing.
+      this.local.configure({
+        setupToken: this.config.get('SETUP_TOKEN', { infer: true }),
+      });
+      this.logger.warn(
+        'No WARD_* variables: using the local single-owner sign-in (brief 152). Set all three to use Ward.',
+      );
+      return;
+    }
+    const publicOrigin = origin!.replace(/\/+$/, '');
+    const apiBasePath = this.config.get('WARD_API_BASE_PATH', { infer: true })!;
+    const appKey = this.config.get('WARD_APP_KEY', { infer: true })!;
 
     this.client = createWardClient({ publicOrigin, apiBasePath, appKey });
     this.logger.log(
@@ -58,11 +79,13 @@ export class WardService implements OnModuleInit {
   authenticate(
     cookieHeader: string | string[] | undefined,
   ): Promise<WardCaller> {
+    if (this.mode === 'local') return this.local.authenticate(cookieHeader);
     return this.client.authenticate(cookieHeader);
   }
 
   /** Test seam: swap the client for a fake without touching the container. */
   useClient(client: WardClient): void {
+    this.mode = 'ward';
     this.client = client;
   }
 }

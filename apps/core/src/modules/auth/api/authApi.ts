@@ -3,15 +3,16 @@ import { api } from '../../../lib/axios'
 /**
  * Who is signed in, and where to send somebody who is not.
  *
- * ## imbatranimOS authenticates nobody now
+ * ## Two identities, one probe
  *
- * There is no `login`, `setupPassword`, `logout`, `changePassword` or TOTP
- * enrolment here. All of it is Ward's, at one login page for the estate. The
- * first-run wizard is gone with them: a machine is not claimed by whoever
- * reaches it first any more — an account gets an `imbatranim-os` **grant** from
- * Ward's console, which is a deliberate act by an operator rather than a race.
+ * Inside the estate, identity is Ward's: sign-in, password and sign-out live
+ * at one login page for every app, and an account gets an `imbatranim-os`
+ * grant from Ward's console. Without Ward (a standalone run, a friend's
+ * install, the server ISO), the backend runs its own single-owner sign-in
+ * (brief 152, option C): a password chosen on first run and a session cookie.
  *
- * What is left is one read and two URLs.
+ * `GET /identity` says which. `GET /me` is the session probe in both modes,
+ * because the backend's guard answers it the same way either way.
  */
 
 /**
@@ -96,4 +97,48 @@ export function wardLoginUrl(next: string = APP_ROOT): string {
  */
 export function wardAccountUrl(): string {
   return '/ward/account'
+}
+
+// ── The machine's own sign-in (brief 152) ─────────────────────────────────
+
+export type IdentityMode = 'ward' | 'local'
+
+export interface Identity {
+  mode: IdentityMode
+  /** Local mode only: whether an owner exists, and whether claiming needs the operator's token. */
+  local?: { setUp: boolean; setupTokenRequired: boolean }
+}
+
+/** Which sign-in this machine uses. Public: asked before anybody is signed in. */
+export async function getIdentity(): Promise<Identity> {
+  const res = await api.get<Identity>('/identity')
+  return res.data
+}
+
+/** The message the backend gave, for showing under a form. */
+export function errorMessage(err: unknown, fallback: string): string {
+  const data = (err as { response?: { data?: { message?: unknown } } }).response?.data
+  const message = Array.isArray(data?.message) ? data.message[0] : data?.message
+  return typeof message === 'string' && message ? message : fallback
+}
+
+/** Claim an unclaimed machine: the owner's name, password and, if required, the setup token. */
+export async function localSetup(input: {
+  username: string
+  password: string
+  setupToken?: string
+}): Promise<void> {
+  await api.post('/identity/local/setup', input)
+}
+
+export async function localSignIn(password: string): Promise<void> {
+  await api.post('/identity/local/sign-in', { password })
+}
+
+export async function localSignOut(): Promise<void> {
+  await api.post('/identity/local/sign-out')
+}
+
+export async function localChangePassword(current: string, next: string): Promise<void> {
+  await api.post('/identity/local/password', { current, next })
 }

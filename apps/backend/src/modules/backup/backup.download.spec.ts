@@ -11,6 +11,7 @@ import { FilesService } from '../files/files.service';
 import { ArchiveService } from '../archive/archive.service';
 import { DbService } from '../../db/db.service';
 import { LogService } from '../logs/log.service';
+import { LocalIdentityService } from '../local-identity/local-identity.service';
 import { BackupService } from './backup.service';
 import { BackupController } from './backup.controller';
 
@@ -76,7 +77,13 @@ describe('BackupController.download — an interrupted download', () => {
     const files = new FilesService();
     const logs = new LogService();
     await logs.onModuleInit();
-    service = new BackupService(files, new ArchiveService(files), db, logs);
+    service = new BackupService(
+      files,
+      new ArchiveService(files),
+      db,
+      logs,
+      new LocalIdentityService(db),
+    );
     const controller = new BackupController(service);
 
     children.length = 0;

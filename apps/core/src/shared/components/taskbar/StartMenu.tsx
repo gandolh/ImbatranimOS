@@ -6,7 +6,7 @@ import { useEnabledApps } from '../../registry/enabledApps'
 import { Logo } from '../brand/Logo'
 import { useAuthStore } from '../../../modules/auth/store/authStore'
 import { clearLayout, useWindowStore } from '../../store/windowStore'
-import { wardAccountUrl } from '../../../modules/auth/api/authApi'
+import { localSignOut, wardAccountUrl } from '../../../modules/auth/api/authApi'
 import { clearRecentFiles, useRecentFilesQuery } from '../../../lib/recentFiles'
 import { openApp } from '../../intents/openApp'
 
@@ -99,6 +99,12 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
     useWindowStore.setState({ windows: [] })
     clearLayout()
     resetToLoggedOut()
+    // Without Ward (brief 152) the session is this machine's own: end it here
+    // and come back to the sign-in screen.
+    if (useAuthStore.getState().identity?.mode === 'local') {
+      void localSignOut().finally(() => window.location.reload())
+      return
+    }
     window.location.assign(wardAccountUrl())
   }
 

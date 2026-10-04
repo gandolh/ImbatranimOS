@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Injectable, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import type { ConfigService } from '@nestjs/config';
 
@@ -7,6 +7,7 @@ import type { Env } from '../../config/env.schema';
 import { WardFreshness } from './ward-freshness';
 import { WardAuthGuard } from './ward.guard';
 import { WardService } from './ward.service';
+import type { LocalIdentityService } from '../local-identity/local-identity.service';
 import {
   IMBATRANIMOS_APP_SLUG,
   WardAuthenticationError,
@@ -46,15 +47,21 @@ const DEFAULT_GRANTS: Record<string, string[]> = {
  * Extends the real class so it satisfies the container and the guard's
  * constructor without a cast at every call site.
  */
+// Decorated so Nest reads THIS constructor (no arguments) rather than
+// inheriting `WardService`'s parameter list.
+@Injectable()
 export class FakeWardService extends WardService {
   private readonly sessions = new Map<string, WardCaller>();
   private broken: Error | undefined;
 
   constructor() {
-    // The real constructor takes a ConfigService only to read three variables
-    // in `onModuleInit`, which this class overrides to do nothing — so there is
-    // nothing for it to read and nothing to hand it.
-    super(undefined as unknown as ConfigService<Env, true>);
+    // The real constructor takes a ConfigService and the local sign-in only
+    // for `onModuleInit`, which this class overrides to do nothing — so there
+    // is nothing for them to read and nothing to hand it.
+    super(
+      undefined as unknown as ConfigService<Env, true>,
+      undefined as unknown as LocalIdentityService,
+    );
     this.signIn(TEST_TOKEN, 'subject_test', DEFAULT_GRANTS);
   }
 

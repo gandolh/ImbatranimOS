@@ -20,6 +20,7 @@ import { FilesService } from '../files/files.service';
 import { TRASH_DIR } from '../files/trash.service';
 import { ArchiveService, parseTarListLine } from '../archive/archive.service';
 import { LogService } from '../logs/log.service';
+import { LocalIdentityService } from '../local-identity/local-identity.service';
 import { childEnv } from '../../child-env';
 import type {
   BackupInfo,
@@ -157,6 +158,7 @@ export class BackupService {
     private readonly archive: ArchiveService,
     private readonly db: DbService,
     private readonly logs: LogService,
+    private readonly localIdentity: LocalIdentityService,
   ) {}
 
   // ── shared ───────────────────────────────────────────────────────────────
@@ -647,13 +649,12 @@ export class BackupService {
    * excludes the live database — has no `db.sqlite` of its own, only the
    * snapshot.
    *
-   * **No sessions are revoked, and that is a consequence of the Ward cutover
-   * rather than an omission.** This used to call `sessions.destroyAll()`,
-   * because the restored database carried the *backup's* credentials and
-   * whoever held a session was no longer necessarily the owner of the password
-   * now guarding the machine. Credentials are Ward's now and are not in this
-   * database, so a restore cannot change who may sign in — there is nothing
-   * left for a revocation here to protect against.
+   * **Local sessions are all revoked.** With Ward, credentials are not in
+   * this database and a restore cannot change who may sign in. With the local
+   * sign-in (brief 152), the restored database carries the *backup's* owner
+   * and password, and its session table carries the backup's sessions: so
+   * every local session ends, and the next sign-in is with the restored
+   * password. On a Ward install the table is empty and this is a no-op.
    */
   private async installDatabase(
     home: string,
@@ -666,6 +667,7 @@ export class BackupService {
       );
     }
     this.db.replaceWith(snapshotAbs);
+    this.localIdentity.revokeAll();
     await fs.rm(join(home, STAGING_REL), { recursive: true, force: true });
   }
 

@@ -3,10 +3,16 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { getStatus } = vi.hoisted(() => ({ getStatus: vi.fn() }))
+const { getStatus, getIdentity, localSignIn } = vi.hoisted(() => ({
+  getStatus: vi.fn(),
+  getIdentity: vi.fn(),
+  localSignIn: vi.fn(),
+}))
 vi.mock('./api/authApi', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./api/authApi')>()),
   getStatus,
+  getIdentity,
+  localSignIn,
 }))
 // The desktop's settings round trip, which only the signed-in case reaches.
 vi.mock('../../lib/prefs', () => ({
@@ -33,8 +39,14 @@ const SIGNED_OUT = { authenticated: false, session: null, unavailable: false, fo
 let container: HTMLDivElement
 let root: Root
 
-async function renderWith(status: typeof SIGNED_OUT | Record<string, unknown>): Promise<string> {
+const WARD = { mode: 'ward' }
+
+async function renderWith(
+  status: typeof SIGNED_OUT | Record<string, unknown>,
+  identity: Record<string, unknown> = WARD
+): Promise<string> {
   getStatus.mockResolvedValue(status)
+  getIdentity.mockResolvedValue(identity)
   await act(async () => {
     root.render(
       <AuthGate>
@@ -54,6 +66,7 @@ beforeEach(() => {
     forbidden: false,
     locked: false,
     everAuthenticated: false,
+    identity: null,
   })
   container = document.createElement('div')
   document.body.appendChild(container)
@@ -96,5 +109,44 @@ describe('AuthGate', () => {
     const text = await renderWith({ ...SIGNED_OUT, unavailable: true })
     expect(text).toContain('Sign-in unavailable')
     expect(text).not.toContain('Continue to sign in')
+  })
+
+  // Brief 152: without Ward, the signed-out screen is the machine's own.
+  it('offers first-run setup on an unclaimed machine without Ward', async () => {
+    const text = await renderWith(SIGNED_OUT, {
+      mode: 'local',
+      local: { setUp: false, setupTokenRequired: true },
+    })
+    expect(text).toContain('Set up this machine')
+    expect(text).toContain('Setup token')
+    expect(text).not.toContain('Continue to sign in')
+  })
+
+  it('asks for the password on a claimed machine without Ward, and signs in with it', async () => {
+    const text = await renderWith(SIGNED_OUT, {
+      mode: 'local',
+      local: { setUp: true, setupTokenRequired: false },
+    })
+    expect(text).toContain("Enter this machine's password")
+
+    localSignIn.mockResolvedValue(undefined)
+    getStatus.mockResolvedValue({
+      ...SIGNED_OUT,
+      authenticated: true,
+      session: { subject: 'local-owner', username: 'Ana' },
+    })
+    const input = container.querySelector<HTMLInputElement>('#password')!
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+      setter.call(input, 'correct horse battery')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      container
+        .querySelector('form')!
+        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect(localSignIn).toHaveBeenCalledWith('correct horse battery')
+    expect(container.textContent).toContain('the desktop')
   })
 })

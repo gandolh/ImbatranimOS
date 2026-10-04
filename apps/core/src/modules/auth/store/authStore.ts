@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { getStatus, type Session } from '../api/authApi'
+import { getIdentity, getStatus, type Identity, type Session } from '../api/authApi'
 
 /**
  * Who is signed in, and whether the screen is covered.
@@ -11,8 +11,8 @@ import { getStatus, type Session } from '../api/authApi'
  * the desktop stayed mounted, PTY sockets stayed open, dirty editor buffers
  * survived (brief 101).
  *
- * There is no local password any more. The only credential is Ward's, and
- * re-proving it means navigating to Ward — which tears down the whole desktop
+ * Inside the estate the only credential is Ward's (the local sign-in of brief
+ * 152 is for installs without Ward), and re-proving it means navigating to Ward — which tears down the whole desktop
  * and so destroys the exact property the lock existed to protect.
  *
  * So the cover is kept and the claim is dropped: **`locked` obscures the
@@ -46,6 +46,11 @@ interface AuthState {
    * screen before the session ended.
    */
   everAuthenticated: boolean
+  /**
+   * Which sign-in this machine uses (brief 152): Ward inside the estate, or
+   * its own local one. Null until the first probe answers.
+   */
+  identity: Identity | null
   /** Re-probe the backend (the source of truth). */
   refresh: () => Promise<void>
   /** Optimistically flip authentication (e.g. on a 401 => cover the screen). */
@@ -64,9 +69,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   forbidden: false,
   locked: false,
   everAuthenticated: false,
+  identity: null,
   refresh: async () => {
-    const status = await getStatus()
+    // Both at once: the screen shown to a signed-out person depends on the mode.
+    const [status, identity] = await Promise.all([getStatus(), getIdentity().catch(() => null)])
     set((prev) => ({
+      identity: identity ?? prev.identity,
       ready: true,
       authenticated: status.authenticated,
       session: status.session,

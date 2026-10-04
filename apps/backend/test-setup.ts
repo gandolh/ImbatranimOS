@@ -1,11 +1,10 @@
 /**
  * Environment every test run needs before `ConfigModule` validates it.
  *
- * `config/env.schema.ts` requires the three `WARD_*` variables and has no
- * defaults for them — deliberately, because a missing one in production is a
- * total outage rather than a degraded mode, and an undefaulted
- * `WARD_API_BASE_PATH` in particular is what stops an empty value resolving
- * Ward's JWKS to a path nothing serves.
+ * `config/env.schema.ts` takes all three `WARD_*` variables or none: with
+ * none, the backend runs its own local sign-in instead (brief 152). Most suites
+ * test the Ward path, so they get all three here; `local-identity.e2e-spec.ts`
+ * supplies its own config to test the local one.
  *
  * That correctness costs the test suite three lines. Setting them here rather
  * than defaulting them in the schema keeps the production guarantee intact:

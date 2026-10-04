@@ -4,11 +4,11 @@ import { Logo } from '../../shared/components/brand/Logo'
  * The full-screen panel every pre-desktop state renders inside: the session
  * cover, the signed-out screen, and the "identity service is down" screen.
  *
- * Moved here verbatim from `FirstRunWizard.tsx`, which went with the local
- * password. There is no first run to wizard through any more — a machine is not
- * claimed by whoever reaches it first, because an account gets an
- * `imbatranim-os` grant from Ward's console, which is a deliberate act by an
- * operator rather than a race.
+ * Moved here from `FirstRunWizard.tsx` when the Ward move deleted the local
+ * password. It came back without Ward (brief 152): the local setup and sign-in
+ * screens in `LocalScreens.tsx` render inside this panel too. With Ward, a
+ * machine is not claimed by whoever reaches it first: an account gets an
+ * `imbatranim-os` grant from Ward's console.
  */
 // Branded ImbatranimOS lock/setup surface — B&W with the single accent.
 export function AuthShell({

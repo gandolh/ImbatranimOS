@@ -1,14 +1,15 @@
 import { Button } from '../../shared/components/ui'
 import { AuthShell } from './AuthShell'
-import { wardAccountUrl, wardLoginUrl } from './api/authApi'
+import { localSignOut, wardAccountUrl, wardLoginUrl } from './api/authApi'
+import { LocalSetupScreen, LocalSignInScreen } from './LocalScreens'
 import { useAuthStore } from './store/authStore'
 
 /**
  * The four pre-desktop states, all rendered in the same panel.
  *
- * None of them is a form. imbatranimOS has no password to take, so every way
- * forward from here is a navigation to Ward — and that is the visible shape of
- * the cutover.
+ * With Ward, none of them is a form: every way forward is a navigation to
+ * Ward. Without Ward (brief 152), the signed-out screen is the machine's own
+ * sign-in, or its first-run setup.
  */
 
 /**
@@ -27,6 +28,7 @@ import { useAuthStore } from './store/authStore'
  */
 export function ScreenCover({ onDismiss }: { onDismiss: () => void }) {
   const session = useAuthStore((s) => s.session)
+  const local = useAuthStore((s) => s.identity?.mode === 'local')
 
   return (
     <AuthShell
@@ -39,21 +41,40 @@ export function ScreenCover({ onDismiss }: { onDismiss: () => void }) {
     >
       <div className="flex flex-col gap-2">
         <Button onClick={onDismiss}>Uncover</Button>
-        {/* Signing out really does end the session, estate-wide — which is why
-            it is a link away from here and not a button beside "Uncover". */}
-        <a
-          className="font-content text-on-surface-variant text-center text-[11px] underline"
-          href={wardAccountUrl()}
-        >
-          Sign out instead
-        </a>
+        {/* Signing out really does end the session (estate-wide with Ward),
+            which is why it is a link away from here and not a button beside
+            "Uncover". */}
+        {local ? (
+          <button
+            type="button"
+            className="font-content text-on-surface-variant text-center text-[11px] underline"
+            onClick={() => void localSignOut().finally(() => window.location.reload())}
+          >
+            Sign out instead
+          </button>
+        ) : (
+          <a
+            className="font-content text-on-surface-variant text-center text-[11px] underline"
+            href={wardAccountUrl()}
+          >
+            Sign out instead
+          </a>
+        )}
       </div>
     </AuthShell>
   )
 }
 
-/** Nobody is signed in. The only way forward is Ward. */
+/** Nobody is signed in: Ward's hand-off, or the machine's own sign-in or setup. */
 export function SignedOutScreen() {
+  const identity = useAuthStore((s) => s.identity)
+  if (identity?.mode === 'local') {
+    return identity.local?.setUp === false ? (
+      <LocalSetupScreen tokenRequired={!!identity.local.setupTokenRequired} />
+    ) : (
+      <LocalSignInScreen />
+    )
+  }
   return (
     <AuthShell
       title="Sign in"

@@ -11,6 +11,7 @@ import { FilesService } from '../files/files.service';
 import { ArchiveService } from '../archive/archive.service';
 import { DbService } from '../../db/db.service';
 import { LogService } from '../logs/log.service';
+import { LocalIdentityService } from '../local-identity/local-identity.service';
 import { BackupService } from './backup.service';
 
 const execFileAsync = promisify(execFile);
@@ -45,7 +46,13 @@ describe('BackupService — a restore that cannot install its database (brief 15
     const files = new FilesService();
     const logs = new LogService();
     await logs.onModuleInit();
-    service = new BackupService(files, new ArchiveService(files), db, logs);
+    service = new BackupService(
+      files,
+      new ArchiveService(files),
+      db,
+      logs,
+      new LocalIdentityService(db),
+    );
   });
 
   afterEach(async () => {

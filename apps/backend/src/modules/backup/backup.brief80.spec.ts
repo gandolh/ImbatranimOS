@@ -9,6 +9,7 @@ import { FilesService } from '../files/files.service';
 import { ArchiveService } from '../archive/archive.service';
 import { DbService } from '../../db/db.service';
 import { LogService } from '../logs/log.service';
+import { LocalIdentityService } from '../local-identity/local-identity.service';
 import {
   BACKUP_METADATA,
   BackupService,
@@ -68,9 +69,15 @@ describe('BackupService — brief 80', () => {
     // audit line into restore, and a stub would hide it breaking.
     const logs = new LogService();
     await logs.onModuleInit();
-    // No SessionService: a restore no longer revokes anything, because
-    // credentials are Ward's and are not in the database being swapped.
-    service = new BackupService(files, archive, db, logs);
+    // A restore revokes every local session (brief 152): on a local-sign-in
+    // install the swapped database brings the backup's owner and password.
+    service = new BackupService(
+      files,
+      archive,
+      db,
+      logs,
+      new LocalIdentityService(db),
+    );
   });
 
   afterEach(async () => {
@@ -519,21 +526,12 @@ describe('BackupService — brief 80', () => {
     });
 
     /**
-     * The inverse of what this test used to assert.
-     *
-     * It checked that a restore revoked every session, because the restored
-     * database carried the *backup's* credentials and whoever held a session
-     * was no longer necessarily the owner of the password now guarding the
-     * machine. Since identity moved to Ward there are no credentials in this
-     * database at all, so a restore cannot change who may sign in — and a
-     * restore that signed somebody out of the whole estate as a side effect
-     * would be this app overreaching.
-     *
-     * Asserted rather than deleted: "a restore does not touch the session" is a
-     * real property now, and a future change that reintroduced a revocation
-     * here should have to argue with a failing test.
+     * With Ward, there are no credentials in this database, so a restore
+     * cannot change who may sign in, and signing somebody out of the whole
+     * estate as a side effect would be this app overreaching. The local
+     * sign-in (brief 152) is the case below.
      */
-    it('does not touch the session — credentials are not in this database', async () => {
+    it('does not touch a Ward session — no Ward credentials are in this database', async () => {
       const tarball = await takeBackup();
       const upload = join(outside, 'u4.tar.gz');
       await fs.copyFile(tarball, upload);
@@ -548,6 +546,45 @@ describe('BackupService — brief 80', () => {
         .all() as { name: string }[];
       expect(tables.map((t) => t.name)).not.toContain('sessions');
       expect(tables.map((t) => t.name)).not.toContain('users');
+    });
+
+    /**
+     * The local sign-in (brief 152): the restored database carries the
+     * backup's owner and password, and its own copy of the session table. So
+     * every local session ends, and the password that works afterwards is the
+     * one the backup was taken with.
+     */
+    it('ends every local session, and the restored password is the one that works', async () => {
+      const local = new LocalIdentityService(db);
+      await local.setUp({
+        username: 'Ana',
+        password: 'the password at backup time',
+      });
+      const before = await local.signIn(
+        'the password at backup time',
+        '127.0.0.1',
+      );
+      const tarball = await takeBackup();
+      const upload = join(outside, 'u152.tar.gz');
+      await fs.copyFile(tarball, upload);
+
+      await local.changePassword(
+        'the password at backup time',
+        'a password chosen later',
+        `imb_session=${before.token}`,
+      );
+      const preview = await service.inspect(upload);
+      await service.apply(preview.id);
+
+      await expect(
+        local.authenticate(`imb_session=${before.token}`),
+      ).rejects.toThrow();
+      await expect(
+        local.signIn('a password chosen later', '127.0.0.2'),
+      ).rejects.toThrow();
+      await expect(
+        local.signIn('the password at backup time', '127.0.0.3'),
+      ).resolves.toBeDefined();
     });
 
     it('answers the restore with what was restored, and no signedOut (brief 149)', async () => {

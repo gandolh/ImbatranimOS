@@ -8,6 +8,7 @@ import type { Server } from 'http';
 import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { WardModule } from '../src/modules/ward/ward.module';
+import { DbModule } from '../src/db/db.module';
 import { WardService } from '../src/modules/ward/ward.service';
 import { WardFreshness } from '../src/modules/ward/ward-freshness';
 import { FakeWardService, TEST_COOKIE } from '../src/modules/ward/testing';
@@ -28,7 +29,7 @@ describe('GET /api/me (e2e) — brief 137', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, WardModule],
+      imports: [ConfigModule, DbModule, WardModule],
     })
       .overrideProvider(WardService)
       .useClass(FakeWardService)

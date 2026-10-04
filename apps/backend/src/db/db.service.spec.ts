@@ -66,7 +66,9 @@ describe('DbService migration ledger — brief 110', () => {
 
   it('a fresh database ends stamped at the newest version', () => {
     const svc = openService(join(dir, 'fresh.sqlite'));
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(7);
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
+      LEDGER_VERSION,
+    );
     expect(svc.migrationFailure).toBeNull();
     svc.onModuleDestroy();
   });
@@ -110,7 +112,7 @@ describe('DbService migration ledger — brief 110', () => {
 
     expect(migrated.migrationFailure).toBeNull();
     expect(Number(migrated.db.pragma('user_version', { simple: true }))).toBe(
-      7,
+      LEDGER_VERSION,
     );
     // The whole point: a migrated database is indistinguishable from a fresh one.
     expect(schemaDump(migrated.db)).toBe(schemaDump(fresh.db));
@@ -141,12 +143,16 @@ describe('DbService migration ledger — brief 110', () => {
     // expected-skips are what make that safe.
     first.migrate();
     expect(first.migrationFailure).toBeNull();
-    expect(Number(first.db.pragma('user_version', { simple: true }))).toBe(7);
+    expect(Number(first.db.pragma('user_version', { simple: true }))).toBe(
+      LEDGER_VERSION,
+    );
     expect(schemaDump(first.db)).toBe(before);
 
     // A second run is a single PRAGMA read: nothing left above the stamp.
     first.migrate();
-    expect(Number(first.db.pragma('user_version', { simple: true }))).toBe(7);
+    expect(Number(first.db.pragma('user_version', { simple: true }))).toBe(
+      LEDGER_VERSION,
+    );
     first.onModuleDestroy();
   });
 
@@ -183,7 +189,9 @@ describe('DbService migration ledger — brief 110', () => {
     svc.db.pragma('user_version = 0');
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(7);
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
+      LEDGER_VERSION,
+    );
     expect(new StorageHealthGuard(svc).canActivate()).toBe(true);
     svc.onModuleDestroy();
   });
@@ -247,9 +255,14 @@ describe('DbService — pre-Ward credential tables are dropped (brief 150)', () 
 
     const svc = openService(path);
     expect(svc.migrationFailure).toBeNull();
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(7);
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
+      LEDGER_VERSION,
+    );
     expect(tables(svc.db)).not.toContain('auth_user');
     expect(tables(svc.db)).not.toContain('auth_sessions');
+    // Step 8 (brief 152): the local sign-in's own tables, empty until claimed.
+    expect(tables(svc.db)).toContain('local_owner');
+    expect(tables(svc.db)).toContain('local_session');
 
     // And a backup taken now carries neither.
     const snap = join(dir, 'snap.sqlite');

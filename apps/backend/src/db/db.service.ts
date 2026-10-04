@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 7;
+export const LEDGER_VERSION = 8;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -195,6 +195,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         toVersion: 7,
         name: 'drop-pre-ward-auth',
         run: () => this.stepDropPreWardAuth(),
+      },
+      {
+        toVersion: 8,
+        name: 'local-identity',
+        run: () => this.stepLocalIdentity(),
       },
     ];
 
@@ -556,6 +561,36 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    * would make fresh and migrated databases diverge (brief 110). No catch:
    * `IF EXISTS` is the whole expected-skip.
    */
+  /**
+   * Step 8 — the local sign-in's tables (brief 152, option C).
+   *
+   * New names, not the dropped `auth_user`/`auth_sessions`: those were a
+   * different design (TOTP, argon2) and step 7 removes them on every database
+   * that still has them. Both tables stay empty while Ward is configured.
+   * `local_owner` is single-row by its CHECK, as the old store was. Sessions
+   * store only a SHA-256 of the cookie's random token, so a database copy (a
+   * backup included) yields no usable cookie. The owner's password hash does
+   * travel in a backup, as it did before the Ward move; a restore therefore
+   * revokes every local session (`BackupService.installDatabase`).
+   */
+  private stepLocalIdentity() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS local_owner (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        username TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS local_session (
+        token_hash TEXT PRIMARY KEY,
+        created_at INTEGER NOT NULL,
+        last_seen INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL
+      );
+    `);
+  }
+
   private stepDropPreWardAuth() {
     this.db.exec(
       'DROP TABLE IF EXISTS auth_sessions; DROP TABLE IF EXISTS auth_user;',

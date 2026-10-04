@@ -25,6 +25,7 @@ import {
   resolveHome,
   resolveShell,
 } from './pty.constants';
+import { childEnv } from '../../child-env';
 
 /**
  * How often to re-check that each live terminal's session is still valid.
@@ -171,7 +172,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         cols,
         rows,
         cwd: resolveHome(),
-        env: shellEnv(process.env),
+        env: childEnv(),
       });
     } catch (err) {
       this.logger.error(`Failed to spawn shell: ${(err as Error).message}`);
@@ -240,29 +241,6 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.live.clear();
     this.wss?.close();
   }
-}
-
-/**
- * The environment a terminal starts with: the backend's own, minus Ward's.
- *
- * `WARD_APP_KEY` is a secret the config schema says never leaves the server,
- * and a shell inheriting `process.env` handed it to anyone with a terminal
- * (`echo $WARD_APP_KEY`). Every `WARD_*` name goes, not just the key: none of
- * them is the shell's business.
- *
- * A denylist rather than an allowlist on purpose. The terminal is the user's
- * workspace on a real system, and an allowlist would also strip whatever the
- * image or the operator set for them (`EDITOR`, locale, tool paths). The cost
- * is that a future secret must be added here; the schema marks each one.
- *
- * A copy: `process.env` itself is never touched.
- */
-export function shellEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  const out: NodeJS.ProcessEnv = {};
-  for (const [name, value] of Object.entries(env)) {
-    if (!name.startsWith('WARD_')) out[name] = value;
-  }
-  return out;
 }
 
 /** Read optional `cols`/`rows` from the upgrade URL query string. */

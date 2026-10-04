@@ -83,6 +83,25 @@ describe('GitService.exec (execa contract — no shell, array args)', () => {
     expect(opts.env?.GIT_LITERAL_PATHSPECS).toBe('1');
   });
 
+  // A repository runs its own hooks, pager and helpers inside git, so git's
+  // environment is the backend's minus Ward's, and execa must not merge
+  // process.env back in (extendEnv) behind it.
+  it("hands git the backend's environment without any WARD_* name", async () => {
+    process.env.WARD_APP_KEY = 'test-secret';
+    try {
+      await service.exec('/some/repo', ['status', '--porcelain']);
+    } finally {
+      delete process.env.WARD_APP_KEY;
+    }
+    const opts = calls()[0][2] as ExecaOpts & { extendEnv?: boolean };
+    expect(opts.extendEnv).toBe(false);
+    expect(
+      Object.keys(opts.env ?? {}).filter((k) => k.startsWith('WARD_')),
+    ).toEqual([]);
+    expect(opts.env?.PATH).toBe(process.env.PATH);
+    expect(opts.env?.GIT_TERMINAL_PROMPT).toBe('0');
+  });
+
   it('stage passes pathspecs after a `--` separator, even a `-`-leading one', async () => {
     // resolveRepo stat check needs the dir to exist; rev-parse is mocked "true".
     const { entries } = await service.stage('home', ['-rf', 'a.txt'], '');

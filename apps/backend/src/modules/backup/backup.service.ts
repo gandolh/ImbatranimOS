@@ -20,6 +20,7 @@ import { FilesService } from '../files/files.service';
 import { TRASH_DIR } from '../files/trash.service';
 import { ArchiveService, parseTarListLine } from '../archive/archive.service';
 import { LogService } from '../logs/log.service';
+import { childEnv } from '../../child-env';
 import type {
   BackupInfo,
   BackupManifest,
@@ -316,6 +317,7 @@ export class BackupService {
       ];
       const child = spawn('tar', args, {
         stdio: ['ignore', 'pipe', 'pipe'],
+        env: childEnv(),
       });
       if (!child.stdout || !child.stderr) {
         child.kill('SIGKILL');

@@ -10,6 +10,7 @@ import * as fs from 'fs/promises';
 import { sep } from 'path';
 import { FilesService } from '../files/files.service';
 import { DbService } from '../../db/db.service';
+import { childEnv } from '../../child-env';
 
 // execa ships pure ESM; import it lazily (dynamic import) so this module still
 // loads under ts-jest's CommonJS transform in unit tests. Same idiom as
@@ -176,8 +177,10 @@ export class GitService {
       cwd,
       timeout: GIT_TIMEOUT_MS,
       maxBuffer: GIT_MAX_BUFFER,
-      env: GIT_ENV,
-      extendEnv: true,
+      // The backend's environment minus Ward's: the repository's own hooks,
+      // pager and helpers run with this, and must not see WARD_APP_KEY.
+      env: { ...childEnv(), ...GIT_ENV },
+      extendEnv: false,
       // Handle non-zero exits ourselves (git uses them for benign states like
       // "nothing to commit") instead of throwing.
       reject: false,

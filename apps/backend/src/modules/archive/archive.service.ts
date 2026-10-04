@@ -13,6 +13,7 @@ import type { Stats } from 'fs';
 import { basename, dirname, join, posix, relative, sep } from 'path';
 import { randomUUID } from 'crypto';
 import { FilesService } from '../files/files.service';
+import { childEnv } from '../../child-env';
 import type {
   ArchiveEntry,
   ArchiveJob,
@@ -408,6 +409,7 @@ export class ArchiveService {
     const flag = this.tarFlag(flavour);
     const { stdout } = await execFileAsync('tar', [`-tv${flag}f`, archiveAbs], {
       timeout: TAR_TIMEOUT_MS,
+      env: childEnv(),
       maxBuffer: TAR_MAX_BUFFER,
     });
     const lines = stdout.split('\n').filter((l) => l.trim().length > 0);
@@ -711,6 +713,7 @@ export class ArchiveService {
     const listArgs = [`-t${flag}f`, archiveAbs];
     const { stdout } = await execFileAsync('tar', listArgs, {
       timeout: TAR_TIMEOUT_MS,
+      env: childEnv(),
       maxBuffer: TAR_MAX_BUFFER,
     });
     const members = stdout.split('\n').filter((l) => l.length > 0);
@@ -758,7 +761,10 @@ export class ArchiveService {
         '--no-same-owner',
         ...(only ? ['--', ...members.filter((m) => only.has(m))] : []),
       ];
-      await execFileAsync('tar', extractArgs, { timeout: TAR_TIMEOUT_MS });
+      await execFileAsync('tar', extractArgs, {
+        timeout: TAR_TIMEOUT_MS,
+        env: childEnv(),
+      });
 
       // (c) walk the extracted tree; reject symlink-escapes + enforce byte cap.
       const totalBytes = await this.verifyExtractedTree(
@@ -1018,11 +1024,12 @@ export class ArchiveService {
     await execFileAsync(
       'tar',
       ['-czf', destAbs, '-C', rootDir, '--no-same-owner', ...rels],
-      { timeout: TAR_TIMEOUT_MS },
+      { timeout: TAR_TIMEOUT_MS, env: childEnv() },
     );
     // Count members for the response (list back the built archive).
     const { stdout } = await execFileAsync('tar', ['-tzf', destAbs], {
       timeout: TAR_TIMEOUT_MS,
+      env: childEnv(),
       maxBuffer: TAR_MAX_BUFFER,
     });
     const members = stdout.split('\n').filter((l) => l && !l.endsWith('/'));

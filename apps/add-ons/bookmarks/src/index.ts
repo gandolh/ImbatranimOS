@@ -26,8 +26,9 @@ import { bookmarksSource } from './commandSource'
  *    with its own links; the tree is assembled client-side (`tree.ts`), so the
  *    Browser can reuse the same helpers instead of a second traversal.
  *
- * Until brief 50 exists, activating a bookmark still calls `window.open` — the brief
- * is explicit that this must not change the open behaviour, only the model.
+ * Since brief 50, activating a bookmark opens it in the Browser when this machine has
+ * one set up, and in a tab of the viewing browser otherwise. The command palette
+ * still opens a tab: its `activate` has no `system` handle to launch an app with.
  *
  * **No favicons**, and this is a decision rather than an omission: fetching one is an
  * outbound request per bookmark from the desktop origin, which needs a CSP hole and

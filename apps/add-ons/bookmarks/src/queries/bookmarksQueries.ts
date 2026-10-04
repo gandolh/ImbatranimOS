@@ -50,6 +50,22 @@ export function useBookmarkGroupsQuery() {
   return useQuery({ queryKey: GROUPS_KEY, queryFn: () => fetchGroups(system.http) })
 }
 
+/**
+ * Whether this machine's Browser app is set up (brief 50): its proxy origin,
+ * or null. Asked once per session; a machine does not grow a port mid-visit.
+ */
+export function useBrowserAvailable(): boolean {
+  const system = useSystem()
+  const { data } = useQuery({
+    queryKey: ['browser', 'config'],
+    queryFn: () =>
+      system.http.get<{ origin: string | null }>('/browser/config').then((r) => r.data),
+    staleTime: Infinity,
+    retry: false,
+  })
+  return Boolean(data?.origin)
+}
+
 export function useCreateGroupMutation() {
   const system = useSystem()
   return useMutation({

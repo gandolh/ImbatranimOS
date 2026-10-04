@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 8;
+export const LEDGER_VERSION = 9;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -200,6 +200,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         toVersion: 8,
         name: 'local-identity',
         run: () => this.stepLocalIdentity(),
+      },
+      {
+        toVersion: 9,
+        name: 'browser-profile',
+        run: () => this.stepBrowserProfile(),
       },
     ];
 
@@ -587,6 +592,17 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         created_at INTEGER NOT NULL,
         last_seen INTEGER NOT NULL,
         expires_at INTEGER NOT NULL
+      );
+    `);
+  }
+
+  /** Step 9 — the Browser's encrypted cookie jar (brief 50). One row: one machine, one profile. */
+  private stepBrowserProfile() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS browser_profile (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        blob BLOB NOT NULL,
+        updated_at INTEGER NOT NULL
       );
     `);
   }

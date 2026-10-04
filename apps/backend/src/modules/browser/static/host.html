@@ -1,0 +1,32 @@
+<!doctype html>
+<!--
+  The Browser's host page, on the proxy origin (brief 50). The desktop's
+  Browser window frames this; it registers the proxy's service worker and
+  holds the proxied page in a frame of its own. See host.js.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Browser</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #fff;
+        font: 13px system-ui, sans-serif;
+        color: #333;
+      }
+      iframe {
+        display: block;
+        border: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+    <script src="/scram/scramjet.all.js"></script>
+    <script src="/baremux/index.js"></script>
+    <script src="/host.js"></script>
+  </head>
+  <body></body>
+</html>

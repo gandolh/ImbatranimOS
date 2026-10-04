@@ -16,6 +16,7 @@ import type { Readable } from 'stream';
 import { promisify } from 'util';
 import Database from 'better-sqlite3';
 import { DbService, LEDGER_VERSION } from '../../db/db.service';
+import { browserProfileKeyPath } from '../browser/browser-profile.service';
 import { FilesService } from '../files/files.service';
 import { TRASH_DIR } from '../files/trash.service';
 import { ArchiveService, parseTarListLine } from '../archive/archive.service';
@@ -203,6 +204,12 @@ export class BackupService {
         `./${posixRel}-shm`,
         `./${posixRel}-journal`,
       );
+    }
+    // The Browser's profile key (brief 50). Left out so a backup carries only
+    // the profile's ciphertext: whoever holds a backup holds no site's sign-in.
+    const keyRel = relative(home, browserProfileKeyPath(this.db.path()));
+    if (!keyRel.startsWith('..') && !keyRel.startsWith(sep)) {
+      patterns.push(`./${keyRel.split(sep).join('/')}`);
     }
     return patterns;
   }

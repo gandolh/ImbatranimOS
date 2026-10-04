@@ -27,6 +27,7 @@ import {
 } from '@imbatranim/ui'
 import {
   useBookmarkGroupsQuery,
+  useBrowserAvailable,
   useCreateGroupMutation,
   useCreateLinkMutation,
   useDeleteGroupMutation,
@@ -247,6 +248,14 @@ function LinkRow({
 export function Bookmarks({ windowId: _windowId }: { windowId: string }) {
   const system = useSystem()
   const { data: groups, isPending } = useBookmarkGroupsQuery()
+  const browserAvailable = useBrowserAvailable()
+  // In the OS's own Browser when this machine has one (brief 50), else a tab
+  // of the browser viewing the desktop.
+  const openLink = (url: string) => {
+    if (!browserAvailable || !system.intents.openApp('browser', { url })) {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
   const createGroup = useCreateGroupMutation()
   const updateGroup = useUpdateGroupMutation()
   const removeGroup = useDeleteGroupMutation()
@@ -598,9 +607,7 @@ export function Bookmarks({ windowId: _windowId }: { windowId: string }) {
                 key={rowKey(row)}
                 link={row.link}
                 depth={row.depth}
-                // Until brief 50 lands, activating a bookmark keeps doing exactly
-                // what it did — the brief is explicit that this must not change yet.
-                onOpen={() => window.open(row.link.url, '_blank', 'noopener,noreferrer')}
+                onOpen={() => openLink(row.link.url)}
                 onEdit={() => void editLink(row.link)}
                 onMove={() => void moveLink(row.link)}
                 onDelete={() => void deleteBookmark(row.link)}

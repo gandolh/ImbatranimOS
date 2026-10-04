@@ -28,32 +28,46 @@ import type { Request, Response, NextFunction } from 'express';
  * (see infrastructure/README.md / Caddyfile.example), so Strict-Transport-Security
  * is the proxy's responsibility, not the app's.
  */
-const CSP = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  "form-action 'self'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "style-src 'self' 'unsafe-inline'",
-  "script-src 'self'",
-  "connect-src 'self'",
-].join('; ');
+function policy(browserProxyOrigin: string | null): string {
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self'",
+    "connect-src 'self'",
+    // The Browser app frames its proxy origin (brief 50), that one origin and
+    // no other. Without it, frames stay at default-src 'self'.
+    ...(browserProxyOrigin ? [`frame-src 'self' ${browserProxyOrigin}`] : []),
+  ].join('; ');
+}
 
 /**
  * Minimal, dependency-free security headers applied to every response
  * (API JSON and the served static desktop alike). Registered via app.use()
  * in main.ts before the router.
+ *
+ * `browserProxyOrigin` is the Browser's proxy origin when it is on; the policy
+ * then lets the desktop frame it.
  */
-export function securityHeaders(
-  _req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Referrer-Policy', 'no-referrer');
-  res.setHeader('Content-Security-Policy', CSP);
-  next();
+export function securityHeadersFor(browserProxyOrigin: string | null) {
+  const csp = policy(browserProxyOrigin);
+  return function securityHeaders(
+    _req: Request,
+    res: Response,
+    next: NextFunction,
+  ): void {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Content-Security-Policy', csp);
+    next();
+  };
 }
+
+/** The headers with the Browser off. */
+export const securityHeaders = securityHeadersFor(null);

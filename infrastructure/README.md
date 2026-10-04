@@ -116,6 +116,37 @@ Two modes, chosen by the environment (decided 2026-10-04, brief 152):
     assets. The Terminal's WebSocket is authenticated by the same check.
   - **Cover screen** hides the desktop but is not a lock.
 
+## The Browser's second port (brief 50)
+
+The Browser app shows real websites through the machine: Scramjet rewrites
+each page, and a Wisp relay in the backend carries its traffic. Proxied pages
+run in a frame on an origin of their own, **never the desktop's**: there, a
+page that escaped the rewriter could act with your session and open a shell.
+So the backend listens on a second port, `BROWSER_PROXY_PORT` (compose: 8081
+prod, 3002 dev), which serves only the proxy's fixed files and the relay.
+
+- **Unset, the Browser is off** and says so; nothing else changes.
+- The proxy origin is `FRONTEND_URL`'s scheme and host on that port. Open the
+  desktop at the address `FRONTEND_URL` names: the proxy page lets only that
+  origin frame it.
+- **Behind a TLS proxy**, give the second port its own site or port and set
+  `BROWSER_PROXY_ORIGIN` to where browsers reach it, for example
+  `https://web.example.com`. It must differ from the desktop's origin (the
+  backend refuses to start otherwise). Proxy WebSockets to it too: the relay
+  is `/wisp/`.
+- The Browser needs a secure context for its service worker: HTTPS, or
+  `localhost`. Over plain HTTP on a LAN address it reports that and stops.
+- **Egress:** the relay connects only to public unicast addresses on ports
+  80, 443, 8080 and 8443, judged after DNS resolution on every answer. No
+  RFC 1918, loopback, link-local (cloud metadata), CGNAT or IPv6 local
+  ranges. This is stricter than the REST client on purpose (decisions:
+  brief 43 vs brief 50).
+- **Sign-ins:** proxied sites' cookies are kept by the machine, AES-GCM
+  encrypted in the database, with the key in
+  `.imbatranim/browser-profile.key` beside it. Backups leave the key out, so a
+  backup carries only ciphertext; restoring one elsewhere signs the Browser
+  out of every site.
+
 ## Native modules note
 
 `better-sqlite3` and `node-pty` are native addons, compiled in the `deps` /

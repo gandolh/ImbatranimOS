@@ -29,10 +29,12 @@ slim container) and starts it, publishing the desktop on `:8080` with your
 files kept in a named Docker volume. Equivalently, without Compose:
 
 ```bash
-docker run -p 8080:8080 -v imbatranim-home:/home/imbatranim imbatranimos
+docker run -p 8080:8080 -p 8081:8081 -e BROWSER_PROXY_PORT=8081 \
+  -v imbatranim-home:/home/imbatranim imbatranimos
 ```
 
-Open **http://localhost:8080**.
+Open **http://localhost:8080**. Port 8081 is the Browser app's (below); leave
+out `-p 8081:8081 -e BROWSER_PROXY_PORT=8081` to run without it.
 
 ## First visit
 
@@ -66,6 +68,14 @@ switched off. Setting only some of the three refuses to start.
 - **Sticky Notes, Todo, Bookmarks, Notepad** — the small stuff that makes a
   desktop feel like yours.
 - **Settings** — theme, accent color, and changing your password.
+- **Browser** — real websites (search, click through, sign in, play a video)
+  fetched by the machine, not by the browser you view the desktop in. Pages
+  are rewritten by [Scramjet](https://github.com/MercuryWorkshop/scramjet)
+  and served from a second port of their own, so a hostile page never runs
+  with the desktop's rights, and the machine refuses to fetch anything on a
+  private network for them. Site sign-ins are kept by the machine, encrypted.
+  It needs HTTPS, or `localhost`. DRM video (Netflix and the like) does not
+  play.
 
 All of it runs as the unprivileged `imbatranim` user — no sudo, by design.
 

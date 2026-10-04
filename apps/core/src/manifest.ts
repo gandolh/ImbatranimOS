@@ -11,6 +11,7 @@ import { Settings as SettingsIcon } from 'lucide-react'
 import { manifest as stickyNotes } from '@imbatranim/sticky-notes'
 import { manifest as todo } from '@imbatranim/todo'
 import { manifest as bookmarks } from '@imbatranim/bookmarks'
+import { manifest as browser } from '@imbatranim/browser'
 import { manifest as notepad } from '@imbatranim/notepad'
 import { manifest as terminal } from '@imbatranim/repl-interpreter'
 import { manifest as fileManager } from '@imbatranim/file-manager'
@@ -60,6 +61,7 @@ const MANIFESTS: AddonManifest[] = [
   stickyNotes,
   todo,
   bookmarks,
+  browser,
   notepad,
   settings,
   terminal,

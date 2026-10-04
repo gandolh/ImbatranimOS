@@ -27,6 +27,10 @@ services:
       # processes on the box) can reach it now. For a LAN/localhost run this is
       # still what you want; drop the prefix only to expose it deliberately.
       - "127.0.0.1:8080:8080"
+      # The Browser app's proxy origin (brief 50): proxied web pages are served
+      # from this second port, never the desktop's, so a hostile page cannot
+      # act as you on the desktop. Loopback-bound for the same reason as above.
+      - "127.0.0.1:8081:8081"
     # Runtime configuration, when there is any. vps-deploy's `server` phase
     # writes this file (0600) with the app's Ward credentials —
     # WARD_PUBLIC_ORIGIN, WARD_API_BASE_PATH and WARD_APP_KEY — all three of
@@ -43,6 +47,12 @@ services:
     env_file:
       - path: .env
         required: false
+    environment:
+      # The Browser listens for its proxy origin here. Its address is
+      # FRONTEND_URL's host on this port; behind a TLS proxy, set
+      # BROWSER_PROXY_ORIGIN to where browsers reach it. Remove to turn the
+      # Browser off.
+      - BROWSER_PROXY_PORT=8081
     volumes:
       - imbatranim-home:/home/imbatranim
     restart: unless-stopped
@@ -85,8 +95,11 @@ services:
     ports:
       - "3001:3001"
       - "5173:5173"
+      # The Browser's proxy origin (brief 50).
+      - "3002:3002"
     environment:
       - VITE_API_URL=http://localhost:3001/api
+      - BROWSER_PROXY_PORT=3002
     develop:
       watch:
         # Source sync — node_modules excluded: the container owns its deps.

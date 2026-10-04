@@ -4,8 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { json } from 'express';
 import { AppModule } from './app.module';
-import { securityHeaders } from './security-headers';
-import type { Env } from './config/env.schema';
+import { securityHeadersFor } from './security-headers';
+import { browserProxyOriginOf, type Env } from './config/env.schema';
 import { DbService } from './db/db.service';
 
 async function bootstrap() {
@@ -18,7 +18,15 @@ async function bootstrap() {
     app.getHttpAdapter().getInstance().set('trust proxy', 1);
   }
 
-  app.use(securityHeaders);
+  app.use(
+    securityHeadersFor(
+      browserProxyOriginOf({
+        FRONTEND_URL: config.get('FRONTEND_URL'),
+        BROWSER_PROXY_PORT: config.get('BROWSER_PROXY_PORT'),
+        BROWSER_PROXY_ORIGIN: config.get('BROWSER_PROXY_ORIGIN'),
+      }),
+    ),
+  );
   // Raise Express's 100 KB default JSON body cap. Registered here (before
   // listen/init) so it runs ahead of Nest's built-in body parser and sets
   // req._body first, which makes the built-in 100 KB parser skip. Without this,

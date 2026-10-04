@@ -52,6 +52,18 @@ export const envSchema = z
     // ISO's first boot), never by the app. Ignored once the machine is claimed.
     SETUP_TOKEN: z.string().min(1).optional(),
 
+    // --- The Browser app's proxy origin (brief 50) ---------------------------
+    //
+    // Proxied web pages run on an origin of their own, never the desktop's: a
+    // rewriter escape on the desktop origin would hold the session and the
+    // terminal. The backend listens for that origin on this second port. Unset,
+    // the Browser app is off and says so.
+    BROWSER_PROXY_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+    // Where the viewing browser reaches that port, when it is not
+    // FRONTEND_URL's scheme and host with BROWSER_PROXY_PORT (a TLS proxy in
+    // front, for instance). Must differ from FRONTEND_URL's origin.
+    BROWSER_PROXY_ORIGIN: z.string().url().optional(),
+
     // Trust X-Forwarded-* from a front proxy so req.ip / protocol are real
     // (needed for correct secure-cookie behaviour behind Caddy/nginx). Keep
     // false when exposed directly.
@@ -72,7 +84,39 @@ export const envSchema = z
           'Set all three of WARD_PUBLIC_ORIGIN, WARD_API_BASE_PATH and WARD_APP_KEY to use Ward, or none of them for the local sign-in.',
       });
     }
+    if (env.BROWSER_PROXY_ORIGIN && env.BROWSER_PROXY_PORT === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['BROWSER_PROXY_ORIGIN'],
+        message: 'BROWSER_PROXY_ORIGIN needs BROWSER_PROXY_PORT as well.',
+      });
+    }
+    const proxy = browserProxyOriginOf(env);
+    if (proxy && proxy === new URL(env.FRONTEND_URL).origin) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['BROWSER_PROXY_ORIGIN'],
+        message:
+          "The Browser's proxy origin must differ from the desktop's (FRONTEND_URL): proxied pages would otherwise run with the desktop's rights.",
+      });
+    }
   });
+
+/**
+ * The origin proxied pages run on, or null when the Browser is off: the
+ * explicit BROWSER_PROXY_ORIGIN, else FRONTEND_URL's scheme and host on
+ * BROWSER_PROXY_PORT.
+ */
+export function browserProxyOriginOf(env: {
+  FRONTEND_URL: string;
+  BROWSER_PROXY_PORT?: number;
+  BROWSER_PROXY_ORIGIN?: string;
+}): string | null {
+  if (env.BROWSER_PROXY_PORT === undefined) return null;
+  if (env.BROWSER_PROXY_ORIGIN) return new URL(env.BROWSER_PROXY_ORIGIN).origin;
+  const frontend = new URL(env.FRONTEND_URL);
+  return `${frontend.protocol}//${frontend.hostname}:${env.BROWSER_PROXY_PORT}`;
+}
 
 /** Which identity this process runs: the estate's Ward, or its own local sign-in. */
 export type IdentityMode = 'ward' | 'local';

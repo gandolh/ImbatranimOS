@@ -1,7 +1,7 @@
 ---
 title: CSP connect-src allows any ws:/wss: host
 created: 2026-07-17
-status: captured
+status: closed
 tags: [security, backend, csp]
 ---
 
@@ -29,3 +29,8 @@ origin) — then verify the terminal still connects on the target browsers.
 Rated informational: it only becomes exploitable given a separate XSS,
 and `script-src 'self'` already keeps that surface small. This is the
 mitigation that keeps it non-urgent.
+
+**Closed 2026-10-04 (brief 153): already fixed in code.** `security-headers.ts`
+sends `connect-src 'self'`, which covers the same-origin API and the terminal's
+WebSocket, and no `ws:`/`wss:` wildcard remains (tightened on 2026-07-19, see
+status-history.md).

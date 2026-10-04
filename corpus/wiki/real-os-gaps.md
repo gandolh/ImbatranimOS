@@ -15,7 +15,8 @@ the rejections and why, so the next session does not re-argue them.
 
 It already is an OS where it counts: a real PTY, a real jailed filesystem with
 symlink-proof `resolveSafe`, real `/proc` memory and statfs, ownership-scoped
-`kill`, argon2id + TOTP auth, and a composition root that behaves like a package
+`kill`, argon2id + TOTP auth (as of 2026-07-31; replaced by Ward and the
+local sign-in since), and a composition root that behaves like a package
 system. **24 apps is a wider roster than a stock Alpine desktop.** So the gap was
 never "more apps" — it is the layer *underneath* them.
 

@@ -91,3 +91,68 @@ Depends on the option chosen: `apps/backend/src/config/env.schema.ts`,
 - A `decisions.md` entry, dated the day of the grill, records the Ward move
   (why, the alternatives rejected, the consequences: lock → cover screen, a
   restore no longer revokes sessions) and the friend-run-bar outcome.
+
+## Outcome (2026-10-04)
+
+**Option C, decided by the owner** ([decisions-estate-era.md](../../wiki/decisions-estate-era.md),
+which also records the 2026-09-06 Ward move as a decision at last). Built
+lean rather than restored from `fb3de23^`.
+
+- **Mode.** `WARD_*` became optional, all three or none: setting only some is
+  refused at boot with a message naming them. With none, `WardService` hands
+  every request to `LocalIdentityService` through the same `authenticate`. The
+  guard, `/api/me`, the freshness registry and the PTY upgrade need no second
+  path. The boot log warns loudly that local mode is on.
+- **`modules/local-identity/`:**
+  - **Storage:** a single `local_owner` row and `local_session`, in ledger
+    step 8, with new names; step 7 still drops the pre-Ward tables.
+  - **Passwords:** scrypt (`node:crypto`, `N=2^15`), so no native module.
+  - **Sessions:** an `imb_session` httpOnly, SameSite=Lax cookie lasting 30
+    days, with only its SHA-256 stored.
+  - **Backoff:** per address, five free failures, then doubling from 1 s to
+    15 min.
+  - **First claim:** `SETUP_TOKEN` gates it, with a constant-time compare.
+  - **Routes:** `GET /api/identity` (public), `POST
+    /api/identity/local/{setup,sign-in,sign-out,password}`. The local routes
+    are 404 in Ward mode.
+  - **The `Secure` flag:** set from `req.secure` or `X-Forwarded-Proto`,
+    because `TRUST_PROXY` must stay off behind Caddy.
+- **A restore revokes local sessions again** (`BackupService.installDatabase`):
+  the restored database brings the backup's owner and password.
+- **Desktop:**
+  - `getIdentity()` beside `/me`; the signed-out screen becomes "Set up this
+    machine" (name, password ×2, the token when required) or "Sign in".
+  - Log off and the cover's "Sign out instead" call the local sign-out.
+  - Settings → Security has a change-password form.
+  - Ward's proactive refresh runs only in Ward mode.
+- **Not built:** option B's development identity. Local dev can run in local
+  mode now, or against the local Ward container (option D, already in place).
+  TOTP is not part of the local sign-in.
+- **The ISO half is redirected:** the kiosk is dropped
+  ([brief 18](../superseded/18-alpine-kiosk-iso.md) superseded), and the
+  server ISO needs its own brief. With no `WARD_*`, its backend now boots into
+  the local sign-in.
+
+**Tests:**
+- Unit: scrypt and throttle; the db ledger at version 8 with both tables; a
+  restore ending a local session, with the backup's password working again
+  (fails without the revoke).
+- e2e `local-identity.e2e-spec.ts` (8): unclaimed, setup once, sign-in,
+  `/me`, sign-out, 429 after the free misses, password change keeping this
+  session only, the Secure flag behind a proxy, the setup token, Ward mode's
+  404s.
+- Core: AuthGate shows setup with the token field, and sign-in submits and
+  reaches the desktop.
+- Repo: typecheck, `format:check`, 30/30 test tasks, backend e2e 132.
+- **Browser walk** (built backend from a scratch dir, no `WARD_*`,
+  `SETUP_TOKEN` set):
+  - claimed with the token;
+  - the desktop loaded and the Terminal ran `echo $((6*7))` with
+    `$WARD_APP_KEY` empty;
+  - Log off made `/me` 401 and showed Sign in;
+  - a wrong password showed "Wrong password", and the right one brought the
+    desktop back.
+- **Container:** `imbatranimos:1.0` run with no environment at all, as the
+  README says. It booted into local mode (`/api/identity` →
+  `{mode: local, setUp: false}`), `/api/me` was 401 and the desktop was served.
+  Before this brief it died at config validation.

@@ -4162,3 +4162,13 @@ The kiosk ISO brief moves from done/ to superseded/ with a one-line note: the ow
 ## [2026-10-04] decide | Briefs 144, 145 and 155 grilled after the fact: all kept
 
 Asked directly, the owner confirmed every call the runs took: 144's proactive refresh plus a refresh-and-replay on 401, 145's freshness registry over a heartbeat route, 155's Overwrite / Reload / Cancel dialog, and its first cut of the three text editors. The office editors' turn is captured as a todo.
+
+## [2026-10-04] done | Briefs 152 and 153: a local sign-in without Ward, and docs that say so
+
+With no `WARD_*` set, the backend now runs its own single-owner sign-in behind the same `WardService.authenticate`, as the owner decided (option C):
+- first-visit setup, optionally gated by `SETUP_TOKEN`;
+- scrypt hashes, and an `imb_session` cookie whose hash is stored;
+- per-address backoff;
+- a restore that ends local sessions again.
+
+The desktop shows its own setup and sign-in screens, and Settings changes the password. The README's `docker run` boots again: a no-environment run of the image came up in local mode, where it used to die at config validation. Walked in a browser: claim, terminal, log off, wrong and right password. Brief 153 rewrote the README, infrastructure docs, architecture and glossary from that. status.md was split: history to 2026-08-06 went to status-history.md, and status is a current snapshot. The two stale todos are closed, and same-origin exposure inside the estate is now an open question.

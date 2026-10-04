@@ -173,9 +173,18 @@ say which one you mean.
   bundle to the OS. The *directory* `apps/core/` is the desktop shell itself
   (compositor, taskbar, settings, auth, command palette). Values live in
   `@imbatranim/ui`. Say "core the package" or "the shell".
-- **session** — a *desktop session* is one browser tab (above). An *auth
-  session* is the `imb_session` httpOnly cookie that says you are logged in.
-  They have unrelated lifetimes: closing a tab ends the first, not the second.
+- **session** — a *desktop session* is one browser tab (above). A *sign-in
+  session* says who you are, and is one of two things: a **Ward session**
+  (the estate's `ward_session` cookie, 15-minute tokens refreshed by the
+  desktop, brief 144) or a **local session** (the `imb_session` cookie of the
+  local sign-in, 30 days, brief 152). The lifetimes are unrelated: closing a
+  tab ends the desktop session, not the sign-in session.
+- **grant** — Ward's permission for an account to use an app. This machine
+  admits any account holding an `imbatranim-os` grant; the local owner holds
+  it implicitly.
+- **Cover screen** — the Start menu's *Cover screen* (was "Lock"): it hides
+  the desktop and keeps everything running, and anyone at the machine can
+  uncover it. Not a lock; *Log off* ends the session.
 - **manifest** — an add-on's exported `AddonManifest` object vs the composition
   root file `apps/core/src/manifest.ts`. Use *manifest* for the object and
   *composition root* for the file.

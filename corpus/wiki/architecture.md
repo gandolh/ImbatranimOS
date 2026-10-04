@@ -19,7 +19,7 @@ display.
 | Backend | NestJS (TypeScript) — prod: serves built frontend statics + REST API + WebSockets on ONE port |
 | Frontend | React + Vite + TS + Tailwind v4 + Framer Motion, Base UI, Zustand, TanStack Query, @xterm/xterm — forked from minimal-web-desktop, restructured (brief 17) into `@imbatranim/core` + add-on packages |
 | System user | `imbatranim`, **no sudo by default**; PTY and FS APIs act as this user |
-| Auth | Single user; sessions + password, TOTP optional, rate-limited login; HTTPS via built-in or documented reverse proxy — internet-exposable |
+| Identity | Ward's inside the estate (`ward_session`, an `imbatranim-os` grant); without `WARD_*`, a local single-owner sign-in (scrypt, `imb_session`, backoff, optional `SETUP_TOKEN`) behind the same `WardService.authenticate` (brief 152). HTTPS via the documented reverse proxy |
 | Persistence | `/home/imbatranim` is a named Docker volume; the app SQLite DB lives inside it |
 | Desktop UX | Windows-7-classic layout: taskbar, start button/menu, tray, desktop icons — B&W retro-flat + parameterized accent |
 
@@ -35,10 +35,16 @@ display.
   via FILES_MAX_UPLOAD_BYTES, over-cap → 413).
 - **System monitor** — real CPU/RAM/disk/process data from /proc
   (`system` module) + uid-scoped kill + About panel (IMAGE_VERSION).
-- **Auth** — `auth` module: argon2id, `imb_session` httpOnly cookie,
-  first-run wizard, optional TOTP, per-IP throttle, global APP_GUARD +
-  `@Public()`, `ws-auth.ts` for WS upgrades; security-headers middleware
-  (CSP etc.; HSTS is the reverse proxy's job).
+- **Identity** — `ward` module: the global `WardAuthGuard` (APP_GUARD +
+  `@Public()`, Origin check first), `WardService.authenticate` shared by REST
+  and the PTY upgrade, `/api/me`, and the freshness registry for open
+  terminals (brief 145). Without `WARD_*`, `local-identity` answers the same
+  call: a single owner claimed on first visit (scrypt, optional
+  `SETUP_TOKEN`), an `imb_session` cookie whose hash is stored, per-address
+  backoff, `GET /api/identity` for the desktop (brief 152). The pre-Ward
+  `auth` module (argon2id, TOTP, the first-run wizard) was deleted on
+  2026-09-06. Security-headers middleware (CSP etc.; HSTS is the reverse
+  proxy's job).
 
 **Productivity apps (surviving the fork prune):** sticky notes, todo,
 bookmarks, notepad. **Cut from the fork (brief 08):** docker desktop,

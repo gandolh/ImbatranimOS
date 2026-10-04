@@ -27,3 +27,9 @@ Why it is not a small addition, and why it earned its own note:
 Prerequisite for none of the other briefs; safe to schedule whenever. It should NOT
 become a password-reset path — brief 57's rejection of that stands, and this is only
 about the second factor.
+
+**Closed 2026-10-04 (brief 153): not this app's any more.** TOTP went with the
+pre-Ward authentication on 2026-09-06. Inside the estate, second factors and
+their recovery are Ward's. The local sign-in that returned without Ward
+(brief 152) has no TOTP, by the owner's choice of a password, a cookie and a
+backoff, so there is nothing here to recover.

@@ -65,3 +65,39 @@ the comments in `infrastructure/docker-compose.yml`,
   returns only historical or decision context, never a description of current
   behaviour.
 - `bash corpus/lint.sh` passes, and the docs build succeeds.
+
+## Outcome (2026-10-04)
+
+Written from brief 152's outcome (option C).
+
+- **`README.md`:**
+  - "First visit" replaces "First login": Set up this machine,
+    `SETUP_TOKEN`, the cover screen, Log off.
+  - "Inside a Ward estate" covers all three `WARD_*` or none.
+  - Settings mentions the password change, and the HTTPS recipe needs only
+    `TRUST_PROXY`.
+  - The kiosk ISO section became the planned server ISO.
+  - Data & backup says a restore signs you out in local mode.
+  - The FAQ is rewritten: scrypt, cookie hash, backoff, setup token, no
+    local two-factor. The password reset now clears `local_owner` with
+    `sqlite3` instead of deleting the database.
+- **`infrastructure/README.md`:**
+  - The `COOKIE_SECURE`/`SESSION_TTL_HOURS` table is replaced by
+    `TRUST_PROXY` and `SETUP_TOKEN`.
+  - "Identity (what ships)" describes both modes and what is common to them.
+  - The argon2 note is gone.
+  - Also updated: `Caddyfile.example` step 4 and the compose comments.
+- **Corpus:**
+  - architecture's identity row and module bullet;
+  - the glossary's *Ward session* / *local session*, *grant* and *Cover
+    screen*;
+  - `status.md` split: the narrative to 2026-08-06 moved unchanged to
+    `status-history.md`, and status is a current snapshot again with the
+    brief table kept;
+  - both stale todos closed with an outcome line;
+  - an `open-questions.md` entry for same-origin exposure inside the estate;
+  - two dated research pages annotated.
+- **Acceptance grep:** what's left is history (status-history, the brief
+  table's row for brief 10, dated research pages, the decisions pages) or the
+  line saying `COOKIE_SECURE` no longer exists. `imb_session` describes
+  current behaviour again, in local mode.

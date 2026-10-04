@@ -1,6 +1,6 @@
 ---
 summary: Web-OS era unknowns — app-install story without sudo, HTTPS in-app vs proxy, accent pick, image size reality, registry publishing, fork prune surprises.
-updated: 2026-07-16
+updated: 2026-10-04
 ---
 
 # Open questions
@@ -11,7 +11,18 @@ updated: 2026-07-16
   (recommended for contrast + distinctiveness). Pick from the live desktop
   and record the choice in decisions.md.
 - **Registry publishing** (Docker Hub/GHCR) vs build-from-source-only —
-  deferred until v1 works; build-from-source is the standing decision.
+  deferred until v1 works; build-from-source is the standing decision. Any publishing would not run on GitHub's
+  runners: the owner wants no GitHub-hosted automation in the repos
+  (2026-10-04).
+- **Same-origin exposure inside the estate** (from the 2026-09-26 sweep's
+  watch list; tracked here by brief 153). The estate is one origin, so any
+  script running on a sibling app (atrium, prm, newspapper…) is same-origin
+  with this desktop: it can call `/imbatranim-os/api/*` with the visitor's
+  Ward cookie, the Origin check passes, and that includes the terminal. The
+  `imbatranim-os` grant limits *who*, not *which page*. Options when it
+  matters: a separate origin (subdomain) for this app, or a per-app
+  credential the siblings never see. Not a problem for a local-sign-in
+  install, which has its own origin.
 
 Resolved 2026-07-16 (brief 08): fork prune was clean — docker-desktop and
 service-launcher were not entangled with shared window/file services;

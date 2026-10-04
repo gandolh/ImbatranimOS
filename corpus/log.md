@@ -4146,3 +4146,7 @@ The cutover's leftovers are gone: argon2, otplib, qrcode and cookie-parser (35 p
 ## [2026-10-03] done | Brief 155 — saves ask when the file changed on disk
 
 A line appended in the Terminal while Notepad had the file open was destroyed by the next Ctrl+S. Every file write now accepts the version the editor read (mtime + size) and answers 409 when the file has moved on. Notepad, Code Editor and Markdown Editor then ask Overwrite / Reload from disk / Cancel, through a new kit dialog. Writes without a token behave as before; the office editors are not in this cut. Later the same day it was walked in the browser against the real local Ward: Notepad asked, and Reload and Overwrite each did what they say.
+
+## [2026-10-04] fix | The Git app no longer hands Ward's secret to git hooks
+
+Git ran with `extendEnv`, so a repository's own hooks, pager or credential helper could read `WARD_APP_KEY`; brief 138 had only closed the terminal. Its scrub is now a shared `childEnv()` (`apps/backend/src/child-env.ts`), used by the terminal, git (with `extendEnv: false`), backup's tar and every archive tar call. Fixed directly from the todo, with the owner's go-ahead; a test checks git gets no `WARD_*` name.

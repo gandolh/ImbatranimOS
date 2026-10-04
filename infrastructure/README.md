@@ -2,7 +2,7 @@
 
 One container is the computer: Alpine + Node, NestJS serves the built React
 desktop **and** the API on a single port (`8080` in prod). This document
-covers running it and the **HTTPS / auth exposure** story (Brief 10).
+covers running it and the **HTTPS / identity** story (briefs 10 and 152).
 
 ## Run it
 
@@ -14,8 +14,10 @@ docker compose -f infrastructure/docker-compose.yml up imbatranimos
 npm run dev     # = docker compose --profile dev watch
 ```
 
-First visit forces a password (no default password ever exists). After that
-it is a lock screen. TOTP is opt-in from **Settings → Security**.
+With no `WARD_*` variables, the first visit sets the owner's name and password
+(no default password ever exists), and every visit after that asks for it. Set
+`SETUP_TOKEN` to make the first claim also need a token only you know. With all
+three `WARD_*` variables set, sign-in is Ward's instead (see Identity below).
 
 ## Developing (contained — brief 51)
 
@@ -71,47 +73,52 @@ os.example.com {
 Caddy provisions and renews the certificate automatically. Point it at the
 container (same Docker network) or at `localhost:8080`.
 
-### Env switches when fronted by HTTPS
+### Behind an HTTPS proxy
 
 The app defaults to **plain-HTTP-safe** settings so LAN use works with zero
-config. When a TLS proxy fronts it, set two env vars on the `imbatranimos`
-service (see the commented block in `docker-compose.yml`):
+config, and nothing needs switching when a TLS proxy fronts it: the local
+session cookie is marked `Secure` whenever the proxy reports the browser used
+HTTPS (`X-Forwarded-Proto`). `COOKIE_SECURE` and `SESSION_TTL_HOURS` no longer
+exist.
 
-| Env var         | Default | Set behind an HTTPS proxy | Effect |
-|-----------------|---------|---------------------------|--------|
-| `COOKIE_SECURE` | `false` | `true`                    | Marks the session cookie `Secure` (browsers require this over HTTPS; setting it on plain HTTP would silently drop the cookie). |
-| `TRUST_PROXY`   | `false` | `true`                    | Trusts `X-Forwarded-*` so `req.ip` (rate-limit key) and protocol reflect the real client, not the proxy. |
+| Env var       | Default | Effect |
+|---------------|---------|--------|
+| `TRUST_PROXY` | `false` | Trusts `X-Forwarded-*` for `req.ip`. Leave it off behind Caddy, which appends to `X-Forwarded-For`, so a client could forge its address. With it off, every client shares the proxy's address and therefore the sign-in backoff. |
+| `SETUP_TOKEN` | unset   | When set, claiming an unclaimed machine also needs this token. |
 
-`SESSION_TTL_HOURS` (default `168` = 7 days) tunes session lifetime.
+## Identity (what ships)
 
-> Do **not** set `COOKIE_SECURE=true` without HTTPS in front — the browser
-> will refuse to store the cookie and login will appear to "not stick".
+Two modes, chosen by the environment (decided 2026-10-04, brief 152):
 
-## Auth model (what ships)
-
-- **Single user**, credential stored in SQLite (`auth_user`), password hashed
-  with **argon2id**. No default password — first run creates it.
-- **Sessions**: opaque random token in an `httpOnly`, `SameSite=Lax` cookie
-  (`imb_session`); only its SHA-256 is stored server-side.
-- **CSRF stance**: `SameSite=Lax` cookie **plus** an Origin check on all
-  state-changing requests (POST/PUT/PATCH/DELETE). A present `Origin` must
-  match the request host or the configured `FRONTEND_URL`; absent Origin
-  (same-origin GET, non-browser clients) is allowed. No CSRF token is used —
-  Lax + Origin is the chosen, sufficient stance for a single-origin app.
-- **Rate limiting**: in-memory, per-IP. First 5 failures are free, then
-  exponential backoff (1 min doubling, capped at 15 min). Resets on a
-  successful login and on container restart (an attacker cannot restart it).
-- **TOTP** (optional): enroll via QR in Settings; once enabled it is required
-  at login.
-- **Every** API route requires a valid session except `POST /api/auth/setup`,
-  `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/status`, the
-  `/health` check, and the static desktop assets.
+- **Local sign-in** (no `WARD_*` set): what a standalone run, a friend's
+  install and the server ISO use.
+  - **A single owner**, stored in SQLite (`local_owner`), with the password
+    hashed with **scrypt** (`node:crypto`, so no native module). No default
+    password: the first visit creates it, optionally gated by `SETUP_TOKEN`.
+  - **Sessions:** a random token in an `httpOnly`, `SameSite=Lax` cookie
+    (`imb_session`). Only its SHA-256 is stored server-side, and a session
+    lasts 30 days. Log off ends it. Changing the password ends every other
+    session, and a restore from backup ends them all.
+  - **Backoff:** in memory, per client address. The first 5 failures are free,
+    then the wait doubles from 1 s, capped at 15 min. It resets on a
+    successful sign-in and on restart.
+  - No two-factor.
+- **Ward** (all three `WARD_*` set): the estate's single sign-in. The browser's
+  `ward_session` cookie is verified against Ward's keys and introspected. An
+  account needs an `imbatranim-os` grant. The local routes answer 404.
+- **Either way:**
+  - **CSRF:** the `SameSite=Lax` cookie **plus** an Origin check on all
+    state-changing requests (POST/PUT/PATCH/DELETE). A present `Origin` must
+    match the request host or the configured `FRONTEND_URL`. An absent Origin
+    (same-origin GET, non-browser clients) is allowed.
+  - **Every** API route needs a session except `GET /api/identity`, the local
+    setup/sign-in/sign-out routes, the `/health` check and the static desktop
+    assets. The Terminal's WebSocket is authenticated by the same check.
+  - **Cover screen** hides the desktop but is not a lock.
 
 ## Native modules note
 
-`argon2` (like `better-sqlite3` and `node-pty`) is a native addon. It is
-compiled in the `deps` / `proddeps` stages, which already carry
-`python3 make g++`; the generic `*.o` / `obj.target` strip in `proddeps` also
-cleans argon2's build intermediates. No Dockerfile build-dep change was
-required — the final prod image ships the compiled `.node` binaries and no
-compiler.
+`better-sqlite3` and `node-pty` are native addons, compiled in the `deps` /
+`proddeps` stages, which carry `python3 make g++`. The final prod image ships
+the compiled `.node` binaries and no compiler. The password hash needs none:
+scrypt is built into Node.

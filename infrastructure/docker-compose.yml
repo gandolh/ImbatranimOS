@@ -36,8 +36,10 @@ services:
     #
     # `required: false` keeps the standalone run in the README working: a
     # friend cloning this repo has no .env, and compose treats a missing
-    # env_file as fatal unless told otherwise. The app's own defaults cover
-    # everything except Ward, which a local run does not use.
+    # env_file as fatal unless told otherwise. With no WARD_* variables the
+    # backend runs its own single-owner sign-in (brief 152), and the first
+    # visit sets the password. Add SETUP_TOKEN here when the machine is
+    # reachable by others before you claim it.
     env_file:
       - path: .env
         required: false
@@ -56,14 +58,14 @@ services:
     # client that forges the header would otherwise defeat IP-based login
     # rate-limiting. Caddy's reverse_proxy appends, so the forged prefix
     # survives — leave this alone until the Caddyfile resets the header.
-    # Auth defaults are plain-HTTP-safe (LAN/localhost works as-is). When a
-    # TLS reverse proxy (see Caddyfile.example / README.md) fronts this, enable
-    # secure cookies and proxy trust so the session cookie sticks over HTTPS
-    # and login rate-limiting keys on the real client IP:
+    # The local sign-in needs no switch for HTTPS: its session cookie is
+    # marked Secure whenever the proxy says the browser used HTTPS
+    # (X-Forwarded-Proto). Behind Caddy with TRUST_PROXY off, every client
+    # shares the proxy's address, so the sign-in backoff is shared too.
+    # Optional settings:
     # environment:
-    #   - COOKIE_SECURE=true
-    #   - TRUST_PROXY=true
-    #   - SESSION_TTL_HOURS=168
+    #   - SETUP_TOKEN=<only you know it>   # needed to claim the machine first
+    #   - TRUST_PROXY=true                 # only behind a proxy that OVERWRITES X-Forwarded-For
 
   # Development, fully contained (brief 51): Nest watch + Vite HMR with source
   # changes SYNCED into the container by `docker compose watch` — run it via

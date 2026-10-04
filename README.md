@@ -34,15 +34,28 @@ docker run -p 8080:8080 -v imbatranim-home:/home/imbatranim imbatranimos
 
 Open **http://localhost:8080**.
 
-## First login
+## First visit
 
-The first thing you see is a setup wizard, not a login screen — there is no
-default password, ever. Pick a password (10 characters minimum) and you're
-in. Every visit after that is a lock screen.
+The first thing you see is **Set up this machine**, not a login screen. There
+is no default password, ever. Choose your name and a password (10 characters
+minimum) and you're in. Every visit after that asks for the password.
 
-Two-factor auth (TOTP) is optional, off by default, and lives under
-**Settings → Security** — enroll by scanning the QR code with any
-authenticator app, and it's required at every login from then on.
+If the machine is reachable by other people before you claim it, start it with
+`SETUP_TOKEN=<something only you know>`: setup then also asks for that token, so
+nobody else can claim it first.
+
+**Cover screen** in the Start menu hides the desktop while you step away. It
+is not a lock: anyone at the machine can uncover it. To end the session, use
+**Log off**.
+
+### Inside a Ward estate
+
+If you run ImbatranimOS next to other apps that share
+[Ward](https://github.com/gandolh/wzd_auth) sign-in, set all three of
+`WARD_PUBLIC_ORIGIN`, `WARD_API_BASE_PATH` and `WARD_APP_KEY`. Sign-in,
+passwords and two-factor then live at Ward, an account needs an
+`imbatranim-os` grant from Ward's console, and the local sign-in above is
+switched off. Setting only some of the three refuses to start.
 
 ## The apps
 
@@ -52,7 +65,7 @@ authenticator app, and it's required at every login from then on.
 - **System Monitor** — live CPU, RAM, disk, and process list, for real.
 - **Sticky Notes, Todo, Bookmarks, Notepad** — the small stuff that makes a
   desktop feel like yours.
-- **Settings** — theme, accent color, and the TOTP enrollment above.
+- **Settings** — theme, accent color, and changing your password.
 
 All of it runs as the unprivileged `imbatranim` user — no sudo, by design.
 
@@ -61,23 +74,20 @@ All of it runs as the unprivileged `imbatranim` user — no sudo, by design.
 The container itself only ever speaks plain HTTP; TLS is meant to be
 terminated by a reverse proxy in front of it (Caddy gets you automatic
 Let's Encrypt certs in about four lines). The full recipe — the Caddyfile,
-the env vars to flip (`COOKIE_SECURE`, `TRUST_PROXY`), and why built-in TLS
+the env var to flip (`TRUST_PROXY`), and why built-in TLS
 was rejected — lives in [infrastructure/README.md](infrastructure/README.md).
 Don't expose the plain-HTTP port directly to the internet; put the proxy in
 front of it first.
 
-## Bare-metal kiosk ISO (experimental, post-v1)
+## A server ISO (planned)
 
-Docker is the way to run ImbatranimOS — everything above is the supported
-path. If you instead want it as an **appliance that boots straight into the
-OS on real hardware or a VM**, there's a separate bootable Alpine-based ISO
-under [`iso/`](iso/README.md). It boots with no desktop and no console —
-just one fullscreen browser showing the same ImbatranimOS login, backed by
-the same server running locally. Build it with `cd iso && cc -o build
-build.c && ./build iso` (needs Docker). It's an occasional VM/bare-metal
-extra; it changes nothing about the container workflow above and adds no new
-prerequisites to it. See [`iso/README.md`](iso/README.md) for the build,
-verification, and design decisions.
+Docker is the way to run ImbatranimOS, and everything above is the supported
+path. The bootable ISO is changing direction: instead of a kiosk with a
+fullscreen browser, it becomes a plain **Alpine Linux server image** with
+ImbatranimOS pre-installed, which you reach from other machines on your
+network over **HTTPS**, signing in with the local sign-in above. The
+[`iso/`](iso/README.md) directory still builds the earlier kiosk variant until
+that work lands.
 
 ## Data & backup
 
@@ -92,9 +102,10 @@ the whole volume out as `imbatranim-home-YYYY-MM-DD.tar.gz` — the database
 included as a consistent `VACUUM INTO` snapshot rather than a hot copy, the
 Trash left behind. "Choose a backup file…" reads an archive, shows its date and
 exactly which folders it would replace, and applies it only after you type
-`RESTORE`; you are signed out afterwards, because the backup brings its own
-password with it. This is the path to use — it is the only one available on the
-kiosk ISO or on a hosted instance, where there is no host shell to run docker
+`RESTORE`. With the local sign-in you are signed out afterwards, because the
+backup brings its own password with it: sign in with the password the backup
+was taken with. This is the path to use. It is the only one available on the
+server ISO or on a hosted instance, where there is no host shell to run docker
 from.
 
 If you do have host access, the equivalent tarball is:
@@ -112,11 +123,13 @@ stop the container first if you take a backup this way.
 ## FAQ
 
 **Is it safe to expose to the internet?**
-It's designed for it: a single user, argon2id-hashed password, sessions in
-an `httpOnly`/`SameSite=Lax` cookie, per-IP rate limiting with exponential
-backoff on login, optional TOTP, and an Origin check on every state-changing
-request. Put it behind the documented HTTPS reverse proxy (see above) — the
-app itself never terminates TLS.
+It's designed for it: a single owner, an scrypt-hashed password, sessions in
+an `httpOnly`/`SameSite=Lax` cookie (only a hash of it is stored), per-IP
+backoff on failed sign-ins, an optional setup token for the first claim, and
+an Origin check on every state-changing request. The local sign-in has no
+two-factor; for that, run it inside a Ward estate. Put it behind the
+documented HTTPS reverse proxy (see above). The app itself never terminates
+TLS.
 
 **What's the user / no-sudo story?**
 Everything inside the container — the shell you get in Terminal, the
@@ -125,13 +138,19 @@ user created in the image. There's no sudo available by default; the
 container is not meant to be run as root.
 
 **How do I reset my password if I forget it?**
-There's currently no in-app "forgot password" flow — first-run setup is
-one-time and intentionally refuses to run again while an account exists (no
-silent password reset). If you're locked out, the honest path is: stop the
-container, delete the database file inside the `imbatranim-home` volume
-(or the whole volume, if you don't need what's in your home directory
-either), and start it again — the setup wizard will run once more. Back the
-volume up first if you want to keep your files (see Data & backup above).
+There's no in-app "forgot password" flow: setup runs once and refuses to run
+again while an owner exists (no silent password reset). If you're locked out,
+stop the container and clear the owner from the database in the volume, which
+keeps everything else:
+
+```bash
+docker run --rm -v imbatranim-home:/home/imbatranim alpine sh -c \
+  "apk add -q sqlite && sqlite3 /home/imbatranim/.imbatranim/db.sqlite \
+   'DELETE FROM local_owner; DELETE FROM local_session;'"
+```
+
+Start it again and **Set up this machine** runs once more. Back the volume up
+first (see Data & backup above).
 
 ## Screenshots
 

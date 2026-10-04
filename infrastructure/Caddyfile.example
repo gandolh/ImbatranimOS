@@ -9,9 +9,9 @@
 #   2. Replace os.example.com with your domain.
 #   3. Run Caddy alongside the container (same Docker network, or on the host
 #      pointing at localhost:8080).
-#   4. On the imbatranimos service set COOKIE_SECURE=true and TRUST_PROXY=true
-#      (see docker-compose.yml) so the session cookie is marked Secure and the
-#      real client IP is used for login rate-limiting.
+#   4. Nothing to switch on the imbatranimos service: the session cookie is
+#      marked Secure from Caddy's X-Forwarded-Proto. Leave TRUST_PROXY off
+#      (Caddy appends to X-Forwarded-For; see docker-compose.yml).
 
 os.example.com {
     # If Caddy runs in the same Docker Compose project, "imbatranimos" is the

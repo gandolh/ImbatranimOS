@@ -116,6 +116,22 @@ describe('the local sign-in (e2e) — brief 152', () => {
     });
   });
 
+  it('marks the cookie Secure when a TLS proxy says the browser used HTTPS', async () => {
+    await http
+      .post('/api/identity/local/setup')
+      .send({ username: 'Ana', password: PASSWORD })
+      .expect(204);
+    const plain = await http
+      .post('/api/identity/local/sign-in')
+      .send({ password: PASSWORD });
+    expect(sessionCookie(plain)).not.toMatch(/Secure/i);
+    const proxied = await http
+      .post('/api/identity/local/sign-in')
+      .set('X-Forwarded-Proto', 'https')
+      .send({ password: PASSWORD });
+    expect(sessionCookie(proxied)).toMatch(/Secure/i);
+  });
+
   it('signing out ends the session', async () => {
     await http
       .post('/api/identity/local/setup')

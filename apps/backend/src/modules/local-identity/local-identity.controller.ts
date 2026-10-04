@@ -36,6 +36,20 @@ import {
   type LocalStatus,
 } from './local-identity.service';
 
+/**
+ * Whether the browser reached us over HTTPS, so the session cookie gets
+ * `Secure`. `X-Forwarded-Proto` counts even when TRUST_PROXY is off (it must
+ * stay off behind Caddy, which appends to `X-Forwarded-For`): read only to
+ * ADD `Secure`, a forged value can at worst make the cookie stricter.
+ */
+function overHttps(req: Request): boolean {
+  const proto = req.headers['x-forwarded-proto'];
+  const first = (Array.isArray(proto) ? proto[0] : proto)
+    ?.split(',')[0]
+    ?.trim();
+  return req.secure || first === 'https';
+}
+
 export interface IdentityResponse {
   mode: IdentityMode;
   /** Present in local mode only. */
@@ -105,9 +119,7 @@ export class LocalIdentityController {
       res.cookie(LOCAL_SESSION_COOKIE, token, {
         httpOnly: true,
         sameSite: 'lax',
-        // Secure whenever the request arrived over HTTPS (behind a proxy, with
-        // TRUST_PROXY): the server ISO serves the LAN over HTTPS.
-        secure: req.secure,
+        secure: overHttps(req),
         path: '/',
         expires: new Date(expiresAt),
       });

@@ -4201,3 +4201,12 @@ notifies on every edit. Todos: office-editors-save-conflict done, totp-recovery-
 closed (TOTP lives in Ward now), install-apps-from-github marked partly built by
 brief 120.
 
+
+## [2026-10-06] decision | Arbitrary-URL app installs stay unbuilt
+
+Asked whether to start the sandboxed iframe runtime that installing from any
+URL needs, the owner chose to leave it: the pinned catalog from brief 120 covers
+the real use. Recorded on the install-apps-from-github todo, which stays partly
+built. On the game side, Hollow now builds a marketplace module
+(`games/hollow/client/dist/os/hollow.mjs` in game-engine); `marketplace/hollow.json`
+waits for that commit to be pushed so it can be pinned.

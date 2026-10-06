@@ -8,6 +8,8 @@ tags: [core, platform, add-on, backend, security]
 # Install apps from a GitHub URL (third-party app package manager)
 
 > **Partly built 2026-10-06 by [brief 120](../briefs/done/120-app-marketplace-install-from-url.md):** apps from other repos install from an in-repo catalog at pinned commits and run natively. What remains is this todo's original ask, installing from an arbitrary URL. That needs the sandboxed iframe runtime, which is not built ([decisions-marketplace.md](../wiki/decisions-marketplace.md)).
+>
+> **Owner, 2026-10-06: leave the arbitrary-URL install unbuilt for now.** The pinned, reviewed catalog covers the real use (the owner's own games, Hollow first). Reopen with a grill on the iframe runtime's security model before any brief.
 
 Paste a GitHub repo URL, press **Install**, and the OS `git clone`s it into the
 home FS, builds it, and adds it to the desktop as a runnable app — no rebuild of

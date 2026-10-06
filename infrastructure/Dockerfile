@@ -155,6 +155,9 @@ CMD ["node", "apps/backend/dist/main"]
 # via `develop.watch` — no bind mounts, no anonymous-volume list; brief 51)
 # ---------------------------------------------------------------------------
 FROM deps AS dev
+# git, as in the prod stage: the Git app runs it, and so does a marketplace
+# install (brief 120). The deps stage has only the native-addon toolchain.
+RUN apk add --no-cache git
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 WORKDIR /app

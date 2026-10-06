@@ -43,6 +43,18 @@ those modules (`npm run dev:local`, `backend`'s tests) need the real compile
 — `install:tooling` is editor-only. `npm run dev:local` (`turbo dev` on the
 host) remains as the escape hatch for a host with the full toolchain.
 
+### The dev container's sign-in
+
+The dev container runs the local sign-in (no Ward). Its owner is:
+
+- name: `Developer`
+- password: `Testing1234#`
+
+**This is the password for local development only. Do not use it on any
+other environment.** It lives in the dev volume (`imbatranim-home-dev`), so a
+fresh volume asks you to set up the machine again; use the same password so
+this stays true.
+
 ## HTTPS decision: reverse-proxy TLS (not built-in)
 
 **Decision: terminate TLS in a reverse proxy (Caddy recommended), not in the

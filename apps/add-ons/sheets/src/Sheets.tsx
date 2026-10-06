@@ -5,7 +5,9 @@ import {
   Tooltip,
   fileName,
   reportFileFailure,
+  saveOverRead,
   useConfirm,
+  useFileConflict,
   useFileDialog,
   useOpenIntent,
   useSaveHotkey,
@@ -41,6 +43,12 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
   // standing property of this workbook, and the moment it matters is the moment
   // the user reaches for Save — which may be an hour after a toast has gone.
   const [lossy, setLossy] = useState<LossyFeature[]>([])
+  // The version of the file this workbook was read from (brief 155): a save
+  // sends it, so a file changed on disk since asks instead of being overwritten.
+  const diskVersionRef = useRef<string | null>(null)
+  // Bumped by "Reload from disk" to run the load again on the same file.
+  const [reloadKey, setReloadKey] = useState(0)
+  const { ask: askConflict, dialog: conflictDialog } = useFileConflict()
 
   const name = source ? fileName(source.path, 'workbook.xlsx') : ''
   const isCsv = /\.csv$/i.test(source?.path ?? '')
@@ -65,8 +73,9 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
         }
         engineRef.current = engine
         engine.onEdit(() => setDirty(true))
-        const bytes = await system.fs.read(source.root, source.path)
+        const { bytes, version } = await system.fs.readWithVersion(source.root, source.path)
         if (cancelled) return
+        diskVersionRef.current = version
 
         if (csvFile) {
           engine.loadWorkbook(csvToUniver(decoder.decode(bytes), fileName(source.path, 'Sheet1')))
@@ -107,7 +116,7 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
       engineRef.current = null
       engine?.destroy()
     }
-  }, [source, system])
+  }, [source, system, reloadKey])
 
   const handleSave = useCallback(async () => {
     const engine = engineRef.current
@@ -146,7 +155,21 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
       const bytes = isCsv
         ? (encoder.encode(univerToCsv(snapshot)).slice().buffer as ArrayBuffer)
         : await univerToXlsx(snapshot)
-      await system.fs.upload(source.root, source.path, bytes, docName)
+      const result = await saveOverRead(
+        system.fs,
+        { root: source.root, path: source.path, name: docName },
+        bytes,
+        diskVersionRef.current,
+        askConflict
+      )
+      // Cancel writes nothing and leaves `dirty` armed. Reload discards these
+      // edits and reads the disk copy again; Univer can't undo a reload.
+      if (result.outcome === 'cancel') return
+      if (result.outcome === 'reload') {
+        setReloadKey((k) => k + 1)
+        return
+      }
+      diskVersionRef.current = result.version
       // Only on a resolved write, and only if no edit landed mid-flight — the
       // export ran before the upload, so those edits are not in these bytes.
       if (engine.editCount() === savedAtEditCount) setDirty(false)
@@ -162,7 +185,7 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
     } finally {
       setSaving(false)
     }
-  }, [source, saving, isCsv, confirm, system])
+  }, [source, saving, isCsv, confirm, system, askConflict])
 
   // Ctrl/Cmd+S saves — but only for the top-most window.
   useSaveHotkey(handleSave)
@@ -243,6 +266,7 @@ export function Sheets({ windowId: _windowId }: { windowId: string }) {
       </div>
       {confirmDialog}
       {unsavedDialog}
+      {conflictDialog}
     </div>
   )
 }

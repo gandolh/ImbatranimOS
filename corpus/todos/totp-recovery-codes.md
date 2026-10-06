@@ -1,4 +1,13 @@
+---
+title: TOTP recovery codes
+created: 2026-08-04
+status: closed
+tags: [auth, security]
+---
+
 # TOTP recovery codes
+
+> **Closed 2026-10-06: no longer this repo's to build.** Since briefs 152-153 the machine signs in through Ward, which owns the password and TOTP (the account page is Ward's), or through the local single-owner sign-in, which has no second factor. Recovery codes belong in Ward if anywhere.
 
 Captured 2026-08-04 while closing [brief 57](../briefs/done/57-settings-password-and-real-about.md),
 which deliberately left this out rather than smuggling it in.

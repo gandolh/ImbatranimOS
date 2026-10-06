@@ -90,6 +90,7 @@ notepad StrictMode intent bug.
 |---|---|---|
 | 15 | [v1-release](../briefs/todo/15-v1-release.md) | **parked** by the owner (2026-10-04): needs a friend's install and a real deploy |
 | 50 | [web-browser-proxied](../briefs/done/50-web-browser-proxied.md) | **done** (2026-10-04): the Browser, on its own proxy origin; security-reviewed; human checks left: search past a CAPTCHA, audio, a real site sign-in across a restart |
+| 156 | [office-editors-save-conflict](../briefs/done/156-office-editors-save-conflict.md) | **done** (2026-10-06): Sheets and Docs ask before overwriting a file changed on disk (shared `saveOverRead`); fixed Sheets losing track of edits after a save |
 | 120 | [app-marketplace-install-from-url](../briefs/done/120-app-marketplace-install-from-url.md) | **done** (2026-10-06): the in-repo catalog installs apps from other repos at pinned commits, built on the machine, mounted natively; security-reviewed; walked in the dev container; owed: a game that exports `mount` (game-engine repo) |
 | — | the server ISO | **deferred** by the owner (2026-10-04): work stays in the Docker container for now. When written: a plain Alpine image with the server pre-installed, reached from the LAN over HTTPS; replaces the kiosk ([brief 18](../briefs/superseded/18-alpine-kiosk-iso.md), superseded) |
 

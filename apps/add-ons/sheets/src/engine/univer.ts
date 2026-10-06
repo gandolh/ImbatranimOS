@@ -24,7 +24,7 @@ export type SheetEngine = {
   loadWorkbook: (data: Partial<IWorkbookData>) => void
   /** Current workbook state as a snapshot (for serialization on save). */
   snapshot: () => IWorkbookData | null
-  /** Fire `cb` the first time the user mutates the sheet (for dirty tracking). */
+  /** Fire `cb` every time the user mutates the sheet (for dirty tracking). */
   onEdit: (cb: () => void) => void
   /**
    * Monotonic count of every user edit since the current workbook was loaded.
@@ -63,10 +63,8 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
 
   let workbook: UniverWorkbook | null = null
   let editListeners: Array<() => void> = []
-  let notifiedThisLoad = false
-  // Counts EVERY user edit since the last load (not just the first). The onEdit
-  // callback stays one-shot for cheap dirty latching, but the counter keeps
-  // ticking so a save can tell whether edits landed while it was in flight.
+  // Counts EVERY user edit since the last load, so a save can tell whether
+  // edits landed while it was in flight.
   let editCount = 0
   // Suppress edit notifications while a workbook is being loaded — building the
   // model can emit mutations that would otherwise register as a user edit.
@@ -76,7 +74,8 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
   // `sheet.mutation.*` are low-level model writes (incl. formula recalculation
   // fired on load), and `sheet.operation.*` are selection/scroll. We latch dirty
   // only on user COMMANDs so opening a workbook (which recalculates formulas via
-  // mutations) never registers as an edit — and dirty is a one-shot latch.
+  // mutations) never registers as an edit. Every edit notifies, not just the
+  // first: a save clears dirty, and the next edit must set it again.
   const commandSub = univerAPI.onCommandExecuted((command) => {
     if (
       typeof command.id === 'string' &&
@@ -84,17 +83,13 @@ export async function createSheetEngine(container: HTMLElement): Promise<SheetEn
       !suppressEdits
     ) {
       editCount++
-      if (!notifiedThisLoad) {
-        notifiedThisLoad = true
-        editListeners.forEach((cb) => cb())
-      }
+      editListeners.forEach((cb) => cb())
     }
   })
 
   return {
     loadWorkbook: (data) => {
       workbook?.dispose()
-      notifiedThisLoad = false
       editCount = 0
       suppressEdits = true
       workbook = univerAPI.createWorkbook(data)

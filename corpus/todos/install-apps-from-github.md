@@ -1,11 +1,13 @@
 ---
 title: Install apps from a GitHub URL (third-party app package manager)
 created: 2026-07-20
-status: captured
+status: partly-built
 tags: [core, platform, add-on, backend, security]
 ---
 
 # Install apps from a GitHub URL (third-party app package manager)
+
+> **Partly built 2026-10-06 by [brief 120](../briefs/done/120-app-marketplace-install-from-url.md):** apps from other repos install from an in-repo catalog at pinned commits and run natively. What remains is this todo's original ask, installing from an arbitrary URL. That needs the sandboxed iframe runtime, which is not built ([decisions-marketplace.md](../wiki/decisions-marketplace.md)).
 
 Paste a GitHub repo URL, press **Install**, and the OS `git clone`s it into the
 home FS, builds it, and adds it to the desktop as a runnable app — no rebuild of

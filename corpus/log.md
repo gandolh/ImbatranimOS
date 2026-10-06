@@ -4188,3 +4188,16 @@ Real websites through the machine: Scramjet in the viewing browser and a Wisp re
 ## [2026-10-06] verify | Brief 120 walked in the dev container; the dev image gets git
 
 The owner had the dev volume deleted and the machine set up again with a documented dev-only password (`infrastructure/README.md`, "local development only"). Walked in Chromium with two test apps from a local repository: both installed from Settings → Marketplace at the pinned commit, Ping Pong with a real `npm ci`. Orbits animated in its window with no iframe, set its title, raised a notification on click, was refused `system.fs` by name, and left nothing behind after `unmount`. Ping Pong's server started on 127.0.0.1 when its window opened; the app reached it over HTTP and WebSocket through the desktop's proxy, the server never saw the session cookie, and it stopped within one sweep of the window closing. Uninstall removed both builds and logs. The walk found one bug: the first installs failed with `spawn git ENOENT`, because only the prod stage of the Dockerfile installs git (the Git app had the same gap in dev). The dev stage installs it now.
+
+## [2026-10-06] done | Brief 156 — the office editors ask before overwriting
+
+Sheets and Docs now read with a version and save through a new kit helper,
+`saveOverRead`, which runs brief 155's Overwrite / Reload from disk / Cancel
+question. Slides never writes the deck, so it needs none. Walked in the dev
+container with a CSV and a `.docx`; every branch held. The walk found an older
+Sheets bug: edits were notified once per load, so after the first save the
+sheet never became dirty again and closing it could drop work silently. It now
+notifies on every edit. Todos: office-editors-save-conflict done, totp-recovery-codes
+closed (TOTP lives in Ward now), install-apps-from-github marked partly built by
+brief 120.
+

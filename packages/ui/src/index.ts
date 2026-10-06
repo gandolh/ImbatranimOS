@@ -41,6 +41,7 @@ export { useElementSize, type ElementSize, type ElementSizeRef } from './hooks/u
 export { installMapGetOrInsert } from './lib/mapGetOrInsert'
 export { isTextEntry } from './lib/textEntry'
 export { fileName, FileConflictError, UploadTooLargeError } from './lib/files'
+export { saveOverRead, type SaveOverReadOutcome } from './lib/saveOverRead'
 export { describeFileFailure, type FileFailureOptions } from './lib/fileFailureText'
 
 // Backend log contract (pure types)

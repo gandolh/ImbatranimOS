@@ -15,6 +15,8 @@ import {
   fileName,
   reportFileFailure,
   reportFileRefusal,
+  saveOverRead,
+  useFileConflict,
   useFileDialog,
   useOpenIntent,
   useSaveHotkey,
@@ -48,6 +50,12 @@ export function Docs({ windowId }: { windowId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
+  // The version of the file this document was read from (brief 155): a save
+  // sends it, so a file changed on disk since asks instead of being overwritten.
+  const diskVersionRef = useRef<string | null>(null)
+  // Bumped by "Reload from disk" to run the load again on the same file.
+  const [reloadKey, setReloadKey] = useState(0)
+  const { ask: askConflict, dialog: conflictDialog } = useFileConflict()
   const [findOpen, setFindOpen] = useState(false)
   const [findText, setFindText] = useState('')
   // Matches are opaque engine tokens; kept in a ref because they are not rendered
@@ -96,8 +104,9 @@ export function Docs({ windowId }: { windowId: string }) {
     setError(null)
     ;(async () => {
       try {
-        const bytes = await system.fs.read(source.root, source.path)
+        const { bytes, version } = await system.fs.readWithVersion(source.root, source.path)
         if (cancelled) return
+        diskVersionRef.current = version
         // Guarantee the parts SuperDoc's exporter needs, so Save actually
         // re-serializes edits instead of silently re-emitting the original.
         const normalized = await normalizeDocx(bytes)
@@ -165,7 +174,7 @@ export function Docs({ windowId }: { windowId: string }) {
       editorHost.remove()
       toolbarHost.remove()
     }
-  }, [system, source, refusal, windowId, docName])
+  }, [system, source, refusal, windowId, docName, reloadKey])
 
   // ── Word count ──────────────────────────────────────────────────────────────
   // Recomputed on demand rather than on every keystroke: reading the whole
@@ -241,7 +250,21 @@ export function Docs({ windowId }: { windowId: string }) {
     setError(null)
     try {
       const bytes = await engine.exportDocx()
-      await system.fs.upload(source.root, source.path, bytes, docName)
+      const result = await saveOverRead(
+        system.fs,
+        { root: source.root, path: source.path, name: docName },
+        bytes,
+        diskVersionRef.current,
+        askConflict
+      )
+      // Cancel writes nothing and leaves `dirty` armed. Reload discards these
+      // edits and reads the disk copy again; SuperDoc can't undo a reload.
+      if (result.outcome === 'cancel') return
+      if (result.outcome === 'reload') {
+        setReloadKey((k) => k + 1)
+        return
+      }
+      diskVersionRef.current = result.version
       if (
         shouldClearDirty({
           uploaded: true,
@@ -258,7 +281,7 @@ export function Docs({ windowId }: { windowId: string }) {
     } finally {
       setSaving(false)
     }
-  }, [system, source, saving, docName])
+  }, [system, source, saving, docName, askConflict])
 
   // Ctrl/Cmd+S saves — but only for the top-most window.
   useSaveHotkey(handleSave)
@@ -420,6 +443,8 @@ export function Docs({ windowId }: { windowId: string }) {
       </div>
 
       {unsavedDialog}
+
+      {conflictDialog}
     </div>
   )
 }

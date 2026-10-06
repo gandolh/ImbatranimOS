@@ -81,7 +81,8 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
   - **155:** the dialog offers Overwrite, Reload from disk and Cancel (Cancel
     focused, Esc cancels). Rejected: a fourth "save as copy" button, and a
     diff view first. First cut: Notepad, Code Editor and Markdown Editor; the
-    office editors follow later
+    office editors followed in brief 156 (Sheets and Docs; Slides never
+    writes the deck)
     ([todo](../todos/office-editors-save-conflict.md)).
 
 ## Brief 50: the Browser (2026-10-04)

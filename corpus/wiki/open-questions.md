@@ -1,28 +1,15 @@
 ---
-summary: Web-OS era unknowns — app-install story without sudo, HTTPS in-app vs proxy, accent pick, image size reality, registry publishing, fork prune surprises.
-updated: 2026-10-04
+summary: Nothing open as of 2026-10-06; the resolved web-OS era questions (install story, HTTPS, image size, accent, registry, shared origin) with where each answer lives.
+updated: 2026-10-06
 ---
 
 # Open questions
 
-- **Accent color on the B&W identity — final pick is the user's.** Brief
-  14 shipped 4 live presets in Settings (crimson, cobalt, emerald,
-  signal-orange) with crimson `#c0263a` as the provisional default
-  (recommended for contrast + distinctiveness). Pick from the live desktop
-  and record the choice in decisions.md.
-- **Registry publishing** (Docker Hub/GHCR) vs build-from-source-only —
-  deferred until v1 works; build-from-source is the standing decision. Any publishing would not run on GitHub's
-  runners: the owner wants no GitHub-hosted automation in the repos
-  (2026-10-04).
-- **Same-origin exposure inside the estate** (from the 2026-09-26 sweep's
-  watch list; tracked here by brief 153). The estate is one origin, so any
-  script running on a sibling app (atrium, prm, newspapper…) is same-origin
-  with this desktop: it can call `/imbatranim-os/api/*` with the visitor's
-  Ward cookie, the Origin check passes, and that includes the terminal. The
-  `imbatranim-os` grant limits *who*, not *which page*. Options when it
-  matters: a separate origin (subdomain) for this app, or a per-app
-  credential the siblings never see. Not a problem for a local-sign-in
-  install, which has its own origin.
+_Nothing is open._ The last three were answered on 2026-10-06: the crimson
+accent stands (already recorded in decisions.md), build-from-source is final,
+and the shared origin is accepted while the desktop drops Ward
+([decisions-estate-era.md](decisions-estate-era.md),
+[brief 157](../briefs/todo/157-drop-ward-own-sign-in.md)).
 
 Resolved 2026-07-16 (brief 08): fork prune was clean — docker-desktop and
 service-launcher were not entangled with shared window/file services;

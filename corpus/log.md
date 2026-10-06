@@ -4210,3 +4210,13 @@ the real use. Recorded on the install-apps-from-github todo, which stays partly
 built. On the game side, Hollow now builds a marketplace module
 (`games/hollow/client/dist/os/hollow.mjs` in game-engine); `marketplace/hollow.json`
 waits for that commit to be pushed so it can be pinned.
+
+## 2026-10-06 — Owner answers: Ward dropped, shared origin accepted, no registry
+
+The three open questions, asked one at a time. The crimson accent was already
+confirmed in decisions.md; the open-questions page had not caught up.
+Build-from-source is final, with no registry image even at v1. On the shared
+origin the owner chose to stay at `gandolh.ro/imbatranim-os` and to drop Ward:
+the desktop keeps brief 152's own sign-in everywhere. Written up as brief 157,
+which also touches vps-deploy and wzd_auth. The same-origin risk is recorded as
+accepted, not fixed. See decisions-estate-era.md.

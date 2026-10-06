@@ -120,7 +120,7 @@ A declarative repo-root file — the thing a repo owner adds to be installable:
 - **Auth everywhere** (project invariant): served bundles and any proxied WS sit
   behind session validation; no unauthenticated app routes.
 - **CSP interaction**: per-app served origins + per-app WS proxying touch the
-  already-flagged [csp-connect-src-ws-wildcard](csp-connect-src-ws-wildcard.md)
+  already-flagged csp-connect-src-ws-wildcard
   work — tighten together, don't widen the wildcard further.
 - **Persistence**: installed-apps registry in the SQLite DB or a `$HOME` dotfile
   so it survives container recreation on the volume. Uninstall = stop process +

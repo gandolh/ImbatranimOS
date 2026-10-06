@@ -20,6 +20,7 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
   only checks the Ward session is still live. It is no longer a security claim.
 - **Consequence, revisited below:** without Ward the backend would not boot,
   which broke the friend-run bar and the ISO.
+- **Revised 2026-10-06:** Ward is dropped altogether (below).
 
 ## 2026-10-04 — Owner answers (asked directly after the brief runs)
 
@@ -83,7 +84,26 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
     diff view first. First cut: Notepad, Code Editor and Markdown Editor; the
     office editors followed in brief 156 (Sheets and Docs; Slides never
     writes the deck)
-    ([todo](../todos/office-editors-save-conflict.md)).
+    (todo).
+
+## 2026-10-06 — Ward dropped; the shared origin accepted; no registry
+
+Asked directly while clearing the open questions.
+
+- **ImbatranimOS keeps its own sign-in, in the estate too.** Revises the
+  2026-09-06 move above. Brief 152's single-owner sign-in becomes the only
+  identity path, and Ward's module, variables and registration go
+  ([brief 157](../briefs/todo/157-drop-ward-own-sign-in.md)). Rejected: a
+  subdomain for the desktop, and a fresh confirmation before the terminal.
+- **The shared origin is an accepted risk.** The desktop stays at
+  `gandolh.ro/imbatranim-os`. A sibling app's script can still send requests
+  there, and the browser attaches `imb_session` to them, so an XSS on a sibling
+  while the owner is signed in reaches the terminal. Accepted because every
+  app on the origin is the owner's own code under `script-src 'self'`.
+  Revisit if a third-party app joins the estate.
+- **No registry image.** Build-from-source is the final distribution answer,
+  not a stance waiting for v1. Rejected: pushing an image to GHCR or Docker
+  Hub at v1.
 
 ## Brief 50: the Browser (2026-10-04)
 

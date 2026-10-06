@@ -17,6 +17,7 @@ import { promisify } from 'util';
 import Database from 'better-sqlite3';
 import { DbService, LEDGER_VERSION } from '../../db/db.service';
 import { browserProfileKeyPath } from '../browser/browser-profile.service';
+import { marketplaceAppsDir } from '../marketplace/marketplace.service';
 import { FilesService } from '../files/files.service';
 import { TRASH_DIR } from '../files/trash.service';
 import { ArchiveService, parseTarListLine } from '../archive/archive.service';
@@ -210,6 +211,17 @@ export class BackupService {
     const keyRel = relative(home, browserProfileKeyPath(this.db.path()));
     if (!keyRel.startsWith('..') && !keyRel.startsWith(sep)) {
       patterns.push(`./${keyRel.split(sep).join('/')}`);
+    }
+    // Installed marketplace apps (brief 120): clones, node_modules and builds,
+    // often hundreds of MB, all rebuilt from the catalog by Reinstall. The
+    // restored database still lists them; the pane offers the reinstall.
+    const appsRel = relative(home, marketplaceAppsDir(this.db.path()));
+    if (
+      appsRel !== '' &&
+      !appsRel.startsWith('..') &&
+      !appsRel.startsWith(sep)
+    ) {
+      patterns.push(`./${appsRel.split(sep).join('/')}`);
     }
     return patterns;
   }

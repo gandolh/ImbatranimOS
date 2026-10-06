@@ -16,6 +16,7 @@ import { useWindowHotkeys } from './shared/hooks/useWindowHotkeys'
 import { useIdleLock } from './shared/hooks/useIdleLock'
 import { runStartupApps } from './shared/lib/startup'
 import { FilePortalHost } from './system/filePortal'
+import { loadMarketplace } from './shared/registry/marketplace'
 
 export default function App() {
   const wallpaper = useWallpaperStore((s) => s.wallpaper)
@@ -29,6 +30,12 @@ export default function App() {
   useEffect(() => {
     applyAppearance(theme, accent)
   }, [theme, accent])
+
+  // Installed marketplace apps join the registry (brief 120). A failure only
+  // means they are missing from Start until the next load; Settings retries.
+  useEffect(() => {
+    loadMarketplace().catch(() => undefined)
+  }, [])
 
   useRegisteredHotkeys([
     {

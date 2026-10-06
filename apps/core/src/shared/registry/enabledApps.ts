@@ -1,6 +1,7 @@
 import { APP_REGISTRY } from './registry'
 import type { AppConfig } from './registry'
 import { useAddonStore } from '../store/addonStore'
+import { useRegistryVersion } from './marketplace'
 
 /**
  * Core apps that can never be disabled — hiding them would lock the user out of
@@ -17,6 +18,8 @@ function filterEnabled(disabled: string[]): AppConfig[] {
 /** Reactive: APP_REGISTRY minus disabled ids (non-disableable always kept). */
 export function useEnabledApps(): AppConfig[] {
   const disabled = useAddonStore((s) => s.disabled)
+  // Marketplace apps arrive after boot (brief 120).
+  useRegistryVersion()
   return filterEnabled(disabled)
 }
 

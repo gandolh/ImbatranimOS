@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 9;
+export const LEDGER_VERSION = 10;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -205,6 +205,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         toVersion: 9,
         name: 'browser-profile',
         run: () => this.stepBrowserProfile(),
+      },
+      {
+        toVersion: 10,
+        name: 'marketplace-apps',
+        run: () => this.stepMarketplaceApps(),
       },
     ];
 
@@ -603,6 +608,23 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         id INTEGER PRIMARY KEY CHECK (id = 1),
         blob BLOB NOT NULL,
         updated_at INTEGER NOT NULL
+      );
+    `);
+  }
+
+  /**
+   * Step 10 — installed marketplace apps (brief 120): which build of each is
+   * live. The builds themselves are directories beside the database.
+   */
+  private stepMarketplaceApps() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS marketplace_apps (
+        id TEXT PRIMARY KEY,
+        ref TEXT NOT NULL,
+        build_id TEXT NOT NULL,
+        root TEXT NOT NULL,
+        entry TEXT NOT NULL,
+        installed_at INTEGER NOT NULL
       );
     `);
   }

@@ -6,6 +6,7 @@ import { WebSocket } from 'ws';
 import { PtyGateway } from '../src/modules/pty/pty.gateway';
 import { WardService } from '../src/modules/ward/ward.service';
 import { WardFreshness } from '../src/modules/ward/ward-freshness';
+import { UpgradeRoutes } from '../src/upgrade-routes';
 import { IMBATRANIMOS_APP_SLUG } from '../src/modules/ward/ward.types';
 
 /**
@@ -44,6 +45,7 @@ describe('PtyGateway (e2e)', () => {
       providers: [
         PtyGateway,
         WardFreshness,
+        UpgradeRoutes,
         { provide: WardService, useValue: wardMock },
         {
           provide: ConfigService,

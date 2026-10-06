@@ -90,7 +90,9 @@ const MANIFESTS: AddonManifest[] = [
   logs,
 ]
 
-export const APP_REGISTRY: AppConfig[] = MANIFESTS
+// A copy, not MANIFESTS itself: marketplace apps (brief 120) are spliced into
+// this array at runtime — see shared/registry/marketplace.tsx.
+export const APP_REGISTRY: AppConfig[] = [...MANIFESTS]
 
 // Register add-on command-palette sources once (guard against HMR
 // double-registration, same as the palette's own sources).

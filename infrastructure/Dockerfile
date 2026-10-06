@@ -121,6 +121,9 @@ COPY --chown=imbatranim:imbatranim --from=builder /app/apps/backend/dist ./apps/
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/core/dist ./public
 COPY --chown=imbatranim:imbatranim package.json ./
 COPY --chown=imbatranim:imbatranim apps/backend/package.json ./apps/backend/
+# The marketplace catalog (brief 120): what may be installed. Root-owned on
+# purpose, like the rest of the image's code: the app reads it, never writes it.
+COPY marketplace ./marketplace
 COPY infrastructure/entrypoint.sh /entrypoint.sh
 RUN chmod 0755 /entrypoint.sh \
  && mkdir -p /home/imbatranim \
@@ -133,6 +136,7 @@ ENV NODE_ENV=production \
     DB_PATH=/home/imbatranim/.imbatranim/db.sqlite \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
+    MARKETPLACE_DIR=/app/marketplace \
     IMAGE_VERSION=1.0.0
 VOLUME /home/imbatranim
 EXPOSE 8080
@@ -161,6 +165,7 @@ COPY apps ./apps
 # mounted them either, which is how host edits to packages/* silently did
 # nothing in the container.
 COPY packages ./packages
+COPY marketplace ./marketplace
 COPY infrastructure/entrypoint.sh /entrypoint.sh
 RUN chmod 0755 /entrypoint.sh \
  && mkdir -p /home/imbatranim && chown -R imbatranim:imbatranim /home/imbatranim /app
@@ -169,7 +174,8 @@ ENV PORT=3001 \
     FRONTEND_URL=http://localhost:5173 \
     DB_PATH=/home/imbatranim/.imbatranim/db.sqlite \
     NOTES_DIR=/home/imbatranim/notes \
-    CONFIGS_DIR=/home/imbatranim/.imbatranim/configs
+    CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
+    MARKETPLACE_DIR=/app/marketplace
 EXPOSE 3001 5173
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["npx", "turbo", "dev"]

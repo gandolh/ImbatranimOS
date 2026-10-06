@@ -18,6 +18,7 @@ import {
   DatabaseBackup,
   FileCog,
   Power,
+  Store,
 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { Checkbox } from '../../shared/components/ui'
@@ -33,6 +34,8 @@ import { wardAccountUrl } from '../auth/api/authApi'
 import { LocalPasswordForm } from '../auth/LocalScreens'
 import { useAuthStore } from '../auth/store/authStore'
 import { AboutMachine } from './AboutMachine'
+import { MarketplaceSettings } from './MarketplaceSettings'
+import { useRegistryVersion } from '../../shared/registry/marketplace'
 
 const WALLPAPERS: { id: Wallpaper; name: string; preview: React.CSSProperties }[] = [
   {
@@ -105,6 +108,8 @@ export function Settings() {
   const setAccent = useAppearanceStore((s) => s.setAccent)
   const disabledApps = useAddonStore((s) => s.disabled)
   const toggleApp = useAddonStore((s) => s.toggle)
+  // The Apps list includes installed marketplace apps (brief 120).
+  useRegistryVersion()
 
   return (
     <div className="bg-surface text-on-surface flex h-full flex-col select-none">
@@ -257,6 +262,12 @@ export function Settings() {
               )
             })}
           </div>
+        </section>
+
+        {/* Marketplace ──────────────────────────────────────────── */}
+        <section className="mb-10">
+          <SectionHeader icon={Store} title="Marketplace" />
+          <MarketplaceSettings />
         </section>
 
         {/* Storage ────────────────────────────────────────────── */}

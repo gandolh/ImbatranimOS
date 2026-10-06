@@ -26,6 +26,7 @@ import {
   resolveShell,
 } from './pty.constants';
 import { childEnv } from '../../child-env';
+import { UpgradeRoutes } from '../../upgrade-routes';
 
 /**
  * How often to re-check that each live terminal's session is still valid.
@@ -76,6 +77,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     private readonly ward: WardService,
     private readonly config: ConfigService<Env, true>,
     private readonly freshness: WardFreshness,
+    private readonly upgrades: UpgradeRoutes,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -95,10 +97,15 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.upgradeHandler = (req, socket, head) => {
       // Once any 'upgrade' listener exists, Node stops answering upgrades
       // itself, so an unclaimed one would pin its socket until the peer gave
-      // up. Refuse it. A future WebSocket endpoint must be dispatched from this
-      // handler, not from a second 'upgrade' listener, or the two would each
-      // refuse the other's path.
+      // up. Refuse it. Another WebSocket endpoint is dispatched from this
+      // handler through UpgradeRoutes, not from a second 'upgrade' listener, or
+      // the two would each refuse the other's path.
       if (!isPtyUpgrade(req.url)) {
+        const route = this.upgrades.find(req.url);
+        if (route) {
+          route.handle(req, socket, head);
+          return;
+        }
         socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
         socket.destroy();
         return;

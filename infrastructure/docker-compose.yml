@@ -98,7 +98,10 @@ services:
       # The Browser's proxy origin (brief 50).
       - "3002:3002"
     environment:
-      - VITE_API_URL=http://localhost:3001/api
+      # Same origin as the desktop, through Vite's dev proxy, the way the
+      # deploy serves it. A marketplace app's module is imported from the API
+      # (brief 120), and a cross-origin module import carries no cookie.
+      - VITE_API_URL=/api
       - BROWSER_PROXY_PORT=3002
     develop:
       watch:
@@ -115,6 +118,10 @@ services:
           target: /app/packages
           ignore:
             - "**/node_modules/**"
+        # The marketplace catalog (brief 120), read on every listing.
+        - action: sync
+          path: ../marketplace
+          target: /app/marketplace
         # Dependency- or image-shape changes need a real rebuild, not a sync.
         - action: rebuild
           path: ../package-lock.json

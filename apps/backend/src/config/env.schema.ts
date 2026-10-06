@@ -64,6 +64,15 @@ export const envSchema = z
     // front, for instance). Must differ from FRONTEND_URL's origin.
     BROWSER_PROXY_ORIGIN: z.string().url().optional(),
 
+    // --- The app marketplace (brief 120) ------------------------------------
+    //
+    // The catalog: the repo's `marketplace/` directory, one descriptor per
+    // installable app. Only what is described there can be installed.
+    MARKETPLACE_DIR: z.string().default('../../marketplace'),
+    // Lets a descriptor's repo be a `file://` path. For tests and for trying a
+    // game from a local checkout; never needed in production.
+    MARKETPLACE_ALLOW_LOCAL_REPOS: envBool(false),
+
     // Trust X-Forwarded-* from a front proxy so req.ip / protocol are real
     // (needed for correct secure-cookie behaviour behind Caddy/nginx). Keep
     // false when exposed directly.

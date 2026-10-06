@@ -8,6 +8,7 @@ import { PtyGateway } from './pty.gateway';
 import { MAX_SESSIONS } from './pty.constants';
 import { WardService } from '../ward/ward.service';
 import { WardFreshness } from '../ward/ward-freshness';
+import { UpgradeRoutes } from '../../upgrade-routes';
 import { IMBATRANIMOS_APP_SLUG, type WardCaller } from '../ward/ward.types';
 
 /**
@@ -59,6 +60,7 @@ describe('PtyGateway upgrade handler', () => {
       providers: [
         PtyGateway,
         WardFreshness,
+        UpgradeRoutes,
         { provide: WardService, useValue: wardMock },
         {
           provide: ConfigService,
@@ -205,6 +207,7 @@ describe('PtyGateway revocation sweep', () => {
       providers: [
         PtyGateway,
         WardFreshness,
+        UpgradeRoutes,
         { provide: WardService, useValue: wardMock },
         {
           provide: ConfigService,

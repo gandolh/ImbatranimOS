@@ -19,6 +19,8 @@ import { BackupModule } from './modules/backup/backup.module';
 import { LogsModule } from './modules/logs/logs.module';
 import { PrefsModule } from './modules/prefs/prefs.module';
 import { BrowserModule } from './modules/browser/browser.module';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module';
+import { UpgradeRoutesModule } from './upgrade-routes';
 
 // Prod image only: serve the built frontend from STATIC_ROOT on the API
 // port, with the SPA index.html fallback. API + health are excluded so
@@ -41,6 +43,7 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
     LogsModule,
     PrefsModule,
     WardModule,
+    UpgradeRoutesModule,
     StickyNotesModule,
     TodosModule,
     BookmarksModule,
@@ -55,6 +58,7 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
     ScheduleModule,
     BackupModule,
     BrowserModule,
+    MarketplaceModule,
   ],
 })
 export class AppModule {}

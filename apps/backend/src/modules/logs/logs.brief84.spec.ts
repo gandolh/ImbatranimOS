@@ -246,7 +246,10 @@ describe('LogService — brief 84', () => {
       const dir = join(home, '.imbatranim', 'logs');
       const total = (await fs.readdir(dir)).length;
       expect(total).toBe(2);
-    });
+      // Two thousand rotations: about 1.5 s alone, and past jest's 5 s default
+      // when the whole repo's tests run at once. Timing out here also leaves
+      // the flood writing into the next test's log.
+    }, 20_000);
   });
 
   // ── reading ──────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { SystemProvider } from '@imbatranim/ui'
 import { createSystemHandle } from '../../../system/createSystemHandle'
 import { AppErrorBoundary } from './AppErrorBoundary'
 import { AppErrorFallback } from './AppErrorFallback'
+import { useRegistryVersion } from '../../registry/marketplace'
 
 // Field separator for the per-window projection key. `␟` (SYMBOL FOR UNIT
 // SEPARATOR) cannot occur in a uuid or an app-id slug, so splitting is safe.
@@ -52,6 +53,9 @@ function useOrderedWindows(): {
 export function WindowContainer() {
   const orderedWindows = useOrderedWindows()
   const activeWorkspace = useWindowStore((s) => s.activeWorkspace)
+  // A restored window of a marketplace app finds its app once the catalog
+  // has loaded (brief 120); until then it is an empty frame.
+  useRegistryVersion()
   // The one shared definition of "focused", now workspace-scoped (brief 85):
   // the taskbar highlight, window chrome and every window-scoped hotkey read
   // this same helper so they can never disagree.

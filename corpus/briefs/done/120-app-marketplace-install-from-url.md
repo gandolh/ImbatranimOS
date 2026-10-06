@@ -222,3 +222,86 @@ toolchain, and unopened installed games stay lazy (idle cost ~zero).
 transport), an external marketplace/registry index, app auto-update policy,
 inter-app IPC (kill-list holds), native/system-dependency apps, and app signing
 beyond the pinned-ref + in-repo-descriptor trust anchor.
+
+## Outcome (2026-10-06)
+
+Built in 0e9cbf2. The decisions the build added or changed, and the three
+revisits this brief required, are in
+[decisions-marketplace.md](../../wiki/decisions-marketplace.md).
+The format and the module contract for whoever writes a descriptor are in
+[marketplace/README.md](../../../marketplace/README.md). Changes to the brief:
+
+- `ref` is a full commit id, not a tag;
+- commands are argv arrays, not shell strings;
+- `mount` takes a third argument, `host`, so a service app can find its
+  server;
+- the catalog is read by the backend; core only reads the listing.
+
+**Security review (adversarial, before commit):**
+- Un-curated code: an id outside the catalog is a 404 for install, files and
+  lease. A descriptor with a moving ref, a shell string, a non-https repo
+  (`ext::`, `ssh`, `http`, or `file` unless the test flag is set), a subdir or
+  entry that climbs out, or an entry in `node_modules` is refused at load and
+  listed as a problem. After checkout, `HEAD` must equal the pinned commit.
+- Path tampering: the subdir, the entry and every served file are resolved
+  through `realpath` and must stay inside the clone or the entry's directory.
+  A symlink out of the build, `..`, `%2F..` and dotfiles are all 404 (e2e
+  test).
+- Build escape: the environment is an allowlist, and `WARD_*`, `DB_PATH` and the
+  user's `~/.npmrc` and `~/.gitconfig` are absent (e2e test reads a build's
+  `process.env`). Git hooks are off and the protocol is fixed. Each step is a
+  process group killed whole at its deadline (unit test with a backgrounded
+  child).
+- Unauthenticated reach: every route sits behind the global guard (e2e: no
+  cookie is a 401 on list, install, uninstall, lease and the served module).
+  The app server's WebSocket gets the terminal's checks (e2e: no cookie and a
+  foreign Origin are both 401) and a 30 s revocation sweep. Its port is on
+  127.0.0.1 and reachable only through a lease the guarded API grants.
+- Credential leak to the app server: the cookie and `Authorization` are
+  stripped on both HTTP and WebSocket, and its `Set-Cookie` and CSP are
+  dropped (e2e test).
+- Resource exhaustion: one build at a time, at most four servers (a server
+  that crashed for good frees its slot, a fix made during the review), 32
+  sockets per app, an 8 MB send buffer, a 1 GB heap per server, leases that
+  lapse after 2 minutes, and a crash loop that stops itself.
+- Capabilities: an ungranted member of `system` throws by name (unit test).
+  This is a fence, not a sandbox, as recorded.
+- **Residual, accepted:** a build and an app server run as the desktop's user,
+  so their code, npm dependencies included, can read the home volume and the
+  backend's `/proc/<pid>/environ` (the Ward app key, in Ward mode). Builds have
+  no disk, memory or network limit beyond the deadline. `HOST=127.0.0.1` is
+  advice to a server, not a rule.
+
+**Verified:**
+- backend unit tests: catalog schema (22), step runner (5), supervisor (6:
+  range, shared leases, lapse, socket hold, early death, crash restart);
+- `test/marketplace.e2e-spec.ts`, 9 tests against a real git repository: real
+  clone at the pinned commit, a real build, a real server with a real
+  WebSocket through the proxy, and uninstall;
+- core: the native host against a real module file (mount with the scoped
+  handle and `host`, unmount on close, a service app's lease held and
+  released, and a missing `mount`, a throwing `mount` and a too-new
+  `minSystemVersion` each landing in the window's own error panel); the
+  registry splice (no built-in id can be shadowed); capability scoping;
+- all 94 turbo tasks; backend e2e 148.
+
+**Not verified in a browser.** The walk in the Docker dev container (install
+the two test apps from Settings, open them, watch the canvas app animate and
+the ping-pong app talk to its server, uninstall) was blocked. The container's
+local owner had a password from an earlier session that no longer existed,
+and the permission check refused both clearing that owner from the dev volume
+and further container commands. The pieces the walk would join are each
+tested above. The walk itself is still owed.
+
+**Left for a human:**
+- The browser walk above, in the dev container.
+- The brief's own human gate needs a game that exports `mount` / `unmount` as
+  an ES module. None does yet: Hollow is a Vite app built against the engine's
+  workspace packages. A build target that bundles it into one `.mjs` with
+  `mount(container)` is work in the game-engine repo, and then a descriptor
+  here pins that commit.
+
+**Weight:** nothing until something is installed. Each installed app costs its
+clone, its `node_modules` and its build on the home volume (left out of
+backups); a service app costs a Node process only while its window is open.
+The image gains the 5 KB catalog README; git and npm were already in it.

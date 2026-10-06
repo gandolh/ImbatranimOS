@@ -1,6 +1,6 @@
 ---
-summary: Decisions since imbatranimOS joined the Ward estate (2026-09-06) — identity, the local sign-in that comes back when Ward is absent, the ISO as a LAN server OS instead of a kiosk (deferred; work stays in Docker), the owner's 2026-10-04 answers on briefs 15, 50, 120, 144/145/155 and old backups, and brief 50's build calls (proxy on its own origin, the strict egress stance, the encrypted profile).
-updated: 2026-10-04
+summary: Decisions since imbatranimOS joined the Ward estate (2026-09-06) — identity, the local sign-in that comes back when Ward is absent, the ISO as a LAN server OS instead of a kiosk (deferred; work stays in Docker), the owner's 2026-10-04 answers on briefs 15, 50, 120, 144/145/155 and old backups, brief 50's build calls (proxy on its own origin, the strict egress stance, the encrypted profile). Brief 120's marketplace calls are in decisions-marketplace.md.
+updated: 2026-10-06
 ---
 
 # Decisions of the estate era
@@ -148,3 +148,6 @@ Built from the 2026-07-19 grill. The calls the build had to add or change:
 - **Bookmarks opens links in the Browser when it is set up,** and in a tab
   otherwise. The command palette still opens a tab: its `activate` has no
   `system` handle.
+
+Brief 120's calls (the marketplace) are on their own page:
+[decisions-marketplace.md](decisions-marketplace.md).

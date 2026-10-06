@@ -3851,7 +3851,7 @@ dropped because brief 48 is **done** in the adopted tree.
 marketplace, had no counterpart on the other side — which still carries
 [todos/install-apps-from-github.md](todos/install-apps-from-github.md) open,
 never having promoted it. It survives as
-[briefs/todo/120-app-marketplace-install-from-url.md](briefs/todo/120-app-marketplace-install-from-url.md),
+[briefs/done/120-app-marketplace-install-from-url.md](briefs/done/120-app-marketplace-install-from-url.md),
 renumbered off the taken 55 and otherwise unchanged. This is the one
 deliberate exception to the never-renumber rule: the number was not free on
 both sides, so keeping 55 would have overwritten unrelated shipped work.
@@ -4180,3 +4180,7 @@ Asked how the ISO should install, serve HTTPS and be found, the owner chose inst
 ## [2026-10-04] done | Brief 50 — the Browser, on an origin of its own
 
 Real websites through the machine: Scramjet in the viewing browser and a Wisp relay in the backend. The brief put the proxy under a `/proxy/` scope on the desktop's origin. It runs on a second backend port instead, because Scramjet runs pages on whatever origin serves them, and on the desktop's one rewriter escape would hold the session and the terminal. The relay allows only public unicast addresses on web ports, checked on every DNS answer and dialled by address. That is the stricter stance, opposite to the REST client's (brief 43) on purpose. Site cookies are kept by the machine, AES-GCM encrypted, with the key left out of backups. Verified in the Docker dev container: pages, click-through, a YouTube video, cookies surviving a restart in a fresh browser, metadata refused, nothing loaded before the Browser opens. Search engines answered the headless browser with CAPTCHAs; that check and audio are the owner's.
+
+## [2026-10-06] done | Brief 120 — apps from other repos, installed from an in-repo catalog
+
+`marketplace/<id>.json` describes an app in another repository: repo, full commit id, argv build commands, the module to load, and for a service app the server to run. Settings → Marketplace clones that commit into the home volume, builds it in the container and mounts the module natively in a window, with `system` cut down to the descriptor's capabilities. A service app's server runs on loopback while its window is open and is reached only through the desktop's port, with the terminal's checks. Three locked decisions were revisited as the brief required (runtime package manager, supervisor, native external code; recorded in [decisions-marketplace.md](wiki/decisions-marketplace.md)), and the brief's own example changed: commit ids instead of tags, argv instead of shell strings, and a third `host` argument to `mount`. Security-reviewed; the residual risk named is that builds run as the desktop's user. Verified by tests against a real repository, build, server and WebSocket, and a real module mounting in the window host; all 94 turbo tasks and 148 backend e2e tests pass. Not walked in a browser: the dev container's sign-in was out of reach (status.md, owed by the owner). The dev container now reaches the API through Vite's proxy, and a separate commit keeps local `.env` files out of the image build context.

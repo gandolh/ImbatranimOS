@@ -136,7 +136,10 @@ Borrowing from Linux is half insight, half cargo-cult. We refuse:
 - **No runtime package manager** (apt/apk for desktop apps). Single user,
   build-from-source; `manifest.ts` **is** the package system. A package
   format / install lifecycle / registry only earns its cost when apps come from
-  *outside* the repo — see [decisions.md app-install stance].
+  *outside* the repo — see [decisions.md app-install stance]. That day came
+  with brief 120 (2026-10-06): apps from other repos install from an in-repo
+  catalog at pinned commits, still built from source, still no registry
+  ([decisions-marketplace.md](decisions-marketplace.md)).
 - **No separate session-manager daemon** (systemd-logind / SDDM analog). The
   auth module + the per-tab ephemeral session **is** the session manager. Don't
   build a second thing.

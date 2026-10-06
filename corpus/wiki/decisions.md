@@ -78,7 +78,9 @@ client-rendered desktop; single-container/build-from-source/no-sudo/first-party 
 - **Isolation = per-window error boundaries now (brief 47)** (first-party threat
   = buggy, not malicious); hard sandboxing = the transport swap, gated on
   third-party apps. **Kill-list (NOT built):** runtime package manager
-  (`manifest.ts` is it), session-manager daemon, app-to-app IPC/D-Bus. **DOM
+  (`manifest.ts` is it; *revisited 2026-10-06*: brief 120's catalog-driven
+  installer, see [decisions-marketplace.md](decisions-marketplace.md)), session-manager daemon,
+  app-to-app IPC/D-Bus. **DOM
   stays substrate; canvas/WebGPU parked.** Specs: briefs 47 (first), 48, 49.
 
 ## 2026-08-03 — norPDF owns `.pdf`; PDF Viewer stays as the light option

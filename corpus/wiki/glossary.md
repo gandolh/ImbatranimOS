@@ -1,6 +1,6 @@
 ---
-summary: The project's vocabulary — the terms ImbatranimOS uses in a specific way (add-on, core vs ui, the system handle, capability vs library, desktop layer, widget, background service, intent, dotfile, session, accent) with the synonyms each one displaces, plus the three terms that carry two live meanings and how to tell them apart.
-updated: 2026-08-23
+summary: The project's vocabulary — the terms ImbatranimOS uses in a specific way (add-on, marketplace catalog/descriptor/app, core vs ui, the system handle, capability vs library, desktop layer, widget, background service, intent, dotfile, session, accent) with the synonyms each one displaces, plus the three terms that carry two live meanings and how to tell them apart.
+updated: 2026-10-06
 ---
 
 # Glossary
@@ -39,10 +39,16 @@ their manifests into `APP_REGISTRY` and registers their command sources.
 _Avoid_: the manifest, the registry file, the barrel.
 
 **Registry**:
-`APP_REGISTRY` — the ordered list of registered `AppConfig`s. Order is
-load-bearing: the first app claiming a file extension wins when the user has
-not chosen.
+`APP_REGISTRY` — the ordered list of registered `AppConfig`s, marketplace apps
+last. Order is load-bearing: the first app claiming a file extension wins when
+the user has not chosen.
 _Avoid_: app list, catalog, app store.
+
+**Marketplace catalog** / **descriptor** / **marketplace app** (brief 120):
+the repo's `marketplace/` directory, the trust anchor; one `<id>.json` in it
+(repo, commit, build, capabilities); an app installed from it, built on the
+machine and mounted natively. _Avoid_: registry or app store (catalog),
+manifest (descriptor), add-on or plugin (marketplace app).
 
 **Widget**:
 A small, always-visible desktop panel an app contributes via `widgets`. It is

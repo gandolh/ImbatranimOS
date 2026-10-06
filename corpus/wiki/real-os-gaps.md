@@ -66,7 +66,8 @@ Where the illusion breaks first, for a new user:
   "later".
 - **A runtime package manager for desktop apps** — kill-list; `manifest.ts` *is*
   the package system. A package format only earns its cost when apps come from
-  outside the repo.
+  outside the repo. (Since brief 120, apps from other repos install from the
+  in-repo marketplace catalog; built-in add-ons are still `manifest.ts`.)
 - **A "Services" / systemd view** — there is no init: `entrypoint.sh:14` execs
   node as PID 1, so it would list one row. Authentic-shaped, zero value, and
   adding a supervisor to make it interesting brushes the killed daemon.

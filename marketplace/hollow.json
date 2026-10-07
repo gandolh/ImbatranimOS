@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "hollow",
+  "name": "Hollow",
+  "description": "A generational social-emergence sim in a small 3D town.",
+  "meta": ["game"],
+  "source": {
+    "repo": "https://github.com/gandolh/game-engine",
+    "ref": "0d83f704ced957b23c44baa510782efb49af17e5"
+  },
+  "type": "static",
+  "runtime": "native",
+  "build": {
+    "install": ["npm", "ci"],
+    "command": ["npm", "run", "build:os", "-w", "@hollow/client"],
+    "entry": "games/hollow/client/dist/os/hollow.mjs"
+  },
+  "window": {
+    "defaultSize": { "w": 960, "h": 640 },
+    "minSize": { "w": 640, "h": 400 }
+  },
+  "capabilities": [],
+  "icon": "gamepad-2",
+  "minSystemVersion": 2
+}

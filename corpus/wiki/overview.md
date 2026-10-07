@@ -1,6 +1,6 @@
 ---
-summary: What ImbatranimOS is after the 2026-07-16 pivot — a real Alpine container whose desktop is a React web app — plus the project's lineage and audience.
-updated: 2026-07-16
+summary: What ImbatranimOS is after the 2026-07-16 pivot — a real Alpine container whose desktop is a React web app — plus the project's lineage (ISO era, web-OS era, estate era) and audience.
+updated: 2026-10-07
 ---
 
 # Overview
@@ -28,6 +28,11 @@ Romanian for "we're getting old," a joke about time passing that computes.
    ImbatranimOS: system apps added (real terminal, real files, system
    monitor), reskinned to the carried-over identity (Windows-7-classic
    layout, black & white + accent).
+3. **Estate era (2026-09-06 →).** Deployed at `gandolh.ro/imbatranim-os`
+   beside the owner's other apps. Sign-in moved to Ward, the estate's
+   identity service, on 2026-09-06, and came back home on 2026-10-07
+   (brief 157): the desktop signs its owner in itself, in the estate as
+   everywhere else. See [decisions-estate-era.md](decisions-estate-era.md).
 
 ## Audience & the finish line
 

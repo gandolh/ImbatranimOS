@@ -1,5 +1,5 @@
 ---
-summary: Decisions since imbatranimOS joined the Ward estate (2026-09-06) — identity, the local sign-in that comes back when Ward is absent, the ISO as a LAN server OS instead of a kiosk (deferred; work stays in Docker), the owner's 2026-10-04 answers on briefs 15, 50, 120, 144/145/155 and old backups, brief 50's build calls (proxy on its own origin, the strict egress stance, the encrypted profile). Brief 120's marketplace calls are in decisions-marketplace.md.
+summary: Decisions since imbatranimOS joined the Ward estate (2026-09-06) — identity (Ward from 2026-09-06, then the machine's own sign-in everywhere from brief 157, 2026-10-07, with the shared origin an accepted risk), the ISO as a LAN server OS instead of a kiosk (deferred; work stays in Docker), the owner's 2026-10-04 answers on briefs 15, 50, 120, 144/145/155 and old backups, brief 50's build calls (proxy on its own origin, the strict egress stance, the encrypted profile). Brief 120's marketplace calls are in decisions-marketplace.md.
 updated: 2026-10-07
 ---
 
@@ -20,7 +20,8 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
   only checks the Ward session is still live. It is no longer a security claim.
 - **Consequence, revisited below:** without Ward the backend would not boot,
   which broke the friend-run bar and the ISO.
-- **Revised 2026-10-06:** Ward is dropped altogether (below).
+- **Revised 2026-10-06:** Ward is dropped altogether (below). Built
+  2026-10-07 in brief 157.
 
 ## 2026-10-04 — Owner answers (asked directly after the brief runs)
 
@@ -31,6 +32,7 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
     an httpOnly session cookie and a login throttle. The old code is
     recoverable from `fb3de23^`.
   - Inside the estate nothing changes: Ward still owns identity.
+    (Superseded 2026-10-06: the local sign-in is the only one, below.)
   - Rejected:
     - A, estate-only, which gives up the friend-run bar;
     - B, a development identity only, which does nothing for friends or the
@@ -80,6 +82,9 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
 - **Old backups that still hold the deleted login's password hash are
   deleted.** Start fresh rather than scrub them.
 - **Briefs 144, 145 and 155: grilled after the fact, all confirmed as built.**
+  (144 and 145 were Ward's token refresh and the terminal's freshness
+  registry. Both went with Ward in brief 157; the local cookie does not
+  rotate.)
   They were built without the interview their briefs asked for; asked the same
   day, the owner kept every call:
   - **144:** proactive refresh about two minutes before expiry (and on a tab
@@ -101,13 +106,22 @@ Asked directly while clearing the open questions.
 - **ImbatranimOS keeps its own sign-in, in the estate too.** Revises the
   2026-09-06 move above. Brief 152's single-owner sign-in becomes the only
   identity path, and Ward's module, variables and registration go
-  ([brief 157](../briefs/todo/157-drop-ward-own-sign-in.md)). Rejected: a
-  subdomain for the desktop, and a fresh confirmation before the terminal.
-- **The shared origin is an accepted risk.** The desktop stays at
-  `gandolh.ro/imbatranim-os`. A sibling app's script can still send requests
-  there, and the browser attaches `imb_session` to them, so an XSS on a sibling
-  while the owner is signed in reaches the terminal. Accepted because every
-  app on the origin is the owner's own code under `script-src 'self'`.
+  ([brief 157](../briefs/done/157-drop-ward-own-sign-in.md), built
+  2026-10-07). Rejected: a subdomain for the desktop, and a fresh
+  confirmation before the terminal.
+  - The deploy passes `SETUP_TOKEN` as a required secret, so the public
+    machine cannot be claimed by whoever reaches it first.
+  - An old environment that still sets `WARD_*` boots and logs one line
+    naming them as ignored. Rejected: refusing to boot, which would turn a
+    leftover line in a `.env` into an outage.
+- **The shared origin is an accepted risk, not a fix.** The desktop stays at
+  `gandolh.ro/imbatranim-os`. Ward's estate-wide cookie no longer opens the
+  desktop, so being signed in to a sibling app is no longer being signed in to
+  a shell. But a same-origin script on a sibling app can still send requests
+  to `/imbatranim-os/api/*`, and the browser still attaches `imb_session` to
+  them, so an XSS on a sibling app while the owner is signed in to the desktop
+  still reaches the terminal. Accepted by the owner on 2026-10-06 because
+  every app on the origin is the owner's own code under `script-src 'self'`.
   Revisit if a third-party app joins the estate.
 - **No registry image.** Build-from-source is the final distribution answer,
   not a stance waiting for v1. Rejected: pushing an image to GHCR or Docker

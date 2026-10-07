@@ -86,3 +86,47 @@ to the desktop still reaches the terminal. The owner accepted that on
 - The backend and core test suites and `npm run typecheck` pass.
 - vps-deploy's dry run for `imbatranim-os` shows `SETUP_TOKEN` and no `WARD_*`.
 - Ward's own tests pass with the row removed.
+
+## Outcome (2026-10-07)
+
+Done as written, in three repos.
+
+- **imbatranimOS** (`97de425`, 1.1.0): the `ward` module, its token client,
+  the `jose` dependency, the three `WARD_*` variables, the desktop's token
+  refresh and the terminal's freshness registry are gone. A new `identity`
+  module holds the global `SessionGuard`, `/api/me`, `Caller` and
+  `AuthenticationError`; `local-identity` keeps the sign-in. The terminal, the
+  Browser relay and the marketplace sockets check the upgrade's own cookie,
+  which no longer rotates. A boot with `WARD_*` still set logs one line naming
+  them as ignored. Child processes lose `SETUP_TOKEN` and any `WARD_*`.
+- **vps-deploy** (`93c1772`): `useWard` and the stack's `app` field are gone,
+  so imbatranim-os no longer depends on ward. The stack passes `SETUP_TOKEN`
+  as a required secret from `secrets/imbatranim-os.env`; a deploy without one
+  stops before the upload. The env-file write now names its keys, never the
+  values: the dry run shows `keys: SETUP_TOKEN` and no `WARD_*`.
+- **wzd_auth** (`3c1d9e6`): no `imbatranim-os` row in `register-app-keys`, in
+  `ESTATE_APPS` (so it is no longer a `?next=` destination) or in the local
+  seed, which also stops writing `WARD_*` into this repo's env files.
+
+**Alt-Tab switcher: no change, the smaller option.** It lists open windows
+only and never had a Ward source or an estate list; the brief's premise came
+from the word "backwards" matching the grep.
+
+`grep -ri ward` over `apps packages infrastructure` now finds only the ignore
+notice (`env.schema.ts`, `child-env.ts`), its tests and the README line about
+it, plus words like "forward" and the untracked local `apps/backend/.env`.
+
+Checks: backend 524 unit and 143 e2e tests, core 298, Ward 946, root
+`npm run typecheck` (31 tasks), vps-deploy typecheck and `--check`. Walked in
+the dev container with a fresh volume and no `WARD_*`: the first-run claim,
+then the desktop, a live terminal (`whoami` is `imbatranim`), Log off back to
+the sign-in form, a wrong password refused in the form, and signing in again.
+
+Owner steps, after the deploy:
+
+1. Add `SETUP_TOKEN` to vps-deploy's `secrets/imbatranim-os.env`
+   (`openssl rand -base64 32`). `WARD_APP_KEY` there is unused now.
+2. Deploy imbatranim-os, open `gandolh.ro/imbatranim-os` and claim the machine
+   with the token and a new password.
+3. Ward cleanup, one line: in Ward's console open Apps, then imbatranim-os, then
+   Delete app. That cascades its grants and service keys.

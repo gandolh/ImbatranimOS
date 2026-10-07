@@ -1,6 +1,6 @@
 ---
 summary: The project's vocabulary — the terms ImbatranimOS uses in a specific way (add-on, marketplace catalog/descriptor/app, core vs ui, the system handle, capability vs library, desktop layer, widget, background service, intent, dotfile, session, accent) with the synonyms each one displaces, plus the three terms that carry two live meanings and how to tell them apart.
-updated: 2026-10-06
+updated: 2026-10-07
 ---
 
 # Glossary
@@ -180,14 +180,10 @@ say which one you mean.
   (compositor, taskbar, settings, auth, command palette). Values live in
   `@imbatranim/ui`. Say "core the package" or "the shell".
 - **session** — a *desktop session* is one browser tab (above). A *sign-in
-  session* says who you are, and is one of two things: a **Ward session**
-  (the estate's `ward_session` cookie, 15-minute tokens refreshed by the
-  desktop, brief 144) or a **local session** (the `imb_session` cookie of the
-  local sign-in, 30 days, brief 152). The lifetimes are unrelated: closing a
-  tab ends the desktop session, not the sign-in session.
-- **grant** — Ward's permission for an account to use an app. This machine
-  admits any account holding an `imbatranim-os` grant; the local owner holds
-  it implicitly.
+  session* says who you are: the `imb_session` cookie of the machine's own
+  sign-in, 30 days (brief 152). The lifetimes are unrelated: closing a tab
+  ends the desktop session, not the sign-in session. (Until 2026-10-07 a
+  sign-in session could also be a Ward session; brief 157 removed that.)
 - **Cover screen** — the Start menu's *Cover screen* (was "Lock"): it hides
   the desktop and keeps everything running, and anyone at the machine can
   uncover it. Not a lock; *Log off* ends the session.

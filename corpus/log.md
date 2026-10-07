@@ -4232,3 +4232,17 @@ version from HEAD and rewrites the root `package.json`, both lockfile fields and
 the Dockerfile's label and `IMAGE_VERSION`. A pre-commit hook was written and
 removed: the agent's permission check blocked installing it, so automation is the
 owner's call. Recorded in decisions-estate-era.md and corpus/CLAUDE.md.
+
+## [2026-10-07] build | Brief 157: Ward dropped, the desktop signs in on its own
+
+Built across three repos. imbatranimOS lost the `ward` module, the `WARD_*`
+variables, the token refresh and the terminal's freshness registry; a new
+`identity` module holds the guard and `/api/me`, and brief 152's sign-in is the
+only path. A leftover `WARD_*` boots with a one-line notice. vps-deploy passes
+`SETUP_TOKEN` as a required secret and drops imbatranim-os's ward edge. Ward no
+longer registers `imbatranim-os` or offers it as a `?next=` destination. The
+Alt-Tab switcher needed nothing: it never had a Ward source. Walked in the dev
+container from the first-run claim to Log off. The decisions, open-questions,
+architecture, overview, glossary and status pages say the same. Owner steps
+(secret, deploy, claim, delete the app in Ward's console) are in the brief's
+outcome and on status.md.

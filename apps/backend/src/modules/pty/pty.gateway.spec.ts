@@ -6,15 +6,14 @@ import { WebSocket } from 'ws';
 import * as pty from 'node-pty';
 import { PtyGateway } from './pty.gateway';
 import { MAX_SESSIONS } from './pty.constants';
-import { WardService } from '../ward/ward.service';
-import { WardFreshness } from '../ward/ward-freshness';
+import { LocalIdentityService } from '../auth/ws-auth';
+import type { Caller } from '../identity/identity.types';
 import { UpgradeRoutes } from '../../upgrade-routes';
-import { IMBATRANIMOS_APP_SLUG, type WardCaller } from '../ward/ward.types';
 
 /**
  * The raw `'upgrade'` handler (brief 138), against a real HTTP server.
  *
- * Ward is a fake whose answers the test controls: `hold()` makes the next
+ * The sign-in is a fake whose answers the test controls: `hold()` makes the next
  * `authenticate` wait on a promise the test resolves, which is the window an
  * unauthenticated client can reset the connection in.
  */
@@ -22,20 +21,18 @@ describe('PtyGateway upgrade handler', () => {
   let app: INestApplication<Server>;
   let port: number;
 
-  const session: WardCaller = {
-    active: true,
+  const session: Caller = {
     subject: 'subject_owner',
     username: 'owner',
-    grants: { [IMBATRANIMOS_APP_SLUG]: ['owner'] },
     sid: 'sid_good',
   };
 
-  let held: Promise<WardCaller> | null = null;
+  let held: Promise<Caller> | null = null;
   let release: () => void = () => undefined;
   let authStarted: () => void = () => undefined;
   /** Hold the next `authenticate` until `release()`; resolves once it starts. */
   const hold = () => {
-    held = new Promise<WardCaller>((r) => {
+    held = new Promise<Caller>((r) => {
       release = () => r(session);
     });
     return new Promise<void>((r) => {
@@ -43,9 +40,9 @@ describe('PtyGateway upgrade handler', () => {
     });
   };
 
-  const wardMock = {
+  const identityMock = {
     authenticate: (cookieHeader: string | undefined) => {
-      if (!cookieHeader?.includes('ward_session=good')) {
+      if (!cookieHeader?.includes('imb_session=good')) {
         return Promise.reject(new Error('session is not active'));
       }
       const pending = held;
@@ -59,9 +56,8 @@ describe('PtyGateway upgrade handler', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         PtyGateway,
-        WardFreshness,
         UpgradeRoutes,
-        { provide: WardService, useValue: wardMock },
+        { provide: LocalIdentityService, useValue: identityMock },
         {
           provide: ConfigService,
           useValue: {
@@ -101,7 +97,7 @@ describe('PtyGateway upgrade handler', () => {
   const openTerminal = () =>
     new Promise<string>((resolve, reject) => {
       const ws = new WebSocket(`ws://127.0.0.1:${port}/api/pty`, {
-        headers: { cookie: 'ward_session=good' },
+        headers: { cookie: 'imb_session=good' },
       });
       let buf = '';
       const timer = setTimeout(() => {
@@ -126,7 +122,7 @@ describe('PtyGateway upgrade handler', () => {
 
   it('survives a client that resets the connection during authentication', async () => {
     const started = hold();
-    const socket = rawUpgrade('/api/pty', 'ward_session=good');
+    const socket = rawUpgrade('/api/pty', 'imb_session=good');
     socket.on('error', () => undefined);
     await started;
 
@@ -141,7 +137,7 @@ describe('PtyGateway upgrade handler', () => {
   }, 15000);
 
   it('answers an upgrade to another path with 404 and closes it', async () => {
-    const socket = rawUpgrade('/api/nope', 'ward_session=good');
+    const socket = rawUpgrade('/api/nope', 'imb_session=good');
     const result = await new Promise<{ head: string; closed: boolean }>(
       (resolve) => {
         let head = '';
@@ -163,37 +159,28 @@ describe('PtyGateway upgrade handler', () => {
 });
 
 /**
- * Brief 145 — the revocation sweep, against a fake Ward keyed by cookie.
- *
- * Token A is what the WebSocket opened with; token B is what the browser
- * rotated to, recorded by the REST guard in `WardFreshness`. The sweep is
+ * The revocation sweep, against a fake sign-in keyed by cookie. The sweep is
  * called directly: driving its 30 s interval with fake timers would also fake
  * the timers inside `ws` and the PTY session.
  */
 describe('PtyGateway revocation sweep', () => {
   let app: INestApplication<Server>;
   let gateway: PtyGateway;
-  let freshness: WardFreshness;
   let url: string;
   const open: WebSocket[] = [];
 
-  /** cookie → what Ward says about it. Absent = expired/unknown. */
-  const ward = new Map<string, 'granted' | 'no-grant'>();
-  const SID = 'sid_family';
-  const caller = (granted: boolean): WardCaller => ({
-    active: true,
+  /** The cookies that name a live session. Absent = signed out or expired. */
+  const live = new Set<string>();
+  const caller: Caller = {
     subject: 'subject_owner',
     username: 'owner',
-    grants: granted ? { [IMBATRANIMOS_APP_SLUG]: ['owner'] } : {},
-    sid: SID,
-  });
-  const wardMock = {
-    authenticate: (cookieHeader: string | undefined) => {
-      const verdict = ward.get(cookieHeader ?? '');
-      return verdict
-        ? Promise.resolve(caller(verdict === 'granted'))
-        : Promise.reject(new Error('session is not active'));
-    },
+    sid: 'sid_a',
+  };
+  const identityMock = {
+    authenticate: (cookieHeader: string | undefined) =>
+      live.has(cookieHeader ?? '')
+        ? Promise.resolve(caller)
+        : Promise.reject(new Error('session is not active')),
   };
 
   const sweep = () =>
@@ -202,13 +189,12 @@ describe('PtyGateway revocation sweep', () => {
     ).sweepRevoked();
 
   beforeEach(async () => {
-    ward.clear();
+    live.clear();
     const moduleRef = await Test.createTestingModule({
       providers: [
         PtyGateway,
-        WardFreshness,
         UpgradeRoutes,
-        { provide: WardService, useValue: wardMock },
+        { provide: LocalIdentityService, useValue: identityMock },
         {
           provide: ConfigService,
           useValue: {
@@ -221,7 +207,6 @@ describe('PtyGateway revocation sweep', () => {
     app = moduleRef.createNestApplication({ logger: false });
     await app.listen(0);
     gateway = moduleRef.get(PtyGateway);
-    freshness = moduleRef.get(WardFreshness);
     url = `ws://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}/api/pty`;
   });
 
@@ -253,73 +238,40 @@ describe('PtyGateway revocation sweep', () => {
       });
     });
 
-  it('(a) keeps a shell open when its token expired but the session rotated', async () => {
-    ward.set('ward_session=A', 'granted');
-    const ws = await shell('ward_session=A');
-
-    ward.delete('ward_session=A'); // A's 15 minutes are up
-    ward.set('ward_session=B', 'granted');
-    freshness.note(SID, 'ward_session=B'); // what the REST guard records
+  it('(a) keeps a shell open while its session is live', async () => {
+    live.add('imb_session=A');
+    const ws = await shell('imb_session=A');
 
     await sweep();
     expect(await closeCode(ws, 300)).toBe('open');
   });
 
-  it('(b) closes the shell with 4401 when Ward reports the session inactive', async () => {
-    ward.set('ward_session=A', 'granted');
-    const ws = await shell('ward_session=A');
-    freshness.note(SID, 'ward_session=B'); // B is no better: revoked too
+  it('(b) closes the shell with 4401 once the session ends', async () => {
+    live.add('imb_session=A');
+    const ws = await shell('imb_session=A');
 
-    ward.clear();
+    live.clear(); // signed out, expired, or another session changed the password
     const closed = closeCode(ws);
     await sweep();
     expect(await closed).toBe(4401);
   });
 
-  it('(c) closes the shell when the grant is removed', async () => {
-    ward.set('ward_session=A', 'granted');
-    const ws = await shell('ward_session=A');
-    ward.set('ward_session=A', 'no-grant');
-
-    const closed = closeCode(ws);
-    await sweep();
-    expect(await closed).toBe(4401);
-  });
-
-  it('(d) closes the shell when its token expired and no fresher one arrived', async () => {
-    ward.set('ward_session=A', 'granted');
-    const ws = await shell('ward_session=A');
-    ward.delete('ward_session=A');
-
-    const closed = closeCode(ws);
-    await sweep();
-    expect(await closed).toBe(4401);
-  });
-
-  it('(e) refuses a shell over MAX_SESSIONS with 503', async () => {
-    ward.set('ward_session=A', 'granted');
-    for (let i = 0; i < MAX_SESSIONS; i++) await shell('ward_session=A');
-    await expect(shell('ward_session=A')).rejects.toThrow('refused 503');
+  it('(c) refuses a shell over MAX_SESSIONS with 503', async () => {
+    live.add('imb_session=A');
+    for (let i = 0; i < MAX_SESSIONS; i++) await shell('imb_session=A');
+    await expect(shell('imb_session=A')).rejects.toThrow('refused 503');
   }, 30_000);
 
-  it('(f) closes with 1011 when the shell cannot be spawned', async () => {
-    ward.set('ward_session=A', 'granted');
+  it('(d) closes with 1011 when the shell cannot be spawned', async () => {
+    live.add('imb_session=A');
     const spawn = jest.spyOn(pty, 'spawn').mockImplementation(() => {
       throw new Error('no shell here');
     });
     try {
-      const ws = await shell('ward_session=A');
+      const ws = await shell('imb_session=A');
       expect(await closeCode(ws)).toBe(1011);
     } finally {
       spawn.mockRestore();
     }
-  });
-
-  it('forgets sessions with no live shell once their token is certainly expired', async () => {
-    freshness.note('sid_gone', 'ward_session=old', Date.now() - 16 * 60_000);
-    freshness.note('sid_recent', 'ward_session=new');
-    await sweep();
-    expect(freshness.latest('sid_gone')).toBeUndefined();
-    expect(freshness.latest('sid_recent')).toBe('ward_session=new');
   });
 });

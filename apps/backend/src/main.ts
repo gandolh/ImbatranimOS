@@ -1,16 +1,22 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { json } from 'express';
 import { AppModule } from './app.module';
 import { securityHeadersFor } from './security-headers';
-import { browserProxyOriginOf, type Env } from './config/env.schema';
+import {
+  browserProxyOriginOf,
+  ignoredEnvNotice,
+  type Env,
+} from './config/env.schema';
 import { DbService } from './db/db.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService<Env, true>);
+  const notice = ignoredEnvNotice(process.env);
+  if (notice) new Logger('Config').warn(notice);
 
   // Behind a TLS-terminating reverse proxy, trust X-Forwarded-* so req.ip
   // (rate-limit key) and the secure-cookie decision reflect the real client.

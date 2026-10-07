@@ -193,8 +193,8 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       { toVersion: 6, name: 'backfills', run: () => this.stepBackfills() },
       {
         toVersion: 7,
-        name: 'drop-pre-ward-auth',
-        run: () => this.stepDropPreWardAuth(),
+        name: 'drop-old-auth',
+        run: () => this.stepDropOldAuth(),
       },
       {
         toVersion: 8,
@@ -389,7 +389,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       -- layering grill settled on: your window layout is the session and dies
       -- with the tab, but your wallpaper and accent are dotfiles -- they belong
       -- to the account and follow you to any browser. Single user, so no owner
-      -- column; the global WardAuthGuard is the whole access story.
+      -- column; the global SessionGuard is the whole access story.
       CREATE TABLE IF NOT EXISTS prefs (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
@@ -560,10 +560,10 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Step 7 — drop the pre-Ward credential tables (brief 150).
+   * Step 7 — drop the credential tables from before 2026-09-06 (brief 150).
    *
-   * Nothing has read `auth_user` or `auth_sessions` since the Ward cutover
-   * (2026-09-06), but every install from before it still held the owner's
+   * Nothing has read `auth_user` or `auth_sessions` since identity moved out
+   * of this app on 2026-09-06, but every install from before it still held the owner's
    * password hash and TOTP secret there, and every backup (a `VACUUM INTO` of
    * this file) carried them off the machine. A restored old backup is migrated
    * by `replaceWith`, so it is scrubbed too. Steps 1 and 5 still create and
@@ -576,12 +576,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    *
    * New names, not the dropped `auth_user`/`auth_sessions`: those were a
    * different design (TOTP, argon2) and step 7 removes them on every database
-   * that still has them. Both tables stay empty while Ward is configured.
-   * `local_owner` is single-row by its CHECK, as the old store was. Sessions
+   * that still has them. `local_owner` is single-row by its CHECK, as the old store was. Sessions
    * store only a SHA-256 of the cookie's random token, so a database copy (a
    * backup included) yields no usable cookie. The owner's password hash does
-   * travel in a backup, as it did before the Ward move; a restore therefore
-   * revokes every local session (`BackupService.installDatabase`).
+   * travel in a backup, as it did before 2026-09-06; a restore therefore
+   * revokes every session (`BackupService.installDatabase`).
    */
   private stepLocalIdentity() {
     this.db.exec(`
@@ -629,7 +628,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     `);
   }
 
-  private stepDropPreWardAuth() {
+  private stepDropOldAuth() {
     this.db.exec(
       'DROP TABLE IF EXISTS auth_sessions; DROP TABLE IF EXISTS auth_user;',
     );

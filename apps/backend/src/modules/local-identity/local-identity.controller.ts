@@ -7,22 +7,15 @@ import {
   HttpCode,
   HttpException,
   HttpStatus,
-  NotFoundException,
   Post,
   Req,
   Res,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 
-import {
-  identityModeOf,
-  type Env,
-  type IdentityMode,
-} from '../../config/env.schema';
 import { Public } from '../auth/public.decorator';
-import { WardAuthenticationError } from '../ward/ward.types';
+import { AuthenticationError } from '../identity/identity.types';
 import {
   LocalPasswordDto,
   LocalSetupDto,
@@ -50,46 +43,26 @@ function overHttps(req: Request): boolean {
   return req.secure || first === 'https';
 }
 
-export interface IdentityResponse {
-  mode: IdentityMode;
-  /** Present in local mode only. */
-  local?: LocalStatus;
-}
-
 /**
- * Which sign-in this machine uses, and the local one's routes (brief 152).
+ * The sign-in's routes (brief 152).
  *
  * `GET /api/identity` is public: before anybody is signed in, the desktop has
- * to know whether to hand off to Ward or show its own form. The local routes
- * answer 404 while Ward is configured, so a Ward install exposes no password
- * surface at all.
+ * to know whether to show the first-run setup or the sign-in form.
  */
 @Controller('identity')
 export class LocalIdentityController {
-  private readonly mode: IdentityMode;
-
-  constructor(
-    private readonly local: LocalIdentityService,
-    config: ConfigService<Env, true>,
-  ) {
-    this.mode = identityModeOf({
-      WARD_PUBLIC_ORIGIN: config.get('WARD_PUBLIC_ORIGIN', { infer: true }),
-    });
-  }
+  constructor(private readonly local: LocalIdentityService) {}
 
   @Public()
   @Get()
-  identity(): IdentityResponse {
-    return this.mode === 'local'
-      ? { mode: 'local', local: this.local.status() }
-      : { mode: 'ward' };
+  identity(): LocalStatus {
+    return this.local.status();
   }
 
   @Public()
   @Post('local/setup')
   @HttpCode(HttpStatus.NO_CONTENT)
   async setup(@Body() dto: LocalSetupDto): Promise<void> {
-    this.requireLocal();
     try {
       await this.local.setUp(dto);
     } catch (err) {
@@ -110,7 +83,6 @@ export class LocalIdentityController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    this.requireLocal();
     try {
       const { token, expiresAt } = await this.local.signIn(
         dto.password,
@@ -131,7 +103,7 @@ export class LocalIdentityController {
         );
         throw new HttpException(err.message, HttpStatus.TOO_MANY_REQUESTS);
       }
-      if (err instanceof WardAuthenticationError) {
+      if (err instanceof AuthenticationError) {
         throw new UnauthorizedException('Wrong password');
       }
       throw err;
@@ -145,7 +117,6 @@ export class LocalIdentityController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): void {
-    this.requireLocal();
     this.local.signOut(req.headers.cookie);
     res.clearCookie(LOCAL_SESSION_COOKIE, {
       path: '/',
@@ -162,7 +133,6 @@ export class LocalIdentityController {
     @Body() dto: LocalPasswordDto,
     @Req() req: Request,
   ): Promise<void> {
-    this.requireLocal();
     try {
       await this.local.changePassword(
         dto.current,
@@ -170,15 +140,11 @@ export class LocalIdentityController {
         req.headers.cookie,
       );
     } catch (err) {
-      if (err instanceof WardAuthenticationError)
+      if (err instanceof AuthenticationError)
         throw new UnauthorizedException(err.message);
       if (err instanceof SetupRefusedError)
         throw new BadRequestException(err.message);
       throw err;
     }
-  }
-
-  private requireLocal(): void {
-    if (this.mode !== 'local') throw new NotFoundException();
   }
 }

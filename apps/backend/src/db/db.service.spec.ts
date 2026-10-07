@@ -210,7 +210,7 @@ describe('DbService migration ledger — brief 110', () => {
   });
 });
 
-describe('DbService — pre-Ward credential tables are dropped (brief 150)', () => {
+describe('DbService — the old credential tables are dropped (brief 150)', () => {
   let dir: string;
 
   beforeEach(() => {

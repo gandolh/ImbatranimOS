@@ -20,7 +20,7 @@ import {
 
 /**
  * Clock's persisted state. Session-guarded like every other route — the global
- * `WardAuthGuard` covers this controller, and nothing here is `@Public()`.
+ * `SessionGuard` covers this controller, and nothing here is `@Public()`.
  */
 @Controller('clock')
 export class ClockController {

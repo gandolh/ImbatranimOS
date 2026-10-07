@@ -1,5 +1,5 @@
 import { RecentService } from './recent.service';
-import { makeTestDb } from '../ward/testing';
+import { makeTestDb } from '../identity/testing';
 import type { DbService } from '../../db/db.service';
 
 describe('RecentService (brief 94)', () => {

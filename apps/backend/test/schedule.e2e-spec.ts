@@ -7,7 +7,10 @@ import type { Server } from 'http';
 import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
-import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
+import {
+  IdentityTestModule,
+  TEST_COOKIE,
+} from '../src/modules/identity/testing';
 import { ScheduleModule } from '../src/modules/schedule/schedule.module';
 
 describe('Schedule claims (e2e) — brief 93', () => {
@@ -17,7 +20,7 @@ describe('Schedule claims (e2e) — brief 93', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, WardTestModule, ScheduleModule],
+      imports: [ConfigModule, DbModule, IdentityTestModule, ScheduleModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

@@ -7,7 +7,10 @@ import type { Server } from 'http';
 import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
-import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
+import {
+  IdentityTestModule,
+  TEST_COOKIE,
+} from '../src/modules/identity/testing';
 import { CalendarModule } from '../src/modules/calendar/calendar.module';
 import type { CalendarEvent } from '../src/modules/calendar/calendar.service';
 
@@ -24,7 +27,7 @@ describe('Calendar (e2e) — events, recurrence rules and import', () => {
     // Fresh app per test so the in-memory DB starts empty — the migration guard's
     // whole contract is "only into an empty table".
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, WardTestModule, CalendarModule],
+      imports: [ConfigModule, DbModule, IdentityTestModule, CalendarModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

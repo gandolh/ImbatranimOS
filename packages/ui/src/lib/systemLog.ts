@@ -5,7 +5,7 @@
  * **backend contract**, not that app's private model. The add-on imports it
  * from here; the presentation (event labels, relative times, row summaries)
  * stays in the add-on, where it belongs. Sign-in history used to be derived
- * here too; sign-in is Ward's since the cutover, and nothing here logs it.
+ * here too; nothing has logged sign-in since 2026-09-06.
  */
 export type LogLevel = 'info' | 'warn' | 'error'
 export type LogSource = 'server' | 'client'

@@ -8,7 +8,7 @@ import { MarketplaceWsProxy } from './marketplace-ws.proxy';
 /**
  * The app marketplace (brief 120): installs the apps `marketplace/*.json`
  * describes, serves their builds, and runs and proxies the servers of the
- * ones that have one. `WardService`/`WardFreshness`, `DbService` and
+ * ones that have one. `LocalIdentityService`, `DbService` and
  * `UpgradeRoutes` come from global modules.
  */
 @Module({

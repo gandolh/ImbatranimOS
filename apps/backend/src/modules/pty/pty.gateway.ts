@@ -11,8 +11,7 @@ import type { Duplex } from 'stream';
 import { WebSocketServer, type WebSocket } from 'ws';
 import * as pty from 'node-pty';
 import type { Env } from '../../config/env.schema';
-import { WardService } from '../auth/ws-auth';
-import { WardFreshness } from '../ward/ward-freshness';
+import { LocalIdentityService } from '../auth/ws-auth';
 import { PtySession } from './pty-session';
 import { isPtyUpgrade, authorizeUpgrade } from './pty-upgrade';
 import {
@@ -29,27 +28,19 @@ import { childEnv } from '../../child-env';
 import { UpgradeRoutes } from '../../upgrade-routes';
 
 /**
- * How often to re-check that each live terminal's session is still valid.
- *
- * Thirty seconds, and it now lines up exactly with Ward's introspection cache
- * window — so a sweep costs at most one request per session per window rather
- * than one per check, and a revoked session closes the shell within the same
- * 30 seconds it stops working everywhere else in the estate.
+ * How often to re-check that each live terminal's session is still valid, so
+ * a sign-out, an expiry or a password change elsewhere closes the shell within
+ * this window. Each check is one indexed SQLite read.
  */
 const REVOKE_SWEEP_MS = 30_000;
 
 interface LiveSession {
   session: PtySession;
-  /** The Ward session the shell was opened under. */
-  sid: string;
   /**
-   * The newest cookie header known to authenticate this shell's session: the
-   * upgrade's, then whatever a later sweep authorized with. The sweep prefers
-   * the freshness registry's cookie and falls back to this one.
-   *
-   * The whole header rather than a parsed token: which cookie Ward uses is
-   * `ward.client.ts`'s business, and a second copy of that knowledge here is
-   * how the terminal ends up honouring a session the REST guard refuses.
+   * The upgrade's cookie header. The whole header rather than a parsed token:
+   * which cookie names the session is `LocalIdentityService`'s business, and a
+   * second copy of that knowledge here is how the terminal ends up honouring
+   * a session the REST guard refuses.
    */
   cookie: string | undefined;
 }
@@ -58,8 +49,8 @@ interface LiveSession {
  * Terminal WebSocket gateway. Attaches a raw `ws` server to Nest's underlying
  * HTTP server via the `upgrade` event (`noServer: true`) — no change to
  * main.ts required. Every upgrade is authenticated through the shared
- * `WardService` — the same client the REST guard uses — and must also carry an
- * `imbatranimos` grant before a pty is spawned as the current process user.
+ * `LocalIdentityService`, the same check the REST guard uses, before a pty is
+ * spawned as the current process user.
  */
 @Injectable()
 export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
@@ -74,9 +65,8 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
   constructor(
     private readonly adapterHost: HttpAdapterHost,
-    private readonly ward: WardService,
+    private readonly identity: LocalIdentityService,
     private readonly config: ConfigService<Env, true>,
-    private readonly freshness: WardFreshness,
     private readonly upgrades: UpgradeRoutes,
   ) {}
 
@@ -113,7 +103,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
       // Node removes its own socket 'error' listener before emitting
       // 'upgrade'. Without this one, a client that resets the connection while
-      // Ward is being asked emits ECONNRESET with no listener, which throws and
+      // the session is being checked emits ECONNRESET with no listener, which throws and
       // takes the whole backend down (brief 138). `handleUpgrade` installs its
       // own, so this is removed just before it; the refusals keep it until
       // `destroy()`.
@@ -124,18 +114,17 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
       socket.on('error', onSocketError);
 
       /*
-       * Authorization is asynchronous now — liveness is a call to Ward — so
-       * this handler starts a promise rather than deciding inline. The socket
-       * is held open meanwhile, which is what an upgrade already does; nothing
-       * is spawned until the answer arrives.
+       * Authorization is asynchronous, so this handler starts a promise rather
+       * than deciding inline. The socket is held open meanwhile, which is what
+       * an upgrade already does; nothing is spawned until the answer arrives.
        */
       void (async () => {
         const record = await authorizeUpgrade(
           req,
-          this.ward,
+          this.identity,
           this.config.get('FRONTEND_URL'),
         );
-        // The client left while Ward was answering: nothing to refuse and
+        // The client left while the check ran: nothing to refuse and
         // nobody to spawn a shell for.
         if (socket.destroyed) return;
         if (!record) {
@@ -157,7 +146,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
         socket.off('error', onSocketError);
         this.wss!.handleUpgrade(req, socket, head, (ws) => {
-          this.onConnection(ws, req, record.sid);
+          this.onConnection(ws, req);
         });
       })();
     };
@@ -170,7 +159,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.logger.log(`Terminal WS listening on ${PTY_PATH}`);
   }
 
-  private onConnection(ws: WebSocket, req: IncomingMessage, sid: string): void {
+  private onConnection(ws: WebSocket, req: IncomingMessage): void {
     const { cols, rows } = parseGeometry(req.url);
     let ptyProcess: pty.IPty;
     try {
@@ -194,10 +183,6 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
     const entry: LiveSession = {
       session: new PtySession(ptyProcess, ws),
-      sid,
-      // The whole cookie header, not a parsed token: `authenticate` owns the
-      // knowledge of which cookie Ward uses, and this file must not acquire a
-      // second copy of it.
       cookie: req.headers.cookie,
     };
     this.live.add(entry);
@@ -208,35 +193,23 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
   /**
    * Close any shell whose session has stopped being valid.
    *
-   * This is what makes revocation reach a terminal that is already open — an
-   * HTTP guard only runs on requests, and a shell makes none. A grant revoked
-   * in Ward's console closes the shell too, not just a signed-out session:
-   * `authorizeUpgrade` checks the grant, and so does this.
-   *
-   * It asks with the newest cookie the REST guard has seen for the shell's Ward
-   * session (brief 145), not the one the WebSocket opened with: that one holds
-   * a 15-minute access token, and re-checking it closed every terminal 15
-   * minutes in. The sweep still only reads. Ward's tokens do not slide on
-   * introspection, so nothing here can extend a session's life; a terminal
-   * outlives its first token only while a signed-in tab keeps the browser's
-   * token rotating.
+   * This is what makes a sign-out reach a terminal that is already open: an
+   * HTTP guard only runs on requests, and a shell makes none. The local
+   * session's cookie does not rotate, so the upgrade's cookie is the one to
+   * check. The sweep only reads; nothing here extends a session's life.
    */
   private async sweepRevoked(): Promise<void> {
     for (const entry of [...this.live]) {
-      const cookie = this.freshness.latest(entry.sid) ?? entry.cookie;
       const still = await authorizeUpgrade(
-        { headers: { cookie } },
-        this.ward,
+        { headers: { cookie: entry.cookie } },
+        this.identity,
         this.config.get('FRONTEND_URL'),
       );
       if (!still) {
         entry.session.dispose(4401, 'session-revoked');
         this.live.delete(entry);
-      } else {
-        entry.cookie = cookie;
       }
     }
-    this.freshness.evict(new Set([...this.live].map((e) => e.sid)));
   }
 
   onModuleDestroy(): void {

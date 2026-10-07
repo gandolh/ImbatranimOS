@@ -4,38 +4,27 @@ import { ConfigService } from '@nestjs/config';
 import type { AddressInfo, Server } from 'net';
 import { WebSocket } from 'ws';
 import { PtyGateway } from '../src/modules/pty/pty.gateway';
-import { WardService } from '../src/modules/ward/ward.service';
-import { WardFreshness } from '../src/modules/ward/ward-freshness';
+import { LocalIdentityService } from '../src/modules/auth/ws-auth';
 import { UpgradeRoutes } from '../src/upgrade-routes';
-import { IMBATRANIMOS_APP_SLUG } from '../src/modules/ward/ward.types';
 
 /**
  * End-to-end proof of the terminal gateway against a REAL http server and a
- * REAL pty (login shell). Ward is faked so no DB and no network are needed: the
- * token "good" is valid, everything else is rejected.
+ * REAL pty (login shell). The sign-in is faked so no DB is needed: the token
+ * "good" is valid, everything else is rejected.
  */
 describe('PtyGateway (e2e)', () => {
   let app: INestApplication<Server>;
   let url: string;
 
   const fakeSession = {
-    active: true as const,
     subject: 'subject_owner',
     username: 'owner',
-    grants: { [IMBATRANIMOS_APP_SLUG]: ['owner'] },
     sid: 'sid_good',
   };
-  /**
-   * A Ward that recognises one cookie and grants this app's slug for it.
-   *
-   * The grant is part of the fixture rather than an afterthought:
-   * `authorizeUpgrade` checks it, and a fake that returned a session without
-   * one would make every test here fail for the right reason and the wrong
-   * one.
-   */
-  const wardMock = {
+  /** A sign-in that recognises one cookie. */
+  const identityMock = {
     authenticate: (cookieHeader: string | undefined) =>
-      cookieHeader?.includes('ward_session=good')
+      cookieHeader?.includes('imb_session=good')
         ? Promise.resolve(fakeSession)
         : Promise.reject(new Error('session is not active')),
   };
@@ -44,9 +33,8 @@ describe('PtyGateway (e2e)', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         PtyGateway,
-        WardFreshness,
         UpgradeRoutes,
-        { provide: WardService, useValue: wardMock },
+        { provide: LocalIdentityService, useValue: identityMock },
         {
           provide: ConfigService,
           useValue: {
@@ -79,7 +67,7 @@ describe('PtyGateway (e2e)', () => {
   });
 
   it('opens a real shell for an authenticated upgrade and echoes input', async () => {
-    const ws = new WebSocket(url, { headers: { cookie: 'ward_session=good' } });
+    const ws = new WebSocket(url, { headers: { cookie: 'imb_session=good' } });
     const output = await new Promise<string>((resolve, reject) => {
       let buf = '';
       const timer = setTimeout(
@@ -134,18 +122,18 @@ describe('PtyGateway (e2e)', () => {
       });
     }
     const [a, b] = await Promise.all([
-      shellPid('ward_session=good'),
-      shellPid('ward_session=good'),
+      shellPid('imb_session=good'),
+      shellPid('imb_session=good'),
     ]);
     expect(a).not.toBe(b); // two distinct shell processes
   }, 20000);
 
-  it("keeps Ward's secret out of the shell's environment (brief 138)", async () => {
-    const before = process.env.WARD_APP_KEY;
-    process.env.WARD_APP_KEY = 'e2e-secret-app-key';
+  it("keeps SETUP_TOKEN out of the shell's environment (brief 138)", async () => {
+    const before = process.env.SETUP_TOKEN;
+    process.env.SETUP_TOKEN = 'e2e-secret-setup-token';
     try {
       const ws = new WebSocket(url, {
-        headers: { cookie: 'ward_session=good' },
+        headers: { cookie: 'imb_session=good' },
       });
       // The typed line is echoed back too; `%s` keeps it from matching.
       const m = await new Promise<RegExpMatchArray>((resolve, reject) => {
@@ -158,7 +146,7 @@ describe('PtyGateway (e2e)', () => {
           ws.send(
             JSON.stringify({
               type: 'input',
-              data: `printf 'K=[%s] H=%s P=%s\\n' "$WARD_APP_KEY" "\${HOME:+set}" "\${PATH:+set}"\r`,
+              data: `printf 'K=[%s] H=%s P=%s\\n' "$SETUP_TOKEN" "\${HOME:+set}" "\${PATH:+set}"\r`,
             }),
           ),
         );
@@ -179,10 +167,10 @@ describe('PtyGateway (e2e)', () => {
       expect(m[2]).toBe('set');
       expect(m[3]).toBe('set');
       // Scrubbed from the shell, not from the backend.
-      expect(process.env.WARD_APP_KEY).toBe('e2e-secret-app-key');
+      expect(process.env.SETUP_TOKEN).toBe('e2e-secret-setup-token');
     } finally {
-      if (before === undefined) delete process.env.WARD_APP_KEY;
-      else process.env.WARD_APP_KEY = before;
+      if (before === undefined) delete process.env.SETUP_TOKEN;
+      else process.env.SETUP_TOKEN = before;
     }
   }, 15000);
 });

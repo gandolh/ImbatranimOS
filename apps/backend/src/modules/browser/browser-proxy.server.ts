@@ -17,9 +17,8 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { logging, server as wisp } from '@mercuryworkshop/wisp-js/server';
 
 import { browserProxyOriginOf, type Env } from '../../config/env.schema';
-import { WardService } from '../auth/ws-auth';
+import { LocalIdentityService } from '../auth/ws-auth';
 import { authorizeUpgrade } from '../pty/pty-upgrade';
-import { WardFreshness } from '../ward/ward-freshness';
 import { GuardedTcpSocket, RefusedUdpSocket } from './guarded-socket';
 import { proxyAssets, type ProxyAsset } from './proxy-assets';
 
@@ -37,7 +36,6 @@ const REVOKE_SWEEP_MS = 30_000;
 
 interface LiveRelay {
   ws: WebSocket;
-  sid: string;
   cookie: string | undefined;
 }
 
@@ -55,7 +53,7 @@ interface LiveRelay {
  *
  * It serves a fixed list of static files ({@link proxyAssets}) and one
  * WebSocket, the Wisp relay at {@link WISP_PATH}. The relay is authenticated
- * exactly like the terminal (session and grant, through `WardService`), must
+ * exactly like the terminal (a session, through `LocalIdentityService`), must
  * come from this origin, and connects only where {@link GuardedTcpSocket}
  * allows: public addresses on web ports.
  */
@@ -74,9 +72,8 @@ export class BrowserProxyServer
   private readonly frontendOrigin: string;
 
   constructor(
-    private readonly ward: WardService,
+    private readonly identity: LocalIdentityService,
     private readonly config: ConfigService<Env, true>,
-    private readonly freshness: WardFreshness,
   ) {
     const frontend = this.config.get('FRONTEND_URL', { infer: true });
     this.frontendOrigin = new URL(frontend).origin;
@@ -213,12 +210,12 @@ export class BrowserProxyServer
 
     const origin = this.origin;
     void (async () => {
-      // The same check as the terminal: a live session holding this app's
-      // grant, and an Origin of this proxy origin (or none). The desktop's
+      // The same check as the terminal: a live session, and an Origin of
+      // this proxy origin (or none). The desktop's
       // own origin is not accepted: the relay is for the proxy's pages.
       const record =
         req.headers.origin === undefined || req.headers.origin === origin
-          ? await authorizeUpgrade(req, this.ward, origin)
+          ? await authorizeUpgrade(req, this.identity, origin)
           : null;
       if (socket.destroyed) return;
       if (!record) {
@@ -234,11 +231,7 @@ export class BrowserProxyServer
       }
       socket.off('error', onSocketError);
       this.wss!.handleUpgrade(req, socket, head, (ws) => {
-        const entry: LiveRelay = {
-          ws,
-          sid: record.sid,
-          cookie: req.headers.cookie,
-        };
+        const entry: LiveRelay = { ws, cookie: req.headers.cookie };
         this.live.add(entry);
         ws.on('close', () => this.live.delete(entry));
         void this.runRelay(ws, req);
@@ -262,21 +255,18 @@ export class BrowserProxyServer
     }
   }
 
-  /** Close every relay whose session ended or lost its grant. See PtyGateway. */
+  /** Close every relay whose session ended. See PtyGateway. */
   private async sweepRevoked(): Promise<void> {
     if (!this.origin) return;
     for (const entry of [...this.live]) {
-      const cookie = this.freshness.latest(entry.sid) ?? entry.cookie;
       const still = await authorizeUpgrade(
-        { headers: { cookie } },
-        this.ward,
+        { headers: { cookie: entry.cookie } },
+        this.identity,
         this.origin,
       );
       if (!still) {
         entry.ws.close(4401, 'session-revoked');
         this.live.delete(entry);
-      } else {
-        entry.cookie = cookie;
       }
     }
   }

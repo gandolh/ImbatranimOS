@@ -10,16 +10,15 @@ import type { Server } from 'http';
 import request from 'supertest';
 
 import { DbModule } from '../src/db/db.module';
-import { WardModule } from '../src/modules/ward/ward.module';
+import { IdentityModule } from '../src/modules/identity/identity.module';
 
 /**
- * The local single-owner sign-in, end to end (brief 152, option C): what a
- * standalone run, a friend's Docker install and the server ISO use when no
- * WARD_* variable is set. Through the real guard, `/api/me` and the cookie.
+ * The single-owner sign-in, end to end (brief 152): the only sign-in since
+ * brief 157, in the estate, standalone and on the ISO. Through the real
+ * guard, `/api/me` and the cookie.
  *
- * `ConfigModule` validates `process.env` when it is imported, and the test
- * setup fills in fictional WARD_* values for every other suite, so this one
- * supplies its own `ConfigService` holding exactly the variables it means.
+ * It supplies its own `ConfigService` holding exactly the variables it means,
+ * rather than whatever `process.env` holds.
  */
 async function boot(
   env: Record<string, string>,
@@ -39,7 +38,7 @@ async function boot(
   class TestConfig {}
 
   const moduleRef = await Test.createTestingModule({
-    imports: [TestConfig, DbModule, WardModule],
+    imports: [TestConfig, DbModule, IdentityModule],
   }).compile();
   const app = moduleRef.createNestApplication<INestApplication<Server>>();
   app.setGlobalPrefix('api');
@@ -51,8 +50,8 @@ async function boot(
 const PASSWORD = 'correct horse battery';
 
 interface IdentityBody {
-  mode: string;
-  local?: { setUp: boolean; setupTokenRequired: boolean };
+  setUp: boolean;
+  setupTokenRequired: boolean;
 }
 const identity = async (http: ReturnType<typeof request>) =>
   (await http.get('/api/identity')).body as IdentityBody;
@@ -71,12 +70,9 @@ describe('the local sign-in (e2e) — brief 152', () => {
     await app.close();
   });
 
-  it('says it is in local mode, unclaimed, and nobody is signed in', async () => {
+  it('says it is unclaimed, and nobody is signed in', async () => {
     const res = await http.get('/api/identity').expect(200);
-    expect(res.body).toEqual({
-      mode: 'local',
-      local: { setUp: false, setupTokenRequired: false },
-    });
+    expect(res.body).toEqual({ setUp: false, setupTokenRequired: false });
     await http.get('/api/me').expect(401);
   });
 
@@ -93,7 +89,7 @@ describe('the local sign-in (e2e) — brief 152', () => {
       .post('/api/identity/local/setup')
       .send({ username: 'Mallory', password: 'another long one' })
       .expect(409);
-    expect((await identity(http)).local!.setUp).toBe(true);
+    expect((await identity(http)).setUp).toBe(true);
 
     await http
       .post('/api/identity/local/sign-in')
@@ -203,7 +199,7 @@ describe('the local sign-in with a SETUP_TOKEN (e2e)', () => {
     const app = await boot({ SETUP_TOKEN: 'printed-on-the-console' });
     const http = request(app.getHttpServer());
     try {
-      expect((await identity(http)).local!.setupTokenRequired).toBe(true);
+      expect((await identity(http)).setupTokenRequired).toBe(true);
       await http
         .post('/api/identity/local/setup')
         .send({ username: 'Ana', password: PASSWORD })
@@ -220,7 +216,7 @@ describe('the local sign-in with a SETUP_TOKEN (e2e)', () => {
           setupToken: 'printed-on-the-console',
         })
         .expect(204);
-      expect((await identity(http)).local!).toEqual({
+      expect(await identity(http)).toEqual({
         setUp: true,
         setupTokenRequired: false,
       });
@@ -230,24 +226,27 @@ describe('the local sign-in with a SETUP_TOKEN (e2e)', () => {
   });
 });
 
-describe('a Ward install exposes no local sign-in (e2e)', () => {
-  it('reports Ward mode, and every local route is 404', async () => {
+describe('an old environment that still sets WARD_* (e2e), brief 157', () => {
+  it('changes nothing: the machine still asks to be claimed and signs in itself', async () => {
     const app = await boot({
-      WARD_PUBLIC_ORIGIN: 'https://ward.test',
-      WARD_API_BASE_PATH: '/ward-api',
-      WARD_APP_KEY: 'wak_test_key_not_a_real_credential',
+      WARD_PUBLIC_ORIGIN: 'https://estate.test',
+      WARD_API_BASE_PATH: '/old-api',
+      WARD_APP_KEY: 'not-a-real-key',
     });
     const http = request(app.getHttpServer());
     try {
-      expect(await identity(http)).toEqual({ mode: 'ward' });
+      expect(await identity(http)).toEqual({
+        setUp: false,
+        setupTokenRequired: false,
+      });
       await http
         .post('/api/identity/local/setup')
         .send({ username: 'Ana', password: PASSWORD })
-        .expect(404);
+        .expect(204);
       await http
         .post('/api/identity/local/sign-in')
         .send({ password: PASSWORD })
-        .expect(404);
+        .expect(204);
     } finally {
       await app.close();
     }

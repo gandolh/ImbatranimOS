@@ -5,8 +5,8 @@ import starlight from '@astrojs/starlight'
 // The deployed base path, baked in rather than injected at deploy time.
 //
 // vps-deploy ships what this repo already built and VERIFIES this base — it does
-// not set it. That is the estate's rule for the case that matters most (Ward's
-// UI does the same, see vps-deploy/stacks/ward.ts): a variable the deploy passes
+// not set it. That is the estate's rule for the case that matters most (the
+// estate's other UIs do the same): a variable the deploy passes
 // that changes nothing is a variable that can silently disagree, whereas a value
 // baked here and checked there cannot. Build with `npm run docs`; a wrong base
 // fails the deploy by name instead of shipping a page whose every asset 404s.

@@ -1,13 +1,18 @@
+import { IGNORED_ENV_PREFIX } from './config/env.schema';
+
+/** Secrets the config schema says never leave the server. */
+const SECRET_NAMES = new Set(['SETUP_TOKEN']);
+
 /**
- * The environment a child process starts with: the backend's own, minus Ward's.
+ * The environment a child process starts with: the backend's own, minus its
+ * secrets.
  *
- * `WARD_APP_KEY` is a secret the config schema says never leaves the server.
- * A terminal inheriting `process.env` handed it to anyone with a shell
- * (`echo $WARD_APP_KEY`, brief 138), and git did the same less directly: a
+ * A terminal inheriting `process.env` hands every secret in it to anyone with
+ * a shell (`echo $NAME`, brief 138), and git does the same less directly: a
  * repository opened in the Git app runs its own hooks, `core.pager`,
  * `core.fsmonitor` and credential helpers, any of which can read the
- * environment. Every `WARD_*` name goes, not just the key: none of them is a
- * child's business.
+ * environment. So `SETUP_TOKEN` goes, and so does every ignored `WARD_*` name
+ * an old `.env` may still carry (one was a key).
  *
  * A denylist rather than an allowlist on purpose. The terminal is the user's
  * workspace on a real system, and an allowlist would also strip whatever the
@@ -22,7 +27,8 @@ export function childEnv(
 ): NodeJS.ProcessEnv {
   const out: NodeJS.ProcessEnv = {};
   for (const [name, value] of Object.entries(env)) {
-    if (!name.startsWith('WARD_')) out[name] = value;
+    if (SECRET_NAMES.has(name) || name.startsWith(IGNORED_ENV_PREFIX)) continue;
+    out[name] = value;
   }
   return out;
 }

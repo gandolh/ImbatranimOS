@@ -27,7 +27,7 @@ import { MarketplaceModule } from '../src/modules/marketplace/marketplace.module
 import { MarketplaceServers } from '../src/modules/marketplace/marketplace-servers.service';
 import { MarketplaceService } from '../src/modules/marketplace/marketplace.service';
 import { PtyModule } from '../src/modules/pty/pty.module';
-import { WardModule } from '../src/modules/ward/ward.module';
+import { IdentityModule } from '../src/modules/identity/identity.module';
 import { UpgradeRoutesModule } from '../src/upgrade-routes';
 
 /**
@@ -213,7 +213,7 @@ describe('the marketplace (e2e) — brief 120', () => {
     );
 
     // A secret in the backend's environment that no build may see.
-    process.env.WARD_TEST_SECRET = 'must-not-leak';
+    process.env.SETUP_TOKEN = 'must-not-leak';
 
     const values: Record<string, unknown> = {
       DB_PATH: join(work, 'home', '.imbatranim', 'db.sqlite'),
@@ -240,7 +240,7 @@ describe('the marketplace (e2e) — brief 120', () => {
       imports: [
         TestConfig,
         DbModule,
-        WardModule,
+        IdentityModule,
         UpgradeRoutesModule,
         PtyModule,
         MarketplaceModule,
@@ -272,7 +272,7 @@ describe('the marketplace (e2e) — brief 120', () => {
   }, 30_000);
 
   afterAll(async () => {
-    delete process.env.WARD_TEST_SECRET;
+    delete process.env.SETUP_TOKEN;
     await app.close();
     rmSync(work, { recursive: true, force: true });
   });
@@ -377,7 +377,7 @@ describe('the marketplace (e2e) — brief 120', () => {
         .set('Cookie', cookie)
         .expect(200)
     ).body as Record<string, string>;
-    expect(env.WARD_TEST_SECRET).toBeUndefined();
+    expect(env.SETUP_TOKEN).toBeUndefined();
     expect(env.DB_PATH).toBeUndefined();
     expect(env.HOME).toBe(join(appsDir, '.cache', 'home'));
     expect(env.npm_config_cache).toBe(join(appsDir, '.cache', 'npm'));

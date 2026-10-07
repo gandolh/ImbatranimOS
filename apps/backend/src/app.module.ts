@@ -8,7 +8,7 @@ import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
 import { SystemModule } from './modules/system/system.module';
 import { PtyModule } from './modules/pty/pty.module';
 import { FilesModule } from './modules/files/files.module';
-import { WardModule } from './modules/ward/ward.module';
+import { IdentityModule } from './modules/identity/identity.module';
 import { GitModule } from './modules/git/git.module';
 import { HttpProxyModule } from './modules/http-proxy/http-proxy.module';
 import { ArchiveModule } from './modules/archive/archive.module';
@@ -42,7 +42,7 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
     DbModule,
     LogsModule,
     PrefsModule,
-    WardModule,
+    IdentityModule,
     UpgradeRoutesModule,
     StickyNotesModule,
     TodosModule,

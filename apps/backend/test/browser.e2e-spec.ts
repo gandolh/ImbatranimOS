@@ -13,7 +13,7 @@ import WebSocket from 'ws';
 import { DbModule } from '../src/db/db.module';
 import { BrowserModule } from '../src/modules/browser/browser.module';
 import { BrowserProxyServer } from '../src/modules/browser/browser-proxy.server';
-import { WardModule } from '../src/modules/ward/ward.module';
+import { IdentityModule } from '../src/modules/identity/identity.module';
 
 /**
  * The Browser's proxy origin and relay, end to end (brief 50): the second
@@ -45,7 +45,7 @@ async function boot(): Promise<INestApplication<Server>> {
   class TestConfig {}
 
   const moduleRef = await Test.createTestingModule({
-    imports: [TestConfig, DbModule, WardModule, BrowserModule],
+    imports: [TestConfig, DbModule, IdentityModule, BrowserModule],
   }).compile();
   const app = moduleRef.createNestApplication<INestApplication<Server>>();
   app.setGlobalPrefix('api');
@@ -284,7 +284,7 @@ describe('the Browser when BROWSER_PROXY_PORT is unset (e2e)', () => {
     })
     class OffConfig {}
     const moduleRef = await Test.createTestingModule({
-      imports: [OffConfig, DbModule, WardModule, BrowserModule],
+      imports: [OffConfig, DbModule, IdentityModule, BrowserModule],
     }).compile();
     const app = moduleRef.createNestApplication<INestApplication<Server>>();
     app.setGlobalPrefix('api');

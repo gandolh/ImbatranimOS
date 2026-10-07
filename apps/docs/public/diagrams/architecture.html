@@ -5039,7 +5039,6 @@
         <path data-edge-from="nest" data-edge-to="pty" data-edge-label="/api/pty over WS" data-edge-key="3" data-edge-id="n-pty" data-composition-points="690,380;714,380;714,284;940,284;940,260" d="M 690 380 L 706 380 Q 714 380 714 372 L 714 292 Q 714 284 722 284 L 932 284 Q 940 284 940 276 L 940 260" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="nest" data-edge-to="fs" data-edge-label="read + write" data-edge-key="4" data-edge-id="n-fs" data-composition-points="690,380;860,380" d="M 690 380 L 860 380" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="nest" data-edge-to="home" data-edge-label="mounted at $HOME" data-edge-key="5" data-edge-id="n-home" data-composition-points="690,380;714,380;714,476;940,476;940,500" d="M 690 380 L 706 380 Q 714 380 714 388 L 714 468 Q 714 476 722 476 L 932 476 Q 940 476 940 484 L 940 500" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="nest" data-edge-to="ward" data-edge-label="verify + grant check" data-edge-key="6" data-edge-id="n-ward" data-composition-points="590,410;590,505;570,505;570,600" d="M 590 410 L 590 497 Q 590 505 582 505 L 578 505 Q 570 505 570 513 L 570 600" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
 
         <!-- Components -->
         <g id="node-browser" data-node-id="browser" data-node-label="Browser" tabindex="0" role="button" aria-label="Focus Browser, the display, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="the display" data-node-context="Architecture component">
@@ -5125,18 +5124,6 @@
         <text data-detail="context" x="940" y="544" class="t-muted" font-size="9" text-anchor="middle">named, survives rebuilds</text>
         </g>
 
-        <g id="node-ward" data-node-id="ward" data-node-label="Ward" tabindex="0" role="button" aria-label="Focus Ward, identity + grants, Architecture component" aria-pressed="false" data-node-kind="security" data-node-sublabel="identity + grants" data-node-context="Architecture component">
-          <title>Ward · identity + grants · Architecture component</title>
-          <rect x="470" y="600" width="200" height="60" rx="6" class="c-mask"/>
-          <rect x="470" y="600" width="200" height="60" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(476 606) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="570" y="628" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Ward</text>
-        <text data-detail="context" x="570" y="644" class="t-muted" font-size="9" text-anchor="middle">identity + grants</text>
-        </g>
-
         <!-- Connection labels -->
         <g data-detail="context" data-edge-from="browser" data-edge-to="caddy" data-edge-label="HTTPS" data-edge-key="0" data-edge-id="b-c">
           <rect x="198" y="360" width="34" height="14" rx="3" class="c-mask"/>
@@ -5161,10 +5148,6 @@
         <g data-detail="context" data-edge-from="nest" data-edge-to="home" data-edge-label="mounted at $HOME" data-edge-key="5" data-edge-id="n-home">
           <rect x="731.6" y="460" width="86.8" height="14" rx="3" class="c-mask"/>
           <text x="775" y="470" class="t-muted" font-size="8" text-anchor="middle">mounted at $HOME</text>
-        </g>
-        <g data-detail="context" data-edge-from="nest" data-edge-to="ward" data-edge-label="verify + grant check" data-edge-key="6" data-edge-id="n-ward">
-          <rect x="537" y="460" width="106" height="14" rx="3" class="c-mask"/>
-          <text x="590" y="470" class="t-security" font-size="8" text-anchor="middle">verify + grant check</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
@@ -5192,13 +5175,9 @@
             <rect x="350" y="735" width="16" height="10" rx="2.5" class="c-cloud" stroke-width="1"/>
             <text x="372" y="744" class="t-muted" font-size="10" font-weight="500">Cloud</text>
           </g>
-          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="Security" data-legend-x="440" data-legend-baseline="744" data-legend-width="83">
-            <rect x="440" y="735" width="16" height="10" rx="2.5" class="c-security" stroke-width="1"/>
-            <text x="462" y="744" class="t-muted" font-size="10" font-weight="500">Security</text>
-          </g>
-          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="545" data-legend-baseline="744" data-legend-width="83">
-            <rect x="545" y="735" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
-            <text x="567" y="744" class="t-muted" font-size="10" font-weight="500">External</text>
+          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="440" data-legend-baseline="744" data-legend-width="83">
+            <rect x="440" y="735" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
+            <text x="462" y="744" class="t-muted" font-size="10" font-weight="500">External</text>
           </g>
         </g>
       </svg>

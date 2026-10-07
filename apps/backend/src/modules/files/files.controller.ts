@@ -58,7 +58,7 @@ export class FilesController {
   /**
    * GET /api/files/search?root=&query=&content= → { items, truncated }
    *
-   * Authed by the global WardAuthGuard (no `@Public()`). Jailed + bounded in
+   * Authed by the global SessionGuard (no `@Public()`). Jailed + bounded in
    * the service — see {@link FilesService.search}.
    */
   /**

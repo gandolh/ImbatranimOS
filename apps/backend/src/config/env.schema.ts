@@ -19,37 +19,16 @@ export const envSchema = z
     // When set (prod image), Nest serves the built frontend from this dir on
     // the same port as the API. Unset in dev — Vite serves the frontend.
     STATIC_ROOT: z.string().optional(),
-    // --- Identity: Ward, or a local sign-in --------------------------------
+    // --- Identity: the machine's own single-owner sign-in -------------------
     //
-    // Inside the estate, identity is Ward's: the browser holds a `ward_session`
-    // cookie for the whole origin, verified locally against Ward's JWKS and then
-    // introspected for liveness. Set all three WARD_* variables for that.
+    // A password chosen on first run, an httpOnly session cookie and a login
+    // throttle (brief 152). It is the only sign-in since brief 157.
     //
-    // With NONE of them set, the backend runs its own single-owner sign-in
-    // instead (decided 2026-10-04, brief 152 option C): a password chosen on
-    // first run, an httpOnly session cookie and a login throttle. That is what a
-    // standalone run, a friend's Docker install and the server ISO use. Setting
-    // only some of the three is refused at boot (see `.superRefine` below): a
-    // half-configured Ward is a typo, not a choice of mode.
-
-    // Ward's public origin, and the exact `iss` on every access token.
-    WARD_PUBLIC_ORIGIN: z.string().url().optional(),
-    // Ward's prefix behind Caddy: `/ward-api`.
-    //
-    // Deliberately undefaulted. An empty value resolves the JWKS to
-    // `<origin>/.well-known/jwks.json`, a path nothing serves — which would make
-    // this app reject every token, with a clean log, on the deploy that carried
-    // the mistake.
-    WARD_API_BASE_PATH: z.string().min(1).optional(),
-    // This app's own Ward service key, sent as `x-ward-app-key`. A SECRET:
-    // server-side only, never logged in full, never exposed to the frontend.
-    // Issued from Ward's console, shown once, not readable back.
-    WARD_APP_KEY: z.string().min(1).optional(),
-
-    // Local sign-in only. When set, the first-run claim needs this token as well
-    // as a new password, so a machine reachable on a network cannot be claimed
-    // by whoever gets there before its owner. Printed by the operator (or the
-    // ISO's first boot), never by the app. Ignored once the machine is claimed.
+    // When set, the first-run claim needs this token as well as a new password,
+    // so a machine reachable on a network cannot be claimed by whoever gets
+    // there before its owner. Printed by the operator (or the ISO's first
+    // boot), never by the app. Ignored once the machine is claimed. A SECRET:
+    // `child-env.ts` keeps it out of every child process.
     SETUP_TOKEN: z.string().min(1).optional(),
 
     // --- The Browser app's proxy origin (brief 50) ---------------------------
@@ -79,20 +58,6 @@ export const envSchema = z
     TRUST_PROXY: envBool(false),
   })
   .superRefine((env, ctx) => {
-    const ward = [
-      env.WARD_PUBLIC_ORIGIN,
-      env.WARD_API_BASE_PATH,
-      env.WARD_APP_KEY,
-    ];
-    const set = ward.filter((v) => v !== undefined).length;
-    if (set !== 0 && set !== 3) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['WARD_PUBLIC_ORIGIN'],
-        message:
-          'Set all three of WARD_PUBLIC_ORIGIN, WARD_API_BASE_PATH and WARD_APP_KEY to use Ward, or none of them for the local sign-in.',
-      });
-    }
     if (env.BROWSER_PROXY_ORIGIN && env.BROWSER_PROXY_PORT === undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -127,13 +92,23 @@ export function browserProxyOriginOf(env: {
   return `${frontend.protocol}//${frontend.hostname}:${env.BROWSER_PROXY_PORT}`;
 }
 
-/** Which identity this process runs: the estate's Ward, or its own local sign-in. */
-export type IdentityMode = 'ward' | 'local';
+/**
+ * Variables a deploy from before brief 157 still sets, which nothing reads.
+ *
+ * The estate's identity service once signed people in here through three
+ * `WARD_*` variables. An old `.env` that still holds them must not fail
+ * silently, so the boot names them once (`main.ts`). `child-env.ts` still keeps
+ * them out of child processes, since one of them was a key.
+ */
+export const IGNORED_ENV_PREFIX = 'WARD_';
 
-export function identityModeOf(env: {
-  WARD_PUBLIC_ORIGIN?: string;
-}): IdentityMode {
-  return env.WARD_PUBLIC_ORIGIN ? 'ward' : 'local';
+/** The boot's one line about ignored variables, or null when there are none. */
+export function ignoredEnvNotice(env: NodeJS.ProcessEnv): string | null {
+  const names = Object.keys(env)
+    .filter((name) => name.startsWith(IGNORED_ENV_PREFIX))
+    .sort();
+  if (names.length === 0) return null;
+  return `Ignoring ${names.join(', ')}: this machine signs people in itself (brief 157). Remove them from the environment.`;
 }
 
 export type Env = z.infer<typeof envSchema>;

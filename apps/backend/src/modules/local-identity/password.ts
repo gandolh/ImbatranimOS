@@ -3,9 +3,9 @@ import { randomBytes, scrypt, timingSafeEqual } from 'crypto';
 /**
  * The owner's password, hashed with scrypt from `node:crypto`.
  *
- * scrypt rather than argon2id (which the pre-Ward store used): no native
- * module, so a Node upgrade cannot break sign-in, and the server ISO's musl
- * build needs nothing compiled. Ward made the same choice for the same reason.
+ * scrypt rather than argon2id (which the store deleted on 2026-09-06 used): no
+ * native module, so a Node upgrade cannot break sign-in, and the server ISO's
+ * musl build needs nothing compiled.
  *
  * Stored as `scrypt$<log2 N>$<r>$<p>$<salt>$<hash>`, base64url, so the cost can
  * be raised later and old hashes still verify.

@@ -11,9 +11,8 @@ import { WebSocket, WebSocketServer, type RawData } from 'ws';
 
 import type { Env } from '../../config/env.schema';
 import { UpgradeRoutes } from '../../upgrade-routes';
-import { WardService } from '../auth/ws-auth';
+import { LocalIdentityService } from '../auth/ws-auth';
 import { authorizeUpgrade } from '../pty/pty-upgrade';
-import { WardFreshness } from '../ward/ward-freshness';
 import { MarketplaceServers } from './marketplace-servers.service';
 
 /** `/api/marketplace/apps/<id>/server[/rest]`. */
@@ -30,15 +29,14 @@ const REVOKE_SWEEP_MS = 30_000;
 interface Live {
   client: WebSocket;
   upstream: WebSocket;
-  sid: string;
   cookie: string | undefined;
 }
 
 /**
  * A service app's WebSocket, reached through the desktop's own port (brief
  * 120). The app's server listens on 127.0.0.1 only; this is the one way in,
- * and it asks exactly what the terminal asks: a live session holding this
- * machine's grant, from the desktop's origin. Sessions are re-checked every
+ * and it asks exactly what the terminal asks: a live session, from the
+ * desktop's origin. Sessions are re-checked every
  * {@link REVOKE_SWEEP_MS}, as the terminal's are.
  *
  * The upstream connection carries no cookie and no Authorization: the
@@ -62,8 +60,7 @@ export class MarketplaceWsProxy
 
   constructor(
     private readonly upgrades: UpgradeRoutes,
-    private readonly ward: WardService,
-    private readonly freshness: WardFreshness,
+    private readonly identity: LocalIdentityService,
     private readonly config: ConfigService<Env, true>,
     private readonly servers: MarketplaceServers,
   ) {}
@@ -110,7 +107,7 @@ export class MarketplaceWsProxy
     void (async () => {
       const record = await authorizeUpgrade(
         req,
-        this.ward,
+        this.identity,
         this.config.get('FRONTEND_URL'),
       );
       if (socket.destroyed) return;
@@ -151,7 +148,7 @@ export class MarketplaceWsProxy
 
       socket.off('error', onSocketError);
       this.wss.handleUpgrade(req, socket, head, (client) => {
-        this.pipe(id, client, upstream, record.sid, req.headers.cookie);
+        this.pipe(id, client, upstream, req.headers.cookie);
       });
     })();
   }
@@ -160,10 +157,9 @@ export class MarketplaceWsProxy
     id: string,
     client: WebSocket,
     upstream: WebSocket,
-    sid: string,
     cookie: string | undefined,
   ): void {
-    const entry: Live = { client, upstream, sid, cookie };
+    const entry: Live = { client, upstream, cookie };
     this.live.add(entry);
     this.perApp.set(id, (this.perApp.get(id) ?? 0) + 1);
     this.servers.socketOpened(id);
@@ -205,20 +201,17 @@ export class MarketplaceWsProxy
     upstream.on('error', () => client.close(1011, 'app server error'));
   }
 
-  /** Close every socket whose session ended or lost its grant. See PtyGateway. */
+  /** Close every socket whose session ended. See PtyGateway. */
   private async sweepRevoked(): Promise<void> {
     for (const entry of [...this.live]) {
-      const cookie = this.freshness.latest(entry.sid) ?? entry.cookie;
       const still = await authorizeUpgrade(
-        { headers: { cookie } },
-        this.ward,
+        { headers: { cookie: entry.cookie } },
+        this.identity,
         this.config.get('FRONTEND_URL'),
       );
       if (!still) {
         entry.client.close(4401, 'session-revoked');
         entry.upstream.terminate();
-      } else {
-        entry.cookie = cookie;
       }
     }
   }

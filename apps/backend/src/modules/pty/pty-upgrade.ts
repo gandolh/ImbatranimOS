@@ -1,11 +1,7 @@
 import type { IncomingMessage } from 'http';
 import { PTY_PATH } from './pty.constants';
 
-import {
-  IMBATRANIMOS_APP_SLUG,
-  type WardCaller,
-  type WardService,
-} from '../auth/ws-auth';
+import type { Caller, LocalIdentityService } from '../auth/ws-auth';
 
 /**
  * True when a raw upgrade request targets the terminal endpoint. The URL may
@@ -45,30 +41,18 @@ export function isOriginAllowed(
 /**
  * Authorize a WS upgrade using the SAME code path as the REST guard.
  *
- * Returns the session on success, or null to reject — the caller destroys the
- * socket. Reads Ward's `ward_session` cookie straight off the raw upgrade
- * request; no cookie middleware is involved.
- *
- * **Both halves are required and neither is optional.** `authenticate`
- * establishes that the session is live; the grant check establishes that this
- * particular account may open a shell on this machine. Skipping the second
- * would let anyone who registered at prm — which is open to the public — reach
- * a terminal, and that is precisely the failure the estate's grant model
- * exists to prevent.
+ * Returns the caller on success, or null to reject: the caller destroys the
+ * socket. Reads the `imb_session` cookie straight off the raw upgrade request;
+ * no cookie middleware is involved.
  */
 export async function authorizeUpgrade(
   req: Pick<IncomingMessage, 'headers'>,
-  ward: Pick<WardService, 'authenticate'>,
+  identity: Pick<LocalIdentityService, 'authenticate'>,
   frontendUrl: string,
-): Promise<WardCaller | null> {
+): Promise<Caller | null> {
   if (!isOriginAllowed(req, frontendUrl)) return null;
   try {
-    const session = await ward.authenticate(req.headers.cookie);
-    const roles = session.grants[IMBATRANIMOS_APP_SLUG] ?? [];
-    // Ward being unreachable throws here too, and lands in the same `null`.
-    // For a WebSocket that is the right collapse: there is no status code to
-    // distinguish with, and failing closed is the only safe answer.
-    return roles.length > 0 ? session : null;
+    return await identity.authenticate(req.headers.cookie);
   } catch {
     return null;
   }

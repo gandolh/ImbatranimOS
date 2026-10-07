@@ -5,9 +5,9 @@ import { errorMessage, localChangePassword, localSetup, localSignIn } from './ap
 import { useAuthStore } from './store/authStore'
 
 /**
- * The machine's own sign-in, for when Ward is not configured (brief 152,
- * option C): claiming an unclaimed machine, and signing its owner in. Both
- * end in `refresh()`, so `/me` stays the one source of truth for who is in.
+ * The machine's own sign-in (brief 152, the only one since brief 157):
+ * claiming an unclaimed machine, and signing its owner in. Both end in
+ * `refresh()`, so `/me` stays the one source of truth for who is in.
  */
 
 /** Matches the backend's `MIN_PASSWORD_LENGTH`. The backend is what enforces it. */
@@ -158,7 +158,7 @@ export function LocalSignInScreen() {
 }
 
 /**
- * Settings → Security, in local mode: change the owner's password. Other
+ * Settings → Security: change the owner's password. Other
  * sessions end; this one carries on.
  */
 export function LocalPasswordForm() {

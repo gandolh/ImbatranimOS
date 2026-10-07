@@ -12,7 +12,7 @@ import * as os from 'os';
 import { join } from 'path';
 import { ConfigModule } from '../../config/config.module';
 import { DbModule } from '../../db/db.module';
-import { WardTestModule, TEST_COOKIE } from '../ward/testing';
+import { IdentityTestModule, TEST_COOKIE } from '../identity/testing';
 import { FilesModule } from './files.module';
 
 /**
@@ -33,7 +33,7 @@ describe('Files body-size cap (T0-4)', () => {
     process.env.FILES_ROOT = jail;
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, WardTestModule, FilesModule],
+      imports: [ConfigModule, DbModule, IdentityTestModule, FilesModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

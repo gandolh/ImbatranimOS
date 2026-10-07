@@ -142,20 +142,6 @@
         160,
         60
       ]
-    },
-    {
-      "id": "ward",
-      "type": "security",
-      "label": "Ward",
-      "sublabel": "identity + grants",
-      "pos": [
-        470,
-        600
-      ],
-      "size": [
-        200,
-        60
-      ]
     }
   ],
   "boundaries": [
@@ -222,19 +208,6 @@
       "toSide": "top",
       "labelAt": [
         775,
-        470
-      ]
-    },
-    {
-      "id": "n-ward",
-      "from": "nest",
-      "to": "ward",
-      "label": "verify + grant check",
-      "variant": "security",
-      "fromSide": "bottom",
-      "toSide": "top",
-      "labelAt": [
-        590,
         470
       ]
     }

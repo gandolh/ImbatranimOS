@@ -28,7 +28,7 @@ describe('AppModule (e2e)', () => {
   });
 
   // Smoke test: the app boots and its global auth guard is wired — an
-  // unauthenticated API call is rejected. (The 401/403/503 split: ward-session.e2e-spec.)
+  // unauthenticated API call is rejected. (The sign-in itself: local-identity.e2e-spec.)
   it('rejects an unauthenticated API request (401)', () => {
     return request(app.getHttpServer()).get('/api/todos').expect(401);
   });

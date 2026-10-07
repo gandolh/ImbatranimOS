@@ -11,12 +11,9 @@ import { BackupService } from './backup.service';
  * `ArchiveService` for the hardened tar extraction a restore runs through.
  * `DbService` is global.
  *
- * It used to import `AuthModule` as well, so a restore could revoke every
- * session — the restored database carried the *backup's* credentials, so
- * whoever held a session was no longer necessarily the owner of the password
- * now guarding the machine. That is moot since the Ward cutover: credentials
- * are not in this database at all, so swapping it changes nothing about who may
- * sign in.
+ * The restored database carries the *backup's* owner and password, so a
+ * restore revokes every session through `LocalIdentityService`, which the
+ * global `IdentityModule` provides.
  */
 @Module({
   imports: [FilesModule, ArchiveModule],

@@ -14,10 +14,9 @@ docker compose -f infrastructure/docker-compose.yml up imbatranimos
 npm run dev     # = docker compose --profile dev watch
 ```
 
-With no `WARD_*` variables, the first visit sets the owner's name and password
-(no default password ever exists), and every visit after that asks for it. Set
-`SETUP_TOKEN` to make the first claim also need a token only you know. With all
-three `WARD_*` variables set, sign-in is Ward's instead (see Identity below).
+The first visit sets the owner's name and password (no default password ever
+exists), and every visit after that asks for it. Set `SETUP_TOKEN` to make the
+first claim also need a token only you know (see Identity below).
 
 ## Developing (contained — brief 51)
 
@@ -45,7 +44,7 @@ host) remains as the escape hatch for a host with the full toolchain.
 
 ### The dev container's sign-in
 
-The dev container runs the local sign-in (no Ward). Its owner is:
+The dev container runs the same sign-in as every other setup. Its owner is:
 
 - name: `Developer`
 - password: `Testing1234#`
@@ -100,33 +99,37 @@ exist.
 
 ## Identity (what ships)
 
-Two modes, chosen by the environment (decided 2026-10-04, brief 152):
+One sign-in, the machine's own (brief 152; the only one since brief 157, in
+the estate too). A standalone run, a friend's install, the `gandolh.ro`
+deploy and the server ISO all use it.
 
-- **Local sign-in** (no `WARD_*` set): what a standalone run, a friend's
-  install and the server ISO use.
-  - **A single owner**, stored in SQLite (`local_owner`), with the password
-    hashed with **scrypt** (`node:crypto`, so no native module). No default
-    password: the first visit creates it, optionally gated by `SETUP_TOKEN`.
-  - **Sessions:** a random token in an `httpOnly`, `SameSite=Lax` cookie
-    (`imb_session`). Only its SHA-256 is stored server-side, and a session
-    lasts 30 days. Log off ends it. Changing the password ends every other
-    session, and a restore from backup ends them all.
-  - **Backoff:** in memory, per client address. The first 5 failures are free,
-    then the wait doubles from 1 s, capped at 15 min. It resets on a
-    successful sign-in and on restart.
-  - No two-factor.
-- **Ward** (all three `WARD_*` set): the estate's single sign-in. The browser's
-  `ward_session` cookie is verified against Ward's keys and introspected. An
-  account needs an `imbatranim-os` grant. The local routes answer 404.
-- **Either way:**
-  - **CSRF:** the `SameSite=Lax` cookie **plus** an Origin check on all
-    state-changing requests (POST/PUT/PATCH/DELETE). A present `Origin` must
-    match the request host or the configured `FRONTEND_URL`. An absent Origin
-    (same-origin GET, non-browser clients) is allowed.
-  - **Every** API route needs a session except `GET /api/identity`, the local
-    setup/sign-in/sign-out routes, the `/health` check and the static desktop
-    assets. The Terminal's WebSocket is authenticated by the same check.
-  - **Cover screen** hides the desktop but is not a lock.
+- **A single owner**, stored in SQLite (`local_owner`), with the password
+  hashed with **scrypt** (`node:crypto`, so no native module). No default
+  password: the first visit creates it, optionally gated by `SETUP_TOKEN`.
+- **Sessions:** a random token in an `httpOnly`, `SameSite=Lax` cookie
+  (`imb_session`). Only its SHA-256 is stored server-side, and a session
+  lasts 30 days. Log off ends it. Changing the password ends every other
+  session, and a restore from backup ends them all.
+- **Backoff:** in memory, per client address. The first 5 failures are free,
+  then the wait doubles from 1 s, capped at 15 min. It resets on a
+  successful sign-in and on restart.
+- No two-factor.
+- **CSRF:** the `SameSite=Lax` cookie **plus** an Origin check on all
+  state-changing requests (POST/PUT/PATCH/DELETE). A present `Origin` must
+  match the request host or the configured `FRONTEND_URL`. An absent Origin
+  (same-origin GET, non-browser clients) is allowed.
+- **Shared origin, accepted risk:** on a domain shared with other apps (the
+  deploy at `gandolh.ro/imbatranim-os`), a script on a sibling app can send
+  requests to `/imbatranim-os/api/*` and the browser attaches `imb_session`.
+  An XSS on a sibling while the owner is signed in reaches the terminal. The
+  owner accepted this on 2026-10-06 because every app on that origin is the
+  owner's own code under `script-src 'self'`.
+- **Every** API route needs a session except `GET /api/identity`, the
+  setup/sign-in/sign-out routes, the `/health` check and the static desktop
+  assets. The Terminal's WebSocket is authenticated by the same check.
+- **Cover screen** hides the desktop but is not a lock.
+- **Old variables:** an environment that still sets `WARD_*` (from before
+  brief 157) boots normally and logs one line naming them as ignored.
 
 ## The Browser's second port (brief 50)
 

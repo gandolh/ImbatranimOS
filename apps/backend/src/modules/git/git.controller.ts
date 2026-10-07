@@ -27,7 +27,7 @@ import {
 
 /**
  * Git operations over a single home-FS repo. Every route is authenticated by
- * the global WardAuthGuard (no `@Public()` here); mutating routes also get
+ * the global SessionGuard (no `@Public()` here); mutating routes also get
  * the guard's Origin/CSRF check. There is deliberately NO generic "run git"
  * route — only this fixed allowlist of subcommands exists.
  */

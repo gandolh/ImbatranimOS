@@ -9,7 +9,7 @@ import { FilesService } from '../files/files.service';
 import { ArchiveService } from '../archive/archive.service';
 import { DbService } from '../../db/db.service';
 import { LogService } from '../logs/log.service';
-import { LocalIdentityService } from '../local-identity/local-identity.service';
+import { makeLocalIdentity } from '../identity/testing';
 import {
   BACKUP_METADATA,
   BackupService,
@@ -76,7 +76,7 @@ describe('BackupService — brief 80', () => {
       archive,
       db,
       logs,
-      new LocalIdentityService(db),
+      makeLocalIdentity(db),
     );
   });
 
@@ -525,13 +525,7 @@ describe('BackupService — brief 80', () => {
       expect(rows.map((r) => r.text)).toEqual(['from the backup']);
     });
 
-    /**
-     * With Ward, there are no credentials in this database, so a restore
-     * cannot change who may sign in, and signing somebody out of the whole
-     * estate as a side effect would be this app overreaching. The local
-     * sign-in (brief 152) is the case below.
-     */
-    it('does not touch a Ward session — no Ward credentials are in this database', async () => {
+    it('restores no table from before brief 150 that held a user or a session', async () => {
       const tarball = await takeBackup();
       const upload = join(outside, 'u4.tar.gz');
       await fs.copyFile(tarball, upload);
@@ -539,8 +533,6 @@ describe('BackupService — brief 80', () => {
       const result = await service.apply(preview.id);
 
       expect(result).toBeDefined();
-      // Nothing in the restored database describes a user, a password or a
-      // session — the tables simply are not there to be swapped.
       const tables = db.db
         .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
         .all() as { name: string }[];
@@ -549,13 +541,13 @@ describe('BackupService — brief 80', () => {
     });
 
     /**
-     * The local sign-in (brief 152): the restored database carries the
+     * The sign-in (brief 152): the restored database carries the
      * backup's owner and password, and its own copy of the session table. So
      * every local session ends, and the password that works afterwards is the
      * one the backup was taken with.
      */
     it('ends every local session, and the restored password is the one that works', async () => {
-      const local = new LocalIdentityService(db);
+      const local = makeLocalIdentity(db);
       await local.setUp({
         username: 'Ana',
         password: 'the password at backup time',

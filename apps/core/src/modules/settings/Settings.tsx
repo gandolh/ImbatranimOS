@@ -30,9 +30,7 @@ import { StorageSettings } from './StorageSettings'
 import { BackupSettings } from './BackupSettings'
 import { DefaultAppsSettings } from './DefaultAppsSettings'
 import { StartupSettings } from './StartupSettings'
-import { wardAccountUrl } from '../auth/api/authApi'
 import { LocalPasswordForm } from '../auth/LocalScreens'
-import { useAuthStore } from '../auth/store/authStore'
 import { AboutMachine } from './AboutMachine'
 import { MarketplaceSettings } from './MarketplaceSettings'
 import { useRegistryVersion } from '../../shared/registry/marketplace'
@@ -99,7 +97,6 @@ export function Settings() {
   // rather than either hardcoding it or fetching twice.
   const [imageVersion, setImageVersion] = useState<string | null>(null)
   const onVersion = useCallback((v: string) => setImageVersion(v), [])
-  const localIdentity = useAuthStore((st) => st.identity?.mode === 'local')
 
   const { wallpaper, setWallpaper } = useWallpaperStore()
   const theme = useAppearanceStore((s) => s.theme)
@@ -307,27 +304,8 @@ export function Settings() {
         {/* Security ───────────────────────────────────────────── */}
         <section className="border-outline-variant mb-6 border-t pt-8">
           <SectionHeader icon={Monitor} title="Security" />
-          {/*
-            The password and two-factor controls lived here and are gone. They
-            are not missing — they moved: identity is the estate's now, so
-            changing a password or enrolling TOTP happens once at Ward and
-            applies everywhere, rather than once per app. Reimplementing them
-            here would give this machine a second, divergent answer to "what is
-            your password".
-          */}
-          {localIdentity ? (
-            // Without Ward (brief 152) the password is this machine's own.
-            <LocalPasswordForm />
-          ) : (
-            <p className="font-content text-on-surface-variant text-[12px]">
-              Your password, two-factor authentication and sign-in history are managed for every app
-              at once.{' '}
-              <a className="underline" href={wardAccountUrl()}>
-                Open your account
-              </a>
-              .
-            </p>
-          )}
+          {/* The machine's own password (brief 152). */}
+          <LocalPasswordForm />
         </section>
 
         {/* About ──────────────────────────────────────────────── */}

@@ -4,24 +4,15 @@ import { getIdentity, getStatus, type Identity, type Session } from '../api/auth
 /**
  * Who is signed in, and whether the screen is covered.
  *
- * ## `locked` is a privacy screen now, not a lock — and the rename matters
+ * ## `locked` is a privacy screen, not a lock
  *
- * Before Ward, locking covered the desktop and unlocking re-proved the local
- * password. That was a genuine lock, and its value was that it ended **nothing**:
- * the desktop stayed mounted, PTY sockets stayed open, dirty editor buffers
- * survived (brief 101).
- *
- * Inside the estate the only credential is Ward's (the local sign-in of brief
- * 152 is for installs without Ward), and re-proving it means navigating to Ward — which tears down the whole desktop
- * and so destroys the exact property the lock existed to protect.
- *
- * So the cover is kept and the claim is dropped: **`locked` obscures the
- * screen, and dismissing it requires only that the Ward session is still live.**
- * That is a screensaver, not a lock. It is worth keeping — walking away from a
- * shared room and coming back to a live terminal is the real use — but it must
- * not be described as security, and `SecurityScreen`'s copy says so plainly. If
- * a real lock is ever wanted, it needs something Ward does not offer today: a
- * re-authentication that does not leave the page.
+ * Covering the desktop ends **nothing**: it stays mounted, PTY sockets stay
+ * open, dirty editor buffers survive (brief 101). Dismissing the cover asks
+ * only that the session is still live. That is a screensaver, not a lock. It
+ * is worth keeping (walking away from a shared room and coming back to a live
+ * terminal is the real use), but it must not be described as security, and
+ * the cover's copy says so plainly. A real lock would re-prove the password
+ * without leaving the page; nothing asks for that yet.
  */
 interface AuthState {
   /** True once the initial probe has completed (avoids a flash of the cover). */
@@ -29,10 +20,6 @@ interface AuthState {
   authenticated: boolean
   /** The signed-in person, for the shell to render. Null when nobody is. */
   session: Session | null
-  /** True when the backend could not reach Ward — see `AuthStatus.unavailable`. */
-  unavailable: boolean
-  /** Signed in to Ward, but no grant for this app — see `AuthStatus.forbidden`. */
-  forbidden: boolean
   /**
    * The screen is covered. Distinct from `!authenticated` on purpose: covering
    * must not end anything — the desktop stays mounted, PTY sockets stay open,
@@ -46,10 +33,7 @@ interface AuthState {
    * screen before the session ended.
    */
   everAuthenticated: boolean
-  /**
-   * Which sign-in this machine uses (brief 152): Ward inside the estate, or
-   * its own local one. Null until the first probe answers.
-   */
+  /** Whether the machine is claimed yet (brief 152). Null until the first probe answers. */
   identity: Identity | null
   /** Re-probe the backend (the source of truth). */
   refresh: () => Promise<void>
@@ -65,21 +49,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   ready: false,
   authenticated: false,
   session: null,
-  unavailable: false,
-  forbidden: false,
   locked: false,
   everAuthenticated: false,
   identity: null,
   refresh: async () => {
-    // Both at once: the screen shown to a signed-out person depends on the mode.
+    // Both at once: a signed-out person sees the setup or the sign-in form.
     const [status, identity] = await Promise.all([getStatus(), getIdentity().catch(() => null)])
     set((prev) => ({
       identity: identity ?? prev.identity,
       ready: true,
       authenticated: status.authenticated,
       session: status.session,
-      unavailable: status.unavailable,
-      forbidden: status.forbidden,
       // Latches: once this tab has seen the desktop, it keeps the overlay model
       // until an explicit sign-out. `refresh` leaves `locked` alone — a status
       // poll must never uncover the screen.
@@ -97,7 +77,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       authenticated: false,
       session: null,
-      forbidden: false,
       locked: false,
       everAuthenticated: false,
     }),

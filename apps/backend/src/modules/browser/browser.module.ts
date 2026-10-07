@@ -6,8 +6,8 @@ import { BrowserProxyServer } from './browser-proxy.server';
 
 /**
  * The Browser (brief 50): the proxy origin's listener and Wisp relay, and the
- * encrypted profile. `WardService` and `WardFreshness` come from the global
- * WardModule, `DbService` from the global DbModule.
+ * encrypted profile. `LocalIdentityService` comes from the global
+ * IdentityModule, `DbService` from the global DbModule.
  */
 @Module({
   controllers: [BrowserController],

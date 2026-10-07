@@ -8,7 +8,10 @@ import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
 import { DbService } from '../src/db/db.service';
-import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
+import {
+  IdentityTestModule,
+  TEST_COOKIE,
+} from '../src/modules/identity/testing';
 import { StickyNotesModule } from '../src/modules/sticky-notes/sticky-notes.module';
 import type { StickyNote } from '../src/modules/sticky-notes/sticky-notes.service';
 
@@ -20,7 +23,7 @@ describe('Sticky notes (e2e) — the desktop surface', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, WardTestModule, StickyNotesModule],
+      imports: [ConfigModule, DbModule, IdentityTestModule, StickyNotesModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

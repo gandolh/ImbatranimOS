@@ -32,14 +32,14 @@ const MAX_BACKUP_UPLOAD_BYTES =
 /**
  * Back up and restore the home volume (brief 80).
  *
- * Every route is authenticated by the global `WardAuthGuard`; none carries
+ * Every route is authenticated by the global `SessionGuard`; none carries
  * `@Public()`. This is the most security-sensitive controller in the OS — the
  * download is the whole machine in one file — so it is worth writing down why
  * there is no second sign-in prompt on it: the archive contains nothing the
  * session cannot already read. `db.sqlite` sits inside the home volume and is
- * already reachable through `/api/files`, and since the Ward cutover it holds
- * no credentials at all (brief 150 dropped the old tables). A re-prompt here
- * would be theatre. Restore is different, and does require a typed
+ * already reachable through `/api/files`. The only credential in it is the
+ * owner's scrypt hash, and the session table stores only hashes of cookies, so
+ * a copy yields no usable session. A re-prompt here would be theatre. Restore is different, and does require a typed
  * confirmation, because it is destructive rather than merely revealing.
  */
 @Controller('backup')
@@ -113,10 +113,9 @@ export class BackupController {
   @Post('restore/apply')
   @HttpCode(HttpStatus.OK)
   async apply(@Body() dto: RestoreApplyDto) {
-    // No `signedOut` any more (brief 149): a restore cannot change who may sign
-    // in, because credentials are Ward's and are not in this database. The
-    // cookie is left alone; clearing Ward's cookie from here would sign
-    // somebody out of the whole estate as a side effect of a restore.
+    // No `signedOut` in the answer (brief 149). The restore does end every
+    // session, this one included (`BackupService.installDatabase`), and the
+    // desktop reloads after it, which lands on the sign-in screen.
     return this.backup.apply(dto.id);
   }
 }

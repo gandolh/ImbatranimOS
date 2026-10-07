@@ -14,7 +14,10 @@ import * as os from 'os';
 import { join } from 'path';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
-import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
+import {
+  IdentityTestModule,
+  TEST_COOKIE,
+} from '../src/modules/identity/testing';
 import { FilesModule } from '../src/modules/files/files.module';
 
 /** Shapes of the response bodies this spec reads fields off of. */
@@ -56,9 +59,9 @@ describe('Files (e2e) — auth + binary round-trip', () => {
     process.env.FILES_ROOT = jail;
 
     // A Test module wiring ONLY the FS surface + auth (no AppModule), so the
-    // global APP_GUARD from WardTestModule protects the FilesModule routes.
+    // global APP_GUARD from IdentityTestModule protects the FilesModule routes.
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, WardTestModule, FilesModule],
+      imports: [ConfigModule, DbModule, IdentityTestModule, FilesModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

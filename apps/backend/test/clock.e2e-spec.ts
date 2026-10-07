@@ -7,7 +7,10 @@ import type { Server } from 'http';
 import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
-import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
+import {
+  IdentityTestModule,
+  TEST_COOKIE,
+} from '../src/modules/identity/testing';
 import { ClockModule } from '../src/modules/clock/clock.module';
 import type { Alarm, WorldClock } from '../src/modules/clock/clock.service';
 
@@ -20,7 +23,7 @@ describe('Clock (e2e) — persisted world clocks and alarms', () => {
     // A fresh app per test so the in-memory DB starts empty — the import
     // endpoint's whole contract is "only into an empty table".
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, WardTestModule, ClockModule],
+      imports: [ConfigModule, DbModule, IdentityTestModule, ClockModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

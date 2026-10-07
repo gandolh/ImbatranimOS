@@ -1,6 +1,5 @@
 import { isPtyUpgrade, authorizeUpgrade, isOriginAllowed } from './pty-upgrade';
 import { PTY_PATH } from './pty.constants';
-import { IMBATRANIMOS_APP_SLUG } from '../ward/ward.types';
 
 const FRONTEND = 'http://localhost:5173';
 
@@ -51,70 +50,41 @@ describe('isOriginAllowed', () => {
 });
 
 describe('authorizeUpgrade', () => {
-  const req = { headers: { cookie: 'ward_session=tok' } };
+  const req = { headers: { cookie: 'imb_session=tok' } };
+  const live = { subject: 'local-owner', username: 'owner', sid: 'sid_1' };
 
-  const session = (grants: Record<string, string[]>) => ({
-    active: true as const,
-    subject: 'subject_owner',
-    username: 'owner',
-    grants,
-    sid: 'sid_1',
-  });
+  it('returns the caller when the session is live', async () => {
+    const identity = { authenticate: jest.fn().mockResolvedValue(live) };
 
-  it('returns the session when it is live and holds a grant for this app', async () => {
-    const live = session({ [IMBATRANIMOS_APP_SLUG]: ['owner'] });
-    const ward = { authenticate: jest.fn().mockResolvedValue(live) };
-
-    await expect(authorizeUpgrade(req, ward, FRONTEND)).resolves.toBe(live);
-    expect(ward.authenticate).toHaveBeenCalledWith('ward_session=tok');
+    await expect(authorizeUpgrade(req, identity, FRONTEND)).resolves.toBe(live);
+    expect(identity.authenticate).toHaveBeenCalledWith('imb_session=tok');
   });
 
   /**
-   * The assertion that matters most in this file.
-   *
-   * prm's registration is open to the public, so a live Ward session held by a
-   * complete stranger is an ordinary thing to receive here. Authenticating
-   * without checking the grant would hand that stranger a shell on the machine.
+   * Any failure collapses into `null`, and for a WebSocket that is the right
+   * answer: there is no status code to distinguish with, and failing closed is
+   * the only safe outcome.
    */
-  it('returns null for a live session that holds no grant for this app', async () => {
-    const ward = {
-      authenticate: jest.fn().mockResolvedValue(session({ prm: ['user'] })),
+  it('returns null (not throw) when there is no live session', async () => {
+    const identity = {
+      authenticate: jest.fn(() => Promise.reject(new Error('not active'))),
     };
-    await expect(authorizeUpgrade(req, ward, FRONTEND)).resolves.toBeNull();
+    await expect(authorizeUpgrade(req, identity, FRONTEND)).resolves.toBeNull();
   });
 
-  it('returns null when there is no live session', async () => {
-    const ward = {
-      authenticate: jest.fn().mockRejectedValue(new Error('not active')),
-    };
-    await expect(authorizeUpgrade(req, ward, FRONTEND)).resolves.toBeNull();
-  });
-
-  /**
-   * Ward being unreachable collapses into the same `null`, and for a WebSocket
-   * that is the right answer: there is no status code to distinguish with, and
-   * failing closed is the only safe outcome.
-   */
-  it('returns null (not throw) when Ward cannot be reached', async () => {
-    const ward = {
-      authenticate: jest.fn(() => Promise.reject(new Error('ward is down'))),
-    };
-    await expect(authorizeUpgrade(req, ward, FRONTEND)).resolves.toBeNull();
-  });
-
-  it('returns null on a cross-site Origin without even asking Ward', async () => {
-    const ward = { authenticate: jest.fn() };
+  it('returns null on a cross-site Origin without even checking the session', async () => {
+    const identity = { authenticate: jest.fn() };
     const crossReq = {
       headers: {
-        cookie: 'ward_session=tok',
+        cookie: 'imb_session=tok',
         origin: 'https://evil.example',
         host: 'box.local',
       },
     };
 
     await expect(
-      authorizeUpgrade(crossReq, ward, FRONTEND),
+      authorizeUpgrade(crossReq, identity, FRONTEND),
     ).resolves.toBeNull();
-    expect(ward.authenticate).not.toHaveBeenCalled();
+    expect(identity.authenticate).not.toHaveBeenCalled();
   });
 });

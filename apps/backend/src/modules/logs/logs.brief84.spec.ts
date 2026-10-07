@@ -389,12 +389,9 @@ describe('audit call sites — brief 84', () => {
   });
 
   /*
-   * Two throttle tests lived here and are gone with `ThrottleService`: the
-   * login lockout was removed rather than retuned when identity moved to Ward,
-   * because there is no credential in this app to brute-force any more. Ward
-   * has its own lockout, with its own budget, on the one login page the estate
-   * shares — the right place for it, since a per-app counter guarded one of six
-   * front doors to the same accounts.
+   * Two throttle tests lived here and went with `ThrottleService` on
+   * 2026-09-06. The sign-in's backoff now lives in
+   * `local-identity/throttle.ts`, tested beside it.
    */
   it('a permanent delete records the ORIGINAL path, not the trash id', async () => {
     const files = new FilesService();

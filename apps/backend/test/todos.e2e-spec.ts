@@ -8,7 +8,10 @@ import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
 import { DbService } from '../src/db/db.service';
-import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
+import {
+  IdentityTestModule,
+  TEST_COOKIE,
+} from '../src/modules/identity/testing';
 import { TodosModule } from '../src/modules/todos/todos.module';
 import type { Todo, TodoList } from '../src/modules/todos/todos.service';
 
@@ -22,7 +25,7 @@ describe('Todos (e2e) — dates, order, lists and bulk actions', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, WardTestModule, TodosModule],
+      imports: [ConfigModule, DbModule, IdentityTestModule, TodosModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

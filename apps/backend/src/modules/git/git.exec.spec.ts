@@ -84,20 +84,18 @@ describe('GitService.exec (execa contract — no shell, array args)', () => {
   });
 
   // A repository runs its own hooks, pager and helpers inside git, so git's
-  // environment is the backend's minus Ward's, and execa must not merge
+  // environment is the backend's minus its secrets, and execa must not merge
   // process.env back in (extendEnv) behind it.
-  it("hands git the backend's environment without any WARD_* name", async () => {
-    process.env.WARD_APP_KEY = 'test-secret';
+  it("hands git the backend's environment without SETUP_TOKEN", async () => {
+    process.env.SETUP_TOKEN = 'test-secret';
     try {
       await service.exec('/some/repo', ['status', '--porcelain']);
     } finally {
-      delete process.env.WARD_APP_KEY;
+      delete process.env.SETUP_TOKEN;
     }
     const opts = calls()[0][2] as ExecaOpts & { extendEnv?: boolean };
     expect(opts.extendEnv).toBe(false);
-    expect(
-      Object.keys(opts.env ?? {}).filter((k) => k.startsWith('WARD_')),
-    ).toEqual([]);
+    expect(opts.env?.SETUP_TOKEN).toBeUndefined();
     expect(opts.env?.PATH).toBe(process.env.PATH);
     expect(opts.env?.GIT_TERMINAL_PROMPT).toBe('0');
   });

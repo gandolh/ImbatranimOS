@@ -10,11 +10,11 @@ docs
 # discovers the workspace — its (heavy, Astro) deps are deliberately never
 # installed by the manifest-glob `npm ci` in the deps stage (brief 51).
 apps/docs
-# Local env files hold secrets (the backend's has this app's Ward key) and
-# were being baked into the dev image by `COPY apps ./apps`. They also pointed
-# the container at http://localhost:8792 for Ward, which inside the container
-# is the container itself. Runtime configuration reaches a container through
-# compose (`env_file`, `environment`), never through the build context.
+# Local env files can hold secrets and were being baked into the dev image by
+# `COPY apps ./apps`. They also pointed the container at services on the host's
+# localhost, which inside the container is the container itself. Runtime
+# configuration reaches a container through compose (`env_file`,
+# `environment`), never through the build context.
 **/.env
 **/.env.*
 !**/.env.example

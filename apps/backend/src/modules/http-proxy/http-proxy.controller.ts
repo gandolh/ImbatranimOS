@@ -7,7 +7,7 @@ import {
 
 /**
  * REST-client backend proxy. Every route here is authenticated by the global
- * WardAuthGuard (grant-holders only) — there is deliberately NO `@Public()`. That
+ * SessionGuard (the signed-in owner only): there is deliberately NO `@Public()`. That
  * guard is the PRIMARY SSRF control; the service enforces the rest.
  */
 @Controller('http')

@@ -177,8 +177,8 @@ export class GitService {
       cwd,
       timeout: GIT_TIMEOUT_MS,
       maxBuffer: GIT_MAX_BUFFER,
-      // The backend's environment minus Ward's: the repository's own hooks,
-      // pager and helpers run with this, and must not see WARD_APP_KEY.
+      // The backend's environment minus its secrets: the repository's own
+      // hooks, pager and helpers run with this, and must not see SETUP_TOKEN.
       env: { ...childEnv(), ...GIT_ENV },
       extendEnv: false,
       // Handle non-zero exits ourselves (git uses them for benign states like

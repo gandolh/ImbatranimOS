@@ -129,14 +129,15 @@ export function BackupSettings() {
       await api.post('/backup/restore/apply', { id: preview.id, confirm: CONFIRM_WORD })
       notify({
         title: 'Restore complete',
-        body: 'The folders from the backup are back in place. The desktop reloads to pick up its settings.',
+        body: 'The folders from the backup are back in place. The desktop reloads; sign in with the password the backup was taken with.',
         level: 'success',
         appId: 'settings',
       })
-      // A restore cannot sign anybody out (brief 149): credentials are Ward's
-      // and not in the restored database. What did change underneath the
-      // desktop is every dotfile — wallpaper, accent, window preferences — so
-      // read them again from a fresh load. A short pause lets the toast show.
+      // The restored database carries the backup's owner and password, so the
+      // restore ended every session, this one included, and every dotfile
+      // (wallpaper, accent, window preferences) changed underneath the
+      // desktop. A fresh load shows the sign-in, then reads them again. A
+      // short pause lets the toast show.
       window.setTimeout(() => window.location.reload(), 1500)
     } catch (err) {
       const message = errMessage(err, 'The restore failed')

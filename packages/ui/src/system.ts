@@ -121,7 +121,7 @@ export interface SystemHttpResponse<T = unknown> {
  * Deliberately the loosest capability and the one to prefer *against*: reach
  * for `system.fs` and friends first. It exists because every app is
  * first-party and owns backend modules of its own (notes, calendar, git, …)
- * behind `WardAuthGuard`. It is also the future permission boundary: when
+ * behind the backend's `SessionGuard`. It is also the future permission boundary: when
  * third-party apps arrive, this is the capability a manifest must ask for.
  */
 export interface SystemHttp {

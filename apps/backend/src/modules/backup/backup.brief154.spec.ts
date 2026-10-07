@@ -11,7 +11,7 @@ import { FilesService } from '../files/files.service';
 import { ArchiveService } from '../archive/archive.service';
 import { DbService } from '../../db/db.service';
 import { LogService } from '../logs/log.service';
-import { LocalIdentityService } from '../local-identity/local-identity.service';
+import { makeLocalIdentity } from '../identity/testing';
 import { BackupService } from './backup.service';
 
 const execFileAsync = promisify(execFile);
@@ -51,7 +51,7 @@ describe('BackupService — a restore that cannot install its database (brief 15
       new ArchiveService(files),
       db,
       logs,
-      new LocalIdentityService(db),
+      makeLocalIdentity(db),
     );
   });
 

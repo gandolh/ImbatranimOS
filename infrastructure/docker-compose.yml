@@ -32,18 +32,14 @@ services:
       # act as you on the desktop. Loopback-bound for the same reason as above.
       - "127.0.0.1:8081:8081"
     # Runtime configuration, when there is any. vps-deploy's `server` phase
-    # writes this file (0600) with the app's Ward credentials —
-    # WARD_PUBLIC_ORIGIN, WARD_API_BASE_PATH and WARD_APP_KEY — all three of
-    # which the backend's config schema REQUIRES, so without this line Nest
-    # boots and immediately dies on "Invalid environment variables". The file
-    # was being written correctly all along; nothing was reading it.
+    # writes this file (0600) with the deploy's SETUP_TOKEN, so the public
+    # deploy cannot be claimed by whoever reaches it before its owner.
     #
     # `required: false` keeps the standalone run in the README working: a
     # friend cloning this repo has no .env, and compose treats a missing
-    # env_file as fatal unless told otherwise. With no WARD_* variables the
-    # backend runs its own single-owner sign-in (brief 152), and the first
-    # visit sets the password. Add SETUP_TOKEN here when the machine is
-    # reachable by others before you claim it.
+    # env_file as fatal unless told otherwise. The first visit sets the
+    # password. Add SETUP_TOKEN here when the machine is reachable by others
+    # before you claim it.
     env_file:
       - path: .env
         required: false

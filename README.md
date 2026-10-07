@@ -50,14 +50,8 @@ nobody else can claim it first.
 is not a lock: anyone at the machine can uncover it. To end the session, use
 **Log off**.
 
-### Inside a Ward estate
-
-If you run ImbatranimOS next to other apps that share
-[Ward](https://github.com/gandolh/ward-auth) sign-in, set all three of
-`WARD_PUBLIC_ORIGIN`, `WARD_API_BASE_PATH` and `WARD_APP_KEY`. Sign-in,
-passwords and two-factor then live at Ward, an account needs an
-`imbatranim-os` grant from Ward's console, and the local sign-in above is
-switched off. Setting only some of the three refuses to start.
+This sign-in is the only one, in every setup: standalone, behind a reverse
+proxy on a shared domain, and on the server ISO.
 
 ## The apps
 
@@ -136,10 +130,11 @@ stop the container first if you take a backup this way.
 It's designed for it: a single owner, an scrypt-hashed password, sessions in
 an `httpOnly`/`SameSite=Lax` cookie (only a hash of it is stored), per-IP
 backoff on failed sign-ins, an optional setup token for the first claim, and
-an Origin check on every state-changing request. The local sign-in has no
-two-factor; for that, run it inside a Ward estate. Put it behind the
-documented HTTPS reverse proxy (see above). The app itself never terminates
-TLS.
+an Origin check on every state-changing request. There is no two-factor.
+Put it behind the documented HTTPS reverse proxy (see above). The app itself
+never terminates TLS. If it shares a domain with other apps, a script on any
+of them can send requests your browser signs with this session, so share the
+origin only with code you trust.
 
 **What's the user / no-sudo story?**
 Everything inside the container — the shell you get in Terminal, the

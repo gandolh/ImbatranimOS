@@ -1,16 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, type OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 
+import type { Env } from '../../config/env.schema';
 import { DbService } from '../../db/db.service';
-import {
-  IMBATRANIMOS_APP_SLUG,
-  WardAuthenticationError,
-  type WardCaller,
-} from '../ward/ward.types';
+import { AuthenticationError, type Caller } from '../identity/identity.types';
 import { hashPassword, verifyPassword } from './password';
 import { SignInThrottle } from './throttle';
 
-/** The local session cookie. The pre-Ward store used the same name. */
+/** The session cookie. */
 export const LOCAL_SESSION_COOKIE = 'imb_session';
 
 /** A local session lasts 30 days from sign-in; signing out or a restore ends it sooner. */
@@ -58,29 +56,29 @@ function readCookie(
 }
 
 /**
- * The single-owner sign-in, for when Ward is not configured (brief 152,
- * option C; `decisions-estate-era.md`).
+ * The single-owner sign-in (brief 152), the machine's only identity path
+ * since brief 157 (`decisions-estate-era.md`).
  *
- * It answers the same question Ward does, in the same shape: `authenticate`
- * turns a `Cookie` header into a {@link WardCaller} or throws
- * `WardAuthenticationError`. `WardService` hands it every request in local
- * mode, so the global guard, `/api/me`, the freshness registry and the
- * terminal's WebSocket upgrade need no second code path.
+ * `authenticate` turns a `Cookie` header into a {@link Caller} or throws
+ * {@link AuthenticationError}. The global guard, `/api/me` and every
+ * WebSocket upgrade call it, so there is no second code path.
  *
- * The owner holds this app's grant, as a Ward account with access would. The
- * session's `sid` is a prefix of its token hash, which is stable for the
+ * The session's `sid` is a prefix of its token hash, which is stable for the
  * session and reveals nothing usable.
  */
 @Injectable()
-export class LocalIdentityService {
+export class LocalIdentityService implements OnModuleInit {
   private readonly throttle = new SignInThrottle();
   private setupToken: string | undefined;
 
-  constructor(private readonly dbs: DbService) {}
+  constructor(
+    private readonly dbs: DbService,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
 
   /** The operator's out-of-band first-run token, from the environment. */
-  configure(options: { setupToken?: string }): void {
-    this.setupToken = options.setupToken;
+  onModuleInit(): void {
+    this.setupToken = this.config.get('SETUP_TOKEN', { infer: true });
   }
 
   private owner(): { username: string; password_hash: string } | undefined {
@@ -144,7 +142,7 @@ export class LocalIdentityService {
       (await verifyPassword(password, owner.password_hash));
     if (!ok) {
       this.throttle.fail(clientKey, now);
-      throw new WardAuthenticationError('Wrong password');
+      throw new AuthenticationError('Wrong password');
     }
     this.throttle.succeed(clientKey);
     const token = randomBytes(32).toString('base64url');
@@ -157,13 +155,13 @@ export class LocalIdentityService {
     return { token, expiresAt };
   }
 
-  /** Cookie → live local session, or `WardAuthenticationError`. */
+  /** Cookie → live session, or `AuthenticationError`. */
   authenticate(
     cookieHeader: string | string[] | undefined,
     now = Date.now(),
-  ): Promise<WardCaller> {
-    // A Promise like Ward's `authenticate`, though nothing here waits: one
-    // indexed SQLite read.
+  ): Promise<Caller> {
+    // A Promise, though nothing here waits (one indexed SQLite read), so the
+    // callers do not change if a check ever has to go off-box.
     try {
       return Promise.resolve(this.resolve(cookieHeader, now));
     } catch (err) {
@@ -174,9 +172,9 @@ export class LocalIdentityService {
   private resolve(
     cookieHeader: string | string[] | undefined,
     now: number,
-  ): WardCaller {
+  ): Caller {
     const token = readCookie(cookieHeader, LOCAL_SESSION_COOKIE);
-    if (!token) throw new WardAuthenticationError('No local session');
+    if (!token) throw new AuthenticationError('No session');
     const tokenHash = hash(token);
     const row = this.dbs.db
       .prepare(
@@ -185,7 +183,7 @@ export class LocalIdentityService {
       .get(tokenHash) as { expires_at: number; last_seen: number } | undefined;
     const owner = this.owner();
     if (!row || row.expires_at <= now || !owner) {
-      throw new WardAuthenticationError('Local session is not active');
+      throw new AuthenticationError('Session is not active');
     }
     // At most one write a minute per session, not one per request.
     if (now - row.last_seen > 60_000) {
@@ -194,10 +192,8 @@ export class LocalIdentityService {
         .run(now, tokenHash);
     }
     return {
-      active: true,
       subject: LOCAL_SUBJECT,
       username: owner.username,
-      grants: { [IMBATRANIMOS_APP_SLUG]: ['owner'] },
       sid: `local-${tokenHash.slice(0, 16)}`,
     };
   }
@@ -227,7 +223,7 @@ export class LocalIdentityService {
   ): Promise<void> {
     const owner = this.owner();
     if (!owner || !(await verifyPassword(current, owner.password_hash))) {
-      throw new WardAuthenticationError('The current password is not right');
+      throw new AuthenticationError('The current password is not right');
     }
     this.checkPassword(next);
     this.dbs.db

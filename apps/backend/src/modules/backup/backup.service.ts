@@ -668,12 +668,10 @@ export class BackupService {
    * excludes the live database — has no `db.sqlite` of its own, only the
    * snapshot.
    *
-   * **Local sessions are all revoked.** With Ward, credentials are not in
-   * this database and a restore cannot change who may sign in. With the local
-   * sign-in (brief 152), the restored database carries the *backup's* owner
-   * and password, and its session table carries the backup's sessions: so
-   * every local session ends, and the next sign-in is with the restored
-   * password. On a Ward install the table is empty and this is a no-op.
+   * **Every session is revoked.** The restored database carries the
+   * *backup's* owner and password (brief 152), and its session table carries
+   * the backup's sessions: so every session ends, and the next sign-in is with
+   * the restored password.
    */
   private async installDatabase(
     home: string,

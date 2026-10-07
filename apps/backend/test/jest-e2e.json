@@ -22,9 +22,6 @@
     ]
   },
   "transformIgnorePatterns": [
-    "/node_modules/(?!(?:strip-ansi|ansi-regex|jose)/)"
-  ],
-  "setupFiles": [
-    "<rootDir>/../test-setup.ts"
+    "/node_modules/(?!(?:strip-ansi|ansi-regex)/)"
   ]
 }

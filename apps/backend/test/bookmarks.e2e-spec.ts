@@ -8,7 +8,10 @@ import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
 import { DbService } from '../src/db/db.service';
-import { WardTestModule, TEST_COOKIE } from '../src/modules/ward/testing';
+import {
+  IdentityTestModule,
+  TEST_COOKIE,
+} from '../src/modules/identity/testing';
 import { BookmarksModule } from '../src/modules/bookmarks/bookmarks.module';
 import type {
   BookmarkGroup,
@@ -23,7 +26,7 @@ describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule, DbModule, WardTestModule, BookmarksModule],
+      imports: [ConfigModule, DbModule, IdentityTestModule, BookmarksModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

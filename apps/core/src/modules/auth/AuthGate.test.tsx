@@ -28,22 +28,21 @@ import { AuthGate } from './AuthGate'
 import { useAuthStore } from './store/authStore'
 
 /**
- * Brief 137 — which screen each session answer produces, before this tab has
- * shown the desktop. Driven with `react-dom/client` + `act`, like
+ * Which screen each session answer produces, before this tab has shown the
+ * desktop. Driven with `react-dom/client` + `act`, like
  * `AppErrorBoundary.test.tsx`, rather than adding Testing Library.
  */
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const SIGNED_OUT = { authenticated: false, session: null, unavailable: false, forbidden: false }
+const SIGNED_OUT = { authenticated: false, session: null }
+const CLAIMED = { setUp: true, setupTokenRequired: false }
 
 let container: HTMLDivElement
 let root: Root
 
-const WARD = { mode: 'ward' }
-
 async function renderWith(
   status: typeof SIGNED_OUT | Record<string, unknown>,
-  identity: Record<string, unknown> = WARD
+  identity: Record<string, unknown> = CLAIMED
 ): Promise<string> {
   getStatus.mockResolvedValue(status)
   getIdentity.mockResolvedValue(identity)
@@ -62,8 +61,6 @@ beforeEach(() => {
     ready: false,
     authenticated: false,
     session: null,
-    unavailable: false,
-    forbidden: false,
     locked: false,
     everAuthenticated: false,
     identity: null,
@@ -79,55 +76,31 @@ afterEach(() => {
   })
   container.remove()
   getStatus.mockReset()
+  getIdentity.mockReset()
 })
 
 describe('AuthGate', () => {
-  it('shows the desktop for a granted session', async () => {
+  it('shows the desktop for a live session', async () => {
     const text = await renderWith({
       ...SIGNED_OUT,
       authenticated: true,
-      session: { subject: 's1', username: 'gandolh' },
+      session: { subject: 'local-owner', username: 'gandolh' },
     })
     expect(text).toContain('the desktop')
   })
 
-  it('offers the sign-in hand-off when signed out', async () => {
-    const text = await renderWith(SIGNED_OUT)
-    expect(text).toContain('Continue to sign in')
+  // Brief 152: the signed-out screen is the machine's own.
+  it('offers first-run setup on an unclaimed machine', async () => {
+    const text = await renderWith(SIGNED_OUT, { setUp: false, setupTokenRequired: true })
+    expect(text).toContain('Set up this machine')
+    expect(text).toContain('Setup token')
     expect(text).not.toContain('the desktop')
   })
 
-  it('shows the no-access screen, not the sign-in hand-off, for a session without a grant', async () => {
-    const text = await renderWith({ ...SIGNED_OUT, forbidden: true })
-    expect(text).toContain('No access')
-    expect(text).not.toContain('Continue to sign in')
-    const link = container.querySelector('a')
-    expect(link?.getAttribute('href')).toBe('/ward/account')
-  })
-
-  it('shows the unavailable screen, not the sign-in hand-off, when Ward is down', async () => {
-    const text = await renderWith({ ...SIGNED_OUT, unavailable: true })
-    expect(text).toContain('Sign-in unavailable')
-    expect(text).not.toContain('Continue to sign in')
-  })
-
-  // Brief 152: without Ward, the signed-out screen is the machine's own.
-  it('offers first-run setup on an unclaimed machine without Ward', async () => {
-    const text = await renderWith(SIGNED_OUT, {
-      mode: 'local',
-      local: { setUp: false, setupTokenRequired: true },
-    })
-    expect(text).toContain('Set up this machine')
-    expect(text).toContain('Setup token')
-    expect(text).not.toContain('Continue to sign in')
-  })
-
-  it('asks for the password on a claimed machine without Ward, and signs in with it', async () => {
-    const text = await renderWith(SIGNED_OUT, {
-      mode: 'local',
-      local: { setUp: true, setupTokenRequired: false },
-    })
+  it('asks for the password on a claimed machine, and signs in with it', async () => {
+    const text = await renderWith(SIGNED_OUT)
     expect(text).toContain("Enter this machine's password")
+    expect(text).not.toContain('the desktop')
 
     localSignIn.mockResolvedValue(undefined)
     getStatus.mockResolvedValue({
@@ -148,5 +121,19 @@ describe('AuthGate', () => {
     })
     expect(localSignIn).toHaveBeenCalledWith('correct horse battery')
     expect(container.textContent).toContain('the desktop')
+  })
+
+  // Brief 157: the identity probe failing must not strand anybody.
+  it('falls back to the sign-in form when the identity probe fails', async () => {
+    getStatus.mockResolvedValue(SIGNED_OUT)
+    getIdentity.mockRejectedValue(new Error('network'))
+    await act(async () => {
+      root.render(
+        <AuthGate>
+          <p>the desktop</p>
+        </AuthGate>
+      )
+    })
+    expect(container.textContent).toContain("Enter this machine's password")
   })
 })

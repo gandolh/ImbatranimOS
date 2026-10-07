@@ -11,7 +11,7 @@ import { useAuthStore } from '../../modules/auth/store/authStore'
  *
  * Locking uses the exact Start-menu path (`lock()`): one lock implementation,
  * no parallel state. The session cookie stays valid; the cover is a
- * screensaver, and uncovering asks only that the Ward session is still live.
+ * screensaver, and uncovering asks only that the session is still live.
  */
 export function useIdleLock(): void {
   const minutes = useSecurityStore((s) => s.idleLockMinutes)

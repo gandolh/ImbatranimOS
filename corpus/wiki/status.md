@@ -1,6 +1,6 @@
 ---
-summary: Current snapshot (2026-10-06) — identity is Ward's in the estate and a local single-owner sign-in without it (brief 152); briefs to 155 done bar 15 (parked), including 50 (the Browser) and 120 (the app marketplace); a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
-updated: 2026-10-06
+summary: Current snapshot (2026-10-06) — identity is Ward's in the estate and a local single-owner sign-in without it (brief 152); briefs to 156 done, 15 closed as v1.0.0 (2026-10-07), including 50 (the Browser) and 120 (the app marketplace); a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
+updated: 2026-10-07
 ---
 
 # Status — 2026-10-06
@@ -42,7 +42,7 @@ Later briefs (47–155) are one entry each in [log.md](../log.md); the open ones
 | 12 | [files-app](../briefs/done/12-files-app.md) | **done** | Home-root FS API (traversal/symlink jail, tested) + explorer UI with tree/context menu/upload/download |
 | 13 | [system-monitor](../briefs/done/13-system-monitor.md) | **done** | Live CPU/RAM/disk/processes + About; uid-scoped kill; app-install stance recorded |
 | 14 | [imbatranim-reskin](../briefs/done/14-imbatranim-reskin.md) | **done** | Win7-classic taskbar/start/tray/icons, B&W tokens, dark default, hourglass logo; accent = 4 presets, crimson provisional (user pick pending) |
-| 15 | [v1-release](../briefs/todo/15-v1-release.md) | in progress | Engineering DONE (security pass, 413/headers/repl_configs fixes, README, 1.0.0 stamp, container verified + numbers); human-gated remainder: friend QA, VPS deploy, accent pick, dep bumps, tag |
+| 15 | [v1-release](../briefs/done/15-v1-release.md) | **done** (2026-10-07, owner's call) | v1.0.0 declared as is; every later commit bumps the minor version. Engineering DONE (security pass, 413/headers/repl_configs fixes, README, 1.0.0 stamp, container verified + numbers); human-gated remainder: friend QA, VPS deploy, accent pick, dep bumps, tag |
 | 16 | [turborepo](../briefs/done/16-turborepo.md) | **done** | npm workspaces + turbo 2.10.5, single root lockfile, phantom tailwind deps rehomed; envMode loose + prettier pin 3.8.3 (see log); image 385MB, FULL TURBO ✓ |
 | 17 | [os-restructure](../briefs/done/17-os-restructure.md) | **done** | apps/{backend,core,add-ons/*}; 7 add-on packages, manifest.ts composition root, eslint-enforced boundary; browser-verified (found+fixed Tray stats crash); backend lint debt remains |
 | 18 | [alpine-kiosk-iso](../briefs/superseded/18-alpine-kiosk-iso.md) | **done** (QEMU-verified) | Post-v1 kiosk ISO: `./build iso` (nob.h build.c → Docker → mkimage, unprivileged/fakeroot) makes a 580 MiB hybrid BIOS+UEFI diskless ISO. App ships as a signed custom `.apk` (musl-compiled native addons); greetd autologin → cage + chromium --kiosk → the web UI off the local backend. **KVM-booted into the fullscreen first-run login, no console/shell** (screenshot-verified); RAM floor 2 GB. Human-gated: UEFI live boot + VirtualBox/Hyper-V + real HW + interactive terminal/files walkthrough |
@@ -88,7 +88,6 @@ notepad StrictMode intent bug.
 
 | # | Brief | State |
 |---|---|---|
-| 15 | [v1-release](../briefs/todo/15-v1-release.md) | **parked** by the owner (2026-10-04): needs a friend's install and a real deploy |
 | 50 | [web-browser-proxied](../briefs/done/50-web-browser-proxied.md) | **done** (2026-10-04): the Browser, on its own proxy origin; security-reviewed; human checks left: search past a CAPTCHA, audio, a real site sign-in across a restart |
 | 156 | [office-editors-save-conflict](../briefs/done/156-office-editors-save-conflict.md) | **done** (2026-10-06): Sheets and Docs ask before overwriting a file changed on disk (shared `saveOverRead`); fixed Sheets losing track of edits after a save |
 | 120 | [app-marketplace-install-from-url](../briefs/done/120-app-marketplace-install-from-url.md) | **done** (2026-10-06): the in-repo catalog installs apps from other repos at pinned commits, built on the machine, mounted natively; security-reviewed; walked in the dev container; owed: a game that exports `mount` (game-engine repo) |

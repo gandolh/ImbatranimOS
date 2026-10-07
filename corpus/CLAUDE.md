@@ -68,6 +68,9 @@ pivot-era and iso-era pages) holds the locked calls.
 - One concept per file; split pages past ~200 body lines.
 - `TodoWrite` is the in-session list; `corpus/` is the durable one. Prefer the
   corpus over personal memory for anything project-specific and reusable.
+- **Every commit bumps the minor version** (owner, 2026-10-07): run
+  `npm run version:bump -- --stage` before `git commit`, never before
+  `git commit --amend`. See [decisions-estate-era.md](wiki/decisions-estate-era.md).
 - Never commit corpus changes unless the user asks. When committing: one commit
   per meaningful corpus change, separate from the code commit, so `log.md` and
   git history agree.

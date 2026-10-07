@@ -1,6 +1,6 @@
 ---
 summary: The ISO-era decisions that still bind the web-OS (build-from-source, no runtime package manager, the locked visual identity and more), plus the compressed record of the ones the 2026-07-16 pivot superseded. Split out of decisions.md, which has a 200-line cap.
-updated: 2026-08-03
+updated: 2026-10-07
 ---
 
 # Decisions inherited from the ISO era
@@ -18,7 +18,9 @@ behind.
 - **Versioning: semantic.** v1.0 = the friend-run bar met.
 - **Finish line: friend-run bar** (adapted from friend-install): a friend
   with Docker runs one documented command, logs in, and uses
-  terminal/files/notes unaided.
+  terminal/files/notes unaided. *Revised 2026-10-07: v1.0.0 was declared
+  without the bar, and every commit now bumps the minor version
+  ([decisions-estate-era.md](decisions-estate-era.md)).*
 - **Distribution: build-from-source** (clone + docker build/compose);
   registry publishing is an open question, not a promise.
 - **Lightweight as identity** — REVISED 2026-07-16 after brief 09 measured

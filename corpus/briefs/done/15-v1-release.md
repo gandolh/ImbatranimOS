@@ -36,3 +36,13 @@ prior briefs.
 Friend-run bar passed by a real second human; VPS + HTTPS deployment
 verified; numbers recorded; `git tag v1.0` on the commit that built it;
 corpus consistent with reality.
+
+## Outcome (2026-10-07)
+
+Closed by the owner's call, not by meeting the bar. On 2026-10-07 the owner
+dropped the requirement: v1.0.0 is declared as the code stands. The engineering
+part was done earlier (security pass, the 413/headers/`repl_configs` fixes, the
+README, the 1.0.0 stamp, container numbers; see status.md). Dropped, not done:
+the friend-run QA, the VPS + HTTPS deploy, and the tag (void since 2026-07-19).
+New rule from the same call: every commit after this one bumps the minor
+version with `npm run version:bump -- --stage` (`scripts/bump-version.mjs`).

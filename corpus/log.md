@@ -4220,3 +4220,15 @@ origin the owner chose to stay at `gandolh.ro/imbatranim-os` and to drop Ward:
 the desktop keeps brief 152's own sign-in everywhere. Written up as brief 157,
 which also touches vps-deploy and wzd_auth. The same-origin risk is recorded as
 accepted, not fixed. See decisions-estate-era.md.
+
+## [2026-10-07] decision | v1.0.0 declared; every commit now bumps the minor version
+
+The owner dropped brief 15's bar: no friend-run QA and no VPS deploy before v1.
+v1.0.0 is the code as it stands (still 1.0.0 in `package.json` and the
+Dockerfile; no tag, per 2026-07-19). Brief 15 moved to `done/` with that
+outcome. New rule: every commit after this one bumps the minor version.
+`scripts/bump-version.mjs` (`npm run version:bump -- --stage`) computes the next
+version from HEAD and rewrites the root `package.json`, both lockfile fields and
+the Dockerfile's label and `IMAGE_VERSION`. A pre-commit hook was written and
+removed: the agent's permission check blocked installing it, so automation is the
+owner's call. Recorded in decisions-estate-era.md and corpus/CLAUDE.md.

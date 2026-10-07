@@ -26,7 +26,8 @@
     "docs": "turbo run docs",
     "install:tooling": "npm install --ignore-scripts",
     "codegraph:init": "codegraph init",
-    "codegraph:sync": "codegraph sync"
+    "codegraph:sync": "codegraph sync",
+    "version:bump": "node scripts/bump-version.mjs"
   },
   "devDependencies": {
     "prettier": "3.8.3",

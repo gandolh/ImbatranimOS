@@ -1,6 +1,6 @@
 ---
 summary: Decisions since imbatranimOS joined the Ward estate (2026-09-06) — identity, the local sign-in that comes back when Ward is absent, the ISO as a LAN server OS instead of a kiosk (deferred; work stays in Docker), the owner's 2026-10-04 answers on briefs 15, 50, 120, 144/145/155 and old backups, brief 50's build calls (proxy on its own origin, the strict egress stance, the encrypted profile). Brief 120's marketplace calls are in decisions-marketplace.md.
-updated: 2026-10-06
+updated: 2026-10-07
 ---
 
 # Decisions of the estate era
@@ -64,9 +64,17 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
     docker container." Development and day-to-day use stay in the Docker
     container (`npm run dev`, the compose dev profile). The three choices
     above are the plan for when the ISO brief is written.
-- **v1.0 (brief 15) is parked.** Its bar needs a friend's install and a real
-  VPS deploy, which only the owner can do. Its desk-side parts (security pass,
-  `npm audit` triage, size and boot numbers) may still run.
+- **v1.0.0 is declared as is (owner, 2026-10-07).** The friend-run bar and a
+  real VPS deploy are no longer v1 gates, and brief 15 is closed. The version
+  stays 1.0.0 in `package.json` and the Dockerfile, with no git tag (the
+  2026-07-19 decision). **From then on every commit bumps the minor version:**
+  1.1.0, 1.2.0, and so on. Run `npm run version:bump -- --stage` before each
+  commit. `scripts/bump-version.mjs` rewrites the root `package.json`, the
+  lockfile, and the Dockerfile's label and `IMAGE_VERSION`, which the About
+  panel shows. Workspace and add-on versions are per-package and don't follow.
+  Not done: a git hook that bumps on its own. The agent's permission check
+  blocked installing one, so automating it is the owner's call.
+  Was: parked on 2026-10-04 because the bar needed a friend's install.
 - **Briefs 50 (proxied web browser) and 120 (app marketplace): build them.**
   Both keep their grilled decisions and their security review before commit.
 - **Old backups that still hold the deleted login's password hash are

@@ -4305,3 +4305,13 @@ machine.
   hostile probe app.
 - **Owed by the owner:** push game-engine's `imbatranim-app` branch, then
   install Hollow from `https://github.com/gandolh/game-engine/tree/imbatranim-app`.
+
+## [2026-10-07] maintenance | Hollow's URL install now comes from game-engine's main
+
+At the owner's request, game-engine merged the `imbatranim-app` branch into `main` as a subtree,
+`games/hollow/os-app/` (merge `8db15ad`), so the app is tested from a stable main rather than a
+side branch. The branch is gone. Checked through this repo's installer against the local
+checkout (`file:` under the test flag, ref `main`, subdir `games/hollow/os-app`): it resolved to
+`8db15ad`, installed, served all four files under its token, and uninstalled. The install URL
+once game-engine is pushed: `https://github.com/gandolh/game-engine/tree/main/games/hollow/os-app`.
+This replaces the branch URL in brief 158's outcome note; status.md now carries this one.

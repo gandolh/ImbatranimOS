@@ -155,7 +155,8 @@ every call below follows from it.
   can shrink to 800×600. Without these, a URL app could draw a fake lock
   screen that stays on top and won't close.
 - **A page-wide keyboard guard, because Chrome lets a frame take the
-  keyboard.** Measured in Chrome 150: a background frame calling `focus()`
+  keyboard.** Measured in headless Chrome 150 (a headed Chrome and Firefox are
+  not walked): a background frame calling `focus()`
   gets every key the owner types into Notepad, and the page learns only a
   `window` blur, with `activeElement` naming the stale textarea. `inert`,
   `display: none` and the `focus-without-user-activation` policy don't stop

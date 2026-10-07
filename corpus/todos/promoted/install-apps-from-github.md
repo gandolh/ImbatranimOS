@@ -1,13 +1,21 @@
 ---
 title: Install apps from a GitHub URL (third-party app package manager)
 created: 2026-07-20
-status: partly-built
+status: promoted
 tags: [core, platform, add-on, backend, security]
 ---
 
 # Install apps from a GitHub URL (third-party app package manager)
 
-> **Partly built 2026-10-06 by [brief 120](../briefs/done/120-app-marketplace-install-from-url.md):** apps from other repos install from an in-repo catalog at pinned commits and run natively. What remains is this todo's original ask, installing from an arbitrary URL. That needs the sandboxed iframe runtime, which is not built ([decisions-marketplace.md](../wiki/decisions-marketplace.md)).
+> **Built 2026-10-07 by [brief 158](../../briefs/done/158-sandboxed-apps-from-a-url.md).**
+> The owner asked for it that day. Apps install from any public GitHub URL,
+> prebuilt (nothing runs on the machine), into an opaque-origin sandboxed
+> frame with `notify` as their only capability. The open questions below were
+> answered there: hidden `~/.imbatranim/apps/`, static apps only, prebuilt
+> only, consent on every install and update, and an `imbatranim.json` read at
+> the resolved commit.
+
+> **Partly built 2026-10-06 by [brief 120](../../briefs/done/120-app-marketplace-install-from-url.md):** apps from other repos install from an in-repo catalog at pinned commits and run natively. What remains is this todo's original ask, installing from an arbitrary URL. That needs the sandboxed iframe runtime, which is not built ([decisions-marketplace.md](../../wiki/decisions-marketplace.md)).
 >
 > **Owner, 2026-10-06: leave the arbitrary-URL install unbuilt for now.** The pinned, reviewed catalog covers the real use (the owner's own games, Hollow first). Reopen with a grill on the iframe runtime's security model before any brief.
 >
@@ -19,7 +27,7 @@ ImbatranimOS itself. The motivating use case is installing **games built with
 the custom game-engine** (`~/projects/game-engine` — Farm Valley, Citadel,
 Hollow), but the format is open: any repo that "respects our format" installs
 the same way. This is the "sandboxed native/third-party app store" that
-[decisions.md](../wiki/decisions.md) named as a *possible future brief, out of
+[decisions.md](../../wiki/decisions.md) named as a *possible future brief, out of
 v1 scope* — this todo is that brief's seed.
 
 ## Why this is hard (the core tension)
@@ -29,7 +37,7 @@ Today an app is a **build-time** workspace package: TS/React under
 into the desktop bundle. A GitHub-installed app **cannot** be compiled into an
 already-built, already-running bundle. So runtime install is only possible over
 the **iframe / postMessage transport** the OS already committed to in
-[os-layering.md](../wiki/os-layering.md): the installed app is a *self-contained
+[os-layering.md](../../wiki/os-layering.md): the installed app is a *self-contained
 web bundle* loaded in a sandboxed `<iframe>`, talking to the OS through the
 injected `system` (`SystemHandle`) capability handle over postMessage — it
 imports nothing from core. **This todo is the concrete thing that "gates" the
@@ -127,7 +135,7 @@ A declarative repo-root file — the thing a repo owner adds to be installable:
 - **Persistence**: installed-apps registry in the SQLite DB or a `$HOME` dotfile
   so it survives container recreation on the volume. Uninstall = stop process +
   rm clone + deregister; update = `git pull` + rebuild.
-- **Pairs with** [addon-manager](promoted/addon-manager.md): that todo adds a per-user
+- **Pairs with** [addon-manager](addon-manager.md): that todo adds a per-user
   enable/disable filter over the roster; installed apps flow through the same
   filtered registry rather than a parallel one.
 - **Reinforces** build-from-source identity (clone + build, no registry) even as

@@ -45,10 +45,13 @@ the user has not chosen.
 _Avoid_: app list, catalog, app store.
 
 **Marketplace catalog** / **descriptor** / **marketplace app** (brief 120):
-the repo's `marketplace/` directory, the trust anchor; one `<id>.json` in it
-(repo, commit, build, capabilities); an app installed from it, built on the
-machine and mounted natively. _Avoid_: registry or app store (catalog),
-manifest (descriptor), add-on or plugin (marketplace app).
+the repo's `marketplace/` directory, the trust anchor; one reviewed `<id>.json`
+in it; an app installed from it, built on the machine and mounted natively.
+**URL app** / **app manifest** (brief 158): an app installed from its own
+repo's URL, unreviewed, prebuilt and run in a sandboxed frame; the
+`imbatranim.json` it carries. _Avoid_: registry or app store (catalog),
+manifest (descriptor), add-on or plugin (either kind of app), sandboxed app
+(URL app: the sandbox is how it runs, not what it is).
 
 **Widget**:
 A small, always-visible desktop panel an app contributes via `widgets`. It is

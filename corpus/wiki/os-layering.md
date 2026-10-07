@@ -1,6 +1,6 @@
 ---
-summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build. BUILT 2026-08-06 (brief 48) — the seam is live in all 26 apps and eslint-enforced.
-updated: 2026-08-06
+summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build. BUILT 2026-08-06 (brief 48) — the seam is live in all 26 apps and eslint-enforced; its sandboxed iframe transport exists since brief 158 (2026-10-07) for apps installed from a URL.
+updated: 2026-10-07
 ---
 
 # OS layering — the compositor seam
@@ -168,6 +168,11 @@ Hard sandboxing (sandboxed iframes / workers, real crash + security isolation)
 is the **transport swap** of the `system` handle, and is **gated on third-party
 apps actually arriving** — not built speculatively. The seam is designed so that
 swap needs no app rewrites.
+
+**They arrived on 2026-10-07** ([brief 158](../briefs/done/158-sandboxed-apps-from-a-url.md)):
+an app from a GitHub URL runs in an opaque-origin sandboxed iframe, its
+`system` handle proxied over a MessagePort, and the same `mount` module runs
+under either transport. Calls: [decisions-marketplace.md](decisions-marketplace.md#brief-158-apps-from-a-url-2026-10-07).
 
 ## Deferred (parked, not rejected)
 

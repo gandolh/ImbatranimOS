@@ -3849,7 +3849,7 @@ dropped because brief 48 is **done** in the adopted tree.
 
 **The one genuine loss avoided:** brief 55, the grilled-but-unbuilt app
 marketplace, had no counterpart on the other side — which still carries
-[todos/install-apps-from-github.md](todos/install-apps-from-github.md) open,
+[todos/install-apps-from-github.md](todos/promoted/install-apps-from-github.md) open,
 never having promoted it. It survives as
 [briefs/done/120-app-marketplace-install-from-url.md](briefs/done/120-app-marketplace-install-from-url.md),
 renumbered off the taken 55 and otherwise unchanged. This is the one
@@ -4263,3 +4263,45 @@ the setup screen's Start button sits over the founders list. Some labels showed
 as empty boxes, likely fonts missing in headless Chrome. The walk used the WSL
 address on port 5173, since another project's dev server held
 `127.0.0.1:5173`; the dev container serves the desktop at `/`.
+
+## [2026-10-07] decision | Arbitrary-URL app installs: built after all
+
+The owner reversed the 2026-10-06 call ("leave it unbuilt") and asked for it
+now. No separate grill: the design calls were made from the todo's own
+recommendations and written into [brief 158](briefs/done/158-sandboxed-apps-from-a-url.md)
+and [decisions-marketplace.md](wiki/decisions-marketplace.md#brief-158-apps-from-a-url-2026-10-07)
+for the owner to veto. They are prebuilt only, a same-port opaque-origin
+sandbox, per-window token URLs, `notify` as the only capability, GitHub only,
+and consent on every install and update. The todo moved to
+[todos/promoted/](todos/promoted/install-apps-from-github.md).
+
+## [2026-10-07] done | Brief 158 — apps install from a GitHub URL into a sandboxed frame
+
+A public repo with an `imbatranim.json` and its built module installs from
+Settings → Marketplace after a consent card. Nothing from it runs on the
+machine.
+- **The frame.** It has an opaque origin (the iframe `sandbox` plus a CSP
+  `sandbox` header). Its files are served under a per-window token, and its
+  `system` handle runs over a MessagePort: `sandboxBridge.ts` on the desktop,
+  the backend-served `runtime.js` in the frame.
+- **Backend.** URL parsing and ref resolution (`source-url.ts`),
+  `app-manifest.ts`, pending inspections, tokens, the sandbox routes, and
+  migration 11.
+- **Desktop.** `SandboxedAppHost.tsx`, the pane's "Install from a URL", and
+  `keyboardGuard.ts`.
+- **Hardening from an adversarial review** (no Critical or High):
+  - the click shield, rate limits and pressing close twice;
+  - measuring the clone before checkout;
+  - a bare commit must be a branch or tag tip;
+  - the listing is robust to a bad row, and tokens are redacted in logs.
+- **The Chrome walk then found three more things:**
+  - a background frame can keylog;
+  - WebRTC is an exit;
+  - raising a window reloaded its iframe, because windows were sorted by
+    z-index in the DOM.
+
+  Each is fixed and walked again. Verified: typecheck, lint, format; backend
+  727 unit and 168 e2e tests; core 452; and the Chrome walk with Hollow and a
+  hostile probe app.
+- **Owed by the owner:** push game-engine's `imbatranim-app` branch, then
+  install Hollow from `https://github.com/gandolh/game-engine/tree/imbatranim-app`.

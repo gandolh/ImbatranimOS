@@ -42,7 +42,7 @@ practically demands).
 
 - **Puter** — app store + publish model, ONLYOFFICE, voice recorder, camera,
   games, an SDK exposing storage/AI to apps. Confirms demand for an app
-  ecosystem (our version is [todos/install-apps-from-github.md](../todos/install-apps-from-github.md),
+  ecosystem (our version is [todos/install-apps-from-github.md](../todos/promoted/install-apps-from-github.md),
   gated on briefs 47→48) and for a games/creative tier. Its cloud/AI services
   are off-identity for us (egress + credentials).
 - **daedalOS** — games and emulators (DOOM, DOSBox, v86), dynamic wallpapers,
@@ -116,7 +116,7 @@ drag; 96 dropped the duplicate Settings list.
   [todos/desktop-drag-selection.md](../todos/promoted/desktop-drag-selection.md).
 - **TOTP recovery codes** (todo, closed
   2026-10-04: TOTP is Ward's now) and
-  **install-apps-from-GitHub** ([todo](../todos/install-apps-from-github.md),
+  **install-apps-from-GitHub** ([todo](../todos/promoted/install-apps-from-github.md),
   gated on 47→48 + a kill-list revisit) — already captured; this sweep
   endorses both, second one as the strategic "add-ons" story.
 

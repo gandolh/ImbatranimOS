@@ -1,5 +1,5 @@
 ---
-summary: Current snapshot (2026-10-07) — identity is the machine's own single-owner sign-in everywhere, the estate included (brief 157 dropped Ward); briefs to 157 done, 15 closed as v1.0.0 (2026-10-07), including 50 (the Browser) and 120 (the app marketplace); a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
+summary: Current snapshot (2026-10-07) — identity is the machine's own single-owner sign-in everywhere, the estate included (brief 157 dropped Ward); briefs to 157 done, 15 closed as v1.0.0 (2026-10-07), including 50 (the Browser) and 120 (the app marketplace, its Hollow gate met 2026-10-07); a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
 updated: 2026-10-07
 ---
 
@@ -89,7 +89,7 @@ notepad StrictMode intent bug.
 | 50 | [web-browser-proxied](../briefs/done/50-web-browser-proxied.md) | **done** (2026-10-04): the Browser, on its own proxy origin; security-reviewed; human checks left: search past a CAPTCHA, audio, a real site sign-in across a restart |
 | 156 | [office-editors-save-conflict](../briefs/done/156-office-editors-save-conflict.md) | **done** (2026-10-06): Sheets and Docs ask before overwriting a file changed on disk (shared `saveOverRead`); fixed Sheets losing track of edits after a save |
 | 157 | [drop-ward-own-sign-in](../briefs/done/157-drop-ward-own-sign-in.md) | **done** (2026-10-07): Ward's module, variables, token refresh and estate registration gone; the deploy passes `SETUP_TOKEN`; owed: the owner's deploy, claim and Ward console cleanup |
-| 120 | [app-marketplace-install-from-url](../briefs/done/120-app-marketplace-install-from-url.md) | **done** (2026-10-06): the in-repo catalog installs apps from other repos at pinned commits, built on the machine, mounted natively; security-reviewed; walked in the dev container; owed: a game that exports `mount` (game-engine repo) |
+| 120 | [app-marketplace-install-from-url](../briefs/done/120-app-marketplace-install-from-url.md) | **done** (2026-10-06): the in-repo catalog installs apps from other repos at pinned commits, built on the machine, mounted natively; security-reviewed; walked in the dev container. **Gate met 2026-10-07:** `marketplace/hollow.json` pins game-engine `0d83f70`; Hollow installs, runs its 3D town in a window, and survives close and reopen |
 | — | the server ISO | **deferred** by the owner (2026-10-04): work stays in the Docker container for now. When written: a plain Alpine image with the server pre-installed, reached from the LAN over HTTPS; replaces the kiosk ([brief 18](../briefs/superseded/18-alpine-kiosk-iso.md), superseded) |
 
 ## Owed by the owner
@@ -104,6 +104,3 @@ notepad StrictMode intent bug.
   `gandolh.ro/imbatranim-os` and claim the machine with it and a new password.
   Then remove the `imbatranim-os` app from Ward's console, which also drops its
   grants and service keys. `WARD_APP_KEY` in that secrets file is unused now.
-- For brief 120's own gate: a build of a game (Hollow first) that bundles it
-  into one ES module exporting `mount` / `unmount`, in the game-engine repo,
-  and a descriptor here pinning that commit.

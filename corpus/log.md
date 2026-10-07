@@ -4246,3 +4246,20 @@ container from the first-run claim to Log off. The decisions, open-questions,
 architecture, overview, glossary and status pages say the same. Owner steps
 (secret, deploy, claim, delete the app in Ward's console) are in the brief's
 outcome and on status.md.
+
+## [2026-10-07] walk | Brief 120's gate met: Hollow from the marketplace
+
+`marketplace/hollow.json` pins game-engine `0d83f70` (GitHub main, with the
+mount build from `9575089`). It loads through the real catalog loader with no
+problems. In the dev container, on a fresh volume: Settings, Marketplace,
+Install cloned the commit, ran `npm ci` (18 s) and `build:os` (under a second)
+at the repository root, and served 1.5 MB from
+`games/hollow/client/dist/os/`. Open showed the setup screen; Start ran the 3D
+town at 45 to 58 fps with the tick advancing. Closing the window removed it and
+lost its WebGL2 context; reopening mounted a fresh one and ran again. Two
+cosmetic things seen in the window, reported to game-engine rather than fixed
+here: the floating label layer draws over the Chronicle and Metrics panels, and
+the setup screen's Start button sits over the founders list. Some labels showed
+as empty boxes, likely fonts missing in headless Chrome. The walk used the WSL
+address on port 5173, since another project's dev server held
+`127.0.0.1:5173`; the dev container serves the desktop at `/`.

@@ -14,6 +14,7 @@ import { UpgradeRoutes } from '../../upgrade-routes';
 import { LocalIdentityService } from '../auth/ws-auth';
 import { authorizeUpgrade } from '../pty/pty-upgrade';
 import { MarketplaceServers } from './marketplace-servers.service';
+import { isUrlAppId } from './source-url';
 
 /** `/api/marketplace/apps/<id>/server[/rest]`. */
 const SERVER_PATH =
@@ -102,6 +103,9 @@ export class MarketplaceWsProxy
     const match = SERVER_PATH.exec(pathname);
     if (!match) return refuse('404 Not Found');
     const id = match[1];
+    // An app installed from a URL (brief 158) has no server, and the catalog
+    // refuses its `x-` ids.
+    if (isUrlAppId(id)) return refuse('404 Not Found');
     const rest = match[2] ?? '/';
 
     void (async () => {

@@ -30,6 +30,9 @@ import type { Request, Response, NextFunction } from 'express';
  */
 function policy(browserProxyOrigin: string | null): string {
   return [
+    // With no frame-src below, this is also where the desktop's frames may
+    // go, and that fences a sandboxed app from a URL (brief 158): see
+    // frame-src.
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
@@ -42,6 +45,13 @@ function policy(browserProxyOrigin: string | null): string {
     "connect-src 'self'",
     // The Browser app frames its proxy origin (brief 50), that one origin and
     // no other. Without it, frames stay at default-src 'self'.
+    //
+    // This directive is also the fence on where a sandboxed app from a URL
+    // (brief 158) can navigate its own frame. That navigation is checked
+    // against this page's policy, the frame's parent, and the CSP the frame
+    // carries cannot stop it. Every origin added here is one an unreviewed
+    // app can send data to by navigating there (`location = …?<data>`), so
+    // widening frame-src gives URL apps a way out.
     ...(browserProxyOrigin ? [`frame-src 'self' ${browserProxyOrigin}`] : []),
   ].join('; ');
 }

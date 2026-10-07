@@ -54,6 +54,7 @@ function app(overrides: Partial<MarketplaceApp> = {}): MarketplaceApp {
     capabilities: ['notify'],
     minSystemVersion: 2,
     ref: 'a'.repeat(40),
+    runtime: 'native',
     installed: {
       ref: 'a'.repeat(40),
       buildId: 'b1',

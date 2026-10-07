@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 10;
+export const LEDGER_VERSION = 11;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -210,6 +210,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         toVersion: 10,
         name: 'marketplace-apps',
         run: () => this.stepMarketplaceApps(),
+      },
+      {
+        toVersion: 11,
+        name: 'marketplace-url-apps',
+        run: () => this.stepMarketplaceUrlApps(),
       },
     ];
 
@@ -626,6 +631,26 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         installed_at INTEGER NOT NULL
       );
     `);
+  }
+
+  /**
+   * Step 11 — apps installed from a URL (brief 158). `runtime` says how the
+   * desktop runs an app: every row before this one is a catalog app, so the
+   * default keeps it native. A URL app has no descriptor to read again, so
+   * its resolved source and its manifest are stored with it, as JSON.
+   */
+  private stepMarketplaceUrlApps() {
+    for (const column of [
+      "runtime TEXT NOT NULL DEFAULT 'native'",
+      'source TEXT',
+      'manifest TEXT',
+    ]) {
+      try {
+        this.db.exec(`ALTER TABLE marketplace_apps ADD COLUMN ${column}`);
+      } catch (err) {
+        if (!isAlreadyApplied(err, DUPLICATE_COLUMN)) throw err;
+      }
+    }
   }
 
   private stepDropOldAuth() {

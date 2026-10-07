@@ -29,7 +29,10 @@ import { APP_REGISTRY, type AppConfig } from './registry'
  * it to look again.
  */
 
-/** One catalog entry as the backend lists it (`MarketplaceApp` there). */
+/**
+ * One app as the backend lists it (`MarketplaceApp` there): a catalog entry
+ * (brief 120), or an app installed from a URL (brief 158).
+ */
 export type MarketplaceApp = {
   id: string
   name: string
@@ -41,11 +44,21 @@ export type MarketplaceApp = {
   capabilities: Capability[]
   minSystemVersion: number
   ref: string
+  /**
+   * How the desktop runs it: `native` imports its module into this page (a
+   * reviewed catalog app); `sandboxed` runs it in an opaque-origin iframe (an
+   * app from a URL). A backend from before brief 158 sends none: read that
+   * as native.
+   */
+  runtime: 'native' | 'sandboxed'
+  /** Where a URL app came from, as resolved at install. Absent for a catalog app. */
+  source?: AppSource
   installed: {
     ref: string
     buildId: string
     installedAt: number
-    entryPath: string
+    /** What the desktop imports, relative to the API's base. A URL app has none. */
+    entryPath?: string
     missing: boolean
   } | null
   job: { state: 'queued' | 'fetching' | 'building' | 'failed'; reason?: string } | null
@@ -57,9 +70,31 @@ export type MarketplaceApp = {
 
 export type Capability = 'fs' | 'http' | 'intents' | 'notify' | 'shortcuts' | 'schedule'
 
+/** A URL app's source (brief 158, contract B's `Inspection['source']`). */
+export type AppSource = {
+  /** Normalized, e.g. `https://github.com/o/r/tree/main/sub`. */
+  url: string
+  /** `https://github.com/o/r`. */
+  repo: string
+  /** The branch or tag asked for; null = the default branch. */
+  ref: string | null
+  /** The commit installed, 40 hex. */
+  commit: string
+  subdir: string | null
+}
+
+/** True for an app the desktop runs in the iframe sandbox. A missing `runtime` is native. */
+export function isSandboxed(app: Pick<MarketplaceApp, 'runtime'>): boolean {
+  return app.runtime === 'sandboxed'
+}
+
 export type MarketplaceListing = {
   apps: MarketplaceApp[]
-  problems: { file: string; problem: string }[]
+  /**
+   * Catalog files that could not be read, and installed apps whose stored
+   * record is damaged; the latter carry `appId` so the pane can uninstall them.
+   */
+  problems: { file: string; problem: string; appId?: string }[]
 }
 
 type IconComponent = AppConfig['icon']
@@ -84,8 +119,14 @@ const ICONS: Record<string, IconComponent> = {
   map: MapIcon,
 }
 
+/**
+ * The icon a descriptor or manifest names, or the package icon. `name` comes
+ * from an app's own manifest, so look it up as an own key only: `ICONS[name]`
+ * would hand back `Object` for "constructor" (and a function for "toString"),
+ * and rendering that as a component crashes the pane.
+ */
 export function marketplaceIcon(name: string): IconComponent {
-  return ICONS[name] ?? Package
+  return Object.hasOwn(ICONS, name) ? ICONS[name] : Package
 }
 
 const useRegistryStore = create<{ version: number; ids: string[] }>(() => ({
@@ -107,6 +148,13 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
   const component = lazy(async () => {
     // The host is its own chunk, and the game's code is fetched only when a
     // window opens: nothing of either is in the eager bundle (brief 33).
+    if (isSandboxed(app)) {
+      const { SandboxedAppHost } = await import('../../modules/marketplace/SandboxedAppHost')
+      const Host: ComponentType<{ windowId: string }> = ({ windowId }) => (
+        <SandboxedAppHost windowId={windowId} app={app} />
+      )
+      return { default: Host }
+    }
     const { NativeAppHost } = await import('../../modules/marketplace/NativeAppHost')
     const Host: ComponentType<{ windowId: string }> = ({ windowId }) => (
       <NativeAppHost windowId={windowId} app={app} />
@@ -129,9 +177,18 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
 }
 
 /**
+ * Installed with its files present, and something to run: a native app needs
+ * the module path; a sandboxed one is served by token and has none.
+ */
+function isRunnable(app: MarketplaceApp): boolean {
+  if (!app.installed || app.installed.missing) return false
+  return isSandboxed(app) || typeof app.installed.entryPath === 'string'
+}
+
+/**
  * Put the installed, runnable apps of a listing into `APP_REGISTRY`, replacing
  * whatever the previous listing put there. A built-in id always wins: a
- * catalog entry cannot shadow Settings or the Terminal.
+ * marketplace app cannot shadow Settings or the Terminal.
  */
 export function syncMarketplaceApps(apps: MarketplaceApp[]): void {
   const previous = new Set(useRegistryStore.getState().ids)
@@ -141,7 +198,7 @@ export function syncMarketplaceApps(apps: MarketplaceApp[]): void {
   const builtIn = new Set(APP_REGISTRY.map((a) => a.id))
   const added: string[] = []
   for (const app of apps) {
-    if (!app.installed || app.installed.missing || builtIn.has(app.id)) continue
+    if (!isRunnable(app) || builtIn.has(app.id) || added.includes(app.id)) continue
     APP_REGISTRY.push(toAppConfig(app))
     added.push(app.id)
   }
@@ -152,11 +209,15 @@ export function syncMarketplaceApps(apps: MarketplaceApp[]): void {
 export async function loadMarketplace(): Promise<MarketplaceListing> {
   const { data } = await api.get<MarketplaceListing>('/marketplace')
   // An install that only changed its job state leaves the registry alone: a
-  // fresh AppConfig would remount every open window of the app.
+  // fresh AppConfig would remount every open window of the app. A URL app's
+  // update is a new commit (and revokes its open windows' tokens), so that
+  // remounts them.
   const key = (list: MarketplaceApp[]) =>
     list
-      .filter((a) => a.installed && !a.installed.missing)
-      .map((a) => `${a.id}@${a.installed?.buildId}`)
+      .filter(isRunnable)
+      .map(
+        (a) => `${a.id}@${a.runtime ?? 'native'}@${a.installed?.buildId}@${a.source?.commit ?? ''}`
+      )
       .join(',')
   if (key(data.apps) !== lastKey) {
     lastKey = key(data.apps)

@@ -95,8 +95,20 @@ describe('descriptorSchema (brief 120)', () => {
       { server: { command: ['node', 's.js'], portEnv: 'PORT' } },
     ],
     ['an id with a slash', { id: 'a/b' }],
+    // Brief 158: `x-…` is what an app installed from a URL is called.
+    ['an id starting with x-', { id: 'x-0123456789ab' }],
   ])('refuses %s', (_label, extra) => {
     expect(parse(valid(extra)).success).toBe(false);
+  });
+
+  it("keeps the catalog's own window limits: the caps on an app from a URL are not its", () => {
+    const window = {
+      defaultSize: { w: 3840, h: 2160 },
+      minSize: { w: 1920, h: 1080 },
+    };
+    const r = parse(valid({ window }));
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.window).toEqual(window);
   });
 
   it('accepts file:// only when local repos are allowed', () => {

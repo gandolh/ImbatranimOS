@@ -39,20 +39,34 @@ export class AuditExceptionFilter extends BaseExceptionFilter {
 
     if (status >= 500) {
       const req = host.switchToHttp().getRequest<Request>();
+      // The path only: a query string can carry a search term, and the log is
+      // not the place to accumulate what the user has been looking for.
+      const path = loggablePath(req.url);
       this.logs.record(
         'error',
         'server.error',
-        `${req.method} ${req.url} failed`,
+        `${req.method} ${path} failed`,
         {
           status,
           method: req.method,
-          // The path only: a query string can carry a search term, and the log is
-          // not the place to accumulate what the user has been looking for.
-          path: req.url.split('?')[0],
+          path,
           error: exception instanceof Error ? exception : String(exception),
         },
       );
     }
     super.catch(exception, host);
   }
+}
+
+/**
+ * A sandboxed app's window token (brief 158) is a capability: its URL
+ * `marketplace/sandbox/<token>/…` serves the app's files with no session at
+ * all, so it is never written to the log. Matched without regard to case,
+ * as the router matches, and across doubled slashes, to be safe.
+ */
+const SANDBOX_TOKEN = /(\/marketplace\/+sandbox\/+)[^/?#]*/gi;
+
+/** A request URL as the log may keep it: no query string, no sandbox token. */
+export function loggablePath(url: string): string {
+  return url.split('?')[0].replace(SANDBOX_TOKEN, '$1<redacted>');
 }

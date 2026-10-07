@@ -13,12 +13,17 @@ import { dirname, join, posix, relative, resolve, sep } from 'path';
 
 import type { Env } from '../../config/env.schema';
 import { DbService } from '../../db/db.service';
+import type { AppManifest } from './app-manifest';
 import { loadCatalog, type Catalog, type Descriptor } from './catalog';
 import {
   MarketplaceServers,
   type ServerSpec,
 } from './marketplace-servers.service';
+import { PendingInspections } from './pending-inspections';
 import { runStep } from './run-step';
+import { SandboxTokens } from './sandbox-tokens';
+import { isUrlAppId, type AppSource } from './source-url';
+import { readUrlAppRow, type UrlAppRecord } from './url-app-record';
 
 /** How long a clone may take. A shallow fetch of one commit. */
 const FETCH_TIMEOUT_MS = 5 * 60_000;
@@ -47,7 +52,7 @@ export interface Job {
   reason?: string;
 }
 
-interface InstalledRow {
+export interface InstalledRow {
   id: string;
   ref: string;
   build_id: string;
@@ -56,6 +61,23 @@ interface InstalledRow {
   /** `build.entry`, relative to `root`. */
   entry: string;
   installed_at: number;
+  /** `sandboxed` for an app installed from a URL (brief 158). */
+  runtime: 'native' | 'sandboxed';
+  /** A URL app's {@link AppSource}, as JSON. Null for a catalog app. */
+  source: string | null;
+  /** A URL app's `imbatranim.json`, as parsed, as JSON. Null for a catalog app. */
+  manifest: string | null;
+}
+
+/**
+ * Something the listing could not show as an app: a catalog file that did not
+ * parse, or an installed app that cannot run. `appId` is set for the latter:
+ * it is still installed, and `DELETE marketplace/apps/:appId` removes it.
+ */
+export interface ListingProblem {
+  file: string;
+  problem: string;
+  appId?: string;
 }
 
 /** What the Marketplace pane and the desktop's registry read. */
@@ -69,20 +91,43 @@ export interface MarketplaceApp {
   window: Descriptor['window'];
   capabilities: Descriptor['capabilities'];
   minSystemVersion: number;
-  /** The commit the catalog pins now. */
+  /** The commit the catalog pins now; for a URL app, the installed one. */
   ref: string;
+  /**
+   * `native` runs in the desktop's page (a reviewed catalog app);
+   * `sandboxed` in an opaque-origin frame (an app from a URL, brief 158).
+   */
+  runtime: 'native' | 'sandboxed';
+  /** Where a URL app came from. Absent for a catalog app. */
+  source?: AppSource;
   installed: {
     ref: string;
     buildId: string;
     installedAt: number;
-    /** What the desktop imports, relative to the API's base (`/api`). */
-    entryPath: string;
+    /**
+     * What the desktop imports, relative to the API's base (`/api`). A URL
+     * app has none: its files are served only under a sandbox token.
+     */
+    entryPath?: string;
     /** The build's directory is gone (a restored backup leaves it out): reinstall. */
     missing: boolean;
   } | null;
   job: Job | null;
   server: ReturnType<MarketplaceServers['status']>;
 }
+
+/**
+ * Runs one command of a fetch or a build and says whether it worked. The
+ * caller decides what a failure means: the catalog's install logs it and
+ * fails the job, a URL check throws the HTTP error the pane shows.
+ */
+export type StepRunner = (
+  label: string,
+  argv: readonly string[],
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+  timeoutMs: number,
+) => Promise<boolean>;
 
 /** The pieces of the environment a build or an app's server gets. Nothing else. */
 const PASSED_THROUGH = ['PATH', 'LANG', 'LC_ALL', 'TZ'] as const;
@@ -104,13 +149,19 @@ const PASSED_THROUGH = ['PATH', 'LANG', 'LC_ALL', 'TZ'] as const;
 export class MarketplaceService implements OnModuleInit {
   private readonly logger = new Logger(MarketplaceService.name);
   private readonly jobs = new Map<string, Job>();
-  /** Builds run one at a time: two at once is twice the memory and CPU. */
+  /**
+   * Builds run one at a time: two at once is twice the memory and CPU. A URL
+   * check's clone (brief 158) takes its turn here too, so git work never
+   * overlaps.
+   */
   private queue: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly dbs: DbService,
     private readonly config: ConfigService<Env, true>,
     private readonly servers: MarketplaceServers,
+    private readonly tokens: SandboxTokens,
+    private readonly pendings: PendingInspections,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -138,7 +189,7 @@ export class MarketplaceService implements OnModuleInit {
     });
   }
 
-  private row(id: string): InstalledRow | undefined {
+  row(id: string): InstalledRow | undefined {
     return this.dbs.db
       .prepare('SELECT * FROM marketplace_apps WHERE id = ?')
       .get(id) as InstalledRow | undefined;
@@ -150,7 +201,7 @@ export class MarketplaceService implements OnModuleInit {
       .all() as InstalledRow[];
   }
 
-  private buildDir(id: string, buildId: string): string {
+  buildDir(id: string, buildId: string): string {
     return join(this.appsDir(), `${id}@${buildId}`);
   }
 
@@ -162,9 +213,10 @@ export class MarketplaceService implements OnModuleInit {
 
   async list(): Promise<{
     apps: MarketplaceApp[];
-    problems: Catalog['problems'];
+    problems: ListingProblem[];
   }> {
-    const { apps, problems } = this.catalog();
+    const { apps, problems: catalogProblems } = this.catalog();
+    const problems: ListingProblem[] = [...catalogProblems];
     const rows = new Map(this.rows().map((r) => [r.id, r]));
     const out: MarketplaceApp[] = [];
     for (const d of apps.values()) {
@@ -180,6 +232,7 @@ export class MarketplaceService implements OnModuleInit {
         capabilities: d.capabilities,
         minSystemVersion: d.minSystemVersion,
         ref: d.source.ref,
+        runtime: 'native',
         installed: row
           ? {
               ref: row.ref,
@@ -195,17 +248,91 @@ export class MarketplaceService implements OnModuleInit {
         server: this.servers.status(d.id),
       });
     }
-    // An app installed from a descriptor that has since left the catalog is
-    // no longer runnable, but its files are still on disk: list it, so it can
-    // be uninstalled.
     for (const row of rows.values()) {
+      if (row.runtime === 'sandboxed') {
+        // A damaged row is left out of the apps and named here instead, so
+        // one bad row cannot fail the whole listing; it can still be
+        // uninstalled by its id.
+        const record = this.urlAppRecord(row);
+        if (record.ok) out.push(await this.urlAppEntry(row, record));
+        else {
+          problems.push({
+            file: row.id,
+            problem: `installed from a URL, but its stored ${record.damaged} is damaged: uninstall it`,
+            appId: row.id,
+          });
+        }
+        continue;
+      }
+      // An app installed from a descriptor that has since left the catalog is
+      // no longer runnable, but its files are still on disk: list it, so it
+      // can be uninstalled.
       if (apps.has(row.id)) continue;
       problems.push({
         file: `${row.id}.json`,
         problem: 'installed, but no longer in the catalog: uninstall it',
+        appId: row.id,
       });
     }
     return { apps: out, problems };
+  }
+
+  /**
+   * An installed URL app as the pane and the registry read it (brief 158):
+   * its name, window and capabilities from its stored manifest, no
+   * `entryPath` (its files are served only under a sandbox token) and no
+   * server. Null when it is not one, or its stored row is damaged.
+   */
+  async urlApp(id: string): Promise<MarketplaceApp | null> {
+    const row = this.row(id);
+    if (row?.runtime !== 'sandboxed') return null;
+    const record = this.urlAppRecord(row);
+    return record.ok ? this.urlAppEntry(row, record) : null;
+  }
+
+  /**
+   * An installed URL app's row, only when it is one and it reads back by
+   * install's rules (`readUrlAppRow`). Minting a token and serving its files
+   * go through here: a damaged row serves nothing.
+   */
+  sandboxedRow(id: string): InstalledRow | null {
+    const row = this.row(id);
+    if (row?.runtime !== 'sandboxed') return null;
+    return this.urlAppRecord(row).ok ? row : null;
+  }
+
+  private urlAppRecord(row: InstalledRow): UrlAppRecord {
+    return readUrlAppRow(row, this.appsDir());
+  }
+
+  private async urlAppEntry(
+    row: InstalledRow,
+    { manifest, source }: { manifest: AppManifest; source: AppSource },
+  ): Promise<MarketplaceApp> {
+    return {
+      id: row.id,
+      name: manifest.name,
+      description: manifest.description,
+      meta: manifest.meta,
+      type: 'static',
+      icon: manifest.icon,
+      window: manifest.window,
+      capabilities: manifest.capabilities as Descriptor['capabilities'],
+      minSystemVersion: manifest.minSystemVersion,
+      ref: row.ref,
+      runtime: 'sandboxed',
+      source,
+      installed: {
+        ref: row.ref,
+        buildId: row.build_id,
+        installedAt: row.installed_at,
+        missing: !(await exists(
+          join(this.buildDir(row.id, row.build_id), row.root, row.entry),
+        )),
+      },
+      job: null,
+      server: { state: 'stopped' },
+    };
   }
 
   async log(id: string): Promise<string> {
@@ -219,7 +346,8 @@ export class MarketplaceService implements OnModuleInit {
    * The file a request for an installed app's build names, as a real path
    * inside the directory the entry lives in. Anything else is a 404: an id
    * outside the catalog, a build that is not the live one, a path that climbs
-   * out or reaches through a symlink, a dotfile.
+   * out or reaches through a symlink, a dotfile. A URL app's build is never
+   * served here, only under its sandbox token with the sandbox's headers.
    */
   async servedFile(
     id: string,
@@ -228,32 +356,29 @@ export class MarketplaceService implements OnModuleInit {
   ): Promise<string> {
     const d = this.catalog().apps.get(id);
     const row = d ? this.row(id) : undefined;
-    if (!row || row.build_id !== buildId) throw new NotFoundException();
-    if (
-      segments.length === 0 ||
-      segments.some(
-        (s) =>
-          s === '' ||
-          s.startsWith('.') ||
-          s.includes('/') ||
-          s.includes('\\') ||
-          s.includes('\0'),
-      )
-    ) {
+    if (!row || row.runtime !== 'native' || row.build_id !== buildId) {
       throw new NotFoundException();
     }
-    const servedRoot = join(
-      this.buildDir(id, buildId),
+    return resolveServed(this.servedRoot(row), segments);
+  }
+
+  /** The directory an installed app's files are served from: its entry's. */
+  servedRoot(row: InstalledRow): string {
+    return join(
+      this.buildDir(row.id, row.build_id),
       row.root,
       posix.dirname(row.entry),
     );
-    try {
-      const realRoot = await fs.realpath(servedRoot);
-      const abs = await fs.realpath(join(servedRoot, ...segments));
-      if (!isInside(realRoot, abs)) throw new Error('outside');
-      if (!(await fs.stat(abs)).isFile()) throw new Error('not a file');
-      return abs;
-    } catch {
+  }
+
+  /**
+   * A 404 for an app installed from a URL (or an id only such an app could
+   * have) on a route of the native runtime: install, the build's files, the
+   * lease and the server proxy. A URL app has no build and no server, and its
+   * files are served only with the sandbox's headers.
+   */
+  refuseSandboxed(id: string): void {
+    if (isUrlAppId(id) || this.row(id)?.runtime === 'sandboxed') {
       throw new NotFoundException();
     }
   }
@@ -288,6 +413,7 @@ export class MarketplaceService implements OnModuleInit {
    * build at the catalog's ref). Answers at once; the pane polls `list`.
    */
   install(id: string): Job {
+    this.refuseSandboxed(id);
     const d = this.catalog().apps.get(id);
     if (!d) throw new NotFoundException(`No app "${id}" in the catalog`);
     const current = this.jobs.get(id);
@@ -311,6 +437,20 @@ export class MarketplaceService implements OnModuleInit {
     return this.queue;
   }
 
+  /**
+   * Run `work` when the builds queued before it are done, and answer with its
+   * result. A URL check uses it: its HTTP call waits for the clone, which
+   * still never runs beside a build.
+   */
+  runQueued<T>(work: () => Promise<T>): Promise<T> {
+    const result = this.queue.then(work);
+    this.queue = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  }
+
   async uninstall(id: string): Promise<void> {
     if (!isAppId(id)) throw new NotFoundException();
     const job = this.jobs.get(id);
@@ -324,6 +464,8 @@ export class MarketplaceService implements OnModuleInit {
     await this.servers.stop(id);
     this.dbs.db.prepare('DELETE FROM marketplace_apps WHERE id = ?').run(id);
     this.jobs.delete(id);
+    // A URL app's open windows lose their files now, not in six hours.
+    this.tokens.revokeApp(id);
     await this.removeBuilds(id, null);
     await fs.rm(this.logPath(id), { force: true });
   }
@@ -365,64 +507,13 @@ export class MarketplaceService implements OnModuleInit {
 
     // ── fetch exactly the pinned commit ──
     job.state = 'fetching';
-    const gitEnv = this.gitEnv(d.source.repo);
-    const git = (...args: string[]) => [
-      'git',
-      // Nothing from the repository may run during the fetch.
-      '-c',
-      'core.hooksPath=/dev/null',
-      ...args,
-    ];
-    if (
-      !(await step('git init', git('init', '-q'), dir, gitEnv, 30_000)) ||
-      !(await step(
-        'Fetching the source',
-        git(
-          'fetch',
-          '-q',
-          '--depth',
-          '1',
-          '--no-tags',
-          '--',
-          d.source.repo,
-          d.source.ref,
-        ),
-        dir,
-        gitEnv,
-        FETCH_TIMEOUT_MS,
-      )) ||
-      !(await step(
-        'Checking out',
-        git('checkout', '-q', '--detach', 'FETCH_HEAD'),
-        dir,
-        gitEnv,
-        60_000,
-      ))
-    ) {
+    if (!(await this.fetchCommit(dir, d.source.repo, d.source.ref, step, fail)))
       return;
-    }
-    const head = await runStep(git('rev-parse', 'HEAD'), {
-      cwd: dir,
-      env: gitEnv,
-      timeoutMs: 30_000,
-    });
-    if (head.output.trim() !== d.source.ref) {
-      await fail(
-        `The fetched commit is ${head.output.trim() || 'unknown'}, not ${d.source.ref}`,
-      );
-      return;
-    }
 
     // ── the app's directory, which must really be inside the clone ──
     const rootRel = d.source.subdir ? posix.normalize(d.source.subdir) : '';
     const root = join(dir, rootRel);
-    try {
-      const realDir = await fs.realpath(dir);
-      const realRoot = await fs.realpath(root);
-      if (!isInside(realDir, realRoot) && realRoot !== realDir)
-        throw new Error();
-      if (!(await fs.stat(realRoot)).isDirectory()) throw new Error();
-    } catch {
+    if (!(await isDirectoryWithin(dir, root))) {
       await fail(`${d.source.subdir} is not a directory in the repository`);
       return;
     }
@@ -490,6 +581,60 @@ export class MarketplaceService implements OnModuleInit {
     this.logger.log(`Installed ${d.id} at ${d.source.ref}`);
   }
 
+  /**
+   * Fetch exactly `commit` of `repo` into the empty directory `dir`: hooks
+   * off, one commit deep, no tags, and `HEAD` checked against the commit
+   * afterwards. Shared by the catalog's builds and the URL apps' clones
+   * (brief 158), which run no step after it. `fail` is told when the fetched
+   * commit is another; a failed command is `step`'s to report.
+   *
+   * `beforeCheckout` runs once the commit is fetched and before anything is
+   * written outside `.git`; false stops there. The URL check measures what
+   * the checkout would write with it. The catalog's builds pass none.
+   */
+  async fetchCommit(
+    dir: string,
+    repo: string,
+    commit: string,
+    step: StepRunner,
+    fail: (reason: string) => Promise<void>,
+    beforeCheckout?: (gitEnv: NodeJS.ProcessEnv) => Promise<boolean>,
+  ): Promise<boolean> {
+    const gitEnv = this.gitEnv(repo);
+    if (
+      !(await step('git init', gitArgv('init', '-q'), dir, gitEnv, 30_000)) ||
+      !(await step(
+        'Fetching the source',
+        gitArgv('fetch', '-q', '--depth', '1', '--no-tags', '--', repo, commit),
+        dir,
+        gitEnv,
+        FETCH_TIMEOUT_MS,
+      )) ||
+      (beforeCheckout && !(await beforeCheckout(gitEnv))) ||
+      !(await step(
+        'Checking out',
+        gitArgv('checkout', '-q', '--detach', 'FETCH_HEAD'),
+        dir,
+        gitEnv,
+        60_000,
+      ))
+    ) {
+      return false;
+    }
+    const head = await runStep(gitArgv('rev-parse', 'HEAD'), {
+      cwd: dir,
+      env: gitEnv,
+      timeoutMs: 30_000,
+    });
+    if (head.output.trim() !== commit) {
+      await fail(
+        `The fetched commit is ${head.output.trim() || 'unknown'}, not ${commit}`,
+      );
+      return false;
+    }
+    return true;
+  }
+
   // ── environments ─────────────────────────────────────────────────────────
 
   /**
@@ -519,7 +664,7 @@ export class MarketplaceService implements OnModuleInit {
   }
 
   /** {@link childEnv}, plus git told to use the descriptor's protocol and nothing else. */
-  private gitEnv(repo: string): NodeJS.ProcessEnv {
+  gitEnv(repo: string): NodeJS.ProcessEnv {
     return this.childEnv({
       GIT_TERMINAL_PROMPT: '0',
       GIT_CONFIG_NOSYSTEM: '1',
@@ -530,7 +675,7 @@ export class MarketplaceService implements OnModuleInit {
     });
   }
 
-  private async prepareDirs(): Promise<void> {
+  async prepareDirs(): Promise<void> {
     const cache = join(this.appsDir(), '.cache');
     for (const d of ['home', 'tmp', 'npm']) {
       await fs.mkdir(join(cache, d), { recursive: true, mode: 0o700 });
@@ -539,11 +684,18 @@ export class MarketplaceService implements OnModuleInit {
 
   // ── housekeeping ─────────────────────────────────────────────────────────
 
-  /** Remove `<id>@*` build directories except `keep`. */
-  private async removeBuilds(id: string, keep: string | null): Promise<void> {
+  /**
+   * Remove `<id>@*` build directories except `keep`, and except a URL check's
+   * clone still cloning or waiting for consent (it is not a build yet).
+   */
+  async removeBuilds(id: string, keep: string | null): Promise<void> {
     const names = await fs.readdir(this.appsDir()).catch(() => [] as string[]);
     for (const name of names) {
-      if (name.startsWith(`${id}@`) && name !== `${id}@${keep}`) {
+      if (
+        name.startsWith(`${id}@`) &&
+        name !== `${id}@${keep}` &&
+        !this.pendings.holds(name)
+      ) {
         await fs.rm(join(this.appsDir(), name), {
           recursive: true,
           force: true,
@@ -554,7 +706,9 @@ export class MarketplaceService implements OnModuleInit {
 
   /**
    * At boot: a build directory no row names is what an install interrupted
-   * by a restart left behind. Nothing is in flight yet, so it can go.
+   * by a restart left behind. Nothing is in flight yet, so it can go. That
+   * includes a URL check's clone: pending checks live in memory, so none
+   * survives the restart, and this runs only here, before any request.
    */
   private async sweepStaleBuilds(): Promise<void> {
     const live = new Set(this.rows().map((r) => `${r.id}@${r.build_id}`));
@@ -574,12 +728,67 @@ export function isAppId(id: string): boolean {
   return /^[a-z][a-z0-9-]{1,39}$/.test(id);
 }
 
-function isInside(root: string, path: string): boolean {
+/** git with nothing from the repository allowed to run during the fetch. */
+export function gitArgv(...args: string[]): string[] {
+  return ['git', '-c', 'core.hooksPath=/dev/null', ...args];
+}
+
+export function isInside(root: string, path: string): boolean {
   const rel = relative(root, path);
   return rel !== '' && !rel.startsWith('..') && !rel.startsWith(sep);
 }
 
-async function exists(path: string): Promise<boolean> {
+/** True when `path` is a directory that really (through symlinks) is `dir` or inside it. */
+export async function isDirectoryWithin(
+  dir: string,
+  path: string,
+): Promise<boolean> {
+  try {
+    const realDir = await fs.realpath(dir);
+    const realPath = await fs.realpath(path);
+    if (!isInside(realDir, realPath) && realPath !== realDir) return false;
+    return (await fs.stat(realPath)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The real path of the file `segments` name inside `servedRoot`, or a 404:
+ * for an empty or dot segment (dotfiles are never served, and `..` is one),
+ * one holding a separator, a path that climbs out or reaches through a
+ * symlink, or anything that is not a file. Both the native build route and
+ * the sandbox's use it.
+ */
+export async function resolveServed(
+  servedRoot: string,
+  segments: string[],
+): Promise<string> {
+  if (
+    segments.length === 0 ||
+    segments.some(
+      (s) =>
+        s === '' ||
+        s.startsWith('.') ||
+        s.includes('/') ||
+        s.includes('\\') ||
+        s.includes('\0'),
+    )
+  ) {
+    throw new NotFoundException();
+  }
+  try {
+    const realRoot = await fs.realpath(servedRoot);
+    const abs = await fs.realpath(join(servedRoot, ...segments));
+    if (!isInside(realRoot, abs)) throw new Error('outside');
+    if (!(await fs.stat(abs)).isFile()) throw new Error('not a file');
+    return abs;
+  } catch {
+    throw new NotFoundException();
+  }
+}
+
+export async function exists(path: string): Promise<boolean> {
   try {
     await fs.stat(path);
     return true;
@@ -590,13 +799,17 @@ async function exists(path: string): Promise<boolean> {
 
 /**
  * Bytes under `dir`, without following symlinks (a link out of the build is
- * not served: `servedFile` refuses it). Stops counting once past the cap.
+ * not served: `servedFile` refuses it). Stops counting once past `cap`.
  */
-async function directorySize(dir: string, within: string): Promise<number> {
+export async function directorySize(
+  dir: string,
+  within: string,
+  cap = MAX_SERVED_BYTES,
+): Promise<number> {
   if (!isInside(within, dir) && dir !== within) return Infinity;
   let total = 0;
   const stack = [dir];
-  while (stack.length > 0 && total <= MAX_SERVED_BYTES) {
+  while (stack.length > 0 && total <= cap) {
     const current = stack.pop()!;
     for (const entry of await fs.readdir(current, { withFileTypes: true })) {
       const path = join(current, entry.name);

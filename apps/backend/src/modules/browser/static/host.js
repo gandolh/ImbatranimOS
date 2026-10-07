@@ -38,6 +38,17 @@
     if (desktopOrigin) window.parent.postMessage(message, desktopOrigin);
   }
 
+  // The desktop's keyboard guard can't see another frame taking the keyboard
+  // from the Browser's page, so this page says when its keyboard has gone: a
+  // moment after a blur, if neither it nor the page inside it has it. (A
+  // click from here into the proxied page is a blur too, but then this
+  // document still has focus through its frame.)
+  window.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (!document.hasFocus()) tell({ imb: 'frame-blur' });
+    }, 0);
+  });
+
   function fail(err) {
     tell({ imb: 'error', message: String((err && err.message) || err) });
   }

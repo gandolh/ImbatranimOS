@@ -5,7 +5,12 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "assets": [
-      { "include": "modules/browser/static/**/*", "watchAssets": true }
+      { "include": "modules/browser/static/**/*", "watchAssets": true },
+      {
+        "include": "modules/marketplace/sandbox/**/*",
+        "exclude": "modules/marketplace/sandbox/**/*.ts",
+        "watchAssets": true
+      }
     ]
   }
 }

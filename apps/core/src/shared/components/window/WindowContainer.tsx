@@ -36,18 +36,22 @@ function useOrderedWindows(): {
       )
     )
   )
-  return keys
-    .map((k) => {
-      const [id, appId, zIndex, isVisible, workspaceId] = k.split(SEP)
-      return {
-        id,
-        appId,
-        zIndex: Number(zIndex),
-        isVisible: isVisible === '1',
-        workspaceId: Number(workspaceId),
-      }
-    })
-    .sort((a, b) => a.zIndex - b.zIndex)
+  return keys.map((k) => {
+    const [id, appId, zIndex, isVisible, workspaceId] = k.split(SEP)
+    return {
+      id,
+      appId,
+      zIndex: Number(zIndex),
+      isVisible: isVisible === '1',
+      workspaceId: Number(workspaceId),
+    }
+  })
+  // Deliberately NOT sorted by zIndex: each Window stacks by its own CSS
+  // z-index inside this container's stacking context, so DOM order doesn't
+  // decide what is on top. Reordering the list on every focus would make React
+  // move window nodes in the DOM, and a browser reloads any iframe whose node
+  // is moved: a URL app (brief 158) or the Browser's page would restart every
+  // time its window was raised.
 }
 
 export function WindowContainer() {

@@ -49,6 +49,7 @@ export function NativeAppHost({ windowId, app }: { windowId: string; app: Market
             `${app.name} needs system protocol ${app.minSystemVersion}; this desktop speaks ${PROTOCOL_VERSION}`
           )
         }
+        if (!installed.entryPath) throw new Error(`${app.name} has no module to load`)
         const entry = apiUrl(installed.entryPath)
         let server: NativeHostContext['server'] = null
         if (app.type === 'service') {

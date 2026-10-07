@@ -53,7 +53,7 @@ is not a lock: anyone at the machine can uncover it. To end the session, use
 ### Inside a Ward estate
 
 If you run ImbatranimOS next to other apps that share
-[Ward](https://github.com/gandolh/wzd_auth) sign-in, set all three of
+[Ward](https://github.com/gandolh/ward-auth) sign-in, set all three of
 `WARD_PUBLIC_ORIGIN`, `WARD_API_BASE_PATH` and `WARD_APP_KEY`. Sign-in,
 passwords and two-factor then live at Ward, an account needs an
 `imbatranim-os` grant from Ward's console, and the local sign-in above is

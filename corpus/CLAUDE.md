@@ -98,3 +98,8 @@ pivot-era and iso-era pages) holds the locked calls.
   don't relitigate per-brief.
 - **Build-from-source distribution**: clone + docker build/compose; no
   registry/CI promises without a decisions.md revisit.
+
+## brief-board
+
+Brief progress goes on brief-board. Run `brief-board guide` before you
+start or resume a brief, and follow it.

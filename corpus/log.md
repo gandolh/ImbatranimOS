@@ -4315,3 +4315,15 @@ checkout (`file:` under the test flag, ref `main`, subdir `games/hollow/os-app`)
 `8db15ad`, installed, served all four files under its token, and uninstalled. The install URL
 once game-engine is pushed: `https://github.com/gandolh/game-engine/tree/main/games/hollow/os-app`.
 This replaces the branch URL in brief 158's outcome note; status.md now carries this one.
+
+## [2026-10-09] capture | Brief 159 filed; architecture page's add-on list refreshed
+
+The README screenshot pass saw desktop icons overlap after a viewport resize in
+headless Chrome, staying so until reload. Not investigated; filed as
+[brief 159](briefs/todo/159-desktop-icons-overlap-after-resize.md) with reproduction as
+step one and four leads from the code (the `requestAnimationFrame`-debounced
+re-placement, pinned icons never re-flowed, the one-cell `taken` check).
+[architecture.md](wiki/architecture.md) listed seven add-ons; `apps/add-ons/` holds 27
+packages and `APP_REGISTRY` carries 30 windowed apps, so the page now says that and
+stops naming a list. The docs site's tour page was refreshed in the code repo's own
+commit. `apps/docs/src/content/docs/wiki/` is gitignored, so no synced output changed.

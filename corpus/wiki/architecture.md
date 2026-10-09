@@ -1,6 +1,6 @@
 ---
 summary: Web-OS era stack — Alpine + NestJS container, one authed port, React/Vite desktop split into @imbatranim/core + add-on packages (npm workspaces + turbo), PTY/FS/monitor apps, volume-backed home.
-updated: 2026-10-07
+updated: 2026-10-09
 ---
 
 # Architecture
@@ -66,9 +66,11 @@ apps/core/             the desktop OS: shell, window manager, command
                        src/index.ts). src/manifest.ts is the ONLY file
                        that may import add-on packages (eslint-enforced).
 apps/add-ons/<app>/    one workspace package per windowed app
-                       (@imbatranim/<app>): bookmarks, file-manager,
-                       notepad, repl-interpreter (Terminal), sticky-notes,
-                       system-monitor, todo. Each exports a manifest
+                       (@imbatranim/<app>); 27 packages today (see
+                       apps/add-ons/), giving 29 of the desktop's 30
+                       windowed apps (Settings is core; the games package
+                       holds Minesweeper and Solitaire, the code-editor
+                       package also holds Diff). Each exports a manifest
                        (AppConfig + optional command-palette sources);
                        add-ons import core's public surface only.
 apps/backend/          NestJS app (API, WS, PTY, auth; prod serves the

@@ -28,7 +28,7 @@ Romanian for "we're getting old," a joke about time passing that computes.
    ImbatranimOS: system apps added (real terminal, real files, system
    monitor), reskinned to the carried-over identity (Windows-7-classic
    layout, black & white + accent).
-3. **Estate era (2026-09-06 →).** Deployed at `gandolh.ro/imbatranim-os`
+3. **Estate era (2026-09-06 →).** Deployed at `/imbatranim-os`
    beside the owner's other apps. Sign-in moved to Ward, the estate's
    identity service, on 2026-09-06, and came back home on 2026-10-07
    (brief 157): the desktop signs its owner in itself, in the estate as

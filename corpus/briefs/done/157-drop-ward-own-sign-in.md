@@ -5,7 +5,7 @@
 Decided by the owner on 2026-10-06, answering the open question "same-origin
 exposure inside the estate". Two answers in one:
 
-1. **Staying on the shared domain is accepted.** `gandolh.ro/imbatranim-os`
+1. **Staying on the shared domain is accepted.** `/imbatranim-os`
    stays where it is. No subdomain.
 2. **ImbatranimOS drops Ward and keeps its own sign-in everywhere.** Brief 152
    already built a single-owner local sign-in (argon2id password, `imb_session`
@@ -74,7 +74,7 @@ to the desktop still reaches the terminal. The owner accepted that on
 ## Owner steps (after the deploy)
 
 - Read `SETUP_TOKEN` from the deploy's secret store, open
-  `gandolh.ro/imbatranim-os`, claim the machine with it and a new password.
+  `/imbatranim-os`, claim the machine with it and a new password.
 - Remove the `imbatranim-os` app from Ward's console.
 
 ## Acceptance
@@ -126,7 +126,7 @@ Owner steps, after the deploy:
 
 1. Add `SETUP_TOKEN` to vps-deploy's `secrets/imbatranim-os.env`
    (`openssl rand -base64 32`). `WARD_APP_KEY` there is unused now.
-2. Deploy imbatranim-os, open `gandolh.ro/imbatranim-os` and claim the machine
+2. Deploy imbatranim-os, open `/imbatranim-os` and claim the machine
    with the token and a new password.
 3. Ward cleanup, one line: in Ward's console open Apps, then imbatranim-os, then
    Delete app. That cascades its grants and service keys.

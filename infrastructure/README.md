@@ -100,7 +100,7 @@ exist.
 ## Identity (what ships)
 
 One sign-in, the machine's own (brief 152; the only one since brief 157, in
-the estate too). A standalone run, a friend's install, the `gandolh.ro`
+the estate too). A standalone run, a friend's install, the production
 deploy and the server ISO all use it.
 
 - **A single owner**, stored in SQLite (`local_owner`), with the password
@@ -119,7 +119,7 @@ deploy and the server ISO all use it.
   match the request host or the configured `FRONTEND_URL`. An absent Origin
   (same-origin GET, non-browser clients) is allowed.
 - **Shared origin, accepted risk:** on a domain shared with other apps (the
-  deploy at `gandolh.ro/imbatranim-os`), a script on a sibling app can send
+  deploy at `/imbatranim-os`), a script on a sibling app can send
   requests to `/imbatranim-os/api/*` and the browser attaches `imb_session`.
   An XSS on a sibling while the owner is signed in reaches the terminal. The
   owner accepted this on 2026-10-06 because every app on that origin is the

@@ -5,7 +5,7 @@ updated: 2026-10-07
 
 # Status — 2026-10-07
 
-**Phase: the web-OS is built and in daily use at `gandolh.ro/imbatranim-os`.** One
+**Phase: the web-OS is built and in daily use at `/imbatranim-os`.** One
 container is the computer: Alpine + Node, the desktop and the API on one port,
 everything as the unprivileged `imbatranim` user, home in a named volume
 ([architecture.md](architecture.md)). The narrative up to 2026-08-06, with the
@@ -21,7 +21,7 @@ change since is in [log.md](../log.md).
   - scrypt hashes, an `imb_session` cookie whose hash is stored, per-address
     backoff;
   - a restore ends every session.
-- **Shared origin, accepted risk:** a script on a sibling app at `gandolh.ro`
+- **Shared origin, accepted risk:** a script on a sibling app on the production domain
   can send requests the browser signs with `imb_session`.
 - **Cover screen** hides the desktop and is not a lock.
 - Decisions: [decisions-estate-era.md](decisions-estate-era.md).
@@ -103,6 +103,6 @@ notepad StrictMode intent bug.
   (decisions-estate-era.md: start fresh).
 - Brief 157, after the next deploy: put `SETUP_TOKEN` in vps-deploy's
   `secrets/imbatranim-os.env` (`openssl rand -base64 32`), deploy, open
-  `gandolh.ro/imbatranim-os` and claim the machine with it and a new password.
+  `/imbatranim-os` and claim the machine with it and a new password.
   Then remove the `imbatranim-os` app from Ward's console, which also drops its
   grants and service keys. `WARD_APP_KEY` in that secrets file is unused now.

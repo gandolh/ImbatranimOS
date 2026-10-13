@@ -6,7 +6,7 @@ A small Linux computer whose screen is a browser tab. One Docker container runs 
   <img src="docs/images/desktop.gif" width="100%" alt="The ImbatranimOS desktop: Start opens a Terminal that runs whoami and prints imbatranim, then File Manager and System Monitor open and each window is dragged into place">
 </p>
 
-**Status:** v1, declared on 2026-10-07; a personal project in daily use, still changing. The owner's machine runs at <https://gandolh.ro/imbatranim-os/>, but it has one owner, so all you will see there is the sign-in screen. Run your own with the three commands below.
+**Status:** v1, declared on 2026-10-07; a personal project in daily use, still changing. The owner's machine runs on the production site at `/imbatranim-os/`, but it has one owner, so all you will see there is the sign-in screen. Run your own with the three commands below.
 
 The name is a joke: *îmbătrânim* is Romanian for "we're getting old".
 

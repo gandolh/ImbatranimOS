@@ -115,7 +115,7 @@ Asked directly while clearing the open questions.
     naming them as ignored. Rejected: refusing to boot, which would turn a
     leftover line in a `.env` into an outage.
 - **The shared origin is an accepted risk, not a fix.** The desktop stays at
-  `gandolh.ro/imbatranim-os`. Ward's estate-wide cookie no longer opens the
+  `/imbatranim-os`. Ward's estate-wide cookie no longer opens the
   desktop, so being signed in to a sibling app is no longer being signed in to
   a shell. But a same-origin script on a sibling app can still send requests
   to `/imbatranim-os/api/*`, and the browser still attaches `imb_session` to

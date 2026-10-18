@@ -4327,3 +4327,7 @@ re-placement, pinned icons never re-flowed, the one-cell `taken` check).
 packages and `APP_REGISTRY` carries 30 windowed apps, so the page now says that and
 stops naming a list. The docs site's tour page was refreshed in the code repo's own
 commit. `apps/docs/src/content/docs/wiki/` is gitignored, so no synced output changed.
+
+## [2026-10-18] todo | Brief 160 filed: the docs site moves from Starlight to Docusaurus
+
+The owner's call (2026-10-18), one brief in every repo with a docs site. [160](briefs/todo/160-docs-site-on-docusaurus.md) ports the splash landing, AppGrid, LayerStack and the Starlight cards to React, keeps TypeDoc and Compodoc under `static/reference/`, and keeps the URLs. The new sync discovers pages, so the owner picks which of twelve wiki pages the old list left out stay unpublished. The docs workspace stays out of the image. The deploy waits on vps-deploy brief 11.

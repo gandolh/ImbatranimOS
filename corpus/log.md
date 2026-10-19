@@ -4343,3 +4343,7 @@ cells blocked one cell instead of all it covers, and a pinned icon below a shrun
 desktop was clipped. Both are fixed, with four unit tests and a headed and headless
 walk. [Brief 159](briefs/done/159-desktop-icons-overlap-after-resize.md) carries the
 outcome.
+
+## [2026-10-19] todo | Brief 161 filed: the craft suite in sandboxed windows
+
+The owner asked for ArtCraft's crafting apps in the OS, five for v1: WordCraft, GridCraft, CADCraft, PdfCraft and DeckCraft. Read-only clones showed all five are Rust/egui apps whose web build is one wasm canvas, MIT OR Apache-2.0, two to three weeks old and changing daily, with nothing to import into a React add-on. CADCraft, GridCraft and PdfCraft have a postMessage host bridge, but only for a same-origin parent, so none works in brief 158's opaque-origin frame; WordCraft and DeckCraft have no bridge at all. [161](briefs/todo/161-the-craft-suite-in-sandboxed-windows.md) proposes the sandboxed route over a same-origin frame, because a same-origin frame would give an unreviewed release the owner's session and terminal. It also proposes catalog entries pinned to release zips by SHA-256, a "document" grant in place of `fs`, and upstream bridge PRs, with a spike first. The real gaps it fills are CAD (we have none) and slide editing (Slides only views). Six decisions wait on the owner.

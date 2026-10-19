@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { GRID_GAP, ICON_HEIGHT, PADDING, layoutIcons } from './layoutIcons'
+import {
+  GRID_GAP,
+  ICON_HEIGHT,
+  ICON_WIDTH,
+  PADDING,
+  clampToDesktop,
+  layoutIcons,
+  overlaps,
+  type Point,
+} from './layoutIcons'
 
 const STRIDE = ICON_HEIGHT + GRID_GAP
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `app-${i}`)
@@ -80,4 +89,78 @@ describe('layoutIcons', () => {
     const b = layoutIcons(ids(23), {}, { width: 1280, height: 533 })
     expect(a).toEqual(b)
   })
+
+  describe('after a resize, with pinned icons (brief 159)', () => {
+    const TALL = { width: 1440, height: 856 }
+    const SHORT = { width: 1440, height: 456 }
+
+    /** Lay out, then draw the pinned icons clamped, the way Desktop does. */
+    function drawn(n: number, pinned: Record<string, Point>, viewport: typeof TALL) {
+      const out: Record<string, Point> = { ...layoutIcons(ids(n), pinned, viewport) }
+      for (const [id, p] of Object.entries(pinned)) out[id] = clampToDesktop(p, viewport)
+      return out
+    }
+
+    function overlapping(out: Record<string, Point>) {
+      const entries = Object.entries(out)
+      const pairs: string[] = []
+      for (let i = 0; i < entries.length; i++) {
+        for (let j = i + 1; j < entries.length; j++) {
+          if (overlaps(entries[i][1], entries[j][1]))
+            pairs.push(`${entries[i][0]}|${entries[j][0]}`)
+        }
+      }
+      return pairs
+    }
+
+    it('keeps auto icons off a pinned icon that sits between grid cells', () => {
+      // Measured in the browser: Paint dropped at 64,70 covers cells (0,0),
+      // (1,0), (0,1) and (1,1). Only (1,1) used to be marked taken, so three
+      // auto icons were laid on top of it.
+      const pinned = { 'app-3': { x: 64, y: 70 } }
+      expect(overlapping(drawn(29, pinned, TALL))).toEqual([])
+      expect(overlapping(drawn(29, pinned, SHORT))).toEqual([])
+    })
+
+    it('has no overlaps through shrink, grow, and shrink again', () => {
+      const pinned = {
+        'app-0': { x: 64, y: 70 },
+        'app-5': { x: 300, y: 610 },
+        'app-9': { x: 900, y: 400 },
+      }
+      for (const viewport of [TALL, SHORT, TALL, SHORT]) {
+        const out = drawn(29, pinned, viewport)
+        expect(overlapping(out), `at ${viewport.height}px`).toEqual([])
+        assertInside(out, viewport)
+      }
+    })
+
+    it('clamps a pinned icon the shrunken desktop no longer contains', () => {
+      // Pinned near the bottom of a tall desktop: y 700 is below a 456px one.
+      const pinned = { 'app-2': { x: 16, y: 700 } }
+      const out = drawn(29, pinned, SHORT)
+      expect(out['app-2']).toEqual({ x: 16, y: SHORT.height - ICON_HEIGHT })
+      expect(overlapping(out)).toEqual([])
+      assertInside(out, SHORT)
+    })
+
+    it('puts a clamped icon back where the owner left it once the desktop grows', () => {
+      const p = { x: 1400, y: 700 }
+      expect(clampToDesktop(p, SHORT)).toEqual({
+        x: SHORT.width - ICON_WIDTH,
+        y: SHORT.height - ICON_HEIGHT,
+      })
+      expect(clampToDesktop(p, { width: 1920, height: 1000 })).toEqual(p)
+    })
+  })
 })
+
+/** Every icon's whole footprint lies inside the desktop. */
+function assertInside(out: Record<string, Point>, viewport: { width: number; height: number }) {
+  for (const [id, p] of Object.entries(out)) {
+    expect(p.x, `${id} left`).toBeGreaterThanOrEqual(0)
+    expect(p.y, `${id} top`).toBeGreaterThanOrEqual(0)
+    expect(p.x + ICON_WIDTH, `${id} right`).toBeLessThanOrEqual(viewport.width)
+    expect(p.y + ICON_HEIGHT, `${id} bottom`).toBeLessThanOrEqual(viewport.height)
+  }
+}

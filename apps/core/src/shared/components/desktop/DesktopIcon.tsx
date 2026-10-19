@@ -1,13 +1,23 @@
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '../../../lib/cn'
 import type { AppConfig } from '../../registry/registry'
+import { ICON_HEIGHT, ICON_WIDTH, clampToDesktop } from './layoutIcons'
 
 type DesktopIconProps = {
   app: AppConfig
   onOpen: () => void
   position: { x: number; y: number }
   onPositionChange: (pos: { x: number; y: number }) => void
-  dragConstraints: React.RefObject<HTMLDivElement | null>
+  /**
+   * The desktop's measured size. Drag limits are numbers derived from it, not
+   * a ref to the desktop element: with a ref, framer-motion listens for window
+   * resizes (and observes the element) and on each one stops the icon's
+   * running animation and moves it to the same fraction of the new bounds. A
+   * resize therefore froze every icon part way to its new grid cell, squeezed
+   * together, until a reload (brief 159). Numeric limits have no such listener.
+   */
+  bounds: { width: number; height: number }
   /**
    * Selection is owned by Desktop (brief 106) — it is a set across icons now
    * (marquee, Ctrl+click), which no per-icon `useState` can express. It is also
@@ -19,22 +29,29 @@ type DesktopIconProps = {
   onContextMenu: (e: React.MouseEvent) => void
 }
 
-// Icon footprint, used to keep a dropped icon fully inside the desktop. Width is
-// the fixed `w-[64px]`; height is the icon box + gap + a two-line label.
-const ICON_WIDTH = 64
-const ICON_HEIGHT = 80
-
 export function DesktopIcon({
   app,
   onOpen,
   position,
   onPositionChange,
-  dragConstraints,
+  bounds,
   selected,
   onSelect,
   onContextMenu,
 }: DesktopIconProps) {
   const Icon = app.icon
+  // In the x/y motion values' own space: the icon is placed by transform from
+  // the desktop's top-left corner. Memoised so a re-render does not hand
+  // framer-motion a new object.
+  const dragConstraints = useMemo(
+    () => ({
+      left: 0,
+      top: 0,
+      right: Math.max(0, bounds.width - ICON_WIDTH),
+      bottom: Math.max(0, bounds.height - ICON_HEIGHT),
+    }),
+    [bounds.width, bounds.height]
+  )
 
   return (
     <motion.div
@@ -47,14 +64,9 @@ export function DesktopIcon({
         // only limits what is drawn during the drag; `info.offset` is the full
         // pointer movement, so a flick past the edge would otherwise be stored
         // (and pinned) out of bounds and redraw off-screen, unrecoverable.
-        const el = dragConstraints.current
-        let x = position.x + info.offset.x
-        let y = position.y + info.offset.y
-        if (el) {
-          x = Math.max(0, Math.min(x, el.clientWidth - ICON_WIDTH))
-          y = Math.max(0, Math.min(y, el.clientHeight - ICON_HEIGHT))
-        }
-        onPositionChange({ x, y })
+        onPositionChange(
+          clampToDesktop({ x: position.x + info.offset.x, y: position.y + info.offset.y }, bounds)
+        )
       }}
       initial={false}
       animate={{ x: position.x, y: position.y }}

@@ -4,7 +4,7 @@ import { useEnabledApps } from '../../registry/enabledApps'
 import { TASKBAR_HEIGHT } from '../../store/windowStore'
 import { useDesktopStore } from '../../store/desktopStore'
 import { openApp } from '../../intents/openApp'
-import { layoutIcons } from './layoutIcons'
+import { clampToDesktop, layoutIcons } from './layoutIcons'
 import { iconsInRect, isDrag, normalizeRect, type DragRect } from './marquee'
 import { isTextEntry } from '../../hooks/shortcutRegistry'
 import type { Wallpaper } from '../../store/wallpaperStore'
@@ -47,7 +47,6 @@ export function Desktop({ wallpaper }: DesktopProps) {
   const updateIconPosition = useDesktopStore((s) => s.updateIconPosition)
   const setAutoPositions = useDesktopStore((s) => s.setAutoPositions)
   const clearPins = useDesktopStore((s) => s.clearPins)
-  const containerRef = useRef<HTMLDivElement>(null)
   const iconLayerRef = useRef<HTMLDivElement>(null)
   // Widgets clamp against the live desktop bounds (brief 96).
   const [desktopSize, sizeRef] = useElementSize()
@@ -82,39 +81,47 @@ export function Desktop({ wallpaper }: DesktopProps) {
   // store, which re-rendered — an infinite loop.
   const appIdsKey = desktopApps.map((a) => a.id).join(',')
 
-  // Auto-place every non-pinned icon, and re-place on viewport or roster
+  // One measured size for icons and widgets alike (brief 96), falling back to
+  // the window before the first measurement lands.
+  const boundsWidth = desktopSize.width || window.innerWidth
+  const boundsHeight = desktopSize.height || window.innerHeight - TASKBAR_HEIGHT
+  const bounds = useMemo(
+    () => ({ width: boundsWidth, height: boundsHeight }),
+    [boundsWidth, boundsHeight]
+  )
+
+  // Auto-place every non-pinned icon, and re-place on desktop-size or roster
   // changes. Reading the store imperatively keeps `iconPositions` out of the
   // dependency list, so writing positions cannot re-trigger this effect.
   // Hoisted out of the effect so Auto-arrange (brief 106) can re-run the exact
   // same placement after clearing pins, instead of duplicating the maths.
+  //
+  // Driven by the desktop's measured size (a ResizeObserver), not a window
+  // `resize` listener debounced through `requestAnimationFrame`: the icons
+  // now follow the same box the widgets clamp against (brief 159).
   const place = useCallback(() => {
-    const el = containerRef.current
     const current = useDesktopStore.getState().iconPositions
     const pinned: Record<string, { x: number; y: number }> = {}
     for (const [id, pos] of Object.entries(current)) {
       if (pos.pinned) pinned[id] = { x: pos.x, y: pos.y }
     }
-    setAutoPositions(
-      layoutIcons(appIdsKey ? appIdsKey.split(',') : [], pinned, {
-        width: el?.clientWidth ?? window.innerWidth,
-        height: el?.clientHeight ?? window.innerHeight - TASKBAR_HEIGHT,
-      })
-    )
-  }, [appIdsKey, setAutoPositions])
+    setAutoPositions(layoutIcons(appIdsKey ? appIdsKey.split(',') : [], pinned, bounds))
+  }, [appIdsKey, setAutoPositions, bounds])
 
   useEffect(() => {
     place()
-    let frame = 0
-    const onResize = () => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(place)
-    }
-    window.addEventListener('resize', onResize)
-    return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('resize', onResize)
-    }
   }, [place])
+
+  // Where each icon is drawn. A pinned icon is clamped into the desktop; the
+  // store keeps the owner's point for when the desktop grows back (brief 159).
+  // The marquee hit-tests these, so it selects what the owner sees.
+  const drawnPositions = useMemo(() => {
+    const out: Record<string, { x: number; y: number }> = {}
+    for (const [id, pos] of Object.entries(iconPositions)) {
+      out[id] = pos.pinned ? clampToDesktop(pos, bounds) : { x: pos.x, y: pos.y }
+    }
+    return out
+  }, [iconPositions, bounds])
 
   /**
    * Launch through the shared `openApp`, not `openWindow` directly.
@@ -198,7 +205,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
     setBand(next)
     // Live feedback: the hit set is recomputed every move, so icons highlight
     // as the band crosses them.
-    const hits = iconsInRect(iconPositions, normalizeRect(next), desktopAppIds)
+    const hits = iconsInRect(drawnPositions, normalizeRect(next), desktopAppIds)
     setSelected(new Set([...baseSelectionRef.current, ...hits]))
   }
 
@@ -213,17 +220,9 @@ export function Desktop({ wallpaper }: DesktopProps) {
     if (drag && !isDrag(drag) && !additiveRef.current) setSelected(new Set())
   }
 
-  const bounds = {
-    width: desktopSize.width || window.innerWidth,
-    height: desktopSize.height || window.innerHeight - TASKBAR_HEIGHT,
-  }
-
   return (
     <div
-      ref={(el) => {
-        containerRef.current = el
-        sizeRef(el)
-      }}
+      ref={sizeRef}
       className="absolute top-0 right-0 left-0 w-full overflow-hidden"
       style={{ ...WALLPAPER_STYLES[wallpaper], bottom: TASKBAR_HEIGHT }}
       onContextMenu={(e) => {
@@ -256,7 +255,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
         onPointerCancel={endMarquee}
       >
         {desktopApps.map((app) => {
-          const pos = iconPositions[app.id]
+          const pos = drawnPositions[app.id]
           if (!pos) return null
           return (
             <DesktopIcon
@@ -265,7 +264,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
               onOpen={() => handleOpen(app.id)}
               position={pos}
               onPositionChange={(newPos) => updateIconPosition(app.id, newPos)}
-              dragConstraints={containerRef}
+              bounds={bounds}
               selected={selected.has(app.id)}
               onSelect={(e) => {
                 // Ctrl/⌘+click toggles membership; a plain click selects one.

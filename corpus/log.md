@@ -4320,7 +4320,7 @@ This replaces the branch URL in brief 158's outcome note; status.md now carries 
 
 The README screenshot pass saw desktop icons overlap after a viewport resize in
 headless Chrome, staying so until reload. Not investigated; filed as
-[brief 159](briefs/todo/159-desktop-icons-overlap-after-resize.md) with reproduction as
+[brief 159](briefs/done/159-desktop-icons-overlap-after-resize.md) with reproduction as
 step one and four leads from the code (the `requestAnimationFrame`-debounced
 re-placement, pinned icons never re-flowed, the one-cell `taken` check).
 [architecture.md](wiki/architecture.md) listed seven add-ons; `apps/add-ons/` holds 27
@@ -4331,3 +4331,15 @@ commit. `apps/docs/src/content/docs/wiki/` is gitignored, so no synced output ch
 ## [2026-10-18] todo | Brief 160 filed: the docs site moves from Starlight to Docusaurus
 
 The owner's call (2026-10-18), one brief in every repo with a docs site. [160](briefs/todo/160-docs-site-on-docusaurus.md) ports the splash landing, AppGrid, LayerStack and the Starlight cards to React, keeps TypeDoc and Compodoc under `static/reference/`, and keeps the URLs. The new sync discovers pages, so the owner picks which of twelve wiki pages the old list left out stay unpublished. The docs workspace stays out of the image. The deploy waits on vps-deploy brief 11.
+
+## [2026-10-19] build | Brief 159 done: desktop icons stay apart after a resize
+
+Reproduced in headless Chrome: 1440x900 to 1440x500 left all 29 icons squeezed together
+while the store held the right grid. framer-motion's ref-based `dragConstraints` stops
+an icon's animation on every window resize and rescales it within the new bounds, so
+each icon froze part way. The limits are now numbers from the measured desktop size
+(`ad7bc2e`). The same walk confirmed two `layoutIcons` faults: a pinned icon between
+cells blocked one cell instead of all it covers, and a pinned icon below a shrunken
+desktop was clipped. Both are fixed, with four unit tests and a headed and headless
+walk. [Brief 159](briefs/done/159-desktop-icons-overlap-after-resize.md) carries the
+outcome.

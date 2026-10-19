@@ -71,3 +71,50 @@ contains them, in which case they are clamped back in.
   Auto-arrange (brief 106).
 - Window and widget clamping (briefs 96 and the window store).
 - Anything in the backend.
+
+## Outcome (2026-10-19)
+
+**Reproduced, and fixed in `ad7bc2e`.** A fresh profile at 1440x900, resized to
+1440x500 in headless Chrome: all 29 icons drew squeezed into four columns, 25
+overlapping pairs, and they stayed that way. The store held the correct
+4-row grid. Each icon's DOM transform was frozen part way to its cell (Sticky
+Notes at `translateY(7.77px)`, its target 16), and animation frames were
+running at 60 fps, so the `requestAnimationFrame` lead was not the cause.
+
+**The cause was framer-motion, not our layout.** With `dragConstraints` set to
+a ref, framer-motion's drag controls listen for window `resize` and observe
+the constraint element. On each one they stop the element's running
+animation and move it to the same fraction of the new bounds
+(`scalePositionWithinConstraints`). Our re-placement starts the animation to
+the new cell, and the next resize callback stops it there. The drag limits
+are now numbers derived from the measured desktop size, which framer-motion
+leaves alone. The drop is clamped against that same size.
+
+**Two layout faults, confirmed in the same walk:**
+- An icon pinned between cells (Paint dropped at 64,70) covers four cells,
+  but only one was marked taken. After a reload at 500px tall, three auto
+  icons sat on it. `layoutIcons` now marks every cell a pinned icon covers.
+- A pinned icon below a shrunken desktop was clipped away by the layer's
+  `overflow-hidden`. Pinned icons are now drawn clamped into the desktop
+  (`clampToDesktop`), and the marquee hit-tests the drawn positions. The
+  store keeps the owner's point, so the icon goes back when the desktop grows.
+
+Placement now runs when the desktop's measured size changes (the box the
+widgets already use), not on a window `resize` listener.
+
+**Verified:**
+- `layoutIcons.test.ts` adds four tests: an off-grid pinned icon at both
+  heights, shrink, grow and shrink again with three pins, a pin clamped in,
+  and the point restored on growth.
+- `npm run typecheck`, `npm run lint` (no errors; one existing warning in
+  `FilePicker.tsx`) and `npm test` in `apps/core` pass (456 tests).
+- Browser walk against the local stack, headless and headed Chrome
+  (`agent-browser`, viewport emulation 900 → 500 → 900 → 500 → 900). There were
+  no DOM overlaps and no icon outside the desktop after each step, with and
+  without pins (Paint at 64,70 and Solitaire at 708,776, clamped to y 376 at
+  500px and back at 900px). A drag past the bottom-right corner is stored at
+  1376,776.
+
+**Not changed:** dropping a dragged icon onto others still overlaps them
+until the next re-placement. That is drag-to-pin behaviour, which this brief
+leaves out of scope.

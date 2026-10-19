@@ -15,5 +15,5 @@ Going deeper:
 - [infrastructure/README.md](../infrastructure/README.md): HTTPS behind Caddy, the sign-in, the Browser's second port, the dev container's sign-in
 - [marketplace/README.md](../marketplace/README.md): the app catalog's format and apps installed from a URL
 - [iso/README.md](../iso/README.md): the older kiosk ISO
-- Docs site: [apps/docs](../apps/docs/README.md) builds a Starlight site from the corpus, plus an API reference generated from the code (`npm run docs`)
+- Docs site: [apps/docs](../apps/docs/README.md) builds a Docusaurus site from the corpus, plus an API reference generated from the code (`npm run docs`)
 - Project wiki: [corpus/](../corpus/index.md) has the decisions, the status and the briefs that built it

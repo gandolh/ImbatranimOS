@@ -17,15 +17,18 @@
     },
     "docs": {
       "inputs": [
+        "docs/**",
         "src/**",
+        "static/**",
         "scripts/**",
-        "astro.config.mjs",
+        "docusaurus.config.ts",
+        "sidebars.ts",
         "typedoc.json",
         "../core/src/**",
         "../backend/src/**",
         "../../corpus/**"
       ],
-      "outputs": ["dist/**", "public/reference/**"]
+      "outputs": ["dist/**", "static/reference/**"]
     }
   }
 }

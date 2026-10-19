@@ -1,0 +1,108 @@
+.stack {
+  margin: 1.5rem 0 2rem;
+  --crimson: #c81236;
+}
+
+.lane {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.side {
+  align-self: center;
+  text-align: right;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  color: #8a8a92;
+  font-family: var(--ifm-font-family-monospace);
+}
+
+.side em {
+  color: #6a6a72;
+  font-style: normal;
+}
+
+.layer {
+  border: 1px solid #e6e6ea;
+  border-left: 4px solid #c9c9d0;
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.client {
+  border-left-color: var(--crimson);
+}
+
+.server {
+  border-left-color: #111;
+  background: #f6f6f7;
+}
+
+.tag {
+  display: inline-block;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: 0.15rem;
+}
+
+.server .tag {
+  color: #444;
+}
+
+.layer strong {
+  display: block;
+  font-size: 1.05rem;
+  color: #17171a;
+}
+
+.layer p {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: #6a6a72;
+  font-family: var(--ifm-font-family-monospace);
+}
+
+.seam {
+  margin: 0.45rem 0 0.45rem 92px;
+  padding-left: 0.75rem;
+}
+
+.seam span {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.72rem;
+  color: var(--crimson);
+  font-weight: 600;
+}
+
+.data span {
+  color: #6a6a72;
+}
+
+.seam code {
+  background: rgba(200, 18, 54, 0.08);
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  border: 0;
+  color: inherit;
+}
+
+@media (max-width: 520px) {
+  .lane {
+    grid-template-columns: 1fr;
+  }
+
+  .side {
+    text-align: left;
+  }
+
+  .seam {
+    margin-left: 0;
+  }
+}

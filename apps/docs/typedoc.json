@@ -2,7 +2,7 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["../core/src/index.ts"],
   "tsconfig": "../core/tsconfig.app.json",
-  "out": "public/reference/core",
+  "out": "static/reference/core",
   "name": "@imbatranim/core — public surface",
   "readme": "none",
   "hideGenerator": true,

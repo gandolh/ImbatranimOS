@@ -1,0 +1,141 @@
+/*
+ * ImbatranimOS docs — light theme only, crimson accent (ported from the
+ * Starlight site's src/styles/theme.css).
+ *
+ * The site's theme, on Infima's tokens. One accent; change the seven
+ * --ifm-color-primary* values to rebrand (the ramp is the accent darkened and
+ * lightened by 10/15/30% lightness).
+ *
+ * Light only by default. The token block also covers [data-theme='dark'], so a
+ * crafted `?docusaurus-data-theme=dark` cannot repaint the site. For a dark-only
+ * site, put the dark palette in this same block; for a site with both modes,
+ * split it into a light block and a `:root[data-theme='dark']` block.
+ *
+ * Starlight → Docusaurus selectors, for a ported stylesheet:
+ *   .sl-markdown-content        → .markdown
+ *   .sidebar-content a[aria-current='page'] → .menu__link[aria-current='page']
+ *   .expressive-code / pre      → .theme-code-block
+ *   .starlight-aside            → .theme-admonition
+ *   --sl-color-accent*          → --ifm-color-primary*
+ *   --sl-color-bg / -nav / -sidebar → --ifm-background-color, --ifm-navbar-background-color
+ *   --sl-color-text / -white    → --ifm-font-color-base, --ifm-heading-color
+ *   --sl-color-hairline*        → --ifm-toc-border-color, --ifm-hr-background-color
+ *   --sl-font / --sl-font-mono  → --ifm-font-family-base / --ifm-font-family-monospace
+ */
+
+/* Self-hosted faces: `@import '@fontsource-variable/<face>';` here works. */
+
+:root,
+:root[data-theme='light'],
+:root[data-theme='dark'] {
+  color-scheme: light only;
+
+  --ifm-color-primary: #c81236;
+  --ifm-color-primary-dark: #b41031;
+  --ifm-color-primary-darker: #aa0f2e;
+  --ifm-color-primary-darkest: #8c0d26;
+  --ifm-color-primary-light: #dc143b;
+  --ifm-color-primary-lighter: #e6153e;
+  --ifm-color-primary-lightest: #ec2f55;
+
+  --ifm-background-color: #ffffff;
+  --ifm-background-surface-color: #ffffff;
+  --ifm-font-color-base: #17171a;
+  --ifm-heading-color: #17171a;
+  --ifm-code-font-size: 92%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.06);
+}
+
+/* Prose links only: --ifm-link-decoration would underline the sidebar, the TOC
+   and the navbar too, which Starlight never did. */
+.markdown a {
+  text-underline-offset: 0.18em;
+}
+
+/* "You are here". Not .menu__link--active: Infima puts that on the parent
+   category of the current page as well. */
+.menu__link[aria-current='page'] {
+  font-weight: 600;
+}
+
+/* Crisper admonitions on white. */
+.markdown .theme-admonition {
+  border-radius: 10px;
+}
+
+/* No ligatures in inline code — reads more like a terminal. */
+.markdown :not(pre) > code {
+  font-variant-ligatures: none;
+}
+
+/* --- Diagram frames (Diagram.tsx) ---------------------------------------- */
+.doc-diagram {
+  margin: 1.75rem 0;
+}
+
+.doc-diagram__frame {
+  width: 100%;
+  display: block;
+  border: 1px solid #e6e6ea;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.doc-diagram__caption {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: #6a6a72;
+}
+
+/* --- Cards (Cards.tsx) ----------------------------------------------------- */
+.doc-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.doc-card {
+  display: block;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e6e6ea;
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+}
+
+.doc-card--link:hover {
+  border-color: var(--ifm-color-primary);
+  text-decoration: none;
+  color: inherit;
+}
+
+.doc-card__title {
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+
+.doc-card__body > :last-child {
+  margin-bottom: 0;
+}
+
+/* --- Hero (Hero.tsx, the old splash page) --------------------------------- */
+.doc-hero {
+  padding: 2.5rem 0 1.5rem;
+}
+
+.doc-hero__tagline {
+  font-size: 1.2rem;
+  max-width: 42rem;
+}
+
+.doc-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.doc-hero__minimal {
+  padding: 0 0.5rem;
+}

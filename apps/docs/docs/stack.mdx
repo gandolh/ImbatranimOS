@@ -3,7 +3,7 @@ title: The technology
 description: The full stack of ImbatranimOS — Alpine + NestJS in one container, a React/Vite/Tailwind desktop, an npm-workspaces + Turborepo monorepo, and the client-side document engines — with the reason each was chosen.
 ---
 
-import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
+import { Card, CardGrid } from '@site/src/components/Cards'
 
 Every technology here earned its place against one rule:
 [lightweight is identity](/ideas/#5--lightweight-is-identity), and a new
@@ -31,14 +31,16 @@ on **one** port, slim). The "one port, serve statics" rule describes prod; HMR i
 a dev-only convenience. The prod image lands at **385 MB** — and that number is a
 story worth telling.
 
-<Aside type="note" title="Why NestJS, when Go would be ~20 MB">
-  The image floor for Node + Nest is ~300 MB; Go could ship at ~20 MB. That trade
-  was made **on purpose**: NestJS let the project fork an existing web desktop and
-  reuse its terminal, files, system, and auth code wholesale. For a run-once
-  personal container, the reuse is worth far more than the bytes — so "lightweight"
-  was redefined to mean **cold start (1.42 s)** and **idle RAM (41 MiB)**, which
-  are excellent, rather than image size, which is merely fine.
-</Aside>
+:::note[Why NestJS, when Go would be ~20 MB]
+
+The image floor for Node + Nest is ~300 MB; Go could ship at ~20 MB. That trade
+was made **on purpose**: NestJS let the project fork an existing web desktop and
+reuse its terminal, files, system, and auth code wholesale. For a run-once
+personal container, the reuse is worth far more than the bytes — so "lightweight"
+was redefined to mean **cold start (1.42 s)** and **idle RAM (41 MiB)**, which
+are excellent, rather than image size, which is merely fine.
+
+:::
 
 ## The backend — NestJS as the syscall bridge
 
@@ -47,26 +49,26 @@ the **kernel bridge**, the only path to touch the real machine. It keeps its own
 `modules/` tree, each module owning one capability:
 
 <CardGrid>
-  <Card title="pty" icon="seti:powershell">
+  <Card title="pty">
     node-pty over an authed WebSocket at `/api/pty` — session check on upgrade,
     backpressure, revocation sweep.
   </Card>
-  <Card title="files" icon="seti:folder">
+  <Card title="files">
     the real home dir behind `resolveSafe` (traversal + symlink jail); also serves
     global search and range-streamed media.
   </Card>
-  <Card title="system" icon="seti:clock">
+  <Card title="system">
     real `/proc` — CPU, RAM, disk, processes — with uid-scoped kill.
   </Card>
-  <Card title="auth" icon="approve-check">
+  <Card title="auth">
     argon2id, `imb_session` cookie, first-run wizard, TOTP, throttle, the global
     guard, and `ws-auth` for upgrades.
   </Card>
-  <Card title="git / archive" icon="seti:git">
+  <Card title="git / archive">
     shell-free subprocesses (array args, `--` guard, jailed cwd) for the Git GUI
     and Archive Manager.
   </Card>
-  <Card title="http-proxy" icon="random">
+  <Card title="http-proxy">
     the owner-authed outbound HTTP proxy behind the REST client — bounded, not
     open (see [Patterns](/patterns/#the-bounded-proxy--trusted-owner-bounded-blast-radius)).
   </Card>
@@ -106,14 +108,16 @@ Everything renders in the browser.
 | Markdown | react-markdown + remark-gfm | **no** rehype-raw → XSS-safe by construction |
 | Code | **Monaco**, self-hosted | workers via Vite `?worker`, no CDN |
 
-<Aside type="caution" title="Two decisions the spikes forced">
-  Engine choices weren't taken on faith. The Sheets engine **moved** from a
-  SheetJS CE bridge to ExcelJS mid-flight when the spike proved SheetJS CE's free
-  writer strips fonts, fills, and borders on save. And a SuperDoc export defect —
-  silently saving the original bytes for docx missing optional OOXML parts — was
-  root-caused and fixed with an open-time normalizer. Verified engines, not
-  hopeful ones.
-</Aside>
+:::caution[Two decisions the spikes forced]
+
+Engine choices weren't taken on faith. The Sheets engine **moved** from a
+SheetJS CE bridge to ExcelJS mid-flight when the spike proved SheetJS CE's free
+writer strips fonts, fills, and borders on save. And a SuperDoc export defect —
+silently saving the original bytes for docx missing optional OOXML parts — was
+root-caused and fixed with an open-time normalizer. Verified engines, not
+hopeful ones.
+
+:::
 
 Adopting SuperDoc (AGPL) made the whole repository **AGPL-3.0-only** so the
 combined work stays compliant — a deliberate, recorded call, since the source is
@@ -137,12 +141,14 @@ infrastructure/ Dockerfile (dev+prod), docker-compose.yml
 corpus/         the LLM-maintained wiki this site's narrative is built from
 ```
 
-<Aside type="tip">
-  This very docs site is part of that monorepo: `npm run docs` syncs the corpus
-  narrative, generates the API reference from TypeScript (TypeDoc for core,
-  Compodoc for the backend), and builds the site — so the reference
-  [can't drift](/reference/) from the code it documents.
-</Aside>
+:::tip
+
+This very docs site is part of that monorepo: `npm run docs` syncs the corpus
+narrative, generates the API reference from TypeScript (TypeDoc for core,
+Compodoc for the backend), and builds the site — so the reference
+[can't drift](/reference/) from the code it documents.
+
+:::
 
 ## The distribution — build from source
 
@@ -154,7 +160,9 @@ HTTP on one port; TLS is terminated by a documented Caddy reverse proxy in front
 of it (automatic Let's Encrypt, `COOKIE_SECURE` + `TRUST_PROXY` flipped) — never
 inside the unprivileged container.
 
-<Aside>
-  Every choice above is a locked, dated entry in [Decisions](/wiki/decisions/),
-  most with the alternative that was rejected and why.
-</Aside>
+:::note
+
+Every choice above is a locked, dated entry in [Decisions](/wiki/decisions/),
+most with the alternative that was rejected and why.
+
+:::

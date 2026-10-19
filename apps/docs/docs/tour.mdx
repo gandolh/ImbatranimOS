@@ -3,8 +3,8 @@ title: A tour of the desktop
 description: What you can actually do in ImbatranimOS — 30 windowed apps across system, productivity, documents, media, and developer tools, plus the platform surfaces that tie them together.
 ---
 
-import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
-import AppGrid from '../../components/AppGrid.astro'
+import { Card, CardGrid } from '@site/src/components/Cards'
+import AppGrid from '@site/src/components/AppGrid'
 
 You log in to a Windows-7-classic desktop — taskbar, start menu, tray, desktop
 icons — rendered modern-flat in black & white with a crimson accent. Behind the
@@ -88,23 +88,23 @@ is what makes the collection feel like *one* desktop rather than a folder of
 apps.
 
 <CardGrid>
-  <Card title="Global search launcher" icon="magnifier">
+  <Card title="Global search launcher">
     A command palette plus a taskbar Search button, backed by a jailed, bounded
     backend file search (`/api/files/search` — no symlink follow, result-capped,
     opt-in content grep). Find a file, hit Enter, it reveals in Files.
   </Card>
-  <Card title="Notification center" icon="bell">
+  <Card title="Notification center">
     A persist-backed store with a public `notify()` on `@imbatranim/core`,
     bottom-right auto-dismiss toasts (errors stay sticky), and a tray bell with an
     unread badge and history. Clock alarms and calendar reminders are its first
     callers.
   </Card>
-  <Card title="Add-on manager" icon="puzzle">
+  <Card title="Add-on manager">
     A Settings "Apps" section backed by a per-user disabled-set — one
     `enabledApps` filter across Start menu, palette, and desktop, with an
     `openApp` guard. Settings, Files, and Terminal are non-disableable on purpose.
   </Card>
-  <Card title="File preview pane" icon="document">
+  <Card title="File preview pane">
     An explorer-style toggleable pane in Files: text, images, and A/V preview
     natively, with a metadata-card fallback. Width and toggle are remembered.
   </Card>
@@ -122,12 +122,14 @@ Two conveniences make the apps feel like a system instead of silos:
   a dirty `•` marker, and a close-guard warning — no autosave surprises, no
   "Save As" maze.
 
-<Aside type="tip">
-  Everything here runs as the unprivileged `imbatranim` user, over a single
-  authenticated port. The apps stream **data**, never pixels — see
-  [the ideas that empower it](/ideas/) for why that one choice shapes all of the
-  above.
-</Aside>
+:::tip
+
+Everything here runs as the unprivileged `imbatranim` user, over a single
+authenticated port. The apps stream **data**, never pixels — see
+[the ideas that empower it](/ideas/) for why that one choice shapes all of the
+above.
+
+:::
 
 ## Try it
 

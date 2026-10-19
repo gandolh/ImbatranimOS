@@ -3,7 +3,7 @@ title: Patterns & techniques
 description: The recurring engineering moves behind ImbatranimOS — the add-on seam, the FS jail, the bounded SSRF proxy, off-thread workers, lazy-loading, virtualization, and the auth stack — with the numbers and rationale that back each one.
 ---
 
-import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
+import { Card, CardGrid } from '@site/src/components/Cards'
 
 Most of ImbatranimOS is the same handful of techniques applied over and over.
 Learn these seven and the codebase stops having surprises — a new app, a new
@@ -34,12 +34,12 @@ function StickyNotes({ system }: { system: SystemHandle }) {
 The barrel bisects by one objective rule — **can it cross `postMessage`?**
 
 <CardGrid>
-  <Card title="No → it's a library" icon="puzzle">
+  <Card title="No → it's a library">
     A component or render hook (`Button`, `Dialog`, `useVirtualList`) → lives in
     `@imbatranim/ui`, a build-time import. Like linking libc. Never crosses the
     seam.
   </Card>
-  <Card title="Yes → it's a capability" icon="random">
+  <Card title="Yes → it's a capability">
     A data call or effect → a namespace on the handle:
     `system.{fs, http, window, intents, notify, on}`. This is what could travel
     to a sandboxed iframe unchanged.
@@ -52,11 +52,13 @@ interface — gated on third-party apps actually arriving, not built
 speculatively. `system.http` is the single escape hatch (an app calling its own
 backend), deliberately designed to become a per-app permission later.
 
-<Aside>
-  Full design: [OS layering — the compositor seam](/wiki/os-layering/). The
-  interface shows up in the [Core reference](/reference/core/) the moment it
-  lands.
-</Aside>
+:::note
+
+Full design: [OS layering — the compositor seam](/wiki/os-layering/). The
+interface shows up in the [Core reference](pathname:///reference/core/) the moment it
+lands.
+
+:::
 
 ---
 
@@ -95,13 +97,15 @@ requested path against the jail root and refuses anything that escapes it
 (traversal *and* symlink). Every FS-touching module reuses it — Files, global
 search, git, and the archive manager all go through the same door.
 
-<Aside type="caution" title="The subtle part: re-validate per entry">
-  Archive extraction can't validate the archive once — a malicious zip carries
-  its traversal **inside** each entry name. So the archive manager re-runs
-  `resolveSafe` on **every** entry (zip-slip-proof), walks temp + realpath, bounds
-  the decompression ratio (an amplification-DoS fix), and guards against
-  hardlinks. 13 tests and an adversarial security review back it.
-</Aside>
+:::caution[The subtle part: re-validate per entry]
+
+Archive extraction can't validate the archive once — a malicious zip carries
+its traversal **inside** each entry name. So the archive manager re-runs
+`resolveSafe` on **every** entry (zip-slip-proof), walks temp + realpath, bounds
+the decompression ratio (an amplification-DoS fix), and guards against
+hardlinks. 13 tests and an adversarial security review back it.
+
+:::
 
 The same discipline shows up in the backend git and archive modules: subprocesses
 run with **array args and no shell**, a `--` guard, literal pathspecs, and a
@@ -130,13 +134,15 @@ destinations:
 | Header hygiene | hop-by-hop + `proxy-*` stripped; the owner's Authorization/Cookie dropped on cross-host redirect |
 | No credential reflection | the OS session cookie is **never** forwarded; CRLF rejected in URL + headers |
 
-<Aside>
-  The reverse case is instructive: the *web browser* brief (post-v1) uses the
-  **stricter opposite** — it blocks private ranges — because it proxies untrusted
-  remote pages, not the owner's deliberate requests. Same mechanism, opposite
-  policy, chosen by who's trusted. Full stance:
-  [Decisions → SSRF](/wiki/decisions/).
-</Aside>
+:::note
+
+The reverse case is instructive: the *web browser* brief (post-v1) uses the
+**stricter opposite** — it blocks private ranges — because it proxies untrusted
+remote pages, not the owner's deliberate requests. Same mechanism, opposite
+policy, chosen by who's trusted. Full stance:
+[Decisions → SSRF](/wiki/decisions/).
+
+:::
 
 ---
 
@@ -148,7 +154,7 @@ Two independent moves, one goal: the desktop boots fast and never janks.
 boundary behind a `<Suspense>` in the window container. Adding an app — even one
 carrying Monaco — must not grow the boot bundle. It works:
 
-import Metrics from '../../components/Metrics.astro'
+import Metrics from '@site/src/components/Metrics'
 
 <Metrics
   items={[
@@ -175,16 +181,16 @@ those reconciles far too much.
 **The technique** is the same three moves each time:
 
 <CardGrid>
-  <Card title="Memoize + select narrowly" icon="setting">
+  <Card title="Memoize + select narrowly">
     A memoized `Window`, a per-window store selector, and `useShallow` on the
     container list — during a drag, only the moving window re-renders; no app
     subtree reconciles.
   </Card>
-  <Card title="Read, don't subscribe" icon="random">
+  <Card title="Read, don't subscribe">
     The `ResizeHandle` reads `store.getState()` in its move handler instead of
     subscribing — high-frequency events don't trigger React at all.
   </Card>
-  <Card title="Virtualize the long lists" icon="list-format">
+  <Card title="Virtualize the long lists">
     The process table and large file lists use `@tanstack/react-virtual` through a
     shared `useVirtualList` helper — with `scrollToIndex` keyboard nav and scroll
     that stays stable across refetch.
@@ -213,11 +219,13 @@ upgrade, with backpressure and a revocation sweep. The building blocks:
   and a global backstop, an **Origin check** on mutating requests, and a
   security-headers middleware (CSP et al.; HSTS is the proxy's job).
 
-<Aside type="tip">
-  Notice the shape repeating: **default-secure, explicit exception.** Same idea as
-  the eslint-enforced add-on boundary and the FS jail — make the safe path the one
-  you get for free, and the unsafe path the one you have to write out loud.
-</Aside>
+:::tip
+
+Notice the shape repeating: **default-secure, explicit exception.** Same idea as
+the eslint-enforced add-on boundary and the FS jail — make the safe path the one
+you get for free, and the unsafe path the one you have to write out loud.
+
+:::
 
 ---
 
@@ -229,8 +237,10 @@ receive, you can't call. A route you don't mark `@Public()` is guarded. A path
 that doesn't pass `resolveSafe` doesn't resolve. That single reflex — not any one
 clever trick — is what keeps a 23-app desktop honest.
 
-<Aside>
-  Every claim here traces to a locked decision or a shipped brief — see
-  [Decisions](/wiki/decisions/) and the [status snapshot](/wiki/status/). Code
-  shape is in the generated [API reference](/reference/).
-</Aside>
+:::note
+
+Every claim here traces to a locked decision or a shipped brief — see
+[Decisions](/wiki/decisions/) and the [status snapshot](/wiki/status/). Code
+shape is in the generated [API reference](/reference/).
+
+:::

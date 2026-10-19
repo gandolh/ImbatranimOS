@@ -3,24 +3,54 @@
   "version": "1.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
-  "type": "module",
   "description": "ImbatranimOS documentation site — narrative rendered from corpus/, reference generated from the TypeScript.",
   "scripts": {
     "sync-corpus": "node scripts/sync-corpus.mjs",
+    "diagrams": "node scripts/build-diagrams.mjs",
     "ref:core": "typedoc",
-    "ref:backend": "compodoc -p ../backend/tsconfig.json -d public/reference/backend -n \"ImbatranimOS Backend API\" --hideGenerator --coverageTest 35 --theme material",
+    "ref:backend:gate": "compodoc -p ../backend/tsconfig.json -d static/reference/backend --coverageTest 35",
+    "ref:backend": "npm run ref:backend:gate && compodoc -p ../backend/tsconfig.json -d static/reference/backend -n \"ImbatranimOS Backend API\" --hideGenerator --theme material",
     "ref": "npm run ref:core && npm run ref:backend",
-    "predev": "npm run sync-corpus && npm run diagrams",
-    "dev": "astro dev",
-    "docs": "npm run sync-corpus && npm run diagrams && npm run ref && astro build",
-    "preview": "astro preview",
-    "diagrams": "node scripts/build-diagrams.mjs"
+    "prestart": "npm run sync-corpus && npm run diagrams",
+    "start": "docusaurus start",
+    "dev": "npm run start",
+    "docs": "npm run sync-corpus && npm run diagrams && npm run ref && docusaurus build --out-dir dist",
+    "typecheck": "tsc",
+    "clear": "docusaurus clear"
+  },
+  "dependencies": {
+    "@docusaurus/core": "^3.10.2",
+    "@docusaurus/faster": "^3.10.2",
+    "@docusaurus/preset-classic": "^3.10.2",
+    "@easyops-cn/docusaurus-search-local": "^0.55.3",
+    "@mdx-js/react": "^3.1.1",
+    "clsx": "^2.1.1",
+    "prism-react-renderer": "^2.4.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
-    "@astrojs/starlight": "^0.41.3",
     "@compodoc/compodoc": "^2.0.0",
-    "astro": "^7.1.1",
-    "sharp": "^0.34.4",
-    "typedoc": "^0.28.20"
+    "@docusaurus/module-type-aliases": "^3.10.2",
+    "@docusaurus/tsconfig": "^3.10.2",
+    "@docusaurus/types": "^3.10.2",
+    "@types/react": "^19.2.14",
+    "typedoc": "^0.28.20",
+    "typescript": "~6.0.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0"
   }
 }

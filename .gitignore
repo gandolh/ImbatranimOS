@@ -15,9 +15,9 @@ build/
 # Generated docs artifacts (apps/docs) — narrative synced from corpus,
 # reference generated from source; both rebuilt by `npm run docs`.
 apps/docs/dist/
-apps/docs/.astro/
-apps/docs/public/reference/
-apps/docs/src/content/docs/wiki/
+apps/docs/.docusaurus/
+apps/docs/static/reference/
+apps/docs/docs/wiki/
 .compodoc/
 documentation/
 

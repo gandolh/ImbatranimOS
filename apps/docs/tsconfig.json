@@ -1,5 +1,9 @@
 {
-  "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "public/reference"]
+  "extends": "@docusaurus/tsconfig",
+  "compilerOptions": {
+    // TypeScript 6 rejects the preset's deprecated `baseUrl`; its `@site/*`
+    // path resolves against this file without it.
+    "baseUrl": null
+  },
+  "exclude": [".docusaurus", "build", "dist", "static/reference"]
 }

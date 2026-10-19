@@ -3,7 +3,7 @@ title: The ideas that empower it
 description: Six load-bearing ideas — real not simulated, one container one port, data not pixels, no sudo, lightweight as identity, and a versioned seam — that every decision in the project is measured against.
 ---
 
-import { Card, CardGrid, Aside } from '@astrojs/starlight/components'
+import { Card, CardGrid } from '@site/src/components/Cards'
 
 ImbatranimOS is small on purpose. It has no unique algorithm and no giant
 feature list — what holds it together is a handful of ideas that every decision
@@ -31,12 +31,14 @@ database — the SQLite app DB lives inside the same `/home/imbatranim` volume a
 your files. Delete the container, keep your computer: the named volume is what
 persists.
 
-<Aside type="tip" title="The friend-run bar">
-  The finish line is a person, not a checklist: a tech-tolerant friend with
-  Docker runs **one** documented command, opens a browser, logs in, and uses the
-  terminal, files, and notes — with no help from you. If that needs a second
-  step, it isn't done.
-</Aside>
+:::tip[The friend-run bar]
+
+The finish line is a person, not a checklist: a tech-tolerant friend with
+Docker runs **one** documented command, opens a browser, logs in, and uses the
+terminal, files, and notes — with no help from you. If that needs a second
+step, it isn't done.
+
+:::
 
 ## 3 · The server streams data, never pixels
 
@@ -51,11 +53,11 @@ accessibility, IME). So it's ruled out — not as a preference, but because it
 contradicts idea #5.
 
 <CardGrid>
-  <Card title="Because data, not pixels…" icon="approve-check">
+  <Card title="Because data, not pixels…">
     the image stays slim, the DOM stays real, and one authenticated port carries
     the whole system.
   </Card>
-  <Card title="It also means…" icon="information">
+  <Card title="It also means…">
     every capability an app has is a **data call** to the kernel bridge — which
     is exactly what makes the seam (idea #6) possible.
   </Card>
@@ -81,7 +83,7 @@ office suite runs on client-side JS engines instead of a LibreOffice server, and
 why nearly every app across the daily-driver backlog shipped with **zero new
 dependencies**.
 
-import Metrics from '../../components/Metrics.astro'
+import Metrics from '@site/src/components/Metrics'
 
 <Metrics
   items={[
@@ -105,7 +107,7 @@ protocol spec.
 
 This is what keeps the project from collapsing into "one big React app that does
 everything." See exactly how it works in
-[Patterns & techniques](/patterns/#the-seam) and
+[Patterns & techniques](/patterns/#the-seam--apps-receive-a-capability-handle) and
 [OS layering](/wiki/os-layering/).
 
 ## The corollary: what we refuse to build
@@ -114,23 +116,25 @@ Ideas cut both ways. Because the six above are load-bearing, a matching
 **kill-list** is too — real-Linux concepts that would be cargo-cult here:
 
 <CardGrid>
-  <Card title="No runtime package manager" icon="close">
+  <Card title="No runtime package manager">
     Single user, build-from-source. `manifest.ts` **is** the package system until
     apps come from outside the repo.
   </Card>
-  <Card title="No session-manager daemon" icon="close">
+  <Card title="No session-manager daemon">
     Auth plus the per-tab ephemeral session **is** the session manager. Don't
     build a second thing.
   </Card>
-  <Card title="No app-to-app IPC bus" icon="close">
+  <Card title="No app-to-app IPC bus">
     Star topology: apps talk to the compositor and the kernel, never to each
     other. No D-Bus analog.
   </Card>
 </CardGrid>
 
-<Aside>
-  These ideas are enforced, not just aspired to. The locked, dated record —
-  including every choice that was revisited and why — lives in
-  [Decisions](/wiki/decisions/); the layering design is in
-  [OS layering](/wiki/os-layering/).
-</Aside>
+:::note
+
+These ideas are enforced, not just aspired to. The locked, dated record —
+including every choice that was revisited and why — lives in
+[Decisions](/wiki/decisions/); the layering design is in
+[OS layering](/wiki/os-layering/).
+
+:::

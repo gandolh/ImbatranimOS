@@ -42,7 +42,7 @@ tokens + one accent, dark-first, zero border radius — locked in
 (`minimalist-ui`, `industrial-brutalist-ui`, `high-end-visual-design`) and
 `design-md-library` may be used **inside** that identity, never to propose a new
 one. A design pass that suggests rounding corners, a second accent or a gradient
-has misread the project. `apps/docs` (the public Starlight site) is the one
+has misread the project. `apps/docs` (the public Docusaurus site) is the one
 surface with its own look — light-only, no toggle — and is not bound by the
 desktop's token rules.
 
@@ -83,7 +83,7 @@ name.
 | backend / API | the brief · `apps/backend/src/modules/<module>/` · `auth/` guards + `ws-auth.ts` · the module's `*.spec.ts` | all frontend · `iso/` | `corpus-flow`, `code-review` (auth-adjacent diffs) |
 | container / infra | the brief · `infrastructure/` (Dockerfile, compose, Caddyfile.example) · root `package.json` + `turbo.json` | app source · `corpus/briefs/` | `bootstrap-vps-deploy` for a VPS target |
 | ISO / kiosk | the brief · `iso/` (`build.c`, `scripts/`, `README.md`) | everything in `apps/` and `packages/` | — |
-| docs site | the brief · `apps/docs/` (`astro.config.mjs`, `scripts/sync-corpus.mjs`, `src/content/`) | the OS source · `corpus/briefs/` | `corpus-docs-site`, `writing-guidelines` |
+| docs site | the brief · `apps/docs/` (`docusaurus.config.ts`, `sidebars.ts`, `scripts/sync-corpus.mjs`, `docs/`, `src/pages/`) | the OS source · `corpus/briefs/` | `corpus-docs-site`, `writing-guidelines` |
 | any | [corpus/index.md](index.md) → ≤3 wiki pages by `summary:` triage | `briefs/` and `todos/` wholesale · `node_modules/` · `dist/` · `.turbo/` · `apps/docs/dist/` | — |
 
 SKIP is **advisory**: a chunk that finds a SKIP area is load-bearing must report

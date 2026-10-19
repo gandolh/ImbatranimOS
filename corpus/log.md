@@ -4330,7 +4330,7 @@ commit. `apps/docs/src/content/docs/wiki/` is gitignored, so no synced output ch
 
 ## [2026-10-18] todo | Brief 160 filed: the docs site moves from Starlight to Docusaurus
 
-The owner's call (2026-10-18), one brief in every repo with a docs site. [160](briefs/todo/160-docs-site-on-docusaurus.md) ports the splash landing, AppGrid, LayerStack and the Starlight cards to React, keeps TypeDoc and Compodoc under `static/reference/`, and keeps the URLs. The new sync discovers pages, so the owner picks which of twelve wiki pages the old list left out stay unpublished. The docs workspace stays out of the image. The deploy waits on vps-deploy brief 11.
+The owner's call (2026-10-18), one brief in every repo with a docs site. [160](briefs/done/160-docs-site-on-docusaurus.md) ports the splash landing, AppGrid, LayerStack and the Starlight cards to React, keeps TypeDoc and Compodoc under `static/reference/`, and keeps the URLs. The new sync discovers pages, so the owner picks which of twelve wiki pages the old list left out stay unpublished. The docs workspace stays out of the image. The deploy waits on vps-deploy brief 11.
 
 ## [2026-10-19] build | Brief 159 done: desktop icons stay apart after a resize
 
@@ -4347,3 +4347,16 @@ outcome.
 ## [2026-10-19] todo | Brief 161 filed: the craft suite in sandboxed windows
 
 The owner asked for ArtCraft's crafting apps in the OS, five for v1: WordCraft, GridCraft, CADCraft, PdfCraft and DeckCraft. Read-only clones showed all five are Rust/egui apps whose web build is one wasm canvas, MIT OR Apache-2.0, two to three weeks old and changing daily, with nothing to import into a React add-on. CADCraft, GridCraft and PdfCraft have a postMessage host bridge, but only for a same-origin parent, so none works in brief 158's opaque-origin frame; WordCraft and DeckCraft have no bridge at all. [161](briefs/todo/161-the-craft-suite-in-sandboxed-windows.md) proposes the sandboxed route over a same-origin frame, because a same-origin frame would give an unreviewed release the owner's session and terminal. It also proposes catalog entries pinned to release zips by SHA-256, a "document" grant in place of `fs`, and upstream bridge PRs, with a spike first. The real gaps it fills are CAD (we have none) and slide editing (Slides only views). Six decisions wait on the owner.
+
+## [2026-10-19] build | Brief 160 done: the docs site is on Docusaurus
+
+`apps/docs` moved from Starlight to Docusaurus 3.10 with the same base, URLs and `dist/`
+(`2442aaf`). The owner chose to publish all twelve wiki pages the old sync list left out,
+so `DENY` is empty and each page has a sidebar entry. The port found that the backend
+reference had never been built: Compodoc exits as soon as a `--coverageTest` run passes,
+before it writes HTML. The gate is now a separate run, and the threshold is still 35%.
+A stale `#the-seam` anchor was fixed, and the architecture diagram no longer names the
+production host (`d275b42`). Route parity holds, with `/search/`, the twelve pages and the
+backend reference added. An `npm ci` on the image's manifests installs no `@docusaurus`
+package. [Brief 160](briefs/done/160-docs-site-on-docusaurus.md) carries the outcome.
+The deploy waits on vps-deploy brief 11.

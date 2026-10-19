@@ -155,3 +155,72 @@ landing copy.
 - Deploying. The owner deploys after vps-deploy brief 11 flips the
   `imbatranim-os` docs stack.
 - New pages or a content rewrite.
+
+## Outcome (2026-10-19)
+
+**Done in `2442aaf`, plus `d275b42`.** `apps/docs` builds with Docusaurus
+3.10.2 at the same base and URLs. The steps went as written, with these
+results and changes:
+
+- **Step 6, the owner's answer (2026-10-19):** publish all twelve pages.
+  `DENY` is empty. The new pages are in the sidebar: the four era decision
+  pages after "Decisions (locked)"; UI conventions, norPDF, the code-graph
+  layer and real-OS gaps under "Deep dive"; and the status history, both
+  backlogs and the feature exploration under "Status & roadmap".
+- **The backend reference had never been built.** Compodoc stops with
+  `process.exit(0)` as soon as a `--coverageTest` run passes, before it writes
+  any HTML. Only a stray `js/routes` file reached `dist/reference/backend/`,
+  so the Starlight site's Backend link went to a 404 (the baseline route list
+  has no `reference/backend/index.html`). The 35% gate is now its own run,
+  `ref:backend:gate`, and `ref:backend` then generates the pages. The
+  threshold is unchanged. A gate at 99% fails the build, exit 1, as it
+  should.
+- **A stale anchor:** `/patterns/#the-seam` on the ideas page never existed.
+  The heading's id is `the-seam--apps-receive-a-capability-handle`.
+  Docusaurus reports broken anchors, so it now points there.
+- **TypeScript 6** rejects the deprecated `baseUrl` in
+  `@docusaurus/tsconfig`, so `tsconfig.json` sets it to `null`. `@site/*`
+  resolves without it.
+- **The archify diagram** showed the production host on its Caddy node. It
+  now reads "TLS :443" (`d275b42`).
+- The leftover `.astro/` cache was deleted. `npm install` added 972 packages
+  and moved 19 shared packages up by a patch or minor version (webpack,
+  terser, browserslist, Babel and others).
+
+**Verified:**
+- Root `npm run docs` (turbo) exits 0 with `onBrokenLinks: 'throw'`. The sync
+  writes 20 pages and prints no warnings. Compodoc reports "53% is over
+  threshold (35%)". The TypeDoc warnings are unchanged (0 errors, 23
+  warnings). No broken anchors.
+- **Route parity:** nothing is missing from `/tmp/ios-routes-before.txt`.
+  These routes were added:
+  - `./search/`;
+  - the twelve `./wiki/<slug>/` pages;
+  - `./reference/backend/` (the fix above);
+  - `./reference/backend/template-playground-app/`, which Compodoc 2.x writes
+    on its own.
+- `dist/index.html` references `/imbatranim-os/docs/assets/`, and no file in
+  `dist/` mentions `_astro`.
+- `npm run typecheck -w @imbatranim/docs-site` passes.
+- **The image:** `apps/docs` stays in `.dockerignore`. The `docker` CLI was
+  not available in this WSL distro, so the image was not built. Instead,
+  `npm ci --ignore-scripts` ran on the deps stage's manifests (root
+  `package.json` and lockfile, backend, core, add-ons, `packages/*`). It
+  installed 1,569 packages, none from `@docusaurus/*`, `@easyops-cn` or
+  `typedoc`.
+- **Browser:** `dist/` was served at `/imbatranim-os/docs/` by `python3 -m
+  http.server`, and checked in headless Chrome.
+  - The landing page shows the hero (three actions), five stat tiles and the
+    card grids, with no sidebar.
+  - `/tour/` shows the AppGrid: 5 groups, 30 apps.
+  - `/architecture/` shows the LayerStack (3 layers) and the diagram frame
+    (200).
+  - Both reference links open from the sidebar in a new tab: "ImbatranimOS
+    Backend API" and "@imbatranim/core — public surface".
+  - There is no theme toggle, and `data-theme` is light.
+  - Searching "compositor" returns the OS-layering page.
+  - A new page (`/wiki/decisions-marketplace/`) renders with its sidebar
+    entry active.
+
+**Left for the owner:** the deploy, after vps-deploy brief 11 switches the
+`imbatranim-os` docs stack's asset check to `assets/`.

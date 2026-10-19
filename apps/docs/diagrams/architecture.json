@@ -62,7 +62,7 @@
       "id": "caddy",
       "type": "cloud",
       "label": "Caddy",
-      "sublabel": "gandolh.ro :443",
+      "sublabel": "TLS :443",
       "pos": [
         250,
         350

@@ -14,9 +14,14 @@ import { dirname, join, posix, relative, resolve, sep } from 'path';
 import type { Env } from '../../config/env.schema';
 import { DbService } from '../../db/db.service';
 import type { AppManifest } from './app-manifest';
+import { z } from 'zod';
+
 import {
   appEntrySchema,
   loadCatalog,
+  MAX_APP_STYLES,
+  sharedKitSchema,
+  styleSchema,
   type Catalog,
   type CatalogApp,
   type Descriptor,
@@ -74,7 +79,9 @@ export interface InstalledRow {
   /**
    * A version 2 descriptor's build (brief 162): JSON, app id → that app's
    * module inside `entry`, as the build that is live produced them. Null for
-   * every other row.
+   * every other row. A kit app's (brief 163) is an object instead of the
+   * module's path: `{ entry, styles, sharedKit }`, its stylesheets and the
+   * shared kit version its build was made against. See {@link recordedBuild}.
    */
   entries: string | null;
   installed_at: number;
@@ -124,6 +131,13 @@ export interface MarketplaceApp {
   /** The file types it offers to open (Open With). Empty when none. */
   opens: string[];
   minSystemVersion: number;
+  /**
+   * The shared kit version a kit app (brief 163) was built against, or null
+   * for an app that exports `mount`. Installed: what the live build was made
+   * against, so the desktop runs it the way it was built until a reinstall.
+   * Not installed: what the descriptor says now.
+   */
+  sharedKit: number | null;
   /** The commit the catalog pins now; for a URL app, the installed one. */
   ref: string;
   /**
@@ -142,6 +156,11 @@ export interface MarketplaceApp {
      * app has none: its files are served only under a sandbox token.
      */
     entryPath?: string;
+    /**
+     * A kit app's stylesheets, served paths like {@link entryPath} (brief
+     * 163). Empty for a mount app; absent with `entryPath`.
+     */
+    stylePaths?: string[];
     /** The build's directory is gone (a restored backup leaves it out): reinstall. */
     missing: boolean;
   } | null;
@@ -262,23 +281,26 @@ export class MarketplaceService implements OnModuleInit {
       const recorded = row ? recordedBuild(row) : null;
       for (const a of d.apps) {
         let installed: MarketplaceApp['installed'] = null;
+        const built = recorded?.entries.get(a.id);
         if (row) {
-          const entry = recorded?.entries.get(a.id);
+          const served = (p: string) =>
+            `marketplace/apps/${d.id}/b/${row.build_id}/${urlPath(p)}`;
           installed = {
             ref: row.ref,
             buildId: row.build_id,
             installedAt: row.installed_at,
-            ...(entry !== undefined && {
-              entryPath: `marketplace/apps/${d.id}/b/${row.build_id}/${urlPath(entry)}`,
+            ...(built !== undefined && {
+              entryPath: served(built.entry),
+              stylePaths: built.styles.map(served),
             }),
             missing:
-              entry === undefined ||
+              built === undefined ||
               !(await exists(
                 join(
                   this.buildDir(d.id, row.build_id),
                   row.root,
                   recorded!.output,
-                  entry,
+                  built.entry,
                 ),
               )),
           };
@@ -297,6 +319,7 @@ export class MarketplaceService implements OnModuleInit {
           multiInstance: a.multiInstance,
           opens: a.opens,
           minSystemVersion: d.minSystemVersion,
+          sharedKit: built ? built.sharedKit : d.sharedKit,
           ref: d.source.ref,
           runtime: 'native',
           installed,
@@ -380,6 +403,9 @@ export class MarketplaceService implements OnModuleInit {
       multiInstance: false,
       opens: [],
       minSystemVersion: manifest.minSystemVersion,
+      // Never a kit app: an app from a URL runs sandboxed, and the shared
+      // modules never reach a frame (brief 163).
+      sharedKit: null,
       ref: row.ref,
       runtime: 'sandboxed',
       source,
@@ -624,9 +650,13 @@ export class MarketplaceService implements OnModuleInit {
       // Reported below, as the first entry it does not hold.
     }
     for (const a of d.apps) {
-      if (!realOutput || !(await isFileWithin(realOutput, a.entry))) {
-        await fail(`The build did not produce ${posix.join(output, a.entry)}`);
-        return;
+      // A kit app's stylesheets (brief 163) are checked like its module: a
+      // listed file the build did not write fails the install.
+      for (const file of [a.entry, ...a.styles]) {
+        if (!realOutput || !(await isFileWithin(realOutput, file))) {
+          await fail(`The build did not produce ${posix.join(output, file)}`);
+          return;
+        }
       }
     }
     const servedBytes = await directorySize(realOutput!, realRoot);
@@ -642,8 +672,10 @@ export class MarketplaceService implements OnModuleInit {
     // directory goes.
     await this.servers.stop(d.id);
     // A version 1 row is written exactly as before brief 162: the entry, and
-    // no entries. A version 2 row names the output and each app's module.
+    // no entries. A version 2 row names the output and each app's module; a
+    // kit app's (brief 163) also its stylesheets and its shared kit version.
     const suite = d.schemaVersion === 2;
+    const kit = d.sharedKit;
     this.dbs.db
       .prepare(
         `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at)
@@ -660,7 +692,18 @@ export class MarketplaceService implements OnModuleInit {
         entry: suite ? output : posix.join(output, d.apps[0].entry),
         entries: suite
           ? JSON.stringify(
-              Object.fromEntries(d.apps.map((a) => [a.id, a.entry])),
+              Object.fromEntries(
+                d.apps.map((a) => [
+                  a.id,
+                  kit === null
+                    ? a.entry
+                    : ({
+                        entry: a.entry,
+                        styles: a.styles,
+                        sharedKit: kit,
+                      } satisfies RecordedApp),
+                ]),
+              ),
             )
           : null,
         installed_at: Date.now(),
@@ -819,20 +862,43 @@ export function isAppId(id: string): boolean {
   return /^[a-z][a-z0-9-]{1,39}$/.test(id);
 }
 
+/** One app of an installed build, as its row records it. */
+export interface RecordedApp {
+  /** Its module, inside the build's output. */
+  entry: string;
+  /** A kit app's stylesheets, inside the output (brief 163). Empty for a mount app. */
+  styles: string[];
+  /** The shared kit version a kit app was built against. Null for a mount app. */
+  sharedKit: number | null;
+}
+
+/** A kit app's value in `entries` (brief 163). */
+const recordedKitApp = z.strictObject({
+  entry: appEntrySchema,
+  styles: z.array(styleSchema).max(MAX_APP_STYLES),
+  sharedKit: sharedKitSchema,
+});
+
 /**
  * What an installed row says its live build holds: the served directory
- * (relative to the row's `root`) and each app's module inside it. A row with
- * no `entries` names one module, for the app whose id is the row's. Null when
- * `entries` is damaged: every app of the row then lists as missing, and a
- * reinstall writes it again.
+ * (relative to the row's `root`) and each app inside it. A row with no
+ * `entries` names one module, for the app whose id is the row's. In
+ * `entries` a mount app's value is its module's path, a kit app's an object
+ * (see `InstalledRow`). Null when `entries` is damaged: every app of the row
+ * then lists as missing, and a reinstall writes it again.
  */
 export function recordedBuild(
   row: Pick<InstalledRow, 'id' | 'entry' | 'entries'>,
-): { output: string; entries: ReadonlyMap<string, string> } | null {
+): { output: string; entries: ReadonlyMap<string, RecordedApp> } | null {
   if (row.entries == null) {
     return {
       output: posix.dirname(row.entry),
-      entries: new Map([[row.id, posix.basename(row.entry)]]),
+      entries: new Map([
+        [
+          row.id,
+          { entry: posix.basename(row.entry), styles: [], sharedKit: null },
+        ],
+      ]),
     };
   }
   let parsed: unknown;
@@ -844,16 +910,25 @@ export function recordedBuild(
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return null;
   }
-  const entries = new Map<string, string>();
-  for (const [id, entry] of Object.entries(parsed)) {
-    if (
-      !isAppId(id) ||
-      typeof entry !== 'string' ||
-      !appEntrySchema.safeParse(entry).success
-    ) {
-      return null;
+  const entries = new Map<string, RecordedApp>();
+  for (const [id, value] of Object.entries(parsed)) {
+    if (!isAppId(id)) return null;
+    if (typeof value === 'string') {
+      if (!appEntrySchema.safeParse(value).success) return null;
+      entries.set(id, {
+        entry: posix.normalize(value),
+        styles: [],
+        sharedKit: null,
+      });
+      continue;
     }
-    entries.set(id, posix.normalize(entry));
+    const kit = recordedKitApp.safeParse(value);
+    if (!kit.success) return null;
+    entries.set(id, {
+      entry: posix.normalize(kit.data.entry),
+      styles: kit.data.styles.map((p) => posix.normalize(p)),
+      sharedKit: kit.data.sharedKit,
+    });
   }
   return { output: row.entry, entries };
 }

@@ -16,6 +16,11 @@ import { z } from 'zod';
  * (`schemaVersion: 2`, an `apps` array): one clone, one build, one served
  * directory, one server, and every app in it shown on the desktop. A
  * version 1 descriptor is one app, and is read into the same shape.
+ *
+ * Since brief 163 a version 2 descriptor's apps may be kit apps (top-level
+ * `sharedKit`): components the desktop renders with its own React and UI kit
+ * rather than modules that `mount` themselves, each with the stylesheets it
+ * lists in `styles`.
  */
 
 /** The `system` capabilities a descriptor may ask for. */
@@ -115,6 +120,26 @@ export const appEntrySchema = innerPath
     'must not be inside node_modules',
   );
 
+/** The most stylesheets one kit app may list. */
+export const MAX_APP_STYLES = 8;
+
+/**
+ * A kit app's stylesheet (brief 163): a `.css` file inside the build's
+ * `output`, like `docs/app.css`. Never inside `node_modules`.
+ */
+export const styleSchema = innerPath
+  .refine((p) => p.endsWith('.css'), 'must be a .css file')
+  .refine(
+    (p) => !posix.normalize(p).split('/').includes('node_modules'),
+    'must not be inside node_modules',
+  );
+
+/**
+ * The version of the desktop's shared kit (`SHARED_KIT_VERSION` in
+ * `@imbatranim/ui`) a kit app's build was made against (brief 163).
+ */
+export const sharedKitSchema = z.number().int().min(1);
+
 /** File types an app opens (brief 162): extensions, or whole names for extensionless files. */
 export const opensSchema = z
   .array(
@@ -187,6 +212,11 @@ function descriptorV1Schema(options: { allowLocalRepos: boolean }) {
     capabilities: capabilitiesSchema,
     icon: iconSchema,
     minSystemVersion: z.number().int().min(1),
+    // Stripped silently, a version 1 descriptor saying it is a kit app would
+    // install as a mount app, and fail only when a window opens.
+    sharedKit: z
+      .undefined({ error: 'sharedKit needs schemaVersion 2' })
+      .optional(),
   });
 }
 
@@ -202,6 +232,19 @@ export const suiteAppSchema = z.object({
   opens: opensSchema,
   multiInstance: z.boolean().default(false),
   capabilities: capabilitiesSchema,
+  /**
+   * A kit app's stylesheets (brief 163), added to the page when an app of
+   * the build first opens. Only a descriptor with `sharedKit` may list any.
+   */
+  styles: z
+    .array(styleSchema)
+    .max(MAX_APP_STYLES)
+    .default([])
+    .refine(
+      (list) =>
+        new Set(list.map((p) => posix.normalize(p))).size === list.length,
+      'lists a stylesheet twice',
+    ),
 });
 
 /**
@@ -225,6 +268,12 @@ function descriptorV2Schema(options: { allowLocalRepos: boolean }) {
     server: serverSchema.optional(),
     apps: z.array(suiteAppSchema).min(1).max(16),
     minSystemVersion: z.number().int().min(1),
+    /**
+     * Present: every app of the descriptor is a kit app (brief 163), a
+     * component the desktop renders with its own React and kit, built
+     * against this version of them. Absent: every app exports `mount`.
+     */
+    sharedKit: sharedKitSchema.optional(),
   });
 }
 
@@ -256,6 +305,11 @@ export interface Descriptor {
   server?: DescriptorV2['server'];
   apps: CatalogApp[];
   minSystemVersion: number;
+  /**
+   * The shared kit version every app of the descriptor was built against
+   * (brief 163), or null when its apps export `mount`. Version 2 only.
+   */
+  sharedKit: number | null;
 }
 
 /** `dist/os/` and `./dist/os` → `dist/os`. */
@@ -295,9 +349,11 @@ function fromV1(d: DescriptorV1): Descriptor {
         opens: [],
         multiInstance: false,
         capabilities: d.capabilities,
+        styles: [],
       },
     ],
     minSystemVersion: d.minSystemVersion,
+    sharedKit: null,
   };
 }
 
@@ -305,7 +361,12 @@ function fromV2(d: DescriptorV2): Descriptor {
   return {
     ...d,
     build: { ...d.build, output: normalDir(d.build.output) },
-    apps: d.apps.map((a) => ({ ...a, entry: posix.normalize(a.entry) })),
+    apps: d.apps.map((a) => ({
+      ...a,
+      entry: posix.normalize(a.entry),
+      styles: a.styles.map((p) => posix.normalize(p)),
+    })),
+    sharedKit: d.sharedKit ?? null,
   };
 }
 
@@ -343,6 +404,15 @@ export function descriptorSchema(options: { allowLocalRepos: boolean }) {
           });
         }
         seen.add(a.id);
+        // A mount app styles its own node; only a kit app, rendered in the
+        // desktop's tree, ships a stylesheet for the page.
+        if (d.sharedKit === null && a.styles.length > 0) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['apps', i, 'styles'],
+            message: 'only a kit app (with sharedKit) may list styles',
+          });
+        }
       });
     });
 }

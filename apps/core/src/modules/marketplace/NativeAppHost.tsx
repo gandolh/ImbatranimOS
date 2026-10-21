@@ -1,99 +1,66 @@
 import { useEffect, useRef, useState } from 'react'
-import { PROTOCOL_VERSION, useSystem } from '@imbatranim/ui'
-import { api } from '../../lib/axios'
-import { descriptorIdOf, type MarketplaceApp } from '../../shared/registry/marketplace'
+import { useSystem } from '@imbatranim/ui'
+import type { MarketplaceApp } from '../../shared/registry/marketplace'
+import { apiUrl } from './apiUrl'
 import { loadModule } from './loadModule'
-import { scopeHandle, type NativeAppModule, type NativeHostContext } from './scopeHandle'
-
-function apiUrl(path: string): URL {
-  const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api'
-  return new URL(`${base.replace(/\/+$/, '')}/${path}`, window.location.href)
-}
+import { protocolRefusal } from './refusals'
+import { scopeHandle, type NativeAppModule } from './scopeHandle'
+import { useServerLease } from './useServerLease'
 
 /**
- * A window holding a marketplace app: fetch its module, hand it the window's
- * content node and a scoped `system`, and take it back on close.
+ * A window holding a marketplace app that mounts itself: fetch its module,
+ * hand it the window's content node and a scoped `system`, and take it back on
+ * close.
  *
  * A failure while loading or mounting is thrown during render, so the window's
  * error boundary (brief 47) shows it in this window only. A service app's
- * server is held with a lease for as long as the window is open. The lease
- * and the server are the descriptor's (brief 162): every window of a suite's
- * apps holds its own lease on the one server, by the descriptor's id.
+ * server is held with a lease for as long as the window is open
+ * ({@link useServerLease}), and the module is mounted only once it is up.
  */
 export function NativeAppHost({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
+  // Before anything is leased or fetched.
+  const refusal = protocolRefusal(app)
+  if (refusal) throw new Error(refusal)
+
   const system = useSystem()
   const container = useRef<HTMLDivElement>(null)
+  const lease = useServerLease(app)
   const [failure, setFailure] = useState<Error | null>(null)
-  const [status, setStatus] = useState<string | null>('Loading…')
+  const [loaded, setLoaded] = useState(false)
 
   if (failure) throw failure
+  if (lease.state === 'failed') throw lease.error
 
   useEffect(() => {
     const node = container.current
     const installed = app.installed
-    if (!node || !installed) return
+    if (!node || !installed || lease.state !== 'ready') return
     let cancelled = false
     let mod: NativeAppModule | null = null
-    let lease: string | null = null
-    let renew: ReturnType<typeof setInterval> | undefined
-    const descriptor = descriptorIdOf(app)
-
-    const releaseLease = () => {
-      if (renew !== undefined) clearInterval(renew)
-      if (lease)
-        void api.delete(`/marketplace/apps/${descriptor}/lease/${lease}`).catch(() => undefined)
-      lease = null
-    }
 
     void (async () => {
       try {
-        if (PROTOCOL_VERSION < app.minSystemVersion) {
-          throw new Error(
-            `${app.name} needs system protocol ${app.minSystemVersion}; this desktop speaks ${PROTOCOL_VERSION}`
-          )
-        }
         if (!installed.entryPath) throw new Error(`${app.name} has no module to load`)
         const entry = apiUrl(installed.entryPath)
-        let server: NativeHostContext['server'] = null
-        if (app.type === 'service') {
-          setStatus('Starting its server…')
-          const { data } = await api.post<{ lease: string; renewMs: number }>(
-            `/marketplace/apps/${descriptor}/lease`,
-            {}
-          )
-          lease = data.lease
-          if (cancelled) return releaseLease()
-          renew = setInterval(() => {
-            void api.post(`/marketplace/apps/${descriptor}/lease`, { lease }).catch(() => undefined)
-          }, data.renewMs)
-          const http = apiUrl(`marketplace/apps/${descriptor}/server`)
-          const ws = new URL(http)
-          ws.protocol = http.protocol === 'https:' ? 'wss:' : 'ws:'
-          server = { http: http.href, ws: ws.href }
-        }
-
-        setStatus('Loading…')
-        const loaded = (await loadModule(entry.href)) as Partial<NativeAppModule>
-        if (cancelled) return releaseLease()
-        if (typeof loaded.mount !== 'function') {
+        const loadedModule = (await loadModule(entry.href)) as Partial<NativeAppModule>
+        if (cancelled) return
+        if (typeof loadedModule.mount !== 'function') {
           throw new Error(`${app.name}'s module does not export mount(container, system)`)
         }
-        mod = loaded as NativeAppModule
-        setStatus(null)
+        mod = loadedModule as NativeAppModule
+        setLoaded(true)
         await mod.mount(node, scopeHandle(system, app.capabilities, app.name), {
           appId: app.id,
           assetBase: new URL('.', entry).href,
-          server,
+          server: lease.server,
         })
       } catch (err) {
-        releaseLease()
         if (!cancelled) setFailure(err instanceof Error ? err : new Error(String(err)))
       }
     })()
 
     return () => {
       cancelled = true
-      releaseLease()
       try {
         mod?.unmount?.(node)
       } catch (err) {
@@ -101,7 +68,9 @@ export function NativeAppHost({ windowId, app }: { windowId: string; app: Market
       }
       node.replaceChildren()
     }
-  }, [app, system, windowId])
+  }, [app, system, windowId, lease])
+
+  const status = lease.state === 'starting' ? 'Starting its server…' : loaded ? null : 'Loading…'
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">

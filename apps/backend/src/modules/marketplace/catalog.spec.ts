@@ -184,8 +184,19 @@ describe('a version 1 descriptor is one app (brief 162)', () => {
         opens: [],
         multiInstance: false,
         capabilities: ['fs', 'notify'],
+        styles: [],
       },
     ]);
+    expect(r.data.sharedKit).toBeNull();
+  });
+
+  it('refuses sharedKit: a kit app needs version 2 (brief 163)', () => {
+    const r = parse(valid({ sharedKit: 1 }));
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues[0].path).toEqual(['sharedKit']);
+      expect(r.error.issues[0].message).toBe('sharedKit needs schemaVersion 2');
+    }
   });
 
   it('parses the committed marketplace/hollow.json to one app, unchanged', () => {
@@ -284,7 +295,9 @@ describe('descriptorSchema version 2 (brief 162)', () => {
       opens: [],
       multiInstance: false,
       capabilities: [],
+      styles: [],
     });
+    expect(r.data.sharedKit).toBeNull();
   });
 
   it('normalises the output and the entries', () => {
@@ -478,5 +491,91 @@ describe('loadCatalog: one namespace for descriptor and app ids (brief 162)', ()
     expect([...descriptors.keys()]).toEqual(['aaa']);
     expect(problems.map((p) => p.file)).toEqual(['office.json']);
     expect(problems[0].problem).toMatch(/aaa\.json/);
+  });
+});
+
+describe('descriptorSchema: kit apps (brief 163)', () => {
+  const kitApp = (extra: Record<string, unknown> = {}) =>
+    app({ styles: ['docs/app.css'], ...extra });
+
+  it('reads sharedKit and each app’s styles, normalised', () => {
+    const r = parse(
+      suite({ sharedKit: 1 }, [
+        kitApp({ styles: ['./docs//app.css', 'shared.css'] }),
+        app({ id: 'office-sheets', entry: 'sheets/app.mjs' }),
+      ]),
+    );
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.sharedKit).toBe(1);
+    expect(r.data.apps.map((a) => a.styles)).toEqual([
+      ['docs/app.css', 'shared.css'],
+      [],
+    ]);
+  });
+
+  it('accepts a kit app with no styles, and eight', () => {
+    expect(parse(suite({ sharedKit: 1 }, [app()])).success).toBe(true);
+    const eight = Array.from({ length: 8 }, (_, i) => `s${i}.css`);
+    expect(
+      parse(suite({ sharedKit: 2 }, [kitApp({ styles: eight })])).success,
+    ).toBe(true);
+  });
+
+  it('names the app whose styles need sharedKit', () => {
+    const r = parse(suite({}, [app(), kitApp({ id: 'office-sheets' })]));
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues[0].path).toEqual(['apps', 1, 'styles']);
+      expect(r.error.issues[0].message).toBe(
+        'only a kit app (with sharedKit) may list styles',
+      );
+    }
+  });
+
+  it.each([
+    ['sharedKit 0', suite({ sharedKit: 0 })],
+    ['a negative sharedKit', suite({ sharedKit: -1 })],
+    ['a fractional sharedKit', suite({ sharedKit: 1.5 })],
+    ['sharedKit as a string', suite({ sharedKit: '1' })],
+    ['styles without sharedKit', suite({}, [kitApp()])],
+    [
+      'a stylesheet that is not CSS',
+      suite({ sharedKit: 1 }, [kitApp({ styles: ['docs/app.js'] })]),
+    ],
+    [
+      'a stylesheet climbing out',
+      suite({ sharedKit: 1 }, [kitApp({ styles: ['../app.css'] })]),
+    ],
+    [
+      'a stylesheet climbing out through the output',
+      suite({ sharedKit: 1 }, [kitApp({ styles: ['docs/../../app.css'] })]),
+    ],
+    [
+      'an absolute stylesheet',
+      suite({ sharedKit: 1 }, [kitApp({ styles: ['/srv/app.css'] })]),
+    ],
+    [
+      'a stylesheet in node_modules',
+      suite({ sharedKit: 1 }, [kitApp({ styles: ['node_modules/x/app.css'] })]),
+    ],
+    [
+      'the same stylesheet twice',
+      suite({ sharedKit: 1 }, [
+        kitApp({ styles: ['docs/app.css', './docs/app.css'] }),
+      ]),
+    ],
+    [
+      'nine stylesheets',
+      suite({ sharedKit: 1 }, [
+        kitApp({ styles: Array.from({ length: 9 }, (_, i) => `s${i}.css`) }),
+      ]),
+    ],
+    [
+      'styles that are not a list',
+      suite({ sharedKit: 1 }, [kitApp({ styles: 'docs/app.css' })]),
+    ],
+  ])('refuses %s', (_label, d) => {
+    expect(parse(d).success).toBe(false);
   });
 });

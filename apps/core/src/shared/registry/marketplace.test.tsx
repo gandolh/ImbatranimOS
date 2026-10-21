@@ -9,7 +9,9 @@ import { APP_REGISTRY } from './registry'
 import {
   MARKETPLACE_ICON_NAMES,
   descriptorIdOf,
+  isKitApp,
   isMarketplaceApp,
+  kitBuildKey,
   loadMarketplace,
   marketplaceIcon,
   syncMarketplaceApps,
@@ -31,6 +33,9 @@ vi.mock('../../modules/marketplace/NativeAppHost', () => ({
 }))
 vi.mock('../../modules/marketplace/SandboxedAppHost', () => ({
   SandboxedAppHost: ({ app }: { app: MarketplaceApp }) => <p data-host="sandboxed">{app.id}</p>,
+}))
+vi.mock('../../modules/marketplace/KitAppHost', () => ({
+  KitAppHost: ({ app }: { app: MarketplaceApp }) => <p data-host="kit">{app.id}</p>,
 }))
 
 function app(
@@ -354,5 +359,62 @@ describe('the icons committed descriptors name (brief 162)', () => {
       expect(marketplaceIcon(name)).not.toBe(Package)
     }
     expect(marketplaceIcon('file-text')).toBe(FileText)
+  })
+})
+
+describe('kit apps in the registry (brief 163)', () => {
+  beforeEach(() => syncMarketplaceApps([]))
+
+  it('opens an app with a shared kit version in the kit host, and one without in the mount host', async () => {
+    const legacy: Partial<MarketplaceApp> = app('orbits', {})
+    delete legacy.sharedKit
+    syncMarketplaceApps([
+      suiteApp('office-docs', { sharedKit: 1 }),
+      app('hollow', {}, { sharedKit: null }),
+      legacy as MarketplaceApp,
+    ])
+    expect(await hostOf('office-docs')).toBe('kit')
+    // A mismatch is still the kit host's to refuse, in its window.
+    syncMarketplaceApps([suiteApp('office-docs', { sharedKit: 99 })])
+    expect(await hostOf('office-docs')).toBe('kit')
+    syncMarketplaceApps([app('hollow', {}, { sharedKit: null }), legacy as MarketplaceApp])
+    expect(await hostOf('hollow')).toBe('native')
+    expect(await hostOf('orbits')).toBe('native')
+    syncMarketplaceApps([])
+  })
+
+  it('never takes a URL app for a kit app', () => {
+    expect(isKitApp({ ...urlApp('x-0123456789ab'), sharedKit: 1 })).toBe(false)
+    expect(isKitApp(suiteApp('office-docs', { sharedKit: 1 }))).toBe(true)
+    expect(isKitApp(suiteApp('office-docs', { sharedKit: null }))).toBe(false)
+  })
+
+  /** A stylesheet link in the page, as the kit host adds it. */
+  const link = (build: string, href: string) => {
+    const l = document.createElement('link')
+    l.rel = 'stylesheet'
+    l.setAttribute('data-kit-build', build)
+    l.setAttribute('href', href)
+    document.head.append(l)
+    return l
+  }
+  const links = () =>
+    [...document.head.querySelectorAll('link[data-kit-build]')].map((l) =>
+      l.getAttribute('data-kit-build')
+    )
+
+  it("keeps a live build's stylesheets and removes one that left, on every sync", () => {
+    link('office@b1', '/api/marketplace/apps/office/b/b1/kit.css')
+    link('office@b0', '/api/marketplace/apps/office/b/b0/kit.css')
+    link('gone@b1', '/api/marketplace/apps/gone/b/b1/kit.css')
+    syncMarketplaceApps([
+      suiteApp('office-docs', { sharedKit: 1 }),
+      suiteApp('office-sheets', { sharedKit: 1 }),
+    ])
+    expect(kitBuildKey(suiteApp('office-docs'))).toBe('office@b1')
+    expect(links()).toEqual(['office@b1'])
+    // Uninstalled: the listing has it, not installed.
+    syncMarketplaceApps([app('office-docs', null, { descriptorId: 'office', sharedKit: 1 })])
+    expect(links()).toEqual([])
   })
 })

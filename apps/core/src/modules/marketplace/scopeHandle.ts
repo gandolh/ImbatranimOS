@@ -1,5 +1,13 @@
-import type { SystemHandle } from '@imbatranim/ui'
+import type { ComponentType } from 'react'
+import type { KitAppProps, NativeHostContext, SystemHandle } from '@imbatranim/ui'
 import type { Capability } from '../../shared/registry/marketplace'
+
+/**
+ * Where things are, for the app: the third argument to `mount`, a kit app's
+ * `host` prop. Defined in the kit since brief 163, so an outside repo's
+ * snapshot of `packages/ui/src` has it.
+ */
+export type { NativeHostContext }
 
 /**
  * What an installed app's module exports (brief 120). The boundary is the
@@ -12,13 +20,14 @@ export type NativeAppModule = {
   unmount?(container: HTMLElement): void
 }
 
-/** Where things are, for the app. The third argument to `mount`. */
-export type NativeHostContext = {
-  appId: string
-  /** The URL of the directory the app's module was served from, ending in `/`. */
-  assetBase: string
-  /** A service app's server, through the desktop's session-checked proxy. Null for a static app. */
-  server: { http: string; ws: string } | null
+/**
+ * What a kit app's module exports instead (brief 163): a component the
+ * desktop renders in the window, in its own tree, with its own React and kit
+ * (read from `__imbatranimShared`). React mounts and unmounts it; anything it
+ * starts outside React it stops in an effect cleanup.
+ */
+export type KitAppModule = {
+  App: ComponentType<KitAppProps>
 }
 
 /** Members of the handle that are not capabilities: every app has them. */

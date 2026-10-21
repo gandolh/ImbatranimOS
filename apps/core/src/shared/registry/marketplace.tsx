@@ -24,6 +24,7 @@ import {
   Trophy,
 } from 'lucide-react'
 import { api } from '../../lib/axios'
+import { pruneKitStyles } from '../../modules/marketplace/kitStyles'
 import { APP_REGISTRY, type AppConfig } from './registry'
 
 /**
@@ -65,6 +66,14 @@ export type MarketplaceApp = {
   /** File types it offers to open, after the built-in apps that claim them. */
   opens: string[]
   minSystemVersion: number
+  /**
+   * A kit app's shared kit version (brief 163): a component the desktop
+   * renders with its own React and UI kit, built against this version of
+   * them. Null for an app that exports `mount`, and for a URL app; a backend
+   * from before brief 163 sends none, which reads the same. For an installed
+   * app, what its live build was made against. Read it with {@link isKitApp}.
+   */
+  sharedKit?: number | null
   ref: string
   /**
    * How the desktop runs it: `native` imports its module into this page (a
@@ -81,6 +90,8 @@ export type MarketplaceApp = {
     installedAt: number
     /** What the desktop imports, relative to the API's base. A URL app has none. */
     entryPath?: string
+    /** A kit app's stylesheets, relative to the API's base like `entryPath` (brief 163). */
+    stylePaths?: string[]
     missing: boolean
   } | null
   job: { state: 'queued' | 'fetching' | 'building' | 'failed'; reason?: string } | null
@@ -116,6 +127,24 @@ export function descriptorIdOf(app: Pick<MarketplaceApp, 'id' | 'descriptorId'>)
 /** True for an app the desktop runs in the iframe sandbox. A missing `runtime` is native. */
 export function isSandboxed(app: Pick<MarketplaceApp, 'runtime'>): boolean {
   return app.runtime === 'sandboxed'
+}
+
+/**
+ * True for a kit app (brief 163): a catalog app whose module exports a
+ * component, rendered in the desktop's tree. Never a sandboxed one.
+ */
+export function isKitApp(app: Pick<MarketplaceApp, 'runtime' | 'sharedKit'>): boolean {
+  return !isSandboxed(app) && typeof app.sharedKit === 'number'
+}
+
+/**
+ * The build a kit app's stylesheets belong to, `<descriptor id>@<build id>`:
+ * every app of one build shares its links in the page. Null when not installed.
+ */
+export function kitBuildKey(
+  app: Pick<MarketplaceApp, 'id' | 'descriptorId' | 'installed'>
+): string | null {
+  return app.installed ? `${descriptorIdOf(app)}@${app.installed.buildId}` : null
 }
 
 export type MarketplaceListing = {
@@ -214,6 +243,14 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
       )
       return { default: Host }
     }
+    // A kit app (brief 163) is rendered in this tree, with this React and kit.
+    if (isKitApp(app)) {
+      const { KitAppHost } = await import('../../modules/marketplace/KitAppHost')
+      const Host: ComponentType<{ windowId: string }> = ({ windowId }) => (
+        <KitAppHost windowId={windowId} app={app} />
+      )
+      return { default: Host }
+    }
     const { NativeAppHost } = await import('../../modules/marketplace/NativeAppHost')
     const Host: ComponentType<{ windowId: string }> = ({ windowId }) => (
       <NativeAppHost windowId={windowId} app={app} />
@@ -261,11 +298,15 @@ export function syncMarketplaceApps(apps: MarketplaceApp[]): void {
   }
   const builtIn = new Set(APP_REGISTRY.map((a) => a.id))
   const added: string[] = []
+  const kitBuilds = new Set<string>()
   for (const app of apps) {
     if (!isRunnable(app) || builtIn.has(app.id) || added.includes(app.id)) continue
     APP_REGISTRY.push(toAppConfig(app))
     added.push(app.id)
+    if (isKitApp(app)) kitBuilds.add(kitBuildKey(app)!)
   }
+  // A build that left (updated, uninstalled) takes its stylesheets with it.
+  pruneKitStyles(kitBuilds)
   useRegistryStore.setState((s) => ({
     version: s.version + 1,
     ids: added,

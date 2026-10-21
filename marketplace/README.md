@@ -100,8 +100,10 @@ thrown by `mount`, or a module that does not load, shows the error panel in
 that window only. An error thrown later from the app's own callbacks is the
 app's to handle.
 
-The module must be self-contained. It cannot import the desktop's React or
-`@imbatranim/ui`; bundle what it needs.
+A `mount` module is self-contained: it bundles whatever it uses, React
+included, and the desktop's React and `@imbatranim/ui` never reach it. An app
+that wants the desktop's own kit (its buttons and dialogs, `useSystem()`, the
+theme) is a [kit app](#kit-apps) instead.
 
 ## A service app
 
@@ -187,8 +189,9 @@ in Open With, and is enabled or disabled on its own in **Settings → Apps**.
 ```
 
 The top level holds what the apps share: `id`, `name`, `description`,
-`source`, `type`, `runtime`, `build`, `server` and `minSystemVersion`. These
-mean what they mean in version 1, except for `build`:
+`source`, `type`, `runtime`, `build`, `server`, `minSystemVersion` and, for
+[kit apps](#kit-apps), `sharedKit`. These mean what they mean in version 1,
+except for `build`:
 
 - **`build.output`** takes the place of `build.entry`: the directory the build
   writes every app into, inside the app's directory (`dist/os`; not the
@@ -225,6 +228,150 @@ mean what they mean in version 1, except for `build`:
 A version 1 descriptor is still valid, and is read as a version 2 one with a
 single app: the app's id is the descriptor's, `output` is the directory its
 entry is in, it opens nothing, and it has one window.
+
+## Kit apps
+
+A kit app is a catalog app whose module exports a React component, which the
+desktop renders in its own page tree with its own React and `@imbatranim/ui`
+(the shared kit). It looks and behaves like a built-in app: the kit's buttons and dialogs, `useSystem()` and the kit's hooks,
+`saveOverRead`, the theme and the accent. A `mount` module can't have any of
+that, because a second copy of React can't read the desktop's context. Only a
+version 2 catalog descriptor can describe kit apps. An app from a URL never
+sees the desktop's modules.
+
+### In the descriptor
+
+```json
+  "schemaVersion": 2,
+  "sharedKit": 1,
+  "apps": [
+    {
+      "id": "office-docs",
+      "entry": "docs/app.mjs",
+      "styles": ["docs/app.css"],
+      "capabilities": ["fs", "intents"]
+    }
+  ]
+```
+
+- **`sharedKit`**: the version of the shared kit the build was made against,
+  an integer from 1 (`SHARED_KIT_VERSION` in `packages/ui/src/sharedKit.ts`,
+  1 today). With it, every app of the descriptor is a kit app; without it,
+  every app exports `mount`. One descriptor does not mix the two, and a
+  version 1 descriptor that sets it is refused.
+- **`styles`**: per app, up to 8 `.css` files inside `output`, each listed
+  once. Only a descriptor with `sharedKit` may list them. After the build
+  each one must exist, as the entries must: if one is missing, the install
+  fails and the build that was live stays live.
+
+### The module
+
+```ts
+import type { ComponentType } from "react";
+import type { KitAppProps } from "@imbatranim/ui";
+
+// KitAppProps = { windowId: string; host: NativeHostContext }
+export const App: ComponentType<KitAppProps>;
+```
+
+The module's named export `App` can be a function or class component, or
+what `memo`, `forwardRef` or `lazy` return. A kit module has no `mount` and
+no `unmount`: React mounts the component when the window opens and unmounts
+it when the window closes. Anything the app starts outside React (a worker,
+a socket, a listener on `window`) it stops in an effect cleanup. `host` is
+the object `mount` receives.
+
+The desktop renders `App` inside the window's error boundary and `Suspense`,
+under a `SystemProvider` holding the app's handle, so `useSystem()` and the
+kit's hooks work, fenced to the descriptor's `capabilities`. The kit's hooks
+use capabilities too: `useOpenIntent` needs `intents`, and `useFileDialog`
+and `saveOverRead` need `fs`. A throw while rendering shows the error panel
+in that window only, as it does for a built-in app.
+
+### The shared modules
+
+Before it imports the first kit app, the desktop sets
+`globalThis.__imbatranimShared`:
+
+```ts
+{
+  version: 1, // SHARED_KIT_VERSION
+  modules: {
+    "react": …,
+    "react/jsx-runtime": …,
+    "react-dom": …,
+    "react-dom/client": …,
+    "@imbatranim/ui": …,
+  },
+}
+```
+
+The object and every module in it are frozen, and the property can't be
+reassigned. Each module holds every export of the desktop's own copy as a
+property: the same objects, so the context the app reads is the desktop's.
+React's modules also carry `default`; the kit's doesn't. Everything else
+(icons, react-query, a document engine) the app bundles itself.
+
+The app's build marks those five specifiers external, and rewrites each
+import into a read from `globalThis.__imbatranimShared.modules[specifier]`
+as the module evaluates. With Vite or Rollup, one way is a plugin that
+resolves each specifier to a small virtual module re-exporting that object's
+properties by name. An import map won't work: it is an inline script, which
+the desktop's CSP (`script-src 'self'`) refuses, and it would have to exist
+before the page loads its first module.
+
+### Building against a snapshot
+
+There is no package registry. A kit app's repository commits a copy of
+`packages/ui/src` from a named commit of this repository, and uses it for
+types, tests and Tailwind's token names. The files that matter most are
+`index.ts` (the exports), `sharedKit.ts` (`SHARED_KIT_VERSION`,
+`NativeHostContext`, `KitAppProps`), `system.ts` (the handle) and
+`theme.css` (the tokens). At bundle time the specifiers stay external, so
+none of the snapshot ships: the desktop's own kit runs. When
+`SHARED_KIT_VERSION` goes up, take a new snapshot, rebuild, and update
+`sharedKit` and `source.ref` here.
+
+### The stylesheet
+
+A kit app's CSS holds utilities only. Compile it with Tailwind 4, the
+desktop's major, with no preflight and no theme of its own. The token names
+come from the snapshot's `theme.css` and resolve to the desktop's CSS
+variables at runtime, and the desktop defines every token in that file,
+whether its own classes use it or not. For example:
+
+```css
+@import "tailwindcss/theme.css" layer(theme) theme(reference);
+@import "../kit/theme.css" theme(reference); /* the snapshot */
+@import "tailwindcss/utilities.css" layer(utilities);
+@source "./src";
+```
+
+`reference` emits no variables of its own. A Tailwind default token the
+desktop never uses falls back to its value inside the `var()`. The output's
+rules land in the desktop's `utilities` layer.
+
+The desktop adds each listed file as a `<link rel="stylesheet">` in the
+page's `<head>` the first time any app of that build opens, one link per
+file however many windows are open. A window waits up to 10 seconds for its
+stylesheets before it renders the app. The links stay while the build is
+installed, and go when an update replaces it or it is uninstalled.
+
+### The version
+
+`SHARED_KIT_VERSION` goes up when a shared module changes incompatibly: a
+React major, a kit export removed, or a kit component's props changed in a
+breaking way. A new export or module doesn't count. The desktop refuses to
+render a kit app whose `sharedKit` differs from its own, older or newer. The
+window's error panel says, for example, "Docs was built for shared kit 2, and
+this desktop has shared kit 1. It needs an update built for kit 1."
+**Settings → Marketplace** shows the row as "Needs an update". The version
+the desktop checks is the one the live build was made against, so a changed
+`sharedKit` takes effect at the next install.
+
+Trust doesn't change. A catalog app already runs in the desktop's page with
+nothing between it and the page; sharing the page's React gives it nothing
+it couldn't already reach.
 
 ## Apps from a URL
 
@@ -329,4 +476,3 @@ with `host.server` always `null`. The differences:
   answer within 60 seconds, the window closes anyway, and if the owner presses
   close again within 10 seconds of a refusal, it closes without asking.
 - An error while loading or in `mount` shows in that window's error panel.
-

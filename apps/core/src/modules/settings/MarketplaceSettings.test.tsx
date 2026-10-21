@@ -323,6 +323,21 @@ describe('MarketplaceSettings: a descriptor with several apps (brief 162)', () =
     useWindowStore.setState({ windows: before.windows, closeWindow: before.closeWindow })
   })
 
+  it('says a kit suite built for another shared kit needs an update (brief 163)', async () => {
+    await renderSuite([
+      officeApp('office-docs', 'Docs', true, { sharedKit: 99 }),
+      officeApp('office-sheets', 'Sheets', true, { sharedKit: 99 }),
+    ])
+    expect(container.textContent).toContain(
+      'Needs an update: built for shared kit 99, this desktop has 1'
+    )
+    act(() => root.unmount())
+    root = createRoot(container)
+    await renderSuite(suite(true).map((a) => ({ ...a, sharedKit: 1 })))
+    expect(container.textContent).not.toContain('Needs an update')
+    expect(container.textContent).toContain('Installed · aaaaaaa')
+  })
+
   it('says when a built-in app has one of its apps’ ids', async () => {
     await renderSuite([
       officeApp('settings', 'Settings', true),

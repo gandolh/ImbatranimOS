@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, useConfirm } from '@imbatranim/ui'
+import { Button, SHARED_KIT_VERSION, useConfirm } from '@imbatranim/ui'
 import { api } from '../../lib/axios'
 import { openApp } from '../../shared/intents/openApp'
 import { useWindowStore } from '../../shared/store/windowStore'
@@ -240,6 +240,10 @@ export function MarketplaceSettings() {
           const missing = row.apps.some((a) => a.installed?.missing)
           const working = app.job && app.job.state !== 'failed'
           const outdated = installed && installed.ref !== app.ref
+          // A kit app built for another shared kit will not open here (brief 163).
+          const kitMismatch = row.apps.find(
+            (a) => typeof a.sharedKit === 'number' && a.sharedKit !== SHARED_KIT_VERSION
+          )?.sharedKit
           const clashing = (a: MarketplaceApp) => clashes.includes(a.id)
           const canOpen = (a: MarketplaceApp) =>
             !!a.installed && !a.installed.missing && !working && !clashing(a)
@@ -247,6 +251,8 @@ export function MarketplaceSettings() {
           if (working) state = JOB_LABEL[app.job!.state]
           else if (app.job?.state === 'failed')
             state = `${JOB_LABEL.failed}: ${app.job.reason ?? ''}`
+          else if (kitMismatch !== undefined)
+            state = `Needs an update: built for shared kit ${kitMismatch}, this desktop has ${SHARED_KIT_VERSION}`
           else if (!installed) state = 'Not installed'
           else if (missing) state = 'Its build is missing (restored from a backup?)'
           else if (outdated) state = 'An update is available'

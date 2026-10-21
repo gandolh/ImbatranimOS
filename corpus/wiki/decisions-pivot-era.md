@@ -81,7 +81,10 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
   OnlyOffice/Collabora server, no LibreOffice in the image (slim-container
   identity holds). Viewers: pdfjs-dist (PDF Viewer), pptx-preview
   (Slides, best-effort + Download escape hatch). Editors: Univer grid
-  (Sheets), SuperDoc (Docs).
+  (Sheets), SuperDoc (Docs). **Narrowed 2026-10-21**: the office apps move
+  to imbatranim-office; editing stays client-side, but a suite app may run a
+  server for one-off jobs (see
+  [decisions-office-suite.md](decisions-office-suite.md)).
 - **Sheets xlsx bridge: ExcelJS (MIT)** — REVISED 2026-07-17 from the
   grilled "SheetJS CE ↔ Univer bridge" after the spike gate failed:
   SheetJS CE's *writer* strips fonts/fills/borders on save (Pro-only),

@@ -4360,3 +4360,7 @@ production host (`d275b42`). Route parity holds, with `/search/`, the twelve pag
 backend reference added. An `npm ci` on the image's manifests installs no `@docusaurus`
 package. [Brief 160](briefs/done/160-docs-site-on-docusaurus.md) carries the outcome.
 The deploy waits on vps-deploy brief 11.
+
+## [2026-10-21] decision | The office suite moves out to imbatranim-office (brief 161 not taken)
+
+Grilled with the owner. They turned down all four of brief 161's routes: the OS should behave like an OS whose apps are all web UI, and a craft's wasm canvas in a sandboxed frame is not that. Research that day showed the crafts' engines are UI-free and already headless (MCP and CLI), but the cost of the owner's first idea, Rust engines behind an API, is the React UI that has to be rebuilt anyway, plus a network hop on every keystroke and two more revisits to run a Rust binary in a compiler-free image. Settled, in [decisions-office-suite.md](wiki/decisions-office-suite.md): Docs, Sheets, Slides, PDF (PDF Viewer and norPDF merged) and a new CAD app move to a separate repo, `imbatranim-office`, in TypeScript with editing in the browser and a server only for one-off jobs, and come back through one marketplace entry that installs all five. The crafts are the reference for behaviour and features. "Client-side JS engines only" is narrowed, not dropped. The owner chose the name over openBureau (taken) and created no remote yet; `~/projects/imbatranim-office` exists as an empty repo on main. Brief 161 moves to `superseded/` when the suite's briefs are written.

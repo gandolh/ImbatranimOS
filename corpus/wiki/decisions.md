@@ -28,6 +28,11 @@ In [decisions-estate-era.md](decisions-estate-era.md): identity is Ward's
 inside the estate, a local sign-in returns when Ward is absent, the ISO is a
 LAN server OS, and the owner's 2026-10-04 answers.
 
+## The office suite (2026-10-21)
+
+In [decisions-office-suite.md](decisions-office-suite.md): the office apps move
+to their own repo, imbatranim-office, in TypeScript, installed as one Office entry.
+
 ## Inherited from the ISO era
 
 Moved to [decisions-iso-era.md](decisions-iso-era.md) — the carried-over

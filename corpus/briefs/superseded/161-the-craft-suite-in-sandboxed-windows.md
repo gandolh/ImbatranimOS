@@ -266,3 +266,18 @@ Keep the handling DOM-free (`craftBridge.ts`, next to `sandboxBridge.ts`) and te
 - Should `.pptx` default to DeckCraft once it can edit and save?
 - Who opens the upstream PRs: the owner by hand, or Claude from the owner's account with the
   owner's go-ahead?
+
+## Outcome (2026-10-21): superseded, not built
+
+The owner turned down all four routes in a grilling on 2026-10-21. The OS should behave like an OS whose apps are all web UI, and a craft's wasm canvas in a frame is not that. They also did not want to patch five upstream repos to make it work.
+
+What the research that day found, for whoever reads this next:
+
+- The crafts' engines are UI-free. In every repo only `ui-egui` and the app shells use egui or wgpu, and all five already run headless: a CLI and an MCP server over stdio, with the engine as a library (`Session::execute`, `Headless`, PdfCraft's `Automation::call`). Wrapping one in a server is cheap.
+- Running a Rust server here is not. The image is `node:alpine` with no compiler, and the catalog forbids prebuilt artifacts (decisions-marketplace.md).
+- The desktop's CSP is `script-src 'self'` with no `'wasm-unsafe-eval'`, so the engines cannot run as wasm in the desktop's page either.
+- The real cost of any route was the UI: an API cannot draw a grid, a page, a CAD canvas or a slide.
+
+Settled instead, in [decisions-office-suite.md](../../wiki/decisions-office-suite.md): Docs, Sheets, Slides, PDF (PDF Viewer and norPDF merged) and a new CAD app move to a separate repo, `imbatranim-office`, in TypeScript with editing in the browser. One catalog entry installs all five, and the desktop shares its React and kit with them. The crafts stay as the reference for how features behave.
+
+Superseded by [162](../todo/162-one-catalog-entry-several-apps.md), [163](../todo/163-the-desktop-shares-its-kit.md) and [164](../todo/164-retiring-a-built-in-office-app.md), and by the suite's own briefs in the imbatranim-office repo.

@@ -14,7 +14,13 @@ import { dirname, join, posix, relative, resolve, sep } from 'path';
 import type { Env } from '../../config/env.schema';
 import { DbService } from '../../db/db.service';
 import type { AppManifest } from './app-manifest';
-import { loadCatalog, type Catalog, type Descriptor } from './catalog';
+import {
+  appEntrySchema,
+  loadCatalog,
+  type Catalog,
+  type CatalogApp,
+  type Descriptor,
+} from './catalog';
 import {
   MarketplaceServers,
   type ServerSpec,
@@ -58,8 +64,19 @@ export interface InstalledRow {
   build_id: string;
   /** The app's directory inside the clone (`source.subdir`), POSIX, '' for the top. */
   root: string;
-  /** `build.entry`, relative to `root`. */
+  /**
+   * Relative to `root`. For a row with no {@link entries} (a version 1
+   * descriptor's, or a URL app's): the module, whose directory is served.
+   * For a version 2 descriptor's row (brief 162): the build's `output`, the
+   * served directory itself.
+   */
   entry: string;
+  /**
+   * A version 2 descriptor's build (brief 162): JSON, app id → that app's
+   * module inside `entry`, as the build that is live produced them. Null for
+   * every other row.
+   */
+  entries: string | null;
   installed_at: number;
   /** `sandboxed` for an app installed from a URL (brief 158). */
   runtime: 'native' | 'sandboxed';
@@ -80,16 +97,32 @@ export interface ListingProblem {
   appId?: string;
 }
 
-/** What the Marketplace pane and the desktop's registry read. */
+/**
+ * What the Marketplace pane and the desktop's registry read: one app. A
+ * version 2 descriptor lists one per item of its `apps` (brief 162), each
+ * carrying the descriptor's ref, type, install, job and server.
+ */
 export interface MarketplaceApp {
   id: string;
+  /**
+   * The descriptor that installs it, and what the routes keyed by `:id`
+   * (install, uninstall, log, lease, server, built files) take. Equal to
+   * `id` for a version 1 descriptor's app and for a URL app.
+   */
+  descriptorId: string;
+  /** The descriptor's name: the pane's heading for a suite. `name` otherwise. */
+  descriptorName: string;
   name: string;
   description: string;
   meta: string[];
   type: Descriptor['type'];
   icon: string;
-  window: Descriptor['window'];
-  capabilities: Descriptor['capabilities'];
+  window: CatalogApp['window'];
+  capabilities: CatalogApp['capabilities'];
+  /** Whether a second launch opens a second window. False unless the descriptor says so. */
+  multiInstance: boolean;
+  /** The file types it offers to open (Open With). Empty when none. */
+  opens: string[];
   minSystemVersion: number;
   /** The commit the catalog pins now; for a URL app, the installed one. */
   ref: string;
@@ -165,12 +198,14 @@ export class MarketplaceService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    const { apps, problems } = this.catalog();
+    const { descriptors, problems } = this.catalog();
     for (const p of problems) {
       this.logger.warn(`Skipped marketplace/${p.file}: ${p.problem}`);
     }
-    if (apps.size > 0) {
-      this.logger.log(`Marketplace catalog: ${[...apps.keys()].join(', ')}`);
+    if (descriptors.size > 0) {
+      this.logger.log(
+        `Marketplace catalog: ${[...descriptors.keys()].join(', ')}`,
+      );
     }
     await this.sweepStaleBuilds();
   }
@@ -215,38 +250,60 @@ export class MarketplaceService implements OnModuleInit {
     apps: MarketplaceApp[];
     problems: ListingProblem[];
   }> {
-    const { apps, problems: catalogProblems } = this.catalog();
+    const { descriptors, problems: catalogProblems } = this.catalog();
     const problems: ListingProblem[] = [...catalogProblems];
     const rows = new Map(this.rows().map((r) => [r.id, r]));
     const out: MarketplaceApp[] = [];
-    for (const d of apps.values()) {
+    for (const d of descriptors.values()) {
       const row = rows.get(d.id);
-      out.push({
-        id: d.id,
-        name: d.name,
-        description: d.description,
-        meta: d.meta,
-        type: d.type,
-        icon: d.icon,
-        window: d.window,
-        capabilities: d.capabilities,
-        minSystemVersion: d.minSystemVersion,
-        ref: d.source.ref,
-        runtime: 'native',
-        installed: row
-          ? {
-              ref: row.ref,
-              buildId: row.build_id,
-              installedAt: row.installed_at,
-              entryPath: `marketplace/apps/${d.id}/b/${row.build_id}/${posix.basename(row.entry)}`,
-              missing: !(await exists(
-                join(this.buildDir(d.id, row.build_id), row.root, row.entry),
+      // What the live build produced, not what the descriptor says now: an
+      // app added to the descriptor since has nothing to load until the
+      // next install, and lists as missing.
+      const recorded = row ? recordedBuild(row) : null;
+      for (const a of d.apps) {
+        let installed: MarketplaceApp['installed'] = null;
+        if (row) {
+          const entry = recorded?.entries.get(a.id);
+          installed = {
+            ref: row.ref,
+            buildId: row.build_id,
+            installedAt: row.installed_at,
+            ...(entry !== undefined && {
+              entryPath: `marketplace/apps/${d.id}/b/${row.build_id}/${urlPath(entry)}`,
+            }),
+            missing:
+              entry === undefined ||
+              !(await exists(
+                join(
+                  this.buildDir(d.id, row.build_id),
+                  row.root,
+                  recorded!.output,
+                  entry,
+                ),
               )),
-            }
-          : null,
-        job: this.jobs.get(d.id) ?? null,
-        server: this.servers.status(d.id),
-      });
+          };
+        }
+        out.push({
+          id: a.id,
+          descriptorId: d.id,
+          descriptorName: d.name,
+          name: a.name,
+          description: a.description,
+          meta: a.meta,
+          type: d.type,
+          icon: a.icon,
+          window: a.window,
+          capabilities: a.capabilities,
+          multiInstance: a.multiInstance,
+          opens: a.opens,
+          minSystemVersion: d.minSystemVersion,
+          ref: d.source.ref,
+          runtime: 'native',
+          installed,
+          job: this.jobs.get(d.id) ?? null,
+          server: this.servers.status(d.id),
+        });
+      }
     }
     for (const row of rows.values()) {
       if (row.runtime === 'sandboxed') {
@@ -267,7 +324,7 @@ export class MarketplaceService implements OnModuleInit {
       // An app installed from a descriptor that has since left the catalog is
       // no longer runnable, but its files are still on disk: list it, so it
       // can be uninstalled.
-      if (apps.has(row.id)) continue;
+      if (descriptors.has(row.id)) continue;
       problems.push({
         file: `${row.id}.json`,
         problem: 'installed, but no longer in the catalog: uninstall it',
@@ -311,13 +368,17 @@ export class MarketplaceService implements OnModuleInit {
   ): Promise<MarketplaceApp> {
     return {
       id: row.id,
+      descriptorId: row.id,
+      descriptorName: manifest.name,
       name: manifest.name,
       description: manifest.description,
       meta: manifest.meta,
       type: 'static',
       icon: manifest.icon,
       window: manifest.window,
-      capabilities: manifest.capabilities as Descriptor['capabilities'],
+      capabilities: manifest.capabilities as CatalogApp['capabilities'],
+      multiInstance: false,
+      opens: [],
       minSystemVersion: manifest.minSystemVersion,
       ref: row.ref,
       runtime: 'sandboxed',
@@ -343,18 +404,20 @@ export class MarketplaceService implements OnModuleInit {
   }
 
   /**
-   * The file a request for an installed app's build names, as a real path
-   * inside the directory the entry lives in. Anything else is a 404: an id
-   * outside the catalog, a build that is not the live one, a path that climbs
-   * out or reaches through a symlink, a dotfile. A URL app's build is never
-   * served here, only under its sandbox token with the sandbox's headers.
+   * The file a request for an installed descriptor's build names, as a real
+   * path inside its served directory. `id` is the descriptor's (brief 162):
+   * the apps of a suite share the directory, and the chunks in it. Anything
+   * else is a 404: an id outside the catalog, a build that is not the live
+   * one, a path that climbs out or reaches through a symlink, a dotfile. A
+   * URL app's build is never served here, only under its sandbox token with
+   * the sandbox's headers.
    */
   async servedFile(
     id: string,
     buildId: string,
     segments: string[],
   ): Promise<string> {
-    const d = this.catalog().apps.get(id);
+    const d = this.catalog().descriptors.get(id);
     const row = d ? this.row(id) : undefined;
     if (!row || row.runtime !== 'native' || row.build_id !== buildId) {
       throw new NotFoundException();
@@ -362,12 +425,15 @@ export class MarketplaceService implements OnModuleInit {
     return resolveServed(this.servedRoot(row), segments);
   }
 
-  /** The directory an installed app's files are served from: its entry's. */
+  /**
+   * The directory an installed row's files are served from: a version 2
+   * build's `output`, otherwise its entry's directory (see `InstalledRow`).
+   */
   servedRoot(row: InstalledRow): string {
     return join(
       this.buildDir(row.id, row.build_id),
       row.root,
-      posix.dirname(row.entry),
+      row.entries != null ? row.entry : posix.dirname(row.entry),
     );
   }
 
@@ -384,12 +450,13 @@ export class MarketplaceService implements OnModuleInit {
   }
 
   /**
-   * What the supervisor needs to start an installed service app's server, or
-   * a 404 when there is no such app, a 409 when it is not a service or not
-   * built.
+   * What the supervisor needs to start an installed service descriptor's
+   * server, or a 404 when there is no such descriptor, a 409 when it is not a
+   * service or not built. One server per descriptor (brief 162): every
+   * window of a suite's apps leases this one, by the descriptor's id.
    */
   serverSpec(id: string): ServerSpec {
-    const d = this.catalog().apps.get(id);
+    const d = this.catalog().descriptors.get(id);
     const row = d ? this.row(id) : undefined;
     if (!d || !row) throw new NotFoundException();
     if (!d.server) throw new ConflictException(`${d.name} has no server`);
@@ -410,11 +477,12 @@ export class MarketplaceService implements OnModuleInit {
 
   /**
    * Queue an install (or an update, or a reinstall: the same thing, a fresh
-   * build at the catalog's ref). Answers at once; the pane polls `list`.
+   * build at the catalog's ref) of a descriptor, and so of every app in it.
+   * Answers at once; the pane polls `list`.
    */
   install(id: string): Job {
     this.refuseSandboxed(id);
-    const d = this.catalog().apps.get(id);
+    const d = this.catalog().descriptors.get(id);
     if (!d) throw new NotFoundException(`No app "${id}" in the catalog`);
     const current = this.jobs.get(id);
     if (current && current.state !== 'failed') {
@@ -535,19 +603,33 @@ export class MarketplaceService implements OnModuleInit {
       return;
     }
 
-    // ── the entry: a real file inside the app's directory ──
-    const entry = posix.normalize(d.build.entry);
-    let servedBytes: number;
+    // ── the output, a real directory inside the app's directory, and every
+    // app's entry, a real file inside the output. One missing fails the
+    // whole install, and the build that is live stays live. ──
+    const output = d.build.output;
+    let realRoot: string;
+    let realOutput: string | null = null;
     try {
-      const realRoot = await fs.realpath(root);
-      const realEntry = await fs.realpath(join(root, entry));
-      if (!isInside(realRoot, realEntry)) throw new Error();
-      if (!(await fs.stat(realEntry)).isFile()) throw new Error();
-      servedBytes = await directorySize(dirname(realEntry), realRoot);
+      realRoot = await fs.realpath(root);
     } catch {
-      await fail(`The build did not produce ${d.build.entry}`);
+      await fail("The build removed the app's own directory");
       return;
     }
+    try {
+      const real = await fs.realpath(join(root, output));
+      if (isInside(realRoot, real) && (await fs.stat(real)).isDirectory()) {
+        realOutput = real;
+      }
+    } catch {
+      // Reported below, as the first entry it does not hold.
+    }
+    for (const a of d.apps) {
+      if (!realOutput || !(await isFileWithin(realOutput, a.entry))) {
+        await fail(`The build did not produce ${posix.join(output, a.entry)}`);
+        return;
+      }
+    }
+    const servedBytes = await directorySize(realOutput!, realRoot);
     if (servedBytes > MAX_SERVED_BYTES) {
       await fail(
         `The build output is ${Math.round(servedBytes / 1048576)} MB; the most an app may serve is ${MAX_SERVED_BYTES / 1048576} MB`,
@@ -559,19 +641,28 @@ export class MarketplaceService implements OnModuleInit {
     // A running server belongs to the old build: stop it before its
     // directory goes.
     await this.servers.stop(d.id);
+    // A version 1 row is written exactly as before brief 162: the entry, and
+    // no entries. A version 2 row names the output and each app's module.
+    const suite = d.schemaVersion === 2;
     this.dbs.db
       .prepare(
-        `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, installed_at)
-         VALUES (@id, @ref, @build_id, @root, @entry, @installed_at)
+        `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at)
+         VALUES (@id, @ref, @build_id, @root, @entry, @entries, @installed_at)
          ON CONFLICT (id) DO UPDATE SET ref = excluded.ref, build_id = excluded.build_id,
-           root = excluded.root, entry = excluded.entry, installed_at = excluded.installed_at`,
+           root = excluded.root, entry = excluded.entry, entries = excluded.entries,
+           installed_at = excluded.installed_at`,
       )
       .run({
         id: d.id,
         ref: d.source.ref,
         build_id: buildId,
         root: rootRel === '.' ? '' : rootRel,
-        entry,
+        entry: suite ? output : posix.join(output, d.apps[0].entry),
+        entries: suite
+          ? JSON.stringify(
+              Object.fromEntries(d.apps.map((a) => [a.id, a.entry])),
+            )
+          : null,
         installed_at: Date.now(),
       });
     this.jobs.delete(d.id);
@@ -726,6 +817,60 @@ export class MarketplaceService implements OnModuleInit {
 
 export function isAppId(id: string): boolean {
   return /^[a-z][a-z0-9-]{1,39}$/.test(id);
+}
+
+/**
+ * What an installed row says its live build holds: the served directory
+ * (relative to the row's `root`) and each app's module inside it. A row with
+ * no `entries` names one module, for the app whose id is the row's. Null when
+ * `entries` is damaged: every app of the row then lists as missing, and a
+ * reinstall writes it again.
+ */
+export function recordedBuild(
+  row: Pick<InstalledRow, 'id' | 'entry' | 'entries'>,
+): { output: string; entries: ReadonlyMap<string, string> } | null {
+  if (row.entries == null) {
+    return {
+      output: posix.dirname(row.entry),
+      entries: new Map([[row.id, posix.basename(row.entry)]]),
+    };
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(row.entries);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return null;
+  }
+  const entries = new Map<string, string>();
+  for (const [id, entry] of Object.entries(parsed)) {
+    if (
+      !isAppId(id) ||
+      typeof entry !== 'string' ||
+      !appEntrySchema.safeParse(entry).success
+    ) {
+      return null;
+    }
+    entries.set(id, posix.normalize(entry));
+  }
+  return { output: row.entry, entries };
+}
+
+/** A path inside a build as it goes in a URL: each segment encoded. */
+function urlPath(p: string): string {
+  return p.split('/').map(encodeURIComponent).join('/');
+}
+
+/** True when `rel`, inside the real directory `realDir`, is really a file there. */
+async function isFileWithin(realDir: string, rel: string): Promise<boolean> {
+  try {
+    const real = await fs.realpath(join(realDir, rel));
+    return isInside(realDir, real) && (await fs.stat(real)).isFile();
+  } catch {
+    return false;
+  }
 }
 
 /** git with nothing from the repository allowed to run during the fetch. */

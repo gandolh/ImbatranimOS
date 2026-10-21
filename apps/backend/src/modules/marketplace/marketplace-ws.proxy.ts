@@ -120,7 +120,8 @@ export class MarketplaceWsProxy
         return refuse('401 Unauthorized');
       }
       // Only a server the desktop started (through the session-checked
-      // lease route) has a port; that is also what makes `id` a catalog app.
+      // lease route) has a port; that is also what makes `id` a catalog
+      // descriptor's (brief 162: a suite's apps share its server).
       const port = this.servers.portFor(id);
       if (port === null) return refuse('503 Service Unavailable');
       if ((this.perApp.get(id) ?? 0) >= MAX_SOCKETS_PER_APP) {

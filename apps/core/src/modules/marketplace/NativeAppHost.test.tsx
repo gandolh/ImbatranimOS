@@ -43,8 +43,12 @@ let root: Root
 let caught: unknown[]
 
 function app(overrides: Partial<MarketplaceApp> = {}): MarketplaceApp {
+  // A one-app descriptor unless the test says otherwise: its id is the app's.
+  const id = overrides.id ?? 'orbits'
   return {
-    id: 'orbits',
+    id,
+    descriptorId: id,
+    descriptorName: overrides.name ?? 'Orbits',
     name: 'Orbits',
     description: '',
     meta: [],
@@ -52,6 +56,8 @@ function app(overrides: Partial<MarketplaceApp> = {}): MarketplaceApp {
     icon: 'rocket',
     window: { defaultSize: { w: 640, h: 420 }, minSize: { w: 320, h: 240 } },
     capabilities: ['notify'],
+    multiInstance: false,
+    opens: [],
     minSystemVersion: 2,
     ref: 'a'.repeat(40),
     runtime: 'native',
@@ -179,6 +185,28 @@ describe('NativeAppHost', () => {
 
     act(() => root.render(<></>))
     expect(del).toHaveBeenCalledWith('/marketplace/apps/pingpong/lease/lease-1')
+  })
+
+  it("leases a suite app's server by its descriptor's id, and keeps its own id for the app", async () => {
+    writeModule(RECORDING_MODULE)
+    mount(
+      app({
+        id: 'sim-alpha',
+        descriptorId: 'sim',
+        descriptorName: 'Sim',
+        name: 'Alpha',
+        type: 'service',
+        multiInstance: true,
+      })
+    )
+    await settle()
+    expect(post).toHaveBeenCalledWith('/marketplace/apps/sim/lease', {})
+    expect(seen().host?.appId).toBe('sim-alpha')
+    expect(seen().host?.server?.http).toMatch(/\/marketplace\/apps\/sim\/server$/)
+    expect(seen().host?.server?.ws).toMatch(/^file:.*\/marketplace\/apps\/sim\/server$/)
+
+    act(() => root.render(<></>))
+    expect(del).toHaveBeenCalledWith('/marketplace/apps/sim/lease/lease-1')
   })
 
   it('shows a module without mount() as a crash of its own window', async () => {

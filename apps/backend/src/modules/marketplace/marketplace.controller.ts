@@ -89,6 +89,11 @@ const DROPPED_RESPONSE_HEADERS = new Set([
  * owner's. The exception is the three `sandbox/:token/…` reads (brief 158):
  * a sandboxed frame's opaque origin sends no cookie, so they are `@Public()`
  * and the token, minted behind the session, is their authentication.
+ *
+ * The native routes' `:id` (install, uninstall, log, built files, lease,
+ * server) is a descriptor's id, not an app's (brief 162): a suite's apps
+ * share one build, one served directory and one server. For a version 1
+ * descriptor and a URL app the two ids are the same.
  */
 @Controller('marketplace')
 export class MarketplaceController {
@@ -240,8 +245,9 @@ export class MarketplaceController {
 
   /**
    * GET /api/marketplace/apps/:id/b/:buildId/<file> → a file of the live
-   * build's output directory. The build id is in the path, so a file never
-   * changes under its URL and may be cached for good.
+   * build's output directory, shared by every app of the descriptor. The
+   * build id is in the path, so a file never changes under its URL and may be
+   * cached for good.
    */
   @Get('apps/:id/b/:buildId/*path')
   async file(
@@ -262,10 +268,11 @@ export class MarketplaceController {
 
   /**
    * POST /api/marketplace/apps/:id/lease { lease? } → { lease, renewMs }:
-   * start the app's server if needed, wait until it answers, and hold it while
-   * the window is open. The window renews before `renewMs` and releases on
-   * close; a lease not renewed lapses, so a closed tab does not keep a server
-   * up.
+   * start the descriptor's server if needed, wait until it answers, and hold
+   * it while the window is open. Each window of any of its apps holds its
+   * own lease on the one server. The window renews before `renewMs` and
+   * releases on close; a lease not renewed lapses, so a closed tab does not
+   * keep a server up.
    */
   @Post('apps/:id/lease')
   async lease(@Param('id') id: string, @Body() dto: LeaseDto) {

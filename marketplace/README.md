@@ -1,7 +1,8 @@
 # The marketplace catalog
 
 Each `<id>.json` here describes one app that can be installed from
-**Settings → Marketplace**. Only an app described here runs natively. That is
+**Settings → Marketplace**, or several apps built together (see
+[Several apps from one build](#several-apps-from-one-build)). Only an app described here runs natively. That is
 the trust model: such an app runs in the desktop's own page with no sandbox,
 so the only code that gets there is code someone reviewed and pinned in this
 repository, at a commit. Any other app can still be installed from its own
@@ -66,8 +67,12 @@ container. Nothing is rebuilt into the OS image. Backups leave
   `intents`, `notify`, `shortcuts`, `schedule`. `window`, `appearance` and `on`
   are always there. Touching one not listed throws an error naming it.
 - **`icon`**: one of `package`, `gamepad-2`, `joystick`, `puzzle`, `swords`,
-  `sprout`, `castle`, `rocket`, `dices`, `ghost`, `trophy`, `map`. Anything
-  else shows `package`.
+  `sprout`, `castle`, `rocket`, `dices`, `ghost`, `trophy`, `map`, or for
+  office apps `file-text`, `file-pen`, `table`, `sheet`, `presentation`,
+  `pen-tool`, `drafting-compass`, `ruler`, `briefcase`. The desktop shows
+  `package` for any other name, and a test fails if a descriptor here uses
+  one, so add the icon to `ICONS` in
+  `apps/core/src/shared/registry/marketplace.tsx` first.
 - **`minSystemVersion`**: the `system` protocol version the app needs
   (`PROTOCOL_VERSION` in `packages/ui/src/system.ts`, 2 today).
 
@@ -122,6 +127,104 @@ The app reaches its server only through the desktop:
 
 Both require the desktop's session. The server never sees the desktop's cookie
 or `Authorization` header, and it cannot set cookies on the desktop's origin.
+
+## Several apps from one build
+
+A repository that builds more than one app, like an office suite, is one
+descriptor with `"schemaVersion": 2` and an `apps` array. It is cloned once
+and built once, and it is installed, updated and uninstalled as a whole:
+**Settings → Marketplace** shows it as one row with its apps listed under it.
+Each app still gets its own entry in Start, its own windows and its own place
+in Open With, and is enabled or disabled on its own in **Settings → Apps**.
+
+```json
+{
+  "schemaVersion": 2,
+  "id": "office",
+  "name": "Office",
+  "description": "Documents and spreadsheets.",
+  "source": {
+    "repo": "https://github.com/gandolh/imbatranim-office",
+    "ref": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "type": "static",
+  "runtime": "native",
+  "build": {
+    "install": ["npm", "ci"],
+    "command": ["npm", "run", "build:os"],
+    "output": "dist/os"
+  },
+  "apps": [
+    {
+      "id": "office-docs",
+      "name": "Docs",
+      "description": "Word documents.",
+      "meta": ["office"],
+      "entry": "docs/app.mjs",
+      "window": {
+        "defaultSize": { "w": 860, "h": 680 },
+        "minSize": { "w": 480, "h": 380 }
+      },
+      "icon": "file-text",
+      "opens": ["docx"],
+      "multiInstance": true,
+      "capabilities": ["fs", "intents", "shortcuts", "notify"]
+    },
+    {
+      "id": "office-sheets",
+      "name": "Sheets",
+      "description": "Spreadsheets.",
+      "meta": ["office"],
+      "entry": "sheets/app.mjs",
+      "icon": "sheet",
+      "opens": ["xlsx", "csv"],
+      "multiInstance": true,
+      "capabilities": ["fs", "intents", "notify"]
+    }
+  ],
+  "minSystemVersion": 2
+}
+```
+
+The top level holds what the apps share: `id`, `name`, `description`,
+`source`, `type`, `runtime`, `build`, `server` and `minSystemVersion`. These
+mean what they mean in version 1, except for `build`:
+
+- **`build.output`** takes the place of `build.entry`: the directory the build
+  writes every app into, inside the app's directory (`dist/os`; not the
+  top, and never inside `node_modules`). It is the only directory served, so
+  the apps can share the chunks a multi-entry build writes beside their
+  entries. It may hold at most 256 MB, as in version 1.
+- **`apps`**: 1 to 16 apps. `name`, `description`, `meta`, `window`, `icon`
+  and `capabilities` mean what they mean in version 1, for that app alone.
+  Three fields are new:
+  - **`entry`**: the app's ES module, a `.mjs` or `.js` path inside `output`
+    (`docs/app.mjs`). After the build every entry must exist. If one is
+    missing, the install fails and the build that was live stays live.
+  - **`opens`**: up to 40 file types the app offers to open: lowercase
+    extensions without the dot (`docx`), or the whole name of a file that
+    has none (`makefile`). When a built-in app claims the same type, the
+    built-in stays the default. The owner can choose this app in **Open
+    with…**, or make it the default in **Settings → Default apps**.
+  - **`multiInstance`**: `true` opens a new window on every launch, as an
+    editor wants. Leave it out for one window that a second launch brings to
+    the front, as a game wants.
+- **Ids**: an app id follows the descriptor id rule and must be unique across
+  the whole catalog, among app ids and descriptor ids alike. An app may reuse
+  its own descriptor's id. If a file reuses an id that another file already
+  took, the later file is skipped and listed under the pane's catalog
+  problems. A built-in app with the same id still wins, and the pane says so.
+- **A server** (`"type": "service"`) belongs to the descriptor. Its apps
+  share one server: it starts when the first of their windows opens and
+  stops after the last one closes, and `host.server` gives every app the
+  same URLs. It counts once against the limit of four.
+- **`host.appId`** in `mount` is the app's own id. `host.assetBase` is the
+  URL of the directory its entry is in, so a shared chunk sits one level up
+  from `docs/app.mjs`; importing it by a relative path is simplest.
+
+A version 1 descriptor is still valid, and is read as a version 2 one with a
+single app: the app's id is the descriptor's, `output` is the directory its
+entry is in, it opens nothing, and it has one window.
 
 ## Apps from a URL
 

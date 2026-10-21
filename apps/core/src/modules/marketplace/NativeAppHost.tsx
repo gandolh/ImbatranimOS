@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { PROTOCOL_VERSION, useSystem } from '@imbatranim/ui'
 import { api } from '../../lib/axios'
-import type { MarketplaceApp } from '../../shared/registry/marketplace'
+import { descriptorIdOf, type MarketplaceApp } from '../../shared/registry/marketplace'
 import { loadModule } from './loadModule'
 import { scopeHandle, type NativeAppModule, type NativeHostContext } from './scopeHandle'
 
@@ -16,7 +16,9 @@ function apiUrl(path: string): URL {
  *
  * A failure while loading or mounting is thrown during render, so the window's
  * error boundary (brief 47) shows it in this window only. A service app's
- * server is held with a lease for as long as the window is open.
+ * server is held with a lease for as long as the window is open. The lease
+ * and the server are the descriptor's (brief 162): every window of a suite's
+ * apps holds its own lease on the one server, by the descriptor's id.
  */
 export function NativeAppHost({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
   const system = useSystem()
@@ -34,11 +36,12 @@ export function NativeAppHost({ windowId, app }: { windowId: string; app: Market
     let mod: NativeAppModule | null = null
     let lease: string | null = null
     let renew: ReturnType<typeof setInterval> | undefined
+    const descriptor = descriptorIdOf(app)
 
     const releaseLease = () => {
       if (renew !== undefined) clearInterval(renew)
       if (lease)
-        void api.delete(`/marketplace/apps/${app.id}/lease/${lease}`).catch(() => undefined)
+        void api.delete(`/marketplace/apps/${descriptor}/lease/${lease}`).catch(() => undefined)
       lease = null
     }
 
@@ -55,15 +58,15 @@ export function NativeAppHost({ windowId, app }: { windowId: string; app: Market
         if (app.type === 'service') {
           setStatus('Starting its server…')
           const { data } = await api.post<{ lease: string; renewMs: number }>(
-            `/marketplace/apps/${app.id}/lease`,
+            `/marketplace/apps/${descriptor}/lease`,
             {}
           )
           lease = data.lease
           if (cancelled) return releaseLease()
           renew = setInterval(() => {
-            void api.post(`/marketplace/apps/${app.id}/lease`, { lease }).catch(() => undefined)
+            void api.post(`/marketplace/apps/${descriptor}/lease`, { lease }).catch(() => undefined)
           }, data.renewMs)
-          const http = apiUrl(`marketplace/apps/${app.id}/server`)
+          const http = apiUrl(`marketplace/apps/${descriptor}/server`)
           const ws = new URL(http)
           ws.protocol = http.protocol === 'https:' ? 'wss:' : 'ws:'
           server = { http: http.href, ws: ws.href }

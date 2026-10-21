@@ -67,6 +67,8 @@ const focusOther = () => act(() => useWindowStore.getState().focusWindow(otherWi
 function app(overrides: Partial<MarketplaceApp> = {}): MarketplaceApp {
   return {
     id: 'x-0123456789ab',
+    descriptorId: 'x-0123456789ab',
+    descriptorName: 'Hollow',
     name: 'Hollow',
     description: '',
     meta: [],
@@ -74,6 +76,8 @@ function app(overrides: Partial<MarketplaceApp> = {}): MarketplaceApp {
     icon: 'gamepad-2',
     window: { defaultSize: { w: 960, h: 640 }, minSize: { w: 640, h: 400 } },
     capabilities: ['notify'],
+    multiInstance: false,
+    opens: [],
     minSystemVersion: 2,
     ref: 'c'.repeat(40),
     runtime: 'sandboxed',

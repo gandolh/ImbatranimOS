@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 11;
+export const LEDGER_VERSION = 12;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -215,6 +215,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         toVersion: 11,
         name: 'marketplace-url-apps',
         run: () => this.stepMarketplaceUrlApps(),
+      },
+      {
+        toVersion: 12,
+        name: 'marketplace-entries',
+        run: () => this.stepMarketplaceEntries(),
       },
     ];
 
@@ -650,6 +655,21 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       } catch (err) {
         if (!isAlreadyApplied(err, DUPLICATE_COLUMN)) throw err;
       }
+    }
+  }
+
+  /**
+   * Step 12 — one descriptor, several apps (brief 162). `entries` is JSON,
+   * app id → that app's module inside the build's output, written when a
+   * version 2 descriptor's build succeeds. Every row before this step, and
+   * every version 1 or URL app's row after it, leaves it null and keeps using
+   * `entry`.
+   */
+  private stepMarketplaceEntries() {
+    try {
+      this.db.exec('ALTER TABLE marketplace_apps ADD COLUMN entries TEXT');
+    } catch (err) {
+      if (!isAlreadyApplied(err, DUPLICATE_COLUMN)) throw err;
     }
   }
 

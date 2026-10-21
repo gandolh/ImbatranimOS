@@ -28,6 +28,8 @@ const MOVED =
 function urlApp(): MarketplaceApp {
   return {
     id: ID,
+    descriptorId: ID,
+    descriptorName: 'Hollow',
     name: 'Hollow',
     description: 'A small town sim.',
     meta: [],
@@ -35,6 +37,8 @@ function urlApp(): MarketplaceApp {
     icon: 'gamepad-2',
     window: { defaultSize: { w: 960, h: 640 }, minSize: { w: 640, h: 400 } },
     capabilities: ['notify'],
+    multiInstance: false,
+    opens: [],
     minSystemVersion: 2,
     ref: OLD,
     runtime: 'sandboxed',
@@ -194,5 +198,140 @@ describe('MarketplaceSettings: problems', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
     expect(del).toHaveBeenCalledWith('/marketplace/apps/x-dead00000000')
+  })
+})
+
+/** An app of the two-app suite `office` (brief 162). */
+function officeApp(
+  id: string,
+  name: string,
+  installed: boolean,
+  extra: Partial<MarketplaceApp> = {}
+): MarketplaceApp {
+  return {
+    ...urlApp(),
+    id,
+    descriptorId: 'office',
+    descriptorName: 'Office',
+    name,
+    description: `${name}, from the suite.`,
+    icon: 'file-text',
+    runtime: 'native',
+    source: undefined,
+    ref: OLD,
+    installed: installed
+      ? {
+          ref: OLD,
+          buildId: 'b1',
+          installedAt: 0,
+          entryPath: `marketplace/apps/office/b/b1/${id}/app.mjs`,
+          missing: false,
+        }
+      : null,
+    ...extra,
+  }
+}
+
+describe('MarketplaceSettings: a descriptor with several apps (brief 162)', () => {
+  const suite = (installed: boolean) => [
+    officeApp('office-docs', 'Docs', installed, { multiInstance: true }),
+    officeApp('office-sheets', 'Sheets', installed),
+  ]
+
+  async function renderSuite(apps: MarketplaceApp[]) {
+    get.mockResolvedValue({ data: { apps, problems: [] } })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={client}>
+          <MarketplaceSettings />
+        </QueryClientProvider>
+      )
+    })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  const buttons = (label: string) =>
+    [...container.querySelectorAll('button')].filter((b) => b.textContent === label)
+
+  it('shows the suite as one row, with its apps under its name', async () => {
+    await renderSuite(suite(true))
+    expect(container.textContent).toContain('Office')
+    expect(container.textContent).toContain('2 apps')
+    const list = container.querySelector('ul[aria-label="Office\'s apps"]')!
+    expect([...list.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
+      'DocsDocs, from the suite.Open',
+      'SheetsSheets, from the suite.Open',
+    ])
+    expect(buttons('Uninstall')).toHaveLength(1)
+    expect(buttons('Log')).toHaveLength(1)
+    expect(container.querySelector('button[aria-label="Open Docs"]')).not.toBeNull()
+    expect(container.querySelector('button[aria-label="Open Sheets"]')).not.toBeNull()
+  })
+
+  it('installs the descriptor, once', async () => {
+    post.mockResolvedValue({ data: { state: 'queued' } })
+    await renderSuite(suite(false))
+    expect(buttons('Install')).toHaveLength(1)
+    expect(buttons('Open')).toHaveLength(0)
+    await act(async () => buttons('Install')[0].click())
+    expect(post).toHaveBeenCalledTimes(1)
+    expect(post).toHaveBeenCalledWith('/marketplace/apps/office/install')
+  })
+
+  it("reads the descriptor's log", async () => {
+    await renderSuite(suite(true))
+    get.mockImplementation((url: string) =>
+      Promise.resolve(
+        url === '/marketplace'
+          ? { data: { apps: suite(true), problems: [] } }
+          : { data: 'built 3 files' }
+      )
+    )
+    await act(async () => buttons('Log')[0].click())
+    expect(get).toHaveBeenCalledWith('/marketplace/apps/office/log', { responseType: 'text' })
+    expect(container.textContent).toContain('built 3 files')
+  })
+
+  it("uninstalls the descriptor and closes every one of its apps' windows", async () => {
+    await renderSuite(suite(true))
+    const { useWindowStore } = await import('../../shared/store/windowStore')
+    const before = useWindowStore.getState()
+    const closed: string[] = []
+    useWindowStore.setState({
+      windows: [
+        { id: 'w1', appId: 'office-docs' },
+        { id: 'w2', appId: 'office-docs' },
+        { id: 'w3', appId: 'office-sheets' },
+        { id: 'w4', appId: 'notepad' },
+      ] as never,
+      closeWindow: (id: string) => closed.push(id),
+    })
+    await act(async () => buttons('Uninstall')[0].click())
+    expect(document.body.textContent).toContain('Its apps (Docs, Sheets) go with it')
+    const confirmButton = [...document.querySelectorAll('button')]
+      .filter((b) => b.textContent === 'Uninstall')
+      .find((b) => b.closest('[role="dialog"], [role="alertdialog"]'))
+    await act(async () => confirmButton!.click())
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(del).toHaveBeenCalledWith('/marketplace/apps/office')
+    expect(closed).toEqual(['w1', 'w2', 'w3'])
+    useWindowStore.setState({ windows: before.windows, closeWindow: before.closeWindow })
+  })
+
+  it('says when a built-in app has one of its apps’ ids', async () => {
+    await renderSuite([
+      officeApp('settings', 'Settings', true),
+      officeApp('office-sheets', 'Sheets', true),
+    ])
+    expect(container.textContent).toContain(
+      'A built-in app already has the id settings, so the built-in opens instead.'
+    )
+    expect(container.querySelector('button[aria-label="Open Settings"]')).toBeNull()
+    expect(container.querySelector('button[aria-label="Open Sheets"]')).not.toBeNull()
   })
 })

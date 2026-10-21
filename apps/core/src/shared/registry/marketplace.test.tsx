@@ -1,16 +1,23 @@
 // @vitest-environment jsdom
 import { act, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
-import { describe, expect, it, vi } from 'vitest'
-import { Gamepad2, Package } from 'lucide-react'
+import { readdirSync, readFileSync } from 'fs'
+import { join } from 'path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { FileText, Gamepad2, Package } from 'lucide-react'
 import { APP_REGISTRY } from './registry'
 import {
+  MARKETPLACE_ICON_NAMES,
+  descriptorIdOf,
   isMarketplaceApp,
   loadMarketplace,
   marketplaceIcon,
   syncMarketplaceApps,
+  useBuiltInClashes,
   type MarketplaceApp,
 } from './marketplace'
+import { candidatesFor, resolveOpener, useAssociationStore } from './associations'
+import { useAddonStore } from '../store/addonStore'
 
 const get = vi.fn()
 vi.mock('../../lib/axios', () => ({
@@ -33,6 +40,8 @@ function app(
 ) {
   return {
     id,
+    descriptorId: id,
+    descriptorName: id,
     name: id,
     description: '',
     meta: [],
@@ -40,6 +49,8 @@ function app(
     icon: 'gamepad-2',
     window: { defaultSize: { w: 800, h: 600 }, minSize: { w: 400, h: 300 } },
     capabilities: [],
+    multiInstance: false,
+    opens: [],
     minSystemVersion: 2,
     ref: 'a'.repeat(40),
     runtime: 'native',
@@ -209,5 +220,139 @@ describe('marketplaceIcon', () => {
     expect(node.querySelector('svg')).not.toBeNull()
     act(() => root.unmount())
     syncMarketplaceApps([])
+  })
+})
+
+/** An app of a two-app suite (brief 162), installed. */
+function suiteApp(id: string, extra: Partial<MarketplaceApp> = {}): MarketplaceApp {
+  return app(
+    id,
+    { entryPath: `marketplace/apps/office/b/b1/${id}/app.mjs` },
+    { descriptorId: 'office', descriptorName: 'Office', ...extra }
+  )
+}
+
+describe('several apps from one descriptor (brief 162)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useAssociationStore.setState({ overrides: {} })
+    useAddonStore.setState({ disabled: [] })
+    syncMarketplaceApps([])
+  })
+
+  it('adds every installed app of a suite, each with its own window rule', () => {
+    syncMarketplaceApps([
+      suiteApp('office-docs', { multiInstance: true }),
+      suiteApp('office-sheets'),
+    ])
+    expect(isMarketplaceApp('office-docs')).toBe(true)
+    expect(isMarketplaceApp('office-sheets')).toBe(true)
+    expect(APP_REGISTRY.find((a) => a.id === 'office-docs')?.multiInstance).toBe(true)
+    expect(APP_REGISTRY.find((a) => a.id === 'office-sheets')?.multiInstance).toBe(false)
+    syncMarketplaceApps([])
+  })
+
+  it('keeps one window for a listing that says nothing about it', () => {
+    const legacy: Partial<MarketplaceApp> = app('orbits', {})
+    delete legacy.multiInstance
+    delete legacy.opens
+    delete legacy.descriptorId
+    syncMarketplaceApps([legacy as MarketplaceApp])
+    const config = APP_REGISTRY.find((a) => a.id === 'orbits')!
+    expect(config.multiInstance).toBe(false)
+    expect(config.opens).toBeUndefined()
+    expect(descriptorIdOf(legacy as MarketplaceApp)).toBe('orbits')
+    syncMarketplaceApps([])
+  })
+
+  it('reads the routes’ id from descriptorId', () => {
+    expect(descriptorIdOf(suiteApp('office-docs'))).toBe('office')
+    expect(descriptorIdOf(app('hollow', {}))).toBe('hollow')
+  })
+
+  it('offers a marketplace app in Open With after the built-in that claims the type', () => {
+    syncMarketplaceApps([suiteApp('office-docs', { opens: ['docx'] })])
+    expect(APP_REGISTRY.find((a) => a.id === 'office-docs')?.opens).toEqual(['docx'])
+    const ids = candidatesFor('letter.docx').map((c) => c.appId)
+    expect(ids).toContain('docs')
+    expect(ids.indexOf('office-docs')).toBeGreaterThan(ids.indexOf('docs'))
+    // The built-in stays the default, until the owner picks the other.
+    expect(resolveOpener('letter.docx').appId).toBe('docs')
+    useAssociationStore.getState().setDefault('docx', 'office-docs')
+    expect(resolveOpener('letter.docx')).toEqual({ appId: 'office-docs', reason: 'override' })
+    syncMarketplaceApps([])
+  })
+
+  it('drops a disabled marketplace app out of Open With, and only that one', () => {
+    syncMarketplaceApps([
+      suiteApp('office-docs', { opens: ['docx'] }),
+      suiteApp('office-writer', { opens: ['docx'] }),
+    ])
+    useAddonStore.setState({ disabled: ['office-docs'] })
+    const ids = candidatesFor('letter.docx').map((c) => c.appId)
+    expect(ids).not.toContain('office-docs')
+    expect(ids).toContain('office-writer')
+    syncMarketplaceApps([])
+  })
+
+  it('gives an app that opens nothing no opens at all, so "Show all" leaves it out', () => {
+    syncMarketplaceApps([suiteApp('office-sheets', { opens: [] })])
+    expect(APP_REGISTRY.find((a) => a.id === 'office-sheets')?.opens).toBeUndefined()
+    syncMarketplaceApps([])
+  })
+
+  it('notes the listed ids a built-in app already has, installed or not', () => {
+    const seen: string[][] = []
+    function Probe() {
+      seen.push(useBuiltInClashes())
+      return null
+    }
+    const node = document.createElement('div')
+    const root = createRoot(node)
+    act(() => root.render(<Probe />))
+    act(() => syncMarketplaceApps([suiteApp('settings'), app('docs', null), suiteApp('ok')]))
+    expect(seen.at(-1)).toEqual(['settings', 'docs'])
+    expect(isMarketplaceApp('settings')).toBe(false)
+    expect(isMarketplaceApp('ok')).toBe(true)
+    act(() => syncMarketplaceApps([]))
+    expect(seen.at(-1)).toEqual([])
+    act(() => root.unmount())
+  })
+})
+
+describe('the icons committed descriptors name (brief 162)', () => {
+  // vitest runs from apps/core.
+  const catalog = join(process.cwd(), '..', '..', 'marketplace')
+  const files = readdirSync(catalog).filter((f) => f.endsWith('.json'))
+
+  it('reads the committed catalog', () => {
+    expect(files).toContain('hollow.json')
+  })
+
+  it.each(files)('%s names only icons the desktop has', (file) => {
+    const d = JSON.parse(readFileSync(join(catalog, file), 'utf8')) as {
+      icon?: string
+      apps?: { icon?: string }[]
+    }
+    const icons = d.apps ? d.apps.map((a) => a.icon ?? 'package') : [d.icon ?? 'package']
+    for (const icon of icons) expect(MARKETPLACE_ICON_NAMES).toContain(icon)
+  })
+
+  it('has the office set', () => {
+    for (const name of [
+      'file-text',
+      'file-pen',
+      'table',
+      'sheet',
+      'presentation',
+      'pen-tool',
+      'drafting-compass',
+      'ruler',
+      'briefcase',
+    ]) {
+      expect(MARKETPLACE_ICON_NAMES).toContain(name)
+      expect(marketplaceIcon(name)).not.toBe(Package)
+    }
+    expect(marketplaceIcon('file-text')).toBe(FileText)
   })
 })

@@ -23,7 +23,7 @@ have that:
 
 This brief adds a second way to run a catalog app, beside `mount`: a **kit
 app**, a React component the desktop renders in its own tree with its own React
-and kit. Depends on [162](162-one-catalog-entry-several-apps.md) (the v2
+and kit. Depends on [162](../done/162-one-catalog-entry-several-apps.md) (the v2
 descriptor this adds two fields to).
 
 ## Decisions (build calls, made while writing this brief)

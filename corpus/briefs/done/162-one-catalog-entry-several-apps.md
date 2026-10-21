@@ -213,3 +213,31 @@ app at a file that was never built.
 - `packages/ui/src/system.ts` (no protocol change here)
 - The sandboxed runtime (`SandboxedAppHost.tsx`, `sandboxBridge.ts`,
   `keyboardGuard.ts`), beyond the three new listing fields
+
+## Outcome (2026-10-21)
+
+**Built in `9394ea6` (version 1.21.0), walked in Chrome in the dev container.**
+A local two-app fixture suite (`suite-alpha`, `suite-beta`) installed in one
+build directory with one log and one row; Alpha (`multiInstance: true`) opened
+three windows while Beta focused its one; Open With on a `.md` listed
+"Markdown Editor | Alpha" and opened the file in Alpha; disabling Alpha hid only
+Alpha; Uninstall removed both apps and the build directory; a build that left
+`beta/app.mjs` out failed the job and kept the previous build live. Hollow
+installed from GitHub and ran in one window as before. Gates: typecheck, lint,
+and 31/31 test tasks (backend 781 unit + 177 e2e, core 472).
+
+**Build calls beyond the brief** are in
+[decisions-marketplace-suites.md](../../wiki/decisions-marketplace-suites.md):
+a v2 row keeps its output directory in `entry` (contract D's one new column,
+`entries`, marks the shape); the listing trusts the recorded entries; a fourth
+listing field, `descriptorName`, heads a suite's row in the pane; every entry
+must resolve inside the output's real path. The dev profile passes
+`MARKETPLACE_ALLOW_LOCAL_REPOS` through (off by default), and a `file://`
+repository is copied into the container with `docker cp`
+(`apps/backend/test/fixtures/suite-repo.ts` makes the fixture). The pane's rows
+also gained `min-w-0`, because a long job reason pushed them wider than the
+window (it did on main too).
+
+`decisions-marketplace.md` went over the 200-line cap, so the suite calls moved
+to their own page rather than cutting brief 158's section, whose anchor other
+pages link to.

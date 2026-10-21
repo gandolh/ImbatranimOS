@@ -1,6 +1,6 @@
 ---
-summary: The app marketplace's locked calls. Brief 120 (2026-10-06) — the kill-list revisits for the in-repo catalog (a runtime installer, a supervisor fenced to marketplace servers, native code only at pinned commits) and its build calls (commit ids, argv, per-build dirs, the allowlisted build env, capabilities as a fence). Brief 158 (2026-10-07) — apps from any GitHub URL, unreviewed, so prebuilt only, an opaque-origin sandboxed frame on the same port, per-window token URLs, notify as the only capability, and consent on every install and update.
-updated: 2026-10-07
+summary: The app marketplace's locked calls. Brief 120 (2026-10-06) — the kill-list revisits for the in-repo catalog (a runtime installer, a supervisor fenced to marketplace servers, native code only at pinned commits) and its build calls (commit ids, argv, per-build dirs, the allowlisted build env, capabilities as a fence). Brief 158 (2026-10-07) — apps from any GitHub URL, unreviewed, so prebuilt only, an opaque-origin sandboxed frame on the same port, per-window token URLs, notify as the only capability, and consent on every install and update. Suites and kit apps (briefs 162 and 163) are in decisions-marketplace-suites.md.
+updated: 2026-10-21
 ---
 
 # Decisions: the app marketplace (brief 120, 2026-10-06)
@@ -199,3 +199,4 @@ every call below follows from it.
 - Firefox is not walked; Chrome is. Firefox's SameSite rules for an opaque
   frame may differ, and CORS plus the Origin check are the backstop there.
 
+Suites and kit apps (briefs 162, 163): [decisions-marketplace-suites.md](decisions-marketplace-suites.md).

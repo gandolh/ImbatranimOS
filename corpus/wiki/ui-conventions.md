@@ -1,11 +1,11 @@
 ---
-summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for brief 102 (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for briefs 74-75: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
-updated: 2026-08-23
+summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-10-21 for brief 163: a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for brief 102 (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for briefs 74-75: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
+updated: 2026-10-21
 ---
 
 # ImbatranimOS UI conventions — the house style, as rules
 
-Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic layout, B&W tokens + ONE accent (crimson), dark-first, zero border radius. Implement inside it.
+Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic layout, B&W tokens + ONE accent (crimson), dark-first, zero border radius. Implement inside it. **A marketplace kit app follows every rule here exactly as an add-on does** (brief 163): it renders in the desktop's tree with the shared kit; only its imports are read from `globalThis.__imbatranimShared` and its utilities come from its own stylesheet, compiled against `packages/ui/src/theme.css` ([marketplace/README.md](../../marketplace/README.md#kit-apps)).
 
 **Copy `apps/add-ons/clock`** — the best-behaved app: pure SDK kit, correct tokens, honest `minSize`, `notify()` for async events. `file-manager` is the richest but violates §8. `sticky-notes` **was** the inherited counter-example; brief 74 (2026-08-05) rewrote it to the rules below, so it is now safe to read — and it is the only worked example of a **desktop layer** (§47).
 
@@ -29,14 +29,14 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 
 ## 2. Tokens and colour
 
-5. Only semantic token classes. Real names, `apps/core/src/index.css:15-58` — surfaces `surface`, `surface-dim`, `surface-bright`,
+5. Only semantic token classes. Real names, the `@theme static` block in `packages/ui/src/theme.css` (in `apps/core/src/index.css` until brief 163) — surfaces `surface`, `surface-dim`, `surface-bright`,
    `surface-container-lowest`/`-low`/`surface-container`/`-high`/`-highest`; text `on-surface` (primary), `on-surface-variant` (muted), `inverse-surface`/`inverse-on-surface`
    (tooltips); borders `outline-variant` (default hairline) and `outline` (stronger); accent `primary` + `on-primary`, `primary-container` + `on-primary-container`; `error`,
    `on-error`, `error-container`, `on-error-container`; and `secondary` / `on-secondary` / `secondary-container` / `on-secondary-container`, which are **aliases** of
-   on-surface-variant / surface / surface-container-high / on-surface (`index.css:45-48`) — real classes, but prefer the surface names, because `text-secondary` reads like a
+   on-surface-variant / surface / surface-container-high / on-surface (`theme.css`) — real classes, but prefer the surface names, because `text-secondary` reads like a
    second accent and there isn't one. As utilities: `bg-surface-container-low`, `text-on-surface-variant`, `border-outline-variant`, `bg-primary text-on-primary`.
 6. **The accent is a runtime CSS var, never a literal.** `--accent`/`--accent-on` are stamped on `<html>` by `applyAppearance()`
-   (`apps/core/src/shared/store/appearanceStore.ts:53-55`), and `--color-primary` maps to `var(--accent)` (`index.css:37`). So `bg-primary` tracks the user's accent choice; a
+   (`apps/core/src/shared/store/appearanceStore.ts:53-55`), and `--color-primary` maps to `var(--accent)` (`theme.css`). So `bg-primary` tracks the user's accent choice; a
    hex does not. Four presets (`appearanceStore.ts:20-25`), crimson default (:27).
 7. **Dark is the shipped default** (`appearanceStore.ts:28`, `index.css:79-100`). Light is the same token names swapped under `:root[data-theme='light']` (`index.css:103-123`)
    — tokens alone buy you light mode. Never add a `dark:` variant; never test only in dark.
@@ -50,8 +50,8 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 
 ## 3. Typography and spacing
 
-11. `font-ui` = Space Grotesk (chrome, labels, numbers); `font-content` = Inter (user-authored prose); `font-mono` for code panes (`MarkdownEditor.tsx:179`). Declared at
-    `index.css:61-62`.
+11. `font-ui` = Space Grotesk (chrome, labels, numbers); `font-content` = Inter (user-authored prose); `font-mono` for code panes (`MarkdownEditor.tsx:179`). Declared in
+    `theme.css`.
 12. Root is **13px** (`index.css:141`); the scale is explicit arbitrary sizes — `text-[11px]` labels/meta/status bars/toolbars/tabs · `text-[12px]` buttons/list rows/menu
     items/dialog titles · `text-[13px]` body, inputs, checkbox labels · `text-[10px]`/`text-[9px]` shell chrome only (`taskbar/StartMenu.tsx:103,132`). Larger type only for a
     real display value: `text-3xl` calculator readout (`calculator/src/BasicPad.tsx:106`), `text-[36px]` timer (`clock/src/tabs/Timer.tsx:36`), both with `tabular-nums`.

@@ -184,3 +184,33 @@ outside React (a worker, a socket) it stops in an effect cleanup.
   `PROTOCOL_VERSION` stays 2.
 - `apps/add-ons/**`
 - `apps/backend/src/security-headers.ts`
+
+## Outcome (2026-10-21)
+
+**Built in `5f3f5aa` (version 1.23.0), walked in Chrome in the dev container**
+with a fixture suite of two kit apps (Kit Notes, Kit Hello) sharing one
+stylesheet, installed through a v2 `file://` descriptor. Both rendered with the
+kit's buttons, Open dialog, ConfirmDialog and conflict dialog; the accent
+followed Settings (Crimson to Cobalt, through `--color-heritage`, a token the
+desktop's CSS had not emitted before); Kit Notes read a file and saved it with
+`saveOverRead`, and an external edit raised the conflict dialog. With
+`sharedKit: 99` reinstalled, both windows refused with "Kit Notes was built for
+shared kit 99, and this desktop has shared kit 1" and the pane said "Needs an
+update"; three windows of one build linked one stylesheet, and uninstall left
+none. Hollow reinstalled and ran in the mount host. Gates: typecheck, lint, and
+31/31 test tasks (backend 805 unit + 183 e2e, core 497, ui 36).
+
+**The built desktop CSS** gained 18 theme variables (tokens of the moved block
+no desktop class used, now emitted by `@theme static`); no value changed and
+nothing outside the theme layer changed. `theme.test.ts` pins the 43 tokens.
+The build's styles are recorded inside the existing `entries` column (a kit
+app's value is `{entry, styles, sharedKit}`), so no database step was needed.
+The other build calls are in
+[decisions-marketplace-suites.md](../../wiki/decisions-marketplace-suites.md).
+
+**Known, not fixed:** a version refusal goes through `AppErrorBoundary`, as the
+protocol refusal does, so it also raises a "crashed" toast and a client-error
+log, with the sentence under "Show details". The pane offers no reinstall when
+only `sharedKit` changed at the same ref. The walk ran on the Vite dev server,
+which sends no CSP header; the suite's own first walk repeats it under the
+production image's CSP.

@@ -1,4 +1,29 @@
-# Brief 164 — Retiring a built-in office app
+# Brief 164 — Retiring a built-in office app: Docs, and the Office catalog entry
+
+## Scope (2026-10-22)
+
+This brief is now **the Docs run only**, plus the catalog entry every run
+needs. It builds the migration (step 2) that the later runs reuse:
+[165](165-retire-built-in-slides.md) (Slides),
+[166](166-retire-built-in-sheets.md) (Sheets) and
+[167](167-retire-pdf-viewer-and-norpdf.md) (PDF Viewer and norPDF), each
+waiting on its imbatranim-office walk brief. The table and the steps below stay
+as the reference for all four.
+
+**Docs is ready.** imbatranim-office brief 02 walked its parity checklist in
+the OS, and the one failing line ("three windows", which the built-in failed
+too) is fixed in the suite (`1ca83c0`). While both apps are installed,
+keystrokes typed in the built-in land in the suite's document (SuperDoc's
+window-level input bridge; the suite's windows are marked, the built-in's are
+not), so retiring the built-in also ends that.
+
+**Step 0, the catalog entry.** Commit `marketplace/imbatranim-office.json`: the
+office repo's `os/descriptor.template.json` with `source.ref` set to the full
+40-hex office commit that was walked (its `main` at the time; check
+`git log` there). Its five apps list beside the built-ins, which stay the
+default for their types until their own runs. The owner pushes the office repo
+before this one.
+
 
 ## Context
 
@@ -81,6 +106,7 @@ chose others, use those and correct this table in the commit.
 
 ## Files you OWN
 
+- `marketplace/imbatranim-office.json` (new: the Office catalog entry)
 - `apps/add-ons/{docs,slides,sheets,pdf-viewer,norpdf}/**` (to delete, one per run)
 - `packages/pdfcore-engine/**` (PDF run only)
 - `apps/core/src/manifest.ts`, `apps/core/src/shared/registry/associations.ts`

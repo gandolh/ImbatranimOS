@@ -1,6 +1,6 @@
 ---
-summary: Current snapshot (2026-10-21) — identity is the machine's own single-owner sign-in everywhere, the estate included (brief 157 dropped Ward); briefs to 160 done (2026-10-19; the docs site is on Docusaurus), 161 superseded, 162–163 done and 164 open (2026-10-21; the office apps move to the imbatranim-office repo), 15 closed as v1.0.0 (2026-10-07), including 50 (the Browser) and 120 (the app marketplace, its Hollow gate met 2026-10-07); 158 installs unreviewed apps from a GitHub URL into a sandboxed frame; a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
-updated: 2026-10-21
+summary: Current snapshot (2026-10-21) — identity is the machine's own single-owner sign-in everywhere, the estate included (brief 157 dropped Ward); briefs to 160 done (2026-10-19; the docs site is on Docusaurus), 161 superseded, 162–163 done, 164–167 open (2026-10-22: one retirement brief per office app; the office apps move to the imbatranim-office repo), 15 closed as v1.0.0 (2026-10-07), including 50 (the Browser) and 120 (the app marketplace, its Hollow gate met 2026-10-07); 158 installs unreviewed apps from a GitHub URL into a sandboxed frame; a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
+updated: 2026-10-22
 ---
 
 # Status — 2026-10-21
@@ -96,7 +96,10 @@ notepad StrictMode intent bug.
 | 161 | [the-craft-suite-in-sandboxed-windows](../briefs/superseded/161-the-craft-suite-in-sandboxed-windows.md) | **superseded** (2026-10-21): the owner turned down the crafts as sandboxed canvases; the office apps move to the imbatranim-office repo in TypeScript ([decisions-office-suite.md](decisions-office-suite.md)) |
 | 162 | [one-catalog-entry-several-apps](../briefs/done/162-one-catalog-entry-several-apps.md) | **done** (2026-10-21): descriptor schema 2 installs several apps from one build (one row, log, served directory and server per descriptor); marketplace apps get `multiInstance`, `opens` (Open With, after the built-in claimant) and an office icon set; the listing trusts the entries the build recorded; Hollow unchanged; walked in Chrome with a two-app fixture |
 | 163 | [the-desktop-shares-its-kit](../briefs/done/163-the-desktop-shares-its-kit.md) | **done** (2026-10-21): kit apps — a catalog module exports `App`, rendered in the desktop's tree with React, React DOM and `@imbatranim/ui` lent on a frozen global; `SHARED_KIT_VERSION` 1, a mismatch refuses with both versions named; per-build stylesheets; theme tokens moved to `packages/ui/src/theme.css` (`@theme static`); CSP unchanged; walked with a two-app fixture |
-| 164 | [retiring-a-built-in-office-app](../briefs/todo/164-retiring-a-built-in-office-app.md) | **todo** (filed 2026-10-21): run once per app when its imbatranim-office version reaches parity; moves the user's choices to the new id, removes the add-on, says where office files open when the suite is absent |
+| 164 | [retiring-a-built-in-office-app](../briefs/todo/164-retiring-a-built-in-office-app.md) | **todo**, ready (2026-10-22): the Docs run, which builds the migration of the owner's choices to the new id, plus the Office catalog entry pinned to the walked imbatranim-office commit |
+| 165 | [retire-built-in-slides](../briefs/todo/165-retire-built-in-slides.md) | **todo** (filed 2026-10-22): after imbatranim-office brief 07 |
+| 166 | [retire-built-in-sheets](../briefs/todo/166-retire-built-in-sheets.md) | **todo** (filed 2026-10-22): after imbatranim-office brief 08 |
+| 167 | [retire-pdf-viewer-and-norpdf](../briefs/todo/167-retire-pdf-viewer-and-norpdf.md) | **todo** (filed 2026-10-22): after imbatranim-office brief 09; removes `packages/pdfcore-engine` too |
 | — | the server ISO | **deferred** by the owner (2026-10-04): work stays in the Docker container for now. When written: a plain Alpine image with the server pre-installed, reached from the LAN over HTTPS; replaces the kiosk ([brief 18](../briefs/superseded/18-alpine-kiosk-iso.md), superseded) |
 
 ## Owed by the owner

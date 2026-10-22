@@ -1,6 +1,6 @@
 ---
 summary: Decisions since imbatranimOS joined the Ward estate (2026-09-06) — identity (Ward from 2026-09-06, then the machine's own sign-in everywhere from brief 157, 2026-10-07, with the shared origin an accepted risk), the ISO as a LAN server OS instead of a kiosk (deferred; work stays in Docker), the owner's 2026-10-04 answers on briefs 15, 50, 120, 144/145/155 and old backups, brief 50's build calls (proxy on its own origin, the strict egress stance, the encrypted profile). Brief 120's marketplace calls are in decisions-marketplace.md.
-updated: 2026-10-07
+updated: 2026-10-22
 ---
 
 # Decisions of the estate era
@@ -108,7 +108,7 @@ Asked directly while clearing the open questions.
   identity path, and Ward's module, variables and registration go
   ([brief 157](../briefs/done/157-drop-ward-own-sign-in.md), built
   2026-10-07). Rejected: a subdomain for the desktop, and a fresh
-  confirmation before the terminal.
+  confirmation before the terminal (the subdomain revisited 2026-10-21, below).
   - The deploy passes `SETUP_TOKEN` as a required secret, so the public
     machine cannot be claimed by whoever reaches it first.
   - An old environment that still sets `WARD_*` boots and logs one line
@@ -123,6 +123,11 @@ Asked directly while clearing the open questions.
   still reaches the terminal. Accepted by the owner on 2026-10-06 because
   every app on the origin is the owner's own code under `script-src 'self'`.
   Revisit if a third-party app joins the estate.
+  - **Revisited 2026-10-21, owner:** the desktop moves to `imbatranim.<domain>`
+    (`../vps-deploy` brief 14, built 2026-10-22, live once deployed), where
+    `imb_session` is host-only and the apex apps are cross-origin, so this
+    risk closes. `/imbatranim-os` redirects there; the docs stay put. Nothing
+    here changed. The Browser's "no subdomain" (LAN installs) stands.
 - **No registry image.** Build-from-source is the final distribution answer,
   not a stance waiting for v1. Rejected: pushing an image to GHCR or Docker
   Hub at v1.

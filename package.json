@@ -1,6 +1,6 @@
 {
   "name": "imbatranimos",
-  "version": "1.26.0",
+  "version": "1.27.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "packageManager": "npm@11.19.1",
@@ -42,5 +42,8 @@
     "sharp": true,
     "unrs-resolver": true,
     "vue-demi": true
+  },
+  "overrides": {
+    "pdfjs-dist": "^6.4.299"
   }
 }

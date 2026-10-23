@@ -29,8 +29,11 @@ import { claimTabSession, saveTabSession } from './lib/tabSession'
 
 // Types are derived from the OnMount callback so we never deep-import Monaco's
 // own type modules here — Monaco stays a runtime-only, lazily-loaded dependency.
+// The namespace is the exception: @monaco-editor/react types it through a deep
+// path Monaco 0.56+ no longer exports, which leaves it `any`, so it comes from
+// a type-only reference instead (erased at compile, like the rest).
 type StandaloneEditor = Parameters<OnMount>[0]
-type MonacoInstance = Parameters<OnMount>[1]
+type MonacoInstance = typeof import('monaco-editor')
 type TextModel = NonNullable<ReturnType<StandaloneEditor['getModel']>>
 type ViewState = ReturnType<StandaloneEditor['saveViewState']>
 type Disposable = ReturnType<TextModel['onDidChangeContent']>

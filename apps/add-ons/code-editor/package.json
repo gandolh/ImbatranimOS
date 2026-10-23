@@ -43,6 +43,6 @@
     "@types/react-dom": "^19.2.3",
     "jsdom": "^27.4.0",
     "react-dom": "^19.2.5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.12"
   }
 }

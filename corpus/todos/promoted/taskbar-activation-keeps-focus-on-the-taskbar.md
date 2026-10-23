@@ -1,9 +1,11 @@
 ---
 title: Activating a window from the taskbar leaves focus on the taskbar
 created: 2026-10-22
-status: open
+status: promoted
 tags: [core, shell, keyboard]
 ---
+
+<!-- Promoted 2026-10-23 → brief 174. -->
 
 # Activating a window from the taskbar leaves focus on the taskbar
 

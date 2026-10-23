@@ -1,9 +1,11 @@
 ---
 title: Kit app version refusal reads as a crash; no reinstall at the same ref
 created: 2026-10-22
-status: open
+status: promoted
 tags: [marketplace, kit-apps]
 ---
+
+<!-- Promoted 2026-10-23: the refusal panel → brief 175, the same-ref rebuild → brief 176. -->
 
 # Kit app version refusal reads as a crash; no reinstall at the same ref
 

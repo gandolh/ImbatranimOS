@@ -4379,7 +4379,7 @@ A catalog app can now export a React component, `App`, that the desktop renders 
 
 ## [2026-10-22] todo | Brief 164 split into one retirement per app; two todos from the suite's walks
 
-imbatranim-office has all five apps built; Docs and CAD were walked in this OS, and the Slides, Sheets and PDF walks are that repo's briefs 07–09. Brief 164 is now the Docs run, which builds the migration and commits the Office catalog entry (`marketplace/imbatranim-office.json`, the suite's template pinned to the walked commit); [165](briefs/todo/165-retire-built-in-slides.md), [166](briefs/todo/166-retire-built-in-sheets.md) and [167](briefs/todo/167-retire-pdf-viewer-and-norpdf.md) are the Slides, Sheets and PDF runs, each waiting on its walk. Two todos: [taskbar activation leaves focus on the taskbar](todos/taskbar-activation-keeps-focus-on-the-taskbar.md), and brief 163's [refusal and same-ref reinstall](todos/kit-app-refusal-and-same-ref-reinstall.md) rough edges.
+imbatranim-office has all five apps built; Docs and CAD were walked in this OS, and the Slides, Sheets and PDF walks are that repo's briefs 07–09. Brief 164 is now the Docs run, which builds the migration and commits the Office catalog entry (`marketplace/imbatranim-office.json`, the suite's template pinned to the walked commit); [165](briefs/todo/165-retire-built-in-slides.md), [166](briefs/todo/166-retire-built-in-sheets.md) and [167](briefs/todo/167-retire-pdf-viewer-and-norpdf.md) are the Slides, Sheets and PDF runs, each waiting on its walk. Two todos: [taskbar activation leaves focus on the taskbar](todos/promoted/taskbar-activation-keeps-focus-on-the-taskbar.md), and brief 163's [refusal and same-ref reinstall](todos/promoted/kit-app-refusal-and-same-ref-reinstall.md) rough edges.
 
 ## [2026-10-22] decision | The desktop moves to its own host; the shared-origin risk closes
 
@@ -4396,3 +4396,16 @@ Same grilling. Spotify ships only for glibc and the OS is Alpine (musl). The own
 ## [2026-10-23] todo | Briefs 168–173 filed: Linux apps in OS windows, Firefox first
 
 The grilling that began with Spotify ended with a general layer: Linux GUI apps from Nix, shown as OS windows through our own Rust Wayland host, Firefox first (Spotify dropped). The settled calls are in [decisions-linux-apps.md](wiki/decisions-linux-apps.md). Brief-level calls: the feature is on on every machine, title bars follow the app (an exception to the Win7 chrome for Linux windows only), a Settings pane from the start, unfree packages allowed, US keyboard only, lossless changed-region frames near 30 fps. Six small briefs, riskiest first: [168](briefs/todo/168-nix-in-the-image-firefox-headless.md) Nix and headless Firefox, [169](briefs/todo/169-the-wayland-host-shows-a-window.md) output, [170](briefs/todo/170-linux-windows-input-and-title-bars.md) input and title bars, [171](briefs/todo/171-popups-and-firefox-in-a-window.md) popups and the Firefox walk, [172](briefs/todo/172-the-linux-apps-pane.md) the pane, [173](briefs/todo/173-linux-app-lifecycle-and-sleep.md) lifecycle and sleep. Left out on purpose: [linux-apps-after-the-first-wave](todos/linux-apps-after-the-first-wave.md).
+
+## [2026-10-23] todo | Briefs 174–176 from two open todos
+
+[174](briefs/todo/174-taskbar-activation-moves-focus-into-the-window.md): activating a
+window from the taskbar, Alt+Tab or the launcher moves DOM focus into it (last focused
+element, then first focusable, then the content area; the iframe for a URL app). It
+stays out of `shared/store/*`, which 164–167 and 169 own.
+[175](briefs/todo/175-kit-app-refusal-says-it-plainly.md): a kit or protocol refusal
+renders as an inline panel instead of a crash, a toast and a client-error log.
+[176](briefs/todo/176-kit-app-rebuild-at-the-same-ref.md): the backend reports the
+catalog's kit beside the build's (today `marketplace.service.ts:322` hides it), and the
+pane offers Rebuild when only the kit changed. The todos moved to `todos/promoted/`.
+`linux-apps-after-the-first-wave` stays a todo until 168–173 are built.

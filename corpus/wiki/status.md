@@ -1,5 +1,5 @@
 ---
-summary: Current snapshot (2026-10-21) — identity is the machine's own single-owner sign-in everywhere, the estate included (brief 157 dropped Ward); briefs to 160 done (2026-10-19; the docs site is on Docusaurus), 161 superseded, 162–163 done, 164–167 open (2026-10-22: one retirement brief per office app; the office apps move to the imbatranim-office repo), 168–173 open (2026-10-23: Linux GUI apps in OS windows through a Rust Wayland host and Nix, Firefox first), 15 closed as v1.0.0 (2026-10-07), including 50 (the Browser) and 120 (the app marketplace, its Hollow gate met 2026-10-07); 158 installs unreviewed apps from a GitHub URL into a sandboxed frame; a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
+summary: Current snapshot (2026-10-21) — identity is the machine's own single-owner sign-in everywhere, the estate included (brief 157 dropped Ward); briefs to 160 done (2026-10-19; the docs site is on Docusaurus), 161 superseded, 162–163 done, 164–167 open (2026-10-22: one retirement brief per office app; the office apps move to the imbatranim-office repo), 168–173 open (2026-10-23: Linux GUI apps in OS windows through a Rust Wayland host and Nix, Firefox first), 174–176 open (2026-10-23: taskbar focus, kit app refusal and rebuild), 15 closed as v1.0.0 (2026-10-07), including 50 (the Browser) and 120 (the app marketplace, its Hollow gate met 2026-10-07); 158 installs unreviewed apps from a GitHub URL into a sandboxed frame; a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
 updated: 2026-10-23
 ---
 
@@ -106,6 +106,9 @@ notepad StrictMode intent bug.
 | 171 | [popups-and-firefox-in-a-window](../briefs/todo/171-popups-and-firefox-in-a-window.md) | **todo** (filed 2026-10-23): menus and tooltips, then the Firefox walk with RAM, CPU and bandwidth measured |
 | 172 | [the-linux-apps-pane](../briefs/todo/172-the-linux-apps-pane.md) | **todo** (filed 2026-10-23): Settings pane to search, install and remove Nix apps; Start entries from `.desktop` files |
 | 173 | [linux-app-lifecycle-and-sleep](../briefs/todo/173-linux-app-lifecycle-and-sleep.md) | **todo** (filed 2026-10-23): reload grace, close ends apps, freeze under the cover screen, quiet while hidden |
+| 174 | [taskbar-activation-moves-focus-into-the-window](../briefs/todo/174-taskbar-activation-moves-focus-into-the-window.md) | **todo** (filed 2026-10-23): taskbar, Alt+Tab and launcher activation put DOM focus inside the window |
+| 175 | [kit-app-refusal-says-it-plainly](../briefs/todo/175-kit-app-refusal-says-it-plainly.md) | **todo** (filed 2026-10-23): a kit or protocol refusal is an inline panel, not a crash and a toast |
+| 176 | [kit-app-rebuild-at-the-same-ref](../briefs/todo/176-kit-app-rebuild-at-the-same-ref.md) | **todo** (filed 2026-10-23): the pane offers Rebuild when only the shared kit changed |
 | — | the server ISO | **deferred** by the owner (2026-10-04): work stays in the Docker container for now. When written: a plain Alpine image with the server pre-installed, reached from the LAN over HTTPS; replaces the kiosk ([brief 18](../briefs/superseded/18-alpine-kiosk-iso.md), superseded) |
 
 ## Owed by the owner

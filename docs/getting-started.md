@@ -5,7 +5,7 @@ How to run ImbatranimOS, claim it on the first visit, and work on the code.
 ## Prerequisites
 
 - Docker with Compose v2, to run it. Everything is built from this repository; there is no published image.
-- To work on the code: Node 24.14.1 (see `.nvmrc`) and npm 11.11 or later, plus Docker for the dev container.
+- To work on the code: Node 24.22.1 (see `.nvmrc`) and npm 11.11 or later, plus Docker for the dev container.
 
 ## Run it with Docker
 

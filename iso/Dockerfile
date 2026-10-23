@@ -24,7 +24,7 @@ FROM alpine:3.22
 #   nodejs-current npm  build the production payload (musl, correct ABI).
 #                     nodejs-current (community) is the Node 24 series on the
 #                     v3.22 branch — matching the Docker image's
-#                     node:24.14.1-alpine and root package.json engines
+#                     node:24.22.1-alpine and root package.json engines
 #                     (node >=24.14.1). Alpine's main `nodejs` (22.x) would ship
 #                     an appliance below the engines floor, so it is NOT used.
 #                     nodejs-current `provides` nodejs, so `npm` (which depends

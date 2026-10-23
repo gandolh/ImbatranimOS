@@ -151,7 +151,7 @@ reported ~1 GB storage / ~1 GB idle RAM).
 - **Node 24**: both the build toolbox and the shipped appliance use
   `nodejs-current` (the Node 24 series on `v3.22`, from the community repo), not
   Alpine's main `nodejs` (22.x). This matches the Docker image's
-  `node:24.14.1-alpine` and the root `package.json` engines floor
+  `node:24.22.1-alpine` and the root `package.json` engines floor
   (`node >=24.14.1`); `nodejs-current` `provides` `nodejs`, so `npm` resolves
   against it with no LTS pulled in.
 - aports pinned via `ISO_APORTS_SHA` (an exact commit, for byte-reproducible

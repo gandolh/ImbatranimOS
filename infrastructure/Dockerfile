@@ -13,7 +13,7 @@
 # ---------------------------------------------------------------------------
 # deps — full workspace install (dev + prod), with native build toolchain
 # ---------------------------------------------------------------------------
-FROM node:24.14.1-alpine AS deps
+FROM node:24.22.1-alpine AS deps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
 # Manifests first for layer caching: one root lockfile, one npm ci.
@@ -56,7 +56,7 @@ RUN VITE_BASE=$VITE_BASE VITE_API_URL=$VITE_API_URL npx turbo build
 # ---------------------------------------------------------------------------
 # proddeps — production-only node_modules (native modules compiled here)
 # ---------------------------------------------------------------------------
-FROM node:24.14.1-alpine AS proddeps
+FROM node:24.22.1-alpine AS proddeps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -98,7 +98,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 # prod — slim runtime: no compiler, runs as the unprivileged imbatranim user
 # ---------------------------------------------------------------------------
-FROM node:24.14.1-alpine AS prod
+FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
       org.opencontainers.image.version="1.26.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns

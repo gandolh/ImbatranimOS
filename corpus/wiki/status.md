@@ -1,6 +1,6 @@
 ---
-summary: Current snapshot (2026-10-21) — identity is the machine's own single-owner sign-in everywhere, the estate included (brief 157 dropped Ward); briefs to 160 done (2026-10-19; the docs site is on Docusaurus), 161 superseded, 162–163 done, 164–167 open (2026-10-22: one retirement brief per office app; the office apps move to the imbatranim-office repo), 15 closed as v1.0.0 (2026-10-07), including 50 (the Browser) and 120 (the app marketplace, its Hollow gate met 2026-10-07); 158 installs unreviewed apps from a GitHub URL into a sandboxed frame; a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
-updated: 2026-10-22
+summary: Current snapshot (2026-10-21) — identity is the machine's own single-owner sign-in everywhere, the estate included (brief 157 dropped Ward); briefs to 160 done (2026-10-19; the docs site is on Docusaurus), 161 superseded, 162–163 done, 164–167 open (2026-10-22: one retirement brief per office app; the office apps move to the imbatranim-office repo), 168–173 open (2026-10-23: Linux GUI apps in OS windows through a Rust Wayland host and Nix, Firefox first), 15 closed as v1.0.0 (2026-10-07), including 50 (the Browser) and 120 (the app marketplace, its Hollow gate met 2026-10-07); 158 installs unreviewed apps from a GitHub URL into a sandboxed frame; a server-ISO brief deferred (work stays in Docker for now); owner-run items listed. History to 2026-08-06 is in status-history.md.
+updated: 2026-10-23
 ---
 
 # Status — 2026-10-21
@@ -100,6 +100,12 @@ notepad StrictMode intent bug.
 | 165 | [retire-built-in-slides](../briefs/todo/165-retire-built-in-slides.md) | **todo** (filed 2026-10-22): after imbatranim-office brief 07 |
 | 166 | [retire-built-in-sheets](../briefs/todo/166-retire-built-in-sheets.md) | **todo** (filed 2026-10-22): after imbatranim-office brief 08 |
 | 167 | [retire-pdf-viewer-and-norpdf](../briefs/todo/167-retire-pdf-viewer-and-norpdf.md) | **todo** (filed 2026-10-22): after imbatranim-office brief 09; removes `packages/pdfcore-engine` too |
+| 168 | [nix-in-the-image-firefox-headless](../briefs/todo/168-nix-in-the-image-firefox-headless.md) | **todo**, ready (filed 2026-10-23): single-user Nix on its own volume, pinned to nixos-26.05; Firefox installs from the Terminal and renders headless; sizes measured. Runs first because it tests the riskiest assumption |
+| 169 | [the-wayland-host-shows-a-window](../briefs/todo/169-the-wayland-host-shows-a-window.md) | **todo** (filed 2026-10-23): the Rust Wayland host, one socket per tab, frames into an OS window; tested with foot |
+| 170 | [linux-windows-input-and-title-bars](../briefs/todo/170-linux-windows-input-and-title-bars.md) | **todo** (filed 2026-10-23): pointer, US keyboard, focus, resize, close; title bars follow the app |
+| 171 | [popups-and-firefox-in-a-window](../briefs/todo/171-popups-and-firefox-in-a-window.md) | **todo** (filed 2026-10-23): menus and tooltips, then the Firefox walk with RAM, CPU and bandwidth measured |
+| 172 | [the-linux-apps-pane](../briefs/todo/172-the-linux-apps-pane.md) | **todo** (filed 2026-10-23): Settings pane to search, install and remove Nix apps; Start entries from `.desktop` files |
+| 173 | [linux-app-lifecycle-and-sleep](../briefs/todo/173-linux-app-lifecycle-and-sleep.md) | **todo** (filed 2026-10-23): reload grace, close ends apps, freeze under the cover screen, quiet while hidden |
 | — | the server ISO | **deferred** by the owner (2026-10-04): work stays in the Docker container for now. When written: a plain Alpine image with the server pre-installed, reached from the LAN over HTTPS; replaces the kiosk ([brief 18](../briefs/superseded/18-alpine-kiosk-iso.md), superseded) |
 
 ## Owed by the owner

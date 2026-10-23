@@ -1,6 +1,6 @@
 ---
 summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build. BUILT 2026-08-06 (brief 48) — the seam is live in all 26 apps and eslint-enforced; its sandboxed iframe transport exists since brief 158 (2026-10-07) for apps installed from a URL.
-updated: 2026-10-07
+updated: 2026-10-23
 ---
 
 # OS layering — the compositor seam
@@ -41,7 +41,8 @@ The drivers are:
 The compositor is client-side **by necessity**: rendering happens in the
 browser. A server-side compositor means VNC/pixel-streaming, which violates the
 slim-image + real-DOM soul. The authoritative server streams **data** (PTY
-bytes, FS, `/proc`), never pixels.
+bytes, FS, `/proc`), never pixels. Narrowed 2026-10-23 for Linux app
+windows only: [decisions-linux-apps.md](decisions-linux-apps.md).
 
 ## The seam — an injected `system` capability handle
 

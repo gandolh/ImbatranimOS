@@ -1,6 +1,6 @@
 ---
 summary: The project's vocabulary — the terms ImbatranimOS uses in a specific way (add-on, core vs ui, the system handle, capability vs library, desktop layer, widget, background service, intent, dotfile, session, accent) with the synonyms each one displaces, plus the three terms that carry two live meanings and how to tell them apart. Marketplace and office-suite terms are in glossary-marketplace.md.
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 # Glossary
@@ -103,7 +103,8 @@ _Avoid_: design system, component library, ui package (when the set is meant).
 **Syscall bridge**:
 The NestJS backend — the only path to the real system (FS, PTY, `/proc`, HTTP
 proxy), and the layer-1 half of the three-layer model. It streams **data**,
-never pixels.
+never pixels, except a Linux app's window images, which it relays from the
+Wayland host (2026-10-23).
 _Avoid_: the server, the API (both are true but say less), the host.
 
 **Compositor**:
@@ -191,6 +192,8 @@ say which one you mean.
   *composition root* for the file.
 
 ## Where the rest lives
+
+Linux apps in OS windows (*Linux app*, *Wayland host*): [glossary-linux-apps.md](glossary-linux-apps.md).
 
 Locked calls and their reasons: [decisions.md](decisions.md) (plus
 [pivot-era](decisions-pivot-era.md) and [iso-era](decisions-iso-era.md)).

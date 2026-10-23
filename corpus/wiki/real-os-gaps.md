@@ -1,6 +1,6 @@
 ---
 summary: Where the OS still stops feeling like an OS (2026-07-31 research) — the three places the illusion breaks first, the Tier-2 features worth doing later, and the standing rejection list (root-requiring features, a package manager, a services view, a global mixer, man pages, printing, a clipboard manager, screen recording, an SSH app) with the reason each is out, so they are not re-litigated.
-updated: 2026-07-31
+updated: 2026-10-23
 ---
 
 # Real-OS gaps — what is missing, and what we refuse
@@ -68,6 +68,8 @@ Where the illusion breaks first, for a new user:
   the package system. A package format only earns its cost when apps come from
   outside the repo. (Since brief 120, apps from other repos install from the
   in-repo marketplace catalog; built-in add-ons are still `manifest.ts`.)
+  Linux apps install at runtime with Nix since 2026-10-23:
+  [decisions-linux-apps.md](decisions-linux-apps.md).
 - **A "Services" / systemd view** — there is no init: `entrypoint.sh:14` execs
   node as PID 1, so it would list one row. Authentic-shaped, zero value, and
   adding a supervisor to make it interesting brushes the killed daemon.

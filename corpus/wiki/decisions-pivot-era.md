@@ -1,6 +1,6 @@
 ---
 summary: The 2026-07-16 web-OS-era and 2026-07-17 Office/post-v1 decisions, still locked — the single-container shape, the add-on contract, the app roster and the Office-suite scope. Split out of decisions.md on 2026-08-05, which has a 200-line cap.
-updated: 2026-08-05
+updated: 2026-10-23
 ---
 
 # Decisions — the pivot era (2026-07-16 / 07-17)
@@ -66,7 +66,8 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
   no sudo and no runtime package manager. "Installing an app" in v1 means
   adding a web-app module to the desktop registry (frontend module +
   optional backend routes). A sandboxed native-app store is a possible
-  future brief, explicitly out of v1 scope.
+  future brief, explicitly out of v1 scope. Reversed 2026-10-23 for Linux
+  apps, installed at runtime with Nix: [decisions-linux-apps.md](decisions-linux-apps.md).
 - **The fork's config-based `repl` module is deleted** (2026-07-17, brief
   11) — absorbed by the real WS terminal, both backend and frontend halves.
   Its leftover `repl_configs` table drop is on brief 15's fix list.

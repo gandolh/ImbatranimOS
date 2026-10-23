@@ -33,6 +33,12 @@ LAN server OS, and the owner's 2026-10-04 answers.
 In [decisions-office-suite.md](decisions-office-suite.md): the office apps move
 to their own repo, imbatranim-office, in TypeScript, installed as one Office entry.
 
+## Linux apps in OS windows (2026-10-23)
+
+In [decisions-linux-apps.md](decisions-linux-apps.md): Linux GUI apps run in
+the container and show as OS windows, their windows travel as pixels, and our
+own Wayland host in Rust does the Wayland part.
+
 ## Inherited from the ISO era
 
 Moved to [decisions-iso-era.md](decisions-iso-era.md) — the carried-over

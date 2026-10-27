@@ -4,6 +4,7 @@ import { kitBuildKey, type MarketplaceApp } from '../../shared/registry/marketpl
 import { apiUrl } from './apiUrl'
 import { addKitStyles } from './kitStyles'
 import { loadModule } from './loadModule'
+import { RefusalPanel } from './RefusalPanel'
 import { kitRefusal, protocolRefusal } from './refusals'
 import { scopeHandle, type KitAppModule } from './scopeHandle'
 import { installSharedKit } from './sharedKit'
@@ -26,22 +27,29 @@ function isComponent(value: unknown): value is ComponentType<KitAppProps> {
  * and behaves like a built-in add-on.
  *
  * In order: refuse an app built for another shared kit or a newer protocol
- * (thrown during render, so the window's error boundary shows the sentence and
- * nothing is leased, fetched or added); put the shared modules on the global
- * the app's module reads them from; add the build's stylesheets to the page,
- * once per build; import the module; lease the server if it has one; render
- * `App` inside a `SystemProvider` holding the scoped handle, so `useSystem()`
- * in the app (and in the kit's hooks it calls) is fenced to the capabilities
- * its descriptor asked for.
+ * (brief 175: the window says so in a {@link RefusalPanel}, and nothing is
+ * leased, fetched or added); put the shared modules on the global the app's
+ * module reads them from; add the build's stylesheets to the page, once per
+ * build; import the module; lease the server if it has one; render `App`
+ * inside a `SystemProvider` holding the scoped handle, so `useSystem()` in the
+ * app (and in the kit's hooks it calls) is fenced to the capabilities its
+ * descriptor asked for.
  *
  * The window's own `AppErrorBoundary`, `SystemProvider` and `Suspense` (from
  * `WindowContainer`) sit outside this: a throw in the app's render is a crash
  * of this window only, and a lazy chunk of its own suspends into the window's
- * Loading.
+ * Loading. A refusal is not a throw, so it raises no crash toast.
  */
 export function KitAppHost({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
+  // Checked here, outside the host that does the work: an early return in
+  // front of its hooks would change their order between renders.
   const refusal = protocolRefusal(app) ?? kitRefusal(app)
-  if (refusal) throw new Error(refusal)
+  if (refusal) return <RefusalPanel appName={app.name} reason={refusal} />
+  return <KitApp windowId={windowId} app={app} />
+}
+
+/** The kit app itself, once {@link KitAppHost} has found it can run here. */
+function KitApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
   const entryPath = app.installed?.entryPath
   if (!entryPath) throw new Error(`${app.name} has no module to load`)
 

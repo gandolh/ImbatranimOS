@@ -420,7 +420,10 @@ describe('SandboxedAppHost', () => {
     expect(registrations).toEqual([])
     await settle()
     expect(registrations).toHaveLength(1)
-    expect(registrations[0]).toMatchObject({ windowId: hostWin, name: 'Hollow', frame: frame() })
+    expect(registrations[0]).toMatchObject({ windowId: hostWin, name: 'Hollow' })
+    // By identity: a subset match would walk the element's React fiber, and
+    // with the host split in two (brief 175) that walk took seven seconds.
+    expect(registrations[0].frame).toBe(frame())
     expect(unregister).not.toHaveBeenCalled()
     act(() => root.render(<></>))
     expect(unregister).toHaveBeenCalledTimes(1)
@@ -517,10 +520,17 @@ describe('SandboxedAppHost', () => {
     expect(del).toHaveBeenCalledWith(`/marketplace/sandbox/${TOKEN}`)
   })
 
-  it('refuses an app that needs a newer system protocol, before minting anything', async () => {
+  it('refuses an app that needs a newer system protocol in a panel, before minting anything', async () => {
     mount(app({ minSystemVersion: 99 }))
     await settle()
-    expect(fallback()).toMatch(/needs system protocol 99/)
+    // Brief 175: a refusal is not a crash. No fallback, no client-error log.
+    const panel = container.querySelector('[data-refusal]')
+    expect(panel?.textContent).toContain(`Can't open ${app().name}`)
+    expect(panel?.textContent).toContain(
+      `${app().name} needs system protocol 99; this desktop speaks 2`
+    )
+    expect(panel?.querySelector('button')?.textContent).toBe('Open Settings')
+    expect(fallback()).toBeUndefined()
     expect(post).not.toHaveBeenCalled()
     expect(frame()).toBeNull()
   })

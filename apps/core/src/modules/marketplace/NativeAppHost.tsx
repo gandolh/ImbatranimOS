@@ -4,6 +4,7 @@ import type { MarketplaceApp } from '../../shared/registry/marketplace'
 import { apiUrl } from './apiUrl'
 import { loadModule } from './loadModule'
 import { protocolRefusal } from './refusals'
+import { RefusalPanel } from './RefusalPanel'
 import { scopeHandle, type NativeAppModule } from './scopeHandle'
 import { useServerLease } from './useServerLease'
 
@@ -16,12 +17,21 @@ import { useServerLease } from './useServerLease'
  * error boundary (brief 47) shows it in this window only. A service app's
  * server is held with a lease for as long as the window is open
  * ({@link useServerLease}), and the module is mounted only once it is up.
+ *
+ * An app that needs a newer system protocol is refused before anything is
+ * leased or fetched, and the window says so in a {@link RefusalPanel}: a
+ * refusal is not a crash (brief 175).
  */
 export function NativeAppHost({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
-  // Before anything is leased or fetched.
+  // Checked here, outside the host's hooks, so an early return cannot change
+  // their order.
   const refusal = protocolRefusal(app)
-  if (refusal) throw new Error(refusal)
+  if (refusal) return <RefusalPanel appName={app.name} reason={refusal} />
+  return <NativeApp windowId={windowId} app={app} />
+}
 
+/** The mounted app, once {@link NativeAppHost} has found it can run here. */
+function NativeApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
   const system = useSystem()
   const container = useRef<HTMLDivElement>(null)
   const lease = useServerLease(app)

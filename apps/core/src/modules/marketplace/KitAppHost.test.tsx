@@ -8,7 +8,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SystemProvider } from '@imbatranim/ui'
 import { createSystemHandle } from '../../system/createSystemHandle'
 import { AppErrorBoundary } from '../../shared/components/window/AppErrorBoundary'
+import { resetCrashToastHistory } from '../../shared/components/window/crashToastGuard'
 import { syncMarketplaceApps, type MarketplaceApp } from '../../shared/registry/marketplace'
+import { useNotificationStore } from '../../shared/store/notificationStore'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const post = vi.fn()
@@ -30,6 +32,9 @@ vi.mock('./loadModule', () => ({
     return import(/* @vite-ignore */ fileURLToPath(url))
   },
 }))
+
+const { openApp } = vi.hoisted(() => ({ openApp: vi.fn() }))
+vi.mock('../../shared/intents/openApp', () => ({ openApp }))
 
 const { KitAppHost } = await import('./KitAppHost')
 
@@ -169,6 +174,21 @@ async function settle() {
 const fallback = (windowId = 'w1') =>
   container.querySelector(`[data-fallback="${windowId}"]`)?.textContent ?? null
 
+/** The refusal panel's heading, sentence and button (brief 175), or null. */
+const refusal = () => {
+  const panel = container.querySelector('[data-refusal]')
+  if (!panel) return null
+  const [heading, sentence] = [...panel.querySelectorAll('p')].map((p) => p.textContent)
+  const button = panel.querySelector('button')
+  return { heading, sentence, button: button?.textContent ?? null, click: () => button?.click() }
+}
+
+/** The titles of the live toasts. */
+const toasts = () => {
+  const { toasts: ids, notifications } = useNotificationStore.getState()
+  return ids.map((id) => notifications.find((n) => n.id === id)?.title)
+}
+
 beforeEach(() => {
   const cache = join(process.cwd(), 'node_modules', '.cache')
   mkdirSync(cache, { recursive: true })
@@ -177,6 +197,9 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container, { onCaughtError: () => undefined })
   delete (globalThis as { __kitSeen?: Seen }).__kitSeen
+  resetCrashToastHistory()
+  useNotificationStore.setState({ notifications: [], toasts: [] })
+  openApp.mockReset()
   loads.mockReset()
   post.mockReset()
   del.mockReset()
@@ -239,25 +262,53 @@ describe('KitAppHost', () => {
     expect(container.querySelector('[data-answer]')?.textContent).toBe('true')
   })
 
-  it('refuses an app built for another shared kit, naming both versions, before fetching anything', async () => {
+  it('refuses an app built for another shared kit in a panel, not a crash, before fetching anything', async () => {
     writeBuild({ 'notes/app.mjs': KIT_MODULE, 'kit.css': '' })
     render([app({ sharedKit: 99, type: 'service' }), 'w1'])
     await settle()
-    expect(fallback()).toBe(
-      'Kit Notes was built for shared kit 99, and this desktop has shared kit 1. It needs an update built for kit 1.'
-    )
+    expect(refusal()).toMatchObject({
+      heading: "Can't open Kit Notes",
+      sentence:
+        'Kit Notes was built for shared kit 99, and this desktop has shared kit 1. It needs an update built for kit 1.',
+      button: 'Open Settings',
+    })
+    expect(fallback()).toBeNull()
     expect(loads).not.toHaveBeenCalled()
     expect(kitLinks()).toEqual([])
-    // The crash is reported like any other; nothing is leased.
-    expect(post.mock.calls.map(([url]) => url as string)).toEqual(['/logs/client-error'])
+    // Brief 175: no toast and no client-error log; nothing is leased either.
+    expect(toasts()).toEqual([])
+    expect(post).not.toHaveBeenCalled()
+
+    act(() => refusal()!.click())
+    expect(openApp).toHaveBeenCalledExactlyOnceWith('settings')
   })
 
-  it('refuses an app that needs a newer system protocol', async () => {
+  it('refuses an app that needs a newer system protocol in the same panel', async () => {
     writeBuild({ 'notes/app.mjs': KIT_MODULE, 'kit.css': '' })
     render([app({ minSystemVersion: 99 }), 'w1'])
     await settle()
-    expect(fallback()).toMatch(/needs system protocol 99/)
+    expect(refusal()).toMatchObject({
+      heading: "Can't open Kit Notes",
+      sentence: 'Kit Notes needs system protocol 99; this desktop speaks 2',
+      button: 'Open Settings',
+    })
+    expect(fallback()).toBeNull()
     expect(loads).not.toHaveBeenCalled()
+    expect(toasts()).toEqual([])
+    expect(post).not.toHaveBeenCalled()
+  })
+
+  it('still shows an app that throws as a crash, with the toast and the client-error log', async () => {
+    writeBuild({
+      'notes/app.mjs': 'export function App() { throw new Error("the kit app broke") }\n',
+      'kit.css': '',
+    })
+    render([app(), 'w1'])
+    await settle()
+    expect(fallback()).toBe('the kit app broke')
+    expect(refusal()).toBeNull()
+    expect(toasts()).toEqual(['Kit Notes crashed'])
+    expect(post.mock.calls.map(([url]) => url as string)).toEqual(['/logs/client-error'])
   })
 
   it('shows a module without App as a crash of its own window', async () => {

@@ -225,13 +225,19 @@ describe('NativeAppHost', () => {
     expect(container.querySelector('[data-testid="fallback"]')?.textContent).toBe('the game broke')
   })
 
-  it('refuses an app that needs a newer system protocol, before loading it', async () => {
+  it('refuses an app that needs a newer system protocol in a panel, before loading it', async () => {
     writeModule(RECORDING_MODULE)
     mount(app({ minSystemVersion: 99 }))
     await settle()
-    expect(container.querySelector('[data-testid="fallback"]')?.textContent).toMatch(
-      /needs system protocol 99/
+    // Brief 175: a refusal is not a crash. No fallback, no client-error log.
+    const panel = container.querySelector('[data-refusal]')
+    expect(panel?.textContent).toContain(`Can't open ${app().name}`)
+    expect(panel?.textContent).toContain(
+      `${app().name} needs system protocol 99; this desktop speaks 2`
     )
+    expect(panel?.querySelector('button')?.textContent).toBe('Open Settings')
+    expect(container.querySelector('[data-testid="fallback"]')).toBeNull()
+    expect(post).not.toHaveBeenCalled()
     expect(seen().mounted).toBeUndefined()
   })
 })

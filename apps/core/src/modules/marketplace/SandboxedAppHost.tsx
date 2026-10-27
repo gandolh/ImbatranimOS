@@ -6,7 +6,7 @@ import {
   useSyncExternalStore,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { PROTOCOL_VERSION, useSystem, type SystemHandle } from '@imbatranim/ui'
+import { useSystem, type SystemHandle } from '@imbatranim/ui'
 import { api } from '../../lib/axios'
 import type { MarketplaceApp } from '../../shared/registry/marketplace'
 import {
@@ -17,6 +17,8 @@ import {
   type SandboxBridge,
 } from './sandboxBridge'
 import { registerSandboxFrame } from './keyboardGuard'
+import { protocolRefusal } from './refusals'
+import { RefusalPanel } from './RefusalPanel'
 import { scopeHandle } from './scopeHandle'
 
 function apiUrl(path: string): URL {
@@ -63,7 +65,8 @@ function useWindowFocused(system: SystemHandle): boolean {
  * The frame's files are served under a per-window capability URL, minted when
  * the window opens and revoked when it closes. A `failed` from the frame, or a
  * failure to mint, is thrown during render so the window's error boundary
- * shows it in this window only, as it does for a native app.
+ * shows it in this window only, as it does for a native app. An app that needs
+ * a newer protocol is not a failure: the window shows a {@link RefusalPanel}.
  *
  * The keyboard and raising the window (security review of brief 158, M1).
  * The frame's code is hostile, and it can call `focus()` on its own elements
@@ -83,6 +86,16 @@ function useWindowFocused(system: SystemHandle): boolean {
  *   the frame has the keyboard and its window is the focused one.
  */
 export function SandboxedAppHost({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
+  // An app for a newer protocol is refused before anything is minted, and the
+  // window says so instead of crashing (brief 175). Outside the frame host so
+  // the early return cannot change the order of its hooks.
+  const refusal = protocolRefusal(app)
+  if (refusal) return <RefusalPanel appName={app.name} reason={refusal} />
+  return <SandboxedApp windowId={windowId} app={app} />
+}
+
+/** The frame itself, once {@link SandboxedAppHost} has found the app can run here. */
+function SandboxedApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
   const system = useSystem()
   const frame = useRef<HTMLIFrameElement>(null)
   const [src, setSrc] = useState<string | null>(null)
@@ -175,11 +188,6 @@ export function SandboxedAppHost({ windowId, app }: { windowId: string; app: Mar
 
     void (async () => {
       try {
-        if (PROTOCOL_VERSION < app.minSystemVersion) {
-          throw new Error(
-            `${app.name} needs system protocol ${app.minSystemVersion}; this desktop speaks ${PROTOCOL_VERSION}`
-          )
-        }
         const { data } = await api.post<{ path?: unknown }>(
           `/marketplace/apps/${app.id}/sandbox`,
           {}

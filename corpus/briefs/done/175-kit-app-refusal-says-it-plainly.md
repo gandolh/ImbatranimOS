@@ -64,3 +64,49 @@ crash. Nothing broke; the app cannot run here, and the window should say so.
   `crashToastGuard.ts`.
 - `apps/core/src/modules/marketplace/refusals.ts` (read it, don't change it).
 - `apps/core/src/modules/settings/MarketplaceSettings.tsx` (brief 176).
+
+## Outcome (2026-10-27)
+
+**Built in `81de146` (version 1.34.0), walked in Chrome in the dev
+container** with brief 163's kit fixture (`kit-repo.ts`) installed from a
+`file://` descriptor copied into the container's catalog only. A window of an
+app that cannot run here now shows `RefusalPanel`: "Can't open <name>", the
+sentence from `refusals.ts` word for word, and **Open Settings**. Settings has
+no deep link to a section or a row, so the button opens it at the top.
+
+**Step 4: both other hosts threw the same way.** `NativeAppHost` threw
+`protocolRefusal` during render; `SandboxedAppHost` threw its own copy of the
+same sentence from inside its mint effect. All three hosts now check in an
+outer component and render the existing host only when the app can run, so
+nothing is leased, fetched, minted or linked for a refused app and the hosts'
+hooks keep their order. `SandboxedAppHost` uses `protocolRefusal` now, and its
+copy of the sentence is gone.
+
+What the walk showed:
+
+- Kit Notes installed with `sharedKit: 99`: its window showed the heading, the
+  kit sentence and the button. No "stopped working", no "crashed" toast, no
+  request to `/logs/client-error`, and the module and `kit.css` were never
+  fetched.
+- The same descriptor with `minSystemVersion: 99`: the same panel with the
+  protocol sentence (checked before the kit one).
+- **Open Settings** brought Settings up *behind* the refused window on the
+  first try: the button's click bubbled to the window root, whose click raises
+  its window. The panel now stops the click; walked again, Settings opened in
+  front. The pane's own **Open** buttons have the same bubbling, which is in
+  the todo
+  [in-window-open-raises-the-clicked-window](../../todos/in-window-open-raises-the-clicked-window.md).
+
+**Not walked:** a kit app whose module throws (covered by the test below), and
+the protocol panel in a native or sandboxed window (covered by their tests).
+
+**Tests:** `KitAppHost.test.tsx` covers the three cases: kit refusal and
+protocol refusal (panel, no fallback, no toast, no request at all) and a
+throwing `App` (fallback, "Kit Notes crashed" toast, one client-error post).
+`RefusalPanel.test.tsx` checks that the button opens Settings and that the
+click does not reach the window. The protocol tests in `NativeAppHost.test.tsx`
+and `SandboxedAppHost.test.tsx` now expect the panel. One sandboxed test
+compared the iframe inside `toMatchObject`, which walks the element's React
+fiber; with the host split in two that took seven seconds and timed out, so it
+compares the frame by identity now. Gates: `npm run typecheck` (32 tasks),
+`npm run lint` (31 tasks, no errors), core tests 522/522.

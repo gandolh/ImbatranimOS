@@ -74,6 +74,14 @@ export type MarketplaceApp = {
    * app, what its live build was made against. Read it with {@link isKitApp}.
    */
   sharedKit?: number | null
+  /**
+   * The shared kit the catalog's descriptor names now (brief 176), whatever
+   * the live build was made against. Null for an app that exports `mount`
+   * and for a URL app. A backend from before brief 176 sends none: unknown,
+   * so the desktop cannot tell whether a rebuild would help. Read it with
+   * {@link rebuildFixesKit}.
+   */
+  catalogSharedKit?: number | null
   ref: string
   /**
    * How the desktop runs it: `native` imports its module into this page (a
@@ -135,6 +143,21 @@ export function isSandboxed(app: Pick<MarketplaceApp, 'runtime'>): boolean {
  */
 export function isKitApp(app: Pick<MarketplaceApp, 'runtime' | 'sharedKit'>): boolean {
   return !isSandboxed(app) && typeof app.sharedKit === 'number'
+}
+
+/**
+ * True when building an installed kit app again at the same ref would make it
+ * run on a desktop with shared kit `desktopKit` (brief 176): its live build
+ * was made against another kit, and the catalog's descriptor now names this
+ * one. False when the catalog names another kit too (a rebuild would make the
+ * same mismatch) or says nothing (a backend from before brief 176).
+ */
+export function rebuildFixesKit(
+  app: Pick<MarketplaceApp, 'runtime' | 'sharedKit' | 'catalogSharedKit' | 'installed'>,
+  desktopKit: number
+): boolean {
+  if (!app.installed || !isKitApp(app) || app.sharedKit === desktopKit) return false
+  return app.catalogSharedKit === desktopKit
 }
 
 /**

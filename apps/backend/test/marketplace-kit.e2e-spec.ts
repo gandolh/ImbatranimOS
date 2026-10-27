@@ -45,6 +45,7 @@ interface Listed {
   id: string;
   descriptorId: string;
   sharedKit: number | null;
+  catalogSharedKit: number | null;
   ref: string;
   installed: {
     ref: string;
@@ -189,9 +190,13 @@ describe('kit apps (e2e) — brief 163', () => {
     expect(notes).toMatchObject({
       descriptorId: 'kit',
       sharedKit: 1,
+      catalogSharedKit: 1,
       installed: null,
     });
-    expect(apps.find((a) => a.id === 'suite-alpha')?.sharedKit).toBeNull();
+    expect(apps.find((a) => a.id === 'suite-alpha')).toMatchObject({
+      sharedKit: null,
+      catalogSharedKit: null,
+    });
     expect(problems).toEqual([
       {
         file: 'styled.json',
@@ -258,6 +263,27 @@ describe('kit apps (e2e) — brief 163', () => {
     }
     expect((await listed('kit-notes')).sharedKit).toBe(1);
   }, 60_000);
+
+  it("reports the catalog's kit beside the build's, so a rebuild at the same ref can be offered (brief 176)", async () => {
+    expect(await listed('kit-notes')).toMatchObject({
+      sharedKit: 1,
+      catalogSharedKit: 1,
+    });
+    // The catalog moves to another kit at the same ref: the build still says
+    // what it was made against, and the catalog what a rebuild would make.
+    write(kitDescriptor(repoUrl, commits.whole, { sharedKit: 99 }));
+    try {
+      const bumped = await listed('kit-notes');
+      expect(bumped).toMatchObject({ sharedKit: 1, catalogSharedKit: 99 });
+      expect(bumped.ref).toBe(bumped.installed?.ref);
+    } finally {
+      write(kitDescriptor(repoUrl, commits.whole));
+    }
+    expect(await listed('kit-notes')).toMatchObject({
+      sharedKit: 1,
+      catalogSharedKit: 1,
+    });
+  });
 
   it('fails an update whose build leaves a stylesheet out, and keeps the live build', async () => {
     const before = await listed('kit-notes');

@@ -8,6 +8,7 @@ import {
   descriptorIdOf,
   loadMarketplace,
   marketplaceIcon,
+  rebuildFixesKit,
   useBuiltInClashes,
   type MarketplaceApp,
 } from '../../shared/registry/marketplace'
@@ -241,9 +242,19 @@ export function MarketplaceSettings() {
           const working = app.job && app.job.state !== 'failed'
           const outdated = installed && installed.ref !== app.ref
           // A kit app built for another shared kit will not open here (brief 163).
-          const kitMismatch = row.apps.find(
+          const mismatched = row.apps.find(
             (a) => typeof a.sharedKit === 'number' && a.sharedKit !== SHARED_KIT_VERSION
-          )?.sharedKit
+          )
+          const kitMismatch = mismatched?.sharedKit
+          // At the same ref, with the build present, Update and Reinstall do
+          // not show; if the catalog now names this desktop's kit, the same
+          // install rebuilds it for this kit (brief 176).
+          const rebuild =
+            !!installed &&
+            !missing &&
+            !outdated &&
+            !!mismatched &&
+            rebuildFixesKit(mismatched, SHARED_KIT_VERSION)
           const clashing = (a: MarketplaceApp) => clashes.includes(a.id)
           const canOpen = (a: MarketplaceApp) =>
             !!a.installed && !a.installed.missing && !working && !clashing(a)
@@ -251,6 +262,8 @@ export function MarketplaceSettings() {
           if (working) state = JOB_LABEL[app.job!.state]
           else if (app.job?.state === 'failed')
             state = `${JOB_LABEL.failed}: ${app.job.reason ?? ''}`
+          else if (rebuild)
+            state = `Built for shared kit ${kitMismatch}; a rebuild for kit ${SHARED_KIT_VERSION} is available`
           else if (kitMismatch !== undefined)
             state = `Needs an update: built for shared kit ${kitMismatch}, this desktop has ${SHARED_KIT_VERSION}`
           else if (!installed) state = 'Not installed'
@@ -328,6 +341,11 @@ export function MarketplaceSettings() {
                         onClick={() => void install(row)}
                       >
                         {!installed ? 'Install' : missing ? 'Reinstall' : 'Update'}
+                      </Button>
+                    )}
+                    {!working && rebuild && (
+                      <Button size="sm" onClick={() => void install(row)}>
+                        Rebuild
                       </Button>
                     )}
                     {(installed || app.job?.state === 'failed') && (

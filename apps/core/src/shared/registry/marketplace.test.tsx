@@ -14,6 +14,7 @@ import {
   kitBuildKey,
   loadMarketplace,
   marketplaceIcon,
+  rebuildFixesKit,
   syncMarketplaceApps,
   useBuiltInClashes,
   type MarketplaceApp,
@@ -381,6 +382,27 @@ describe('kit apps in the registry (brief 163)', () => {
     expect(await hostOf('hollow')).toBe('native')
     expect(await hostOf('orbits')).toBe('native')
     syncMarketplaceApps([])
+  })
+
+  it('offers a rebuild only when the catalog now names this desktop’s kit (brief 176)', () => {
+    const built = (sharedKit: number, catalogSharedKit?: number | null) =>
+      suiteApp('office-docs', { sharedKit, catalogSharedKit })
+    // Built for kit 1, the catalog moved to 2, the desktop has 2.
+    expect(rebuildFixesKit(built(1, 2), 2)).toBe(true)
+    // The catalog still names kit 1: a rebuild would make the same mismatch.
+    expect(rebuildFixesKit(built(1, 1), 2)).toBe(false)
+    // A backend from before brief 176 says nothing about the catalog: unknown.
+    expect(rebuildFixesKit(built(1), 2)).toBe(false)
+    // Nothing to fix.
+    expect(rebuildFixesKit(built(2, 2), 2)).toBe(false)
+    // Not installed, a mount app, a URL app.
+    expect(rebuildFixesKit({ ...built(1, 2), installed: null }, 2)).toBe(false)
+    expect(rebuildFixesKit(app('hollow', {}, { sharedKit: null, catalogSharedKit: null }), 2)).toBe(
+      false
+    )
+    expect(
+      rebuildFixesKit({ ...urlApp('x-0123456789ab'), sharedKit: 1, catalogSharedKit: 2 }, 2)
+    ).toBe(false)
   })
 
   it('never takes a URL app for a kit app', () => {

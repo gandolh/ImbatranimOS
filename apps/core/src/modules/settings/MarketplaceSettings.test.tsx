@@ -338,6 +338,61 @@ describe('MarketplaceSettings: a descriptor with several apps (brief 162)', () =
     expect(container.textContent).toContain('Installed · aaaaaaa')
   })
 
+  it('offers Rebuild at the same ref when the catalog now names this desktop’s kit (brief 176)', async () => {
+    post.mockResolvedValue({ data: { state: 'queued' } })
+    await renderSuite([
+      officeApp('office-docs', 'Docs', true, { sharedKit: 99, catalogSharedKit: 1 }),
+      officeApp('office-sheets', 'Sheets', true, { sharedKit: 99, catalogSharedKit: 1 }),
+    ])
+    expect(container.textContent).toContain(
+      'Built for shared kit 99; a rebuild for kit 1 is available'
+    )
+    expect(container.textContent).not.toContain('Needs an update')
+    expect(buttons('Rebuild')).toHaveLength(1)
+    expect(buttons('Update')).toHaveLength(0)
+    expect(buttons('Reinstall')).toHaveLength(0)
+    await act(async () => buttons('Rebuild')[0].click())
+    expect(post).toHaveBeenCalledExactlyOnceWith('/marketplace/apps/office/install')
+  })
+
+  it('keeps the mismatch text and offers nothing when the catalog names another kit too', async () => {
+    for (const catalogSharedKit of [99, undefined]) {
+      // undefined: a backend from before brief 176, which cannot say.
+      await renderSuite([
+        officeApp('office-docs', 'Docs', true, { sharedKit: 99, catalogSharedKit }),
+        officeApp('office-sheets', 'Sheets', true, { sharedKit: 99, catalogSharedKit }),
+      ])
+      expect(container.textContent).toContain(
+        'Needs an update: built for shared kit 99, this desktop has 1'
+      )
+      for (const label of ['Rebuild', 'Update', 'Reinstall', 'Install']) {
+        expect(buttons(label)).toHaveLength(0)
+      }
+      act(() => root.unmount())
+      root = createRoot(container)
+    }
+  })
+
+  it('still says Update for a new ref and Reinstall for a missing build, not Rebuild', async () => {
+    const mismatched = { sharedKit: 99, catalogSharedKit: 1 }
+    await renderSuite([
+      officeApp('office-docs', 'Docs', true, { ...mismatched, ref: NEW }),
+      officeApp('office-sheets', 'Sheets', true, { ...mismatched, ref: NEW }),
+    ])
+    expect(buttons('Update')).toHaveLength(1)
+    expect(buttons('Rebuild')).toHaveLength(0)
+    act(() => root.unmount())
+    root = createRoot(container)
+
+    const gone = officeApp('office-docs', 'Docs', true, mismatched)
+    await renderSuite([
+      { ...gone, installed: { ...gone.installed!, missing: true } },
+      officeApp('office-sheets', 'Sheets', true, mismatched),
+    ])
+    expect(buttons('Reinstall')).toHaveLength(1)
+    expect(buttons('Rebuild')).toHaveLength(0)
+  })
+
   it('says when a built-in app has one of its apps’ ids', async () => {
     await renderSuite([
       officeApp('settings', 'Settings', true),

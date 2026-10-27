@@ -138,6 +138,13 @@ export interface MarketplaceApp {
    * Not installed: what the descriptor says now.
    */
   sharedKit: number | null;
+  /**
+   * What the catalog's descriptor says now (brief 176), whatever was built.
+   * Beside an installed `sharedKit` it tells the desktop whether a rebuild
+   * at the same ref would fix a kit mismatch. Null for an app that exports
+   * `mount` and for a URL app. Older desktops ignore it.
+   */
+  catalogSharedKit: number | null;
   /** The commit the catalog pins now; for a URL app, the installed one. */
   ref: string;
   /**
@@ -320,6 +327,7 @@ export class MarketplaceService implements OnModuleInit {
           opens: a.opens,
           minSystemVersion: d.minSystemVersion,
           sharedKit: built ? built.sharedKit : d.sharedKit,
+          catalogSharedKit: d.sharedKit,
           ref: d.source.ref,
           runtime: 'native',
           installed,
@@ -406,6 +414,7 @@ export class MarketplaceService implements OnModuleInit {
       // Never a kit app: an app from a URL runs sandboxed, and the shared
       // modules never reach a frame (brief 163).
       sharedKit: null,
+      catalogSharedKit: null,
       ref: row.ref,
       runtime: 'sandboxed',
       source,

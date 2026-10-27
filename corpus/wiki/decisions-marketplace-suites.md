@@ -1,6 +1,6 @@
 ---
-summary: The marketplace's calls for suites (brief 162) and kit apps (brief 163), 2026-10-21 — a v2 row keeps its output in `entry`, the listing trusts what the build recorded (entries, and a kit app's stylesheets and shared kit version), the shared global holds frozen copies of the namespaces, the registry sync prunes a gone build's stylesheet links, the theme tokens are static, and the dev container can try a local `file://` checkout.
-updated: 2026-10-21
+summary: The marketplace's calls for suites (brief 162) and kit apps (brief 163), 2026-10-21 — a v2 row keeps its output in `entry`, the listing trusts what the build recorded (entries, and a kit app's stylesheets and shared kit version) and, since brief 176 (2026-10-27), reports the catalog's kit beside it so the pane can offer a rebuild, the shared global holds frozen copies of the namespaces, the registry sync prunes a gone build's stylesheet links, the theme tokens are static, and the dev container can try a local `file://` checkout.
+updated: 2026-10-27
 ---
 
 # Decisions: suites and kit apps in the marketplace
@@ -98,3 +98,12 @@ build added these.
   stripped field that would fail only when a window opens.
 - **The pane says "Needs an update"** for a kit app whose version differs
   (`MarketplaceSettings.tsx`, one state line, outside the brief's file list).
+- **The listing reports the catalog's kit beside the build's** (brief 176,
+  2026-10-27). An installed app's `sharedKit` stays what its live build was
+  made against, so the desktop runs a build the way it was built;
+  `catalogSharedKit` is what the descriptor names now (null for a mount app
+  and a URL app). The pane offers **Rebuild** at the same ref only when the
+  build's kit differs from the desktop's and the catalog's equals it. Rejected:
+  reporting the catalog's kit as `sharedKit`, which would make the desktop
+  load a build against a kit it was not made for. A backend without the field
+  reads as unknown and offers nothing.

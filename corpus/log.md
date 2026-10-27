@@ -4399,7 +4399,7 @@ The grilling that began with Spotify ended with a general layer: Linux GUI apps 
 
 ## [2026-10-23] todo | Briefs 174–176 from two open todos
 
-[174](briefs/todo/174-taskbar-activation-moves-focus-into-the-window.md): activating a
+[174](briefs/done/174-taskbar-activation-moves-focus-into-the-window.md): activating a
 window from the taskbar, Alt+Tab or the launcher moves DOM focus into it (last focused
 element, then first focusable, then the content area; the iframe for a URL app). It
 stays out of `shared/store/*`, which 164–167 and 169 own.
@@ -4409,3 +4409,7 @@ renders as an inline panel instead of a crash, a toast and a client-error log.
 catalog's kit beside the build's (today `marketplace.service.ts:322` hides it), and the
 pane offers Rebuild when only the kit changed. The todos moved to `todos/promoted/`.
 `linux-apps-after-the-first-wave` stays a todo until 168–173 are built.
+
+## [2026-10-27] build | Brief 174 done: activation moves focus into the window
+
+A window raised from the taskbar, an Alt+Tab commit, the Start menu or the palette now gets the keyboard (`683ecad`, 1.32.0). One frame after the store call, and only while that window is still the focused one (so never behind the cover screen), focus goes to the element that last had it in the window's content area, else the first focusable element (a URL app's iframe), else the content area, now `tabIndex={-1}`. Focus is remembered from the content area only, so a restore never lands on Minimize; a click inside a window is untouched, and minimising from the taskbar leaves focus on the button. The brief put the Start menu in `appsSource.ts`; it goes through `openApp`, so its path is in `Taskbar.tsx` and moves focus only for an app that was already open. Walked in Chrome in the dev container on remapped ports (5173 was taken): two Terminals by taskbar and Alt+Tab, a minimised one restored both ways, Calculator from Start and the palette, and a URL app from a local `file://` repository whose iframe took the keys. CAD was not walked; it is not in this catalog. The walk found three gaps, left in [keyboard-focus-gaps-after-brief-174](todos/keyboard-focus-gaps-after-brief-174.md): xterm eats the Tab keydown so Alt+Tab does nothing inside a Terminal, a new window from Start keeps focus on the Start button, and desktop icons, toasts and `system.window.focus()` don't move focus. [Brief 174](briefs/done/174-taskbar-activation-moves-focus-into-the-window.md) carries the outcome.

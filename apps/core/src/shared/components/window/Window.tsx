@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState } from 'react'
+import React, { useRef, useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { useDrag } from '@use-gesture/react'
@@ -12,6 +12,7 @@ import {
   TITLEBAR_MIN_VISIBLE,
 } from '../../store/windowStore'
 import { SnapOverlay } from './SnapOverlay'
+import { forgetWindowFocus, rememberWindowFocus } from './focusIntoWindow'
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
@@ -227,6 +228,12 @@ export const Window = React.memo(function Window({
     [closeWindow, windowId]
   )
 
+  const handleContentFocus = useCallback(
+    (e: React.FocusEvent) => rememberWindowFocus(windowId, e.target),
+    [windowId]
+  )
+  useEffect(() => () => forgetWindowFocus(windowId), [windowId])
+
   if (!instance) return null
 
   return (
@@ -335,8 +342,15 @@ export const Window = React.memo(function Window({
             </div>
           </div>
 
-          {/* Window body */}
-          <div className="bg-surface-container-lowest text-on-surface min-h-0 flex-1 overflow-auto">
+          {/* Window body. Focusable by script only (tabIndex -1), as the last
+              place the taskbar or Alt+Tab can put the keyboard (brief 174);
+              its focus handler remembers where the keyboard was in the app. */}
+          <div
+            data-window-content=""
+            tabIndex={-1}
+            onFocus={handleContentFocus}
+            className="bg-surface-container-lowest text-on-surface min-h-0 flex-1 overflow-auto outline-none"
+          >
             {children}
           </div>
         </motion.div>

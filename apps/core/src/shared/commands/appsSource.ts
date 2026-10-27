@@ -1,6 +1,7 @@
 import { APP_REGISTRY } from '../registry/registry'
 import { getEnabledApps } from '../registry/enabledApps'
 import { useWindowStore } from '../store/windowStore'
+import { focusIntoWindowSoon } from '../components/window/focusIntoWindow'
 import type { CommandSource, CommandItem } from './CommandSourcesRegistry'
 
 const GROUP = 'Apps'
@@ -49,6 +50,9 @@ export const appsSource: CommandSource = {
       if (existing) {
         useWindowStore.getState().focusWindow(existing.id)
         useWindowStore.getState().showWindow(existing.id)
+        // The palette hands focus back as it closes; a frame later the
+        // keyboard goes into the window (brief 174).
+        focusIntoWindowSoon(existing.id)
         return
       }
     }

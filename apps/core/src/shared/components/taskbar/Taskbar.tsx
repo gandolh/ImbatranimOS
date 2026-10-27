@@ -16,6 +16,7 @@ import { StartMenu } from './StartMenu'
 import { Tray } from './Tray'
 import { WorkspacePips } from './WorkspacePips'
 import { TaskbarContextMenu } from './TaskbarContextMenu'
+import { focusIntoWindowSoon } from '../window/focusIntoWindow'
 
 // Field separator for the task-button projection; cannot occur in a uuid, slug,
 // or realistic window title. Title goes last and is rejoined so a stray one is harmless.
@@ -78,19 +79,32 @@ export function Taskbar() {
    * three-line version of "open an app", and both were missing the rule.
    */
   function launchApp(appId: string) {
-    openApp(appId)
+    const open = new Set(useWindowStore.getState().windows.map((w) => w.id))
+    const id = openApp(appId)
+    // A single-instance app that was already open came to the front: put the
+    // keyboard in it (brief 174). The menu hands focus back to the Start
+    // button as it closes, so this waits a frame. A new window is left to
+    // its app, which decides its own first focus as it mounts.
+    if (open.has(id)) focusIntoWindowSoon(id)
   }
 
+  /**
+   * A task button: restore a minimised window, minimise the focused one, or
+   * bring another to the front. Restoring and raising move the keyboard into
+   * the window (brief 174); minimising leaves it on the button.
+   */
   function handleTaskClick(id: string) {
     const win = useWindowStore.getState().windows.find((w) => w.id === id)
     if (!win) return
     if (!win.isVisible) {
       showWindow(id)
       focusWindow(id)
+      focusIntoWindowSoon(id)
     } else if (win.id === topVisibleWindowId()) {
       hideWindow(id) // minimize the focused window
     } else {
       focusWindow(id)
+      focusIntoWindowSoon(id)
     }
   }
 

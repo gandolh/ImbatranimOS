@@ -4,6 +4,7 @@ import { isShellSuspended } from '../../../modules/auth/store/authStore'
 import { APP_REGISTRY } from '../../registry/registry'
 import { useDocumentedShortcuts } from '../../hooks/useRegisteredHotkeys'
 import { cn } from '../../../lib/cn'
+import { focusIntoWindowSoon } from '../window/focusIntoWindow'
 import { openOrAdvance, switcherOrder, commitTarget, type SwitcherState } from './switcherModel'
 
 /**
@@ -61,6 +62,8 @@ export function AltTabSwitcher() {
       // focusWindow keeps holding.
       if (!win.isVisible) store.showWindow(id)
       store.focusWindow(id)
+      // And the keyboard goes with it (brief 174), as a click inside would.
+      focusIntoWindowSoon(id)
     }
 
     const onKeyDown = (e: KeyboardEvent) => {

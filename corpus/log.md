@@ -4433,7 +4433,7 @@ imbatranim-office brief 09's on 2026-10-28. [178](briefs/done/178-alt-tab-works-
 the Alt+Tab switcher listens in the capture phase, so it works over a Terminal.
 [179](briefs/done/179-a-click-that-opens-another-window-leaves-it-in-front.md): a
 window's root click doesn't raise it when the click brought another window to
-the front, fixed once in `Window.tsx`. [180](briefs/todo/180-every-new-or-raised-window-gets-the-keyboard.md):
+the front, fixed once in `Window.tsx`. [180](briefs/done/180-every-new-or-raised-window-gets-the-keyboard.md):
 new windows, desktop icons, toast actions and `system.window.focus()` move the
 keyboard in, as brief 174's paths do. [181](briefs/todo/181-prefs-imports-the-notification-store-statically.md):
 `prefs.ts` imports the notification store statically, if there is no cycle, so
@@ -4449,3 +4449,7 @@ The Alt+Tab switcher's key listeners on `window` run in the capture phase (`770f
 ## [2026-10-28] build | Brief 179 done: a click that opens another window leaves it in front
 
 A click anywhere in a window still raises it, unless the click itself brought another window to the front (`90cf397`, 1.41.0). The root notes the store's z counter in its click-capture handler, before any handler inside the window runs; if the counter moved and another window is on top when the click reaches the root, the root leaves it there. Closing or minimising mints no z, so a click that only did that still raises the clicked window. The store is unchanged, and brief 175's refusal panel no longer stops its own click. Walked in Chrome against the dev container with brief 163's kit fixture, whose Kit Hello opens one window: Settings → Marketplace → Open Kit Hello left Kit Hello in front whether it was already open or not, and a click on Settings' uncovered content raised Settings. [Brief 179](briefs/done/179-a-click-that-opens-another-window-leaves-it-in-front.md) carries the outcome.
+
+## [2026-10-28] build | Brief 180 done: every new or raised window gets the keyboard
+
+A new window takes the keyboard once its app has mounted (`e233299`, 1.42.0): a marker rendered after the app inside its `Suspense` boundary waits two frames, then calls brief 174's helper if the window is still the focused one, which keeps an app's own first focus such as CAD's command line. A desktop icon, a toast's action, an app's `system.intents.openApp` and `system.window.focus()` move the keyboard into a window they raise; the store and the protocol are unchanged. Walked in Chrome against the dev container: Terminal from Start took typing with no click, Calculator from the palette took `42`, CAD kept its command line, Calculator's desktop icon and a Clock alarm's Snooze each brought their window up with the keyboard in it. No app calls `system.window.focus()` today; unit tests cover it. A side effect: after a reload the restored top window has the keyboard. Left in [keyboard-gaps-after-brief-180](todos/keyboard-gaps-after-brief-180.md): Ctrl+K misses a Terminal, and other `openApp` callers this brief did not own raise a window without the keyboard. [Brief 180](briefs/done/180-every-new-or-raised-window-gets-the-keyboard.md) carries the outcome.

@@ -1,15 +1,21 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { topVisibleWindowId } = vi.hoisted(() => ({
+const { topVisibleWindowId, openWindows } = vi.hoisted(() => ({
   topVisibleWindowId: vi.fn<() => string | null>(),
+  openWindows: { ids: [] as string[] },
 }))
-vi.mock('../../store/windowStore', () => ({ topVisibleWindowId }))
+vi.mock('../../store/windowStore', () => ({
+  topVisibleWindowId,
+  useWindowStore: { getState: () => ({ windows: openWindows.ids.map((id) => ({ id })) }) },
+}))
 
 import {
+  focusIntoNewWindowSoon,
   focusIntoWindow,
   focusIntoWindowSoon,
   forgetWindowFocus,
+  openWithKeyboard,
   rememberWindowFocus,
 } from './focusIntoWindow'
 
@@ -43,6 +49,7 @@ function taskbarButton(): HTMLButtonElement {
 
 beforeEach(() => {
   topVisibleWindowId.mockReset()
+  openWindows.ids = []
 })
 
 afterEach(() => {
@@ -186,5 +193,117 @@ describe('focusIntoWindowSoon', () => {
     focusIntoWindowSoon('a')
     flushFrame()
     expect(document.activeElement).toBe(button)
+  })
+})
+
+/** Brief 180: a new window takes the keyboard from its own mount. */
+describe('focusIntoNewWindowSoon', () => {
+  let frames: FrameRequestCallback[]
+
+  beforeEach(() => {
+    frames = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => frames.push(cb))
+    vi.stubGlobal('cancelAnimationFrame', (handle: number) => {
+      // Handles are 1-based push results; a cancelled slot never runs.
+      frames[handle - 1] = () => {}
+    })
+  })
+
+  const flushFrame = () => {
+    const pending = frames
+    frames = []
+    for (const cb of pending) cb(0)
+  }
+
+  it('waits two frames, then puts the keyboard in the new window', () => {
+    const { content } = mountWindow('a', '<input id="cmd" />')
+    const start = taskbarButton()
+    topVisibleWindowId.mockReturnValue('a')
+
+    focusIntoNewWindowSoon('a')
+    flushFrame()
+    // The launcher's own focus return gets the first frame.
+    expect(document.activeElement).toBe(start)
+    flushFrame()
+    expect(document.activeElement).toBe(content.querySelector('#cmd'))
+  })
+
+  it("leaves the app's own first focus alone (CAD's command line)", () => {
+    const { content } = mountWindow('a', '<button id="menu">File</button><input id="cmd" />')
+    topVisibleWindowId.mockReturnValue('a')
+    const cmd = content.querySelector<HTMLInputElement>('#cmd')!
+    cmd.focus()
+
+    focusIntoNewWindowSoon('a')
+    flushFrame()
+    flushFrame()
+    expect(document.activeElement).toBe(cmd)
+  })
+
+  it('moves nothing for a window that opened behind another', () => {
+    mountWindow('a', '<input id="cmd" />')
+    const start = taskbarButton()
+    topVisibleWindowId.mockReturnValue('b')
+
+    focusIntoNewWindowSoon('a')
+    flushFrame()
+    flushFrame()
+    expect(document.activeElement).toBe(start)
+  })
+
+  it('moves nothing behind the cover screen', () => {
+    mountWindow('a', '<input id="cmd" />')
+    const start = taskbarButton()
+    topVisibleWindowId.mockReturnValue(null)
+
+    focusIntoNewWindowSoon('a')
+    flushFrame()
+    flushFrame()
+    expect(document.activeElement).toBe(start)
+  })
+
+  it('moves nothing once cancelled (the window went away)', () => {
+    mountWindow('a', '<input id="cmd" />')
+    const start = taskbarButton()
+    topVisibleWindowId.mockReturnValue('a')
+
+    const cancel = focusIntoNewWindowSoon('a')
+    flushFrame()
+    cancel()
+    flushFrame()
+    expect(document.activeElement).toBe(start)
+  })
+})
+
+describe('openWithKeyboard', () => {
+  let frames: FrameRequestCallback[]
+
+  beforeEach(() => {
+    frames = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => frames.push(cb))
+  })
+
+  it('puts the keyboard in a window that was already open and came up', () => {
+    const { content } = mountWindow('a', '<input id="cmd" />')
+    taskbarButton()
+    openWindows.ids = ['a']
+    topVisibleWindowId.mockReturnValue('a')
+
+    expect(openWithKeyboard(() => 'a')).toBe('a')
+    expect(frames).toHaveLength(1)
+    frames[0](0)
+    expect(document.activeElement).toBe(content.querySelector('#cmd'))
+  })
+
+  it('leaves a new window to its own mount', () => {
+    openWindows.ids = ['a']
+    expect(openWithKeyboard(() => 'new')).toBe('new')
+    expect(frames).toHaveLength(0)
+  })
+
+  it('does nothing for a refused open', () => {
+    openWindows.ids = ['a']
+    expect(openWithKeyboard(() => '')).toBe('')
+    expect(frames).toHaveLength(0)
   })
 })

@@ -1,4 +1,4 @@
-import { topVisibleWindowId } from '../../store/windowStore'
+import { topVisibleWindowId, useWindowStore } from '../../store/windowStore'
 
 /**
  * Moving the keyboard into a window the desktop raised (brief 174).
@@ -10,6 +10,11 @@ import { topVisibleWindowId } from '../../store/windowStore'
  * command line) needed a click first. Those paths call
  * {@link focusIntoWindowSoon} after their store calls; the click path never
  * does, because the click has already decided.
+ *
+ * Brief 180 widened it to every path: a desktop icon, a toast's action, an
+ * app's `system.window.focus()` or `system.intents.openApp` raise a window and
+ * call the same helper, and a NEW window gets the keyboard from its own mount
+ * ({@link focusIntoNewWindowSoon}), whatever opened it.
  */
 
 /** Marks a window's content area (Window.tsx): the app's part, not the title bar. */
@@ -116,4 +121,41 @@ export function focusIntoWindowSoon(windowId: string): void {
     if (topVisibleWindowId() !== windowId) return
     focusIntoWindow(windowId)
   })
+}
+
+/**
+ * A new window's first focus (brief 180). WindowContainer calls this once the
+ * app's content has mounted (past its lazy chunk), and again after a Reload.
+ * Two frames later, and only while the window is still the focused one, the
+ * keyboard goes in by the same order as {@link focusIntoWindow}, which leaves
+ * it alone when the app already focused something of its own (CAD's command
+ * line). The two frames are for the launcher that opened it: the Start menu
+ * and the palette hand focus back to their trigger as they close.
+ *
+ * A window that opens behind another, or behind the cover screen, is never
+ * the focused one, so it takes nothing. Returns a cancel for the effect's
+ * cleanup.
+ */
+export function focusIntoNewWindowSoon(windowId: string): () => void {
+  let frame = requestAnimationFrame(() => {
+    frame = requestAnimationFrame(() => {
+      if (topVisibleWindowId() !== windowId) return
+      focusIntoWindow(windowId)
+    })
+  })
+  return () => cancelAnimationFrame(frame)
+}
+
+/**
+ * Runs `open`, an `openApp` call from a path that is not a click inside the
+ * window it brings up (a desktop icon, a toast, an app's intent). When that
+ * window was already open, it was raised, and the keyboard follows it as it
+ * does from the taskbar. A new window takes the keyboard from its own mount
+ * instead, once its content is there. Returns what `open` returned.
+ */
+export function openWithKeyboard(open: () => string): string {
+  const openBefore = new Set(useWindowStore.getState().windows.map((w) => w.id))
+  const id = open()
+  if (id && openBefore.has(id)) focusIntoWindowSoon(id)
+  return id
 }

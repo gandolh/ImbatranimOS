@@ -24,6 +24,7 @@ import { useAppearanceStore } from '../shared/store/appearanceStore'
 import { useIntentStore } from '../shared/store/intentStore'
 import { isTopWindow, useWindowStore } from '../shared/store/windowStore'
 import { openApp } from '../shared/intents/openApp'
+import { focusIntoWindowSoon, openWithKeyboard } from '../shared/components/window/focusIntoWindow'
 import { isShellSuspended } from '../modules/auth/store/authStore'
 import { useShortcutStore } from '../shared/hooks/shortcutRegistry'
 import { eventMatchesBinding, parseBinding } from '../shared/hooks/useGlobalHotkeys'
@@ -99,7 +100,11 @@ function windowFor(windowId: string): SystemWindow {
   return {
     setTitle: (title) => store().updateTitle(windowId, title),
     requestClose: () => store().closeWindow(windowId),
-    focus: () => store().focusWindow(windowId),
+    // The keyboard comes with the raise (brief 180), as from the taskbar.
+    focus: () => {
+      store().focusWindow(windowId)
+      focusIntoWindowSoon(windowId)
+    },
     hide: () => store().hideWindow(windowId),
     show: () => store().showWindow(windowId),
     isFocused: () => isTopWindow(windowId),
@@ -189,7 +194,9 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
     window: win,
 
     intents: {
-      openApp: (target, payload) => openApp(target, payload),
+      // A window this raises gets the keyboard; a new one takes it as it
+      // mounts (brief 180).
+      openApp: (target, payload) => openWithKeyboard(() => openApp(target, payload)),
       consume: <T>() =>
         windowId === null
           ? undefined

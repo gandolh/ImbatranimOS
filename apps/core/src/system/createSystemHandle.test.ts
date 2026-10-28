@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSystemHandle } from './createSystemHandle'
 import { useWindowStore } from '../shared/store/windowStore'
 import { useIntentStore } from '../shared/store/intentStore'
@@ -66,6 +66,56 @@ describe('window scoping', () => {
     allow = true
     system.window.requestClose()
     expect(useWindowStore.getState().windows).toHaveLength(0)
+  })
+
+  // Brief 180: an app raising its own window brings the keyboard with it, as
+  // the taskbar does. Window.tsx is stood in for by its two data attributes.
+  describe('window.focus', () => {
+    let frames: FrameRequestCallback[]
+
+    beforeEach(() => {
+      frames = []
+      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => frames.push(cb))
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+      document.body.innerHTML = ''
+    })
+
+    function windowDom(id: string): HTMLInputElement {
+      const root = document.createElement('div')
+      root.setAttribute('data-window-id', id)
+      root.innerHTML = '<div data-window-content="" tabindex="-1"><input /></div>'
+      document.body.appendChild(root)
+      return root.querySelector('input')!
+    }
+
+    it('raises the own window and puts the keyboard in it', () => {
+      const mine = openTestWindow('notepad')
+      const theirs = openTestWindow('calculator')
+      const input = windowDom(mine)
+      const elsewhere = windowDom(theirs)
+      elsewhere.focus()
+
+      createSystemHandle('notepad', mine).window.focus()
+      expect(useWindowStore.getState().windows.find((w) => w.id === mine)?.zIndex).toBe(3)
+      for (const cb of frames) cb(0)
+      expect(document.activeElement).toBe(input)
+    })
+
+    it('moves no focus for a minimised window it cannot show', () => {
+      const mine = openTestWindow('notepad')
+      const theirs = openTestWindow('calculator')
+      windowDom(mine)
+      const elsewhere = windowDom(theirs)
+      elsewhere.focus()
+      useWindowStore.getState().hideWindow(mine)
+
+      createSystemHandle('notepad', mine).window.focus()
+      for (const cb of frames) cb(0)
+      expect(document.activeElement).toBe(elsewhere)
+    })
   })
 
   it('a windowless handle degrades instead of crashing', () => {

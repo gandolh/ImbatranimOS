@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { cn } from '../../../lib/cn'
 import { TASKBAR_HEIGHT } from '../../store/windowStore'
 import { openApp } from '../../intents/openApp'
+import { openWithKeyboard } from '../window/focusIntoWindow'
 import { useNotificationStore, type NotificationItem } from '../../store/notificationStore'
 import { NotificationIcon } from './NotificationIcon'
 import { levelStripeClass } from './levelStyle'
@@ -29,10 +30,14 @@ function Toast({ item }: { item: NotificationItem }) {
     markRead(item.id)
     dismissToast(item.id)
   }
-  /** Open the raising app, optionally with an action's payload. */
+  /**
+   * Open the raising app, optionally with an action's payload. An app already
+   * open comes to the front with the keyboard (brief 180).
+   */
   const activate = (payload?: unknown) => {
-    if (!item.appId) return
-    openApp(item.appId, payload)
+    const appId = item.appId
+    if (!appId) return
+    openWithKeyboard(() => openApp(appId, payload))
     close()
   }
 

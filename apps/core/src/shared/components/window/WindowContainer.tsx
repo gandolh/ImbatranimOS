@@ -1,4 +1,4 @@
-import { Suspense, memo, useCallback, useMemo, useState } from 'react'
+import { Suspense, memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/shallow'
 import { topVisibleWindowId, useWindowStore } from '../../store/windowStore'
 import { Window } from './Window'
@@ -8,6 +8,7 @@ import { createSystemHandle } from '../../../system/createSystemHandle'
 import { AppErrorBoundary } from './AppErrorBoundary'
 import { AppErrorFallback } from './AppErrorFallback'
 import { useRegistryVersion } from '../../registry/marketplace'
+import { focusIntoNewWindowSoon } from './focusIntoWindow'
 
 // Field separator for the per-window projection key. `␟` (SYMBOL FOR UNIT
 // SEPARATOR) cannot occur in a uuid or an app-id slug, so splitting is safe.
@@ -170,6 +171,10 @@ const WindowSlot = memo(function WindowSlot({
               }
             >
               <AppComponent windowId={windowId} />
+              {/* After the app, in the same boundary: it mounts once the app's
+                  lazy chunk has resolved and the app's own mount effects
+                  (an input that focuses itself) have run (brief 180). */}
+              <FirstFocus windowId={windowId} />
             </Suspense>
           </SystemProvider>
         </AppErrorBoundary>
@@ -179,3 +184,9 @@ const WindowSlot = memo(function WindowSlot({
     </Window>
   )
 })
+
+/** A new window takes the keyboard once its app is on screen (brief 180). */
+function FirstFocus({ windowId }: { windowId: string }) {
+  useEffect(() => focusIntoNewWindowSoon(windowId), [windowId])
+  return null
+}

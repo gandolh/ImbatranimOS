@@ -37,7 +37,8 @@ const { openApp } = vi.hoisted(() => ({ openApp: vi.fn() }))
 vi.mock('../../shared/intents/openApp', () => ({ openApp }))
 
 const { KitAppHost } = await import('./KitAppHost')
-const { startKitApp } = await import('./kitModule')
+const { importKitModule, startKitApp } = await import('./kitModule')
+const { apiUrl } = await import('./apiUrl')
 
 /**
  * Brief 163 — a kit app in a window: a real ES module, written here as a
@@ -269,7 +270,7 @@ describe('KitAppHost', () => {
     expect(loads).toHaveBeenCalledOnce()
     // The module evaluated with the shared kit already on the global.
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 20))
+      await importKitModule(apiUrl('notes/app.mjs').href)
     })
     expect(seen().version).toBe(1)
     render([app(), 'w1'])
@@ -290,7 +291,7 @@ describe('KitAppHost', () => {
     writeBuild({ 'kit.css': '' })
     startKitApp(app())
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 20))
+      await importKitModule(apiUrl('notes/app.mjs').href).catch(() => undefined)
     })
     render([app(), 'w1'])
     await settle()

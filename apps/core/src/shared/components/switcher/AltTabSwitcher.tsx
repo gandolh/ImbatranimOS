@@ -21,6 +21,12 @@ import { openOrAdvance, switcherOrder, commitTarget, type SwitcherState } from '
  * documented-mod+S pattern. Window blur COMMITS the visible selection: if the
  * host OS stole focus mid-switch the Alt keyup never arrives, and eating the
  * user's switch reads worse than honoring what the overlay showed.
+ *
+ * The key listeners run in the CAPTURE phase on `window` (brief 178): xterm
+ * handles Tab and stops its keydown, so a bubbling listener never saw Alt+Tab
+ * while a Terminal had the keyboard. A key the switcher acts on is stopped
+ * here, so the focused app never also gets it; every other key goes on to the
+ * focused element untouched.
  */
 export function AltTabSwitcher() {
   const [state, setState] = useState<SwitcherState | null>(null)
@@ -66,11 +72,18 @@ export function AltTabSwitcher() {
       focusIntoWindowSoon(id)
     }
 
+    // The switcher took this key: the focused app must not also act on it
+    // (a Terminal would complete a command on the Tab).
+    const take = (e: KeyboardEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
     const onKeyDown = (e: KeyboardEvent) => {
       // A covered screen eats no keys (brief 101).
       if (isShellSuspended()) return
       if (e.key === 'Tab' && e.altKey) {
-        e.preventDefault()
+        take(e)
         const dir: 1 | -1 = e.shiftKey ? -1 : 1
         setState((prev) => {
           if (prev) return openOrAdvance(prev, prev.ids, dir)
@@ -83,16 +96,16 @@ export function AltTabSwitcher() {
       if (!stateRef.current) return
       // While open: arrows also move, Enter commits, Esc cancels.
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault()
+        take(e)
         setState((prev) => (prev ? openOrAdvance(prev, prev.ids, 1) : prev))
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault()
+        take(e)
         setState((prev) => (prev ? openOrAdvance(prev, prev.ids, -1) : prev))
       } else if (e.key === 'Enter') {
-        e.preventDefault()
+        take(e)
         commit()
       } else if (e.key === 'Escape') {
-        e.preventDefault()
+        take(e)
         setState(null)
       }
     }
@@ -100,7 +113,7 @@ export function AltTabSwitcher() {
     const onKeyUp = (e: KeyboardEvent) => {
       if (!stateRef.current) return
       if (e.key === 'Alt') {
-        e.preventDefault()
+        take(e)
         commit()
       }
     }
@@ -110,12 +123,14 @@ export function AltTabSwitcher() {
       if (stateRef.current) commit()
     }
 
-    window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
+    // Capture phase (brief 178): window is first on every key's path, so a
+    // target that stops propagation (xterm on Tab) can't hide it from us.
+    window.addEventListener('keydown', onKeyDown, { capture: true })
+    window.addEventListener('keyup', onKeyUp, { capture: true })
     window.addEventListener('blur', onBlur)
     return () => {
-      window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('keydown', onKeyDown, { capture: true })
+      window.removeEventListener('keyup', onKeyUp, { capture: true })
       window.removeEventListener('blur', onBlur)
     }
   }, [])

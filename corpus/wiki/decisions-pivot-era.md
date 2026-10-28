@@ -1,6 +1,6 @@
 ---
 summary: The 2026-07-16 web-OS-era and 2026-07-17 Office/post-v1 decisions, still locked — the single-container shape, the add-on contract, the app roster and the Office-suite scope. Split out of decisions.md on 2026-08-05, which has a 200-line cap.
-updated: 2026-10-23
+updated: 2026-10-28
 ---
 
 # Decisions — the pivot era (2026-07-16 / 07-17)
@@ -95,7 +95,10 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
   read.
 - **License: AGPL-3.0-only, repo-wide** (executed 2026-07-17 with brief
   20, approved with the office grilling): required by SuperDoc (AGPL);
-  source is public and stays public, no plans to sell.
+  source is public and stays public, no plans to sell. **2026-10-28:**
+  SuperDoc left the repo with the built-in Docs (brief 164), so it no longer
+  requires the licence. The owner keeps AGPL-3.0-only by choice; the licence
+  is unchanged.
 - **Editor UX: explicit Save only** (Ctrl+S + toolbar, overwrite in
   place, dirty `•`, close-guard warning) — no autosave, no Save As (v1).
   New documents are born in the file-manager (right-click → New →

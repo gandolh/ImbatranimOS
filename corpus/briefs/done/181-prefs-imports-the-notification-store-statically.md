@@ -97,3 +97,11 @@ brief's files. Recorded in
 [full-run-timeouts-under-load](../../todos/full-run-timeouts-under-load.md).
 `npm run typecheck` and `npm run lint` pass. **Owner:** close this as is, or
 first fix those timeouts (the todo), then run the three again.
+
+## Closed 2026-10-28 by the owner
+
+The owner closed this brief as it stands on 2026-10-28. Its own two errors
+(`EnvironmentTeardownError` and `api.put is not a function`) are gone. The
+full run's remaining failures are other workspaces' fixed timeouts under load,
+and they stay in
+[full-run-timeouts-under-load](../../todos/full-run-timeouts-under-load.md).

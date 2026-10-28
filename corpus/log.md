@@ -4435,7 +4435,7 @@ the Alt+Tab switcher listens in the capture phase, so it works over a Terminal.
 window's root click doesn't raise it when the click brought another window to
 the front, fixed once in `Window.tsx`. [180](briefs/done/180-every-new-or-raised-window-gets-the-keyboard.md):
 new windows, desktop icons, toast actions and `system.window.focus()` move the
-keyboard in, as brief 174's paths do. [181](briefs/todo/181-prefs-imports-the-notification-store-statically.md):
+keyboard in, as brief 174's paths do. [181](briefs/done/181-prefs-imports-the-notification-store-statically.md):
 `prefs.ts` imports the notification store statically, if there is no cycle, so
 the full `npm test` stops flaking. [182](briefs/done/182-a-kit-app-starts-loading-when-its-window-opens.md):
 a kit app's entry is fetched as its window opens, which closes most of the
@@ -4456,7 +4456,7 @@ A new window takes the keyboard once its app has mounted (`e233299`, 1.42.0): a 
 
 ## [2026-10-28] build | Brief 181 built: prefs.ts imports the notification store statically; stays in todo
 
-`notificationStore.ts` imports only zustand, so there is no cycle, and the store was already in the entry chunk: `prefs.ts` now imports it at the top (`0937bba`, 1.43.0), and the eager set shrank by 518 bytes rather than grew. `marketplace.test.tsx`'s axios mock has a `put`. A follow-up (`c5b1bd9`, 1.51.0) resets every prefs module a test loads, since an old module's 5 s retry fired inside a later test. Fifteen full runs (`turbo test test:e2e --force`; without `--force` turbo replays its cache) showed no `EnvironmentTeardownError` and no `api.put` error, and core passed every run it finished after the follow-up. The run is still not green three times in a row: markdown-editor, notepad, code-editor and sheets tests hit vitest's 5 s, and the backend's service-server e2e its 60 s, with the machine's load average between 18 and 55 from other builds. Those are in [full-run-timeouts-under-load](todos/full-run-timeouts-under-load.md); the owner closes [brief 181](briefs/todo/181-prefs-imports-the-notification-store-statically.md) or fixes them first.
+`notificationStore.ts` imports only zustand, so there is no cycle, and the store was already in the entry chunk: `prefs.ts` now imports it at the top (`0937bba`, 1.43.0), and the eager set shrank by 518 bytes rather than grew. `marketplace.test.tsx`'s axios mock has a `put`. A follow-up (`c5b1bd9`, 1.51.0) resets every prefs module a test loads, since an old module's 5 s retry fired inside a later test. Fifteen full runs (`turbo test test:e2e --force`; without `--force` turbo replays its cache) showed no `EnvironmentTeardownError` and no `api.put` error, and core passed every run it finished after the follow-up. The run is still not green three times in a row: markdown-editor, notepad, code-editor and sheets tests hit vitest's 5 s, and the backend's service-server e2e its 60 s, with the machine's load average between 18 and 55 from other builds. Those are in [full-run-timeouts-under-load](todos/full-run-timeouts-under-load.md); the owner closes [brief 181](briefs/done/181-prefs-imports-the-notification-store-statically.md) or fixes them first.
 
 ## [2026-10-28] build | Brief 182 done: a kit app starts loading when its window opens
 
@@ -4465,3 +4465,22 @@ The registry's `lazy` factory for a kit app now preloads the entry and the build
 ## [2026-10-28] build | Brief 164 built (the Docs run); walk unfinished, stays in todo
 
 The built-in Docs is gone and Office is in the catalog, pinned to the office commit `1ca83c0` (`c3baeef`, 1.45.0). At sign-in a one-time migration moves the owner's choices from `docs` to `office-docs` (association overrides, the disabled set, desktop icons, startup apps) and records it in a new dotfile; recents are read through the same table. New Document resolves its opener through the associations and hides when nothing opens `.docx`; the Open With chooser names Office in the Marketplace for an unclaimed `.docx`. The production image shrank by about 35 MB. Walked in Chrome against the dev container with the suite installed: seeded choices moved, `letter.docx` opened in the suite's Docs from Files and from the Start menu's recents. The New Document check and the suite-uninstalled half were not walked when the owner paused the run. Found: Marketplace startup apps never open at sign-in, since the catalog registers them after `runStartupApps()`. [Brief 164](briefs/todo/164-retiring-a-built-in-office-app.md) carries the note.
+
+## [2026-10-28] decision | The owner's answers: 181 closed, AGPL stays, brief 183, the shell keeps Ctrl+K
+
+The owner answered the questions the last run left, on 2026-10-28.
+[Brief 181](briefs/done/181-prefs-imports-the-notification-store-statically.md)
+is closed as built: its own two errors are gone, and the full run's other
+timeouts stay in [full-run-timeouts-under-load](todos/full-run-timeouts-under-load.md).
+**The licence stays AGPL-3.0-only.** Its recorded reason was SuperDoc, which
+left the repo with the built-in Docs in brief 164; the licence now stands by
+the owner's choice, noted beside it in
+[decisions-pivot-era.md](wiki/decisions-pivot-era.md). Marketplace startup
+apps that never open at sign-in get
+[brief 183](briefs/todo/183-marketplace-startup-apps-open-at-sign-in.md): the
+set waits for the first Marketplace listing when it names an app that is not
+registered yet, so the list's order holds. Ctrl+K and the other global
+shortcuts over a Terminal stay with the shell; only Alt+Tab is taken in the
+capture phase. That item of
+[keyboard-gaps-after-brief-180](todos/keyboard-gaps-after-brief-180.md) is
+settled and the rest stay open.

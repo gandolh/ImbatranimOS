@@ -20,6 +20,10 @@ these:
   still opens the palette. Moving them to the capture phase would also take
   the key from the Terminal, which for Ctrl+K may be wanted and for Ctrl+W
   (close the shell's word) may not; that is the call.
+  **Decided by the owner, 2026-10-28: the shell keeps them.** Ctrl+K and the
+  other global shortcuts stay in the bubbling phase, so while a Terminal has
+  the keyboard they go to the shell. Only Alt+Tab is taken in the capture
+  phase (brief 178). This item is settled; the ones below stay open.
 - **Other `openApp` callers that can raise an open window** move no focus:
   the palette's recent-files and files sources (`recentFilesSource.ts`,
   `filesSource.ts`), the Notification panel's rows (`NotificationPanel.tsx`),

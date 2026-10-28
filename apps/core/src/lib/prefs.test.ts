@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * Brief 49 — the dotfile adapter.
@@ -22,10 +22,24 @@ vi.mock('./axios', () => ({
   },
 }))
 
+/**
+ * Every module a test loaded. `resetModules` gives the next test a new one,
+ * but the old one's debounce and retry timers still run: under the full turbo
+ * run a 503 test's 5 s retry landed in a later test as an extra PUT (brief
+ * 181). Each is stopped after its test.
+ */
+const loaded: { resetPrefsForTest: () => void }[] = []
+
 async function freshModule() {
   vi.resetModules()
-  return import('./prefs')
+  const mod = await import('./prefs')
+  loaded.push(mod)
+  return mod
 }
+
+afterEach(() => {
+  for (const mod of loaded.splice(0)) mod.resetPrefsForTest()
+})
 
 beforeEach(() => {
   localStorage.clear()

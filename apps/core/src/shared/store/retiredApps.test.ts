@@ -64,13 +64,36 @@ describe('migrateRetiredAppIds', () => {
 
   it('records that it ran, in a dotfile, and runs once', () => {
     migrateRetiredAppIds()
-    expect(JSON.parse(readPref(APP_ID_MIGRATIONS_KEY)!)).toEqual({ done: ['docs>office-docs'] })
+    expect(JSON.parse(readPref(APP_ID_MIGRATIONS_KEY)!)).toEqual({
+      done: RETIRED_APP_IDS.map(([from, to]) => `${from}>${to}`),
+    })
     expect(DOTFILE_KEYS as readonly string[]).toContain(APP_ID_MIGRATIONS_KEY)
 
     // A later choice of the old id (another browser's stale copy) is left alone.
     useStartupStore.setState({ apps: ['docs'] })
     migrateRetiredAppIds()
     expect(useStartupStore.getState().apps).toEqual(['docs'])
+  })
+
+  it('runs a pair added later on a desktop that already moved the earlier ones (brief 165)', () => {
+    // Moved Docs on brief 164's sign-in; Slides retires a release later.
+    writePref(APP_ID_MIGRATIONS_KEY, JSON.stringify({ done: ['docs>office-docs'] }))
+    useAssociationStore.setState({ overrides: { pptx: 'slides', docx: 'docs' } })
+    useDesktopStore.setState({ iconPositions: { slides: { x: 8, y: 300, pinned: true } } })
+    useStartupStore.setState({ apps: ['slides'] })
+
+    migrateRetiredAppIds()
+
+    // The Docs pair is not run again: a later choice of `docs` stays.
+    expect(useAssociationStore.getState().overrides).toEqual({
+      pptx: 'office-slides',
+      docx: 'docs',
+    })
+    expect(useDesktopStore.getState().iconPositions).toEqual({
+      'office-slides': { x: 8, y: 300, pinned: true },
+    })
+    expect(useStartupStore.getState().apps).toEqual(['office-slides'])
+    expect(JSON.parse(readPref(APP_ID_MIGRATIONS_KEY)!).done).toContain('slides>office-slides')
   })
 
   it("keeps a place the owner gave the suite's icon over the built-in's", () => {

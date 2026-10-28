@@ -102,13 +102,12 @@ Everything renders in the browser.
 | App | Engine | License note |
 |---|---|---|
 | PDF Viewer | pdfjs-dist | — |
-| Slides | pptx-preview | best-effort + Download escape hatch |
 | Sheets | Univer grid + **ExcelJS** bridge | ExcelJS (MIT) after SheetJS CE failed the styling spike |
 | Markdown | react-markdown + remark-gfm | **no** rehype-raw → XSS-safe by construction |
 | Code | **Monaco**, self-hosted | workers via Vite `?worker`, no CDN |
 
-Docs (SuperDoc) left for the Office suite in imbatranim-office on 2026-10-28;
-it installs from Settings → Marketplace.
+Docs (SuperDoc) and Slides (pptx-preview) left for the Office suite in
+imbatranim-office on 2026-10-28; it installs from Settings → Marketplace.
 
 :::caution[Two decisions the spikes forced]
 

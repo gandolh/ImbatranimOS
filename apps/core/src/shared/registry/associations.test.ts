@@ -74,8 +74,6 @@ describe('the before/after table — every mapping the old constant had', () => 
     ['a.toml', 'code-editor'],
     ['a.xml', 'code-editor'],
     ['a.sql', 'code-editor'],
-    ['deck.pptx', 'slides'],
-    ['deck.ppt', 'slides'],
     ['book.xlsx', 'sheets'],
     ['book.xls', 'sheets'],
     ['data.csv', 'sheets'],
@@ -198,6 +196,13 @@ describe('THE DEAD DOUBLE-CLICK IS GONE', () => {
     // file manager shows the chooser and names it.
     expect(resolveOpener('letter.docx')).toEqual({ appId: '', reason: 'none' })
     expect(isTextish('letter.docx')).toBe(false)
+  })
+
+  it('a .pptx or .ppt with Slides retired resolves to nothing (brief 165)', () => {
+    // Office's Slides opens .pptx; nothing installed opens .ppt.
+    expect(resolveOpener('deck.pptx')).toEqual({ appId: '', reason: 'none' })
+    expect(resolveOpener('deck.ppt')).toEqual({ appId: '', reason: 'none' })
+    expect(isTextish('deck.pptx')).toBe(false)
   })
 
   it('falls back to nothing rather than crashing when even the editor is disabled', () => {

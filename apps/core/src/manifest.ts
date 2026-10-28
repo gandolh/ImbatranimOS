@@ -19,7 +19,6 @@ import { manifest as systemMonitor } from '@imbatranim/system-monitor'
 import { manifest as snippingTool } from '@imbatranim/snipping-tool'
 import { manifest as pdfViewer } from '@imbatranim/pdf-viewer'
 import { manifest as norpdf } from '@imbatranim/norpdf'
-import { manifest as slides } from '@imbatranim/slides'
 import { manifest as sheets } from '@imbatranim/sheets'
 import { manifest as calculator } from '@imbatranim/calculator'
 import { manifest as clock } from '@imbatranim/clock'
@@ -69,7 +68,6 @@ const MANIFESTS: AddonManifest[] = [
   snippingTool,
   pdfViewer,
   norpdf,
-  slides,
   sheets,
   calculator,
   clock,

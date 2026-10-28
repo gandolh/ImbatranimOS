@@ -5,7 +5,7 @@
   "description": "Office apps built and installed together.",
   "source": {
     "repo": "https://github.com/gandolh/imbatranim-office",
-    "ref": "1ca83c094f74acc22f32f5d5417dd63e9fbc7dec"
+    "ref": "909c321dfb73815a4bcb50046f8bd920afa70c5d"
   },
   "type": "static",
   "runtime": "native",

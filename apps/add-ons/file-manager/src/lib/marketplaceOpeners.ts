@@ -8,6 +8,16 @@
  */
 const SUITE_TYPES: Readonly<Record<string, string>> = {
   docx: 'Office',
+  pptx: 'Office',
+}
+
+/**
+ * Old binary formats a retired built-in opened and the suite refuses by name
+ * (brief 165), so nothing opens them, installed or not. The chooser says so
+ * rather than suggesting the text editor.
+ */
+const REFUSED_TYPES: Readonly<Record<string, string>> = {
+  ppt: "No app here opens .ppt files (PowerPoint 97-2003). Office's Slides opens .pptx.",
 }
 
 /**
@@ -16,6 +26,7 @@ const SUITE_TYPES: Readonly<Record<string, string>> = {
  * is known to open it.
  */
 export function marketplaceGap(key: string): string | null {
+  if (Object.hasOwn(REFUSED_TYPES, key)) return REFUSED_TYPES[key]
   const suite = Object.hasOwn(SUITE_TYPES, key) ? SUITE_TYPES[key] : null
   return suite
     ? `No installed app opens .${key} files. ${suite} in Settings → Marketplace does.`

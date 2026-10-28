@@ -100,6 +100,17 @@ describe('marketplaceGap', () => {
     )
   })
 
+  it('names Office for a .pptx, and not for a .ppt it refuses (brief 165)', () => {
+    expect(marketplaceGap('pptx')).toBe(
+      'No installed app opens .pptx files. Office in Settings → Marketplace does.'
+    )
+    // Office's Slides refuses PowerPoint 97-2003 by name: no Marketplace
+    // sentence, and no nudge towards the text editor either.
+    expect(marketplaceGap('ppt')).toBe(
+      "No app here opens .ppt files (PowerPoint 97-2003). Office's Slides opens .pptx."
+    )
+  })
+
   it('says nothing for a type no Marketplace app is known to open', () => {
     expect(marketplaceGap('bin')).toBeNull()
     expect(marketplaceGap('constructor')).toBeNull()

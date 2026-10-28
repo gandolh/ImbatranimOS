@@ -15,7 +15,7 @@ const NAMES: Record<string, string> = {
   'pdf-viewer': 'PDF Viewer',
   'office-docs': 'Docs',
   sheets: 'Sheets',
-  slides: 'Slides',
+  'office-slides': 'Slides',
   'code-editor': 'Code Editor',
   notepad: 'Notepad',
   'markdown-editor': 'Markdown Editor',
@@ -27,7 +27,7 @@ const TABLE: Record<string, string> = {
   docx: 'office-docs',
   xlsx: 'sheets',
   csv: 'sheets',
-  pptx: 'slides',
+  pptx: 'office-slides',
   ts: 'code-editor',
   txt: 'notepad',
   log: 'notepad',
@@ -77,7 +77,8 @@ describe('resolveOpenApp', () => {
     expect(resolveOpenApp(assoc, 'home', 'a.docx')).toBe('office-docs')
     expect(resolveOpenApp(assoc, 'home', 'a.xlsx')).toBe('sheets')
     expect(resolveOpenApp(assoc, 'home', 'a.csv')).toBe('sheets')
-    expect(resolveOpenApp(assoc, 'home', 'a.pptx')).toBe('slides')
+    // Slides is Office's since brief 165.
+    expect(resolveOpenApp(assoc, 'home', 'a.pptx')).toBe('office-slides')
   })
 
   it('sends code to the Code Editor from any root', () => {

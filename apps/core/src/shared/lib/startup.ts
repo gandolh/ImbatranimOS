@@ -83,21 +83,21 @@ export function startupCandidates(ids: string[] = useStartupStore.getState().app
 }
 
 /**
- * Open the startup set, or do nothing if this tab has already booted or has a
- * restored arrangement.
- *
- * Returns the ids it opened, which is what the tests assert on. Each open is
- * wrapped: one app that throws must not take the rest of the list — or the
- * desktop — with it.
+ * True when the list names an app the registry does not have yet and the
+ * owner has not disabled: a Marketplace app, registered only once the first
+ * listing arrives (brief 183). An id that never arrives is skipped then.
  */
-export function runStartupApps(): string[] {
-  if (startupHasRun()) return []
-  // Whatever happens below, this tab has now had its one chance. Marked *before*
-  // opening so a throw cannot leave the marker unset and re-run on every reload.
-  markStartupRan()
+function waitsForRegistry(ids: string[] = useStartupStore.getState().apps): boolean {
+  const disabled = useAddonStore.getState()
+  return ids.some(
+    (id) =>
+      !APP_REGISTRY.some((app) => app.id === id) &&
+      (!disabled.isDisabled(id) || NON_DISABLEABLE.has(id))
+  )
+}
 
-  if (useWindowStore.getState().windows.length > 0) return []
-
+/** Open what {@link startupCandidates} says, in order; one throw skips one app. */
+function openStartupSet(): string[] {
   const opened: string[] = []
   for (const id of startupCandidates()) {
     try {
@@ -112,4 +112,36 @@ export function runStartupApps(): string[] {
     }
   }
   return opened
+}
+
+/**
+ * Open the startup set, or do nothing if this tab has already booted or has a
+ * restored arrangement.
+ *
+ * `registryReady` is the tab's first Marketplace listing (`loadMarketplace()`
+ * from App's boot). When the list names an app that is not registered yet,
+ * the whole set waits for that listing to settle, success or failure, and
+ * then opens in the list's order, so "the last one ends up in front" holds
+ * for Marketplace apps too (brief 183). The decision to run is made before
+ * the wait: a restored layout or a tab that already ran opens nothing, ever.
+ * When every listed app is registered, or there is nothing to wait for, the
+ * set opens synchronously, in this call, as it did before.
+ *
+ * Resolves the ids it opened, which is what the tests assert on. Each open is
+ * wrapped: one app that throws must not take the rest of the list — or the
+ * desktop — with it.
+ */
+export function runStartupApps(registryReady?: Promise<unknown>): Promise<string[]> {
+  if (startupHasRun()) return Promise.resolve([])
+  // Whatever happens below, this tab has now had its one chance. Marked *before*
+  // opening so a throw cannot leave the marker unset and re-run on every reload.
+  markStartupRan()
+
+  if (useWindowStore.getState().windows.length > 0) return Promise.resolve([])
+
+  if (registryReady && waitsForRegistry()) {
+    const open = () => openStartupSet()
+    return registryReady.then(open, open)
+  }
+  return Promise.resolve(openStartupSet())
 }

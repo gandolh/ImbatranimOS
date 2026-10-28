@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { resetStartupForTest, runStartupApps, startupCandidates, startupHasRun } from './startup'
 import { useStartupStore } from '../store/startupStore'
 import { useAddonStore } from '../store/addonStore'
 import { useWindowStore } from '../store/windowStore'
 import { DOTFILE_KEYS } from '../../lib/prefs'
+import { APP_REGISTRY } from '../registry/registry'
 
 /**
  * Brief 82 — startup apps.
@@ -54,35 +55,35 @@ describe('which apps are candidates', () => {
   })
 })
 
-describe('running the set', () => {
-  it('opens the configured apps, in order', () => {
+describe('running the set', async () => {
+  it('opens the configured apps, in order', async () => {
     useStartupStore.setState({ apps: ['terminal', 'calculator'] })
-    expect(runStartupApps()).toEqual(['terminal', 'calculator'])
+    expect(await runStartupApps()).toEqual(['terminal', 'calculator'])
     expect(useWindowStore.getState().windows.map((w) => w.appId)).toEqual([
       'terminal',
       'calculator',
     ])
   })
 
-  it('leaves the last one focused, which is why the order is a list', () => {
+  it('leaves the last one focused, which is why the order is a list', async () => {
     useStartupStore.setState({ apps: ['terminal', 'calculator'] })
-    runStartupApps()
+    await runStartupApps()
     const wins = useWindowStore.getState().windows
     const top = wins.reduce((a, b) => (b.zIndex > a.zIndex ? b : a))
     expect(top.appId).toBe('calculator')
   })
 
-  it('does NOT run a second time in the same tab, even with an empty desktop', () => {
+  it('does NOT run a second time in the same tab, even with an empty desktop', async () => {
     // Close everything, reload: the set must not come back. Otherwise "close it"
     // is impossible for any app on the list.
     useStartupStore.setState({ apps: ['terminal'] })
-    expect(runStartupApps()).toEqual(['terminal'])
+    expect(await runStartupApps()).toEqual(['terminal'])
     useWindowStore.setState({ windows: [] })
-    expect(runStartupApps()).toEqual([])
+    expect(await runStartupApps()).toEqual([])
     expect(useWindowStore.getState().windows).toHaveLength(0)
   })
 
-  it('does NOT run when a layout was restored — the reload case brief 82 missed', () => {
+  it('does NOT run when a layout was restored — the reload case brief 82 missed', async () => {
     // Brief 49 kept the restore and moved it to sessionStorage, so a reload comes
     // back with its windows. Re-running the set here would double every
     // multi-instance app and steal focus on every single reload.
@@ -90,24 +91,119 @@ describe('running the set', () => {
     useWindowStore
       .getState()
       .openWindow('notepad', 'Notepad', { width: 400, height: 300 }, { width: 200, height: 150 })
-    expect(runStartupApps()).toEqual([])
+    expect(await runStartupApps()).toEqual([])
     expect(useWindowStore.getState().windows.map((w) => w.appId)).toEqual(['notepad'])
   })
 
-  it('marks the tab even when the list is empty, so adding one mid-session waits for the next boot', () => {
-    expect(runStartupApps()).toEqual([])
+  it('marks the tab even when the list is empty, so adding one mid-session waits for the next boot', async () => {
+    expect(await runStartupApps()).toEqual([])
     expect(startupHasRun()).toBe(true)
   })
 
-  it('opens nothing at all when nothing is configured', () => {
-    expect(runStartupApps()).toEqual([])
+  it('opens nothing at all when nothing is configured', async () => {
+    expect(await runStartupApps()).toEqual([])
     expect(useWindowStore.getState().windows).toHaveLength(0)
   })
 
-  it('skips a disabled entry without dropping the ones after it', () => {
+  it('skips a disabled entry without dropping the ones after it', async () => {
     useStartupStore.setState({ apps: ['calculator', 'terminal'] })
     useAddonStore.setState({ disabled: ['calculator'] })
-    expect(runStartupApps()).toEqual(['terminal'])
+    expect(await runStartupApps()).toEqual(['terminal'])
+  })
+})
+
+describe('a Marketplace app in the list (brief 183)', () => {
+  // A Marketplace app joins APP_REGISTRY only when the first listing arrives,
+  // after the boot effect has run. These stand in for that listing.
+  function listing() {
+    let settle!: (ok: boolean) => void
+    const promise = new Promise<void>((resolve, reject) => {
+      settle = (ok) => (ok ? resolve() : reject(new Error('listing failed')))
+    })
+    return { promise, settle }
+  }
+  function register(id: string) {
+    const calculator = APP_REGISTRY.find((a) => a.id === 'calculator')!
+    APP_REGISTRY.push({ ...calculator, id, name: id })
+  }
+
+  afterEach(() => {
+    for (let i = APP_REGISTRY.length - 1; i >= 0; i--) {
+      if (APP_REGISTRY[i].id.startsWith('market-')) APP_REGISTRY.splice(i, 1)
+    }
+  })
+
+  const appIds = () => useWindowStore.getState().windows.map((w) => w.appId)
+
+  it('waits for the listing, then opens the whole set in order, the last in front', async () => {
+    useStartupStore.setState({ apps: ['terminal', 'market-docs', 'calculator'] })
+    const first = listing()
+    const run = runStartupApps(first.promise)
+    // Nothing yet: the built-ins wait with the Marketplace app.
+    expect(appIds()).toEqual([])
+    register('market-docs')
+    first.settle(true)
+    expect(await run).toEqual(['terminal', 'market-docs', 'calculator'])
+    expect(appIds()).toEqual(['terminal', 'market-docs', 'calculator'])
+    const wins = useWindowStore.getState().windows
+    expect(wins.reduce((a, b) => (b.zIndex > a.zIndex ? b : a)).appId).toBe('calculator')
+  })
+
+  it('still opens the built-ins when the listing fails', async () => {
+    useStartupStore.setState({ apps: ['market-docs', 'terminal'] })
+    const first = listing()
+    const run = runStartupApps(first.promise)
+    first.settle(false)
+    expect(await run).toEqual(['terminal'])
+  })
+
+  it('skips an app the listing never brought', async () => {
+    useStartupStore.setState({ apps: ['terminal', 'market-gone'] })
+    const first = listing()
+    const run = runStartupApps(first.promise)
+    first.settle(true)
+    expect(await run).toEqual(['terminal'])
+  })
+
+  it('opens at once, without waiting, when every listed app is registered', async () => {
+    useStartupStore.setState({ apps: ['terminal'] })
+    const first = listing()
+    const run = runStartupApps(first.promise)
+    expect(appIds()).toEqual(['terminal'])
+    expect(await run).toEqual(['terminal'])
+  })
+
+  it('does not wait for a disabled Marketplace app', async () => {
+    useStartupStore.setState({ apps: ['terminal', 'market-docs'] })
+    useAddonStore.setState({ disabled: ['market-docs'] })
+    void runStartupApps(listing().promise)
+    expect(appIds()).toEqual(['terminal'])
+  })
+
+  it('opens nothing after the listing when a layout was restored', async () => {
+    useStartupStore.setState({ apps: ['market-docs'] })
+    useWindowStore
+      .getState()
+      .openWindow('notepad', 'Notepad', { width: 400, height: 300 }, { width: 200, height: 150 })
+    const first = listing()
+    const run = runStartupApps(first.promise)
+    register('market-docs')
+    first.settle(true)
+    expect(await run).toEqual([])
+    expect(appIds()).toEqual(['notepad'])
+  })
+
+  it('opens nothing after the listing in a tab that already ran', async () => {
+    useStartupStore.setState({ apps: ['terminal'] })
+    expect(await runStartupApps()).toEqual(['terminal'])
+    useWindowStore.setState({ windows: [] })
+    useStartupStore.setState({ apps: ['market-docs'] })
+    const second = listing()
+    const run = runStartupApps(second.promise)
+    register('market-docs')
+    second.settle(true)
+    expect(await run).toEqual([])
+    expect(appIds()).toEqual([])
   })
 })
 

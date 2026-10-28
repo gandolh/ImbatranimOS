@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { ArrowDown, ArrowUp, Camera, RotateCcw } from 'lucide-react'
 import { Button, Checkbox } from '../../shared/components/ui'
 import { cn } from '../../lib/cn'
@@ -8,6 +7,7 @@ import { useAddonStore } from '../../shared/store/addonStore'
 import { useStartupStore } from '../../shared/store/startupStore'
 import { useWindowStore } from '../../shared/store/windowStore'
 import { startupCandidates } from '../../shared/lib/startup'
+import { useRegistryVersion } from '../../shared/registry/marketplace'
 
 /**
  * Settings → Startup (brief 82).
@@ -30,7 +30,11 @@ export function StartupSettings() {
   const disabled = useAddonStore((s) => s.disabled)
   const windows = useWindowStore((s) => s.windows)
 
-  const byId = useMemo(() => new Map(APP_REGISTRY.map((a) => [a.id, a])), [])
+  // Marketplace apps join APP_REGISTRY when their listing arrives, which can
+  // be after this pane mounts (brief 183): re-render then, and read the
+  // registry each render rather than once per mount. It is a few dozen apps.
+  useRegistryVersion()
+  const byId = new Map(APP_REGISTRY.map((a) => [a.id, a]))
 
   // What boot would actually open, computed by the same function boot uses — so
   // the count under the list cannot drift from behaviour. Not memoised: it is a

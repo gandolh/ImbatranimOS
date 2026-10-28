@@ -33,8 +33,13 @@ export default function App() {
 
   // Installed marketplace apps join the registry (brief 120). A failure only
   // means they are missing from Start until the next load; Settings retries.
+  // The startup effect below waits on this first listing when the startup
+  // list names a Marketplace app (brief 183); it runs after this effect.
+  const firstListing = useRef<Promise<unknown> | null>(null)
   useEffect(() => {
-    loadMarketplace().catch(() => undefined)
+    const listing = loadMarketplace()
+    listing.catch(() => undefined)
+    firstListing.current = listing
   }, [])
 
   useRegisteredHotkeys([
@@ -144,7 +149,9 @@ export default function App() {
   // top of them would double every multi-instance app and steal focus on every
   // reload. It also marks the tab, so closing everything and reloading does not
   // resurrect the set. App mounts behind AuthGate's `prefsReady`, so the list has
-  // already been read from the server by the time this runs.
+  // already been read from the server by the time this runs. A Marketplace app
+  // in the list is registered only when the first listing arrives, so then the
+  // set waits for it (brief 183); a list of built-ins opens at once.
   useEffect(() => {
     // The store learns minSize through this resolver (brief 103) — importing
     // APP_REGISTRY into windowStore would couple it to the manifest graph.
@@ -156,7 +163,7 @@ export default function App() {
     // The layout may have been saved at a different resolution — re-fit it to
     // the viewport this tab actually has before the first paint settles.
     useWindowStore.getState().reflowToViewport()
-    runStartupApps()
+    void runStartupApps(firstListing.current ?? undefined)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fit windows when the browser viewport changes (brief 103) — devtools,

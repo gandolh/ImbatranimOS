@@ -417,6 +417,29 @@ describe('kit apps in the registry (brief 163)', () => {
     expect(isKitApp(suiteApp('office-docs', { sharedKit: null }))).toBe(false)
   })
 
+  it("starts a kit app's entry as its window opens, and no other host's (brief 182)", async () => {
+    const preloads = () =>
+      [...document.head.querySelectorAll('link[rel="modulepreload"]')].map((l) =>
+        l.getAttribute('href')
+      )
+    // The windows earlier tests opened left theirs: jsdom never loads a link.
+    document.head.querySelectorAll('link').forEach((l) => l.remove())
+    syncMarketplaceApps([
+      suiteApp('office-docs', { sharedKit: 1 }),
+      app('hollow', {}, { sharedKit: null }),
+    ])
+    // Listed and in the registry, but no window yet: nothing fetched.
+    expect(preloads()).toEqual([])
+    expect(await hostOf('hollow')).toBe('native')
+    expect(preloads()).toEqual([])
+    expect(await hostOf('office-docs')).toBe('kit')
+    expect(preloads()).toEqual([
+      new URL('/api/marketplace/apps/office/b/b1/office-docs/app.mjs', location.href).href,
+    ])
+    document.head.querySelectorAll('link').forEach((l) => l.remove())
+    syncMarketplaceApps([])
+  })
+
   /** A stylesheet link in the page, as the kit host adds it. */
   const link = (build: string, href: string) => {
     const l = document.createElement('link')

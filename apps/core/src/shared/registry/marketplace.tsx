@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { api } from '../../lib/axios'
 import { pruneKitStyles } from '../../modules/marketplace/kitStyles'
+import { preloadKitApp } from '../../modules/marketplace/kitPreload'
 import { APP_REGISTRY, type AppConfig } from './registry'
 
 /**
@@ -268,6 +269,10 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
     }
     // A kit app (brief 163) is rendered in this tree, with this React and kit.
     if (isKitApp(app)) {
+      // Its entry and styles start now, beside the host's chunk, not once the
+      // host has mounted (brief 182). This factory runs as the window renders,
+      // so nothing is fetched before a window opens.
+      preloadKitApp(app, kitBuildKey(app))
       const { KitAppHost } = await import('../../modules/marketplace/KitAppHost')
       const Host: ComponentType<{ windowId: string }> = ({ windowId }) => (
         <KitAppHost windowId={windowId} app={app} />

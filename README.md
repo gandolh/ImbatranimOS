@@ -15,7 +15,7 @@ The name is a joke: *îmbătrânim* is Romanian for "we're getting old".
 - Gives you a real shell in the Terminal app: a PTY on the container, running as the unprivileged `imbatranim` user.
 - Opens the container's actual home folder in Files. It lives in a Docker volume, so it survives rebuilds, and Settings → Backup downloads it as one archive.
 - Shows the container's real CPU, memory, disk and processes in System Monitor.
-- Comes with about 30 apps: Notepad, Sheets, Docs, PDF tools, a Monaco code editor, Git, a REST client, Paint, Minesweeper and more. The Browser app fetches pages from the machine, not from the browser you are sitting at.
+- Comes with about 30 apps: Notepad, Sheets, PDF tools, a Monaco code editor, Git, a REST client, Paint, Minesweeper and more. The Browser app fetches pages from the machine, not from the browser you are sitting at. Docs comes with Office, from the Marketplace.
 - Installs more apps from the reviewed catalog in [`marketplace/`](marketplace/README.md), or from any GitHub repository into a sandboxed frame.
 
 Web desktops such as daedalOS run entirely in the tab and keep their files in browser storage. Here the tab only draws the screen; the files, the shell and the processes belong to a Linux machine you own. It has one owner and no other accounts, no sudo, and no two-factor sign-in.
@@ -69,4 +69,4 @@ For development, the tests and the dev container's sign-in, see [docs/getting-st
 
 ## License
 
-[AGPL-3.0-only](LICENSE). The Docs app is built on [SuperDoc](https://github.com/Harbour-Enterprises/SuperDoc), which is AGPL-3.0, so the whole repository uses the same license. If you run a modified version as a network service, you must offer its source to the people who use it.
+[AGPL-3.0-only](LICENSE). If you run a modified version as a network service, you must offer its source to the people who use it.

@@ -79,7 +79,6 @@ describe('the before/after table — every mapping the old constant had', () => 
     ['book.xlsx', 'sheets'],
     ['book.xls', 'sheets'],
     ['data.csv', 'sheets'],
-    ['letter.docx', 'docs'],
     ['pic.png', 'image-viewer'],
     ['pic.jpg', 'image-viewer'],
     ['pic.svg', 'image-viewer'],
@@ -192,6 +191,13 @@ describe('THE DEAD DOUBLE-CLICK IS GONE', () => {
     expect(resolved.reason).toBe('none')
     expect(resolved.appId).toBe('')
     expect(isTextish('firmware.bin')).toBe(false)
+  })
+
+  it('a .docx with Docs retired resolves to nothing, never to a text editor (brief 164)', () => {
+    // Office in the Marketplace opens it; with the suite not installed the
+    // file manager shows the chooser and names it.
+    expect(resolveOpener('letter.docx')).toEqual({ appId: '', reason: 'none' })
+    expect(isTextish('letter.docx')).toBe(false)
   })
 
   it('falls back to nothing rather than crashing when even the editor is disabled', () => {

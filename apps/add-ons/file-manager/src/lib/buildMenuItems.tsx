@@ -22,7 +22,7 @@ import {
 import type { ContextMenuItem } from '@imbatranim/ui'
 import type { FsEntry } from '../types'
 import { resolveOpenApp, openAppLabel, type Associations } from './openWith'
-import type { NewFileKind } from './newFileTemplates'
+import { newFileOpener, type NewFileKind } from './newFileTemplates'
 
 export type BuildMenuItemsCtx = {
   /** The right-clicked entry, or null for the empty-background menu. */
@@ -118,16 +118,26 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
         icon: <FolderPlus size={13} />,
         onSelect: onNewFolder,
       },
-      {
-        label: 'New Spreadsheet',
-        icon: <FileSpreadsheet size={13} />,
-        onSelect: () => onNewOfficeFile('spreadsheet'),
-      },
-      {
-        label: 'New Document',
-        icon: <FileText size={13} />,
-        onSelect: () => onNewOfficeFile('document'),
-      },
+      // Only while an installed app opens the kind (brief 164): the office
+      // apps live in the Marketplace's Office, which may not be installed.
+      ...(newFileOpener(ctx.assoc, 'spreadsheet')
+        ? [
+            {
+              label: 'New Spreadsheet',
+              icon: <FileSpreadsheet size={13} />,
+              onSelect: () => onNewOfficeFile('spreadsheet'),
+            },
+          ]
+        : []),
+      ...(newFileOpener(ctx.assoc, 'document')
+        ? [
+            {
+              label: 'New Document',
+              icon: <FileText size={13} />,
+              onSelect: () => onNewOfficeFile('document'),
+            },
+          ]
+        : []),
       {
         label: 'Upload…',
         icon: <Upload size={13} />,

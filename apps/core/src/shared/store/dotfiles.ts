@@ -2,6 +2,7 @@ import { useAssociationStore } from '../registry/associations'
 import { useAddonStore } from './addonStore'
 import { useAppearanceStore, applyAppearance } from './appearanceStore'
 import { useDesktopStore } from './desktopStore'
+import { migrateRetiredAppIds } from './retiredApps'
 import { useStartupStore } from './startupStore'
 import { useWallpaperStore } from './wallpaperStore'
 
@@ -30,6 +31,8 @@ export async function rehydrateDotfileStores(): Promise<void> {
     useAssociationStore.persist.rehydrate(),
     useStartupStore.persist.rehydrate(),
   ])
+  // On the server's copy, now that the stores hold it (brief 164).
+  migrateRetiredAppIds()
   const { theme, accent } = useAppearanceStore.getState()
   applyAppearance(theme, accent)
 }

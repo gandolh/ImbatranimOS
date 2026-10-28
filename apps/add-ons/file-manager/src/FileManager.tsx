@@ -47,7 +47,7 @@ import { buildMenuItems } from './lib/buildMenuItems'
 import {
   makeBlankFile,
   uniqueNewFileName,
-  editorAppId,
+  newFileOpener,
   type NewFileKind,
 } from './lib/newFileTemplates'
 import {
@@ -358,7 +358,9 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       { path: filePath, file },
       {
         onSuccess: () => {
-          system.intents.openApp(editorAppId(kind), { openPath: filePath, root })
+          // The menu offers the kind only while some app opens it (brief 164).
+          const appId = newFileOpener(system.intents.associations, kind)
+          if (appId) system.intents.openApp(appId, { openPath: filePath, root })
         },
       }
     )

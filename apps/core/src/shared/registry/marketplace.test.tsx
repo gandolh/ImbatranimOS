@@ -283,15 +283,24 @@ describe('several apps from one descriptor (brief 162)', () => {
   })
 
   it('offers a marketplace app in Open With after the built-in that claims the type', () => {
-    syncMarketplaceApps([suiteApp('office-docs', { opens: ['docx'] })])
-    expect(APP_REGISTRY.find((a) => a.id === 'office-docs')?.opens).toEqual(['docx'])
-    const ids = candidatesFor('letter.docx').map((c) => c.appId)
-    expect(ids).toContain('docs')
-    expect(ids.indexOf('office-docs')).toBeGreaterThan(ids.indexOf('docs'))
+    // Markdown, not an office type: the built-in Docs, Slides, Sheets and PDF
+    // apps leave for the suite (briefs 164-167), Markdown Editor stays.
+    syncMarketplaceApps([suiteApp('office-notes', { opens: ['md'] })])
+    expect(APP_REGISTRY.find((a) => a.id === 'office-notes')?.opens).toEqual(['md'])
+    const ids = candidatesFor('notes.md').map((c) => c.appId)
+    expect(ids).toContain('markdown-editor')
+    expect(ids.indexOf('office-notes')).toBeGreaterThan(ids.indexOf('markdown-editor'))
     // The built-in stays the default, until the owner picks the other.
-    expect(resolveOpener('letter.docx').appId).toBe('docs')
-    useAssociationStore.getState().setDefault('docx', 'office-docs')
-    expect(resolveOpener('letter.docx')).toEqual({ appId: 'office-docs', reason: 'override' })
+    expect(resolveOpener('notes.md').appId).toBe('markdown-editor')
+    useAssociationStore.getState().setDefault('md', 'office-notes')
+    expect(resolveOpener('notes.md')).toEqual({ appId: 'office-notes', reason: 'override' })
+    syncMarketplaceApps([])
+  })
+
+  it('makes the suite the only opener of .docx once the built-in Docs is gone (brief 164)', () => {
+    expect(resolveOpener('letter.docx')).toEqual({ appId: '', reason: 'none' })
+    syncMarketplaceApps([suiteApp('office-docs', { opens: ['docx'] })])
+    expect(resolveOpener('letter.docx')).toEqual({ appId: 'office-docs', reason: 'declared' })
     syncMarketplaceApps([])
   })
 
@@ -322,8 +331,8 @@ describe('several apps from one descriptor (brief 162)', () => {
     const node = document.createElement('div')
     const root = createRoot(node)
     act(() => root.render(<Probe />))
-    act(() => syncMarketplaceApps([suiteApp('settings'), app('docs', null), suiteApp('ok')]))
-    expect(seen.at(-1)).toEqual(['settings', 'docs'])
+    act(() => syncMarketplaceApps([suiteApp('settings'), app('notepad', null), suiteApp('ok')]))
+    expect(seen.at(-1)).toEqual(['settings', 'notepad'])
     expect(isMarketplaceApp('settings')).toBe(false)
     expect(isMarketplaceApp('ok')).toBe(true)
     act(() => syncMarketplaceApps([]))

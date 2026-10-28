@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from './axios'
 import { queryClient } from './queryClient'
+import { currentAppId } from '../shared/store/retiredApps'
 
 /**
  * OS-wide recent files (brief 94) — the client half of `/api/files/recent`.
@@ -24,10 +25,20 @@ function invalidate(): void {
   void queryClient.invalidateQueries({ queryKey: RECENT_FILES_KEY })
 }
 
+/**
+ * The server's rows, with a retired built-in's id read as its suite app's
+ * (brief 164). Rewriting them would mean re-recording each one, which moves
+ * it to the top of the list; reading through the map keeps the order.
+ */
+async function getRecentFiles(): Promise<RecentFile[]> {
+  const rows = (await api.get<RecentFile[]>('/files/recent')).data
+  return rows.map((r) => ({ ...r, appId: currentAppId(r.appId) }))
+}
+
 export function useRecentFilesQuery() {
   return useQuery({
     queryKey: RECENT_FILES_KEY,
-    queryFn: async () => (await api.get<RecentFile[]>('/files/recent')).data,
+    queryFn: getRecentFiles,
   })
 }
 
@@ -58,5 +69,5 @@ export async function clearRecentFiles(): Promise<void> {
 
 /** Non-hook read for imperative callers (the palette source). */
 export async function fetchRecentFiles(): Promise<RecentFile[]> {
-  return (await api.get<RecentFile[]>('/files/recent')).data
+  return getRecentFiles()
 }

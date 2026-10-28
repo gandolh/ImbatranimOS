@@ -21,7 +21,6 @@ import { manifest as pdfViewer } from '@imbatranim/pdf-viewer'
 import { manifest as norpdf } from '@imbatranim/norpdf'
 import { manifest as slides } from '@imbatranim/slides'
 import { manifest as sheets } from '@imbatranim/sheets'
-import { manifest as docs } from '@imbatranim/docs'
 import { manifest as calculator } from '@imbatranim/calculator'
 import { manifest as clock } from '@imbatranim/clock'
 import { manifest as calendar } from '@imbatranim/calendar'
@@ -72,7 +71,6 @@ const MANIFESTS: AddonManifest[] = [
   norpdf,
   slides,
   sheets,
-  docs,
   calculator,
   clock,
   calendar,

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Checkbox, Dialog, cn, useSystem } from '@imbatranim/ui'
+import { marketplaceGap } from '../lib/marketplaceOpeners'
 
 /**
  * "Open with…" — the chooser, and the place a default gets set (brief 81).
@@ -53,7 +54,10 @@ export function OpenWithDialog({
       <div className="flex flex-col gap-2">
         {claimants.length === 0 && (
           <p className="text-on-surface-variant text-[12px]">
-            No app claims this file type. Pick one — the text editor opens most things.
+            {/* An office file with Office not installed says where to get it
+                (brief 164), rather than steering it into the text editor. */}
+            {marketplaceGap(key) ??
+              'No app claims this file type. Pick one — the text editor opens most things.'}
           </p>
         )}
 

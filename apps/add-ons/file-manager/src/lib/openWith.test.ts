@@ -13,7 +13,7 @@ import { openAppLabel, resolveOpenApp, type Associations } from './openWith'
 const NAMES: Record<string, string> = {
   norpdf: 'norPDF',
   'pdf-viewer': 'PDF Viewer',
-  docs: 'Docs',
+  'office-docs': 'Docs',
   sheets: 'Sheets',
   slides: 'Slides',
   'code-editor': 'Code Editor',
@@ -24,7 +24,7 @@ const NAMES: Record<string, string> = {
 }
 const TABLE: Record<string, string> = {
   pdf: 'norpdf',
-  docx: 'docs',
+  docx: 'office-docs',
   xlsx: 'sheets',
   csv: 'sheets',
   pptx: 'slides',
@@ -73,7 +73,8 @@ describe('resolveOpenApp', () => {
   })
 
   it('routes the office formats to their editors', () => {
-    expect(resolveOpenApp(assoc, 'home', 'a.docx')).toBe('docs')
+    // Docs is Office's since brief 164.
+    expect(resolveOpenApp(assoc, 'home', 'a.docx')).toBe('office-docs')
     expect(resolveOpenApp(assoc, 'home', 'a.xlsx')).toBe('sheets')
     expect(resolveOpenApp(assoc, 'home', 'a.csv')).toBe('sheets')
     expect(resolveOpenApp(assoc, 'home', 'a.pptx')).toBe('slides')

@@ -104,9 +104,11 @@ Everything renders in the browser.
 | PDF Viewer | pdfjs-dist | — |
 | Slides | pptx-preview | best-effort + Download escape hatch |
 | Sheets | Univer grid + **ExcelJS** bridge | ExcelJS (MIT) after SheetJS CE failed the styling spike |
-| Docs | **SuperDoc** | AGPL — and the reason the whole repo is AGPL-3.0 |
 | Markdown | react-markdown + remark-gfm | **no** rehype-raw → XSS-safe by construction |
 | Code | **Monaco**, self-hosted | workers via Vite `?worker`, no CDN |
+
+Docs (SuperDoc) left for the Office suite in imbatranim-office on 2026-10-28;
+it installs from Settings → Marketplace.
 
 :::caution[Two decisions the spikes forced]
 

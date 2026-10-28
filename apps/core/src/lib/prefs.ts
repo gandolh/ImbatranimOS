@@ -50,6 +50,8 @@ export const DOTFILE_KEYS = [
   'imbatranimos:addons',
   'imbatranimos:file-associations',
   'imbatranimos:startup',
+  // Which retired built-ins' ids have been moved to the suite's (brief 164).
+  'imbatranimos:app-id-migrations',
 ] as const
 
 type Cache = Map<string, string>

@@ -4431,7 +4431,7 @@ The owner likes the desktop's minimalism but wants it friendlier: pastel colours
 The owner answered the four questions briefs 174-176 left, on 2026-10-27, and
 imbatranim-office brief 09's on 2026-10-28. [178](briefs/done/178-alt-tab-works-over-a-terminal.md):
 the Alt+Tab switcher listens in the capture phase, so it works over a Terminal.
-[179](briefs/todo/179-a-click-that-opens-another-window-leaves-it-in-front.md): a
+[179](briefs/done/179-a-click-that-opens-another-window-leaves-it-in-front.md): a
 window's root click doesn't raise it when the click brought another window to
 the front, fixed once in `Window.tsx`. [180](briefs/todo/180-every-new-or-raised-window-gets-the-keyboard.md):
 new windows, desktop icons, toast actions and `system.window.focus()` move the
@@ -4445,3 +4445,7 @@ briefs 166 and 167. The three todos are marked promoted.
 ## [2026-10-28] build | Brief 178 done: Alt+Tab works over a Terminal
 
 The Alt+Tab switcher's key listeners on `window` run in the capture phase (`770f616`, 1.40.0), so xterm stopping the Tab keydown no longer hides Alt+Tab from it. A key the switcher acts on (Alt+Tab, Alt+Shift+Tab, and the arrows, Enter, Escape and the Alt release while it is open) is stopped there, so the Terminal never also gets it; every other key reaches the focused element untouched. Walked in headless Chrome against the dev container with real key ups: two Terminals and a Calculator, focus in a Terminal, Alt+Tab opened the switcher, a second Tab stepped, releasing Alt brought the other Terminal up with the keyboard in it, and `ech` + Tab still completed in the shell. The global hotkeys share the old cause (Ctrl+K does nothing inside a Terminal): [keyboard-gaps-after-brief-180](todos/keyboard-gaps-after-brief-180.md). [Brief 178](briefs/done/178-alt-tab-works-over-a-terminal.md) carries the outcome.
+
+## [2026-10-28] build | Brief 179 done: a click that opens another window leaves it in front
+
+A click anywhere in a window still raises it, unless the click itself brought another window to the front (`90cf397`, 1.41.0). The root notes the store's z counter in its click-capture handler, before any handler inside the window runs; if the counter moved and another window is on top when the click reaches the root, the root leaves it there. Closing or minimising mints no z, so a click that only did that still raises the clicked window. The store is unchanged, and brief 175's refusal panel no longer stops its own click. Walked in Chrome against the dev container with brief 163's kit fixture, whose Kit Hello opens one window: Settings → Marketplace → Open Kit Hello left Kit Hello in front whether it was already open or not, and a click on Settings' uncovered content raised Settings. [Brief 179](briefs/done/179-a-click-that-opens-another-window-leaves-it-in-front.md) carries the outcome.

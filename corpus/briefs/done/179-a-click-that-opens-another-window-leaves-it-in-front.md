@@ -58,3 +58,41 @@ are still affected.
 
 - `apps/core/src/shared/store/*`, `windowStore.ts` included: briefs 164–167
   and 169 own it. The fix lives in the component.
+
+## Outcome (2026-10-28)
+
+**Built in `90cf397` (version 1.41.0), walked in Chrome in the dev
+container.** The way picked: the window root notes the store's `nextZIndex`
+in a React click-capture handler (`onClickCapture`), which runs before any
+handler inside the window, and `handleWindowClick` raises the window as before
+unless that counter moved during the click and another window is now on top.
+Every open, raise and restore mints a z from the counter; closing and
+minimising don't. That is simpler than the `pointerdown` the brief suggested
+and closer: it is the same click event, so a click made from the keyboard
+counts too, and a click that only minimised or closed the window on top still
+raises the clicked one (comparing top ids alone would not). The store is
+untouched, and `focusWindow`'s no-op guard still saves a click on the top
+window from minting a z.
+
+Brief 175's refusal panel no longer stops its own click; Open Settings bubbles
+to the root like any other button.
+
+The walk used brief 163's kit fixture installed from a local `file://`
+repository, because its Kit Hello opens one window (every Office app opens
+several, so their Open always makes a new window):
+
+- Kit Hello open, then Settings over it. Settings → Marketplace → **Open Kit
+  Hello**: Kit Hello came to the front (z 3) and Settings stayed behind (z 2).
+- Kit Hello closed, the same **Open** again: the new window stayed in front
+  (z 4).
+- A click on Settings' content where Kit Hello did not cover it raised
+  Settings (z 5).
+
+Dragging, resizing and the title-bar buttons were used through the walks of
+178 and 180 as before.
+
+**Tests:** `Window.test.tsx` (new, 5: a click that raised an open window, one
+that opened a new window, a background window's content, a button that only
+minimised the top window, no z minted for the top window; the first two fail
+without the change); `RefusalPanel.test.tsx` no longer asserts the stopped
+click. Gates: typecheck, lint and core tests pass.

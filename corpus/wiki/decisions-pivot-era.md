@@ -87,7 +87,9 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
   server for one-off jobs (see
   [decisions-office-suite.md](decisions-office-suite.md)).
   **2026-10-28:** the built-in Docs (SuperDoc) is gone from this repo; Docs
-  lives in imbatranim-office as `office-docs` (brief 164).
+  lives in imbatranim-office as `office-docs` (brief 164). Slides, Sheets and
+  the PDF apps followed the same day (briefs 165–167); PDF Viewer and norPDF
+  became one app, `office-pdf`.
 - **Sheets xlsx bridge: ExcelJS (MIT)** — REVISED 2026-07-17 from the
   grilled "SheetJS CE ↔ Univer bridge" after the spike gate failed:
   SheetJS CE's *writer* strips fonts/fills/borders on save (Pro-only),

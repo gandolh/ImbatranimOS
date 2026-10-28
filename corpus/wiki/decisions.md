@@ -1,6 +1,6 @@
 ---
 summary: Locked choices of the web-OS era (2026-07-16 pivot grilling) plus the 2026-07-17 office-suite/post-v1 set, the 2026-07-18 REST-client SSRF stance, and a compressed record of the superseded ISO-era decisions — do not relitigate without an explicit revisit and a log entry.
-updated: 2026-08-03
+updated: 2026-10-28
 ---
 
 # Decisions (locked)
@@ -107,6 +107,9 @@ Brief 65 asked which of the two PDF apps the OS opens. Measured on the same
 | chrome | one canvas, zoom + paging | outline, thumbnails, search, annotate, forms, organise, save |
 
 **Decision: `openWith` routes `pdf` → `norpdf`. PDF Viewer is kept, not deleted.**
+
+**2026-10-28:** both apps left this repo for imbatranim-office, where they
+became one app, Office's PDF (brief 167); `PREFERRED_DEFAULT` lost this row.
 
 - The default had to move. While it pointed at the 340-line viewer, norPDF's 3886
   lines were reachable only by launching it from the desktop, which almost nobody

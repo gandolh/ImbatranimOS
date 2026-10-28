@@ -247,6 +247,21 @@ describe('a flush that fails', () => {
     expect(pendingPrefsForTest()).toEqual({})
   })
 
+  it('a refused save says so once, at once (brief 181: no late import)', async () => {
+    const { prefsStorage, flushPrefs } = await freshModule()
+    // The same module registry prefs.ts just loaded into.
+    const { useNotificationStore } = await import('../shared/store/notificationStore')
+    useNotificationStore.setState({ notifications: [], toasts: [] })
+    put.mockRejectedValueOnce({ response: { status: 422 } })
+
+    prefsStorage.setItem('wallpaper-storage', '{"w":1}')
+    flushPrefs()
+    await flushMicrotasks()
+
+    const titles = useNotificationStore.getState().notifications.map((n) => n.title)
+    expect(titles).toEqual(["Couldn't save your settings"])
+  })
+
   it('a 401 HOLDS the batch — the write is fine, the session is not', async () => {
     const { prefsStorage, flushPrefs, pendingPrefsForTest, prefsWaitingForAuth } =
       await freshModule()

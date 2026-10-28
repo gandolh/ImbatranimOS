@@ -24,7 +24,13 @@ import { useAddonStore } from '../store/addonStore'
 
 const get = vi.fn()
 vi.mock('../../lib/axios', () => ({
-  api: { get: (...args: unknown[]) => get(...args) as unknown },
+  api: {
+    get: (...args: unknown[]) => get(...args) as unknown,
+    // The stores this file writes are dotfiles: prefs.ts's debounced flush
+    // PUTs them a moment later, sometimes after the test that wrote them
+    // (brief 181).
+    put: () => Promise.resolve({ data: { written: 0 } }),
+  },
 }))
 
 // Which host a window gets is the registry's decision; the hosts themselves

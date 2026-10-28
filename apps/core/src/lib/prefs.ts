@@ -1,5 +1,6 @@
 import type { StateStorage } from 'zustand/middleware'
 import { api } from './axios'
+import { useNotificationStore } from '../shared/store/notificationStore'
 
 /**
  * Server-backed dotfiles, with a local mirror for the first paint (brief 49).
@@ -168,14 +169,19 @@ function statusOf(err: unknown): number | undefined {
   return (err as { response?: { status?: number } } | undefined)?.response?.status
 }
 
-/** Report an unrecoverable save failure once, without importing the store eagerly. */
+/**
+ * Report an unrecoverable save failure once.
+ *
+ * A static import since brief 181. The store imports nothing of the shell
+ * (only zustand), so there is no cycle, and it is already in the entry chunk;
+ * the dynamic import saved nothing and, in tests, resolved after Vitest had
+ * torn the environment down (`EnvironmentTeardownError`).
+ */
 function reportSaveFailure(): void {
-  void import('../shared/store/notificationStore').then(({ useNotificationStore }) => {
-    useNotificationStore.getState().notify({
-      title: "Couldn't save your settings",
-      body: 'The server refused the change. It has been discarded — try again.',
-      level: 'error',
-    })
+  useNotificationStore.getState().notify({
+    title: "Couldn't save your settings",
+    body: 'The server refused the change. It has been discarded — try again.',
+    level: 'error',
   })
 }
 

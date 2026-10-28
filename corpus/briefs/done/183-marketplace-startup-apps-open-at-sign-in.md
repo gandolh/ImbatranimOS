@@ -84,3 +84,48 @@ from `loadMarketplace()` to `runStartupApps`), and say which in the outcome.
   change it.
 - `apps/core/src/shared/store/*`, `startupStore.ts` included: briefs 164–167
   and 169 own it.
+
+## Outcome (2026-10-28)
+
+**Built in `78741ee` (version 1.63.0), walked in Chrome against the dev
+container.** The wiring picked: App's Marketplace effect keeps the promise
+from its own `loadMarketplace()` in a ref, and the startup effect, which runs
+after it in the same commit, hands that promise to `runStartupApps`.
+`marketplace.tsx` is unchanged. `runStartupApps` now returns a promise of the
+ids it opened. It decides as before whether to run at all (the tab's marker,
+a restored layout), then, only when the list names an id that is not
+registered and not disabled, waits for the listing to settle (success or
+failure) and opens the whole set in the list's order. A list of registered
+apps opens synchronously, inside the call, as it did. Settings' later
+`loadMarketplace` calls never reach it, and StrictMode's second run finds the
+tab's marker.
+
+Settings → Startup reads the registry on every render and subscribes to its
+version, so a Marketplace app in the list appears by name once the listing
+is in; before, `byId` was computed once per mount.
+
+**Checked:** `npm run typecheck`, `npm run lint` and `npm test -w
+@imbatranim/core` pass (574 tests; seven new in `startup.test.ts`: the set
+waits and opens in order with the last in front, a failed listing still
+opens the built-ins, an app the listing never brings is skipped, a fully
+registered list does not wait, a disabled Marketplace app is not waited for,
+and a restored layout or a tab that already ran opens nothing after the
+listing).
+
+**Walked**, with Office `909c321` installed and the startup list
+`terminal, office-docs`:
+
+- Before this brief, a new tab opened Terminal only.
+- After: a new tab opened Terminal, then Office's Docs in front. A reload of
+  that tab brought the same two windows back from its layout and opened
+  nothing new.
+- With `/api/marketplace` answering 503 (a Playwright route), a new tab
+  opened Terminal.
+- With the listing held back 12 s, Settings opened from Start during the
+  wait listed only Terminal under Startup and no startup window was open;
+  once the listing arrived the pane listed Terminal and Docs, and Terminal
+  and Docs opened.
+
+While the set waits on a slow listing, a window the owner opens meanwhile can
+end up under the startup windows when they arrive; the listing normally
+takes a fraction of a second.

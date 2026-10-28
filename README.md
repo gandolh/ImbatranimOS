@@ -15,7 +15,7 @@ The name is a joke: *îmbătrânim* is Romanian for "we're getting old".
 - Gives you a real shell in the Terminal app: a PTY on the container, running as the unprivileged `imbatranim` user.
 - Opens the container's actual home folder in Files. It lives in a Docker volume, so it survives rebuilds, and Settings → Backup downloads it as one archive.
 - Shows the container's real CPU, memory, disk and processes in System Monitor.
-- Comes with about 30 apps: Notepad, Sheets, PDF tools, a Monaco code editor, Git, a REST client, Paint, Minesweeper and more. The Browser app fetches pages from the machine, not from the browser you are sitting at. Docs and Slides come with Office, from the Marketplace.
+- Comes with about 30 apps: Notepad, PDF tools, a Monaco code editor, Git, a REST client, Paint, Minesweeper and more. The Browser app fetches pages from the machine, not from the browser you are sitting at. Docs, Sheets and Slides come with Office, from the Marketplace.
 - Installs more apps from the reviewed catalog in [`marketplace/`](marketplace/README.md), or from any GitHub repository into a sandboxed frame.
 
 Web desktops such as daedalOS run entirely in the tab and keep their files in browser storage. Here the tab only draws the screen; the files, the shell and the processes belong to a Linux machine you own. It has one owner and no other accounts, no sudo, and no two-factor sign-in.
@@ -51,7 +51,7 @@ For development, the tests and the dev container's sign-in, see [docs/getting-st
 | Path | What lives there |
 |---|---|
 | `apps/core` | The desktop: shell, window manager, sign-in, Settings |
-| `apps/add-ons/` | One package per app: Terminal, Files, Sheets and the rest |
+| `apps/add-ons/` | One package per app: Terminal, Files, Notepad and the rest |
 | `apps/backend` | The NestJS API: shell, files, system stats, backup, marketplace |
 | `apps/docs` | The documentation site, built from `corpus/` and the code |
 | `packages/` | `@imbatranim/ui`, the kit apps are built with, and the PDF engine |

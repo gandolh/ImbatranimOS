@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { compile } from 'tailwindcss'

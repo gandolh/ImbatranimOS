@@ -15,6 +15,7 @@ import { useStartupStore } from './startupStore'
 export const RETIRED_APP_IDS: readonly (readonly [from: string, to: string])[] = [
   ['docs', 'office-docs'],
   ['slides', 'office-slides'],
+  ['sheets', 'office-sheets'],
 ]
 
 /** The dotfile that records which pairs have been moved. */

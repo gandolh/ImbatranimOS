@@ -111,6 +111,18 @@ describe('marketplaceGap', () => {
     )
   })
 
+  it('names Office for a .xlsx and a .csv, and not for a .xls it refuses (brief 166)', () => {
+    expect(marketplaceGap('xlsx')).toBe(
+      'No installed app opens .xlsx files. Office in Settings → Marketplace does.'
+    )
+    expect(marketplaceGap('csv')).toBe(
+      'No installed app opens .csv files. Office in Settings → Marketplace does.'
+    )
+    expect(marketplaceGap('xls')).toBe(
+      "No app here opens .xls files (Excel 97-2003). Office's Sheets opens .xlsx."
+    )
+  })
+
   it('says nothing for a type no Marketplace app is known to open', () => {
     expect(marketplaceGap('bin')).toBeNull()
     expect(marketplaceGap('constructor')).toBeNull()

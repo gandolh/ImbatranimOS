@@ -74,9 +74,6 @@ describe('the before/after table — every mapping the old constant had', () => 
     ['a.toml', 'code-editor'],
     ['a.xml', 'code-editor'],
     ['a.sql', 'code-editor'],
-    ['book.xlsx', 'sheets'],
-    ['book.xls', 'sheets'],
-    ['data.csv', 'sheets'],
     ['pic.png', 'image-viewer'],
     ['pic.jpg', 'image-viewer'],
     ['pic.svg', 'image-viewer'],
@@ -205,6 +202,15 @@ describe('THE DEAD DOUBLE-CLICK IS GONE', () => {
     expect(isTextish('deck.pptx')).toBe(false)
   })
 
+  it('a .xlsx or .xls with Sheets retired resolves to nothing; a .csv opens as text (brief 166)', () => {
+    expect(resolveOpener('book.xlsx')).toEqual({ appId: '', reason: 'none' })
+    expect(resolveOpener('book.xls')).toEqual({ appId: '', reason: 'none' })
+    expect(isTextish('book.xlsx')).toBe(false)
+    // CSV is text: with nothing installed that claims it, the text editor
+    // opens it, as it does a .tsv. Office's Sheets, once installed, claims it.
+    expect(resolveOpener('data.csv')).toEqual({ appId: 'code-editor', reason: 'text-fallback' })
+  })
+
   it('falls back to nothing rather than crashing when even the editor is disabled', () => {
     useAddonStore.setState({ disabled: ['code-editor'] })
     expect(resolveOpener('nginx.conf').reason).toBe('none')
@@ -225,7 +231,7 @@ describe('the Settings row list', () => {
   it('is computed from the registry, so a new app appears with no second edit', () => {
     const known = knownExtensions()
     expect(known).toContain('md')
-    expect(known).toContain('csv')
+    expect(known).toContain('png')
     expect(known).toContain('pdf')
     expect(known).toContain('mkv')
     // Sorted and unique.

@@ -102,12 +102,12 @@ Everything renders in the browser.
 | App | Engine | License note |
 |---|---|---|
 | PDF Viewer | pdfjs-dist | — |
-| Sheets | Univer grid + **ExcelJS** bridge | ExcelJS (MIT) after SheetJS CE failed the styling spike |
 | Markdown | react-markdown + remark-gfm | **no** rehype-raw → XSS-safe by construction |
 | Code | **Monaco**, self-hosted | workers via Vite `?worker`, no CDN |
 
-Docs (SuperDoc) and Slides (pptx-preview) left for the Office suite in
-imbatranim-office on 2026-10-28; it installs from Settings → Marketplace.
+Docs (SuperDoc), Slides (pptx-preview) and Sheets (Univer with an ExcelJS
+bridge) left for the Office suite in imbatranim-office on 2026-10-28; it
+installs from Settings → Marketplace.
 
 :::caution[Two decisions the spikes forced]
 
@@ -121,8 +121,9 @@ hopeful ones.
 :::
 
 Adopting SuperDoc (AGPL) made the whole repository **AGPL-3.0-only** so the
-combined work stays compliant — a deliberate, recorded call, since the source is
-public and there are no plans to sell it.
+combined work stayed compliant, a recorded call, since the source is public and
+there are no plans to sell it. SuperDoc left with Docs on 2026-10-28; the
+licence stays AGPL-3.0-only by the owner's choice.
 
 ## The monorepo — one install, cached everything
 

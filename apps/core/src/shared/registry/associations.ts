@@ -103,6 +103,7 @@ const TEXTISH_EXTENSIONS = new Set([
   'nfo',
   'srt',
   'vtt',
+  'csv',
   'csv2',
   'tsv',
   'jsonl',

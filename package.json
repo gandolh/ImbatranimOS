@@ -1,6 +1,6 @@
 {
   "name": "imbatranimos",
-  "version": "1.57.0",
+  "version": "1.58.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "packageManager": "npm@11.19.1",
@@ -45,9 +45,6 @@
   },
   "overrides": {
     "pdfjs-dist": "^6.4.299",
-    "@univerjs/core": {
-      "nanoid": "^5.1.16"
-    },
     "@docusaurus/core": {
       "tinypool": "^2.1.2"
     },
@@ -55,9 +52,6 @@
     "sockjs": {
       "uuid": "^11.1.1"
     },
-    "postcss-selector-parser": "^7.1.6",
-    "exceljs": {
-      "uuid": "^11.1.1"
-    }
+    "postcss-selector-parser": "^7.1.6"
   }
 }

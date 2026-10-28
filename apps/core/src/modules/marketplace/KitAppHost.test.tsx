@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+/// <reference types="node" />
 import { act, Suspense } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs'

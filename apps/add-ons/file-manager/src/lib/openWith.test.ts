@@ -14,7 +14,7 @@ const NAMES: Record<string, string> = {
   norpdf: 'norPDF',
   'pdf-viewer': 'PDF Viewer',
   'office-docs': 'Docs',
-  sheets: 'Sheets',
+  'office-sheets': 'Sheets',
   'office-slides': 'Slides',
   'code-editor': 'Code Editor',
   notepad: 'Notepad',
@@ -25,8 +25,8 @@ const NAMES: Record<string, string> = {
 const TABLE: Record<string, string> = {
   pdf: 'norpdf',
   docx: 'office-docs',
-  xlsx: 'sheets',
-  csv: 'sheets',
+  xlsx: 'office-sheets',
+  csv: 'office-sheets',
   pptx: 'office-slides',
   ts: 'code-editor',
   txt: 'notepad',
@@ -75,8 +75,9 @@ describe('resolveOpenApp', () => {
   it('routes the office formats to their editors', () => {
     // Docs is Office's since brief 164.
     expect(resolveOpenApp(assoc, 'home', 'a.docx')).toBe('office-docs')
-    expect(resolveOpenApp(assoc, 'home', 'a.xlsx')).toBe('sheets')
-    expect(resolveOpenApp(assoc, 'home', 'a.csv')).toBe('sheets')
+    // Sheets is Office's since brief 166.
+    expect(resolveOpenApp(assoc, 'home', 'a.xlsx')).toBe('office-sheets')
+    expect(resolveOpenApp(assoc, 'home', 'a.csv')).toBe('office-sheets')
     // Slides is Office's since brief 165.
     expect(resolveOpenApp(assoc, 'home', 'a.pptx')).toBe('office-slides')
   })
@@ -98,7 +99,7 @@ describe('resolveOpenApp', () => {
 
   it('is case-insensitive about the extension', () => {
     expect(resolveOpenApp(assoc, 'home', 'REPORT.PDF')).toBe('norpdf')
-    expect(resolveOpenApp(assoc, 'home', 'Book.XLSX')).toBe('sheets')
+    expect(resolveOpenApp(assoc, 'home', 'Book.XLSX')).toBe('office-sheets')
   })
 
   it('FLIPPED by brief 81: a text-ish unmapped file no longer dead-ends', () => {

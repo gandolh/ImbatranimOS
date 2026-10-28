@@ -9,15 +9,20 @@
 const SUITE_TYPES: Readonly<Record<string, string>> = {
   docx: 'Office',
   pptx: 'Office',
+  xlsx: 'Office',
+  // A .csv opens in the text editor while nothing claims it (brief 166), so
+  // this shows only when that editor is disabled too.
+  csv: 'Office',
 }
 
 /**
  * Old binary formats a retired built-in opened and the suite refuses by name
- * (brief 165), so nothing opens them, installed or not. The chooser says so
+ * (briefs 165 and 166), so nothing opens them, installed or not. The chooser says so
  * rather than suggesting the text editor.
  */
 const REFUSED_TYPES: Readonly<Record<string, string>> = {
   ppt: "No app here opens .ppt files (PowerPoint 97-2003). Office's Slides opens .pptx.",
+  xls: "No app here opens .xls files (Excel 97-2003). Office's Sheets opens .xlsx.",
 }
 
 /**

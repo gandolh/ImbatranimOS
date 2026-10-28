@@ -118,3 +118,68 @@ chose others, use those and correct this table in the commit.
 
 - The marketplace backend and host (162 and 163 own them).
 - Any add-on outside the table.
+
+## Built 2026-10-28 (Docs run); the walk stopped part way, the owner paused the run
+
+**Built in `c3baeef` (version 1.45.0).**
+
+- Step 0: `marketplace/imbatranim-office.json` is the office repo's
+  `os/descriptor.template.json` pinned to
+  `1ca83c094f74acc22f32f5d5417dd63e9fbc7dec` (`1ca83c0`, the commit this brief
+  names as fixing brief 02's last line). The template is byte-identical at
+  every later office commit, so the later runs move only `source.ref`. The
+  owner pushes the office repo before this one.
+- Step 2: `apps/core/src/shared/store/retiredApps.ts` holds the id pairs
+  (`docs` → `office-docs` so far) and `migrateRetiredAppIds()`, called from
+  `rehydrateDotfileStores()` once the server's dotfiles are in the stores. It
+  rewrites the association overrides, the disabled set, the desktop icons (a
+  place the owner gave the suite's icon wins) and the startup apps, and
+  records each pair in a new dotfile, `imbatranimos:app-id-migrations`
+  (added to `DOTFILE_KEYS` in `prefs.ts`). Recents live on the server, where
+  re-recording a row moves it to the top, so `lib/recentFiles.ts` reads them
+  through the same table instead of rewriting them.
+- Step 3: the package, its manifest line and the lockfile entries only it
+  used are gone (SuperDoc, Vue, ProseMirror, Yjs and their deps; jsdom and a
+  few others became dev-only).
+- Step 4: `newFileTemplates.ts` names no app. `newFileOpener` resolves the
+  new file's name through the associations (an override or a claimant; never
+  the text fallback), and the background menu leaves New Document or New
+  Spreadsheet out while nothing installed opens it.
+- Step 5: the Open With chooser, with no claimant for an extension the
+  suite took over, says "No installed app opens .docx files. Office in
+  Settings → Marketplace does." (`marketplaceOpeners.ts`, one line per type).
+- The README, the docs site's tour and stack pages drop the built-in.
+
+**Checked:** typecheck, lint and core tests (564 at the time) pass, and the
+file manager's tests (83, with a new `newFileTemplates.test.ts`). The
+production image built at `608ad1e` (which has this commit) is 279,598,118
+bytes against 315,050,234 at `0937bba`: it shrank.
+
+**Walked in Chrome against the dev container, Office `21c5c1d` installed from
+a local `file://` repository**, with the old choices seeded through the API
+first (`.docx` → `docs`, a pinned desktop icon for `docs`, `docs` as a startup
+app, a recent `letter.docx` attributed to `docs`, the migration record
+emptied):
+
+- After sign-in the dotfiles read `.docx` → `office-docs`, startup
+  `office-docs`, the pinned icon under `office-docs` at the same place (the
+  suite's Docs icon showed there), and the record `docs>office-docs`.
+- `letter.docx` double-clicked in Files opened in the suite's Docs; its menu
+  said "Open in Docs".
+- The Start menu listed `letter.docx` in recents, and clicking it opened the
+  suite's Docs.
+
+**Where it stopped:** the background menu's New Document (the scripted
+right-click on an empty part of the list opened no menu, not yet looked
+into), and the whole "suite uninstalled" half (the chooser's Marketplace
+sentence, New Document hidden). Step 6's dated notes in
+`decisions-pivot-era.md` and `decisions.md` are not written yet.
+
+**Found:** startup apps from the Marketplace never open at sign-in.
+`runStartupApps()` keeps only ids already in `APP_REGISTRY`, and the
+Marketplace catalog registers its apps after that runs. The migrated
+`office-docs` startup entry is kept but does nothing until that changes; it
+was true for any Marketplace app before this brief. **Owner:** the license
+decision (`decisions-pivot-era.md`, "required by SuperDoc") and the README's
+reason for AGPL both rested on Docs; the README no longer gives that reason,
+the license is unchanged.

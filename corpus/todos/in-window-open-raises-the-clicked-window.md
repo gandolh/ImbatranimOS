@@ -1,9 +1,11 @@
 ---
 title: A button in a window that opens another app leaves that app behind
 created: 2026-10-27
-status: open
+status: promoted
 tags: [core, shell, windows]
 ---
+
+<!-- Promoted 2026-10-28 → brief 179, with the owner's answer of 2026-10-27. -->
 
 # A button in a window that opens another app leaves that app behind
 

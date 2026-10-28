@@ -1,9 +1,11 @@
 ---
 title: Keyboard focus gaps left after brief 174
 created: 2026-10-27
-status: open
+status: promoted
 tags: [core, shell, keyboard]
 ---
+
+<!-- Promoted 2026-10-28 → briefs 178 (the first gap) and 180 (the second and third), with the owner's answers of 2026-10-27. -->
 
 # Keyboard focus gaps left after brief 174
 

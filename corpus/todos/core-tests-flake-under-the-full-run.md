@@ -1,9 +1,11 @@
 ---
 title: Core's tests flake under the full test run
 created: 2026-10-27
-status: open
+status: promoted
 tags: [core, tests]
 ---
+
+<!-- Promoted 2026-10-28 → brief 181, with the owner's answer of 2026-10-27. -->
 
 # Core's tests flake under the full test run
 

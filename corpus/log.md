@@ -4425,3 +4425,19 @@ The marketplace listing now reports `catalogSharedKit`, what the descriptor name
 ## [2026-10-27] todo | Brief 177 filed: research a warmer look
 
 The owner likes the desktop's minimalism but wants it friendlier: pastel colours, a cute background, maybe Aero glass, "warm, calm and chill". [Brief 177](briefs/todo/177-research-a-warmer-look.md) is research for a revisit of the locked identity (B&W tokens, crimson accent, dark-first, zero radius). The Win7-classic layout stays. It asks for references, three directions in light and dark on the real token names, a mock page, and the frame cost of `backdrop-filter` measured, since lightweight is an invariant. Not grilled; brief-board is down, so nothing was filed there.
+
+## [2026-10-28] todo | Briefs 178-182 filed from the owner's answers
+
+The owner answered the four questions briefs 174-176 left, on 2026-10-27, and
+imbatranim-office brief 09's on 2026-10-28. [178](briefs/todo/178-alt-tab-works-over-a-terminal.md):
+the Alt+Tab switcher listens in the capture phase, so it works over a Terminal.
+[179](briefs/todo/179-a-click-that-opens-another-window-leaves-it-in-front.md): a
+window's root click doesn't raise it when the click brought another window to
+the front, fixed once in `Window.tsx`. [180](briefs/todo/180-every-new-or-raised-window-gets-the-keyboard.md):
+new windows, desktop icons, toast actions and `system.window.focus()` move the
+keyboard in, as brief 174's paths do. [181](briefs/todo/181-prefs-imports-the-notification-store-statically.md):
+`prefs.ts` imports the notification store statically, if there is no cycle, so
+the full `npm test` stops flaking. [182](briefs/todo/182-a-kit-app-starts-loading-when-its-window-opens.md):
+a kit app's entry is fetched as its window opens, which closes most of the
+suite PDF's 40 ms gap; that gap and Sheets' formula freeze no longer hold back
+briefs 166 and 167. The three todos are marked promoted.

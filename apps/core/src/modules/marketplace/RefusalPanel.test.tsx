@@ -27,15 +27,11 @@ afterEach(() => {
 })
 
 describe('RefusalPanel', () => {
-  it('opens Settings without the click reaching the window, which would raise it back over Settings', () => {
-    const windowClick = vi.fn()
+  // Settings staying in front of this window is Window.tsx's job since brief
+  // 179 (Window.test.tsx), so the click is free to bubble.
+  it('names the app and the reason, and opens Settings', () => {
     act(() =>
-      root.render(
-        // Window.tsx raises its window on any click inside it.
-        <div onClick={windowClick}>
-          <RefusalPanel appName="Kit Notes" reason="Kit Notes needs system protocol 9." />
-        </div>
-      )
+      root.render(<RefusalPanel appName="Kit Notes" reason="Kit Notes needs system protocol 9." />)
     )
     expect(container.textContent).toContain("Can't open Kit Notes")
     expect(container.textContent).toContain('Kit Notes needs system protocol 9.')
@@ -44,6 +40,5 @@ describe('RefusalPanel', () => {
     expect(button.textContent).toBe('Open Settings')
     act(() => button.click())
     expect(openApp).toHaveBeenCalledExactlyOnceWith('settings')
-    expect(windowClick).not.toHaveBeenCalled()
   })
 })

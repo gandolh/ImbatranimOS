@@ -10,6 +10,7 @@ import {
   detectSnapRegion,
   TASKBAR_HEIGHT,
   TITLEBAR_MIN_VISIBLE,
+  topVisibleWindowId,
 } from '../../store/windowStore'
 import { SnapOverlay } from './SnapOverlay'
 import { forgetWindowFocus, rememberWindowFocus } from './focusIntoWindow'
@@ -196,7 +197,26 @@ export const Window = React.memo(function Window({
     { filterTaps: true }
   )
 
+  // A click anywhere in a window raises it, unless the click itself brought
+  // another window to the front (brief 179): an Open button that opened or
+  // raised another app runs before its click bubbles here, and raising this
+  // window then would cover the app it just put up. The capture handler runs
+  // before any handler inside the window and notes the store's z counter;
+  // every open, raise or restore mints a z from it, closing and minimising
+  // don't. So if the counter moved and this window is not the top one now,
+  // the click raised another window and this one stays where it is.
+  const zAtClickStart = useRef<number | null>(null)
+  const handleWindowClickCapture = useCallback(() => {
+    zAtClickStart.current = useWindowStore.getState().nextZIndex
+  }, [])
   const handleWindowClick = useCallback(() => {
+    const before = zAtClickStart.current
+    zAtClickStart.current = null
+    const raisedAnother =
+      before !== null &&
+      useWindowStore.getState().nextZIndex !== before &&
+      topVisibleWindowId() !== windowId
+    if (raisedAnother) return
     focusWindow(windowId)
   }, [focusWindow, windowId])
 
@@ -268,6 +288,7 @@ export const Window = React.memo(function Window({
               ? 'border-primary border shadow-[0_18px_50px_rgba(0,0,0,0.5)]'
               : 'border-outline-variant border shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
           )}
+          onClickCapture={handleWindowClickCapture}
           onClick={handleWindowClick}
           // Addressable from the outside. Every UI probe so far has had to guess
           // at a window by its text; the compositor knowing its own id costs a

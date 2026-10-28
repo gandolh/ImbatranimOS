@@ -28,12 +28,9 @@ export function RefusalPanel({ appName, reason }: { appName: string; reason: str
         variant="primary"
         size="sm"
         className="gap-1"
-        onClick={(e) => {
-          // Not to the window root: its click raises this window again, over
-          // the Settings window just brought up.
-          e.stopPropagation()
-          openApp('settings')
-        }}
+        // The click still bubbles to the window root, which leaves Settings in
+        // front because the click raised it (brief 179).
+        onClick={() => openApp('settings')}
       >
         <Settings size={12} strokeWidth={2} />
         Open Settings

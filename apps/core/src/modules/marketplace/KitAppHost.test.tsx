@@ -37,6 +37,7 @@ const { openApp } = vi.hoisted(() => ({ openApp: vi.fn() }))
 vi.mock('../../shared/intents/openApp', () => ({ openApp }))
 
 const { KitAppHost } = await import('./KitAppHost')
+const { startKitApp } = await import('./kitModule')
 
 /**
  * Brief 163 — a kit app in a window: a real ES module, written here as a
@@ -260,6 +261,44 @@ describe('KitAppHost', () => {
     await act(async () => confirm.click())
     await settle()
     expect(container.querySelector('[data-answer]')?.textContent).toBe('true')
+  })
+
+  it('starts the import before the host mounts, and the host takes that one (brief 182)', async () => {
+    writeBuild({ 'notes/app.mjs': KIT_MODULE, 'kit.css': '' })
+    startKitApp(app())
+    expect(loads).toHaveBeenCalledOnce()
+    // The module evaluated with the shared kit already on the global.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+    })
+    expect(seen().version).toBe(1)
+    render([app(), 'w1'])
+    await settle()
+    expect(container.querySelector('[data-kit-app="kit-notes"]')).not.toBeNull()
+    expect(loads).toHaveBeenCalledOnce()
+  })
+
+  it('starts nothing for a refused app (brief 175)', () => {
+    writeBuild({ 'notes/app.mjs': KIT_MODULE, 'kit.css': '' })
+    startKitApp(app({ sharedKit: 99 }))
+    startKitApp(app({ minSystemVersion: 99 }))
+    startKitApp(app({ installed: null }))
+    expect(loads).not.toHaveBeenCalled()
+  })
+
+  it('forgets a failed import, so the next window tries again', async () => {
+    writeBuild({ 'kit.css': '' })
+    startKitApp(app())
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+    })
+    render([app(), 'w1'])
+    await settle()
+    // The window asked again rather than reusing the failed promise. Whether
+    // the second fetch can succeed is the module loader's business: the
+    // runner, like a browser's module map, remembers a missing file.
+    expect(loads).toHaveBeenCalledTimes(2)
+    expect(fallback()).toContain('notes/app.mjs')
   })
 
   it('refuses an app built for another shared kit in a panel, not a crash, before fetching anything', async () => {

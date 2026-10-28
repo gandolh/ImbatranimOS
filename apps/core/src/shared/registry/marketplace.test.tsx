@@ -41,9 +41,11 @@ vi.mock('../../modules/marketplace/NativeAppHost', () => ({
 vi.mock('../../modules/marketplace/SandboxedAppHost', () => ({
   SandboxedAppHost: ({ app }: { app: MarketplaceApp }) => <p data-host="sandboxed">{app.id}</p>,
 }))
+const { startKitApp } = vi.hoisted(() => ({ startKitApp: vi.fn() }))
 vi.mock('../../modules/marketplace/KitAppHost', () => ({
   KitAppHost: ({ app }: { app: MarketplaceApp }) => <p data-host="kit">{app.id}</p>,
 }))
+vi.mock('../../modules/marketplace/kitModule', () => ({ startKitApp }))
 
 function app(
   id: string,
@@ -441,10 +443,15 @@ describe('kit apps in the registry (brief 163)', () => {
     expect(preloads()).toEqual([])
     expect(await hostOf('hollow')).toBe('native')
     expect(preloads()).toEqual([])
+    startKitApp.mockClear()
     expect(await hostOf('office-docs')).toBe('kit')
     expect(preloads()).toEqual([
       new URL('/api/marketplace/apps/office/b/b1/office-docs/app.mjs', location.href).href,
     ])
+    // And the import itself starts as the host's chunk arrives, before it mounts.
+    expect(startKitApp).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ id: 'office-docs' })
+    )
     document.head.querySelectorAll('link').forEach((l) => l.remove())
     syncMarketplaceApps([])
   })

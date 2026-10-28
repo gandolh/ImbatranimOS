@@ -3,11 +3,10 @@ import { SystemProvider, useSystem, type KitAppProps, type NativeHostContext } f
 import { kitBuildKey, type MarketplaceApp } from '../../shared/registry/marketplace'
 import { apiUrl } from './apiUrl'
 import { addKitStyles } from './kitStyles'
-import { loadModule } from './loadModule'
 import { RefusalPanel } from './RefusalPanel'
+import { importKitModule } from './kitModule'
 import { kitRefusal, protocolRefusal } from './refusals'
 import { scopeHandle, type KitAppModule } from './scopeHandle'
-import { installSharedKit } from './sharedKit'
 import { useServerLease } from './useServerLease'
 
 /**
@@ -75,8 +74,6 @@ function KitApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
 
   useEffect(() => {
     let cancelled = false
-    // Before the import: the module reads the global as it evaluates.
-    installSharedKit()
     const build = kitBuildKey(app)
     const styles = build
       ? addKitStyles(
@@ -84,7 +81,8 @@ function KitApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
           (app.installed?.stylePaths ?? []).map((p) => apiUrl(p).href)
         )
       : Promise.resolve()
-    void Promise.all([loadModule(entry.href), styles])
+    // Usually under way already: the registry started it (brief 182).
+    void Promise.all([importKitModule(entry.href), styles])
       .then(([mod]) => {
         if (cancelled) return
         const App = (mod as Partial<KitAppModule> | null)?.App

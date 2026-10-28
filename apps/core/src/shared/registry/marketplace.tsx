@@ -269,11 +269,16 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
     }
     // A kit app (brief 163) is rendered in this tree, with this React and kit.
     if (isKitApp(app)) {
-      // Its entry and styles start now, beside the host's chunk, not once the
-      // host has mounted (brief 182). This factory runs as the window renders,
-      // so nothing is fetched before a window opens.
+      // Its entry and styles start now, beside the host's chunk, and the
+      // import (the entry's own imports with it) the moment that chunk is in,
+      // not once the host has mounted (brief 182). This factory runs as the
+      // window renders, so nothing is fetched before a window opens.
       preloadKitApp(app, kitBuildKey(app))
-      const { KitAppHost } = await import('../../modules/marketplace/KitAppHost')
+      const [{ KitAppHost }, { startKitApp }] = await Promise.all([
+        import('../../modules/marketplace/KitAppHost'),
+        import('../../modules/marketplace/kitModule'),
+      ])
+      startKitApp(app)
       const Host: ComponentType<{ windowId: string }> = ({ windowId }) => (
         <KitAppHost windowId={windowId} app={app} />
       )

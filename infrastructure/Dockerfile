@@ -24,8 +24,8 @@ COPY apps/core/package.json ./apps/core/
 # links every workspace core/src/manifest.ts imports. Globbed so newly-added
 # add-ons are picked up automatically — no per-add-on COPY line to keep in sync.
 COPY --parents apps/add-ons/*/package.json ./
-# Shared workspace packages (e.g. @pdfcore/engine, a dep of add-ons/norpdf that
-# core's manifest pulls in). Without these manifests npm ci never links the
+# Shared workspace packages (e.g. @imbatranim/ui, the kit every add-on and
+# core's manifest pull in). Without these manifests npm ci never links the
 # packages/* workspaces and the desktop's turbo build fails on the dangling dep.
 COPY --parents packages/*/package.json ./
 # apps/docs (the documentation site) is DELIBERATELY absent: .dockerignore
@@ -100,7 +100,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.58.0"
+      org.opencontainers.image.version="1.59.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -137,7 +137,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.58.0
+    IMAGE_VERSION=1.59.0
 VOLUME /home/imbatranim
 EXPOSE 8080
 # Liveness against the backend's purpose-built /health endpoint. busybox wget

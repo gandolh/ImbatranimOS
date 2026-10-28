@@ -96,6 +96,37 @@ describe('migrateRetiredAppIds', () => {
     expect(JSON.parse(readPref(APP_ID_MIGRATIONS_KEY)!).done).toContain('slides>office-slides')
   })
 
+  it("moves norPDF and PDF Viewer onto Office's PDF, norPDF's icon first (brief 167)", () => {
+    useAssociationStore.setState({ overrides: { pdf: 'norpdf' } })
+    useDesktopStore.setState({
+      iconPositions: {
+        norpdf: { x: 8, y: 200, pinned: true },
+        'pdf-viewer': { x: 8, y: 300, pinned: true },
+      },
+    })
+    useStartupStore.setState({ apps: ['pdf-viewer', 'terminal', 'norpdf'] })
+
+    migrateRetiredAppIds()
+
+    expect(useAssociationStore.getState().overrides).toEqual({ pdf: 'office-pdf' })
+    expect(useDesktopStore.getState().iconPositions).toEqual({
+      'office-pdf': { x: 8, y: 200, pinned: true },
+    })
+    expect(useStartupStore.getState().apps).toEqual(['office-pdf', 'terminal'])
+  })
+
+  it("disables Office's PDF only when both PDF built-ins were disabled (brief 167)", () => {
+    // Hiding the light viewer is not hiding PDF.
+    useAddonStore.setState({ disabled: ['pdf-viewer', 'games'] })
+    migrateRetiredAppIds()
+    expect(useAddonStore.getState().disabled).toEqual(['pdf-viewer', 'games'])
+
+    writePref(APP_ID_MIGRATIONS_KEY, '{}')
+    useAddonStore.setState({ disabled: ['norpdf', 'games', 'pdf-viewer'] })
+    migrateRetiredAppIds()
+    expect(useAddonStore.getState().disabled).toEqual(['office-pdf', 'games'])
+  })
+
   it("keeps a place the owner gave the suite's icon over the built-in's", () => {
     useDesktopStore.setState({
       iconPositions: {

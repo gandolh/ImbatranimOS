@@ -113,7 +113,7 @@ services:
           target: /app/apps
           ignore:
             - "**/node_modules/**"
-        # The shared workspace packages (the @imbatranim/ui SDK, pdfcore) are
+        # The shared workspace packages (the @imbatranim/ui SDK) are
         # source too — the old bind-mount flow never covered them at all.
         - action: sync
           path: ../packages

@@ -123,6 +123,12 @@ describe('marketplaceGap', () => {
     )
   })
 
+  it('names Office for a .pdf (brief 167)', () => {
+    expect(marketplaceGap('pdf')).toBe(
+      'No installed app opens .pdf files. Office in Settings → Marketplace does.'
+    )
+  })
+
   it('says nothing for a type no Marketplace app is known to open', () => {
     expect(marketplaceGap('bin')).toBeNull()
     expect(marketplaceGap('constructor')).toBeNull()

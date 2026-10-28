@@ -12,8 +12,9 @@
  * PDF page came out blank**. A 595×841 canvas with zero non-white pixels, no
  * error surfaced to the user, in the shipped production build.
  *
- * That affects all three PDF surfaces (`pdf-viewer`, `norpdf`,
- * `packages/pdfcore-engine`) because they share the library. Requiring the
+ * That affected all three PDF surfaces of the time (`pdf-viewer`, `norpdf`,
+ * `packages/pdfcore-engine`, all in imbatranim-office's PDF since brief 167),
+ * and the kit still hands it to kit apps (`sharedKit.ts`). Requiring the
  * newest Chrome is not an option for an OS that ships its own kiosk browser and
  * is meant to be reachable from any machine.
  *

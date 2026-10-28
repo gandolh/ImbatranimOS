@@ -101,13 +101,13 @@ Everything renders in the browser.
 
 | App | Engine | License note |
 |---|---|---|
-| PDF Viewer | pdfjs-dist | — |
 | Markdown | react-markdown + remark-gfm | **no** rehype-raw → XSS-safe by construction |
 | Code | **Monaco**, self-hosted | workers via Vite `?worker`, no CDN |
 
-Docs (SuperDoc), Slides (pptx-preview) and Sheets (Univer with an ExcelJS
-bridge) left for the Office suite in imbatranim-office on 2026-10-28; it
-installs from Settings → Marketplace.
+Docs (SuperDoc), Slides (pptx-preview), Sheets (Univer with an ExcelJS
+bridge) and the two PDF apps (pdf.js; PDF Viewer and norPDF became one app)
+left for the Office suite in imbatranim-office on 2026-10-28; it installs from
+Settings → Marketplace.
 
 :::caution[Two decisions the spikes forced]
 
@@ -129,7 +129,7 @@ licence stays AGPL-3.0-only by the owner's choice.
 
 The repo is an npm-workspaces monorepo with **Turborepo** as the task runner: one
 root `npm install`, one lockfile, and root scripts (`build`, `lint`, `typecheck`,
-`test`, `dev`, `format:check`, `docs`) that fan out across all 25 workspaces with
+`test`, `dev`, `format:check`, `docs`) that fan out across all 26 workspaces with
 caching — a second `build` is instant (`FULL TURBO`). The same `turbo dev` runs
 inside the container's compose dev profile with `apps/` bind-mounted for HMR.
 

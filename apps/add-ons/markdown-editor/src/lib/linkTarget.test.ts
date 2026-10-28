@@ -19,7 +19,7 @@ describe('baseName', () => {
 })
 
 describe('linkTarget', () => {
-  const registry = assoc({ png: 'image-viewer', csv: 'sheets', pdf: 'pdf-viewer' })
+  const registry = assoc({ png: 'image-viewer', csv: 'office-sheets', pdf: 'office-pdf' })
 
   it('keeps markdown in the markdown editor, whatever the registry says', () => {
     // Even if the user associated .md with Notepad: following a link inside a
@@ -31,8 +31,8 @@ describe('linkTarget', () => {
 
   it('routes everything else through the association registry', () => {
     expect(linkTarget(registry, 'img/logo.png')).toEqual({ kind: 'app', appId: 'image-viewer' })
-    expect(linkTarget(registry, 'data/rows.csv')).toEqual({ kind: 'app', appId: 'sheets' })
-    expect(linkTarget(registry, 'spec.pdf')).toEqual({ kind: 'app', appId: 'pdf-viewer' })
+    expect(linkTarget(registry, 'data/rows.csv')).toEqual({ kind: 'app', appId: 'office-sheets' })
+    expect(linkTarget(registry, 'spec.pdf')).toEqual({ kind: 'app', appId: 'office-pdf' })
   })
 
   it('says nothing claims it rather than guessing', () => {
@@ -43,7 +43,7 @@ describe('linkTarget', () => {
     // A directory called "notes.csv" in the path must not decide the answer.
     expect(linkTarget(registry, 'notes.csv/readme.pdf')).toEqual({
       kind: 'app',
-      appId: 'pdf-viewer',
+      appId: 'office-pdf',
     })
   })
 })

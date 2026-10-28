@@ -16,6 +16,10 @@ export const RETIRED_APP_IDS: readonly (readonly [from: string, to: string])[] =
   ['docs', 'office-docs'],
   ['slides', 'office-slides'],
   ['sheets', 'office-sheets'],
+  // norPDF first: it was the default for .pdf, so its icon's place wins when
+  // both were pinned.
+  ['norpdf', 'office-pdf'],
+  ['pdf-viewer', 'office-pdf'],
 ]
 
 /** The dotfile that records which pairs have been moved. */
@@ -57,7 +61,10 @@ function swapIn(list: readonly string[], from: string, to: string): string[] | n
   return next
 }
 
-/** Rewrite `from` to `to` in every dotfile that keeps an app id. */
+/**
+ * Rewrite `from` to `to` in every dotfile that keeps an app id, except the
+ * disabled set, which {@link moveDisabled} handles per suite app.
+ */
 function moveChoices(from: string, to: string): void {
   // "Always open .docx with Docs" becomes "with Office's Docs".
   const { overrides } = useAssociationStore.getState()
@@ -68,10 +75,6 @@ function moveChoices(from: string, to: string): void {
       ),
     })
   }
-
-  // A disabled built-in stays disabled under its new id.
-  const disabled = swapIn(useAddonStore.getState().disabled, from, to)
-  if (disabled) useAddonStore.setState({ disabled })
 
   // The icon keeps the place the owner gave it, unless the suite's icon
   // already has one they chose.
@@ -88,6 +91,18 @@ function moveChoices(from: string, to: string): void {
 }
 
 /**
+ * A disabled built-in stays disabled under its suite app's id. A suite app
+ * that replaces two built-ins is disabled only when both were (brief 167):
+ * hiding PDF Viewer, the light option, said nothing about wanting no PDF app.
+ */
+function moveDisabled(froms: readonly string[], to: string): void {
+  let disabled: readonly string[] = useAddonStore.getState().disabled
+  if (!froms.every((id) => disabled.includes(id))) return
+  for (const from of froms) disabled = swapIn(disabled, from, to) ?? disabled
+  useAddonStore.setState({ disabled: [...disabled] })
+}
+
+/**
  * Move the owner's choices from each retired built-in to its suite app, once
  * per pair. Runs at sign-in, after the dotfiles are rehydrated from the server
  * (`rehydrateDotfileStores`), so it rewrites the server's copy, and the record
@@ -100,13 +115,16 @@ function moveChoices(from: string, to: string): void {
  */
 export function migrateRetiredAppIds(): void {
   const done = readDone()
-  let ran = false
-  for (const [from, to] of RETIRED_APP_IDS) {
-    const tag = pairTag(from, to)
-    if (done.includes(tag)) continue
+  const pending = RETIRED_APP_IDS.filter(([from, to]) => !done.includes(pairTag(from, to)))
+  if (pending.length === 0) return
+
+  const sources = new Map<string, string[]>()
+  for (const [from, to] of pending) {
     moveChoices(from, to)
-    done.push(tag)
-    ran = true
+    sources.set(to, [...(sources.get(to) ?? []), from])
   }
-  if (ran) writePref(APP_ID_MIGRATIONS_KEY, JSON.stringify({ done }))
+  for (const [to, froms] of sources) moveDisabled(froms, to)
+
+  done.push(...pending.map(([from, to]) => pairTag(from, to)))
+  writePref(APP_ID_MIGRATIONS_KEY, JSON.stringify({ done }))
 }

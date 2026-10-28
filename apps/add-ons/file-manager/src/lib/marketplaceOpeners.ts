@@ -10,6 +10,7 @@ const SUITE_TYPES: Readonly<Record<string, string>> = {
   docx: 'Office',
   pptx: 'Office',
   xlsx: 'Office',
+  pdf: 'Office',
   // A .csv opens in the text editor while nothing claims it (brief 166), so
   // this shows only when that editor is disabled too.
   csv: 'Office',

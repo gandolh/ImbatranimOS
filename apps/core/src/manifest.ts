@@ -17,8 +17,6 @@ import { manifest as terminal } from '@imbatranim/repl-interpreter'
 import { manifest as fileManager } from '@imbatranim/file-manager'
 import { manifest as systemMonitor } from '@imbatranim/system-monitor'
 import { manifest as snippingTool } from '@imbatranim/snipping-tool'
-import { manifest as pdfViewer } from '@imbatranim/pdf-viewer'
-import { manifest as norpdf } from '@imbatranim/norpdf'
 import { manifest as calculator } from '@imbatranim/calculator'
 import { manifest as clock } from '@imbatranim/clock'
 import { manifest as calendar } from '@imbatranim/calendar'
@@ -65,8 +63,6 @@ const MANIFESTS: AddonManifest[] = [
   fileManager,
   systemMonitor,
   snippingTool,
-  pdfViewer,
-  norpdf,
   calculator,
   clock,
   calendar,

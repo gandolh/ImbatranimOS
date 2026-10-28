@@ -177,12 +177,10 @@ const TEXT_APP_IDS = ['code-editor', 'notepad', 'markdown-editor'] as const
  *
  * This is one line per genuinely contested type, not a second association table:
  * every uncontested extension still comes straight from the app's own `opens`.
+ * Empty since brief 167: its one row sent `.pdf` to norPDF over PDF Viewer, and
+ * both left for Office's PDF.
  */
-const PREFERRED_DEFAULT: Record<string, string> = {
-  // Brief 65: norPDF is a strict superset (outline, search, annotate, forms,
-  // a real save path). PDF Viewer stays the light option, via Open with.
-  pdf: 'norpdf',
-}
+const PREFERRED_DEFAULT: Record<string, string> = {}
 
 /**
  * The extension for association purposes, or the whole lowercase name when there

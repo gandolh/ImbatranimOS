@@ -726,8 +726,8 @@ export class FilesService {
    * container restart — left the user's file truncated and the original bytes
    * gone. Both save paths come through here: `writeFile` (`PUT /files/content`:
    * Notepad, the file manager's text writes, the REST client's collections) and
-   * `uploadFile` (Docs, Sheets, Slides, Code Editor, Markdown Editor, norPDF,
-   * images).
+   * `uploadFile` (Code Editor, Markdown Editor, Paint, images, and Office's
+   * apps from the Marketplace).
    *
    * `rename` within the same directory is atomic on POSIX: either the new bytes
    * are fully in place or the old file is untouched. Staging in the

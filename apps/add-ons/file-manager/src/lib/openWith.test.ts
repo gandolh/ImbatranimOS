@@ -4,15 +4,14 @@ import { openAppLabel, resolveOpenApp, type Associations } from './openWith'
 /**
  * Since brief 48 this adapter resolves against the HANDLE's association slice,
  * not core's registry — an app test cannot reach the OS, which is the seam
- * working as designed. The registry's real table (pdf → norpdf, the office
- * formats, the text fallback) is pinned in core's associations.test.ts; what
+ * working as designed. The registry's real table (the text fallback, the
+ * office formats Office's apps took over) is pinned in core's associations.test.ts; what
  * this file owns is the ADAPTER's contract: null for a refused resolution, the
  * label shapes the menu shows. The fake below implements the protocol slice
  * with the registry's real shape.
  */
 const NAMES: Record<string, string> = {
-  norpdf: 'norPDF',
-  'pdf-viewer': 'PDF Viewer',
+  'office-pdf': 'PDF',
   'office-docs': 'Docs',
   'office-sheets': 'Sheets',
   'office-slides': 'Slides',
@@ -23,7 +22,7 @@ const NAMES: Record<string, string> = {
   'media-player': 'Media Player',
 }
 const TABLE: Record<string, string> = {
-  pdf: 'norpdf',
+  pdf: 'office-pdf',
   docx: 'office-docs',
   xlsx: 'office-sheets',
   csv: 'office-sheets',
@@ -66,10 +65,9 @@ const assoc: Associations = {
  * double-click depends on — from the outside.
  */
 describe('resolveOpenApp', () => {
-  it('sends .pdf to norPDF, not the light viewer (brief 65)', () => {
-    // The default has to be the capable app. PDF Viewer stays in the tree as a
-    // deliberate lightweight option, chosen explicitly.
-    expect(resolveOpenApp(assoc, 'home', 'report.pdf')).toBe('norpdf')
+  it("sends .pdf to Office's PDF (brief 167)", () => {
+    // norPDF and PDF Viewer became one app in imbatranim-office.
+    expect(resolveOpenApp(assoc, 'home', 'report.pdf')).toBe('office-pdf')
   })
 
   it('routes the office formats to their editors', () => {
@@ -98,7 +96,7 @@ describe('resolveOpenApp', () => {
   })
 
   it('is case-insensitive about the extension', () => {
-    expect(resolveOpenApp(assoc, 'home', 'REPORT.PDF')).toBe('norpdf')
+    expect(resolveOpenApp(assoc, 'home', 'REPORT.PDF')).toBe('office-pdf')
     expect(resolveOpenApp(assoc, 'home', 'Book.XLSX')).toBe('office-sheets')
   })
 
@@ -121,12 +119,8 @@ describe('resolveOpenApp', () => {
 })
 
 describe('openAppLabel', () => {
-  it('names norPDF, so the menu matches the app that will actually open', () => {
-    expect(openAppLabel(assoc, 'norpdf')).toBe('Open in norPDF')
-  })
-
-  it('still names PDF Viewer, which remains available', () => {
-    expect(openAppLabel(assoc, 'pdf-viewer')).toBe('Open in PDF Viewer')
+  it('names the app that will actually open', () => {
+    expect(openAppLabel(assoc, 'office-pdf')).toBe('Open in PDF')
   })
 
   it('has a label for every app the map can resolve to', () => {

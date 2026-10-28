@@ -40,7 +40,6 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'wiki/architecture', label: 'Architecture' },
         { type: 'doc', id: 'wiki/os-layering', label: 'OS layering — the compositor seam' },
         { type: 'doc', id: 'wiki/ui-conventions', label: 'UI conventions' },
-        { type: 'doc', id: 'wiki/norpdf', label: 'norPDF and @pdfcore/engine' },
         { type: 'doc', id: 'wiki/code-graph', label: 'The code-graph layer' },
         { type: 'doc', id: 'wiki/glossary', label: 'Glossary' },
         { type: 'doc', id: 'wiki/decisions', label: 'Decisions (locked)' },

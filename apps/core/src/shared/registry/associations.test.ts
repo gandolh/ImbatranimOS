@@ -12,6 +12,7 @@ import {
   useAssociationStore,
 } from './associations'
 import { useAddonStore } from '../store/addonStore'
+import { APP_REGISTRY } from './registry'
 import { DOTFILE_KEYS } from '../../lib/prefs'
 
 /**
@@ -87,13 +88,6 @@ describe('the before/after table — every mapping the old constant had', () => 
   it.each(cases)('%s still opens in %s', (file, appId) => {
     expect(resolveOpener(file).appId).toBe(appId)
   })
-
-  it('.pdf still goes to norPDF, NOT the light viewer', () => {
-    // Both claim `.pdf` and pdf-viewer is registered FIRST, so "first candidate
-    // wins" would have quietly undone brief 65's decision.
-    expect(resolveOpener('doc.pdf').appId).toBe('norpdf')
-    expect(candidatesFor('doc.pdf').map((c) => c.appId)).toContain('pdf-viewer')
-  })
 })
 
 describe('the user override wins', () => {
@@ -143,8 +137,19 @@ describe('a disabled app is not a candidate', () => {
   })
 
   it('hands a contested extension to the other claimant', () => {
-    useAddonStore.setState({ disabled: ['norpdf'] })
-    expect(resolveOpener('doc.pdf').appId).toBe('pdf-viewer')
+    // No two built-ins share a type since brief 167 (norPDF and PDF Viewer
+    // left together); a Marketplace app beside a built-in is the case now.
+    const markdown = APP_REGISTRY.find((a) => a.id === 'markdown-editor')!
+    APP_REGISTRY.push({ ...markdown, id: 'other-markdown' })
+    try {
+      useAddonStore.setState({ disabled: ['markdown-editor'] })
+      expect(resolveOpener('a.md').appId).toBe('other-markdown')
+    } finally {
+      APP_REGISTRY.splice(
+        APP_REGISTRY.findIndex((a) => a.id === 'other-markdown'),
+        1
+      )
+    }
   })
 })
 
@@ -202,6 +207,11 @@ describe('THE DEAD DOUBLE-CLICK IS GONE', () => {
     expect(isTextish('deck.pptx')).toBe(false)
   })
 
+  it('a .pdf with norPDF and PDF Viewer retired resolves to nothing (brief 167)', () => {
+    expect(resolveOpener('report.pdf')).toEqual({ appId: '', reason: 'none' })
+    expect(isTextish('report.pdf')).toBe(false)
+  })
+
   it('a .xlsx or .xls with Sheets retired resolves to nothing; a .csv opens as text (brief 166)', () => {
     expect(resolveOpener('book.xlsx')).toEqual({ appId: '', reason: 'none' })
     expect(resolveOpener('book.xls')).toEqual({ appId: '', reason: 'none' })
@@ -232,7 +242,7 @@ describe('the Settings row list', () => {
     const known = knownExtensions()
     expect(known).toContain('md')
     expect(known).toContain('png')
-    expect(known).toContain('pdf')
+    expect(known).toContain('mp3')
     expect(known).toContain('mkv')
     // Sorted and unique.
     expect([...new Set(known)]).toEqual(known)

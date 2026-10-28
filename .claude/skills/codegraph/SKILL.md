@@ -87,8 +87,8 @@ caller, only a file node. Filtering them out drops real callers.
   `FsEntry`, `LEGACY_KEY`, `LegacyState`. **Scope every query for these by path**
   (`grep -rn "formatBytes" apps/add-ons/notepad`) or don't ask the graph.
 - **`explore` with a common verb in the question.** "how does an add-on receive
-  the system handle" pulled in three unrelated `add` definitions
-  (`widgetStore.add`, two pdfcore `add`s) alongside the real answer. Read past
+  the system handle" pulled in unrelated `add` definitions
+  (`widgetStore.add` among them) alongside the real answer. Read past
   the noise, or ask `node SystemHandle` instead.
 - **Exhaustive renames / "did I get every usage".** `grep -rnw <symbol>`, then
   confirm each hit. The graph is a scoping aid, never a completeness proof.

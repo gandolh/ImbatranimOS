@@ -4429,7 +4429,7 @@ The owner likes the desktop's minimalism but wants it friendlier: pastel colours
 ## [2026-10-28] todo | Briefs 178-182 filed from the owner's answers
 
 The owner answered the four questions briefs 174-176 left, on 2026-10-27, and
-imbatranim-office brief 09's on 2026-10-28. [178](briefs/todo/178-alt-tab-works-over-a-terminal.md):
+imbatranim-office brief 09's on 2026-10-28. [178](briefs/done/178-alt-tab-works-over-a-terminal.md):
 the Alt+Tab switcher listens in the capture phase, so it works over a Terminal.
 [179](briefs/todo/179-a-click-that-opens-another-window-leaves-it-in-front.md): a
 window's root click doesn't raise it when the click brought another window to
@@ -4441,3 +4441,7 @@ the full `npm test` stops flaking. [182](briefs/todo/182-a-kit-app-starts-loadin
 a kit app's entry is fetched as its window opens, which closes most of the
 suite PDF's 40 ms gap; that gap and Sheets' formula freeze no longer hold back
 briefs 166 and 167. The three todos are marked promoted.
+
+## [2026-10-28] build | Brief 178 done: Alt+Tab works over a Terminal
+
+The Alt+Tab switcher's key listeners on `window` run in the capture phase (`770f616`, 1.40.0), so xterm stopping the Tab keydown no longer hides Alt+Tab from it. A key the switcher acts on (Alt+Tab, Alt+Shift+Tab, and the arrows, Enter, Escape and the Alt release while it is open) is stopped there, so the Terminal never also gets it; every other key reaches the focused element untouched. Walked in headless Chrome against the dev container with real key ups: two Terminals and a Calculator, focus in a Terminal, Alt+Tab opened the switcher, a second Tab stepped, releasing Alt brought the other Terminal up with the keyboard in it, and `ech` + Tab still completed in the shell. The global hotkeys share the old cause (Ctrl+K does nothing inside a Terminal): [keyboard-gaps-after-brief-180](todos/keyboard-gaps-after-brief-180.md). [Brief 178](briefs/done/178-alt-tab-works-over-a-terminal.md) carries the outcome.

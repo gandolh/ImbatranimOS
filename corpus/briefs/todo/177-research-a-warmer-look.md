@@ -82,3 +82,18 @@ What the look is made of today:
 
 - `packages/ui/src/theme.css`, `apps/core/src/index.css`, the stores and `theme.test.ts`.
 - `corpus/wiki/decisions*.md`.
+
+## Where the 2026-10-28 run stopped
+
+Stopped after reading, when the run's session ran out. Nothing collected, rendered or measured yet;
+no findings page, no mock page. What the reading confirmed, for the next run:
+
+- The radius rule is `* { border-radius: 0 !important }` in `apps/core/src/index.css`, so a
+  direction with radius changes that line, not only `ui-conventions.md`.
+- The three wallpapers are CSS gradients in `WALLPAPER_STYLES`
+  (`apps/core/src/shared/components/desktop/Desktop.tsx`); `wallpaperStore.ts` holds only the id.
+- The chrome a glass direction would touch: the taskbar's `bg-surface-container-low`
+  (`taskbar/Taskbar.tsx`), the Start menu's `bg-surface-container-low` and its
+  `shadow-[0_-8px_32px_rgba(0,0,0,0.45)]` (`taskbar/StartMenu.tsx`), and the title bar's
+  `bg-surface-container-high`/`bg-surface-container` (`window/Window.tsx`).
+- The `os-run-dev` container (exited) is there to reuse for step 4.

@@ -2,7 +2,7 @@
 
 ## Context
 
-The PDF run of [brief 164](164-retiring-a-built-in-office-app.md)'s
+The PDF run of [brief 164](../done/164-retiring-a-built-in-office-app.md)'s
 hand-over: remove the built-in once its imbatranim-office version has passed
 its walk in the OS (imbatranim-office brief 09). Brief 164's Docs run builds the migration
 that moves the owner's choices to the new id; this run adds its id pair to it.

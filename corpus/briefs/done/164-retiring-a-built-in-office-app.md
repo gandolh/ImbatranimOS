@@ -183,3 +183,37 @@ was true for any Marketplace app before this brief. **Owner:** the license
 decision (`decisions-pivot-era.md`, "required by SuperDoc") and the README's
 reason for AGPL both rested on Docs; the README no longer gives that reason,
 the license is unchanged.
+
+## Outcome (2026-10-28): the walk finished, the Docs run closes
+
+**Walked in Chrome against the dev container on 2026-10-28, Office
+`909c321` installed from a local `file://` repository** (the walk's own
+catalog entry; the repo's stays pinned to `1ca83c0` until brief 165 moves
+it). No code changed since `c3baeef`.
+
+- **New Document, the suite installed:** the background menu listed New
+  Spreadsheet and New Document. New Document wrote `Untitled
+  Document.docx` beside `letter.docx` and opened it in the suite's Docs,
+  which showed the blank page (3.8 s, load average 29).
+- **The suite uninstalled:** double-clicking `letter.docx` showed the Open
+  With chooser with "No installed app opens .docx files. Office in Settings →
+  Marketplace does.", no app picked, and nothing opened. The background menu
+  had no New Document (New Spreadsheet stays while the built-in Sheets does).
+  No Docs icon showed; the dotfiles kept `.docx` → `office-docs`, the startup
+  entry and the pinned icon's place.
+- **Reinstalled:** `letter.docx` opened straight in the suite's Docs with no
+  prompt, and the Docs icon came back where it was pinned.
+
+**Why the scripted right-click opened no menu last time:** the element that
+owns the background menu is only as tall as the listing, so in a short folder
+a right-click below the last row reaches nothing. In this walk the menu came
+from the header row. Not this brief's files:
+[files-background-menu-misses-empty-space](../../todos/files-background-menu-misses-empty-space.md).
+
+**Step 6:** `decisions-pivot-era.md`'s office section has a dated note that
+Docs left for imbatranim-office. `decisions.md`'s 2026-08-03 entry is the PDF
+decision and gets its note in brief 167.
+
+**The owner's answers of 2026-10-28:** the AGPL licence stays by the owner's
+choice, noted beside its old SuperDoc reason; Marketplace startup apps that
+never open at sign-in are [brief 183](183-marketplace-startup-apps-open-at-sign-in.md).

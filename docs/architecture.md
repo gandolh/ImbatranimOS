@@ -46,4 +46,4 @@ Settings → Marketplace installs more apps. An app described in [`marketplace/`
 - [corpus/wiki/architecture.md](../corpus/wiki/architecture.md): the stack, layer by layer
 - [corpus/wiki/os-layering.md](../corpus/wiki/os-layering.md): the three layers and the `system` handle
 - [infrastructure/README.md](../infrastructure/README.md): HTTPS, the sign-in and the Browser's second port
-- The docs site's [architecture page](../apps/docs/src/content/docs/architecture.mdx) and [tour of the desktop](../apps/docs/src/content/docs/tour.mdx), plus an API reference generated from the code by `npm run docs` ([apps/docs](../apps/docs/README.md))
+- The docs site's [architecture page](../apps/docs/docs/architecture.mdx) and [tour of the desktop](../apps/docs/docs/tour.mdx), plus an API reference generated from the code by `npm run docs` ([apps/docs](../apps/docs/README.md))

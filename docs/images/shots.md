@@ -4,15 +4,17 @@ How each image was made, so the next refresh is a re-run. Re-take an image when 
 
 | File | Shows | How to reach that state | Viewport | Data | Taken |
 |---|---|---|---|---|---|
-| desktop.gif | Start → Terminal runs `whoami` and `cat /etc/alpine-release`; File Manager and System Monitor open; each window is dragged into place | the beats below, recorded with `agent-browser record` | 1280×800 @1x, GIF 960 px wide, 12 fps, 12 s | demo files below | 2026-10-09 |
+| desktop.gif | Start → Terminal runs `whoami` and `ls`; File Manager and System Monitor open; each window is dragged into place | the beats below, one Playwright screenshot per beat, joined with ffmpeg | 1280×800 @1x, GIF 960 px wide, 12 fps, 14 s | demo files below | 2026-10-31 |
 | terminal.webp | Terminal after `whoami`, `grep PRETTY_NAME /etc/os-release`, `ls`, `sudo -v`, `ps -o pid,user,comm` | double-click the Terminal icon, type the commands, screenshot the `[data-app-id="terminal"]` element | 1440×900 @2x, window 700×460 | demo files below | 2026-10-09 |
 | files.webp | File Manager on Home with the preview pane on and `notes.txt` selected | double-click File Manager, drag its bottom-right corner to about 816×524, click the preview-pane button, click `notes.txt`, screenshot the window element | 1440×900 @2x | demo files below | 2026-10-09 |
 | system-monitor.webp | System Monitor, Overview tab | double-click System Monitor, resize to about 622×617, screenshot the window, crop the empty bottom (`crop=iw:1016:0:0`) | 1440×900 @2x | live numbers | 2026-10-09 |
-| marketplace.webp | Settings, Marketplace section: install from a URL, and the catalog's Hollow entry | Start → Settings, resize to about 721×761, scroll the Marketplace heading to the top, screenshot the window, keep the top 692 px (`crop=iw:692:0:0`) | 1440×900 @2x | the catalog in `marketplace/` | 2026-10-09 |
+| marketplace.webp | Settings, Marketplace section: install from a URL, and the catalog: Hollow and Office with its five apps | Start → Settings, resize to about 721×761, scroll the Marketplace heading to just below the top, screenshot the window, keep the top 1046 px (`crop=iw:1046:0:0`) | 1440×900 @2x | the catalog in `marketplace/` | 2026-10-31 |
 
 ## Setup
 
-All images come from the dev container, so the Terminal, Files and System Monitor show the container's own user, home folder and processes, not the host's.
+The images of 2026-10-09 come from the dev container. On 2026-10-31 `desktop.gif` and `marketplace.webp` were taken again from a host run, because the workspace could not pull the Node base image: the backend built with `npm run build -w apps/backend` and started with `node dist/main` as a Linux user named `imbatranim` with the demo files in its home and the database outside it, and the desktop from `VITE_API_URL=/api npm run dev -w apps/core`. Either way the windows show the same user and files.
+
+All images come from a machine whose user is `imbatranim`, so the Terminal, Files and System Monitor show the container's own user, home folder and processes, not the host's.
 
 1. `docker compose -f infrastructure/docker-compose.yml --profile dev build dev` if the image is older than the code, then `docker compose -f infrastructure/docker-compose.yml --profile dev up -d dev`. Wait for Vite on <http://localhost:5173>.
 2. Make the demo files:
@@ -35,14 +37,14 @@ All images come from the dev container, so the Terminal, Files and System Monito
 With no windows open, at 1280×800:
 
 1. Click Start, then the Terminal entry.
-2. Focus `textarea[aria-label="Terminal input"]`, type `whoami` and Enter, then `cat /etc/alpine-release` and Enter.
+2. Focus `textarea[aria-label="Terminal input"]`, type `whoami` and Enter, then `ls` and Enter.
 3. Drag the Terminal by its title bar so its top-left lands at about (340, 290).
 4. Double-click the File Manager icon; drag it to about (590, 44).
 5. Double-click the System Monitor icon; drag it to about (716, 252). Hold for two seconds.
 
 Drag with `mouse move`, `mouse down`, a dozen small `mouse move` steps, `mouse up`. Keep the pointer away from the top edge of the screen: dropping a window there maximizes it.
 
-Record with `agent-browser --session imbatranim record start <abs path>.webm`, run the beats, `record stop`. Then trim the idle start and convert:
+Take one screenshot after each beat, two during each drag, and join them with an ffmpeg concat list that holds the last frame for 2.5 s, as in the readme-docs capture guide. The 2026-10-09 GIF was recorded with `agent-browser --session imbatranim record start <abs path>.webm` instead, then trimmed and converted:
 
 ```bash
 ffmpeg -y -ss 7.6 -i hero.webm \

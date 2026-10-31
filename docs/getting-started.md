@@ -67,7 +67,7 @@ The dev container keeps its home in its own volume and has a fixed owner for loc
 
 The host needs Node only for the editor, eslint and tsc. `npm run install:tooling` (`npm install --ignore-scripts`) skips compiling `better-sqlite3` and `node-pty`, so the host needs no C toolchain.
 
-`npm run dev:local` runs `turbo dev` on the host instead. It needs the full native build, and it runs as your own user: Files opens your real home folder, the Terminal is your own shell, and System Monitor lists your host's processes. The database defaults to `data/db.sqlite` at the repo root. Prefer the container.
+`npm run dev:local` runs `turbo dev` on the host instead. It needs the full native build, and it runs as your own user: Files opens your real home folder, the Terminal is your own shell, and System Monitor lists your host's processes. The database defaults to `data/db.sqlite` at the repo root. The desktop needs `VITE_API_URL=/api` in its environment, as the dev container sets it; without it the API calls miss the proxy and the desktop stays blank. Prefer the container.
 
 ### Scripts
 

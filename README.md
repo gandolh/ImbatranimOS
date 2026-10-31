@@ -3,7 +3,7 @@
 A small Linux computer whose screen is a browser tab. One Docker container runs Alpine Linux with a real shell, real files and real processes, and you use it through a Windows 7-style desktop in any browser. It is for anyone with Docker who wants a personal machine they can open from anywhere.
 
 <p align="center">
-  <img src="docs/images/desktop.gif" width="100%" alt="The ImbatranimOS desktop: Start opens a Terminal that runs whoami and prints imbatranim, then File Manager and System Monitor open and each window is dragged into place">
+  <img src="docs/images/desktop.gif" width="100%" alt="The ImbatranimOS desktop: Start opens a Terminal that runs whoami, which prints imbatranim, and ls, which lists the home folder; then File Manager and System Monitor open and each window is dragged into place">
 </p>
 
 **Status:** v1, declared on 2026-10-07; a personal project in daily use, still changing. The owner's machine runs on the production site at `/imbatranim-os/`, but it has one owner, so all you will see there is the sign-in screen. Run your own with the three commands below.
@@ -15,7 +15,7 @@ The name is a joke: *îmbătrânim* is Romanian for "we're getting old".
 - Gives you a real shell in the Terminal app: a PTY on the container, running as the unprivileged `imbatranim` user.
 - Opens the container's actual home folder in Files. It lives in a Docker volume, so it survives rebuilds, and Settings → Backup downloads it as one archive.
 - Shows the container's real CPU, memory, disk and processes in System Monitor.
-- Comes with about 25 apps: Notepad, a Monaco code editor, Git, a REST client, Paint, Minesweeper and more. The Browser app fetches pages from the machine, not from the browser you are sitting at. Docs, Sheets, Slides and a PDF reader come with Office, from the Marketplace.
+- Comes with about 25 apps: Notepad, a Monaco code editor, Git, a REST client, Paint, Minesweeper and more. The Browser app fetches pages from the machine, not from the browser you are sitting at. Docs, Sheets, Slides, a PDF reader and a 2D CAD app come with Office, from the Marketplace.
 - Installs more apps from the reviewed catalog in [`marketplace/`](marketplace/README.md), or from any GitHub repository into a sandboxed frame.
 
 Web desktops such as daedalOS run entirely in the tab and keep their files in browser storage. Here the tab only draws the screen; the files, the shell and the processes belong to a Linux machine you own. It has one owner and no other accounts, no sudo, and no two-factor sign-in.
@@ -26,7 +26,7 @@ Web desktops such as daedalOS run entirely in the tab and keep their files in br
 |---|---|
 | ![Terminal window: whoami prints imbatranim, os-release names Alpine Linux, sudo is not found, and ps lists a few processes, all owned by imbatranim](docs/images/terminal.webp) | ![File Manager on the home folder showing Projects, Sample folder and notes.txt, with notes.txt selected and its text in the preview pane](docs/images/files.webp) |
 | **System Monitor: live numbers from the machine** | **Marketplace: the catalog, and installs from a URL** |
-| ![System Monitor overview: CPU, memory, swap and disk bars with live graphs, plus uptime and network totals](docs/images/system-monitor.webp) | ![Settings, Marketplace section: a field for a GitHub URL and the catalog's one app, Hollow, with an Install button](docs/images/marketplace.webp) |
+| ![System Monitor overview: CPU, memory, swap and disk bars with live graphs, plus uptime and network totals](docs/images/system-monitor.webp) | ![Settings, Marketplace section: a field for a GitHub URL, then the catalog: Hollow, and Office with its five apps Docs, CAD, Slides, Sheets and PDF, each with an Install button](docs/images/marketplace.webp) |
 
 ## How it works
 

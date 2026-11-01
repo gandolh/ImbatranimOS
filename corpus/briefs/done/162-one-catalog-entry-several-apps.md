@@ -83,7 +83,7 @@ app's code is loaded or what it may import: that is
   "name": "Office",
   "description": "Documents, spreadsheets, slides, PDF and CAD.",
   "source": {
-    "repo": "https://github.com/gandolh/imbatranim-office",
+    "repo": "https://github.com/<owner>/imbatranim-office",
     "ref": "<40 hex>"
   },
   "type": "static",

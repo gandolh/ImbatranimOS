@@ -24,7 +24,7 @@ container. Nothing is rebuilt into the OS image. Backups leave
   "description": "A short line for the Marketplace list.",
   "meta": ["game"],
   "source": {
-    "repo": "https://github.com/gandolh/game-engine",
+    "repo": "https://github.com/<owner>/game-engine",
     "ref": "0123456789abcdef0123456789abcdef01234567",
     "subdir": "games/hollow"
   },
@@ -146,7 +146,7 @@ in Open With, and is enabled or disabled on its own in **Settings → Apps**.
   "name": "Office",
   "description": "Documents and spreadsheets.",
   "source": {
-    "repo": "https://github.com/gandolh/imbatranim-office",
+    "repo": "https://github.com/<owner>/imbatranim-office",
     "ref": "0123456789abcdef0123456789abcdef01234567"
   },
   "type": "static",

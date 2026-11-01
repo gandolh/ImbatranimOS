@@ -10,7 +10,7 @@ How to run ImbatranimOS, claim it on the first visit, and work on the code.
 ## Run it with Docker
 
 ```bash
-git clone https://github.com/gandolh/ImbatranimOS.git
+git clone https://github.com/<owner>/ImbatranimOS.git
 cd ImbatranimOS
 docker compose -f infrastructure/docker-compose.yml up imbatranimos
 ```

@@ -329,5 +329,5 @@ the author's guide is in [marketplace/README.md](../../../marketplace/README.md#
 
 **Left for the owner:** push game-engine's `imbatranim-app` branch (Hollow's
 built module plus `imbatranim.json`), then install
-`https://github.com/gandolh/game-engine/tree/imbatranim-app` from the pane.
+`https://github.com/<owner>/game-engine/tree/imbatranim-app` from the pane.
 Firefox is not walked.

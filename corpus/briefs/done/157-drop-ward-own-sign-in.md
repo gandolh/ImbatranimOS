@@ -36,10 +36,10 @@ to the desktop still reaches the terminal. The owner accepted that on
   (`switcherModel.ts`, `AltTabSwitcher.tsx`) and `packages/ui/src/system.ts`
 - `apps/core/vite.config.ts` (the dev `/ward` proxy), `README.md`,
   `infrastructure/`
-- In `../vps-deploy`: `stacks/imbatranim-os.ts` (`useWard` goes) and the
+- In `vps-deploy`: `stacks/imbatranim-os.ts` (`useWard` goes) and the
   `imbatranimOs.useWard(...)` line in `app.ts`; the stack gains a
   `SETUP_TOKEN` secret instead
-- In `../wzd_auth`: the `"imbatranim-os"` row in
+- In `wzd_auth`: the `"imbatranim-os"` row in
   `api/src/scripts/register-app-keys.ts` and in `ui/src/lib/estate.ts` (and
   their tests)
 - Corpus: `wiki/decisions-estate-era.md`, `wiki/open-questions.md`,

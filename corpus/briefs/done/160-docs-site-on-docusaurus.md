@@ -9,7 +9,7 @@ from, and it uses the most Starlight features of any site.
 
 The recipe is written and verified. The `corpus-docs-site` skill
 (personal-skills v0.31.0, source in
-`~/projects/my-personal-skills/skills/corpus-docs-site/`) now scaffolds
+`my-personal-skills/skills/corpus-docs-site`) now scaffolds
 Docusaurus 3.10, and `references/migrating-from-starlight.md` beside it holds
 the file, config and content maps plus ten gotchas, each hit during a real
 port. **Read that guide first.** Its `references/` folder has React versions of

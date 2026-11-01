@@ -11,7 +11,7 @@ strict maintainability pass on a diff — deliberate, not routine
 explicit go
 **Issue tracker:** none — `corpus/briefs/` **is** the tracker; `wiki/status.md`
 holds one line per brief
-**Code host:** GitHub (`gandolh/ImbatranimOS`), origin only — no `gh` workflow
+**Code host:** GitHub (`<owner>/ImbatranimOS`), origin only — no `gh` workflow
 
 ## Intent routing
 

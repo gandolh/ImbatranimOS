@@ -3,7 +3,7 @@
 ## Context
 
 First brief of the web-OS era (see corpus/wiki/decisions.md). Frontend +
-backend start as a fork of https://github.com/gandolh/minimal-web-desktop
+backend start as a fork of `https://github.com/<owner>/minimal-web-desktop`
 (default branch `main`). Recon done 2026-07-16 (grilling); findings baked
 into the decisions below so this brief is unambiguous.
 

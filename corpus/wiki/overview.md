@@ -23,7 +23,7 @@ Romanian for "we're getting old," a joke about time passing that computes.
    Superseded briefs and the log preserve the record; the code was deleted
    uncommitted by explicit choice.
 2. **Web-OS era (2026-07-16 →).** Fork of the user's own
-   [minimal-web-desktop](https://github.com/gandolh/minimal-web-desktop)
+   minimal-web-desktop
    (React/Vite/TS + Tailwind + Framer Motion, NestJS, SQLite), evolved into
    ImbatranimOS: system apps added (real terminal, real files, system
    monitor), reskinned to the carried-over identity (Windows-7-classic

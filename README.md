@@ -37,7 +37,7 @@ A NestJS server inside the container serves the React desktop and the API on one
 Requires Docker with Compose. Everything is built from this repository; there is no published image.
 
 ```bash
-git clone https://github.com/gandolh/ImbatranimOS.git
+git clone https://github.com/<owner>/ImbatranimOS.git
 cd ImbatranimOS
 docker compose -f infrastructure/docker-compose.yml up imbatranimos
 ```

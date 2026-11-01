@@ -24,7 +24,7 @@ tags: [core, platform, add-on, backend, security]
 Paste a GitHub repo URL, press **Install**, and the OS `git clone`s it into the
 home FS, builds it, and adds it to the desktop as a runnable app — no rebuild of
 ImbatranimOS itself. The motivating use case is installing **games built with
-the custom game-engine** (`~/projects/game-engine` — Farm Valley, Citadel,
+the custom game-engine** (`game-engine` — Farm Valley, Citadel,
 Hollow), but the format is open: any repo that "respects our format" installs
 the same way. This is the "sandboxed native/third-party app store" that
 [decisions.md](../../wiki/decisions.md) named as a *possible future brief, out of

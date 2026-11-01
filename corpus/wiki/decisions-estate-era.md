@@ -124,7 +124,7 @@ Asked directly while clearing the open questions.
   every app on the origin is the owner's own code under `script-src 'self'`.
   Revisit if a third-party app joins the estate.
   - **Revisited 2026-10-21, owner:** the desktop moves to `imbatranim.<domain>`
-    (`../vps-deploy` brief 14, built 2026-10-22, live once deployed), where
+    (`vps-deploy` brief 14, built 2026-10-22, live once deployed), where
     `imb_session` is host-only and the apex apps are cross-origin, so this
     risk closes. `/imbatranim-os` redirects there; the docs stay put. Nothing
     here changed. The Browser's "no subdomain" (LAN installs) stands.

@@ -63,7 +63,7 @@ Fourth grilling. ImbatranimOS is now a real Alpine-based Docker container
 whose entire GUI is a React web desktop ("B: real OS, browser = screen" —
 real PTY terminal, real FS, real processes). Locked: Docker runtime;
 NestJS backend (fork reuse over Go's smaller image); fork of
-gandolh/minimal-web-desktop as the frontend/backend base; internet-
+`<owner>/minimal-web-desktop` as the frontend/backend base; internet-
 exposable with proper auth day 1 (single user, sessions + password, TOTP
 option); shell as `imbatranim` with NO sudo; volume-backed /home; v1 apps
 = terminal/files/system-monitor + notes/todo/bookmarks/notepad; identity
@@ -3860,7 +3860,7 @@ The `.claude/` skills directory came across with the tree.
 
 ## [2026-08-23] maintenance | Corpus realigned to personal-skills 0.29.0
 
-The skills library at `~/projects/my-personal-skills` moved 0.23.0 → **0.29.0**
+The skills library at `my-personal-skills` moved 0.23.0 → **0.29.0**
 (a marketplace plugin now; the vendored copy under `.claude/` was deleted from
 this repo the same day). The corpus was written against the old roster, so:
 
@@ -4304,7 +4304,7 @@ machine.
   727 unit and 168 e2e tests; core 452; and the Chrome walk with Hollow and a
   hostile probe app.
 - **Owed by the owner:** push game-engine's `imbatranim-app` branch, then
-  install Hollow from `https://github.com/gandolh/game-engine/tree/imbatranim-app`.
+  install Hollow from `https://github.com/<owner>/game-engine/tree/imbatranim-app`.
 
 ## [2026-10-07] maintenance | Hollow's URL install now comes from game-engine's main
 
@@ -4313,7 +4313,7 @@ At the owner's request, game-engine merged the `imbatranim-app` branch into `mai
 side branch. The branch is gone. Checked through this repo's installer against the local
 checkout (`file:` under the test flag, ref `main`, subdir `games/hollow/os-app`): it resolved to
 `8db15ad`, installed, served all four files under its token, and uninstalled. The install URL
-once game-engine is pushed: `https://github.com/gandolh/game-engine/tree/main/games/hollow/os-app`.
+once game-engine is pushed: `https://github.com/<owner>/game-engine/tree/main/games/hollow/os-app`.
 This replaces the branch URL in brief 158's outcome note; status.md now carries this one.
 
 ## [2026-10-09] capture | Brief 159 filed; architecture page's add-on list refreshed
@@ -4363,7 +4363,7 @@ The deploy waits on vps-deploy brief 11.
 
 ## [2026-10-21] decision | The office suite moves out to imbatranim-office (brief 161 not taken)
 
-Grilled with the owner. They turned down all four of brief 161's routes: the OS should behave like an OS whose apps are all web UI, and a craft's wasm canvas in a sandboxed frame is not that. Research that day showed the crafts' engines are UI-free and already headless (MCP and CLI), but the cost of the owner's first idea, Rust engines behind an API, is the React UI that has to be rebuilt anyway, plus a network hop on every keystroke and two more revisits to run a Rust binary in a compiler-free image. Settled, in [decisions-office-suite.md](wiki/decisions-office-suite.md): Docs, Sheets, Slides, PDF (PDF Viewer and norPDF merged) and a new CAD app move to a separate repo, `imbatranim-office`, in TypeScript with editing in the browser and a server only for one-off jobs, and come back through one marketplace entry that installs all five. The crafts are the reference for behaviour and features. "Client-side JS engines only" is narrowed, not dropped. The owner chose the name over openBureau (taken) and created no remote yet; `~/projects/imbatranim-office` exists as an empty repo on main. Brief 161 moves to `superseded/` when the suite's briefs are written.
+Grilled with the owner. They turned down all four of brief 161's routes: the OS should behave like an OS whose apps are all web UI, and a craft's wasm canvas in a sandboxed frame is not that. Research that day showed the crafts' engines are UI-free and already headless (MCP and CLI), but the cost of the owner's first idea, Rust engines behind an API, is the React UI that has to be rebuilt anyway, plus a network hop on every keystroke and two more revisits to run a Rust binary in a compiler-free image. Settled, in [decisions-office-suite.md](wiki/decisions-office-suite.md): Docs, Sheets, Slides, PDF (PDF Viewer and norPDF merged) and a new CAD app move to a separate repo, `imbatranim-office`, in TypeScript with editing in the browser and a server only for one-off jobs, and come back through one marketplace entry that installs all five. The crafts are the reference for behaviour and features. "Client-side JS engines only" is narrowed, not dropped. The owner chose the name over openBureau (taken) and created no remote yet; `imbatranim-office` exists as an empty repo on main. Brief 161 moves to `superseded/` when the suite's briefs are written.
 
 ## [2026-10-21] todo | Briefs 162–164 filed for the office suite; 161 superseded
 
@@ -4383,7 +4383,7 @@ imbatranim-office has all five apps built; Docs and CAD were walked in this OS, 
 
 ## [2026-10-22] decision | The desktop moves to its own host; the shared-origin risk closes
 
-The owner asked on 2026-10-21 for a subdomain for the desktop, revisiting the 2026-10-06 call that kept it at `/imbatranim-os` and accepted the shared origin as a risk. `../vps-deploy` brief 14, built on 2026-10-22, serves it at the root of `imbatranim.<domain>`, where `imb_session` is host-only, and redirects `/imbatranim-os` there; the docs stay at `/imbatranim-os/docs`. Nothing in this repo changed: the image already defaults to `VITE_BASE=/` and `VITE_API_URL=/api`, the session cookie's path is `/`, and the origin check compares against the request's own host. The note is on both 2026-10-06 entries in [decisions-estate-era.md](wiki/decisions-estate-era.md); it applies once the owner deploys. Signing in again on the new host is expected, since the old cookie belonged to the apex.
+The owner asked on 2026-10-21 for a subdomain for the desktop, revisiting the 2026-10-06 call that kept it at `/imbatranim-os` and accepted the shared origin as a risk. `vps-deploy` brief 14, built on 2026-10-22, serves it at the root of `imbatranim.<domain>`, where `imb_session` is host-only, and redirects `/imbatranim-os` there; the docs stay at `/imbatranim-os/docs`. Nothing in this repo changed: the image already defaults to `VITE_BASE=/` and `VITE_API_URL=/api`, the session cookie's path is `/`, and the origin check compares against the request's own host. The note is on both 2026-10-06 entries in [decisions-estate-era.md](wiki/decisions-estate-era.md); it applies once the owner deploys. Signing in again on the new host is expected, since the old cookie belonged to the apex.
 
 ## [2026-10-23] decision | Revisit: Linux apps show as OS windows, sent as pixels
 

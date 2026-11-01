@@ -93,7 +93,7 @@ tree. This is os-layering's "attach a buffer" / raw-surface idea, kept minimal.
   "description": "…",
   "meta": ["game"],
   "source": {                          // where — points OUT to the game repo
-    "repo": "https://github.com/gandolh/game-engine",
+    "repo": "https://github.com/<owner>/game-engine",
     "ref": "v1.2.0",                   // pinned tag/commit → reproducible
     "subdir": "games/hollow"           // monorepo path (optional)
   },

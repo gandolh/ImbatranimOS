@@ -203,6 +203,15 @@ nix profile add nixpkgs#firefox    # `nix profile install` is the older name
   `XDG_RUNTIME_DIR` (`/run/user/1000`). There is no session D-Bus. The
   backend's own `PATH` leaves the profile out, so a Nix copy of `git` or `tar`
   never replaces the image's.
+- **Their windows.** A Linux app's display is the Wayland host
+  (`apps/wayland-host`, Rust, built in its own image stage). The backend
+  starts it when the first tab signs in, and each tab gets its own socket,
+  `$XDG_RUNTIME_DIR/wayland-<tab's session id>`, which that tab's Terminal
+  shells have in `WAYLAND_DISPLAY`. Windows reach the tab as lossless images
+  over `/api/wayland`, behind the same sign-in as the Terminal; closing the
+  tab disconnects its apps. The dev image adds `foot` to test with:
+  `foot &` in the Terminal opens a window. How the pieces talk:
+  [`apps/wayland-host/PROTOCOL.md`](../apps/wayland-host/PROTOCOL.md).
 
 ## Native modules note
 

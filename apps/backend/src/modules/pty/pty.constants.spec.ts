@@ -26,4 +26,18 @@ describe('terminalEnv', () => {
   it('adds nothing outside the container, where NIX_STATE_HOME is unset', () => {
     expect(terminalEnv({ PATH: '/usr/bin' })).toEqual({ PATH: '/usr/bin' });
   });
+
+  it("names the tab's Wayland socket for a valid desktop session id", () => {
+    expect(terminalEnv({}, 'abcdefghijklmnop').WAYLAND_DISPLAY).toBe(
+      'wayland-abcdefghijklmnop',
+    );
+  });
+
+  it('adds no display for a missing or unsafe session id, and drops an inherited one', () => {
+    expect(
+      terminalEnv({ WAYLAND_DISPLAY: 'wayland-1' }).WAYLAND_DISPLAY,
+    ).toBeUndefined();
+    expect(terminalEnv({}, '../../etc/passwd').WAYLAND_DISPLAY).toBeUndefined();
+    expect(terminalEnv({}, 'short').WAYLAND_DISPLAY).toBeUndefined();
+  });
 });

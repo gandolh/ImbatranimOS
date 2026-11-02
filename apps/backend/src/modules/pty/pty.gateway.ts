@@ -162,6 +162,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
   private onConnection(ws: WebSocket, req: IncomingMessage): void {
     const { cols, rows } = parseGeometry(req.url);
+    const desktopSession = parseDesktopSession(req.url);
     let ptyProcess: pty.IPty;
     try {
       ptyProcess = pty.spawn(resolveShell(), [], {
@@ -169,7 +170,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         cols,
         rows,
         cwd: resolveHome(),
-        env: terminalEnv(childEnv()),
+        env: terminalEnv(childEnv(), desktopSession),
       });
     } catch (err) {
       this.logger.error(`Failed to spawn shell: ${(err as Error).message}`);
@@ -222,6 +223,12 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.live.clear();
     this.wss?.close();
   }
+}
+
+/** The desktop session (tab) id the Terminal sends, if any. */
+function parseDesktopSession(url: string | undefined): string | null {
+  const q = url?.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
+  return q ? new URLSearchParams(q).get('session') : null;
 }
 
 /** Read optional `cols`/`rows` from the upgrade URL query string. */

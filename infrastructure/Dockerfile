@@ -54,6 +54,20 @@ ARG VITE_API_URL=/api
 RUN VITE_BASE=$VITE_BASE VITE_API_URL=$VITE_API_URL npx turbo build
 
 # ---------------------------------------------------------------------------
+# wayland-host — the Wayland host Linux apps connect to (Rust, smithay).
+# Built in its own stage; only the binary reaches the prod and dev images.
+# libxkbcommon is linked dynamically, so musl's static default is turned off
+# and the runtime stages install the library instead.
+# ---------------------------------------------------------------------------
+FROM rust:1.97-alpine AS wayland-host
+RUN apk add --no-cache musl-dev libxkbcommon-dev pkgconf
+WORKDIR /src
+COPY apps/wayland-host/Cargo.toml apps/wayland-host/Cargo.lock ./
+COPY apps/wayland-host/src ./src
+ENV RUSTFLAGS="-C target-feature=-crt-static"
+RUN cargo build --release --locked
+
+# ---------------------------------------------------------------------------
 # proddeps — production-only node_modules (native modules compiled here)
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS proddeps
@@ -100,12 +114,13 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.71.0"
+      org.opencontainers.image.version="1.72.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
 # in the shipped image while working in development on a glibc host.
-RUN apk add --no-cache git
+# libxkbcommon: the Wayland host links it for the keymap it sends Linux apps.
+RUN apk add --no-cache git libxkbcommon
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 # Linux apps come from Nix, run single-user as imbatranim. Every piece of Nix
@@ -135,6 +150,7 @@ COPY --chown=imbatranim:imbatranim --from=proddeps /app/node_modules ./node_modu
 COPY --chown=imbatranim:imbatranim --from=proddeps /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/core/dist ./public
+COPY --from=wayland-host /src/target/release/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
 COPY --chown=imbatranim:imbatranim package.json ./
 COPY --chown=imbatranim:imbatranim apps/backend/package.json ./apps/backend/
 # The marketplace catalog: what may be installed. Root-owned on
@@ -153,7 +169,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.71.0
+    IMAGE_VERSION=1.72.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -175,8 +191,10 @@ CMD ["node", "apps/backend/dist/main"]
 # ---------------------------------------------------------------------------
 FROM deps AS dev
 # git, as in the prod stage: the Git app runs it, and so does a marketplace
-# install. The deps stage has only the native-addon toolchain.
-RUN apk add --no-cache git
+# install. The deps stage has only the native-addon toolchain. libxkbcommon
+# for the Wayland host; foot (and a font for it) is a Linux app to test the
+# host with, in the dev image only.
+RUN apk add --no-cache git libxkbcommon foot font-dejavu
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 # Linux apps under Nix, as in the prod stage (the reasons are there).
@@ -200,6 +218,7 @@ COPY apps ./apps
 # nothing in the container.
 COPY packages ./packages
 COPY marketplace ./marketplace
+COPY --from=wayland-host /src/target/release/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
 COPY infrastructure/entrypoint.sh /entrypoint.sh
 RUN chmod 0755 /entrypoint.sh \
  && mkdir -p /home/imbatranim && chown -R imbatranim:imbatranim /home/imbatranim /app

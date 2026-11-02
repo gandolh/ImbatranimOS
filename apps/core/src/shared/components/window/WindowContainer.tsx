@@ -9,6 +9,8 @@ import { AppErrorBoundary } from './AppErrorBoundary'
 import { AppErrorFallback } from './AppErrorFallback'
 import { useRegistryVersion } from '../../registry/marketplace'
 import { focusIntoNewWindowSoon } from './focusIntoWindow'
+import { isLinuxWindow } from '../../../modules/linux-windows/kind'
+import { LinuxWindowBody } from '../../../modules/linux-windows/LinuxWindowBody'
 
 // Field separator for the per-window projection key. `␟` (SYMBOL FOR UNIT
 // SEPARATOR) cannot occur in a uuid or an app-id slug, so splitting is safe.
@@ -144,7 +146,10 @@ const WindowSlot = memo(function WindowSlot({
       isFocused={isFocused}
       onActiveWorkspace={onActiveWorkspace}
     >
-      {AppComponent ? (
+      {isLinuxWindow(appId) ? (
+        // A Linux app's window: no add-on and no system handle, just its picture.
+        <LinuxWindowBody windowId={windowId} />
+      ) : AppComponent ? (
         <AppErrorBoundary
           // Bumping the key remounts the boundary AND the app beneath it, which
           // is what makes Reload a real recovery rather than a re-render of the

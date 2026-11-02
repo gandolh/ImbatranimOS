@@ -57,3 +57,28 @@ export function resolveShell(env: NodeJS.ProcessEnv = process.env): string {
 export function resolveHome(env: NodeJS.ProcessEnv = process.env): string {
   return env.HOME?.trim() || homedir() || process.cwd();
 }
+
+/**
+ * The environment a Terminal shell starts with: `base` (the backend's
+ * environment minus its secrets) plus the user's Nix profile at the front of
+ * `PATH`, so a Linux app installed with `nix profile add` runs by name.
+ *
+ * The profile goes on the shell's `PATH` only, never the backend's: the
+ * backend runs `git` and `tar` by name, and a Nix-installed copy of either must
+ * not replace the one the image ships. The other variables Nix apps need
+ * (`LOCALE_ARCHIVE`, `FONTCONFIG_FILE`, `XDG_DATA_DIRS`, `XDG_RUNTIME_DIR`)
+ * come from the image's environment and pass through `base` unchanged.
+ * Outside the container `NIX_STATE_HOME` is unset and nothing is added.
+ */
+export function terminalEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const env = { ...base };
+  const stateHome = env.NIX_STATE_HOME?.trim();
+  if (stateHome) {
+    const profileBin = `${stateHome}/profile/bin`;
+    const parts = (env.PATH ?? '').split(':').filter((p) => p !== '');
+    if (!parts.includes(profileBin)) {
+      env.PATH = [profileBin, ...parts].join(':');
+    }
+  }
+  return env;
+}

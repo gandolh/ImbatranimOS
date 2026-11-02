@@ -162,6 +162,48 @@ prod, 3002 dev), which serves only the proxy's fixed files and the relay.
   backup carries only ciphertext; restoring one elsewhere signs the Browser
   out of every site.
 
+## Linux apps and Nix
+
+Linux apps (Firefox is the first) come from Nix, not from Alpine. Nix runs
+single-user as `imbatranim`, so installing one needs no sudo:
+
+```bash
+nix profile add nixpkgs#firefox    # `nix profile install` is the older name
+```
+
+- **The volume.** `/nix` is its own named volume, `imbatranim-nix`
+  (`imbatranim-nix-dev` for the dev container), owned by `imbatranim`. Apps
+  survive `docker compose down` and `up` and image rebuilds. The image holds
+  Nix itself, never the apps. All of Nix's state lives in the volume, profiles
+  and caches included (`NIX_STATE_HOME`, `NIX_CACHE_HOME`, `NIX_CONFIG_HOME`
+  and `NIX_DATA_HOME` point into `/nix/var/imbatranim`), and nothing lands in
+  the home folder, so Settings → Backup leaves Linux apps out.
+- **The base profile.** A new volume is empty. On boot the entrypoint
+  installs `imbatranim-base` in the background when it is missing: DejaVu
+  fonts and glibc's UTF-8 locale archive, which Nix apps need on a host that
+  isn't NixOS. With no network it logs a `nix-base-profile:` line and the OS
+  boots as usual; Linux apps have no fonts until a later boot installs it.
+- **The pin.** `nixpkgs` means one commit of one release, set in
+  [`nix/nixpkgs-pin.env`](./nix/nixpkgs-pin.env) and nowhere else. The image
+  build writes it into the system flake registry, `/etc/nix/registry.json`.
+  To move it, put the release and the commit from
+  `https://channels.nixos.org/<release>/git-revision` in that file and rebuild
+  the image. Installed apps stay at their old commit until
+  `nix profile upgrade`.
+- **No build sandbox, and no building.** [`nix/nix.conf`](./nix/nix.conf)
+  sets `sandbox = false`, because the sandbox needs user namespaces that an
+  unprivileged container doesn't get, and `max-jobs = 0`, so a package with
+  no binary in `cache.nixos.org` fails instead of compiling on the machine.
+- **Unfree packages** are allowed. The image sets `NIXPKGS_ALLOW_UNFREE=1`,
+  and Nix only reads it with `--impure`:
+  `nix profile add --impure nixpkgs#<name>`.
+- **What a Nix app gets.** Terminal shells have the profile first on `PATH`,
+  plus `LOCALE_ARCHIVE`, `FONTCONFIG_FILE` (fonts from the base profile and
+  the user's, the font cache in `/nix`), `XDG_DATA_DIRS` and a private
+  `XDG_RUNTIME_DIR` (`/run/user/1000`). There is no session D-Bus. The
+  backend's own `PATH` leaves the profile out, so a Nix copy of `git` or `tar`
+  never replaces the image's.
+
 ## Native modules note
 
 `better-sqlite3` and `node-pty` are native addons, compiled in the `deps` /

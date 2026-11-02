@@ -100,7 +100,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.69.0"
+      org.opencontainers.image.version="1.70.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -108,6 +108,22 @@ LABEL org.opencontainers.image.title="ImbatranimOS" \
 RUN apk add --no-cache git
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
+# Linux apps come from Nix, run single-user as imbatranim. Every piece of Nix
+# state lives in /nix (its own volume), never in the home folder: a home link
+# into /nix would make every backup fail its restore, which refuses links that
+# point outside the home. The paths are read by setup-image.sh, the
+# entrypoint, the Terminal and Nix itself. The dev stage repeats this block.
+ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
+    NIX_CACHE_HOME=/nix/var/imbatranim/cache \
+    NIX_CONFIG_HOME=/nix/var/imbatranim/config \
+    NIX_DATA_HOME=/nix/var/imbatranim/data \
+    XDG_RUNTIME_DIR=/run/user/1000 \
+    FONTCONFIG_FILE=/etc/fonts/nix-apps.conf \
+    NIXPKGS_ALLOW_UNFREE=1
+ENV LOCALE_ARCHIVE=$NIX_STATE_HOME/profiles/imbatranim-base/lib/locale/locale-archive \
+    XDG_DATA_DIRS=$NIX_STATE_HOME/profile/share:$NIX_STATE_HOME/profiles/imbatranim-base/share:/usr/local/share:/usr/share
+COPY infrastructure/nix /tmp/nix-setup
+RUN sh /tmp/nix-setup/setup-image.sh && rm -rf /tmp/nix-setup
 WORKDIR /app
 # Hoisted runtime deps + any backend-nested overrides (may be empty).
 # --chown sets ownership as the files land, so there is no second `chown -R`
@@ -137,8 +153,11 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.69.0
+    IMAGE_VERSION=1.70.0
 VOLUME /home/imbatranim
+# Nix's store and profiles: Linux apps the user installs survive image
+# rebuilds, and Settings → Backup never sees them (they are not in the home).
+VOLUME /nix
 EXPOSE 8080
 # Liveness against the backend's purpose-built /health endpoint. busybox wget
 # ships in node:alpine, so no extra package is needed. --start-period covers
@@ -160,6 +179,18 @@ FROM deps AS dev
 RUN apk add --no-cache git
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
+# Linux apps under Nix, as in the prod stage (the reasons are there).
+ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
+    NIX_CACHE_HOME=/nix/var/imbatranim/cache \
+    NIX_CONFIG_HOME=/nix/var/imbatranim/config \
+    NIX_DATA_HOME=/nix/var/imbatranim/data \
+    XDG_RUNTIME_DIR=/run/user/1000 \
+    FONTCONFIG_FILE=/etc/fonts/nix-apps.conf \
+    NIXPKGS_ALLOW_UNFREE=1
+ENV LOCALE_ARCHIVE=$NIX_STATE_HOME/profiles/imbatranim-base/lib/locale/locale-archive \
+    XDG_DATA_DIRS=$NIX_STATE_HOME/profile/share:$NIX_STATE_HOME/profiles/imbatranim-base/share:/usr/local/share:/usr/share
+COPY infrastructure/nix /tmp/nix-setup
+RUN sh /tmp/nix-setup/setup-image.sh && rm -rf /tmp/nix-setup
 WORKDIR /app
 COPY apps ./apps
 # The shared workspace packages are SOURCE the dev server compiles (the

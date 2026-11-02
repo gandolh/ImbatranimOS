@@ -51,6 +51,9 @@ services:
       - BROWSER_PROXY_PORT=8081
     volumes:
       - imbatranim-home:/home/imbatranim
+      # Nix's store and profiles: the Linux apps the user installs. Outside
+      # the home on purpose, so Settings → Backup skips it.
+      - imbatranim-nix:/nix
     restart: unless-stopped
     # Mirrors the Dockerfile HEALTHCHECK (the image already carries one); stated
     # here too so `docker compose ps` reports health and the interval is tunable.
@@ -135,7 +138,11 @@ services:
           path: Dockerfile
     volumes:
       - imbatranim-home-dev:/home/imbatranim
+      # Its own Nix store, as the dev home is its own home.
+      - imbatranim-nix-dev:/nix
 
 volumes:
   imbatranim-home:
   imbatranim-home-dev:
+  imbatranim-nix:
+  imbatranim-nix-dev:

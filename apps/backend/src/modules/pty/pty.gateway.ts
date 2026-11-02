@@ -23,6 +23,7 @@ import {
   PTY_PATH,
   resolveHome,
   resolveShell,
+  terminalEnv,
 } from './pty.constants';
 import { childEnv } from '../../child-env';
 import { UpgradeRoutes } from '../../upgrade-routes';
@@ -168,7 +169,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         cols,
         rows,
         cwd: resolveHome(),
-        env: childEnv(),
+        env: terminalEnv(childEnv()),
       });
     } catch (err) {
       this.logger.error(`Failed to spawn shell: ${(err as Error).message}`);

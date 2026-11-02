@@ -1,3 +1,5 @@
+> SUPERSEDED 2026-11-02: the owner made the calls this research was to prepare in a grill over a canvas of three warm directions and Classic. Apricot is the default theme and Classic is kept ([decisions-themes.md](../../wiki/decisions-themes.md)); the glass measurement dropped out with "no glass". The build is briefs 08-15. Spec kept for the record.
+
 # Brief 07 — Research a warmer, softer look
 
 ## Context

@@ -4545,3 +4545,15 @@ Record in [decisions-themes.md](wiki/decisions-themes.md) and
 2026-07-19 crimson entry and the invariant in CLAUDE.md. The canvas source, holding every value, is
 [wiki/assets/themes-2026-11/Desktop.dc.html](wiki/assets/themes-2026-11/Desktop.dc.html). Brief 07
 stays in `briefs/todo/` until build briefs replace it.
+
+## [2026-11-02] brief | Themes: briefs 08-15 written, 07 superseded
+
+Brief 07 (research a warmer look) moved to `briefs/superseded/`: the grill above made its calls.
+The build is split into eight small briefs, run one at a time and deployed together after 15:
+08 themes and mode in the stores, with the one-time move to Apricot light; 09 Apricot's colours
+and accents; 10 selection fills on the soft accent; 11 Figtree for Apricot; 12 rounded corners and
+Apricot's chrome; 13 Apricot's wallpapers; 14 the theme picker in Settings; 15 a check of every app
+in the four combinations. In Apricot, `primary` becomes a deep shade of the accent so every text,
+ring and border use stays readable; the pastel moves to `primary-container`, which 10 uses for
+selected states. They don't depend on 01-06 (Linux apps), which wait for a quiet machine, and run
+before them.

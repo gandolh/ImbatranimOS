@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-02) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; seven open briefs (the Linux apps layer 01-06, a warmer look 07); what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-02) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; fourteen open briefs (the Linux apps layer 01-06, the two themes 08-15); what the owner owes, open todos, and where the history lives.
 updated: 2026-11-02
 ---
 
@@ -55,8 +55,16 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 01-06 are the Linux apps layer, in build order: Nix in the image with Firefox
 headless, the Wayland host showing a window, input and title bars, popups and
 Firefox in a window, the Linux apps pane, lifecycle and sleep
-([decisions-linux-apps.md](decisions-linux-apps.md)). 07 researches a warmer,
-softer look; it is not grilled, and a 2026-10-28 run stopped after reading.
+([decisions-linux-apps.md](decisions-linux-apps.md)). They wait for a quiet
+machine (Rust and Nix builds).
+
+08-15 build the two themes settled on 2026-11-02, Apricot by default and
+Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the
+one-time move, Apricot's colours and accents, soft selection fills, Figtree,
+corners and chrome, wallpapers, the Settings picker, and a check of every app
+in the four combinations. They don't depend on 01-06 and run before them, one
+at a time; they deploy together after 15. 07 (research) is superseded by the
+grill.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner

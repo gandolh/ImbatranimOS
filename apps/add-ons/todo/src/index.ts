@@ -13,7 +13,7 @@ export const manifest: AddonManifest = {
   multiInstance: false,
   defaultSize: { width: 360, height: 480 },
   /**
-   * Measured (brief 73). The app gained two header rows this brief — lists and
+   * Measured. The app gained two header rows this brief — lists and
    * bulk actions — so the same window shows meaningfully fewer tasks than it did,
    * and the old 280×300 left 138px of list: under four rows.
    *
@@ -24,7 +24,7 @@ export const manifest: AddonManifest = {
    * themselves `flex-wrap` and were measured not to wrap even at 280.
    */
   minSize: { width: 300, height: 340 },
-  // Desktop-lifetime due-date announcements (brief 93) — eager on purpose;
+  // Desktop-lifetime due-date announcements — eager on purpose;
   // pulls the watcher and query modules, not the lazy Todo UI chunk.
   background: TodoBackground,
 }

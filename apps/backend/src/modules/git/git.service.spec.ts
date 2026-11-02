@@ -57,7 +57,7 @@ import { FilesService } from '../files/files.service';
 import { DbService } from '../../db/db.service';
 
 /**
- * A real in-memory DbService for the recent-repos table (brief 76). GitService
+ * A real in-memory DbService for the recent-repos table. GitService
  * takes one now; a stub would let the recents SQL rot untested, and an in-memory
  * database costs nothing.
  */

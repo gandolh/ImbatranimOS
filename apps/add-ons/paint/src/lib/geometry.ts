@@ -1,4 +1,4 @@
-/** Rectangle + clamp math for the canvas and the crop selection (brief 95). */
+/** Rectangle + clamp math for the canvas and the crop selection. */
 
 export type Rect = { x: number; y: number; width: number; height: number }
 

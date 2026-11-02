@@ -74,7 +74,7 @@ export function Notepad({ windowId }: { windowId: string }) {
 
   // Drain the one-shot open intent exactly once in a ref-guarded effect — never in a
   // render selector, because StrictMode double-renders would drain it twice and
-  // open-from-Files would arrive empty (brief 30).
+  // open-from-Files would arrive empty.
   const consumedRef = useRef(false)
   useEffect(() => {
     if (consumedRef.current) return
@@ -100,7 +100,7 @@ export function Notepad({ windowId }: { windowId: string }) {
    * Open through the shared picker.
    *
    * ONE button, not one per root: core's `FilePicker` already has a root switcher
-   * (Home / Notes), which is the point of brief 54 promoting it — there is one picker
+   * (Home / Notes), which is the point of the shared file open dialog work promoting it — there is one picker
    * in the OS rather than Notepad's private copy plus everyone else's. The chosen
    * root comes back in the result, so both filesystems stay reachable without this
    * app reimplementing the switch.

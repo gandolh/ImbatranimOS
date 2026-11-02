@@ -2,8 +2,8 @@
  * The shapes the backend `sticky-notes` module speaks.
  *
  * camelCase throughout, with `x`/`y` rather than `pos_x`/`pos_y`. This is the
- * module `ui-conventions.md` §45 and brief 71 both singled out for leaking
- * `snake_case` into React props; brief 74 rewrites both sides.
+ * module `ui-conventions.md` §45 and the clock fixes both singled out for leaking
+ * `snake_case` into React props; the sticky-notes work rewrites both sides.
  */
 
 /** Shared with Calendar's event colours — see `noteStyle.ts` for why. */

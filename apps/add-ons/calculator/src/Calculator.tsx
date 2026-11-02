@@ -25,7 +25,7 @@ const MODES: { id: Mode; label: string }[] = [
  *
  * The tab labels shortened to Basic / Sci / Prog when the third arrived: three full words do
  * not fit the 300px minimum width, and a tab strip that wraps to two rows costs the keypad
- * exactly the vertical space brief 70 exists to protect.
+ * exactly the vertical space the calculator work exists to protect.
  */
 export function Calculator({ windowId }: { windowId: string }) {
   const [mode, setMode] = useState<Mode>('basic')

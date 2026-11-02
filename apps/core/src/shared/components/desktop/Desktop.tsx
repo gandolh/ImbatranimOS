@@ -49,11 +49,11 @@ export function Desktop({ wallpaper }: DesktopProps) {
   const setAutoPositions = useDesktopStore((s) => s.setAutoPositions)
   const clearPins = useDesktopStore((s) => s.clearPins)
   const iconLayerRef = useRef<HTMLDivElement>(null)
-  // Widgets clamp against the live desktop bounds (brief 96).
+  // Widgets clamp against the live desktop bounds.
   const [desktopSize, sizeRef] = useElementSize()
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null)
   const [iconMenuAt, setIconMenuAt] = useState<{ x: number; y: number } | null>(null)
-  // Selection is ephemeral component state, never persisted (brief 106).
+  // Selection is ephemeral component state, never persisted.
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
   // The live rubber band, in icon-layer coordinates. Null when not dragging.
   const [band, setBand] = useState<DragRect | null>(null)
@@ -82,7 +82,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
   // store, which re-rendered — an infinite loop.
   const appIdsKey = desktopApps.map((a) => a.id).join(',')
 
-  // One measured size for icons and widgets alike (brief 96), falling back to
+  // One measured size for icons and widgets alike, falling back to
   // the window before the first measurement lands.
   const boundsWidth = desktopSize.width || window.innerWidth
   const boundsHeight = desktopSize.height || window.innerHeight - TASKBAR_HEIGHT
@@ -94,12 +94,12 @@ export function Desktop({ wallpaper }: DesktopProps) {
   // Auto-place every non-pinned icon, and re-place on desktop-size or roster
   // changes. Reading the store imperatively keeps `iconPositions` out of the
   // dependency list, so writing positions cannot re-trigger this effect.
-  // Hoisted out of the effect so Auto-arrange (brief 106) can re-run the exact
+  // Hoisted out of the effect so Auto-arrange can re-run the exact
   // same placement after clearing pins, instead of duplicating the maths.
   //
   // Driven by the desktop's measured size (a ResizeObserver), not a window
   // `resize` listener debounced through `requestAnimationFrame`: the icons
-  // now follow the same box the widgets clamp against (brief 159).
+  // now follow the same box the widgets clamp against.
   const place = useCallback(() => {
     const current = useDesktopStore.getState().iconPositions
     const pinned: Record<string, { x: number; y: number }> = {}
@@ -114,7 +114,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
   }, [place])
 
   // Where each icon is drawn. A pinned icon is clamped into the desktop; the
-  // store keeps the owner's point for when the desktop grows back (brief 159).
+  // store keeps the owner's point for when the desktop grows back.
   // The marquee hit-tests these, so it selects what the owner sees.
   const drawnPositions = useMemo(() => {
     const out: Record<string, { x: number; y: number }> = {}
@@ -131,10 +131,10 @@ export function Desktop({ wallpaper }: DesktopProps) {
    * rule that `openApp` exists to enforce — double-clicking Calculator twice
    * gave you two Calculators. Merely untidy before workspaces; with them the
    * duplicate opens on whichever desktop you happen to be on while the original
-   * sits invisible on another, so the app looks lost. Found by brief 85's probe.
+   * sits invisible on another, so the app looks lost. Found by workspaces's probe.
    */
   function handleOpen(appId: string) {
-    // An app already open comes to the front with the keyboard (brief 180).
+    // An app already open comes to the front with the keyboard.
     openWithKeyboard(() => openApp(appId))
   }
 
@@ -231,7 +231,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
         // Windows are DOM children of this container, so an app that calls
         // preventDefault without stopPropagation (the Terminal's paste,
         // Minesweeper's flag) used to ALSO open this menu on top of its own
-        // (brief 106). The old `[data-desktop-icon], [data-widget]` guard
+        //. The old `[data-desktop-icon], [data-widget]` guard
         // could never have caught that — nothing in the repo sets either
         // attribute. `data-window-id` is real (Window.tsx), so window
         // interiors keep whatever their app decided; everything else on the
@@ -240,7 +240,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
         e.preventDefault()
         setIconMenuAt(null)
         // Raw viewport coordinates: the kit menu portals to body and positions
-        // in viewport space (brief 105) — the old container-relative math died
+        // in viewport space — the old container-relative math died
         // with the absolutely-positioned local menu.
         setMenuAt({ x: e.clientX, y: e.clientY })
       }}
@@ -304,7 +304,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
       </div>
 
       {/*
-        Add-on desktop layers (brief 74's sticky notes, and anything later).
+        Add-on desktop layers (the sticky notes, and anything later).
 
         Above the icon grid on purpose: that grid is an `inset-0` div, so anything
         below it would never receive a click. The wrapper is `pointer-events-none`
@@ -316,7 +316,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
       <div className="pointer-events-none absolute inset-0">
         <Suspense fallback={null}>
           {desktopLayers.map(({ id, Layer }) => (
-            // Windowless handle (brief 48): a desktop layer belongs to its app
+            // Windowless handle: a desktop layer belongs to its app
             // but to no window, exactly like a background service.
             <WindowlessSystemProvider key={id} appId={id}>
               <Layer />
@@ -325,7 +325,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
         </Suspense>
       </div>
 
-      {/* Hosted widgets (brief 96) — same stacking slot as the add-on layers:
+      {/* Hosted widgets — same stacking slot as the add-on layers:
           above the icon grid, below every window. */}
       <div className="pointer-events-none absolute inset-0">
         <WidgetLayer bounds={bounds} />

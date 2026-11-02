@@ -4,7 +4,7 @@ import { useSecurityStore } from '../store/securityStore'
 import { useAuthStore } from '../../modules/auth/store/authStore'
 
 /**
- * Auto-lock after idle (brief 97; overlay since brief 101). The desktop stays
+ * Auto-lock after idle (overlay since the lock keeps the desktop work). The desktop stays
  * mounted behind the lock now, so this hook keeps running while the screen is
  * covered — the controller already re-arms after firing, and `lock()` is
  * idempotent, so a second due deadline while locked is a no-op.

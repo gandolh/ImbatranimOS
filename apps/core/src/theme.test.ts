@@ -5,7 +5,7 @@ import { compile } from 'tailwindcss'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Brief 163 moved the desktop's `@theme` block out of `index.css` into the
+ * The shared kit moved the desktop's `@theme` block out of `index.css` into the
  * kit (`packages/ui/src/theme.css`), so a marketplace kit app builds against
  * the same token names. No value was to change. `BEFORE` is the block as it
  * stood in `index.css` before the move, token for token.
@@ -74,7 +74,7 @@ function declarations(css: string): [string, string][] {
   )
 }
 
-describe('the theme tokens moved into the kit (brief 163)', () => {
+describe('the theme tokens moved into the kit', () => {
   it('index.css imports the kit theme and declares no @theme of its own', () => {
     expect(indexCss).toContain("@import '../../../packages/ui/src/theme.css';")
     expect(indexCss.replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(/@theme\b/)

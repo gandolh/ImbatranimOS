@@ -8,7 +8,7 @@ import { StorageHealthGuard } from './storage-health.guard';
 import type { Env } from '../config/env.schema';
 
 /**
- * The migration ledger (brief 110).
+ * The migration ledger.
  *
  * The pins that matter: a fully-migrated database and a restored 2026-01
  * backup are BOTH `user_version = 0`, so the conversion has to run every step
@@ -53,7 +53,7 @@ function schemaDump(db: Database.Database): string {
     .join('\n');
 }
 
-describe('DbService migration ledger — brief 110', () => {
+describe('DbService migration ledger', () => {
   let dir: string;
 
   beforeEach(() => {
@@ -120,7 +120,7 @@ describe('DbService migration ledger — brief 110', () => {
     expect(migrated.db.prepare(`SELECT text FROM todos`).all()).toEqual([
       { text: 'carried over' },
     ]);
-    // The old-shape recent_files was dropped and rebuilt (brief 94).
+    // The old-shape recent_files was dropped and rebuilt.
     const recentCols = (
       migrated.db.prepare(`PRAGMA table_info(recent_files)`).all() as {
         name: string;
@@ -196,7 +196,7 @@ describe('DbService migration ledger — brief 110', () => {
     svc.onModuleDestroy();
   });
 
-  it('a VACUUM INTO snapshot carries the stamp (brief 80 restores stay current)', () => {
+  it('a VACUUM INTO snapshot carries the stamp (so restores stay current)', () => {
     const svc = openService(join(dir, 'src.sqlite'));
     const snap = join(dir, 'snap.sqlite');
     svc.snapshotTo(snap);
@@ -210,7 +210,7 @@ describe('DbService migration ledger — brief 110', () => {
   });
 });
 
-describe('DbService — the old credential tables are dropped (brief 150)', () => {
+describe('DbService — the old credential tables are dropped', () => {
   let dir: string;
 
   beforeEach(() => {
@@ -260,7 +260,7 @@ describe('DbService — the old credential tables are dropped (brief 150)', () =
     );
     expect(tables(svc.db)).not.toContain('auth_user');
     expect(tables(svc.db)).not.toContain('auth_sessions');
-    // Step 8 (brief 152): the local sign-in's own tables, empty until claimed.
+    // Step 8: the local sign-in's own tables, empty until claimed.
     expect(tables(svc.db)).toContain('local_owner');
     expect(tables(svc.db)).toContain('local_session');
 
@@ -282,7 +282,7 @@ describe('DbService — the old credential tables are dropped (brief 150)', () =
   });
 });
 
-describe('DbService — a database that will not open (brief 154)', () => {
+describe('DbService — a database that will not open', () => {
   let dir: string;
 
   beforeEach(() => {

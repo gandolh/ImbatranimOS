@@ -20,7 +20,7 @@ import {
 } from './focusIntoWindow'
 
 /**
- * Brief 174: a window raised from the taskbar or Alt+Tab gets the keyboard.
+ * A window raised from the taskbar or Alt+Tab gets the keyboard.
  * The order is the brief's: where focus last was in the window, then the first
  * focusable element, then the content area itself. Plain DOM fixtures shaped
  * like Window.tsx's (root with `data-window-id`, title bar, content area); no
@@ -196,7 +196,7 @@ describe('focusIntoWindowSoon', () => {
   })
 })
 
-/** Brief 180: a new window takes the keyboard from its own mount. */
+/** The keyboard-focus fix: a new window takes the keyboard from its own mount. */
 describe('focusIntoNewWindowSoon', () => {
   let frames: FrameRequestCallback[]
 

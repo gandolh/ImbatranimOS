@@ -7,7 +7,7 @@ import {
 import { cn } from '../../../lib/cn'
 
 /**
- * Four workspace pips, beside the Tray (brief 85).
+ * Four workspace pips, beside the Tray.
  *
  * **Empty workspaces stay visible.** Hiding them until they hold something would
  * make the whole feature undiscoverable to anyone who does not already know it

@@ -6,7 +6,7 @@ import { UpdateStickyNoteDto } from './dto/update-sticky-note.dto';
 /**
  * Sticky notes, and where on the desktop they sit.
  *
- * Brief 74 turned these from "a list inside a window" into notes that live on the
+ * The sticky-notes work turned these from "a list inside a window" into notes that live on the
  * desktop, so a note now carries a size, a colour and an `onDesktop` flag beside
  * its position.
  *
@@ -16,7 +16,7 @@ import { UpdateStickyNoteDto } from './dto/update-sticky-note.dto';
  * two sources of truth for the same thing. They are exposed as `x`/`y`.
  *
  * Like `clock`, `calendar` and `todos`, rows are mapped to **camelCase at the
- * service boundary**. This is the module brief 71 named as leaking `snake_case`
+ * service boundary**. This is the module the clock fixes named as leaking `snake_case`
  * into React props (`pos_x`, `created_at`); it is rewritten on both sides in this
  * commit, so the break is bounded and paid for.
  */

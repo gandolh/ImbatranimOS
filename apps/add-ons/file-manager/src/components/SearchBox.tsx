@@ -21,7 +21,7 @@ type SearchBoxProps = {
 }
 
 /**
- * The search box, right-aligned in the breadcrumb bar (brief 112).
+ * The search box, right-aligned in the breadcrumb bar.
  *
  * It sits in the breadcrumb rather than the toolbar on purpose: the breadcrumb
  * is the row that says *where you are*, and this box searches exactly there.

@@ -3,14 +3,14 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import { prefsStorage } from '../../lib/prefs'
 
 /**
- * Startup apps — what opens when you sit down at the machine (brief 82).
+ * Startup apps — what opens when you sit down at the machine.
  *
  * An **ordered** list of app ids, because order decides which window ends up on
  * top: the last one opened is the focused one, so "Terminal, then Files" and
  * "Files, then Terminal" are different arrangements and a user who bothers to set
  * this has an opinion about which they get.
  *
- * A dotfile, not session state (brief 49): it belongs to the account, so a new
+ * A dotfile, not session state: it belongs to the account, so a new
  * tab or a different browser boots the same way. The *window layout* is
  * deliberately the opposite — per tab, and not restored across tabs — and keeping
  * those two on opposite sides of that line is the whole point of this feature.
@@ -58,7 +58,7 @@ export const useStartupStore = create<StartupStore>()(
     {
       name: 'imbatranimos:startup',
       // Registered in DOTFILE_KEYS — without that entry `writePref` drops it and
-      // the list never leaves this browser (brief 81 learned that the hard way).
+      // the list never leaves this browser (default apps and Open with learned that the hard way).
       storage: createJSONStorage(() => prefsStorage),
     }
   )

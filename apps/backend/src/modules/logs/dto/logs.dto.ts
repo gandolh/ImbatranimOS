@@ -31,7 +31,7 @@ export class LogQueryDto {
 }
 
 /**
- * A crash the browser is reporting (brief 47's error boundary → brief 84's log).
+ * A crash the browser is reporting (per-window error boundaries's error boundary → the system log's log).
  *
  * Everything here is **untrusted text from the client**, which is why the shape
  * is this narrow: an app id, a one-line message, and nothing else. There is no

@@ -28,7 +28,7 @@ type EditorPrefsStore = EditorPrefs & {
  *   Opt in and it is a feature; default on and it is a surprise.
  *
  * These live in localStorage rather than the container because they are a
- * per-browser display preference, the same class as the theme. When brief 49
+ * per-browser display preference, the same class as the theme. When the ephemeral-session work
  * lands durable dotfiles this moves there rather than growing a second store.
  */
 export const useEditorPrefs = create<EditorPrefsStore>()(

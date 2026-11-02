@@ -1,7 +1,7 @@
 /**
  * The shapes the backend `todos` module speaks.
  *
- * camelCase throughout, and `completed` is a real boolean. Before brief 73 this
+ * camelCase throughout, and `completed` is a real boolean. Before the todo dates work this
  * type read `completed: boolean | number // SQLite returns 0/1`, which is a type
  * admitting the API had a problem; the service now maps rows at its boundary the
  * way `clock` and `calendar` do.

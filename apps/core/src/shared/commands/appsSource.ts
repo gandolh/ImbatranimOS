@@ -51,7 +51,7 @@ export const appsSource: CommandSource = {
         useWindowStore.getState().focusWindow(existing.id)
         useWindowStore.getState().showWindow(existing.id)
         // The palette hands focus back as it closes; a frame later the
-        // keyboard goes into the window (brief 174).
+        // keyboard goes into the window.
         focusIntoWindowSoon(existing.id)
         return
       }

@@ -134,7 +134,7 @@ measure (recorded in brief 15). Amended in wiki/decisions.md.
 
 ## [2026-07-16] todo | Brief 16 filed — Turborepo integration
 
-Filed [briefs/done/16-turborepo.md](briefs/done/16-turborepo.md): convert the
+Filed briefs/done/16-turborepo.md: convert the
 repo to a real npm workspace (root package.json + single lockfile; today there
 are THREE independent npm ci roots — apps/, apps/backend, apps/frontend — and
 apps/package.json looks vestigial from the fork), add turbo.json pipeline
@@ -154,7 +154,7 @@ complete spec; build deferred.
 
 ## [2026-07-16] todo | Brief 17 filed — backend / core / add-ons restructure
 
-Filed [briefs/done/17-os-restructure.md](briefs/done/17-os-restructure.md):
+Filed briefs/done/17-os-restructure.md:
 user-requested split into backend, core (desktop + main OS functions), and
 add-ons with one directory per app. Flags an explicit revisit of the locked
 "keep the fork's repo layout" decision (amend decisions.md when it lands)
@@ -496,7 +496,7 @@ perf/code-quality wins (debounced layout persist, tab-gated system-monitor
 poll + row cap, streamed uploads, bookmarks index/typing, query-DTO
 validation, dead-code + magic-number cleanup, PTY types). Backend 80 unit
 + 29 e2e green; monorepo typecheck/format clean; backend#lint debt
-unchanged (pre-existing, [lint-format-debt](todos/promoted/lint-format-debt.md)).
+unchanged (pre-existing, lint-format-debt).
 Deferred the larger refactors + product-decision security items as todos.
 Two commits on `main`.
 
@@ -1424,7 +1424,7 @@ Tests **415 → 439** (backend 174 → 182, engine 70 → 82).
 
 ## 2026-08-04 — brief 67 (Image Viewer): pan, a rotation that survives, and "Fit" fixed in three apps
 
-[Brief 67](briefs/done/67-image-viewer-navigation-and-edit.md) done. Pan, rotate
+Brief 67 done. Pan, rotate
 that persists via a canvas re-encode, and a refusal path with the reason on screen
 for formats that cannot take one. 24 unit tests, zero new dependencies.
 
@@ -1482,7 +1482,7 @@ Tests **439 → 463** (vitest 277, backend jest unchanged at 182).
 
 ## 2026-08-04 — brief 55 (File Manager): sorting, Icons view, Ctrl+H, one dialog dialect
 
-[Brief 55](briefs/done/55-file-manager-explorer-parity.md) done. 28 unit tests, zero
+Brief 55 done. 28 unit tests, zero
 new dependencies.
 
 **Two of its six items were already fixed by later briefs and the brief did not
@@ -1558,7 +1558,7 @@ Tests **463 → 478** (vitest 277 → 296, backend jest 182).
 
 ## 2026-08-04 — brief 56 (Terminal): reconnect proven against a real process kill
 
-[Brief 56](briefs/done/56-terminal-reconnect-and-affordances.md) done. 25 unit tests,
+Brief 56 done. 25 unit tests,
 two new first-party xterm addons (search, web-links).
 
 **The reconnect is a decision table, not a retry loop.** "Retry on close" would have
@@ -1621,7 +1621,7 @@ Tests **478 → 503** (vitest 296 → 321, backend jest 182).
 
 ## 2026-08-04 — brief 57 (Settings): the OS can rotate its own password
 
-[Brief 57](briefs/done/57-settings-password-and-real-about.md) done. The OS had **no
+Brief 57 done. The OS had **no
 way to change its password at all** — a password typed once at first-run could only
 be replaced by deleting the database and losing the account, which for a system the
 README recommends exposing behind a reverse proxy was a real gap.
@@ -1681,7 +1681,7 @@ out with no fallback — the same class of gap this brief just closed for passwo
 
 ## 2026-08-04 — brief 58 (System Monitor): the kill asks first, and the OS knows its own pid
 
-[Brief 58](briefs/done/58-system-monitor-history-and-safety.md) done. All five problems
+Brief 58 done. All five problems
 closed, plus a piece of missing test infrastructure the work itself exposed.
 
 **The kill now confirms**, naming the process and pid, with the outcome through
@@ -1744,7 +1744,7 @@ Tests: backend **208 unit + 46 e2e** (was 192 + 46), frontend vitest **336 → 3
 
 ## 2026-08-04 — brief 59 (Notepad): one filesystem, and the save spine it was assumed to have
 
-[Brief 59](briefs/done/59-notepad-one-filesystem.md) done. 36 unit tests, one 183-line
+Brief 59 done. 36 unit tests, one 183-line
 private component deleted.
 
 **The brief was wrong about its own biggest item, in a way that inverted the work.** It
@@ -1803,7 +1803,7 @@ Tests: frontend vitest **353 → 389**, backend unchanged at 208 + 46.
 
 Toolbar, keymap, scroll sync, draggable split, outline rail, images into the real
 filesystem, and lazily-loaded syntax highlighting. Brief moved to
-[done/60-markdown-editor-authoring.md](briefs/done/60-markdown-editor-authoring.md).
+done/60-markdown-editor-authoring.md.
 
 **The first brief in this run whose problem list was accurate.** Five apps in a row
 had briefs that misdescribed their own code; this one's six problems were all real.
@@ -1878,7 +1878,7 @@ justified by the measurement above.
 Persistence (volume, mute, rate, repeat, shuffle, per-file resume), shuffle and repeat on a
 derived order, durations in the queue, sidecar subtitles, and the deferred keys from brief
 89. Brief moved to
-[done/68-media-player-playlist-and-codecs.md](briefs/done/68-media-player-playlist-and-codecs.md).
+done/68-media-player-playlist-and-codecs.md.
 
 Six of its seven problems were real. The seventh — "an unplayable codec is a black box" —
 was **half-fixed already** by the work around brief 89, which the brief predates: the error
@@ -1940,7 +1940,7 @@ Tests: frontend vitest **492 → 550** (58 new here, which had 7), backend uncha
 
 A launcher instead of an ambush, delay capture, an opaque redaction beside the pixelate one,
 per-region detection of what a DOM raster cannot see, and reopening a saved capture. Brief
-moved to [done/69-snipping-tool-honest-capture.md](briefs/done/69-snipping-tool-honest-capture.md).
+moved to done/69-snipping-tool-honest-capture.md.
 
 **The question the brief asked to have answered — is the Terminal actually captured? — is
 yes.** Measured against ground truth rather than asserted: the browser's own screenshot of a
@@ -2000,7 +2000,7 @@ All 95 turbo tasks green, no dependency added.
 
 Scientific mode on the existing evaluator, memory keys and a tape, a measured `minSize`, and
 full precision through a chained calculation. Brief moved to
-[done/70-calculator-reach-and-depth.md](briefs/done/70-calculator-reach-and-depth.md).
+done/70-calculator-reach-and-depth.md.
 
 **Item 4 was already done, and was hiding a worse bug.** The brief says `0.1 + 0.2` renders as
 `0.30000000000000004`; `formatResult` had been rounding to 12 significant digits all along, so
@@ -2050,7 +2050,7 @@ naming: 1123 lines of arithmetic engine had shipped untested.
 
 ## 2026-08-05 — Brief 71: Clock, the countdown off-by-one and the storage decision for two apps
 
-[Brief 71](briefs/done/71-clock-timer-off-by-one-and-scheduling.md) done. The first
+Brief 71 done. The first
 brief in this run whose problem list was **accurate in every item**: the `Math.round`
 was exactly where it said, the disclosure it told me not to touch was already there
 and already right, and the storage complaint was correct for the reason it gave. The
@@ -2129,7 +2129,7 @@ dependencies.
 
 ## 2026-08-05 — Brief 72: Calendar, the storage mechanism reused and recurrence that stays a rule
 
-[Brief 72](briefs/done/72-calendar-storage-and-recurrence.md) done. The storage
+Brief 72 done. The storage
 complaint and the recurrence gap were exactly right; two smaller items were not — one
 was **already implemented**, and another had been **fixed by a different brief** since
 this one was written.
@@ -2204,7 +2204,7 @@ e2e **59 → 80**, unit unchanged at 208. All 98 turbo tasks green. Zero new dep
 
 ## 2026-08-05 — Brief 73: Todo, and an ordering bug hiding under a wrong problem statement
 
-[Brief 73](briefs/done/73-todo-dates-and-structure.md) done. Due dates, priority, one
+Brief 73 done. Due dates, priority, one
 level of lists, bulk actions and keyboard-first adding all landed as specified. Two of
 the six problems were **not what the brief said**, and the one it got half wrong was
 sitting on a real bug it had not noticed.
@@ -2976,7 +2976,7 @@ faster poll (chatty) or server push (the killed daemon's shape).
 Deep exploration at commit aaa128b: six parallel audit lanes (backend, core
 shell, heavy add-ons, light add-ons, @pdfcore/engine, infra/build) with all
 gates green at baseline. ~75 verified findings filed as
-[brief 100](briefs/done/100-code-health-sweep-2026-08-06.md), ranked in tiers.
+brief 100, ranked in tiers.
 Headlines: the prod Docker image cannot build (packages/ never COPYed — proven
 by npm-install simulation); pdf-lib's stale page cache makes delete→reorder
 resurrect a deleted page (proven by executed repro); Sheets converts every
@@ -3009,7 +3009,7 @@ core and backend `noImplicitAny` produced 0 errors (config lagged, not code).
 Verification: forced `turbo typecheck lint test` = **75/75** after each wave and
 the final pass. New regression tests in every lane. Prod-image unbuildability
 (T0-1) reproduced then fixed; Docker/ISO not built here (no daemon). Brief moved
-to [done/](briefs/done/100-code-health-sweep-2026-08-06.md) with a full outcome
+to done/ with a full outcome
 note; wiki folded below.
 
 ## 2026-08-06 — Brief 49: the session becomes per-tab, the config becomes an account
@@ -3311,7 +3311,7 @@ they touched.
 
 ## 2026-08-07 — Brief 101: lock keeps the desktop, sessions slide
 
-[Brief 101](briefs/done/101-lock-keeps-the-desktop.md) **DONE** — the first of
+Brief 101 **DONE** — the first of
 the new backlog. Locking (idle or Start menu) and session loss are now an
 opaque overlay over a still-mounted desktop (`visibility:hidden` + `inert` +
 `aria-hidden`, behind an `everAuthenticated` per-tab latch): PTY sockets stay
@@ -3331,7 +3331,7 @@ hard 401, the reaped shell printed "Session ended", log off left nothing.
 
 ## 2026-08-07 — Brief 102: the last native dialog is gone
 
-[Brief 102](briefs/done/102-async-close-guards-themed-confirm.md) **DONE** —
+Brief 102 **DONE** —
 protocol v2. `onCloseRequest` guards may now settle asynchronously
 (`boolean | Promise<boolean>`); `closeWindow` keeps the same-tick sync fast
 path and holds a promise-guarded close in a `pendingCloses` set (second
@@ -3355,7 +3355,7 @@ the dirty marker, nothing stacked, zero native dialogs observed.
 
 ## 2026-08-07 — Brief 103: the desktop reflows, and the missing reflexes ship
 
-[Brief 103](briefs/done/103-window-management-parity-2.md) **DONE** — the
+Brief 103 **DONE** — the
 brief-52 deferral is paid: `reflowToViewport()` re-fits every window when the
 browser viewport changes (200 ms trailing debounce + one boot pass after
 `restoreLayout`, and `restoreWindow`/`unsnap` re-clamp saved geometry too).
@@ -3377,7 +3377,7 @@ and the ?-overlay listing every new row.
 
 ## 2026-08-07 — Brief 104: Alt+Tab shows you where you are going
 
-[Brief 104](briefs/done/104-alt-tab-switcher.md) **DONE** — the blind cycle is
+Brief 104 **DONE** — the blind cycle is
 replaced by a visual MRU switcher. The ordering costs no new bookkeeping:
 `focusWindow` mints a monotonic z on every focus, so z-descending IS the
 recency list — minimized windows included, which makes them keyboard-reachable
@@ -3397,7 +3397,7 @@ two bindings are documented rows with the host-OS interception note; the old
 
 ## 2026-08-07 — Brief 105: one context menu, promoted at last
 
-[Brief 105](briefs/done/105-context-menu-kit.md) **DONE** — the OS had three
+Brief 105 **DONE** — the OS had three
 hand-rolled right-click menus and they already disagreed on positioning,
 dismissal, shadow, surface and danger styling; none of them had a keyboard
 contract. `@imbatranim/ui` now owns the only one: a thin wrap of base-ui's
@@ -3422,7 +3422,7 @@ half of that handler's guard matches nothing — no element sets the attribute.
 
 ## 2026-08-07 — Brief 106: the desktop answers the mouse
 
-[Brief 106](briefs/done/106-desktop-interaction-pack.md) **DONE** — four
+Brief 106 **DONE** — four
 defects in one 12-line handler, plus the user's marquee todo. The exclusion
 guard was dead code: nothing in the repo sets `[data-desktop-icon]` or
 `[data-widget]`, so right-clicking an app icon opened the *Widgets* menu and
@@ -3446,7 +3446,7 @@ nothing inside the desktop holds focus. Verified: 11 marquee units, turbo
 
 ## 2026-08-07 — Brief 108: `onIntent` finally has a consumer
 
-[Brief 108](briefs/done/108-intent-redelivery.md) **DONE** — the shell's half
+Brief 108 **DONE** — the shell's half
 of re-delivery always worked (`openApp` on an open single-instance app focuses
 the window and re-sets its intent), but Archive Manager drained its intent once
 behind a `startedRef` and never looked again. It is the only manifest that is
@@ -3471,7 +3471,7 @@ still completes afterwards, and a delivery in the `done` phase switches back.
 
 ## 2026-08-07 — Brief 107: a toast you can actually answer
 
-[Brief 107](briefs/done/107-actionable-notifications.md) **DONE** — a live
+Brief 107 **DONE** — a live
 toast was strictly less capable than its own history entry: the panel row for
 an item opened the raising app, the toast had only a dismiss X, and it
 auto-dismissed in six seconds while the user hunted for the window.
@@ -3505,7 +3505,7 @@ and brief 106's probe still passes 24/24. Verified: 8 new units, turbo
 
 ## 2026-08-07 — Brief 109: dotfile writes that actually stick
 
-[Brief 109](briefs/done/109-dotfile-write-durability.md) **DONE** — the
+Brief 109 **DONE** — the
 dotfile pipe every registered store shares had a quiet data-loss bug:
 `flushPrefs` cleared `pendingWrites` *before* the PUT and swallowed the
 rejection, so one blip, one 500 or one badly-timed expiry meant the write
@@ -3537,7 +3537,7 @@ and a 401 held the batch without hammering until re-auth flushed it.
 
 ## 2026-08-07 — Brief 110: the migration ledger, and Wave A closes
 
-[Brief 110](briefs/done/110-migration-ledger.md) **DONE** — `migrate()` ran
+Brief 110 **DONE** — `migrate()` ran
 all of history on every boot behind six bare `try/catch` blocks whose
 catch-all swallowed SQLITE_FULL, SQLITE_IOERR and SQLITE_READONLY exactly as
 it swallowed a duplicate column. A disk-full boot left the schema silently
@@ -3849,9 +3849,9 @@ dropped because brief 48 is **done** in the adopted tree.
 
 **The one genuine loss avoided:** brief 55, the grilled-but-unbuilt app
 marketplace, had no counterpart on the other side — which still carries
-[todos/install-apps-from-github.md](todos/promoted/install-apps-from-github.md) open,
+todos/install-apps-from-github.md open,
 never having promoted it. It survives as
-[briefs/done/120-app-marketplace-install-from-url.md](briefs/done/120-app-marketplace-install-from-url.md),
+briefs/done/120-app-marketplace-install-from-url.md,
 renumbered off the taken 55 and otherwise unchanged. This is the one
 deliberate exception to the never-renumber rule: the number was not free on
 both sides, so keeping 55 would have overwritten unrelated shipped work.
@@ -4268,12 +4268,12 @@ address on port 5173, since another project's dev server held
 
 The owner reversed the 2026-10-06 call ("leave it unbuilt") and asked for it
 now. No separate grill: the design calls were made from the todo's own
-recommendations and written into [brief 158](briefs/done/158-sandboxed-apps-from-a-url.md)
+recommendations and written into brief 158
 and [decisions-marketplace.md](wiki/decisions-marketplace.md#brief-158-apps-from-a-url-2026-10-07)
 for the owner to veto. They are prebuilt only, a same-port opaque-origin
 sandbox, per-window token URLs, `notify` as the only capability, GitHub only,
 and consent on every install and update. The todo moved to
-[todos/promoted/](todos/promoted/install-apps-from-github.md).
+todos/promoted/.
 
 ## [2026-10-07] done | Brief 158 — apps install from a GitHub URL into a sandboxed frame
 
@@ -4320,7 +4320,7 @@ This replaces the branch URL in brief 158's outcome note; status.md now carries 
 
 The README screenshot pass saw desktop icons overlap after a viewport resize in
 headless Chrome, staying so until reload. Not investigated; filed as
-[brief 159](briefs/done/159-desktop-icons-overlap-after-resize.md) with reproduction as
+brief 159 with reproduction as
 step one and four leads from the code (the `requestAnimationFrame`-debounced
 re-placement, pinned icons never re-flowed, the one-cell `taken` check).
 [architecture.md](wiki/architecture.md) listed seven add-ons; `apps/add-ons/` holds 27
@@ -4330,7 +4330,7 @@ commit. `apps/docs/src/content/docs/wiki/` is gitignored, so no synced output ch
 
 ## [2026-10-18] todo | Brief 160 filed: the docs site moves from Starlight to Docusaurus
 
-The owner's call (2026-10-18), one brief in every repo with a docs site. [160](briefs/done/160-docs-site-on-docusaurus.md) ports the splash landing, AppGrid, LayerStack and the Starlight cards to React, keeps TypeDoc and Compodoc under `static/reference/`, and keeps the URLs. The new sync discovers pages, so the owner picks which of twelve wiki pages the old list left out stay unpublished. The docs workspace stays out of the image. The deploy waits on vps-deploy brief 11.
+The owner's call (2026-10-18), one brief in every repo with a docs site. 160 ports the splash landing, AppGrid, LayerStack and the Starlight cards to React, keeps TypeDoc and Compodoc under `static/reference/`, and keeps the URLs. The new sync discovers pages, so the owner picks which of twelve wiki pages the old list left out stay unpublished. The docs workspace stays out of the image. The deploy waits on vps-deploy brief 11.
 
 ## [2026-10-19] build | Brief 159 done: desktop icons stay apart after a resize
 
@@ -4341,12 +4341,12 @@ each icon froze part way. The limits are now numbers from the measured desktop s
 (`ad7bc2e`). The same walk confirmed two `layoutIcons` faults: a pinned icon between
 cells blocked one cell instead of all it covers, and a pinned icon below a shrunken
 desktop was clipped. Both are fixed, with four unit tests and a headed and headless
-walk. [Brief 159](briefs/done/159-desktop-icons-overlap-after-resize.md) carries the
+walk. Brief 159 carries the
 outcome.
 
 ## [2026-10-19] todo | Brief 161 filed: the craft suite in sandboxed windows
 
-The owner asked for ArtCraft's crafting apps in the OS, five for v1: WordCraft, GridCraft, CADCraft, PdfCraft and DeckCraft. Read-only clones showed all five are Rust/egui apps whose web build is one wasm canvas, MIT OR Apache-2.0, two to three weeks old and changing daily, with nothing to import into a React add-on. CADCraft, GridCraft and PdfCraft have a postMessage host bridge, but only for a same-origin parent, so none works in brief 158's opaque-origin frame; WordCraft and DeckCraft have no bridge at all. [161](briefs/superseded/161-the-craft-suite-in-sandboxed-windows.md) proposes the sandboxed route over a same-origin frame, because a same-origin frame would give an unreviewed release the owner's session and terminal. It also proposes catalog entries pinned to release zips by SHA-256, a "document" grant in place of `fs`, and upstream bridge PRs, with a spike first. The real gaps it fills are CAD (we have none) and slide editing (Slides only views). Six decisions wait on the owner.
+The owner asked for ArtCraft's crafting apps in the OS, five for v1: WordCraft, GridCraft, CADCraft, PdfCraft and DeckCraft. Read-only clones showed all five are Rust/egui apps whose web build is one wasm canvas, MIT OR Apache-2.0, two to three weeks old and changing daily, with nothing to import into a React add-on. CADCraft, GridCraft and PdfCraft have a postMessage host bridge, but only for a same-origin parent, so none works in brief 158's opaque-origin frame; WordCraft and DeckCraft have no bridge at all. 161 proposes the sandboxed route over a same-origin frame, because a same-origin frame would give an unreviewed release the owner's session and terminal. It also proposes catalog entries pinned to release zips by SHA-256, a "document" grant in place of `fs`, and upstream bridge PRs, with a spike first. The real gaps it fills are CAD (we have none) and slide editing (Slides only views). Six decisions wait on the owner.
 
 ## [2026-10-19] build | Brief 160 done: the docs site is on Docusaurus
 
@@ -4358,7 +4358,7 @@ before it writes HTML. The gate is now a separate run, and the threshold is stil
 A stale `#the-seam` anchor was fixed, and the architecture diagram no longer names the
 production host (`d275b42`). Route parity holds, with `/search/`, the twelve pages and the
 backend reference added. An `npm ci` on the image's manifests installs no `@docusaurus`
-package. [Brief 160](briefs/done/160-docs-site-on-docusaurus.md) carries the outcome.
+package. Brief 160 carries the outcome.
 The deploy waits on vps-deploy brief 11.
 
 ## [2026-10-21] decision | The office suite moves out to imbatranim-office (brief 161 not taken)
@@ -4367,19 +4367,19 @@ Grilled with the owner. They turned down all four of brief 161's routes: the OS 
 
 ## [2026-10-21] todo | Briefs 162–164 filed for the office suite; 161 superseded
 
-[161](briefs/superseded/161-the-craft-suite-in-sandboxed-windows.md) moves to `superseded/` with an outcome note carrying the day's research (the crafts' engines are UI-free and already headless; a Rust server needs a compiler or prebuilt binaries; the desktop's CSP has no wasm). Three OS briefs replace it. [162](briefs/done/162-one-catalog-entry-several-apps.md) teaches the catalog "one descriptor, several apps": schema version 2 with an `apps` array, one build and at most one server per descriptor, per-app `multiInstance` and `opens`, and an office set of icons checked against every committed descriptor; Hollow's v1 descriptor stays as it is. [163](briefs/done/163-the-desktop-shares-its-kit.md) adds kit apps: the desktop lends its React and `@imbatranim/ui` on a frozen global, versioned as `SHARED_KIT_VERSION`, and renders the app's component in its own tree with a scoped handle; an import map was rejected because it needs an inline script under `script-src 'self'`. The theme tokens move into the kit so an outside repo can build against a snapshot. [164](briefs/done/164-retiring-a-built-in-office-app.md) is run once per app at parity: it moves the user's choices to the new id, removes the add-on, and replaces two hard-coded ids (`newFileTemplates.ts`, `PREFERRED_DEFAULT`). The glossary's marketplace terms moved to [glossary-marketplace.md](wiki/glossary-marketplace.md), which adds suite descriptor, kit app, shared kit and imbatranim-office; brief 161's "craft app" and "document grant" are recorded as never adopted.
+161 moves to `superseded/` with an outcome note carrying the day's research (the crafts' engines are UI-free and already headless; a Rust server needs a compiler or prebuilt binaries; the desktop's CSP has no wasm). Three OS briefs replace it. 162 teaches the catalog "one descriptor, several apps": schema version 2 with an `apps` array, one build and at most one server per descriptor, per-app `multiInstance` and `opens`, and an office set of icons checked against every committed descriptor; Hollow's v1 descriptor stays as it is. 163 adds kit apps: the desktop lends its React and `@imbatranim/ui` on a frozen global, versioned as `SHARED_KIT_VERSION`, and renders the app's component in its own tree with a scoped handle; an import map was rejected because it needs an inline script under `script-src 'self'`. The theme tokens move into the kit so an outside repo can build against a snapshot. 164 is run once per app at parity: it moves the user's choices to the new id, removes the add-on, and replaces two hard-coded ids (`newFileTemplates.ts`, `PREFERRED_DEFAULT`). The glossary's marketplace terms moved to [glossary-marketplace.md](wiki/glossary-marketplace.md), which adds suite descriptor, kit app, shared kit and imbatranim-office; brief 161's "craft app" and "document grant" are recorded as never adopted.
 
 ## [2026-10-21] build | Brief 162 done: one catalog entry, several apps
 
-A schema-2 descriptor lists its apps in an `apps` array and installs them in one build: one clone, build directory, log, row and server per descriptor (`9394ea6`, 1.21.0). Version 1 normalises to one app, so Hollow is unchanged. Each app has its own id (unique across the catalog), window, icon, `opens` and `multiInstance`, so marketplace apps can open several windows and appear in Open With after the built-in that claims the same extension. A new `entries` column records what the build produced, and the listing reads it rather than the descriptor; a build that leaves an entry out fails and keeps the previous build live. Walked in Chrome in the dev container with a local two-app fixture copied in with `docker cp` (the dev profile now passes `MARKETPLACE_ALLOW_LOCAL_REPOS`, off by default). The build calls are on a new page, [decisions-marketplace-suites.md](wiki/decisions-marketplace-suites.md), split from decisions-marketplace.md at its line cap. [Brief 162](briefs/done/162-one-catalog-entry-several-apps.md) carries the outcome.
+A schema-2 descriptor lists its apps in an `apps` array and installs them in one build: one clone, build directory, log, row and server per descriptor (`9394ea6`, 1.21.0). Version 1 normalises to one app, so Hollow is unchanged. Each app has its own id (unique across the catalog), window, icon, `opens` and `multiInstance`, so marketplace apps can open several windows and appear in Open With after the built-in that claims the same extension. A new `entries` column records what the build produced, and the listing reads it rather than the descriptor; a build that leaves an entry out fails and keeps the previous build live. Walked in Chrome in the dev container with a local two-app fixture copied in with `docker cp` (the dev profile now passes `MARKETPLACE_ALLOW_LOCAL_REPOS`, off by default). The build calls are on a new page, [decisions-marketplace-suites.md](wiki/decisions-marketplace-suites.md), split from decisions-marketplace.md at its line cap. Brief 162 carries the outcome.
 
 ## [2026-10-21] build | Brief 163 done: kit apps share the desktop's React and kit
 
-A catalog app can now export a React component, `App`, that the desktop renders in its own tree with its own React, React DOM and `@imbatranim/ui`, lent on a frozen `globalThis.__imbatranimShared` set before the first kit module loads (`5f3f5aa`, 1.23.0). `useSystem()` inside it returns the capability-scoped handle, and the kit's dialogs and save helpers work because they are the desktop's instances. `SHARED_KIT_VERSION` (1) is the contract; a descriptor's `sharedKit` that differs refuses the app with both versions named. Per-app stylesheets are linked once per build. The theme block moved to `packages/ui/src/theme.css` as `@theme static`, so imbatranim-office can snapshot the token names and every token exists at runtime (18 previously unused variables now emitted, no value changed). No import map, no inline script, CSP unchanged. Walked in Chrome with a two-app fixture suite; Hollow unchanged. [Brief 163](briefs/done/163-the-desktop-shares-its-kit.md) carries the outcome and two known rough edges.
+A catalog app can now export a React component, `App`, that the desktop renders in its own tree with its own React, React DOM and `@imbatranim/ui`, lent on a frozen `globalThis.__imbatranimShared` set before the first kit module loads (`5f3f5aa`, 1.23.0). `useSystem()` inside it returns the capability-scoped handle, and the kit's dialogs and save helpers work because they are the desktop's instances. `SHARED_KIT_VERSION` (1) is the contract; a descriptor's `sharedKit` that differs refuses the app with both versions named. Per-app stylesheets are linked once per build. The theme block moved to `packages/ui/src/theme.css` as `@theme static`, so imbatranim-office can snapshot the token names and every token exists at runtime (18 previously unused variables now emitted, no value changed). No import map, no inline script, CSP unchanged. Walked in Chrome with a two-app fixture suite; Hollow unchanged. Brief 163 carries the outcome and two known rough edges.
 
 ## [2026-10-22] todo | Brief 164 split into one retirement per app; two todos from the suite's walks
 
-imbatranim-office has all five apps built; Docs and CAD were walked in this OS, and the Slides, Sheets and PDF walks are that repo's briefs 07–09. Brief 164 is now the Docs run, which builds the migration and commits the Office catalog entry (`marketplace/imbatranim-office.json`, the suite's template pinned to the walked commit); [165](briefs/done/165-retire-built-in-slides.md), [166](briefs/done/166-retire-built-in-sheets.md) and [167](briefs/done/167-retire-pdf-viewer-and-norpdf.md) are the Slides, Sheets and PDF runs, each waiting on its walk. Two todos: [taskbar activation leaves focus on the taskbar](todos/promoted/taskbar-activation-keeps-focus-on-the-taskbar.md), and brief 163's [refusal and same-ref reinstall](todos/promoted/kit-app-refusal-and-same-ref-reinstall.md) rough edges.
+imbatranim-office has all five apps built; Docs and CAD were walked in this OS, and the Slides, Sheets and PDF walks are that repo's briefs 07–09. Brief 164 is now the Docs run, which builds the migration and commits the Office catalog entry (`marketplace/imbatranim-office.json`, the suite's template pinned to the walked commit); 165, 166 and 167 are the Slides, Sheets and PDF runs, each waiting on its walk. Two todos: taskbar activation leaves focus on the taskbar, and brief 163's refusal and same-ref reinstall rough edges.
 
 ## [2026-10-22] decision | The desktop moves to its own host; the shared-origin risk closes
 
@@ -4395,81 +4395,81 @@ Same grilling. Spotify ships only for glibc and the OS is Alpine (musl). The own
 
 ## [2026-10-23] todo | Briefs 168–173 filed: Linux apps in OS windows, Firefox first
 
-The grilling that began with Spotify ended with a general layer: Linux GUI apps from Nix, shown as OS windows through our own Rust Wayland host, Firefox first (Spotify dropped). The settled calls are in [decisions-linux-apps.md](wiki/decisions-linux-apps.md). Brief-level calls: the feature is on on every machine, title bars follow the app (an exception to the Win7 chrome for Linux windows only), a Settings pane from the start, unfree packages allowed, US keyboard only, lossless changed-region frames near 30 fps. Six small briefs, riskiest first: [168](briefs/todo/168-nix-in-the-image-firefox-headless.md) Nix and headless Firefox, [169](briefs/todo/169-the-wayland-host-shows-a-window.md) output, [170](briefs/todo/170-linux-windows-input-and-title-bars.md) input and title bars, [171](briefs/todo/171-popups-and-firefox-in-a-window.md) popups and the Firefox walk, [172](briefs/todo/172-the-linux-apps-pane.md) the pane, [173](briefs/todo/173-linux-app-lifecycle-and-sleep.md) lifecycle and sleep. Left out on purpose: [linux-apps-after-the-first-wave](todos/linux-apps-after-the-first-wave.md).
+The grilling that began with Spotify ended with a general layer: Linux GUI apps from Nix, shown as OS windows through our own Rust Wayland host, Firefox first (Spotify dropped). The settled calls are in [decisions-linux-apps.md](wiki/decisions-linux-apps.md). Brief-level calls: the feature is on on every machine, title bars follow the app (an exception to the Win7 chrome for Linux windows only), a Settings pane from the start, unfree packages allowed, US keyboard only, lossless changed-region frames near 30 fps. Six small briefs, riskiest first: 168 Nix and headless Firefox, 169 output, 170 input and title bars, 171 popups and the Firefox walk, 172 the pane, 173 lifecycle and sleep. Left out on purpose: [linux-apps-after-the-first-wave](todos/linux-apps-after-the-first-wave.md).
 
 ## [2026-10-23] todo | Briefs 174–176 from two open todos
 
-[174](briefs/done/174-taskbar-activation-moves-focus-into-the-window.md): activating a
+174: activating a
 window from the taskbar, Alt+Tab or the launcher moves DOM focus into it (last focused
 element, then first focusable, then the content area; the iframe for a URL app). It
 stays out of `shared/store/*`, which 164–167 and 169 own.
-[175](briefs/done/175-kit-app-refusal-says-it-plainly.md): a kit or protocol refusal
+175: a kit or protocol refusal
 renders as an inline panel instead of a crash, a toast and a client-error log.
-[176](briefs/done/176-kit-app-rebuild-at-the-same-ref.md): the backend reports the
+176: the backend reports the
 catalog's kit beside the build's (today `marketplace.service.ts:322` hides it), and the
 pane offers Rebuild when only the kit changed. The todos moved to `todos/promoted/`.
 `linux-apps-after-the-first-wave` stays a todo until 168–173 are built.
 
 ## [2026-10-27] build | Brief 174 done: activation moves focus into the window
 
-A window raised from the taskbar, an Alt+Tab commit, the Start menu or the palette now gets the keyboard (`683ecad`, 1.32.0). One frame after the store call, and only while that window is still the focused one (so never behind the cover screen), focus goes to the element that last had it in the window's content area, else the first focusable element (a URL app's iframe), else the content area, now `tabIndex={-1}`. Focus is remembered from the content area only, so a restore never lands on Minimize; a click inside a window is untouched, and minimising from the taskbar leaves focus on the button. The brief put the Start menu in `appsSource.ts`; it goes through `openApp`, so its path is in `Taskbar.tsx` and moves focus only for an app that was already open. Walked in Chrome in the dev container on remapped ports (5173 was taken): two Terminals by taskbar and Alt+Tab, a minimised one restored both ways, Calculator from Start and the palette, and a URL app from a local `file://` repository whose iframe took the keys. CAD was not walked; it is not in this catalog. The walk found three gaps, left in [keyboard-focus-gaps-after-brief-174](todos/keyboard-focus-gaps-after-brief-174.md): xterm eats the Tab keydown so Alt+Tab does nothing inside a Terminal, a new window from Start keeps focus on the Start button, and desktop icons, toasts and `system.window.focus()` don't move focus. [Brief 174](briefs/done/174-taskbar-activation-moves-focus-into-the-window.md) carries the outcome.
+A window raised from the taskbar, an Alt+Tab commit, the Start menu or the palette now gets the keyboard (`683ecad`, 1.32.0). One frame after the store call, and only while that window is still the focused one (so never behind the cover screen), focus goes to the element that last had it in the window's content area, else the first focusable element (a URL app's iframe), else the content area, now `tabIndex={-1}`. Focus is remembered from the content area only, so a restore never lands on Minimize; a click inside a window is untouched, and minimising from the taskbar leaves focus on the button. The brief put the Start menu in `appsSource.ts`; it goes through `openApp`, so its path is in `Taskbar.tsx` and moves focus only for an app that was already open. Walked in Chrome in the dev container on remapped ports (5173 was taken): two Terminals by taskbar and Alt+Tab, a minimised one restored both ways, Calculator from Start and the palette, and a URL app from a local `file://` repository whose iframe took the keys. CAD was not walked; it is not in this catalog. The walk found three gaps, left in keyboard-focus-gaps-after-brief-174: xterm eats the Tab keydown so Alt+Tab does nothing inside a Terminal, a new window from Start keeps focus on the Start button, and desktop icons, toasts and `system.window.focus()` don't move focus. Brief 174 carries the outcome.
 
 ## [2026-10-27] build | Brief 175 done: a refused app says so in its window
 
-A kit app built for another shared kit, or any marketplace app that needs a newer system protocol, now opens a window showing "Can't open <name>", the sentence from `refusals.ts` word for word, and Open Settings (`81de146`, 1.34.0). It used to throw during render, so the window said "stopped working", a "crashed" toast appeared and a client-error log was sent. The native and sandboxed hosts threw the same protocol refusal, so all three hosts now check in an outer component and render the real host only when the app can run; nothing is leased, fetched or minted for a refused app. Settings has no deep link, so the button opens it at the top. Walked in Chrome with brief 163's kit fixture at `sharedKit: 99` and then `minSystemVersion: 99`: the panel each time, no toast, no client-error request, no module fetched. The walk caught Open Settings bringing Settings up behind the refused window, because the click bubbled to the window root, which raises its window; the panel stops its click now. The pane's own Open buttons have the same bubbling: [in-window-open-raises-the-clicked-window](todos/in-window-open-raises-the-clicked-window.md). [Brief 175](briefs/done/175-kit-app-refusal-says-it-plainly.md) carries the outcome.
+A kit app built for another shared kit, or any marketplace app that needs a newer system protocol, now opens a window showing "Can't open <name>", the sentence from `refusals.ts` word for word, and Open Settings (`81de146`, 1.34.0). It used to throw during render, so the window said "stopped working", a "crashed" toast appeared and a client-error log was sent. The native and sandboxed hosts threw the same protocol refusal, so all three hosts now check in an outer component and render the real host only when the app can run; nothing is leased, fetched or minted for a refused app. Settings has no deep link, so the button opens it at the top. Walked in Chrome with brief 163's kit fixture at `sharedKit: 99` and then `minSystemVersion: 99`: the panel each time, no toast, no client-error request, no module fetched. The walk caught Open Settings bringing Settings up behind the refused window, because the click bubbled to the window root, which raises its window; the panel stops its click now. The pane's own Open buttons have the same bubbling: in-window-open-raises-the-clicked-window. Brief 175 carries the outcome.
 
 ## [2026-10-27] build | Brief 176 done: Rebuild a kit app at the same ref
 
-The marketplace listing now reports `catalogSharedKit`, what the descriptor names now, beside `sharedKit`, what the live build was made against (`ff91201`, 1.36.0). When the build's kit differs from the desktop's and the catalog's equals it, the pane says "Built for shared kit N; a rebuild for kit M is available" and offers Rebuild, the same install as Update. When the catalog names another kit too, or an older backend sends no field, the row keeps "Needs an update" and offers nothing; a new ref still shows Update and a missing build Reinstall. Walked in Chrome with brief 163's kit fixture built against kit 99 on a kit-1 desktop: no button while the catalog said 99; Rebuild once it said 1 at the same ref, a new build, and the Kit Notes window that had shown brief 175's refusal ran the app. The build call is in [decisions-marketplace-suites.md](wiki/decisions-marketplace-suites.md). The service has no unit spec, so the backend checks went into the kit e2e suite. The full `npm test` run fails at the core task before and after these briefs, from load-dependent errors in files they don't own (a fire-and-forget import in `prefs.ts` above all): [core-tests-flake-under-the-full-run](todos/core-tests-flake-under-the-full-run.md). [Brief 176](briefs/done/176-kit-app-rebuild-at-the-same-ref.md) carries the outcome.
+The marketplace listing now reports `catalogSharedKit`, what the descriptor names now, beside `sharedKit`, what the live build was made against (`ff91201`, 1.36.0). When the build's kit differs from the desktop's and the catalog's equals it, the pane says "Built for shared kit N; a rebuild for kit M is available" and offers Rebuild, the same install as Update. When the catalog names another kit too, or an older backend sends no field, the row keeps "Needs an update" and offers nothing; a new ref still shows Update and a missing build Reinstall. Walked in Chrome with brief 163's kit fixture built against kit 99 on a kit-1 desktop: no button while the catalog said 99; Rebuild once it said 1 at the same ref, a new build, and the Kit Notes window that had shown brief 175's refusal ran the app. The build call is in [decisions-marketplace-suites.md](wiki/decisions-marketplace-suites.md). The service has no unit spec, so the backend checks went into the kit e2e suite. The full `npm test` run fails at the core task before and after these briefs, from load-dependent errors in files they don't own (a fire-and-forget import in `prefs.ts` above all): core-tests-flake-under-the-full-run. Brief 176 carries the outcome.
 
 ## [2026-10-27] todo | Brief 177 filed: research a warmer look
 
-The owner likes the desktop's minimalism but wants it friendlier: pastel colours, a cute background, maybe Aero glass, "warm, calm and chill". [Brief 177](briefs/todo/177-research-a-warmer-look.md) is research for a revisit of the locked identity (B&W tokens, crimson accent, dark-first, zero radius). The Win7-classic layout stays. It asks for references, three directions in light and dark on the real token names, a mock page, and the frame cost of `backdrop-filter` measured, since lightweight is an invariant. Not grilled; brief-board is down, so nothing was filed there.
+The owner likes the desktop's minimalism but wants it friendlier: pastel colours, a cute background, maybe Aero glass, "warm, calm and chill". Brief 177 is research for a revisit of the locked identity (B&W tokens, crimson accent, dark-first, zero radius). The Win7-classic layout stays. It asks for references, three directions in light and dark on the real token names, a mock page, and the frame cost of `backdrop-filter` measured, since lightweight is an invariant. Not grilled; brief-board is down, so nothing was filed there.
 
 ## [2026-10-28] todo | Briefs 178-182 filed from the owner's answers
 
 The owner answered the four questions briefs 174-176 left, on 2026-10-27, and
-imbatranim-office brief 09's on 2026-10-28. [178](briefs/done/178-alt-tab-works-over-a-terminal.md):
+imbatranim-office brief 09's on 2026-10-28. 178:
 the Alt+Tab switcher listens in the capture phase, so it works over a Terminal.
-[179](briefs/done/179-a-click-that-opens-another-window-leaves-it-in-front.md): a
+179: a
 window's root click doesn't raise it when the click brought another window to
-the front, fixed once in `Window.tsx`. [180](briefs/done/180-every-new-or-raised-window-gets-the-keyboard.md):
+the front, fixed once in `Window.tsx`. 180:
 new windows, desktop icons, toast actions and `system.window.focus()` move the
-keyboard in, as brief 174's paths do. [181](briefs/done/181-prefs-imports-the-notification-store-statically.md):
+keyboard in, as brief 174's paths do. 181:
 `prefs.ts` imports the notification store statically, if there is no cycle, so
-the full `npm test` stops flaking. [182](briefs/done/182-a-kit-app-starts-loading-when-its-window-opens.md):
+the full `npm test` stops flaking. 182:
 a kit app's entry is fetched as its window opens, which closes most of the
 suite PDF's 40 ms gap; that gap and Sheets' formula freeze no longer hold back
 briefs 166 and 167. The three todos are marked promoted.
 
 ## [2026-10-28] build | Brief 178 done: Alt+Tab works over a Terminal
 
-The Alt+Tab switcher's key listeners on `window` run in the capture phase (`770f616`, 1.40.0), so xterm stopping the Tab keydown no longer hides Alt+Tab from it. A key the switcher acts on (Alt+Tab, Alt+Shift+Tab, and the arrows, Enter, Escape and the Alt release while it is open) is stopped there, so the Terminal never also gets it; every other key reaches the focused element untouched. Walked in headless Chrome against the dev container with real key ups: two Terminals and a Calculator, focus in a Terminal, Alt+Tab opened the switcher, a second Tab stepped, releasing Alt brought the other Terminal up with the keyboard in it, and `ech` + Tab still completed in the shell. The global hotkeys share the old cause (Ctrl+K does nothing inside a Terminal): [keyboard-gaps-after-brief-180](todos/keyboard-gaps-after-brief-180.md). [Brief 178](briefs/done/178-alt-tab-works-over-a-terminal.md) carries the outcome.
+The Alt+Tab switcher's key listeners on `window` run in the capture phase (`770f616`, 1.40.0), so xterm stopping the Tab keydown no longer hides Alt+Tab from it. A key the switcher acts on (Alt+Tab, Alt+Shift+Tab, and the arrows, Enter, Escape and the Alt release while it is open) is stopped there, so the Terminal never also gets it; every other key reaches the focused element untouched. Walked in headless Chrome against the dev container with real key ups: two Terminals and a Calculator, focus in a Terminal, Alt+Tab opened the switcher, a second Tab stepped, releasing Alt brought the other Terminal up with the keyboard in it, and `ech` + Tab still completed in the shell. The global hotkeys share the old cause (Ctrl+K does nothing inside a Terminal): [keyboard-gaps-left-after-the-focus-fixes](todos/keyboard-gaps-left-after-the-focus-fixes.md). Brief 178 carries the outcome.
 
 ## [2026-10-28] build | Brief 179 done: a click that opens another window leaves it in front
 
-A click anywhere in a window still raises it, unless the click itself brought another window to the front (`90cf397`, 1.41.0). The root notes the store's z counter in its click-capture handler, before any handler inside the window runs; if the counter moved and another window is on top when the click reaches the root, the root leaves it there. Closing or minimising mints no z, so a click that only did that still raises the clicked window. The store is unchanged, and brief 175's refusal panel no longer stops its own click. Walked in Chrome against the dev container with brief 163's kit fixture, whose Kit Hello opens one window: Settings → Marketplace → Open Kit Hello left Kit Hello in front whether it was already open or not, and a click on Settings' uncovered content raised Settings. [Brief 179](briefs/done/179-a-click-that-opens-another-window-leaves-it-in-front.md) carries the outcome.
+A click anywhere in a window still raises it, unless the click itself brought another window to the front (`90cf397`, 1.41.0). The root notes the store's z counter in its click-capture handler, before any handler inside the window runs; if the counter moved and another window is on top when the click reaches the root, the root leaves it there. Closing or minimising mints no z, so a click that only did that still raises the clicked window. The store is unchanged, and brief 175's refusal panel no longer stops its own click. Walked in Chrome against the dev container with brief 163's kit fixture, whose Kit Hello opens one window: Settings → Marketplace → Open Kit Hello left Kit Hello in front whether it was already open or not, and a click on Settings' uncovered content raised Settings. Brief 179 carries the outcome.
 
 ## [2026-10-28] build | Brief 180 done: every new or raised window gets the keyboard
 
-A new window takes the keyboard once its app has mounted (`e233299`, 1.42.0): a marker rendered after the app inside its `Suspense` boundary waits two frames, then calls brief 174's helper if the window is still the focused one, which keeps an app's own first focus such as CAD's command line. A desktop icon, a toast's action, an app's `system.intents.openApp` and `system.window.focus()` move the keyboard into a window they raise; the store and the protocol are unchanged. Walked in Chrome against the dev container: Terminal from Start took typing with no click, Calculator from the palette took `42`, CAD kept its command line, Calculator's desktop icon and a Clock alarm's Snooze each brought their window up with the keyboard in it. No app calls `system.window.focus()` today; unit tests cover it. A side effect: after a reload the restored top window has the keyboard. Left in [keyboard-gaps-after-brief-180](todos/keyboard-gaps-after-brief-180.md): Ctrl+K misses a Terminal, and other `openApp` callers this brief did not own raise a window without the keyboard. [Brief 180](briefs/done/180-every-new-or-raised-window-gets-the-keyboard.md) carries the outcome.
+A new window takes the keyboard once its app has mounted (`e233299`, 1.42.0): a marker rendered after the app inside its `Suspense` boundary waits two frames, then calls brief 174's helper if the window is still the focused one, which keeps an app's own first focus such as CAD's command line. A desktop icon, a toast's action, an app's `system.intents.openApp` and `system.window.focus()` move the keyboard into a window they raise; the store and the protocol are unchanged. Walked in Chrome against the dev container: Terminal from Start took typing with no click, Calculator from the palette took `42`, CAD kept its command line, Calculator's desktop icon and a Clock alarm's Snooze each brought their window up with the keyboard in it. No app calls `system.window.focus()` today; unit tests cover it. A side effect: after a reload the restored top window has the keyboard. Left in [keyboard-gaps-left-after-the-focus-fixes](todos/keyboard-gaps-left-after-the-focus-fixes.md): Ctrl+K misses a Terminal, and other `openApp` callers this brief did not own raise a window without the keyboard. Brief 180 carries the outcome.
 
 ## [2026-10-28] build | Brief 181 built: prefs.ts imports the notification store statically; stays in todo
 
-`notificationStore.ts` imports only zustand, so there is no cycle, and the store was already in the entry chunk: `prefs.ts` now imports it at the top (`0937bba`, 1.43.0), and the eager set shrank by 518 bytes rather than grew. `marketplace.test.tsx`'s axios mock has a `put`. A follow-up (`c5b1bd9`, 1.51.0) resets every prefs module a test loads, since an old module's 5 s retry fired inside a later test. Fifteen full runs (`turbo test test:e2e --force`; without `--force` turbo replays its cache) showed no `EnvironmentTeardownError` and no `api.put` error, and core passed every run it finished after the follow-up. The run is still not green three times in a row: markdown-editor, notepad, code-editor and sheets tests hit vitest's 5 s, and the backend's service-server e2e its 60 s, with the machine's load average between 18 and 55 from other builds. Those are in [full-run-timeouts-under-load](todos/full-run-timeouts-under-load.md); the owner closes [brief 181](briefs/done/181-prefs-imports-the-notification-store-statically.md) or fixes them first.
+`notificationStore.ts` imports only zustand, so there is no cycle, and the store was already in the entry chunk: `prefs.ts` now imports it at the top (`0937bba`, 1.43.0), and the eager set shrank by 518 bytes rather than grew. `marketplace.test.tsx`'s axios mock has a `put`. A follow-up (`c5b1bd9`, 1.51.0) resets every prefs module a test loads, since an old module's 5 s retry fired inside a later test. Fifteen full runs (`turbo test test:e2e --force`; without `--force` turbo replays its cache) showed no `EnvironmentTeardownError` and no `api.put` error, and core passed every run it finished after the follow-up. The run is still not green three times in a row: markdown-editor, notepad, code-editor and sheets tests hit vitest's 5 s, and the backend's service-server e2e its 60 s, with the machine's load average between 18 and 55 from other builds. Those are in [full-run-timeouts-under-load](todos/full-run-timeouts-under-load.md); the owner closes brief 181 or fixes them first.
 
 ## [2026-10-28] build | Brief 182 done: a kit app starts loading when its window opens
 
-The registry's `lazy` factory for a kit app now preloads the entry and the build's stylesheets as the window opens (`99d6115`, 1.44.0) and, once the host's chunk is in, starts the import itself (`608ad1e`, 1.46.0); the host takes the same import. The preload alone measured no gain, 640 ms against 632: React holds a lazy component that resolves just after its fallback for up to 300 ms, the host's effect ran the import after that, and a modulepreload fetches the entry without its ten shared chunks. Starting the import in the factory moves those chunks from about 316 ms to 78. Measured as office brief 09 did, in the production image with the suite installed from a local repository, Open With → ink on NIST SP 800-218, fresh headless Chrome per run, two series of 7 alternating with the before image and PDF Viewer: the suite's median went from 671 to 540 ms and from 661 to 548, PDF Viewer measured 552 and 558. The literal bar, 30 ms under brief 09's 574, is met in one series and missed by 4 ms in the other; PDF Viewer itself was 18 to 24 ms slower here than in brief 09. Refused apps fetch nothing, and nothing is fetched before a window opens. [Brief 182](briefs/done/182-a-kit-app-starts-loading-when-its-window-opens.md) carries the outcome.
+The registry's `lazy` factory for a kit app now preloads the entry and the build's stylesheets as the window opens (`99d6115`, 1.44.0) and, once the host's chunk is in, starts the import itself (`608ad1e`, 1.46.0); the host takes the same import. The preload alone measured no gain, 640 ms against 632: React holds a lazy component that resolves just after its fallback for up to 300 ms, the host's effect ran the import after that, and a modulepreload fetches the entry without its ten shared chunks. Starting the import in the factory moves those chunks from about 316 ms to 78. Measured as office brief 09 did, in the production image with the suite installed from a local repository, Open With → ink on NIST SP 800-218, fresh headless Chrome per run, two series of 7 alternating with the before image and PDF Viewer: the suite's median went from 671 to 540 ms and from 661 to 548, PDF Viewer measured 552 and 558. The literal bar, 30 ms under brief 09's 574, is met in one series and missed by 4 ms in the other; PDF Viewer itself was 18 to 24 ms slower here than in brief 09. Refused apps fetch nothing, and nothing is fetched before a window opens. Brief 182 carries the outcome.
 
 ## [2026-10-28] build | Brief 164 built (the Docs run); walk unfinished, stays in todo
 
-The built-in Docs is gone and Office is in the catalog, pinned to the office commit `1ca83c0` (`c3baeef`, 1.45.0). At sign-in a one-time migration moves the owner's choices from `docs` to `office-docs` (association overrides, the disabled set, desktop icons, startup apps) and records it in a new dotfile; recents are read through the same table. New Document resolves its opener through the associations and hides when nothing opens `.docx`; the Open With chooser names Office in the Marketplace for an unclaimed `.docx`. The production image shrank by about 35 MB. Walked in Chrome against the dev container with the suite installed: seeded choices moved, `letter.docx` opened in the suite's Docs from Files and from the Start menu's recents. The New Document check and the suite-uninstalled half were not walked when the owner paused the run. Found: Marketplace startup apps never open at sign-in, since the catalog registers them after `runStartupApps()`. [Brief 164](briefs/done/164-retiring-a-built-in-office-app.md) carries the note.
+The built-in Docs is gone and Office is in the catalog, pinned to the office commit `1ca83c0` (`c3baeef`, 1.45.0). At sign-in a one-time migration moves the owner's choices from `docs` to `office-docs` (association overrides, the disabled set, desktop icons, startup apps) and records it in a new dotfile; recents are read through the same table. New Document resolves its opener through the associations and hides when nothing opens `.docx`; the Open With chooser names Office in the Marketplace for an unclaimed `.docx`. The production image shrank by about 35 MB. Walked in Chrome against the dev container with the suite installed: seeded choices moved, `letter.docx` opened in the suite's Docs from Files and from the Start menu's recents. The New Document check and the suite-uninstalled half were not walked when the owner paused the run. Found: Marketplace startup apps never open at sign-in, since the catalog registers them after `runStartupApps()`. Brief 164 carries the note.
 
 ## [2026-10-28] decision | The owner's answers: 181 closed, AGPL stays, brief 183, the shell keeps Ctrl+K
 
 The owner answered the questions the last run left, on 2026-10-28.
-[Brief 181](briefs/done/181-prefs-imports-the-notification-store-statically.md)
+Brief 181
 is closed as built: its own two errors are gone, and the full run's other
 timeouts stay in [full-run-timeouts-under-load](todos/full-run-timeouts-under-load.md).
 **The licence stays AGPL-3.0-only.** Its recorded reason was SuperDoc, which
@@ -4477,34 +4477,57 @@ left the repo with the built-in Docs in brief 164; the licence now stands by
 the owner's choice, noted beside it in
 [decisions-pivot-era.md](wiki/decisions-pivot-era.md). Marketplace startup
 apps that never open at sign-in get
-[brief 183](briefs/done/183-marketplace-startup-apps-open-at-sign-in.md): the
+brief 183: the
 set waits for the first Marketplace listing when it names an app that is not
 registered yet, so the list's order holds. Ctrl+K and the other global
 shortcuts over a Terminal stay with the shell; only Alt+Tab is taken in the
 capture phase. That item of
-[keyboard-gaps-after-brief-180](todos/keyboard-gaps-after-brief-180.md) is
+[keyboard-gaps-left-after-the-focus-fixes](todos/keyboard-gaps-left-after-the-focus-fixes.md) is
 settled and the rest stay open.
 
 ## [2026-10-28] build | Brief 164 done: the Docs run's walk finished
 
-The rest of [brief 164](briefs/done/164-retiring-a-built-in-office-app.md)'s walk, in Chrome against the dev container with Office `909c321` installed from a local `file://` repository; no code changed since `c3baeef`. With the suite installed, the background menu's New Document wrote `Untitled Document.docx` and opened it in the suite's Docs. With the suite uninstalled, `letter.docx` showed the chooser's sentence, "No installed app opens .docx files. Office in Settings → Marketplace does.", with no app picked; New Document was gone; the `.docx` override, the startup entry and the pinned icon's place stayed in the dotfiles, and all came back on reinstall with no prompt. The last walk's right-click opened no menu because the element that owns the background menu is only as tall as the listing: [files-background-menu-misses-empty-space](todos/files-background-menu-misses-empty-space.md). Step 6: `decisions-pivot-era.md`'s office section says Docs left for imbatranim-office; the 2026-08-03 PDF decision gets its note in brief 167.
+The rest of brief 164's walk, in Chrome against the dev container with Office `909c321` installed from a local `file://` repository; no code changed since `c3baeef`. With the suite installed, the background menu's New Document wrote `Untitled Document.docx` and opened it in the suite's Docs. With the suite uninstalled, `letter.docx` showed the chooser's sentence, "No installed app opens .docx files. Office in Settings → Marketplace does.", with no app picked; New Document was gone; the `.docx` override, the startup entry and the pinned icon's place stayed in the dotfiles, and all came back on reinstall with no prompt. The last walk's right-click opened no menu because the element that owns the background menu is only as tall as the listing: [files-background-menu-misses-empty-space](todos/files-background-menu-misses-empty-space.md). Step 6: `decisions-pivot-era.md`'s office section says Docs left for imbatranim-office; the 2026-08-03 PDF decision gets its note in brief 167.
 
 ## [2026-10-28] build | Brief 165 done: the built-in Slides retired for Office's
 
-The built-in Slides is gone and the Office catalog entry is pinned to `909c321` (`dbd0c04`, 1.57.0), which has every walk fix and the Sheets formula worker. `slides` → `office-slides` joined the sign-in migration; a desktop that had moved Docs runs only the new pair. `pptx-preview` and its `echarts` tree left the lockfile (46 packages). With Office not installed a `.pptx` gets brief 164's Marketplace sentence; a `.ppt` gets "No app here opens .ppt files (PowerPoint 97-2003). Office's Slides opens .pptx.", since Office refuses it by name, rather than the hint about the text editor. Walked in Chrome against the dev container with the old choices seeded: the override, the pinned icon's place, the startup entry and a recent all moved, `deck.pptx` opened in Office's Slides from Files and from Start, and the uninstalled chooser named the Marketplace. The production image shrank from 279,598,118 to 278,157,380 bytes. A first build came out 11.4 MB larger because `better-sqlite3` compiled from source under load and the Dockerfile keeps a source build's leftovers: [native-build-leftovers-in-the-image](todos/native-build-leftovers-in-the-image.md). The pin moves again once Sheets computes formulas past row 1000: [office-pin-after-the-row-1000-fix](todos/office-pin-after-the-row-1000-fix.md). [Brief 165](briefs/done/165-retire-built-in-slides.md) carries the outcome.
+The built-in Slides is gone and the Office catalog entry is pinned to `909c321` (`dbd0c04`, 1.57.0), which has every walk fix and the Sheets formula worker. `slides` → `office-slides` joined the sign-in migration; a desktop that had moved Docs runs only the new pair. `pptx-preview` and its `echarts` tree left the lockfile (46 packages). With Office not installed a `.pptx` gets brief 164's Marketplace sentence; a `.ppt` gets "No app here opens .ppt files (PowerPoint 97-2003). Office's Slides opens .pptx.", since Office refuses it by name, rather than the hint about the text editor. Walked in Chrome against the dev container with the old choices seeded: the override, the pinned icon's place, the startup entry and a recent all moved, `deck.pptx` opened in Office's Slides from Files and from Start, and the uninstalled chooser named the Marketplace. The production image shrank from 279,598,118 to 278,157,380 bytes. A first build came out 11.4 MB larger because `better-sqlite3` compiled from source under load and the Dockerfile keeps a source build's leftovers: [native-build-leftovers-in-the-image](todos/native-build-leftovers-in-the-image.md). The pin moves again once Sheets computes formulas past row 1000: [office-pin-after-the-row-1000-fix](todos/office-pin-after-the-row-1000-fix.md). Brief 165 carries the outcome.
 
 ## [2026-10-28] build | Brief 166 done: the built-in Sheets retired for Office's
 
-The built-in Sheets is gone (`b81a87a`, 1.58.0); Office stays pinned to `909c321`. `sheets` → `office-sheets` joined the sign-in migration; Univer and ExcelJS left the lockfile (263 packages). Four core tests had been getting Node's types through Sheets' dependencies and now reference them themselves. Three types, three answers with Office not installed: `.xlsx` gets the Marketplace sentence; `.xls`, which Office refuses by name, gets "No app here opens .xls files (Excel 97-2003). Office's Sheets opens .xlsx."; `.csv` is text and now opens in the Code Editor while nothing claims it, as a `.tsv` does, a departure from the brief's literal "shows the chooser" recorded in its outcome. New Spreadsheet opens Office's Sheets and is gone without it. Walked in Chrome against the dev container: the seeded choices moved, `book.xlsx` and `data.csv` opened in Office's Sheets from Files and Start, and the uninstalled half behaved as above; one uninstalled run first showed a stale module, because the dev container's Vite missed a synced file, and was redone after a restart. The image shrank from 278,157,380 to 262,170,013 bytes. Office's descriptor still lists `xls` for Sheets although the app refuses it; that is the office repo's to change. [Brief 166](briefs/done/166-retire-built-in-sheets.md) carries the outcome.
+The built-in Sheets is gone (`b81a87a`, 1.58.0); Office stays pinned to `909c321`. `sheets` → `office-sheets` joined the sign-in migration; Univer and ExcelJS left the lockfile (263 packages). Four core tests had been getting Node's types through Sheets' dependencies and now reference them themselves. Three types, three answers with Office not installed: `.xlsx` gets the Marketplace sentence; `.xls`, which Office refuses by name, gets "No app here opens .xls files (Excel 97-2003). Office's Sheets opens .xlsx."; `.csv` is text and now opens in the Code Editor while nothing claims it, as a `.tsv` does, a departure from the brief's literal "shows the chooser" recorded in its outcome. New Spreadsheet opens Office's Sheets and is gone without it. Walked in Chrome against the dev container: the seeded choices moved, `book.xlsx` and `data.csv` opened in Office's Sheets from Files and Start, and the uninstalled half behaved as above; one uninstalled run first showed a stale module, because the dev container's Vite missed a synced file, and was redone after a restart. The image shrank from 278,157,380 to 262,170,013 bytes. Office's descriptor still lists `xls` for Sheets although the app refuses it; that is the office repo's to change. Brief 166 carries the outcome.
 
 ## [2026-10-28] build | Brief 167 done: PDF Viewer and norPDF retired for Office's PDF
 
-PDF Viewer, norPDF and `packages/pdfcore-engine` are gone (`51608b5`, 1.59.0), with pdf.js, `@napi-rs/canvas` and the root `pdfjs-dist` override; Office stays pinned to `909c321`. Both ids migrate to `office-pdf`, norPDF first so its icon's place wins; Office's PDF is disabled only when both built-ins were, since hiding the light viewer was not hiding PDF. `PREFERRED_DEFAULT` lost its only row and stays, empty. With Office not installed a `.pdf` gets the Marketplace sentence. Every reference the brief listed changed, including the file manager's and Markdown Editor's tests, which its Files you OWN left out. `norpdf.md` is a pointer to the suite's own `wiki/pdf.md`; merging anything from the old page there is an owner step, since this run may not write in imbatranim-office. The 2026-08-03 PDF decision and the pivot era's office section carry dated notes. Walked in Chrome against the dev container with `.pdf` → `pdf-viewer`, both icons pinned and norPDF disabled: the override, startup entry and norPDF's icon place moved to `office-pdf`, Office's PDF stayed enabled, the NIST file opened in it from Files and from a recent attributed to `pdf-viewer`, and the uninstalled chooser named the Marketplace. The machine restarted part way through; the uninstalled half and the reinstall ran after it. The image built on the third try (node-gyp timed out reaching nodejs.org twice) with a source-built `better-sqlite3`; net of those leftovers it shrank from 262,170,013 to 259,464,127 bytes. [Brief 167](briefs/done/167-retire-pdf-viewer-and-norpdf.md) carries the outcome.
+PDF Viewer, norPDF and `packages/pdfcore-engine` are gone (`51608b5`, 1.59.0), with pdf.js, `@napi-rs/canvas` and the root `pdfjs-dist` override; Office stays pinned to `909c321`. Both ids migrate to `office-pdf`, norPDF first so its icon's place wins; Office's PDF is disabled only when both built-ins were, since hiding the light viewer was not hiding PDF. `PREFERRED_DEFAULT` lost its only row and stays, empty. With Office not installed a `.pdf` gets the Marketplace sentence. Every reference the brief listed changed, including the file manager's and Markdown Editor's tests, which its Files you OWN left out. `norpdf.md` is a pointer to the suite's own `wiki/pdf.md`; merging anything from the old page there is an owner step, since this run may not write in imbatranim-office. The 2026-08-03 PDF decision and the pivot era's office section carry dated notes. Walked in Chrome against the dev container with `.pdf` → `pdf-viewer`, both icons pinned and norPDF disabled: the override, startup entry and norPDF's icon place moved to `office-pdf`, Office's PDF stayed enabled, the NIST file opened in it from Files and from a recent attributed to `pdf-viewer`, and the uninstalled chooser named the Marketplace. The machine restarted part way through; the uninstalled half and the reinstall ran after it. The image built on the third try (node-gyp timed out reaching nodejs.org twice) with a source-built `better-sqlite3`; net of those leftovers it shrank from 262,170,013 to 259,464,127 bytes. Brief 167 carries the outcome.
 
 ## [2026-10-28] build | Brief 183 done: Marketplace startup apps open at sign-in
 
-A Marketplace app in Settings → Startup now opens when a new tab signs in (`78741ee`, 1.63.0). App hands its first `loadMarketplace()` promise to `runStartupApps`, which still decides first whether to run (the tab's marker, a restored layout) and, only when the list names an app that is not registered yet, waits for that listing, success or failure, before opening the whole set in order, so the last one stays in front; a list of registered apps opens at once, as before. The Startup pane reads the registry each render, so an app whose listing arrives after the pane mounted shows by name. Walked in Chrome against the dev container with the startup list `terminal, office-docs`: before the brief a new tab opened Terminal only; after it, Terminal then Office's Docs in front; a reload opened nothing new; with the listing failing, Terminal alone; with it held back 12 s, the pane went from Terminal alone to Terminal and Docs as it arrived. [Brief 183](briefs/done/183-marketplace-startup-apps-open-at-sign-in.md) carries the outcome.
+A Marketplace app in Settings → Startup now opens when a new tab signs in (`78741ee`, 1.63.0). App hands its first `loadMarketplace()` promise to `runStartupApps`, which still decides first whether to run (the tab's marker, a restored layout) and, only when the list names an app that is not registered yet, waits for that listing, success or failure, before opening the whole set in order, so the last one stays in front; a list of registered apps opens at once, as before. The Startup pane reads the registry each render, so an app whose listing arrives after the pane mounted shows by name. Walked in Chrome against the dev container with the startup list `terminal, office-docs`: before the brief a new tab opened Terminal only; after it, Terminal then Office's Docs in front; a reload opened nothing new; with the listing failing, Terminal alone; with it held back 12 s, the pane went from Terminal alone to Terminal and Docs as it arrived. Brief 183 carries the outcome.
 
 ## [2026-10-31] maintenance | README images retaken after the office retirements
 
 The hero GIF still showed the built-in Docs, Slides, Sheets, PDF Viewer and norPDF icons retired by briefs 164 to 167, and the Marketplace screenshot showed a catalog with Hollow only. Both were taken again (`docs/images/desktop.gif`, `docs/images/marketplace.webp`); `shots.md` records how. The README names CAD among Office's apps and describes the new images. [docs/getting-started.md](../docs/getting-started.md) now says `npm run dev:local` needs `VITE_API_URL=/api`, and `docs/architecture.md` links the docs site pages at their Docusaurus paths; without the variable the desktop stays black, filed as [a todo](todos/tray-crash-on-a-wrong-api-base.md). Checked: `npm ci` with Node 24.22.1, the backend built and started, the desktop answered on port 5173, every relative link in the README and `docs/` resolves.
+
+## [2026-11-02] maintenance | Briefs reset
+
+Part of an estate-wide reset. The 151 briefs in `briefs/done/` and the ten in `briefs/superseded/`
+are folded into the wiki and deleted; brief numbering restarts at 01. The last commit that held
+them is `621c4dd`: read one with `git show 621c4dd:corpus/briefs/done/158-sandboxed-apps-from-a-url.md`.
+Brief numbers in the entries above refer to that set. The seven unbuilt briefs stay as specs,
+renumbered in the same order: 168-173 (the Linux apps layer) are now 01-06 and 177 (a warmer look)
+is 07.
+
+status.md drops its tables for a dated line per area, the open briefs, what the owner owes and the
+open todos. Its one-line table of the first forty-six pieces of work moves to
+[build-record-2026-07.md](wiki/build-record-2026-07.md); that page and the two backlog pages keep
+their old numbers in a labelled `Old #` column, with the commit to read each spec from. The other
+pages name the work and its date. Thirty-one todos are deleted: the twenty-eight in `todos/promoted/`
+and three promoted at the top level, all built. `keyboard-gaps-after-brief-180.md` is now
+`keyboard-gaps-left-after-the-focus-fixes.md`.
+
+Code comments, test titles, the docs and `infrastructure/README.md` no longer cite brief numbers.
+Left as they were: the ESLint rule message every add-on prints ("forbidden (brief 48)"), the
+warning about old `WARD_*` variables, a docs diagram label (string literals and rendered text),
+and eight test files named after briefs (`archive.brief78.spec.ts` and the like), since renaming files
+is outside a comment-only pass.

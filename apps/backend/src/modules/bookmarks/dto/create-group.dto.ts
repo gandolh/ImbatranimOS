@@ -22,7 +22,7 @@ export class CreateGroupDto {
   icon?: string;
 
   /**
-   * Parent folder, or absent/null for a root folder (brief 75).
+   * Parent folder, or absent/null for a root folder.
    *
    * Nullable rather than optional-only because "move this folder to the root" has
    * to be expressible — `undefined` means "don't touch", `null` means "the root".

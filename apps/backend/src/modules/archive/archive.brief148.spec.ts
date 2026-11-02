@@ -10,13 +10,13 @@ import { ArchiveService } from './archive.service';
 const execFileAsync = promisify(execFile);
 
 /**
- * Brief 148 — extracting never deletes what is already there.
+ * The tar extract never deletes existing files work — extracting never deletes what is already there.
  *
  * Extracting `project.tar.gz` a second time used to `rm -rf` the existing
  * `project/` folder (every edit, every new file) and rename the archive's copy
  * into its place.
  */
-describe('ArchiveService — extracting over existing files (brief 148)', () => {
+describe('ArchiveService — extracting over existing files', () => {
   let service: ArchiveService;
   let jail: string;
   const prevEnv = process.env.FILES_ROOT;

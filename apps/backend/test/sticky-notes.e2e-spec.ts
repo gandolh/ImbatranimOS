@@ -60,7 +60,7 @@ describe('Sticky notes (e2e) — the desktop surface', () => {
 
   describe('the shape of a note', () => {
     it('is camelCase, with x/y instead of pos_x/pos_y', async () => {
-      // This is the module brief 71 named as leaking snake_case into React props.
+      // This is the module the clock fixes named as leaking snake_case into React props.
       const res = await add({ content: 'buy milk' }).expect(201);
       const note = res.body as StickyNote;
       expect(note).not.toHaveProperty('pos_x');
@@ -106,7 +106,7 @@ describe('Sticky notes (e2e) — the desktop surface', () => {
     });
 
     it('refuses a colour outside the shared palette', async () => {
-      // The palette is Calendar's (brief 72) — reused, not reinvented.
+      // The palette is Calendar's — reused, not reinvented.
       await add({ color: 'yellow' }).expect(400);
       await add({ color: '#ffcc00' }).expect(400);
       for (const color of [
@@ -182,14 +182,14 @@ describe('Sticky notes (e2e) — the desktop surface', () => {
 
   describe('the migration', () => {
     it('leaves an existing note editable, off the desktop, with its content', async () => {
-      // A note as it existed before brief 74: content and pos_x/pos_y only.
+      // A note as it existed before the sticky-notes work: content and pos_x/pos_y only.
       db.db.exec('DELETE FROM sticky_notes');
       db.db
         .prepare(
           "INSERT INTO sticky_notes (id, content, pos_x, pos_y) VALUES (1, 'inherited', 42, 84)",
         )
         .run();
-      // Simulate an OLD database: since brief 110 the ledger runs each
+      // Simulate an OLD database: since the migration ledger the ledger runs each
       // step once, so replaying a historical repair resets the stamp.
       db.db.pragma('user_version = 0');
       db.migrate();
@@ -219,7 +219,7 @@ describe('Sticky notes (e2e) — the desktop surface', () => {
     });
 
     it('is idempotent', () => {
-      // Simulate an OLD database: since brief 110 the ledger runs each
+      // Simulate an OLD database: since the migration ledger the ledger runs each
       // step once, so replaying a historical repair resets the stamp.
       db.db.pragma('user_version = 0');
       db.migrate();

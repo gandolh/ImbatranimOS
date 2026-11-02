@@ -21,12 +21,12 @@ function isComponent(value: unknown): value is ComponentType<KitAppProps> {
 }
 
 /**
- * A window holding a marketplace **kit app** (brief 163): a component the
+ * A window holding a marketplace **kit app**: a component the
  * desktop renders in its own tree, with its own React and UI kit, so it looks
  * and behaves like a built-in add-on.
  *
  * In order: refuse an app built for another shared kit or a newer protocol
- * (brief 175: the window says so in a {@link RefusalPanel}, and nothing is
+ * (the window says so in a {@link RefusalPanel}, and nothing is
  * leased, fetched or added); put the shared modules on the global the app's
  * module reads them from; add the build's stylesheets to the page, once per
  * build; import the module; lease the server if it has one; render `App`
@@ -81,7 +81,7 @@ function KitApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
           (app.installed?.stylePaths ?? []).map((p) => apiUrl(p).href)
         )
       : Promise.resolve()
-    // Usually under way already: the registry started it (brief 182).
+    // Usually under way already: the registry started it.
     void Promise.all([importKitModule(entry.href), styles])
       .then(([mod]) => {
         if (cancelled) return

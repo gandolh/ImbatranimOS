@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { entrySchema, iconSchema, windowSchema } from './catalog';
 
 /**
- * `imbatranim.json`: the manifest of an app installed from a URL (brief 158,
+ * `imbatranim.json`: the manifest of an app installed from a URL (sandboxed apps from a URL,
  * contract A). It sits in the app's directory of the repository, beside the
  * prebuilt module it names.
  *

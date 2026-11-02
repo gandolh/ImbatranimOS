@@ -4,7 +4,7 @@ import { createSystemHandle } from '../../system/createSystemHandle'
 import { scopeHandle } from './scopeHandle'
 
 /**
- * Brief 120 — a marketplace app's handle carries only the capabilities its
+ * The marketplace install — a marketplace app's handle carries only the capabilities its
  * descriptor asked for. A fence for mistakes (the code is curated, and runs
  * in this page), so what matters is that a missing one fails loudly and names
  * itself.

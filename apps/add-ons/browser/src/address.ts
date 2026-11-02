@@ -1,5 +1,5 @@
 /**
- * What the address bar typed means (brief 50): a URL to open, or a search.
+ * What the address bar typed means: a URL to open, or a search.
  *
  * Only `http:` and `https:` ever leave here. A `javascript:`, `data:` or
  * `file:` address is a search for those words, never a navigation: the proxy

@@ -8,7 +8,7 @@ import { StorageHealthGuard } from './storage-health.guard';
   providers: [
     DbService,
     // Every API request answers an honest 503 while a migration has failed
-    // (brief 110) — the same APP_GUARD pattern auth and logs already use.
+    // — the same APP_GUARD pattern auth and logs already use.
     { provide: APP_GUARD, useClass: StorageHealthGuard },
   ],
   exports: [DbService],

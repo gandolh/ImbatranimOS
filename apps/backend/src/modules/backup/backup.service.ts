@@ -136,7 +136,7 @@ interface PendingUpload {
 }
 
 /**
- * Back up and restore the home volume from inside the OS (brief 80).
+ * Back up and restore the home volume from inside the OS.
  *
  * The only backup path the product used to offer was a host `docker run` in the
  * README — impossible for anyone on the kiosk ISO, who has no host shell, and for
@@ -185,7 +185,7 @@ export class BackupService {
   private async excludePatterns(): Promise<string[]> {
     const home = await this.homeRoot();
     const patterns = [
-      // The Trash is not worth carrying, and brief 79 made it a real directory
+      // The Trash is not worth carrying, and the trash made it a real directory
       // rather than a metaphor.
       `./${TRASH_DIR.split(sep).join('/')}`,
       // Scratch directories belonging to an in-flight restore or extraction.
@@ -206,13 +206,13 @@ export class BackupService {
         `./${posixRel}-journal`,
       );
     }
-    // The Browser's profile key (brief 50). Left out so a backup carries only
+    // The Browser's profile key. Left out so a backup carries only
     // the profile's ciphertext: whoever holds a backup holds no site's sign-in.
     const keyRel = relative(home, browserProfileKeyPath(this.db.path()));
     if (!keyRel.startsWith('..') && !keyRel.startsWith(sep)) {
       patterns.push(`./${keyRel.split(sep).join('/')}`);
     }
-    // Installed marketplace apps (brief 120): clones, node_modules and builds,
+    // Installed marketplace apps: clones, node_modules and builds,
     // often hundreds of MB, all rebuilt from the catalog by Reinstall. The
     // restored database still lists them; the pane offers the reinstall.
     const appsRel = relative(home, marketplaceAppsDir(this.db.path()));
@@ -512,7 +512,7 @@ export class BackupService {
           'That backup carries no database snapshot and cannot be restored',
         );
       }
-      // And that it opens, BEFORE anything moves (brief 154). A snapshot that
+      // And that it opens, BEFORE anything moves. A snapshot that
       // only exists used to be swapped in, fail to open, and take the
       // moved-aside pre-restore tree with it.
       this.validateSnapshot(snapshotStaged);
@@ -606,7 +606,7 @@ export class BackupService {
         restored.push(name);
       }
       // The caller keeps the undo list: a failure AFTER the swap (installing
-      // the database) must be able to put the tree back too (brief 154).
+      // the database) must be able to put the tree back too.
       return { restored, undo };
     } catch (err) {
       await this.runUndo(undo);
@@ -633,7 +633,7 @@ export class BackupService {
 
   /**
    * Refuse a snapshot that is not a usable database, before anything moves
-   * (brief 154): it must open, pass `quick_check`, and not come from a build
+   *: it must open, pass `quick_check`, and not come from a build
    * newer than this one, whose migrations this build does not know.
    */
   private validateSnapshot(snapshotAbs: string): void {
@@ -669,7 +669,7 @@ export class BackupService {
    * snapshot.
    *
    * **Every session is revoked.** The restored database carries the
-   * *backup's* owner and password (brief 152), and its session table carries
+   * *backup's* owner and password, and its session table carries
    * the backup's sessions: so every session ends, and the next sign-in is with
    * the restored password.
    */
@@ -717,7 +717,7 @@ export class BackupService {
     }
     let totalBytes = 0;
     const members = lines.map((line) => {
-      // parseTarListLine is brief 78's `tar -tv` parser, reused rather than
+      // parseTarListLine is the archive manager work's `tar -tv` parser, reused rather than
       // re-derived — the format is identical and it already handles symlinks.
       const entry = parseTarListLine(line);
       const size = entry.size ?? 0;
@@ -785,7 +785,7 @@ export class BackupService {
   }
 
   /**
-   * Turn a full volume into the sentence brief 83 settled on, rather than a 500.
+   * Turn a full volume into the sentence the storage and disk-full work settled on, rather than a 500.
    * Restore is the operation most likely to hit it: it writes a second copy of
    * the home directory before it moves anything.
    */

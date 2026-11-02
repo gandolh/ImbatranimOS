@@ -3,7 +3,7 @@ import { Bomb, Spade } from 'lucide-react'
 import type { AddonManifest } from '@imbatranim/core'
 
 /**
- * The identity-affirming tier (brief 98): the two games a Win7-shaped desktop
+ * The identity-affirming tier: the two games a Win7-shaped desktop
  * cannot not have. One package, two manifests — they share the stats store
  * and the registry takes AppConfig entries either way; a second package per
  * game would be scaffolding for its own sake.

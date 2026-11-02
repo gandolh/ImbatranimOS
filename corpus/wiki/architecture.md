@@ -1,6 +1,6 @@
 ---
 summary: Web-OS era stack — Alpine + NestJS container, one authed port, React/Vite desktop split into @imbatranim/core + add-on packages (npm workspaces + turbo), PTY/FS/monitor apps, volume-backed home.
-updated: 2026-10-09
+updated: 2026-11-02
 ---
 
 # Architecture
@@ -17,15 +17,15 @@ display.
 |---|---|
 | Image | Alpine-based, Node LTS, single container, one multi-stage Dockerfile with `dev` (Nest+Vite HMR, 2 ports) and `prod` (Nest serves statics, 1 port, slim ~<150MB target) targets |
 | Backend | NestJS (TypeScript) — prod: serves built frontend statics + REST API + WebSockets on ONE port |
-| Frontend | React + Vite + TS + Tailwind v4 + Framer Motion, Base UI, Zustand, TanStack Query, @xterm/xterm — forked from minimal-web-desktop, restructured (brief 17) into `@imbatranim/core` + add-on packages |
+| Frontend | React + Vite + TS + Tailwind v4 + Framer Motion, Base UI, Zustand, TanStack Query, @xterm/xterm — forked from minimal-web-desktop, restructured (2026-07-17) into `@imbatranim/core` + add-on packages |
 | System user | `imbatranim`, **no sudo by default**; PTY and FS APIs act as this user |
-| Identity | The machine's own single-owner sign-in everywhere, the estate included (brief 152; Ward dropped in brief 157, 2026-10-07): scrypt, `imb_session`, backoff, optional `SETUP_TOKEN`. HTTPS via the documented reverse proxy |
+| Identity | The machine's own single-owner sign-in everywhere, the estate included (the standalone and dev identity work (2026-10-04); Ward dropped in the move off Ward (2026-10-07), 2026-10-07): scrypt, `imb_session`, backoff, optional `SETUP_TOKEN`. HTTPS via the documented reverse proxy |
 | Persistence | `/home/imbatranim` is a named Docker volume; the app SQLite DB lives inside it |
 | Desktop UX | Windows-7-classic layout: taskbar, start button/menu, tray, desktop icons — B&W retro-flat + parameterized accent |
 
 ## v1 apps
 
-**System apps (built 2026-07-17, briefs 10–13):**
+**System apps (built 2026-07-17, the work of 2026-07-17):**
 - **Terminal** — xterm.js ↔ node-pty over an authenticated WS at
   `/api/pty` (backend `pty` module; session check on upgrade,
   backpressure, revocation sweep). The fork's HTTP `repl` module is
@@ -39,21 +39,21 @@ display.
   `@Public()`, Origin check first) and `/api/me`. `local-identity` holds the
   sign-in itself: a single owner claimed on first visit (scrypt, optional
   `SETUP_TOKEN`), an `imb_session` cookie whose hash is stored, per-address
-  backoff, `GET /api/identity` for the desktop (brief 152).
+  backoff, `GET /api/identity` for the desktop (2026-10-04).
   `LocalIdentityService.authenticate` is shared by REST and every WebSocket
   upgrade (terminal, Browser relay, marketplace sockets). Ward's module, its
   token refresh and the terminal's freshness registry were deleted on
-  2026-10-07 (brief 157); `WARD_*` left in an old environment are ignored
+  2026-10-07; `WARD_*` left in an old environment are ignored
   with a boot notice. The older `auth` module (argon2id, TOTP, the first-run
   wizard) was deleted on 2026-09-06. Security-headers middleware (CSP etc.; HSTS is the reverse
   proxy's job).
 
 **Productivity apps (surviving the fork prune):** sticky notes, todo,
-bookmarks, notepad. **Cut from the fork (brief 08):** docker desktop,
+bookmarks, notepad. **Cut from the fork (2026-07-16):** docker desktop,
 service launcher, and the backend `docker` + `services` modules (they
 assume a dev host, not a container).
 
-## Repo layout (briefs 16 + 17, 2026-07-17)
+## Repo layout (Turborepo and the OS restructure, 2026-07-17)
 
 npm workspaces + Turborepo: one root `npm install`, one lockfile, root
 scripts (`build`/`lint`/`typecheck`/`test`/`dev`/`format:check`) fan out

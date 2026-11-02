@@ -3,7 +3,7 @@ import { api } from './axios'
 export type ScheduleDomain = 'clock' | 'calendar' | 'todo'
 
 /**
- * Ask the backend whether this tab won a scheduled occurrence (brief 93).
+ * Ask the backend whether this tab won a scheduled occurrence.
  *
  * The `schedule_fired` primary key makes the claim atomic: with two desktop
  * tabs polling the same alarms, exactly one INSERT succeeds and only that tab

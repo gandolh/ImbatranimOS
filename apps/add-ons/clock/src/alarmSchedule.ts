@@ -83,7 +83,7 @@ export type DueOccurrence = {
   /**
    * The instant the alarm names (or the snooze deadline) — NOT the tick that
    * observed it. Stable across tabs, so it doubles as the cross-tab claim key
-   * (brief 93), and it is what `firedPatch` should record.
+   *, and it is what `firedPatch` should record.
    */
   occurrenceMs: number
 }

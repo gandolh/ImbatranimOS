@@ -2,7 +2,7 @@ import { eachLine, LOG_TAIL_BYTES, MAX_LINE_LENGTH, runStep } from './run-step';
 
 const env = { PATH: process.env.PATH };
 
-describe('runStep (brief 120)', () => {
+describe('runStep', () => {
   it('runs an argv with no shell', async () => {
     const r = await runStep(
       ['node', '-e', 'console.log(process.argv[1])', '$(id); echo hi'],
@@ -103,7 +103,7 @@ describe('runStep (brief 120)', () => {
   });
 });
 
-describe('eachLine (brief 158)', () => {
+describe('eachLine', () => {
   it('splits chunks into lines, across chunk and UTF-8 boundaries', () => {
     const lines: string[] = [];
     const split = eachLine((line) => lines.push(line));

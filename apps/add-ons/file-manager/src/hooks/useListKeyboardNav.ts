@@ -7,7 +7,7 @@ type UseListKeyboardNavArgs = {
   renamingPath: string | null
   onOpen: (entry: FsEntry) => void
   setSelected: React.Dispatch<React.SetStateAction<Set<string>>>
-  /** Extend the selection from the anchor to a path (Shift+Arrow, brief 111). */
+  /** Extend the selection from the anchor to a path (Shift+Arrow). */
   selectRange: (orderedPaths: string[], toPath: string) => void
   /** Move the range anchor without changing the selection (plain arrows). */
   setAnchor: (entryPath: string | null) => void

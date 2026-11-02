@@ -57,7 +57,7 @@ export class GitController {
   /**
    * GET /api/git/show?root=&path=&file= → { content, exists }
    *
-   * One file's contents at HEAD (brief 114). `show` is one more literal at one
+   * One file's contents at HEAD. `show` is one more literal at one
    * more call site — still no generic "run git" route, and no `rev` parameter.
    */
   @Get('show')
@@ -83,7 +83,7 @@ export class GitController {
   }
 
   // -------------------------------------------------------------------------
-  // Brief 76. Still no generic "run git" route — this is a longer allowlist,
+  // Still no generic "run git" route — this is a longer allowlist,
   // not a looser one, and every entry names one subcommand.
   // -------------------------------------------------------------------------
 

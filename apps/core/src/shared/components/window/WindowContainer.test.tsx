@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
- * Brief 180: a new window gets the keyboard once its app has mounted, past
+ * A new window gets the keyboard once its app has mounted, past
  * the app's lazy chunk, unless the app focused something of its own first.
  * The registry is a stand-in with two apps; the window chrome is the real one.
  */
@@ -110,7 +110,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('a new window (brief 180)', () => {
+describe('a new window', () => {
   it('takes the keyboard once its lazy app has mounted', async () => {
     const start = document.createElement('button')
     document.body.appendChild(start)

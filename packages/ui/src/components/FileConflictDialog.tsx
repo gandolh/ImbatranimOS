@@ -17,7 +17,7 @@ export type FileConflictDialogProps = {
 
 /**
  * Asked when a save finds the file changed on disk since the editor read it
- * (brief 155): a `git checkout` in the Terminal, another window, another app.
+ *: a `git checkout` in the Terminal, another window, another app.
  * The save has written nothing yet. Esc, backdrop and the title-bar × mean
  * Cancel, and Cancel has the focus: the one answer that loses nothing.
  */

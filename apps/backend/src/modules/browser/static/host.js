@@ -1,5 +1,5 @@
 /*
- * The Browser's host page script, on the proxy origin (brief 50).
+ * The Browser's host page script, on the proxy origin.
  *
  * It talks to exactly two parties:
  *

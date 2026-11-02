@@ -12,7 +12,7 @@ export type FileConflict = {
 }
 
 /**
- * The question a save asks when it meets a `FileConflictError` (brief 155).
+ * The question a save asks when it meets a `FileConflictError`.
  * A promise, so the save path reads top to bottom:
  *
  * ```ts

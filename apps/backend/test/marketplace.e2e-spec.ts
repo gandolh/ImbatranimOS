@@ -31,7 +31,7 @@ import { IdentityModule } from '../src/modules/identity/identity.module';
 import { UpgradeRoutesModule } from '../src/upgrade-routes';
 
 /**
- * The marketplace end to end (brief 120), against a real git repository on
+ * The marketplace end to end, against a real git repository on
  * disk (a `file://` descriptor, allowed by the test-only flag): install clones
  * the pinned commit and runs the build, the build's output is served and
  * nothing outside it is, a service app's server is started, proxied behind the
@@ -156,7 +156,7 @@ interface Listed {
   job: { state: string; reason?: string } | null;
 }
 
-describe('the marketplace (e2e) — brief 120', () => {
+describe('the marketplace (e2e)', () => {
   let work: string;
   let appsDir: string;
   let app: INestApplication<Server>;

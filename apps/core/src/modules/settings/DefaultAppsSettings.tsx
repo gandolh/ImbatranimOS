@@ -10,7 +10,7 @@ import {
 } from '../../shared/registry/associations'
 
 /**
- * Settings → Default apps (brief 81).
+ * Settings → Default apps.
  *
  * The rows are **computed from the registry**, not listed here: every extension
  * any app declares in its `opens` shows up, so adding an app puts its types in

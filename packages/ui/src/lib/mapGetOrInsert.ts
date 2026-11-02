@@ -13,7 +13,7 @@
  * error surfaced to the user, in the shipped production build.
  *
  * That affected all three PDF surfaces of the time (`pdf-viewer`, `norpdf`,
- * `packages/pdfcore-engine`, all in imbatranim-office's PDF since brief 167),
+ * `packages/pdfcore-engine`, all in imbatranim-office's PDF since the PDF viewer's retirement),
  * and the kit still hands it to kit apps (`sharedKit.ts`). Requiring the
  * newest Chrome is not an option for an OS that ships its own kiosk browser and
  * is meant to be reachable from any machine.

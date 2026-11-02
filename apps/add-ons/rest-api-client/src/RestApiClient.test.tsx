@@ -6,7 +6,7 @@ import { SystemProvider, type SystemHandle } from '@imbatranim/ui'
 import { RestApiClient } from './RestApiClient'
 
 /**
- * Brief 139: a whole-file save must never replace collections the client failed to
+ * A whole-file save must never replace collections the client failed to
  * read. `react-dom/client` plus `act`, as in apps/core; no testing library.
  */
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true

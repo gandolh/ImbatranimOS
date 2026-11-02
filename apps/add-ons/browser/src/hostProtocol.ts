@@ -1,5 +1,5 @@
 /**
- * The messages between this window and the proxy origin's host page (brief 50).
+ * The messages between this window and the proxy origin's host page.
  * The host's side is `apps/backend/src/modules/browser/static/host.js`; the two
  * must agree.
  *

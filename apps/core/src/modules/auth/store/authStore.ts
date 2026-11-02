@@ -7,7 +7,7 @@ import { getIdentity, getStatus, type Identity, type Session } from '../api/auth
  * ## `locked` is a privacy screen, not a lock
  *
  * Covering the desktop ends **nothing**: it stays mounted, PTY sockets stay
- * open, dirty editor buffers survive (brief 101). Dismissing the cover asks
+ * open, dirty editor buffers survive. Dismissing the cover asks
  * only that the session is still live. That is a screensaver, not a lock. It
  * is worth keeping (walking away from a shared room and coming back to a live
  * terminal is the real use), but it must not be described as security, and
@@ -33,7 +33,7 @@ interface AuthState {
    * screen before the session ended.
    */
   everAuthenticated: boolean
-  /** Whether the machine is claimed yet (brief 152). Null until the first probe answers. */
+  /** Whether the machine is claimed yet. Null until the first probe answers. */
   identity: Identity | null
   /** Re-probe the backend (the source of truth). */
   refresh: () => Promise<void>
@@ -84,7 +84,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 /**
  * True while the shell is visually suspended behind the cover — the one
- * question every keyboard chokepoint asks (brief 101). A hidden desktop must
+ * question every keyboard chokepoint asks. A hidden desktop must
  * eat no keys: a stray Delete may not remove a file nobody can see.
  */
 export function isShellSuspended(): boolean {

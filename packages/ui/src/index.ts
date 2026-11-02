@@ -1,5 +1,5 @@
 /**
- * @imbatranim/ui — the app SDK (brief 48).
+ * @imbatranim/ui — the app SDK.
  *
  * The library half of the old `@imbatranim/core` barrel, split by one objective
  * rule: **can it travel over postMessage?** Nothing in here can — it is
@@ -52,7 +52,7 @@ export type { LogEntry, LogLevel, LogSource } from './lib/systemLog'
 // this one, exactly as before the split.
 export { queryClient } from './queryClient'
 
-// ── The protocol (brief 48) ──────────────────────────────────────────────────
+// ── The protocol ──────────────────────────────────────────────────
 // `system.ts` is the spec; the provider/context pair is how the compositor
 // injects a handle and how apps + SDK hooks reach it.
 export { PROTOCOL_VERSION } from './system'
@@ -86,7 +86,7 @@ export type {
 } from './system'
 export { SystemProvider, useSystem } from './systemContext'
 
-// The shared kit (brief 163): what a marketplace kit app reads from the
+// The shared kit: what a marketplace kit app reads from the
 // desktop at runtime instead of bundling, and the props it is rendered with.
 export { SHARED_KIT_MODULES, SHARED_KIT_VERSION } from './sharedKit'
 export type { KitAppProps, NativeHostContext, SharedKitModule } from './sharedKit'

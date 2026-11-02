@@ -32,7 +32,7 @@ function Toast({ item }: { item: NotificationItem }) {
   }
   /**
    * Open the raising app, optionally with an action's payload. An app already
-   * open comes to the front with the keyboard (brief 180).
+   * open comes to the front with the keyboard.
    */
   const activate = (payload?: unknown) => {
     const appId = item.appId

@@ -57,7 +57,7 @@ type Tool =
   | 'eyedropper'
   | 'select'
 
-/** The six shared hue names (briefs 72/74) as ink, plus the monochrome core. */
+/** The six shared hue names (Calendar's and Sticky Notes') as ink, plus the monochrome core. */
 const SWATCHES = [
   '#000000',
   '#666666',
@@ -105,7 +105,7 @@ const TOOLS: { id: Tool; icon: typeof Pencil; label: string }[] = [
 ]
 
 /**
- * Paint (brief 95): a canvas-2D image editor with the classic tool set —
+ * Paint: a canvas-2D image editor with the classic tool set —
  * v1 is Paint, not Photoshop. The pixel decisions (flood fill, undo model,
  * zoom coordinate math, size caps) live in ./lib as pure tested modules;
  * this component owns the canvas, the pointer choreography and the save
@@ -201,7 +201,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
     consumedRef.current = true
     const intent = system.intents.consume<{ openPath?: string; root?: string; dataUrl?: string }>()
     // Draining a one-shot intent IS the "sync from an external system" an
-    // effect is for (ref-guarded; the house pattern since brief 30).
+    // effect is for (ref-guarded; the house pattern since the addon polish work).
     /* eslint-disable react-hooks/set-state-in-effect */
     if (intent?.openPath && intent.root) {
       void loadImage(intent.root, intent.openPath)
@@ -490,7 +490,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
   // and no work is lost.
   const unsavedDialog = useUnsavedGuard(dirty, doc ? fileName(doc.path) : 'untitled', save)
 
-  // Handlers via a ref: useRegisteredHotkeys captures per key set (brief 98).
+  // Handlers via a ref: useRegisteredHotkeys captures per key set.
   const actionsRef = useRef({ undo: () => {}, redo: () => {} })
   useEffect(() => {
     actionsRef.current = { undo: () => applyUndo('undo'), redo: () => applyUndo('redo') }

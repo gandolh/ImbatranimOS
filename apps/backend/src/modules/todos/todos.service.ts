@@ -7,12 +7,12 @@ import { CreateListDto, UpdateListDto } from './dto/list.dto';
 /**
  * Todos, and the lists they can be filed under.
  *
- * Unlike Clock and Calendar (briefs 71/72) this module never needed moving — it
- * has always persisted here. Brief 73 extends the model instead: a due date, a
+ * Unlike Clock and Calendar this module never needed moving — it
+ * has always persisted here. The todo dates work extends the model instead: a due date, a
  * priority flag, and one level of lists.
  *
  * **This module now maps rows to camelCase at the service boundary**, matching
- * `clock` and `calendar`. Brief 71 deliberately left the older modules alone
+ * `clock` and `calendar`. The clock fixes deliberately left the older modules alone
  * because changing them is a client-visible break for no user gain — but this
  * brief rewrites both sides of the Todo surface in the same commit, and the
  * alternative was a response mixing `created_at` with `dueAt`. `completed` is a

@@ -1,6 +1,6 @@
 import { MAX_TOKENS, SandboxTokens, TOKEN_IDLE_MS } from './sandbox-tokens';
 
-describe('SandboxTokens (brief 158)', () => {
+describe('SandboxTokens', () => {
   it('mints 32 random bytes as base64url, each token different', () => {
     const tokens = new SandboxTokens();
     const a = tokens.mint('x-app', 'b1', 0);

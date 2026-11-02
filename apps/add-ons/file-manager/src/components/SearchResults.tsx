@@ -27,7 +27,7 @@ type SearchResultsProps = {
 }
 
 /**
- * The results view (brief 112) — a SIBLING of the directory listing, never a
+ * The results view — a SIBLING of the directory listing, never a
  * child of it.
  *
  * That placement is load-bearing. The listing pane is wrapped in an

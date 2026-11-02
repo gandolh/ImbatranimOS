@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The dotfile writes below flush to the server on a debounce; never a real
-// request from a test (brief 181's flake).
+// request from a test (the static notification-store import's flake).
 vi.mock('../../lib/axios', () => ({
   api: {
     get: () => Promise.resolve({ data: {} }),
@@ -23,7 +23,7 @@ import {
 } from './retiredApps'
 
 /**
- * Brief 164: the owner's choices for a retired built-in move to its suite
+ * The owner's choices for a retired built-in move to its suite
  * app at sign-in, once per pair, and the record of it is a dotfile.
  */
 
@@ -75,8 +75,8 @@ describe('migrateRetiredAppIds', () => {
     expect(useStartupStore.getState().apps).toEqual(['docs'])
   })
 
-  it('runs a pair added later on a desktop that already moved the earlier ones (brief 165)', () => {
-    // Moved Docs on brief 164's sign-in; Slides retires a release later.
+  it('runs a pair added later on a desktop that already moved the earlier ones', () => {
+    // Moved Docs on the built-in retirement's sign-in; Slides retires a release later.
     writePref(APP_ID_MIGRATIONS_KEY, JSON.stringify({ done: ['docs>office-docs'] }))
     useAssociationStore.setState({ overrides: { pptx: 'slides', docx: 'docs' } })
     useDesktopStore.setState({ iconPositions: { slides: { x: 8, y: 300, pinned: true } } })
@@ -96,7 +96,7 @@ describe('migrateRetiredAppIds', () => {
     expect(JSON.parse(readPref(APP_ID_MIGRATIONS_KEY)!).done).toContain('slides>office-slides')
   })
 
-  it("moves norPDF and PDF Viewer onto Office's PDF, norPDF's icon first (brief 167)", () => {
+  it("moves norPDF and PDF Viewer onto Office's PDF, norPDF's icon first", () => {
     useAssociationStore.setState({ overrides: { pdf: 'norpdf' } })
     useDesktopStore.setState({
       iconPositions: {
@@ -115,7 +115,7 @@ describe('migrateRetiredAppIds', () => {
     expect(useStartupStore.getState().apps).toEqual(['office-pdf', 'terminal'])
   })
 
-  it("disables Office's PDF only when both PDF built-ins were disabled (brief 167)", () => {
+  it("disables Office's PDF only when both PDF built-ins were disabled", () => {
     // Hiding the light viewer is not hiding PDF.
     useAddonStore.setState({ disabled: ['pdf-viewer', 'games'] })
     migrateRetiredAppIds()

@@ -44,7 +44,7 @@ function overHttps(req: Request): boolean {
 }
 
 /**
- * The sign-in's routes (brief 152).
+ * The sign-in's routes.
  *
  * `GET /api/identity` is public: before anybody is signed in, the desktop has
  * to know whether to show the first-run setup or the sign-in form.

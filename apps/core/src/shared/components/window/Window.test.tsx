@@ -9,7 +9,7 @@ import { Window } from './Window'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 /**
- * Brief 179: a click anywhere in a window raises it, unless that click
+ * A click anywhere in a window raises it, unless that click
  * brought another window to the front (an Open button in Settings →
  * Marketplace), which then stays there.
  */
@@ -63,7 +63,7 @@ afterEach(() => {
   container.remove()
 })
 
-describe('a click in a window (brief 179)', () => {
+describe('a click in a window', () => {
   it('leaves an already open window it raised in front', () => {
     useWindowStore.setState({
       windows: [win('a', 2), win('b', 1)],

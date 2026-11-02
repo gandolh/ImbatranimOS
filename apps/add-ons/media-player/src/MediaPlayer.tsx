@@ -24,7 +24,7 @@ import { useTrackDurations } from './hooks/useTrackDurations'
  * audio element outliving its window would contradict the compositor model the whole
  * desktop is built on. Playback continues while the window is merely unfocused or behind
  * others — only closing it ends the track. A background mini-player is a compositor
- * feature, not something this app should smuggle in (brief 68).
+ * feature, not something this app should smuggle in.
  */
 export function MediaPlayer({ windowId: _windowId }: { windowId: string }) {
   const system = useSystem()

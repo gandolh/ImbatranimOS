@@ -12,7 +12,7 @@ import { PrefsService } from './prefs.service';
 import { PutPrefsDto } from './dto/prefs.dto';
 
 /**
- * The dotfile store (brief 49).
+ * The dotfile store.
  *
  * Authed by the global `SessionGuard`; no `@Public()`. Your wallpaper is not
  * a secret, but the disabled-app set and icon layout describe how the machine is

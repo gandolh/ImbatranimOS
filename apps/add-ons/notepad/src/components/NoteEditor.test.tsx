@@ -7,7 +7,7 @@ import { queryClient, SystemProvider, type SystemHandle } from '@imbatranim/ui'
 import { NoteEditor } from './NoteEditor'
 
 /**
- * Brief 155: a save over a file that changed on disk since it was opened asks
+ * A save over a file that changed on disk since it was opened asks
  * Overwrite / Reload from disk / Cancel instead of destroying the change.
  * `react-dom/client` plus `act`, as in apps/core; no testing library.
  */
@@ -117,7 +117,7 @@ afterEach(() => {
   queryClient.clear()
 })
 
-describe('a save over a file that changed on disk (brief 155)', () => {
+describe('a save over a file that changed on disk', () => {
   it('sends the version it read, and asks on a 409', async () => {
     await saveOverExternalChange()
     expect(put).toHaveBeenCalledTimes(1)

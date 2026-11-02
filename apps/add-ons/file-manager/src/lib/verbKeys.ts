@@ -1,5 +1,5 @@
 /**
- * Which file verb a keypress means — or nothing at all (brief 111).
+ * Which file verb a keypress means — or nothing at all.
  *
  * Split out from the handler for one reason: the *inertness* rules are the
  * part that matters and the part nobody can eyeball. A verb key that fires

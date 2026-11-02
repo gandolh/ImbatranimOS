@@ -21,7 +21,7 @@ export type CommandItem = {
 }
 
 /**
- * Capabilities a source may use while searching (brief 48). Sources are
+ * Capabilities a source may use while searching. Sources are
  * registered statically from the manifest and run with no mount, so they can
  * never call `useSystem()` — the palette hands them this context instead.
  * Grow it deliberately; it is protocol surface like everything apps touch.

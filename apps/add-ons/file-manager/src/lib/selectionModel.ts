@@ -1,5 +1,5 @@
 /**
- * Selection arithmetic for the file list (brief 111).
+ * Selection arithmetic for the file list.
  *
  * Pure, and separate from `useFileSelection`, because range selection is the
  * one part of this that is easy to get subtly wrong — backwards ranges, an

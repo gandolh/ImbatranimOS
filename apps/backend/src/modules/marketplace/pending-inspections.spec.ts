@@ -9,7 +9,7 @@ import {
   PendingInspections,
 } from './pending-inspections';
 
-describe('PendingInspections (brief 158)', () => {
+describe('PendingInspections', () => {
   let work: string;
   let pendings: PendingInspections;
   beforeEach(() => {

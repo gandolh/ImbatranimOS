@@ -58,7 +58,7 @@ function useWindowFocused(system: SystemHandle): boolean {
 }
 
 /**
- * A window holding an app installed from a URL (brief 158): the app runs in a
+ * A window holding an app installed from a URL: the app runs in a
  * sandboxed iframe on an opaque origin and reaches the desktop only through
  * the port {@link createSandboxBridge} answers.
  *
@@ -68,7 +68,7 @@ function useWindowFocused(system: SystemHandle): boolean {
  * shows it in this window only, as it does for a native app. An app that needs
  * a newer protocol is not a failure: the window shows a {@link RefusalPanel}.
  *
- * The keyboard and raising the window (security review of brief 158, M1).
+ * The keyboard and raising the window (security review of sandboxed apps from a URL, M1).
  * The frame's code is hostile, and it can call `focus()` on its own elements
  * whenever it likes. In a real browser that takes the keyboard from the page
  * even while another window is in front, and everything the owner then types
@@ -87,7 +87,7 @@ function useWindowFocused(system: SystemHandle): boolean {
  */
 export function SandboxedAppHost({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
   // An app for a newer protocol is refused before anything is minted, and the
-  // window says so instead of crashing (brief 175). Outside the frame host so
+  // window says so instead of crashing. Outside the frame host so
   // the early return cannot change the order of its hooks.
   const refusal = protocolRefusal(app)
   if (refusal) return <RefusalPanel appName={app.name} reason={refusal} />

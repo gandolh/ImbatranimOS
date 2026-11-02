@@ -43,7 +43,7 @@ export function eventMatchesBinding(e: KeyboardEvent, parsed: ParsedKey): boolea
   // `!parsed.ctrl` is load-bearing, and its absence was a real bug: off a mac,
   // `mod` IS ctrl, so an explicit `ctrl+…` binding was rejected here by the
   // very key it asked for. Every `ctrl+` binding was therefore dead on Linux
-  // and Windows — invisible until brief 85 wanted `ctrl+alt+left`, because
+  // and Windows — invisible until workspaces wanted `ctrl+alt+left`, because
   // until then every binding in the OS used `mod`.
   if (!parsed.mod && !parsed.ctrl && modPressed) return false
 
@@ -73,7 +73,7 @@ export function eventMatchesBinding(e: KeyboardEvent, parsed: ParsedKey): boolea
   const normalized = keyMap[evKey] ?? evKey
   if (normalized === parsed.key) return true
 
-  // Digit bindings also match on the physical key (brief 103): Shift+1
+  // Digit bindings also match on the physical key: Shift+1
   // produces `!` in e.key (and layout-dependent characters elsewhere), so a
   // `ctrl+alt+shift+1` binding would never fire on e.key alone. e.code is
   // layout-independent for the top digit row.
@@ -105,7 +105,7 @@ export function useGlobalHotkeys(bindings: HotkeyBinding): void {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // A covered screen eats no keys (brief 101): the desktop stays mounted
+      // A covered screen eats no keys: the desktop stays mounted
       // beneath the lock overlay, and typing a password must not fire mod+K.
       if (isShellSuspended()) return
       for (const [bindingStr, handler] of Object.entries(bindingsRef.current)) {

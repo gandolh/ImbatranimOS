@@ -396,7 +396,7 @@ describe('FilesService (jail + real filesystem)', () => {
       expect(items.map((i) => i.path)).toEqual(['match.txt']);
     });
 
-    // Brief 112: the optional `path` scope. Additive — omitting it keeps the
+    // The optional `path` scope. Additive — omitting it keeps the
     // whole-root walk the palette has always had.
     describe('folder scope', () => {
       beforeEach(async () => {
@@ -468,7 +468,7 @@ describe('FilesService (jail + real filesystem)', () => {
       });
     });
 
-    // Brief 113: per-match line data, opt-in on top of `content`.
+    // Per-match line data, opt-in on top of `content`.
     describe('match lines', () => {
       beforeEach(async () => {
         await service.createFile(
@@ -577,7 +577,7 @@ describe('FilesService (jail + real filesystem)', () => {
     });
   });
 
-  describe('uploadFile is atomic (brief 66)', () => {
+  describe('uploadFile is atomic', () => {
     /** A multer-style on-disk temp file. */
     async function stageTmp(content: string): Promise<string> {
       const dir = await fs.mkdtemp(join(os.tmpdir(), 'imb-up-'));
@@ -687,7 +687,7 @@ describe('FilesService (jail + real filesystem)', () => {
     });
   });
 
-  describe('writeFile is atomic too (brief 140)', () => {
+  describe('writeFile is atomic too', () => {
     // The injected mid-write failure, which needs a mocked `fs/promises`, is in
     // files.service.write.spec.ts so the mock stays out of this file.
 
@@ -728,7 +728,7 @@ describe('FilesService (jail + real filesystem)', () => {
     });
   });
 
-  describe('saves detect external changes (brief 155)', () => {
+  describe('saves detect external changes', () => {
     const tmpUpload = async (content: string) => {
       const dir = await fs.mkdtemp(join(os.tmpdir(), 'imb-155-'));
       const p = join(dir, 'up.bin');

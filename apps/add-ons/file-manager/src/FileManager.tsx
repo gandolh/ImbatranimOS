@@ -120,7 +120,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     }
   }, [system])
 
-  // Search state (brief 112). Ephemeral window state on purpose — a search is a
+  // Search state. Ephemeral window state on purpose — a search is a
   // question you are asking right now, not a setting; nothing here belongs in
   // the dotfile.
   const [query, setQuery] = useState('')
@@ -131,7 +131,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
 
   // Rename state
   const [renamingPath, setRenamingPath] = useState<string | null>(null)
-  /** The file whose "Open with" chooser is showing, if any (brief 81). */
+  /** The file whose "Open with" chooser is showing, if any. */
   const [openWithFor, setOpenWithFor] = useState<FsEntry | null>(null)
   const [renameValue, setRenameValue] = useState('')
 
@@ -159,7 +159,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
    * The banner alone was not enough — a background File Manager's failed upload or
    * delete is invisible until the user comes back to the window, and the comment
    * here used to say "(no toast system here)" long after `notify()` shipped in
-   * brief 34. Raising the notification *and* keeping the inline banner is
+   * Raising the notification *and* keeping the inline banner is
    * deliberate: the notification is what gets noticed, the banner is what stays
    * readable while the user fixes it. One function so the two cannot drift, the
    * same reason `reportFileFailure` exists in core.
@@ -249,18 +249,18 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       navigate(entry.path)
       return
     }
-    // Routing goes through the handle's association registry (brief 81): the
+    // Routing goes through the handle's association registry: the
     // user's choice, then whichever app declares the type, then a text fallback.
     const appId = resolveOpenApp(system.intents.associations, root, entry.name)
     if (appId) {
-      // openApp records the OS-wide recent (brief 94) at the choke point — an
+      // openApp records the OS-wide recent at the choke point — an
       // app cannot attribute a recent to another app any more, so the shell does.
       system.intents.openApp(appId, { openPath: entry.path, root })
       return
     }
     // Nothing claims it and it is not text — an unknown binary. Ask, rather
     // than swallowing the click, which is what this did for every unmapped
-    // extension before brief 81 and is the single worst thing an OS can do to
+    // extension before default apps and Open with and is the single worst thing an OS can do to
     // a double-click.
     setOpenWithFor(entry)
   }
@@ -358,7 +358,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       { path: filePath, file },
       {
         onSuccess: () => {
-          // The menu offers the kind only while some app opens it (brief 164).
+          // The menu offers the kind only while some app opens it.
           const appId = newFileOpener(system.intents.associations, kind)
           if (appId) system.intents.openApp(appId, { openPath: filePath, root })
         },
@@ -483,7 +483,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         },
         onCompare: (() => {
           // Exactly two files selected, the clicked entry one of them — the
-          // only state where "Compare" can mean something (brief 99).
+          // only state where "Compare" can mean something.
           if (!menu.entry || menu.entry.type !== 'file') return null
           if (selected.size !== 2 || !selected.has(menu.entry.path)) return null
           const files = (dirQuery.data ?? []).filter(
@@ -532,14 +532,14 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const hiddenCount = entries.length - visibleEntries.length
 
   // One name for one entry, a count for many — the clipboard went multi-entry
-  // in brief 111 and both the toolbar badge and the status bar read from here.
+  // in file manager keyboard parity and both the toolbar badge and the status bar read from here.
   const clipboardLabel = clipboard.clipboard
     ? clipboard.clipboard.entries.length === 1
       ? clipboard.clipboard.entries[0].name
       : `${clipboard.clipboard.entries.length} items`
     : ''
 
-  // ── Search (brief 112) ──────────────────────────────────────────────────────
+  // ── Search ──────────────────────────────────────────────────────
   const searchActive = query.trim().length > 0
   const search = useFileSearch(root, path, query, contentMode)
 

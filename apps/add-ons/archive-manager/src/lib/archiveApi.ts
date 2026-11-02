@@ -10,7 +10,7 @@ import type {
 } from '../types'
 
 /**
- * The app's own backend module, reached through the injected handle (brief 48).
+ * The app's own backend module, reached through the injected handle.
  * Plain functions take the capability as their first argument; only hooks may
  * call `useSystem()`, and these are not hooks.
  */
@@ -90,7 +90,7 @@ export function errorMessage(err: unknown): string {
 }
 
 // ---------------------------------------------------------------------------
-// Brief 78
+// The archive manager work
 // ---------------------------------------------------------------------------
 
 /** GET /api/archive/list — read an archive's contents, extracting nothing. */

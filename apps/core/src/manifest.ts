@@ -80,7 +80,7 @@ const MANIFESTS: AddonManifest[] = [
   logs,
 ]
 
-// A copy, not MANIFESTS itself: marketplace apps (brief 120) are spliced into
+// A copy, not MANIFESTS itself: marketplace apps are spliced into
 // this array at runtime — see shared/registry/marketplace.tsx.
 export const APP_REGISTRY: AppConfig[] = [...MANIFESTS]
 

@@ -299,7 +299,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
       return 'Copied to clipboard'
     })
 
-  // Brief 95: the two apps are a pipeline — annotate here, edit properly there.
+  // The two apps are a pipeline — annotate here, edit properly there.
   const onEditInPaint = () =>
     doExit(() => {
       system.intents.openApp('paint', { dataUrl: canvasRef.current!.toDataURL('image/png') })

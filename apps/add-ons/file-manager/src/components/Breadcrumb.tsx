@@ -7,7 +7,7 @@ type BreadcrumbProps = {
   path: string
   onNavigate: (path: string) => void
   /**
-   * Right-aligned slot in the same bar — the search box (brief 112). A real
+   * Right-aligned slot in the same bar — the search box. A real
    * slot rather than a `flex-1` the caller has to remember: the segments must
    * be the part that shrinks and truncates when the path is long, so a deep
    * folder can never squeeze the search box out of the window.

@@ -6,7 +6,7 @@ import {
 import { DbService } from './db.service';
 
 /**
- * Refuse every API request while a migration has failed (brief 110).
+ * Refuse every API request while a migration has failed.
  *
  * A half-migrated schema serving "most" routes is how data gets corrupted
  * confidently: the tables that migrated accept writes, the ones that did not

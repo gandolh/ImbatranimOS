@@ -5,7 +5,7 @@ import { BackupController } from './backup.controller';
 import { BackupService } from './backup.service';
 
 /**
- * Backup and restore (brief 80).
+ * Backup and restore.
  *
  * Imports rather than reimplements: `FilesService` for the FS jail and
  * `ArchiveService` for the hardened tar extraction a restore runs through.

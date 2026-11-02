@@ -58,7 +58,7 @@ export function uniqueNewFileName(kind: NewFileKind, existingNames: string[]): s
 
 /**
  * The app a new file of this kind opens in, or null when no installed app
- * claims its type (brief 164). Asked of the OS's associations for the new
+ * claims its type. Asked of the OS's associations for the new
  * file's name, as a double-click would be, so the owner's "always open with"
  * choice counts and nothing here names an app: the office apps can come and
  * go with the Marketplace's Office. A text editor is never the answer for a

@@ -8,7 +8,7 @@ import type {
 import type { Capability } from '../../shared/registry/marketplace'
 
 /**
- * The desktop's side of a sandboxed app's port (brief 158, contract C): the
+ * The desktop's side of a sandboxed app's port (contract C): the
  * postMessage twin of `createSystemHandle`'s in-process transport.
  *
  * The app on the other end came from a URL nobody reviewed, so everything it
@@ -22,7 +22,7 @@ import type { Capability } from '../../shared/registry/marketplace'
  * the tests drive it without a browser.
  */
 
-/** The capabilities a sandboxed app can hold today (brief 158, decision 5). */
+/** The capabilities a sandboxed app can hold today (decision 5). */
 export const SANDBOX_CAPABILITIES: readonly Capability[] = ['notify']
 
 /** The granted capabilities this transport actually implements; the rest are dropped. */

@@ -26,7 +26,7 @@ export class UploadTooLargeError extends Error {
 
 /**
  * Raised when a save's `expected` version no longer matches the file on disk
- * (409, brief 155): something else wrote it since this editor read it. Nothing
+ * (409): something else wrote it since this editor read it. Nothing
  * was written. `current` is the file's version now, or null when it is gone.
  *
  * Part of the protocol for the same reason as {@link UploadTooLargeError}.

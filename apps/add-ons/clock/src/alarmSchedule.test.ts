@@ -81,7 +81,7 @@ describe('minuteKey', () => {
   })
 })
 
-describe('dueOccurrence (window-based, brief 93)', () => {
+describe('dueOccurrence (window-based)', () => {
   const since = (d: Date, secondsBefore: number) => d.getTime() - secondsBefore * 1000
 
   it('a throttled tick landing after the minute still catches the alarm', () => {

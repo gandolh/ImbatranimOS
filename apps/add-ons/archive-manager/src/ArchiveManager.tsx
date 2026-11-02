@@ -37,7 +37,7 @@ const POLL_MS = 400
 /**
  * Browse an archive, then extract all of it or just part of it.
  *
- * Brief 78 turned this from a progress window into a browser: an extract intent now
+ * The archive manager work turned this from a progress window into a browser: an extract intent now
  * **lists first** and waits, because being able to see what is in a zip and pull out
  * one file is most of what an archive manager is for. Extraction runs as a polled
  * job so a large archive shows progress instead of looking hung.
@@ -59,7 +59,7 @@ export function ArchiveManager({ windowId: _windowId }: { windowId: string }) {
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [errorText, setErrorText] = useState('')
 
-  // Re-delivery plumbing (brief 108). `phaseRef` mirrors the committed phase so
+  // Re-delivery plumbing. `phaseRef` mirrors the committed phase so
   // the delivery rule can read it from an event handler; `pendingIntentRef`
   // holds at most the NEWEST payload that arrived mid-extraction.
   const phaseRef = useRef<Phase>('idle')
@@ -228,7 +228,7 @@ export function ArchiveManager({ windowId: _windowId }: { windowId: string }) {
   }, [applyIntent])
 
   /**
-   * SUBSCRIBE to intents rather than draining once (brief 108).
+   * SUBSCRIBE to intents rather than draining once.
    *
    * `openApp` on an already-open single-instance app focuses the window and
    * re-sets its intent — but the old consume-once effect never looked again,

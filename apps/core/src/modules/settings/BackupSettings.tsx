@@ -38,7 +38,7 @@ function errMessage(err: unknown, fallback: string): string {
 }
 
 /**
- * Settings → Backup (brief 80).
+ * Settings → Backup.
  *
  * The only backup the product used to offer was a `docker run` in the README —
  * useless to anyone on the kiosk ISO or handed a running instance, which is to

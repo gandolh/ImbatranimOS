@@ -96,7 +96,7 @@ export function Terminal(_props: { windowId: string }) {
 
     const instance = new XTerm({
       scrollback: SCROLLBACK,
-      // Required by the Unicode11 addon below (brief 115): xterm gates
+      // Required by the Unicode11 addon below: xterm gates
       // `term.unicode` — the only way to swap the width table — behind this
       // flag. Narrow and deliberate: it is the one proposed API this app
       // touches, and without it the addon throws on activate and the whole
@@ -117,7 +117,7 @@ export function Terminal(_props: { windowId: string }) {
     instance.loadAddon(search)
     searchRef.current = search
     /**
-     * Unicode 11 cell widths (brief 115).
+     * Unicode 11 cell widths.
      *
      * xterm ships a Unicode *6* width table by default, which predates emoji
      * being double-width and gets a lot of CJK wrong. The visible symptom is

@@ -7,7 +7,7 @@ import type { MarketplaceApp } from '../../shared/registry/marketplace'
  * the page.
  */
 
-/** An app that needs a newer system protocol than this desktop speaks (brief 120). */
+/** An app that needs a newer system protocol than this desktop speaks. */
 export function protocolRefusal(
   app: Pick<MarketplaceApp, 'name' | 'minSystemVersion'>
 ): string | null {

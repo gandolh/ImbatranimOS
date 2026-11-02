@@ -10,7 +10,7 @@ import type { RepeatMode } from '../lib/queueOrder'
  * Hand-rolled localStorage rather than a state library, because this add-on ships with
  * zero non-core dependencies and four scalars plus a map do not justify breaking that.
  *
- * The brief wants these on brief 49's durable dotfiles ("my volume should follow the
+ * The brief wants these on the ephemeral-session work's durable dotfiles ("my volume should follow the
  * account"), and that is right — `CONFIGS_DIR` is declared in the backend env schema and
  * **not used by any module yet**, so there is nowhere durable to put them today. The
  * brief's own fallback ("until then, the existing persisted-store pattern") is what this

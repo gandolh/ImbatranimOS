@@ -1,6 +1,6 @@
 ---
 summary: Linux GUI apps run in the container and show as ordinary OS windows; their windows reach the tab as pixels, narrowing os-layering's "data, never pixels". Our own Wayland host in Rust (smithay) does the Wayland part, the backend relays it over the signed-in WebSocket, and the compositor stays in the browser. The OS stays Alpine; Linux apps come from Nix, installed by the user at runtime without sudo, reversing the build-time-only app stance. An app lives with its tab, survives a reload, and sleeps (SIGSTOP) under the idle cover screen. Firefox is the first app; Spotify was dropped. Settled with the owner 2026-10-23 in the Spotify grilling.
-updated: 2026-10-23
+updated: 2026-11-02
 ---
 
 # Decisions: Linux apps in OS windows (2026-10-23)
@@ -114,7 +114,7 @@ tab closes; and ending apps whenever the socket drops, as Terminal shells do,
 which kills them on every reload.
 **Why**: it keeps the session rule in [os-layering.md](os-layering.md) (closing
 the tab is logging out, reloading is the screen redrawing), and on a small VPS
-an idle app should cost no CPU. Reusing brief 97's idle cover avoids a second
+an idle app should cost no CPU. Reusing the auto lock on idle work's idle cover avoids a second
 timer and a second setting.
 - *Consequence*: the Linux apps feature is on on every machine, VPS included;
   the cost of an idle app is its RAM, which the VPS's swap can take.

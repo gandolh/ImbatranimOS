@@ -7,7 +7,7 @@ import type { InstalledRow } from './marketplace.service';
 import { deriveAppId, type AppSource } from './source-url';
 
 /**
- * Reading back the database row of an app installed from a URL (brief 158).
+ * Reading back the database row of an app installed from a URL.
  *
  * The row holds the app's manifest and source as JSON, and the paths its
  * files are served from. Everything in it was checked at install, but a row

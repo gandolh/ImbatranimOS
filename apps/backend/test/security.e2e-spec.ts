@@ -10,7 +10,7 @@ import { AppModule } from './../src/app.module';
 import { securityHeaders } from '../src/security-headers';
 
 /**
- * Verifies the hardening added in Brief 15: the hand-rolled security-headers
+ * Verifies the hardening added in The v1 release work: the hand-rolled security-headers
  * middleware, and the adversarial auth-surface edges (HEAD/OPTIONS, unknown
  * /api paths, the public /health handler).
  */

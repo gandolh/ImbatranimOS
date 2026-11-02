@@ -72,7 +72,7 @@ export function usePaneResize(previewPane: PreviewPaneControls) {
   )
 
   /**
-   * The keyboard half of the splitter (brief 111).
+   * The keyboard half of the splitter.
    *
    * Left grows the pane and Right shrinks it, matching the drag: the pane is
    * to the *right* of the handle, so moving the handle left gives it room.

@@ -12,7 +12,7 @@ function hostFor(method: string, url: string): ArgumentsHost {
   } as unknown as ArgumentsHost;
 }
 
-describe('AuditExceptionFilter — sandbox tokens stay out of the log (brief 158)', () => {
+describe('AuditExceptionFilter — sandbox tokens stay out of the log', () => {
   let record: jest.Mock;
   let filter: AuditExceptionFilter;
 

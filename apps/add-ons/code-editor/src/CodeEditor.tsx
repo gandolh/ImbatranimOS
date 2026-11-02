@@ -94,7 +94,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  /** Find-in-files panel (brief 113) — window state, nothing persisted. */
+  /** Find-in-files panel — window state, nothing persisted. */
   const [findOpen, setFindOpen] = useState(false)
   const findInputRef = useRef<HTMLInputElement>(null)
 
@@ -108,14 +108,14 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
   const listenersRef = useRef<Map<string, Disposable>>(new Map())
   // Alternative-version-id captured at last save; drives an undo-aware dirty flag.
   const savedVersionRef = useRef<Map<string, number>>(new Map())
-  // The file's version on disk as of the last read or save (brief 155), keyed
+  // The file's version on disk as of the last read or save, keyed
   // by tab id. Sent with each save, so a file changed underneath asks first.
   const diskVersionRef = useRef<Map<string, string | null>>(new Map())
   // Decoded file contents awaiting model creation (once the editor is mounted).
   const pendingContentRef = useRef<Map<string, string>>(new Map())
   const openedIdsRef = useRef<Set<string>>(new Set())
   /**
-   * Lines to reveal once a tab's model is live (brief 113). The activation
+   * Lines to reveal once a tab's model is live. The activation
    * effect drains this AFTER `restoreViewState`, because restoring a saved
    * scroll position would otherwise undo the reveal we just performed.
    */
@@ -363,7 +363,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
    *
    * A save over the tab's own file sends the version it read; if the file
    * changed on disk since, the user picks Overwrite, Reload from disk or Cancel
-   * (brief 155). Save As onto another path is a deliberate overwrite and sends
+   *. Save As onto another path is a deliberate overwrite and sends
    * none.
    */
   const writeTab = useCallback(

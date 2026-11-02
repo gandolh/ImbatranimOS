@@ -80,7 +80,7 @@ export interface Inspection {
 }
 
 /**
- * Apps installed from a URL (brief 158).
+ * Apps installed from a URL.
  *
  * The threat model is the reverse of the catalog's: nobody reviewed the
  * repository, so the app is treated as potentially malicious. Nothing from it

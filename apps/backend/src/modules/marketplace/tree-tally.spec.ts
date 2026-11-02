@@ -15,7 +15,7 @@ function tally(output: string, chunkSize = output.length || 1): TreeTally {
   return t;
 }
 
-describe('TreeTally (brief 158)', () => {
+describe('TreeTally', () => {
   const output = [
     record('100644', 'blob', '1048576', 'dist/zeros-1.bin'),
     // The same blob under another name: checkout writes it again.

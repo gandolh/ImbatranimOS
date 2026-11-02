@@ -27,20 +27,20 @@ type Side = {
   path: string
   text: string
   /**
-   * Display name override for a side with no file behind it (brief 114). Also
+   * Display name override for a side with no file behind it. Also
    * the marker that this side is NOT on disk: `readOnly` sides are never saved.
    */
   label?: string
 }
 
-/** Payload from the file manager's two-selection "Compare" (brief 99). */
+/** Payload from the file manager's two-selection "Compare". */
 type DiffIntent = {
   leftRoot?: string
   leftPath?: string
   rightRoot?: string
   rightPath?: string
   /**
-   * A left side that is not a file on disk (brief 114) — Git GUI's
+   * A left side that is not a file on disk — Git GUI's
    * "Compare with HEAD" hands over the committed blob. Additive: when absent,
    * the leftRoot/leftPath path below is exactly what it was. When present it
    * wins, because there is nothing to read.
@@ -64,8 +64,8 @@ function looksBinary(bytes: Uint8Array): boolean {
 }
 
 /**
- * The Diff tool (brief 99): Monaco's DiffEditor, which has been in the
- * code-editor package's lazy chunk since brief 41, finally given a window.
+ * The Diff tool: Monaco's DiffEditor, which has been in the
+ * code-editor package's lazy chunk since the Monaco editor, finally given a window.
  * Lives in this package so it shares the self-hosted Monaco + worker setup —
  * a separate add-on would duplicate that dependency wholesale.
  *

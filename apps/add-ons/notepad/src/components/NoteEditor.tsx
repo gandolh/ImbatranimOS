@@ -33,7 +33,7 @@ import {
  * ## Explicit save, not autosave
  *
  * This app used to write on a 1-second debounce after every keystroke, with **no
- * dirty marker, no Ctrl+S and no close guard**. Brief 59 lists the save spine under
+ * dirty marker, no Ctrl+S and no close guard**. The one-filesystem notepad lists the save spine under
  * "must preserve" and calls autosave "rejected" — but Notepad was the autosaving app,
  * so the brief's non-change was in fact its largest one.
  *
@@ -59,7 +59,7 @@ export function NoteEditor({
 
   const [content, setContent] = useState('')
   const [savedContent, setSavedContent] = useState('')
-  // The version of `savedContent` on disk, sent with every save (brief 155).
+  // The version of `savedContent` on disk, sent with every save.
   // Tied to the baseline, not to the latest read: a refetch that is not adopted
   // (unsaved edits) must not move it, or the next save would overwrite blind.
   const [savedVersion, setSavedVersion] = useState<string | null>(null)
@@ -136,7 +136,7 @@ export function NoteEditor({
 
   // The window and taskbar titles carry the filename and the dirty marker, and
   // closing with unsaved changes asks Save / Don't Save / Cancel — the same
-  // themed spine every other editor uses (brief 102).
+  // themed spine every other editor uses.
   const unsavedDialog = useUnsavedGuard(dirty, fileName(path, 'note'), save)
 
   useSaveHotkey(save)

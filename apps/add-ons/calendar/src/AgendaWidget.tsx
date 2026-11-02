@@ -8,7 +8,7 @@ import { expandOccurrences } from './recurrence'
 const MAX_ROWS = 4
 
 /**
- * Today's agenda on the desktop (brief 96). Reads the same events cache the
+ * Today's agenda on the desktop. Reads the same events cache the
  * app and the background reminder service share, so it costs no extra
  * requests while either is alive.
  */

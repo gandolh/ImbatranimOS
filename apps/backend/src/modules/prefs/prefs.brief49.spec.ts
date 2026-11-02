@@ -8,7 +8,7 @@ import { PrefsController } from './prefs.controller';
 import { PrefsService } from './prefs.service';
 
 /**
- * Brief 49 — durable dotfiles.
+ * The ephemeral-session work — durable dotfiles.
  *
  * The server's whole job here is durability and access control; the *meaning* of
  * a value belongs to the client store that wrote it. So these test round-tripping
@@ -16,7 +16,7 @@ import { PrefsService } from './prefs.service';
  * knew the schema of every client store would need changing every time one gained
  * a field.
  */
-describe('PrefsService — brief 49', () => {
+describe('PrefsService', () => {
   let dir: string;
   let db: DbService;
   let prefs: PrefsService;
@@ -152,7 +152,7 @@ describe('PrefsService — brief 49', () => {
     controller.put({ entries: [{ key: 'desktop-storage', value: big }] });
     expect(controller.all()['desktop-storage']).toBe(big);
   });
-  // Brief 109: the PUT echoes each key's updated_at, so a two-browser conflict
+  // The PUT echoes each key's updated_at, so a two-browser conflict
   // has a timestamp to reason with. Last-writer-wins stays the merge rule.
   it('echoes updated_at per key alongside the written count', () => {
     const res = controller.put({

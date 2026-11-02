@@ -1,9 +1,9 @@
 ---
-summary: The app marketplace's locked calls. Brief 120 (2026-10-06) — the kill-list revisits for the in-repo catalog (a runtime installer, a supervisor fenced to marketplace servers, native code only at pinned commits) and its build calls (commit ids, argv, per-build dirs, the allowlisted build env, capabilities as a fence). Brief 158 (2026-10-07) — apps from any GitHub URL, unreviewed, so prebuilt only, an opaque-origin sandboxed frame on the same port, per-window token URLs, notify as the only capability, and consent on every install and update. Suites and kit apps (briefs 162 and 163) are in decisions-marketplace-suites.md.
-updated: 2026-10-21
+summary: The app marketplace's locked calls. The marketplace install (2026-10-06) (2026-10-06) — the kill-list revisits for the in-repo catalog (a runtime installer, a supervisor fenced to marketplace servers, native code only at pinned commits) and its build calls (commit ids, argv, per-build dirs, the allowlisted build env, capabilities as a fence). Sandboxed apps from a URL (2026-10-07) (2026-10-07) — apps from any GitHub URL, unreviewed, so prebuilt only, an opaque-origin sandboxed frame on the same port, per-window token URLs, notify as the only capability, and consent on every install and update. Suites and kit apps (one catalog entry, several apps and the shared kit) are in decisions-marketplace-suites.md.
+updated: 2026-11-02
 ---
 
-# Decisions: the app marketplace (brief 120, 2026-10-06)
+# Decisions: the app marketplace (the marketplace install (2026-10-06), 2026-10-06)
 
 Split out of [decisions-estate-era.md](decisions-estate-era.md), which has a
 200-line cap. Same rule: changing an entry needs an explicit revisit and a
@@ -18,7 +18,7 @@ brief required, and the build added some calls of its own.
   The in-repo catalog (`marketplace/<id>.json`) drives an installer that clones
   and builds external apps in the live container. Build-from-source still
   holds: each app is cloned at a pinned commit and built on the machine, with
-  no registry and no prebuilt artifacts. What flips is brief 13's "installing
+  no registry and no prebuilt artifacts. What flips is the system monitor work's "installing
   an app means adding a build-time module". `manifest.ts` stays the one place
   built-in add-ons are composed. Marketplace apps join the same
   `APP_REGISTRY` at runtime, so they are enabled, disabled and launched the
@@ -34,7 +34,7 @@ brief required, and the build added some calls of its own.
   descriptors pinned to a commit.** That pin is what keeps such an app
   first-party ("buggy, not malicious"), so it runs in the desktop's own page
   at full speed. An app from an arbitrary URL must use `runtime: "sandboxed"`
-  (the brief-48 iframe transport), built by brief 158 (below). The two
+  (the brief-48 iframe transport), built by sandboxed apps from a URL (2026-10-07) (below). The two
   stances differ on purpose.
 
 **Calls the build made.**
@@ -98,7 +98,7 @@ brief required, and the build added some calls of its own.
     `0.0.0.0` is still unreachable from outside a container that publishes
     none of those ports, but on a host network it would be exposed.
 
-## Brief 158: apps from a URL (2026-10-07)
+## Sandboxed apps from a URL (2026-10-07): apps from a URL (2026-10-07)
 
 The owner parked arbitrary-URL installs on 2026-10-06 and asked for them on
 2026-10-07. An app from a URL nobody reviewed is treated as **malicious**, not
@@ -109,13 +109,13 @@ every call below follows from it.
   install, build or server for it, so code from an unreviewed URL never runs on
   the machine. Rejected: building on install (the repo's scripts and every npm
   dependency would run as the desktop's user with the home volume readable,
-  the residual risk brief 120 accepted only because the catalog is reviewed);
+  the residual risk the marketplace install (2026-10-06) accepted only because the catalog is reviewed);
   service apps, for the same reason.
 - **Same port, opaque origin.** The app runs in
   `<iframe sandbox="allow-scripts allow-pointer-lock">`, and every sandbox
   response also carries the CSP `sandbox` directive, so the document is opaque
   even when opened in a tab. Rejected: a second port like the Browser's
-  (brief 50). The Browser needs `allow-same-origin` because real sites need
+  (2026-10-04). The Browser needs `allow-same-origin` because real sites need
   their storage; these apps don't, and a port costs deploy configuration.
 - **The frame's files sit behind a per-window token, not the cookie.** An
   opaque-origin frame gets no `SameSite=Lax` cookie (verified in Chrome:
@@ -199,4 +199,4 @@ every call below follows from it.
 - Firefox is not walked; Chrome is. Firefox's SameSite rules for an opaque
   frame may differ, and CORS plus the Origin check are the backstop there.
 
-Suites and kit apps (briefs 162, 163): [decisions-marketplace-suites.md](decisions-marketplace-suites.md).
+Suites and kit apps (2026-10-21): [decisions-marketplace-suites.md](decisions-marketplace-suites.md).

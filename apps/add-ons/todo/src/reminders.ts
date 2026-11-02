@@ -6,7 +6,7 @@ import { peekTodos } from './queries/todosQueries'
 /**
  * Tells you once when a todo falls due.
  *
- * The same shape as Clock's and Calendar's watchers. Since brief 93 it is
+ * The same shape as Clock's and Calendar's watchers. Since the reminder scheduler it is
  * mounted by `TodoBackground` (the manifest's desktop-lifetime service), so due
  * todos announce themselves while the desktop is open — no Todo window needed.
  *
@@ -59,7 +59,7 @@ export function useTodoReminders(): void {
           const key = `${todo.id}:today`
           if (notified.has(key)) continue
           remember(key)
-          // Cross-tab dedupe (brief 93): keyed on the due instant, so an edited
+          // Cross-tab dedupe: keyed on the due instant, so an edited
           // due date announces again and an unchanged one cannot double-toast.
           void system.schedule.claim('todo', `${todo.id}:today`, dueAt).then((claimed) => {
             if (!claimed) return

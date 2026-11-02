@@ -26,13 +26,13 @@ export function openApp(appId: string, payload?: unknown): string {
   if (!appConfig) {
     // A stale id is a normal input, not a bug: notification history and recent
     // files outlive the add-on that raised them. Throwing broke the caller
-    // mid-click (brief 141); the protocol says refused is ''.
+    // mid-click; the protocol says refused is ''.
     console.warn(`openApp: app "${appId}" is not in the registry`)
     return ''
   }
 
   // The OS records "file X opened with app Y" here, at the one choke point
-  // every launcher funnels through (brief 48). File Manager used to make this
+  // every launcher funnels through. File Manager used to make this
   // call itself, per target app — but attributing a recent to another app is
   // exactly what a scoped capability must forbid, so the shell owns it.
   if (
@@ -54,7 +54,7 @@ export function openApp(appId: string, payload?: unknown): string {
     if (existingWindow) {
       // Focus first (it switches to the window's workspace), then show: focus
       // alone never un-minimizes, so relaunching a minimized app delivered the
-      // intent to a window nobody could see (brief 141). The command palette's
+      // intent to a window nobody could see. The command palette's
       // order.
       windowStore.focusWindow(existingWindow.id)
       if (!existingWindow.isVisible) windowStore.showWindow(existingWindow.id)

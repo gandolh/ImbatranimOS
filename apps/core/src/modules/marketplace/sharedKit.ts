@@ -112,7 +112,7 @@ const KIT: { [K in keyof typeof KitNamespace]: (typeof KitNamespace)[K] } = {
 /** One shared module: every export of it, as a readable property. */
 export type SharedModule = Readonly<Record<string, unknown>>
 
-/** `globalThis.__imbatranimShared` (brief 163, contract A). */
+/** `globalThis.__imbatranimShared` (contract A). */
 export type SharedKitGlobal = Readonly<{
   version: number
   modules: Readonly<Record<SharedKitModule, SharedModule>>
@@ -143,7 +143,7 @@ export function sharedKit(): SharedKitGlobal | undefined {
 
 /**
  * Put the desktop's own React, React DOM and UI kit on the global a kit app's
- * build reads its imports from (brief 163). Called before the first kit app's
+ * build reads its imports from. Called before the first kit app's
  * module is imported; the module reads the global as it evaluates. Once per
  * page: the property is frozen, read-only and cannot be redefined, so an app
  * cannot swap a module out from under the others.

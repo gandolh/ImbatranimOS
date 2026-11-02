@@ -10,7 +10,7 @@ import {
 } from './windowStore'
 
 /**
- * Brief 85 — virtual desktops.
+ * Workspaces — virtual desktops.
  *
  * The invariant these exist to hold is the brief's hardest one: **no window can
  * become unreachable.** Everything else — filtering, pips, shortcuts — is a view

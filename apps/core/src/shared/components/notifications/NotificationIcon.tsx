@@ -6,7 +6,7 @@ import type { NotificationLevel } from '../../store/notificationStore'
 
 /**
  * The icon on a notification — the raising app's when `appId` resolves,
- * the severity glyph otherwise (brief 107).
+ * the severity glyph otherwise.
  *
  * ui-conventions §23 has always told callers to "pass `appId` so the item gets
  * your icon", but neither surface ever rendered one. Severity stays legible

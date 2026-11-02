@@ -2,7 +2,7 @@ import { type ComponentType, type LazyExoticComponent } from 'react'
 import type { CommandSource } from './shared/commands/CommandSourcesRegistry'
 
 /**
- * A desktop widget an app contributes (brief 96): a small always-visible
+ * A desktop widget an app contributes: a small always-visible
  * panel the user can place on the desktop — Win7 gadgets, in the house style.
  *
  * Unlike `desktopLayer` (one free-form surface the app paints itself), a
@@ -42,13 +42,13 @@ export type AppConfig = {
   minSize: { width: number; height: number }
   /**
    * Lowercase file extensions this app can open — the `.desktop` `MimeType=`
-   * analogue (brief 81).
+   * analogue.
    *
    * Declarative data, deliberately: core computes the extension → candidates
    * table from `APP_REGISTRY`, so an app announces what it handles **in its own
    * manifest** instead of the file manager keeping a list of everyone else's
    * types. That list was the coupling `manifest.ts` exists to avoid, and it is
-   * why brief 65's PDF mismatch happened — the weaker app owned `.pdf` because
+   * why the PDF split's PDF mismatch happened — the weaker app owned `.pdf` because
    * the map said so and nobody looked.
    *
    * Order matters: when several apps claim an extension and the user has not
@@ -59,7 +59,7 @@ export type AppConfig = {
   /**
    * Optional component painted on the **desktop**, beneath every window.
    *
-   * The seam exists so Sticky Notes (brief 74) can put notes on the desktop
+   * The seam exists so Sticky Notes can put notes on the desktop
    * without core importing that package — core knows only "some app contributed a
    * layer", exactly as it knows only "some app contributed a command source".
    *
@@ -77,7 +77,7 @@ export type AppConfig = {
    */
   desktopLayer?: ComponentType | LazyExoticComponent<ComponentType>
   /**
-   * Optional headless **desktop-lifetime service** (brief 93): mounted by the
+   * Optional headless **desktop-lifetime service**: mounted by the
    * shell from login to tab close, whether or not any of the app's windows are
    * open, and unmounted when the add-on is disabled.
    *
@@ -92,7 +92,7 @@ export type AppConfig = {
    *   `claimScheduleOccurrence`) so a second desktop tab does not double-toast.
    */
   background?: ComponentType
-  /** Desktop widgets this app contributes (brief 96) — hosted by core's layer. */
+  /** Desktop widgets this app contributes — hosted by core's layer. */
   widgets?: WidgetConfig[]
 }
 

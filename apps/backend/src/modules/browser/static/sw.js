@@ -1,5 +1,5 @@
 /*
- * The proxy origin's service worker (brief 50). It is Scramjet's, plus the
+ * The proxy origin's service worker. It is Scramjet's, plus the
  * cookie jar's custody.
  *
  * Scramjet keeps proxied sites' cookies in a jar in this worker's memory. Left

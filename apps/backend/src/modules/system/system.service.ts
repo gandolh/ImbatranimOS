@@ -60,7 +60,7 @@ export type DiskStats = {
  *
  * Fields were ADDED here, never renamed — the tray polls the same endpoint and a
  * rename would break it silently (`/api/system/stats` stays backward-compatible,
- * per brief 58's regression surface).
+ * per the system monitor work's regression surface).
  */
 export type SystemStats = {
   cpu: CpuStats;

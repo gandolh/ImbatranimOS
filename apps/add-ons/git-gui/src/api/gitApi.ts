@@ -50,7 +50,7 @@ export async function fetchDiff(
 }
 
 /**
- * One file's contents at HEAD (brief 114). `exists: false` means the file has
+ * One file's contents at HEAD. `exists: false` means the file has
  * no blob at HEAD — newly added or untracked — which the caller renders as an
  * empty left side labelled "new file", not as a failure.
  */
@@ -97,7 +97,7 @@ export async function commit(
 }
 
 // ---------------------------------------------------------------------------
-// Brief 76. Every one of these is a named backend route over a fixed subcommand
+// Every one of these is a named backend route over a fixed subcommand
 // allowlist — there is no "run arbitrary git" endpoint to call.
 //   GET  /api/git/branches      POST /api/git/branch    POST /api/git/switch
 //   POST /api/git/discard       GET/POST /api/git/stash POST /api/git/stash/pop
@@ -212,6 +212,6 @@ export async function rememberRepo(http: SystemHttp, root: string, path: string)
 
 export async function forgetRepo(http: SystemHttp, root: string, path: string): Promise<void> {
   // DELETE /git/recents reads its body; the protocol grew `data` on the request
-  // config for exactly this shape (brief 48).
+  // config for exactly this shape.
   await http.delete('/git/recents', { data: { root, path } })
 }

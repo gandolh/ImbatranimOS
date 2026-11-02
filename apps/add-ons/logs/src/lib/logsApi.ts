@@ -7,7 +7,7 @@ export interface LogPage {
 }
 
 // Plain function, not a hook, so the capability arrives as the first argument
-// (brief 48): the calling component owns the handle.
+//: the calling component owns the handle.
 export async function fetchLogs(
   http: SystemHttp,
   params: {

@@ -1,5 +1,5 @@
 /**
- * The Alt+Tab switcher's pure core (brief 104) — the ordering and the
+ * The Alt+Tab switcher's pure core — the ordering and the
  * selection state machine, DOM-free so the unit tests can pin the semantics
  * that today's blind cycle got wrong (landing on the least-recently-used
  * window; no reverse; minimized windows unreachable).

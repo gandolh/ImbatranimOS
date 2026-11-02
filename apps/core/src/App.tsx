@@ -31,10 +31,10 @@ export default function App() {
     applyAppearance(theme, accent)
   }, [theme, accent])
 
-  // Installed marketplace apps join the registry (brief 120). A failure only
+  // Installed marketplace apps join the registry. A failure only
   // means they are missing from Start until the next load; Settings retries.
   // The startup effect below waits on this first listing when the startup
-  // list names a Marketplace app (brief 183); it runs after this effect.
+  // list names a Marketplace app; it runs after this effect.
   const firstListing = useRef<Promise<unknown> | null>(null)
   useEffect(() => {
     const listing = loadMarketplace()
@@ -141,7 +141,7 @@ export default function App() {
   const persistLayout = useWindowStore((s) => s.persistLayout)
   const windows = useWindowStore((s) => s.windows)
 
-  // Restore this tab's layout, then open the startup set (brief 82) — in that
+  // Restore this tab's layout, then open the startup set — in that
   // order, and in one effect, because the second decision depends on the first.
   //
   // `runStartupApps` opens nothing when the restore brought windows back: those
@@ -151,9 +151,9 @@ export default function App() {
   // resurrect the set. App mounts behind AuthGate's `prefsReady`, so the list has
   // already been read from the server by the time this runs. A Marketplace app
   // in the list is registered only when the first listing arrives, so then the
-  // set waits for it (brief 183); a list of built-ins opens at once.
+  // set waits for it; a list of built-ins opens at once.
   useEffect(() => {
-    // The store learns minSize through this resolver (brief 103) — importing
+    // The store learns minSize through this resolver — importing
     // APP_REGISTRY into windowStore would couple it to the manifest graph.
     // Same fallback WindowContainer uses for unknown apps.
     setMinSizeResolver(
@@ -166,7 +166,7 @@ export default function App() {
     void runStartupApps(firstListing.current ?? undefined)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-fit windows when the browser viewport changes (brief 103) — devtools,
+  // Re-fit windows when the browser viewport changes — devtools,
   // half-screen snap of the host window, a projector. Trailing debounce so
   // dragging the browser's resize handle reflows once, not per frame; the
   // 500ms persist debounce below then coalesces the writes.
@@ -229,7 +229,7 @@ export default function App() {
 
   // 4c: keyboard window management (Alt+Tab, Mod+W, Mod+M, Mod+Enter)
   useWindowHotkeys()
-  // Auto-lock after idle (brief 97) — Settings → Security owns the timeout.
+  // Auto-lock after idle — Settings → Security owns the timeout.
   useIdleLock()
   // ── /SWARM:S4 layout restore boot ──────────────────────────────────────────
 
@@ -239,7 +239,7 @@ export default function App() {
       <Taskbar />
       {/* Notification toasts (bottom-right, above the taskbar) */}
       <ToastHost />
-      {/* The OS file portal (brief 48): system.fs.pick* renders here, once. */}
+      {/* The OS file portal: system.fs.pick* renders here, once. */}
       <FilePortalHost />
       {/* Desktop-lifetime add-on services — alarms/reminders fire without windows */}
       <BackgroundServices />

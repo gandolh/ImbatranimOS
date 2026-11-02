@@ -2,7 +2,7 @@
 #
 # Caddy terminates TLS (automatic Let's Encrypt certs + renewal) and proxies
 # to the container's single plain-HTTP port. This is the recommended HTTPS
-# story (Brief 10) — the app itself stays plain-HTTP and unprivileged.
+# story — the app itself stays plain-HTTP and unprivileged.
 #
 # Usage:
 #   1. Point your domain's DNS at this host.

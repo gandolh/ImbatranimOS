@@ -5,7 +5,7 @@ import type { MarketplaceApp } from '../../shared/registry/marketplace'
 import { preloadKitApp, preloadModule } from './kitPreload'
 
 /**
- * Brief 182: a kit app's entry and styles start loading as its window opens,
+ * A kit app's entry and styles start loading as its window opens,
  * beside the host's chunk. The entry is preloaded, never evaluated here.
  */
 
@@ -87,12 +87,12 @@ describe('preloadKitApp', () => {
     ).toBe('office@b1')
   })
 
-  it('fetches nothing for an app built for another shared kit (brief 175)', () => {
+  it('fetches nothing for an app built for another shared kit', () => {
     preloadKitApp(kitApp({ sharedKit: SHARED_KIT_VERSION + 98 }), 'office@b1')
     expect(document.head.querySelectorAll('link')).toHaveLength(0)
   })
 
-  it('fetches nothing for an app that needs a newer protocol (brief 175)', () => {
+  it('fetches nothing for an app that needs a newer protocol', () => {
     preloadKitApp(kitApp({ minSystemVersion: 99 }), 'office@b1')
     expect(document.head.querySelectorAll('link')).toHaveLength(0)
   })

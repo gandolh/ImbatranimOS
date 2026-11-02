@@ -1,5 +1,5 @@
 /**
- * The app ↔ OS protocol (brief 48). THIS FILE IS THE SPEC.
+ * The app ↔ OS protocol. THIS FILE IS THE SPEC.
  *
  * An app imports nothing from the OS. At mount, the compositor hands it one
  * `system` object — its connection to the machine, the way a Wayland client
@@ -39,7 +39,7 @@ export type PickOpenOptions = {
 
 export type PickSaveOptions = PickOpenOptions & { suggestedName?: string }
 
-/** A file's bytes and its version token (brief 155). */
+/** A file's bytes and its version token. */
 export type VersionedBytes = { bytes: ArrayBuffer; version: string | null }
 
 export type UploadOptions = {
@@ -64,7 +64,7 @@ export interface SystemFs {
   /** Fetch a file's raw bytes. Rejects with an HTTP-shaped error on failure. */
   read(root: string, path: string): Promise<ArrayBuffer>
   /**
-   * {@link read}, plus the file's version token (brief 155). An editor keeps the
+   * {@link read}, plus the file's version token. An editor keeps the
    * token and hands it back on save, so a save over a file that changed on disk
    * since asks instead of overwriting. `version` is null when the backend sent
    * none.
@@ -91,9 +91,9 @@ export interface SystemFs {
   pickSave(opts?: PickSaveOptions): Promise<FileChoice | null>
   /** OS folder chooser. `path` is `''` at a root. */
   pickDirectory(opts?: { title?: string }): Promise<FileChoice | null>
-  /** Record a file in the OS-wide recents (brief 94), attributed to this app. */
+  /** Record a file in the OS-wide recents, attributed to this app. */
   recordRecent(root: string, path: string): void
-  /** Drop a recents entry this app failed to reopen (self-heal, brief 94). */
+  /** Drop a recents entry this app failed to reopen (self-heal). */
   removeRecent(root: string, path: string): void
 }
 
@@ -168,7 +168,7 @@ export interface SystemWindow {
   show(): void
   /** True while this window is the top-most visible one on its workspace. */
   isFocused(): boolean
-  /** False while minimised. (Workspace parking is not minimisation: brief 85.) */
+  /** False while minimised. (Workspace parking is not minimisation: workspaces.) */
   isVisible(): boolean
   /**
    * Register a close veto: settle false to keep the window open (unsaved
@@ -188,7 +188,7 @@ export interface SystemWindow {
 
 // ── Intents ───────────────────────────────────────────────────────────────────
 
-/** Why the opener resolved the way it did (brief 81). */
+/** Why the opener resolved the way it did. */
 export type OpenerResolution = {
   appId: string
   reason: 'override' | 'declared' | 'text-fallback' | 'none'
@@ -212,7 +212,7 @@ export interface SystemIntents {
   consume<T = unknown>(): T | undefined
   /** Subscribe to intents for this window; pending payload delivered at once. */
   onIntent(cb: (payload: unknown) => void): () => void
-  /** The file-association registry (brief 81), read side + the user's choice. */
+  /** The file-association registry, read side + the user's choice. */
   readonly associations: {
     resolveOpener(fileName: string): OpenerResolution
     candidatesFor(fileName: string): OpenerCandidate[]
@@ -221,7 +221,7 @@ export interface SystemIntents {
     keyFor(fileName: string): string
     /** Display name for an opener app id, or null if unknown. */
     openerName(appId: string): string | null
-    /** Persist "always open this type with …" (a dotfile, brief 49). */
+    /** Persist "always open this type with …" (a dotfile). */
     setDefault(key: string, appId: string): void
   }
 }
@@ -236,7 +236,7 @@ export type SystemNotifyLevel = 'info' | 'success' | 'warning' | 'error'
  * app's name.
  */
 /**
- * A button on a live toast (brief 107).
+ * A button on a live toast.
  *
  * Intent-shaped DATA, never a closure. Activating one calls
  * `intents.openApp(<the raising app>, payload)` — the same choke point every
@@ -310,7 +310,7 @@ export interface SystemAppearance {
 export type ScheduleDomain = 'clock' | 'calendar' | 'todo'
 
 /**
- * `system.schedule` — atomic cross-tab occurrence claims (brief 93), so two
+ * `system.schedule` — atomic cross-tab occurrence claims, so two
  * desktop tabs polling the same alarm produce exactly one toast. Fails open:
  * an unreachable backend claims true, because a duplicate toast beats a
  * silently missed alarm.

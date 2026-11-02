@@ -6,7 +6,7 @@ import type { ScheduleDomain } from './dto/claim.dto';
 const PRUNE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * The durable half of the reminder scheduler (brief 93).
+ * The durable half of the reminder scheduler.
  *
  * Occurrence *computation* stays in the browser — alarm times and calendar
  * instants have local wall-clock meaning and the container deliberately knows

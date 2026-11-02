@@ -16,7 +16,7 @@ import { FilesService } from '../files/files.service';
 import { DbService } from '../../db/db.service';
 
 /**
- * A real in-memory DbService for the recent-repos table (brief 76). GitService
+ * A real in-memory DbService for the recent-repos table. GitService
  * takes one now; a stub would let the recents SQL rot untested, and an in-memory
  * database costs nothing.
  */
@@ -42,12 +42,12 @@ const callWith = (sub: string): ExecaCall | undefined =>
   calls().find((c) => c[1].includes(sub));
 
 /**
- * Brief 76 added five subcommands to the allowlist. The brief's regression surface
+ * The git GUI work added five subcommands to the allowlist. The brief's regression surface
  * names the single `exec` seam, array args, the `--` pathspec guard and the jail as
  * the things a reviewer will grep for — so each new command is asserted at the
  * level of the argument array it produces, not at the level of "it returned data".
  */
-describe('GitService — brief 76 subcommands (arg arrays, no shell, guards)', () => {
+describe('GitService subcommands (arg arrays, no shell, guards)', () => {
   let service: GitService;
   let jail: string;
   const prevEnv = process.env.FILES_ROOT;
@@ -435,7 +435,7 @@ describe('GitService — brief 76 subcommands (arg arrays, no shell, guards)', (
     });
 
     it('refuses a work tree whose top-level is above the jail', async () => {
-      // The ancestor-`.git` case closed in brief 42, re-asserted for the new
+      // The ancestor-`.git` case closed in the git gui work, re-asserted for the new
       // commands: git discovers a repo by walking UP, so a `.git` above the root
       // would otherwise let these operate on files outside it.
       mockExeca.mockImplementation((_f: string, args: string[]) => {

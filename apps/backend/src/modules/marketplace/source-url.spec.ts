@@ -34,7 +34,7 @@ function refusal(fn: () => unknown): string {
   throw new Error('expected a refusal');
 }
 
-describe('parseSourceUrl (brief 158)', () => {
+describe('parseSourceUrl', () => {
   it.each([
     ['https://github.com/o/r', REPO, []],
     ['https://github.com/o/r/', REPO, []],
@@ -129,7 +129,7 @@ describe('parseSourceUrl (brief 158)', () => {
   });
 });
 
-describe('resolveRef (brief 158)', () => {
+describe('resolveRef', () => {
   it('resolves no ref to the default branch, named by --symref', () => {
     const out = `ref: refs/heads/trunk\tHEAD\n${A}\tHEAD\n`;
     expect(resolveRef(out, [], REPO)).toEqual({
@@ -313,7 +313,7 @@ describe('resolveRef (brief 158)', () => {
   });
 });
 
-describe('naming a URL app (brief 158)', () => {
+describe('naming a URL app', () => {
   it('derives the id from the repository and subdirectory', () => {
     const expected = `x-${createHash('sha256')
       .update(`${REPO}#games/hollow`)

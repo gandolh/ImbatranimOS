@@ -10,7 +10,7 @@ import {
 } from '@imbatranim/ui'
 
 /**
- * Brief 155: a save over a file that changed on disk since it was opened asks
+ * A save over a file that changed on disk since it was opened asks
  * Overwrite / Reload from disk / Cancel instead of destroying the change.
  *
  * Monaco cannot run in jsdom, so `@monaco-editor/react` is replaced by a fake
@@ -203,7 +203,7 @@ afterEach(() => {
   container.remove()
 })
 
-describe('a save over a file that changed on disk (brief 155)', () => {
+describe('a save over a file that changed on disk', () => {
   it('sends the version it read, and asks on a conflict', async () => {
     await saveOverExternalChange()
     expect(upload).toHaveBeenCalledTimes(1)

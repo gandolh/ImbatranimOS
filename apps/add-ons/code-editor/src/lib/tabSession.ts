@@ -13,7 +13,7 @@ const KEY = 'imbatranimos:code-editor:tabs'
  * to show. That covers the case this exists for — an accidental reload losing
  * six open files — and does not pretend to cover per-window restore.
  *
- * `sessionStorage`, not `localStorage`: these are session state (brief 49), not
+ * `sessionStorage`, not `localStorage`: these are session state, not
  * a durable dotfile, and a tab list that outlives the browser session would be
  * a config store nobody asked for. Untitled tabs are never recorded — their
  * contents are not on disk, so "restoring" one would restore an empty buffer

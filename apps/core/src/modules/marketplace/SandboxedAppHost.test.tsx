@@ -32,7 +32,7 @@ vi.mock('./keyboardGuard', () => ({
 const { SandboxedAppHost } = await import('./SandboxedAppHost')
 
 /**
- * Brief 158 — the window side of an app installed from a URL: a token is
+ * Sandboxed apps from a URL — the window side of an app installed from a URL: a token is
  * minted for the window and revoked when it closes, the app runs in an
  * opaque-origin iframe, only that iframe can open the port, and a frame that
  * reports a failure fails inside its own window.
@@ -422,7 +422,7 @@ describe('SandboxedAppHost', () => {
     expect(registrations).toHaveLength(1)
     expect(registrations[0]).toMatchObject({ windowId: hostWin, name: 'Hollow' })
     // By identity: a subset match would walk the element's React fiber, and
-    // with the host split in two (brief 175) that walk took seven seconds.
+    // with the host split in two that walk took seven seconds.
     expect(registrations[0].frame).toBe(frame())
     expect(unregister).not.toHaveBeenCalled()
     act(() => root.render(<></>))
@@ -523,7 +523,7 @@ describe('SandboxedAppHost', () => {
   it('refuses an app that needs a newer system protocol in a panel, before minting anything', async () => {
     mount(app({ minSystemVersion: 99 }))
     await settle()
-    // Brief 175: a refusal is not a crash. No fallback, no client-error log.
+    // A refusal is not a crash. No fallback, no client-error log.
     const panel = container.querySelector('[data-refusal]')
     expect(panel?.textContent).toContain(`Can't open ${app().name}`)
     expect(panel?.textContent).toContain(

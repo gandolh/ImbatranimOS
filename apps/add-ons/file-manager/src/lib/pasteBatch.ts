@@ -1,7 +1,7 @@
 import type { FsEntry } from '../types'
 
 /**
- * Paste arithmetic (brief 111) — where each clipboard entry lands, and what to
+ * Paste arithmetic — where each clipboard entry lands, and what to
  * say when only some of them get there.
  *
  * Pulled out of `useFileClipboard` when the clipboard went multi-entry: a batch

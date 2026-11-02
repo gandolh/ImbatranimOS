@@ -86,7 +86,7 @@ describe('restoreWindow', () => {
 
 describe('closeWindow cleanup', () => {
   it('clears the pending intent for the closed window', () => {
-    // The opened-file latch moved into the SDK with brief 48 and is private to
+    // The opened-file latch moved into the SDK with the system-handle seam and is private to
     // it, so the compositor's cleanup covers exactly what the compositor owns:
     // the intent map. The SDK's latch is keyed by uuid window ids that never
     // recur, so a closed window's record is inert.
@@ -103,7 +103,7 @@ describe('closeWindow cleanup', () => {
   })
 })
 
-describe('async close guards (brief 102)', () => {
+describe('async close guards', () => {
   it('a guardless window still closes in the same tick', () => {
     const { openWindow, closeWindow } = useWindowStore.getState()
     const id = openWindow('files', 'A', DEFAULT, MIN)
@@ -216,7 +216,7 @@ describe('async close guards (brief 102)', () => {
   })
 })
 
-describe('reflowToViewport (brief 103)', () => {
+describe('reflowToViewport', () => {
   it('re-fits a maximized window to the new usable desktop', () => {
     const { openWindow, maximizeWindow } = useWindowStore.getState()
     const id = openWindow('files', 'A', DEFAULT, MIN)
@@ -327,7 +327,7 @@ describe('reflowToViewport (brief 103)', () => {
   })
 })
 
-describe('nextSnapState (brief 103)', () => {
+describe('nextSnapState', () => {
   it('floating: left/right snap halves, up maximizes, down minimizes', () => {
     const w = { isMaximized: false }
     expect(nextSnapState(w, 'left')).toEqual({ type: 'snap', region: 'left' })
@@ -383,7 +383,7 @@ describe('nextSnapState (brief 103)', () => {
   })
 })
 
-describe('toggleShowDesktop (brief 103)', () => {
+describe('toggleShowDesktop', () => {
   it('hides everything visible, then brings the same stack back in order', () => {
     const { openWindow, toggleShowDesktop } = useWindowStore.getState()
     const a = openWindow('files', 'A', DEFAULT, MIN)

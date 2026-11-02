@@ -1,5 +1,5 @@
 /**
- * A kit app's stylesheets in the page (brief 163). A kit app renders in the
+ * A kit app's stylesheets in the page. A kit app renders in the
  * desktop's own tree, so its CSS has to be in the desktop's document: each
  * file its build lists becomes one `<link rel="stylesheet">` in `<head>`,
  * tagged with the build it came from.

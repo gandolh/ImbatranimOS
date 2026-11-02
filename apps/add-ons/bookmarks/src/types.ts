@@ -1,7 +1,7 @@
 /**
  * camelCase, and `url` rather than `href` — the shape the backend now returns.
  *
- * `url` is the field name brief 50's browser will consume via
+ * `url` is the field name the proxied browser will consume via
  * `openApp('browser', { url })`; see `index.ts` for that contract.
  */
 export type BookmarkLink = {

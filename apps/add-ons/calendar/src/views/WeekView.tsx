@@ -24,7 +24,7 @@ type WeekViewProps = {
 /**
  * The week grid.
  *
- * Brief 72 split it in two, which is what a week view has to be:
+ * The calendar storage work split it in two, which is what a week view has to be:
  *
  * - An **all-day row** above the time grid, where all-day events sit and span the
  *   columns they cover. Before this they were pinned to midnight of their start day

@@ -29,7 +29,7 @@ describe('event labels', () => {
     expect(knownEvents()).toContain('app.crashed')
   })
 
-  it('carries no sign-in events: nothing here logs them (brief 151)', () => {
+  it('carries no sign-in events: nothing here logs them', () => {
     expect(knownEvents().filter((e) => e.startsWith('auth.'))).toEqual([])
   })
 })

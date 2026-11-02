@@ -3,7 +3,7 @@ import { WORKSPACE_IDS, type WorkspaceId } from '../../store/windowStore'
 import { cn } from '../../../lib/cn'
 
 /**
- * Right-click menu on a taskbar button (brief 85; kit-backed since brief 105 —
+ * Right-click menu on a taskbar button (kit-backed since the context-menu kit —
  * the third hand-rolled menu triggered the promote rule, so positioning,
  * dismissal and the keyboard/ARIA contract now come from the shared
  * `ContextMenu`; the old `MENU_WIDTH`/`MENU_HEIGHT` size guesses are gone, the

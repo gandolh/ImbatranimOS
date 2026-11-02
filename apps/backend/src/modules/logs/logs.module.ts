@@ -5,7 +5,7 @@ import { LogsController } from './logs.controller';
 import { AuditExceptionFilter } from './audit-exception.filter';
 
 /**
- * The system log (brief 84).
+ * The system log.
  *
  * `@Global` for the same reason `DbModule` is: auditing is cross-cutting, and it
  * depends on nothing itself, so there is no cycle to create. Modules whose

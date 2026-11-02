@@ -40,7 +40,7 @@ interface LiveRelay {
 }
 
 /**
- * The Browser's proxy origin (brief 50): a second HTTP listener in the same
+ * The Browser's proxy origin: a second HTTP listener in the same
  * process, on BROWSER_PROXY_PORT.
  *
  * Proxied pages are served to the viewing browser from here, never from the

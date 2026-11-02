@@ -4,7 +4,7 @@ import type { WidgetConfig } from '../../../contract'
 
 export type ResolvedWidget = { key: string; appId: string; config: WidgetConfig }
 
-/** Every enabled app's widgets, keyed for the widget store (brief 96). */
+/** Every enabled app's widgets, keyed for the widget store. */
 export function useAvailableWidgets(): ResolvedWidget[] {
   const apps = useEnabledApps()
   return useMemo(

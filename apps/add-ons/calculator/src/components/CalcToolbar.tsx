@@ -7,7 +7,7 @@ import { cn } from '@imbatranim/ui'
  *
  * Small text buttons rather than another keypad row, because every row added to the keypad
  * raises the window's honest minimum height — and the keypad's height is the whole reason the
- * `=` key used to end up under the taskbar (brief 70, problem 1).
+ * `=` key used to end up under the taskbar (problem 1).
  */
 export function CalcToolbar({
   memory,

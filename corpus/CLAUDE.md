@@ -23,8 +23,9 @@ corpus/
 1. Read `index.md` first; triage on `summary:` lines.
 2. Open **at most 2–3 wiki pages**. Needing more means a page must split or a
    summary isn't sharp — fix the cause.
-3. Never read `briefs/` or `todos/` wholesale; `wiki/status.md` has one line
-   per brief. Open a brief only for the spec that directed specific work.
+3. Never read `briefs/` or `todos/` wholesale; `wiki/status.md` has a dated
+   line per area and the open briefs. Open a brief only for the spec that
+   directs specific work.
 4. Prefer a page's `summary:` line over opening the page — that is what it is
    for.
 
@@ -62,6 +63,14 @@ pivot-era and iso-era pages) holds the locked calls.
 - Every wiki page opens with `summary:` + `updated:` frontmatter. `index.md`
   is generated from those — never hand-maintain the catalog.
 - Brief numbers are stable for the life of the file; never renumber on move.
+  Briefs run in number order; `wiki/status.md` doesn't list them one by one.
+- Numbering restarted at 01 on 2026-11-02. The 161 briefs before that were
+  folded into the wiki and deleted, the seven unbuilt ones renumbered 01-07;
+  the last commit holding them is `621c4dd` ([log.md](log.md), "Briefs reset").
+  Old numbers survive only as labelled `Old #` columns on the history pages.
+- Code comments and test titles don't cite brief numbers ("brief 48", "(brief
+  174)"), this repo's or imbatranim-office's. Say what the code does and why,
+  or give the date; the history belongs in `log.md`.
 - Briefs in `done/`/`superseded/` are immutable (outcome note added at move
   time only). New work = new brief.
 - Standard relative markdown links (no `[[wikilinks]]`); absolute dates only.

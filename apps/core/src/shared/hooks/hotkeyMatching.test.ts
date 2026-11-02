@@ -5,7 +5,7 @@ import { eventMatchesBinding, parseBinding } from './useGlobalHotkeys'
 /**
  * The modifier matcher, tested directly.
  *
- * Brief 85 wanted `ctrl+alt+left` and it never fired. The cause was in here and
+ * Workspaces wanted `ctrl+alt+left` and it never fired. The cause was in here and
  * it was pre-existing: off a mac, `mod` IS ctrl, and the mod guard rejected an
  * explicit `ctrl+…` binding using the very key it had asked for. Nothing caught
  * it because until now every binding in the OS used `mod`.
@@ -26,7 +26,7 @@ const matches = (binding: string, ev: KeyboardEvent) =>
   eventMatchesBinding(ev, parseBinding(binding))
 
 describe('an explicit ctrl+ binding', () => {
-  it('FIRES on a real Ctrl press (the bug brief 85 found)', () => {
+  it('FIRES on a real Ctrl press (the bug the workspaces work found)', () => {
     expect(matches('ctrl+alt+left', key('ArrowLeft', { ctrl: true, alt: true }))).toBe(true)
     expect(matches('ctrl+alt+right', key('ArrowRight', { ctrl: true, alt: true }))).toBe(true)
   })
@@ -69,7 +69,7 @@ describe('mod bindings still behave', () => {
   })
 })
 
-describe('digit bindings match on e.code (brief 103)', () => {
+describe('digit bindings match on e.code', () => {
   const digitKey = (
     key: string,
     code: string,

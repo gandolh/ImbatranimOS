@@ -2,7 +2,7 @@ import { RecentService } from './recent.service';
 import { makeTestDb } from '../identity/testing';
 import type { DbService } from '../../db/db.service';
 
-describe('RecentService (brief 94)', () => {
+describe('RecentService', () => {
   let db: DbService;
   let service: RecentService;
 
@@ -57,7 +57,7 @@ describe('RecentService (brief 94)', () => {
 
   it('the old-shape table is dropped and recreated by the migration', () => {
     // Recreate the pre-94 shape, then run migrate() again: the shape wins,
-    // the rows are gone. Since brief 110 the ledger makes each step run once,
+    // the rows are gone. Since the migration ledger the ledger makes each step run once,
     // so simulating an OLD database means resetting the stamp too — otherwise
     // migrate() correctly does nothing on an already-current database.
     db.db.exec(`DROP TABLE recent_files`);

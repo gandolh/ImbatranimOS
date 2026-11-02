@@ -15,11 +15,11 @@ type DesktopIconProps = {
    * resizes (and observes the element) and on each one stops the icon's
    * running animation and moves it to the same fraction of the new bounds. A
    * resize therefore froze every icon part way to its new grid cell, squeezed
-   * together, until a reload (brief 159). Numeric limits have no such listener.
+   * together, until a reload. Numeric limits have no such listener.
    */
   bounds: { width: number; height: number }
   /**
-   * Selection is owned by Desktop (brief 106) — it is a set across icons now
+   * Selection is owned by Desktop — it is a set across icons now
    * (marquee, Ctrl+click), which no per-icon `useState` can express. It is also
    * deliberately ephemeral: the desktop store persists to a dotfile, and a
    * selection surviving a reload would be a bug, not a feature.

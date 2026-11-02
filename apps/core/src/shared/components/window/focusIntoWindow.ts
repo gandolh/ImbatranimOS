@@ -1,7 +1,7 @@
 import { topVisibleWindowId, useWindowStore } from '../../store/windowStore'
 
 /**
- * Moving the keyboard into a window the desktop raised (brief 174).
+ * Moving the keyboard into a window the desktop raised.
  *
  * A click inside a window puts DOM focus there by itself. Raising a window
  * from the taskbar, Alt+Tab, the Start menu or the palette does not: the store
@@ -11,7 +11,7 @@ import { topVisibleWindowId, useWindowStore } from '../../store/windowStore'
  * {@link focusIntoWindowSoon} after their store calls; the click path never
  * does, because the click has already decided.
  *
- * Brief 180 widened it to every path: a desktop icon, a toast's action, an
+ * The keyboard-focus fix widened it to every path: a desktop icon, a toast's action, an
  * app's `system.window.focus()` or `system.intents.openApp` raise a window and
  * call the same helper, and a NEW window gets the keyboard from its own mount
  * ({@link focusIntoNewWindowSoon}), whatever opened it.
@@ -112,7 +112,7 @@ export function focusIntoWindow(windowId: string): HTMLElement | null {
  * trigger as it closes; one frame lets both settle.
  *
  * Only while `windowId` is still the focused window: `topVisibleWindowId()` is
- * null behind the cover screen (brief 101), so nothing moves focus while the
+ * null behind the cover screen, so nothing moves focus while the
  * shell is suspended, and a window closed, minimised or covered by another in
  * that frame is left alone.
  */
@@ -124,7 +124,7 @@ export function focusIntoWindowSoon(windowId: string): void {
 }
 
 /**
- * A new window's first focus (brief 180). WindowContainer calls this once the
+ * A new window's first focus. WindowContainer calls this once the
  * app's content has mounted (past its lazy chunk), and again after a Reload.
  * Two frames later, and only while the window is still the focused one, the
  * keyboard goes in by the same order as {@link focusIntoWindow}, which leaves

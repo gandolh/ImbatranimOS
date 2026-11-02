@@ -61,7 +61,7 @@ caller, only a file node. Filtering them out drops real callers.
 
 ### Do NOT use it for
 
-- **Anything reached through the `system` handle.** Since brief 48 an add-on
+- **Anything reached through the `system` handle.** Since 2026-08-06 an add-on
   imports nothing from core: capabilities arrive as `system.fs.*`,
   `system.intents.openApp`, `system.notify(...)`. Those are **member
   expressions**, and the resolver does not connect them to the SDK definition —

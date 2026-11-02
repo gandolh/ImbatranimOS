@@ -8,7 +8,7 @@ import { focusIntoWindowSoon } from '../window/focusIntoWindow'
 import { openOrAdvance, switcherOrder, commitTarget, type SwitcherState } from './switcherModel'
 
 /**
- * The Alt+Tab switcher (brief 104): see where you are going.
+ * The Alt+Tab switcher: see where you are going.
  *
  * Selection is COMPONENT state — the store is untouched until commit, so Esc
  * is simply closing the overlay: z-order, the persisted layout and focus stay
@@ -22,7 +22,7 @@ import { openOrAdvance, switcherOrder, commitTarget, type SwitcherState } from '
  * host OS stole focus mid-switch the Alt keyup never arrives, and eating the
  * user's switch reads worse than honoring what the overlay showed.
  *
- * The key listeners run in the CAPTURE phase on `window` (brief 178): xterm
+ * The key listeners run in the CAPTURE phase on `window`: xterm
  * handles Tab and stops its keydown, so a bubbling listener never saw Alt+Tab
  * while a Terminal had the keyboard. A key the switcher acts on is stopped
  * here, so the focused app never also gets it; every other key goes on to the
@@ -68,7 +68,7 @@ export function AltTabSwitcher() {
       // focusWindow keeps holding.
       if (!win.isVisible) store.showWindow(id)
       store.focusWindow(id)
-      // And the keyboard goes with it (brief 174), as a click inside would.
+      // And the keyboard goes with it, as a click inside would.
       focusIntoWindowSoon(id)
     }
 
@@ -80,7 +80,7 @@ export function AltTabSwitcher() {
     }
 
     const onKeyDown = (e: KeyboardEvent) => {
-      // A covered screen eats no keys (brief 101).
+      // A covered screen eats no keys.
       if (isShellSuspended()) return
       if (e.key === 'Tab' && e.altKey) {
         take(e)
@@ -123,7 +123,7 @@ export function AltTabSwitcher() {
       if (stateRef.current) commit()
     }
 
-    // Capture phase (brief 178): window is first on every key's path, so a
+    // Capture phase: window is first on every key's path, so a
     // target that stops propagation (xterm on Tab) can't hide it from us.
     window.addEventListener('keydown', onKeyDown, { capture: true })
     window.addEventListener('keyup', onKeyUp, { capture: true })

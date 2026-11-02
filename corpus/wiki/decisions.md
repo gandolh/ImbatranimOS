@@ -1,6 +1,6 @@
 ---
 summary: Locked choices of the web-OS era (2026-07-16 pivot grilling) plus the 2026-07-17 office-suite/post-v1 set, the 2026-07-18 REST-client SSRF stance, and a compressed record of the superseded ISO-era decisions — do not relitigate without an explicit revisit and a log entry.
-updated: 2026-10-28
+updated: 2026-11-02
 ---
 
 # Decisions (locked)
@@ -51,14 +51,14 @@ cap.
 
 Locked during the first real human QA pass of the desktop:
 
-- **Crimson accent is the confirmed default** (was provisional since brief 14).
+- **Crimson accent is the confirmed default** (was provisional since the imbatranim reskin work (2026-07-17)).
   The other 3 presets stay user-selectable in Settings — not dropped.
 - **VPS + HTTPS deploy is NOT a v1 gate.** Deferred; the Caddy reverse-proxy
-  recipe stays documented for whoever deploys. Brief 15's acceptance is
+  recipe stays documented for whoever deploys. The v1 release work's acceptance is
   relaxed accordingly.
 - **No git tags.** The release version lives in `package.json` (already 1.0.0
   across all 25 workspaces) + Dockerfile `LABEL`/`IMAGE_VERSION` + ISO init;
-  the About panel reads it at runtime. "Tag v1.0" in brief 15 is void.
+  the About panel reads it at runtime. "Tag v1.0" in the v1 release work (2026-10-07) is void.
 - ~~**Kiosk ISO deferred until the OS is feature-complete**~~ **Superseded
   2026-10-04:** the kiosk is dropped; the ISO is a LAN server OS
   ([decisions-estate-era.md](decisions-estate-era.md)).
@@ -86,17 +86,17 @@ client-rendered desktop; single-container/build-from-source/no-sudo/first-party 
 - **Session vs dotfile split:** session = ephemeral per-tab in-memory window layout
   (fixes the shared-`localStorage` stomp bug); user config (wallpaper, accent, icon
   positions, pinned taskbar) = durable `$HOME` dotfiles, shared; tmux reattach = future.
-- **Isolation = per-window error boundaries now (brief 47)** (first-party threat
+- **Isolation = per-window error boundaries now (2026-08-06)** (first-party threat
   = buggy, not malicious); hard sandboxing = the transport swap, gated on
   third-party apps. **Kill-list (NOT built):** runtime package manager
-  (`manifest.ts` is it; *revisited 2026-10-06*: brief 120's catalog-driven
+  (`manifest.ts` is it; *revisited 2026-10-06*: the marketplace install's catalog-driven
   installer, see [decisions-marketplace.md](decisions-marketplace.md)), session-manager daemon,
   app-to-app IPC/D-Bus. **DOM
-  stays substrate; canvas/WebGPU parked.** Specs: briefs 47 (first), 48, 49.
+  stays substrate; canvas/WebGPU parked.** Built 2026-08-06: per-window error boundaries first, then the system-handle seam and the ephemeral session.
 
 ## 2026-08-03 — norPDF owns `.pdf`; PDF Viewer stays as the light option
 
-Brief 65 asked which of the two PDF apps the OS opens. Measured on the same
+The PDF split (2026-08-03) asked which of the two PDF apps the OS opens. Measured on the same
 40-page PDF, cold, in the shipped production build:
 
 | | PDF Viewer | norPDF |
@@ -109,7 +109,7 @@ Brief 65 asked which of the two PDF apps the OS opens. Measured on the same
 **Decision: `openWith` routes `pdf` → `norpdf`. PDF Viewer is kept, not deleted.**
 
 **2026-10-28:** both apps left this repo for imbatranim-office, where they
-became one app, Office's PDF (brief 167); `PREFERRED_DEFAULT` lost this row.
+became one app, Office's PDF (2026-10-28); `PREFERRED_DEFAULT` lost this row.
 
 - The default had to move. While it pointed at the 340-line viewer, norPDF's 3886
   lines were reachable only by launching it from the desktop, which almost nobody
@@ -119,28 +119,28 @@ became one app, Office's PDF (brief 167); `PREFERRED_DEFAULT` lost this row.
   shared. There is no size win to collect, and it is measurably faster to first
   page with a fraction of the bytes fetched, which is a real use case ("just look
   at this file").
-- Brief 81's "Open with ▸" is the mechanism for choosing it. Deleting the
+- Default apps and Open with's "Open with ▸" is the mechanism for choosing it. Deleting the
   alternative *before* the chooser exists would remove the user's option and
   gain 5 KB.
 
 **Known regression, recorded rather than hidden:** norPDF is ~1.2 s slower to
 first page. Cause is visible in the numbers — it paints 7 canvases (the page plus
 its thumbnail rail) and fetches several times the code. The fix is to get the
-first page up before the rail, which is brief 66's territory (norPDF is
+first page up before the rail, which is the norpdf document and harden work's territory (norPDF is
 undocumented and untested; that brief owns it). Not fixed here, and not pretended
 away.
 
 **Also fixed under this brief:** norPDF's own "Open a PDF" was a native
-`<input type="file">`, which reads the **host machine**. Brief 54 rules that out
+`<input type="file">`, which reads the **host machine**. The shared file open dialog work (2026-07-31) rules that out
 by name — "the computer is the container", and a dialog browsing the user's laptop
 instead of their home directory is actively wrong. It now uses the OS's own picker.
 Drag-and-drop from the host is kept, because dropping a file is an explicit,
 visible host action rather than a dialog pretending to be the OS's.
 
-## 2026-08-05 — Git: what the allowlist may grow into (brief 76)
+## 2026-08-05 — Git: what the allowlist may grow into (2026-08-05)
 
 The git backend has one `execa` seam, array args, no shell, a `--` pathspec guard
-and a jailed cwd, and it was adversarially security-reviewed. Brief 76 extended the
+and a jailed cwd, and it was adversarially security-reviewed. The git GUI work (2026-08-05) extended the
 **subcommand allowlist** — the first extension since that review — so the rules it
 adds are locked here rather than re-derived per brief.
 
@@ -163,7 +163,7 @@ adds are locked here rather than re-derived per brief.
   channel for large client-supplied text. A patch must never become an argument or a
   temp file.
 - **No server-side dirty-tree block on a branch switch.** Considered and rejected as
-  a departure from brief 76's wording: git already refuses a switch that would
+  a departure from the git GUI work's wording: git already refuses a switch that would
   overwrite local changes, and deliberately allows one that carries clean changes
   across — a normal, safe, very common workflow. Blocking it would make the app worse
   than the Terminal it exists to save you from. The **warning** lives in the UI; git's
@@ -175,13 +175,13 @@ adds are locked here rather than re-derived per brief.
 - **Push / pull / fetch stay out, and this is a decision, not a gap.** They need a
   credential living in the container and an outbound path — where the secret lives,
   how it is encrypted, and what an XSS in another app could reach. That deserves its
-  own grilled brief alongside brief 50's SSRF stance. The Terminal is a real shell for
+  own grilled brief alongside the proxied browser's SSRF stance. The Terminal is a real shell for
   anyone who needs to push today.
 - **Rejected here, unchanged:** merge-conflict resolution UI (large, subtle; Terminal
   + Code Editor covers it) and a history graph with topology (substantial work for a
   single-user local browser).
 
-## 2026-08-06 — code-health sweep (brief 93)
+## 2026-08-06 — code-health sweep (2026-08-06)
 
 - **Frontend `strict` is ON and stays on.** All 23 add-ons (`apps/add-ons/tsconfig.base.json`)
   and core (`tsconfig.app.json`) now compile under `strict`; the backend runs

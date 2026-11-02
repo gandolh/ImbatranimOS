@@ -29,7 +29,7 @@ vi.mock('../../lib/axios', () => ({
     get: (...args: unknown[]) => get(...args) as unknown,
     // The stores this file writes are dotfiles: prefs.ts's debounced flush
     // PUTs them a moment later, sometimes after the test that wrote them
-    // (brief 181).
+    //.
     put: () => Promise.resolve({ data: { written: 0 } }),
   },
 }))
@@ -118,7 +118,7 @@ async function hostOf(id: string): Promise<string | null> {
   return host
 }
 
-describe('the marketplace registry (brief 120)', () => {
+describe('the marketplace registry', () => {
   const builtIns = APP_REGISTRY.length
 
   it('adds installed, present apps and nothing else', () => {
@@ -149,7 +149,7 @@ describe('the marketplace registry (brief 120)', () => {
   })
 })
 
-describe('apps from a URL in the registry (brief 158)', () => {
+describe('apps from a URL in the registry', () => {
   const builtIns = APP_REGISTRY.length
 
   it('adds an installed URL app though it has no entryPath, and opens it in the sandboxed host', async () => {
@@ -211,7 +211,7 @@ describe('apps from a URL in the registry (brief 158)', () => {
 })
 
 describe('marketplaceIcon', () => {
-  // The name comes from an unreviewed app's manifest (brief 158).
+  // The name comes from an unreviewed app's manifest.
   it('looks up a listed icon', () => {
     expect(marketplaceIcon('gamepad-2')).toBe(Gamepad2)
     expect(marketplaceIcon('package')).toBe(Package)
@@ -238,7 +238,7 @@ describe('marketplaceIcon', () => {
   })
 })
 
-/** An app of a two-app suite (brief 162), installed. */
+/** An app of a two-app suite, installed. */
 function suiteApp(id: string, extra: Partial<MarketplaceApp> = {}): MarketplaceApp {
   return app(
     id,
@@ -247,7 +247,7 @@ function suiteApp(id: string, extra: Partial<MarketplaceApp> = {}): MarketplaceA
   )
 }
 
-describe('several apps from one descriptor (brief 162)', () => {
+describe('several apps from one descriptor', () => {
   beforeEach(() => {
     localStorage.clear()
     useAssociationStore.setState({ overrides: {} })
@@ -287,7 +287,7 @@ describe('several apps from one descriptor (brief 162)', () => {
 
   it('offers a marketplace app in Open With after the built-in that claims the type', () => {
     // Markdown, not an office type: the built-in Docs, Slides, Sheets and PDF
-    // apps leave for the suite (briefs 164-167), Markdown Editor stays.
+    // apps leave for the suite, Markdown Editor stays.
     syncMarketplaceApps([suiteApp('office-notes', { opens: ['md'] })])
     expect(APP_REGISTRY.find((a) => a.id === 'office-notes')?.opens).toEqual(['md'])
     const ids = candidatesFor('notes.md').map((c) => c.appId)
@@ -300,7 +300,7 @@ describe('several apps from one descriptor (brief 162)', () => {
     syncMarketplaceApps([])
   })
 
-  it('makes the suite the only opener of .docx once the built-in Docs is gone (brief 164)', () => {
+  it('makes the suite the only opener of .docx once the built-in Docs is gone', () => {
     expect(resolveOpener('letter.docx')).toEqual({ appId: '', reason: 'none' })
     syncMarketplaceApps([suiteApp('office-docs', { opens: ['docx'] })])
     expect(resolveOpener('letter.docx')).toEqual({ appId: 'office-docs', reason: 'declared' })
@@ -344,7 +344,7 @@ describe('several apps from one descriptor (brief 162)', () => {
   })
 })
 
-describe('the icons committed descriptors name (brief 162)', () => {
+describe('the icons committed descriptors name', () => {
   // vitest runs from apps/core.
   const catalog = join(process.cwd(), '..', '..', 'marketplace')
   const files = readdirSync(catalog).filter((f) => f.endsWith('.json'))
@@ -381,7 +381,7 @@ describe('the icons committed descriptors name (brief 162)', () => {
   })
 })
 
-describe('kit apps in the registry (brief 163)', () => {
+describe('kit apps in the registry', () => {
   beforeEach(() => syncMarketplaceApps([]))
 
   it('opens an app with a shared kit version in the kit host, and one without in the mount host', async () => {
@@ -402,14 +402,14 @@ describe('kit apps in the registry (brief 163)', () => {
     syncMarketplaceApps([])
   })
 
-  it('offers a rebuild only when the catalog now names this desktop’s kit (brief 176)', () => {
+  it('offers a rebuild only when the catalog now names this desktop’s kit', () => {
     const built = (sharedKit: number, catalogSharedKit?: number | null) =>
       suiteApp('office-docs', { sharedKit, catalogSharedKit })
     // Built for kit 1, the catalog moved to 2, the desktop has 2.
     expect(rebuildFixesKit(built(1, 2), 2)).toBe(true)
     // The catalog still names kit 1: a rebuild would make the same mismatch.
     expect(rebuildFixesKit(built(1, 1), 2)).toBe(false)
-    // A backend from before brief 176 says nothing about the catalog: unknown.
+    // A backend from before the same-ref rebuild says nothing about the catalog: unknown.
     expect(rebuildFixesKit(built(1), 2)).toBe(false)
     // Nothing to fix.
     expect(rebuildFixesKit(built(2, 2), 2)).toBe(false)
@@ -429,7 +429,7 @@ describe('kit apps in the registry (brief 163)', () => {
     expect(isKitApp(suiteApp('office-docs', { sharedKit: null }))).toBe(false)
   })
 
-  it("starts a kit app's entry as its window opens, and no other host's (brief 182)", async () => {
+  it("starts a kit app's entry as its window opens, and no other host's", async () => {
     const preloads = () =>
       [...document.head.querySelectorAll('link[rel="modulepreload"]')].map((l) =>
         l.getAttribute('href')

@@ -72,20 +72,20 @@ export interface InstalledRow {
   /**
    * Relative to `root`. For a row with no {@link entries} (a version 1
    * descriptor's, or a URL app's): the module, whose directory is served.
-   * For a version 2 descriptor's row (brief 162): the build's `output`, the
+   * For a version 2 descriptor's row: the build's `output`, the
    * served directory itself.
    */
   entry: string;
   /**
-   * A version 2 descriptor's build (brief 162): JSON, app id → that app's
+   * A version 2 descriptor's build: JSON, app id → that app's
    * module inside `entry`, as the build that is live produced them. Null for
-   * every other row. A kit app's (brief 163) is an object instead of the
+   * every other row. A kit app's is an object instead of the
    * module's path: `{ entry, styles, sharedKit }`, its stylesheets and the
    * shared kit version its build was made against. See {@link recordedBuild}.
    */
   entries: string | null;
   installed_at: number;
-  /** `sandboxed` for an app installed from a URL (brief 158). */
+  /** `sandboxed` for an app installed from a URL. */
   runtime: 'native' | 'sandboxed';
   /** A URL app's {@link AppSource}, as JSON. Null for a catalog app. */
   source: string | null;
@@ -106,7 +106,7 @@ export interface ListingProblem {
 
 /**
  * What the Marketplace pane and the desktop's registry read: one app. A
- * version 2 descriptor lists one per item of its `apps` (brief 162), each
+ * version 2 descriptor lists one per item of its `apps`, each
  * carrying the descriptor's ref, type, install, job and server.
  */
 export interface MarketplaceApp {
@@ -132,14 +132,14 @@ export interface MarketplaceApp {
   opens: string[];
   minSystemVersion: number;
   /**
-   * The shared kit version a kit app (brief 163) was built against, or null
+   * The shared kit version a kit app was built against, or null
    * for an app that exports `mount`. Installed: what the live build was made
    * against, so the desktop runs it the way it was built until a reinstall.
    * Not installed: what the descriptor says now.
    */
   sharedKit: number | null;
   /**
-   * What the catalog's descriptor says now (brief 176), whatever was built.
+   * What the catalog's descriptor says now, whatever was built.
    * Beside an installed `sharedKit` it tells the desktop whether a rebuild
    * at the same ref would fix a kit mismatch. Null for an app that exports
    * `mount` and for a URL app. Older desktops ignore it.
@@ -149,7 +149,7 @@ export interface MarketplaceApp {
   ref: string;
   /**
    * `native` runs in the desktop's page (a reviewed catalog app);
-   * `sandboxed` in an opaque-origin frame (an app from a URL, brief 158).
+   * `sandboxed` in an opaque-origin frame (an app from a URL).
    */
   runtime: 'native' | 'sandboxed';
   /** Where a URL app came from. Absent for a catalog app. */
@@ -192,7 +192,7 @@ export type StepRunner = (
 const PASSED_THROUGH = ['PATH', 'LANG', 'LC_ALL', 'TZ'] as const;
 
 /**
- * The marketplace (brief 120): installs the apps the in-repo catalog
+ * The marketplace: installs the apps the in-repo catalog
  * describes, by cloning each at its pinned commit and building it in the live
  * container.
  *
@@ -210,7 +210,7 @@ export class MarketplaceService implements OnModuleInit {
   private readonly jobs = new Map<string, Job>();
   /**
    * Builds run one at a time: two at once is twice the memory and CPU. A URL
-   * check's clone (brief 158) takes its turn here too, so git work never
+   * check's clone takes its turn here too, so git work never
    * overlaps.
    */
   private queue: Promise<void> = Promise.resolve();
@@ -366,7 +366,7 @@ export class MarketplaceService implements OnModuleInit {
   }
 
   /**
-   * An installed URL app as the pane and the registry read it (brief 158):
+   * An installed URL app as the pane and the registry read it:
    * its name, window and capabilities from its stored manifest, no
    * `entryPath` (its files are served only under a sandbox token) and no
    * server. Null when it is not one, or its stored row is damaged.
@@ -412,7 +412,7 @@ export class MarketplaceService implements OnModuleInit {
       opens: [],
       minSystemVersion: manifest.minSystemVersion,
       // Never a kit app: an app from a URL runs sandboxed, and the shared
-      // modules never reach a frame (brief 163).
+      // modules never reach a frame.
       sharedKit: null,
       catalogSharedKit: null,
       ref: row.ref,
@@ -440,7 +440,7 @@ export class MarketplaceService implements OnModuleInit {
 
   /**
    * The file a request for an installed descriptor's build names, as a real
-   * path inside its served directory. `id` is the descriptor's (brief 162):
+   * path inside its served directory. `id` is the descriptor's:
    * the apps of a suite share the directory, and the chunks in it. Anything
    * else is a 404: an id outside the catalog, a build that is not the live
    * one, a path that climbs out or reaches through a symlink, a dotfile. A
@@ -487,7 +487,7 @@ export class MarketplaceService implements OnModuleInit {
   /**
    * What the supervisor needs to start an installed service descriptor's
    * server, or a 404 when there is no such descriptor, a 409 when it is not a
-   * service or not built. One server per descriptor (brief 162): every
+   * service or not built. One server per descriptor: every
    * window of a suite's apps leases this one, by the descriptor's id.
    */
   serverSpec(id: string): ServerSpec {
@@ -659,7 +659,7 @@ export class MarketplaceService implements OnModuleInit {
       // Reported below, as the first entry it does not hold.
     }
     for (const a of d.apps) {
-      // A kit app's stylesheets (brief 163) are checked like its module: a
+      // A kit app's stylesheets are checked like its module: a
       // listed file the build did not write fails the install.
       for (const file of [a.entry, ...a.styles]) {
         if (!realOutput || !(await isFileWithin(realOutput, file))) {
@@ -680,9 +680,9 @@ export class MarketplaceService implements OnModuleInit {
     // A running server belongs to the old build: stop it before its
     // directory goes.
     await this.servers.stop(d.id);
-    // A version 1 row is written exactly as before brief 162: the entry, and
+    // A version 1 row is written exactly as before one catalog entry, several apps: the entry, and
     // no entries. A version 2 row names the output and each app's module; a
-    // kit app's (brief 163) also its stylesheets and its shared kit version.
+    // kit app's also its stylesheets and its shared kit version.
     const suite = d.schemaVersion === 2;
     const kit = d.sharedKit;
     this.dbs.db
@@ -728,7 +728,7 @@ export class MarketplaceService implements OnModuleInit {
    * Fetch exactly `commit` of `repo` into the empty directory `dir`: hooks
    * off, one commit deep, no tags, and `HEAD` checked against the commit
    * afterwards. Shared by the catalog's builds and the URL apps' clones
-   * (brief 158), which run no step after it. `fail` is told when the fetched
+   *, which run no step after it. `fail` is told when the fetched
    * commit is another; a failed command is `step`'s to report.
    *
    * `beforeCheckout` runs once the commit is fetched and before anything is
@@ -875,13 +875,13 @@ export function isAppId(id: string): boolean {
 export interface RecordedApp {
   /** Its module, inside the build's output. */
   entry: string;
-  /** A kit app's stylesheets, inside the output (brief 163). Empty for a mount app. */
+  /** A kit app's stylesheets, inside the output. Empty for a mount app. */
   styles: string[];
   /** The shared kit version a kit app was built against. Null for a mount app. */
   sharedKit: number | null;
 }
 
-/** A kit app's value in `entries` (brief 163). */
+/** A kit app's value in `entries`. */
 const recordedKitApp = z.strictObject({
   entry: appEntrySchema,
   styles: z.array(styleSchema).max(MAX_APP_STYLES),

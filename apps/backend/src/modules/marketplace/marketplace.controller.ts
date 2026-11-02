@@ -84,14 +84,14 @@ const DROPPED_RESPONSE_HEADERS = new Set([
 ]);
 
 /**
- * The marketplace (brief 120). Every route sits behind the global guard:
+ * The marketplace. Every route sits behind the global guard:
  * installing runs a build, and the served files and the app servers are the
- * owner's. The exception is the three `sandbox/:token/…` reads (brief 158):
+ * owner's. The exception is the three `sandbox/:token/…` reads:
  * a sandboxed frame's opaque origin sends no cookie, so they are `@Public()`
  * and the token, minted behind the session, is their authentication.
  *
  * The native routes' `:id` (install, uninstall, log, built files, lease,
- * server) is a descriptor's id, not an app's (brief 162): a suite's apps
+ * server) is a descriptor's id, not an app's: a suite's apps
  * share one build, one served directory and one server. For a version 1
  * descriptor and a URL app the two ids are the same.
  */
@@ -132,7 +132,7 @@ export class MarketplaceController {
     res.send(text);
   }
 
-  // ── apps from a URL (brief 158) ──────────────────────────────────────────
+  // ── apps from a URL ──────────────────────────────────────────
 
   /**
    * POST /api/marketplace/url/inspect { url } → the consent card's facts and a
@@ -241,7 +241,7 @@ export class MarketplaceController {
     pipeline(createReadStream(abs), res, () => undefined);
   }
 
-  // ── the native runtime's files and servers (brief 120) ───────────────────
+  // ── the native runtime's files and servers ───────────────────
 
   /**
    * GET /api/marketplace/apps/:id/b/:buildId/<file> → a file of the live

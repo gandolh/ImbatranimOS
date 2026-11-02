@@ -5,7 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { ContextMenu, type ContextMenuItem } from './ContextMenu'
 
 /**
- * The kit context menu's ARIA contract (brief 105) — the part all three
+ * The kit context menu's ARIA contract — the part all three
  * migrated call sites inherit and none of the hand-rolled copies had.
  */
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true

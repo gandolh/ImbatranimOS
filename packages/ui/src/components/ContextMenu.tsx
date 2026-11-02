@@ -29,7 +29,7 @@ type ContextMenuProps = {
 }
 
 /**
- * THE right-click menu (brief 105) — the third hand-rolled copy triggered the
+ * THE right-click menu — the third hand-rolled copy triggered the
  * promote-on-third-use rule, so this is now the only one. Wraps base-ui's Menu
  * primitives so every caller inherits the ARIA menu contract (focus moves in,
  * Arrow/Home/End, Enter activates, Escape closes and restores focus) and

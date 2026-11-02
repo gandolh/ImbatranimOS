@@ -89,7 +89,7 @@ describe('AuthGate', () => {
     expect(text).toContain('the desktop')
   })
 
-  // Brief 152: the signed-out screen is the machine's own.
+  // The signed-out screen is the machine's own.
   it('offers first-run setup on an unclaimed machine', async () => {
     const text = await renderWith(SIGNED_OUT, { setUp: false, setupTokenRequired: true })
     expect(text).toContain('Set up this machine')
@@ -123,7 +123,7 @@ describe('AuthGate', () => {
     expect(container.textContent).toContain('the desktop')
   })
 
-  // Brief 157: the identity probe failing must not strand anybody.
+  // The identity probe failing must not strand anybody.
   it('falls back to the sign-in form when the identity probe fails', async () => {
     getStatus.mockResolvedValue(SIGNED_OUT)
     getIdentity.mockRejectedValue(new Error('network'))

@@ -41,11 +41,11 @@ export interface SavedRequest {
 /**
  * A bounded record of a past send.
  *
- * `headers` and `body` are carried (brief 77) because without them "replay" restored
+ * `headers` and `body` are carried because without them "replay" restored
  * only the method and URL and **left the previous request's headers and body loaded**
  * — click a GET from history while a POST body and an Authorization header are still
  * in the builder, press Send, and you send something other than what you clicked.
- * They are optional so entries written before brief 77 still load.
+ * They are optional so entries written before the REST client work still load.
  */
 export interface HistoryEntry {
   id: string
@@ -92,7 +92,7 @@ export interface FormField {
 export interface RestClientData {
   collections: SavedRequest[]
   history: HistoryEntry[]
-  /** Brief 77. Optional in the type so a pre-77 file still loads. */
+  /** The REST client work. Optional in the type so a pre-77 file still loads. */
   environments: Environment[]
   activeEnvId: string | null
 }

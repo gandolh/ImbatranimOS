@@ -17,7 +17,7 @@ export type UnsavedChangesDialogProps = {
 }
 
 /**
- * The themed unsaved-changes prompt (brief 102) — the one dialog every dirty
+ * The themed unsaved-changes prompt — the one dialog every dirty
  * close asks with, replacing the last native browser confirm. Desktop-modal
  * like every kit dialog: other windows are pointer-blocked but their JS keeps
  * running, which is exactly what the native modal broke. Esc, backdrop and the

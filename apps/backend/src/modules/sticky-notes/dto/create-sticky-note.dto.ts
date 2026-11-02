@@ -13,7 +13,7 @@ import {
 export const MAX_CONTENT = 10_000;
 
 /**
- * The shared palette, matching Calendar's event colours (brief 72).
+ * The shared palette, matching Calendar's event colours.
  *
  * Same names, same reason: the OS identity is B&W plus one accent, so a
  * saturated "sticky yellow" is off-identity, and these are applied as a tinted

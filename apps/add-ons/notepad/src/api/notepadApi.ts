@@ -10,7 +10,7 @@ import type { NotepadRoot } from '../lib/notepadRoot'
  * for the migration rule. There is deliberately no default parameter: a silent
  * fallback is how one call site quietly keeps writing to the old root.
  *
- * Plain functions take the capability as their first argument (brief 48); only
+ * Plain functions take the capability as their first argument; only
  * hooks may call `useSystem()`, and these are not hooks.
  */
 
@@ -48,7 +48,7 @@ export async function createFile(
 /**
  * Save over `path`. With `expected` (the version the editor read), a file that
  * changed on disk since throws {@link FileConflictError} and nothing is written
- * (brief 155); without it, the write is a blind overwrite.
+ *; without it, the write is a blind overwrite.
  */
 export async function updateFile(
   http: SystemHttp,

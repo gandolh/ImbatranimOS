@@ -33,7 +33,7 @@ export type BuildMenuItemsCtx = {
   /** Whether the clipboard holds something (gates the Paste item). */
   hasClipboard: boolean
   /**
-   * How many entries the row verbs will act on (brief 111): 1 for a lone row,
+   * How many entries the row verbs will act on: 1 for a lone row,
    * the selection size when the clicked row is part of a multi-selection. The
    * labels say so — "Copy 3 items" — because a Copy that silently takes four
    * more files than the one you right-clicked is a trap.
@@ -52,26 +52,26 @@ export type BuildMenuItemsCtx = {
   onUpload: () => void
   onPaste: () => void
   onRefresh: () => void
-  /** Show the "Open with" chooser for this entry (brief 81). */
+  /** Show the "Open with" chooser for this entry. */
   onOpenWith: (entry: FsEntry) => void
   /** Extract an archive file (Archive Manager). */
   onExtract: (entry: FsEntry) => void
   /** Compress the current selection (or this entry) to a .zip (Archive Manager). */
   onCompress: (entry: FsEntry) => void
   /**
-   * Compare the two selected files in the Diff tool (brief 99). Non-null only
+   * Compare the two selected files in the Diff tool. Non-null only
    * when exactly two files are selected and the clicked entry is one of them —
    * the builder shows the item exactly when the action can mean something.
    */
   onCompare: (() => void) | null
-  /** Open a bitmap in Paint (brief 95) — an Edit verb beside the viewer's Open. */
+  /** Open a bitmap in Paint — an Edit verb beside the viewer's Open. */
   onEditInPaint: (entry: FsEntry) => void
 }
 
 /** Archive files the "Extract here" item is offered for. */
 const ARCHIVE_RE = /\.(zip|tar\.gz|tgz|tar)$/i
 
-/** Bitmaps Paint can edit (brief 95) — the viewer keeps the double-click. */
+/** Bitmaps Paint can edit — the viewer keeps the double-click. */
 const PAINTABLE_RE = /\.(png|jpe?g|gif|webp|bmp)$/i
 
 /**
@@ -118,7 +118,7 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
         icon: <FolderPlus size={13} />,
         onSelect: onNewFolder,
       },
-      // Only while an installed app opens the kind (brief 164): the office
+      // Only while an installed app opens the kind: the office
       // apps live in the Marketplace's Office, which may not be installed.
       ...(newFileOpener(ctx.assoc, 'spreadsheet')
         ? [
@@ -166,7 +166,7 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
           : openAppLabel(ctx.assoc, resolveOpenApp(ctx.assoc, root, entry.name)),
       icon: <FolderOpen size={13} />,
       onSelect: () => onOpen(entry),
-      // Never disabled for a file any more (brief 81): resolution always ends
+      // Never disabled for a file any more: resolution always ends
       // somewhere, and when it genuinely cannot, `onOpen` shows the chooser
       // rather than nothing happening.
     },

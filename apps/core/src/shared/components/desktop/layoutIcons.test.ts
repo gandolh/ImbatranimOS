@@ -90,7 +90,7 @@ describe('layoutIcons', () => {
     expect(a).toEqual(b)
   })
 
-  describe('after a resize, with pinned icons (brief 159)', () => {
+  describe('after a resize, with pinned icons', () => {
     const TALL = { width: 1440, height: 856 }
     const SHORT = { width: 1440, height: 456 }
 

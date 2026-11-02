@@ -3,7 +3,7 @@ import { DbService } from '../../db/db.service';
 import type { PrefEntryDto, PrefsMap } from './dto/prefs.dto';
 
 /**
- * Durable user config — the dotfiles half of brief 49's split.
+ * Durable user config — the dotfiles half of the ephemeral-session work's split.
  *
  * The layering grill settled the model as SSH: a **session** is per-tab and dies
  * with the tab, while **user config** belongs to the account and follows you to
@@ -48,7 +48,7 @@ export class PrefsService {
    * icon rewrites the desktop layout) and a half-applied batch would leave the
    * next boot hydrating an inconsistent pair.
    *
-   * The response echoes each key's `updated_at` (brief 109). The column already
+   * The response echoes each key's `updated_at`. The column already
    * existed and the client ignored it; returning it gives a two-browser
    * conflict a timestamp to reason with. Whole-key last-writer-wins stays the
    * merge rule — this is durability information, not a version check.

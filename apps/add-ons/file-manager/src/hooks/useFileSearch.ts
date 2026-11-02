@@ -20,7 +20,7 @@ export type FileSearchState = {
 const NAME_DEBOUNCE_MS = 300
 
 /**
- * The file manager's search, scoped to the folder it is showing (brief 112).
+ * The file manager's search, scoped to the folder it is showing.
  *
  * Two speeds, deliberately:
  *

@@ -5,7 +5,7 @@ import { isWebUrl, toAddress } from './address'
 import { parseFromHost, type ToHost } from './hostProtocol'
 
 /**
- * The Browser (brief 50): real websites, clickable, through the machine.
+ * The Browser: real websites, clickable, through the machine.
  *
  * Pages are fetched by the machine, not by the viewing browser: Scramjet
  * rewrites them and a Wisp relay on the backend carries the traffic. They run

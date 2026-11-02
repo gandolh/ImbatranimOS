@@ -16,7 +16,7 @@ import {
 import { scopeHandle } from './scopeHandle'
 
 /**
- * Brief 158, contract C — the desktop's side of a sandboxed app's port. The
+ * Sandboxed apps from a URL, contract C — the desktop's side of a sandboxed app's port. The
  * frame is untrusted: what matters is that only the named calls get through,
  * checked; that a bad message is dropped rather than thrown; and that the app
  * can neither hold its window open nor keep anything alive past dispose.

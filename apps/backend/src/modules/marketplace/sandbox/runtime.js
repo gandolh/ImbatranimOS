@@ -1,5 +1,5 @@
 /*
- * The runtime of an app installed from a URL, inside its frame (brief 158).
+ * The runtime of an app installed from a URL, inside its frame.
  *
  * The frame is <iframe sandbox="allow-scripts allow-pointer-lock"> and every
  * response on its routes carries the CSP `sandbox` directive, so this

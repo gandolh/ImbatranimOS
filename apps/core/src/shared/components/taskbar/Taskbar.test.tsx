@@ -28,7 +28,7 @@ import { Taskbar } from './Taskbar'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 /**
- * Brief 174: raising a window from its task button moves the keyboard into it;
+ * Raising a window from its task button moves the keyboard into it;
  * minimising the focused one leaves the keyboard on the button.
  */
 
@@ -85,7 +85,7 @@ const top = () =>
     .windows.filter((w) => w.isVisible)
     .sort((x, y) => y.zIndex - x.zIndex)[0]?.id
 
-describe('Taskbar activation (brief 174)', () => {
+describe('Taskbar activation', () => {
   it('raises a background window and moves focus into it', () => {
     click('Window a')
     expect(top()).toBe('a')

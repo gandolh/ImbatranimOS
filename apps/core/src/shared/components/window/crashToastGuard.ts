@@ -1,5 +1,5 @@
 /**
- * Rate limit for "this app crashed" notifications (brief 47).
+ * Rate limit for "this app crashed" notifications.
  *
  * Its own module for two reasons. The lint rule that forced it out of
  * `AppErrorBoundary.tsx` is right — a file mixing components and helpers breaks

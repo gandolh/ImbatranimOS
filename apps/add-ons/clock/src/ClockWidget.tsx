@@ -1,7 +1,7 @@
 import { useNow } from './useNow'
 
 /**
- * The desktop clock widget (brief 96): time at a glance, hosted by core's
+ * The desktop clock widget: time at a glance, hosted by core's
  * widget layer. Content only — the frame, drag and removal are the host's.
  */
 export function ClockWidget() {

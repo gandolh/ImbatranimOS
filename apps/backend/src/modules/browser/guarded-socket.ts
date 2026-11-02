@@ -13,7 +13,7 @@ const logger = new Logger('BrowserRelay');
 
 /**
  * The TCP socket the Wisp relay opens for each stream, with the egress rule
- * built in (brief 50).
+ * built in.
  *
  * wisp-js accepts a socket class of its own shape, and this is the one place a
  * connection is made, so the rule cannot be skipped by any path through the

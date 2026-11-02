@@ -3,7 +3,7 @@
  *
  * Times are epoch ms with **local-time semantics only** — no timezone conversion
  * happens anywhere in this package, and a per-event timezone is explicitly out of
- * scope (brief 72).
+ * scope.
  */
 
 export type Frequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
@@ -28,7 +28,7 @@ export type RecurrenceRule = {
 export type EventColor = 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'slate'
 
 export type CalendarEvent = {
-  /** Server-assigned. Was a client-side uuid string before brief 72. */
+  /** Server-assigned. Was a client-side uuid string before the calendar storage work. */
   id: number
   title: string
   /** epoch ms */

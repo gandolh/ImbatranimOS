@@ -3,7 +3,7 @@ import { scramjetPath } from '@mercuryworkshop/scramjet/path';
 import { dirname, join } from 'path';
 
 /**
- * Every file the proxy origin serves (brief 50), by exact path. Anything not
+ * Every file the proxy origin serves, by exact path. Anything not
  * listed is a 404: the origin has no directory to wander, and no route reaches
  * the desktop's files or API.
  *

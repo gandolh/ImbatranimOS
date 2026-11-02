@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 /**
- * A kit suite (brief 163) as a real git repository: one build that writes two
+ * A kit suite as a real git repository: one build that writes two
  * kit apps' modules and the stylesheet they share into `dist/os`.
  *
  * - `main`: the whole build. `notes/app.mjs` and `hello/app.mjs` export `App`
@@ -180,7 +180,7 @@ export function App({ host }) {
  * may not hold, in the desktop's `utilities` layer, naming the desktop's
  * tokens. Hand-written here, so plain `var()` with no fallback: the walk
  * shows `--color-heritage` resolving, which the desktop's CSS did not define
- * before its tokens became static (brief 163).
+ * before its tokens became static.
  */
 const KIT_CSS = `@layer utilities {
   .border-l-4 { border-left-style: solid; border-left-width: 4px; }

@@ -23,7 +23,7 @@ type DesktopStore = {
   /** An auto-layout placement — does not pin, and never overwrites a pin. */
   setAutoPositions: (positions: Record<string, { x: number; y: number }>) => void
   /**
-   * Auto-arrange (brief 106): forget every user pin so the next layout pass
+   * Auto-arrange: forget every user pin so the next layout pass
    * places all icons on the grid. Same persisted shape — un-pinning is the
    * whole verb, no "arranged" mode flag to keep in sync.
    */
@@ -75,7 +75,7 @@ export const useDesktopStore = create<DesktopStore>()(
     {
       name: 'desktop-storage',
       /**
-       * Server-backed dotfile (brief 49): durable user config that belongs to the
+       * Server-backed dotfile: durable user config that belongs to the
        * account, not to one browser. `prefsStorage` mirrors to localStorage for
        * the pre-auth first paint and writes through to `/api/prefs`.
        */

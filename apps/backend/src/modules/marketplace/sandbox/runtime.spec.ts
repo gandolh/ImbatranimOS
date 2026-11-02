@@ -10,7 +10,7 @@ import {
 } from 'node:worker_threads';
 
 /*
- * runtime.js (brief 158, contracts C and D) run in jsdom, dressed as the
+ * runtime.js (contracts C and D) run in jsdom, dressed as the
  * sandboxed frame: `self.origin` reads 'null' and `window.parent` is a fake
  * desktop that records postMessage. The desktop's end of the port is a Node
  * MessageChannel, read synchronously with receiveMessageOnPort.

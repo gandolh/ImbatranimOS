@@ -25,7 +25,7 @@ export const manifest: AddonManifest = {
   multiInstance: false,
   defaultSize: { width: 720, height: 560 },
   /**
-   * Measured, not guessed (brief 72). The month grid compresses rather than
+   * Measured, not guessed. The month grid compresses rather than
    * overflowing, so nothing ever clips — which means the honest minimum is the
    * size at which the grid still *says* something rather than the size at which
    * it fits.
@@ -41,10 +41,10 @@ export const manifest: AddonManifest = {
    * fit on one row.
    */
   minSize: { width: 520, height: 400 },
-  // Desktop-lifetime reminder firing (brief 93) — eager on purpose; pulls the
+  // Desktop-lifetime reminder firing — eager on purpose; pulls the
   // watcher and query modules, not the lazy Calendar UI chunk.
   background: CalendarBackground,
-  // Desktop widget (brief 96): today's agenda, reading the same events cache
+  // Desktop widget: today's agenda, reading the same events cache
   // the background reminder service keeps warm.
   widgets: [
     {

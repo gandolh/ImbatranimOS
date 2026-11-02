@@ -1,5 +1,5 @@
 /**
- * Minesweeper rules as pure functions over an immutable board (brief 98).
+ * Minesweeper rules as pure functions over an immutable board.
  *
  * The UI is a thin shell: every decision that can go wrong — a mine under the
  * first click, a flood reveal that leaks through a diagonal, a chord that

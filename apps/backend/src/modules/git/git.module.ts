@@ -9,7 +9,7 @@ import { GitService } from './git.service';
  * `resolveSafe`, the FS jail — so the repo directory (used only as an execa
  * `cwd`) can never escape the home root. The jail is NOT reimplemented here.
  *
- * DbModule is for the recent-repos list only (brief 76); no git operation reads
+ * DbModule is for the recent-repos list only; no git operation reads
  * or writes the database.
  */
 @Module({

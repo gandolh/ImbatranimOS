@@ -36,7 +36,7 @@ import {
 } from './fixtures/suite-repo';
 
 /**
- * One catalog entry, several apps (brief 162), end to end against a real git
+ * One catalog entry, several apps, end to end against a real git
  * repository on disk: a version 2 descriptor installs once (one clone, one
  * build, one directory, one row, one log) and lists one app per item; the
  * whole output is served, so the apps' shared chunk loads; a build that
@@ -77,7 +77,7 @@ function rawStatus(
   });
 }
 
-describe('one catalog entry, several apps (e2e) — brief 162', () => {
+describe('one catalog entry, several apps (e2e)', () => {
   let work: string;
   let catalog: string;
   let appsDir: string;

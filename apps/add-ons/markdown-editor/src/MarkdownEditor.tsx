@@ -83,7 +83,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
   useEffect(() => {
     textRef.current = text
   }, [text])
-  // The file's version on disk as of the last read or save (brief 155).
+  // The file's version on disk as of the last read or save.
   const diskVersionRef = useRef<string | null>(null)
 
   const name = source ? fileName(source.path, 'untitled.md') : ''
@@ -374,7 +374,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
       }
       if (target.kind === 'app') {
         // openApp is the choke point that also records the OS-wide recent
-        // (brief 94), so a link followed from a document counts as opening it.
+        //, so a link followed from a document counts as opening it.
         system.intents.openApp(target.appId, { openPath: path, root: source.root })
         return
       }

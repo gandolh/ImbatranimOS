@@ -21,7 +21,7 @@ export type AboutInfo = {
  * `GET /api/system/about` had always returned the real hostname, kernel, platform,
  * arch, uptime and `IMAGE_VERSION`, and `package.json` was at 1.0.0. So a panel
  * titled "About this machine" knew nothing about the machine and reported a version
- * the OS was not. Brief 57 calls that the third place a new user notices the
+ * the OS was not. The settings password and real about work calls that the third place a new user notices the
  * illusion break, and it is right.
  *
  * Now every row comes from the API, and the version is whatever `IMAGE_VERSION` says

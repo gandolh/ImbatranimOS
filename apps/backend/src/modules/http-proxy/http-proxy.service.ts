@@ -86,7 +86,7 @@ export class HttpProxyService {
     // Guardrail 1: parse + scheme allowlist on the *initial* URL.
     let currentUrl = this.parseAndValidateUrl(dto.url);
     let method: string = dto.method;
-    // A binary body (brief 77) wins over the string one. Decoded once, here, and
+    // A binary body wins over the string one. Decoded once, here, and
     // then treated exactly as the string body is — opaque bytes handed to `fetch`.
     // Every guardrail (scheme, size, timeout, redirects, headers) is upstream of it.
     // `ArrayBuffer` rather than `Uint8Array`: undici's `BodyInit` accepts the former

@@ -24,7 +24,7 @@ const MAX_TEXT_FILE_BYTES =
   Number(process.env.FILES_MAX_TEXT_BYTES) || 5 * 1024 * 1024;
 
 /**
- * A cheap "has this file changed" token (brief 155): the modification time in
+ * A cheap "has this file changed" token: the modification time in
  * whole milliseconds and the size. Content hashes would mean reading large
  * files on every listing; two writes inside one millisecond with the same size
  * are the accepted blind spot.
@@ -49,7 +49,7 @@ export interface FileEntry {
   version: string;
 }
 
-/** One line inside a file that matched a `content=1` search (brief 113). */
+/** One line inside a file that matched a `content=1` search. */
 export interface SearchMatch {
   /** 1-based line number, so it can be handed straight to an editor. */
   line: number;
@@ -64,7 +64,7 @@ export interface SearchHit {
   type: 'file' | 'directory';
   /**
    * Which lines matched, for a `content=1` search that asked for them
-   * (brief 113). Absent on name-only matches and on every request that did
+   *. Absent on name-only matches and on every request that did
    * not opt in, so the response stays byte-identical for the command palette
    * and the file manager's search box.
    */
@@ -391,7 +391,7 @@ export class FilesService {
       // Per-file size cap for the content grep; larger files are skipped.
       maxContentBytes:
         Number(process.env.FILES_SEARCH_MAX_CONTENT_BYTES) || 256 * 1024,
-      /** Matching lines reported per file (brief 113). A results panel wants a
+      /** Matching lines reported per file. A results panel wants a
        *  taste of each file, not a second copy of it. */
       maxMatchesPerFile: Number(process.env.FILES_SEARCH_MAX_MATCHES) || 5,
       /** Longest previewed line; a minified bundle would otherwise ship 200KB
@@ -413,7 +413,7 @@ export class FilesService {
    * any returns the partial list with `truncated: true`. `node_modules`, `.git`
    * and dot-directories are always skipped.
    *
-   * Scope (brief 112): `opts.path` starts the walk at a subfolder — jailed by
+   * Scope: `opts.path` starts the walk at a subfolder — jailed by
    * the same `resolveSafe`, and every bound still applies. Emitted paths stay
    * **root**-relative whatever the scope, so a scoped response is shaped
    * exactly like an unscoped one and no consumer has to know which it asked
@@ -434,7 +434,7 @@ export class FilesService {
     const wantContent = opts.content === true;
     // Per-match line data is opt-in on top of the content grep: the bytes are
     // already read either way, but the extra field would change the response
-    // shape for consumers that never asked for it (brief 113).
+    // shape for consumers that never asked for it.
     const wantMatches = wantContent && opts.matches === true;
     const bounds = this.searchBounds();
     const deadline = Date.now() + bounds.budgetMs;
@@ -527,7 +527,7 @@ export class FilesService {
 
   /**
    * Cheap text-content grep for the search walk, now reporting *which* lines
-   * matched (brief 113).
+   * matched.
    *
    * Returns `null` when the file was not searchable at all — unreadable,
    * oversized, or binary (a NUL in the sniff window) — and an array otherwise,
@@ -650,7 +650,7 @@ export class FilesService {
     const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
     await this.assertVersion(abs, expected);
     await withDiskSpaceCheck(() => fs.mkdir(dirname(abs), { recursive: true }));
-    // Atomic like an upload (brief 140): `fs.writeFile` onto `abs` truncated it
+    // Atomic like an upload: `fs.writeFile` onto `abs` truncated it
     // first, so a full disk mid-save left Notepad's file empty.
     await this.writeAtomically(abs, (staged) =>
       fs.writeFile(staged, content, 'utf-8'),
@@ -699,7 +699,7 @@ export class FilesService {
   }
 
   /**
-   * The save precondition (brief 155). With no `expected` token this is
+   * The save precondition. With no `expected` token this is
    * today's blind overwrite, so every existing caller is unchanged. With one,
    * the file must still be the version the editor read: a `git checkout` in
    * the Terminal or a second window that wrote it meanwhile answers 409 with

@@ -1,5 +1,5 @@
 /**
- * The shared kit (brief 163): what a marketplace **kit app** links against at
+ * The shared kit: what a marketplace **kit app** links against at
  * runtime instead of bundling. The desktop puts its own instances of React,
  * React DOM and this package on `globalThis.__imbatranimShared` before the
  * first kit app loads; the app's build marks {@link SHARED_KIT_MODULES}

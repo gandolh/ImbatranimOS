@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 /**
- * Security preferences (brief 97). User config, not session state — a
+ * Security preferences. User config, not session state — a
  * brief-49-shaped pref persisted under the house key style so the eventual
  * dotfiles migration can sweep it.
  */

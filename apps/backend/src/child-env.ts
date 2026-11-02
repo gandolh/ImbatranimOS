@@ -8,7 +8,7 @@ const SECRET_NAMES = new Set(['SETUP_TOKEN']);
  * secrets.
  *
  * A terminal inheriting `process.env` hands every secret in it to anyone with
- * a shell (`echo $NAME`, brief 138), and git does the same less directly: a
+ * a shell (`echo $NAME`), and git does the same less directly: a
  * repository opened in the Git app runs its own hooks, `core.pager`,
  * `core.fsmonitor` and credential helpers, any of which can read the
  * environment. So `SETUP_TOKEN` goes, and so does every ignored `WARD_*` name

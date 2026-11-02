@@ -2,7 +2,7 @@ import type { SystemIntents } from '@imbatranim/ui'
 
 type Associations = SystemIntents['associations']
 
-/** What following a relative link should do (brief 119). */
+/** What following a relative link should do. */
 export type LinkTarget = { kind: 'markdown' } | { kind: 'app'; appId: string } | { kind: 'none' }
 
 const MARKDOWN = /\.(md|markdown)$/i

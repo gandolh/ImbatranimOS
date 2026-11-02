@@ -105,7 +105,7 @@ export function Settings() {
   const setAccent = useAppearanceStore((s) => s.setAccent)
   const disabledApps = useAddonStore((s) => s.disabled)
   const toggleApp = useAddonStore((s) => s.toggle)
-  // The Apps list includes installed marketplace apps (brief 120).
+  // The Apps list includes installed marketplace apps.
   useRegistryVersion()
 
   return (
@@ -304,7 +304,7 @@ export function Settings() {
         {/* Security ───────────────────────────────────────────── */}
         <section className="border-outline-variant mb-6 border-t pt-8">
           <SectionHeader icon={Monitor} title="Security" />
-          {/* The machine's own password (brief 152). */}
+          {/* The machine's own password. */}
           <LocalPasswordForm />
         </section>
 

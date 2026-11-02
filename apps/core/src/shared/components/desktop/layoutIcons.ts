@@ -37,7 +37,7 @@ export function layoutIcons(
   // Cells a user-placed icon covers, so auto placement skips them. A pinned
   // icon sits wherever it was dropped, usually between grid cells, so it can
   // cover up to four of them. Marking only the one cell its corner rounds to
-  // left the others free, and auto icons were laid on top of it (brief 159).
+  // left the others free, and auto icons were laid on top of it.
   // The pinned point is clamped first because that is where it is drawn.
   const taken = new Set<string>()
   for (const raw of Object.values(pinned)) {

@@ -24,7 +24,7 @@ export function browserProfileKeyPath(dbPath: string): string {
 }
 
 /**
- * The Browser's profile (brief 50): the proxied sites' cookie jar, kept by the
+ * The Browser's profile: the proxied sites' cookie jar, kept by the
  * machine rather than the laptop viewing it, so a site stays signed in across
  * container restarts and from whichever browser opens the desktop.
  *

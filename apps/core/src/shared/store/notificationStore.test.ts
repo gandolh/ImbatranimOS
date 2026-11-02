@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useNotificationStore } from './notificationStore'
 
 /**
- * Toast actions (brief 107): intent-shaped data that has to survive the
+ * Toast actions: intent-shaped data that has to survive the
  * persisted history and the raising window closing, which is the whole reason
  * they are not callbacks.
  */

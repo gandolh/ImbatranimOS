@@ -50,7 +50,7 @@ export function FilePicker({
   const [dir, setDir] = useState('')
   const [showAll, setShowAll] = useState(false)
   const [name, setName] = useState(suggestedName ?? '')
-  // Recent tab (brief 94) — open mode only: picking a recent in save mode
+  // Recent tab — open mode only: picking a recent in save mode
   // would be a disguised overwrite, and in directory mode it is meaningless.
   const [showRecent, setShowRecent] = useState(false)
   const { data: recentFiles } = useRecentFilesQuery()

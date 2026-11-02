@@ -10,11 +10,11 @@ import {
 /**
  * Calendar's events.
  *
- * Why this exists (brief 72): the add-on persisted through zustand to
+ * Why this exists: the add-on persisted through zustand to
  * `localStorage`, so the user's calendar lived in whichever *browser* opened the
  * OS — empty from a second machine, outside the documented home-volume backup, and
  * stomped by a second tab on the same origin. This is the fifth app to persist
- * here, and it deliberately copies the shape brief 71 landed for Clock rather than
+ * here, and it deliberately copies the shape the clock fixes landed for Clock rather than
  * inventing a second mechanism: a typed table per domain, camelCase mapped at the
  * service boundary, class-validator DTOs at the door, and the global
  * `SessionGuard` covering the controller.

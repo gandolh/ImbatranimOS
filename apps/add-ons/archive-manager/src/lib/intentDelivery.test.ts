@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { deliveryFor, normaliseIntent, type Phase } from './intentDelivery'
 
 /**
- * The re-delivery rule (brief 108). Archive Manager is the only single-instance
+ * The re-delivery rule. Archive Manager is the only single-instance
  * app declaring `opens`, so it is the one place a second double-click used to
  * be silently dropped.
  */

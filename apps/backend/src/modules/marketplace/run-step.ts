@@ -28,7 +28,7 @@ export interface StepOptions {
   timeoutMs: number;
   /**
    * Read stdout as it comes instead of keeping its tail, for output too big
-   * to hold (a URL check's `git ls-tree` and `git ls-remote`, brief 158).
+   * to hold (a URL check's `git ls-tree` and `git ls-remote`).
    * Returning false stops the command: it is killed, and the result says
    * `stopped`.
    */
@@ -36,7 +36,7 @@ export interface StepOptions {
 }
 
 /**
- * Run one install or build command (brief 120): an argv, no shell, with a
+ * Run one install or build command: an argv, no shell, with a
  * deadline and a bounded log.
  *
  * The child gets its own process group, so a timeout kills everything the

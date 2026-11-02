@@ -18,7 +18,7 @@ import type {
   BookmarkLink,
 } from '../src/modules/bookmarks/bookmarks.service';
 
-describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
+describe('Bookmarks (e2e) — the model the Browser consumes', () => {
   let app: INestApplication<Server>;
   let http: ReturnType<typeof request>;
   let cookie: string;
@@ -203,7 +203,7 @@ describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
     });
   });
 
-  describe('deleting a folder — the bug brief 73 handed over', () => {
+  describe('deleting a folder — a bug found in the todo dates work', () => {
     it('deletes the folder AND its links, leaving no orphans', async () => {
       // bookmark_links declares ON DELETE CASCADE, but PRAGMA foreign_keys is
       // never enabled on this connection, so the constraint is decorative. The old
@@ -280,7 +280,7 @@ describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
         .prepare('DELETE FROM bookmark_groups WHERE id = ?')
         .run(ghostParent);
 
-      // Simulate an OLD database: since brief 110 the ledger runs each
+      // Simulate an OLD database: since the migration ledger the ledger runs each
       // step once, so replaying a historical repair resets the stamp.
       db.db.pragma('user_version = 0');
       db.migrate();
@@ -345,7 +345,7 @@ describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
       expect(new Set(groups[0].links.map((l) => l.position)).size).toBe(3);
     });
 
-    it('refuses a partial reorder — brief 73 corrupted positions this way', async () => {
+    it('refuses a partial reorder — the todo dates work found positions corrupted this way', async () => {
       const groupId = await newGroup('Order');
       const ids: number[] = [];
       for (const t of ['one', 'two', 'three']) {
@@ -490,7 +490,7 @@ describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
     });
 
     it('is idempotent', () => {
-      // Simulate an OLD database: since brief 110 the ledger runs each
+      // Simulate an OLD database: since the migration ledger the ledger runs each
       // step once, so replaying a historical repair resets the stamp.
       db.db.pragma('user_version = 0');
       db.migrate();
@@ -507,7 +507,7 @@ describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
     });
 
     it('gives pre-existing rows distinct positions per parent', async () => {
-      // Rows as they existed before brief 75: no position at all, so DEFAULT 0 ties
+      // Rows as they existed before the bookmarks model: no position at all, so DEFAULT 0 ties
       // them all and ORDER BY position falls back to whatever SQLite feels like.
       db.db.exec('DELETE FROM bookmark_links; DELETE FROM bookmark_groups;');
       db.db.exec(`
@@ -520,7 +520,7 @@ describe('Bookmarks (e2e) — the model brief 50 will consume', () => {
         UPDATE bookmark_links SET position = 0;
       `);
 
-      // Simulate an OLD database: since brief 110 the ledger runs each
+      // Simulate an OLD database: since the migration ledger the ledger runs each
       // step once, so replaying a historical repair resets the stamp.
       db.db.pragma('user_version = 0');
       db.migrate();

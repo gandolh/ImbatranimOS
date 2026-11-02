@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-/* The design tokens (the @theme block), shared with marketplace kit apps (brief 163). */
+/* The design tokens (the @theme block), shared with marketplace kit apps. */
 @import '../../../packages/ui/src/theme.css';
 @plugin '@tailwindcss/typography';
 /* Add-on packages live outside core's auto-detection root — scan them too. */
@@ -37,7 +37,7 @@
  * Dark is the shipped default (on-brand for an OS).
  *
  * The @theme block that maps Tailwind's token names onto these variables is
- * the kit's (brief 163): packages/ui/src/theme.css, imported at the top.
+ * the kit's: packages/ui/src/theme.css, imported at the top.
  */
 
 /* ── Accent presets: default lives here so first paint is branded ────────────── */

@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { Difficulty } from '../minesweeper/model'
 
 /**
- * Win/loss records and best times (brief 98). User config in the house key
+ * Win/loss records and best times. User config in the house key
  * style, shared by both games — interrupted games are session state and die
  * with the window; only finished results persist.
  */

@@ -4,12 +4,12 @@ import type { OpenerResolution, SystemIntents } from '@imbatranim/ui'
 export type Associations = SystemIntents['associations']
 
 /**
- * File routing, now a thin adapter over core's association registry (brief 81).
+ * File routing, now a thin adapter over core's association registry.
  *
  * The 100-line `EXTENSION_APP_MAP` that used to live here is gone. It was the
  * single source of truth for what opens what, which meant **adding an app
  * required editing this file** — the coupling `manifest.ts` exists to avoid, and
- * the reason brief 65's PDF mismatch went unnoticed for so long. Apps now declare
+ * the reason the PDF split's PDF mismatch went unnoticed for so long. Apps now declare
  * `opens` in their own manifests and core derives the table, so this file only
  * translates the result into the labels the menu shows.
  *

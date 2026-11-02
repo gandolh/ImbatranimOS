@@ -1,8 +1,8 @@
 /**
- * Pure idle-lock controller (brief 97). DOM-free so it tests under the node
+ * Pure idle-lock controller. DOM-free so it tests under the node
  * environment: the hook wires real listeners and media detection around it.
  *
- * Timestamp-driven like the Clock (brief 71): activity only stamps
+ * Timestamp-driven like the Clock: activity only stamps
  * `lastActivity` — cheap enough to call from a throttled pointermove — and a
  * single timer fires at the computed deadline. At fire time the controller
  * re-checks the arithmetic (browsers throttle background-tab timers, and a

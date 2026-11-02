@@ -5,7 +5,7 @@ import { FileConflictError, UploadTooLargeError } from '@imbatranim/ui'
 import { api } from './axios'
 import { fetchFileBytesWithVersion, uploadFileBytes } from './fileBytes'
 
-/** Brief 155 — the version token rides every read and save of `system.fs`. */
+/** External-change detection — the version token rides every read and save of `system.fs`. */
 
 type Scripted = { status: number; data?: unknown; headers?: Record<string, string> }
 

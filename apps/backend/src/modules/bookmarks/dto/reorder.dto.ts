@@ -10,7 +10,7 @@ export class ReorderDto {
   /**
    * Every sibling in the folder, in its new order.
    *
-   * "Every sibling" is enforced server-side too (see `checkReorder`): brief 73's
+   * "Every sibling" is enforced server-side too (see `checkReorder`): the todo dates work's
    * bug was a reorder from a filtered view stamping positions over rows the caller
    * could not see, and a DTO alone cannot tell a complete list from a subset.
    */

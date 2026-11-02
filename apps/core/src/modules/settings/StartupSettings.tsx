@@ -10,7 +10,7 @@ import { startupCandidates } from '../../shared/lib/startup'
 import { useRegistryVersion } from '../../shared/registry/marketplace'
 
 /**
- * Settings → Startup (brief 82).
+ * Settings → Startup.
  *
  * Two lists in one panel, because they answer different questions: the **chosen**
  * apps in the order they will open (which is the thing you edit), and everything
@@ -31,7 +31,7 @@ export function StartupSettings() {
   const windows = useWindowStore((s) => s.windows)
 
   // Marketplace apps join APP_REGISTRY when their listing arrives, which can
-  // be after this pane mounts (brief 183): re-render then, and read the
+  // be after this pane mounts: re-render then, and read the
   // registry each render rather than once per mount. It is a few dozen apps.
   useRegistryVersion()
   const byId = new Map(APP_REGISTRY.map((a) => [a.id, a]))
@@ -51,7 +51,7 @@ export function StartupSettings() {
    * Taken in **z-order** rather than open order, so the arrangement you are
    * looking at is the arrangement you get: the front-most window is opened last
    * and therefore ends up in front again. De-duplicated, because two Notepad
-   * windows are still one startup entry (brief 82 rejected per-document startup,
+   * windows are still one startup entry (startup apps rejected per-document startup,
    * so a second copy would open the same empty app twice).
    */
   function snapshot() {

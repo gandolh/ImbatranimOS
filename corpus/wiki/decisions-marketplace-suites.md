@@ -1,15 +1,15 @@
 ---
-summary: The marketplace's calls for suites (brief 162) and kit apps (brief 163), 2026-10-21 — a v2 row keeps its output in `entry`, the listing trusts what the build recorded (entries, and a kit app's stylesheets and shared kit version) and, since brief 176 (2026-10-27), reports the catalog's kit beside it so the pane can offer a rebuild, the shared global holds frozen copies of the namespaces, the registry sync prunes a gone build's stylesheet links, the theme tokens are static, and the dev container can try a local `file://` checkout.
-updated: 2026-10-27
+summary: The marketplace's calls for suites (2026-10-21) and kit apps (2026-10-21), 2026-10-21 — a v2 row keeps its output in `entry`, the listing trusts what the build recorded (entries, and a kit app's stylesheets and shared kit version) and, since the same-ref rebuild (2026-10-27) (2026-10-27), reports the catalog's kit beside it so the pane can offer a rebuild, the shared global holds frozen copies of the namespaces, the registry sync prunes a gone build's stylesheet links, the theme tokens are static, and the dev container can try a local `file://` checkout.
+updated: 2026-11-02
 ---
 
 # Decisions: suites and kit apps in the marketplace
 
 Split out of [decisions-marketplace.md](decisions-marketplace.md), which holds
-brief 120's catalog calls and brief 158's URL apps. Changing one needs an
+the marketplace install's catalog calls and sandboxed apps from a URL's URL apps. Changing one needs an
 explicit revisit and a `log.md` entry.
 
-## Brief 162: one catalog entry, several apps (2026-10-21)
+## One catalog entry, several apps (2026-10-21): one catalog entry, several apps (2026-10-21)
 
 The office suite comes back from its own repository as one catalog entry
 ([decisions-office-suite.md](decisions-office-suite.md)). The brief fixed the
@@ -51,7 +51,7 @@ directory and server per descriptor; one id namespace; per-app
   Rejected: syncing a fixture repository through `compose watch`, which would
   put a nested `.git` under `apps/` or `marketplace/`.
 
-## Brief 163: the desktop shares its kit (2026-10-21)
+## The shared kit (2026-10-21): the desktop shares its kit (2026-10-21)
 
 Kit apps: a v2 descriptor with `sharedKit` describes components the desktop
 renders with its own React and `@imbatranim/ui`, read from
@@ -98,7 +98,7 @@ build added these.
   stripped field that would fail only when a window opens.
 - **The pane says "Needs an update"** for a kit app whose version differs
   (`MarketplaceSettings.tsx`, one state line, outside the brief's file list).
-- **The listing reports the catalog's kit beside the build's** (brief 176,
+- **The listing reports the catalog's kit beside the build's** (the same-ref rebuild (2026-10-27),
   2026-10-27). An installed app's `sharedKit` stays what its live build was
   made against, so the desktop runs a build the way it was built;
   `catalogSharedKit` is what the descriptor names now (null for a mount app

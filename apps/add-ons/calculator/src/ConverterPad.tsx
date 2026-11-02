@@ -4,7 +4,7 @@ import { cn } from '@imbatranim/ui'
 import { CATEGORIES, categoryById, convert, formatResult, type UnitId } from './engine/units'
 
 /**
- * The unit converter (brief 116) — the fourth mode tab every OS calculator
+ * The unit converter — the fourth mode tab every OS calculator
  * ships with.
  *
  * Static tables over the same window as the other three pads; no evaluator, no

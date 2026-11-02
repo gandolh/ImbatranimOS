@@ -18,14 +18,14 @@ const tar = async (args: string[]): Promise<void> => {
 };
 
 /**
- * Brief 78: browsing, selective extraction and progress — against the REAL
+ * Browsing, selective extraction and progress — against the REAL
  * filesystem and the REAL `tar`, like the module's existing spec.
  *
  * The point of these is the same as the originals: **a selection comes from the
  * client**, so it is a new way to reach the zip-slip machinery, and it must not
  * become a way around it.
  */
-describe('ArchiveService — brief 78 (list, selective extract, jobs)', () => {
+describe('ArchiveService (list, selective extract, jobs)', () => {
   let files: FilesService;
   let service: ArchiveService;
   let jail: string;
@@ -308,7 +308,7 @@ describe('ArchiveService — brief 78 (list, selective extract, jobs)', () => {
   });
 });
 
-describe('brief 78 pure helpers', () => {
+describe('archive pure helpers', () => {
   describe('decodeEntryName', () => {
     it('decodes valid UTF-8 unchanged', () => {
       const bytes = new TextEncoder().encode('café/naïve.txt');

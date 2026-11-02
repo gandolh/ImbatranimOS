@@ -8,7 +8,7 @@ import { useUnsavedGuard } from './systemHooks'
 import type { SystemHandle } from '../system'
 
 /**
- * The async unsaved-close guard (brief 102). Exercised through a real React
+ * The async unsaved-close guard. Exercised through a real React
  * root — the dialog is state driven, so nothing short of mounting answers
  * whether the guard's promise actually follows the buttons.
  */
@@ -79,7 +79,7 @@ function clickButton(label: string) {
   })
 }
 
-describe('useUnsavedGuard (brief 102)', () => {
+describe('useUnsavedGuard', () => {
   it('a clean window closes synchronously with no dialog', () => {
     const { system, guardRef } = makeSystem()
     act(() => root.render(<HostInProvider system={system} initialDirty={false} />))

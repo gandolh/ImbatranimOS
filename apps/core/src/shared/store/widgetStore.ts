@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 /**
- * Which widgets are on the desktop and where (brief 96). User config in the
+ * Which widgets are on the desktop and where. User config in the
  * house key style — a brief-49-shaped pref the dotfiles migration can sweep.
  *
  * Rows for a disabled add-on's widgets are kept (the layer just does not

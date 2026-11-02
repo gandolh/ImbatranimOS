@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { installSharedKit, sharedKit } from './sharedKit'
 
 /**
- * Brief 163, contract A: the desktop's own modules on
+ * The shared kit, contract A: the desktop's own modules on
  * `globalThis.__imbatranimShared`, for a kit app's build to read its imports
  * from. Identity is the point: the `useSystem` a kit app calls must read the
  * desktop's context, so every value is the desktop's own, not a copy.
@@ -29,7 +29,7 @@ const DESKTOP: Record<SharedKitModule, object> = {
   '@imbatranim/ui': Kit,
 }
 
-describe('the shared kit global (brief 163)', () => {
+describe('the shared kit global', () => {
   it('is absent until the first kit app needs it, then the same object every time', () => {
     expect(sharedKit()).toBeUndefined()
     expect('__imbatranimShared' in globalThis).toBe(false)

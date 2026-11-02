@@ -12,14 +12,14 @@ import { useDocumentedShortcuts, useRegisteredHotkeys } from './useRegisteredHot
 import { useGlobalHotkeys } from './useGlobalHotkeys'
 
 /**
- * Keyboard window management (4c; extended by briefs 85 and 103).
+ * Keyboard window management (4c; extended by workspaces and the window management parity 2 work).
  *
  * Shortcut map (chosen to avoid browser conflicts):
  *   Alt+Tab              — the visual switcher, owned by AltTabSwitcher (104)
  *   Mod+W                — close focused window
  *   Mod+M                — hide (minimise) focused window
  *   Mod+Enter            — toggle maximize / restore focused window
- *   Ctrl+Alt+←/→         — previous / next workspace (brief 85)
+ *   Ctrl+Alt+←/→         — previous / next workspace
  *   Ctrl+Alt+1…4         — jump to workspace N (what the pips always promised)
  *   Ctrl+Alt+Shift+1…4   — carry the focused window to workspace N and follow
  *   Mod+Alt+Shift+arrows — keyboard snapping (Windows semantics by sequence).
@@ -36,7 +36,7 @@ export function useWindowHotkeys(): void {
   const restoreWindow = useWindowStore((s) => s.restoreWindow)
   /**
    * The windows these hotkeys may act on: visible, and **on the workspace you
-   * are looking at** (brief 85).
+   * are looking at**.
    *
    * The workspace half applies to all four bindings, not just Alt+Tab. Without
    * it `Ctrl+W` would close, and `Ctrl+M` would minimise, whatever happens to
@@ -50,7 +50,7 @@ export function useWindowHotkeys(): void {
 
   const bindings = useMemo(
     () => ({
-      // Alt+Tab moved to the AltTabSwitcher component (brief 104): hold-Alt
+      // Alt+Tab moved to the AltTabSwitcher component: hold-Alt
       // semantics need a keyup, which this keydown-only plumbing cannot
       // express — and two owners of alt+tab would both fire.
 
@@ -89,7 +89,7 @@ export function useWindowHotkeys(): void {
         }
       },
 
-      // Keyboard snapping (brief 103): the pure transition table decides, the
+      // Keyboard snapping: the pure transition table decides, the
       // existing store methods act — no second snap implementation.
       snapKey: (dir: SnapKeyDirection) => {
         const focusedId = topVisibleWindowId()

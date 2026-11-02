@@ -25,7 +25,7 @@ type TodoRowProps = {
   onDelete: (id: number) => void
   /** Non-null puts the row in select mode. */
   selection: { selected: boolean; onToggle: (id: number) => void } | null
-  /** Every list this task could be filed under (brief 117). */
+  /** Every list this task could be filed under. */
   lists: TodoList[]
   now: number
 }
@@ -275,7 +275,7 @@ export function TodoRow({
  * place.
  */
 /**
- * Where a task is filed (brief 117).
+ * Where a task is filed.
  *
  * Refiling used to mean deleting the task and retyping it, which threw away
  * its due date, its importance and its position. The update mutation has

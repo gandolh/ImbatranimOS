@@ -1,5 +1,5 @@
 /**
- * @imbatranim/core — what is left of the public surface after brief 48: the
+ * @imbatranim/core — what is left of the public surface after the system-handle seam: the
  * add-on CONTRACT, and nothing else.
  *
  * Everything an app does at runtime now arrives through the injected `system`

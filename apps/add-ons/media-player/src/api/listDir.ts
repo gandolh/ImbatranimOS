@@ -22,7 +22,7 @@ export type Track = {
 }
 
 // Kept in lockstep with the extension list registered for `media-player` in
-// the shell's `openWith.ts` (see brief 38).
+// the shell's `openWith.ts` (see the media player work).
 export const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'aac', 'opus']
 export const VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogv', 'mov', 'm4v', 'mkv']
 

@@ -10,7 +10,7 @@ import { LogService } from './log.service';
 
 /**
  * Record backend errors, then let Nest respond exactly as it always did
- * (brief 84).
+ *.
  *
  * Two things this is careful about:
  *
@@ -59,7 +59,7 @@ export class AuditExceptionFilter extends BaseExceptionFilter {
 }
 
 /**
- * A sandboxed app's window token (brief 158) is a capability: its URL
+ * A sandboxed app's window token is a capability: its URL
  * `marketplace/sandbox/<token>/…` serves the app's files with no session at
  * all, so it is never written to the log. Matched without regard to case,
  * as the router matches, and across doubled slashes, to be safe.

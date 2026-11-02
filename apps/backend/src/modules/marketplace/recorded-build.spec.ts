@@ -1,7 +1,7 @@
 import { recordedBuild } from './marketplace.service';
 
 /**
- * Brief 162: what an installed row says its live build holds. The listing
+ * What an installed row says its live build holds. The listing
  * reads this, not the descriptor, so editing a descriptor without a
  * reinstall cannot point an app at a file that was never built.
  */
@@ -37,7 +37,7 @@ describe('recordedBuild', () => {
     ]);
   });
 
-  it("reads a kit suite's row: each app's module, stylesheets and shared kit version (brief 163)", () => {
+  it("reads a kit suite's row: each app's module, stylesheets and shared kit version", () => {
     const r = recordedBuild({
       id: 'office',
       entry: 'dist/os',

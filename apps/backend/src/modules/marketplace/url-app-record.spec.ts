@@ -49,7 +49,7 @@ const damaged = (r: InstalledRow) => {
   return read.ok ? null : read.damaged;
 };
 
-describe('readUrlAppRow (brief 158)', () => {
+describe('readUrlAppRow', () => {
   it('reads back a row as install writes it', () => {
     expect(readUrlAppRow(row(), APPS)).toEqual({ ok: true, manifest, source });
   });

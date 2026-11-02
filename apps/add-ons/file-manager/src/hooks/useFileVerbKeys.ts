@@ -29,7 +29,7 @@ type UseFileVerbKeysArgs = {
 }
 
 /**
- * The file verbs, on the keyboard (brief 111).
+ * The file verbs, on the keyboard.
  *
  * Bound on the list wrapper that already hosts the arrow keys, not on the
  * window: the kit's dialogs portal to `document.body`, so a window-level

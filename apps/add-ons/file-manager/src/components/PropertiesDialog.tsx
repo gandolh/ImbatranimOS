@@ -43,7 +43,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 /**
  * File / folder properties.
  *
- * Folder size comes from the bounded `/files/size` walk (brief 83) and is
+ * Folder size comes from the bounded `/files/size` walk and is
  * fetched on open rather than with the listing — a recursive walk is slow
  * enough that doing it eagerly would make every right-click hesitate. When the
  * walk hits its bound the number is a floor, and that is shown rather than

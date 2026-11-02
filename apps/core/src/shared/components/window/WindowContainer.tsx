@@ -51,7 +51,7 @@ function useOrderedWindows(): {
   // z-index inside this container's stacking context, so DOM order doesn't
   // decide what is on top. Reordering the list on every focus would make React
   // move window nodes in the DOM, and a browser reloads any iframe whose node
-  // is moved: a URL app (brief 158) or the Browser's page would restart every
+  // is moved: a URL app or the Browser's page would restart every
   // time its window was raised.
 }
 
@@ -59,9 +59,9 @@ export function WindowContainer() {
   const orderedWindows = useOrderedWindows()
   const activeWorkspace = useWindowStore((s) => s.activeWorkspace)
   // A restored window of a marketplace app finds its app once the catalog
-  // has loaded (brief 120); until then it is an empty frame.
+  // has loaded; until then it is an empty frame.
   useRegistryVersion()
-  // The one shared definition of "focused", now workspace-scoped (brief 85):
+  // The one shared definition of "focused", now workspace-scoped:
   // the taskbar highlight, window chrome and every window-scoped hotkey read
   // this same helper so they can never disagree.
   const focusedId = topVisibleWindowId()
@@ -99,7 +99,7 @@ export function WindowContainer() {
  * One window and the app inside it.
  *
  * Extracted from the map so each window can own a remount counter — the "Reload"
- * a crashed app offers (brief 47) is a key change, and a key needs state, which a
+ * a crashed app offers is a key change, and a key needs state, which a
  * map callback cannot hold. Memoised so that when the container re-renders (a
  * zIndex bump, a visibility or workspace change), only the windows whose props
  * actually changed re-render.
@@ -159,7 +159,7 @@ const WindowSlot = memo(function WindowSlot({
           {/* Inside the boundary on purpose: a lazy chunk that fails to load
               throws, and that is a crash the user should see handled the same
               way as any other. */}
-          {/* The seam (brief 48): the compositor hands the app its one
+          {/* The seam: the compositor hands the app its one
               connection to the OS here. Scoped to this app in this window —
               `system.window.*` cannot address anything else. */}
           <SystemProvider system={system}>
@@ -173,7 +173,7 @@ const WindowSlot = memo(function WindowSlot({
               <AppComponent windowId={windowId} />
               {/* After the app, in the same boundary: it mounts once the app's
                   lazy chunk has resolved and the app's own mount effects
-                  (an input that focuses itself) have run (brief 180). */}
+                  (an input that focuses itself) have run. */}
               <FirstFocus windowId={windowId} />
             </Suspense>
           </SystemProvider>
@@ -185,7 +185,7 @@ const WindowSlot = memo(function WindowSlot({
   )
 })
 
-/** A new window takes the keyboard once its app is on screen (brief 180). */
+/** A new window takes the keyboard once its app is on screen. */
 function FirstFocus({ windowId }: { windowId: string }) {
   useEffect(() => focusIntoNewWindowSoon(windowId), [windowId])
   return null

@@ -11,7 +11,7 @@ import { RecentService, type RecentFile } from './recent.service';
 import { RecordRecentDto, RemoveRecentQueryDto } from './dto/recent.dto';
 
 /**
- * OS-wide recent files (brief 94). Session-authed by the global guard.
+ * OS-wide recent files. Session-authed by the global guard.
  * `DELETE /files/recent/all` is a separate route rather than "DELETE with no
  * params" so clearing everything can never be an accidental validation hole.
  */

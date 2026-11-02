@@ -117,7 +117,7 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
      * a dead backend produces. Without this the terminal would say "disconnected"
      * when the truth is "you are signed out".
      *
-     * Probes `/me`, the desktop's own session read (brief 137), whose status
+     * Probes `/me`, the desktop's own session read, whose status
      * codes are the answer: 200 means the session is fine and the refusal was
      * something else; 401 is signed out; 403 is signed in without a grant.
      */

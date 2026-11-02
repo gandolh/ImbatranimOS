@@ -23,7 +23,7 @@ interface State {
 }
 
 /**
- * Containment for a single window's app content (brief 47).
+ * Containment for a single window's app content.
  *
  * Every windowed app renders into core's shared React tree, so one uncaught
  * `throw` in a render or effect unmounts **the whole desktop** — React's default
@@ -40,7 +40,7 @@ interface State {
  * - **It does not catch a hang.** An error boundary catches throws, not infinite
  *   loops, and a spinning app still freezes the tab because every app shares the
  *   main thread. Real hang isolation needs the iframe/worker transport that
- *   brief 48's seam makes possible; a watchdog here would be a worse version of
+ *   the system-handle seam's seam makes possible; a watchdog here would be a worse version of
  *   it. The limit is documented rather than half-solved.
  */
 export class AppErrorBoundary extends Component<Props, State> {
@@ -59,7 +59,7 @@ export class AppErrorBoundary extends Component<Props, State> {
         level: 'error',
         appId,
       })
-      // Also into the system log (brief 84), so the crash is still findable
+      // Also into the system log, so the crash is still findable
       // tomorrow rather than only in a toast the user may have missed. Behind
       // the same guard as the toast — a render loop should not become a
       // request loop — and fire-and-forget, because failing to record a crash

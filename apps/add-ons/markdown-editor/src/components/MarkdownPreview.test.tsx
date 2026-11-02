@@ -8,7 +8,7 @@ import { parseHeadings } from '../lib/outline'
 // as the pure tests — no jsdom, no testing-library, no new dev dependency for the one
 // property in this app that is a security property rather than a feature.
 //
-// The preview reaches the OS only through the injected handle (brief 48), and only
+// The preview reaches the OS only through the injected handle, and only
 // for `fs.downloadUrl` — so the fake implements that one protocol member, shaped like
 // the real route, and nothing else. Touching any other capability should throw.
 const system = {

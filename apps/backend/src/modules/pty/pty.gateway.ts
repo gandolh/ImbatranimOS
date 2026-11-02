@@ -104,7 +104,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
       // Node removes its own socket 'error' listener before emitting
       // 'upgrade'. Without this one, a client that resets the connection while
       // the session is being checked emits ECONNRESET with no listener, which throws and
-      // takes the whole backend down (brief 138). `handleUpgrade` installs its
+      // takes the whole backend down. `handleUpgrade` installs its
       // own, so this is removed just before it; the refusals keep it until
       // `destroy()`.
       const onSocketError = (err: Error) => {

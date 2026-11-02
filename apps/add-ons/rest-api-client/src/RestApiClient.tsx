@@ -65,7 +65,7 @@ export function RestApiClient(_props: { windowId: string }) {
 
   /*
    * Every write saves the whole doc, so nothing may be written until the doc has
-   * been read (brief 139). A failed load used to look like a first run, and the
+   * been read. A failed load used to look like a first run, and the
    * next Send replaced every saved request with one history entry. Send itself
    * still works while this is anything but writable: it is a proxy call.
    */
@@ -148,7 +148,7 @@ export function RestApiClient(_props: { windowId: string }) {
         url: url.trim(),
         status,
         ts: Date.now(),
-        // Brief 77: carry the headers and body, or "replay" only restores the method
+        // Carry the headers and body, or "replay" only restores the method
         // and URL and silently leaves the PREVIOUS request's headers and body loaded.
         headers,
         body,
@@ -304,7 +304,7 @@ export function RestApiClient(_props: { windowId: string }) {
   /**
    * Replay a past request.
    *
-   * Before brief 77 this set only the method and URL, leaving whatever headers and
+   * Before the REST client work this set only the method and URL, leaving whatever headers and
    * body happened to be in the builder — so clicking a GET while a POST body and an
    * Authorization header were loaded and pressing Send sent something else entirely.
    * Entries recorded before the fix carry no headers, so they reset to empty rather

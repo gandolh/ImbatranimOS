@@ -11,7 +11,7 @@ import {
 import { MarkdownEditor } from './MarkdownEditor'
 
 /**
- * Brief 155: a save over a file that changed on disk since it was opened asks
+ * A save over a file that changed on disk since it was opened asks
  * Overwrite / Reload from disk / Cancel instead of destroying the change.
  */
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -140,7 +140,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('a save over a file that changed on disk (brief 155)', () => {
+describe('a save over a file that changed on disk', () => {
   it('sends the version it read, and asks on a conflict', async () => {
     await saveOverExternalChange()
     expect(upload).toHaveBeenCalledTimes(1)

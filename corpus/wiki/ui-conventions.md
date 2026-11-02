@@ -1,17 +1,17 @@
 ---
-summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-10-21 for brief 163: a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for brief 102 (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for briefs 74-75: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
-updated: 2026-10-21
+summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-10-21 for the shared kit (2026-10-21): a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for the async close guards themed confirm work (2026-08-07) (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for the work of 2026-08-05: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
+updated: 2026-11-02
 ---
 
 # ImbatranimOS UI conventions — the house style, as rules
 
-Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic layout, B&W tokens + ONE accent (crimson), dark-first, zero border radius. Implement inside it. **A marketplace kit app follows every rule here exactly as an add-on does** (brief 163): it renders in the desktop's tree with the shared kit; only its imports are read from `globalThis.__imbatranimShared` and its utilities come from its own stylesheet, compiled against `packages/ui/src/theme.css` ([marketplace/README.md](../../marketplace/README.md#kit-apps)).
+Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic layout, B&W tokens + ONE accent (crimson), dark-first, zero border radius. Implement inside it. **A marketplace kit app follows every rule here exactly as an add-on does** (2026-10-21): it renders in the desktop's tree with the shared kit; only its imports are read from `globalThis.__imbatranimShared` and its utilities come from its own stylesheet, compiled against `packages/ui/src/theme.css` ([marketplace/README.md](../../marketplace/README.md#kit-apps)).
 
-**Copy `apps/add-ons/clock`** — the best-behaved app: pure SDK kit, correct tokens, honest `minSize`, `notify()` for async events. `file-manager` is the richest but violates §8. `sticky-notes` **was** the inherited counter-example; brief 74 (2026-08-05) rewrote it to the rules below, so it is now safe to read — and it is the only worked example of a **desktop layer** (§47).
+**Copy `apps/add-ons/clock`** — the best-behaved app: pure SDK kit, correct tokens, honest `minSize`, `notify()` for async events. `file-manager` is the richest but violates §8. `sticky-notes` **was** the inherited counter-example; the sticky-notes work (2026-08-05) (2026-08-05) rewrote it to the rules below, so it is now safe to read — and it is the only worked example of a **desktop layer** (§47).
 
 ## 1. The import rule
 
-1. Import **only** `@imbatranim/ui`, `lucide-react`, `react`, `@tanstack/react-query`, and your own declared deps. Since **brief 48** the split is absolute
+1. Import **only** `@imbatranim/ui`, `lucide-react`, `react`, `@tanstack/react-query`, and your own declared deps. Since **the system-handle seam (2026-08-06)** the split is absolute
    (`apps/add-ons/calculator/eslint.config.js:37-61`): `@imbatranim/core` is **type-only** — a value import from it is an eslint error, since values are what would couple an app
    bundle to the OS; in practice you import it once, for `AddonManifest`/`AppConfig`. Deep paths, sibling add-ons and `../../core/*` escapes are blocked too.
 2. Never re-implement anything on the SDK surface — **read `packages/ui/src/index.ts`**, don't trust a copy of the list: `cn`; the kit (`Button`, `Checkbox`, `Dialog`, `Input`,
@@ -23,13 +23,13 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
    read it before inventing a call; [glossary.md](glossary.md) has capability vs library.
 3. One import statement per specifier: `import { Button, Input, cn } from '@imbatranim/ui'` (`calculator/src/BasicPad.tsx:2` right; `file-manager/src/FileManager.tsx:12-19`
    wrong — nine statements, same specifier).
-4. **Missing from the kit** — propose adding it to `@imbatranim/ui`, don't grow a private copy. (**Shipped since**: `ContextMenu`, brief 105 → §27; the file-open picker as the
-   `system.fs.pick*` portal capability + `useFileDialog`, brief 48; `useTopWindowKeydown`, now an SDK hook.) Still missing: **Tabs** (hand-rolled 3×: `Calculator.tsx:31-52`,
+4. **Missing from the kit** — propose adding it to `@imbatranim/ui`, don't grow a private copy. (**Shipped since**: `ContextMenu`, the context-menu kit (2026-08-07) → §27; the file-open picker as the
+   `system.fs.pick*` portal capability + `useFileDialog`, the system-handle seam (2026-08-06); `useTopWindowKeydown`, now an SDK hook.) Still missing: **Tabs** (hand-rolled 3×: `Calculator.tsx:31-52`,
    `clock/src/Clock.tsx:67-81`, `markdown-editor/src/MarkdownEditor.tsx:129-147`); an **EmptyState**; a `Tooltip` that can render as a non-button (§8).
 
 ## 2. Tokens and colour
 
-5. Only semantic token classes. Real names, the `@theme static` block in `packages/ui/src/theme.css` (in `apps/core/src/index.css` until brief 163) — surfaces `surface`, `surface-dim`, `surface-bright`,
+5. Only semantic token classes. Real names, the `@theme static` block in `packages/ui/src/theme.css` (in `apps/core/src/index.css` until the shared kit (2026-10-21)) — surfaces `surface`, `surface-dim`, `surface-bright`,
    `surface-container-lowest`/`-low`/`surface-container`/`-high`/`-highest`; text `on-surface` (primary), `on-surface-variant` (muted), `inverse-surface`/`inverse-on-surface`
    (tooltips); borders `outline-variant` (default hairline) and `outline` (stronger); accent `primary` + `on-primary`, `primary-container` + `on-primary-container`; `error`,
    `on-error`, `error-container`, `on-error-container`; and `secondary` / `on-secondary` / `secondary-container` / `on-secondary-container`, which are **aliases** of
@@ -89,14 +89,14 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
     (`apps/core/src/shared/store/notificationStore.ts:122`). Errors are sticky, others auto-dismiss at 6s (`ToastHost.tsx:10,16`). Always pass `appId` so the item gets your
     icon and click-to-open (`clock/src/useClockNotifications.ts`). A `console.error` is never a user-facing signal. The clean shape for a mutation-heavy app is one private
     `reportFailure()` wired into every `onError` (`sticky-notes/src/queries/stickyNotesQueries.ts:20-27`, `todo/src/queries/todosQueries.ts`). An inline banner is acceptable
-    only for errors bound to the visible view (`FileManager.tsx:430-442`); a toast is the default. As of brief 74 no add-on ships a console-only failure path — the two
+    only for errors bound to the visible view (`FileManager.tsx:430-442`); a toast is the default. As of the sticky-notes work (2026-08-05) no add-on ships a console-only failure path — the two
     remaining `console.error` calls (`pdf-viewer/src/PdfViewer.tsx:81`, `code-editor/src/CodeEditor.tsx:322`) each sit beside a visible banner, which this rule allows.
 24. **Destructive action** → `variant="destructive"` (`ui/Button.tsx:24-27`) **and** `destructive: true` on the confirm. Both, always.
 25. **Empty state** → centred column, one big thin glyph, one 12px line — `<div className="text-on-surface-variant flex flex-col items-center justify-center gap-2 py-12"><Folder size={32} strokeWidth={1} /><span className="font-ui text-[12px]">Empty folder</span></div>` (`file-manager/src/components/FileList.tsx:105-112`; 40/1
     variant at `docs/src/Docs.tsx:146`). Say what is empty; do not apologise.
 26. **Loading** → centred `text-on-surface-variant font-ui text-[12px]` "Loading…", plus `<Loader2 size={16} className="animate-spin" />` when the wait can exceed ~1s
     (`MarkdownEditor.tsx:165-167`; text-only at `FileManager.tsx:462`). An in-place refresh spins the existing icon instead: `<RefreshCw className={cn(isFetching && 'animate-spin')} />` (`FileManager.tsx:411`). No skeleton shimmers.
-27. **Context menu** → **never hand-roll one** (brief 105 promoted the third copy). `onContextMenu={e => { e.preventDefault(); setMenu({x: e.clientX, y: e.clientY}) }}` —
+27. **Context menu** → **never hand-roll one** (the context-menu kit (2026-08-07) promoted the third copy). `onContextMenu={e => { e.preventDefault(); setMenu({x: e.clientX, y: e.clientY}) }}` —
     raw VIEWPORT coords — then `{menu && <ContextMenu x={menu.x} y={menu.y} items={items} onClose={…} label="…"/>}` from `@imbatranim/ui`. Items are data:
     `{label, icon?, onSelect, danger?, disabled?, checked?}`, `{type:'separator'}`, `{type:'custom', key, children}` for a one-off row (`file-manager/src/lib/buildMenuItems.tsx`
     is the worked example). Positioning, edge-flipping, portalling above the taskbar, outside-press/Escape/scroll dismissal and the whole `role="menu"` keyboard contract come
@@ -109,8 +109,8 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
     Mirror it in your toolbar as `{name}{dirty ? ' •' : ''}` at `text-[11px] text-on-surface-variant` (`MarkdownEditor.tsx:156-159`).
 30. **File/save spine**, in this order (`markdown-editor/src/MarkdownEditor.tsx:25-99`): `const source = useOpenIntent(windowId)` → `const name = source ? fileName(source.path, 'untitled.md') : ''` → `await fetchFileBytes(source.root, source.path)` → `await uploadFileBytes(source.root, source.path, out, name)` (catch
     `UploadTooLargeError`) → `useSaveHotkey(windowId, handleSave)` + `useUnsavedGuard(windowId, dirty, name)`. `downloadUrl()` is unauthed by design, only for a real `<a download>` (`lib/fileBytes.ts:75`); every in-app byte read goes through `fetchFileBytes` (:21). Per-window state → `createOpenedFileStore()`. Cross-app handoff →
-    `openApp(appId, { openPath, root })` (`FileManager.tsx:159`). **A save over the file you opened sends the version you read** (brief 155): `system.fs.readWithVersion`, keep the token with your saved baseline (not the latest refetch), `upload(..., { expected })`; on `FileConflictError` ask with `useFileConflict()` (Overwrite = upload without `expected`, Reload from disk, Cancel). Save As elsewhere sends none. The office editors do not do this yet.
-31. **Form** → `Input` with the `label` prop (renders the house label and wires `htmlFor` to your `id`; `ui/Input.tsx:9-19`); `Select` with `options={[{value,label}]} value onValueChange placeholder` (`clock/src/tabs/ClockTab.tsx:23-29`); `Checkbox` with `label`. **`Select` now shows the option's `label` on its trigger** — until brief 75 it
+    `openApp(appId, { openPath, root })` (`FileManager.tsx:159`). **A save over the file you opened sends the version you read** (2026-10-03): `system.fs.readWithVersion`, keep the token with your saved baseline (not the latest refetch), `upload(..., { expected })`; on `FileConflictError` ask with `useFileConflict()` (Overwrite = upload without `expected`, Reload from disk, Cancel). Save As elsewhere sends none. The office editors do not do this yet.
+31. **Form** → `Input` with the `label` prop (renders the house label and wires `htmlFor` to your `id`; `ui/Input.tsx:9-19`); `Select` with `options={[{value,label}]} value onValueChange placeholder` (`clock/src/tabs/ClockTab.tsx:23-29`); `Checkbox` with `label`. **`Select` now shows the option's `label` on its trigger** — until the bookmarks model (2026-08-05) it
     rendered the raw `value`, because base-ui can only look a label up when `Select.Root` is given an `items` map, so every Select whose value differed from its label (an id,
     a minute offset, a timezone) displayed the value. Fixed once in `ui/Select.tsx` for all callers; the lookup is by `String(value)`, so a numeric `value` still resolves.
     Actions right-aligned in `<div className="flex justify-end gap-2">`, Cancel
@@ -149,19 +149,19 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
     trigger to a `button` (`node_modules/@base-ui/react/tooltip/trigger/TooltipTrigger.js:220`). `file-manager/src/components/FileList.tsx:190-240` does it five times per row,
     plus `FileManager.tsx:414` and `MarkdownEditor.tsx:116,131`. This is the source of the walkthrough's console errors — invalid HTML, and the inner button can swallow
     clicks. **Until core's `Tooltip` forwards `render`, use `title=` on an icon-only `Button`.** Add no new `Tooltip`-around-`Button` sites.
-43. **There are no native dialogs — every dialog is the kit's** (brief 102). `useUnsavedGuard` returns the themed
+43. **There are no native dialogs — every dialog is the kit's** (2026-08-07). `useUnsavedGuard` returns the themed
     `UnsavedChangesDialog` (Save / Don't Save / Cancel — render the node, `packages/ui/src/hooks/systemHooks.tsx`);
     everything else asks with `useConfirm`/`usePrompt`. `window.confirm`/`alert`/`prompt` grep to zero under `apps/`
     and `packages/` source, and any new hit is a regression: a native modal names the host browser and freezes every
     window's JS, the two hardest breaks of the "this is an OS" illusion.
 44. **`file-manager` hand-rolls what core exports**: a bespoke delete confirm (`FileManager.tsx:569-596`) instead of `useConfirm`, and a custom error banner whose comment at
-    :104 still claims "no toast system here" though `notify()` shipped in brief 34. Copy its _layout_ (toolbar / body / status bar), not its dialogs.
-45. **`sticky-notes` was off-style — fixed by brief 74** (2026-08-05), kept here because the four defects are the ones an inherited app most often has and this is the shape of
+    :104 still claims "no toast system here" though `notify()` shipped in the notification center work (2026-07-18). Copy its _layout_ (toolbar / body / status bar), not its dialogs.
+45. **`sticky-notes` was off-style — fixed by the sticky-notes work (2026-08-05)** (2026-08-05), kept here because the four defects are the ones an inherited app most often has and this is the shape of
     the fix. It had: `<div onClick>` rows (keyboard-unreachable), a raw `overflow-y-auto` instead of `ScrollArea`, `console.error` as the only failure signal, and a raw
     `<button>` where a ghost `Button` belongs. Now: rows are real `<button>`s with the controls as **siblings** (`StickyNotes.tsx:298-354`), `ScrollArea` (:261), a private
     `reportFailure()` on every mutation's `onError` (`queries/stickyNotesQueries.ts:20-27`), and kit `Button`s throughout. `useConfirm` was always right (:197) and stayed.
 46. Literal colour: `norpdf/src/editor/SignatureDialog.tsx:186` (kept deliberately — it previews ink on paper and must match the PDF).
-    **The Terminal's `bg-[#0d0d0e]` is fixed** (brief 56): its xterm theme now comes from `--k-surface`/`--k-on-surface`/`--accent` and is
+    **The Terminal's `bg-[#0d0d0e]` is fixed** (2026-08-04): its xterm theme now comes from `--k-surface`/`--k-on-surface`/`--accent` and is
     re-applied on theme or accent change. Note that a light terminal needs its own **ANSI 16** palette too — xterm's dark-tuned defaults are
     unreadable on a near-white surface, so `repl-interpreter/src/lib/xtermTheme.ts` carries one per mode, contrast-tested. Dead radius classes: `code-editor/src/CodeEditor.tsx:345,350`,
     `norpdf/src/editor/AnnotateToolbar.tsx:109,157`. `TASKBAR_HEIGHT = 44` is declared twice (`windowStore.ts:27`, `taskbar/Taskbar.tsx:11`) and is not exported to add-ons —
@@ -169,7 +169,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 
 ## 9. Painting on the desktop
 
-47. **An app may paint outside its window, and only through `desktopLayer`.** Set `desktopLayer` on your manifest (`contract.ts:41`, added by brief 74) and core mounts it on
+47. **An app may paint outside its window, and only through `desktopLayer`.** Set `desktopLayer` on your manifest (`contract.ts:41`, added by the sticky-notes work (2026-08-05)) and core mounts it on
     the desktop with no import of your package — the same seam as `commandSources`. `Desktop.tsx` collects the layers from `useEnabledApps()` and renders each inside one
     `pointer-events-none absolute inset-0` wrapper with `<Suspense fallback={null}>`, placed **after** the icon container and **before** `WindowContainer`. The three rules that
     follow from that, all of them load-bearing:

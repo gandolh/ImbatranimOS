@@ -52,7 +52,7 @@ async function bootstrap() {
 
   // Health check outside global prefix.
   //
-  // Reports `degraded` at HTTP **200** when a migration failed (brief 110): a
+  // Reports `degraded` at HTTP **200** when a migration failed: a
   // compose healthcheck restart cannot fix a half-migrated disk, and flapping
   // the container would only hide the one message that explains it.
   const httpAdapter = app.getHttpAdapter();

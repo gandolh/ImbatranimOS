@@ -11,7 +11,7 @@ import {
 } from './keyboardGuard'
 
 /**
- * Security review of brief 158, M1 — the page's keyboard guard. In Chrome a
+ * Security review of sandboxed apps from a URL, M1 — the page's keyboard guard. In Chrome a
  * background frame's `focus()` takes the keyboard without the page seeing
  * more than a `window` blur, so jsdom cannot play the theft itself. These
  * tests drive the decision: stubs say whether the page still has focus, which

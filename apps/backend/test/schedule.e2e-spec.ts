@@ -13,7 +13,7 @@ import {
 } from '../src/modules/identity/testing';
 import { ScheduleModule } from '../src/modules/schedule/schedule.module';
 
-describe('Schedule claims (e2e) — brief 93', () => {
+describe('Schedule claims (e2e)', () => {
   let app: INestApplication<Server>;
   let http: ReturnType<typeof request>;
   let cookie: string;

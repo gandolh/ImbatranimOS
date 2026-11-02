@@ -25,7 +25,7 @@ const LOOKAHEAD_MS = 31 * 24 * 60 * 60 * 1000
 /**
  * Already-notified occurrences, as `eventId:YYYY-MM-DD`.
  *
- * **Session state, deliberately — and a change from before brief 72.** The old
+ * **Session state, deliberately — and a change from before the calendar storage work.** The old
  * model persisted a single `reminderFired` boolean per event, which cannot work once
  * an event repeats: the first ring would set the flag and silence every later
  * occurrence of the series forever. A per-occurrence key fixes that, and it does not
@@ -53,7 +53,7 @@ function remember(key: string): void {
 /**
  * Fires a `system.notify(...)` toast once per occurrence when `now` crosses
  * `start - reminderMinutes`. Runs a single ~1/min interval for as long as this hook
- * stays mounted. Since brief 93 it is mounted by `CalendarBackground` (the
+ * stays mounted. Since the reminder scheduler it is mounted by `CalendarBackground` (the
  * manifest's desktop-lifetime service), so reminders fire while the desktop is
  * open — no Calendar window required. Mount it exactly once.
  *
@@ -76,7 +76,7 @@ export function useCalendarReminders(): void {
           const key = `${event.id}:${occurrence.occurrenceDate}`
           if (notified.has(key)) continue
           remember(key)
-          // Cross-tab dedupe (brief 93): the trigger instant is derived from
+          // Cross-tab dedupe: the trigger instant is derived from
           // stored fields, so every tab computes the same claim key and exactly
           // one of them toasts.
           void system.schedule.claim('calendar', String(event.id), trigger).then((claimed) => {

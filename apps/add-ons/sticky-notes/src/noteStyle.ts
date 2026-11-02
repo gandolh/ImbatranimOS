@@ -8,7 +8,7 @@ import type { NoteColor } from './types'
  * sticky note's metaphor wants colour — the brief calls this "the one place the
  * locked identity and the app's metaphor genuinely pull apart".
  *
- * It turns out the question was already settled one brief earlier. Brief 72 gave
+ * It turns out the question was already settled one brief earlier. The calendar storage work gave
  * Calendar events a six-name palette applied as a **tinted left border plus a
  * low-alpha fill**, on exactly this reasoning: enough hue to tell two things apart
  * at a glance, not enough to read as a saturated colour block. So this reuses that

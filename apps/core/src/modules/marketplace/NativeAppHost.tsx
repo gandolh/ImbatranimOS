@@ -14,13 +14,13 @@ import { useServerLease } from './useServerLease'
  * close.
  *
  * A failure while loading or mounting is thrown during render, so the window's
- * error boundary (brief 47) shows it in this window only. A service app's
+ * error boundary shows it in this window only. A service app's
  * server is held with a lease for as long as the window is open
  * ({@link useServerLease}), and the module is mounted only once it is up.
  *
  * An app that needs a newer system protocol is refused before anything is
  * leased or fetched, and the window says so in a {@link RefusalPanel}: a
- * refusal is not a crash (brief 175).
+ * refusal is not a crash.
  */
 export function NativeAppHost({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
   // Checked here, outside the host's hooks, so an early return cannot change

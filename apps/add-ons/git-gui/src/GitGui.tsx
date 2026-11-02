@@ -154,7 +154,7 @@ export function GitGui({ windowId: _windowId }: { windowId: string }) {
         setDiffError(null)
       })
       .catch((err) => {
-        // A diff past the 10 MB cap arrives as a 413 with a real message (brief 76,
+        // A diff past the 10 MB cap arrives as a 413 with a real message (the git GUI work,
         // item 7) — shown as an error, not fed to the diff parser.
         if (cancelled) return
         setDiff('')
@@ -260,7 +260,7 @@ export function GitGui({ windowId: _windowId }: { windowId: string }) {
 
   /**
    * Open the selected file side by side against HEAD in the Diff tool
-   * (brief 114).
+   *.
    *
    * The left side is the committed blob — text, not a file, so it rides the
    * intent rather than a path. The right side is the working-tree file itself,

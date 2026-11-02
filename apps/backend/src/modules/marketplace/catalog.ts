@@ -3,21 +3,21 @@ import { isAbsolute, join, normalize, posix } from 'path';
 import { z } from 'zod';
 
 /**
- * The marketplace catalog (brief 120): `marketplace/<id>.json` in THIS repo.
+ * The marketplace catalog: `marketplace/<id>.json` in THIS repo.
  *
  * A descriptor is the trust anchor. Only an app described here, at the commit
  * it pins, can be installed, and because the descriptor set is curated in the
  * OS repo, an installed app is first-party ("buggy, not malicious"), which is
  * what lets it run natively in the desktop's own realm. An app from an
- * arbitrary URL is another thing entirely (brief 158, `app-manifest.ts`): it
+ * arbitrary URL is another thing entirely (`app-manifest.ts`): it
  * runs sandboxed, and its id starts with `x-`, which a catalog id may not.
  *
- * Since brief 162 one descriptor may describe several apps built together
+ * Since one catalog entry, several apps one descriptor may describe several apps built together
  * (`schemaVersion: 2`, an `apps` array): one clone, one build, one served
  * directory, one server, and every app in it shown on the desktop. A
  * version 1 descriptor is one app, and is read into the same shape.
  *
- * Since brief 163 a version 2 descriptor's apps may be kit apps (top-level
+ * Since the shared kit a version 2 descriptor's apps may be kit apps (top-level
  * `sharedKit`): components the desktop renders with its own React and UI kit
  * rather than modules that `mount` themselves, each with the stylesheets it
  * lists in `styles`.
@@ -87,14 +87,14 @@ export const entrySchema = innerPath
   }, 'must be inside the build output directory, like dist/app.mjs');
 
 /**
- * The rule for a descriptor's id and, since brief 162, for each of its apps'
+ * The rule for a descriptor's id and, since one catalog entry, several apps, for each of its apps'
  * ids: they share one namespace (see {@link loadCatalog}).
  */
 const ID_PATTERN = /^[a-z][a-z0-9-]{1,39}$/;
 const idSchema = z
   .string()
   .regex(ID_PATTERN, 'lowercase letters, digits and -')
-  // `x-…` is what an app installed from a URL is called (brief 158). A
+  // `x-…` is what an app installed from a URL is called. A
   // catalog app taking one could be mistaken for, or replace, one.
   .refine((id) => !id.startsWith('x-'), 'must not start with x-');
 
@@ -124,7 +124,7 @@ export const appEntrySchema = innerPath
 export const MAX_APP_STYLES = 8;
 
 /**
- * A kit app's stylesheet (brief 163): a `.css` file inside the build's
+ * A kit app's stylesheet: a `.css` file inside the build's
  * `output`, like `docs/app.css`. Never inside `node_modules`.
  */
 export const styleSchema = innerPath
@@ -136,11 +136,11 @@ export const styleSchema = innerPath
 
 /**
  * The version of the desktop's shared kit (`SHARED_KIT_VERSION` in
- * `@imbatranim/ui`) a kit app's build was made against (brief 163).
+ * `@imbatranim/ui`) a kit app's build was made against.
  */
 export const sharedKitSchema = z.number().int().min(1);
 
-/** File types an app opens (brief 162): extensions, or whole names for extensionless files. */
+/** File types an app opens: extensions, or whole names for extensionless files. */
 export const opensSchema = z
   .array(
     z
@@ -191,7 +191,7 @@ function sourceSchema(options: { allowLocalRepos: boolean }) {
   });
 }
 
-/** Version 1 (brief 120): one descriptor, one app. */
+/** Version 1: one descriptor, one app. */
 function descriptorV1Schema(options: { allowLocalRepos: boolean }) {
   return z.object({
     schemaVersion: z.literal(1),
@@ -233,7 +233,7 @@ export const suiteAppSchema = z.object({
   multiInstance: z.boolean().default(false),
   capabilities: capabilitiesSchema,
   /**
-   * A kit app's stylesheets (brief 163), added to the page when an app of
+   * A kit app's stylesheets, added to the page when an app of
    * the build first opens. Only a descriptor with `sharedKit` may list any.
    */
   styles: z
@@ -248,7 +248,7 @@ export const suiteAppSchema = z.object({
 });
 
 /**
- * Version 2 (brief 162): one build, several apps. The top level is what the
+ * Version 2: one build, several apps. The top level is what the
  * build shares; each item of `apps` is one app.
  */
 function descriptorV2Schema(options: { allowLocalRepos: boolean }) {
@@ -269,7 +269,7 @@ function descriptorV2Schema(options: { allowLocalRepos: boolean }) {
     apps: z.array(suiteAppSchema).min(1).max(16),
     minSystemVersion: z.number().int().min(1),
     /**
-     * Present: every app of the descriptor is a kit app (brief 163), a
+     * Present: every app of the descriptor is a kit app, a
      * component the desktop renders with its own React and kit, built
      * against this version of them. Absent: every app exports `mount`.
      */
@@ -307,7 +307,7 @@ export interface Descriptor {
   minSystemVersion: number;
   /**
    * The shared kit version every app of the descriptor was built against
-   * (brief 163), or null when its apps export `mount`. Version 2 only.
+   *, or null when its apps export `mount`. Version 2 only.
    */
   sharedKit: number | null;
 }
@@ -429,7 +429,7 @@ export interface Catalog {
  * skipped and reported, never half-loaded; so is one whose file name is not
  * its id, or one that reuses an id an earlier file took.
  *
- * Descriptor ids and app ids are one namespace (brief 162): the desktop
+ * Descriptor ids and app ids are one namespace: the desktop
  * knows apps by their ids and the routes know descriptors by theirs, so an
  * app id that is another descriptor's id, or another descriptor's app's,
  * would make one of them mean two things. An app may carry its own

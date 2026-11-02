@@ -37,7 +37,7 @@ export const manifest: AddonManifest = {
   ],
   multiInstance: true,
   // 620 so the window fits a 720px-tall viewport with the taskbar still on
-  // screen; 680 did not, and the clamp in brief 52 had to shrink it on open.
+  // screen; 680 did not, and the clamp in the window size clamp had to shrink it on open.
   defaultSize: { width: 960, height: 620 },
   // Honest floor: below ~560 the menu bar wraps and Monaco's own find widget
   // has nowhere to sit.
@@ -45,10 +45,10 @@ export const manifest: AddonManifest = {
 }
 
 /**
- * The Diff tool (brief 99) — a second app from this package, so it shares the
+ * The Diff tool — a second app from this package, so it shares the
  * self-hosted Monaco + worker setup and the same lazy chunk graph. A separate
  * add-on would carry its own monaco-editor dependency wholesale for a
- * component that has been sitting in this one since brief 41.
+ * component that has been sitting in this one since the Monaco editor.
  */
 export const diffManifest: AddonManifest = {
   id: 'diff',

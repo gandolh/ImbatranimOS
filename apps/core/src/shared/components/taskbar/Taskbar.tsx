@@ -61,7 +61,7 @@ export function Taskbar() {
   })
 
   // Only the current workspace's windows get a button — that is what a taskbar
-  // per virtual desktop means (brief 85). The others are reachable via their pip.
+  // per virtual desktop means. The others are reachable via their pip.
   const visibleWindows = allTasks.filter((w) => w.workspaceId === activeWorkspace)
 
   // Focus from the shared, workspace-scoped helper (topmost visible window on the
@@ -82,7 +82,7 @@ export function Taskbar() {
     const open = new Set(useWindowStore.getState().windows.map((w) => w.id))
     const id = openApp(appId)
     // A single-instance app that was already open came to the front: put the
-    // keyboard in it (brief 174). The menu hands focus back to the Start
+    // keyboard in it. The menu hands focus back to the Start
     // button as it closes, so this waits a frame. A new window is left to
     // its app, which decides its own first focus as it mounts.
     if (open.has(id)) focusIntoWindowSoon(id)
@@ -91,7 +91,7 @@ export function Taskbar() {
   /**
    * A task button: restore a minimised window, minimise the focused one, or
    * bring another to the front. Restoring and raising move the keyboard into
-   * the window (brief 174); minimising leaves it on the button.
+   * the window; minimising leaves it on the button.
    */
   function handleTaskClick(id: string) {
     const win = useWindowStore.getState().windows.find((w) => w.id === id)

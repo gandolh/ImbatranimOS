@@ -32,7 +32,7 @@ jest.mock('child_process', () => {
 });
 
 /**
- * Brief 142 — a download the client abandons must free the backup slot.
+ * The backup download abort frees the slot work — a download the client abandons must free the backup slot.
  *
  * Real HTTP, real `tar`, real SQLite. The home holds 8 MB of incompressible
  * bytes so tar is still writing when the client leaves: with `.pipe()` it then

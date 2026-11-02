@@ -3,7 +3,7 @@ import type { FormField } from '../types'
 /**
  * Building a multipart body by hand.
  *
- * The proxy takes bytes (`bodyBase64`, brief 77) and does not compose bodies, so the
+ * The proxy takes bytes (`bodyBase64`) and does not compose bodies, so the
  * multipart envelope is assembled here. That is the right split: the proxy stays a
  * dumb relay whose guardrails are about *where* a request goes, not what is in it.
  *

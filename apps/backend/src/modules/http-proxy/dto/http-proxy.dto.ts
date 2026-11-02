@@ -54,7 +54,7 @@ export class HttpProxyRequestDto {
   body?: string;
 
   /**
-   * A **binary** request body, base64-encoded (brief 77).
+   * A **binary** request body, base64-encoded.
    *
    * The REST client could previously only send a string, which meant no multipart
    * upload and no raw binary — "a client that cannot upload a file cannot exercise

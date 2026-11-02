@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 
 /**
- * Where an app installed from a URL comes from (brief 158): the URL the owner
+ * Where an app installed from a URL comes from: the URL the owner
  * pasted, what it resolves to, and the id that follows from it.
  *
  * GitHub only, plus `file:` behind `MARKETPLACE_ALLOW_LOCAL_REPOS` for tests.

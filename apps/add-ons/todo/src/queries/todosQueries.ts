@@ -46,7 +46,7 @@ function invalidateTodos(): void {
 /**
  * Report a failed write.
  *
- * Before brief 73 these went nowhere: a rejected PATCH rolled the optimistic
+ * Before the todo dates work these went nowhere: a rejected PATCH rolled the optimistic
  * update back and the row simply sprang into its old state, which reads as the app
  * ignoring the click.
  */
@@ -63,7 +63,7 @@ export function useTodosQuery(scope: Scope, options?: { refetchIntervalMs?: numb
   return useQuery({
     queryKey: todosKey(scope),
     queryFn: () => fetchTodos(system.http, scope),
-    // The background service (brief 93) keeps the all-todos cache warm for the
+    // The background service keeps the all-todos cache warm for the
     // due-date watcher even with no Todo window open — including hidden tabs,
     // where a due toast still has to land.
     refetchInterval: options?.refetchIntervalMs,

@@ -21,7 +21,7 @@ interface RecentRow {
 }
 
 /**
- * OS-wide recent files (brief 94). Promoted from Notepad's private recents:
+ * OS-wide recent files. Promoted from Notepad's private recents:
  * every opener records `(root, path, appId)` through one core helper, and the
  * Start menu, the file picker and the palette read it back.
  *

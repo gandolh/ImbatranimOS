@@ -15,7 +15,7 @@ import {
 import { ConsentCard, InstallFromUrl } from './InstallFromUrl'
 import { apiMessage, sourceLine, type Inspection } from './urlApps'
 
-/** Brief 158 adds these to the registry's type; narrowed here so this compiles either way. */
+/** Sandboxed apps from a URL adds these to the registry's type; narrowed here so this compiles either way. */
 
 const JOB_LABEL: Record<NonNullable<MarketplaceApp['job']>['state'], string> = {
   queued: 'Waiting for another install…',
@@ -31,7 +31,7 @@ function errorMessage(err: unknown): string {
 
 /**
  * One row of the pane: a URL app, or a catalog descriptor with its apps
- * (brief 162). The apps of one descriptor share its install, job, server and
+ *. The apps of one descriptor share its install, job, server and
  * log, so the row reads them from the first.
  */
 type Row = {
@@ -68,12 +68,12 @@ function rowsOf(apps: MarketplaceApp[]): Row[] {
 }
 
 /**
- * Settings → Marketplace (brief 120): the apps the OS repo's catalog
+ * Settings → Marketplace: the apps the OS repo's catalog
  * describes, and installing, updating and removing them. Installing clones
  * the app's repository at the commit the catalog pins and builds it here, so
  * it takes a while; the list polls until it is done.
  *
- * One row per descriptor (brief 162): a suite's apps are installed, updated
+ * One row per descriptor: a suite's apps are installed, updated
  * and removed together, so its row carries those buttons once and lists its
  * apps under the heading, each with its own Open. Enabling and disabling an
  * app stays per app, in Settings → Apps.
@@ -241,14 +241,14 @@ export function MarketplaceSettings() {
           const missing = row.apps.some((a) => a.installed?.missing)
           const working = app.job && app.job.state !== 'failed'
           const outdated = installed && installed.ref !== app.ref
-          // A kit app built for another shared kit will not open here (brief 163).
+          // A kit app built for another shared kit will not open here.
           const mismatched = row.apps.find(
             (a) => typeof a.sharedKit === 'number' && a.sharedKit !== SHARED_KIT_VERSION
           )
           const kitMismatch = mismatched?.sharedKit
           // At the same ref, with the build present, Update and Reinstall do
           // not show; if the catalog now names this desktop's kit, the same
-          // install rebuilds it for this kit (brief 176).
+          // install rebuilds it for this kit.
           const rebuild =
             !!installed &&
             !missing &&

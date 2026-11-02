@@ -3,7 +3,7 @@ import { Globe } from 'lucide-react'
 import type { AddonManifest } from '@imbatranim/core'
 
 /**
- * The Browser (brief 50). Open a page from another app with
+ * The Browser. Open a page from another app with
  * `openApp('browser', { url })`; only http(s) URLs are honoured.
  */
 export const manifest: AddonManifest = {

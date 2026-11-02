@@ -5,7 +5,7 @@ import { useIntentStore } from './intentStore'
 
 export type SnapRegion = 'left' | 'right' | 'top' | 'tl' | 'tr' | 'bl' | 'br'
 
-// ── Workspaces (brief 85) ─────────────────────────────────────────────────────
+// ── Workspaces ─────────────────────────────────────────────────────
 
 /**
  * How many virtual desktops there are.
@@ -52,7 +52,7 @@ export type WindowInstance = {
   id: string
   appId: string
   title: string
-  /** Which virtual desktop this window lives on (brief 85). Never undefined. */
+  /** Which virtual desktop this window lives on. Never undefined. */
   workspaceId: WorkspaceId
   isVisible: boolean
   isMaximized: boolean
@@ -132,7 +132,7 @@ export type PersistedWindow = {
   /**
    * Persisted, despite the brief listing it as out of scope.
    *
-   * Brief 85 called this out and brief 49 settled where it belongs: the window
+   * Workspaces called this out and the ephemeral-session work settled where it belongs: the window
    * layout is **per-tab session state**, persisted in `sessionStorage`, so the
    * workspace a window sits on rides along with it. Omitting it would mean a
    * reload silently collapses every workspace onto 1, destroying the arrangement
@@ -150,7 +150,7 @@ export type PersistedWindow = {
 }
 
 /**
- * Where a tab's window layout lives (brief 49).
+ * Where a tab's window layout lives.
  *
  * **`sessionStorage`, not `localStorage`** — and that one word is the whole
  * brief-49 session fix. `localStorage` is shared by every tab of an origin, so
@@ -187,7 +187,7 @@ function sessionStore(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | n
 
 /**
  * Remember which workspace was on screen — per tab, like the layout it belongs
- * to (brief 49).
+ * to.
  *
  * Without this, a reload of a session whose windows live on workspace 3 lands on
  * an empty workspace 1 — which reads as "everything is gone" even though nothing
@@ -275,7 +275,7 @@ export function computeSnapGeometry(region: SnapRegion): {
   }
 }
 
-// ── Keyboard snapping (brief 103) ─────────────────────────────────────────────
+// ── Keyboard snapping ─────────────────────────────────────────────
 
 export type SnapKeyDirection = 'left' | 'right' | 'up' | 'down'
 
@@ -394,13 +394,13 @@ export function detectSnapRegion(pointerX: number, pointerY: number): SnapRegion
 
 type WindowStore = {
   windows: WindowInstance[]
-  /** The workspace currently on screen (brief 85). */
+  /** The workspace currently on screen. */
   activeWorkspace: WorkspaceId
   preMaximizeStates: Record<string, PreMaximizeState>
   preSnapStates: Record<string, PreMaximizeState>
   // A window may veto its own close (e.g. an editor with unsaved changes). The
   // guard returns true to allow the close, false to abort it — or a promise of
-  // either, for guards that ask with a themed dialog (brief 102). Kept generic —
+  // either, for guards that ask with a themed dialog. Kept generic —
   // the store never knows *why* a close is vetoed; the window supplies the policy.
   closeGuards: Record<string, () => boolean | Promise<boolean>>
   // Windows whose async guard is still deciding. Consulted at closeWindow entry
@@ -436,14 +436,14 @@ type WindowStore = {
   snapWindow: (id: string, region: SnapRegion) => void
   unsnap: (id: string) => void
   /**
-   * Re-fit every window to the CURRENT viewport (brief 103): maximized windows
+   * Re-fit every window to the CURRENT viewport: maximized windows
    * take the new usable desktop, snapped windows retile, floaters shrink only
    * if they now overflow and move only enough to keep their title bar
    * reachable. `minSize` still wins over the viewport.
    */
   reflowToViewport: () => void
   /**
-   * Show desktop (brief 103): any visible window on the active workspace →
+   * Show desktop: any visible window on the active workspace →
    * stash and hide them all; none → bring the stash back in its stacking
    * order. A window opened between the two presses makes "any visible" true
    * again, so the second press hides — exactly Windows' behaviour.
@@ -464,14 +464,14 @@ type WindowStore = {
  * the focused window was minimized).
  */
 export function topVisibleWindowId(): string | null {
-  // Behind the lock overlay no window is focused (brief 101): this is the one
+  // Behind the lock overlay no window is focused: this is the one
   // gate that silences every app-side useSaveHotkey/useTopWindowKeydown, since
   // they all check system.window.isFocused() at keydown time.
   if (isShellSuspended()) return null
   const { windows, activeWorkspace } = useWindowStore.getState()
   let top: WindowInstance | null = null
   for (const w of windows) {
-    // Scoped to the active workspace (brief 85): a window on another virtual
+    // Scoped to the active workspace: a window on another virtual
     // desktop is `display:none`, so it must not be treated as focused — else
     // the taskbar highlight, window chrome and Ctrl+S/Mod+W would target a
     // window the user cannot see.
@@ -604,7 +604,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     // when the window goes away, so a long session leaks one entry per opened
     // window (and a stale intent could be mis-delivered to a recycled id). Clear
     // both here, the single choke point every close funnels through.
-    // The opened-file latch moved into the SDK with brief 48 and is private to
+    // The opened-file latch moved into the SDK with the system-handle seam and is private to
     // it — the OS cannot (and should not) reach in to clear it. Entries are
     // keyed by uuid window ids that never recur, so a closed window's record
     // is a few dozen orphaned bytes per tab session, not a leak that grows.
@@ -631,7 +631,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     // A guard verdict of false — sync or settled — aborts the close for every
     // caller: the title bar X and the Ctrl+W hotkey both funnel through here,
     // so neither can bypass it. A plain boolean keeps today's same-tick close;
-    // a promise (a themed dialog asking, brief 102) holds the close open until
+    // a promise (a themed dialog asking) holds the close open until
     // it settles.
     const guard = get().closeGuards[id]
     const verdict = guard ? guard() : true
@@ -741,7 +741,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       // permanently un-restorable. Fall back to a centered, desktop-clamped
       // floating size so the restore button always does something sane.
       const geometry = saved ?? fallbackFloatingGeometry(win.size)
-      // The saved geometry may predate a viewport resize (brief 103): re-clamp
+      // The saved geometry may predate a viewport resize: re-clamp
       // so a restore never lands off-screen or oversized for the new desktop.
       const size = clampToDesktop(geometry.size, minSizeResolver(win.appId), {
         width: window.innerWidth,
@@ -774,7 +774,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     const { nextZIndex } = get()
     set((state) => {
       const target = state.windows.find((w) => w.id === id)
-      // Focusing a window on another workspace SWITCHES to it (brief 85).
+      // Focusing a window on another workspace SWITCHES to it.
       //
       // This is the invariant "no window can become unreachable", enforced at
       // the one place every caller funnels through: the taskbar, Alt+Tab,
@@ -1026,7 +1026,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       isVisible: p.isVisible,
       zIndex: p.zIndex,
       snapState: p.snapState,
-      // A layout written before brief 85 has no workspace; clamp defaults it to
+      // A layout written before workspaces has no workspace; clamp defaults it to
       // 1 rather than leaving `undefined`, which would filter to nowhere.
       workspaceId: clampWorkspace(p.workspaceId),
     }))

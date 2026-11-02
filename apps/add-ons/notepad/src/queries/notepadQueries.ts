@@ -32,7 +32,7 @@ export function useNoteFileQuery(root: NotepadRoot, path: string | undefined) {
     // Re-read whenever the editor mounts. That does not catch a change made
     // while it is open: the shared client never refetches on focus, and "focus"
     // there would mean the browser tab, not this desktop window. What keeps a
-    // save from destroying such a change is its version precondition (brief 155).
+    // save from destroying such a change is its version precondition.
     staleTime: 0,
   })
 }

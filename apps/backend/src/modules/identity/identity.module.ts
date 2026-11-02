@@ -8,7 +8,7 @@ import { MeController } from './me.controller';
 
 /**
  * Identity: the machine's own single-owner sign-in, the only one since
- * brief 157.
+ * the move off Ward.
  *
  * Registers the global {@link SessionGuard} so every route is authenticated by
  * default, and exports {@link LocalIdentityService} so a WebSocket upgrade

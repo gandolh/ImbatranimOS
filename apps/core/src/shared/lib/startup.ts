@@ -6,12 +6,12 @@ import { useWindowStore } from '../store/windowStore'
 import { openApp } from '../intents/openApp'
 
 /**
- * Startup apps (brief 82) — opening the set, exactly once, without fighting the
+ * Startup apps — opening the set, exactly once, without fighting the
  * layout restore.
  *
  * ## The brief's premise was out of date, and it matters
  *
- * Brief 82 says brief 49 "deliberately deletes" the layout restore, so every load
+ * Startup apps says the ephemeral-session work "deliberately deletes" the layout restore, so every load
  * lands on a bare desktop. That is not what 49 shipped: it moved the layout to
  * **`sessionStorage`**, so a *reload of the same tab* still restores its windows
  * and only a *new tab* starts bare. Written to the brief's premise, this feature
@@ -70,7 +70,7 @@ export function resetStartupForTest(): void {
  * Which of the configured apps would actually open right now.
  *
  * Skips ids the registry no longer has (an app removed from the tree must not
- * leave a permanently broken boot) and apps the user has disabled (brief 46) —
+ * leave a permanently broken boot) and apps the user has disabled —
  * a disabled app in the startup list is *skipped*, never resurrected. Settings
  * shows the same computation, so what the list says is what boot does.
  */
@@ -85,7 +85,7 @@ export function startupCandidates(ids: string[] = useStartupStore.getState().app
 /**
  * True when the list names an app the registry does not have yet and the
  * owner has not disabled: a Marketplace app, registered only once the first
- * listing arrives (brief 183). An id that never arrives is skipped then.
+ * listing arrives. An id that never arrives is skipped then.
  */
 function waitsForRegistry(ids: string[] = useStartupStore.getState().apps): boolean {
   const disabled = useAddonStore.getState()
@@ -103,7 +103,7 @@ function openStartupSet(): string[] {
     try {
       // Plain `openApp`, no special-case placement: `openWindow` already scatters
       // new windows by ±100px around centre and clamps each against the viewport
-      // (brief 52), so a set of three lands visibly apart and none of them can
+      //, so a set of three lands visibly apart and none of them can
       // hang off a short screen. A hand-rolled stagger here would fight that.
       const win = openApp(id)
       if (win !== '') opened.push(id)
@@ -122,7 +122,7 @@ function openStartupSet(): string[] {
  * from App's boot). When the list names an app that is not registered yet,
  * the whole set waits for that listing to settle, success or failure, and
  * then opens in the list's order, so "the last one ends up in front" holds
- * for Marketplace apps too (brief 183). The decision to run is made before
+ * for Marketplace apps too. The decision to run is made before
  * the wait: a restored layout or a tab that already ran opens nothing, ever.
  * When every listed app is registered, or there is nothing to wait for, the
  * set opens synchronously, in this call, as it did before.

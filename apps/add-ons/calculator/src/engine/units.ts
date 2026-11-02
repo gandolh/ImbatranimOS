@@ -1,5 +1,5 @@
 /**
- * Unit conversion tables and arithmetic (brief 116).
+ * Unit conversion tables and arithmetic.
  *
  * Pure data plus two functions, deliberately: a converter is a table, and a
  * table is the one thing in a calculator that can be wrong in a way nobody

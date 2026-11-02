@@ -8,7 +8,7 @@ import { useWallpaperStore } from './wallpaperStore'
 
 /**
  * Re-read every dotfile store from the mirror, after the server has filled it
- * (brief 49).
+ *.
  *
  * This is the step the design needs and is easy to miss: zustand's `persist`
  * hydrates **once, at store creation**, which happens at import time — long
@@ -31,7 +31,7 @@ export async function rehydrateDotfileStores(): Promise<void> {
     useAssociationStore.persist.rehydrate(),
     useStartupStore.persist.rehydrate(),
   ])
-  // On the server's copy, now that the stores hold it (brief 164).
+  // On the server's copy, now that the stores hold it.
   migrateRetiredAppIds()
   const { theme, accent } = useAppearanceStore.getState()
   applyAppearance(theme, accent)

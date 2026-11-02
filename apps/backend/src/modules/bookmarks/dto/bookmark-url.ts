@@ -25,7 +25,7 @@ import {
  * strictness is load-bearing now that this brief adds import: a Netscape file is
  * untrusted input, and the app renders bookmarks as `<a href>`, so a
  * `javascript:` or `data:` URL reaching the table would be stored XSS. Only
- * `http:` and `https:` pass, which is also all brief 50's browser will be able to
+ * `http:` and `https:` pass, which is also all the proxied browser will be able to
  * fetch through its proxy.
  */
 export const ALLOWED_SCHEMES = ['http:', 'https:'] as const;

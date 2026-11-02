@@ -1,5 +1,5 @@
 /**
- * Bounded undo/redo over opaque snapshots (brief 95). Pure and generic so the
+ * Bounded undo/redo over opaque snapshots. Pure and generic so the
  * branch-discard rule — editing after an undo forgets the redo tail — is
  * tested without ImageData.
  */

@@ -1,6 +1,6 @@
 ---
-summary: Decisions since imbatranimOS joined the Ward estate (2026-09-06) — identity (Ward from 2026-09-06, then the machine's own sign-in everywhere from brief 157, 2026-10-07, with the shared origin an accepted risk), the ISO as a LAN server OS instead of a kiosk (deferred; work stays in Docker), the owner's 2026-10-04 answers on briefs 15, 50, 120, 144/145/155 and old backups, brief 50's build calls (proxy on its own origin, the strict egress stance, the encrypted profile). Brief 120's marketplace calls are in decisions-marketplace.md.
-updated: 2026-10-22
+summary: Decisions since imbatranimOS joined the Ward estate (2026-09-06) — identity (Ward from 2026-09-06, then the machine's own sign-in everywhere from the move off Ward (2026-10-07), 2026-10-07, with the shared origin an accepted risk), the ISO as a LAN server OS instead of a kiosk (deferred; work stays in Docker), the owner's 2026-10-04 answers on the v1 release, the proxied browser, the marketplace, three built-ahead fixes and old backups, the proxied browser's build calls (proxy on its own origin, the strict egress stance, the encrypted profile). The marketplace install's marketplace calls are in decisions-marketplace.md.
+updated: 2026-11-02
 ---
 
 # Decisions of the estate era
@@ -10,7 +10,7 @@ Same rule: changing an entry needs an explicit revisit and a `log.md` entry.
 
 ## 2026-09-06 — Identity moves to Ward (recorded 2026-10-04)
 
-Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
+The standalone and dev identity work (2026-10-04) found this move only in `log.md` (2026-09-06), with no entry here.
 
 - **Inside the estate, identity is Ward's.** The `imb_session` cookie, the
   argon2 check, TOTP, the first-run wizard and the login throttle were deleted.
@@ -21,12 +21,12 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
 - **Consequence, revisited below:** without Ward the backend would not boot,
   which broke the friend-run bar and the ISO.
 - **Revised 2026-10-06:** Ward is dropped altogether (below). Built
-  2026-10-07 in brief 157.
+  2026-10-07 in the move off Ward (2026-10-07).
 
 ## 2026-10-04 — Owner answers (asked directly after the brief runs)
 
 - **When Ward is not configured, imbatranimOS has its own sign-in again**
-  (brief 152, option C).
+  (the standalone and dev identity work (2026-10-04), option C).
   - With `WARD_*` unset, a single-user local sign-in runs behind the same
     caller seam the Ward guard fills. Its pieces: a password set on first run,
     an httpOnly session cookie and a login throttle. The old code is
@@ -40,9 +40,9 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
     - D alone, the local Ward container, which ties a standalone install to
       another repo.
   - Cost, accepted: two sign-in paths to maintain and review.
-  - The friend-run bar stands again. Brief 153 writes the docs from this.
+  - The friend-run bar stands again. The identity docs tell the truth work (2026-10-04) writes the docs from this.
 - **The kiosk is dropped. The ISO is a server OS** (supersedes "Kiosk ISO
-  deferred" in decisions.md and the kiosk half of brief 18).
+  deferred" in decisions.md and the kiosk half of the alpine kiosk iso work (2026-07-17)).
   - It is a plain Alpine Linux image with the web server's packages
     pre-installed. It boots straight into serving imbatranimOS.
   - People reach it from other machines on the internal network over
@@ -67,7 +67,7 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
     container (`npm run dev`, the compose dev profile). The three choices
     above are the plan for when the ISO brief is written.
 - **v1.0.0 is declared as is (owner, 2026-10-07).** The friend-run bar and a
-  real VPS deploy are no longer v1 gates, and brief 15 is closed. The version
+  real VPS deploy are no longer v1 gates, and the v1 release work (2026-10-07) is closed. The version
   stays 1.0.0 in `package.json` and the Dockerfile, with no git tag (the
   2026-07-19 decision). **From then on every commit bumps the minor version:**
   1.1.0, 1.2.0, and so on. Run `npm run version:bump -- --stage` before each
@@ -77,14 +77,14 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
   Not done: a git hook that bumps on its own. The agent's permission check
   blocked installing one, so automating it is the owner's call.
   Was: parked on 2026-10-04 because the bar needed a friend's install.
-- **Briefs 50 (proxied web browser) and 120 (app marketplace): build them.**
+- **The proxied web browser and the app marketplace: build them.**
   Both keep their grilled decisions and their security review before commit.
 - **Old backups that still hold the deleted login's password hash are
   deleted.** Start fresh rather than scrub them.
-- **Briefs 144, 145 and 155: grilled after the fact, all confirmed as built.**
-  (144 and 145 were Ward's token refresh and the terminal's freshness
-  registry. Both went with Ward in brief 157; the local cookie does not
-  rotate.)
+- **Three fixes built ahead of a grill, confirmed after the fact:** Ward's
+  token refresh, the terminal's freshness registry and external-change
+  detection on save. The first two went with Ward on 2026-10-07; the local
+  cookie does not rotate.
   They were built without the interview their briefs asked for; asked the same
   day, the owner kept every call:
   - **144:** proactive refresh about two minutes before expiry (and on a tab
@@ -95,7 +95,7 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
   - **155:** the dialog offers Overwrite, Reload from disk and Cancel (Cancel
     focused, Esc cancels). Rejected: a fourth "save as copy" button, and a
     diff view first. First cut: Notepad, Code Editor and Markdown Editor; the
-    office editors followed in brief 156 (Sheets and Docs; Slides never
+    office editors followed in the office editors save conflict work (2026-10-06) (Sheets and Docs; Slides never
     writes the deck)
     (todo).
 
@@ -104,9 +104,9 @@ Brief 152 found this move only in `log.md` (2026-09-06), with no entry here.
 Asked directly while clearing the open questions.
 
 - **ImbatranimOS keeps its own sign-in, in the estate too.** Revises the
-  2026-09-06 move above. Brief 152's single-owner sign-in becomes the only
+  2026-09-06 move above. The standalone and dev identity work's single-owner sign-in becomes the only
   identity path, and Ward's module, variables and registration go
-  ([brief 157](../briefs/done/157-drop-ward-own-sign-in.md), built
+  (the move off Ward (2026-10-07), built
   2026-10-07). Rejected: a subdomain for the desktop, and a fresh
   confirmation before the terminal (the subdomain revisited 2026-10-21, below).
   - The deploy passes `SETUP_TOKEN` as a required secret, so the public
@@ -124,7 +124,7 @@ Asked directly while clearing the open questions.
   every app on the origin is the owner's own code under `script-src 'self'`.
   Revisit if a third-party app joins the estate.
   - **Revisited 2026-10-21, owner:** the desktop moves to `imbatranim.<domain>`
-    (`vps-deploy` brief 14, built 2026-10-22, live once deployed), where
+    (`vps-deploy` the imbatranim reskin work (2026-07-17), built 2026-10-22, live once deployed), where
     `imb_session` is host-only and the apex apps are cross-origin, so this
     risk closes. `/imbatranim-os` redirects there; the docs stay put. Nothing
     here changed. The Browser's "no subdomain" (LAN installs) stands.
@@ -132,7 +132,7 @@ Asked directly while clearing the open questions.
   not a stance waiting for v1. Rejected: pushing an image to GHCR or Docker
   Hub at v1.
 
-## Brief 50: the Browser (2026-10-04)
+## The proxied browser (2026-10-04): the Browser (2026-10-04)
 
 Built from the 2026-07-19 grill. The calls the build had to add or change:
 
@@ -151,12 +151,12 @@ Built from the 2026-07-19 grill. The calls the build had to add or change:
   - Rejected: same origin with a path-scoped service worker (above); a
     subdomain (needs DNS that a localhost or LAN install does not have).
 - **The add-on frames the proxy origin itself; core gains nothing.** Since
-  brief 48, core's barrel is type-only, so the brief's `<ProxyView>` export
+  the system-handle seam (2026-08-06), core's barrel is type-only, so the brief's `<ProxyView>` export
   from core no longer fits the seam. On a separate origin the service worker
   is not core's either. Lazy loading comes for free: nothing proxy-related
   exists until the Browser window mounts its frame, and the desktop origin
   never registers a worker.
-- **Egress, the stricter stance (opposite to brief 43's, on purpose).** The
+- **Egress, the stricter stance (opposite to the rest api client work's, on purpose).** The
   REST client may reach the LAN because it sends only URLs the owner typed.
   The relay carries traffic for pages whose own scripts drive it.
   - Allowed: public unicast addresses only (ipaddr.js range `unicast`, minus
@@ -197,5 +197,5 @@ Built from the 2026-07-19 grill. The calls the build had to add or change:
   otherwise. The command palette still opens a tab: its `activate` has no
   `system` handle.
 
-Brief 120's calls (the marketplace) are on their own page:
+The marketplace install's calls (the marketplace) are on their own page:
 [decisions-marketplace.md](decisions-marketplace.md).

@@ -5,7 +5,7 @@
  * from a timestamp**, never accumulated by counting interval ticks. A running
  * timer stores the instant it reaches zero (`endAt`) and a paused one stores the
  * remaining span, so pausing, resuming, a throttled background tab, or a slow
- * render can never make the countdown drift. Brief 71 calls this out as the
+ * render can never make the countdown drift. The clock fixes calls this out as the
  * regression surface for the multiple-timers change, which is exactly the kind
  * of rewrite that reintroduces tick-counting — so the transitions live here,
  * take `now` as an argument, and are unit-tested.

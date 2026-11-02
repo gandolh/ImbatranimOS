@@ -1,6 +1,6 @@
 ---
 summary: The ISO-era decisions that still bind the web-OS (build-from-source, no runtime package manager, the locked visual identity and more), plus the compressed record of the ones the 2026-07-16 pivot superseded. Split out of decisions.md, which has a 200-line cap.
-updated: 2026-10-07
+updated: 2026-11-02
 ---
 
 # Decisions inherited from the ISO era
@@ -23,14 +23,14 @@ behind.
   ([decisions-estate-era.md](decisions-estate-era.md)).*
 - **Distribution: build-from-source** (clone + docker build/compose);
   registry publishing is an open question, not a promise.
-- **Lightweight as identity** — REVISED 2026-07-16 after brief 09 measured
+- **Lightweight as identity** — REVISED 2026-07-16 after the container image work (2026-07-16) measured
   the prod image at 364 MB. The old "~150 MB image target / 200 MB tripwire"
   is retired as unrealistic for Node+Nest (floor ~300 MB). New target:
   **image ≤ ~400 MB**, and "lightweight" is measured primarily by
-  **cold-start time and idle RAM** (recorded in brief 15), not image bytes.
+  **cold-start time and idle RAM** (recorded in the v1 release work (2026-10-07)), not image bytes.
   NestJS is kept — the fork reuse it enabled (terminal/files/system/all
   apps) is worth far more than image bytes for a run-once container.
-- **REST-client backend proxy — SSRF stance** (2026-07-18, brief 43). The REST
+- **REST-client backend proxy — SSRF stance** (2026-07-18. The REST
   API client sends outbound HTTP through an authed backend proxy (`POST
   /api/http/request`) because the SPA's CSP (`connect-src` same-origin) + CORS
   block direct browser fetches. It sits behind the global `SessionAuthGuard` —
@@ -60,4 +60,4 @@ nob.h with .sh chroot steps; privileged-Docker-on-WSL2 build host (smoke
 test PASSED — durable finding: debootstrap/chroot/mksquashfs work fine in
 privileged Docker on WSL2); Calamares, Secure Boot shim, dual-boot, SDDM,
 PipeWire, VLC, Fluent-fork theming, QML welcome app, 2GB-with-zram floor.
-Full detail: superseded briefs 01–07 and log.md entries of 2026-07-16.
+Full detail: superseded the work of 2026-07-16 and log.md entries of 2026-07-16.

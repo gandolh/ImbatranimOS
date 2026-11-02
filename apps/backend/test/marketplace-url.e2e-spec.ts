@@ -49,7 +49,7 @@ import { securityHeaders } from '../src/security-headers';
 import { UpgradeRoutesModule } from '../src/upgrade-routes';
 
 /**
- * Apps installed from a URL end to end (brief 158), against a real git
+ * Apps installed from a URL end to end, against a real git
  * repository on disk (`file://`, allowed by the test-only flag): a check
  * clones the commit and validates the manifest, install keeps the clone, and
  * the app's files are served only under a window's token with the sandbox's
@@ -244,7 +244,7 @@ interface Inspected {
   current: { commit: string } | null;
 }
 
-describe('apps installed from a URL (e2e) — brief 158', () => {
+describe('apps installed from a URL (e2e)', () => {
   let work: string;
   let repo: string;
   let appsDir: string;

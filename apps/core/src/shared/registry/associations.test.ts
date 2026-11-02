@@ -16,7 +16,7 @@ import { APP_REGISTRY } from './registry'
 import { DOTFILE_KEYS } from '../../lib/prefs'
 
 /**
- * Brief 81 — default apps.
+ * Default apps and Open with — default apps.
  *
  * The headline is the last group: **a double-click must always do something.**
  * Everything before it is resolution order, which matters mostly because getting
@@ -137,7 +137,7 @@ describe('a disabled app is not a candidate', () => {
   })
 
   it('hands a contested extension to the other claimant', () => {
-    // No two built-ins share a type since brief 167 (norPDF and PDF Viewer
+    // No two built-ins share a type since the PDF viewer's retirement (norPDF and PDF Viewer
     // left together); a Marketplace app beside a built-in is the case now.
     const markdown = APP_REGISTRY.find((a) => a.id === 'markdown-editor')!
     APP_REGISTRY.push({ ...markdown, id: 'other-markdown' })
@@ -193,26 +193,26 @@ describe('THE DEAD DOUBLE-CLICK IS GONE', () => {
     expect(isTextish('firmware.bin')).toBe(false)
   })
 
-  it('a .docx with Docs retired resolves to nothing, never to a text editor (brief 164)', () => {
+  it('a .docx with Docs retired resolves to nothing, never to a text editor', () => {
     // Office in the Marketplace opens it; with the suite not installed the
     // file manager shows the chooser and names it.
     expect(resolveOpener('letter.docx')).toEqual({ appId: '', reason: 'none' })
     expect(isTextish('letter.docx')).toBe(false)
   })
 
-  it('a .pptx or .ppt with Slides retired resolves to nothing (brief 165)', () => {
+  it('a .pptx or .ppt with Slides retired resolves to nothing', () => {
     // Office's Slides opens .pptx; nothing installed opens .ppt.
     expect(resolveOpener('deck.pptx')).toEqual({ appId: '', reason: 'none' })
     expect(resolveOpener('deck.ppt')).toEqual({ appId: '', reason: 'none' })
     expect(isTextish('deck.pptx')).toBe(false)
   })
 
-  it('a .pdf with norPDF and PDF Viewer retired resolves to nothing (brief 167)', () => {
+  it('a .pdf with norPDF and PDF Viewer retired resolves to nothing', () => {
     expect(resolveOpener('report.pdf')).toEqual({ appId: '', reason: 'none' })
     expect(isTextish('report.pdf')).toBe(false)
   })
 
-  it('a .xlsx or .xls with Sheets retired resolves to nothing; a .csv opens as text (brief 166)', () => {
+  it('a .xlsx or .xls with Sheets retired resolves to nothing; a .csv opens as text', () => {
     expect(resolveOpener('book.xlsx')).toEqual({ appId: '', reason: 'none' })
     expect(resolveOpener('book.xls')).toEqual({ appId: '', reason: 'none' })
     expect(isTextish('book.xlsx')).toBe(false)

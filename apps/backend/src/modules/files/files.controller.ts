@@ -64,7 +64,7 @@ export class FilesController {
   /**
    * Recursive size of a directory. Bounded like search — a huge tree returns a
    * floor with `truncated: true` rather than hanging. Consumed by Settings →
-   * Storage and (per brief 55) file-manager Properties: one implementation,
+   * Storage and (per the file manager explorer parity work) file-manager Properties: one implementation,
    * two consumers.
    */
   @Get('size')
@@ -105,7 +105,7 @@ export class FilesController {
       q.root,
       q.path,
     );
-    // The token a save sends back as `expected` (brief 155).
+    // The token a save sends back as `expected`.
     res.setHeader('X-File-Version', version);
     const filename = basename(q.path);
     res.setHeader(

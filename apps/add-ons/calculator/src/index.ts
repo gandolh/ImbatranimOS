@@ -25,7 +25,7 @@ export const manifest: AddonManifest = {
   // Single-instance: one calculator window at a time.
   multiInstance: false,
   /**
-   * Measured, not guessed (brief 70). Scientific is the tallest mode: 276px of keypad + a 27px
+   * Measured, not guessed. Scientific is the tallest mode: 276px of keypad + a 27px
    * memory/tape row + a 36px display floor = 339px of content, plus ~29px of tabs and ~32px of
    * window chrome — 400px before the display has anything to show. `minSize` is that plus a
    * usable display; `defaultSize` opens Scientific comfortably rather than exactly.

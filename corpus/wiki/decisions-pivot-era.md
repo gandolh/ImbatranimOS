@@ -1,6 +1,6 @@
 ---
 summary: The 2026-07-16 web-OS-era and 2026-07-17 Office/post-v1 decisions, still locked — the single-container shape, the add-on contract, the app roster and the Office-suite scope. Split out of decisions.md on 2026-08-05, which has a 200-line cap.
-updated: 2026-10-28
+updated: 2026-11-02
 ---
 
 # Decisions — the pivot era (2026-07-16 / 07-17)
@@ -17,7 +17,7 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
   the real filesystem, the monitor shows real processes.
 - **Runtime: Docker container.** `docker run -p 8080:8080 -v …` is the
   product. Bootable/kiosk variants are explicitly not v1. [2026-07-17,
-  brief 18: the post-v1 kiosk ISO variant now exists as its own artifact
+  the alpine kiosk iso work (2026-07-17): the post-v1 kiosk ISO variant now exists as its own artifact
   under `iso/` (Alpine + cage/chromium, aports mkimage); docker remains
   the product and the primary dev/test loop.]
 - **Backend: NestJS/Node** — familiarity + code reuse from
@@ -26,7 +26,7 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
 - **Frontend: fork minimal-web-desktop** (React/Vite/TS, Tailwind v4,
   Framer Motion, NestJS patterns) and evolve it into ImbatranimOS.
 - **Repo layout: `apps/backend` + `apps/core` + `apps/add-ons/<app>`**
-  (SUPERSEDES 2026-07-17, brief 17, user-requested revisit of the
+  (SUPERSEDES 2026-07-17, user-requested revisit of the
   brief-08 "keep the fork's layout" entry). Core = shell + auth +
   settings + Vite host, published to add-ons as `@imbatranim/core`
   (public-surface barrel `src/index.ts`); every windowed app is a
@@ -34,12 +34,12 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
   a manifest; `apps/core/src/manifest.ts` is the ONLY file allowed to
   import add-on packages (eslint-enforced both directions). Backend
   keeps its own `modules/` tree — the add-on/backend seam is the HTTP
-  API. The fork-import scoping from brief 08 (drop the fork's own
+  API. The fork-import scoping from the fork bootstrap work (2026-07-16) (drop the fork's own
   corpus/CLAUDE.md/.agents) remains in force.
 - **Dual-mode container, one multi-stage Dockerfile**: `dev` target runs
   Nest + Vite HMR (2 ports); `prod` target = Nest serves built statics on
   1 port, slim. The "one port / serve statics" rule describes PROD; HMR is
-  a dev-target feature. [brief 08 grilling — amends the item below]
+  a dev-target feature. [the fork bootstrap work (2026-07-16) grilling — amends the item below]
 - **Security: internet-exposable with proper auth from day 1.** Single
   user; sessions + strong password, optional TOTP, rate-limited login;
   HTTPS built-in or via documented reverse proxy.
@@ -54,14 +54,14 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
   notepad. Cut: docker desktop, service launcher.
 - **ISO-era code deleted uncommitted** (explicit choice over archiving);
   the corpus log is the record.
-- **HTTPS: reverse-proxy TLS, not built-in** (2026-07-17, brief 10). The
+- **HTTPS: reverse-proxy TLS, not built-in** (2026-07-17. The
   container stays plain-HTTP on one port; a documented Caddy recipe
   (infrastructure/README.md + Caddyfile.example) terminates TLS with
   automatic Let's Encrypt. Rationale: no cert lifecycle or privileged :443
   bind inside the unprivileged container; LAN/localhost use needs no TLS.
   Behind the proxy set `COOKIE_SECURE=true` + `TRUST_PROXY=true`. CSRF
   stance: SameSite=Lax cookie + Origin check on mutating requests.
-- **App-install story, v1 stance** (2026-07-17, brief 13). The Linux side
+- **App-install story, v1 stance** (2026-07-17. The Linux side
   (packages, binaries) is fixed at image build time — the desktop user has
   no sudo and no runtime package manager. "Installing an app" in v1 means
   adding a web-app module to the desktop registry (frontend module +
@@ -70,8 +70,8 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
   apps, installed at runtime with Nix: [decisions-linux-apps.md](decisions-linux-apps.md).
 - **The fork's config-based `repl` module is deleted** (2026-07-17, brief
   11) — absorbed by the real WS terminal, both backend and frontend halves.
-  Its leftover `repl_configs` table drop is on brief 15's fix list.
-- **Reskin calls** (2026-07-17, brief 14): dark variant is the shipped
+  Its leftover `repl_configs` table drop is on the v1 release work's fix list.
+- **Reskin calls** (2026-07-17: dark variant is the shipped
   default; fonts kept (Space Grotesk UI + Inter content); accent is one
   CSS var with 4 Settings presets — crimson `#c0263a` is the PROVISIONAL
   default, final pick awaits the user (see open-questions.md).
@@ -87,8 +87,8 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
   server for one-off jobs (see
   [decisions-office-suite.md](decisions-office-suite.md)).
   **2026-10-28:** the built-in Docs (SuperDoc) is gone from this repo; Docs
-  lives in imbatranim-office as `office-docs` (brief 164). Slides, Sheets and
-  the PDF apps followed the same day (briefs 165–167); PDF Viewer and norPDF
+  lives in imbatranim-office as `office-docs` (2026-10-28). Slides, Sheets and
+  the PDF apps followed the same day (2026-10-28); PDF Viewer and norPDF
   became one app, `office-pdf`.
 - **Sheets xlsx bridge: ExcelJS (MIT)** — REVISED 2026-07-17 from the
   grilled "SheetJS CE ↔ Univer bridge" after the spike gate failed:
@@ -100,7 +100,7 @@ newest decisions, and the ISO-era inheritance, live on their own pages.
 - **License: AGPL-3.0-only, repo-wide** (executed 2026-07-17 with brief
   20, approved with the office grilling): required by SuperDoc (AGPL);
   source is public and stays public, no plans to sell. **2026-10-28:**
-  SuperDoc left the repo with the built-in Docs (brief 164), so it no longer
+  SuperDoc left the repo with the built-in Docs (2026-10-28), so it no longer
   requires the licence. The owner keeps AGPL-3.0-only by choice; the licence
   is unchanged.
 - **Editor UX: explicit Save only** (Ctrl+S + toolbar, overwrite in

@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 /**
- * A two-app suite (brief 162) as a real git repository: one build that
+ * A two-app suite as a real git repository: one build that
  * writes both apps' modules and the chunk they share into `dist/os`.
  *
  * - `main`: the whole build. `alpha/app.mjs` and `beta/app.mjs` both import

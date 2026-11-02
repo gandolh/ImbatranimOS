@@ -18,7 +18,7 @@ function valid(extra: Record<string, unknown> = {}) {
   };
 }
 
-describe('imbatranim.json (brief 158, contract A)', () => {
+describe('imbatranim.json (contract A)', () => {
   it("accepts the contract's example", () => {
     const r = parseManifest(valid());
     expect(r).toEqual({ ok: true, manifest: valid() });

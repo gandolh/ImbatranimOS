@@ -18,7 +18,7 @@ type MonthViewProps = {
 /**
  * The month grid.
  *
- * Two things changed with brief 72. It renders **occurrences**, not events, so a
+ * Two things changed with the calendar storage work. It renders **occurrences**, not events, so a
  * recurring event appears on every day it falls on; and a day cell shows every
  * occurrence that *overlaps* it rather than only those that start on it — a
  * three-day trip used to be visible on its first day and invisible on the other

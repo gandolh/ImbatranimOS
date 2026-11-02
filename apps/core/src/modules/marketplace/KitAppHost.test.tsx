@@ -42,7 +42,7 @@ const { importKitModule, startKitApp } = await import('./kitModule')
 const { apiUrl } = await import('./apiUrl')
 
 /**
- * Brief 163 — a kit app in a window: a real ES module, written here as a
+ * The shared kit — a kit app in a window: a real ES module, written here as a
  * kit app's build would leave it (no imports; React, the JSX runtime and the
  * kit read from `globalThis.__imbatranimShared`), rendered in the desktop's
  * own tree inside the window's boundary, provider and Suspense, exactly as
@@ -177,7 +177,7 @@ async function settle() {
 const fallback = (windowId = 'w1') =>
   container.querySelector(`[data-fallback="${windowId}"]`)?.textContent ?? null
 
-/** The refusal panel's heading, sentence and button (brief 175), or null. */
+/** The refusal panel's heading, sentence and button, or null. */
 const refusal = () => {
   const panel = container.querySelector('[data-refusal]')
   if (!panel) return null
@@ -265,7 +265,7 @@ describe('KitAppHost', () => {
     expect(container.querySelector('[data-answer]')?.textContent).toBe('true')
   })
 
-  it('starts the import before the host mounts, and the host takes that one (brief 182)', async () => {
+  it('starts the import before the host mounts, and the host takes that one', async () => {
     writeBuild({ 'notes/app.mjs': KIT_MODULE, 'kit.css': '' })
     startKitApp(app())
     expect(loads).toHaveBeenCalledOnce()
@@ -280,7 +280,7 @@ describe('KitAppHost', () => {
     expect(loads).toHaveBeenCalledOnce()
   })
 
-  it('starts nothing for a refused app (brief 175)', () => {
+  it('starts nothing for a refused app', () => {
     writeBuild({ 'notes/app.mjs': KIT_MODULE, 'kit.css': '' })
     startKitApp(app({ sharedKit: 99 }))
     startKitApp(app({ minSystemVersion: 99 }))
@@ -316,7 +316,7 @@ describe('KitAppHost', () => {
     expect(fallback()).toBeNull()
     expect(loads).not.toHaveBeenCalled()
     expect(kitLinks()).toEqual([])
-    // Brief 175: no toast and no client-error log; nothing is leased either.
+    // No toast and no client-error log; nothing is leased either.
     expect(toasts()).toEqual([])
     expect(post).not.toHaveBeenCalled()
 

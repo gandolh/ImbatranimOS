@@ -56,12 +56,12 @@ import type { BookmarkGroup, BookmarkLink } from './types'
 /**
  * Bookmarks: a folder tree, not a flat list.
  *
- * Brief 75 exists because brief 50 (the web browser) will consume this app rather
+ * The bookmarks model exists because the proxied browser will consume this app rather
  * than build its own bookmark store, which turns the old flat one-level model into a
  * load-bearing limitation. So: nested folders, `url` instead of `href`, Netscape-HTML
  * import/export, search, and duplicate detection.
  *
- * It also pays this app's share of the style debt that brief 74 paid for
+ * It also pays this app's share of the style debt that the sticky-notes work paid for
  * sticky-notes — kit `Button`s instead of raw `<button>`s, a real `<button>` for
  * every clickable row, and `notify()` on failure where the app previously had no
  * failure signal at all.
@@ -181,7 +181,7 @@ function LinkRow({
     <div className="group/row border-outline-variant hover:bg-surface-container-low flex h-7 items-center gap-1 border-b pr-1">
       {/*
         A real button rather than a bare `<a>` wrapped in a div: activating a bookmark
-        is an app action (and becomes `openApp('browser', …)` once brief 50 lands), so
+        is an app action (and became `openApp('browser', …)` with the proxied browser), so
         the row must not depend on anchor semantics that will change. The separate
         `<a>` below stays for "open in a new tab", where an anchor is the right thing.
       */}
@@ -249,7 +249,7 @@ export function Bookmarks({ windowId: _windowId }: { windowId: string }) {
   const system = useSystem()
   const { data: groups, isPending } = useBookmarkGroupsQuery()
   const browserAvailable = useBrowserAvailable()
-  // In the OS's own Browser when this machine has one (brief 50), else a tab
+  // In the OS's own Browser when this machine has one, else a tab
   // of the browser viewing the desktop.
   const openLink = (url: string) => {
     if (!browserAvailable || !system.intents.openApp('browser', { url })) {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { SystemHttp } from '@imbatranim/ui'
 import { loadData } from './collectionsApi'
 
-// Brief 139: only a 404 may be read as "start empty". Everything else must reach
+// Only a 404 may be read as "start empty". Everything else must reach
 // the caller as a failure, or the next whole-file save replaces data nobody saw.
 
 function httpGetting(result: { content: string } | { error: unknown }): SystemHttp {

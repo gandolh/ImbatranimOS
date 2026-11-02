@@ -6,7 +6,7 @@ import { useIntentStore } from '../store/intentStore'
 import { useAddonStore } from '../store/addonStore'
 
 /**
- * Brief 141 — the one launcher every other launcher funnels through.
+ * The relaunch shows minimized apps work — the one launcher every other launcher funnels through.
  *
  * Todo is the fixture because it is single-instance and disableable (Notepad is
  * multi-instance: relaunching it opens a second window, by design).

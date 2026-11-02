@@ -415,7 +415,7 @@ describe('Todos (e2e) — dates, order, lists and bulk actions', () => {
       ).toBe(1);
 
       // Run the migration again, as a restart would.
-      // Simulate an OLD database: since brief 110 the ledger runs each
+      // Simulate an OLD database: since the migration ledger the ledger runs each
       // step once, so replaying a historical repair resets the stamp.
       db.db.pragma('user_version = 0');
       db.migrate();
@@ -433,7 +433,7 @@ describe('Todos (e2e) — dates, order, lists and bulk actions', () => {
         t.text,
         t.position,
       ]);
-      // Simulate an OLD database: since brief 110 the ledger runs each
+      // Simulate an OLD database: since the migration ledger the ledger runs each
       // step once, so replaying a historical repair resets the stamp.
       db.db.pragma('user_version = 0');
       db.migrate();
@@ -451,7 +451,7 @@ describe('Todos (e2e) — dates, order, lists and bulk actions', () => {
           "INSERT INTO todos (id, text, completed, position) VALUES (1, 'kept', 1, 0)",
         )
         .run();
-      // Simulate an OLD database: since brief 110 the ledger runs each
+      // Simulate an OLD database: since the migration ledger the ledger runs each
       // step once, so replaying a historical repair resets the stamp.
       db.db.pragma('user_version = 0');
       db.migrate();

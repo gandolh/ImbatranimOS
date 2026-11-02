@@ -88,7 +88,7 @@ function WidgetFrame({
       </button>
       <Suspense fallback={null}>
         <div className="h-full w-full overflow-hidden">
-          {/* Windowless handle (brief 48): a widget belongs to its app, not a window. */}
+          {/* Windowless handle: a widget belongs to its app, not a window. */}
           <WindowlessSystemProvider appId={widget.appId}>
             <Component />
           </WindowlessSystemProvider>
@@ -99,7 +99,7 @@ function WidgetFrame({
 }
 
 /**
- * The hosted-widget layer (brief 96): the second consumer of the desktop
+ * The hosted-widget layer: the second consumer of the desktop
  * surface after sticky notes. Core owns the frame — placement, drag, clamp,
  * persistence, removal — so every widget behaves identically; the add-on owns
  * only the content.

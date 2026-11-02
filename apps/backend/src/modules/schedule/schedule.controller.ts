@@ -3,7 +3,7 @@ import { ScheduleService } from './schedule.service';
 import { ClaimDto } from './dto/claim.dto';
 
 /**
- * Brief 93. One route: claim an occurrence before toasting it. Session-authed
+ * One route: claim an occurrence before toasting it. Session-authed
  * by the global guard like everything else.
  */
 @Controller('schedule')

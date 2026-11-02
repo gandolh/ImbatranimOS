@@ -10,7 +10,7 @@ export const manifest: AddonManifest = {
   icon: StickyNote,
   component: lazy(() => import('./StickyNotes').then((m) => ({ default: m.StickyNotes }))),
   /**
-   * The notes themselves, painted on the desktop beneath every window (brief 74).
+   * The notes themselves, painted on the desktop beneath every window.
    *
    * Lazy for the same reason the window is: core mounts this for as long as the app
    * is enabled, whether or not the window is ever opened, so its cost belongs in a

@@ -151,7 +151,7 @@ describe('SystemService.getProcesses', () => {
     expect(Array.isArray(first)).toBe(true);
     // /proc always has at least this process.
     expect(first.length).toBeGreaterThan(0);
-    // NULL, not 0, on the first poll — brief 58. There is no baseline to diff
+    // NULL, not 0, on the first poll — the system monitor work. There is no baseline to diff
     // against yet, so nothing is known about any process's CPU use, and a confident
     // `0.0` for a busy process is a lie that persists until the next poll. This
     // assertion previously required 0; the change is deliberate.

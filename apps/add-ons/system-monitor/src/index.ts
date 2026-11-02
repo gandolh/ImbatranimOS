@@ -12,7 +12,7 @@ export const manifest: AddonManifest = {
   multiInstance: false,
   defaultSize: { width: 560, height: 480 },
   minSize: { width: 420, height: 360 },
-  // Desktop widget (brief 96): CPU trace + RAM bar, hosted by core's layer.
+  // Desktop widget: CPU trace + RAM bar, hosted by core's layer.
   widgets: [
     {
       id: 'stats',

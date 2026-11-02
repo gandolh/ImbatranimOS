@@ -6,7 +6,7 @@ import { AuthShell } from './AuthShell'
 import { ScreenCover, SignedOutScreen } from './SessionScreens'
 
 /**
- * Gates the entire desktop, in two regimes (brief 101):
+ * Gates the entire desktop, in two regimes:
  *
  * **Before this tab's first sign-in** only the start-up, setup and sign-in
  * screens exist; nothing desktop-shaped mounts or fetches.
@@ -21,7 +21,7 @@ import { ScreenCover, SignedOutScreen } from './SessionScreens'
  * `isShellSuspended()` besides. Explicit sign-out still tears everything down —
  * walking away on purpose means the screen owes you nothing.
  *
- * It is also where the dotfiles are hydrated (brief 49): `/api/prefs` is behind
+ * It is also where the dotfiles are hydrated: `/api/prefs` is behind
  * the session guard, so the transition into `authenticated` is the one moment
  * hydration is both necessary and possible.
  */
@@ -46,7 +46,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!authenticated) return
     let cancelled = false
-    // Re-flush FIRST (brief 109): a write held back by a 401 is still queued in
+    // Re-flush FIRST: a write held back by a 401 is still queued in
     // module state, and re-authenticating is exactly when it can land. Safe
     // before hydration because `hydratePrefs` latches on `hydrated`, so a
     // re-auth inside a tab cannot clobber the pending value with the server's
@@ -64,7 +64,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   // A change made just before the tab closes should still reach the server —
   // over keepalive, because an ordinary XHR is routinely aborted on unload
-  // (brief 109). `pagehide` rather than `beforeunload`: it also covers bfcache
+  //. `pagehide` rather than `beforeunload`: it also covers bfcache
   // navigations, which `beforeunload` misses entirely.
   useEffect(() => {
     const flush = () => flushPrefsKeepalive()

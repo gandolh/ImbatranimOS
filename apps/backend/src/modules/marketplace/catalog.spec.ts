@@ -32,7 +32,7 @@ function valid(extra: Record<string, unknown> = {}) {
 const parse = (d: unknown, allowLocalRepos = false) =>
   descriptorSchema({ allowLocalRepos }).safeParse(d);
 
-describe('descriptorSchema (brief 120)', () => {
+describe('descriptorSchema', () => {
   it('accepts a pinned https descriptor and fills the defaults', () => {
     const r = parse(valid());
     expect(r.success).toBe(true);
@@ -95,7 +95,7 @@ describe('descriptorSchema (brief 120)', () => {
       { server: { command: ['node', 's.js'], portEnv: 'PORT' } },
     ],
     ['an id with a slash', { id: 'a/b' }],
-    // Brief 158: `x-…` is what an app installed from a URL is called.
+    // `x-…` is what an app installed from a URL is called.
     ['an id starting with x-', { id: 'x-0123456789ab' }],
   ])('refuses %s', (_label, extra) => {
     expect(parse(valid(extra)).success).toBe(false);
@@ -158,7 +158,7 @@ describe('loadCatalog', () => {
   });
 });
 
-describe('a version 1 descriptor is one app (brief 162)', () => {
+describe('a version 1 descriptor is one app', () => {
   it('reads as a single app whose id is the descriptor id, served from its entry directory', () => {
     const r = parse(valid());
     expect(r.success).toBe(true);
@@ -190,7 +190,7 @@ describe('a version 1 descriptor is one app (brief 162)', () => {
     expect(r.data.sharedKit).toBeNull();
   });
 
-  it('refuses sharedKit: a kit app needs version 2 (brief 163)', () => {
+  it('refuses sharedKit: a kit app needs version 2', () => {
     const r = parse(valid({ sharedKit: 1 }));
     expect(r.success).toBe(false);
     if (!r.success) {
@@ -221,7 +221,7 @@ describe('a version 1 descriptor is one app (brief 162)', () => {
   });
 });
 
-/** A two-app suite, as contract A of brief 162 describes one. */
+/** A two-app suite, as contract A of one catalog entry, several apps describes one. */
 function suite(
   extra: Record<string, unknown> = {},
   apps?: Record<string, unknown>[],
@@ -270,7 +270,7 @@ const app = (extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
-describe('descriptorSchema version 2 (brief 162)', () => {
+describe('descriptorSchema version 2', () => {
   it('accepts a suite and fills each app’s defaults', () => {
     const r = parse(suite());
     expect(r.success).toBe(true);
@@ -431,7 +431,7 @@ describe('descriptorSchema version 2 (brief 162)', () => {
   });
 });
 
-describe('loadCatalog: one namespace for descriptor and app ids (brief 162)', () => {
+describe('loadCatalog: one namespace for descriptor and app ids', () => {
   let dir: string;
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'imb-catalog-'));
@@ -494,7 +494,7 @@ describe('loadCatalog: one namespace for descriptor and app ids (brief 162)', ()
   });
 });
 
-describe('descriptorSchema: kit apps (brief 163)', () => {
+describe('descriptorSchema: kit apps', () => {
   const kitApp = (extra: Record<string, unknown> = {}) =>
     app({ styles: ['docs/app.css'], ...extra });
 

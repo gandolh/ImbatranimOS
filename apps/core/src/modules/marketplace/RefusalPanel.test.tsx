@@ -9,7 +9,7 @@ vi.mock('../../shared/intents/openApp', () => ({ openApp }))
 import { RefusalPanel } from './RefusalPanel'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-/** Brief 175: the window of an app that cannot run here says so, and points to Settings. */
+/** The plain kit-app refusal: the window of an app that cannot run here says so, and points to Settings. */
 
 let container: HTMLDivElement
 let root: Root

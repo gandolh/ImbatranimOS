@@ -75,7 +75,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
   }
 
   // Lock: cover the screen. The session stays valid and the desktop stays
-  // mounted beneath the overlay (brief 101) — shells and buffers survive.
+  // mounted beneath the overlay — shells and buffers survive.
   function handleLock() {
     lock()
     onClose()
@@ -155,7 +155,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
         })}
       </div>
 
-      {/* Recent files (brief 94) — hidden entirely while the list is empty */}
+      {/* Recent files — hidden entirely while the list is empty */}
       {recent.length > 0 && (
         <div className="border-outline-variant border-t py-1">
           <div className="flex items-center justify-between px-4 pt-1 pb-0.5">

@@ -3,7 +3,7 @@ import { createServer, type Server } from 'net';
 import { EgressRefusedError } from './egress';
 import { GuardedTcpSocket, RefusedUdpSocket } from './guarded-socket';
 
-describe('GuardedTcpSocket (brief 50)', () => {
+describe('GuardedTcpSocket', () => {
   let server: Server;
   let connections = 0;
 

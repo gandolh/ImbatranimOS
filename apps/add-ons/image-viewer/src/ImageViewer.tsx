@@ -166,7 +166,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
   // piece of state is reset for the new path. `useUnsavedGuard` only covers
   // *closing* the window, so without this an arrow key silently discards the
   // user's turn — the same defect as rotate not persisting at all, just harder to
-  // notice. Asks with the kit's themed confirm (brief 102) — the OS has no
+  // notice. Asks with the kit's themed confirm — the OS has no
   // native dialogs left.
   const { confirm, confirmDialog } = useConfirm()
   const confirmDiscard = useCallback(async () => {

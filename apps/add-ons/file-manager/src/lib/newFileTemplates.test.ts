@@ -6,7 +6,7 @@ import { newFileOpener } from './newFileTemplates'
 import type { Associations } from './openWith'
 
 /**
- * Brief 164: New → Document and New → Spreadsheet name no app. They open in
+ * New → Document and New → Spreadsheet name no app. They open in
  * whatever the OS resolves for the new file's name, and the menu leaves a kind
  * out while nothing installed opens it.
  */
@@ -100,7 +100,7 @@ describe('marketplaceGap', () => {
     )
   })
 
-  it('names Office for a .pptx, and not for a .ppt it refuses (brief 165)', () => {
+  it('names Office for a .pptx, and not for a .ppt it refuses', () => {
     expect(marketplaceGap('pptx')).toBe(
       'No installed app opens .pptx files. Office in Settings → Marketplace does.'
     )
@@ -111,7 +111,7 @@ describe('marketplaceGap', () => {
     )
   })
 
-  it('names Office for a .xlsx and a .csv, and not for a .xls it refuses (brief 166)', () => {
+  it('names Office for a .xlsx and a .csv, and not for a .xls it refuses', () => {
     expect(marketplaceGap('xlsx')).toBe(
       'No installed app opens .xlsx files. Office in Settings → Marketplace does.'
     )
@@ -123,7 +123,7 @@ describe('marketplaceGap', () => {
     )
   })
 
-  it('names Office for a .pdf (brief 167)', () => {
+  it('names Office for a .pdf', () => {
     expect(marketplaceGap('pdf')).toBe(
       'No installed app opens .pdf files. Office in Settings → Marketplace does.'
     )

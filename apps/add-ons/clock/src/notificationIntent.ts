@@ -1,5 +1,5 @@
 /**
- * Payloads Clock accepts from its own notification actions (brief 107).
+ * Payloads Clock accepts from its own notification actions.
  *
  * A toast action is intent-shaped DATA — `openApp('clock', payload)` — so the
  * app must be able to recognise its own payload after a reload, from history,

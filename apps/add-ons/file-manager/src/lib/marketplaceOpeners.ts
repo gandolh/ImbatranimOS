@@ -1,6 +1,6 @@
 /**
  * File types only a Marketplace app opens, by the name the Marketplace lists
- * it under (brief 164). The built-in office apps moved to imbatranim-office,
+ * it under. The built-in office apps moved to imbatranim-office,
  * so with Office not installed a `.docx` has no claimant, and the Open With
  * chooser names where to get one instead of offering the text editor.
  *
@@ -11,14 +11,14 @@ const SUITE_TYPES: Readonly<Record<string, string>> = {
   pptx: 'Office',
   xlsx: 'Office',
   pdf: 'Office',
-  // A .csv opens in the text editor while nothing claims it (brief 166), so
+  // A .csv opens in the text editor while nothing claims it, so
   // this shows only when that editor is disabled too.
   csv: 'Office',
 }
 
 /**
  * Old binary formats a retired built-in opened and the suite refuses by name
- * (briefs 165 and 166), so nothing opens them, installed or not. The chooser says so
+ *, so nothing opens them, installed or not. The chooser says so
  * rather than suggesting the text editor.
  */
 const REFUSED_TYPES: Readonly<Record<string, string>> = {

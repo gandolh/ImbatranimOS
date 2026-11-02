@@ -1,11 +1,11 @@
 ---
-summary: The office apps leave the OS for their own repo, imbatranim-office, written in TypeScript with editing in the browser and installed from the marketplace as one Office entry. Settled with the owner 2026-10-21 in place of brief 161's sandboxed craft windows.
-updated: 2026-10-21
+summary: The office apps leave the OS for their own repo, imbatranim-office, written in TypeScript with editing in the browser and installed from the marketplace as one Office entry. Settled with the owner 2026-10-21 in place of the the craft suite in sandboxed windows work's sandboxed craft windows.
+updated: 2026-11-02
 ---
 
 # Decisions: the office suite (2026-10-21)
 
-Settled with the owner on 2026-10-21. They replace brief 161's proposal, which
+Settled with the owner on 2026-10-21. They replace the the craft suite in sandboxed windows work's proposal, which
 put the ArtCraft crafts in the OS as wasm canvases in sandboxed frames. Changing
 one needs an explicit revisit and a `log.md` entry.
 
@@ -14,7 +14,7 @@ _2026-10-21_ — Docs, Sheets, Slides, PDF and a new CAD app move out of
 `apps/add-ons` into a separate repo, `imbatranim-office`, and come back through
 the marketplace. PDF is PDF Viewer and norPDF merged into one app. Each app's UI
 mounts natively in an OS window, as Hollow's does, not in an iframe.
-Rejected: the crafts in sandboxed frames (brief 161, option A), and keeping the
+Rejected: the crafts in sandboxed frames (the the craft suite in sandboxed windows work (2026-10-21), option A), and keeping the
 office apps built in.
 **Why**: the owner wants an OS whose every app is web UI, and a canvas in a
 frame neither looks nor behaves like one; every craft also needed a bridge

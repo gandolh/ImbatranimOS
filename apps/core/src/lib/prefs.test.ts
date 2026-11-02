@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
- * Brief 49 — the dotfile adapter.
+ * The ephemeral-session work — the dotfile adapter.
  *
  * The two things worth pinning down are the two the brief did not anticipate:
  * that the mirror has to answer **synchronously** (an async storage makes every
@@ -206,7 +206,7 @@ describe('writing through', () => {
 })
 
 /**
- * Brief 109 — durability. The old flush cleared the batch BEFORE the request
+ * The dotfile write durability work — durability. The old flush cleared the batch BEFORE the request
  * and swallowed the rejection, so one blip lost the write forever while the
  * localStorage mirror went on showing it as applied.
  */
@@ -261,7 +261,7 @@ describe('a flush that fails', () => {
     expect(pendingPrefsForTest()).toEqual({})
   })
 
-  it('a refused save says so once, at once (brief 181: no late import)', async () => {
+  it('a refused save says so once, at once (no late import)', async () => {
     const { prefsStorage, flushPrefs } = await freshModule()
     // The same module registry prefs.ts just loaded into.
     const { useNotificationStore } = await import('../shared/store/notificationStore')

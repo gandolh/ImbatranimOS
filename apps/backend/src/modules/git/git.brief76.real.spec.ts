@@ -56,7 +56,7 @@ import { FilesService } from '../files/files.service';
 import { DbService } from '../../db/db.service';
 
 /**
- * A real in-memory DbService for the recent-repos table (brief 76). GitService
+ * A real in-memory DbService for the recent-repos table. GitService
  * takes one now; a stub would let the recents SQL rot untested, and an in-memory
  * database costs nothing.
  */
@@ -69,7 +69,7 @@ function testDb(): DbService {
 }
 
 /**
- * Brief 76's new commands against REAL git in a REAL jailed repo.
+ * The git GUI work's new commands against REAL git in a REAL jailed repo.
  *
  * The mocked spec (`git.brief76.spec.ts`) proves the argument arrays; this one
  * proves the behaviour those arrays actually produce — that a branch is really
@@ -77,7 +77,7 @@ function testDb(): DbService {
  * stages **one hunk of a two-hunk file** and leaves the working tree alone. That
  * last one cannot be established by asserting flags.
  */
-describe('Brief 76 against real git', () => {
+describe('git against a real repository', () => {
   let service: GitService;
   let jail: string;
   const repoRel = 'repo';
@@ -398,7 +398,7 @@ describe('Brief 76 against real git', () => {
     });
   });
 
-  // Brief 114: one file's contents at HEAD, for Git GUI's Compare with HEAD.
+  // One file's contents at HEAD, for Git GUI's Compare with HEAD.
   describe('showAtHead against real git', () => {
     it('returns the COMMITTED text, not the working copy', async () => {
       await commitFile('a.txt', 'committed\n', 'init');

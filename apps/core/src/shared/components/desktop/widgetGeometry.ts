@@ -1,5 +1,5 @@
 /**
- * Placement math for hosted desktop widgets (brief 96). Pure, because a
+ * Placement math for hosted desktop widgets. Pure, because a
  * widget dragged off the edge cannot be recovered by the user — the same
  * reason sticky notes made their clamp a tested module.
  */

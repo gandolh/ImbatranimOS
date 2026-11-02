@@ -10,7 +10,7 @@ import type {
 import type { ParsedFolder } from '../netscape'
 
 /**
- * The app's own backend module, reached through the injected handle (brief 48).
+ * The app's own backend module, reached through the injected handle.
  * Plain functions take the capability as their first argument; only hooks may
  * call `useSystem()`, and these are not hooks.
  */

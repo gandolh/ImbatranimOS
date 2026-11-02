@@ -26,7 +26,7 @@ export const GROUPS_KEY = ['bookmarks', 'groups'] as const
 /**
  * Report a failed write.
  *
- * Before brief 75 this app had **no** failure signal at all — every mutation carried
+ * Before the bookmarks model this app had **no** failure signal at all — every mutation carried
  * `onSuccess` only, so a rejected create or a refused move did nothing visible and
  * the row simply stayed as it was. That reads as the app ignoring the click.
  */
@@ -51,7 +51,7 @@ export function useBookmarkGroupsQuery() {
 }
 
 /**
- * Whether this machine's Browser app is set up (brief 50): its proxy origin,
+ * Whether this machine's Browser app is set up: its proxy origin,
  * or null. Asked once per session; a machine does not grow a port mid-visit.
  */
 export function useBrowserAvailable(): boolean {

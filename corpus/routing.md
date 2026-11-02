@@ -10,7 +10,7 @@ strict maintainability pass on a diff — deliberate, not routine
 `main`, plus a separate commit for the corpus change. Never push without an
 explicit go
 **Issue tracker:** none — `corpus/briefs/` **is** the tracker; `wiki/status.md`
-holds one line per brief
+holds a dated line per area and the open briefs
 **Code host:** GitHub (`<owner>/ImbatranimOS`), origin only — no `gh` workflow
 
 ## Intent routing
@@ -53,7 +53,7 @@ desktop's token rules.
 |---|---|
 | "Why is it built this way?" / "what did we decide?" | [wiki/decisions.md](wiki/decisions.md) (+ pivot-era / iso-era), [wiki/architecture.md](wiki/architecture.md) |
 | "What do we call this?" / a term is being used two ways | [wiki/glossary.md](wiki/glossary.md) |
-| "Where do things stand?" | [wiki/status.md](wiki/status.md) — one line per brief |
+| "Where do things stand?" | [wiki/status.md](wiki/status.md) — a dated line per area |
 | "What's still unresolved?" | [wiki/open-questions.md](wiki/open-questions.md) |
 | "How does an app talk to the OS?" | [wiki/os-layering.md](wiki/os-layering.md), then `packages/ui/src/system.ts` — the interface **is** the spec |
 | "How should this UI look/behave?" | [wiki/ui-conventions.md](wiki/ui-conventions.md) — 40+ numbered rules with code citations |

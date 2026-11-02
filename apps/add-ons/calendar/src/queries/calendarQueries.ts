@@ -23,7 +23,7 @@ export function useEventsQuery(options?: { refetchIntervalMs?: number }) {
   return useQuery({
     queryKey: EVENTS_KEY,
     queryFn: () => fetchEvents(system.http),
-    // The background service (brief 93) keeps this cache warm for the reminder
+    // The background service keeps this cache warm for the reminder
     // watcher even with no Calendar window open — and keeps polling while the
     // tab is hidden, because that is exactly when a reminder must still fire.
     refetchInterval: options?.refetchIntervalMs,

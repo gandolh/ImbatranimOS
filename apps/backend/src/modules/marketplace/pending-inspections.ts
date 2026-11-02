@@ -34,7 +34,7 @@ export interface PendingInspection {
 }
 
 /**
- * Apps checked from a URL and waiting for the owner's consent (brief 158).
+ * Apps checked from a URL and waiting for the owner's consent.
  *
  * A check clones the repository, so its directory has to outlive the request
  * that made it, until Install keeps it or Cancel, a second check's install or

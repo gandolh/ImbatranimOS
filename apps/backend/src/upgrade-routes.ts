@@ -17,7 +17,7 @@ export interface UpgradeRoute {
  * to refuse what it does not own or the socket hangs. Two listeners would each
  * refuse the other's paths, so there is one, in `PtyGateway`, and other
  * endpoints register here for it to dispatch to (the marketplace's service
- * apps, brief 120).
+ * apps).
  */
 @Injectable()
 export class UpgradeRoutes {

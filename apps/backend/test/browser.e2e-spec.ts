@@ -16,7 +16,7 @@ import { BrowserProxyServer } from '../src/modules/browser/browser-proxy.server'
 import { IdentityModule } from '../src/modules/identity/identity.module';
 
 /**
- * The Browser's proxy origin and relay, end to end (brief 50): the second
+ * The Browser's proxy origin and relay, end to end: the second
  * listener, its fixed file list, the relay's authentication and origin rule,
  * and the egress filter seen through a real Wisp connection. Local sign-in
  * mode supplies the session, the way a standalone install would.
@@ -99,7 +99,7 @@ function openRelay(
   });
 }
 
-describe('the Browser proxy origin (e2e) — brief 50', () => {
+describe('the Browser proxy origin (e2e)', () => {
   let app: INestApplication<Server>;
   let http: ReturnType<typeof request>;
   let proxyPort: number;

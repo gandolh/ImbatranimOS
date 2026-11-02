@@ -13,8 +13,8 @@ import { DbModule } from '../src/db/db.module';
 import { IdentityModule } from '../src/modules/identity/identity.module';
 
 /**
- * The single-owner sign-in, end to end (brief 152): the only sign-in since
- * brief 157, in the estate, standalone and on the ISO. Through the real
+ * The single-owner sign-in, end to end: the only sign-in since
+ * the move off Ward, in the estate, standalone and on the ISO. Through the real
  * guard, `/api/me` and the cookie.
  *
  * It supplies its own `ConfigService` holding exactly the variables it means,
@@ -58,7 +58,7 @@ const identity = async (http: ReturnType<typeof request>) =>
 const sessionCookie = (res: request.Response) =>
   [res.headers['set-cookie']].flat().find((c) => c?.startsWith('imb_session='));
 
-describe('the local sign-in (e2e) — brief 152', () => {
+describe('the local sign-in (e2e)', () => {
   let app: INestApplication<Server>;
   let http: ReturnType<typeof request>;
 
@@ -226,7 +226,7 @@ describe('the local sign-in with a SETUP_TOKEN (e2e)', () => {
   });
 });
 
-describe('an old environment that still sets WARD_* (e2e), brief 157', () => {
+describe('an old environment that still sets WARD_* (e2e)', () => {
   it('changes nothing: the machine still asks to be claimed and signs in itself', async () => {
     const app = await boot({
       WARD_PUBLIC_ORIGIN: 'https://estate.test',

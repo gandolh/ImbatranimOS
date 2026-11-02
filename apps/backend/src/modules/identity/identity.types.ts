@@ -2,7 +2,7 @@
  * Who is calling, as the guard and the WebSocket upgrades see it.
  *
  * There is one identity path: the machine's own single-owner sign-in
- * (brief 152, the only one since brief 157). `LocalIdentityService.authenticate`
+ * (the only one since the move off Ward). `LocalIdentityService.authenticate`
  * turns a `Cookie` header into a {@link Caller} or throws
  * {@link AuthenticationError}.
  */

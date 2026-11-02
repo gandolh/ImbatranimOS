@@ -10,7 +10,7 @@ import {
 /**
  * Clock's persisted state: world clocks and alarms.
  *
- * Why this exists (brief 71, shared with Calendar/brief 72): the add-on used to
+ * Why this exists (shared with Calendar/the calendar storage work): the add-on used to
  * persist through zustand to `localStorage`, which put the user's alarms in
  * whichever *browser* opened the OS. That contradicts "the computer is the
  * container" — the data was outside the home volume the documented backup

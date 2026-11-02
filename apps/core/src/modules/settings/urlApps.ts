@@ -1,8 +1,8 @@
-// Shapes and helpers for apps installed from a URL (brief 158).
+// Shapes and helpers for apps installed from a URL.
 
 import type { AppSource } from '../../shared/registry/marketplace'
 
-/** The backend's answer to `POST marketplace/url/inspect` (brief 158, contract B). */
+/** The backend's answer to `POST marketplace/url/inspect` (contract B). */
 export type Inspection = {
   pending: string
   id: string

@@ -2,7 +2,7 @@ import { topVisibleWindowId, useWindowStore } from '../../shared/store/windowSto
 
 /**
  * Keeps the owner's keyboard out of sandboxed apps that are not in front
- * (security review of brief 158, M1).
+ * (security review of sandboxed apps from a URL, M1).
  *
  * A URL app's frame can call `focus()` inside itself at any time, and Chrome
  * then gives it the keyboard even while another window is in front: what the

@@ -8,10 +8,10 @@ import { DOTFILE_KEYS } from '../../lib/prefs'
 import { APP_REGISTRY } from '../registry/registry'
 
 /**
- * Brief 82 — startup apps.
+ * Startup apps — startup apps.
  *
- * The interesting assertions are the two "does NOT open" cases. Brief 82 was
- * written believing brief 49 had deleted the layout restore; it had not, so
+ * The interesting assertions are the two "does NOT open" cases. Startup apps was
+ * written believing the ephemeral-session work had deleted the layout restore; it had not, so
  * "open the list once per session" as literally specified would re-open
  * everything on top of the windows a reload just brought back.
  */
@@ -27,7 +27,7 @@ beforeEach(() => {
 
 describe('the list is a dotfile', () => {
   it('its persist key is registered in DOTFILE_KEYS', () => {
-    // Same trap brief 81 fell into: a store wired to `prefsStorage` whose key is
+    // Same trap default apps and Open with fell into: a store wired to `prefsStorage` whose key is
     // not in this list persists to localStorage only, so "my startup apps follow
     // me" silently means "in this browser".
     expect(DOTFILE_KEYS as readonly string[]).toContain('imbatranimos:startup')
@@ -83,8 +83,8 @@ describe('running the set', async () => {
     expect(useWindowStore.getState().windows).toHaveLength(0)
   })
 
-  it('does NOT run when a layout was restored — the reload case brief 82 missed', async () => {
-    // Brief 49 kept the restore and moved it to sessionStorage, so a reload comes
+  it('does NOT run when a layout was restored — the reload case startup apps first missed', async () => {
+    // The ephemeral-session work kept the restore and moved it to sessionStorage, so a reload comes
     // back with its windows. Re-running the set here would double every
     // multi-instance app and steal focus on every single reload.
     useStartupStore.setState({ apps: ['terminal', 'calculator'] })
@@ -112,7 +112,7 @@ describe('running the set', async () => {
   })
 })
 
-describe('a Marketplace app in the list (brief 183)', () => {
+describe('a Marketplace app in the list', () => {
   // A Marketplace app joins APP_REGISTRY only when the first listing arrives,
   // after the boot effect has run. These stand in for that listing.
   function listing() {

@@ -4,7 +4,7 @@ import type { FileChoice } from '@imbatranim/ui'
 import { FilePicker } from '../shared/components/files/FilePicker'
 
 /**
- * The OS file portal (brief 48) — the xdg-desktop-portal analogue.
+ * The OS file portal — the xdg-desktop-portal analogue.
  *
  * `system.fs.pickOpen/pickSave/pickDirectory` resolve through here: the app
  * awaits pure data while the OS renders its one Open/Save dialog. The old

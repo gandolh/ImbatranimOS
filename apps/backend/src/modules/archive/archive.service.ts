@@ -267,7 +267,7 @@ export class ArchiveService {
 
   /**
    * Read what is inside an archive **without extracting it** — the headline of
-   * brief 78, and most of what an archive manager is for.
+   * the archive manager work, and most of what an archive manager is for.
    *
    * This reuses the validation that already existed rather than adding a second,
    * looser path: every declared entry goes through the same {@link resolveEntry}
@@ -428,7 +428,7 @@ export class ArchiveService {
     path: string,
     dest?: string,
     /**
-     * Extract only these entries (brief 78). **Untrusted client input** — the
+     * Extract only these entries. **Untrusted client input** — the
      * exact zip-slip vector this module was hardened against — so it is jailed by
      * `resolveEntry` like any other name AND required to name an entry the
      * archive actually declares.
@@ -446,7 +446,7 @@ export class ArchiveService {
 
     // Destination: caller-supplied, else a sibling folder named after the
     // archive (foo.tar.gz -> foo), or `foo (2)`… when that exists: extracting
-    // the same archive twice must never land on the first copy (brief 148).
+    // the same archive twice must never land on the first copy.
     // Always re-jailed.
     const destVirtual =
       dest ?? (await this.freeDest(root, this.deriveDest(path)));
@@ -685,7 +685,7 @@ export class ArchiveService {
    * into place. Returns the staging directory for the caller to inspect and to
    * clean up.
    *
-   * This exists so brief 80's restore can reuse the guards rather than
+   * This exists so backup and restore's restore can reuse the guards rather than
    * re-implement them: restore needs the verified tree in hand so it can swap it
    * in atomically with a rollback, which `extractTar`'s merge step cannot give it.
    * Splitting the method is real reuse — a second copy of a traversal check is a
@@ -854,7 +854,7 @@ export class ArchiveService {
    * It used to `rm -rf` each top-level destination entry and rename the staged
    * one into its place, so extracting an archive into a folder that already
    * held its `project/` deleted every edit and every new file inside it, with
-   * no prompt and no Trash (brief 148). Now an existing directory is merged
+   * no prompt and no Trash. Now an existing directory is merged
    * into, a same-path file is replaced by `rename` (atomic), and nothing that
    * the archive does not contain is touched.
    */
@@ -1081,7 +1081,7 @@ export class ArchiveService {
    *
    * **Verified against the shipped image rather than assumed** — the brief calls
    * this out as the class of guess that broke `ps` and `git`. Docker pulls are
-   * blocked from this environment, so the check was done the way brief 68 cleared
+   * blocked from this environment, so the check was done the way the media player playlist and codecs work cleared
    * `--no-same-owner`: from busybox's own source and Alpine's build config
    * (`aports@3.22-stable main/busybox/busyboxconfig`, cross-checked on 3.21).
    *

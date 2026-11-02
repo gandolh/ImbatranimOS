@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware'
 export type NotificationLevel = 'info' | 'success' | 'warning' | 'error'
 
 /**
- * A toast button (brief 107) — intent-shaped data, never a closure, so it can
+ * A toast button — intent-shaped data, never a closure, so it can
  * ride the persisted history and outlive the window that raised it.
  */
 export type NotificationAction = {

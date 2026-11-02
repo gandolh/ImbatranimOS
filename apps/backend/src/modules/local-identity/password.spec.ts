@@ -1,6 +1,6 @@
 import { hashPassword, verifyPassword } from './password';
 
-describe('local password hashing (brief 152)', () => {
+describe('local password hashing', () => {
   it('verifies the password it was made from and nothing else', async () => {
     const stored = await hashPassword('correct horse battery');
     expect(stored).toMatch(/^scrypt\$15\$8\$1\$[\w-]+\$[\w-]+$/);

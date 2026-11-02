@@ -27,7 +27,7 @@ services:
       # processes on the box) can reach it now. For a LAN/localhost run this is
       # still what you want; drop the prefix only to expose it deliberately.
       - "127.0.0.1:8080:8080"
-      # The Browser app's proxy origin (brief 50): proxied web pages are served
+      # The Browser app's proxy origin: proxied web pages are served
       # from this second port, never the desktop's, so a hostile page cannot
       # act as you on the desktop. Loopback-bound for the same reason as above.
       - "127.0.0.1:8081:8081"
@@ -73,7 +73,7 @@ services:
     #   - SETUP_TOKEN=<only you know it>   # needed to claim the machine first
     #   - TRUST_PROXY=true                 # only behind a proxy that OVERWRITES X-Forwarded-For
 
-  # Development, fully contained (brief 51): Nest watch + Vite HMR with source
+  # Development, fully contained: Nest watch + Vite HMR with source
   # changes SYNCED into the container by `docker compose watch` — run it via
   # `npm run dev`. No bind mounts and no anonymous-volume list: the old
   # hand-list of per-add-on node_modules volumes rotted twice (7/24 covered at
@@ -91,16 +91,16 @@ services:
     ports:
       - "3001:3001"
       - "5173:5173"
-      # The Browser's proxy origin (brief 50).
+      # The Browser's proxy origin.
       - "3002:3002"
     environment:
       # Same origin as the desktop, through Vite's dev proxy, the way the
       # deploy serves it. A marketplace app's module is imported from the API
-      # (brief 120), and a cross-origin module import carries no cookie.
+      #, and a cross-origin module import carries no cookie.
       - VITE_API_URL=/api
       - BROWSER_PROXY_PORT=3002
       # `file://` repositories in marketplace descriptors, for trying a local
-      # checkout (brief 162). Off unless the shell that starts the dev
+      # checkout. Off unless the shell that starts the dev
       # container turns it on:
       #   MARKETPLACE_ALLOW_LOCAL_REPOS=true npm run dev
       # The repository must be a path inside the container (docker cp it).
@@ -120,7 +120,7 @@ services:
           target: /app/packages
           ignore:
             - "**/node_modules/**"
-        # The marketplace catalog (brief 120), read on every listing.
+        # The marketplace catalog, read on every listing.
         - action: sync
           path: ../marketplace
           target: /app/marketplace

@@ -9,9 +9,9 @@ import { PendingInspections } from './pending-inspections';
 import { SandboxTokens } from './sandbox-tokens';
 
 /**
- * The app marketplace (brief 120): installs the apps `marketplace/*.json`
+ * The app marketplace: installs the apps `marketplace/*.json`
  * describes, serves their builds, and runs and proxies the servers of the
- * ones that have one. Since brief 158 it also installs prebuilt apps from a
+ * ones that have one. Since sandboxed apps from a URL it also installs prebuilt apps from a
  * GitHub URL, which run sandboxed and are served under per-window tokens.
  * `LocalIdentityService`, `DbService` and `UpgradeRoutes` come from global
  * modules.

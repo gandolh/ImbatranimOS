@@ -1,6 +1,6 @@
 import { envSchema, ignoredEnvNotice } from './env.schema';
 
-describe('ignoredEnvNotice (brief 157)', () => {
+describe('ignoredEnvNotice', () => {
   it('is null when no WARD_* variable is set', () => {
     expect(ignoredEnvNotice({ PATH: '/usr/bin', SETUP_TOKEN: 't' })).toBeNull();
   });

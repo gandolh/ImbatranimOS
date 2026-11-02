@@ -13,7 +13,7 @@ import { BrowserProxyServer } from './browser-proxy.server';
 import { PutBrowserProfileDto } from './dto/browser-profile.dto';
 
 /**
- * The Browser app's routes on the desktop's API (brief 50). Authed by the
+ * The Browser app's routes on the desktop's API. Authed by the
  * global guard; no `@Public()`.
  *
  * They live on the desktop's origin, not the proxy's, on purpose: the profile

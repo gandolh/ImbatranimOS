@@ -19,7 +19,7 @@ function get(port: number, path: string): Promise<number> {
   });
 }
 
-describe('MarketplaceServers (brief 120)', () => {
+describe('MarketplaceServers', () => {
   let dir: string;
   let servers: MarketplaceServers;
 

@@ -5,7 +5,7 @@ import { LEGACY_KEY, describeMigration, readLegacyCalendarState } from './legacy
 /**
  * One-time hand-over of the pre-brief-72 `localStorage` calendar.
  *
- * The same shape Clock's migration uses (brief 71): exactly-once is enforced on the
+ * The same shape Clock's migration uses: exactly-once is enforced on the
  * **server** — the import refuses a non-empty table — rather than by a flag here,
  * because two tabs opening at the same moment would both find the same key.
  *

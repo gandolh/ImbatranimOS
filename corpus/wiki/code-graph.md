@@ -1,6 +1,6 @@
 ---
 summary: The generated code-graph layer (codegraph 1.5.0) and its accuracy measured on THIS repo, 2026-08-23 — 100% caller recall on imported functions and correct cross-package barrel resolution, but ~35% on anything called through the `system` handle and 0% on `manifest`, which 25 add-ons export. Read before trusting a structural answer; the working skill is .claude/skills/codegraph/SKILL.md.
-updated: 2026-08-23
+updated: 2026-11-02
 ---
 
 # The code-graph layer
@@ -56,7 +56,7 @@ Two mechanical gotchas that make the numbers look worse than they are:
 
 ## What this means for how we work
 
-**The blind spot is architecturally central.** Brief 48 made the `system` handle
+**The blind spot is architecturally central.** The system-handle seam (2026-08-06) made the `system` handle
 the only way an add-on touches the OS, and member expressions are exactly what
 the resolver cannot follow. So the graph is weakest on the seam this project
 cares most about. The rule that falls out: **graph for `impact` and named-function

@@ -33,7 +33,7 @@ COPY --parents packages/*/package.json ./
 # workspace dir, and the builder's `turbo build` must never discover it — its
 # Astro deps are not installed here, so copying its manifest in with `COPY
 # apps ./apps` would break the image build (it did, silently, from the day the
-# site landed until brief 51 simulated a fresh-clone install).
+# site landed until the containerized dev pipeline work simulated a fresh-clone install).
 RUN npm ci
 
 # ---------------------------------------------------------------------------
@@ -100,7 +100,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.66.0"
+      org.opencontainers.image.version="1.67.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -121,7 +121,7 @@ COPY --chown=imbatranim:imbatranim --from=builder /app/apps/backend/dist ./apps/
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/core/dist ./public
 COPY --chown=imbatranim:imbatranim package.json ./
 COPY --chown=imbatranim:imbatranim apps/backend/package.json ./apps/backend/
-# The marketplace catalog (brief 120): what may be installed. Root-owned on
+# The marketplace catalog: what may be installed. Root-owned on
 # purpose, like the rest of the image's code: the app reads it, never writes it.
 COPY marketplace ./marketplace
 COPY infrastructure/entrypoint.sh /entrypoint.sh
@@ -137,7 +137,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.66.0
+    IMAGE_VERSION=1.67.0
 VOLUME /home/imbatranim
 EXPOSE 8080
 # Liveness against the backend's purpose-built /health endpoint. busybox wget
@@ -152,18 +152,18 @@ CMD ["node", "apps/backend/dist/main"]
 # ---------------------------------------------------------------------------
 # dev — contained development: `turbo dev` = Nest watch + Vite HMR
 # (docker compose dev profile SYNCS source changes into this image's own FS
-# via `develop.watch` — no bind mounts, no anonymous-volume list; brief 51)
+# via `develop.watch` — no bind mounts, no anonymous-volume list)
 # ---------------------------------------------------------------------------
 FROM deps AS dev
 # git, as in the prod stage: the Git app runs it, and so does a marketplace
-# install (brief 120). The deps stage has only the native-addon toolchain.
+# install. The deps stage has only the native-addon toolchain.
 RUN apk add --no-cache git
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 WORKDIR /app
 COPY apps ./apps
 # The shared workspace packages are SOURCE the dev server compiles (the
-# @imbatranim/ui SDK lives here since brief 48) — without them `turbo dev`
+# @imbatranim/ui SDK lives here since the system-handle seam) — without them `turbo dev`
 # fails on every dangling workspace dep. The old bind-mount dev flow never
 # mounted them either, which is how host edits to packages/* silently did
 # nothing in the container.

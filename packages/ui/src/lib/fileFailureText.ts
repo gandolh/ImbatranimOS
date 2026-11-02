@@ -1,7 +1,7 @@
 import { UploadTooLargeError } from './files'
 
 /**
- * The pure half of the file-failure convention (briefs 62-64): turn an unknown
+ * The pure half of the file-failure convention: turn an unknown
  * error into the sentence a human should read. The notifying half
  * (`reportFileFailure` / `reportFileRefusal`) needs `system.notify`, so it lives
  * with the capability consumers — this half ships with any bundle and is what
@@ -27,7 +27,7 @@ function statusOf(err: unknown): number | undefined {
  * A message the backend wrote for a human, if there is one.
  *
  * The files service translates `ENOSPC`/`EDQUOT` into a 503 whose message says
- * the volume is full (brief 83). Passing that through beats replacing it with a
+ * the volume is full. Passing that through beats replacing it with a
  * generic failure, which is what discards the one useful sentence.
  */
 function serverMessage(err: unknown): string | undefined {

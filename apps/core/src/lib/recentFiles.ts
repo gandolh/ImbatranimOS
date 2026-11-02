@@ -4,7 +4,7 @@ import { queryClient } from './queryClient'
 import { currentAppId } from '../shared/store/retiredApps'
 
 /**
- * OS-wide recent files (brief 94) — the client half of `/api/files/recent`.
+ * OS-wide recent files — the client half of `/api/files/recent`.
  *
  * Recording happens at the choke points (the file manager's open routing and
  * the core file dialog), plus any app whose open flow bypasses both (Notepad's
@@ -27,7 +27,7 @@ function invalidate(): void {
 
 /**
  * The server's rows, with a retired built-in's id read as its suite app's
- * (brief 164). Rewriting them would mean re-recording each one, which moves
+ *. Rewriting them would mean re-recording each one, which moves
  * it to the top of the list; reading through the map keeps the order.
  */
 async function getRecentFiles(): Promise<RecentFile[]> {

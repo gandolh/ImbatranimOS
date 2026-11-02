@@ -4,7 +4,7 @@ import { loadModule } from './loadModule'
 import { kitRefusal, protocolRefusal } from './refusals'
 import { installSharedKit } from './sharedKit'
 
-/** A kit app's entry module per URL, imported at most once at a time (brief 182). */
+/** A kit app's entry module per URL, imported at most once at a time. */
 const imports = new Map<string, Promise<unknown>>()
 
 /**
@@ -26,12 +26,12 @@ export function importKitModule(href: string): Promise<unknown> {
 }
 
 /**
- * Start a kit app's import as soon as this chunk has arrived (brief 182),
+ * Start a kit app's import as soon as this chunk has arrived,
  * before the host mounts. The registry's `lazy` factory calls it: React holds
  * a lazy component that resolves just after its fallback showed for up to
  * 300 ms before it commits, and the host's effect ran only after that, so the
  * module graph (the entry's own imports, which a modulepreload does not
- * fetch) loaded after the wait. Nothing for a refused app (brief 175) or one
+ * fetch) loaded after the wait. Nothing for a refused app or one
  * without an entry; the host reports a failure in its window.
  */
 export function startKitApp(app: MarketplaceApp): void {

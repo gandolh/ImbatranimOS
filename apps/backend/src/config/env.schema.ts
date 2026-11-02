@@ -22,7 +22,7 @@ export const envSchema = z
     // --- Identity: the machine's own single-owner sign-in -------------------
     //
     // A password chosen on first run, an httpOnly session cookie and a login
-    // throttle (brief 152). It is the only sign-in since brief 157.
+    // throttle. It is the only sign-in since the move off Ward.
     //
     // When set, the first-run claim needs this token as well as a new password,
     // so a machine reachable on a network cannot be claimed by whoever gets
@@ -31,7 +31,7 @@ export const envSchema = z
     // `child-env.ts` keeps it out of every child process.
     SETUP_TOKEN: z.string().min(1).optional(),
 
-    // --- The Browser app's proxy origin (brief 50) ---------------------------
+    // --- The Browser app's proxy origin ---------------------------
     //
     // Proxied web pages run on an origin of their own, never the desktop's: a
     // rewriter escape on the desktop origin would hold the session and the
@@ -43,7 +43,7 @@ export const envSchema = z
     // front, for instance). Must differ from FRONTEND_URL's origin.
     BROWSER_PROXY_ORIGIN: z.string().url().optional(),
 
-    // --- The app marketplace (brief 120) ------------------------------------
+    // --- The app marketplace ------------------------------------
     //
     // The catalog: the repo's `marketplace/` directory, one descriptor per
     // installable app. Only what is described there can be installed.
@@ -93,7 +93,7 @@ export function browserProxyOriginOf(env: {
 }
 
 /**
- * Variables a deploy from before brief 157 still sets, which nothing reads.
+ * Variables a deploy from before the move off Ward still sets, which nothing reads.
  *
  * The estate's identity service once signed people in here through three
  * `WARD_*` variables. An old `.env` that still holds them must not fail

@@ -12,7 +12,7 @@ const ROTATED_NAME = 'system.log.1';
 
 /**
  * Per-file cap. Two files, so the log can never cost more than ~4 MB of a volume
- * that brief 83 exists because it fills up. Read per call, not at import, so an
+ * that the storage and disk-full work exists because it fills up. Read per call, not at import, so an
  * env change takes effect without a module reload — the same pattern the archive
  * module's caps use.
  */
@@ -26,7 +26,7 @@ const DEFAULT_READ_LIMIT = 200;
 /**
  * How many client-reported entries this process will accept before it stops.
  *
- * The browser can write here (brief 47's crash boundary), and a render loop is
+ * The browser can write here (per-window error boundaries's crash boundary), and a render loop is
  * exactly the thing that would fill the disk with identical lines. The frontend
  * already dedupes its toasts; this is the backstop that does not trust it.
  */
@@ -59,7 +59,7 @@ export interface LogQuery {
 }
 
 /**
- * The machine's memory of itself (brief 84).
+ * The machine's memory of itself.
  *
  * `/var/log` is empty and nothing runs there: `entrypoint.sh` execs node as PID
  * 1, so Nest's logger goes to stdout and only `docker logs` ever sees it. From
@@ -190,7 +190,7 @@ export class LogService implements OnModuleInit {
    *
    * A rename, not a copy: it is atomic on the same filesystem and costs nothing
    * regardless of file size. The previous generation is discarded — two files is
-   * the cap, and a log that grows without bound is the failure mode brief 83 was
+   * the cap, and a log that grows without bound is the failure mode the storage and disk-full work was
    * written about.
    */
   private async rotate(): Promise<void> {

@@ -46,7 +46,7 @@ export function Select({
             `<Select.Value>` with no children renders the raw value, because base-ui
             can only look a label up when `Select.Root` is given an `items` map. So
             every Select in the OS whose value differs from its label displayed the
-            value — found by measurement in brief 75, where a folder picker read "6"
+            value — found by measurement in the bookmarks work, where a folder picker read "6"
             instead of "Work / Specs". `git-gui`'s root picker and Calendar's reminder
             offsets had the same defect.
 

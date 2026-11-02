@@ -60,7 +60,7 @@ export function useOpenIntent(): OpenedFile | null {
 }
 
 /**
- * The OS Open / Save-as dialog, portal-style (brief 48): the OS renders the
+ * The OS Open / Save-as dialog, portal-style: the OS renders the
  * picker and the app awaits pure data. A successful `openFile` also latches
  * the choice into the same store `useOpenIntent` reads, so the app's one load
  * path fires exactly as if File Manager had handed it the file.

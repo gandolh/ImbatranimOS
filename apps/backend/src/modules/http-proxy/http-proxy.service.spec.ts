@@ -261,7 +261,7 @@ describe('HttpProxyService', () => {
     });
   });
 
-  describe('binary request body (brief 77)', () => {
+  describe('binary request body', () => {
     it('sends the decoded bytes, not the base64 text', async () => {
       // Without this, the REST client could only send a string — no multipart, no
       // file upload. The bytes must arrive byte-for-byte, including a NUL and a

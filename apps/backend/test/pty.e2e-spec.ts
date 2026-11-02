@@ -128,7 +128,7 @@ describe('PtyGateway (e2e)', () => {
     expect(a).not.toBe(b); // two distinct shell processes
   }, 20000);
 
-  it("keeps SETUP_TOKEN out of the shell's environment (brief 138)", async () => {
+  it("keeps SETUP_TOKEN out of the shell's environment", async () => {
     const before = process.env.SETUP_TOKEN;
     process.env.SETUP_TOKEN = 'e2e-secret-setup-token';
     try {

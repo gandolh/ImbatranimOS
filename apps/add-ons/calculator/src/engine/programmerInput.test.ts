@@ -13,7 +13,7 @@ import {
 } from './programmerInput'
 
 /**
- * Programmer mode is on brief 70's "must preserve" list and had no tests, so these pin the
+ * Programmer mode is on the calculator work's "must preserve" list and had no tests, so these pin the
  * behaviour rather than change it. Written after a probe misread the app: the initial base is
  * **HEX**, not DEC, so typing `255` and pressing HEX looks like a broken conversion when it is
  * simply the base that was already selected.

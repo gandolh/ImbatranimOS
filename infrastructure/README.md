@@ -2,7 +2,7 @@
 
 One container is the computer: Alpine + Node, NestJS serves the built React
 desktop **and** the API on a single port (`8080` in prod). This document
-covers running it and the **HTTPS / identity** story (briefs 10 and 152).
+covers running it and the **HTTPS / identity** story.
 
 ## Run it
 
@@ -18,7 +18,7 @@ The first visit sets the owner's name and password (no default password ever
 exists), and every visit after that asks for it. Set `SETUP_TOKEN` to make the
 first claim also need a token only you know (see Identity below).
 
-## Developing (contained — brief 51)
+## Developing (contained)
 
 `npm run dev` runs **`docker compose … --profile dev watch`**: install, build,
 watch and serve all happen in the container, and compose `watch` syncs your
@@ -99,7 +99,7 @@ exist.
 
 ## Identity (what ships)
 
-One sign-in, the machine's own (brief 152; the only one since brief 157, in
+One sign-in, the machine's own (the only one since 2026-10-07, in
 the estate too). A standalone run, a friend's install, the production
 deploy and the server ISO all use it.
 
@@ -129,9 +129,9 @@ deploy and the server ISO all use it.
   assets. The Terminal's WebSocket is authenticated by the same check.
 - **Cover screen** hides the desktop but is not a lock.
 - **Old variables:** an environment that still sets `WARD_*` (from before
-  brief 157) boots normally and logs one line naming them as ignored.
+  2026-10-07) boots normally and logs one line naming them as ignored.
 
-## The Browser's second port (brief 50)
+## The Browser's second port
 
 The Browser app shows real websites through the machine: Scramjet rewrites
 each page, and a Wisp relay in the backend carries its traffic. Proxied pages
@@ -154,8 +154,8 @@ prod, 3002 dev), which serves only the proxy's fixed files and the relay.
 - **Egress:** the relay connects only to public unicast addresses on ports
   80, 443, 8080 and 8443, judged after DNS resolution on every answer. No
   RFC 1918, loopback, link-local (cloud metadata), CGNAT or IPv6 local
-  ranges. This is stricter than the REST client on purpose (decisions:
-  brief 43 vs brief 50).
+  ranges. This is stricter than the REST client on purpose (see the
+  decisions on the REST client and the proxied browser).
 - **Sign-ins:** proxied sites' cookies are kept by the machine, AES-GCM
   encrypted in the database, with the key in
   `.imbatranim/browser-profile.key` beside it. Backups leave the key out, so a

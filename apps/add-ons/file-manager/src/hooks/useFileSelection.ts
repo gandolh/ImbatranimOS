@@ -5,7 +5,7 @@ import { applySelect, nextAnchor, rangeBetween, type SelectMode } from '../lib/s
  * Multi-select state for the file list.
  *
  * Plain click replaces the selection (clicking the sole selected row clears
- * it) and ctrl/meta-click toggles — both byte-for-byte as before brief 111.
+ * it) and ctrl/meta-click toggles — both byte-for-byte as before file manager keyboard parity.
  * Shift-click and Shift+Arrow now extend a range from an anchor.
  *
  * The anchor lives here rather than in `FileManager` (which is where the brief

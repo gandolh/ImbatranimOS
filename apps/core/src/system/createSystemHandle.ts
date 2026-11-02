@@ -40,7 +40,7 @@ import {
 import { requestPick } from './filePortal'
 
 /**
- * The in-process transport of the protocol (brief 48).
+ * The in-process transport of the protocol.
  *
  * One handle per (app, window) mount, built over the exact stores and libs the
  * old direct imports reached — so behaviour is identical, only the coupling
@@ -52,7 +52,7 @@ import { requestPick } from './filePortal'
 /** Imperative twin of `useGlobalHotkeys`, same matcher, same text-entry rule. */
 function bindHotkeys(bindings: ShortcutBinding[]): () => void {
   function onKeyDown(e: KeyboardEvent) {
-    // Same rule as useGlobalHotkeys: a covered screen eats no keys (brief 101).
+    // Same rule as useGlobalHotkeys: a covered screen eats no keys.
     if (isShellSuspended()) return
     for (const binding of bindings) {
       const parsed = parseBinding(binding.keys)
@@ -100,7 +100,7 @@ function windowFor(windowId: string): SystemWindow {
   return {
     setTitle: (title) => store().updateTitle(windowId, title),
     requestClose: () => store().closeWindow(windowId),
-    // The keyboard comes with the raise (brief 180), as from the taskbar.
+    // The keyboard comes with the raise, as from the taskbar.
     focus: () => {
       store().focusWindow(windowId)
       focusIntoWindowSoon(windowId)
@@ -195,7 +195,7 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
 
     intents: {
       // A window this raises gets the keyboard; a new one takes it as it
-      // mounts (brief 180).
+      // mounts.
       openApp: (target, payload) => openWithKeyboard(() => openApp(target, payload)),
       consume: <T>() =>
         windowId === null

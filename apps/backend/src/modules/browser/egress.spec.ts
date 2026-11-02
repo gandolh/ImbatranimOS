@@ -5,7 +5,7 @@ import {
   resolvePublicTarget,
 } from './egress';
 
-describe('isPublicAddress — the relay reaches public unicast only (brief 50)', () => {
+describe('isPublicAddress — the relay reaches public unicast only', () => {
   it.each([
     '8.8.8.8',
     '93.184.215.14',

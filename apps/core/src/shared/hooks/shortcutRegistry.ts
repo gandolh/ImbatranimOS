@@ -79,7 +79,7 @@ export function groupShortcuts(shortcuts: Shortcut[]): [ShortcutScope, Shortcut[
  * The `textarea` case covers the Terminal too: xterm reads input through a
  * hidden textarea, and it must receive every keystroke it is given.
  */
-// isTextEntry moved to @imbatranim/ui (brief 48): pure DOM predicate, SDK-side.
+// isTextEntry moved to @imbatranim/ui: pure DOM predicate, SDK-side.
 export { isTextEntry } from '@imbatranim/ui'
 
 /** Human-readable binding, e.g. `mod+k` → `Ctrl + K` (or `⌘ + K` on a Mac). */

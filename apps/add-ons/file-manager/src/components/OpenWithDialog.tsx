@@ -3,7 +3,7 @@ import { Button, Checkbox, Dialog, cn, useSystem } from '@imbatranim/ui'
 import { marketplaceGap } from '../lib/marketplaceOpeners'
 
 /**
- * "Open with…" — the chooser, and the place a default gets set (brief 81).
+ * "Open with…" — the chooser, and the place a default gets set.
  *
  * It serves two arrivals, and they want different lists:
  *
@@ -12,7 +12,7 @@ import { marketplaceGap } from '../lib/marketplaceOpeners'
  * - **a double-click on something nothing claims**, where the claimants list is
  *   empty and the honest thing is to show everything immediately.
  *
- * "Always use this" writes a dotfile (brief 49), so the choice follows the
+ * "Always use this" writes a dotfile, so the choice follows the
  * account rather than the browser — and it is keyed by *extension*, not by file:
  * per-file overrides are state nobody can find again later.
  */
@@ -55,7 +55,7 @@ export function OpenWithDialog({
         {claimants.length === 0 && (
           <p className="text-on-surface-variant text-[12px]">
             {/* An office file with Office not installed says where to get it
-                (brief 164), rather than steering it into the text editor. */}
+                rather than steering it into the text editor. */}
             {marketplaceGap(key) ??
               'No app claims this file type. Pick one — the text editor opens most things.'}
           </p>

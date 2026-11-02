@@ -1,5 +1,5 @@
 /**
- * The shape of a system-log entry (brief 84).
+ * The shape of a system-log entry.
  *
  * This lives in the SDK rather than in the Logs add-on because it is a
  * **backend contract**, not that app's private model. The add-on imports it

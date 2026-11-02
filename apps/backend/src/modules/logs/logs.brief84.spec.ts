@@ -21,14 +21,14 @@ const parseEntry = (
   JSON.parse(line) as LogEntry & { meta?: Record<string, unknown> };
 
 /**
- * Brief 84 — the machine's memory of itself.
+ * The system log — the machine's memory of itself.
  *
  * The load-bearing test in this file is the one asserting a failed login does
  * **not** record the attempted password. A log written by the process that also
  * handles credentials is exactly where a secret leaks, and "we were careful at
  * the call sites" is not a guarantee — the guard has to be provable.
  */
-describe('LogService — brief 84', () => {
+describe('LogService', () => {
   let home: string;
   let logs: LogService;
   const prevRoot = process.env.FILES_ROOT;
@@ -369,7 +369,7 @@ describe('LogService — brief 84', () => {
 
 // ── the deliberate call sites ──────────────────────────────────────────────
 
-describe('audit call sites — brief 84', () => {
+describe('audit call sites', () => {
   let home: string;
   let logs: LogService;
   const prevRoot = process.env.FILES_ROOT;

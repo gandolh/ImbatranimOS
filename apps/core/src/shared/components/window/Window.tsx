@@ -198,7 +198,7 @@ export const Window = React.memo(function Window({
   )
 
   // A click anywhere in a window raises it, unless the click itself brought
-  // another window to the front (brief 179): an Open button that opened or
+  // another window to the front: an Open button that opened or
   // raised another app runs before its click bubbles here, and raising this
   // window then would cover the app it just put up. The capture handler runs
   // before any handler inside the window and notes the store's z counter;
@@ -310,7 +310,7 @@ export const Window = React.memo(function Window({
             </>
           )}
 
-          {/* Title bar — double-click toggles maximize/restore (brief 103),
+          {/* Title bar — double-click toggles maximize/restore,
               the reflex every desktop user carries. */}
           <div
             {...titleBarBind()}
@@ -364,7 +364,7 @@ export const Window = React.memo(function Window({
           </div>
 
           {/* Window body. Focusable by script only (tabIndex -1), as the last
-              place the taskbar or Alt+Tab can put the keyboard (brief 174);
+              place the taskbar or Alt+Tab can put the keyboard;
               its focus handler remembers where the keyboard was in the app. */}
           <div
             data-window-content=""

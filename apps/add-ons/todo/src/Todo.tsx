@@ -182,7 +182,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
   }
 
   /**
-   * Refile every selected task at once (brief 117).
+   * Refile every selected task at once.
    *
    * The same update mutation the row's own picker uses, one call per task —
    * there is no batch endpoint and inventing one for this would be a schema
@@ -533,7 +533,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
         )}
       </div>
 
-      {/* The same note Clock and Calendar carry since brief 93. */}
+      {/* The same note Clock and Calendar carry since the reminder scheduler. */}
       <div className="border-outline-variant bg-surface-container-low text-on-surface-variant flex h-5 shrink-0 items-center gap-1 border-t px-2 text-[10px]">
         Due reminders appear while the desktop is open — this window can be closed.
       </div>

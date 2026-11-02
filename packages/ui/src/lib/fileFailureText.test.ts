@@ -31,7 +31,7 @@ describe('describeFileFailure', () => {
 
   it('passes the disk-full message through instead of replacing it', () => {
     // The files service translates ENOSPC/EDQUOT into a 503 whose message says
-    // the volume is full (brief 83). Overwriting that with "could not save"
+    // the volume is full. Overwriting that with "could not save"
     // throws away the one sentence that tells the user what to do.
     const err = http(503, 'The disk is full. Free some space and try again.')
     expect(describeFileFailure('save', err, 'spreadsheet')).toBe(

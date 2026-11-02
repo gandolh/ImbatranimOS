@@ -22,7 +22,7 @@ function dbAt(path: string): DbService {
   return dbs;
 }
 
-describe('BrowserProfileService (brief 50)', () => {
+describe('BrowserProfileService', () => {
   let dir: string;
   let dbs: DbService;
   let profile: BrowserProfileService;

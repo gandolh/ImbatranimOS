@@ -8,7 +8,7 @@ import { AppErrorFallback } from './AppErrorFallback'
 import { useNotificationStore } from '../../store/notificationStore'
 
 /**
- * Brief 47 — a faulty app must not take down the OS.
+ * Per-window error boundaries — a faulty app must not take down the OS.
  *
  * Driven with `react-dom/client` + React 19's `act` rather than Testing Library:
  * jsdom is already a devDependency, the whole surface under test is "does the
@@ -85,7 +85,7 @@ const boundary = (children: ReactNode, onReload = () => {}, onClose = () => {}) 
   </AppErrorBoundary>
 )
 
-describe('AppErrorBoundary (brief 47)', () => {
+describe('AppErrorBoundary', () => {
   it('renders the app normally when it does not throw', () => {
     render(boundary(<div data-testid="app">hello</div>))
     expect(container.querySelector('[data-testid="app"]')).not.toBeNull()

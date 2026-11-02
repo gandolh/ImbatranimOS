@@ -13,7 +13,7 @@ export const NOTES_KEY = ['sticky-notes'] as const
 /**
  * Report a failed write.
  *
- * Before brief 74 the only failure signal in this app was a `console.error` in the
+ * Before the sticky-notes work the only failure signal in this app was a `console.error` in the
  * create path — a note could fail to save and the user was told nothing, three
  * briefs after `notify()` shipped.
  */

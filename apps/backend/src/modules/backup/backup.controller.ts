@@ -30,7 +30,7 @@ const MAX_BACKUP_UPLOAD_BYTES =
   Number(process.env.BACKUP_MAX_UPLOAD_BYTES) || 4 * 1024 * 1024 * 1024;
 
 /**
- * Back up and restore the home volume (brief 80).
+ * Back up and restore the home volume.
  *
  * Every route is authenticated by the global `SessionGuard`; none carries
  * `@Public()`. This is the most security-sensitive controller in the OS — the
@@ -71,7 +71,7 @@ export class BackupController {
     // streaming design exists to avoid.
     res.setHeader('X-Accel-Buffering', 'no');
 
-    // `pipeline`, not `.pipe()` (brief 142). A client that disconnected left
+    // `pipeline`, not `.pipe()`. A client that disconnected left
     // `.pipe()` unpiped and tar's stdout paused: tar blocked on a full pipe
     // forever, `done` never settled, and `dispose()` never ran, so every later
     // backup answered 409 until a restart. Whichever side fails first now
@@ -113,7 +113,7 @@ export class BackupController {
   @Post('restore/apply')
   @HttpCode(HttpStatus.OK)
   async apply(@Body() dto: RestoreApplyDto) {
-    // No `signedOut` in the answer (brief 149). The restore does end every
+    // No `signedOut` in the answer. The restore does end every
     // session, this one included (`BackupService.installDatabase`), and the
     // desktop reloads after it, which lands on the sign-in screen.
     return this.backup.apply(dto.id);

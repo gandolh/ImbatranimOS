@@ -4,13 +4,13 @@ import type { Capability } from '../../shared/registry/marketplace'
 
 /**
  * Where things are, for the app: the third argument to `mount`, a kit app's
- * `host` prop. Defined in the kit since brief 163, so an outside repo's
+ * `host` prop. Defined in the kit since the shared kit, so an outside repo's
  * snapshot of `packages/ui/src` has it.
  */
 export type { NativeHostContext }
 
 /**
- * What an installed app's module exports (brief 120). The boundary is the
+ * What an installed app's module exports. The boundary is the
  * DOM, not the component tree: the app renders itself into `container` with
  * whatever it likes (its own React, raw canvas, WebGPU), so it never shares
  * core's React and runs at full speed in the desktop's own page.
@@ -21,7 +21,7 @@ export type NativeAppModule = {
 }
 
 /**
- * What a kit app's module exports instead (brief 163): a component the
+ * What a kit app's module exports instead: a component the
  * desktop renders in the window, in its own tree, with its own React and kit
  * (read from `__imbatranimShared`). React mounts and unmounts it; anything it
  * starts outside React it stops in an effect cleanup.
@@ -40,7 +40,7 @@ const ALWAYS = new Set(['protocolVersion', 'appId', 'windowId', 'window', 'appea
  *
  * A fence for mistakes, not a sandbox: the app's code runs in this page and
  * could reach `fetch` itself. What keeps that acceptable is the catalog: every
- * app here was curated into the OS repo at a pinned commit (brief 120's trust
+ * app here was curated into the OS repo at a pinned commit (the marketplace install's trust
  * anchor). An app from anywhere else would need the sandboxed runtime.
  */
 export function scopeHandle(

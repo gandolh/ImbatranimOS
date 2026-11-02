@@ -18,7 +18,7 @@ vi.mock('../registry/registry', () => ({
 import { useWindowStore, type WindowInstance } from '../store/windowStore'
 import { appsSource } from './appsSource'
 
-/** Brief 174: the palette bringing up an open app moves the keyboard into it. */
+/** The taskbar focus fix: the palette bringing up an open app moves the keyboard into it. */
 
 const terminal: WindowInstance = {
   id: 't1',
@@ -38,7 +38,7 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('appsSource.activate (brief 174)', () => {
+describe('appsSource.activate', () => {
   it('shows the open window and moves focus into it', () => {
     useWindowStore.setState({ windows: [terminal], activeWorkspace: 1, nextZIndex: 2 })
     appsSource.activate(item)

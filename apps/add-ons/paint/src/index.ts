@@ -11,7 +11,7 @@ export const manifest: AddonManifest = {
   component: lazy(() => import('./Paint').then((m) => ({ default: m.Paint }))),
   multiInstance: true,
   // The toolbar wraps below ~640; 900×640 fits an 800×600 canvas at 100%
-  // inside a 720p-with-taskbar viewport after brief 52's clamp.
+  // inside a 720p-with-taskbar viewport after the window size clamp's clamp.
   defaultSize: { width: 900, height: 640 },
   minSize: { width: 640, height: 420 },
 }

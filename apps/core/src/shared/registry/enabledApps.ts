@@ -18,7 +18,7 @@ function filterEnabled(disabled: string[]): AppConfig[] {
 /** Reactive: APP_REGISTRY minus disabled ids (non-disableable always kept). */
 export function useEnabledApps(): AppConfig[] {
   const disabled = useAddonStore((s) => s.disabled)
-  // Marketplace apps arrive after boot (brief 120).
+  // Marketplace apps arrive after boot.
   useRegistryVersion()
   return filterEnabled(disabled)
 }

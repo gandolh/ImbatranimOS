@@ -1,5 +1,5 @@
 /**
- * Klondike Solitaire rules as pure functions over an immutable game (brief 98).
+ * Klondike Solitaire rules as pure functions over an immutable game.
  *
  * Every mutation returns a new `Game`; the UI keeps an undo stack of the
  * states it passed through. Nothing here touches the DOM, timers or storage.

@@ -45,7 +45,7 @@ export type ServerStatus =
   | { state: 'crashed'; reason: string };
 
 interface Running {
-  /** The descriptor's id: a suite's apps share its one server (brief 162). */
+  /** The descriptor's id: a suite's apps share its one server. */
   id: string;
   spec: ServerSpec;
   port: number;
@@ -64,10 +64,10 @@ interface Running {
 }
 
 /**
- * Runs the servers of service apps (brief 120): Farm Valley's and Citadel's
+ * Runs the servers of service apps: Farm Valley's and Citadel's
  * simulation servers. Keyed by descriptor id, so a suite's apps run one
  * server between them, and it counts once against {@link MAX_SERVERS}
- * (brief 162).
+ *.
  *
  * This is the "no supervisor daemon" kill-list item, extended and fenced: it
  * supervises marketplace apps' servers and nothing else. A server runs while

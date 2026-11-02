@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { normaliseClockIntent } from './notificationIntent'
 
 /**
- * Clock is the first adopter of toast actions (brief 107). The payload arrives
+ * Clock is the first adopter of toast actions. The payload arrives
  * as plain data through `openApp`, so it has to be validated like any other
  * untrusted input — it can come from persisted history or another tab.
  */

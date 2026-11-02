@@ -5,7 +5,7 @@ import { EMPTY_RESULT, runFindInFiles, type FindResult } from '../lib/findInFile
 
 type SearchPanelProps = {
   root: string
-  /** Open a file at a line — the editor's one loader (brief 113). */
+  /** Open a file at a line — the editor's one loader. */
   onOpenAt: (path: string, line: number) => void
   /** Esc, or the close button: hide the panel and return focus to Monaco. */
   onClose: () => void
@@ -15,10 +15,10 @@ type SearchPanelProps = {
 }
 
 /**
- * Find in files (brief 113) — a bottom panel, not a dialog.
+ * Find in files — a bottom panel, not a dialog.
  *
  * A dialog would end the search-edit-search loop every time you clicked a
- * result; the left rail belongs to brief 121's folder tree; and Monaco owns
+ * result; the left rail belongs to the folder tree; and Monaco owns
  * the centre. The bottom is what is left, and it is where every editor puts
  * this anyway.
  *

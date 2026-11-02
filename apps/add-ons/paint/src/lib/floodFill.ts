@@ -1,5 +1,5 @@
 /**
- * Scanline flood fill over raw RGBA pixels (brief 95). Pure — takes the
+ * Scanline flood fill over raw RGBA pixels. Pure — takes the
  * buffer, returns whether anything changed — so the boundary cases (fill on
  * the target colour, fill at an edge, anti-aliased borders) are testable
  * without a canvas.

@@ -1,5 +1,5 @@
 /**
- * Wording for the search results view (brief 112).
+ * Wording for the search results view.
  *
  * Pure, and separate from the components, for one reason: the header, the row
  * subtitles and the status bar all have to name the *same* place the same way.

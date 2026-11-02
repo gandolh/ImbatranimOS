@@ -116,7 +116,7 @@ export function isBinaryMissing(result: unknown): boolean {
 /**
  * True when execa aborted the call because output passed `maxBuffer`.
  *
- * Brief 76 item 7: a big `diff` hits the 10 MB cap, and with `reject: false` that
+ * The git GUI work's spec: a big `diff` hits the 10 MB cap, and with `reject: false` that
  * arrives as a *result* whose stdout is truncated or empty — indistinguishable from
  * "no changes" unless it is detected here. The user then sees an empty diff pane and
  * concludes the app is broken. Shape-checked rather than pinned to one property,
@@ -165,7 +165,7 @@ export class GitService {
     cwd: string,
     args: string[],
     /**
-     * Optional stdin. Added by brief 76 for `git apply --cached`, which is how
+     * Optional stdin. Added by the git GUI work for `git apply --cached`, which is how
      * every GUI stages a single hunk. It is stdin precisely so a patch — the one
      * piece of large, structured, client-supplied text this module handles —
      * never becomes an argument, a temp file, or anything a shell could see.
@@ -386,7 +386,7 @@ export class GitService {
   }
 
   // ---------------------------------------------------------------------------
-  // Brief 76 — each new subcommand is added to the allowlist deliberately, goes
+  // The git GUI work — each new subcommand is added to the allowlist deliberately, goes
   // through `this.git(...)` and the one `exec` seam, takes array args only, and
   // has a test asserting the exact array it produces.
   // ---------------------------------------------------------------------------
@@ -816,7 +816,7 @@ export class GitService {
 
   /**
    * Stricter than {@link assertPathspec}, for the one place a path becomes part
-   * of a *revision* argument rather than a pathspec after `--` (brief 114).
+   * of a *revision* argument rather than a pathspec after `--`.
    *
    * `git show HEAD:<file>` has no `--` to hide behind, so the argv element is
    * checked itself: no leading `-` (never a flag), never absolute, and no `..`
@@ -837,7 +837,7 @@ export class GitService {
   }
 
   /**
-   * The committed contents of one file at HEAD (brief 114) — the left side of
+   * The committed contents of one file at HEAD — the left side of
    * Git GUI's "Compare with HEAD".
    *
    * The revision is the literal `HEAD`, never anything the client sends: the

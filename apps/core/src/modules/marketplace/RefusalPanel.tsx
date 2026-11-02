@@ -4,7 +4,7 @@ import { openApp } from '../../shared/intents/openApp'
 
 /**
  * What a window shows instead of a marketplace app that cannot run on this
- * desktop (brief 175): built for another shared kit, or for a newer system
+ * desktop: built for another shared kit, or for a newer system
  * protocol. Nothing broke, so it is not the crash fallback: no "stopped
  * working", no toast, no client-error log. The sentence from `refusals.ts` is
  * the body, word for word.
@@ -29,7 +29,7 @@ export function RefusalPanel({ appName, reason }: { appName: string; reason: str
         size="sm"
         className="gap-1"
         // The click still bubbles to the window root, which leaves Settings in
-        // front because the click raised it (brief 179).
+        // front because the click raised it.
         onClick={() => openApp('settings')}
       >
         <Settings size={12} strokeWidth={2} />

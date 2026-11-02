@@ -10,7 +10,7 @@ import { pushSample } from './lib/history'
 const WIDGET_POLL_MS = 5000
 
 /**
- * CPU + RAM at a glance on the desktop (brief 96). Shares the monitor app's
+ * CPU + RAM at a glance on the desktop. Shares the monitor app's
  * query key, so with the app open the cache is one; alone it polls at its own
  * slower cadence. History is session state — the trace starts collecting when
  * the widget appears.

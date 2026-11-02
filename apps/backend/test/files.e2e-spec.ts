@@ -210,7 +210,7 @@ describe('Files (e2e) — auth + binary round-trip', () => {
     });
   });
 
-  describe('saves detect external changes (brief 155)', () => {
+  describe('saves detect external changes', () => {
     it('a stale expected token is 409 with the current one; the file is unchanged', async () => {
       const first = await http
         .put('/api/files/content')

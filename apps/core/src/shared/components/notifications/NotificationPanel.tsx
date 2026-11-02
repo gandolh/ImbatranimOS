@@ -32,7 +32,7 @@ function Row({ item, onOpen }: { item: NotificationItem; onOpen: () => void }) {
       }
     >
       <span className={cn('absolute inset-y-0 left-0 w-[3px]', levelStripeClass(item.level))} />
-      {/* The raising app's icon when it resolves (brief 107 — §23 promised it
+      {/* The raising app's icon when it resolves (§23 promised it
           on both surfaces and neither delivered); severity stays in the stripe. */}
       <NotificationIcon
         appId={item.appId}

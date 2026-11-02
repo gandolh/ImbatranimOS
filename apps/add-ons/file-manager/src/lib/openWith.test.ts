@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { openAppLabel, resolveOpenApp, type Associations } from './openWith'
 
 /**
- * Since brief 48 this adapter resolves against the HANDLE's association slice,
+ * Since the system-handle seam this adapter resolves against the HANDLE's association slice,
  * not core's registry — an app test cannot reach the OS, which is the seam
  * working as designed. The registry's real table (the text fallback, the
  * office formats Office's apps took over) is pinned in core's associations.test.ts; what
@@ -56,27 +56,27 @@ const assoc: Associations = {
 
 /**
  * The routing table had no tests, which is how `.pdf` came to point at the
- * 340-line viewer while the 3886-line suite sat unreachable (brief 65). These
+ * 340-line viewer while the 3886-line suite sat unreachable. These
  * pin the decisions that are easy to flip by accident and hard to notice.
  *
- * Since brief 81 the table itself lives in core, derived from each app's own
+ * Since default apps and Open with the table itself lives in core, derived from each app's own
  * `opens`; this file is a thin adapter over it. These stay because they assert
  * the *file manager's* contract — the labels its menu shows and the behaviour its
  * double-click depends on — from the outside.
  */
 describe('resolveOpenApp', () => {
-  it("sends .pdf to Office's PDF (brief 167)", () => {
+  it("sends .pdf to Office's PDF", () => {
     // norPDF and PDF Viewer became one app in imbatranim-office.
     expect(resolveOpenApp(assoc, 'home', 'report.pdf')).toBe('office-pdf')
   })
 
   it('routes the office formats to their editors', () => {
-    // Docs is Office's since brief 164.
+    // Docs is Office's since the built-in retirement.
     expect(resolveOpenApp(assoc, 'home', 'a.docx')).toBe('office-docs')
-    // Sheets is Office's since brief 166.
+    // Sheets is Office's since the retire built in sheets work.
     expect(resolveOpenApp(assoc, 'home', 'a.xlsx')).toBe('office-sheets')
     expect(resolveOpenApp(assoc, 'home', 'a.csv')).toBe('office-sheets')
-    // Slides is Office's since brief 165.
+    // Slides is Office's since the retire built in slides work.
     expect(resolveOpenApp(assoc, 'home', 'a.pptx')).toBe('office-slides')
   })
 
@@ -86,7 +86,7 @@ describe('resolveOpenApp', () => {
   })
 
   it('opens .txt and .log in Notepad from ANY root', () => {
-    // FLIPPED by brief 59. This test previously asserted that `home/notes.txt`
+    // FLIPPED by the one-filesystem notepad. This test previously asserted that `home/notes.txt`
     // resolved to null — double-clicking a text file in your own home directory
     // opened nothing at all, because Notepad could only read the `notes` root.
     // Notepad is root-aware now, so the `onlyRoots` gate is gone.
@@ -100,7 +100,7 @@ describe('resolveOpenApp', () => {
     expect(resolveOpenApp(assoc, 'home', 'Book.XLSX')).toBe('office-sheets')
   })
 
-  it('FLIPPED by brief 81: a text-ish unmapped file no longer dead-ends', () => {
+  it('FLIPPED by Open with: a text-ish unmapped file no longer dead-ends', () => {
     // This test used to assert `null` for both of these, and the caller then did
     // nothing at all — double-clicking a `Makefile` was a dead click, which is
     // the single most "broken OS" thing the file manager did. Text-ish files now

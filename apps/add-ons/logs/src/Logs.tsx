@@ -25,7 +25,7 @@ const LEVELS: { id: LogLevel; label: string }[] = [
 ]
 
 /**
- * The system log (brief 84).
+ * The system log.
  *
  * Until now the machine had no memory of itself: nothing runs in `/var/log`, and
  * Nest's output goes to stdout where only `docker logs` sees it — which is to say

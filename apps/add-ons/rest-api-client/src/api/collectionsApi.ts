@@ -20,7 +20,7 @@ export const EMPTY_DATA: RestClientData = {
 /**
  * Coerce an unknown parsed doc into a valid RestClientData (defensive).
  *
- * Every field is checked independently so a file written before brief 77 — which had
+ * Every field is checked independently so a file written before the REST client work — which had
  * no `environments` or `activeEnvId` — loads with its collections and history intact
  * rather than degrading to EMPTY_DATA. A dangling `activeEnvId` is dropped here, so
  * the send path never has to cope with one.
@@ -47,7 +47,7 @@ export const DATA_FILE = { root: ROOT, path: PATH } as const
 /**
  * What `loadData` found. Only `ok` and `missing` may be written over: `missing` is
  * a first run, where empty data is the truth, and anything else is data the user
- * has not seen, which a whole-file save would replace (brief 139).
+ * has not seen, which a whole-file save would replace.
  */
 export type LoadResult =
   | { status: 'ok'; data: RestClientData }
@@ -63,7 +63,7 @@ function httpStatus(err: unknown): number | undefined {
 /**
  * Load collections + history.
  *
- * Before brief 139 every failure here degraded to empty data: a 401, a 503, a
+ * Before the rest client never overwrites unread collections work every failure here degraded to empty data: a 401, a 503, a
  * network blip and a hand-edited file with a typo all looked like a first run, and
  * the next Send then saved that empty doc over the user's collections. Now only a
  * 404 means "start empty"; everything else is reported, and the caller refuses to

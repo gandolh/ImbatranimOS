@@ -50,9 +50,9 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     // A database that cannot even be opened (not a SQLite file, a torn copy)
-    // is STATE like a failed migration, not a crash (brief 154): throwing here
+    // is STATE like a failed migration, not a crash: throwing here
     // escaped Nest's bootstrap and crash-looped the container, the outcome
-    // brief 110's degraded mode exists to avoid. `StorageHealthGuard` then
+    // the migration ledger's degraded mode exists to avoid. `StorageHealthGuard` then
     // answers 503 and `/health` says degraded.
     try {
       this.open();
@@ -71,7 +71,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Close and reopen `DB_PATH`. A restore that put the previous tree back
-   * (brief 154) calls this: the old connection may point at a file that has
+   * calls this: the old connection may point at a file that has
    * since moved.
    */
   reopen(): void {
@@ -85,7 +85,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Write a **consistent** copy of the database to `destPath` (brief 80).
+   * Write a **consistent** copy of the database to `destPath`.
    *
    * The database sits inside the home volume that a backup tars up, and it is in
    * WAL mode. Copying `db.sqlite` with `tar` while the process is writing gives a
@@ -102,7 +102,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Swap the live database file for `sourcePath` and reopen (brief 80's restore).
+   * Swap the live database file for `sourcePath` and reopen (backup and restore's restore).
    *
    * Renaming a file out from under an open SQLite connection does **not** switch
    * the connection to the new file: the descriptor follows the inode, so every
@@ -119,7 +119,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   replaceWith(sourcePath: string): void {
     const target = this.path();
     // The previous database is kept aside until the new one has opened and
-    // migrated (brief 154). Renaming the snapshot straight over it meant a
+    // migrated. Renaming the snapshot straight over it meant a
     // snapshot that would not open left no database at all.
     const previous = `${target}.previous`;
     this.db.close();
@@ -245,7 +245,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    * A failed migration is STATE, not a crash.
    *
    * Throwing out of `onModuleInit` gives a restart-looping container with no
-   * UI — and on the kiosk ISO no host shell to read why, which is brief 84's
+   * UI — and on the kiosk ISO no host shell to read why, which is the system log's
    * founding rationale. So boot continues, the flag makes every API request
    * answer an honest 503, and the reason is recorded where it can be read.
    */
@@ -271,13 +271,13 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /** Step 1 — the baseline schema, plus brief 94's recent_files reshape. */
+  /** Step 1 — the baseline schema, plus the recent-files service's recent_files reshape. */
   private stepBaseline() {
-    // Brief 94: recent_files changed shape (root + app_id, UNIQUE(root, path)
+    // Recent_files changed shape (root + app_id, UNIQUE(root, path)
     // instead of UNIQUE(path)). SQLite cannot alter constraints, so an
     // old-shape table is dropped and recreated by the block below. The rows
     // are deliberately not migrated: they were Notepad's bare paths with no
-    // root — "recently opened" hints, not data — and brief 59 moved Notepad's
+    // root — "recently opened" hints, not data — and the one-filesystem notepad moved Notepad's
     // default root out from under them, so their meaning is unrecoverable.
     const recentCols = this.db
       .prepare(`PRAGMA table_info(recent_files)`)
@@ -322,7 +322,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       CREATE INDEX IF NOT EXISTS idx_bookmark_links_group
         ON bookmark_links(group_id);
 
-      -- Clock (Brief 71): world clocks + alarms, moved out of the viewing
+      -- Clock: world clocks + alarms, moved out of the viewing
       -- browser's localStorage so they belong to the container. The stopwatch
       -- and countdown timers are session state and deliberately absent.
       CREATE TABLE IF NOT EXISTS clock_world_clocks (
@@ -347,7 +347,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
-      -- Calendar (Brief 72): events moved out of the viewing browser's
+      -- Calendar: events moved out of the viewing browser's
       -- localStorage, sharing Clock's shape. Recurrence is stored as a RULE, not
       -- as materialised instances -- a weekly standup is one row, and the client
       -- expands only the range it is painting. rrule_* are all NULL for a
@@ -377,10 +377,10 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       CREATE INDEX IF NOT EXISTS idx_calendar_events_start
         ON calendar_events(start_ms);
 
-      -- Git repos the user has opened (Brief 76). A table of its own rather than
+      -- Git repos the user has opened. A table of its own rather than
       -- reusing recent_files: that one is Notes' (a bare path, no root), and
       -- folding two meanings into one table is the shapeless-blob-store pattern
-      -- this repo has refused since brief 71. UNIQUE(root, path) makes "open it
+      -- this repo has refused since the clock fixes. UNIQUE(root, path) makes "open it
       -- again" an upsert of the timestamp rather than a duplicate row.
       CREATE TABLE IF NOT EXISTS git_recent_repos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -390,11 +390,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         UNIQUE(root, path)
       );
 
-      -- OS-wide recent files (Brief 94). Replaces Notepad's private recents:
+      -- OS-wide recent files. Replaces Notepad's private recents:
       -- every opener records (root, path, appId), and the Start menu, file
       -- picker and palette consume. UNIQUE(root, path) makes reopening an
       -- upsert of the timestamp; app_id remembers which app to reopen with.
-      -- Dotfiles (Brief 49): durable user config, keyed by store name and
+      -- Dotfiles: durable user config, keyed by store name and
       -- holding that store's serialised state as JSON. The SSH analogy the
       -- layering grill settled on: your window layout is the session and dies
       -- with the tab, but your wallpaper and accent are dotfiles -- they belong
@@ -415,7 +415,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         UNIQUE(root, path)
       );
 
-      -- Scheduler claims (Brief 93): which alarm/reminder/due occurrences have
+      -- Scheduler claims: which alarm/reminder/due occurrences have
       -- already produced a toast. The PRIMARY KEY makes "claim" an atomic
       -- INSERT-or-lose, so with two desktop tabs polling, exactly one wins the
       -- notification. Rows are dedupe state, not history — pruned after days.
@@ -427,7 +427,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         PRIMARY KEY (domain, item_id, occurrence_ms)
       );
 
-      -- Auth (Brief 10): single-user credential store. The CHECK (id = 1)
+      -- Auth: single-user credential store. The CHECK (id = 1)
       -- enforces "single user" at the schema level — at most one row.
       CREATE TABLE IF NOT EXISTS auth_user (
         id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -449,7 +449,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       );
     `);
 
-    // Todo lists (Brief 73): one level deep, deliberately — arbitrary nesting
+    // Todo lists: one level deep, deliberately — arbitrary nesting
     // turns a task list into an outliner. A todo with list_id NULL is unfiled and
     // shows under "All".
     this.db.exec(`
@@ -462,9 +462,9 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     `);
   }
 
-  /** Step 2 — brief 74's sticky-note desktop columns. */
+  /** Step 2 — the sticky-notes work's sticky-note desktop columns. */
   private stepStickyNoteColumns() {
-    // Sticky notes (Brief 74): the desktop surface. pos_x/pos_y already existed
+    // Sticky notes: the desktop surface. pos_x/pos_y already existed
     // and are reused as the note's position on the desktop — they used to be the
     // spawn point of a per-note window, which the desktop layer replaces, so no
     // second pair of coordinate columns was added. on_desktop defaults to 0 so
@@ -485,14 +485,14 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /** Step 3 — brief 73's todo columns. */
+  /** Step 3 — the todo dates work's todo columns. */
   private stepTodoColumns() {
     // Columns added to a table that already shipped. Each is attempted
     // separately, because ALTER TABLE cannot add several at once and one
     // already-exists must not skip the rest.
     for (const column of [
       'position INTEGER NOT NULL DEFAULT 0',
-      // Brief 73. due_at is epoch ms with local wall-clock meaning, matching
+      // Due_at is epoch ms with local wall-clock meaning, matching
       // Calendar; NULL means no due date, which is the common case.
       'due_at INTEGER',
       'priority INTEGER NOT NULL DEFAULT 0',
@@ -511,11 +511,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /** Step 4 — brief 75's bookmark rename, columns and index. */
+  /** Step 4 — the bookmarks model's bookmark rename, columns and index. */
   private stepBookmarkShape() {
-    // Bookmarks (Brief 75): nested folders, and `href` becomes `url`.
+    // Bookmarks: nested folders, and `href` becomes `url`.
     //
-    // The rename is the contract brief 50 (web browser) will consume — it speaks
+    // The rename is the contract the proxied browser will consume — it speaks
     // of `openApp('browser', { url })`, and translating at that seam forever is
     // worse than renaming once here. RENAME COLUMN needs SQLite 3.25+, which
     // better-sqlite3 has; the catch makes the second run a no-op.
@@ -531,7 +531,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       // No REFERENCES clause, for the same reason as todos.list_id: the pragma is
       // off, so it would be decorative. The service deletes a folder subtree
       // explicitly, in one transaction — see the note on deleteGroup, which is the
-      // bug brief 73 handed over.
+      // bug the todo dates work handed over.
       'parent_id INTEGER',
       'position INTEGER NOT NULL DEFAULT 0',
     ]) {
@@ -570,7 +570,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Step 7 — drop the credential tables from before 2026-09-06 (brief 150).
+   * Step 7 — drop the credential tables from before 2026-09-06.
    *
    * Nothing has read `auth_user` or `auth_sessions` since identity moved out
    * of this app on 2026-09-06, but every install from before it still held the owner's
@@ -578,11 +578,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    * this file) carried them off the machine. A restored old backup is migrated
    * by `replaceWith`, so it is scrubbed too. Steps 1 and 5 still create and
    * alter the tables: the ledger replays history, and rewriting old steps
-   * would make fresh and migrated databases diverge (brief 110). No catch:
+   * would make fresh and migrated databases diverge. No catch:
    * `IF EXISTS` is the whole expected-skip.
    */
   /**
-   * Step 8 — the local sign-in's tables (brief 152, option C).
+   * Step 8 — the local sign-in's tables (option C).
    *
    * New names, not the dropped `auth_user`/`auth_sessions`: those were a
    * different design (TOTP, argon2) and step 7 removes them on every database
@@ -610,7 +610,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     `);
   }
 
-  /** Step 9 — the Browser's encrypted cookie jar (brief 50). One row: one machine, one profile. */
+  /** Step 9 — the Browser's encrypted cookie jar. One row: one machine, one profile. */
   private stepBrowserProfile() {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS browser_profile (
@@ -622,7 +622,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Step 10 — installed marketplace apps (brief 120): which build of each is
+   * Step 10 — installed marketplace apps: which build of each is
    * live. The builds themselves are directories beside the database.
    */
   private stepMarketplaceApps() {
@@ -639,7 +639,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Step 11 — apps installed from a URL (brief 158). `runtime` says how the
+   * Step 11 — apps installed from a URL. `runtime` says how the
    * desktop runs an app: every row before this one is a catalog app, so the
    * default keeps it native. A URL app has no descriptor to read again, so
    * its resolved source and its manifest are stored with it, as JSON.
@@ -659,7 +659,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Step 12 — one descriptor, several apps (brief 162). `entries` is JSON,
+   * Step 12 — one descriptor, several apps. `entries` is JSON,
    * app id → that app's module inside the build's output, written when a
    * version 2 descriptor's build succeeds. Every row before this step, and
    * every version 1 or URL app's row after it, leaves it null and keeps using
@@ -778,7 +778,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   /**
    * Delete bookmark links whose folder is gone.
    *
-   * This repairs the bug brief 73 handed to brief 75. `bookmark_links.group_id`
+   * This repairs the bug the todo dates work handed to the bookmarks model. `bookmark_links.group_id`
    * declares `ON DELETE CASCADE`, and `deleteGroup` even carried a comment saying
    * SQLite handled it — but `PRAGMA foreign_keys` is **never enabled on this
    * connection**, so the constraint was decorative and every folder deletion left

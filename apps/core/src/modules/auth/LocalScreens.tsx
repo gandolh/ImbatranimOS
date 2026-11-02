@@ -5,7 +5,7 @@ import { errorMessage, localChangePassword, localSetup, localSignIn } from './ap
 import { useAuthStore } from './store/authStore'
 
 /**
- * The machine's own sign-in (brief 152, the only one since brief 157):
+ * The machine's own sign-in (the only one since the move off Ward):
  * claiming an unclaimed machine, and signing its owner in. Both end in
  * `refresh()`, so `/me` stays the one source of truth for who is in.
  */

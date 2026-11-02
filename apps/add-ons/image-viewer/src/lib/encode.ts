@@ -73,7 +73,7 @@ export function encodeMime(path: string): string {
  * animated, and a re-encode would silently keep one frame. ICO is a container of
  * several sizes. For those, rotation stays a view transform and the app offers
  * "Save a copy" instead — losing an animation without saying so is the same
- * class of defect as losing a chart on a spreadsheet save (brief 63).
+ * class of defect as losing a chart on a spreadsheet save.
  */
 export function canSaveInPlace(path: string): boolean {
   return ['png', 'jpg', 'jpeg', 'webp'].includes(extensionOf(path))

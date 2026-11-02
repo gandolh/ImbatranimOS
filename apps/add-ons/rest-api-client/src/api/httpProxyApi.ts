@@ -8,7 +8,7 @@ import type { HttpMethod, ProxyResponse } from '../types'
  * a base64-encoded body. All SSRF guardrails live server-side.
  *
  * Plain function, not a hook — the capability arrives as the first argument
- * (brief 48).
+ *.
  */
 export async function sendProxyRequest(
   http: SystemHttp,
@@ -18,7 +18,7 @@ export async function sendProxyRequest(
     headers?: Record<string, string>
     body?: string
     /**
-     * A binary body, base64-encoded (brief 77) — multipart and raw file uploads.
+     * A binary body, base64-encoded — multipart and raw file uploads.
      * The proxy prefers this over `body` when both are present.
      */
     bodyBase64?: string

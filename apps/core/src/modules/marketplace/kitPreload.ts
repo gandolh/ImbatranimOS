@@ -4,7 +4,7 @@ import { addKitStyles } from './kitStyles'
 import { kitRefusal, protocolRefusal } from './refusals'
 
 /**
- * A kit app's files start loading as its window opens (brief 182), beside the
+ * A kit app's files start loading as its window opens, beside the
  * `KitAppHost` chunk rather than after it.
  *
  * Before, the window mounted, the host's chunk loaded, the host mounted, and
@@ -49,7 +49,7 @@ export function preloadModule(href: string): void {
 
 /**
  * Start a kit app's entry module and stylesheets as its window opens. A
- * refused app gets nothing (brief 175: nothing is fetched or added for it),
+ * refused app gets nothing (nothing is fetched or added for it),
  * nor does an app with no entry or build, which the host reports itself.
  * `build` is the app's build key (`kitBuildKey`), passed in so this file
  * needs nothing from the registry at run time.

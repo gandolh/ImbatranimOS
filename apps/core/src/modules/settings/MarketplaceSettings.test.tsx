@@ -13,7 +13,7 @@ import type { Inspection } from './urlApps'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 /**
- * Brief 158 — "Check for update" on an app installed from a URL. The stored
+ * Sandboxed apps from a URL — "Check for update" on an app installed from a URL. The stored
  * URL is inspected again; what comes back may be a new commit of the same app,
  * the same commit, or (when the URL now resolves to another folder or repo) a
  * different app altogether, which must not be offered as this row's update.
@@ -201,7 +201,7 @@ describe('MarketplaceSettings: problems', () => {
   })
 })
 
-/** An app of the two-app suite `office` (brief 162). */
+/** An app of the two-app suite `office`. */
 function officeApp(
   id: string,
   name: string,
@@ -232,7 +232,7 @@ function officeApp(
   }
 }
 
-describe('MarketplaceSettings: a descriptor with several apps (brief 162)', () => {
+describe('MarketplaceSettings: a descriptor with several apps', () => {
   const suite = (installed: boolean) => [
     officeApp('office-docs', 'Docs', installed, { multiInstance: true }),
     officeApp('office-sheets', 'Sheets', installed),
@@ -323,7 +323,7 @@ describe('MarketplaceSettings: a descriptor with several apps (brief 162)', () =
     useWindowStore.setState({ windows: before.windows, closeWindow: before.closeWindow })
   })
 
-  it('says a kit suite built for another shared kit needs an update (brief 163)', async () => {
+  it('says a kit suite built for another shared kit needs an update', async () => {
     await renderSuite([
       officeApp('office-docs', 'Docs', true, { sharedKit: 99 }),
       officeApp('office-sheets', 'Sheets', true, { sharedKit: 99 }),
@@ -338,7 +338,7 @@ describe('MarketplaceSettings: a descriptor with several apps (brief 162)', () =
     expect(container.textContent).toContain('Installed · aaaaaaa')
   })
 
-  it('offers Rebuild at the same ref when the catalog now names this desktop’s kit (brief 176)', async () => {
+  it('offers Rebuild at the same ref when the catalog now names this desktop’s kit', async () => {
     post.mockResolvedValue({ data: { state: 'queued' } })
     await renderSuite([
       officeApp('office-docs', 'Docs', true, { sharedKit: 99, catalogSharedKit: 1 }),
@@ -357,7 +357,7 @@ describe('MarketplaceSettings: a descriptor with several apps (brief 162)', () =
 
   it('keeps the mismatch text and offers nothing when the catalog names another kit too', async () => {
     for (const catalogSharedKit of [99, undefined]) {
-      // undefined: a backend from before brief 176, which cannot say.
+      // undefined: a backend from before the same-ref rebuild, which cannot say.
       await renderSuite([
         officeApp('office-docs', 'Docs', true, { sharedKit: 99, catalogSharedKit }),
         officeApp('office-sheets', 'Sheets', true, { sharedKit: 99, catalogSharedKit }),

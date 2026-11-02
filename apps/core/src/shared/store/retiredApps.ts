@@ -6,7 +6,7 @@ import { useStartupStore } from './startupStore'
 
 /**
  * Built-in apps that left for imbatranim-office, and the one-time move of the
- * owner's choices to the suite's ids (brief 164, decisions-office-suite.md).
+ * owner's choices to the suite's ids (decisions-office-suite.md).
  *
  * Each retirement run adds its pair here: the built-in's id, then the suite
  * app that replaces it. Two built-ins may map to one suite app (PDF Viewer
@@ -92,7 +92,7 @@ function moveChoices(from: string, to: string): void {
 
 /**
  * A disabled built-in stays disabled under its suite app's id. A suite app
- * that replaces two built-ins is disabled only when both were (brief 167):
+ * that replaces two built-ins is disabled only when both were:
  * hiding PDF Viewer, the light option, said nothing about wanting no PDF app.
  */
 function moveDisabled(froms: readonly string[], to: string): void {

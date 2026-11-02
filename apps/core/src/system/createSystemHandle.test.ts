@@ -7,7 +7,7 @@ import { useNotificationStore } from '../shared/store/notificationStore'
 import { useShortcutStore } from '../shared/hooks/shortcutRegistry'
 
 /**
- * Brief 48 — the in-process transport of the protocol.
+ * The system-handle seam — the in-process transport of the protocol.
  *
  * The assertions that matter are the SCOPING ones: a handle is minted for one
  * app in one window, and nothing on it may reach further. That is the security
@@ -68,7 +68,7 @@ describe('window scoping', () => {
     expect(useWindowStore.getState().windows).toHaveLength(0)
   })
 
-  // Brief 180: an app raising its own window brings the keyboard with it, as
+  // An app raising its own window brings the keyboard with it, as
   // the taskbar does. Window.tsx is stood in for by its two data attributes.
   describe('window.focus', () => {
     let frames: FrameRequestCallback[]

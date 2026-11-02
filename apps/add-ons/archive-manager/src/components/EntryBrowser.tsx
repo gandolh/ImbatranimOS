@@ -5,7 +5,7 @@ import type { ArchiveEntry, ArchiveListing } from '../types'
 import { entrySize } from '../lib/archiveApi'
 
 /**
- * Look inside an archive without extracting it — the headline of brief 78.
+ * Look inside an archive without extracting it — the headline of the archive manager work.
  *
  * Two things here are deliberate rather than incidental:
  *

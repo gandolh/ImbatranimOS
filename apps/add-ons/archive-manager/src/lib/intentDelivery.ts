@@ -4,16 +4,16 @@ import type { ArchiveIntent } from '../types'
 export type Phase = 'idle' | 'listing' | 'browsing' | 'running' | 'done' | 'error'
 
 /**
- * Accept the generic open payload as well as this app's own intents (brief 81).
+ * Accept the generic open payload as well as this app's own intents.
  *
- * Since brief 81 the manifest declares `opens: ['zip', 'tar', …]`, so
+ * Since default apps and Open with the manifest declares `opens: ['zip', 'tar', …]`, so
  * double-clicking an archive routes here through the same `{ openPath, root }`
  * payload every other opener gets. Without this translation the app would have
  * opened idle and empty — a double-click that technically launched something and
- * did nothing, which is the exact failure brief 81 exists to remove.
+ * did nothing, which is the exact failure Open with exists to remove.
  *
  * "Open" means **browse**, not extract: `action: 'extract'` with no `dest` is
- * already the list-and-wait path brief 78 built.
+ * already the list-and-wait path the archive manager work built.
  */
 export function normaliseIntent(raw: unknown): ArchiveIntent | null {
   if (raw === null || typeof raw !== 'object') return null
@@ -28,7 +28,7 @@ export function normaliseIntent(raw: unknown): ArchiveIntent | null {
 export type Delivery = 'run' | 'defer' | 'ignore'
 
 /**
- * What to do with a payload that just arrived (brief 108).
+ * What to do with a payload that just arrived.
  *
  * Archive Manager is the only single-instance app that declares `opens`, so it
  * is the one app where re-delivery is visible: opening zip B while zip A is on

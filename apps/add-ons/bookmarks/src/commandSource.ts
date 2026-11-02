@@ -26,7 +26,7 @@ export const bookmarksSource: CommandSource = {
       const groups = await fetchGroups(ctx.http)
       const needle = query.trim().toLowerCase()
 
-      // Searching the folder path too is the point of the palette after brief 75:
+      // Searching the folder path too is the point of the palette after the bookmarks model:
       // typing "work" should reach everything filed under Work, even when no
       // bookmark's own title contains the word.
       const matches: { link: BookmarkLink; path: string }[] = []

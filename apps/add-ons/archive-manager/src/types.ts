@@ -36,7 +36,7 @@ export interface DirEntry {
 }
 
 // ---------------------------------------------------------------------------
-// Brief 78
+// The archive manager work
 // ---------------------------------------------------------------------------
 
 /** One row of an archive listing, as the backend validated it. */

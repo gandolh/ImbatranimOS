@@ -1,6 +1,6 @@
 import type { SystemHttp } from '@imbatranim/ui'
 
-/** One matching line, as the backend reports it (brief 113). */
+/** One matching line, as the backend reports it. */
 export type SearchMatch = { line: number; text: string }
 
 /** The raw hit shape of `GET /api/files/search`. */

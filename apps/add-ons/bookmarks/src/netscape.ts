@@ -19,7 +19,7 @@
  *
  * Times, icons and tags are deliberately dropped. `ADD_DATE` has nowhere to live in
  * this model, and `ICON` is a base64 favicon — the brief's no-favicons decision
- * (until brief 50's proxy exists) applies to imported ones too, and inlining a few
+ * (until the proxied browser's proxy exists) applies to imported ones too, and inlining a few
  * hundred KB of base64 into SQLite for decoration is not a trade worth making.
  */
 

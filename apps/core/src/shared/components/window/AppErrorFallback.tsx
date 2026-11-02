@@ -3,7 +3,7 @@ import { AlertTriangle, RotateCcw, X } from 'lucide-react'
 import { Button } from '../ui'
 
 /**
- * What a crashed app's window shows instead of the app (brief 47).
+ * What a crashed app's window shows instead of the app.
  *
  * Recoverable and in-chrome: the window is still a window. **Reload** remounts
  * the app with a fresh key — which is a real fix for the common case, a crash on

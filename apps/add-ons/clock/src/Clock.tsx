@@ -56,7 +56,7 @@ export function Clock({ windowId: _windowId }: { windowId: string }) {
   }, [system])
 
   /**
-   * Apply the Snooze pressed on an alarm TOAST (brief 107).
+   * Apply the Snooze pressed on an alarm TOAST.
    *
    * The toast's button is data, so pressing it opens/focuses this window and
    * delivers `{ action: 'snooze', alarmId }` here. Subscribing rather than

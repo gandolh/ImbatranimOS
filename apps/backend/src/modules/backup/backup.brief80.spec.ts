@@ -25,7 +25,7 @@ const tar = async (args: string[]): Promise<void> => {
 };
 
 /**
- * Brief 80 — backup and restore, against the real filesystem, the real `tar`
+ * Backup and restore — backup and restore, against the real filesystem, the real `tar`
  * and a real SQLite database.
  *
  * The interesting cases are all the ones where a backup is *not* what it claims
@@ -34,7 +34,7 @@ const tar = async (args: string[]): Promise<void> => {
  * entire home directory, so every one of those has to be refused before a single
  * byte moves.
  */
-describe('BackupService — brief 80', () => {
+describe('BackupService', () => {
   let home: string;
   let outside: string;
   let files: FilesService;
@@ -65,11 +65,11 @@ describe('BackupService — brief 80', () => {
     files = new FilesService();
     archive = new ArchiveService(files);
     db = makeDb(join(home, '.imbatranim', 'db.sqlite'));
-    // A real LogService, initialised against the test home: brief 84 wired an
+    // A real LogService, initialised against the test home: the system log wired an
     // audit line into restore, and a stub would hide it breaking.
     const logs = new LogService();
     await logs.onModuleInit();
-    // A restore revokes every local session (brief 152): on a local-sign-in
+    // A restore revokes every local session: on a local-sign-in
     // install the swapped database brings the backup's owner and password.
     service = new BackupService(
       files,
@@ -525,7 +525,7 @@ describe('BackupService — brief 80', () => {
       expect(rows.map((r) => r.text)).toEqual(['from the backup']);
     });
 
-    it('restores no table from before brief 150 that held a user or a session', async () => {
+    it('restores no table from before the local sign-in that held a user or a session', async () => {
       const tarball = await takeBackup();
       const upload = join(outside, 'u4.tar.gz');
       await fs.copyFile(tarball, upload);
@@ -541,7 +541,7 @@ describe('BackupService — brief 80', () => {
     });
 
     /**
-     * The sign-in (brief 152): the restored database carries the
+     * The sign-in: the restored database carries the
      * backup's owner and password, and its own copy of the session table. So
      * every local session ends, and the password that works afterwards is the
      * one the backup was taken with.
@@ -579,7 +579,7 @@ describe('BackupService — brief 80', () => {
       ).resolves.toBeDefined();
     });
 
-    it('answers the restore with what was restored, and no signedOut (brief 149)', async () => {
+    it('answers the restore with what was restored, and no signedOut', async () => {
       const tarball = await takeBackup();
       const upload = join(outside, 'u149.tar.gz');
       await fs.copyFile(tarball, upload);

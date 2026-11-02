@@ -11,7 +11,7 @@ import type { Caller } from '../identity/identity.types';
 import { UpgradeRoutes } from '../../upgrade-routes';
 
 /**
- * The raw `'upgrade'` handler (brief 138), against a real HTTP server.
+ * The raw `'upgrade'` handler, against a real HTTP server.
  *
  * The sign-in is a fake whose answers the test controls: `hold()` makes the next
  * `authenticate` wait on a promise the test resolves, which is the window an

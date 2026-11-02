@@ -59,7 +59,7 @@ export function fsSearchKey(root: string, path: string, query: string, content: 
 }
 
 /**
- * A scoped search (brief 112), as a keyed query rather than a hand-rolled fetch.
+ * A scoped search, as a keyed query rather than a hand-rolled fetch.
  *
  * The key IS the out-of-order guard — the same reason `usePreviewContentQuery`
  * is keyed per path. A slow response for "rep" resolves into its own inactive

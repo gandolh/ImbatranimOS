@@ -29,7 +29,7 @@ import { preloadKitApp } from '../../modules/marketplace/kitPreload'
 import { APP_REGISTRY, type AppConfig } from './registry'
 
 /**
- * The second registry beside `manifest.ts` (brief 120): apps installed from
+ * The second registry beside `manifest.ts`: apps installed from
  * the marketplace catalog. `manifest.ts` stays the one place built-in add-ons
  * are composed; these arrive at runtime, from `GET /marketplace`, and are
  * spliced into the same `APP_REGISTRY` array so the launcher, the add-on
@@ -42,13 +42,13 @@ import { APP_REGISTRY, type AppConfig } from './registry'
 
 /**
  * One app as the backend lists it (`MarketplaceApp` there): an app of a
- * catalog descriptor (brief 120; several to a descriptor since brief 162), or
- * an app installed from a URL (brief 158).
+ * catalog descriptor (several to a descriptor since one catalog entry, several apps), or
+ * an app installed from a URL.
  */
 export type MarketplaceApp = {
   id: string
   /**
-   * The descriptor that installs it (brief 162), which the routes keyed by
+   * The descriptor that installs it, which the routes keyed by
    * `:id` take: install, uninstall, log, lease, server. Equal to `id` for a
    * one-app descriptor and a URL app. Read it with {@link descriptorIdOf}.
    */
@@ -68,17 +68,17 @@ export type MarketplaceApp = {
   opens: string[]
   minSystemVersion: number
   /**
-   * A kit app's shared kit version (brief 163): a component the desktop
+   * A kit app's shared kit version: a component the desktop
    * renders with its own React and UI kit, built against this version of
    * them. Null for an app that exports `mount`, and for a URL app; a backend
-   * from before brief 163 sends none, which reads the same. For an installed
+   * from before the shared kit sends none, which reads the same. For an installed
    * app, what its live build was made against. Read it with {@link isKitApp}.
    */
   sharedKit?: number | null
   /**
-   * The shared kit the catalog's descriptor names now (brief 176), whatever
+   * The shared kit the catalog's descriptor names now, whatever
    * the live build was made against. Null for an app that exports `mount`
-   * and for a URL app. A backend from before brief 176 sends none: unknown,
+   * and for a URL app. A backend from before the same-ref rebuild sends none: unknown,
    * so the desktop cannot tell whether a rebuild would help. Read it with
    * {@link rebuildFixesKit}.
    */
@@ -87,7 +87,7 @@ export type MarketplaceApp = {
   /**
    * How the desktop runs it: `native` imports its module into this page (a
    * reviewed catalog app); `sandboxed` runs it in an opaque-origin iframe (an
-   * app from a URL). A backend from before brief 158 sends none: read that
+   * app from a URL). A backend from before sandboxed apps from a URL sends none: read that
    * as native.
    */
   runtime: 'native' | 'sandboxed'
@@ -99,7 +99,7 @@ export type MarketplaceApp = {
     installedAt: number
     /** What the desktop imports, relative to the API's base. A URL app has none. */
     entryPath?: string
-    /** A kit app's stylesheets, relative to the API's base like `entryPath` (brief 163). */
+    /** A kit app's stylesheets, relative to the API's base like `entryPath`. */
     stylePaths?: string[]
     missing: boolean
   } | null
@@ -112,7 +112,7 @@ export type MarketplaceApp = {
 
 export type Capability = 'fs' | 'http' | 'intents' | 'notify' | 'shortcuts' | 'schedule'
 
-/** A URL app's source (brief 158, contract B's `Inspection['source']`). */
+/** A URL app's source (contract B's `Inspection['source']`). */
 export type AppSource = {
   /** Normalized, e.g. `https://github.com/o/r/tree/main/sub`. */
   url: string
@@ -126,7 +126,7 @@ export type AppSource = {
 }
 
 /**
- * The descriptor id an app's routes take. A backend from before brief 162
+ * The descriptor id an app's routes take. A backend from before one catalog entry, several apps
  * sends none, and there every app was its own descriptor.
  */
 export function descriptorIdOf(app: Pick<MarketplaceApp, 'id' | 'descriptorId'>): string {
@@ -139,7 +139,7 @@ export function isSandboxed(app: Pick<MarketplaceApp, 'runtime'>): boolean {
 }
 
 /**
- * True for a kit app (brief 163): a catalog app whose module exports a
+ * True for a kit app: a catalog app whose module exports a
  * component, rendered in the desktop's tree. Never a sandboxed one.
  */
 export function isKitApp(app: Pick<MarketplaceApp, 'runtime' | 'sharedKit'>): boolean {
@@ -148,10 +148,10 @@ export function isKitApp(app: Pick<MarketplaceApp, 'runtime' | 'sharedKit'>): bo
 
 /**
  * True when building an installed kit app again at the same ref would make it
- * run on a desktop with shared kit `desktopKit` (brief 176): its live build
+ * run on a desktop with shared kit `desktopKit`: its live build
  * was made against another kit, and the catalog's descriptor now names this
  * one. False when the catalog names another kit too (a rebuild would make the
- * same mismatch) or says nothing (a backend from before brief 176).
+ * same mismatch) or says nothing (a backend from before the same-ref rebuild).
  */
 export function rebuildFixesKit(
   app: Pick<MarketplaceApp, 'runtime' | 'sharedKit' | 'catalogSharedKit' | 'installed'>,
@@ -186,11 +186,11 @@ type IconComponent = AppConfig['icon']
  * The icons a descriptor may name. A fixed list rather than all of lucide:
  * the whole icon map is hundreds of KB in the eager bundle for a field most
  * descriptors leave at its default. A test fails when a committed descriptor
- * names one that is not here (brief 162), so none falls back silently.
+ * names one that is not here, so none falls back silently.
  */
 const ICONS: Record<string, IconComponent> = {
   package: Package,
-  // Games (brief 120).
+  // Games.
   'gamepad-2': Gamepad2,
   joystick: Joystick,
   puzzle: Puzzle,
@@ -202,7 +202,7 @@ const ICONS: Record<string, IconComponent> = {
   ghost: Ghost,
   trophy: Trophy,
   map: MapIcon,
-  // Office (brief 162).
+  // Office.
   'file-text': FileText,
   'file-pen': FilePen,
   table: Table,
@@ -250,7 +250,7 @@ export function isMarketplaceApp(appId: string): boolean {
 
 /**
  * The ids of listed apps the registry left out because a built-in app has
- * the same id (brief 162: the built-in wins, and the pane says so).
+ * the same id (the built-in wins, and the pane says so).
  */
 export function useBuiltInClashes(): string[] {
   return useRegistryStore((s) => s.clashes)
@@ -259,7 +259,7 @@ export function useBuiltInClashes(): string[] {
 function toAppConfig(app: MarketplaceApp): AppConfig {
   const component = lazy(async () => {
     // The host is its own chunk, and the game's code is fetched only when a
-    // window opens: nothing of either is in the eager bundle (brief 33).
+    // window opens: nothing of either is in the eager bundle.
     if (isSandboxed(app)) {
       const { SandboxedAppHost } = await import('../../modules/marketplace/SandboxedAppHost')
       const Host: ComponentType<{ windowId: string }> = ({ windowId }) => (
@@ -267,11 +267,11 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
       )
       return { default: Host }
     }
-    // A kit app (brief 163) is rendered in this tree, with this React and kit.
+    // A kit app is rendered in this tree, with this React and kit.
     if (isKitApp(app)) {
       // Its entry and styles start now, beside the host's chunk, and the
       // import (the entry's own imports with it) the moment that chunk is in,
-      // not once the host has mounted (brief 182). This factory runs as the
+      // not once the host has mounted. This factory runs as the
       // window renders, so nothing is fetched before a window opens.
       preloadKitApp(app, kitBuildKey(app))
       const [{ KitAppHost }, { startKitApp }] = await Promise.all([
@@ -297,7 +297,7 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
     meta: [...app.meta, 'marketplace'],
     icon: marketplaceIcon(app.icon),
     component,
-    // One window unless the descriptor says otherwise (brief 162): for a
+    // One window unless the descriptor says otherwise: for a
     // game a second would be a second copy of its world. An office app opens
     // one window per document.
     multiInstance: app.multiInstance === true,

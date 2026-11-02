@@ -58,14 +58,14 @@ For development, the tests and the dev container's sign-in, see [docs/getting-st
 | `infrastructure/` | Dockerfile, compose file, Caddy example, HTTPS and sign-in notes |
 | `marketplace/` | The catalog of installable apps |
 | `iso/` | The older kiosk ISO build; a server ISO is planned |
-| `corpus/` | The project wiki: decisions, status, briefs |
+| `corpus/` | The project wiki: decisions, status, work specs |
 
 ## Docs
 
 - [docs/](docs/README.md): setup, architecture, backup and a lost password, adding an app, and how the images here were made
 - [infrastructure/README.md](infrastructure/README.md): HTTPS, the sign-in, the Browser's second port
 - [apps/docs](apps/docs/README.md): the documentation site's source, with a tour of the desktop and an API reference generated from the code (`npm run docs`)
-- [Project wiki](corpus/index.md): decisions, status and the briefs that built it
+- [Project wiki](corpus/index.md): decisions, status and the log of how it was built
 
 ## License
 

@@ -16,7 +16,7 @@ export interface SandboxGrant {
 }
 
 /**
- * The capability URLs of sandboxed app windows (brief 158, decision 3).
+ * The capability URLs of sandboxed app windows (decision 3).
  *
  * A sandboxed frame has an opaque origin, so it sends no `SameSite=Lax`
  * cookie, and its files cannot be served behind the session. Each window

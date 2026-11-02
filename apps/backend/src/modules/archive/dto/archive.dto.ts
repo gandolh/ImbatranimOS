@@ -29,7 +29,7 @@ export class ExtractDto {
   dest?: string;
 
   /**
-   * Extract only these entries (brief 78). Absent means the whole archive.
+   * Extract only these entries. Absent means the whole archive.
    *
    * **This list is untrusted input from the client**, which is precisely the
    * zip-slip vector this module was hardened against — so every name is run

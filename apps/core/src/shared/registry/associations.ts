@@ -6,13 +6,13 @@ import { useAddonStore } from '../store/addonStore'
 import { NON_DISABLEABLE } from './enabledApps'
 
 /**
- * Which app opens which file, and how the user changes it (brief 81).
+ * Which app opens which file, and how the user changes it.
  *
  * The table is **computed from `APP_REGISTRY`**, not maintained: each app
  * declares `opens` in its own manifest and core derives extension → candidates.
  * Before this, the association map was a hardcoded constant inside the *file
  * manager*, which meant adding an app required editing another app — the exact
- * coupling `manifest.ts` exists to avoid, and the reason brief 65's PDF
+ * coupling `manifest.ts` exists to avoid, and the reason the PDF split's PDF
  * mismatch survived so long.
  *
  * Resolution order, and it is the whole feature:
@@ -28,7 +28,7 @@ import { NON_DISABLEABLE } from './enabledApps'
  */
 
 /**
- * Where the user's per-extension choices live. A dotfile (brief 49), not session
+ * Where the user's per-extension choices live. A dotfile, not session
  * state. Exported so a test can assert it is actually in `DOTFILE_KEYS` — being
  * wired to `prefsStorage` is not sufficient, and the failure is invisible in one
  * browser.
@@ -169,15 +169,15 @@ const TEXT_APP_IDS = ['code-editor', 'notepad', 'markdown-editor'] as const
  * The default when more than one app claims an extension.
  *
  * The brief proposed "first in registry order wins", and that would have
- * **silently reversed brief 65**: `pdfViewer` is registered before `norpdf`, so
- * `.pdf` would have gone back to the 340-line viewer that brief 65 deliberately
+ * **silently reversed the PDF split**: `pdfViewer` is registered before `norpdf`, so
+ * `.pdf` would have gone back to the 340-line viewer that the PDF split deliberately
  * demoted. Registry order is an incidental property — it drives desktop icon
  * layout — and using it to decide file associations couples two unrelated things,
  * so a contested extension gets a decision written down instead.
  *
  * This is one line per genuinely contested type, not a second association table:
  * every uncontested extension still comes straight from the app's own `opens`.
- * Empty since brief 167: its one row sent `.pdf` to norPDF over PDF Viewer, and
+ * Empty since the PDF viewer's retirement: its one row sent `.pdf` to norPDF over PDF Viewer, and
  * both left for Office's PDF.
  */
 const PREFERRED_DEFAULT: Record<string, string> = {}
@@ -242,7 +242,7 @@ export const useAssociationStore = create<AssociationState>()(
     {
       name: ASSOCIATIONS_KEY,
       /**
-       * A dotfile (brief 49): "open `.md` in the code editor" is user config that
+       * A dotfile: "open `.md` in the code editor" is user config that
        * should follow the account, not a per-tab session choice.
        */
       storage: createJSONStorage(() => prefsStorage),
@@ -259,7 +259,7 @@ function isAvailable(appId: string): boolean {
 /**
  * Every app that declares it can open this file, in registry order.
  *
- * A **disabled** app is excluded (brief 46): offering to open a file with an app
+ * A **disabled** app is excluded: offering to open a file with an app
  * the user has hidden would be an offer the OS cannot keep, and disabling the app
  * that owned an extension has to fall back rather than dead-end.
  */

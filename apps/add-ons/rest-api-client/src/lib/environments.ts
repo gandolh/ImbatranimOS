@@ -7,7 +7,7 @@ import type { Variables } from './interpolate'
  * **Secrets here are plaintext on disk**, in `~/.config/rest-client/collections.json`
  * inside the home volume. That is stated in the UI rather than papered over, because
  * encrypting them needs a key, and the honest place for that key is the
- * account-derived one brief 50 proposes for the browser profile. Until that exists,
+ * account-derived one the proxied browser proposes for the browser profile. Until that exists,
  * implying protection would be worse than admitting there is none.
  *
  * What the `secret` flag *does* buy, today:

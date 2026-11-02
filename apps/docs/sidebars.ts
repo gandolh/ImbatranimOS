@@ -58,6 +58,7 @@ const sidebars: SidebarsConfig = {
       items: [
         { type: 'doc', id: 'wiki/status', label: 'Status snapshot' },
         { type: 'doc', id: 'wiki/status-history', label: 'Status history (to 2026-08-06)' },
+        { type: 'doc', id: 'wiki/build-record-2026-07', label: 'Build record (to 2026-08-06)' },
         { type: 'doc', id: 'wiki/backlog-2026-07-31', label: 'Backlog — 2026-07-31 sweep' },
         { type: 'doc', id: 'wiki/feature-exploration-2026-08-06', label: 'Feature exploration — 2026-08-06' },
         { type: 'doc', id: 'wiki/backlog-2026-08-07', label: 'Backlog — 2026-08-07 sweep' },

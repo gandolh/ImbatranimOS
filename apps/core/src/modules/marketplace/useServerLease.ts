@@ -15,11 +15,11 @@ const NO_SERVER: ServerLease = { state: 'ready', server: null }
 
 /**
  * Hold a service app's server for as long as the calling window is open
- * (brief 120), renewing the lease on the interval the backend names and
+ *, renewing the lease on the interval the backend names and
  * releasing it on unmount. Both hosts use it: a `mount` app's and a kit app's
- * (brief 163).
+ *.
  *
- * The lease and the server are the descriptor's (brief 162): every window of
+ * The lease and the server are the descriptor's: every window of
  * a suite's apps holds its own lease on the one server, by the descriptor's
  * id. A static app is `ready` at once with no server.
  */

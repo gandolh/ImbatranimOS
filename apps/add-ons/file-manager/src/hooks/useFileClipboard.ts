@@ -19,7 +19,7 @@ type UseFileClipboardArgs = {
 /**
  * Copy/cut/paste for one *or many* entries, plus the paste orchestration.
  *
- * Multi-entry since brief 111: Ctrl+C on a five-item selection quietly copying
+ * Multi-entry since file manager keyboard parity: Ctrl+C on a five-item selection quietly copying
  * one of them is a trap, and the context menu's Copy/Cut now act on the whole
  * selection the same way Compress already did.
  *

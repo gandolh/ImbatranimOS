@@ -11,7 +11,7 @@ import { LogService } from './log.service';
 import { ClientErrorDto, LogQueryDto } from './dto/logs.dto';
 
 /**
- * Read the system log, and let the browser report its own crashes (brief 84).
+ * Read the system log, and let the browser report its own crashes.
  *
  * Authed by the global `SessionGuard`; neither route carries `@Public()`.
  * That is not boilerplate here — **log content is as sensitive as the events it
@@ -32,7 +32,7 @@ export class LogsController {
   /**
    * POST /api/logs/client-error { appId, message } → { recorded }
    *
-   * Brief 47's error boundary calls this so a crashed app leaves a trace the user
+   * Per-window error boundaries's error boundary calls this so a crashed app leaves a trace the user
    * can find later, rather than only a toast they may have missed. `recorded:
    * false` means the per-process budget is spent — a render loop cannot turn the
    * browser into a disk-filling tool, and the honest answer to "did you write

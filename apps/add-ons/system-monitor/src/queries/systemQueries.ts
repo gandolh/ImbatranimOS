@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSystem } from '@imbatranim/ui'
 import { fetchAbout, fetchProcesses, fetchStats, killProcess } from '../api/systemApi'
 
-// 1–2s poll cadence lives here (react-query), per Brief 13 — backend endpoints
+// 1–2s poll cadence lives here (react-query), per The system monitor work — backend endpoints
 // stay cheap + stateless (aside from a small CPU-delta cache).
 const POLL_MS = 1500
 

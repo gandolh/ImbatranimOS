@@ -56,8 +56,8 @@ function readCookie(
 }
 
 /**
- * The single-owner sign-in (brief 152), the machine's only identity path
- * since brief 157 (`decisions-estate-era.md`).
+ * The single-owner sign-in, the machine's only identity path
+ * since the move off Ward (`decisions-estate-era.md`).
  *
  * `authenticate` turns a `Cookie` header into a {@link Caller} or throws
  * {@link AuthenticationError}. The global guard, `/api/me` and every

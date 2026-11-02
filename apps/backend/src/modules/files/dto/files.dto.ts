@@ -50,7 +50,7 @@ export class SearchQueryDto {
   content?: boolean;
 
   /**
-   * Optional folder to search under, relative to the root (brief 112).
+   * Optional folder to search under, relative to the root.
    *
    * Additive: omitting it keeps the whole-root walk every existing consumer
    * (the command palette) gets today. Jailed through the same `resolveSafe`
@@ -62,7 +62,7 @@ export class SearchQueryDto {
   path?: string;
 
   /**
-   * Ask for the matching line numbers and text on content hits (brief 113).
+   * Ask for the matching line numbers and text on content hits.
    *
    * Opt-in on top of `content`, and additive: without it the response is the
    * one every existing consumer already gets. The editor's find-in-files panel
@@ -88,7 +88,7 @@ export class WriteContentDto {
   @IsNotEmpty()
   content: string;
 
-  /** The `version` the editor read; a mismatch answers 409 (brief 155). */
+  /** The `version` the editor read; a mismatch answers 409. */
   @IsOptional()
   @IsString()
   expected?: string;

@@ -13,7 +13,7 @@ export type SaveOverReadOutcome =
 
 /**
  * Save over the file an editor read, asking first if it changed on disk since
- * (brief 155). `expected` is the version token from that read; null or
+ *. `expected` is the version token from that read; null or
  * undefined writes unconditionally, as a backend that sent no token requires.
  *
  * On a `FileConflictError` it asks through `ask` (from `useFileConflict`):

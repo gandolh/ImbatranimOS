@@ -3,8 +3,8 @@ import { api } from '../../../lib/axios'
 /**
  * Who is signed in.
  *
- * The machine has one sign-in of its own (brief 152, the only one since
- * brief 157): a single owner, a password chosen on first run, and a session
+ * The machine has one sign-in of its own (the only one since
+ * the move off Ward): a single owner, a password chosen on first run, and a session
  * cookie. `GET /identity` says whether the machine is claimed yet; `GET /me`
  * is the session probe.
  */

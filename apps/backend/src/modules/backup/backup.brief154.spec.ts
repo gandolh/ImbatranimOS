@@ -17,12 +17,12 @@ import { BackupService } from './backup.service';
 const execFileAsync = promisify(execFile);
 
 /**
- * Brief 154 — a restore whose database cannot be installed puts everything
+ * The restore validates its database work — a restore whose database cannot be installed puts everything
  * back. Before it, a backup carrying a corrupt `db.sqlite` swapped the home
- * tree in, failed to open the database (a 500, not brief 110's 503), and
+ * tree in, failed to open the database (a 500, not the migration ledger's 503), and
  * deleted the moved-aside pre-restore copy on the way out.
  */
-describe('BackupService — a restore that cannot install its database (brief 154)', () => {
+describe('BackupService — a restore that cannot install its database', () => {
   let home: string;
   let outside: string;
   let db: DbService;

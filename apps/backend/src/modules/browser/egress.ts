@@ -3,8 +3,8 @@ import { isIP } from 'net';
 import ipaddr from 'ipaddr.js';
 
 /**
- * Where the Browser's relay may connect (brief 50) — the OPPOSITE stance from
- * the REST client's (brief 43), on purpose.
+ * Where the Browser's relay may connect — the OPPOSITE stance from
+ * the REST client's, on purpose.
  *
  * The REST client fires only URLs the owner typed, so it may reach the LAN.
  * The relay carries traffic for arbitrary third-party pages whose own scripts

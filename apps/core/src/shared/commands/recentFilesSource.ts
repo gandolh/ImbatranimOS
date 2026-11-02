@@ -21,7 +21,7 @@ function decodeId(id: string): { root: string; appId: string; path: string } {
 }
 
 /**
- * Palette source over the OS-wide recents (brief 94). Replaces Notepad's
+ * Palette source over the OS-wide recents. Replaces Notepad's
  * private "Recent Files" source: entries carry the app that opened them, so
  * activation reopens a spreadsheet in Sheets and a photo in the Image Viewer,
  * not everything in Notepad.

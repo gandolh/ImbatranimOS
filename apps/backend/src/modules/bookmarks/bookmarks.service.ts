@@ -17,8 +17,8 @@ import { ReorderDto } from './dto/reorder.dto';
 /**
  * camelCase at the service boundary, and `url` rather than `href`.
  *
- * The rename is the contract brief 50 will consume (`openApp('browser', { url })`);
- * the case is the rule briefs 71 and 73 set — no snake_case reaches a React prop.
+ * The rename is the contract the proxied browser will consume (`openApp('browser', { url })`);
+ * the case is the rule the clock fixes and the todo dates work set — no snake_case reaches a React prop.
  * Both happen here, at the one seam, rather than being translated by every caller.
  */
 export interface BookmarkLink {
@@ -175,7 +175,7 @@ export class BookmarksService {
   /**
    * Delete a folder, its descendants, and all of their links.
    *
-   * **This is the bug brief 73 handed over.** The schema declares
+   * **This is the bug the todo dates work handed over.** The schema declares
    * `ON DELETE CASCADE` and the old code carried a comment claiming SQLite handled
    * it — but `PRAGMA foreign_keys` is never enabled on this connection, so the
    * constraint was decorative and every folder deletion silently orphaned its
@@ -263,7 +263,7 @@ export class BookmarksService {
   /**
    * Reorder siblings: stamp 1..N onto the ids in the order given.
    *
-   * Brief 73's reorder bug was that ids from a **filtered** view got 1..N written
+   * The todo dates work's reorder bug was that ids from a **filtered** view got 1..N written
    * over rows the caller could not see, so two rows ended up sharing a position.
    * The defence here is structural rather than a comment: every id must share one
    * parent, and the caller must name **every** sibling, so there is no hidden row

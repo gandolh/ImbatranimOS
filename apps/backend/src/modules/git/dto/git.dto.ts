@@ -59,7 +59,7 @@ export class DiffQueryDto extends RepoRefDto {
 /**
  * GET /api/git/show?root=&path=&file=
  *
- * No `rev` — the revision is the literal HEAD in the service (brief 114).
+ * No `rev` — the revision is the literal HEAD in the service.
  */
 export class ShowQueryDto extends RepoRefDto {
   @IsString()
@@ -84,7 +84,7 @@ export class CommitBodyDto extends RepoRefDto {
 }
 
 // ---------------------------------------------------------------------------
-// Brief 76. Note what is NOT here: no DTO accepts a raw ref pattern, an option
+// Note what is NOT here: no DTO accepts a raw ref pattern, an option
 // string, or a remote. A branch name is validated again in the service by
 // `assertRefName` — the DTO is the outer layer, not the only one, because `--`
 // cannot protect a ref the way it protects a pathspec.

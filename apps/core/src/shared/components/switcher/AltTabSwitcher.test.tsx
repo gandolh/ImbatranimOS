@@ -13,8 +13,8 @@ import { AltTabSwitcher } from './AltTabSwitcher'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 /**
- * Brief 174: the window Alt+Tab commits to gets the keyboard; a cancelled
- * switch moves nothing. Brief 178: the switcher hears its keys even when the
+ * The window Alt+Tab commits to gets the keyboard; a cancelled
+ * switch moves nothing. The Alt+Tab fix: the switcher hears its keys even when the
  * focused element stops them (xterm on Tab), and takes only those.
  */
 
@@ -56,7 +56,7 @@ afterEach(() => {
   container.remove()
 })
 
-describe('Alt+Tab commit (brief 174)', () => {
+describe('Alt+Tab commit', () => {
   it('moves focus into the window it switches to', () => {
     useWindowStore.setState({ windows: [win('a', 1), win('b', 2)], activeWorkspace: 1 })
     key('keydown', { key: 'Tab', altKey: true })
@@ -92,7 +92,7 @@ describe('Alt+Tab commit (brief 174)', () => {
   })
 })
 
-describe('Alt+Tab over an element that stops its keys (brief 178)', () => {
+describe('Alt+Tab over an element that stops its keys', () => {
   // Stands in for xterm: it handles every keydown/keyup and stops it.
   let term: HTMLTextAreaElement
   let termKeys: string[]

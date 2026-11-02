@@ -19,7 +19,7 @@ const SAVED_FLASH_MS = 1500
 /**
  * The manager window.
  *
- * Brief 74 made this the *manager*, not the only surface: notes live on the desktop
+ * The sticky-notes work made this the *manager*, not the only surface: notes live on the desktop
  * (see `DesktopNotes.tsx`), and this is where you search them, place them, and edit
  * the ones you have not placed.
  *
@@ -229,7 +229,7 @@ function NoteList({ windowId }: { windowId: string }) {
 
   function handleNewNote() {
     // Failures surface through the mutation's notify, not a console.error nobody
-    // reads — that was this app's only failure signal before brief 74.
+    // reads — that was this app's only failure signal before the sticky-notes work.
     create.mutate({}, { onSuccess: (note) => setEditor(windowId, note.id) })
   }
 

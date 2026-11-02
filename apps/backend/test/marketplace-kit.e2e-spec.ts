@@ -30,13 +30,13 @@ import { kitDescriptor, makeKitRepo, type KitRepo } from './fixtures/kit-repo';
 import { makeSuiteRepo, suiteDescriptor } from './fixtures/suite-repo';
 
 /**
- * Kit apps (brief 163), end to end against a real git repository on disk: a
+ * Kit apps, end to end against a real git repository on disk: a
  * version 2 descriptor with `sharedKit` installs its apps with their
  * stylesheets; the listing says the shared kit version the live build was
  * made against and where each app's stylesheets are served; the row records
  * both; a build that leaves a listed stylesheet out fails and keeps the live
  * build; and a descriptor without `sharedKit` lists and records exactly as
- * brief 162 left it.
+ * one catalog entry, several apps left it.
  */
 const DESKTOP = 'http://localhost:5173';
 const PASSWORD = 'correct horse battery';
@@ -57,7 +57,7 @@ interface Listed {
   job: { state: string; reason?: string } | null;
 }
 
-describe('kit apps (e2e) — brief 163', () => {
+describe('kit apps (e2e)', () => {
   let work: string;
   let catalog: string;
   let appsDir: string;
@@ -79,7 +79,7 @@ describe('kit apps (e2e) — brief 163', () => {
     mkdirSync(catalog);
 
     write(kitDescriptor(repoUrl, commits.whole));
-    // A mount suite beside it, from brief 162's repository.
+    // A mount suite beside it, from one catalog entry, several apps's repository.
     const suiteRepo = join(work, 'suite-repo');
     const suite = makeSuiteRepo(suiteRepo);
     write(suiteDescriptor(`file://${suiteRepo}`, suite.whole));
@@ -264,7 +264,7 @@ describe('kit apps (e2e) — brief 163', () => {
     expect((await listed('kit-notes')).sharedKit).toBe(1);
   }, 60_000);
 
-  it("reports the catalog's kit beside the build's, so a rebuild at the same ref can be offered (brief 176)", async () => {
+  it("reports the catalog's kit beside the build's, so a rebuild at the same ref can be offered", async () => {
     expect(await listed('kit-notes')).toMatchObject({
       sharedKit: 1,
       catalogSharedKit: 1,
@@ -312,7 +312,7 @@ describe('kit apps (e2e) — brief 163', () => {
     }
   }, 30_000);
 
-  it('records and lists a mount suite exactly as brief 162 did', async () => {
+  it('records and lists a mount suite exactly as one catalog entry, several apps did', async () => {
     await install('suite');
     const alpha = await listed('suite-alpha');
     expect(alpha.sharedKit).toBeNull();

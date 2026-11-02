@@ -3,7 +3,7 @@ import { join } from 'path';
 import { ServiceUnavailableException } from '@nestjs/common';
 
 /*
- * Brief 140: a save that fails part-way must leave the original file alone.
+ * A save that fails part-way must leave the original file alone.
  *
  * The other atomicity tests use real filesystem conditions, but no real
  * condition fails `writeFile`'s own write without root (a full tmpfs) or

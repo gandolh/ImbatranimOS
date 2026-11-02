@@ -3,7 +3,7 @@ import { api } from './axios'
 import { useNotificationStore } from '../shared/store/notificationStore'
 
 /**
- * Server-backed dotfiles, with a local mirror for the first paint (brief 49).
+ * Server-backed dotfiles, with a local mirror for the first paint.
  *
  * ## Why not server-only, as the brief says
  *
@@ -30,7 +30,7 @@ import { useNotificationStore } from '../shared/store/notificationStore'
 /** Debounce for the write-through. Long enough to coalesce a drag, short enough to survive a close. */
 const WRITE_DEBOUNCE_MS = 400
 
-/** Backoff for a failed flush: 5s, doubling, capped (brief 109). */
+/** Backoff for a failed flush: 5s, doubling, capped. */
 const RETRY_BASE_MS = 5_000
 const RETRY_MAX_MS = 60_000
 
@@ -40,7 +40,7 @@ const RETRY_MAX_MS = 60_000
  * Adding a store to this list is **not optional bookkeeping** — `writePref`
  * silently drops anything absent, so a store wired to `prefsStorage` without an
  * entry here persists to localStorage only and looks like it works right up
- * until you sign in from a second browser. Brief 81's file associations shipped
+ * until you sign in from a second browser. Default apps and Open with's file associations shipped
  * that way for exactly as long as it took to check the server copy.
  */
 export const DOTFILE_KEYS = [
@@ -50,7 +50,7 @@ export const DOTFILE_KEYS = [
   'imbatranimos:addons',
   'imbatranimos:file-associations',
   'imbatranimos:startup',
-  // Which retired built-ins' ids have been moved to the suite's (brief 164).
+  // Which retired built-ins' ids have been moved to the suite's.
   'imbatranimos:app-id-migrations',
 ] as const
 
@@ -63,7 +63,7 @@ let writeTimer: ReturnType<typeof setTimeout> | undefined
 let hydrated = false
 let hydrating: Promise<void> | null = null
 
-// Durability state (brief 109). A batch stays queued until the server confirms
+// Durability state. A batch stays queued until the server confirms
 // it, so a blip cannot silently discard a change the UI already shows.
 let inFlight = false
 let flushAgain = false
@@ -174,7 +174,7 @@ function statusOf(err: unknown): number | undefined {
 /**
  * Report an unrecoverable save failure once.
  *
- * A static import since brief 181. The store imports nothing of the shell
+ * A static import since the static notification-store import. The store imports nothing of the shell
  * (only zustand), so there is no cycle, and it is already in the entry chunk;
  * the dynamic import saved nothing and, in tests, resolved after Vitest had
  * torn the environment down (`EnvironmentTeardownError`).
@@ -194,7 +194,7 @@ function reportSaveFailure(): void {
  * wallpaper changed two hundred milliseconds before closing the tab should not
  * be the one change that does not stick.
  *
- * Durability (brief 109): the batch is NOT cleared before the request. It used
+ * Durability: the batch is NOT cleared before the request. It used
  * to be, and the rejection was swallowed, so one blip lost the write forever —
  * and worse, `hydratePrefs` merges server-over-local, so the change looked
  * applied (the localStorage mirror lied) until the next sign-in snapped it back

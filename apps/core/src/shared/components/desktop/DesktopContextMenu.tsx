@@ -6,8 +6,8 @@ import { staggeredPosition } from './widgetGeometry'
 import { useAvailableWidgets } from './useAvailableWidgets'
 
 /**
- * The desktop's background right-click menu (brief 96; kit-backed and always
- * populated since briefs 105/106).
+ * The desktop's background right-click menu (kit-backed and always
+ * populated since 2026-08-07).
  *
  * It used to render `null` when no widget app was enabled — but the handler
  * had already `preventDefault`-ed, so the click was silently swallowed. There
@@ -65,7 +65,7 @@ export function DesktopContextMenu({
 }
 
 /**
- * The icon right-click menu (brief 106). The desktop had no Open verb at all
+ * The icon right-click menu. The desktop had no Open verb at all
  * before this — right-clicking an icon opened the *widgets* menu, because the
  * background handler's `[data-desktop-icon]` guard matched nothing.
  */

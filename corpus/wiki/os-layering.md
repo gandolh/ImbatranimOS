@@ -1,6 +1,6 @@
 ---
-summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build. BUILT 2026-08-06 (brief 48) — the seam is live in all 26 apps and eslint-enforced; its sandboxed iframe transport exists since brief 158 (2026-10-07) for apps installed from a URL.
-updated: 2026-10-23
+summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build. BUILT 2026-08-06 — the seam is live in all 26 apps and eslint-enforced; its sandboxed iframe transport exists since sandboxed apps from a URL (2026-10-07) (2026-10-07) for apps installed from a URL.
+updated: 2026-11-02
 ---
 
 # OS layering — the compositor seam
@@ -8,7 +8,7 @@ updated: 2026-10-23
 Outcome of the 2026-07-19 architecture-direction grilling (promotes the
 `os-architecture-layering-research` todo). This page is the design; the locked
 calls are in [decisions.md](decisions.md#2026-07-19--os-layering--the-compositor-seam),
-the specs are briefs 47–48.
+the specs are the work of 2026-08-06.
 
 **Headline:** this design reopens **zero** locked decisions — it *reinforces*
 them. The client-rendered desktop is confirmed and strengthened (the compositor
@@ -46,7 +46,7 @@ windows only: [decisions-linux-apps.md](decisions-linux-apps.md).
 
 ## The seam — an injected `system` capability handle
 
-**DONE 2026-08-06** — [brief 48](../briefs/done/48-protocol-seam-system-handle.md),
+**DONE 2026-08-06** — the system-handle seam (2026-08-06),
 whose outcome note carries the full detail. The load-bearing refinements: the
 protocol spec lives in the **SDK** (`packages/ui/src/system.ts`, so both sides
 resolve one context and the eslint rule is absolute — zero value imports from
@@ -102,9 +102,9 @@ Today's monolithic `@imbatranim/core` barrel splits in two by an objective rule:
 deliberately designed to be **restrictable** — the day third-party apps arrive,
 it becomes the per-app permission you gate in the manifest.
 
-## Sessions vs dotfiles (the one new decision) — brief 49
+## Sessions vs dotfiles (the one new decision) — the ephemeral-session work (2026-08-06)
 
-**DONE 2026-08-06** — [brief](../briefs/done/49-ephemeral-session-durable-dotfiles.md).
+**DONE 2026-08-06** — brief.
 One refinement to the decision below, made while building and recorded here
 because the wiki is where the design lives: the session is **per-tab
 `sessionStorage`, not in-memory**. Same boundary, one more property. Under this
@@ -138,7 +138,7 @@ Borrowing from Linux is half insight, half cargo-cult. We refuse:
   build-from-source; `manifest.ts` **is** the package system. A package
   format / install lifecycle / registry only earns its cost when apps come from
   *outside* the repo — see [decisions.md app-install stance]. That day came
-  with brief 120 (2026-10-06): apps from other repos install from an in-repo
+  with the marketplace install (2026-10-06) (2026-10-06): apps from other repos install from an in-repo
   catalog at pinned commits, still built from source, still no registry
   ([decisions-marketplace.md](decisions-marketplace.md)).
 - **No separate session-manager daemon** (systemd-logind / SDDM analog). The
@@ -153,10 +153,10 @@ Borrowing from Linux is half insight, half cargo-cult. We refuse:
 Apps are **first-party for the foreseeable future** (in-repo, build-time,
 `manifest.ts`-composed). So the threat is a *buggy* app (a `throw`, an infinite
 loop), **not** a *malicious* one. That is cheaply contained with **per-window
-React error boundaries + main-thread hygiene** — brief 47. No iframes today.
+React error boundaries + main-thread hygiene** — per-window error boundaries (2026-08-06). No iframes today.
 
-**Brief 47 is DONE (2026-08-06)** —
-[brief](../briefs/done/47-per-window-error-boundaries.md). The boundary sits
+**Per-window error boundaries (2026-08-06) is DONE (2026-08-06)** —
+brief. The boundary sits
 *inside* the window frame, so a crashed app keeps a title bar that drags and a
 close button that works; Reload is a **key change**, not a state reset, because
 clearing the error in place re-renders the state that just threw. Crash toasts
@@ -170,7 +170,7 @@ is the **transport swap** of the `system` handle, and is **gated on third-party
 apps actually arriving** — not built speculatively. The seam is designed so that
 swap needs no app rewrites.
 
-**They arrived on 2026-10-07** ([brief 158](../briefs/done/158-sandboxed-apps-from-a-url.md)):
+**They arrived on 2026-10-07** (2026-10-07):
 an app from a GitHub URL runs in an opaque-origin sandboxed iframe, its
 `system` handle proxied over a MessagePort, and the same `mount` module runs
 under either transport. Calls: [decisions-marketplace.md](decisions-marketplace.md#brief-158-apps-from-a-url-2026-10-07).
@@ -187,9 +187,9 @@ under either transport. Calls: [decisions-marketplace.md](decisions-marketplace.
   never the substrate. **Constraint kept now:** the protocol must not foreclose a
   raw-surface primitive.
 
-## Migration sequence (briefs 47–48)
+## Migration sequence (2026-08-06)
 
-1. ~~**Error boundaries first** (brief 47, standalone) — banks the (c) win at
+1. ~~**Error boundaries first** (per-window error boundaries (2026-08-06), standalone) — banks the (c) win at
    near-zero cost, no API change, independent of the seam.~~ **Done 2026-08-06.**
 2. **Extract `@imbatranim/ui`** — mechanical move of the ~70 component/hook
    exports; apps re-point imports.
@@ -201,4 +201,4 @@ under either transport. Calls: [decisions-marketplace.md](decisions-marketplace.
 5. **Flip eslint** — forbid capability imports from core; only `@imbatranim/ui`
    + the injected `system` allowed. Enforces the seam so it can't rot.
 
-Steps 2–5 are brief 48.
+Steps 2–5 are the system-handle seam (2026-08-06).

@@ -1,5 +1,5 @@
 /**
- * Strip anything secret out of a log entry's metadata (brief 84).
+ * Strip anything secret out of a log entry's metadata.
  *
  * A log written by the process that also handles credentials is exactly where a
  * secret leaks, so this is a **guard, not a convention**. The rule is

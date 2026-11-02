@@ -29,7 +29,7 @@ vi.mock('./loadModule', () => ({
 const { NativeAppHost } = await import('./NativeAppHost')
 
 /**
- * Brief 120 — the window side of a marketplace app: its module is imported,
+ * The marketplace install — the window side of a marketplace app: its module is imported,
  * mounted into the window's node with a scoped handle and the host context,
  * and unmounted on close; a service app's server is leased for exactly as long
  * as the window is open; and a module that cannot run fails inside its window.
@@ -230,7 +230,7 @@ describe('NativeAppHost', () => {
     writeModule(RECORDING_MODULE)
     mount(app({ minSystemVersion: 99 }))
     await settle()
-    // Brief 175: a refusal is not a crash. No fallback, no client-error log.
+    // A refusal is not a crash. No fallback, no client-error log.
     const panel = container.querySelector('[data-refusal]')
     expect(panel?.textContent).toContain(`Can't open ${app().name}`)
     expect(panel?.textContent).toContain(

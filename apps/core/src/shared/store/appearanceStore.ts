@@ -46,7 +46,7 @@ export const useAppearanceStore = create<AppearanceStore>()(
     {
       name: 'imbatranimos:appearance',
       /**
-       * Server-backed dotfile (brief 49): durable user config that belongs to the
+       * Server-backed dotfile: durable user config that belongs to the
        * account, not to one browser. `prefsStorage` mirrors to localStorage for
        * the pre-auth first paint and writes through to `/api/prefs`.
        */

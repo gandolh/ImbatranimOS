@@ -103,7 +103,7 @@ export class MarketplaceWsProxy
     const match = SERVER_PATH.exec(pathname);
     if (!match) return refuse('404 Not Found');
     const id = match[1];
-    // An app installed from a URL (brief 158) has no server, and the catalog
+    // An app installed from a URL has no server, and the catalog
     // refuses its `x-` ids.
     if (isUrlAppId(id)) return refuse('404 Not Found');
     const rest = match[2] ?? '/';
@@ -121,7 +121,7 @@ export class MarketplaceWsProxy
       }
       // Only a server the desktop started (through the session-checked
       // lease route) has a port; that is also what makes `id` a catalog
-      // descriptor's (brief 162: a suite's apps share its server).
+      // descriptor's (a suite's apps share its server).
       const port = this.servers.portFor(id);
       if (port === null) return refuse('503 Service Unavailable');
       if ((this.perApp.get(id) ?? 0) >= MAX_SOCKETS_PER_APP) {

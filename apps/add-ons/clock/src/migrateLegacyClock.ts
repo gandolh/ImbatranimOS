@@ -5,7 +5,7 @@ import { LEGACY_KEY, describeMigration, readLegacyClockState } from './legacyClo
 /**
  * One-time hand-over of the pre-brief-71 `localStorage` state.
  *
- * Until brief 71 the clock persisted through zustand to `imbatranimos:clock`,
+ * Until the clock fixes the clock persisted through zustand to `imbatranimos:clock`,
  * which meant world clocks and alarms lived in whichever browser opened the OS.
  * Now they live in the container. A silent switch would read as data loss to
  * anyone who has been using it, so on first load the old state is handed over —

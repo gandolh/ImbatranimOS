@@ -4531,3 +4531,17 @@ Left as they were: the ESLint rule message every add-on prints ("forbidden (brie
 warning about old `WARD_*` variables, a docs diagram label (string literals and rendered text),
 and eight test files named after briefs (`archive.brief78.spec.ts` and the like), since renaming files
 is outside a comment-only pass.
+
+## [2026-11-02] decision | Themes: Apricot by default, Classic kept
+
+Grilled brief 07 (a warmer look) with the owner over a canvas of three warm directions (Apricot,
+Sage, Lavender) and today's look, each in light and dark. Settled: Apricot is the default theme and
+Classic, today's look, stays selectable in Settings → Appearance; light is the default mode; Apricot
+has rounded corners and Figtree as its UI font, and there is no glass; Sage and Lavender don't ship;
+a machine with saved settings moves to Apricot light once. "Theme" now means Apricot or Classic, and
+light or dark is the *mode*. This revisits the locked identity; the Win7-classic layout stays.
+Record in [decisions-themes.md](wiki/decisions-themes.md) and
+[glossary-themes.md](wiki/glossary-themes.md), with notes on the iso-era identity line, the
+2026-07-19 crimson entry and the invariant in CLAUDE.md. The canvas source, holding every value, is
+[wiki/assets/themes-2026-11/Desktop.dc.html](wiki/assets/themes-2026-11/Desktop.dc.html). Brief 07
+stays in `briefs/todo/` until build briefs replace it.

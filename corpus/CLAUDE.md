@@ -103,8 +103,10 @@ pivot-era and iso-era pages) holds the locked calls.
   ships without session validation; no default passwords, ever.
 - **Lightweight is identity**: slim image (NestJS trade accepted, ~150MB
   target), snappy desktop, dependency additions need a reason.
-- **Identity carryover is locked**: Win7-classic layout, B&W + accent —
-  don't relitigate per-brief.
+- **Identity carryover is locked**: Win7-classic layout; the colours, corners
+  and UI font come from the two themes, Apricot by default and Classic
+  ([decisions-themes.md](wiki/decisions-themes.md), 2026-11-02) — don't
+  relitigate per-brief.
 - **Build-from-source distribution**: clone + docker build/compose; no
   registry/CI promises without a decisions.md revisit.
 

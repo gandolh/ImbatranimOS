@@ -143,9 +143,10 @@ deliberately no reattach and no server-side session state.
 _Avoid_: tab state, workspace, layout. See [Terms that split](#terms-that-split).
 
 **Accent**:
-The single user-chosen colour of an otherwise black-and-white identity, stamped
-on `<html>` as the `--accent` CSS var at runtime. Four presets, crimson by
-default. A hex literal is not an accent — it does not track the choice.
+The single user-chosen colour on top of a theme's neutrals, stamped on
+`<html>` as the `--accent` CSS var at runtime. Each theme has its own presets:
+Apricot's five pastels and Classic's four, crimson first. A hex literal is not
+an accent — it does not track the choice.
 _Avoid_: primary colour (the token is `primary`; the *concept* is the accent),
 theme colour, brand colour.
 
@@ -194,6 +195,7 @@ say which one you mean.
 ## Where the rest lives
 
 Linux apps in OS windows (*Linux app*, *Wayland host*): [glossary-linux-apps.md](glossary-linux-apps.md).
+Themes (*theme*, *mode*, *Apricot*, *Classic*): [glossary-themes.md](glossary-themes.md).
 
 Locked calls and their reasons: [decisions.md](decisions.md) (plus
 [pivot-era](decisions-pivot-era.md) and [iso-era](decisions-iso-era.md)).

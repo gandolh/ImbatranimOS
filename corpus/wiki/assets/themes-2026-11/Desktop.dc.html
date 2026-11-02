@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>imbatranimOS desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Figtree:wght@400;500;600;700&amp;family=Nunito:wght@400;600;700;800&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1280px; height: 800px; overflow: hidden; font-family: {{font}}; font-size: 13px; color: {{c.on}}; background: {{c.surface}}">
+
+<div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 1280px; height: 756px; background: {{wallBg}}">
+<sc-if value="{{isApricot}}" hint-placeholder-val="{{ true }}">
+<svg width="1280" height="756" viewBox="0 0 1280 756" style="position: absolute; left: 0; top: 0">
+<g fill="{{w.star}}" opacity="{{w.starOpacity}}">
+<circle cx="140" cy="70" r="1.6"></circle><circle cx="420" cy="40" r="1.2"></circle><circle cx="610" cy="110" r="1.8"></circle><circle cx="760" cy="56" r="1.3"></circle><circle cx="900" cy="150" r="1.5"></circle><circle cx="1210" cy="60" r="1.4"></circle><circle cx="1240" cy="300" r="1.2"></circle><circle cx="980" cy="330" r="1.6"></circle>
+</g>
+<circle cx="1080" cy="190" r="150" fill="{{w.sun}}" opacity="0.28"></circle>
+<circle cx="1080" cy="190" r="74" fill="{{w.sun}}"></circle>
+<g fill="{{w.cloud}}" opacity="0.85">
+<ellipse cx="300" cy="150" rx="90" ry="20"></ellipse><ellipse cx="346" cy="134" rx="52" ry="26"></ellipse>
+<ellipse cx="860" cy="96" rx="72" ry="16"></ellipse><ellipse cx="896" cy="84" rx="40" ry="20"></ellipse>
+<ellipse cx="1190" cy="330" rx="60" ry="14"></ellipse><ellipse cx="1210" cy="320" rx="32" ry="16"></ellipse>
+</g>
+<path d="M0 500 C 200 430 420 450 640 505 S 1040 590 1280 470 L 1280 756 L 0 756 Z" fill="{{w.h1}}"></path>
+<path d="M0 590 C 240 530 500 550 760 600 S 1110 660 1280 590 L 1280 756 L 0 756 Z" fill="{{w.h2}}"></path>
+<path d="M0 670 C 300 630 620 640 900 680 S 1180 715 1280 690 L 1280 756 L 0 756 Z" fill="{{w.h3}}"></path>
+</svg>
+</sc-if>
+<sc-if value="{{isSage}}" hint-placeholder-val="{{ false }}">
+<svg width="1280" height="756" viewBox="0 0 1280 756" style="position: absolute; left: 0; top: 0">
+<g fill="{{w.star}}" opacity="{{w.starOpacity}}">
+<circle cx="160" cy="80" r="1.6"></circle><circle cx="380" cy="46" r="1.2"></circle><circle cx="640" cy="120" r="1.8"></circle><circle cx="790" cy="40" r="1.3"></circle><circle cx="880" cy="200" r="1.5"></circle><circle cx="1220" cy="90" r="1.4"></circle><circle cx="1150" cy="330" r="1.2"></circle>
+</g>
+<circle cx="1010" cy="140" r="110" fill="{{w.sun}}" opacity="0.24"></circle>
+<circle cx="1010" cy="140" r="48" fill="{{w.sun}}"></circle>
+<g fill="{{w.cloud}}" opacity="0.85">
+<ellipse cx="420" cy="120" rx="80" ry="18"></ellipse><ellipse cx="460" cy="106" rx="44" ry="22"></ellipse>
+<ellipse cx="1180" cy="260" rx="60" ry="14"></ellipse><ellipse cx="1200" cy="250" rx="34" ry="16"></ellipse>
+</g>
+<path d="M0 560 C 160 470 360 470 520 540 C 680 610 860 480 1040 470 C 1150 465 1230 500 1280 520 L 1280 756 L 0 756 Z" fill="{{w.h1}}"></path>
+<rect x="1078" y="440" width="6" height="32" fill="{{w.trunk}}"></rect><circle cx="1081" cy="432" r="20" fill="{{w.tree}}"></circle>
+<rect x="1128" y="448" width="5" height="24" fill="{{w.trunk}}"></rect><circle cx="1130" cy="442" r="15" fill="{{w.tree}}"></circle>
+<rect x="1222" y="474" width="5" height="26" fill="{{w.trunk}}"></rect><circle cx="1224" cy="466" r="17" fill="{{w.tree}}"></circle>
+<path d="M0 640 C 220 580 420 600 640 650 C 860 700 1060 600 1280 620 L 1280 756 L 0 756 Z" fill="{{w.h2}}"></path>
+<path d="M0 710 C 260 680 560 690 820 715 C 1020 732 1180 712 1280 705 L 1280 756 L 0 756 Z" fill="{{w.h3}}"></path>
+</svg>
+</sc-if>
+<sc-if value="{{isLavender}}" hint-placeholder-val="{{ false }}">
+<svg width="1280" height="756" viewBox="0 0 1280 756" style="position: absolute; left: 0; top: 0">
+<g fill="{{w.star}}" opacity="{{w.starOpacity}}">
+<circle cx="150" cy="60" r="1.6"></circle><circle cx="400" cy="34" r="1.2"></circle><circle cx="700" cy="70" r="1.8"></circle><circle cx="820" cy="150" r="1.3"></circle><circle cx="930" cy="40" r="1.5"></circle><circle cx="1250" cy="200" r="1.4"></circle><circle cx="1010" cy="380" r="1.2"></circle>
+</g>
+<circle cx="1090" cy="130" r="96" fill="{{w.sun}}" opacity="0.3"></circle>
+<circle cx="1090" cy="130" r="40" fill="{{w.sun}}"></circle>
+<g fill="{{w.sparkle}}">
+<path transform="translate(960 230)" d="M0 -12 L3 -3 L12 0 L3 3 L0 12 L-3 3 L-12 0 L-3 -3 Z"></path>
+<path transform="translate(1230 330) scale(0.7)" d="M0 -12 L3 -3 L12 0 L3 3 L0 12 L-3 3 L-12 0 L-3 -3 Z"></path>
+<path transform="translate(560 90) scale(0.8)" d="M0 -12 L3 -3 L12 0 L3 3 L0 12 L-3 3 L-12 0 L-3 -3 Z"></path>
+<path transform="translate(1190 60) scale(0.5)" d="M0 -12 L3 -3 L12 0 L3 3 L0 12 L-3 3 L-12 0 L-3 -3 Z"></path>
+<path transform="translate(1180 470) scale(0.6)" d="M0 -12 L3 -3 L12 0 L3 3 L0 12 L-3 3 L-12 0 L-3 -3 Z"></path>
+</g>
+<g fill="{{w.cloud}}" opacity="0.9">
+<circle cx="1170" cy="300" r="26"></circle><circle cx="1202" cy="286" r="34"></circle><circle cx="1238" cy="302" r="24"></circle><rect x="1150" y="298" width="110" height="28" rx="14"></rect>
+<circle cx="320" cy="150" r="20"></circle><circle cx="346" cy="138" r="27"></circle><circle cx="376" cy="152" r="18"></circle><rect x="300" y="150" width="94" height="22" rx="11"></rect>
+</g>
+<g fill="{{w.cloud2}}">
+<circle cx="40" cy="700" r="110"></circle><circle cx="200" cy="676" r="96"></circle><circle cx="360" cy="704" r="104"></circle><circle cx="520" cy="684" r="92"></circle><circle cx="680" cy="708" r="104"></circle><circle cx="840" cy="680" r="98"></circle><circle cx="1000" cy="702" r="106"></circle><circle cx="1150" cy="672" r="94"></circle><circle cx="1290" cy="694" r="104"></circle>
+</g>
+<g fill="{{w.cloud}}">
+<circle cx="110" cy="770" r="84"></circle><circle cx="270" cy="760" r="76"></circle><circle cx="430" cy="776" r="82"></circle><circle cx="600" cy="758" r="78"></circle><circle cx="760" cy="778" r="84"></circle><circle cx="930" cy="760" r="78"></circle><circle cx="1090" cy="776" r="84"></circle><circle cx="1240" cy="756" r="80"></circle>
+</g>
+</svg>
+</sc-if>
+</div>
+
+<div style="position: absolute; left: 16px; top: 16px; display: flex; flex-direction: column; gap: 10px">
+<button type="button" style="width: 76px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0; border: 0; background: transparent; font: inherit; font-size: 12px; font-weight: 500; color: {{di.label}}">
+<span style="width: 44px; height: 44px; display: grid; place-items: center; border-radius: {{r.tile}}; background: {{di.bg}}; box-shadow: {{di.shadow}}; color: {{di.icon}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
+</span>
+Files
+</button>
+<button type="button" style="width: 76px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0; border: 0; background: transparent; font: inherit; font-size: 12px; font-weight: 500; color: {{di.label}}">
+<span style="width: 44px; height: 44px; display: grid; place-items: center; border-radius: {{r.tile}}; background: {{di.bg}}; box-shadow: {{di.shadow}}; color: {{di.icon}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" x2="20" y1="19" y2="19"></line></svg>
+</span>
+Terminal
+</button>
+<button type="button" style="width: 76px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0; border: 0; background: transparent; font: inherit; font-size: 12px; font-weight: 500; color: {{di.label}}">
+<span style="width: 44px; height: 44px; display: grid; place-items: center; border-radius: {{r.tile}}; background: {{di.bg}}; box-shadow: {{di.shadow}}; color: {{di.icon}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h4"></path><path d="M2 10h4"></path><path d="M2 14h4"></path><path d="M2 18h4"></path><rect width="16" height="20" x="4" y="2" rx="2"></rect><path d="M16 2v20"></path></svg>
+</span>
+Notes
+</button>
+<button type="button" style="width: 76px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0; border: 0; background: transparent; font: inherit; font-size: 12px; font-weight: 500; color: {{di.label}}">
+<span style="width: 44px; height: 44px; display: grid; place-items: center; border-radius: {{r.tile}}; background: {{di.bg}}; box-shadow: {{di.shadow}}; color: {{di.icon}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path><path d="M2 7h20"></path></svg>
+</span>
+Marketplace
+</button>
+</div>
+
+<section aria-label="File Manager window" style="position: absolute; left: 150px; top: 40px; width: 620px; height: 420px; display: flex; flex-direction: column; background: {{c.lowest}}; border: 1px solid {{fm.border}}; border-radius: {{r.win}}; box-shadow: {{c.shadowBlur}}; overflow: hidden">
+<div style="height: 36px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 12px; background: {{fm.title}}; border-bottom: 1px solid {{c.outlineVar}}">
+<span style="width: 10px; height: 10px; border-radius: {{r.dot}}; background: {{c.accent}}"></span>
+<span style="flex: 1; font-size: 13px; font-weight: 600">File Manager</span>
+<button type="button" aria-label="Minimise" style="width: 30px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: {{r.ctl}}; background: transparent; color: {{c.onVar}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+<button type="button" aria-label="Maximise" style="width: 30px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: {{r.ctl}}; background: transparent; color: {{c.onVar}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="16" height="16" x="4" y="4" rx="2"></rect></svg></button>
+<button type="button" aria-label="Close" style="width: 30px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: {{r.ctl}}; background: transparent; color: {{c.onVar}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+</div>
+<div style="flex: none; display: flex; align-items: center; gap: 6px; padding: 8px 10px; background: {{c.low}}; border-bottom: 1px solid {{c.outlineVar}}">
+<button type="button" aria-pressed="true" style="height: 28px; padding: 0 12px; border: 1px solid {{c.accent}}; border-radius: {{r.ctl}}; background: {{c.accent}}; color: {{c.accentOn}}; font: inherit; font-size: 12px; font-weight: 600">Home</button>
+<button type="button" aria-pressed="false" style="height: 28px; padding: 0 12px; border: 1px solid {{btn.border}}; border-radius: {{r.ctl}}; background: {{btn.bg}}; color: {{c.on}}; font: inherit; font-size: 12px; font-weight: 500">Notes</button>
+<span style="width: 1px; height: 20px; margin: 0 4px; background: {{c.outlineVar}}"></span>
+<button type="button" style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid {{btn.border}}; border-radius: {{r.ctl}}; background: {{btn.bg}}; color: {{c.on}}; font: inherit; font-size: 12px; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path><line x1="12" x2="12" y1="10" y2="16"></line><line x1="9" x2="15" y1="13" y2="13"></line></svg>New Folder</button>
+<button type="button" style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid {{btn.border}}; border-radius: {{r.ctl}}; background: {{btn.bg}}; color: {{c.on}}; font: inherit; font-size: 12px; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Upload</button>
+</div>
+<div style="flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid {{c.outlineVar}}">
+<span style="flex: 1; font-size: 13px; font-weight: 600">Home</span>
+<label style="display: flex; align-items: center; gap: 6px; width: 190px; height: 28px; box-sizing: border-box; padding: 0 10px; border: 1px solid {{c.outlineVar}}; border-radius: {{r.ctl}}; background: {{c.lowest}}; color: {{c.onVar}}">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+<input type="text" placeholder="Search Home" aria-label="Search Home" style="width: 140px; padding: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 12px; color: {{c.on}}">
+</label>
+</div>
+<div style="flex: 1; min-height: 0; display: flex">
+<div style="width: 168px; flex: none; display: flex; flex-direction: column; gap: 2px; padding: {{sidePad}}; background: {{c.low}}; border-right: 1px solid {{c.outlineVar}}">
+<sc-for list="{{side}}" as="s" hint-placeholder-count="5">
+<div style="height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: {{r.row}}; background: {{s.bg}}; color: {{s.fg}}; font-weight: {{s.weight}}">
+<span style="display: flex; color: {{s.icon}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span>
+<span>{{s.name}}</span>
+</div>
+</sc-for>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<div style="height: 30px; display: grid; grid-template-columns: 28px minmax(0, 1fr) 70px 110px; align-items: center; padding: 0 {{rowPadX}}; border-bottom: 1px solid {{c.outlineVar}}; color: {{c.onVar}}; font-size: 11px; font-weight: 600; text-transform: {{lab.transform}}; letter-spacing: {{lab.spacing}}">
+<span></span><span>Name</span><span>Size</span><span>Modified</span>
+</div>
+<sc-for list="{{rows}}" as="row" hint-placeholder-count="5">
+<div style="height: 32px; display: grid; grid-template-columns: 28px minmax(0, 1fr) 70px 110px; align-items: center; padding: 0 10px; margin: {{rowM}}; border-radius: {{r.row}}; border-bottom: 1px solid {{row.border}}; background: {{row.bg}}; color: {{row.fg}}; font-weight: {{row.weight}}">
+<span style="display: flex; color: {{row.icon}}">
+<sc-if value="{{row.isFolder}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></sc-if>
+<sc-if value="{{row.isFile}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg></sc-if>
+</span>
+<span>{{row.name}}</span>
+<span style="color: {{row.fgVar}}">{{row.size}}</span>
+<span style="color: {{row.fgVar}}">{{row.date}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="height: 26px; flex: none; display: flex; align-items: center; padding: 0 12px; background: {{c.low}}; border-top: 1px solid {{c.outlineVar}}; color: {{c.onVar}}; font-size: 11px">5 items · 1 selected</div>
+</section>
+
+<section aria-label="Settings window" style="position: absolute; left: 640px; top: 150px; width: 520px; height: 492px; display: flex; flex-direction: column; background: {{c.lowest}}; border: 1px solid {{st.border}}; border-radius: {{r.win}}; box-shadow: {{c.shadow}}; overflow: hidden">
+<div style="height: 36px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 12px; background: {{st.title}}; border-bottom: 1px solid {{c.outlineVar}}">
+<span style="width: 10px; height: 10px; border-radius: {{r.dot}}; background: {{c.accent}}"></span>
+<span style="flex: 1; font-size: 13px; font-weight: 600">Settings</span>
+<button type="button" aria-label="Minimise" style="width: 30px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: {{r.ctl}}; background: transparent; color: {{c.onVar}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+<button type="button" aria-label="Maximise" style="width: 30px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: {{r.ctl}}; background: transparent; color: {{c.onVar}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="16" height="16" x="4" y="4" rx="2"></rect></svg></button>
+<button type="button" aria-label="Close" style="width: 30px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: {{r.ctl}}; background: transparent; color: {{c.onVar}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+</div>
+<div style="flex: 1; min-height: 0; display: flex">
+<nav aria-label="Settings sections" style="width: 140px; flex: none; display: flex; flex-direction: column; gap: 2px; padding: {{sidePad}}; background: {{c.low}}; border-right: 1px solid {{c.outlineVar}}">
+<sc-for list="{{rail}}" as="it" hint-placeholder-count="4">
+<button type="button" style="height: 30px; padding: 0 10px; border: 0; border-radius: {{r.row}}; background: {{it.bg}}; color: {{it.fg}}; font: inherit; font-size: 13px; font-weight: {{it.weight}}; text-align: left">{{it.name}}</button>
+</sc-for>
+</nav>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; padding: 16px 20px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Appearance</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: {{lab.size}}; font-weight: 600; color: {{c.onVar}}; text-transform: {{lab.transform}}; letter-spacing: {{lab.spacing}}">Theme</span>
+<div style="display: flex; gap: 14px; padding-left: 2px">
+<sc-for list="{{themeCards}}" as="tc" hint-placeholder-count="2">
+<button type="button" aria-pressed="{{tc.pressed}}" style="display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; background: transparent; font: inherit; font-size: 12px; font-weight: {{tc.weight}}; color: {{c.on}}; text-align: left">
+<span style="position: relative; display: block; width: 132px; height: 80px; overflow: hidden; border-radius: {{r.thumb}}; background: {{tc.wall}}; box-shadow: {{tc.ring}}">
+<span style="position: absolute; left: 24px; top: 12px; width: 76px; height: 48px; overflow: hidden; background: {{tc.win}}; border: 1px solid {{tc.border}}; border-radius: {{tc.winR}}">
+<span style="display: block; height: 10px; background: {{tc.title}}; border-bottom: 1px solid {{tc.border}}"></span>
+<span style="display: block; width: 34px; height: 6px; margin: 7px 6px 4px; background: {{tc.accent}}; border-radius: {{tc.ctlR}}"></span>
+<span style="display: block; width: 50px; height: 4px; margin: 0 6px; background: {{tc.border}}; border-radius: {{tc.ctlR}}"></span>
+</span>
+<span style="position: absolute; left: 0; right: 0; bottom: 0; height: 11px; background: {{tc.bar}}; border-top: 1px solid {{tc.border}}"></span>
+</span>
+<span>{{tc.name}}</span>
+</button>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: {{lab.size}}; font-weight: 600; color: {{c.onVar}}; text-transform: {{lab.transform}}; letter-spacing: {{lab.spacing}}">Mode</span>
+<div style="width: fit-content; display: flex; gap: 3px; padding: 3px; border: 1px solid {{c.outlineVar}}; border-radius: {{r.ctl}}; background: {{c.low}}">
+<sc-for list="{{themeSeg}}" as="sg" hint-placeholder-count="2">
+<button type="button" aria-pressed="{{sg.pressed}}" style="height: 28px; padding: 0 16px; border: 0; border-radius: {{r.seg}}; background: {{sg.bg}}; color: {{sg.fg}}; font: inherit; font-size: 12px; font-weight: {{sg.weight}}">{{sg.label}}</button>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: {{lab.size}}; font-weight: 600; color: {{c.onVar}}; text-transform: {{lab.transform}}; letter-spacing: {{lab.spacing}}">Accent</span>
+<div style="display: flex; gap: 12px; padding-left: 4px">
+<sc-for list="{{swatches}}" as="sw" hint-placeholder-count="5">
+<button type="button" aria-label="{{sw.name}}" aria-pressed="{{sw.pressed}}" style="width: 26px; height: 26px; padding: 0; border: 0; border-radius: {{r.sw}}; background: {{sw.hex}}; box-shadow: {{sw.ring}}"></button>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: {{lab.size}}; font-weight: 600; color: {{c.onVar}}; text-transform: {{lab.transform}}; letter-spacing: {{lab.spacing}}">Wallpaper</span>
+<div style="display: flex; gap: 12px; padding-left: 2px">
+<sc-for list="{{thumbs}}" as="t" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{t.pressed}}" style="display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; background: transparent; font: inherit; font-size: 11px; color: {{c.onVar}}; text-align: left">
+<span style="display: block; width: 92px; height: 56px; border-radius: {{r.thumb}}; background: {{t.bg}}; box-shadow: {{t.ring}}"></span>
+<span>{{t.label}}</span>
+</button>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<div style="position: absolute; left: {{sm.left}}; top: {{sm.top}}; width: 300px; height: 404px; box-sizing: border-box; display: flex; flex-direction: column; background: {{c.low}}; border: 1px solid {{c.outlineVar}}; border-radius: {{r.menu}}; box-shadow: {{c.menuShadow}}; overflow: hidden">
+<div style="padding: 12px 12px 8px">
+<label style="display: flex; align-items: center; gap: 8px; height: 34px; box-sizing: border-box; padding: 0 10px; border: 1px solid {{c.outlineVar}}; border-radius: {{r.ctl}}; background: {{c.lowest}}; color: {{c.onVar}}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+<input type="text" placeholder="Search apps" aria-label="Search apps" style="width: 220px; padding: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 13px; color: {{c.on}}">
+</label>
+</div>
+<span style="padding: 4px 16px 6px; font-size: {{lab.size}}; font-weight: 600; color: {{c.onVar}}; text-transform: {{lab.transform}}; letter-spacing: {{lab.spacing}}">Apps</span>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 8px">
+<button type="button" style="height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 8px; border: 0; border-radius: {{r.row}}; background: {{c.high}}; color: {{c.on}}; font: inherit; font-size: 13px; text-align: left">
+<span style="width: 26px; height: 26px; display: grid; place-items: center; border-radius: {{r.ctl}}; background: {{sm.tile}}; color: {{sm.icon}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span>
+File Manager
+</button>
+<button type="button" style="height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 8px; border: 0; border-radius: {{r.row}}; background: transparent; color: {{c.on}}; font: inherit; font-size: 13px; text-align: left">
+<span style="width: 26px; height: 26px; display: grid; place-items: center; border-radius: {{r.ctl}}; background: {{sm.tile}}; color: {{sm.icon}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" x2="20" y1="19" y2="19"></line></svg></span>
+Terminal
+</button>
+<button type="button" style="height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 8px; border: 0; border-radius: {{r.row}}; background: transparent; color: {{c.on}}; font: inherit; font-size: 13px; text-align: left">
+<span style="width: 26px; height: 26px; display: grid; place-items: center; border-radius: {{r.ctl}}; background: {{sm.tile}}; color: {{sm.icon}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h4"></path><path d="M2 10h4"></path><path d="M2 14h4"></path><path d="M2 18h4"></path><rect width="16" height="20" x="4" y="2" rx="2"></rect><path d="M16 2v20"></path></svg></span>
+Notes
+</button>
+<button type="button" style="height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 8px; border: 0; border-radius: {{r.row}}; background: transparent; color: {{c.on}}; font: inherit; font-size: 13px; text-align: left">
+<span style="width: 26px; height: 26px; display: grid; place-items: center; border-radius: {{r.ctl}}; background: {{sm.tile}}; color: {{sm.icon}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg></span>
+Browser
+</button>
+<button type="button" style="height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 8px; border: 0; border-radius: {{r.row}}; background: transparent; color: {{c.on}}; font: inherit; font-size: 13px; text-align: left">
+<span style="width: 26px; height: 26px; display: grid; place-items: center; border-radius: {{r.ctl}}; background: {{sm.tile}}; color: {{sm.icon}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path><path d="M2 7h20"></path></svg></span>
+Marketplace
+</button>
+<button type="button" style="height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 8px; border: 0; border-radius: {{r.row}}; background: transparent; color: {{c.on}}; font: inherit; font-size: 13px; text-align: left">
+<span style="width: 26px; height: 26px; display: grid; place-items: center; border-radius: {{r.ctl}}; background: {{sm.tile}}; color: {{sm.icon}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"></line><line x1="10" x2="3" y1="4" y2="4"></line><line x1="21" x2="12" y1="12" y2="12"></line><line x1="8" x2="3" y1="12" y2="12"></line><line x1="21" x2="16" y1="20" y2="20"></line><line x1="12" x2="3" y1="20" y2="20"></line><line x1="14" x2="14" y1="2" y2="6"></line><line x1="8" x2="8" y1="10" y2="14"></line><line x1="16" x2="16" y1="18" y2="22"></line></svg></span>
+Settings
+</button>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid {{c.outlineVar}}">
+<span style="width: 30px; height: 30px; display: grid; place-items: center; border-radius: {{r.dot}}; background: {{c.accent}}; color: {{c.accentOn}}; font-size: 13px; font-weight: 700">O</span>
+<span style="flex: 1; font-weight: 600">Owner</span>
+<button type="button" aria-label="Power" style="width: 32px; height: 32px; display: grid; place-items: center; padding: 0; border: 0; border-radius: {{r.ctl}}; background: transparent; color: {{c.onVar}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v10"></path><path d="M18.4 6.6a9 9 0 1 1-12.77.04"></path></svg></button>
+</div>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0; height: 44px; box-sizing: border-box; display: flex; align-items: stretch; gap: {{tb.gap}}; padding: {{tb.pad}}; background: {{c.low}}; border-top: 1px solid {{c.outlineVar}}">
+<button type="button" aria-label="Start" aria-expanded="true" style="position: relative; display: flex; align-items: center; padding: 0 14px; border: 0; border-right: {{tb.sep}}; border-radius: {{r.ctl}}; background: {{c.high}}; font: inherit; color: {{c.on}}">
+<span style="position: absolute; left: 0; right: 0; top: 0; height: 2px; background: {{c.accent}}; opacity: {{tb.edge}}"></span>
+<span style="font-size: 13px; font-weight: 700; letter-spacing: -0.01em">Imbatranim<span style="color: {{c.ink}}">OS</span></span>
+</button>
+<button type="button" style="display: flex; align-items: center; gap: 8px; width: {{tb.searchW}}; padding: 0 12px; border: 0; border-right: {{tb.sep}}; border-radius: {{r.pill}}; background: {{tb.searchBg}}; color: {{c.onVar}}; font: inherit; font-size: 12px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>Search</button>
+<div style="flex: 1; display: flex; align-items: center; gap: 4px; padding: {{tb.taskPad}}">
+<button type="button" style="position: relative; height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 0; border-radius: {{r.ctl}}; background: transparent; color: {{c.on}}; font: inherit; font-size: 12px"><span style="display: flex; color: {{c.onVar}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span>File Manager</button>
+<button type="button" aria-current="true" style="position: relative; height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 0; border-radius: {{r.ctl}}; background: {{c.high}}; color: {{c.on}}; font: inherit; font-size: 12px; font-weight: 600"><span style="display: flex; color: {{c.onVar}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"></line><line x1="10" x2="3" y1="4" y2="4"></line><line x1="21" x2="12" y1="12" y2="12"></line><line x1="8" x2="3" y1="12" y2="12"></line><line x1="21" x2="16" y1="20" y2="20"></line><line x1="12" x2="3" y1="20" y2="20"></line><line x1="14" x2="14" y1="2" y2="6"></line><line x1="8" x2="8" y1="10" y2="14"></line><line x1="16" x2="16" y1="18" y2="22"></line></svg></span>Settings<span style="position: absolute; left: {{ind.left}}; width: {{ind.width}}; bottom: {{ind.bottom}}; height: {{ind.height}}; border-radius: {{ind.radius}}; background: {{ind.color}}"></span></button>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 0 14px; border-left: {{tb.sep}}">
+<span style="display: flex; color: {{c.onVar}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2"><span style="font-size: 12px; font-weight: 600">18:42</span><span style="font-size: 11px; color: {{c.onVar}}">Mon 2 Nov</span></span>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"look":{"editor":"enum","options":["apricot","sage","lavender","classic"],"default":"apricot","section":"Look"},"theme":{"editor":"enum","options":["light","dark"],"default":"light","section":"Look"},"font":{"editor":"enum","options":["Look default","Space Grotesk","Figtree","DM Sans","Nunito"],"default":"Look default","section":"Look"},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  looks() {
+    var round = { win: '12px', menu: '14px', ctl: '8px', seg: '6px', tile: '12px', dot: '999px', pill: '999px', row: '8px', sw: '999px', thumb: '8px' };
+    var square = { win: '0px', menu: '0px', ctl: '0px', seg: '0px', tile: '0px', dot: '0px', pill: '0px', row: '0px', sw: '0px', thumb: '0px' };
+    function soft(rgb) {
+      return {
+        shadow: '0 18px 44px rgba(' + rgb + ', 0.20), 0 2px 8px rgba(' + rgb + ', 0.10)',
+        shadowBlur: '0 10px 28px rgba(' + rgb + ', 0.14)',
+        menuShadow: '0 18px 48px rgba(' + rgb + ', 0.24)',
+        tileShadow: '0 4px 12px rgba(' + rgb + ', 0.16)'
+      };
+    }
+    var night = {
+      shadow: '0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.30)',
+      shadowBlur: '0 10px 28px rgba(0, 0, 0, 0.40)',
+      menuShadow: '0 18px 48px rgba(0, 0, 0, 0.60)',
+      tileShadow: '0 4px 12px rgba(0, 0, 0, 0.35)'
+    };
+    return {
+      apricot: {
+        warm: true, font: 'Figtree', r: round, scene: 'Sunset hills',
+        accents: ['#f2a97e', '#eea6b5', '#f3d27a', '#a9c9a4', '#a7c7e7'],
+        accentNames: ['Apricot', 'Rose', 'Butter', 'Sage', 'Sky'],
+        accentOn: '#33241b',
+        light: Object.assign(soft('140, 84, 48'), {
+          surface: '#fbf3ea', lowest: '#fffdf9', low: '#fdf7f0', container: '#f6ebdf', high: '#f0e1d2', highest: '#e9d6c3',
+          on: '#3a2a20', onVar: '#7a5f4e', outlineVar: '#ead8c6', outline: '#c4a58c', ink: '#a84f25',
+          w: { sky1: '#fde9d8', sky2: '#fbd5bd', sky3: '#f6bfa3', sun: '#fff4e6', cloud: '#fff8f1', h1: '#f0b794', h2: '#e7a183', h3: '#d98d73', star: '#ffffff', starOpacity: 0 }
+        }),
+        dark: Object.assign({}, night, {
+          surface: '#1f1916', lowest: '#231d1a', low: '#27201c', container: '#2c2420', high: '#352b26', highest: '#3e332d',
+          on: '#f6eadf', onVar: '#c6b09f', outlineVar: '#3f352f', outline: '#6e5c50', ink: '#f2a97e',
+          w: { sky1: '#241c29', sky2: '#382634', sky3: '#4d2f38', sun: '#f7d9bf', cloud: '#4a3644', h1: '#5b3a3e', h2: '#4a3036', h3: '#3a252c', star: '#f7e6d6', starOpacity: 0.9 }
+        })
+      },
+      sage: {
+        warm: true, font: 'DM Sans', r: round, scene: 'Meadow',
+        accents: ['#9cc5a1', '#a8dcc9', '#a9c8ea', '#c7b8e6', '#f3b99a'],
+        accentNames: ['Sage', 'Mint', 'Sky', 'Lilac', 'Peach'],
+        accentOn: '#1e2a22',
+        light: Object.assign(soft('60, 92, 64'), {
+          surface: '#f2f5ee', lowest: '#fcfdf9', low: '#f7f9f3', container: '#ebf0e5', high: '#e2e9da', highest: '#d7e0cd',
+          on: '#25302a', onVar: '#59675d', outlineVar: '#d6decb', outline: '#a1af96', ink: '#3d7749',
+          w: { sky1: '#eef5ee', sky2: '#e3efe2', sky3: '#d8e9d6', sun: '#fbfdf4', cloud: '#ffffff', h1: '#c4dcc0', h2: '#a9cca8', h3: '#8fba94', tree: '#78a982', trunk: '#8d7c66', star: '#ffffff', starOpacity: 0 }
+        }),
+        dark: Object.assign({}, night, {
+          surface: '#161b18', lowest: '#191f1b', low: '#1c221e', container: '#212823', high: '#28302a', highest: '#303932',
+          on: '#e7efe7', onVar: '#a8b8ac', outlineVar: '#2e3831', outline: '#566459', ink: '#9cc5a1',
+          w: { sky1: '#141c19', sky2: '#1a2722', sky3: '#22332b', sun: '#e4eedb', cloud: '#26352e', h1: '#2b3e33', h2: '#24352b', h3: '#1d2b23', tree: '#36523f', trunk: '#3a382d', star: '#e4eedb', starOpacity: 0.9 }
+        })
+      },
+      lavender: {
+        warm: true, font: 'Nunito', r: round, scene: 'Clouds',
+        accents: ['#c3aef0', '#f5b5c8', '#a9dfc8', '#f6dc8f', '#a8cdf2'],
+        accentNames: ['Lavender', 'Blush', 'Mint', 'Butter', 'Sky'],
+        accentOn: '#271f33',
+        light: Object.assign(soft('96, 70, 150'), {
+          surface: '#f6f2fa', lowest: '#fefcff', low: '#faf7fd', container: '#f0eaf7', high: '#e8e0f2', highest: '#ddd3eb',
+          on: '#2b2437', onVar: '#655a77', outlineVar: '#e1d7ed', outline: '#ab9dc2', ink: '#6a4dae',
+          w: { sky1: '#ebe2fb', sky2: '#f4e3f5', sky3: '#fde9ef', sun: '#fff7fc', cloud: '#ffffff', cloud2: '#f3eafb', sparkle: '#c6b1f1', star: '#ffffff', starOpacity: 0 }
+        }),
+        dark: Object.assign({}, night, {
+          surface: '#1a1723', lowest: '#1d1a27', low: '#201c2a', container: '#252030', high: '#2d2739', highest: '#362f43',
+          on: '#efe9f7', onVar: '#b3a8c5', outlineVar: '#342d41', outline: '#615675', ink: '#c3aef0',
+          w: { sky1: '#1b1729', sky2: '#261f3b', sky3: '#352543', sun: '#efe4ff', cloud: '#3a3153', cloud2: '#2f2846', sparkle: '#c3aef0', star: '#efe4ff', starOpacity: 0.9 }
+        })
+      },
+      classic: {
+        warm: false, font: 'Space Grotesk', r: square, scene: 'Dots',
+        accents: ['#c0263a', '#1f5fd6', '#0f7a40', '#d24317'],
+        accentNames: ['Crimson', 'Cobalt', 'Emerald', 'Signal Orange'],
+        accentOn: '#ffffff',
+        light: {
+          surface: '#f3f3f1', lowest: '#ffffff', low: '#f8f8f6', container: '#efefec', high: '#e7e7e3', highest: '#e0e0db',
+          on: '#16161a', onVar: '#57575d', outlineVar: '#d1d1cc', outline: '#9a9a9f', ink: '#c0263a',
+          shadow: '0 8px 24px rgba(0, 0, 0, 0.14)', shadowBlur: '0 6px 18px rgba(0, 0, 0, 0.10)', menuShadow: '0 -8px 32px rgba(0, 0, 0, 0.45)', tileShadow: 'none',
+          w: {}
+        },
+        dark: {
+          surface: '#0d0d0e', lowest: '#141416', low: '#171719', container: '#1c1c1f', high: '#232327', highest: '#2b2b2f',
+          on: '#f2f2ef', onVar: '#a4a4aa', outlineVar: '#2e2e33', outline: '#55555c', ink: '#c0263a',
+          shadow: '0 8px 24px rgba(0, 0, 0, 0.50)', shadowBlur: '0 6px 18px rgba(0, 0, 0, 0.40)', menuShadow: '0 -8px 32px rgba(0, 0, 0, 0.45)', tileShadow: 'none',
+          w: {}
+        }
+      }
+    };
+  }
+
+  renderVals() {
+    var all = this.looks();
+    var key = all[this.props.look] ? this.props.look : 'apricot';
+    var L = all[key];
+    var dark = this.props.theme === 'dark';
+    var warm = L.warm;
+    var r = L.r;
+    var base = dark ? L.dark : L.light;
+    var accent = L.accents[0];
+    var c = Object.assign({}, base, { accent: accent, accentOn: L.accentOn });
+    var w = base.w;
+    var fontName = this.props.font && this.props.font !== 'Look default' ? this.props.font : L.font;
+
+    var wallBg;
+    if (!warm) {
+      wallBg = 'radial-gradient(' + c.outlineVar + ' 1px, transparent 1px) 0 0 / 22px 22px, ' + c.surface;
+    } else if (key === 'lavender') {
+      wallBg = 'linear-gradient(160deg, ' + w.sky1 + ' 0%, ' + w.sky2 + ' 50%, ' + w.sky3 + ' 100%)';
+    } else {
+      wallBg = 'linear-gradient(180deg, ' + w.sky1 + ' 0%, ' + w.sky2 + ' 55%, ' + w.sky3 + ' 100%)';
+    }
+
+    var side = ['Home', 'Documents', 'Photos', 'Projects', 'notes'].map(function (n, i) {
+      var s = i === 0;
+      return {
+        name: n,
+        bg: s ? (warm ? c.high : accent) : 'transparent',
+        fg: s ? (warm ? c.ink : c.accentOn) : c.on,
+        icon: s ? (warm ? c.ink : c.accentOn) : (warm ? c.ink : c.onVar),
+        weight: s ? '600' : '400'
+      };
+    });
+
+    var rows = [
+      ['Documents', '—', 'Oct 6, 2026', false],
+      ['Photos', '—', 'Oct 9, 2026', false],
+      ['Projects', '—', 'Oct 9, 2026', false],
+      ['notes', '—', 'Oct 12, 2026', false],
+      ['shopping-list.txt', '81 B', 'Nov 2, 2026', true]
+    ].map(function (d) {
+      var s = d[3];
+      return {
+        name: d[0], size: d[1], date: d[2], isFile: s, isFolder: !s,
+        bg: s ? accent : 'transparent',
+        fg: s ? c.accentOn : c.on,
+        fgVar: s ? c.accentOn : c.onVar,
+        icon: s ? c.accentOn : (warm ? c.ink : c.onVar),
+        border: warm ? 'transparent' : (s ? accent : c.outlineVar),
+        weight: s ? '600' : '400'
+      };
+    });
+
+    var rail = ['Appearance', 'Marketplace', 'Account', 'About'].map(function (n, i) {
+      var s = i === 0;
+      return {
+        name: n,
+        bg: s ? (warm ? c.high : accent) : 'transparent',
+        fg: s ? (warm ? c.ink : c.accentOn) : c.on,
+        weight: s ? '600' : '400'
+      };
+    });
+
+    function seg(labels, onIndex) {
+      return labels.map(function (label, i) {
+        var on = i === onIndex;
+        return { label: label, bg: on ? accent : 'transparent', fg: on ? c.accentOn : c.on, weight: on ? '600' : '500', pressed: on ? 'true' : 'false' };
+      });
+    }
+
+    var swatches = L.accents.map(function (hex, i) {
+      var on = i === 0;
+      return {
+        hex: hex, name: L.accentNames[i], pressed: on ? 'true' : 'false',
+        ring: on ? '0 0 0 2px ' + c.lowest + ', 0 0 0 4px ' + c.on : 'inset 0 0 0 1px rgba(0, 0, 0, 0.08)'
+      };
+    });
+
+    var hz = { h1: w.h1 || w.cloud2, h2: w.h2 || w.cloud2, h3: w.h3 || w.cloud };
+    var thumbs;
+    if (warm) {
+      thumbs = [
+        { label: L.scene, bg: 'radial-gradient(circle at 78% 30%, ' + w.sun + ' 0 9%, transparent 10%), linear-gradient(180deg, ' + w.sky1 + ' 0%, ' + w.sky3 + ' 56%, ' + hz.h1 + ' 56%, ' + hz.h1 + ' 70%, ' + hz.h2 + ' 70%, ' + hz.h2 + ' 84%, ' + hz.h3 + ' 84%)' },
+        { label: 'Plain', bg: c.high },
+        { label: 'Soft dots', bg: 'radial-gradient(' + c.outline + ' 1.2px, transparent 1.6px) 0 0 / 10px 10px, ' + c.surface }
+      ];
+    } else {
+      thumbs = [
+        { label: 'Dots', bg: 'radial-gradient(' + c.outline + ' 1px, transparent 1px) 0 0 / 8px 8px, ' + c.surface },
+        { label: 'Grid', bg: 'linear-gradient(' + c.outlineVar + ' 1px, transparent 1px) 0 0 / 12px 12px, linear-gradient(90deg, ' + c.outlineVar + ' 1px, transparent 1px) 0 0 / 12px 12px, ' + c.surface },
+        { label: 'Linen', bg: 'repeating-linear-gradient(45deg, ' + c.outlineVar + ' 0 1px, transparent 1px 4px), ' + c.surface }
+      ];
+    }
+    thumbs = thumbs.map(function (t, i) {
+      var on = i === 0;
+      return { label: t.label, bg: t.bg, pressed: on ? 'true' : 'false', ring: on ? '0 0 0 2px ' + c.lowest + ', 0 0 0 4px ' + c.ink : '0 0 0 1px ' + c.outlineVar };
+    });
+
+    var themeCards = [warm ? key : 'apricot', 'classic'].map(function (k) {
+      var T = all[k];
+      var p = dark ? T.dark : T.light;
+      var on = k === key;
+      var pw = p.w;
+      var wall = T.warm
+        ? 'radial-gradient(circle at 80% 26%, ' + pw.sun + ' 0 8%, transparent 9%), linear-gradient(180deg, ' + pw.sky1 + ' 0%, ' + pw.sky3 + ' 60%, ' + (pw.h1 || pw.cloud2) + ' 60%, ' + (pw.h2 || pw.cloud2) + ' 80%, ' + (pw.h3 || pw.cloud) + ' 80%)'
+        : 'radial-gradient(' + p.outlineVar + ' 1px, transparent 1px) 0 0 / 6px 6px, ' + p.surface;
+      return {
+        name: k.charAt(0).toUpperCase() + k.slice(1),
+        pressed: on ? 'true' : 'false',
+        weight: on ? '600' : '500',
+        ring: on ? '0 0 0 2px ' + c.lowest + ', 0 0 0 4px ' + c.ink : '0 0 0 1px ' + c.outlineVar,
+        wall: wall,
+        win: p.lowest,
+        title: T.warm ? p.container : p.high,
+        border: p.outlineVar,
+        bar: p.low,
+        accent: T.accents[0],
+        winR: T.warm ? '5px' : '0px',
+        ctlR: T.warm ? '3px' : '0px'
+      };
+    });
+
+    return {
+      themeCards: themeCards,
+      font: "'" + fontName + "', ui-sans-serif, system-ui, sans-serif",
+      c: c, w: w, r: r, wallBg: wallBg,
+      isApricot: key === 'apricot', isSage: key === 'sage', isLavender: key === 'lavender',
+      di: {
+        bg: warm ? c.lowest : 'transparent',
+        shadow: warm ? c.tileShadow : 'none',
+        icon: warm ? c.ink : c.on,
+        label: c.on
+      },
+      fm: { border: c.outlineVar, title: warm ? c.low : c.container },
+      st: { border: warm ? c.outlineVar : accent, title: warm ? c.container : c.high },
+      btn: { bg: warm ? c.container : 'transparent', border: warm ? c.container : c.outlineVar },
+      lab: warm ? { size: '12px', transform: 'none', spacing: '0' } : { size: '11px', transform: 'uppercase', spacing: '0.08em' },
+      sidePad: warm ? '6px' : '0',
+      rowPadX: warm ? '16px' : '10px',
+      rowM: warm ? '2px 6px 0' : '0',
+      side: side, rows: rows, rail: rail,
+      lookSeg: seg(['Warm', 'Classic'], warm ? 0 : 1),
+      themeSeg: seg(['Light', 'Dark'], dark ? 1 : 0),
+      swatches: swatches, thumbs: thumbs,
+      sm: {
+        left: warm ? '8px' : '0px',
+        top: warm ? '344px' : '352px',
+        tile: warm ? c.container : 'transparent',
+        icon: warm ? c.ink : c.onVar
+      },
+      tb: {
+        pad: warm ? '6px 8px' : '0',
+        gap: warm ? '6px' : '0',
+        sep: warm ? '0' : '1px solid ' + c.outlineVar,
+        searchW: warm ? '220px' : 'auto',
+        searchBg: warm ? c.container : 'transparent',
+        taskPad: warm ? '0' : '0 6px',
+        edge: warm ? 0 : 1
+      },
+      ind: warm
+        ? { left: 'calc(50% - 7px)', width: '14px', bottom: '3px', height: '3px', radius: '999px', color: c.ink }
+        : { left: '0', width: '100%', bottom: '-6px', height: '2px', radius: '0', color: accent }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -53,6 +53,7 @@ Locked during the first real human QA pass of the desktop:
 
 - **Crimson accent is the confirmed default** (was provisional since the imbatranim reskin work (2026-07-17)).
   The other 3 presets stay user-selectable in Settings — not dropped.
+  *Revised 2026-11-02: crimson is Classic's default; Apricot is the default theme ([decisions-themes.md](decisions-themes.md)).*
 - **VPS + HTTPS deploy is NOT a v1 gate.** Deferred; the Caddy reverse-proxy
   recipe stays documented for whoever deploys. The v1 release work's acceptance is
   relaxed accordingly.

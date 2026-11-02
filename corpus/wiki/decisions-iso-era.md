@@ -14,7 +14,9 @@ behind.
 - **Identity: Windows-7-classic layout** (taskbar, start button + compact
   menu, tray, desktop icons) rendered **modern flat, classy black & white
   with parameterized accent colors** (accent picked from mockups during the
-  reskin work). Name stays ImbatranimOS.
+  reskin work). Name stays ImbatranimOS. *Revised 2026-11-02: the colours
+  are now themes, Apricot by default with this black-and-white look kept as
+  Classic ([decisions-themes.md](decisions-themes.md)). The layout still binds.*
 - **Versioning: semantic.** v1.0 = the friend-run bar met.
 - **Finish line: friend-run bar** (adapted from friend-install): a friend
   with Docker runs one documented command, logs in, and uses

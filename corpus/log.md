@@ -4557,3 +4557,17 @@ in the four combinations. In Apricot, `primary` becomes a deep shade of the acce
 ring and border use stays readable; the pastel moves to `primary-container`, which 10 uses for
 selected states. They don't depend on 01-06 (Linux apps), which wait for a quiet machine, and run
 before them.
+
+## [2026-11-02] brief | 01 built; the in-container proof is owed
+
+Nix is in the prod and dev images (`c5ef3b2`, branch `claude/linux-apps-layer`): Alpine's own
+`nix` 2.31.5, single-user as `imbatranim`, sandbox off, `max-jobs = 0`, `/nix` on its own volume,
+the nixpkgs pin in `infrastructure/nix/nixpkgs-pin.env` (`nixos-26.05` at `9bb5222`) written into
+the system flake registry, and a base profile of DejaVu fonts and the UTF-8 locale archive that the
+entrypoint installs in the background. One change from the spec: Nix's profile and caches live in
+`/nix/var/imbatranim` (the `NIX_*_HOME` variables and `use-xdg-base-directories`), not in
+`~/.nix-profile` and `~/.cache/nix`, because restore refuses a backup holding a link out of the
+home. The build environment couldn't pull images or reach the Nix cache, so the container proof
+and the Spec 7 numbers are the owner's to run; the brief stays in `todo/` with the commands.
+Proven outside a container with Nix 2.34.6: the config, the registry, profile installs under
+`max-jobs = 0`, fonts found through the generated `fonts.conf`, nothing written to the home.

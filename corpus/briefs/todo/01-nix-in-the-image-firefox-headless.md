@@ -108,3 +108,108 @@ It shows no window. Briefs 02 to 06 build the window layer on top of it.
 
 - `apps/core/**` and every add-on: no UI in this brief.
 - The marketplace backend.
+
+## Status (2026-11-02): built, the in-container proof is owed
+
+Built on `claude/linux-apps-layer` in `c5ef3b2`. It stays in `todo/` because
+the environment it was built in could not prove it in a container: its
+Docker daemon starts but can't pull `node:24.22.1-alpine` (Docker Hub is
+blocked there), and `cache.nixos.org` and `channels.nixos.org` are blocked
+too. Spec 6 and Spec 7 are the owner's to run (commands below).
+
+What was built:
+
+- **Nix: Alpine's package**, `nix` 2.31.5 from the 3.24 community repo (the
+  Alpine under `node:24.22.1-alpine`, read from the `aports` branch). It is
+  current, signed by apk and needs no second download path, so the static
+  binary wasn't needed. It is packaged for a multi-user daemon:
+  `setup-image.sh` drops its `/etc/profile.d/nix-remote.sh` (which sets
+  `NIX_REMOTE=daemon`) and replaces its `nix.conf`. Whether it runs
+  single-user on musl is the first thing the owner's run shows.
+- **Single-user, all state in `/nix`.** `/nix` is owned by `imbatranim` and
+  declared a volume, `imbatranim-nix` for prod and `imbatranim-nix-dev` for
+  dev. One change from the spec: the profile is not `~/.nix-profile`.
+  `NIX_STATE_HOME`, `NIX_CACHE_HOME`, `NIX_CONFIG_HOME` and `NIX_DATA_HOME`
+  point into `/nix/var/imbatranim` and `use-xdg-base-directories = true`, so
+  the profile link is `/nix/var/imbatranim/state/profile` and nothing lands
+  in the home. The reason: a home link into `/nix` goes into every backup,
+  and restore refuses links that point outside the home, so every backup
+  would stop restoring. `~/.cache/nix` (the nixpkgs tarball cache) and the
+  font cache stay out of backups the same way.
+- **`nix.conf`** as specced, plus `build-users-group =` (single-user) and
+  `flake-registry =` (no global registry to download).
+- **Unfree:** `NIXPKGS_ALLOW_UNFREE=1` in the image, used with `--impure`. A
+  user `config.nix` isn't read by a pure flake evaluation, so it wasn't an
+  option for `nixpkgs#…`.
+- **The pin:** `infrastructure/nix/nixpkgs-pin.env`, `nixos-26.05` at
+  `9bb52223f4f6a0cc606fd0852d8784f896c137d5`. That commit came from the
+  `nixos-26.05` branch on GitHub, which the channel advances to the same
+  commit, because `channels.nixos.org` was blocked; the owner's run checks it
+  against `git-revision`. The image build writes it into the **system**
+  registry (`/etc/nix/registry.json`), not the user's: it is image-owned,
+  moves with a rebuild, and keeps the home free of a `registry.json`. Brief 05
+  reads the pin from `/etc/nix/nixpkgs-pin.env`.
+- **Base profile:** `imbatranim-base` holds `dejavu_fonts` and
+  `glibcLocalesUtf8` (both top-level attributes at the pin, so Hydra builds
+  them; whether they are cached wasn't checkable). The entrypoint starts the
+  install in the background so boot never waits on the network.
+- **Terminal environment:** `LOCALE_ARCHIVE`, `FONTCONFIG_FILE` (a
+  `fonts.conf` generated at build that lists the base and user profiles'
+  fonts and keeps its cache in `/nix`), `XDG_DATA_DIRS` and `XDG_RUNTIME_DIR`
+  come from the image's environment; `terminalEnv` in `pty.constants.ts`
+  puts the profile first on the shell's `PATH`, and
+  `/etc/profile.d/nix-apps.sh` does the same for login shells. The
+  backend's own `PATH` leaves the profile out. `XDG_RUNTIME_DIR` is
+  `/run/user/1000`, made by the image (the entrypoint runs as `imbatranim`
+  and can't create anything under `/run`) and kept at 0700 by the
+  entrypoint.
+
+What was proven here, outside a container, with the Nix 2.34.6 this
+machine has, against an overlay of its store in a private mount namespace:
+`setup-image.sh` runs (with `apk` stubbed); `nix config show` reads the
+config as written; `nix registry list` resolves `nixpkgs` to the pin;
+`nix profile add` works with `max-jobs = 0` and builds the profile at
+`/nix/var/imbatranim/state/profile`; `fc-list` with the generated
+`fonts.conf` finds fonts in both profiles and caches in `/nix`; the home
+folder is unchanged afterwards; `base-profile.sh` with no reachable
+nixpkgs logs its failure and exits 0 within a second. `npm run typecheck`
+(26 packages), `npm run lint` (26), the backend's unit tests (808 in 46
+suites, 3 new) and its e2e suite (184 in 16) pass.
+
+Not proven: anything in the Alpine image (the build itself, Nix on musl,
+Firefox, the screenshot), and no numbers for Spec 7.
+
+### The owner's run
+
+From the repo root on this branch:
+
+```bash
+docker images imbatranimos:1.0 --format '{{.Size}}'      # size before, on main's image
+docker compose -f infrastructure/docker-compose.yml build imbatranimos
+docker images imbatranimos:1.0 --format '{{.Size}}'      # size after
+docker compose -f infrastructure/docker-compose.yml up -d imbatranimos
+docker compose -f infrastructure/docker-compose.yml logs imbatranimos | grep nix-base-profile
+docker compose -f infrastructure/docker-compose.yml exec imbatranimos sh -c \
+  'cat /etc/nix/nixpkgs-pin.env; nix registry list; ls -l $NIX_STATE_HOME/profiles'
+```
+
+The pin check, on any machine with network:
+`curl -s https://channels.nixos.org/nixos-26.05/git-revision` should print
+`9bb52223f4f6a0cc606fd0852d8784f896c137d5` (or a newer commit; then decide
+whether to move the pin).
+
+Then, in the desktop's Terminal:
+
+```sh
+time nix profile add nixpkgs#firefox
+time -v firefox --headless --screenshot ~/shot.png https://example.org 2>&1 | grep -i 'maximum resident'
+du -sh /nix
+```
+
+Open `~/shot.png` in the Image Viewer: the text must be readable. Then
+`docker compose -f infrastructure/docker-compose.yml down`, `up -d` again and
+rerun the `firefox` line; then rebuild the image (`build`, `up -d`) and rerun
+it once more. `time` is busybox's: its first line is the install time, and
+`-v` adds the peak resident set size. If this busybox has no `-v`, read peak
+RAM from System Monitor during the screenshot. The dev container is the same
+with `--profile dev` and the `dev` service.

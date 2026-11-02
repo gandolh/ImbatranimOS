@@ -55,8 +55,11 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 01-06 are the Linux apps layer, in build order: Nix in the image with Firefox
 headless, the Wayland host showing a window, input and title bars, popups and
 Firefox in a window, the Linux apps pane, lifecycle and sleep
-([decisions-linux-apps.md](decisions-linux-apps.md)). They wait for a quiet
-machine (Rust and Nix builds).
+([decisions-linux-apps.md](decisions-linux-apps.md)). Their branch is
+`claude/linux-apps-layer` (2026-11-02). 01 is built and stays in `todo/`:
+its proof in a container (Firefox headless under Nix, the measurements) is
+the owner's to run, with the commands in the brief. Nix state lives in
+`/nix`, not the home, so backups keep restoring.
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
 Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the

@@ -51,6 +51,12 @@ describe('the Wayland host control protocol', () => {
           app_id: 'foot',
           width: 640,
           height: 480,
+          geometry: { x: 0, y: 0, width: 640, height: 480 },
+          decorations: 'server',
+          min_width: 0,
+          min_height: 0,
+          max_width: 0,
+          max_height: 0,
         },
       },
     ]);

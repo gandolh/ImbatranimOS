@@ -11,6 +11,7 @@ import { useRegistryVersion } from '../../registry/marketplace'
 import { focusIntoNewWindowSoon } from './focusIntoWindow'
 import { isLinuxWindow } from '../../../modules/linux-windows/kind'
 import { LinuxWindowBody } from '../../../modules/linux-windows/LinuxWindowBody'
+import { useLinuxWindowsStore } from '../../../modules/linux-windows/linuxWindowsStore'
 
 // Field separator for the per-window projection key. `␟` (SYMBOL FOR UNIT
 // SEPARATOR) cannot occur in a uuid or an app-id slug, so splitting is safe.
@@ -126,6 +127,8 @@ const WindowSlot = memo(function WindowSlot({
   onActiveWorkspace: boolean
 }) {
   const closeWindow = useWindowStore((s) => s.closeWindow)
+  // A Linux app that draws its own title bar gets the frame only.
+  const frameOnly = useLinuxWindowsStore((s) => s.byWindow[windowId]?.decorations === 'client')
   const [remountKey, setRemountKey] = useState(0)
 
   const reload = useCallback(() => setRemountKey((k) => k + 1), [])
@@ -145,6 +148,7 @@ const WindowSlot = memo(function WindowSlot({
       minSize={minSize}
       isFocused={isFocused}
       onActiveWorkspace={onActiveWorkspace}
+      frameOnly={frameOnly}
     >
       {isLinuxWindow(appId) ? (
         // A Linux app's window: no add-on and no system handle, just its picture.

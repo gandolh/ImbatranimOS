@@ -13,6 +13,7 @@ import { LocalIdentityService } from '../auth/ws-auth';
 import { authorizeUpgrade } from '../pty/pty-upgrade';
 import { UpgradeRoutes } from '../../upgrade-routes';
 import { WaylandHostService } from './wayland-host.service';
+import { clampSize, toHostMessage } from './wayland-input';
 import {
   CLOSE_REVOKED,
   CLOSE_SESSION_IN_USE,
@@ -20,7 +21,6 @@ import {
   FRAME_ACK_LOW_WATER,
   FRAME_ACK_POLL_MS,
   MAX_CLIENT_MESSAGE,
-  MAX_VIEWPORT,
   MAX_WAYLAND_SESSIONS,
   WAYLAND_PATH,
   WAYLAND_REVOKE_SWEEP_MS,
@@ -234,15 +234,8 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       return;
     }
     if (!msg || typeof msg !== 'object') return;
-    const m = msg as Record<string, unknown>;
-    if (m.type === 'viewport') {
-      this.host.send({
-        type: 'output',
-        session: s.id,
-        width: clampSize(m.width),
-        height: clampSize(m.height),
-      });
-    }
+    const forHost = toHostMessage(s.id, msg as Record<string, unknown>);
+    if (forHost) this.host.send(forHost);
   }
 
   private safeSend(s: LiveSession, text: string): void {
@@ -274,13 +267,6 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
 function parseQuery(url: string | undefined): URLSearchParams {
   const q = url?.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
   return new URLSearchParams(q);
-}
-
-/** A viewport dimension from the tab: a positive integer, clamped. */
-function clampSize(v: unknown): number {
-  const n = Math.floor(Number(v));
-  if (!Number.isFinite(n) || n < 1) return 1024;
-  return Math.min(n, MAX_VIEWPORT);
 }
 
 function rawText(data: RawData): string {

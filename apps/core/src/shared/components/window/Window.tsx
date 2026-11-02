@@ -27,6 +27,11 @@ type WindowProps = {
    * still mounted — see the `display` rule below.
    */
   onActiveWorkspace?: boolean
+  /**
+   * The frame and resize edges without the title bar: a Linux app that draws
+   * its own title bar gets no second one. Its own bar moves the window.
+   */
+  frameOnly?: boolean
 }
 
 type ResizeHandleProps = {
@@ -140,6 +145,7 @@ export const Window = React.memo(function Window({
   children,
   isFocused,
   onActiveWorkspace = true,
+  frameOnly = false,
 }: WindowProps) {
   const instance = useWindowStore((s) => s.windows.find((w) => w.id === windowId))
   const closeWindow = useWindowStore((s) => s.closeWindow)
@@ -315,7 +321,11 @@ export const Window = React.memo(function Window({
           <div
             {...titleBarBind()}
             onDoubleClick={handleMaximizeToggle}
-            style={{ touchAction: 'none', userSelect: 'none' }}
+            style={{
+              touchAction: 'none',
+              userSelect: 'none',
+              display: frameOnly ? 'none' : undefined,
+            }}
             className={cn(
               'flex h-[30px] shrink-0 items-center justify-between border-b pr-1 pl-3',
               isFocused

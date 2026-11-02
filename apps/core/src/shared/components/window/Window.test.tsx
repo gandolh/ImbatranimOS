@@ -128,3 +128,27 @@ describe('a click in a window', () => {
     expect(topVisibleWindowId()).toBe('a')
   })
 })
+
+describe("a Linux app's frame-only window", () => {
+  it('has the frame and no title bar when the app draws its own', () => {
+    useWindowStore.setState({ windows: [win('a', 1)] })
+    for (const frameOnly of [false, true]) {
+      act(() =>
+        root.render(
+          <Window
+            windowId="a"
+            minSize={{ width: 100, height: 100 }}
+            isFocused={false}
+            frameOnly={frameOnly}
+          >
+            <p>content</p>
+          </Window>
+        )
+      )
+      const bar = container.querySelector<HTMLElement>('[data-window-content]')!
+        .previousElementSibling as HTMLElement
+      expect(bar.style.display).toBe(frameOnly ? 'none' : '')
+      expect(container.querySelector('[data-window-id="a"]')).not.toBeNull()
+    }
+  })
+})

@@ -63,15 +63,32 @@ impl Host {
             Inbound::SessionOpen { session, width, height } => self.open(session, width, height),
             Inbound::SessionClose { session } => self.close(&session),
             Inbound::Output { session, width, height } => {
-                if let Some(s) = self.sessions.get(&session) {
-                    s.borrow_mut().state.set_output_size(width, height);
-                }
+                self.with(&session, |s| s.set_output_size(width, height))
             }
-            Inbound::FrameAck { session, toplevel } => {
-                if let Some(s) = self.sessions.get(&session) {
-                    s.borrow_mut().state.ack(toplevel);
-                }
+            Inbound::FrameAck { session, toplevel } => self.with(&session, |s| s.ack(toplevel)),
+            Inbound::Focus { session, toplevel } => self.with(&session, |s| s.focus(toplevel)),
+            Inbound::PointerMotion { session, toplevel, x, y } => {
+                self.with(&session, |s| s.pointer_motion(toplevel, x, y))
             }
+            Inbound::PointerButton { session, toplevel, button, pressed } => {
+                self.with(&session, |s| s.pointer_button(toplevel, button, pressed))
+            }
+            Inbound::PointerAxis { session, toplevel, dx, dy, v120x, v120y, wheel } => {
+                self.with(&session, |s| s.pointer_axis(toplevel, dx, dy, v120x, v120y, wheel))
+            }
+            Inbound::PointerLeave { session } => self.with(&session, |s| s.pointer_leave()),
+            Inbound::Key { session, keycode, pressed } => self.with(&session, |s| s.key(keycode, pressed)),
+            Inbound::Configure { session, toplevel, width, height, maximized } => {
+                self.with(&session, |s| s.configure(toplevel, width, height, maximized))
+            }
+            Inbound::Close { session, toplevel } => self.with(&session, |s| s.close(toplevel)),
+        }
+    }
+
+    /// Run `f` on a session's state, if the session is open.
+    fn with(&mut self, session: &str, f: impl FnOnce(&mut SessionState)) {
+        if let Some(s) = self.sessions.get(session) {
+            f(&mut s.borrow_mut().state);
         }
     }
 

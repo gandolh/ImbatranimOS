@@ -1,38 +1,59 @@
 //! One desktop session (one browser tab): its own Wayland display, globals,
-//! output and clients. Nothing here is shared with another session, so a
-//! client on tab A's socket can never reach tab B.
+//! output, seat and clients. Nothing here is shared with another session, so
+//! a client on tab A's socket can never reach tab B.
 
 use std::time::Instant;
 
 use smithay::delegate_compositor;
+use smithay::delegate_cursor_shape;
 use smithay::delegate_data_device;
 use smithay::delegate_output;
 use smithay::delegate_seat;
 use smithay::delegate_shm;
+use smithay::delegate_xdg_decoration;
 use smithay::delegate_xdg_shell;
+use smithay::input::keyboard::{FilterResult, KeyboardHandle, XkbConfig};
+use smithay::input::pointer::{
+    AxisFrame, ButtonEvent, CursorImageStatus, MotionEvent, PointerHandle,
+};
 use smithay::input::{Seat, SeatHandler, SeatState};
 use smithay::output::{Mode, Output, PhysicalProperties, Scale, Subpixel};
+use smithay::reexports::wayland_protocols::xdg::decoration::zv1::server::zxdg_toplevel_decoration_v1::Mode as DecorationMode;
+use smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel;
 use smithay::reexports::wayland_server::backend::{ClientData, ClientId, DisconnectReason};
-use smithay::reexports::wayland_server::protocol::{wl_buffer::WlBuffer, wl_seat::WlSeat, wl_shm, wl_surface::WlSurface};
+use smithay::backend::input::{Axis, AxisSource, ButtonState, KeyState};
+use smithay::reexports::wayland_server::protocol::{
+    wl_buffer::WlBuffer, wl_output::WlOutput, wl_seat::WlSeat, wl_shm, wl_surface::WlSurface,
+};
 use smithay::reexports::wayland_server::{Client, DisplayHandle, Resource};
-use smithay::utils::{Serial, Transform};
+use smithay::utils::{Serial, Transform, SERIAL_COUNTER};
 use smithay::wayland::buffer::BufferHandler;
 use smithay::wayland::compositor::{
     is_sync_subsurface, with_states, with_surface_tree_upward, BufferAssignment, CompositorClientState,
     CompositorHandler, CompositorState, Damage, SurfaceAttributes, TraversalAction,
 };
+use smithay::wayland::cursor_shape::CursorShapeManagerState;
 use smithay::wayland::output::OutputHandler;
 use smithay::wayland::selection::data_device::{
     ClientDndGrabHandler, DataDeviceHandler, DataDeviceState, ServerDndGrabHandler,
 };
 use smithay::wayland::selection::SelectionHandler;
+use smithay::wayland::shell::xdg::decoration::{XdgDecorationHandler, XdgDecorationState};
 use smithay::wayland::shell::xdg::{
-    PopupSurface, PositionerState, ToplevelSurface, XdgShellHandler, XdgShellState, XdgToplevelSurfaceData,
+    PopupSurface, PositionerState, SurfaceCachedState, ToplevelSurface, XdgShellHandler, XdgShellState,
+    XdgToplevelSurfaceData,
 };
 use smithay::wayland::shm::{with_buffer_contents, ShmHandler, ShmState};
+use smithay::wayland::tablet_manager::TabletSeatHandler;
 
 use crate::pixels::{clip_signed, Canvas, Encoding, ShmFormat};
-use crate::protocol::{encode_frame_body, Outbound, Rect};
+use crate::protocol::{encode_frame_body, Decorations, Geometry, Outbound, Rect, ToplevelInfo};
+
+/// Key repeat the host announces (`wl_keyboard.repeat_info`). Apps repeat
+/// keys themselves; the browser's own repeats are dropped before they get
+/// here.
+const REPEAT_DELAY_MS: i32 = 500;
+const REPEAT_RATE_HZ: i32 = 25;
 
 /// Per-client data smithay needs.
 #[derive(Default)]
@@ -55,6 +76,30 @@ struct Toplevel {
     mapped: bool,
     /// A frame was sent and the backend hasn't acked it yet.
     in_flight: bool,
+    decorations: Decorations,
+    /// `xdg_surface.set_window_geometry`, if the app set one.
+    geometry: Option<Geometry>,
+    min: (u32, u32),
+    max: (u32, u32),
+}
+
+impl Toplevel {
+    fn info(&self) -> ToplevelInfo {
+        let (width, height) = (self.canvas.width, self.canvas.height);
+        ToplevelInfo {
+            toplevel: self.id,
+            title: self.title.clone(),
+            app_id: self.app_id.clone(),
+            width,
+            height,
+            geometry: self.geometry.unwrap_or(Geometry { x: 0, y: 0, width, height }),
+            decorations: self.decorations,
+            min_width: self.min.0,
+            min_height: self.min.1,
+            max_width: self.max.0,
+            max_height: self.max.1,
+        }
+    }
 }
 
 pub struct SessionState {
@@ -63,11 +108,18 @@ pub struct SessionState {
     xdg: XdgShellState,
     shm: ShmState,
     data_device: DataDeviceState,
+    _decoration: XdgDecorationState,
+    _cursor_shape: CursorShapeManagerState,
     seat_state: SeatState<SessionState>,
     _seat: Seat<SessionState>,
+    keyboard: KeyboardHandle<SessionState>,
+    pointer: PointerHandle<SessionState>,
     output: Output,
     toplevels: Vec<Toplevel>,
     next_toplevel: u32,
+    /// The toplevel with keyboard focus, if a Linux window has it.
+    focused: Option<u32>,
+    cursor: String,
     /// Surfaces with frame callbacks waiting to be answered.
     pending_callbacks: Vec<WlSurface>,
     /// JSON messages for the backend, drained by the host.
@@ -84,10 +136,15 @@ impl SessionState {
         // desktop's clipboard is a later piece of work. Some apps (foot)
         // refuse to start without this global.
         let data_device = DataDeviceState::new::<SessionState>(dh);
+        let decoration = XdgDecorationState::new::<SessionState>(dh);
+        let cursor_shape = CursorShapeManagerState::new::<SessionState>(dh);
         let mut seat_state = SeatState::new();
-        // Input devices come later; a seat with no capabilities is still a
-        // seat, and clients expect one.
-        let seat = seat_state.new_wl_seat(dh, "seat0");
+        let mut seat = seat_state.new_wl_seat(dh, "seat0");
+        // A US keymap; a layout setting is later work.
+        let keyboard = seat
+            .add_keyboard(XkbConfig::default(), REPEAT_DELAY_MS, REPEAT_RATE_HZ)
+            .expect("the default US keymap compiles");
+        let pointer = seat.add_pointer();
         let output = Output::new(
             format!("imbatranim-{}", &id[..8]),
             PhysicalProperties {
@@ -104,17 +161,27 @@ impl SessionState {
             xdg,
             shm,
             data_device,
+            _decoration: decoration,
+            _cursor_shape: cursor_shape,
             seat_state,
             _seat: seat,
+            keyboard,
+            pointer,
             output,
             toplevels: Vec::new(),
             next_toplevel: 1,
+            focused: None,
+            cursor: "default".into(),
             pending_callbacks: Vec::new(),
             outbox: Vec::new(),
             started,
         };
         state.set_output_size(width, height);
         state
+    }
+
+    fn now(&self) -> u32 {
+        self.started.elapsed().as_millis() as u32
     }
 
     /// The session's one output is the tab's viewport.
@@ -171,7 +238,7 @@ impl SessionState {
     }
 
     fn fire_callbacks(&mut self, pick: impl Fn(&WlSurface) -> bool) {
-        let time = self.started.elapsed().as_millis() as u32;
+        let time = self.now();
         let mut keep = Vec::new();
         for surface in std::mem::take(&mut self.pending_callbacks) {
             if !surface.is_alive() {
@@ -195,16 +262,24 @@ impl SessionState {
         self.toplevels.iter().position(|t| t.surface.wl_surface() == surface)
     }
 
+    fn by_id(&self, id: u32) -> Option<&Toplevel> {
+        self.toplevels.iter().find(|t| t.id == id)
+    }
+
     fn announce(&mut self, index: usize, created: bool) {
-        let t = &self.toplevels[index];
+        let info = self.toplevels[index].info();
         let session = self.id.clone();
-        let (toplevel, title, app_id, width, height) =
-            (t.id, t.title.clone(), t.app_id.clone(), t.canvas.width, t.canvas.height);
         self.outbox.push(if created {
-            Outbound::ToplevelCreated { session, toplevel, title, app_id, width, height }
+            Outbound::ToplevelCreated { session, info }
         } else {
-            Outbound::ToplevelUpdated { session, toplevel, title, app_id, width, height }
+            Outbound::ToplevelUpdated { session, info }
         });
+    }
+
+    fn announce_if_mapped(&mut self, index: usize) {
+        if self.toplevels[index].mapped {
+            self.announce(index, false);
+        }
     }
 
     fn unmap(&mut self, index: usize) {
@@ -215,6 +290,15 @@ impl SessionState {
             let toplevel = t.id;
             self.outbox.push(Outbound::ToplevelDestroyed { session: self.id.clone(), toplevel });
         }
+        if self.focused == Some(self.toplevels[index].id) {
+            self.focused = None;
+        }
+    }
+
+    fn request(&mut self, surface: &ToplevelSurface, action: &str, edges: Option<String>) {
+        let Some(i) = self.toplevel_index(surface.wl_surface()) else { return };
+        let toplevel = self.toplevels[i].id;
+        self.outbox.push(Outbound::Request { session: self.id.clone(), toplevel, action: action.into(), edges });
     }
 
     /// A toplevel's root surface got a new buffer: copy what changed.
@@ -258,6 +342,168 @@ impl SessionState {
             self.announce(index, true);
         } else if resized {
             self.announce(index, false);
+        }
+    }
+
+    /// The window geometry and size limits the app set with its last commit.
+    fn read_cached(&mut self, index: usize) {
+        let surface = self.toplevels[index].surface.wl_surface().clone();
+        let (geometry, min, max) = with_states(&surface, |states| {
+            let mut cached = states.cached_state.get::<SurfaceCachedState>();
+            let c = cached.current();
+            (c.geometry, c.min_size, c.max_size)
+        });
+        let geometry = geometry.filter(|g| g.size.w > 0 && g.size.h > 0).map(|g| Geometry {
+            x: g.loc.x,
+            y: g.loc.y,
+            width: g.size.w as u32,
+            height: g.size.h as u32,
+        });
+        let min = (min.w.max(0) as u32, min.h.max(0) as u32);
+        let max = (max.w.max(0) as u32, max.h.max(0) as u32);
+        let t = &mut self.toplevels[index];
+        if t.geometry != geometry || t.min != min || t.max != max {
+            t.geometry = geometry;
+            t.min = min;
+            t.max = max;
+            self.announce_if_mapped(index);
+        }
+    }
+
+    fn set_decorations(&mut self, surface: &ToplevelSurface, mode: DecorationMode) {
+        surface.with_pending_state(|s| s.decoration_mode = Some(mode));
+        if surface.is_initial_configure_sent() {
+            surface.send_pending_configure();
+        }
+        if let Some(i) = self.toplevel_index(surface.wl_surface()) {
+            let d = if mode == DecorationMode::ServerSide { Decorations::Server } else { Decorations::Client };
+            if self.toplevels[i].decorations != d {
+                self.toplevels[i].decorations = d;
+                self.announce_if_mapped(i);
+            }
+        }
+    }
+
+    // ── Input from the tab ──────────────────────────────────────────────
+
+    /// Keyboard focus follows the OS window the owner raised. Only one Linux
+    /// window in the session has it; the rest lose `activated`.
+    pub fn focus(&mut self, toplevel: Option<u32>) {
+        let target = toplevel.and_then(|id| self.by_id(id)).map(|t| (t.id, t.surface.wl_surface().clone()));
+        self.focused = target.as_ref().map(|(id, _)| *id);
+        let keyboard = self.keyboard.clone();
+        keyboard.set_focus(self, target.map(|(_, s)| s), SERIAL_COUNTER.next_serial());
+        let focused = self.focused;
+        for t in &self.toplevels {
+            let changed = t.surface.with_pending_state(|s| {
+                if Some(t.id) == focused {
+                    s.states.set(xdg_toplevel::State::Activated)
+                } else {
+                    s.states.unset(xdg_toplevel::State::Activated)
+                }
+            });
+            if changed && t.surface.is_initial_configure_sent() {
+                t.surface.send_pending_configure();
+            }
+        }
+    }
+
+    pub fn pointer_motion(&mut self, toplevel: u32, x: f64, y: f64) {
+        let Some(surface) = self.by_id(toplevel).map(|t| t.surface.wl_surface().clone()) else { return };
+        let event = MotionEvent { location: (x, y).into(), serial: SERIAL_COUNTER.next_serial(), time: self.now() };
+        let pointer = self.pointer.clone();
+        pointer.motion(self, Some((surface, (0.0, 0.0).into())), &event);
+        pointer.frame(self);
+    }
+
+    pub fn pointer_button(&mut self, toplevel: u32, button: u32, pressed: bool) {
+        if self.by_id(toplevel).is_none() {
+            return;
+        }
+        let state = if pressed { ButtonState::Pressed } else { ButtonState::Released };
+        let event = ButtonEvent { serial: SERIAL_COUNTER.next_serial(), time: self.now(), button, state };
+        let pointer = self.pointer.clone();
+        pointer.button(self, &event);
+        pointer.frame(self);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn pointer_axis(&mut self, toplevel: u32, dx: f64, dy: f64, v120x: i32, v120y: i32, wheel: bool) {
+        if self.by_id(toplevel).is_none() {
+            return;
+        }
+        let mut frame = AxisFrame::new(self.now()).source(if wheel { AxisSource::Wheel } else { AxisSource::Finger });
+        if dx != 0.0 {
+            frame = frame.value(Axis::Horizontal, dx);
+            if wheel && v120x != 0 {
+                frame = frame.v120(Axis::Horizontal, v120x);
+            }
+        }
+        if dy != 0.0 {
+            frame = frame.value(Axis::Vertical, dy);
+            if wheel && v120y != 0 {
+                frame = frame.v120(Axis::Vertical, v120y);
+            }
+        }
+        let pointer = self.pointer.clone();
+        pointer.axis(self, frame);
+        pointer.frame(self);
+    }
+
+    pub fn pointer_leave(&mut self) {
+        let location = self.pointer.current_location();
+        let event = MotionEvent { location, serial: SERIAL_COUNTER.next_serial(), time: self.now() };
+        let pointer = self.pointer.clone();
+        pointer.motion(self, None, &event);
+        pointer.frame(self);
+    }
+
+    /// A key on the focused toplevel. `keycode` is the Linux (evdev) code;
+    /// xkb's are 8 higher. The host's xkb state tracks the modifiers.
+    pub fn key(&mut self, keycode: u32, pressed: bool) {
+        if self.focused.is_none() || keycode == 0 || keycode > 767 {
+            return;
+        }
+        let state = if pressed { KeyState::Pressed } else { KeyState::Released };
+        let keyboard = self.keyboard.clone();
+        let time = self.now();
+        keyboard.input::<(), _>(self, (keycode + 8).into(), state, SERIAL_COUNTER.next_serial(), time, |_, _, _| {
+            FilterResult::Forward
+        });
+    }
+
+    /// The OS window's size and state, as `xdg_toplevel.configure`, within
+    /// the app's own limits. The app answers with an ack and a new buffer.
+    pub fn configure(&mut self, toplevel: u32, width: u32, height: u32, maximized: bool) {
+        let Some(t) = self.by_id(toplevel) else { return };
+        let clamp = |v: u32, min: u32, max: u32| {
+            let v = v.max(min).max(1);
+            if max > 0 {
+                v.min(max)
+            } else {
+                v
+            }
+        };
+        let w = clamp(width, t.min.0, t.max.0).min(16384) as i32;
+        let h = clamp(height, t.min.1, t.max.1).min(16384) as i32;
+        t.surface.with_pending_state(|s| {
+            s.size = Some((w, h).into());
+            if maximized {
+                s.states.set(xdg_toplevel::State::Maximized);
+            } else {
+                s.states.unset(xdg_toplevel::State::Maximized);
+            }
+        });
+        if t.surface.is_initial_configure_sent() {
+            t.surface.send_pending_configure();
+        }
+    }
+
+    /// The OS close button. The app decides: it may close, ask to save, or
+    /// refuse. The OS window closes when the toplevel goes, not here.
+    pub fn close(&mut self, toplevel: u32) {
+        if let Some(t) = self.by_id(toplevel) {
+            t.surface.send_close();
         }
     }
 }
@@ -319,6 +565,9 @@ impl CompositorHandler for SessionState {
                 }
                 None => {}
             }
+            if let Some(i) = index {
+                self.read_cached(i);
+            }
             if wants_frame && !self.pending_callbacks.contains(&surf) {
                 self.pending_callbacks.push(surf);
             }
@@ -344,6 +593,13 @@ impl XdgShellHandler for SessionState {
     fn new_toplevel(&mut self, surface: ToplevelSurface) {
         let id = self.next_toplevel;
         self.next_toplevel = self.next_toplevel.wrapping_add(1).max(1);
+        // The window manager can maximize and minimize; it has no
+        // fullscreen of its own, so a fullscreen request maximizes.
+        surface.with_pending_state(|s| {
+            s.capabilities.set(xdg_toplevel::WmCapabilities::Maximize);
+            s.capabilities.set(xdg_toplevel::WmCapabilities::Minimize);
+            s.capabilities.set(xdg_toplevel::WmCapabilities::Fullscreen);
+        });
         self.toplevels.push(Toplevel {
             id,
             surface,
@@ -352,6 +608,11 @@ impl XdgShellHandler for SessionState {
             canvas: Canvas::default(),
             mapped: false,
             in_flight: false,
+            // Until the app asks for the OS title bar, it draws its own.
+            decorations: Decorations::Client,
+            geometry: None,
+            min: (0, 0),
+            max: (0, 0),
         });
     }
 
@@ -364,6 +625,47 @@ impl XdgShellHandler for SessionState {
     fn grab(&mut self, _surface: PopupSurface, _seat: WlSeat, _serial: Serial) {}
 
     fn reposition_request(&mut self, _surface: PopupSurface, _positioner: PositionerState, _token: u32) {}
+
+    fn move_request(&mut self, surface: ToplevelSurface, _seat: WlSeat, _serial: Serial) {
+        self.request(&surface, "move", None);
+    }
+
+    fn resize_request(&mut self, surface: ToplevelSurface, _seat: WlSeat, _serial: Serial, edges: xdg_toplevel::ResizeEdge) {
+        let edges = match edges {
+            xdg_toplevel::ResizeEdge::Top => "n",
+            xdg_toplevel::ResizeEdge::Bottom => "s",
+            xdg_toplevel::ResizeEdge::Left => "w",
+            xdg_toplevel::ResizeEdge::Right => "e",
+            xdg_toplevel::ResizeEdge::TopLeft => "nw",
+            xdg_toplevel::ResizeEdge::TopRight => "ne",
+            xdg_toplevel::ResizeEdge::BottomLeft => "sw",
+            xdg_toplevel::ResizeEdge::BottomRight => "se",
+            _ => return,
+        };
+        self.request(&surface, "resize", Some(edges.into()));
+    }
+
+    fn maximize_request(&mut self, surface: ToplevelSurface) {
+        self.request(&surface, "maximize", None);
+    }
+
+    fn unmaximize_request(&mut self, surface: ToplevelSurface) {
+        self.request(&surface, "unmaximize", None);
+    }
+
+    fn minimize_request(&mut self, surface: ToplevelSurface) {
+        self.request(&surface, "minimize", None);
+    }
+
+    fn fullscreen_request(&mut self, surface: ToplevelSurface, _output: Option<WlOutput>) {
+        self.request(&surface, "fullscreen", None);
+    }
+
+    fn unfullscreen_request(&mut self, surface: ToplevelSurface) {
+        self.request(&surface, "unfullscreen", None);
+    }
+
+    // `show_window_menu` is left to its default: ignored.
 
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
         if let Some(i) = self.toplevel_index(surface.wl_surface()) {
@@ -399,9 +701,24 @@ impl SessionState {
         }
         t.title = title;
         t.app_id = app_id;
-        if t.mapped {
-            self.announce(i, false);
-        }
+        self.announce_if_mapped(i);
+    }
+}
+
+/// xdg-decoration: an app that asks gets the OS title bar; one that asks to
+/// draw its own, or never asks, gets a frame. With no preference stated, the
+/// host picks the OS title bar.
+impl XdgDecorationHandler for SessionState {
+    fn new_decoration(&mut self, toplevel: ToplevelSurface) {
+        self.set_decorations(&toplevel, DecorationMode::ServerSide);
+    }
+
+    fn request_mode(&mut self, toplevel: ToplevelSurface, mode: DecorationMode) {
+        self.set_decorations(&toplevel, mode);
+    }
+
+    fn unset_mode(&mut self, toplevel: ToplevelSurface) {
+        self.set_decorations(&toplevel, DecorationMode::ServerSide);
     }
 }
 
@@ -413,7 +730,23 @@ impl SeatHandler for SessionState {
     fn seat_state(&mut self) -> &mut SeatState<SessionState> {
         &mut self.seat_state
     }
+
+    /// cursor-shape-v1 names a cursor; the tab shows it as a CSS cursor. An
+    /// app that draws its own cursor surface gets the default arrow.
+    fn cursor_image(&mut self, _seat: &Seat<Self>, image: CursorImageStatus) {
+        let name = match image {
+            CursorImageStatus::Hidden => "none".to_string(),
+            CursorImageStatus::Named(icon) => icon.name().to_string(),
+            CursorImageStatus::Surface(_) => "default".to_string(),
+        };
+        if name != self.cursor {
+            self.cursor = name.clone();
+            self.outbox.push(Outbound::Cursor { session: self.id.clone(), name });
+        }
+    }
 }
+
+impl TabletSeatHandler for SessionState {}
 
 impl OutputHandler for SessionState {}
 
@@ -433,6 +766,8 @@ impl ServerDndGrabHandler for SessionState {}
 delegate_compositor!(SessionState);
 delegate_shm!(SessionState);
 delegate_xdg_shell!(SessionState);
+delegate_xdg_decoration!(SessionState);
+delegate_cursor_shape!(SessionState);
 delegate_seat!(SessionState);
 delegate_output!(SessionState);
 delegate_data_device!(SessionState);

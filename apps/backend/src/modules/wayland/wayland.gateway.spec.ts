@@ -15,6 +15,14 @@ import {
 import type { HostInbound } from './wayland.protocol';
 
 const SESSION = 'abcdefghijklmnop';
+const SHAPE = {
+  geometry: { x: 0, y: 0, width: 700, height: 474 },
+  decorations: 'server' as const,
+  min_width: 0,
+  min_height: 0,
+  max_width: 0,
+  max_height: 0,
+};
 
 /** Stands in for the host process: records what the gateway asks of it. */
 class FakeHost {
@@ -151,6 +159,7 @@ describe('WaylandGateway', () => {
       app_id: 'foot',
       width: 700,
       height: 474,
+      ...SHAPE,
     });
     const body = Buffer.alloc(14);
     body.writeUInt32LE(3, 0);
@@ -163,6 +172,7 @@ describe('WaylandGateway', () => {
       app_id: 'foot',
       width: 700,
       height: 474,
+      ...SHAPE,
     });
     expect(c.messages[1].binary?.[0]).toBe(2);
     expect(c.messages[1].binary?.subarray(1)).toEqual(body);
@@ -184,6 +194,43 @@ describe('WaylandGateway', () => {
 
     c.ws.close();
     await until(() => host.closed.includes(SESSION));
+  });
+
+  it("passes the tab's input to the host, checked, with the session", async () => {
+    const c = open(`session=${SESSION}`);
+    await c.opened;
+    await until(() => host.listeners.has(SESSION));
+    for (const m of [
+      { type: 'focus', toplevel: 3 },
+      { type: 'pointer_motion', toplevel: 3, x: 10.5, y: 20 },
+      { type: 'pointer_button', toplevel: 3, button: 0x110, pressed: true },
+      { type: 'pointer_button', toplevel: 3, button: 1, pressed: true },
+      { type: 'key', keycode: 30, pressed: true },
+      { type: 'key', keycode: 'a', pressed: true },
+      {
+        type: 'configure',
+        toplevel: 3,
+        width: 800,
+        height: 600,
+        maximized: false,
+      },
+      { type: 'close', toplevel: 3 },
+      { type: 'run', command: 'rm -rf ~' },
+    ]) {
+      c.ws.send(JSON.stringify(m));
+    }
+    await until(() => host.sent.some((m) => m.type === 'close'));
+    expect(host.sent.map((m) => m.type)).toEqual([
+      'focus',
+      'pointer_motion',
+      'pointer_button',
+      'key',
+      'configure',
+      'close',
+    ]);
+    expect(host.sent.every((m) => m.session === SESSION)).toBe(true);
+    c.ws.close();
+    await c.closed;
   });
 
   it('keeps one socket per session: a second one is told to pick a new id', async () => {

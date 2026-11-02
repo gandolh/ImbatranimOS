@@ -39,6 +39,89 @@ pub enum Inbound {
     /// The backend has passed a frame to the WebSocket and the socket has
     /// room again: the toplevel may send its next one.
     FrameAck { session: String, toplevel: u32 },
+    /// Keyboard focus moved to this toplevel's OS window, or (None) to a
+    /// window that isn't a Linux app's.
+    Focus { session: String, toplevel: Option<u32> },
+    /// The pointer is over a toplevel, at surface coordinates.
+    PointerMotion {
+        session: String,
+        toplevel: u32,
+        x: f64,
+        y: f64,
+    },
+    /// A Linux button code (BTN_LEFT is 0x110).
+    PointerButton {
+        session: String,
+        toplevel: u32,
+        button: u32,
+        pressed: bool,
+    },
+    /// Scrolling, in surface pixels, plus wheel steps in 120ths of a notch
+    /// when it came from a wheel.
+    PointerAxis {
+        session: String,
+        toplevel: u32,
+        dx: f64,
+        dy: f64,
+        v120x: i32,
+        v120y: i32,
+        wheel: bool,
+    },
+    /// The pointer left the session's Linux windows.
+    PointerLeave { session: String },
+    /// A key, as a Linux (evdev) key code.
+    Key {
+        session: String,
+        keycode: u32,
+        pressed: bool,
+    },
+    /// The OS window's size and state changed: tell the app.
+    Configure {
+        session: String,
+        toplevel: u32,
+        width: u32,
+        height: u32,
+        maximized: bool,
+    },
+    /// The OS window's close button: ask the app to close.
+    Close { session: String, toplevel: u32 },
+}
+
+/// How a toplevel's title bar is drawn.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Decorations {
+    /// The app asked the display to draw it: the OS title bar.
+    Server,
+    /// The app draws its own: the OS window is a frame only.
+    Client,
+}
+
+/// The part of a toplevel's image that is the window (without shadows).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub struct Geometry {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
+/// What a toplevel is, as the backend and the tab see it.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct ToplevelInfo {
+    pub toplevel: u32,
+    pub title: String,
+    pub app_id: String,
+    /// The image's size.
+    pub width: u32,
+    pub height: u32,
+    pub geometry: Geometry,
+    pub decorations: Decorations,
+    /// The app's limits on its window geometry; 0 means none.
+    pub min_width: u32,
+    pub min_height: u32,
+    pub max_width: u32,
+    pub max_height: u32,
 }
 
 /// Host to backend (JSON kind). Frames travel as [`KIND_FRAME`].
@@ -58,23 +141,33 @@ pub enum Outbound {
     },
     ToplevelCreated {
         session: String,
-        toplevel: u32,
-        title: String,
-        app_id: String,
-        width: u32,
-        height: u32,
+        #[serde(flatten)]
+        info: ToplevelInfo,
     },
     ToplevelUpdated {
         session: String,
-        toplevel: u32,
-        title: String,
-        app_id: String,
-        width: u32,
-        height: u32,
+        #[serde(flatten)]
+        info: ToplevelInfo,
     },
     ToplevelDestroyed {
         session: String,
         toplevel: u32,
+    },
+    /// The cursor the app asked for, as a CSS cursor name.
+    Cursor {
+        session: String,
+        name: String,
+    },
+    /// The app asked the window manager for something: `move` and `resize`
+    /// (with `edges`) start the OS window's own drag; `maximize`,
+    /// `unmaximize`, `minimize`, `fullscreen` and `unfullscreen` map to its
+    /// actions.
+    Request {
+        session: String,
+        toplevel: u32,
+        action: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        edges: Option<String>,
     },
 }
 
@@ -226,12 +319,40 @@ mod tests {
     fn sample_created() -> Vec<u8> {
         encode_json(&Outbound::ToplevelCreated {
             session: "abcdefghijklmnop".into(),
-            toplevel: 7,
-            title: "foot".into(),
-            app_id: "foot".into(),
-            width: 640,
-            height: 480,
+            info: ToplevelInfo {
+                toplevel: 7,
+                title: "foot".into(),
+                app_id: "foot".into(),
+                width: 640,
+                height: 480,
+                geometry: Geometry { x: 0, y: 0, width: 640, height: 480 },
+                decorations: Decorations::Server,
+                min_width: 0,
+                min_height: 0,
+                max_width: 0,
+                max_height: 0,
+            },
         })
+    }
+
+    #[test]
+    fn input_messages_decode() {
+        let mut d = Decoder::default();
+        let mut bytes = Vec::new();
+        for json in [
+            r#"{"type":"focus","session":"abcdefghijklmnop","toplevel":null}"#,
+            r#"{"type":"pointer_axis","session":"abcdefghijklmnop","toplevel":2,"dx":0,"dy":15,"v120x":0,"v120y":120,"wheel":true}"#,
+            r#"{"type":"key","session":"abcdefghijklmnop","keycode":30,"pressed":true}"#,
+        ] {
+            push_message(&mut bytes, KIND_JSON, json.as_bytes());
+        }
+        d.push(&bytes);
+        assert_eq!(
+            d.next_inbound(),
+            Ok(Some(Inbound::Focus { session: "abcdefghijklmnop".into(), toplevel: None }))
+        );
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::PointerAxis { v120y: 120, wheel: true, .. }))));
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Key { keycode: 30, pressed: true, .. }))));
     }
 
     #[test]

@@ -1,13 +1,16 @@
 import { desktopSessionId, renewDesktopSessionId } from '@imbatranim/ui'
-import { TASKBAR_HEIGHT, useWindowStore } from '../../shared/store/windowStore'
-import { LINUX_APP_PREFIX, LINUX_WINDOW_CHROME } from './kind'
+import { TASKBAR_HEIGHT, topVisibleWindowId, useWindowStore } from '../../shared/store/windowStore'
+import { LINUX_APP_PREFIX, linuxWindowChrome } from './kind'
 import { paintFrame, parseFrame } from './frames'
 import {
   canvasFor,
   dropAllCanvases,
   dropCanvas,
+  setLinuxSender,
   useLinuxWindowsStore,
   windowForToplevel,
+  type Geometry,
+  type LinuxToplevel,
 } from './linuxWindowsStore'
 
 /** Close codes the backend uses (wayland.constants.ts). */
@@ -27,10 +30,18 @@ type ToplevelMessage = {
   app_id: string
   width: number
   height: number
+  geometry: Geometry
+  decorations: 'server' | 'client'
+  min_width: number
+  min_height: number
+  max_width: number
+  max_height: number
 }
 type ServerMessage =
   | ToplevelMessage
   | { type: 'toplevel_destroyed'; toplevel: number }
+  | { type: 'cursor'; name: string }
+  | { type: 'request'; toplevel: number; action: string; edges?: string }
   | { type: 'unavailable'; reason: string }
 
 /** Where Linux apps' windows are drawn: the desktop above the taskbar. */
@@ -54,10 +65,23 @@ export function buildWaylandUrl(session: string, size: { width: number; height: 
   return `${scheme}//${window.location.host}/api/wayland${query}`
 }
 
+function shape(m: ToplevelMessage): Omit<LinuxToplevel, 'windowId' | 'toplevel'> {
+  return {
+    title: m.title || m.app_id || 'Linux app',
+    appId: m.app_id,
+    width: m.width,
+    height: m.height,
+    geometry: m.geometry,
+    decorations: m.decorations,
+    min: { width: m.min_width, height: m.min_height },
+    max: { width: m.max_width, height: m.max_height },
+  }
+}
+
 /**
  * This tab's Linux windows socket: opens an OS window for each toplevel the
- * host announces, paints its frames, closes it when the toplevel goes. One
- * per tab, started once the desktop is signed in.
+ * host announces, paints its frames, passes input back, and closes the window
+ * when the toplevel goes. One per tab, started once the desktop is signed in.
  *
  * Closing the socket ends the session in the backend and its apps with it,
  * so when it drops, the windows go too; a reconnect starts an empty session.
@@ -71,6 +95,9 @@ export class LinuxWindowsConnection {
   private viewportTimer: ReturnType<typeof setTimeout> | null = null
   /** One paint at a time per toplevel, so frames land in order. */
   private painting = new Map<number, Promise<void>>()
+  private unsubscribeWindows: (() => void) | null = null
+  /** The toplevel the host was last told has keyboard focus. */
+  private focused: number | null = null
 
   private readonly onResize = () => {
     if (this.viewportTimer) clearTimeout(this.viewportTimer)
@@ -83,12 +110,18 @@ export class LinuxWindowsConnection {
     if (!this.stopped) return
     this.stopped = false
     window.addEventListener('resize', this.onResize)
+    // Keyboard focus follows the window manager's focused window.
+    this.unsubscribeWindows = useWindowStore.subscribe(() => this.syncFocus())
+    setLinuxSender((m) => this.send(m))
     this.connect()
   }
 
   stop(): void {
     this.stopped = true
     window.removeEventListener('resize', this.onResize)
+    this.unsubscribeWindows?.()
+    this.unsubscribeWindows = null
+    setLinuxSender(null)
     if (this.retryTimer) clearTimeout(this.retryTimer)
     if (this.viewportTimer) clearTimeout(this.viewportTimer)
     const ws = this.ws
@@ -104,6 +137,7 @@ export class LinuxWindowsConnection {
     this.ws = ws
     ws.onopen = () => {
       this.retries = 0
+      this.focused = null
     }
     ws.onmessage = (ev: MessageEvent<ArrayBuffer | string>) => this.onMessage(ev.data)
     ws.onclose = (ev) => {
@@ -137,12 +171,21 @@ export class LinuxWindowsConnection {
     if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(message))
   }
 
+  /** Tell the host which Linux window, if any, the window manager focused. */
+  private syncFocus(): void {
+    const top = topVisibleWindowId()
+    const t = top ? useLinuxWindowsStore.getState().byWindow[top] : undefined
+    const next = t ? t.toplevel : null
+    if (next === this.focused) return
+    this.focused = next
+    this.send({ type: 'focus', toplevel: next })
+  }
+
   private onMessage(data: ArrayBuffer | string): void {
     if (typeof data !== 'string') {
       const frame = parseFrame(data)
       if (!frame) return
-      const t = windowForToplevel(frame.toplevel)
-      if (!t) return
+      if (!windowForToplevel(frame.toplevel)) return
       const canvas = canvasFor(frame.toplevel)
       const prev = this.painting.get(frame.toplevel) ?? Promise.resolve()
       const next = prev.then(() => paintFrame(canvas, frame)).catch(() => undefined)
@@ -158,6 +201,8 @@ export class LinuxWindowsConnection {
     if (m.type === 'toplevel_created') this.created(m)
     else if (m.type === 'toplevel_updated') this.updated(m)
     else if (m.type === 'toplevel_destroyed') this.destroyed(m.toplevel)
+    else if (m.type === 'cursor') useLinuxWindowsStore.getState().setCursor(m.name)
+    else if (m.type === 'request') this.request(m.toplevel, m.action, m.edges)
   }
 
   private created(m: ToplevelMessage): void {
@@ -165,43 +210,31 @@ export class LinuxWindowsConnection {
       this.updated(m)
       return
     }
-    const appId = LINUX_APP_PREFIX + (m.app_id || 'app')
-    const title = m.title || m.app_id || 'Linux app'
-    const windowId = useWindowStore.getState().openWindow(
-      appId,
-      title,
-      {
-        width: m.width + LINUX_WINDOW_CHROME.width,
-        height: m.height + LINUX_WINDOW_CHROME.height,
-      },
+    const s = shape(m)
+    const chrome = linuxWindowChrome(s.decorations === 'server')
+    const windows = useWindowStore.getState()
+    const windowId = windows.openWindow(
+      LINUX_APP_PREFIX + (m.app_id || 'app'),
+      s.title,
+      { width: s.geometry.width + chrome.width, height: s.geometry.height + chrome.height },
       { width: 120, height: 80 }
     )
-    useLinuxWindowsStore.getState().add({
-      toplevel: m.toplevel,
-      windowId,
-      title,
-      appId: m.app_id,
-      width: m.width,
-      height: m.height,
+    // The close button asks the app; the window closes when its toplevel
+    // goes, which may be never (the app asked to save, or refused).
+    windows.registerCloseGuard(windowId, () => {
+      this.send({ type: 'close', toplevel: m.toplevel })
+      return false
     })
+    useLinuxWindowsStore.getState().add({ toplevel: m.toplevel, windowId, ...s })
+    this.syncFocus()
   }
 
   private updated(m: ToplevelMessage): void {
     const t = windowForToplevel(m.toplevel)
     if (!t) return
-    const title = m.title || m.app_id || 'Linux app'
-    const windows = useWindowStore.getState()
-    if (title !== t.title) windows.updateTitle(t.windowId, title)
-    // The app chose a new size: the OS window follows its picture.
-    if (m.width !== t.width || m.height !== t.height) {
-      windows.updateSize(t.windowId, {
-        width: m.width + LINUX_WINDOW_CHROME.width,
-        height: m.height + LINUX_WINDOW_CHROME.height,
-      })
-    }
-    useLinuxWindowsStore
-      .getState()
-      .update(t.windowId, { title, appId: m.app_id, width: m.width, height: m.height })
+    const s = shape(m)
+    if (s.title !== t.title) useWindowStore.getState().updateTitle(t.windowId, s.title)
+    useLinuxWindowsStore.getState().update(t.windowId, s)
   }
 
   private destroyed(toplevel: number): void {
@@ -210,15 +243,52 @@ export class LinuxWindowsConnection {
     useLinuxWindowsStore.getState().remove(t.windowId)
     this.painting.delete(toplevel)
     dropCanvas(toplevel)
-    useWindowStore.getState().closeWindow(t.windowId)
+    const windows = useWindowStore.getState()
+    windows.unregisterCloseGuard(t.windowId)
+    windows.closeWindow(t.windowId)
+  }
+
+  /**
+   * The app asked the window manager for something. Maximize, restore and
+   * minimize map to its own actions (it has no fullscreen, so fullscreen
+   * maximizes); a move or resize from the app's own title bar or edge is
+   * started by the window body, which knows where the pointer is.
+   */
+  private request(toplevel: number, action: string, edges?: string): void {
+    const t = windowForToplevel(toplevel)
+    if (!t) return
+    const windows = useWindowStore.getState()
+    const win = windows.windows.find((w) => w.id === t.windowId)
+    if (!win) return
+    switch (action) {
+      case 'maximize':
+      case 'fullscreen':
+        if (!win.isMaximized) windows.maximizeWindow(t.windowId)
+        break
+      case 'unmaximize':
+      case 'unfullscreen':
+        if (win.isMaximized) windows.restoreWindow(t.windowId)
+        break
+      case 'minimize':
+        windows.hideWindow(t.windowId)
+        break
+      case 'move':
+      case 'resize':
+        useLinuxWindowsStore.getState().setRequest({ windowId: t.windowId, action, edges })
+        break
+    }
   }
 
   private closeAllWindows(): void {
     const all = Object.values(useLinuxWindowsStore.getState().byWindow)
     useLinuxWindowsStore.getState().clear()
     this.painting.clear()
+    this.focused = null
     dropAllCanvases()
     const windows = useWindowStore.getState()
-    for (const t of all) windows.closeWindow(t.windowId)
+    for (const t of all) {
+      windows.unregisterCloseGuard(t.windowId)
+      windows.closeWindow(t.windowId)
+    }
   }
 }

@@ -36,14 +36,58 @@ export type HostInbound =
   | { type: 'session_open'; session: string; width: number; height: number }
   | { type: 'session_close'; session: string }
   | { type: 'output'; session: string; width: number; height: number }
-  | { type: 'frame_ack'; session: string; toplevel: number };
+  | { type: 'frame_ack'; session: string; toplevel: number }
+  | { type: 'focus'; session: string; toplevel: number | null }
+  | {
+      type: 'pointer_motion';
+      session: string;
+      toplevel: number;
+      x: number;
+      y: number;
+    }
+  | {
+      type: 'pointer_button';
+      session: string;
+      toplevel: number;
+      button: number;
+      pressed: boolean;
+    }
+  | {
+      type: 'pointer_axis';
+      session: string;
+      toplevel: number;
+      dx: number;
+      dy: number;
+      v120x: number;
+      v120y: number;
+      wheel: boolean;
+    }
+  | { type: 'pointer_leave'; session: string }
+  | { type: 'key'; session: string; keycode: number; pressed: boolean }
+  | {
+      type: 'configure';
+      session: string;
+      toplevel: number;
+      width: number;
+      height: number;
+      maximized: boolean;
+    }
+  | { type: 'close'; session: string; toplevel: number };
 
 /** Host → backend, JSON kind. */
 export type HostOutbound =
   | { type: 'hello'; version: number }
   | { type: 'session_ready'; session: string; display: string }
   | { type: 'session_failed'; session: string; reason: string }
-  | ToplevelMessage;
+  | ToplevelMessage
+  | { type: 'cursor'; session: string; name: string }
+  | {
+      type: 'request';
+      session: string;
+      toplevel: number;
+      action: string;
+      edges?: string;
+    };
 
 export type ToplevelMessage =
   | {
@@ -54,6 +98,12 @@ export type ToplevelMessage =
       app_id: string;
       width: number;
       height: number;
+      geometry: { x: number; y: number; width: number; height: number };
+      decorations: 'server' | 'client';
+      min_width: number;
+      min_height: number;
+      max_width: number;
+      max_height: number;
     }
   | { type: 'toplevel_destroyed'; session: string; toplevel: number };
 

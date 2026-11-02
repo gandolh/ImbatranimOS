@@ -12,8 +12,11 @@ export function isLinuxWindow(appId: string): boolean {
 }
 
 /**
- * The OS window's frame around a Linux app's image: a 1px border on each
- * side and the 30px title bar. An OS window sized to an image plus this shows
- * the image exactly.
+ * The OS window's frame around a Linux app's window: a 1px border on each
+ * side, plus the 30px title bar when the app asked the display to draw it.
+ * An app that draws its own title bar gets the frame alone. An OS window
+ * sized to the app's window plus this shows it exactly.
  */
-export const LINUX_WINDOW_CHROME = { width: 2, height: 32 }
+export function linuxWindowChrome(serverSide: boolean): { width: number; height: number } {
+  return serverSide ? { width: 2, height: 32 } : { width: 2, height: 2 }
+}

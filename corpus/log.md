@@ -4585,3 +4585,20 @@ canvas in a new kind of OS window. Frames are lossless WebP: 1.2 KB/s for a tick
 core's marketplace host names the new export, both outside the brief's file list. Walked outside the
 container with foot and headless Chromium; the dev-container walk and the image build are the
 owner's.
+
+## [2026-11-02] brief | 03 done: Linux windows take input; title bars follow the app
+
+The host's seat has a US keyboard and a pointer, with cursor-shape-v1 and xdg-decoration
+(`3996293`). Keys go by `KeyboardEvent.code` to evdev codes; the desktop keeps its Global and
+Window management shortcuts and the app gets the rest, Escape included. Focus follows the window
+manager's focused window; resizing the OS window configures the app within its limits; the close
+button asks the app. An app asking for server-side decoration gets the Win7 title bar; one drawing
+its own gets a frame only (a `frameOnly` prop on `Window`), and its own bar's move and resize
+requests drive the window manager's drag. Walked outside the container with foot and gtk3-demo, 14
+checks passing; the browser's reserved keys are listed in the brief from Chrome's documentation,
+untested. Popups and subsurfaces are 04's.
+
+## [2026-11-02] brief | 04-06 not started: they wait on 01's proof
+
+The build environment can't pull images or reach the Nix cache, so 01's container proof is owed, and
+04 (Firefox in a window) must not be built on an unproven 01. 04, 05 and 06 stay in `todo/` untouched.

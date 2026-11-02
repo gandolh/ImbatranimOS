@@ -61,7 +61,11 @@ its proof in a container (Firefox headless under Nix, the measurements) is
 the owner's to run, with the commands in the brief. Nix state lives in
 `/nix`, not the home, so backups keep restoring. 02 is done: the Wayland
 host shows a Linux app's window in an OS window, one socket per tab, frames
-as lossless WebP; walked outside the container, with the image build owed.
+as lossless WebP. 03 is done: pointer, US keyboard, focus, resize and close,
+and title bars that follow the app (the Win7 bar on request, else a frame).
+Both were walked outside the container with foot and gtk3-demo; the
+dev-container walk and the image build are the owner's. 04-06 wait on 01's
+in-container proof.
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
 Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the

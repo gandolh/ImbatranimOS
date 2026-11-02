@@ -59,7 +59,9 @@ Firefox in a window, the Linux apps pane, lifecycle and sleep
 `claude/linux-apps-layer` (2026-11-02). 01 is built and stays in `todo/`:
 its proof in a container (Firefox headless under Nix, the measurements) is
 the owner's to run, with the commands in the brief. Nix state lives in
-`/nix`, not the home, so backups keep restoring.
+`/nix`, not the home, so backups keep restoring. 02 is done: the Wayland
+host shows a Linux app's window in an OS window, one socket per tab, frames
+as lossless WebP; walked outside the container, with the image build owed.
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
 Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the

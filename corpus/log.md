@@ -4571,3 +4571,17 @@ home. The build environment couldn't pull images or reach the Nix cache, so the 
 and the Spec 7 numbers are the owner's to run; the brief stays in `todo/` with the commands.
 Proven outside a container with Nix 2.34.6: the config, the registry, profile installs under
 `max-jobs = 0`, fonts found through the generated `fonts.conf`, nothing written to the home.
+
+## [2026-11-02] brief | 02 done: the Wayland host shows a window
+
+`apps/wayland-host` (Rust, smithay 0.7, Wayland server side only) is the display Linux apps
+connect to; the backend starts it on the first tab, talks to it over a control socket
+(`apps/wayland-host/PROTOCOL.md`) and relays each tab's windows over `/api/wayland` behind the
+Terminal's checks (`f43b42e`). Each tab has a desktop session id in `sessionStorage`, its own
+Wayland display and socket, and Terminal shells carry it in `WAYLAND_DISPLAY`. A Linux window is a
+canvas in a new kind of OS window. Frames are lossless WebP: 1.2 KB/s for a ticking clock against
+2.0 KB/s deflated, equal when scrolling, about 10% more host CPU. foot needed
+`wl_data_device_manager`, added. The Terminal add-on sends the session id and the kit list in
+core's marketplace host names the new export, both outside the brief's file list. Walked outside the
+container with foot and headless Chromium; the dev-container walk and the image build are the
+owner's.

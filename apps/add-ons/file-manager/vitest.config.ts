@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config'
 
-// Pure routing logic; no DOM needed.
+// Pure logic runs in node. The listing's test renders the app and opts into
+// jsdom with a docblock.
 export default defineConfig({
-  test: { environment: 'node', include: ['src/**/*.test.ts'] },
+  test: { environment: 'node', include: ['src/**/*.test.ts', 'src/**/*.test.tsx'] },
 })

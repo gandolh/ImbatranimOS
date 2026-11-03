@@ -102,3 +102,79 @@ the attribute check. All suites pass.
 
 - `infrastructure/nix/**` (read the pin; never write it).
 - The marketplace backend and its pane.
+
+## Outcome (2026-11-03)
+
+Built in `457db5d` on `claude/linux-apps-layer` (1.83.0) and walked in the
+dev container in headless Chromium, 12 checks passing.
+
+**The index.** The baked `packages.json.br` is 381 MB of JSON unpacked,
+and `JSON.parse` of it costs about 1.6 GB, more than the VPS has. So it is
+streamed: brotli-decompressed in chunks, each package's object cut out by
+depth (strings skipped) and parsed alone, and only what the pane shows is
+kept: 129,833 packages (x86_64-linux, and not marked unavailable unless
+unfree, since the list was made without allowing unfree ones), 11.7 MB on
+the `/nix` volume as `index-<commit>.json`. Built in 7.2 s at a peak RSS of
+174 MB, once per pin; loaded again in 0.17 s; dropped from memory after 15
+minutes without a search. The pane says when the list's commit differs from
+the pin and installs nothing then.
+
+**Search** matches every word in the attribute, the name or the
+description: exact names first, then prefixes, then other name matches,
+then descriptions; 50 at most. Each result has its version, description,
+attribute and an Unfree badge.
+
+**Jobs.** `nix profile add nixpkgs#<attr>` (with `--impure` for an unfree
+one, which `NIXPKGS_ALLOW_UNFREE=1` then allows), `nix profile remove
+<name>` and `nix-collect-garbage -d`, each with `spawn` and an argument
+array, in its own process group (a 30-minute limit stops the group), one at
+a time; the attribute must be in the index and plain (`isValidAttr`), the
+name in `nix profile list --json`. The pane polls the job's log every
+second while it runs, as the marketplace pane does.
+
+**Only from the tab that holds the session** (owner, 2026-11-03). Installs,
+removals, Free space and launches carry the tab's desktop session id, and
+the backend refuses them unless that session's `/api/wayland` socket is
+live (`WaylandGateway.hasSession`): the tab the apps will show in. Reading
+(status, search, installed, the job, the store) needs only the sign-in.
+
+**Start entries.** The profile's `share/applications/*.desktop`
+(`Type=Application`, not `NoDisplay` or `Hidden`; the profile is
+`$NIX_STATE_HOME/profile` since 01, not `~/.nix-profile`) become
+`linux:<id>` entries spliced into `APP_REGISTRY` the way marketplace apps
+are, at sign-in and after every job. Start, the palette, the desktop, pins
+and Settings → Apps treat them as apps; opening one posts a launch instead
+of opening a window. The launch runs `Exec` with its field codes removed and
+its quoting split per the spec, detached in its own process group, with the
+Terminal's environment and the session's `WAYLAND_DISPLAY`; the backend
+records the group per session for 06. A Linux window's app id is the same
+`linux:<id>`, so its taskbar button and the desktop now show the entry's
+icon (02 left them without one). Icons come from the profile's hicolor
+theme (largest PNG, or the SVG) or a store path, served with a
+`sandbox` policy so an SVG opened by its URL runs nothing.
+
+The walk: the pane is in Settings next to Marketplace; Firefox (from 01's
+proof) was in Start; removing it ran a job and took it out of Start;
+searching "firefox" listed it; installing streamed the log and finished,
+Firefox was in Start again and launched from the Start menu into an OS
+window titled by Firefox, its taskbar button showing its icon; "gimp"
+listed GIMP; `vscode` carried the Unfree badge; a made-up attribute posted
+to the install endpoint got 400 with no Nix process started and the last
+job unchanged; Free space took the store from 2.1 GB to 1.6 GB (the
+nixpkgs source and Firefox's earlier copy went).
+
+**Departures from "files you own"**, each the smallest hook: `openApp` and
+the palette's app source (which opens windows itself) launch a Linux entry;
+`shared/registry/marketplace.tsx` exports `noteRegistryChanged` so Start
+re-renders; the Wayland module exports its gateway and `hasSession`; the
+app module registers the new module.
+
+Not done: localized names (`Name[ro]`), desktop actions (New Window), and
+`TryExec`. A command-line tool installs and works in the Terminal but gets
+no Start entry, as specced.
+
+Checks: `npm run typecheck` (26) and `npm run lint` (25), core's tests (586
+in 46 files, 2 new), the backend's unit tests (847 in 53 suites, 17 new) and
+e2e suite (183 of 184 in the full run; the marketplace's service-app test
+timed out under load, the open todo, and passed with its file alone, 9 of
+9).

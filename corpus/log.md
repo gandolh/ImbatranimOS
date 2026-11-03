@@ -4659,3 +4659,13 @@ CPU 3%, 22% scrolling, 17% on a video; 0, 160 and 239 kB/s on the WebSocket; 13 
 28 on the video. Chromium's renderer crashed when a window's zoom ran beside a drawing Linux window;
 while one is open, windows open with the fade only (1 crash in 5 left, opening an app beside a
 playing video). Owner: check Chrome with a GPU.
+
+## [2026-11-03] brief | 05 done: the Linux apps pane, and Start entries
+
+Settings → Linux apps searches the pinned release's package list, installs and removes with the
+job's log in the pane, shows the store's size and frees space (`457db5d`, 1.83.0). The 381 MB list
+is streamed into a 12 MB index on the `/nix` volume (7 s, 174 MB peak, once per pin; parsing it
+whole would cost 1.6 GB). Changes and launches come only from a tab whose desktop session is live
+(owner). Installed apps' `.desktop` files become `linux:<id>` Start entries, launched in their own
+process group into the tab's session; Linux windows now find their icon through the same id.
+Walked in the dev container, 12 checks passing, Free space taking the store from 2.1 to 1.6 GB.

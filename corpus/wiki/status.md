@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; twelve open briefs (the Linux apps layer 05-06, the two themes 08-15; 01-04 done); what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; eleven open briefs (the Linux apps layer 06, the two themes 08-15; 01-05 done); what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -70,7 +70,10 @@ request, else a frame). Both were walked again in the dev container on
 and subsurfaces, and Firefox in an OS window, walked in the dev container
 (menus, tabs, a download, a video; PSS about 500 MB idle, 160 kB/s
 scrolling). While a Linux window is open, windows open with the fade only:
-Chromium's renderer crashed when a zoom ran beside one. 05-06 follow.
+Chromium's renderer crashed when a zoom ran beside one. 05 is done:
+Settings → Linux apps searches the release's list (streamed into a 12 MB
+index), installs and removes from the tab that holds the session, and frees
+space; installed apps appear in Start and launch into the tab. 06 follows.
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
 Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the

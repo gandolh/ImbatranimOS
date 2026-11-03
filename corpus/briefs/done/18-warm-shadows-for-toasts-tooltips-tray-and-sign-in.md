@@ -32,3 +32,23 @@ black shadows:
 
 `apps/core/src/index.css` (the shadow variables), the four components,
 `corpus/wiki/ui-conventions.md`, `corpus/wiki/status.md`, `corpus/log.md`.
+
+## Outcome (2026-11-03)
+
+**Built in `79a83ae`.**
+- The four variables sit in the Apricot light and dark blocks and Classic's
+  shape block.
+- `ToastHost`, the kit's `Tooltip`, the tray's two popovers and
+  `AuthShell` use `shadow-(--k-shadow-…)`.
+- A grep finds no literal `shadow-[…]` left in core, the add-ons or the kit.
+- `ui-conventions.md` rule 9 lists the four.
+
+**Checked:**
+- Typecheck; `theme.test.ts`, `contrast.test.ts` and the auth and kit tests
+  pass.
+- In the browser, Classic's computed `--k-shadow-toast/-tooltip/-tray/-card`
+  are the old literals character for character, and Apricot light's are the
+  warm ones.
+- The notification popover in Apricot light is rounded with the soft warm
+  shadow.
+- Vite was restarted after the kit edit.

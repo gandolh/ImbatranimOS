@@ -4671,3 +4671,9 @@ covers File Manager's list and search results, the playlist, the outline, the pa
 and Git's lists. File Manager's list stayed a `<table>`: in Apricot it separates its borders and
 puts the row fill on rounded cells, which keeps its virtualisation and keyboard handling as they
 were. Classic is pixel-identical.
+
+## [2026-11-03] brief | 18 done: warm shadows for toasts, tooltips, the tray and sign-in
+
+Toasts, tooltips, the tray's popovers and the sign-in card take `--k-shadow-*` variables: Classic
+keeps its exact old shadows, Apricot gets the canvas's warm ones. No literal shadow is left in the
+desktop, the add-ons or the kit.

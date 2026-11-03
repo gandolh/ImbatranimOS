@@ -56,7 +56,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
    derived use is the Checkbox's half control radius. A maximised or snapped window drops `rounded-window`. Theme-only styling uses the `apricot:` variant.
 9. **Shadows only on floating layers**, and only the shadow variables (`index.css`), as `shadow-(--k-shadow-…)`: `window` / `window-focused` (frames), `menu` (Start),
    `popup` (context menus, Select), `dialog` (dialogs, Alt+Tab), `tile` (desktop icons, Apricot only). Classic keeps the old recipes as their values; Apricot's
-   are warm-tinted. Toasts, tooltips and tray popovers still carry literal recipes. In-window content is flat —
+   are warm-tinted. Also `toast`, `tooltip`, `tray` (the tray's popovers) and `card` (the sign-in card), 2026-11-03. In-window content is flat —
    separation is a 1px `border-outline-variant` plus a surface-container step.
 10. Never invent a colour to mean a state. Levels are told apart by **icon shape**; only `error` gets colour (`notifications/levelStyle.ts:11-18`). Success is `text-primary`,
     not green.

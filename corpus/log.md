@@ -4602,3 +4602,16 @@ untested. Popups and subsurfaces are 04's.
 
 The build environment can't pull images or reach the Nix cache, so 01's container proof is owed, and
 04 (Firefox in a window) must not be built on an unproven 01. 04, 05 and 06 stay in `todo/` untouched.
+
+## [2026-11-03] decision | The image is self-contained; boot never downloads
+
+Grilled with the owner on the open PR: as few dependencies as possible outside the image. Nix stays,
+in the image. The base profile (fonts, locale archive) is installed into the image's `/nix` at build
+and copied into a new volume; boot downloads nothing and logs a volume that lacks it. The pinned
+snapshot's `packages.json.br` is baked in for 05, from a snapshot the pin now names on
+`releases.nixos.org`. Apps and the nixpkgs source still download on first install; the dev test
+clients stay. Rejected: a `file://` cache in the image, baking Firefox, dropping Nix, shipping the
+nixpkgs source, a boot fallback, following the channel for the index. Record in
+[decisions-linux-apps.md](wiki/decisions-linux-apps.md); brief 01's spec and 05's index step are
+amended, and 01 is rebuilt to match (`383beba`). The pin's snapshot name is empty until the owner
+looks it up; the build stops with instructions meanwhile.

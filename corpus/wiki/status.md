@@ -1,9 +1,9 @@
 ---
-summary: Dated snapshot (2026-11-02) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; fourteen open briefs (the Linux apps layer 01-06, the two themes 08-15); what the owner owes, open todos, and where the history lives.
-updated: 2026-11-02
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; fourteen open briefs (the Linux apps layer 01-06, the two themes 08-15); what the owner owes, open todos, and where the history lives.
+updated: 2026-11-03
 ---
 
-# Status — 2026-11-02
+# Status — 2026-11-03
 
 **The web OS is built and in daily use.** One container is the computer: Alpine
 and Node, the desktop and the API on one port, everything as the unprivileged
@@ -59,7 +59,9 @@ Firefox in a window, the Linux apps pane, lifecycle and sleep
 `claude/linux-apps-layer` (2026-11-02). 01 is built and stays in `todo/`:
 its proof in a container (Firefox headless under Nix, the measurements) is
 the owner's to run, with the commands in the brief. Nix state lives in
-`/nix`, not the home, so backups keep restoring. 02 is done: the Wayland
+`/nix`, not the home, so backups keep restoring. Since 2026-11-03 the image
+is self-contained: the base profile and package index are baked in and boot
+never downloads; the pin's snapshot name is the owner's to fill in. 02 is done: the Wayland
 host shows a Linux app's window in an OS window, one socket per tab, frames
 as lossless WebP. 03 is done: pointer, US keyboard, focus, resize and close,
 and title bars that follow the app (the Win7 bar on request, else a frame).

@@ -36,8 +36,9 @@ It shows no window. Briefs 02 to 06 build the window layer on top of it.
    `NIXPKGS_ALLOW_UNFREE=1` with `--impure`) and document it.
 4. **Pin one nixpkgs revision.** The pin is the `nixos-26.05` release, at the
    commit in `https://channels.nixos.org/nixos-26.05/git-revision`. One file
-   in the repo (`infrastructure/nix/`) holds the release name and the commit,
-   and nothing else repeats them. Register the pin in the user's flake
+   in the repo (`infrastructure/nix/`) holds the release name, the release
+   snapshot's directory on `releases.nixos.org` (added 2026-11-03) and the
+   commit, and nothing else repeats them. Register the pin in the user's flake
    registry as `nixpkgs`, so `nix profile install nixpkgs#firefox` installs
    from the pinned commit. Brief 05 searches `packages.json.br` from the same
    release, so it must be able to read this file.
@@ -55,15 +56,19 @@ It shows no window. Briefs 02 to 06 build the window layer on top of it.
    There is no session D-Bus. Note any GTK warnings this causes; don't fix
    them here.
 
-   **Who installs the fonts and locale data.** `/nix` is a named volume and
-   starts empty. `entrypoint.sh` installs a small base profile
-   (`imbatranim-base`) on boot when it is missing: one font package and the
-   smallest cached UTF-8 locale package at the pin (check `glibcLocalesUtf8`
-   first; a custom locale override would need compiling, which `max-jobs = 0`
-   forbids). With no network at boot, it logs and carries on; the OS works,
-   and Linux apps wait until the next boot. If that turns out to be
-   unworkable, fill the volume from the image at build time instead (Docker
-   copies image content into a new named volume once) and record why.
+   **Who installs the fonts and locale data** (revised by the owner
+   2026-11-03, [decisions-linux-apps.md](../../wiki/decisions-linux-apps.md)).
+   The image build installs a small base profile (`imbatranim-base`) into
+   the image's `/nix`: one font package and the smallest cached UTF-8 locale
+   package at the pin (check `glibcLocalesUtf8` first; a custom locale
+   override would need compiling, which `max-jobs = 0` forbids). Docker
+   copies it into a new Nix volume, so the first boot needs no network. Boot
+   never downloads: a volume without the base logs it and carries on.
+
+   **The package index** (same revision). The build also bakes the pinned
+   snapshot's `packages.json.br` and `git-revision` into the image, from the
+   snapshot directory the pin names on `releases.nixos.org`, and checks the
+   revision against the commit. Brief 05 searches it.
 6. **Prove it from the Terminal:**
    1. Run `nix profile install nixpkgs#firefox`.
    2. Run `firefox --headless --screenshot ~/shot.png https://example.org`.
@@ -81,9 +86,9 @@ It shows no window. Briefs 02 to 06 build the window layer on top of it.
 
 - `imbatranim` has no sudo, and nothing runs as root after the entrypoint.
   Nix runs as `imbatranim`.
-- The image still builds from source with `docker compose build`; Nix
-  binaries come from the cache at install or first boot, not at image build
-  time (unless Spec 5's fallback is taken and recorded).
+- The image still builds from source with `docker compose build`. The base
+  profile's binaries come from the cache at image build (2026-11-03); apps'
+  come from it when the user installs them.
 - The Terminal, Files, Backup and every other app behave as before. A backup
   archive's contents don't change.
 
@@ -151,8 +156,16 @@ What was built:
   reads the pin from `/etc/nix/nixpkgs-pin.env`.
 - **Base profile:** `imbatranim-base` holds `dejavu_fonts` and
   `glibcLocalesUtf8` (both top-level attributes at the pin, so Hydra builds
-  them; whether they are cached wasn't checkable). The entrypoint starts the
-  install in the background so boot never waits on the network.
+  them; whether they are cached wasn't checkable). First built as a
+  background install at boot (`c5ef3b2`); on 2026-11-03 the owner moved it
+  into the image build (`383beba`), followed by `nix store gc` to drop the
+  nixpkgs source, and removed the boot download. Checked here: the gc keeps
+  the profile and collects an unrooted path.
+- **Package index** (2026-11-03): `packages.json.br` and `git-revision` from
+  the pinned snapshot, baked into `/usr/share/imbatranim/nix/`. The pin file
+  gained `NIXPKGS_SNAPSHOT`, which is empty: the snapshot name couldn't be
+  looked up from here, and the build stops with instructions until the owner
+  fills it in.
 - **Terminal environment:** `LOCALE_ARCHIVE`, `FONTCONFIG_FILE` (a
   `fonts.conf` generated at build that lists the base and user profiles'
   fonts and keeps its cache in `/nix`), `XDG_DATA_DIRS` and `XDG_RUNTIME_DIR`
@@ -169,10 +182,9 @@ machine has, against an overlay of its store in a private mount namespace:
 `setup-image.sh` runs (with `apk` stubbed); `nix config show` reads the
 config as written; `nix registry list` resolves `nixpkgs` to the pin;
 `nix profile add` works with `max-jobs = 0` and builds the profile at
-`/nix/var/imbatranim/state/profile`; `fc-list` with the generated
+`/nix/var/imbatranim/state/profile`; `nix store gc` keeps it; `fc-list` with the generated
 `fonts.conf` finds fonts in both profiles and caches in `/nix`; the home
-folder is unchanged afterwards; `base-profile.sh` with no reachable
-nixpkgs logs its failure and exits 0 within a second. `npm run typecheck`
+folder is unchanged afterwards. `npm run typecheck`
 (26 packages), `npm run lint` (26), the backend's unit tests (808 in 46
 suites, 3 new) and its e2e suite (184 in 16) pass.
 
@@ -181,22 +193,21 @@ Firefox, the screenshot), and no numbers for Spec 7.
 
 ### The owner's run
 
-From the repo root on this branch:
+First fill in `NIXPKGS_SNAPSHOT` in `infrastructure/nix/nixpkgs-pin.env`:
+open `https://channels.nixos.org/nixos-26.05`, which redirects to
+`https://releases.nixos.org/nixos/26.05/<snapshot>/`, and copy `<snapshot>`.
+If that snapshot's `git-revision` isn't `9bb52223…`, move `NIXPKGS_COMMIT` to
+it too. Then, from the repo root on this branch:
 
 ```bash
 docker images imbatranimos:1.0 --format '{{.Size}}'      # size before, on main's image
 docker compose -f infrastructure/docker-compose.yml build imbatranimos
 docker images imbatranimos:1.0 --format '{{.Size}}'      # size after
 docker compose -f infrastructure/docker-compose.yml up -d imbatranimos
-docker compose -f infrastructure/docker-compose.yml logs imbatranimos | grep nix-base-profile
+docker compose -f infrastructure/docker-compose.yml logs imbatranimos | grep -i 'base profile'   # expect nothing
 docker compose -f infrastructure/docker-compose.yml exec imbatranimos sh -c \
   'cat /etc/nix/nixpkgs-pin.env; nix registry list; ls -l $NIX_STATE_HOME/profiles'
 ```
-
-The pin check, on any machine with network:
-`curl -s https://channels.nixos.org/nixos-26.05/git-revision` should print
-`9bb52223f4f6a0cc606fd0852d8784f896c137d5` (or a newer commit; then decide
-whether to move the pin).
 
 Then, in the desktop's Terminal:
 

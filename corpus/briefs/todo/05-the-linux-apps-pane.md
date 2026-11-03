@@ -17,12 +17,11 @@ whole package list as one file, `packages.json.br`. `nixos-26.05`'s was
 ## Spec
 
 1. **The package index.**
-   - Download `packages.json.br` and `git-revision` from the same release
-     snapshot. Follow `channels.nixos.org/<release>`'s redirect once and use
-     the resolved directory for both files, so the list matches what installs.
-   - The release and commit must equal the pin in `infrastructure/nix/`
-     from 01. If they differ, show that, and offer no installs until they
-     match.
+   - Read `packages.json.br` and `git-revision` from
+     `/usr/share/imbatranim/nix/`, where 01's image build bakes them from the
+     pinned snapshot (owner, 2026-11-03: no download for the index).
+   - The commit must equal the pin in `/etc/nix/nixpkgs-pin.env`. If it
+     differs, show that, and offer no installs until they match.
    - Decompress with Node's built-in brotli and keep a compact index on the
      `/nix` volume (not in home, so Backup skips it).
    - Only `x86_64-linux` packages.

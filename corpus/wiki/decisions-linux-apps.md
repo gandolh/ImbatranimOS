@@ -1,6 +1,6 @@
 ---
-summary: Linux GUI apps run in the container and show as ordinary OS windows; their windows reach the tab as pixels, narrowing os-layering's "data, never pixels". Our own Wayland host in Rust (smithay) does the Wayland part, the backend relays it over the signed-in WebSocket, and the compositor stays in the browser. The OS stays Alpine; Linux apps come from Nix, installed by the user at runtime without sudo, reversing the build-time-only app stance. An app lives with its tab, survives a reload, and sleeps (SIGSTOP) under the idle cover screen. Firefox is the first app; Spotify was dropped. Settled with the owner 2026-10-23 in the Spotify grilling.
-updated: 2026-11-02
+summary: Linux GUI apps run in the container and show as ordinary OS windows; their windows reach the tab as pixels, narrowing os-layering's "data, never pixels". Our own Wayland host in Rust (smithay) does the Wayland part, the backend relays it over the signed-in WebSocket, and the compositor stays in the browser. The OS stays Alpine; Linux apps come from Nix, installed by the user at runtime without sudo, reversing the build-time-only app stance. An app lives with its tab, survives a reload, and sleeps (SIGSTOP) under the idle cover screen. Firefox is the first app; Spotify was dropped. Settled with the owner 2026-10-23 in the Spotify grilling; the image made self-contained 2026-11-03 (base profile and package index baked in, no download at boot).
+updated: 2026-11-03
 ---
 
 # Decisions: Linux apps in OS windows (2026-10-23)
@@ -127,3 +127,30 @@ timer and a second setting.
 - *Consequence*: an app is many processes (Firefox is), so it is launched in
   its own process group and frozen as a group. A frozen client misses the
   host's liveness pings, so the host does not count those against it.
+
+## The image is self-contained; only installing an app downloads
+_2026-11-03_ — The host needs only Docker, and the image carries everything
+the OS needs to boot: Nix itself, the base profile (DejaVu fonts and the
+UTF-8 locale archive, installed into the image's `/nix` at build, which
+Docker copies into a new Nix volume) and the pinned snapshot's package index
+(`packages.json.br`, baked into `/usr/share/imbatranim/nix/`). Boot never
+downloads; a volume without the base logs it and carries on, and recreating
+the volume restores it. Installing an app still fetches it from
+`cache.nixos.org`, and the pinned nixpkgs source from GitHub once per volume.
+The pin names the release snapshot on `releases.nixos.org` as well as its
+commit, so the baked index always matches what installs.
+Rejected: a signed `file://` binary cache in the image (heals any volume
+offline, but carries the base twice); baking Firefox (about 300 MB against
+the ~150 MB target, and reverses runtime installs); dropping Nix for Alpine
+packages baked at build (reverses the 2026-10-23 call); shipping the nixpkgs
+source; a download fallback at boot; following the channel URL for the
+index (it moves every few days and would stop matching the pin).
+**Why**: the owner wants as few dependencies as possible outside the image,
+and a machine that boots offline.
+- *Consequence*: building the image needs `releases.nixos.org`, `github.com`
+  and `cache.nixos.org`.
+- *Consequence*: a pin move means copying a snapshot name as well as its
+  commit, and the build stops until the snapshot is set.
+- *Consequence*: an existing volume keeps its base across pin moves; fonts
+  and locales don't need to match the pin.
+

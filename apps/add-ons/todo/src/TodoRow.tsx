@@ -335,7 +335,7 @@ function PickerChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'font-ui border px-1.5 py-0.5 text-[11px]',
+        'font-ui rounded-control border px-1.5 py-0.5 text-[11px]',
         active
           ? 'border-primary bg-primary-container text-on-primary-container'
           : 'border-outline-variant text-on-surface hover:bg-surface-container'

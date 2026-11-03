@@ -315,7 +315,7 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
             <Download size={13} />
           </Button>
 
-          <div className="border-outline-variant flex border">
+          <div className="border-outline-variant rounded-control flex overflow-hidden border">
             {views.map((mode) => (
               <button
                 key={mode}

@@ -58,7 +58,7 @@ function DayPicker({
               aria-label={`Repeat on ${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][index]}`}
               onClick={() => onChange(toggleDay(mask, index))}
               className={cn(
-                'font-ui h-6 w-6 border text-[10px] font-semibold transition-colors',
+                'font-ui rounded-control h-6 w-6 border text-[10px] font-semibold transition-colors',
                 on
                   ? 'border-primary bg-primary-container text-on-primary-container'
                   : 'border-outline-variant text-on-surface-variant hover:text-on-surface'

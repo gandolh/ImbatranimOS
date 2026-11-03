@@ -65,7 +65,7 @@ export function ConverterPad({ windowId: _windowId }: { windowId: string }) {
             onClick={() => pickCategory(cat.id)}
             aria-pressed={cat.id === categoryId}
             className={cn(
-              'font-ui border px-2 py-0.5 text-[11px]',
+              'font-ui rounded-control border px-2 py-0.5 text-[11px]',
               cat.id === categoryId
                 ? 'border-primary bg-primary-container text-on-primary-container'
                 : 'border-outline-variant text-on-surface hover:bg-surface-container'

@@ -274,7 +274,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
           type="button"
           onClick={() => setListId(null)}
           className={cn(
-            'font-ui border px-1.5 py-0.5 text-[11px]',
+            'font-ui rounded-control border px-1.5 py-0.5 text-[11px]',
             listId === null
               ? 'border-primary bg-primary-container text-on-primary-container'
               : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
@@ -288,7 +288,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             type="button"
             onClick={() => setListId(l.id)}
             className={cn(
-              'font-ui max-w-28 truncate border px-1.5 py-0.5 text-[11px]',
+              'font-ui rounded-control max-w-28 truncate border px-1.5 py-0.5 text-[11px]',
               listId === l.id
                 ? 'border-primary bg-primary-container text-on-primary-container'
                 : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
@@ -369,7 +369,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
           }}
           aria-pressed={selectMode}
           className={cn(
-            'font-ui border px-1.5 py-0.5 text-[11px]',
+            'font-ui rounded-control border px-1.5 py-0.5 text-[11px]',
             selectMode
               ? 'border-primary bg-primary-container text-on-primary-container'
               : 'border-outline-variant text-on-surface-variant hover:text-on-surface'

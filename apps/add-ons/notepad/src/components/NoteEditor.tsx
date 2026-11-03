@@ -324,7 +324,7 @@ export function NoteEditor({
           <button
             onClick={() => setMode('edit')}
             className={cn(
-              'p-1.5',
+              'rounded-control p-1.5',
               mode === 'edit' && 'bg-primary-container text-on-primary-container'
             )}
             title="Edit"
@@ -335,7 +335,7 @@ export function NoteEditor({
           <button
             onClick={() => setMode('preview')}
             className={cn(
-              'p-1.5',
+              'rounded-control p-1.5',
               mode === 'preview' && 'bg-primary-container text-on-primary-container'
             )}
             title="Preview as Markdown"

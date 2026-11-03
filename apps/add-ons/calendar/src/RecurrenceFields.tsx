@@ -89,7 +89,7 @@ export function RecurrenceFields({
                         })
                       }
                       className={cn(
-                        'font-ui h-6 w-7 border text-[10px] font-semibold',
+                        'font-ui rounded-control h-6 w-7 border text-[10px] font-semibold',
                         on
                           ? 'border-primary bg-primary-container text-on-primary-container'
                           : 'border-outline-variant text-on-surface-variant hover:text-on-surface'

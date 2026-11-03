@@ -115,7 +115,7 @@ export function SearchBox({
           aria-pressed={contentMode}
           onClick={onToggleContentMode}
           className={cn(
-            'flex h-[22px] w-[22px] shrink-0 items-center justify-center border',
+            'rounded-control flex h-[22px] w-[22px] shrink-0 items-center justify-center border',
             contentMode
               ? 'border-primary bg-primary-container text-on-primary-container'
               : 'border-outline-variant text-on-surface-variant hover:text-on-surface'

@@ -36,7 +36,7 @@ export function CalcToolbar({
   copyEnabled: boolean
 }) {
   const key =
-    'font-ui border-outline-variant text-on-surface hover:bg-surface-container-high ' +
+    'font-ui rounded-control border-outline-variant text-on-surface hover:bg-surface-container-high ' +
     'h-6 border px-1.5 text-[10px] font-semibold disabled:opacity-40'
 
   return (

@@ -134,7 +134,7 @@ export function Logs() {
             onClick={() => setLevel((current) => (current === l.id ? null : l.id))}
             aria-pressed={level === l.id}
             className={cn(
-              'border-outline-variant border px-2 py-1 text-[11px] transition-colors',
+              'border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors',
               level === l.id
                 ? 'bg-primary-container text-on-primary-container border-primary'
                 : 'hover:bg-surface-container-high'
@@ -149,7 +149,7 @@ export function Logs() {
           aria-pressed={follow}
           title="Re-read the newest entries every few seconds"
           className={cn(
-            'border-outline-variant border px-2 py-1 text-[11px] transition-colors',
+            'border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors',
             follow
               ? 'bg-primary-container text-on-primary-container border-primary'
               : 'hover:bg-surface-container-high'

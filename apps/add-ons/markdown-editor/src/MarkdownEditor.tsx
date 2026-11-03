@@ -421,7 +421,10 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
           </Button>
         </Tooltip>
 
-        <div className="border-outline-variant ml-1 flex items-center border" role="group">
+        <div
+          className="border-outline-variant rounded-control ml-1 flex items-center overflow-hidden border"
+          role="group"
+        >
           {VIEW_MODE_OPTIONS.map((option) => (
             <Tooltip key={option.mode} content={option.label}>
               <button
@@ -449,7 +452,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
             aria-pressed={settings.outlineOpen}
             onClick={() => update({ outlineOpen: !settings.outlineOpen })}
             className={cn(
-              'ml-1 flex h-6 w-6 items-center justify-center',
+              'rounded-control ml-1 flex h-6 w-6 items-center justify-center',
               settings.outlineOpen
                 ? 'bg-primary-container text-on-primary-container'
                 : 'text-on-surface hover:bg-surface-container-high'
@@ -467,7 +470,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
               aria-pressed={settings.syncScroll}
               onClick={() => update({ syncScroll: !settings.syncScroll })}
               className={cn(
-                'flex h-6 w-6 items-center justify-center',
+                'rounded-control flex h-6 w-6 items-center justify-center',
                 settings.syncScroll
                   ? 'bg-primary-container text-on-primary-container'
                   : 'text-on-surface hover:bg-surface-container-high'

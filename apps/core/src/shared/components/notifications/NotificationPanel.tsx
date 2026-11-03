@@ -89,7 +89,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
             aria-pressed={dnd}
             title={dnd ? 'Do Not Disturb is on' : 'Do Not Disturb is off'}
             className={cn(
-              'flex items-center gap-1 px-1.5 py-1 text-[10px] outline-none',
+              'rounded-control flex items-center gap-1 px-1.5 py-1 text-[10px] outline-none',
               'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
               dnd
                 ? 'bg-primary-container text-on-primary-container'

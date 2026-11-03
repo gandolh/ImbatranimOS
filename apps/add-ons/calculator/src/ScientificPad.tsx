@@ -253,7 +253,7 @@ export function ScientificPad({
               onClick={() => setAngleMode(mode)}
               aria-pressed={angleMode === mode}
               className={cn(
-                'font-ui border-outline-variant h-6 flex-1 border text-[10px] font-semibold uppercase',
+                'font-ui border-outline-variant rounded-control h-6 flex-1 border text-[10px] font-semibold uppercase',
                 angleMode === mode
                   ? 'bg-primary-container text-on-primary-container border-primary'
                   : 'text-on-surface hover:bg-surface-container-high'

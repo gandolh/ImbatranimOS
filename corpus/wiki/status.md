@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); six open briefs: the Linux apps layer 01-06, in a cloud session on its own branch; the theme follow-ups 16-21 are done; what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); seven open briefs: the Linux apps layer 01-06, in a cloud session on its own branch, and 22, a dev image that survives a version bump; the theme follow-ups 16-21 are done; what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -78,6 +78,10 @@ deployed with 08-15:
 - 19 (done): rounded boxes inside windows;
 - 20 (done): the accent focus ring on every control;
 - 21 (done): Settings fits a phone.
+22 makes the dev image survive a version bump: every commit's bump changes
+the manifests the `npm ci` layer copies, so each rebuild reinstalls everything
+and re-owns `node_modules`, and Compose watch rebuilds on every commit
+(owner, 2026-11-03).
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner

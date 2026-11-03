@@ -4715,3 +4715,12 @@ the rounded kit button. The todo office-pin-after-the-row-1000-fix is closed. Co
 brief 15's outcome: Hollow does not build against the kit (a schema-1, kit-less descriptor and
 no `@imbatranim/ui` import in game-engine), so it needs no re-vendor and its pin stays. Nothing is
 pushed or deployed; the owner pushes imbatranim-office first.
+
+## [2026-11-03] brief | 22 written: the dev image survives a version bump
+
+The owner asked for it while the dev image rebuilt for the README images. Every commit's version
+bump changes `package.json` and `package-lock.json`, which the Dockerfile's `deps` stage copies
+before `npm ci`, so each image build reinstalls every dependency and the `dev` stage re-owns all
+of `node_modules`; Compose watch also rebuilds the container on every commit. The brief keys the
+`npm ci` layer on the dependencies alone, drops the `chown -R` over `node_modules`, and stops
+watch from rebuilding for a version-only change.

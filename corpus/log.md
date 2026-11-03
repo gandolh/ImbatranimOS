@@ -4610,3 +4610,11 @@ Classic's windows are pixel-identical. File Manager's table rows stay square, an
 buttons wait for 14. ui-conventions rules 8 and 9 and checklist item 3 are rewritten. Built in
 `547b223` (1.78.0). Vite's watcher missed a kit edit once; restart it after touching
 `packages/ui`.
+
+## [2026-11-03] brief | 13 done: Apricot's wallpapers
+
+Wallpapers live in one module per theme that the desktop and Settings both read; Classic's three
+moved over unchanged. Apricot gets the canvas's sunset hills as an inline SVG behind the icons
+(sky gradient, sun or moon, clouds, three hills, stars at dusk) that fills any desktop size and
+recolours from `--k-wall-*` variables on a mode switch, plus Plain and Soft dots. Checked at
+1280×800, 390×844 and 2560×1440; Classic is pixel-identical. Built in `e41d80c` (1.80.0).

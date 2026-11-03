@@ -67,3 +67,57 @@ Independent of 01-06; ships together with 08-15.
   previews only.
 - `apps/core/src/index.css`: the scene variables in the Apricot blocks.
 - `corpus/wiki/status.md`, `corpus/log.md`.
+
+## Outcome (2026-11-03)
+
+**Built in `e41d80c` (version 1.80.0).**
+
+`desktop/wallpapers.ts` holds `WALLPAPERS: Record<ThemeId, WallpaperDef[]>`,
+where each entry is `{ id, name, background, scene?, preview }`.
+`wallpaperById` finds an id in either theme, and an unknown id gets the plain
+surface. Desktop draws `background` and, for a scene, the scene component
+first, so the icon layer paints over it. Settings lists the current theme's
+entries with their `preview`. Classic's three entries carry the old desktop
+styles and Settings previews unchanged.
+
+**Sunset hills** (`desktop/SunsetHills.tsx`, its own file for the
+fast-refresh lint rule). One SVG with no viewBox, `aria-hidden` and
+`pointer-events-none`:
+- the canvas's eight stars and six cloud ellipses at percentage centres,
+  fixed radii;
+- the sun's halo (r 150, opacity 0.28) and disc (r 74) at 84.4% / 25.1%;
+- a nested SVG at `y` 56.88% and height 43.12%, with `viewBox="0 430 1280
+  326"` and `preserveAspectRatio="none"`, holding the canvas's three hill
+  paths.
+
+At the canvas's own 1280×756 it matches the canvas. The sky is a
+`linear-gradient` on the desktop's background. Fills are `style={{ fill:
+'var(--k-wall-…)' }}`.
+
+**Variables** in the Apricot light and dark blocks, from `looks().apricot`:
+- `--k-wall-sky-1/2/3`;
+- `--k-wall-sun`;
+- `--k-wall-cloud`;
+- `--k-wall-hill-1/2/3`;
+- `--k-wall-star` and `--k-wall-star-opacity` (0 in light, 0.9 in dark).
+
+**Plain** is `--k-surface-container-high`. **Soft dots** is
+`radial-gradient(var(--k-outline) 1.2px, transparent 1.6px)` at 22px (10px
+in the preview) on `--k-surface`.
+
+**Checked:**
+- Typecheck and lint; the desktop, Settings, store, theme and contrast tests
+  (86) pass.
+- Apricot light shows the sunset hills and dark the dusk version with moon
+  and stars, at 1280×800, 390×844 and 2560×1440. The hills stay along the
+  bottom, the sky stretches and the sun stays top-right. On the phone width,
+  the sun's halo reaches the middle of the screen.
+- Icons, the context menu and the rubber band sit above it.
+- Plain applied at once in Settings and was still there after a reload
+  (`wallpapers.apricot: 'plain'`). Soft dots applied at once.
+- Classic light and dark screenshots match the ones before brief 08: windows
+  (Settings' previews included) 0 pixels, desktop only the tray's stats.
+- No network requests or image files.
+
+Vite needed a restart after `wallpapers.tsx` became `wallpapers.ts`. It kept
+resolving the deleted file and the page went blank.

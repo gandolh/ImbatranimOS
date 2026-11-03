@@ -78,7 +78,7 @@ All run from the repo root through Turborepo.
 | `npm run build` | Builds the backend and the desktop (cached; a second run is instant) |
 | `npm run lint` | Lints every package |
 | `npm run typecheck` | Typechecks every package |
-| `npm test` | Every package's unit tests, plus the backend's end-to-end suite |
+| `npm test` | Every package's unit tests, plus the backend's end-to-end suite, at most half as many at once as the machine has cores (`--concurrency=50%`): under load, more failed tests on fixed timeouts that pass alone. For one run without the cap, call turbo yourself: `npx turbo test test:e2e --concurrency=100%` (turbo refuses the flag twice, so `npm test -- --concurrency=…` won't do) |
 | `npm run format:check` | Prettier check across the packages |
 | `npm run docs` | Builds the documentation site in `apps/docs` (corpus pages plus the generated API reference) |
 | `npm run version:bump -- --stage` | Bumps the minor version; the project runs it before each commit |

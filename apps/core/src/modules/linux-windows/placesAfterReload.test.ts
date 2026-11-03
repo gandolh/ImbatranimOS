@@ -23,7 +23,9 @@ class FakeSocket {
   onopen: (() => void) | null = null
   onmessage: ((ev: { data: string }) => void) | null = null
   onclose: ((ev: { code: number }) => void) | null = null
-  constructor(public url: string) {
+  url: string
+  constructor(url: string) {
+    this.url = url
     FakeSocket.last = this
   }
   send(data: string) {

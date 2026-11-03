@@ -4685,3 +4685,11 @@ boxes, cards, inputs, buttons and progress tracks take the control radius in Apr
 (checkboxes, swatches, key caps, tags) a new sixth token, `rounded-small` (4px, 0 in Classic);
 frames already rounded, the rubber band, Paint's canvas and Minesweeper's cells were left. Classic
 is pixel-identical.
+
+## [2026-11-03] brief | 20 done: every control has the accent focus ring
+
+A scan of every focusable element found 188 with no focus style. 144 class strings took the house
+ring by script; the shared class constants, a bare checkbox and an inline field were done by hand;
+native checkboxes, radios, the colour picker and range inputs take an accent outline. Hidden
+inputs and Markdown content were left. ui-conventions rule 36 now says no control may fall back to
+the browser outline.

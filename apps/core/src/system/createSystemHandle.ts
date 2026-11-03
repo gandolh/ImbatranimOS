@@ -176,6 +176,7 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
           mode: 'open',
           title: opts.title ?? 'Open file',
           extensions: opts.extensions,
+          startIn: opts.startIn,
         }),
       pickSave: (opts = {}) =>
         requestPick({
@@ -183,6 +184,7 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
           title: opts.title ?? 'Save as',
           extensions: opts.extensions,
           suggestedName: opts.suggestedName,
+          startIn: opts.startIn,
         }),
       pickDirectory: (opts = {}) =>
         requestPick({ mode: 'directory', title: opts.title ?? 'Choose a folder' }),

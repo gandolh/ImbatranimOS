@@ -35,6 +35,16 @@ export type PickOpenOptions = {
   title?: string
   /** Preferred extensions, lowercase without the dot. A hint, not a jail. */
   extensions?: string[]
+  /**
+   * The folder the dialog opens in, instead of the home root: a Save as that
+   * starts beside the open document, say. A `path` that names a file means
+   * the folder it is in. A start the app couldn't reach by walking the dialog
+   * (an unknown root, a path outside the root's jail, a folder that no longer
+   * exists) opens at the home root, without an error; either way the user can
+   * walk anywhere they could before. Since kit 1.1.0; an older desktop
+   * ignores it and opens at the home root.
+   */
+  startIn?: FileChoice
 }
 
 export type PickSaveOptions = PickOpenOptions & { suggestedName?: string }

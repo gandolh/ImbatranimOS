@@ -69,3 +69,53 @@ Independent of 01-06; ships together with 08-15.
   that entry.
 - The literals listed in step 4.
 - `corpus/wiki/status.md`, `corpus/log.md`.
+
+## Outcome (2026-11-03)
+
+**Built in `5e2ae74` (version 1.76.0).**
+
+**The font file.** `figtree-latin-var.woff2` is Figtree 2.002, `wght` 300-900.
+It comes from `@fontsource-variable/figtree` 5.3.0
+(`files/figtree-latin-wght-normal.woff2`) and adds **20,156 bytes** (19.7
+KiB). Only the current theme's UI font is fetched: Apricot loads Figtree and
+Inter, Classic loads Space Grotesk and Inter. The `@font-face` declares `300
+900`.
+
+**Provenance.** `assets/fonts/README.md` names each file, its source, version
+and licence (OFL-1.1 for all three). The two older files had no recorded
+source. Their name tables say Inter 4.001 (`git-66647c0bb`) and Space Grotesk
+2.000. Each is byte-for-byte the Fontsource 5.3.0 latin `wght` file (sha256
+compared on 2026-11-03). None of the three latin subsets has ă, ș or ț, as
+before.
+
+**The UI font per theme.** `--font-ui` is `var(--k-font-ui)` in `theme.css`.
+Each token block sets `--k-font-ui`: Figtree in Apricot, Space Grotesk in
+Classic, each with today's fallback stack. `theme.test.ts` has the one entry
+changed, with a comment.
+
+**The literals.** These now use `var(--font-ui)`:
+- `Window.tsx`;
+- `SnippingTool.tsx` (`font` shorthand);
+- `CaptureOverlay.tsx`;
+- `CountdownOverlay.tsx`;
+- `AnnotationStage.tsx` (the overlay and the text field).
+
+The annotation canvas reads `--font-ui` from `<html>` with `getComputedStyle`
+at draw time (`uiFont()`). Not in the brief's list:
+`CommandPalette.tsx`'s eight `font-[Space_Grotesk,sans-serif]` classes,
+now `font-ui`.
+
+**Checked:**
+- Typecheck, lint, `theme.test.ts`, `contrast.test.ts`, core's component
+  tests (125) and the snipping tool's (20) pass.
+- In headless Chrome, Apricot's Start button computes to `Figtree, …` with
+  Figtree loaded, and Classic's to `"Space Grotesk", …`.
+- `getComputedStyle(<html>).getPropertyValue('--font-ui')` returns Figtree's
+  stack in Apricot, which is the value the annotation canvas draws with. A
+  real annotation wasn't drawn: screen capture needs `getDisplayMedia`, which
+  headless Chrome doesn't grant.
+- Classic light and dark windows are the same as before brief 08 (0 pixels).
+- Fit in Apricot light: the taskbar, Start menu, window titles, File
+  Manager's columns, Settings and the desktop labels have no clipping.
+  Figtree is a little narrower than Space Grotesk ("Bookmarks" now fits on
+  one line). The current Settings has no section rail to check.

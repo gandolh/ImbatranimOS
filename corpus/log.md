@@ -4590,3 +4590,11 @@ stay strong. The kit's `Button` gains a `selected` variant for toggles that used
 their "on" look. Classic renders as before; the rule is in
 [ui-conventions.md](wiki/ui-conventions.md) rule 6. Built in `592b788` (1.74.0). Two calls left to
 the owner: "today" in the calendars stays strong, and a selected chip keeps its deep border.
+
+## [2026-11-03] brief | 11 done: Figtree for Apricot
+
+Apricot's chrome renders in Figtree 2.002, vendored from Fontsource 5.3.0 (20,156 bytes); Classic
+keeps Space Grotesk and both keep Inter for content. `--font-ui` follows the theme through
+`--k-font-ui` in the token blocks, and the window frame, command palette and snipping tool no
+longer name Space Grotesk. `assets/fonts/README.md` now records all three fonts' sources: the two
+older files turned out to be byte-for-byte Fontsource 5.3.0's. Built in `5e2ae74` (1.76.0).

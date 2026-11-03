@@ -178,18 +178,33 @@ nix profile add nixpkgs#firefox    # `nix profile install` is the older name
   and caches included (`NIX_STATE_HOME`, `NIX_CACHE_HOME`, `NIX_CONFIG_HOME`
   and `NIX_DATA_HOME` point into `/nix/var/imbatranim`), and nothing lands in
   the home folder, so Settings → Backup leaves Linux apps out.
-- **The base profile.** A new volume is empty. On boot the entrypoint
-  installs `imbatranim-base` in the background when it is missing: DejaVu
-  fonts and glibc's UTF-8 locale archive, which Nix apps need on a host that
-  isn't NixOS. With no network it logs a `nix-base-profile:` line and the OS
-  boots as usual; Linux apps have no fonts until a later boot installs it.
-- **The pin.** `nixpkgs` means one commit of one release, set in
-  [`nix/nixpkgs-pin.env`](./nix/nixpkgs-pin.env) and nowhere else. The image
-  build writes it into the system flake registry, `/etc/nix/registry.json`.
-  To move it, put the release and the commit from
-  `https://channels.nixos.org/<release>/git-revision` in that file and rebuild
-  the image. Installed apps stay at their old commit until
-  `nix profile upgrade`.
+- **Self-contained.** The image carries Nix, the base profile and the
+  package index; booting never downloads anything, and the host needs only
+  Docker. Only installing an app reaches the network (`cache.nixos.org`, and
+  `github.com` once per volume for the pinned nixpkgs source).
+- **The base profile.** `imbatranim-base` holds DejaVu fonts and glibc's
+  UTF-8 locale archive, which Nix apps need on a host that isn't NixOS. The
+  image build installs it into the image's `/nix`, and Docker copies that
+  into a new Nix volume. A volume made before it never gets it: the
+  entrypoint logs that the base is missing and boots anyway, and
+  `docker volume rm infrastructure_imbatranim-nix` (which also removes the
+  installed apps) gets it back from the image. After a pin move an existing
+  volume keeps its older base, which is fine: fonts and locales don't need to
+  match the pin.
+- **The pin.** `nixpkgs` means one release snapshot, set in
+  [`nix/nixpkgs-pin.env`](./nix/nixpkgs-pin.env) and nowhere else: the
+  release, the snapshot's directory on `releases.nixos.org` and its commit.
+  The image build writes the commit into the system flake registry,
+  `/etc/nix/registry.json`, checks it against the snapshot's `git-revision`,
+  and bakes the snapshot's `packages.json.br` into
+  `/usr/share/imbatranim/nix/` for the Linux apps pane to search offline. To
+  move it, open `https://channels.nixos.org/<release>`, which redirects to
+  `https://releases.nixos.org/nixos/<version>/<snapshot>/`, copy the snapshot
+  name and its `git-revision` into the file, and rebuild. The build stops
+  with that instruction while the snapshot is empty. Installed apps stay at
+  their old commit until `nix profile upgrade`.
+- **Building the image needs the network**: `releases.nixos.org`,
+  `github.com` and `cache.nixos.org`, besides the Alpine and npm mirrors.
 - **No build sandbox, and no building.** [`nix/nix.conf`](./nix/nix.conf)
   sets `sandbox = false`, because the sandbox needs user namespaces that an
   unprivileged container doesn't get, and `max-jobs = 0`, so a package with

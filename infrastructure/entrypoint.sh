@@ -19,11 +19,11 @@ if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
     echo "entrypoint: cannot prepare XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR; Linux apps won't start" >&2
 fi
 
-# The base Nix profile (fonts and locales for Linux apps), in the background
-# so that boot never waits on the network. It does nothing once installed.
-base_profile=/usr/local/libexec/imbatranim/nix-base-profile.sh
-if [ -x "$base_profile" ]; then
-  "$base_profile" &
+# The base Nix profile (fonts and locales for Linux apps) comes in the image
+# and is copied into a new /nix volume. A volume made before it never gets it;
+# boot doesn't download it, it says so.
+if [ -n "${NIX_STATE_HOME:-}" ] && [ ! -e "$NIX_STATE_HOME/profiles/imbatranim-base" ]; then
+  echo "entrypoint: the Nix base profile is missing from /nix; Linux apps will have no fonts or locales. Recreate the Nix volume to get it from the image." >&2
 fi
 
 exec "$@"

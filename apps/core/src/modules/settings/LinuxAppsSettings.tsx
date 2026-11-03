@@ -172,13 +172,13 @@ export function LinuxAppsSettings() {
       </p>
 
       {status.data.index === 'mismatch' && (
-        <p className="border-error text-error border px-3 py-2 text-[12px]">
+        <p className="border-error text-error rounded-control border px-3 py-2 text-[12px]">
           The package list doesn&apos;t match the release this machine installs from, so installing
           is off. Rebuild the image to fix it.
         </p>
       )}
       {status.data.index === 'failed' && (
-        <p className="border-error text-error border px-3 py-2 text-[12px]">
+        <p className="border-error text-error rounded-control border px-3 py-2 text-[12px]">
           The package list could not be read.
         </p>
       )}
@@ -201,17 +201,21 @@ export function LinuxAppsSettings() {
           />
         </div>
         {ready && term && (
-          <ul className="border-outline-variant mt-3 max-h-[320px] divide-y overflow-y-auto border">
+          <ul className="border-outline-variant rounded-control apricot:divide-transparent apricot:py-1 mt-3 max-h-[320px] divide-y overflow-y-auto border px-(--k-list-inset)">
             {results.isFetching && !results.data && (
-              <li className="text-on-surface-variant px-3 py-2 text-[12px]">Searching…</li>
+              <li className="text-on-surface-variant rounded-item px-3 py-2 text-[12px]">
+                Searching…
+              </li>
             )}
             {results.data?.length === 0 && (
-              <li className="text-on-surface-variant px-3 py-2 text-[12px]">Nothing found.</li>
+              <li className="text-on-surface-variant rounded-item px-3 py-2 text-[12px]">
+                Nothing found.
+              </li>
             )}
             {results.data?.map((r) => (
               <li
                 key={r.attr}
-                className="flex items-start gap-3 px-3 py-2"
+                className="rounded-item flex items-start gap-3 px-3 py-2"
                 data-linux-result={r.attr}
               >
                 <div className="min-w-0 flex-1">
@@ -220,7 +224,7 @@ export function LinuxAppsSettings() {
                     <span className="text-on-surface-variant">{r.version}</span>
                     {r.unfree && (
                       <span
-                        className="border-outline text-on-surface-variant border px-1 text-[10px] uppercase"
+                        className="border-outline text-on-surface-variant rounded-small border px-1 text-[10px] uppercase"
                         title="Its license isn't free software"
                       >
                         Unfree
@@ -262,7 +266,7 @@ export function LinuxAppsSettings() {
           </p>
           <pre
             ref={logRef}
-            className="border-outline-variant bg-surface-container-lowest text-on-surface-variant max-h-[180px] overflow-auto border p-2 font-mono text-[11px] whitespace-pre-wrap"
+            className="border-outline-variant bg-surface-container-lowest text-on-surface-variant rounded-control max-h-[180px] overflow-auto border p-2 font-mono text-[11px] whitespace-pre-wrap"
           >
             {job.data.log}
           </pre>
@@ -275,11 +279,11 @@ export function LinuxAppsSettings() {
           Installed
         </p>
         {installed.data?.length ? (
-          <ul className="border-outline-variant divide-y border">
+          <ul className="border-outline-variant rounded-control apricot:divide-transparent apricot:py-1 divide-y border px-(--k-list-inset)">
             {installed.data.map((a) => (
               <li
                 key={a.name}
-                className="flex items-center gap-3 px-3 py-2"
+                className="rounded-item flex items-center gap-3 px-3 py-2"
                 data-linux-installed={a.name}
               >
                 <span className="text-on-surface flex-1 text-[13px]">

@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); one open brief, 22, a dev image that survives a version bump; the theme follow-ups 16-21 are done; what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); open briefs 22-36 (the dev image, five fixes, two kit changes for imbatranim-office, a turbo cap, six Linux apps follow-ups); the theme follow-ups 16-21 are done; what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -102,6 +102,21 @@ deployed with 08-15:
 the manifests the `npm ci` layer copies, so each rebuild reinstalls everything
 and re-owns `node_modules`, and Compose watch rebuilds on every commit
 (owner, 2026-11-03).
+
+23-36 were written on 2026-11-03 from the open todos, in an estate-wide grill
+with the owner, and none is started; the owner picks the order:
+- 23-27, small fixes: the Linux apps pane in the themes (no accent ring on a
+  Linux window's surface), the tray surviving a wrong stats answer, Files'
+  background menu below a short listing, `openApp` moving the keyboard into a
+  raised window, and the image's size after a source build;
+- 28 and 29, for imbatranim-office: the file dialogs' `startIn`, and a kit
+  app asking for its server on demand
+  ([decisions-marketplace-suites.md](decisions-marketplace-suites.md));
+  imbatranim-office's own briefs then use them;
+- 30: the full test run caps turbo at half the cores;
+- 31-36, Linux apps after the first wave: XWayland, a keyboard layout,
+  HiDPI, window places after a reload, localized desktop entries with their
+  actions, and lossy video regions.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner
@@ -136,13 +151,14 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Open todos
 
-- [linux-apps-ui-in-the-themes](../todos/linux-apps-ui-in-the-themes.md)
-- [files-background-menu-misses-empty-space](../todos/files-background-menu-misses-empty-space.md)
-- [full-run-timeouts-under-load](../todos/full-run-timeouts-under-load.md)
-- [keyboard-gaps-left-after-the-focus-fixes](../todos/keyboard-gaps-left-after-the-focus-fixes.md)
-- [linux-apps-after-the-first-wave](../todos/linux-apps-after-the-first-wave.md)
-- [native-build-leftovers-in-the-image](../todos/native-build-leftovers-in-the-image.md)
-- [tray-crash-on-a-wrong-api-base](../todos/tray-crash-on-a-wrong-api-base.md)
+Four Linux apps items each need a grill with the owner before a brief, and
+one waits on the owner's check:
+- [linux-apps-sound](../todos/linux-apps-sound.md)
+- [linux-apps-clipboard](../todos/linux-apps-clipboard.md)
+- [linux-apps-on-the-vps](../todos/linux-apps-on-the-vps.md)
+- [linux-apps-move-the-nix-pin](../todos/linux-apps-move-the-nix-pin.md)
+- [window-zoom-beside-linux-windows](../todos/window-zoom-beside-linux-windows.md)
+  (Chrome with a real GPU)
 
 ## History
 

@@ -1,6 +1,6 @@
 ---
-summary: The marketplace's calls for suites (2026-10-21) and kit apps (2026-10-21), 2026-10-21 — a v2 row keeps its output in `entry`, the listing trusts what the build recorded (entries, and a kit app's stylesheets and shared kit version) and, since the same-ref rebuild (2026-10-27) (2026-10-27), reports the catalog's kit beside it so the pane can offer a rebuild, the shared global holds frozen copies of the namespaces, the registry sync prunes a gone build's stylesheet links, the theme tokens are static, and the dev container can try a local `file://` checkout.
-updated: 2026-11-02
+summary: The marketplace's calls for suites (2026-10-21) and kit apps (2026-10-21), 2026-10-21 — a v2 row keeps its output in `entry`, the listing trusts what the build recorded (entries, and a kit app's stylesheets and shared kit version) and, since the same-ref rebuild (2026-10-27) (2026-10-27), reports the catalog's kit beside it so the pane can offer a rebuild, the shared global holds frozen copies of the namespaces, the registry sync prunes a gone build's stylesheet links, the theme tokens are static, and the dev container can try a local `file://` checkout; a kit app asks for its server when it needs one, instead of the host leasing it before the app renders (2026-11-03).
+updated: 2026-11-03
 ---
 
 # Decisions: suites and kit apps in the marketplace
@@ -107,3 +107,17 @@ build added these.
   reporting the catalog's kit as `sharedKit`, which would make the desktop
   load a build against a kit it was not made for. A backend without the field
   reads as unknown and offers nothing.
+
+## A kit app asks for its server when it needs one (2026-11-03)
+
+Decided in a grill with the owner, for imbatranim-office's DWG opening (its
+todo "every Office window waits on, and fails with, the suite server"). Today
+the host leases a `service` descriptor's server before any of its apps
+renders, and a failed lease stops the window. Instead the kit lets an app
+ask for its server at the moment it needs one (CAD on its first DWG) and
+handle a failure itself; an app that never asks never waits and never fails
+on it. Rejected: a per-app `server: true` flag, which keeps the four other
+Office apps static but still makes every CAD window wait for the cold start,
+even for a DXF. The cost: a kit contract change (the kit grows a call to
+lease the app's server) and a change to how `KitAppHost` hosts kit apps.
+

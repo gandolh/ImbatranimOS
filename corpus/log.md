@@ -4395,7 +4395,7 @@ Same grilling. Spotify ships only for glibc and the OS is Alpine (musl). The own
 
 ## [2026-10-23] todo | Briefs 168–173 filed: Linux apps in OS windows, Firefox first
 
-The grilling that began with Spotify ended with a general layer: Linux GUI apps from Nix, shown as OS windows through our own Rust Wayland host, Firefox first (Spotify dropped). The settled calls are in [decisions-linux-apps.md](wiki/decisions-linux-apps.md). Brief-level calls: the feature is on on every machine, title bars follow the app (an exception to the Win7 chrome for Linux windows only), a Settings pane from the start, unfree packages allowed, US keyboard only, lossless changed-region frames near 30 fps. Six small briefs, riskiest first: 168 Nix and headless Firefox, 169 output, 170 input and title bars, 171 popups and the Firefox walk, 172 the pane, 173 lifecycle and sleep. Left out on purpose: [linux-apps-after-the-first-wave](todos/linux-apps-after-the-first-wave.md).
+The grilling that began with Spotify ended with a general layer: Linux GUI apps from Nix, shown as OS windows through our own Rust Wayland host, Firefox first (Spotify dropped). The settled calls are in [decisions-linux-apps.md](wiki/decisions-linux-apps.md). Brief-level calls: the feature is on on every machine, title bars follow the app (an exception to the Win7 chrome for Linux windows only), a Settings pane from the start, unfree packages allowed, US keyboard only, lossless changed-region frames near 30 fps. Six small briefs, riskiest first: 168 Nix and headless Firefox, 169 output, 170 input and title bars, 171 popups and the Firefox walk, 172 the pane, 173 lifecycle and sleep. Left out on purpose: linux-apps-after-the-first-wave.
 
 ## [2026-10-23] todo | Briefs 174–176 from two open todos
 
@@ -4444,7 +4444,7 @@ briefs 166 and 167. The three todos are marked promoted.
 
 ## [2026-10-28] build | Brief 178 done: Alt+Tab works over a Terminal
 
-The Alt+Tab switcher's key listeners on `window` run in the capture phase (`770f616`, 1.40.0), so xterm stopping the Tab keydown no longer hides Alt+Tab from it. A key the switcher acts on (Alt+Tab, Alt+Shift+Tab, and the arrows, Enter, Escape and the Alt release while it is open) is stopped there, so the Terminal never also gets it; every other key reaches the focused element untouched. Walked in headless Chrome against the dev container with real key ups: two Terminals and a Calculator, focus in a Terminal, Alt+Tab opened the switcher, a second Tab stepped, releasing Alt brought the other Terminal up with the keyboard in it, and `ech` + Tab still completed in the shell. The global hotkeys share the old cause (Ctrl+K does nothing inside a Terminal): [keyboard-gaps-left-after-the-focus-fixes](todos/keyboard-gaps-left-after-the-focus-fixes.md). Brief 178 carries the outcome.
+The Alt+Tab switcher's key listeners on `window` run in the capture phase (`770f616`, 1.40.0), so xterm stopping the Tab keydown no longer hides Alt+Tab from it. A key the switcher acts on (Alt+Tab, Alt+Shift+Tab, and the arrows, Enter, Escape and the Alt release while it is open) is stopped there, so the Terminal never also gets it; every other key reaches the focused element untouched. Walked in headless Chrome against the dev container with real key ups: two Terminals and a Calculator, focus in a Terminal, Alt+Tab opened the switcher, a second Tab stepped, releasing Alt brought the other Terminal up with the keyboard in it, and `ech` + Tab still completed in the shell. The global hotkeys share the old cause (Ctrl+K does nothing inside a Terminal): keyboard-gaps-left-after-the-focus-fixes. Brief 178 carries the outcome.
 
 ## [2026-10-28] build | Brief 179 done: a click that opens another window leaves it in front
 
@@ -4452,11 +4452,11 @@ A click anywhere in a window still raises it, unless the click itself brought an
 
 ## [2026-10-28] build | Brief 180 done: every new or raised window gets the keyboard
 
-A new window takes the keyboard once its app has mounted (`e233299`, 1.42.0): a marker rendered after the app inside its `Suspense` boundary waits two frames, then calls brief 174's helper if the window is still the focused one, which keeps an app's own first focus such as CAD's command line. A desktop icon, a toast's action, an app's `system.intents.openApp` and `system.window.focus()` move the keyboard into a window they raise; the store and the protocol are unchanged. Walked in Chrome against the dev container: Terminal from Start took typing with no click, Calculator from the palette took `42`, CAD kept its command line, Calculator's desktop icon and a Clock alarm's Snooze each brought their window up with the keyboard in it. No app calls `system.window.focus()` today; unit tests cover it. A side effect: after a reload the restored top window has the keyboard. Left in [keyboard-gaps-left-after-the-focus-fixes](todos/keyboard-gaps-left-after-the-focus-fixes.md): Ctrl+K misses a Terminal, and other `openApp` callers this brief did not own raise a window without the keyboard. Brief 180 carries the outcome.
+A new window takes the keyboard once its app has mounted (`e233299`, 1.42.0): a marker rendered after the app inside its `Suspense` boundary waits two frames, then calls brief 174's helper if the window is still the focused one, which keeps an app's own first focus such as CAD's command line. A desktop icon, a toast's action, an app's `system.intents.openApp` and `system.window.focus()` move the keyboard into a window they raise; the store and the protocol are unchanged. Walked in Chrome against the dev container: Terminal from Start took typing with no click, Calculator from the palette took `42`, CAD kept its command line, Calculator's desktop icon and a Clock alarm's Snooze each brought their window up with the keyboard in it. No app calls `system.window.focus()` today; unit tests cover it. A side effect: after a reload the restored top window has the keyboard. Left in keyboard-gaps-left-after-the-focus-fixes: Ctrl+K misses a Terminal, and other `openApp` callers this brief did not own raise a window without the keyboard. Brief 180 carries the outcome.
 
 ## [2026-10-28] build | Brief 181 built: prefs.ts imports the notification store statically; stays in todo
 
-`notificationStore.ts` imports only zustand, so there is no cycle, and the store was already in the entry chunk: `prefs.ts` now imports it at the top (`0937bba`, 1.43.0), and the eager set shrank by 518 bytes rather than grew. `marketplace.test.tsx`'s axios mock has a `put`. A follow-up (`c5b1bd9`, 1.51.0) resets every prefs module a test loads, since an old module's 5 s retry fired inside a later test. Fifteen full runs (`turbo test test:e2e --force`; without `--force` turbo replays its cache) showed no `EnvironmentTeardownError` and no `api.put` error, and core passed every run it finished after the follow-up. The run is still not green three times in a row: markdown-editor, notepad, code-editor and sheets tests hit vitest's 5 s, and the backend's service-server e2e its 60 s, with the machine's load average between 18 and 55 from other builds. Those are in [full-run-timeouts-under-load](todos/full-run-timeouts-under-load.md); the owner closes brief 181 or fixes them first.
+`notificationStore.ts` imports only zustand, so there is no cycle, and the store was already in the entry chunk: `prefs.ts` now imports it at the top (`0937bba`, 1.43.0), and the eager set shrank by 518 bytes rather than grew. `marketplace.test.tsx`'s axios mock has a `put`. A follow-up (`c5b1bd9`, 1.51.0) resets every prefs module a test loads, since an old module's 5 s retry fired inside a later test. Fifteen full runs (`turbo test test:e2e --force`; without `--force` turbo replays its cache) showed no `EnvironmentTeardownError` and no `api.put` error, and core passed every run it finished after the follow-up. The run is still not green three times in a row: markdown-editor, notepad, code-editor and sheets tests hit vitest's 5 s, and the backend's service-server e2e its 60 s, with the machine's load average between 18 and 55 from other builds. Those are in full-run-timeouts-under-load; the owner closes brief 181 or fixes them first.
 
 ## [2026-10-28] build | Brief 182 done: a kit app starts loading when its window opens
 
@@ -4471,7 +4471,7 @@ The built-in Docs is gone and Office is in the catalog, pinned to the office com
 The owner answered the questions the last run left, on 2026-10-28.
 Brief 181
 is closed as built: its own two errors are gone, and the full run's other
-timeouts stay in [full-run-timeouts-under-load](todos/full-run-timeouts-under-load.md).
+timeouts stay in full-run-timeouts-under-load.
 **The licence stays AGPL-3.0-only.** Its recorded reason was SuperDoc, which
 left the repo with the built-in Docs in brief 164; the licence now stands by
 the owner's choice, noted beside it in
@@ -4482,16 +4482,16 @@ set waits for the first Marketplace listing when it names an app that is not
 registered yet, so the list's order holds. Ctrl+K and the other global
 shortcuts over a Terminal stay with the shell; only Alt+Tab is taken in the
 capture phase. That item of
-[keyboard-gaps-left-after-the-focus-fixes](todos/keyboard-gaps-left-after-the-focus-fixes.md) is
+keyboard-gaps-left-after-the-focus-fixes is
 settled and the rest stay open.
 
 ## [2026-10-28] build | Brief 164 done: the Docs run's walk finished
 
-The rest of brief 164's walk, in Chrome against the dev container with Office `909c321` installed from a local `file://` repository; no code changed since `c3baeef`. With the suite installed, the background menu's New Document wrote `Untitled Document.docx` and opened it in the suite's Docs. With the suite uninstalled, `letter.docx` showed the chooser's sentence, "No installed app opens .docx files. Office in Settings → Marketplace does.", with no app picked; New Document was gone; the `.docx` override, the startup entry and the pinned icon's place stayed in the dotfiles, and all came back on reinstall with no prompt. The last walk's right-click opened no menu because the element that owns the background menu is only as tall as the listing: [files-background-menu-misses-empty-space](todos/files-background-menu-misses-empty-space.md). Step 6: `decisions-pivot-era.md`'s office section says Docs left for imbatranim-office; the 2026-08-03 PDF decision gets its note in brief 167.
+The rest of brief 164's walk, in Chrome against the dev container with Office `909c321` installed from a local `file://` repository; no code changed since `c3baeef`. With the suite installed, the background menu's New Document wrote `Untitled Document.docx` and opened it in the suite's Docs. With the suite uninstalled, `letter.docx` showed the chooser's sentence, "No installed app opens .docx files. Office in Settings → Marketplace does.", with no app picked; New Document was gone; the `.docx` override, the startup entry and the pinned icon's place stayed in the dotfiles, and all came back on reinstall with no prompt. The last walk's right-click opened no menu because the element that owns the background menu is only as tall as the listing: files-background-menu-misses-empty-space. Step 6: `decisions-pivot-era.md`'s office section says Docs left for imbatranim-office; the 2026-08-03 PDF decision gets its note in brief 167.
 
 ## [2026-10-28] build | Brief 165 done: the built-in Slides retired for Office's
 
-The built-in Slides is gone and the Office catalog entry is pinned to `909c321` (`dbd0c04`, 1.57.0), which has every walk fix and the Sheets formula worker. `slides` → `office-slides` joined the sign-in migration; a desktop that had moved Docs runs only the new pair. `pptx-preview` and its `echarts` tree left the lockfile (46 packages). With Office not installed a `.pptx` gets brief 164's Marketplace sentence; a `.ppt` gets "No app here opens .ppt files (PowerPoint 97-2003). Office's Slides opens .pptx.", since Office refuses it by name, rather than the hint about the text editor. Walked in Chrome against the dev container with the old choices seeded: the override, the pinned icon's place, the startup entry and a recent all moved, `deck.pptx` opened in Office's Slides from Files and from Start, and the uninstalled chooser named the Marketplace. The production image shrank from 279,598,118 to 278,157,380 bytes. A first build came out 11.4 MB larger because `better-sqlite3` compiled from source under load and the Dockerfile keeps a source build's leftovers: [native-build-leftovers-in-the-image](todos/native-build-leftovers-in-the-image.md). The pin moves again once Sheets computes formulas past row 1000: `office-pin-after-the-row-1000-fix` (closed 2026-11-03). Brief 165 carries the outcome.
+The built-in Slides is gone and the Office catalog entry is pinned to `909c321` (`dbd0c04`, 1.57.0), which has every walk fix and the Sheets formula worker. `slides` → `office-slides` joined the sign-in migration; a desktop that had moved Docs runs only the new pair. `pptx-preview` and its `echarts` tree left the lockfile (46 packages). With Office not installed a `.pptx` gets brief 164's Marketplace sentence; a `.ppt` gets "No app here opens .ppt files (PowerPoint 97-2003). Office's Slides opens .pptx.", since Office refuses it by name, rather than the hint about the text editor. Walked in Chrome against the dev container with the old choices seeded: the override, the pinned icon's place, the startup entry and a recent all moved, `deck.pptx` opened in Office's Slides from Files and from Start, and the uninstalled chooser named the Marketplace. The production image shrank from 279,598,118 to 278,157,380 bytes. A first build came out 11.4 MB larger because `better-sqlite3` compiled from source under load and the Dockerfile keeps a source build's leftovers: native-build-leftovers-in-the-image. The pin moves again once Sheets computes formulas past row 1000: `office-pin-after-the-row-1000-fix` (closed 2026-11-03). Brief 165 carries the outcome.
 
 ## [2026-10-28] build | Brief 166 done: the built-in Sheets retired for Office's
 
@@ -4507,7 +4507,7 @@ A Marketplace app in Settings → Startup now opens when a new tab signs in (`78
 
 ## [2026-10-31] maintenance | README images retaken after the office retirements
 
-The hero GIF still showed the built-in Docs, Slides, Sheets, PDF Viewer and norPDF icons retired by briefs 164 to 167, and the Marketplace screenshot showed a catalog with Hollow only. Both were taken again (`docs/images/desktop.gif`, `docs/images/marketplace.webp`); `shots.md` records how. The README names CAD among Office's apps and describes the new images. [docs/getting-started.md](../docs/getting-started.md) now says `npm run dev:local` needs `VITE_API_URL=/api`, and `docs/architecture.md` links the docs site pages at their Docusaurus paths; without the variable the desktop stays black, filed as [a todo](todos/tray-crash-on-a-wrong-api-base.md). Checked: `npm ci` with Node 24.22.1, the backend built and started, the desktop answered on port 5173, every relative link in the README and `docs/` resolves.
+The hero GIF still showed the built-in Docs, Slides, Sheets, PDF Viewer and norPDF icons retired by briefs 164 to 167, and the Marketplace screenshot showed a catalog with Hollow only. Both were taken again (`docs/images/desktop.gif`, `docs/images/marketplace.webp`); `shots.md` records how. The README names CAD among Office's apps and describes the new images. [docs/getting-started.md](../docs/getting-started.md) now says `npm run dev:local` needs `VITE_API_URL=/api`, and `docs/architecture.md` links the docs site pages at their Docusaurus paths; without the variable the desktop stays black, filed as a todo. Checked: `npm ci` with Node 24.22.1, the backend built and started, the desktop answered on port 5173, every relative link in the README and `docs/` resolves.
 
 ## [2026-11-02] maintenance | Briefs reset
 
@@ -4878,6 +4878,28 @@ Nix in the image, the Wayland host, Linux windows, the Linux apps pane, lifecycl
 local `main`, which carried the theme briefs 08-22, merged it. Conflicts were only the expected
 ones: the version (kept 1.106.0, the merge commit bumps it), the two runs of entries in this log
 (both kept, the Linux apps run first), `status.md` (both areas kept; 01-06 now read as merged) and
-`index.md` (regenerated). Core (635), the kit (39) and the backend (854) tests pass on the merged tree. The layer's UI predates the themes; what it lacks is filed as [linux-apps-ui-in-the-themes](todos/linux-apps-ui-in-the-themes.md). Nothing is deployed: the themes and the Linux apps deploy together after
+`index.md` (regenerated). Core (635), the kit (39) and the backend (854) tests pass on the merged tree. The layer's UI predates the themes; what it lacks is filed as linux-apps-ui-in-the-themes. Nothing is deployed: the themes and the Linux apps deploy together after
 the owner pushes imbatranim-office and this repo.
 
+
+## [2026-11-03] todo | Briefs 23-36 from the open todos, five todos split out
+
+An estate-wide grill with the owner turned every open todo into a brief or closed it. Here:
+
+- Promoted as written, each todo's acceptance as the spec: 23 the Linux apps pane in the themes
+  (the owner: no accent ring on a Linux window's surface, which is the app's own), 24 a wrong stats
+  answer leaves the desktop standing, 25 Files' background menu reaches the empty space, 26
+  `openApp` moves the keyboard into a raised window (the owner: once inside `openApp`, not per
+  caller), 27 the image is the same size after a source build.
+- From imbatranim-office's todos: 28 `startIn` on the file dialogs, and 29 a kit app asks for its
+  server, decided as on-demand leasing
+  ([decisions-marketplace-suites.md](wiki/decisions-marketplace-suites.md)); the office's own briefs
+  then use them.
+- 30: the full test run caps turbo at half the cores (the owner chose that over per-test timeouts
+  and polling); the full run under load is the owner's check.
+- The first wave's leftovers split: 31 XWayland, 32 a keyboard layout, 33 HiDPI, 34 window places
+  after a reload, 35 localized desktop entries with their actions, 36 lossy video regions. Sound,
+  clipboard, the VPS and moving the Nix pin each became a todo that needs a grill first, and the
+  window zoom beside Linux windows a todo that waits on the owner's check in Chrome with a GPU.
+
+The seven todos promoted are deleted; links to them in this log are now plain text.

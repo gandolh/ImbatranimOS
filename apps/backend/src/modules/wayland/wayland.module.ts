@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { WaylandGateway } from './wayland.gateway';
 import { WaylandHostService } from './wayland-host.service';
+import { SessionApps } from './session-apps';
 
 /**
  * Linux apps' windows. The Wayland host (apps/wayland-host) is the display
@@ -9,8 +10,9 @@ import { WaylandHostService } from './wayland-host.service';
  * `LocalIdentityService` and `UpgradeRoutes` come from global modules.
  */
 @Module({
-  providers: [WaylandHostService, WaylandGateway],
-  // The Linux apps pane launches into a live session, and installs only from one.
-  exports: [WaylandGateway],
+  providers: [WaylandHostService, WaylandGateway, SessionApps],
+  // The Linux apps pane launches into a live session, and installs only
+  // from one; what it launches is recorded for the session's end.
+  exports: [WaylandGateway, SessionApps],
 })
 export class WaylandModule {}

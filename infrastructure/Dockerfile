@@ -114,13 +114,15 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.84.0"
+      org.opencontainers.image.version="1.85.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
 # in the shipped image while working in development on a glibc host.
 # libxkbcommon: the Wayland host links it for the keymap it sends Linux apps.
-RUN apk add --no-cache git libxkbcommon
+# tini: PID 1 (below), so the processes an app leaves behind when its parent
+# dies are reaped instead of piling up as zombies under node.
+RUN apk add --no-cache git libxkbcommon tini
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 # Linux apps come from Nix, run single-user as imbatranim. Every piece of Nix
@@ -169,7 +171,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.84.0
+    IMAGE_VERSION=1.85.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -181,7 +183,9 @@ EXPOSE 8080
 # failure makes wget exit non-zero and marks the container unhealthy.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
   CMD wget -qO- http://127.0.0.1:8080/health || exit 1
-ENTRYPOINT ["/entrypoint.sh"]
+# tini is PID 1: it reaps orphans (a Linux app started from a Terminal
+# outlives the shell that would have waited for it) and passes signals on.
+ENTRYPOINT ["/sbin/tini", "--", "/entrypoint.sh"]
 CMD ["node", "apps/backend/dist/main"]
 
 # ---------------------------------------------------------------------------
@@ -195,7 +199,7 @@ FROM deps AS dev
 # for the Wayland host. foot (with a font) and gtk3-demo are Linux apps to
 # test the host with, in the dev image only: foot asks for the OS title bar,
 # gtk3-demo draws its own.
-RUN apk add --no-cache git libxkbcommon foot font-dejavu gtk+3.0-demo
+RUN apk add --no-cache git libxkbcommon tini foot font-dejavu gtk+3.0-demo
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 # Linux apps under Nix, as in the prod stage (the reasons are there).
@@ -231,5 +235,5 @@ ENV PORT=3001 \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace
 EXPOSE 3001 5173
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "--", "/entrypoint.sh"]
 CMD ["npx", "turbo", "dev"]

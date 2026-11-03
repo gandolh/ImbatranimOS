@@ -14,6 +14,7 @@ import { childEnv } from '../../child-env';
 import { terminalEnv } from '../pty/pty.constants';
 import { isValidSessionId } from '../wayland/wayland.protocol';
 import { WaylandGateway } from '../wayland/wayland.gateway';
+import { SessionApps } from '../wayland/session-apps';
 import { execArgv, parseDesktopEntry } from './desktop-entry';
 import {
   linuxAppsPaths,
@@ -131,10 +132,11 @@ export class LinuxAppsService implements OnModuleDestroy {
   private jobChild: ChildProcess | null = null;
   private nextJobId = 1;
   private storeSize: { bytes: number; at: number } | null = null;
-  /** Apps started from Start, by desktop session: their process groups. */
-  private readonly launched = new Map<string, Set<number>>();
 
-  constructor(private readonly wayland: WaylandGateway) {}
+  constructor(
+    private readonly wayland: WaylandGateway,
+    private readonly sessionApps: SessionApps,
+  ) {}
 
   onModuleDestroy(): void {
     if (this.idleTimer) clearTimeout(this.idleTimer);
@@ -545,23 +547,13 @@ export class LinuxAppsService implements OnModuleDestroy {
       );
     });
     child.unref();
-    const groups = this.launched.get(sid) ?? new Set<number>();
-    groups.add(pid);
-    this.launched.set(sid, groups);
-    child.once('exit', () => groups.delete(pid));
+    // Its group ends with the session, and freezes under the cover screen.
+    this.sessionApps.record(sid, pid);
+    child.once('exit', () => this.sessionApps.exited(sid, pid));
     this.logger.log(
       `Started ${entry.name} (${id}) in a session's display, group ${pid}`,
     );
     return { pid };
-  }
-
-  /** The process groups of the apps started from Start for a session. */
-  launchedGroups(session: string): number[] {
-    return [...(this.launched.get(session) ?? [])];
-  }
-
-  forgetSession(session: string): void {
-    this.launched.delete(session);
   }
 }
 

@@ -85,6 +85,12 @@ impl Host {
             Inbound::Close { session, toplevel } => self.with(&session, |s| s.close(toplevel)),
             Inbound::Position { session, toplevel, x, y } => self.with(&session, |s| s.position(toplevel, x, y)),
             Inbound::PressOutside { session } => self.with(&session, |s| s.press_outside()),
+            Inbound::Resync { session } => self.with(&session, |s| s.resync()),
+            Inbound::Freeze { session, frozen } => self.with(&session, |s| s.set_frozen(frozen)),
+            Inbound::Visibility { session, visible } => self.with(&session, |s| s.set_visible(visible)),
+            Inbound::ToplevelVisible { session, toplevel, visible } => {
+                self.with(&session, |s| s.set_toplevel_visible(toplevel, visible))
+            }
         }
     }
 
@@ -126,9 +132,17 @@ impl Host {
         let listen_token = self
             .handle
             .insert_source(listener, move |stream, _, _host| {
-                let s = for_clients.borrow_mut();
-                if let Err(e) = s.display.handle().insert_client(stream, Arc::new(ClientState::default())) {
-                    log(&format!("could not add a client: {e}"));
+                let mut guard = for_clients.borrow_mut();
+                let s = &mut *guard;
+                let data = Arc::new(ClientState::default());
+                match s.display.handle().insert_client(stream, data.clone()) {
+                    // Who connected, for the backend to stop with the
+                    // session or freeze under the cover screen.
+                    Ok(client) => {
+                        let pid = client.get_credentials(&s.display.handle()).map(|c| c.pid as u32).unwrap_or(0);
+                        s.state.add_client(pid, data);
+                    }
+                    Err(e) => log(&format!("could not add a client: {e}")),
                 }
             })
             .map_err(|e| e.error.to_string())?;
@@ -165,6 +179,7 @@ impl Host {
         let mut frames = Vec::new();
         for (id, session) in &self.sessions {
             let mut s = session.borrow_mut();
+            s.state.prune_clients();
             s.state.fire_idle_callbacks();
             for body in s.state.take_frames(self.encoding) {
                 frames.push(encode_frame(id, &body));

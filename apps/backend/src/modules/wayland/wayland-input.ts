@@ -132,6 +132,17 @@ export function toHostMessage(
       };
     case 'press_outside':
       return { type: 'press_outside', session };
+    case 'visibility':
+      if (typeof m.visible !== 'boolean') return null;
+      return { type: 'visibility', session, visible: m.visible };
+    case 'toplevel_visible':
+      if (!isU32(m.toplevel) || typeof m.visible !== 'boolean') return null;
+      return {
+        type: 'toplevel_visible',
+        session,
+        toplevel: m.toplevel,
+        visible: m.visible,
+      };
     default:
       return null;
   }

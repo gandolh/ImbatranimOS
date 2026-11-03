@@ -3,6 +3,8 @@
 //! a client on tab A's socket can never reach tab B.
 
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Instant;
 
 use smithay::delegate_compositor;
@@ -56,15 +58,18 @@ use crate::protocol::{encode_frame_body, Decorations, Geometry, Outbound, PopupI
 const REPEAT_DELAY_MS: i32 = 500;
 const REPEAT_RATE_HZ: i32 = 25;
 
-/// Per-client data smithay needs.
+/// Per-client data smithay needs, and whether the client has gone.
 #[derive(Default)]
 pub struct ClientState {
     pub compositor: CompositorClientState,
+    gone: AtomicBool,
 }
 
 impl ClientData for ClientState {
     fn initialized(&self, _client_id: ClientId) {}
-    fn disconnected(&self, _client_id: ClientId, _reason: DisconnectReason) {}
+    fn disconnected(&self, _client_id: ClientId, _reason: DisconnectReason) {
+        self.gone.store(true, Ordering::Relaxed);
+    }
 }
 
 /// What a window is to the app: a toplevel (an OS window) or a popup (a
@@ -108,6 +113,8 @@ struct Window {
     /// The surfaces last composed, bottom to top, with their offsets and
     /// sizes. When this changes, the whole window is redrawn.
     layout: Vec<Placed>,
+    /// Its OS window is showing (not minimized). A popup follows its toplevel.
+    shown: bool,
 }
 
 #[derive(Clone, PartialEq)]
@@ -264,6 +271,13 @@ pub struct SessionState {
     grabs: Vec<u32>,
     /// A press outside every Linux window took the keyboard from them.
     keyboard_away: bool,
+    /// The processes connected to the socket: pid (0 when unknown) and
+    /// whether each has gone.
+    clients: Vec<(u32, Arc<ClientState>)>,
+    /// The backend froze the session's apps under the cover screen.
+    frozen: bool,
+    /// The tab is showing; a hidden one gets no frames.
+    visible: bool,
     cursor: String,
     /// Surfaces with frame callbacks waiting to be answered.
     pending_callbacks: Vec<WlSurface>,
@@ -322,6 +336,9 @@ impl SessionState {
             focused: None,
             grabs: Vec::new(),
             keyboard_away: false,
+            clients: Vec::new(),
+            frozen: false,
+            visible: true,
             cursor: "default".into(),
             pending_callbacks: Vec::new(),
             outbox: Vec::new(),
@@ -390,9 +407,10 @@ impl SessionState {
     /// sent is in flight until the backend acks it.
     pub fn take_frames(&mut self, encoding: Encoding) -> Vec<Vec<u8>> {
         let mut out = Vec::new();
+        let quiet: Vec<bool> = (0..self.windows.len()).map(|i| !self.is_live(i)).collect();
         let images = &self.images;
-        for w in self.windows.iter_mut() {
-            if !w.mapped || w.in_flight || !w.canvas.has_damage() {
+        for (i, w) in self.windows.iter_mut().enumerate() {
+            if !w.mapped || w.in_flight || quiet[i] || !w.canvas.has_damage() {
                 continue;
             }
             let layers: Vec<Layer> = w
@@ -422,14 +440,129 @@ impl SessionState {
     /// Answer frame callbacks for every surface whose window isn't waiting
     /// on an ack. Holding them while a frame is in flight is what slows an
     /// app down when the tab's connection can't keep up.
+    ///
+    /// A frozen or hidden session, and a minimized window, get none: a
+    /// well-behaved app then stops drawing until it is shown again.
     pub fn fire_idle_callbacks(&mut self) {
-        let busy: Vec<WlSurface> = self
-            .windows
-            .iter()
-            .filter(|w| w.in_flight)
-            .map(|w| w.root.clone())
+        if self.frozen || !self.visible {
+            return;
+        }
+        let held: Vec<WlSurface> = (0..self.windows.len())
+            .filter(|&i| self.windows[i].in_flight || !self.is_live(i))
+            .map(|i| self.windows[i].root.clone())
             .collect();
-        self.fire_callbacks(|s| !busy.contains(&root_of(s)));
+        self.fire_callbacks(|s| !held.contains(&root_of(s)));
+    }
+
+    /// The window's frames and frame callbacks flow: the session is neither
+    /// frozen nor hidden, and its toplevel's OS window isn't minimized.
+    fn is_live(&self, index: usize) -> bool {
+        if self.frozen || !self.visible {
+            return false;
+        }
+        let mut i = index;
+        for _ in 0..64 {
+            let w = &self.windows[i];
+            if !w.shown {
+                return false;
+            }
+            match &w.role {
+                Role::Toplevel { .. } => return true,
+                Role::Popup { parent, .. } => match self.index_of(*parent) {
+                    Some(p) => i = p,
+                    None => return true,
+                },
+            }
+        }
+        true
+    }
+
+    // ── Lifecycle ───────────────────────────────────────────────────
+
+    pub fn add_client(&mut self, pid: u32, data: Arc<ClientState>) {
+        self.clients.push((pid, data));
+        self.announce_clients();
+    }
+
+    /// Forget clients that have gone, and say so if any had.
+    pub fn prune_clients(&mut self) {
+        let before = self.clients.len();
+        self.clients.retain(|(_, c)| !c.gone.load(Ordering::Relaxed));
+        if self.clients.len() != before {
+            self.announce_clients();
+        }
+    }
+
+    fn announce_clients(&mut self) {
+        let mut pids: Vec<u32> = self.clients.iter().map(|(p, _)| *p).filter(|p| *p != 0).collect();
+        pids.sort_unstable();
+        pids.dedup();
+        self.outbox.push(Outbound::Clients { session: self.id.clone(), pids });
+    }
+
+    /// A tab took the session back (after a reload): every window is
+    /// announced again, toplevels before popups, and sent whole.
+    pub fn resync(&mut self) {
+        for popups in [false, true] {
+            for i in 0..self.windows.len() {
+                if self.windows[i].mapped && self.windows[i].is_popup() == popups {
+                    self.announce(i, true);
+                }
+            }
+        }
+        for w in self.windows.iter_mut() {
+            w.in_flight = false;
+            w.shown = true;
+            w.canvas.damage_all();
+        }
+        self.visible = true;
+        let name = self.cursor.clone();
+        self.outbox.push(Outbound::Cursor { session: self.id.clone(), name });
+        self.announce_clients();
+    }
+
+    /// Everything is drawn again when the session comes back to life.
+    fn redraw_all(&mut self) {
+        for w in self.windows.iter_mut() {
+            w.canvas.damage_all();
+        }
+    }
+
+    pub fn set_frozen(&mut self, frozen: bool) {
+        if self.frozen == frozen {
+            return;
+        }
+        self.frozen = frozen;
+        if !frozen {
+            self.redraw_all();
+        }
+    }
+
+    pub fn set_visible(&mut self, visible: bool) {
+        if self.visible == visible {
+            return;
+        }
+        self.visible = visible;
+        if visible {
+            self.redraw_all();
+        }
+    }
+
+    /// A minimized OS window (or one shown again): it and its popups.
+    pub fn set_toplevel_visible(&mut self, toplevel: u32, visible: bool) {
+        let Some(i) = self.index_of(toplevel) else { return };
+        if self.windows[i].shown == visible {
+            return;
+        }
+        self.windows[i].shown = visible;
+        if visible {
+            for j in 0..self.windows.len() {
+                let own = j == i || matches!(self.windows[j].role, Role::Popup { parent, .. } if parent == toplevel);
+                if own {
+                    self.windows[j].canvas.damage_all();
+                }
+            }
+        }
     }
 
     fn fire_callbacks(&mut self, pick: impl Fn(&WlSurface) -> bool) {
@@ -1083,6 +1216,7 @@ impl XdgShellHandler for SessionState {
             in_flight: false,
             geometry: None,
             layout: Vec::new(),
+            shown: true,
         });
     }
 
@@ -1119,6 +1253,7 @@ impl XdgShellHandler for SessionState {
             in_flight: false,
             geometry: None,
             layout: Vec::new(),
+            shown: true,
         });
     }
 

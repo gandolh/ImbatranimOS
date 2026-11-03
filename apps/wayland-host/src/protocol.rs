@@ -12,7 +12,7 @@ pub const KIND_FRAME: u8 = 2;
 /// Refuse anything larger: a full 4K frame deflated is far below this.
 pub const MAX_MESSAGE: usize = 64 * 1024 * 1024;
 
-pub const PROTOCOL_VERSION: u32 = 2;
+pub const PROTOCOL_VERSION: u32 = 3;
 
 /// Pixel encodings of a frame's rectangles.
 pub const ENC_DEFLATE_RGBA: u8 = 1;
@@ -98,6 +98,23 @@ pub enum Inbound {
     /// holding a grab close, until the next press in a Linux window or focus
     /// change.
     PressOutside { session: String },
+    /// A tab took the session back after a reload: announce every window
+    /// again and send each one whole.
+    Resync { session: String },
+    /// The backend froze (or woke) the session's apps under the cover
+    /// screen: no frames and no frame callbacks meanwhile, everything
+    /// redrawn after.
+    Freeze { session: String, frozen: bool },
+    /// The tab was hidden or shown again: a hidden session gets no frames
+    /// and its apps no frame callbacks.
+    Visibility { session: String, visible: bool },
+    /// The toplevel's OS window was minimized (or shown): the same, for it
+    /// and its popups.
+    ToplevelVisible {
+        session: String,
+        toplevel: u32,
+        visible: bool,
+    },
 }
 
 /// How a toplevel's title bar is drawn.
@@ -200,6 +217,12 @@ pub enum Outbound {
     PopupDestroyed {
         session: String,
         popup: u32,
+    },
+    /// The processes connected to the session's socket, by pid (from
+    /// `SO_PEERCRED`), whenever one connects or goes.
+    Clients {
+        session: String,
+        pids: Vec<u32>,
     },
     /// The cursor the app asked for, as a CSS cursor name.
     Cursor {
@@ -414,6 +437,8 @@ mod tests {
             r#"{"type":"key","session":"abcdefghijklmnop","keycode":30,"pressed":true}"#,
             r#"{"type":"position","session":"abcdefghijklmnop","toplevel":2,"x":-30,"y":40}"#,
             r#"{"type":"press_outside","session":"abcdefghijklmnop"}"#,
+            r#"{"type":"freeze","session":"abcdefghijklmnop","frozen":true}"#,
+            r#"{"type":"toplevel_visible","session":"abcdefghijklmnop","toplevel":4,"visible":false}"#,
         ] {
             push_message(&mut bytes, KIND_JSON, json.as_bytes());
         }
@@ -426,6 +451,8 @@ mod tests {
         assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Key { keycode: 30, pressed: true, .. }))));
         assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Position { toplevel: 2, x: -30, y: 40, .. }))));
         assert!(matches!(d.next_inbound(), Ok(Some(Inbound::PressOutside { .. }))));
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Freeze { frozen: true, .. }))));
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::ToplevelVisible { toplevel: 4, visible: false, .. }))));
     }
 
     #[test]

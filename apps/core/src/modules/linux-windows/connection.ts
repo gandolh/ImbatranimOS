@@ -1,11 +1,13 @@
 import { desktopSessionId, renewDesktopSessionId } from '@imbatranim/ui'
 import { TASKBAR_HEIGHT, topVisibleWindowId, useWindowStore } from '../../shared/store/windowStore'
+import { useAuthStore } from '../auth/store/authStore'
 import { LINUX_APP_PREFIX, linuxWindowChrome } from './kind'
 import { paintFrame, parseFrame } from './frames'
 import {
   canvasFor,
   dropAllCanvases,
   dropCanvas,
+  noteLinuxFrame,
   setLinuxSender,
   useLinuxWindowsStore,
   windowForToplevel,
@@ -96,8 +98,10 @@ function shape(m: ToplevelMessage): Omit<LinuxToplevel, 'windowId' | 'toplevel'>
  * host announces, paints its frames, passes input back, and closes the window
  * when the toplevel goes. One per tab, started once the desktop is signed in.
  *
- * Closing the socket ends the session in the backend and its apps with it,
- * so when it drops, the windows go too; a reconnect starts an empty session.
+ * When it drops, the windows go; the backend keeps the session and its apps
+ * for a while, so the reconnect (or a reload, which keeps the session id)
+ * gets them back. It also says when the cover screen is up (the apps freeze),
+ * when the tab is hidden, and which windows are minimized (they go quiet).
  */
 export class LinuxWindowsConnection {
   private ws: WebSocket | null = null
@@ -111,6 +115,13 @@ export class LinuxWindowsConnection {
   private unsubscribeWindows: (() => void) | null = null
   /** The toplevel the host was last told has keyboard focus. */
   private focused: number | null = null
+  /** Whether each toplevel's OS window shows, as the host was last told. */
+  private shown = new Map<number, boolean>()
+  private unsubscribeAuth: (() => void) | null = null
+
+  private readonly onVisibility = () => {
+    this.send({ type: 'visibility', visible: document.visibilityState !== 'hidden' })
+  }
 
   /**
    * A press outside every Linux window takes the keyboard from their apps,
@@ -137,8 +148,17 @@ export class LinuxWindowsConnection {
     this.stopped = false
     window.addEventListener('resize', this.onResize)
     document.addEventListener('pointerdown', this.onPressAnywhere, true)
-    // Keyboard focus follows the window manager's focused window.
-    this.unsubscribeWindows = useWindowStore.subscribe(() => this.syncFocus())
+    document.addEventListener('visibilitychange', this.onVisibility)
+    // Keyboard focus follows the window manager's focused window, and a
+    // minimized window goes quiet.
+    this.unsubscribeWindows = useWindowStore.subscribe(() => {
+      this.syncFocus()
+      this.syncShown()
+    })
+    // The cover screen, by idle timeout or by hand, freezes the apps.
+    this.unsubscribeAuth = useAuthStore.subscribe((s, prev) => {
+      if (s.locked !== prev.locked) this.send({ type: 'cover', covered: s.locked })
+    })
     setLinuxSender((m) => this.send(m))
     this.connect()
   }
@@ -147,6 +167,9 @@ export class LinuxWindowsConnection {
     this.stopped = true
     window.removeEventListener('resize', this.onResize)
     document.removeEventListener('pointerdown', this.onPressAnywhere, true)
+    document.removeEventListener('visibilitychange', this.onVisibility)
+    this.unsubscribeAuth?.()
+    this.unsubscribeAuth = null
     this.unsubscribeWindows?.()
     this.unsubscribeWindows = null
     setLinuxSender(null)
@@ -166,6 +189,10 @@ export class LinuxWindowsConnection {
     ws.onopen = () => {
       this.retries = 0
       this.focused = null
+      this.shown.clear()
+      // Where this tab stands now, which a resumed session may not know.
+      this.send({ type: 'cover', covered: useAuthStore.getState().locked })
+      this.onVisibility()
     }
     ws.onmessage = (ev: MessageEvent<ArrayBuffer | string>) => this.onMessage(ev.data)
     ws.onclose = (ev) => {
@@ -199,6 +226,24 @@ export class LinuxWindowsConnection {
     if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(message))
   }
 
+  /** Tell the host which toplevels' OS windows are minimized or on another workspace. */
+  private syncShown(): void {
+    const { windows, activeWorkspace } = useWindowStore.getState()
+    for (const t of Object.values(useLinuxWindowsStore.getState().byWindow)) {
+      const win = windows.find((w) => w.id === t.windowId)
+      if (!win) continue
+      const shown = win.isVisible && win.workspaceId === activeWorkspace
+      if (this.shown.get(t.toplevel) === shown) continue
+      // A new window shows; say nothing until that changes.
+      if (!this.shown.has(t.toplevel) && shown) {
+        this.shown.set(t.toplevel, shown)
+        continue
+      }
+      this.shown.set(t.toplevel, shown)
+      this.send({ type: 'toplevel_visible', toplevel: t.toplevel, visible: shown })
+    }
+  }
+
   /** Tell the host which Linux window, if any, the window manager focused. */
   private syncFocus(): void {
     const top = topVisibleWindowId()
@@ -213,6 +258,7 @@ export class LinuxWindowsConnection {
     if (typeof data !== 'string') {
       const frame = parseFrame(data)
       if (!frame) return
+      noteLinuxFrame(frame.rects.reduce((sum, r) => sum + r.w * r.h, 0))
       const isPopup = frame.toplevel in useLinuxWindowsStore.getState().popups
       if (!isPopup && !windowForToplevel(frame.toplevel)) return
       const canvas = canvasFor(frame.toplevel)
@@ -334,6 +380,7 @@ export class LinuxWindowsConnection {
     useLinuxWindowsStore.getState().clear()
     this.painting.clear()
     this.focused = null
+    this.shown.clear()
     dropAllCanvases()
     const windows = useWindowStore.getState()
     for (const t of all) {

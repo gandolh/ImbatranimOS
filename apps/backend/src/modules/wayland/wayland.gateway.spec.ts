@@ -8,6 +8,7 @@ import { LocalIdentityService } from '../auth/ws-auth';
 import type { Caller } from '../identity/identity.types';
 import { UpgradeRoutes } from '../../upgrade-routes';
 import { WaylandGateway } from './wayland.gateway';
+import { SessionApps } from './session-apps';
 import {
   WaylandHostService,
   type SessionListener,
@@ -66,6 +67,7 @@ describe('WaylandGateway', () => {
         WaylandGateway,
         UpgradeRoutes,
         { provide: WaylandHostService, useValue: host },
+        SessionApps,
         {
           provide: LocalIdentityService,
           useValue: {
@@ -85,6 +87,10 @@ describe('WaylandGateway', () => {
       ],
     }).compile();
     app = moduleRef.createNestApplication({ logger: false });
+    // A reload's grace and SIGTERM's turn, shortened for the tests.
+    const gateway = moduleRef.get(WaylandGateway);
+    gateway.graceMs = 150;
+    gateway.killAfterMs = 50;
     await app.listen(0);
     port = (app.getHttpServer().address() as AddressInfo).port;
   });
@@ -242,6 +248,89 @@ describe('WaylandGateway', () => {
     expect(first.ws.readyState).toBe(WebSocket.OPEN);
     first.ws.close();
     await first.closed;
+  });
+
+  it('keeps a session through a reload, and announces its windows again', async () => {
+    const first = open(`session=${SESSION}&width=1000&height=700`);
+    await first.opened;
+    await until(() => host.listeners.has(SESSION));
+    first.ws.close();
+    await first.closed;
+    const again = open(`session=${SESSION}&width=1200&height=800`);
+    await again.opened;
+    await until(() => host.sent.some((m) => m.type === 'resync'));
+    expect(host.opened).toHaveLength(1);
+    expect(host.closed).not.toContain(SESSION);
+    expect(host.sent).toContainEqual({
+      type: 'output',
+      session: SESSION,
+      width: 1200,
+      height: 800,
+    });
+    // The reloaded tab gets the session's windows as before.
+    host.listeners
+      .get(SESSION)!
+      .message({ type: 'toplevel_destroyed', session: SESSION, toplevel: 9 });
+    await until(() => again.messages.length > 0);
+    expect(again.messages[0].text).toEqual({
+      type: 'toplevel_destroyed',
+      toplevel: 9,
+    });
+    again.ws.close();
+    await again.closed;
+  });
+
+  it("lets a reload's socket take over when the old one closes after it arrived", async () => {
+    const old = open(`session=${SESSION}`);
+    await old.opened;
+    await until(() => host.listeners.has(SESSION));
+    const fresh = open(`session=${SESSION}`);
+    await fresh.opened;
+    old.ws.close();
+    await until(() => host.sent.some((m) => m.type === 'resync'));
+    expect(fresh.ws.readyState).toBe(WebSocket.OPEN);
+    expect(host.opened).toHaveLength(1);
+    fresh.ws.close();
+    await fresh.closed;
+  });
+
+  it('ends the session once the grace period runs out', async () => {
+    const c = open(`session=${SESSION}`);
+    await c.opened;
+    await until(() => host.listeners.has(SESSION));
+    c.ws.close();
+    await c.closed;
+    expect(host.closed).not.toContain(SESSION);
+    await until(() => host.closed.includes(SESSION));
+  });
+
+  it('freezes the apps under the cover screen and wakes them after, without forwarding the cover', async () => {
+    const c = open(`session=${SESSION}`);
+    await c.opened;
+    await until(() => host.listeners.has(SESSION));
+    c.ws.send(JSON.stringify({ type: 'cover', covered: true }));
+    c.ws.send(JSON.stringify({ type: 'cover', covered: true }));
+    c.ws.send(JSON.stringify({ type: 'visibility', visible: false }));
+    c.ws.send(
+      JSON.stringify({ type: 'toplevel_visible', toplevel: 2, visible: false }),
+    );
+    c.ws.send(JSON.stringify({ type: 'cover', covered: false }));
+    await until(
+      () => host.sent.filter((m) => m.type === 'freeze').length === 2,
+    );
+    expect(host.sent.filter((m) => m.type !== 'output')).toEqual([
+      { type: 'freeze', session: SESSION, frozen: true },
+      { type: 'visibility', session: SESSION, visible: false },
+      {
+        type: 'toplevel_visible',
+        session: SESSION,
+        toplevel: 2,
+        visible: false,
+      },
+      { type: 'freeze', session: SESSION, frozen: false },
+    ]);
+    c.ws.close();
+    await c.closed;
   });
 
   it('tells the tab when Linux apps are unavailable', async () => {

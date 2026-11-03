@@ -130,6 +130,23 @@ export function dropAllCanvases(): void {
 }
 
 /**
+ * When a Linux window last drew something big enough to be watched: a
+ * frame of at least {@link DRAWING_AREA} pixels. A blinking caret or a small
+ * spinner doesn't count; a video does.
+ */
+const DRAWING_AREA = 64 * 64
+let lastDrawnAt = -Infinity
+
+export function noteLinuxFrame(area: number): void {
+  if (area >= DRAWING_AREA) lastDrawnAt = performance.now()
+}
+
+/** A Linux window drew within `ms`: it holds the idle cover off, as a playing video does. */
+export function linuxWindowsDrawing(ms = 3000): boolean {
+  return performance.now() - lastDrawnAt < ms
+}
+
+/**
  * The one way the window bodies talk to the host: the live connection sets
  * it, and it drops messages while there is none.
  */

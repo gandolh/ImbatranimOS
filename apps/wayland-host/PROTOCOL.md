@@ -57,6 +57,11 @@ refused on both sides.
 | `position` | `session`, `toplevel`, `x`, `y` | Where the toplevel's window geometry starts on the output (the tab's viewport), after the OS window moved or resized. Popups are kept on the output from it. |
 | `press_outside` | `session` | The owner pressed outside every Linux window. The keyboard leaves the session's apps, which close the menus they track themselves, and popups holding a grab get `popup_done`. The next press in a Linux window or the next `focus` gives the keyboard back. |
 
+| `resync` | `session` | A tab took the session back after a reload: announce every mapped window again (toplevels, then popups), the cursor and the clients, and send each window whole. |
+| `freeze` | `session`, `frozen` | The backend froze the session's apps (SIGSTOP) under the cover screen, or woke them: meanwhile no frames go and no frame callbacks are answered; after, every window is sent whole. |
+| `visibility` | `session`, `visible` | The tab was hidden or shown: a hidden session gets no frames and its apps no frame callbacks, so well-behaved apps stop drawing; shown again, every window is sent whole. |
+| `toplevel_visible` | `session`, `toplevel`, `visible` | The same for one toplevel and its popups: its OS window was minimized, or moved to another workspace, or shown again. |
+
 In the pointer messages, `toplevel` names a toplevel or a popup: their ids
 share one space within a session.
 
@@ -64,13 +69,14 @@ share one space within a session.
 
 | `type` | Fields |
 |---|---|
-| `hello` | `version` (2) |
+| `hello` | `version` (3) |
 | `session_ready` | `session`, `display` (the socket name, `wayland-<session>`) |
 | `session_failed` | `session`, `reason` |
 | `toplevel_created`, `toplevel_updated` | `session`, `toplevel`, `title`, `app_id`, `width`, `height`, `geometry`, `decorations`, `min_width`, `min_height`, `max_width`, `max_height` |
 | `toplevel_destroyed` | `session`, `toplevel` |
 | `popup_created`, `popup_updated` | `session`, `popup`, `parent`, `x`, `y`, `width`, `height`, `geometry`, `grab` |
 | `popup_destroyed` | `session`, `popup` |
+| `clients` | `session`, `pids` |
 | `cursor` | `session`, `name` |
 | `request` | `session`, `toplevel`, `action`, `edges` |
 
@@ -96,6 +102,12 @@ toplevels, by their id.
 A window's image is its root surface's buffer with its subsurfaces composed
 over and under it in stacking order, at their offsets, clipped to the root's
 size; a synchronized subsurface's state shows with its parent's commit.
+
+`clients` lists the pids of the processes connected to the session's
+socket (read with `SO_PEERCRED`) whenever one connects or goes. The backend
+uses them, with the process groups of the apps it started from Start, to
+freeze the session's apps under the cover screen and to stop them when the
+session ends; it doesn't forward them to the tab.
 
 `cursor` is the CSS name of the cursor the app asked for with cursor-shape-v1
 (`default` when it set a cursor surface instead, `none` when hidden).
@@ -156,10 +168,20 @@ Server to tab: binary frames (`[2] + body`), and JSON text: the host's
 toplevel and popup messages without `session`, and `{"type":"unavailable","reason"}`
 before a close with code 4503.
 
-Tab to server, JSON text: `{"type":"viewport","width","height"}`, and the
-input messages above (`focus` to `press_outside`) without `session`; the backend
-checks each field and adds the session.
+Tab to server, JSON text: `{"type":"viewport","width","height"}`, the
+input messages above (`focus` to `press_outside`), `visibility` and
+`toplevel_visible`, without `session`; the backend checks each field and adds
+the session. `{"type":"cover","covered"}` is the backend's own: it freezes or
+wakes the session's apps and sends the host `freeze`.
+
+A session outlives its socket by 30 s. A socket for the same session id
+within that time (a reload keeps the id in `sessionStorage`) takes it back:
+the backend sends the host `output` and `resync`. After it, or at once when
+the sign-in ended or the host went away, the session ends: the process
+groups of its apps get SIGTERM (after SIGCONT, if frozen), then SIGKILL 5 s
+later, and then `session_close`.
 
 Close codes: 4401 the sign-in ended, 4409 the session id already has a socket
-(a duplicated tab; it takes a new id and reconnects), 4503 Linux apps are
+(a duplicated tab; it takes a new id and reconnects), 4410 the session is
+still ending (its apps are being stopped; try again shortly), 4503 Linux apps are
 unavailable (no host binary, no `XDG_RUNTIME_DIR`, or the host exited).

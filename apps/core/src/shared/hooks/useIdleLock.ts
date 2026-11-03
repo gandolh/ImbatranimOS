@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { createIdleLock } from './idleLock'
 import { useSecurityStore } from '../store/securityStore'
 import { useAuthStore } from '../../modules/auth/store/authStore'
+import { linuxWindowsDrawing } from '../../modules/linux-windows/linuxWindowsStore'
 
 /**
  * Auto-lock after idle (overlay since the lock keeps the desktop work). The desktop stays
@@ -24,11 +25,12 @@ export function useIdleLock(): void {
       timeoutMs: minutes * 60_000,
       onLock: () => lock(),
       // A playing <audio>/<video> anywhere on the desktop holds the lock, the
-      // way real OSes inhibit the screensaver during a movie.
+      // way real OSes inhibit the screensaver during a movie; so does a Linux
+      // window still drawing (a video in Firefox), but not a still one.
       isMediaPlaying: () =>
         Array.from(document.querySelectorAll<HTMLMediaElement>('audio, video')).some(
           (m) => !m.paused && !m.ended
-        ),
+        ) || linuxWindowsDrawing(),
     })
 
     // Activity only stamps a timestamp (no timer churn), so a raw pointermove

@@ -19,7 +19,7 @@ export const WS_KIND_FRAME = 2;
 /** Refuse anything larger, as the host does. */
 export const MAX_MESSAGE = 64 * 1024 * 1024;
 
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /**
  * A desktop session id: random, per tab, and part of a socket's file name
@@ -80,7 +80,16 @@ export type HostInbound =
       x: number;
       y: number;
     }
-  | { type: 'press_outside'; session: string };
+  | { type: 'press_outside'; session: string }
+  | { type: 'resync'; session: string }
+  | { type: 'freeze'; session: string; frozen: boolean }
+  | { type: 'visibility'; session: string; visible: boolean }
+  | {
+      type: 'toplevel_visible';
+      session: string;
+      toplevel: number;
+      visible: boolean;
+    };
 
 /** Host → backend, JSON kind. */
 export type HostOutbound =
@@ -89,6 +98,7 @@ export type HostOutbound =
   | { type: 'session_failed'; session: string; reason: string }
   | ToplevelMessage
   | PopupMessage
+  | { type: 'clients'; session: string; pids: number[] }
   | { type: 'cursor'; session: string; name: string }
   | {
       type: 'request';

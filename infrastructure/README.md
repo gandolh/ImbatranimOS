@@ -227,6 +227,12 @@ nix profile add nixpkgs#firefox    # `nix profile install` is the older name
   `XDG_RUNTIME_DIR` (`/run/user/1000`). There is no session D-Bus. The
   backend's own `PATH` leaves the profile out, so a Nix copy of `git` or `tar`
   never replaces the image's.
+- **Their lifetime.** A tab's Linux apps live with its desktop session:
+  a reload within 30 s finds them again, closing the tab stops them 30 s
+  later (SIGTERM to each app's process group, SIGKILL 5 s after), and the
+  cover screen pauses them (SIGSTOP) until it lifts. PID 1 is `tini`, so
+  the processes an app leaves behind when its parent dies are reaped
+  rather than left as zombies.
 - **Their windows.** A Linux app's display is the Wayland host
   (`apps/wayland-host`, Rust, built in its own image stage). The backend
   starts it when the first tab signs in, and each tab gets its own socket,

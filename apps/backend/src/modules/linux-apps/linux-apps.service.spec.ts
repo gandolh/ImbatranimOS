@@ -4,6 +4,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { brotliCompressSync } from 'zlib';
 import type { WaylandGateway } from '../wayland/wayland.gateway';
+import { SessionApps } from '../wayland/session-apps';
 import { LinuxAppsService, parseProfileList } from './linux-apps.service';
 
 // Every spawn the service makes goes through this; nothing really runs.
@@ -94,13 +95,16 @@ describe('LinuxAppsService', () => {
   let m: ReturnType<typeof machine>;
   let live: Set<string>;
   let apps: LinuxAppsService;
+  let sessionApps: SessionApps;
 
   beforeEach(() => {
     m = machine();
     live = new Set([SESSION]);
-    apps = new LinuxAppsService({
-      hasSession: (id: string) => live.has(id),
-    } as unknown as WaylandGateway);
+    sessionApps = new SessionApps();
+    apps = new LinuxAppsService(
+      { hasSession: (id: string) => live.has(id) } as unknown as WaylandGateway,
+      sessionApps,
+    );
     apps.paths = m.paths;
   });
   afterEach(() => {
@@ -179,7 +183,7 @@ describe('LinuxAppsService', () => {
     expect((opts as { env: NodeJS.ProcessEnv }).env.WAYLAND_DISPLAY).toBe(
       `wayland-${SESSION}`,
     );
-    expect(apps.launchedGroups(SESSION)).toEqual([4242]);
+    expect(sessionApps.groups(SESSION)).toEqual([4242]);
   });
 });
 

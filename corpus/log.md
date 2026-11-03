@@ -4939,3 +4939,14 @@ Open buttons all give it the keyboard (`2162640`, 1.115.0). `openWithKeyboard`, 
 taskbar's hand-made copy are gone; a new window still gets the keyboard once, from its mount. A test
 drives the palette, Start's recent files and the Notification panel against an open window; the
 desktop menu was walked in the dev container.
+
+## [2026-11-03] brief | 22 done: the dev image survives a version bump
+
+A `manifests` stage blanks the root version in the manifests (`scripts/normalise-manifests.mjs`)
+and `deps` runs `npm ci` on its output; the dev stage copies sources with `--chown` and gives the
+user only `.turbo`, `apps/backend` and Vite's two caches; `npm run dev` runs `scripts/dev.mjs`, which
+keeps version-free copies of the manifests and the Dockerfile for Compose watch (`6f36e2b`, 1.117.0).
+A version-only rebuild of the dev image: 4 min 31 s before, 4.3 s after. The dev image starts and
+hot-reloads; the prod image builds and reports its version. The watch rules were proved on a
+miniature (Compose's bake refused the sandbox's host networking): a bump left the container alone, a
+dependency change rebuilt it. Found: `watch` also starts the prod service; a todo.

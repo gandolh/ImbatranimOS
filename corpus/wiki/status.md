@@ -99,10 +99,11 @@ deployed with 08-15:
 - 19 (done): rounded boxes inside windows;
 - 20 (done): the accent focus ring on every control;
 - 21 (done): Settings fits a phone.
-22 makes the dev image survive a version bump: every commit's bump changes
-the manifests the `npm ci` layer copies, so each rebuild reinstalls everything
-and re-owns `node_modules`, and Compose watch rebuilds on every commit
-(owner, 2026-11-03).
+22 (done 2026-11-03, on this run's branch) makes the dev image survive a
+version bump: `npm ci` runs on version-free manifests, the dev stage no
+longer re-owns `node_modules`, and `npm run dev` (`scripts/dev.mjs`) has
+Compose watch version-free copies. A version-only rebuild went from 4 min
+31 s to 4 s.
 
 23-36 were written on 2026-11-03 from the open todos, in an estate-wide grill
 with the owner. A run on branch `claude/tender-franklin-h8lc35` (one PR, not

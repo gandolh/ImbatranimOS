@@ -39,11 +39,18 @@
 }
 
 /*
- * ImbatranimOS design tokens — Windows-7-classic layout, modern flat, B&W + ONE accent.
- * Colors are indirected through runtime CSS vars so:
- *   - the accent is a single parameter (--accent), switchable at runtime
- *   - light / dark are swapped via [data-theme] on <html>
- * Dark is the shipped default (on-brand for an OS).
+ * ImbatranimOS design tokens — Windows-7-classic layout, drawn in one of two
+ * themes (decisions-themes.md, 2026-11-02): Apricot, the default (cream and
+ * peach, pastel accents, soft corners, Figtree), and Classic (black and white
+ * with crimson, square, Space Grotesk). Each has a light and a dark mode;
+ * light is the default.
+ * Everything is indirected through runtime CSS vars so:
+ *   - the theme and mode are swapped via [data-os-theme] and [data-theme],
+ *     on <html> or on any element that draws a theme of its own
+ *   - the accent is two runtime pairs, strong (--accent) and soft
+ *     (--accent-soft), stamped by applyAppearance
+ *   - corners, shadows, the UI font and the wallpaper colours are --k-* vars
+ *     per theme, so components never branch on the theme
  *
  * The @theme block that maps Tailwind's token names onto these variables is
  * the kit's: packages/ui/src/theme.css, imported at the top.

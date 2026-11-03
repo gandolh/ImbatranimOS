@@ -4669,3 +4669,16 @@ whole would cost 1.6 GB). Changes and launches come only from a tab whose deskto
 (owner). Installed apps' `.desktop` files become `linux:<id>` Start entries, launched in their own
 process group into the tab's session; Linux windows now find their icon through the same id.
 Walked in the dev container, 12 checks passing, Free space taking the store from 2.1 to 1.6 GB.
+
+## [2026-11-03] brief | 06 done: Linux apps live with their tab, and sleep under the cover
+
+A session outlives its socket by 30 s; a reload takes it back and the host announces its windows
+again (`ab44333`, 1.85.0). After that, or when the sign-in ends, its apps' groups (Start's, and the
+socket's clients' through `SO_PEERCRED`) get SIGTERM, SIGKILL 5 s later. The cover screen freezes
+them (SIGSTOP) and the host sends nothing meanwhile; a Linux window drawing at least 64×64 pixels
+holds the idle cover off; a hidden tab or minimized window gets no frames. tini is PID 1. Walked in
+the dev container, 9 checks passing: Firefox survived a reload with its tabs; the cover stopped its
+10 processes; hidden, the socket went from 237 kB/s to 0 and Firefox from 17% to 7.5%; a video held
+the 5-minute cover off and a still page let it engage; closing the tab left nothing at 38 s. Found:
+BusyBox `sh` passes no SIGHUP to background jobs, so a Terminal's `app &` outlives its shell until
+the session ends, against the decision's assumption; the owner's call, in status.

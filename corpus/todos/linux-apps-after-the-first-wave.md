@@ -28,3 +28,17 @@ pane, with a lifecycle and sleep. The owner left these out on purpose on
   RAM against the box's roughly 2 GiB free.
 - **A video codec**, if 171 shows lossless frames are too heavy for video.
 - **Moving the Nix pin** to a newer release from the pane.
+
+Found while building it (2026-11-03, briefs 01, 04-06 of the new numbering):
+
+- **Video bandwidth.** Firefox playing a synthetic 480 px video cost 239 kB/s
+  in lossless WebP at 28 frames/s; a real film would cost several times
+  that. The codec item above is now measured, not guessed (04's table).
+- **Window places after a reload.** Linux windows come back where a new
+  window opens: the saved layout leaves them out.
+- **The Terminal's background jobs** outlive their shell (BusyBox `sh`),
+  against the decision; owner's call, in status.md.
+- **Localized `.desktop` names and desktop actions** (New Window) aren't
+  read; a CJK font isn't in the base profile.
+- **The zoom-less windows** while a Linux window is open stay until a
+  Chromium without the renderer crash is confirmed (04's outcome).

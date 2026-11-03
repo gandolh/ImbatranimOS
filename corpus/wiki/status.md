@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; eleven open briefs (the Linux apps layer 06, the two themes 08-15; 01-05 done); what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; eight open briefs (the two themes 08-15; the Linux apps layer 01-06 done 2026-11-03); what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -73,7 +73,10 @@ scrolling). While a Linux window is open, windows open with the fade only:
 Chromium's renderer crashed when a zoom ran beside one. 05 is done:
 Settings → Linux apps searches the release's list (streamed into a 12 MB
 index), installs and removes from the tab that holds the session, and frees
-space; installed apps appear in Start and launch into the tab. 06 follows.
+space; installed apps appear in Start and launch into the tab. 06 is done:
+an app lives with its tab (a reload within 30 s finds it, closing the tab
+stops it), sleeps under the cover screen, and goes quiet when hidden or
+minimized; tini is PID 1. The layer is on its branch and not merged.
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
 Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the
@@ -93,6 +96,14 @@ The server ISO is deferred by the owner (2026-10-04).
   change and still did once in five (brief 04's outcome); Chrome with a GPU
   may not at all. Also look at a Linux window on a screen with
   `devicePixelRatio` above 1 (soft, known).
+- Linux apps: an app started with `&` in the Terminal outlives its shell
+  (BusyBox `sh` passes no SIGHUP to its jobs) and lives until the tab's
+  session ends, where the 2026-10-23 decision expected it to end with the
+  shell. Keep that, or have the PTY's end hang up the shell's whole session
+  (a PTY change)? Brief 06's outcome has the test.
+- Linux apps, in Chrome on the dev container: a hidden tab carrying no
+  frames (the walk could only simulate hiding), and the keys the browser
+  keeps (brief 03's list).
 
 - Delete the old local development database at `data/db.sqlite` in the repo
   root (gitignored): it is from before the Ward move and still holds the old

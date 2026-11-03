@@ -87,6 +87,7 @@ function app(overrides: Partial<MarketplaceApp> = {}): MarketplaceApp {
 }
 
 type Seen = {
+  results?: { windowId: string; server?: { http: string; ws: string }; error?: string }[]
   version?: number
   windowIds?: string[]
   host?: { appId: string; assetBase: string; server: { http: string; ws: string } | null }
@@ -131,6 +132,29 @@ export function App({ windowId, host }) {
 }
 `
 
+/** A kit app that asks for its server when its button is clicked, and keeps what it got. */
+const SERVER_MODULE = `
+const shared = globalThis.__imbatranimShared
+const React = shared.modules['react']
+const { jsx } = shared.modules['react/jsx-runtime']
+const { useSystem } = shared.modules['@imbatranim/ui']
+const seen = (globalThis.__kitSeen = { version: shared.version, windowIds: [], results: [] })
+
+export function App({ windowId, host }) {
+  const system = useSystem()
+  React.useEffect(() => {
+    seen.windowIds.push(windowId)
+    seen.host = host
+  }, [windowId, host])
+  const ask = () =>
+    system.server.request().then(
+      (server) => seen.results.push({ windowId, server }),
+      (err) => seen.results.push({ windowId, error: err.message })
+    )
+  return jsx('button', { 'data-kit-app': host.appId, 'data-ask': windowId, onClick: ask, children: 'Open a DWG' })
+}
+`
+
 /** Write the build's files and point the API base at them. */
 function writeBuild(files: Record<string, string>) {
   for (const [path, text] of Object.entries(files)) {
@@ -160,6 +184,14 @@ function window(a: MarketplaceApp, windowId: string) {
 
 function render(...windows: [MarketplaceApp, string][]) {
   act(() => root.render(<>{windows.map(([a, id]) => window(a, id))}</>))
+}
+
+/** Click the app's button in window `windowId` and let its ask settle. */
+async function ask(windowId: string) {
+  const button = container.querySelector<HTMLButtonElement>(`[data-ask="${windowId}"]`)
+  if (!button) throw new Error(`No app in window ${windowId}: ${container.textContent}`)
+  act(() => button.click())
+  await settle()
 }
 
 const kitLinks = () => [...document.head.querySelectorAll<HTMLLinkElement>('link[data-kit-build]')]
@@ -381,16 +413,102 @@ describe('KitAppHost', () => {
     expect(kitLinks()).toEqual([])
   })
 
-  it("leases a service kit app's server by its descriptor's id before rendering it", async () => {
-    writeBuild({ 'notes/app.mjs': KIT_MODULE, 'kit.css': '' })
+  it('renders a service kit app without taking a lease', async () => {
+    writeBuild({ 'notes/app.mjs': SERVER_MODULE, 'kit.css': '' })
     render([app({ type: 'service' }), 'w1'])
     await settle()
-    expect(post).toHaveBeenCalledWith('/marketplace/apps/kit/lease', {})
-    expect(seen().host?.appId).toBe('kit-notes')
-    expect(seen().host?.server?.http).toMatch(/\/marketplace\/apps\/kit\/server$/)
-    expect(seen().host?.server?.ws).toMatch(/^file:.*\/marketplace\/apps\/kit\/server$/)
+    expect(container.querySelector('[data-ask="w1"]')).not.toBeNull()
+    expect(container.textContent).not.toContain('Starting its server')
+    expect(seen().host?.server).toBeNull()
+    expect(post).not.toHaveBeenCalled()
+  })
 
-    act(() => root.render(<></>))
-    expect(del).toHaveBeenCalledWith('/marketplace/apps/kit/lease/lease-1')
+  it('starts the server on its first ask, by the descriptor, and reuses it on the next', async () => {
+    writeBuild({ 'notes/app.mjs': SERVER_MODULE, 'kit.css': '' })
+    render([app({ type: 'service' }), 'w1'])
+    await settle()
+    await ask('w1')
+    expect(post).toHaveBeenCalledExactlyOnceWith('/marketplace/apps/kit/lease', {})
+    const [first] = seen().results!
+    expect(first.server?.http).toMatch(/\/marketplace\/apps\/kit\/server$/)
+    expect(first.server?.ws).toMatch(/^file:.*\/marketplace\/apps\/kit\/server$/)
+
+    await ask('w1')
+    expect(post).toHaveBeenCalledTimes(1)
+    expect(seen().results![1]).toEqual(first)
+  })
+
+  it('rejects the ask when the server fails to start, leaves the window open, and tries again on the next', async () => {
+    writeBuild({ 'notes/app.mjs': SERVER_MODULE, 'kit.css': '' })
+    post.mockRejectedValueOnce(
+      Object.assign(new Error('Request failed with status code 503'), {
+        response: {
+          data: { message: '4 app servers are running already; close one of those apps first' },
+        },
+      })
+    )
+    render([app({ type: 'service' }), 'w1'])
+    await settle()
+    await ask('w1')
+    expect(seen().results).toEqual([
+      {
+        windowId: 'w1',
+        error:
+          "Kit's server didn't start: 4 app servers are running already; close one of those apps first",
+      },
+    ])
+    expect(fallback()).toBeNull()
+    expect(container.querySelector('[data-ask="w1"]')).not.toBeNull()
+    expect(toasts()).toEqual([])
+
+    await ask('w1')
+    expect(post).toHaveBeenCalledTimes(2)
+    expect(seen().results![1].server?.http).toMatch(/\/marketplace\/apps\/kit\/server$/)
+  })
+
+  it('holds the lease until the window closes; each window holds its own', async () => {
+    writeBuild({ 'notes/app.mjs': SERVER_MODULE, 'kit.css': '' })
+    post
+      .mockResolvedValueOnce({ data: { lease: 'lease-1', renewMs: 60_000 } })
+      .mockResolvedValueOnce({ data: { lease: 'lease-2', renewMs: 60_000 } })
+    const a = app({ type: 'service' })
+    render([a, 'w1'], [a, 'w2'])
+    await settle()
+    await ask('w1')
+    await ask('w2')
+    expect(post).toHaveBeenCalledTimes(2)
+
+    render([a, 'w2'])
+    expect(del).toHaveBeenCalledExactlyOnceWith('/marketplace/apps/kit/lease/lease-1')
+    render()
+    expect(del).toHaveBeenLastCalledWith('/marketplace/apps/kit/lease/lease-2')
+    expect(del).toHaveBeenCalledTimes(2)
+  })
+
+  it('releases a lease that arrives after its window closed', async () => {
+    writeBuild({ 'notes/app.mjs': SERVER_MODULE, 'kit.css': '' })
+    let answer!: (value: unknown) => void
+    post.mockReturnValueOnce(new Promise((r) => (answer = r)))
+    render([app({ type: 'service' }), 'w1'])
+    await settle()
+    await ask('w1')
+    render()
+    await act(async () => answer({ data: { lease: 'late', renewMs: 60_000 } }))
+    await settle()
+    expect(del).toHaveBeenCalledWith('/marketplace/apps/kit/lease/late')
+    expect(seen().results).toEqual([{ windowId: 'w1', error: "Kit Notes's window is closed." }])
+  })
+
+  it('never leases for a static kit app: asking says it has no server', async () => {
+    writeBuild({ 'notes/app.mjs': SERVER_MODULE, 'kit.css': '' })
+    render([app(), 'w1'])
+    await settle()
+    await ask('w1')
+    expect(seen().results).toEqual([
+      { windowId: 'w1', error: 'Kit Notes has no server: its descriptor runs none.' },
+    ])
+    expect(post).not.toHaveBeenCalled()
+    render()
+    expect(del).not.toHaveBeenCalled()
   })
 })

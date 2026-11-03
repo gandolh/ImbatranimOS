@@ -252,6 +252,14 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
         claimScheduleOccurrence(domain, itemId, occurrenceMs),
     },
 
+    // No server here: a built-in app runs none. The kit app's host
+    // (KitAppHost) puts its window's own claim on the descriptor's server in
+    // this member's place, on the handle the app receives.
+    server: {
+      request: () =>
+        Promise.reject(new Error(`${appId} has no server: it isn't a marketplace app.`)),
+    },
+
     // Stamped with this handle's app: a capability cannot toast in another
     // app's name, which the old free `notify(...)` import happily allowed.
     notify: (input: SystemNotifyInput) => notify({ ...input, appId }),

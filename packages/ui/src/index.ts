@@ -80,6 +80,8 @@ export type {
   SystemNotifyInput,
   SystemNotifyLevel,
   SystemSchedule,
+  SystemServer,
+  SystemServerAddress,
   SystemShortcuts,
   SystemWindow,
   UploadOptions,

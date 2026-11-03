@@ -42,7 +42,12 @@ export type NativeHostContext = {
   appId: string
   /** The URL of the directory the app's module was served from, ending in `/`. */
   assetBase: string
-  /** A service app's server, through the desktop's session-checked proxy. Null for a static app. */
+  /**
+   * A `mount` app's server, through the desktop's session-checked proxy,
+   * leased while its window is open. Null for a static app, and always null
+   * for a kit app (since kit 1.2.0): a kit app asks with
+   * `system.server.request()` when it needs the server.
+   */
   server: { http: string; ws: string } | null
 }
 

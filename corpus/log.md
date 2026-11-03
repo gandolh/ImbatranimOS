@@ -4626,7 +4626,7 @@ in its own theme's values: the token blocks now match `[data-os-theme][data-them
 element, and Classic's square rule skips an Apricot card. Every group is a labelled radio group
 (Tab reaches the chosen option, arrows move, Space/Enter choose), and choosing a card brings back
 that theme's own accent and wallpaper at once. Built in `1542261` (1.82.0), with a new test. Filed
-[settings-apps-rows-overflow-on-a-phone](todos/settings-apps-rows-overflow-on-a-phone.md): the Apps
+`settings-apps-rows-overflow-on-a-phone` (closed by brief 21): the Apps
 rows below the section make Settings scroll sideways at 390 px.
 
 ## [2026-11-03] brief | 15 done: every app checked in the themes; 08-15 complete
@@ -4693,3 +4693,9 @@ ring by script; the shared class constants, a bare checkbox and an inline field 
 native checkboxes, radios, the colour picker and range inputs take an accent outline. Hidden
 inputs and Markdown content were left. ui-conventions rule 36 now says no control may fall back to
 the browser outline.
+
+## [2026-11-03] brief | 21 done: Settings fits a phone
+
+The Apps grid's single column is `minmax(0, 1fr)`, so its rows shrink and truncate; Settings no
+longer scrolls sideways at 390 px (measured: no section overflows). The todo
+settings-apps-rows-overflow-on-a-phone is closed. This finishes the theme follow-ups 16-21.

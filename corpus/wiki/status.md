@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); seven open briefs: the Linux apps layer 01-06, in a cloud session on its own branch, and the theme follow-up 21; what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); six open briefs: the Linux apps layer 01-06, in a cloud session on its own branch; the theme follow-ups 16-21 are done; what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -69,7 +69,7 @@ and deploy together; each brief's outcome is in `briefs/done/`, and 15's lists
 the owner's steps and six design questions. 07 (research) is superseded by
 the grill.
 
-16-21 are the owner's answers to those questions (grilled 2026-11-03,
+16-21, all done 2026-11-03, are the owner's answers to those questions (grilled 2026-11-03,
 [decisions-themes.md](decisions-themes.md)), run one at a time on `main` and
 deployed with 08-15:
 - 16 (done): a Monaco theme from the tokens, with Diff following the OS mode;
@@ -77,7 +77,7 @@ deployed with 08-15:
 - 18 (done): warm shadows for toasts, tooltips, the tray and sign-in;
 - 19 (done): rounded boxes inside windows;
 - 20 (done): the accent focus ring on every control;
-- 21: Settings fits a phone.
+- 21 (done): Settings fits a phone.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner
@@ -106,7 +106,6 @@ The server ISO is deferred by the owner (2026-10-04).
 - [linux-apps-after-the-first-wave](../todos/linux-apps-after-the-first-wave.md)
 - [native-build-leftovers-in-the-image](../todos/native-build-leftovers-in-the-image.md)
 - [office-pin-after-the-row-1000-fix](../todos/office-pin-after-the-row-1000-fix.md)
-- [settings-apps-rows-overflow-on-a-phone](../todos/settings-apps-rows-overflow-on-a-phone.md)
 - [tray-crash-on-a-wrong-api-base](../todos/tray-crash-on-a-wrong-api-base.md)
 
 ## History

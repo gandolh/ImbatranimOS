@@ -53,7 +53,7 @@ function Toast({ item }: { item: NotificationItem }) {
       className={cn(
         'font-ui rounded-menu pointer-events-auto relative flex w-80 items-start gap-2.5 overflow-hidden',
         'border-outline-variant bg-surface-container-low border py-2.5 pr-2 pl-3',
-        'shadow-[0_6px_24px_rgba(0,0,0,0.35)]'
+        'shadow-(--k-shadow-toast)'
       )}
     >
       <span className={cn('absolute inset-y-0 left-0 w-[3px]', levelStripeClass(item.level))} />

@@ -32,7 +32,7 @@ export function Tooltip({ content, children, side = 'top' }: TooltipProps) {
               className={cn(
                 'border-outline-variant bg-inverse-surface rounded-control border px-2 py-1',
                 'font-ui text-inverse-on-surface text-[11px]',
-                'shadow-[0_6px_18px_rgba(0,0,0,0.4)]'
+                'shadow-(--k-shadow-tooltip)'
               )}
             >
               {content}

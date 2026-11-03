@@ -109,7 +109,7 @@ function NotificationBell() {
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="top" align="end" sideOffset={6} className="z-[1000]">
-          <Popover.Popup className="border-outline-variant bg-surface-container-low rounded-menu overflow-hidden border shadow-[0_-6px_24px_rgba(0,0,0,0.35)]">
+          <Popover.Popup className="border-outline-variant bg-surface-container-low rounded-menu overflow-hidden border shadow-(--k-shadow-tray)">
             <NotificationPanel onClose={() => setOpen(false)} />
           </Popover.Popup>
         </Popover.Positioner>
@@ -184,7 +184,7 @@ export function Tray() {
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Positioner side="top" align="end" sideOffset={6} className="z-[1000]">
-            <Popover.Popup className="border-outline-variant bg-surface-container-low rounded-menu overflow-hidden border shadow-[0_-6px_24px_rgba(0,0,0,0.35)]">
+            <Popover.Popup className="border-outline-variant bg-surface-container-low rounded-menu overflow-hidden border shadow-(--k-shadow-tray)">
               <MiniCalendar />
             </Popover.Popup>
           </Popover.Positioner>

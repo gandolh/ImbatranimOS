@@ -9,6 +9,7 @@ import { clampToDesktop, layoutIcons } from './layoutIcons'
 import { iconsInRect, isDrag, normalizeRect, type DragRect } from './marquee'
 import { isTextEntry } from '../../hooks/shortcutRegistry'
 import type { Wallpaper } from '../../store/wallpaperStore'
+import { wallpaperById } from './wallpapers'
 import { WindowContainer } from '../window/WindowContainer'
 import { WidgetLayer } from './WidgetLayer'
 import { WindowlessSystemProvider } from '../../../system/WindowlessSystemProvider'
@@ -19,33 +20,9 @@ type DesktopProps = {
   wallpaper: Wallpaper
 }
 
-// Theme-aware wallpapers — pattern lines use the active outline token, base uses
-// the active surface token, so both light and dark read correctly.
-const WALLPAPER_STYLES: Partial<Record<Wallpaper, React.CSSProperties>> = {
-  dots: {
-    backgroundImage: 'radial-gradient(var(--k-outline-variant) 1px, transparent 1px)',
-    backgroundSize: '22px 22px',
-    backgroundColor: 'var(--k-surface)',
-  },
-  grid: {
-    backgroundImage:
-      'linear-gradient(var(--k-outline-variant) 1px, transparent 1px), linear-gradient(90deg, var(--k-outline-variant) 1px, transparent 1px)',
-    backgroundSize: '32px 32px',
-    backgroundColor: 'var(--k-surface)',
-  },
-  linen: {
-    backgroundColor: 'var(--k-surface)',
-    backgroundImage:
-      'radial-gradient(var(--k-outline-variant) 0.5px, transparent 0.5px), radial-gradient(var(--k-outline-variant) 0.5px, var(--k-surface) 0.5px)',
-    backgroundSize: '8px 8px',
-    backgroundPosition: '0 0, 4px 4px',
-  },
-}
-
-/** A wallpaper with no drawing yet shows the plain surface. */
-const PLAIN_WALLPAPER: React.CSSProperties = { backgroundColor: 'var(--k-surface)' }
-
 export function Desktop({ wallpaper }: DesktopProps) {
+  const paper = wallpaperById(wallpaper)
+  const Scene = paper.scene
   const enabledApps = useEnabledApps()
   const iconPositions = useDesktopStore((s) => s.iconPositions)
   const updateIconPosition = useDesktopStore((s) => s.updateIconPosition)
@@ -229,7 +206,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
     <div
       ref={sizeRef}
       className="absolute top-0 right-0 left-0 w-full overflow-hidden"
-      style={{ ...(WALLPAPER_STYLES[wallpaper] ?? PLAIN_WALLPAPER), bottom: TASKBAR_HEIGHT }}
+      style={{ ...paper.background, bottom: TASKBAR_HEIGHT }}
       onContextMenu={(e) => {
         // Windows are DOM children of this container, so an app that calls
         // preventDefault without stopPropagation (the Terminal's paste,
@@ -248,6 +225,9 @@ export function Desktop({ wallpaper }: DesktopProps) {
         setMenuAt({ x: e.clientX, y: e.clientY })
       }}
     >
+      {/* A scene wallpaper, under everything and never a click target. */}
+      {Scene && <Scene />}
+
       {/* Desktop icon container - using absolute positioning for children.
           Also the marquee surface: a press that targets THIS div (not an icon,
           widget, note or window) rubber-band-selects. */}

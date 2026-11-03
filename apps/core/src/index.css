@@ -84,6 +84,17 @@
   --k-shadow-popup: 0 18px 48px rgba(140, 84, 48, 0.24);
   --k-shadow-dialog: 0 18px 44px rgba(140, 84, 48, 0.2), 0 2px 8px rgba(140, 84, 48, 0.1);
   --k-shadow-tile: 0 4px 12px rgba(140, 84, 48, 0.16);
+  /* The sunset-hills wallpaper (light: no stars) */
+  --k-wall-sky-1: #fde9d8;
+  --k-wall-sky-2: #fbd5bd;
+  --k-wall-sky-3: #f6bfa3;
+  --k-wall-sun: #fff4e6;
+  --k-wall-cloud: #fff8f1;
+  --k-wall-hill-1: #f0b794;
+  --k-wall-hill-2: #e7a183;
+  --k-wall-hill-3: #d98d73;
+  --k-wall-star: #ffffff;
+  --k-wall-star-opacity: 0;
 
   color-scheme: light;
 }
@@ -114,6 +125,17 @@
   --k-shadow-popup: 0 18px 48px rgba(0, 0, 0, 0.6);
   --k-shadow-dialog: 0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
   --k-shadow-tile: 0 4px 12px rgba(0, 0, 0, 0.35);
+  /* The sunset-hills wallpaper at dusk, with a moon and stars */
+  --k-wall-sky-1: #241c29;
+  --k-wall-sky-2: #382634;
+  --k-wall-sky-3: #4d2f38;
+  --k-wall-sun: #f7d9bf;
+  --k-wall-cloud: #4a3644;
+  --k-wall-hill-1: #5b3a3e;
+  --k-wall-hill-2: #4a3036;
+  --k-wall-hill-3: #3a252c;
+  --k-wall-star: #f7e6d6;
+  --k-wall-star-opacity: 0.9;
 
   color-scheme: dark;
 }

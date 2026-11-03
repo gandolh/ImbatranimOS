@@ -1,9 +1,6 @@
 import { useCallback, useState } from 'react'
-import {
-  useCurrentWallpaper,
-  useWallpaperStore,
-  type Wallpaper,
-} from '../../shared/store/wallpaperStore'
+import { useCurrentWallpaper, useWallpaperStore } from '../../shared/store/wallpaperStore'
+import { WALLPAPERS } from '../../shared/components/desktop/wallpapers'
 import { useAppearanceStore, ACCENT_PRESETS, type Mode } from '../../shared/store/appearanceStore'
 import {
   Monitor,
@@ -34,39 +31,6 @@ import { LocalPasswordForm } from '../auth/LocalScreens'
 import { AboutMachine } from './AboutMachine'
 import { MarketplaceSettings } from './MarketplaceSettings'
 import { useRegistryVersion } from '../../shared/registry/marketplace'
-
-const WALLPAPERS: { id: Wallpaper; name: string; preview: React.CSSProperties }[] = [
-  {
-    id: 'dots',
-    name: 'Dots',
-    preview: {
-      backgroundImage: 'radial-gradient(var(--k-outline-variant) 1px, transparent 1px)',
-      backgroundSize: '12px 12px',
-      backgroundColor: 'var(--k-surface)',
-    },
-  },
-  {
-    id: 'grid',
-    name: 'Grid',
-    preview: {
-      backgroundImage:
-        'linear-gradient(var(--k-outline-variant) 1px, transparent 1px), linear-gradient(90deg, var(--k-outline-variant) 1px, transparent 1px)',
-      backgroundSize: '16px 16px',
-      backgroundColor: 'var(--k-surface)',
-    },
-  },
-  {
-    id: 'linen',
-    name: 'Fine',
-    preview: {
-      backgroundImage:
-        'radial-gradient(var(--k-outline-variant) 0.5px, transparent 0.5px), radial-gradient(var(--k-outline-variant) 0.5px, var(--k-surface) 0.5px)',
-      backgroundSize: '6px 6px',
-      backgroundPosition: '0 0, 3px 3px',
-      backgroundColor: 'var(--k-surface)',
-    },
-  },
-]
 
 const MODES: { id: Mode; name: string; icon: typeof Moon }[] = [
   { id: 'dark', name: 'Dark', icon: Moon },
@@ -192,7 +156,7 @@ export function Settings() {
           <div>
             <FieldLabel>Desktop pattern</FieldLabel>
             <div className="grid grid-cols-3 gap-4">
-              {WALLPAPERS.map((wp) => {
+              {WALLPAPERS[theme].map((wp) => {
                 const active = wallpaper === wp.id
                 return (
                   <button

@@ -22,7 +22,7 @@ export function CountdownOverlay({ remaining }: { remaining: number }) {
         alignItems: 'flex-start',
         justifyContent: 'center',
         paddingTop: 16,
-        fontFamily: "'Space Grotesk', sans-serif",
+        fontFamily: 'var(--font-ui)',
       }}
     >
       <div

@@ -12,8 +12,17 @@
  * air-gapped (the diskless kiosk, LAN deploys), where a Google Fonts @import
  * stalls and renders in fallback fonts — and it leaked every visitor's IP to
  * Google. Self-hosting lets the CSP's font-src/style-src drop to 'self'.
- * One file per family covers all weights (both are variable on the wght axis).
+ * One file per family covers all weights (each is variable on the wght axis).
+ * Figtree is Apricot's UI font, Space Grotesk Classic's; Inter is the content
+ * font in both. Sources and versions: assets/fonts/README.md.
  */
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('./assets/fonts/figtree-latin-var.woff2') format('woff2');
+}
 @font-face {
   font-family: 'Space Grotesk';
   font-style: normal;
@@ -68,6 +77,7 @@
   --k-error: #ba1a1a;
   --k-error-container: #ffdad6;
   --k-on-error-container: #93000a;
+  --k-font-ui: 'Figtree', ui-sans-serif, system-ui, sans-serif;
 
   color-scheme: light;
 }
@@ -91,6 +101,7 @@
   --k-error: #ff7171; /* Classic's #ff6b6b, lifted to clear 4.5:1 on highest */
   --k-error-container: #3a1516;
   --k-on-error-container: #ffb4ab;
+  --k-font-ui: 'Figtree', ui-sans-serif, system-ui, sans-serif;
 
   color-scheme: dark;
 }
@@ -114,6 +125,7 @@
   --k-error: #ff6b6b;
   --k-error-container: #3a1516;
   --k-on-error-container: #ffb4ab;
+  --k-font-ui: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
 
   color-scheme: dark;
 }
@@ -137,6 +149,7 @@
   --k-error: #ba1a1a;
   --k-error-container: #ffdad6;
   --k-on-error-container: #93000a;
+  --k-font-ui: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
 
   color-scheme: light;
 }

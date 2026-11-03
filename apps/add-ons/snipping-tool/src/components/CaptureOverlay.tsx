@@ -82,7 +82,7 @@ export function CaptureOverlay({ onSelect, onCancel }: Props) {
         cursor: 'crosshair',
         userSelect: 'none',
         touchAction: 'none',
-        fontFamily: "'Space Grotesk', sans-serif",
+        fontFamily: 'var(--font-ui)',
       }}
     >
       {/* Dim: a full sheet when idle; a box-shadow "hole" once a region exists. */}

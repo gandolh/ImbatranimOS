@@ -57,7 +57,9 @@ const BEFORE: [string, string][] = [
   ['--color-on-error', '#ffffff'],
   ['--color-error-container', 'var(--k-error-container)'],
   ['--color-on-error-container', 'var(--k-on-error-container)'],
-  ['--font-ui', "'Space Grotesk', ui-sans-serif, system-ui, sans-serif"],
+  // Since 2026-11-03 the UI font follows the theme: index.css sets --k-font-ui
+  // per token block, Figtree in Apricot and Space Grotesk in Classic.
+  ['--font-ui', 'var(--k-font-ui)'],
   ['--font-content', "'Inter', ui-sans-serif, system-ui, sans-serif"],
   ['--spacing-half', '4px'],
   ['--spacing-base', '8px'],

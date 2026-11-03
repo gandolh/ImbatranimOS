@@ -280,7 +280,7 @@ export const Window = React.memo(function Window({
             // its sockets, its buffers and its scroll position.
             display: instance.isVisible && onActiveWorkspace ? 'flex' : 'none',
             flexDirection: 'column',
-            fontFamily: "'Space Grotesk', sans-serif",
+            fontFamily: 'var(--font-ui)',
           }}
           className={cn(
             'bg-surface-container-low overflow-hidden',

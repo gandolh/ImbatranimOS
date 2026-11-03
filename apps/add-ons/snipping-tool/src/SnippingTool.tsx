@@ -189,7 +189,7 @@ export function SnippingTool({ windowId: _windowId }: { windowId: string }) {
           alignItems: 'center',
           justifyContent: 'center',
           color: '#fff',
-          font: '600 13px "Space Grotesk", sans-serif',
+          font: '600 13px var(--font-ui)',
           background: 'rgba(0,0,0,0.35)',
         }}
       >

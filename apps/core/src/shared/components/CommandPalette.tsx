@@ -149,7 +149,7 @@ export function CommandPalette({ open, onClose }: Props) {
             'w-[600px] max-w-[calc(100vw-32px)]',
             'border-outline bg-surface-container-lowest border-2',
             'outline-none',
-            'font-[Space_Grotesk,sans-serif]'
+            'font-ui'
           )}
           onKeyDown={handleKeyDown}
         >
@@ -164,13 +164,13 @@ export function CommandPalette({ open, onClose }: Props) {
               placeholder="Search apps, files, bookmarks…"
               className={cn(
                 'flex-1 bg-transparent outline-none',
-                'text-on-surface font-[Space_Grotesk,sans-serif] text-[13px]',
+                'text-on-surface font-ui text-[13px]',
                 'placeholder:text-on-surface-variant'
               )}
               autoComplete="off"
               spellCheck={false}
             />
-            <kbd className="border-outline-variant bg-surface-container text-on-surface-variant border px-1 py-0.5 font-[Space_Grotesk,sans-serif] text-[11px]">
+            <kbd className="border-outline-variant bg-surface-container text-on-surface-variant font-ui border px-1 py-0.5 text-[11px]">
               ESC
             </kbd>
           </div>
@@ -178,13 +178,13 @@ export function CommandPalette({ open, onClose }: Props) {
           {/* Results */}
           <div className="max-h-[360px] overflow-y-auto">
             {loading && items.length === 0 && (
-              <div className="text-on-surface-variant px-3 py-4 text-center font-[Space_Grotesk,sans-serif] text-[12px]">
+              <div className="text-on-surface-variant font-ui px-3 py-4 text-center text-[12px]">
                 Searching…
               </div>
             )}
 
             {!loading && items.length === 0 && (
-              <div className="text-on-surface-variant px-3 py-4 text-center font-[Space_Grotesk,sans-serif] text-[12px]">
+              <div className="text-on-surface-variant font-ui px-3 py-4 text-center text-[12px]">
                 {query ? 'No results.' : 'Type to search.'}
               </div>
             )}
@@ -196,7 +196,7 @@ export function CommandPalette({ open, onClose }: Props) {
                   return (
                     <li key={group} role="presentation">
                       {/* Group header */}
-                      <div className="border-outline-variant bg-surface-container text-on-surface-variant border-b px-3 py-1 font-[Space_Grotesk,sans-serif] text-[10px] font-semibold tracking-widest uppercase">
+                      <div className="border-outline-variant bg-surface-container text-on-surface-variant font-ui border-b px-3 py-1 text-[10px] font-semibold tracking-widest uppercase">
                         {group}
                       </div>
                       {/* Group items */}
@@ -221,13 +221,13 @@ export function CommandPalette({ open, onClose }: Props) {
                               onClose()
                             }}
                           >
-                            <span className="font-[Space_Grotesk,sans-serif] text-[13px] leading-none font-medium">
+                            <span className="font-ui text-[13px] leading-none font-medium">
                               {item.label}
                             </span>
                             {item.subtitle && (
                               <span
                                 className={cn(
-                                  'font-[Space_Grotesk,sans-serif] text-[11px] leading-none',
+                                  'font-ui text-[11px] leading-none',
                                   isSelected
                                     ? 'text-on-primary-container/70'
                                     : 'text-on-surface-variant'

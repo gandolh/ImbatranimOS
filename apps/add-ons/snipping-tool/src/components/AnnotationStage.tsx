@@ -50,6 +50,16 @@ const TOOLS: { id: Tool; label: string; Icon: typeof Square }[] = [
 /** The one fixed colour in the app: a redaction is not a styling choice. */
 const BLACKOUT_FILL = '#0b0b0d'
 
+/**
+ * The desktop's UI font stack, read at draw time: `ctx.font` can't take a CSS
+ * variable, and the font follows the theme (Figtree in Apricot, Space Grotesk
+ * in Classic).
+ */
+function uiFont(): string {
+  const stack = getComputedStyle(document.documentElement).getPropertyValue('--font-ui').trim()
+  return stack || 'sans-serif'
+}
+
 const canCopy =
   typeof window !== 'undefined' &&
   window.isSecureContext &&
@@ -125,7 +135,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
         }
         case 'text': {
           ctx.fillStyle = a.color
-          ctx.font = `600 ${a.size}px 'Space Grotesk', sans-serif`
+          ctx.font = `600 ${a.size}px ${uiFont()}`
           ctx.textBaseline = 'top'
           a.text.split('\n').forEach((line, i) => {
             ctx.fillText(line, a.x, a.y + i * a.size * 1.25)
@@ -348,7 +358,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
         display: 'flex',
         flexDirection: 'column',
         background: 'rgba(10,10,12,0.92)',
-        fontFamily: "'Space Grotesk', sans-serif",
+        fontFamily: 'var(--font-ui)',
       }}
     >
       {/* Win7-classic toolbar */}
@@ -519,7 +529,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
               left: textDraft.left,
               top: textDraft.top,
               zIndex: 100001,
-              font: '600 16px "Space Grotesk", sans-serif',
+              font: '600 16px var(--font-ui)',
               color,
               background: 'rgba(255,255,255,0.95)',
               border: '1px solid var(--accent, #c0263a)',

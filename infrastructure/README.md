@@ -11,7 +11,7 @@ covers running it and the **HTTPS / identity** story.
 docker compose -f infrastructure/docker-compose.yml up imbatranimos
 
 # Dev (HMR): Nest watch + Vite, two ports (3001 API, 5173 desktop)
-npm run dev     # = docker compose --profile dev watch
+npm run dev     # scripts/dev.mjs: docker compose --profile dev watch
 ```
 
 The first visit sets the owner's name and password (no default password ever
@@ -20,14 +20,29 @@ first claim also need a token only you know (see Identity below).
 
 ## Developing (contained)
 
-`npm run dev` runs **`docker compose … --profile dev watch`**: install, build,
-watch and serve all happen in the container, and compose `watch` syncs your
-edits from `apps/` and `packages/` into the container's own filesystem
-(node_modules excluded — the container owns its deps). Dependency changes
-(`package-lock.json`, root `package.json`, `turbo.json`, the Dockerfile)
-trigger an image rebuild instead of a sync. There are no bind mounts and no
-per-add-on volume list to keep in sync — adding an add-on needs no
-infrastructure edit.
+`npm run dev` runs **`docker compose … --profile dev watch`** through
+`scripts/dev.mjs`: install, build, watch and serve all happen in the container,
+and compose `watch` syncs your edits from `apps/` and `packages/` into the
+container's own filesystem (node_modules excluded — the container owns its
+deps). Dependency changes (`package-lock.json`, root `package.json`,
+`turbo.json`, the Dockerfile) trigger an image rebuild instead of a sync. There
+are no bind mounts and no per-add-on volume list to keep in sync — adding an
+add-on needs no infrastructure edit.
+
+Every commit bumps the version in `package.json`, the lockfile and the
+Dockerfile, and none of that should rebuild anything (2026-11-03). Two pieces
+keep it from doing so:
+
+- The image's `manifests` stage takes the version out of `package.json` and
+  the lockfile (`scripts/normalise-manifests.mjs`), and `npm ci` runs on that
+  output, so its layer is reused until a dependency changes. Measured: a
+  version-only change rebuilt the dev image in 4 s instead of 4 min 31 s.
+- `scripts/dev.mjs` keeps the same version-free copies of the two and of the
+  Dockerfile in `infrastructure/.dev-deps/` (gitignored), rewritten only when
+  their content changes, and compose watches those instead of the originals.
+
+The dev stage gives `imbatranim` only what the dev servers write (`.turbo`,
+the backend's `dist`, Vite's caches); `node_modules` stays root's.
 
 The host needs **Docker plus Node/npm for editor IntelliSense only**:
 

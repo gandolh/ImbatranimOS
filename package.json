@@ -1,6 +1,6 @@
 {
   "name": "imbatranimos",
-  "version": "1.116.0",
+  "version": "1.117.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "packageManager": "npm@11.19.1",
@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "build": "turbo build",
-    "dev": "docker compose -f infrastructure/docker-compose.yml --profile dev watch",
+    "dev": "node scripts/dev.mjs",
     "dev:local": "turbo dev",
     "lint": "turbo lint",
     "test": "turbo test test:e2e",

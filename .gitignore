@@ -11,6 +11,8 @@ build/
 *.sqlite-shm
 # Local dev state: sqlite db + notes/configs created by `npm run dev`
 /data/
+# The version-free manifests `npm run dev` keeps for Compose watch (scripts/dev.mjs)
+/infrastructure/.dev-deps/
 
 # Generated docs artifacts (apps/docs) — narrative synced from corpus,
 # reference generated from source; both rebuilt by `npm run docs`.

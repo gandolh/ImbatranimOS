@@ -4,8 +4,8 @@
 #
 #   Prod (the friend-run experience):
 #     docker compose -f infrastructure/docker-compose.yml up imbatranimos
-#   Dev (HMR):
-#     docker compose -f infrastructure/docker-compose.yml --profile dev up
+#   Dev (HMR), the container rebuilt only when a dependency changes:
+#     npm run dev       (scripts/dev.mjs, which runs `--profile dev watch`)
 services:
   # Slim single-container product: desktop + API + (future) WS on one port.
   imbatranimos:
@@ -136,14 +136,16 @@ services:
           path: ../marketplace
           target: /app/marketplace
         # Dependency- or image-shape changes need a real rebuild, not a sync.
+        # package.json, the lockfile and the Dockerfile are watched through
+        # normalised copies in .dev-deps/, without the version, which every
+        # commit bumps: watched directly, each commit rebuilt and restarted
+        # this container though nothing it runs had changed.
+        # scripts/dev.mjs (`npm run dev`) writes the copies and keeps them
+        # current; run `watch` some other way and they go stale.
         - action: rebuild
-          path: ../package-lock.json
-        - action: rebuild
-          path: ../package.json
+          path: .dev-deps
         - action: rebuild
           path: ../turbo.json
-        - action: rebuild
-          path: Dockerfile
     volumes:
       - imbatranim-home-dev:/home/imbatranim
       # Its own Nix store, as the dev home is its own home.

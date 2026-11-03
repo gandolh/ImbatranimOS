@@ -11,13 +11,20 @@
 # ships without a compiler.
 
 # ---------------------------------------------------------------------------
-# deps — full workspace install (dev + prod), with native build toolchain
+# manifests — the workspace manifests with the product version taken out
 # ---------------------------------------------------------------------------
-FROM node:24.22.1-alpine AS deps
-RUN apk add --no-cache python3 make g++
-WORKDIR /app
-# Manifests first for layer caching: one root lockfile, one npm ci.
-COPY package.json package-lock.json turbo.json ./
+# Every commit bumps the version in package.json and package-lock.json
+# (scripts/bump-version.mjs). Copied straight into `deps`, they changed the
+# `npm ci` layer's cache key on every commit, so each build reinstalled every
+# dependency and recompiled the native addons. This stage reruns on every
+# commit, but it only copies files and runs one small script, and its output
+# changes only when a dependency does: `deps` copies that output, and BuildKit
+# keys the copy on its content. The real files return in the stages that build
+# the code (builder, dev); the prod image takes its own (proddeps, and the
+# package.json it serves the version from).
+FROM node:24.22.1-alpine AS manifests
+WORKDIR /m
+COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/core/package.json ./apps/core/
 # ALL add-on manifests (--parents preserves each add-on's dir), so `npm ci`
@@ -34,6 +41,18 @@ COPY --parents packages/*/package.json ./
 # Astro deps are not installed here, so copying its manifest in with `COPY
 # apps ./apps` would break the image build (it did, silently, from the day the
 # site landed until the containerized dev pipeline work simulated a fresh-clone install).
+COPY scripts/normalise-manifests.mjs /tmp/
+RUN node /tmp/normalise-manifests.mjs /m
+
+# ---------------------------------------------------------------------------
+# deps — full workspace install (dev + prod), with native build toolchain
+# ---------------------------------------------------------------------------
+FROM node:24.22.1-alpine AS deps
+RUN apk add --no-cache python3 make g++
+WORKDIR /app
+# The normalised manifests (above): one root lockfile, one npm ci, reused
+# until a dependency changes.
+COPY --from=manifests /m/ ./
 RUN npm ci
 
 # ---------------------------------------------------------------------------
@@ -41,6 +60,8 @@ RUN npm ci
 # bundles the add-on packages via workspace resolution)
 # ---------------------------------------------------------------------------
 FROM deps AS builder
+# The real manifests over the normalised ones, and turbo's config.
+COPY package.json package-lock.json turbo.json ./
 COPY apps ./apps
 COPY packages ./packages
 # Sub-path build args. Default to root / same-origin (the standalone container
@@ -114,7 +135,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.116.0"
+      org.opencontainers.image.version="1.117.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -171,7 +192,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.116.0
+    IMAGE_VERSION=1.117.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -215,18 +236,30 @@ ENV LOCALE_ARCHIVE=$NIX_STATE_HOME/profiles/imbatranim-base/lib/locale/locale-ar
 COPY infrastructure/nix /tmp/nix-setup
 RUN sh /tmp/nix-setup/setup-image.sh && rm -rf /tmp/nix-setup
 WORKDIR /app
-COPY apps ./apps
+COPY --from=wayland-host /src/target/release/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
+COPY infrastructure/entrypoint.sh /entrypoint.sh
+# The runtime writes four places under /app, and gets only those, made here:
+# turbo's cache (.turbo), Nest's output (dist, which it deletes and recreates,
+# so its parent apps/backend), and Vite's dependency and config caches. The
+# rest of /app, node_modules above all, stays root's. It was one
+# `chown -R imbatranim /app`, which rewrote all of node_modules into a new
+# layer on every build and sat on that step for minutes.
+RUN chmod 0755 /entrypoint.sh \
+ && install -d -o imbatranim -g imbatranim /home/imbatranim /app/.turbo \
+      /app/apps/core/node_modules/.vite /app/apps/core/node_modules/.vite-temp \
+ && chown imbatranim:imbatranim /app/apps/backend
+# The real manifests over the normalised ones (see the manifests stage), and
+# the sources, owned by the user as they land. These change with every commit,
+# so they come after everything slow.
+COPY --chown=imbatranim:imbatranim package.json package-lock.json turbo.json ./
+COPY --chown=imbatranim:imbatranim apps ./apps
 # The shared workspace packages are SOURCE the dev server compiles (the
 # @imbatranim/ui SDK lives here since the system-handle seam) — without them `turbo dev`
 # fails on every dangling workspace dep. The old bind-mount dev flow never
 # mounted them either, which is how host edits to packages/* silently did
 # nothing in the container.
-COPY packages ./packages
-COPY marketplace ./marketplace
-COPY --from=wayland-host /src/target/release/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
-COPY infrastructure/entrypoint.sh /entrypoint.sh
-RUN chmod 0755 /entrypoint.sh \
- && mkdir -p /home/imbatranim && chown -R imbatranim:imbatranim /home/imbatranim /app
+COPY --chown=imbatranim:imbatranim packages ./packages
+COPY --chown=imbatranim:imbatranim marketplace ./marketplace
 USER imbatranim
 ENV PORT=3001 \
     FRONTEND_URL=http://localhost:5173 \

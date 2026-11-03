@@ -672,7 +672,7 @@ function ChangeSection({
         {entries.length === 0 ? (
           <div className="text-on-surface-variant px-2 py-2 text-[12px]">Nothing here</div>
         ) : (
-          <ul>
+          <ul className="px-(--k-list-inset)">
             {entries.map((e) => {
               const key = `${prefix}:${e.path}`
               const code = badgeCode(e)
@@ -681,7 +681,7 @@ function ChangeSection({
                 <li
                   key={key}
                   className={cn(
-                    'flex items-center gap-2 px-2 py-1',
+                    'rounded-item flex items-center gap-2 px-2 py-1',
                     'hover:bg-surface-container-high',
                     active && 'bg-primary-container text-on-primary-container'
                   )}

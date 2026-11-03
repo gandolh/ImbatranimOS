@@ -34,7 +34,7 @@ export function Playlist({ tracks, activePath, durations, resume, root, onSelect
         </span>
       </div>
       <ScrollArea className="min-h-0 flex-1">
-        <ul className="flex flex-col">
+        <ul className="flex flex-col px-(--k-list-inset)">
           {tracks.map((track) => {
             const active = track.path === activePath
             const Icon = track.kind === 'video' ? Video : Music
@@ -44,7 +44,7 @@ export function Playlist({ tracks, activePath, durations, resume, root, onSelect
                   type="button"
                   onClick={() => onSelect(track.path)}
                   className={cn(
-                    'font-ui border-outline-variant flex w-full cursor-pointer items-center gap-1.5 border-b px-2 py-1.5 text-left text-[11px]',
+                    'font-ui border-outline-variant rounded-item apricot:border-transparent flex w-full cursor-pointer items-center gap-1.5 border-b px-2 py-1.5 text-left text-[11px]',
                     active
                       ? 'bg-primary-container text-on-primary-container'
                       : 'text-on-surface hover:bg-surface-container-high'

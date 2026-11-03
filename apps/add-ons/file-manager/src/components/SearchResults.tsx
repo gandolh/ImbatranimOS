@@ -139,7 +139,7 @@ export function SearchResults({
           role="listbox"
           aria-label={`Search results in ${scope}`}
           onKeyDown={handleKeyDown}
-          className="min-h-full outline-none"
+          className="min-h-full px-(--k-list-inset) outline-none"
         >
           {error ? (
             <Empty icon={<AlertTriangle size={32} strokeWidth={1} />} label="Search failed." />
@@ -168,7 +168,7 @@ export function SearchResults({
                   onClick={() => onSelect(hit.path)}
                   onDoubleClick={() => onOpen(hit)}
                   className={cn(
-                    'flex cursor-default items-center gap-2 px-2 py-1 select-none',
+                    'rounded-item flex cursor-default items-center gap-2 px-2 py-1 select-none',
                     selected
                       ? 'bg-primary-container text-on-primary-container'
                       : 'hover:bg-surface-container'

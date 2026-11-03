@@ -84,7 +84,10 @@ export function FileList({
   }
 
   return (
-    <table className="font-ui w-full border-collapse text-[12px]">
+    // In Apricot the table separates its borders, so a row can be rounded: the
+    // fill moves from the row onto its cells, with the outer cells rounded, and
+    // the table is inset from the pane's edges. Classic keeps the collapsed table.
+    <table className="font-ui apricot:mx-(--k-list-inset) apricot:w-[calc(100%-2*var(--k-list-inset))] apricot:border-separate apricot:border-spacing-0 w-full border-collapse text-[12px]">
       <thead>
         <tr className="border-outline-variant bg-surface-container-low text-on-surface-variant border-b">
           <th className="w-6 px-2 py-1 text-left font-medium" />
@@ -133,14 +136,15 @@ export function FileList({
                 onContextMenu(entry, e)
               }}
               className={cn(
-                'border-outline-variant/30 cursor-pointer border-b transition-colors',
+                'group/row border-outline-variant/30 cursor-pointer border-b transition-colors',
                 isSelected
                   ? 'bg-primary-container text-on-primary-container'
-                  : 'hover:bg-surface-container'
+                  : 'hover:bg-surface-container',
+                'apricot:bg-transparent apricot:hover:bg-transparent'
               )}
             >
-              <td className="px-2 py-1">{getFileIcon(entry)}</td>
-              <td className="px-2 py-1">
+              <td className={cn('px-2 py-1', cellFill(isSelected))}>{getFileIcon(entry)}</td>
+              <td className={cn('px-2 py-1', cellFill(isSelected))}>
                 {isRenaming ? (
                   <input
                     autoFocus
@@ -158,13 +162,20 @@ export function FileList({
                   <span className="select-none">{entry.name}</span>
                 )}
               </td>
-              <td className="text-on-surface-variant px-2 py-1 text-right">
+              <td
+                className={cn('text-on-surface-variant px-2 py-1 text-right', cellFill(isSelected))}
+              >
                 {entry.type === 'file' ? formatSize(entry.size) : '—'}
               </td>
-              <td className="text-on-surface-variant px-2 py-1 text-right">
+              <td
+                className={cn('text-on-surface-variant px-2 py-1 text-right', cellFill(isSelected))}
+              >
                 {dayjs(entry.modifiedAt).format('MMM D, YYYY')}
               </td>
-              <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
+              <td
+                className={cn('px-2 py-1', cellFill(isSelected))}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 [tr:hover_&]:opacity-100">
                   <Tooltip content="Rename">
                     <Button
@@ -229,6 +240,17 @@ export function FileList({
         )}
       </tbody>
     </table>
+  )
+}
+
+/**
+ * Apricot's row fill, on the cells: the row itself can't be rounded, so each
+ * cell takes the fill and the outer two round the ends.
+ */
+function cellFill(isSelected: boolean): string {
+  return cn(
+    'apricot:first:rounded-l-item apricot:last:rounded-r-item',
+    isSelected ? 'apricot:bg-primary-container' : 'apricot:group-hover/row:bg-surface-container'
   )
 }
 

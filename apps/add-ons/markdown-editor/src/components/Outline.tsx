@@ -41,7 +41,7 @@ export function Outline({
         </p>
       ) : (
         <ScrollArea className="min-h-0 flex-1">
-          <ul className="py-1">
+          <ul className="px-(--k-list-inset) py-1">
             {headings.map((heading, index) => (
               <li key={`${heading.line}-${heading.slug}`}>
                 <button
@@ -49,7 +49,7 @@ export function Outline({
                   onClick={() => onSelect(heading)}
                   title={heading.title}
                   className={cn(
-                    'font-ui block w-full truncate px-2 py-0.5 text-left text-[11px]',
+                    'font-ui rounded-item block w-full truncate px-2 py-0.5 text-left text-[11px]',
                     index === activeIndex
                       ? 'bg-primary-container text-on-primary-container'
                       : 'text-on-surface hover:bg-surface-container-high'

@@ -209,8 +209,8 @@ export function CommandPalette({ open, onClose }: Props) {
                             role="option"
                             aria-selected={isSelected}
                             className={cn(
-                              'flex cursor-pointer flex-col gap-0.5 px-3 py-2',
-                              'border-outline-variant/40 border-b',
+                              'rounded-item mx-(--k-list-inset) flex cursor-pointer flex-col gap-0.5 px-3 py-2',
+                              'border-outline-variant/40 apricot:border-transparent border-b',
                               isSelected
                                 ? 'bg-primary-container text-on-primary-container'
                                 : 'text-on-surface hover:bg-surface-container-low'

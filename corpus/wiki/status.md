@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; thirteen open briefs (the Linux apps layer 01-06, in a cloud session on its own branch; the two themes 09-15, 08 done 2026-11-03); what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; twelve open briefs (the Linux apps layer 01-06, in a cloud session on its own branch; the two themes 10-15, 08-09 done 2026-11-03); what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -62,11 +62,14 @@ origin), not on `main`. Merging it will conflict on the version bump,
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
 Classic kept ([decisions-themes.md](decisions-themes.md)), one at a time on
-`main`. 08 is done (2026-11-03): the stores hold a theme, a mode and an accent
-and wallpaper per theme, `<html>` carries `data-os-theme`, and a machine saved
-before themes moves once to Apricot light. Nothing looks different yet, and
-until 09 Apricot draws with Classic's values. Left: Apricot's colours and
-accents, soft selection fills, Figtree, corners and chrome, wallpapers, the
+`main`. Done 2026-11-03:
+- 08: the stores hold a theme, a mode, and an accent and wallpaper per theme.
+  `<html>` carries `data-os-theme`, and a machine saved before themes moves
+  once to Apricot light.
+- 09: Apricot's surfaces and, per accent, a strong pair (`primary`) and a soft
+  pastel pair (`primary-container`), held to 4.5:1 by a contrast test.
+
+Left: soft selection fills, Figtree, corners and chrome, wallpapers, the
 Settings picker, and a check of every app in the four combinations. They
 deploy together after 15. 07 (research) is superseded by the grill.
 The server ISO is deferred by the owner (2026-10-04).

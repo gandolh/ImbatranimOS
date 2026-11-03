@@ -4569,3 +4569,14 @@ hex, as its type always said, instead of its id. Classic light and dark screensh
 Manager and Settings windows match the ones taken before, pixel for pixel. Built in `93604c2`
 (1.70.0). The capture recipe that 09-15 reuse is in the brief's outcome. Run alongside briefs
 01-06, which a cloud session is building on `claude/linux-apps-layer`.
+
+## [2026-11-03] brief | 09 done: Apricot's colours and accents
+
+`index.css` holds four token blocks, Apricot light and dark from the canvas and Classic's two
+unchanged, with Apricot light as the bare default so the sign-in screen paints it. Each accent has
+a strong pair (`primary`: in Apricot light a deep shade with white on it) and a soft pair
+(`primary-container`: the pastel with dark text). A new contrast test holds every Apricot surface,
+text colour and accent pair to 4.5:1. Three canvas values were moved just enough to pass: the deep
+apricot `#a84f25` → `#a04b23`, light `onVar` `#7a5f4e` → `#735949`, dark error `#ff6b6b` →
+`#ff7171`. Classic's windows are pixel-identical. Built in `b35e1b8` (1.72.0); the outcome lists
+every preset's hexes.

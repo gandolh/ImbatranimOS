@@ -97,3 +97,80 @@ Independent of 01-06; ships together with 08-15.
 - `apps/core/src/shared/store/appearanceStore.ts`: `AccentPreset`, the
   presets and `applyAppearance`.
 - `corpus/wiki/status.md`, `corpus/log.md`.
+
+## Outcome (2026-11-03)
+
+**Built in `b35e1b8` (version 1.72.0).**
+
+`index.css` has four token blocks:
+- `:root, :root[data-os-theme='apricot'][data-theme='light']`;
+- Apricot dark;
+- Classic dark;
+- Classic light.
+
+The bare `:root` accent defaults are Apricot light's. `AccentPreset` is now
+`{ id, name, light, dark }`, each mode an `AccentColours` of `{ strong,
+strongOn, soft, softOn }`. `accentColours(state)` returns the current one,
+and `applyAppearance` stamps `--accent`, `--accent-on`, `--accent-soft` and
+`--accent-soft-on`. `theme.css` maps `primary-container` /
+`on-primary-container` to the soft pair.
+
+**The hexes chosen.** Apricot light: strong with `#ffffff` on it, soft with
+`#33241b` on it. Apricot dark: strong and soft are both the pastel with
+`#33241b` on it. Classic: all four slots are the preset with `#ffffff`, in
+both modes.
+
+| Preset | Apricot light strong | Soft (both modes), dark strong |
+|---|---|---|
+| Apricot | `#a04b23` | `#f2a97e` |
+| Rose | `#b23656` | `#eea6b5` |
+| Butter | `#7f5f1b` | `#f3d27a` |
+| Sage | `#4e6c48` | `#a9c9a4` |
+| Sky | `#376891` | `#a7c7e7` |
+
+Classic is unchanged: Crimson `#c0263a`, Cobalt `#1f5fd6`, Emerald `#0f7a40`,
+Signal Orange `#d24317`.
+
+How the deep shades were made: each keeps its pastel's hue, shifted as the
+canvas's `#a84f25` is from Apricot (about 3°). The saturation is scaled the
+same way. Each takes the highest lightness that clears 4.6:1 as text on
+`surface` through `surface-container-high` and under white.
+
+**Three canvas values failed the contrast test and were moved just enough,**
+same hue:
+- The deep apricot `#a84f25` is 4.31:1 on `high` (`#f0e1d2`), so it became
+  `#a04b23` (4.65).
+- Apricot light's `onVar` `#7a5f4e` is 4.16:1 on `highest`, so it became
+  `#735949` (4.57).
+- Apricot dark's error `#ff6b6b` is 4.41:1 on `highest`, so it became
+  `#ff7171` (4.58).
+
+Apricot light's error `#ba1a1a` passes (4.58 on `highest`) and is kept.
+
+Derived tokens:
+- Apricot light: `surface-dim` `#e9d6c4` (beside `highest`, as Classic
+  light's is), `surface-bright` `#fffdf9`, inverse `#3a2a20` / `#fbf3ea`.
+- Apricot dark: `dim` `#181310`, `bright` `#2e2622`, inverse `#f6eadf` /
+  `#231d1a`.
+
+**Checked:**
+- `contrast.test.ts` (new, 32 tests) covers every Apricot surface token in
+  both modes:
+  - `on` and `onVar` on each surface;
+  - each preset's strong as text on `surface` through `high`;
+  - `strongOn` on strong and `softOn` on soft;
+  - Classic's white on each fill, with its soft pair equal to its strong one.
+- `theme.test.ts` (the two container entries changed, with a comment), the
+  store tests, the marketplace tests, typecheck and lint pass.
+- Screenshots: Classic light and dark windows are the same as before brief 08
+  (0 pixels). On the desktop only the tray's live stats moved, shifting the
+  workspace buttons.
+- Apricot light and dark show the canvas's cream and dusk surfaces on the
+  desktop, the Start menu, Settings and File Manager. Corners are still
+  square, and selected things still use the deep fill until 10.
+- A fresh profile's sign-in screen paints cream (`rgb(251, 243, 234)`).
+
+**A miss in 08:** its outcome said typecheck passed on the touched files, but
+`tsc -b` had run before the store test was written. The test's
+write-counting helper was untyped (two implicit `any`), and the commit fixes
+it.

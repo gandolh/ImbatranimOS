@@ -190,7 +190,9 @@ nix profile add nixpkgs#firefox    # `nix profile install` is the older name
   `docker volume rm infrastructure_imbatranim-nix` (which also removes the
   installed apps) gets it back from the image. After a pin move an existing
   volume keeps its older base, which is fine: fonts and locales don't need to
-  match the pin.
+  match the pin. DejaVu has no CJK glyphs; for Chinese, Japanese or Korean
+  text, install `noto-fonts-cjk-sans` (or the smaller `wqy_microhei`) from
+  Settings → Linux apps, then restart the app.
 - **The pin.** `nixpkgs` means one release snapshot, set in
   [`nix/nixpkgs-pin.env`](./nix/nixpkgs-pin.env) and nowhere else: the
   release, the snapshot's directory on `releases.nixos.org` and its commit.

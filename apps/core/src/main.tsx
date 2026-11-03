@@ -8,11 +8,8 @@ import { AuthGate } from './modules/auth/AuthGate'
 import { useAppearanceStore, applyAppearance } from './shared/store/appearanceStore'
 
 // Brand the very first paint (the start-up and sign-in screens) with the
-// persisted theme + accent, before React mounts.
-{
-  const { theme, accent } = useAppearanceStore.getState()
-  applyAppearance(theme, accent)
-}
+// persisted theme, mode and accent, before React mounts.
+applyAppearance(useAppearanceStore.getState())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

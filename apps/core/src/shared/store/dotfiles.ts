@@ -33,6 +33,5 @@ export async function rehydrateDotfileStores(): Promise<void> {
   ])
   // On the server's copy, now that the stores hold it.
   migrateRetiredAppIds()
-  const { theme, accent } = useAppearanceStore.getState()
-  applyAppearance(theme, accent)
+  applyAppearance(useAppearanceStore.getState())
 }

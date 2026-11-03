@@ -21,7 +21,7 @@ type DesktopProps = {
 
 // Theme-aware wallpapers — pattern lines use the active outline token, base uses
 // the active surface token, so both light and dark read correctly.
-const WALLPAPER_STYLES: Record<Wallpaper, React.CSSProperties> = {
+const WALLPAPER_STYLES: Partial<Record<Wallpaper, React.CSSProperties>> = {
   dots: {
     backgroundImage: 'radial-gradient(var(--k-outline-variant) 1px, transparent 1px)',
     backgroundSize: '22px 22px',
@@ -41,6 +41,9 @@ const WALLPAPER_STYLES: Record<Wallpaper, React.CSSProperties> = {
     backgroundPosition: '0 0, 4px 4px',
   },
 }
+
+/** A wallpaper with no drawing yet shows the plain surface. */
+const PLAIN_WALLPAPER: React.CSSProperties = { backgroundColor: 'var(--k-surface)' }
 
 export function Desktop({ wallpaper }: DesktopProps) {
   const enabledApps = useEnabledApps()
@@ -226,7 +229,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
     <div
       ref={sizeRef}
       className="absolute top-0 right-0 left-0 w-full overflow-hidden"
-      style={{ ...WALLPAPER_STYLES[wallpaper], bottom: TASKBAR_HEIGHT }}
+      style={{ ...(WALLPAPER_STYLES[wallpaper] ?? PLAIN_WALLPAPER), bottom: TASKBAR_HEIGHT }}
       onContextMenu={(e) => {
         // Windows are DOM children of this container, so an app that calls
         // preventDefault without stopPropagation (the Terminal's paste,

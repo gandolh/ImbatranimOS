@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Taskbar } from './shared/components/taskbar'
 import { Desktop } from './shared/components/desktop'
-import { useWallpaperStore } from './shared/store/wallpaperStore'
+import { useCurrentWallpaper } from './shared/store/wallpaperStore'
 import { setMinSizeResolver, useWindowStore } from './shared/store/windowStore'
 import { APP_REGISTRY } from './shared/registry/registry'
 import { usePaletteStore } from './shared/store/paletteStore'
@@ -19,17 +19,18 @@ import { FilePortalHost } from './system/filePortal'
 import { loadMarketplace } from './shared/registry/marketplace'
 
 export default function App() {
-  const wallpaper = useWallpaperStore((s) => s.wallpaper)
+  const wallpaper = useCurrentWallpaper()
   const theme = useAppearanceStore((s) => s.theme)
-  const accent = useAppearanceStore((s) => s.accent)
+  const mode = useAppearanceStore((s) => s.mode)
+  const accents = useAppearanceStore((s) => s.accents)
   const paletteOpen = usePaletteStore((s) => s.open)
   const setPaletteOpen = usePaletteStore((s) => s.setOpen)
   const openPalette = usePaletteStore((s) => s.openPalette)
 
-  // Reflect the persisted theme + accent onto <html> so the CSS vars resolve.
+  // Reflect the persisted theme, mode and accent onto <html> so the CSS vars resolve.
   useEffect(() => {
-    applyAppearance(theme, accent)
-  }, [theme, accent])
+    applyAppearance({ theme, mode, accents })
+  }, [theme, mode, accents])
 
   // Installed marketplace apps join the registry. A failure only
   // means they are missing from Start until the next load; Settings retries.

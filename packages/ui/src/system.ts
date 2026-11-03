@@ -293,6 +293,10 @@ export interface SystemShortcuts {
 
 // ── Appearance ────────────────────────────────────────────────────────────────
 
+/**
+ * `theme` here is the mode, light or dark, inside whichever desktop theme
+ * (Apricot or Classic) is on; `accent` is the current accent's hex.
+ */
 export type SystemAppearanceState = { theme: 'dark' | 'light'; accent: string }
 
 /**

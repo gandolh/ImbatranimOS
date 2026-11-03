@@ -20,7 +20,7 @@ import {
 import { recordRecentFile, removeRecentFile } from '../lib/recentFiles'
 import { claimScheduleOccurrence, type ScheduleDomain } from '../lib/scheduleClaim'
 import { notify } from '../shared/store/notificationStore'
-import { useAppearanceStore } from '../shared/store/appearanceStore'
+import { currentAccent, useAppearanceStore } from '../shared/store/appearanceStore'
 import { useIntentStore } from '../shared/store/intentStore'
 import { isTopWindow, useWindowStore } from '../shared/store/windowStore'
 import { openApp } from '../shared/intents/openApp'
@@ -116,9 +116,10 @@ function windowFor(windowId: string): SystemWindow {
   }
 }
 
+/** The add-on contract's view: its `theme` is the mode, its `accent` the current accent's hex. */
 function appearanceSnapshot(): SystemAppearanceState {
-  const { theme, accent } = useAppearanceStore.getState()
-  return { theme, accent }
+  const state = useAppearanceStore.getState()
+  return { theme: state.mode, accent: currentAccent(state).hex }
 }
 
 export function createSystemHandle(appId: string, windowId: string | null): SystemHandle {

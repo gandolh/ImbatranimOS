@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
-import { useWallpaperStore, type Wallpaper } from '../../shared/store/wallpaperStore'
 import {
-  useAppearanceStore,
-  ACCENT_PRESETS,
-  type ThemeMode,
-} from '../../shared/store/appearanceStore'
+  useCurrentWallpaper,
+  useWallpaperStore,
+  type Wallpaper,
+} from '../../shared/store/wallpaperStore'
+import { useAppearanceStore, ACCENT_PRESETS, type Mode } from '../../shared/store/appearanceStore'
 import {
   Monitor,
   Palette,
@@ -68,7 +68,7 @@ const WALLPAPERS: { id: Wallpaper; name: string; preview: React.CSSProperties }[
   },
 ]
 
-const THEMES: { id: ThemeMode; name: string; icon: typeof Moon }[] = [
+const MODES: { id: Mode; name: string; icon: typeof Moon }[] = [
   { id: 'dark', name: 'Dark', icon: Moon },
   { id: 'light', name: 'Light', icon: Sun },
 ]
@@ -98,10 +98,12 @@ export function Settings() {
   const [imageVersion, setImageVersion] = useState<string | null>(null)
   const onVersion = useCallback((v: string) => setImageVersion(v), [])
 
-  const { wallpaper, setWallpaper } = useWallpaperStore()
+  const wallpaper = useCurrentWallpaper()
+  const setWallpaper = useWallpaperStore((s) => s.setWallpaper)
   const theme = useAppearanceStore((s) => s.theme)
-  const accent = useAppearanceStore((s) => s.accent)
-  const setTheme = useAppearanceStore((s) => s.setTheme)
+  const mode = useAppearanceStore((s) => s.mode)
+  const accent = useAppearanceStore((s) => s.accents[s.theme])
+  const setMode = useAppearanceStore((s) => s.setMode)
   const setAccent = useAppearanceStore((s) => s.setAccent)
   const disabledApps = useAddonStore((s) => s.disabled)
   const toggleApp = useAddonStore((s) => s.toggle)
@@ -124,13 +126,13 @@ export function Settings() {
           <div className="mb-8">
             <FieldLabel>Theme</FieldLabel>
             <div className="flex gap-3">
-              {THEMES.map((t) => {
+              {MODES.map((t) => {
                 const Icon = t.icon
-                const active = theme === t.id
+                const active = mode === t.id
                 return (
                   <button
                     key={t.id}
-                    onClick={() => setTheme(t.id)}
+                    onClick={() => setMode(t.id)}
                     className={cn(
                       'flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 text-[12px] font-medium transition-colors outline-none',
                       'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
@@ -151,7 +153,7 @@ export function Settings() {
           <div className="mb-8">
             <FieldLabel>Accent color</FieldLabel>
             <div className="flex flex-wrap gap-3">
-              {ACCENT_PRESETS.map((preset) => {
+              {ACCENT_PRESETS[theme].map((preset) => {
                 const active = accent === preset.id
                 return (
                   <button

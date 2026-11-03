@@ -209,6 +209,15 @@ nix profile add nixpkgs#firefox    # `nix profile install` is the older name
   sets `sandbox = false`, because the sandbox needs user namespaces that an
   unprivileged container doesn't get, and `max-jobs = 0`, so a package with
   no binary in `cache.nixos.org` fails instead of compiling on the machine.
+  With nothing built here, the derivations an install evaluates are never
+  needed again, so `keep-derivations = false` lets a garbage collection
+  remove them too.
+- **What it costs** (measured 2026-11-03 at `nixos-26.05.13446.7dcdd87373d7`).
+  The prod image is 488 MB against main's 393 MB: Nix and its libraries,
+  the base profile (15 MB) and the package index (9.4 MB) are most of it.
+  Firefox 159 is a 446 MiB download that unpacks to 1.4 GiB in `/nix`, and
+  the first install also unpacks the pinned nixpkgs source (470 MB), which
+  `nix store gc` removes again. Plan the Nix volume's disk for that.
 - **Unfree packages** are allowed. The image sets `NIXPKGS_ALLOW_UNFREE=1`,
   and Nix only reads it with `--impure`:
   `nix profile add --impure nixpkgs#<name>`.

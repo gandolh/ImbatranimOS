@@ -82,10 +82,12 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner
 
-- Deploy the two themes (briefs 08-15) together, then retake the README
-  images (`docs/images/shots.md`) and re-vendor `packages/ui/src` into
-  imbatranim-office and Hollow before moving their Marketplace pins
-  (brief 15's outcome).
+- Push imbatranim-office's `main` (to `aa626c2` or later), then this repo,
+  then deploy the two themes (briefs 08-21) with vps-deploy
+  (`node cli.ts imbatranim-os all`). The Office catalog entry pins
+  `aa626c2`, which only exists locally until the push. The office kit is
+  synced and the pin moved (2026-11-03). Hollow needs nothing: it doesn't use
+  the kit.
 - Delete the old local development database at `data/db.sqlite` in the repo
   root (gitignored): it is from before the Ward move and still holds the old
   password hash. Delete any old downloaded `imbatranim-home-*.tar.gz` backups
@@ -105,7 +107,6 @@ The server ISO is deferred by the owner (2026-10-04).
 - [keyboard-gaps-left-after-the-focus-fixes](../todos/keyboard-gaps-left-after-the-focus-fixes.md)
 - [linux-apps-after-the-first-wave](../todos/linux-apps-after-the-first-wave.md)
 - [native-build-leftovers-in-the-image](../todos/native-build-leftovers-in-the-image.md)
-- [office-pin-after-the-row-1000-fix](../todos/office-pin-after-the-row-1000-fix.md)
 - [tray-crash-on-a-wrong-api-base](../todos/tray-crash-on-a-wrong-api-base.md)
 
 ## History

@@ -4491,7 +4491,7 @@ The rest of brief 164's walk, in Chrome against the dev container with Office `9
 
 ## [2026-10-28] build | Brief 165 done: the built-in Slides retired for Office's
 
-The built-in Slides is gone and the Office catalog entry is pinned to `909c321` (`dbd0c04`, 1.57.0), which has every walk fix and the Sheets formula worker. `slides` → `office-slides` joined the sign-in migration; a desktop that had moved Docs runs only the new pair. `pptx-preview` and its `echarts` tree left the lockfile (46 packages). With Office not installed a `.pptx` gets brief 164's Marketplace sentence; a `.ppt` gets "No app here opens .ppt files (PowerPoint 97-2003). Office's Slides opens .pptx.", since Office refuses it by name, rather than the hint about the text editor. Walked in Chrome against the dev container with the old choices seeded: the override, the pinned icon's place, the startup entry and a recent all moved, `deck.pptx` opened in Office's Slides from Files and from Start, and the uninstalled chooser named the Marketplace. The production image shrank from 279,598,118 to 278,157,380 bytes. A first build came out 11.4 MB larger because `better-sqlite3` compiled from source under load and the Dockerfile keeps a source build's leftovers: [native-build-leftovers-in-the-image](todos/native-build-leftovers-in-the-image.md). The pin moves again once Sheets computes formulas past row 1000: [office-pin-after-the-row-1000-fix](todos/office-pin-after-the-row-1000-fix.md). Brief 165 carries the outcome.
+The built-in Slides is gone and the Office catalog entry is pinned to `909c321` (`dbd0c04`, 1.57.0), which has every walk fix and the Sheets formula worker. `slides` → `office-slides` joined the sign-in migration; a desktop that had moved Docs runs only the new pair. `pptx-preview` and its `echarts` tree left the lockfile (46 packages). With Office not installed a `.pptx` gets brief 164's Marketplace sentence; a `.ppt` gets "No app here opens .ppt files (PowerPoint 97-2003). Office's Slides opens .pptx.", since Office refuses it by name, rather than the hint about the text editor. Walked in Chrome against the dev container with the old choices seeded: the override, the pinned icon's place, the startup entry and a recent all moved, `deck.pptx` opened in Office's Slides from Files and from Start, and the uninstalled chooser named the Marketplace. The production image shrank from 279,598,118 to 278,157,380 bytes. A first build came out 11.4 MB larger because `better-sqlite3` compiled from source under load and the Dockerfile keeps a source build's leftovers: [native-build-leftovers-in-the-image](todos/native-build-leftovers-in-the-image.md). The pin moves again once Sheets computes formulas past row 1000: `office-pin-after-the-row-1000-fix` (closed 2026-11-03). Brief 165 carries the outcome.
 
 ## [2026-10-28] build | Brief 166 done: the built-in Sheets retired for Office's
 
@@ -4699,3 +4699,19 @@ the browser outline.
 The Apps grid's single column is `minmax(0, 1fr)`, so its rows shrink and truncate; Settings no
 longer scrolls sideways at 390 px (measured: no section overflows). The todo
 settings-apps-rows-overflow-on-a-phone is closed. This finishes the theme follow-ups 16-21.
+
+## [2026-11-03] marketplace | Office pinned at aa626c2, static, with the themed kit
+
+imbatranim-office's kit snapshot was synced to this repo's `5a31e37` (its `kit:sync`; `--check`
+passes byte for byte), CAD's overlay tooltip now draws in `--font-ui`, and the owner chose to
+keep the suite **static**: the OS starts a descriptor's server for every window, which slowed
+the first Office window to 2.7-5.0 s and could break all of them, so DWG waits for an on-demand
+server (recorded in the office repo's decisions). The Office catalog entry moves from `909c321`
+to `aa626c2` (`e074268`), which also brings Sheets' fix for formulas past row 1000 (verified in
+the office repo's brief 15 inside this OS's production image with openpyxl); the descriptor
+matches the office's template apart from the pin. Installed through the Marketplace from a local
+`file://` catalog copy: done in under a minute, Sheets opened in Apricot light with Figtree and
+the rounded kit button. The todo office-pin-after-the-row-1000-fix is closed. Correction to
+brief 15's outcome: Hollow does not build against the kit (a schema-1, kit-less descriptor and
+no `@imbatranim/ui` import in game-engine), so it needs no re-vendor and its pin stays. Nothing is
+pushed or deployed; the owner pushes imbatranim-office first.

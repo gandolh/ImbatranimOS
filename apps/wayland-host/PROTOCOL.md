@@ -166,7 +166,10 @@ the socket when the sign-in ends). One socket per session id.
 
 Server to tab: binary frames (`[2] + body`), and JSON text: the host's
 toplevel and popup messages without `session`, and `{"type":"unavailable","reason"}`
-before a close with code 4503.
+before a close with code 4503. First of all, `{"type":"session","resumed"}`:
+`true` when the socket took back a running session (below), so the windows the
+resync announces are ones the tab had and go back to their places, and `false`
+for a new session, whose toplevel ids may repeat an old session's.
 
 Tab to server, JSON text: `{"type":"viewport","width","height"}`, the
 input messages above (`focus` to `press_outside`), `visibility` and

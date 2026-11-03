@@ -198,6 +198,12 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       existing.grace = null;
       existing.cookie = cookie;
       this.attach(existing, ws);
+      // Told first, so the tab knows the windows that follow are the ones it
+      // had (it puts them back where they were) and not new ones.
+      this.safeSend(
+        existing,
+        JSON.stringify({ type: 'session', resumed: true }),
+      );
       this.host.send({ type: 'output', session: id, width, height });
       this.host.send({ type: 'resync', session: id });
       return;
@@ -238,7 +244,10 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
         JSON.stringify({ type: 'unavailable', reason: failure }),
       );
       this.end(s, CLOSE_UNAVAILABLE, 'unavailable');
+      return;
     }
+    // A new session: none of its windows is one the tab had before.
+    this.safeSend(s, JSON.stringify({ type: 'session', resumed: false }));
   }
 
   private attach(s: LiveSession, ws: WebSocket): void {

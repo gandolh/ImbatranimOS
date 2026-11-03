@@ -27,6 +27,18 @@ type WindowProps = {
    * still mounted — see the `display` rule below.
    */
   onActiveWorkspace?: boolean
+  /**
+   * The frame and resize edges without the title bar: a Linux app that draws
+   * its own title bar gets no second one. Its own bar moves the window.
+   */
+  frameOnly?: boolean
+  /**
+   * Open and close with the fade only, no zoom. Chromium's renderer crashed
+   * (2026-11-03, headless and full builds) when any window's zoom ran while a
+   * Linux app's window was on screen and drawing: as it opened, and when
+   * another window opened beside Firefox playing a video.
+   */
+  fadeOnly?: boolean
 }
 
 type ResizeHandleProps = {
@@ -143,6 +155,8 @@ export const Window = React.memo(function Window({
   children,
   isFocused,
   onActiveWorkspace = true,
+  frameOnly = false,
+  fadeOnly = false,
 }: WindowProps) {
   const instance = useWindowStore((s) => s.windows.find((w) => w.id === windowId))
   const closeWindow = useWindowStore((s) => s.closeWindow)
@@ -267,9 +281,9 @@ export const Window = React.memo(function Window({
       <AnimatePresence>
         <motion.div
           key={instance.id}
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: fadeOnly ? 1 : 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
+          exit={{ opacity: 0, scale: fadeOnly ? 1 : 0.95, transition: { duration: 0.1 } }}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           style={{
             position: 'fixed',
@@ -320,7 +334,11 @@ export const Window = React.memo(function Window({
           <div
             {...titleBarBind()}
             onDoubleClick={handleMaximizeToggle}
-            style={{ touchAction: 'none', userSelect: 'none' }}
+            style={{
+              touchAction: 'none',
+              userSelect: 'none',
+              display: frameOnly ? 'none' : undefined,
+            }}
             className={cn(
               'flex h-[30px] shrink-0 items-center justify-between border-b pr-1 pl-3',
               isFocused

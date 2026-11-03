@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   computeSnapGeometry,
+  loadLayout,
   nextSnapState,
   setMinSizeResolver,
   TASKBAR_HEIGHT,
@@ -446,5 +447,20 @@ describe('intent re-delivery', () => {
     // A fresh delivery after a consume is seen again (the dead-letter fix).
     setIntent(id, { openPath: 'c.txt', root: 'home' })
     expect(useIntentStore.getState().intents.get(id)).toEqual({ openPath: 'c.txt', root: 'home' })
+  })
+})
+
+describe("Linux apps' windows and the saved layout", () => {
+  beforeEach(() => {
+    resetStores()
+    window.sessionStorage.clear()
+  })
+
+  it('leaves them out of the layout a reload restores', () => {
+    const s = useWindowStore.getState()
+    s.openWindow('notes', 'Notes', DEFAULT, MIN)
+    s.openWindow('linux:foot', 'foot', DEFAULT, MIN)
+    useWindowStore.getState().persistLayout()
+    expect(loadLayout().map((w) => w.appId)).toEqual(['notes'])
   })
 })

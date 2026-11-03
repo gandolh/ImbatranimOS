@@ -4,6 +4,7 @@ import { useIntentStore } from '../store/intentStore'
 import { APP_REGISTRY } from '../registry/registry'
 import { NON_DISABLEABLE } from '../registry/enabledApps'
 import { useAddonStore } from '../store/addonStore'
+import { isLinuxLauncher, launchLinuxApp } from '../../modules/linux-windows/launchers'
 
 /**
  * Opens an app window with optional payload.
@@ -28,6 +29,12 @@ export function openApp(appId: string, payload?: unknown): string {
     // files outlive the add-on that raised them. Throwing broke the caller
     // mid-click; the protocol says refused is ''.
     console.warn(`openApp: app "${appId}" is not in the registry`)
+    return ''
+  }
+
+  // A Linux app's Start entry starts the program; its windows open on their own.
+  if (isLinuxLauncher(appId)) {
+    void launchLinuxApp(appId)
     return ''
   }
 

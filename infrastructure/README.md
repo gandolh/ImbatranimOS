@@ -162,6 +162,89 @@ prod, 3002 dev), which serves only the proxy's fixed files and the relay.
   backup carries only ciphertext; restoring one elsewhere signs the Browser
   out of every site.
 
+## Linux apps and Nix
+
+Linux apps (Firefox is the first) come from Nix, not from Alpine. Nix runs
+single-user as `imbatranim`, so installing one needs no sudo:
+
+```bash
+nix profile add nixpkgs#firefox    # `nix profile install` is the older name
+```
+
+- **The volume.** `/nix` is its own named volume, `imbatranim-nix`
+  (`imbatranim-nix-dev` for the dev container), owned by `imbatranim`. Apps
+  survive `docker compose down` and `up` and image rebuilds. The image holds
+  Nix itself, never the apps. All of Nix's state lives in the volume, profiles
+  and caches included (`NIX_STATE_HOME`, `NIX_CACHE_HOME`, `NIX_CONFIG_HOME`
+  and `NIX_DATA_HOME` point into `/nix/var/imbatranim`), and nothing lands in
+  the home folder, so Settings → Backup leaves Linux apps out.
+- **Self-contained.** The image carries Nix, the base profile and the
+  package index; booting never downloads anything, and the host needs only
+  Docker. Only installing an app reaches the network (`cache.nixos.org`, and
+  `github.com` once per volume for the pinned nixpkgs source).
+- **The base profile.** `imbatranim-base` holds DejaVu fonts and glibc's
+  UTF-8 locale archive, which Nix apps need on a host that isn't NixOS. The
+  image build installs it into the image's `/nix`, and Docker copies that
+  into a new Nix volume. A volume made before it never gets it: the
+  entrypoint logs that the base is missing and boots anyway, and
+  `docker volume rm infrastructure_imbatranim-nix` (which also removes the
+  installed apps) gets it back from the image. After a pin move an existing
+  volume keeps its older base, which is fine: fonts and locales don't need to
+  match the pin. DejaVu has no CJK glyphs; for Chinese, Japanese or Korean
+  text, install `noto-fonts-cjk-sans` (or the smaller `wqy_microhei`) from
+  Settings → Linux apps, then restart the app.
+- **The pin.** `nixpkgs` means one release snapshot, set in
+  [`nix/nixpkgs-pin.env`](./nix/nixpkgs-pin.env) and nowhere else: the
+  release, the snapshot's directory on `releases.nixos.org` and its commit.
+  The image build writes the commit into the system flake registry,
+  `/etc/nix/registry.json`, checks it against the snapshot's `git-revision`,
+  and bakes the snapshot's `packages.json.br` into
+  `/usr/share/imbatranim/nix/` for the Linux apps pane to search offline. To
+  move it, open `https://channels.nixos.org/<release>`, which redirects to
+  `https://releases.nixos.org/nixos/<version>/<snapshot>/`, copy the snapshot
+  name and its `git-revision` into the file, and rebuild. The build stops
+  with that instruction while the snapshot is empty. Installed apps stay at
+  their old commit until `nix profile upgrade`.
+- **Building the image needs the network**: `releases.nixos.org`,
+  `github.com` and `cache.nixos.org`, besides the Alpine and npm mirrors.
+- **No build sandbox, and no building.** [`nix/nix.conf`](./nix/nix.conf)
+  sets `sandbox = false`, because the sandbox needs user namespaces that an
+  unprivileged container doesn't get, and `max-jobs = 0`, so a package with
+  no binary in `cache.nixos.org` fails instead of compiling on the machine.
+  With nothing built here, the derivations an install evaluates are never
+  needed again, so `keep-derivations = false` lets a garbage collection
+  remove them too.
+- **What it costs** (measured 2026-11-03 at `nixos-26.05.13446.7dcdd87373d7`).
+  The prod image is 488 MB against main's 393 MB: Nix and its libraries,
+  the base profile (15 MB) and the package index (9.4 MB) are most of it.
+  Firefox 159 is a 446 MiB download that unpacks to 1.4 GiB in `/nix`, and
+  the first install also unpacks the pinned nixpkgs source (470 MB), which
+  `nix store gc` removes again. Plan the Nix volume's disk for that.
+- **Unfree packages** are allowed. The image sets `NIXPKGS_ALLOW_UNFREE=1`,
+  and Nix only reads it with `--impure`:
+  `nix profile add --impure nixpkgs#<name>`.
+- **What a Nix app gets.** Terminal shells have the profile first on `PATH`,
+  plus `LOCALE_ARCHIVE`, `FONTCONFIG_FILE` (fonts from the base profile and
+  the user's, the font cache in `/nix`), `XDG_DATA_DIRS` and a private
+  `XDG_RUNTIME_DIR` (`/run/user/1000`). There is no session D-Bus. The
+  backend's own `PATH` leaves the profile out, so a Nix copy of `git` or `tar`
+  never replaces the image's.
+- **Their lifetime.** A tab's Linux apps live with its desktop session:
+  a reload within 30 s finds them again, closing the tab stops them 30 s
+  later (SIGTERM to each app's process group, SIGKILL 5 s after), and the
+  cover screen pauses them (SIGSTOP) until it lifts. PID 1 is `tini`, so
+  the processes an app leaves behind when its parent dies are reaped
+  rather than left as zombies.
+- **Their windows.** A Linux app's display is the Wayland host
+  (`apps/wayland-host`, Rust, built in its own image stage). The backend
+  starts it when the first tab signs in, and each tab gets its own socket,
+  `$XDG_RUNTIME_DIR/wayland-<tab's session id>`, which that tab's Terminal
+  shells have in `WAYLAND_DISPLAY`. Windows reach the tab as lossless images
+  over `/api/wayland`, behind the same sign-in as the Terminal; closing the
+  tab disconnects its apps. The dev image adds `foot` to test with:
+  `foot &` in the Terminal opens a window. How the pieces talk:
+  [`apps/wayland-host/PROTOCOL.md`](../apps/wayland-host/PROTOCOL.md).
+
 ## Native modules note
 
 `better-sqlite3` and `node-pty` are native addons, compiled in the `deps` /

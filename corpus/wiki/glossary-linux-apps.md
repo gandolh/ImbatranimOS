@@ -1,6 +1,6 @@
 ---
-summary: Vocabulary for Linux GUI apps shown as OS windows (2026-10-23) — Linux app and Wayland host, and the synonyms they displace (native app, the Rust compositor). The rest of the vocabulary is in glossary.md.
-updated: 2026-10-23
+summary: Vocabulary for Linux GUI apps shown as OS windows (2026-10-23) — Linux app, Wayland host and desktop session id, and the synonyms they displace (native app, the Rust compositor, tab id). The rest of the vocabulary is in glossary.md.
+updated: 2026-11-02
 ---
 
 # Glossary: Linux apps
@@ -21,3 +21,9 @@ The Rust process that Linux apps connect to as their display. It accepts their
 windows and passes images out and input in; it is not the compositor, which
 stays in the browser.
 _Avoid_: compositor, display server, window server, the Rust compositor.
+
+**Desktop session id**:
+The random id a browser tab keeps in `sessionStorage` for its whole life,
+reloads included, naming that tab's Wayland socket (`wayland-<id>`). A
+duplicated tab gets a new one.
+_Avoid_: tab id, window id (an OS window's own id), session token.

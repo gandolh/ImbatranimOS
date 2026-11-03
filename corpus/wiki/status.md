@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); seven open briefs: the Linux apps layer 01-06, in a cloud session on its own branch, and 22, a dev image that survives a version bump; the theme follow-ups 16-21 are done; what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); one open brief, 22, a dev image that survives a version bump; the theme follow-ups 16-21 are done; what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -56,13 +56,33 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 
 ## Open briefs
 
-01-06 are the Linux apps layer, in build order: Nix in the image with Firefox
+01-06, the Linux apps layer, are done: Nix in the image with Firefox
 headless, the Wayland host showing a window, input and title bars, popups and
 Firefox in a window, the Linux apps pane, lifecycle and sleep
-([decisions-linux-apps.md](decisions-linux-apps.md)). A Claude cloud session
-is building them on the branch `claude/linux-apps-layer` (pull request #1 on
-origin), not on `main`. Merging it will conflict on the version bump,
-`log.md` and this page.
+([decisions-linux-apps.md](decisions-linux-apps.md)). Their branch is
+`claude/linux-apps-layer` (2026-11-02, PR 1). 01 is done (2026-11-03): proven
+in the prod image and the dev container, pinned at
+`nixos-26.05.13446.7dcdd87373d7` (`7dcdd873`). The image is self-contained
+(base profile and package index baked in; boot never downloads) and grows
+from 393 MB to 488 MB; Firefox is a 446 MiB download and 1.4 GiB in `/nix`.
+Nix state lives in `/nix`, not the home, so backups keep restoring. 02 is
+done: the Wayland host shows a Linux app's window in an OS window, one
+socket per tab, frames as lossless WebP. 03 is done: pointer, US keyboard,
+focus, resize and close, and title bars that follow the app (the Win7 bar on
+request, else a frame). Both were walked again in the dev container on
+2026-11-03 with foot and gtk3-demo, 19 checks passing. 04 is done: popups
+and subsurfaces, and Firefox in an OS window, walked in the dev container
+(menus, tabs, a download, a video; PSS about 500 MB idle, 160 kB/s
+scrolling). While a Linux window is open, windows open with the fade only:
+Chromium's renderer crashed when a zoom ran beside one. 05 is done:
+Settings → Linux apps searches the release's list (streamed into a 12 MB
+index), installs and removes from the tab that holds the session, and frees
+space; installed apps appear in Start and launch into the tab. 06 is done:
+an app lives with its tab (a reload within 30 s finds it, closing the tab
+stops it), sleeps under the cover screen, and goes quiet when hidden or
+minimized; tini is PID 1. The owner merged the branch into `main` on 2026-11-03 (PR 1, `0cba6ab`), and this repo's `main` merged it after the theme briefs. The
+grill of 2026-11-03 settled what it left open
+([decisions-linux-apps-built.md](decisions-linux-apps-built.md)).
 
 08-15, the two themes, were built 2026-11-03 on `main` (1.70.0 to 1.86.0)
 and deploy together; each brief's outcome is in `briefs/done/`, and 15's lists
@@ -87,12 +107,21 @@ The server ISO is deferred by the owner (2026-10-04).
 ## Owed by the owner
 
 - Push imbatranim-office's `main` (to `aa626c2` or later), then this repo,
-  then deploy the two themes (briefs 08-21) with vps-deploy
+  then deploy the two themes (briefs 08-21) and the Linux apps layer (01-06)
+  together with vps-deploy
   (`node cli.ts imbatranim-os all`). The README images are already retaken
   in Apricot light (2026-11-03). The Office catalog entry pins
   `aa626c2`, which only exists locally until the push. The office kit is
   synced and the pin moved (2026-11-03). Hollow needs nothing: it doesn't use
   the kit.
+- Linux apps, in Chrome on the dev container: open an app beside Firefox
+  playing a video, a few times. Chromium crashed there before the fade-only
+  change and still did once in five (brief 04's outcome); Chrome with a GPU
+  may not at all. Also look at a Linux window on a screen with
+  `devicePixelRatio` above 1 (soft, known).
+- Linux apps, in Chrome on the dev container: a hidden tab carrying no
+  frames (the walk could only simulate hiding), and the keys the browser
+  keeps (brief 03's list).
 - Delete the old local development database at `data/db.sqlite` in the repo
   root (gitignored): it is from before the Ward move and still holds the old
   password hash. Delete any old downloaded `imbatranim-home-*.tar.gz` backups
@@ -107,6 +136,7 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Open todos
 
+- [linux-apps-ui-in-the-themes](../todos/linux-apps-ui-in-the-themes.md)
 - [files-background-menu-misses-empty-space](../todos/files-background-menu-misses-empty-space.md)
 - [full-run-timeouts-under-load](../todos/full-run-timeouts-under-load.md)
 - [keyboard-gaps-left-after-the-focus-fixes](../todos/keyboard-gaps-left-after-the-focus-fixes.md)

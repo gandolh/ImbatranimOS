@@ -32,6 +32,20 @@ flowchart LR
 5. Keystrokes go up the socket and the shell's output comes back; xterm.js draws it.
 6. Files and System Monitor work the same way over REST (`/api/files`, `/api/system`), and every API route needs the session except `GET /api/identity`, setup, sign-in, sign-out and the health check.
 
+### Linux apps started from the Terminal
+
+A Linux app you start in the Terminal shows its windows in the tab whose
+Terminal started it. One running in the foreground (`foot`, without `&`)
+ends with its shell, when you close the Terminal window, close the tab or
+reload it, as on any Linux desktop when a terminal closes (a program that
+ignores the hang-up, as foot does, keeps running). The Terminal's
+shell (BusyBox `sh`) does not stop its background jobs when it ends, so an
+app started with `&`, like one started with `setsid` or `nohup`, keeps
+running as long as the tab's desktop session: a reload finds it again within
+about 30 seconds, and closing the tab ends it 30 seconds later. An app
+started from Start lives that long too. While the cover screen is up, the
+tab's Linux apps are paused, and they carry on when you uncover the desktop.
+
 ## No root, by design
 
 Everything inside the container, the shell you get in Terminal and the process that serves the desktop, runs as `imbatranim`, an unprivileged user created in the image. There is no sudo, and the container is not meant to run as root or privileged. Features that would need root are on the project's rejection list ([corpus/wiki/real-os-gaps.md](../corpus/wiki/real-os-gaps.md)).

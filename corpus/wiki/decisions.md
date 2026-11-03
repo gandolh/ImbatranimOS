@@ -35,9 +35,9 @@ to their own repo, imbatranim-office, in TypeScript, installed as one Office ent
 
 ## Linux apps in OS windows (2026-10-23)
 
-In [decisions-linux-apps.md](decisions-linux-apps.md): Linux GUI apps run in
-the container and show as OS windows, their windows travel as pixels, and our
-own Wayland host in Rust does the Wayland part.
+In [decisions-linux-apps.md](decisions-linux-apps.md): Linux GUI apps show as
+OS windows, as pixels, through our own Wayland host in Rust. After the build
+(2026-11-03): [decisions-linux-apps-built.md](decisions-linux-apps-built.md).
 
 ## Inherited from the ISO era
 

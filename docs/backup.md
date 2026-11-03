@@ -18,6 +18,7 @@ The volume's name depends on how you started the container:
 Use **Settings → Backup**. It works everywhere, including the server ISO and a hosted instance, where there is no host shell to run Docker from.
 
 - **Download backup** streams the home folder as `imbatranim-home-YYYY-MM-DD.tar.gz`. The database goes in as a consistent `VACUUM INTO` snapshot rather than a hot copy. The Trash, installed marketplace apps and the Browser's encryption key stay behind; after a restore, the Marketplace pane offers to reinstall the apps.
+- **Linux apps** installed with Nix are never in a backup. They live outside the home folder, in their own `/nix` volume (`infrastructure_imbatranim-nix` with Compose), and Nix keeps its profiles and caches there too. After restoring onto a new machine, install them again.
 - **Choose a backup file…** reads an archive, shows its date and which folders it would replace, and applies it only after you type `RESTORE`.
 
 A restore signs you out, because the backup brings its own password with it. Sign in with the password the backup was taken with.

@@ -9,6 +9,7 @@ import {
   FileCog,
   Power,
   Store,
+  Boxes,
 } from 'lucide-react'
 import { Checkbox } from '../../shared/components/ui'
 import { APP_REGISTRY } from '../../shared/registry/registry'
@@ -23,6 +24,7 @@ import { LocalPasswordForm } from '../auth/LocalScreens'
 import { AboutMachine } from './AboutMachine'
 import { AppearanceSettings } from './AppearanceSettings'
 import { MarketplaceSettings } from './MarketplaceSettings'
+import { LinuxAppsSettings } from './LinuxAppsSettings'
 import { useRegistryVersion } from '../../shared/registry/marketplace'
 
 function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: string }) {
@@ -111,6 +113,12 @@ export function Settings() {
         <section className="mb-10">
           <SectionHeader icon={Store} title="Marketplace" />
           <MarketplaceSettings />
+        </section>
+
+        {/* Linux apps ─────────────────────────────────────────── */}
+        <section className="mb-10">
+          <SectionHeader icon={Boxes} title="Linux apps" />
+          <LinuxAppsSettings />
         </section>
 
         {/* Storage ────────────────────────────────────────────── */}

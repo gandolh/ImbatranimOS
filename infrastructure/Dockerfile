@@ -54,6 +54,20 @@ ARG VITE_API_URL=/api
 RUN VITE_BASE=$VITE_BASE VITE_API_URL=$VITE_API_URL npx turbo build
 
 # ---------------------------------------------------------------------------
+# wayland-host — the Wayland host Linux apps connect to (Rust, smithay).
+# Built in its own stage; only the binary reaches the prod and dev images.
+# libxkbcommon is linked dynamically, so musl's static default is turned off
+# and the runtime stages install the library instead.
+# ---------------------------------------------------------------------------
+FROM rust:1.97-alpine AS wayland-host
+RUN apk add --no-cache musl-dev libxkbcommon-dev pkgconf
+WORKDIR /src
+COPY apps/wayland-host/Cargo.toml apps/wayland-host/Cargo.lock ./
+COPY apps/wayland-host/src ./src
+ENV RUSTFLAGS="-C target-feature=-crt-static"
+RUN cargo build --release --locked
+
+# ---------------------------------------------------------------------------
 # proddeps — production-only node_modules (native modules compiled here)
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS proddeps
@@ -100,14 +114,33 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.106.0"
+      org.opencontainers.image.version="1.107.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
 # in the shipped image while working in development on a glibc host.
-RUN apk add --no-cache git
+# libxkbcommon: the Wayland host links it for the keymap it sends Linux apps.
+# tini: PID 1 (below), so the processes an app leaves behind when its parent
+# dies are reaped instead of piling up as zombies under node.
+RUN apk add --no-cache git libxkbcommon tini
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
+# Linux apps come from Nix, run single-user as imbatranim. Every piece of Nix
+# state lives in /nix (its own volume), never in the home folder: a home link
+# into /nix would make every backup fail its restore, which refuses links that
+# point outside the home. The paths are read by setup-image.sh, the
+# entrypoint, the Terminal and Nix itself. The dev stage repeats this block.
+ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
+    NIX_CACHE_HOME=/nix/var/imbatranim/cache \
+    NIX_CONFIG_HOME=/nix/var/imbatranim/config \
+    NIX_DATA_HOME=/nix/var/imbatranim/data \
+    XDG_RUNTIME_DIR=/run/user/1000 \
+    FONTCONFIG_FILE=/etc/fonts/nix-apps.conf \
+    NIXPKGS_ALLOW_UNFREE=1
+ENV LOCALE_ARCHIVE=$NIX_STATE_HOME/profiles/imbatranim-base/lib/locale/locale-archive \
+    XDG_DATA_DIRS=$NIX_STATE_HOME/profile/share:$NIX_STATE_HOME/profiles/imbatranim-base/share:/usr/local/share:/usr/share
+COPY infrastructure/nix /tmp/nix-setup
+RUN sh /tmp/nix-setup/setup-image.sh && rm -rf /tmp/nix-setup
 WORKDIR /app
 # Hoisted runtime deps + any backend-nested overrides (may be empty).
 # --chown sets ownership as the files land, so there is no second `chown -R`
@@ -119,6 +152,7 @@ COPY --chown=imbatranim:imbatranim --from=proddeps /app/node_modules ./node_modu
 COPY --chown=imbatranim:imbatranim --from=proddeps /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/core/dist ./public
+COPY --from=wayland-host /src/target/release/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
 COPY --chown=imbatranim:imbatranim package.json ./
 COPY --chown=imbatranim:imbatranim apps/backend/package.json ./apps/backend/
 # The marketplace catalog: what may be installed. Root-owned on
@@ -137,8 +171,11 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.106.0
+    IMAGE_VERSION=1.107.0
 VOLUME /home/imbatranim
+# Nix's store and profiles: Linux apps the user installs survive image
+# rebuilds, and Settings → Backup never sees them (they are not in the home).
+VOLUME /nix
 EXPOSE 8080
 # Liveness against the backend's purpose-built /health endpoint. busybox wget
 # ships in node:alpine, so no extra package is needed. --start-period covers
@@ -146,7 +183,9 @@ EXPOSE 8080
 # failure makes wget exit non-zero and marks the container unhealthy.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
   CMD wget -qO- http://127.0.0.1:8080/health || exit 1
-ENTRYPOINT ["/entrypoint.sh"]
+# tini is PID 1: it reaps orphans (a Linux app started from a Terminal
+# outlives the shell that would have waited for it) and passes signals on.
+ENTRYPOINT ["/sbin/tini", "--", "/entrypoint.sh"]
 CMD ["node", "apps/backend/dist/main"]
 
 # ---------------------------------------------------------------------------
@@ -156,10 +195,25 @@ CMD ["node", "apps/backend/dist/main"]
 # ---------------------------------------------------------------------------
 FROM deps AS dev
 # git, as in the prod stage: the Git app runs it, and so does a marketplace
-# install. The deps stage has only the native-addon toolchain.
-RUN apk add --no-cache git
+# install. The deps stage has only the native-addon toolchain. libxkbcommon
+# for the Wayland host. foot (with a font) and gtk3-demo are Linux apps to
+# test the host with, in the dev image only: foot asks for the OS title bar,
+# gtk3-demo draws its own.
+RUN apk add --no-cache git libxkbcommon tini foot font-dejavu gtk+3.0-demo
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
+# Linux apps under Nix, as in the prod stage (the reasons are there).
+ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
+    NIX_CACHE_HOME=/nix/var/imbatranim/cache \
+    NIX_CONFIG_HOME=/nix/var/imbatranim/config \
+    NIX_DATA_HOME=/nix/var/imbatranim/data \
+    XDG_RUNTIME_DIR=/run/user/1000 \
+    FONTCONFIG_FILE=/etc/fonts/nix-apps.conf \
+    NIXPKGS_ALLOW_UNFREE=1
+ENV LOCALE_ARCHIVE=$NIX_STATE_HOME/profiles/imbatranim-base/lib/locale/locale-archive \
+    XDG_DATA_DIRS=$NIX_STATE_HOME/profile/share:$NIX_STATE_HOME/profiles/imbatranim-base/share:/usr/local/share:/usr/share
+COPY infrastructure/nix /tmp/nix-setup
+RUN sh /tmp/nix-setup/setup-image.sh && rm -rf /tmp/nix-setup
 WORKDIR /app
 COPY apps ./apps
 # The shared workspace packages are SOURCE the dev server compiles (the
@@ -169,6 +223,7 @@ COPY apps ./apps
 # nothing in the container.
 COPY packages ./packages
 COPY marketplace ./marketplace
+COPY --from=wayland-host /src/target/release/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
 COPY infrastructure/entrypoint.sh /entrypoint.sh
 RUN chmod 0755 /entrypoint.sh \
  && mkdir -p /home/imbatranim && chown -R imbatranim:imbatranim /home/imbatranim /app
@@ -180,5 +235,5 @@ ENV PORT=3001 \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace
 EXPOSE 3001 5173
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "--", "/entrypoint.sh"]
 CMD ["npx", "turbo", "dev"]

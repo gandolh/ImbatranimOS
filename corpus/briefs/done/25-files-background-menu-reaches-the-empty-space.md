@@ -38,3 +38,31 @@ Promoted from the todo `files-background-menu-misses-empty-space`.
 
 - `apps/add-ons/file-manager/src/FileManager.tsx`
 - its tests
+
+## Outcome (2026-11-03)
+
+**Built in `8323063` (version 1.113.0).** The first option: the listing fills the
+scroll viewport. File Manager's `ScrollArea` takes `[container-type:size]`
+and the listing `min-h-[100cqh]`, 100% of that container's height, which is
+the viewport's. `min-h-full` couldn't work: the kit's scroll content wraps
+the listing and has no definite height. Nothing moved to the viewport, so the
+listing's focus ring, `tabIndex` and key handling are as they were, and
+`packages/ui` is untouched. The search results list (`SearchResults.tsx`)
+has the same `min-h-full` pattern; it wasn't in this brief and was left.
+
+**Checked:**
+- In the dev container, Chromium at 1280×800, Apricot light: in a folder with
+  two files the listing is 384 px tall, the pane's height (its rows end
+  74 px down); a right-click 12 px above the pane's bottom lands on the
+  listing and opens New File…, New Folder, Upload…, Paste and Refresh, and a
+  click there clears a selected row (5 filled cells to 0).
+- In a 60-file folder the rows fill the listing to its bottom, so after
+  scrolling to the end the bottom is the last row, and a right-click there
+  opens the row's menu.
+- A replica of the scroll area's structure in Chromium: 2 rows give a
+  400 px listing in a 400 px pane with nothing to scroll; 60 rows give
+  1200 px.
+- `FileManager.test.tsx` (3): the listing has `min-h-[100cqh]` inside a
+  size container; a right-click on the listing opens the background menu
+  (New Folder, New Document, Paste); one on a row opens the row's (Rename).
+  The file manager's tests (88), typecheck and lint pass.

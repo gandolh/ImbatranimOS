@@ -107,7 +107,8 @@ and re-owns `node_modules`, and Compose watch rebuilds on every commit
 with the owner. A run on branch `claude/tender-franklin-h8lc35` (one PR, not
 merged) builds them in number order; done there so far: 23 (the Linux apps
 pane rounds in Apricot; a Linux window's surface keeps no ring), 24 (the tray
-and Sticky Notes' desktop layer read a wrong answer as nothing). As written:
+and Sticky Notes' desktop layer read a wrong answer as nothing), 25 (Files'
+listing fills its pane, so its menu reaches below the rows). As written:
 - 23-27, small fixes: the Linux apps pane in the themes (no accent ring on a
   Linux window's surface), the tray surviving a wrong stats answer, Files'
   background menu below a short listing, `openApp` moving the keyboard into a

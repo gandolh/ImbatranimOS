@@ -4922,3 +4922,11 @@ tray without them (`7f4c520`, 1.111.0). A host run with `VITE_API_URL` unset the
 Notes' desktop layer on the same HTML; it now takes only an array, and the desktop drew (icons,
 taskbar, a "Couldn't save your settings" toast). Desktop layers have no error boundary; filed as a
 todo.
+
+## [2026-11-03] brief | 25 done: Files' background menu reaches the empty space
+
+File Manager's scroll area became a size container and its listing `min-h-[100cqh]`, so in a short
+folder the listing, which carries the background menu and click-to-clear, is the pane's height
+(`8323063`, 1.113.0). Walked in the dev container: a two-file folder's listing is 384 px, the pane's
+height, and a right-click near the pane's bottom opens New Folder, New File and Paste; a click there
+clears the selection. A first component test of File Manager covers the menus.

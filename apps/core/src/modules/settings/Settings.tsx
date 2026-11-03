@@ -69,7 +69,7 @@ export function Settings() {
             Turn add-ons on or off. Disabled apps disappear from Start, search, and the desktop —
             their code never loads. Core apps stay on so you can't lock yourself out.
           </p>
-          <div className="grid gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
             {APP_REGISTRY.map((app) => {
               const AppIcon = app.icon
               const required = NON_DISABLEABLE.has(app.id)

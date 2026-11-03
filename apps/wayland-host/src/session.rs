@@ -2,6 +2,7 @@
 //! output, seat and clients. Nothing here is shared with another session, so
 //! a client on tab A's socket can never reach tab B.
 
+use std::collections::HashMap;
 use std::time::Instant;
 
 use smithay::delegate_compositor;
@@ -20,17 +21,17 @@ use smithay::input::{Seat, SeatHandler, SeatState};
 use smithay::output::{Mode, Output, PhysicalProperties, Scale, Subpixel};
 use smithay::reexports::wayland_protocols::xdg::decoration::zv1::server::zxdg_toplevel_decoration_v1::Mode as DecorationMode;
 use smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel;
-use smithay::reexports::wayland_server::backend::{ClientData, ClientId, DisconnectReason};
+use smithay::reexports::wayland_server::backend::{ClientData, ClientId, DisconnectReason, ObjectId};
 use smithay::backend::input::{Axis, AxisSource, ButtonState, KeyState};
 use smithay::reexports::wayland_server::protocol::{
     wl_buffer::WlBuffer, wl_output::WlOutput, wl_seat::WlSeat, wl_shm, wl_surface::WlSurface,
 };
 use smithay::reexports::wayland_server::{Client, DisplayHandle, Resource};
-use smithay::utils::{Serial, Transform, SERIAL_COUNTER};
+use smithay::utils::{Logical, Point, Rectangle, Serial, Transform, SERIAL_COUNTER};
 use smithay::wayland::buffer::BufferHandler;
 use smithay::wayland::compositor::{
-    is_sync_subsurface, with_states, with_surface_tree_upward, BufferAssignment, CompositorClientState,
-    CompositorHandler, CompositorState, Damage, SurfaceAttributes, TraversalAction,
+    get_parent, is_sync_subsurface, with_states, with_surface_tree_upward, BufferAssignment, CompositorClientState,
+    CompositorHandler, CompositorState, Damage, SubsurfaceCachedState, SurfaceAttributes, TraversalAction,
 };
 use smithay::wayland::cursor_shape::CursorShapeManagerState;
 use smithay::wayland::output::OutputHandler;
@@ -46,8 +47,8 @@ use smithay::wayland::shell::xdg::{
 use smithay::wayland::shm::{with_buffer_contents, ShmHandler, ShmState};
 use smithay::wayland::tablet_manager::TabletSeatHandler;
 
-use crate::pixels::{clip_signed, Canvas, Encoding, ShmFormat};
-use crate::protocol::{encode_frame_body, Decorations, Geometry, Outbound, Rect, ToplevelInfo};
+use crate::pixels::{clip_signed, Canvas, Encoding, Layer, ShmFormat, SurfaceImage};
+use crate::protocol::{encode_frame_body, Decorations, Geometry, Outbound, PopupInfo, Rect, ToplevelInfo};
 
 /// Key repeat the host announces (`wl_keyboard.repeat_info`). Apps repeat
 /// keys themselves; the browser's own repeats are dropped before they get
@@ -66,40 +67,172 @@ impl ClientData for ClientState {
     fn disconnected(&self, _client_id: ClientId, _reason: DisconnectReason) {}
 }
 
-struct Toplevel {
+/// What a window is to the app: a toplevel (an OS window) or a popup (a
+/// menu, a dropdown, a tooltip) drawn above its parent.
+enum Role {
+    Toplevel {
+        surface: ToplevelSurface,
+        title: String,
+        app_id: String,
+        decorations: Decorations,
+        min: (u32, u32),
+        max: (u32, u32),
+        /// Where the tab shows the window geometry's top-left on the output,
+        /// as it last said. Popups are kept on screen from it.
+        origin: (i32, i32),
+    },
+    Popup {
+        surface: PopupSurface,
+        /// The window (toplevel or popup) it opened from.
+        parent: u32,
+        /// Its window geometry's top-left, relative to the parent's.
+        position: (i32, i32),
+        /// It holds an explicit grab, so it has the keyboard.
+        grab: bool,
+    },
+}
+
+/// A toplevel or a popup: one root surface, its subsurfaces, and the image
+/// the host sends for them.
+struct Window {
     id: u32,
-    surface: ToplevelSurface,
-    title: String,
-    app_id: String,
+    root: WlSurface,
+    role: Role,
     canvas: Canvas,
-    /// Announced to the backend: it has a buffer and an OS window.
+    /// Announced to the backend: it has a buffer and the tab shows it.
     mapped: bool,
     /// A frame was sent and the backend hasn't acked it yet.
     in_flight: bool,
-    decorations: Decorations,
     /// `xdg_surface.set_window_geometry`, if the app set one.
     geometry: Option<Geometry>,
-    min: (u32, u32),
-    max: (u32, u32),
+    /// The surfaces last composed, bottom to top, with their offsets and
+    /// sizes. When this changes, the whole window is redrawn.
+    layout: Vec<Placed>,
 }
 
-impl Toplevel {
-    fn info(&self) -> ToplevelInfo {
+#[derive(Clone, PartialEq)]
+struct Placed {
+    id: ObjectId,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+}
+
+impl Window {
+    fn is_popup(&self) -> bool {
+        matches!(self.role, Role::Popup { .. })
+    }
+
+    fn whole_geometry(&self) -> Geometry {
         let (width, height) = (self.canvas.width, self.canvas.height);
-        ToplevelInfo {
-            toplevel: self.id,
-            title: self.title.clone(),
-            app_id: self.app_id.clone(),
+        self.geometry.unwrap_or(Geometry {
+            x: 0,
+            y: 0,
             width,
             height,
-            geometry: self.geometry.unwrap_or(Geometry { x: 0, y: 0, width, height }),
-            decorations: self.decorations,
-            min_width: self.min.0,
-            min_height: self.min.1,
-            max_width: self.max.0,
-            max_height: self.max.1,
-        }
+        })
     }
+
+    fn toplevel_info(&self) -> Option<ToplevelInfo> {
+        let Role::Toplevel {
+            title,
+            app_id,
+            decorations,
+            min,
+            max,
+            ..
+        } = &self.role
+        else {
+            return None;
+        };
+        Some(ToplevelInfo {
+            toplevel: self.id,
+            title: title.clone(),
+            app_id: app_id.clone(),
+            width: self.canvas.width,
+            height: self.canvas.height,
+            geometry: self.whole_geometry(),
+            decorations: *decorations,
+            min_width: min.0,
+            min_height: min.1,
+            max_width: max.0,
+            max_height: max.1,
+        })
+    }
+
+    fn popup_info(&self) -> Option<PopupInfo> {
+        let Role::Popup {
+            parent, position, grab, ..
+        } = &self.role
+        else {
+            return None;
+        };
+        Some(PopupInfo {
+            popup: self.id,
+            parent: *parent,
+            x: position.0,
+            y: position.1,
+            width: self.canvas.width,
+            height: self.canvas.height,
+            geometry: self.whole_geometry(),
+            grab: *grab,
+        })
+    }
+
+    fn client(&self) -> Option<ClientId> {
+        self.root.client().map(|c| c.id())
+    }
+}
+
+/// The surface tree's root: a toplevel's or a popup's surface.
+fn root_of(surface: &WlSurface) -> WlSurface {
+    let mut s = surface.clone();
+    while let Some(p) = get_parent(&s) {
+        s = p;
+    }
+    s
+}
+
+/// Copy what a client's shm buffer changed into a surface's image. Returns
+/// the changed rectangles in surface pixels, or None when it can't be read.
+fn copy_buffer(buffer: &WlBuffer, damage: &[Damage], image: &mut SurfaceImage) -> Option<Vec<Rect>> {
+    with_buffer_contents(buffer, |ptr, len, data| {
+        let format = match data.format {
+            wl_shm::Format::Argb8888 => ShmFormat::Argb8888,
+            wl_shm::Format::Xrgb8888 => ShmFormat::Xrgb8888,
+            _ => return None,
+        };
+        let (w, h) = (data.width.max(0) as u32, data.height.max(0) as u32);
+        let rects: Vec<Rect> = damage
+            .iter()
+            .filter_map(|d| match d {
+                Damage::Surface(r) => clip_signed(r.loc.x, r.loc.y, r.size.w, r.size.h, w, h),
+                Damage::Buffer(r) => clip_signed(r.loc.x, r.loc.y, r.size.w, r.size.h, w, h),
+            })
+            .collect();
+        // SAFETY: smithay hands us the client's mapped pool for the
+        // duration of this closure; we only read inside it.
+        let pool = unsafe { std::slice::from_raw_parts(ptr, len) };
+        image.copy_from_shm(
+            pool,
+            data.offset.max(0) as usize,
+            w,
+            h,
+            data.stride.max(0) as usize,
+            format,
+            &rects,
+        )
+    })
+    .ok()
+    .flatten()
+}
+
+/// A surface's offset in its window: its parent's plus its own subsurface
+/// position (zero for the root).
+fn own_offset(parent: (i32, i32), states: &smithay::wayland::compositor::SurfaceData) -> (i32, i32) {
+    let loc = states.cached_state.get::<SubsurfaceCachedState>().current().location;
+    (parent.0 + loc.x, parent.1 + loc.y)
 }
 
 pub struct SessionState {
@@ -110,15 +243,27 @@ pub struct SessionState {
     data_device: DataDeviceState,
     _decoration: XdgDecorationState,
     _cursor_shape: CursorShapeManagerState,
+    stubs: crate::stubs::Stubs,
     seat_state: SeatState<SessionState>,
     _seat: Seat<SessionState>,
     keyboard: KeyboardHandle<SessionState>,
     pointer: PointerHandle<SessionState>,
     output: Output,
-    toplevels: Vec<Toplevel>,
-    next_toplevel: u32,
+    output_size: (i32, i32),
+    /// Toplevels and popups, in the order they were made. Ids are shared, so
+    /// a frame, an ack or an input event names either.
+    windows: Vec<Window>,
+    next_window: u32,
+    /// Every surface's last buffer, by surface. A window's canvas is composed
+    /// from its surfaces' images.
+    images: HashMap<ObjectId, SurfaceImage>,
     /// The toplevel with keyboard focus, if a Linux window has it.
     focused: Option<u32>,
+    /// Popups holding an explicit grab, oldest first. The newest has the
+    /// keyboard.
+    grabs: Vec<u32>,
+    /// A press outside every Linux window took the keyboard from them.
+    keyboard_away: bool,
     cursor: String,
     /// Surfaces with frame callbacks waiting to be answered.
     pending_callbacks: Vec<WlSurface>,
@@ -138,6 +283,7 @@ impl SessionState {
         let data_device = DataDeviceState::new::<SessionState>(dh);
         let decoration = XdgDecorationState::new::<SessionState>(dh);
         let cursor_shape = CursorShapeManagerState::new::<SessionState>(dh);
+        let stubs = crate::stubs::Stubs::new(dh);
         let mut seat_state = SeatState::new();
         let mut seat = seat_state.new_wl_seat(dh, "seat0");
         // A US keymap; a layout setting is later work.
@@ -163,14 +309,19 @@ impl SessionState {
             data_device,
             _decoration: decoration,
             _cursor_shape: cursor_shape,
+            stubs,
             seat_state,
             _seat: seat,
             keyboard,
             pointer,
             output,
-            toplevels: Vec::new(),
-            next_toplevel: 1,
+            output_size: (1, 1),
+            windows: Vec::new(),
+            next_window: 1,
+            images: HashMap::new(),
             focused: None,
+            grabs: Vec::new(),
+            keyboard_away: false,
             cursor: "default".into(),
             pending_callbacks: Vec::new(),
             outbox: Vec::new(),
@@ -184,57 +335,101 @@ impl SessionState {
         self.started.elapsed().as_millis() as u32
     }
 
+    pub fn stubs_mut(&mut self) -> &mut crate::stubs::Stubs {
+        &mut self.stubs
+    }
+
     /// The session's one output is the tab's viewport.
     pub fn set_output_size(&mut self, width: u32, height: u32) {
+        let size = (width.clamp(1, 16384) as i32, height.clamp(1, 16384) as i32);
+        self.output_size = size;
         let mode = Mode {
-            size: (width.clamp(1, 16384) as i32, height.clamp(1, 16384) as i32).into(),
+            size: size.into(),
             refresh: 60_000,
         };
-        self.output
-            .change_current_state(Some(mode), Some(Transform::Normal), Some(Scale::Integer(1)), Some((0, 0).into()));
+        self.output.change_current_state(
+            Some(mode),
+            Some(Transform::Normal),
+            Some(Scale::Integer(1)),
+            Some((0, 0).into()),
+        );
         self.output.set_preferred(mode);
     }
 
-    /// Encode every toplevel that has damage and no frame in flight. Each one
+    // ── Frames ──────────────────────────────────────────────────────────
+
+    /// The surfaces of a window, bottom to top, with their offsets: the
+    /// layers its canvas is composed from. Surfaces with no buffer are left
+    /// out.
+    fn placements(&self, root: &WlSurface) -> Vec<Placed> {
+        let mut out = Vec::new();
+        with_surface_tree_upward(
+            root,
+            (0, 0),
+            |_, states, parent| TraversalAction::DoChildren(own_offset(*parent, states)),
+            |surf, states, parent| {
+                let (x, y) = own_offset(*parent, states);
+                if let Some(img) = self.images.get(&surf.id()) {
+                    if !img.is_empty() {
+                        out.push(Placed {
+                            id: surf.id(),
+                            x,
+                            y,
+                            width: img.width,
+                            height: img.height,
+                        });
+                    }
+                }
+            },
+            |_, _, _| true,
+        );
+        out
+    }
+
+    /// Encode every window that has damage and no frame in flight. Each one
     /// sent is in flight until the backend acks it.
     pub fn take_frames(&mut self, encoding: Encoding) -> Vec<Vec<u8>> {
         let mut out = Vec::new();
-        for t in self.toplevels.iter_mut() {
-            if !t.mapped || t.in_flight || !t.canvas.has_damage() {
+        let images = &self.images;
+        for w in self.windows.iter_mut() {
+            if !w.mapped || w.in_flight || !w.canvas.has_damage() {
                 continue;
             }
-            let rects = t.canvas.take_frame(encoding);
-            out.push(encode_frame_body(t.id, t.canvas.width, t.canvas.height, &rects));
-            t.in_flight = true;
+            let layers: Vec<Layer> = w
+                .layout
+                .iter()
+                .filter_map(|p| images.get(&p.id).map(|image| Layer { x: p.x, y: p.y, image }))
+                .collect();
+            let rects = w.canvas.take_frame(&layers, encoding);
+            out.push(encode_frame_body(w.id, w.canvas.width, w.canvas.height, &rects));
+            w.in_flight = true;
         }
         out
     }
 
     /// The backend passed a frame on and has room for the next one. The
-    /// toplevel's waiting frame callbacks go now, so the app draws its next
+    /// window's waiting frame callbacks go now, so the app draws its next
     /// frame in time for the next tick.
-    pub fn ack(&mut self, toplevel: u32) {
-        let surface = match self.toplevels.iter_mut().find(|t| t.id == toplevel) {
-            Some(t) => {
-                t.in_flight = false;
-                t.surface.wl_surface().clone()
-            }
-            None => return,
+    pub fn ack(&mut self, id: u32) {
+        let Some(w) = self.windows.iter_mut().find(|w| w.id == id) else {
+            return;
         };
-        self.fire_callbacks(|s| s == &surface);
+        w.in_flight = false;
+        let root = w.root.clone();
+        self.fire_callbacks(|s| root_of(s) == root);
     }
 
-    /// Answer frame callbacks for every surface whose toplevel isn't waiting
+    /// Answer frame callbacks for every surface whose window isn't waiting
     /// on an ack. Holding them while a frame is in flight is what slows an
     /// app down when the tab's connection can't keep up.
     pub fn fire_idle_callbacks(&mut self) {
         let busy: Vec<WlSurface> = self
-            .toplevels
+            .windows
             .iter()
-            .filter(|t| t.in_flight)
-            .map(|t| t.surface.wl_surface().clone())
+            .filter(|w| w.in_flight)
+            .map(|w| w.root.clone())
             .collect();
-        self.fire_callbacks(|s| !busy.contains(s));
+        self.fire_callbacks(|s| !busy.contains(&root_of(s)));
     }
 
     fn fire_callbacks(&mut self, pick: impl Fn(&WlSurface) -> bool) {
@@ -258,87 +453,124 @@ impl SessionState {
         self.pending_callbacks = keep;
     }
 
-    fn toplevel_index(&self, surface: &WlSurface) -> Option<usize> {
-        self.toplevels.iter().position(|t| t.surface.wl_surface() == surface)
+    // ── Windows ─────────────────────────────────────────────────────────
+
+    fn index_of_root(&self, root: &WlSurface) -> Option<usize> {
+        self.windows.iter().position(|w| &w.root == root)
     }
 
-    fn by_id(&self, id: u32) -> Option<&Toplevel> {
-        self.toplevels.iter().find(|t| t.id == id)
+    fn index_of(&self, id: u32) -> Option<usize> {
+        self.windows.iter().position(|w| w.id == id)
+    }
+
+    fn new_id(&mut self) -> u32 {
+        let id = self.next_window;
+        self.next_window = self.next_window.wrapping_add(1).max(1);
+        id
     }
 
     fn announce(&mut self, index: usize, created: bool) {
-        let info = self.toplevels[index].info();
         let session = self.id.clone();
-        self.outbox.push(if created {
-            Outbound::ToplevelCreated { session, info }
+        let w = &self.windows[index];
+        let msg = if let Some(info) = w.toplevel_info() {
+            if created {
+                Outbound::ToplevelCreated { session, info }
+            } else {
+                Outbound::ToplevelUpdated { session, info }
+            }
+        } else if let Some(info) = w.popup_info() {
+            if created {
+                Outbound::PopupCreated { session, info }
+            } else {
+                Outbound::PopupUpdated { session, info }
+            }
         } else {
-            Outbound::ToplevelUpdated { session, info }
-        });
+            return;
+        };
+        self.outbox.push(msg);
     }
 
     fn announce_if_mapped(&mut self, index: usize) {
-        if self.toplevels[index].mapped {
+        if self.windows[index].mapped {
             self.announce(index, false);
         }
     }
 
     fn unmap(&mut self, index: usize) {
-        let t = &mut self.toplevels[index];
-        if t.mapped {
-            t.mapped = false;
-            t.in_flight = false;
-            let toplevel = t.id;
-            self.outbox.push(Outbound::ToplevelDestroyed { session: self.id.clone(), toplevel });
+        let w = &mut self.windows[index];
+        if w.mapped {
+            w.mapped = false;
+            w.in_flight = false;
+            let (id, popup) = (w.id, w.is_popup());
+            let session = self.id.clone();
+            self.outbox.push(if popup {
+                Outbound::PopupDestroyed { session, popup: id }
+            } else {
+                Outbound::ToplevelDestroyed { session, toplevel: id }
+            });
         }
-        if self.focused == Some(self.toplevels[index].id) {
+        if self.focused == Some(self.windows[index].id) {
             self.focused = None;
         }
     }
 
-    fn request(&mut self, surface: &ToplevelSurface, action: &str, edges: Option<String>) {
-        let Some(i) = self.toplevel_index(surface.wl_surface()) else { return };
-        let toplevel = self.toplevels[i].id;
-        self.outbox.push(Outbound::Request { session: self.id.clone(), toplevel, action: action.into(), edges });
+    fn remove_window(&mut self, index: usize) {
+        self.unmap(index);
+        let id = self.windows[index].id;
+        self.windows.remove(index);
+        if self.grabs.contains(&id) {
+            self.grabs.retain(|g| *g != id);
+            self.keyboard_to_grab_or_focus();
+        }
     }
 
-    /// A toplevel's root surface got a new buffer: copy what changed.
-    fn take_toplevel_buffer(&mut self, index: usize, buffer: &WlBuffer, damage: &[Damage]) {
-        let t = &mut self.toplevels[index];
-        let before = (t.canvas.width, t.canvas.height);
-        let copied = with_buffer_contents(buffer, |ptr, len, data| {
-            let format = match data.format {
-                wl_shm::Format::Argb8888 => ShmFormat::Argb8888,
-                wl_shm::Format::Xrgb8888 => ShmFormat::Xrgb8888,
-                _ => return false,
-            };
-            let (w, h) = (data.width.max(0) as u32, data.height.max(0) as u32);
-            let rects: Vec<Rect> = damage
-                .iter()
-                .filter_map(|d| match d {
-                    Damage::Surface(r) => clip_signed(r.loc.x, r.loc.y, r.size.w, r.size.h, w, h),
-                    Damage::Buffer(r) => clip_signed(r.loc.x, r.loc.y, r.size.w, r.size.h, w, h),
-                })
-                .collect();
-            // SAFETY: smithay hands us the client's mapped pool for the
-            // duration of this closure; we only read inside it.
-            let pool = unsafe { std::slice::from_raw_parts(ptr, len) };
-            t.canvas.copy_from_shm(
-                pool,
-                data.offset.max(0) as usize,
-                w,
-                h,
-                data.stride.max(0) as usize,
-                format,
-                &rects,
-            )
-        })
-        .unwrap_or(false);
-        if !copied {
+    fn request(&mut self, surface: &ToplevelSurface, action: &str, edges: Option<String>) {
+        let Some(i) = self.index_of_root(surface.wl_surface()) else {
             return;
+        };
+        let toplevel = self.windows[i].id;
+        self.outbox.push(Outbound::Request {
+            session: self.id.clone(),
+            toplevel,
+            action: action.into(),
+            edges,
+        });
+    }
+
+    /// After a commit in a window's surface tree: lay its surfaces out again,
+    /// damage what changed, and map, resize or unmap it.
+    fn refresh_window(&mut self, index: usize, changed: &[(ObjectId, Vec<Rect>)]) {
+        let root = self.windows[index].root.clone();
+        let layout = self.placements(&root);
+        let root_size = self
+            .images
+            .get(&root.id())
+            .filter(|i| !i.is_empty())
+            .map(|i| (i.width, i.height));
+        let Some((width, height)) = root_size else {
+            // No buffer on the root: the app hid the window.
+            self.windows[index].layout = layout;
+            self.unmap(index);
+            return;
+        };
+        let w = &mut self.windows[index];
+        let before = (w.canvas.width, w.canvas.height);
+        w.canvas.resize(width, height);
+        if w.layout != layout {
+            w.canvas.damage_all();
+        } else {
+            for (id, rects) in changed {
+                if let Some(p) = layout.iter().find(|p| &p.id == id) {
+                    for r in rects {
+                        w.canvas.damage(p.x + r.x as i32, p.y + r.y as i32, r.w, r.h);
+                    }
+                }
+            }
         }
-        let resized = before != (t.canvas.width, t.canvas.height);
-        if !t.mapped {
-            t.mapped = true;
+        w.layout = layout;
+        let resized = before != (width, height);
+        if !w.mapped {
+            w.mapped = true;
             self.announce(index, true);
         } else if resized {
             self.announce(index, false);
@@ -347,7 +579,7 @@ impl SessionState {
 
     /// The window geometry and size limits the app set with its last commit.
     fn read_cached(&mut self, index: usize) {
-        let surface = self.toplevels[index].surface.wl_surface().clone();
+        let surface = self.windows[index].root.clone();
         let (geometry, min, max) = with_states(&surface, |states| {
             let mut cached = states.cached_state.get::<SurfaceCachedState>();
             let c = cached.current();
@@ -361,11 +593,15 @@ impl SessionState {
         });
         let min = (min.w.max(0) as u32, min.h.max(0) as u32);
         let max = (max.w.max(0) as u32, max.h.max(0) as u32);
-        let t = &mut self.toplevels[index];
-        if t.geometry != geometry || t.min != min || t.max != max {
-            t.geometry = geometry;
-            t.min = min;
-            t.max = max;
+        let w = &mut self.windows[index];
+        let mut changed = w.geometry != geometry;
+        w.geometry = geometry;
+        if let Role::Toplevel { min: m, max: x, .. } = &mut w.role {
+            changed |= *m != min || *x != max;
+            *m = min;
+            *x = max;
+        }
+        if changed {
             self.announce_if_mapped(index);
         }
     }
@@ -375,61 +611,248 @@ impl SessionState {
         if surface.is_initial_configure_sent() {
             surface.send_pending_configure();
         }
-        if let Some(i) = self.toplevel_index(surface.wl_surface()) {
-            let d = if mode == DecorationMode::ServerSide { Decorations::Server } else { Decorations::Client };
-            if self.toplevels[i].decorations != d {
-                self.toplevels[i].decorations = d;
-                self.announce_if_mapped(i);
+        if let Some(i) = self.index_of_root(surface.wl_surface()) {
+            let d = if mode == DecorationMode::ServerSide {
+                Decorations::Server
+            } else {
+                Decorations::Client
+            };
+            if let Role::Toplevel { decorations, .. } = &mut self.windows[i].role {
+                if *decorations != d {
+                    *decorations = d;
+                    self.announce_if_mapped(i);
+                }
             }
+        }
+    }
+
+    // ── Popups ──────────────────────────────────────────────────────────
+
+    /// Where a window's geometry starts on the output: a toplevel's from
+    /// the tab, a popup's from its parent's plus its own position.
+    fn screen_origin(&self, id: u32) -> (i32, i32) {
+        let mut at = (0, 0);
+        let mut next = Some(id);
+        // A chain is short; the bound guards against a cycle.
+        for _ in 0..64 {
+            let Some(i) = next.and_then(|id| self.index_of(id)) else {
+                break;
+            };
+            match &self.windows[i].role {
+                Role::Toplevel { origin, .. } => {
+                    return (at.0 + origin.0, at.1 + origin.1);
+                }
+                Role::Popup { parent, position, .. } => {
+                    at = (at.0 + position.0, at.1 + position.1);
+                    next = Some(*parent);
+                }
+            }
+        }
+        at
+    }
+
+    /// The positioner's rectangle, flipped, slid or resized to stay on the
+    /// output, relative to the parent's window geometry.
+    fn place_popup(&self, parent: u32, positioner: PositionerState) -> Rectangle<i32, Logical> {
+        let (ox, oy) = self.screen_origin(parent);
+        let (w, h) = self.output_size;
+        let target = Rectangle::new(Point::from((-ox, -oy)), (w, h).into());
+        positioner.get_unconstrained_geometry(target)
+    }
+
+    /// Close the popups that hold an explicit grab, and every popup opened
+    /// from one, newest first: the app gets `popup_done` and destroys them.
+    /// With `keep`, that client's stay.
+    fn dismiss_grabbed(&mut self, keep: Option<ClientId>) {
+        let grabbed = |w: &Window| matches!(w.role, Role::Popup { grab: true, .. });
+        let mut doomed: Vec<usize> = Vec::new();
+        for i in (0..self.windows.len()).rev() {
+            if !self.windows[i].is_popup() || (keep.is_some() && self.windows[i].client() == keep) {
+                continue;
+            }
+            // A grabbing popup, or one with a grabbing popup above it in its chain.
+            let mut cur = Some(i);
+            for _ in 0..64 {
+                let Some(j) = cur else { break };
+                if grabbed(&self.windows[j]) {
+                    doomed.push(i);
+                    break;
+                }
+                cur = match &self.windows[j].role {
+                    Role::Popup { parent, .. } => self.index_of(*parent),
+                    Role::Toplevel { .. } => None,
+                };
+            }
+        }
+        if doomed.is_empty() {
+            return;
+        }
+        let mut ids = Vec::new();
+        for i in doomed {
+            if let Role::Popup { surface, .. } = &self.windows[i].role {
+                surface.send_popup_done();
+            }
+            ids.push(self.windows[i].id);
+        }
+        self.grabs.retain(|g| !ids.contains(g));
+        self.keyboard_to_grab_or_focus();
+    }
+
+    /// The owner pressed outside every Linux window. As on any desktop, the
+    /// keyboard leaves the apps, so an app closes the menus it tracks itself
+    /// (Firefox takes no grab for its menus and closes them when its window
+    /// loses the keyboard), and popups holding a grab get `popup_done`. The
+    /// keyboard comes back with the next press in a Linux window or the next
+    /// focus change.
+    pub fn press_outside(&mut self) {
+        self.keyboard_away = true;
+        self.dismiss_grabbed(None);
+        self.keyboard_to_grab_or_focus();
+    }
+
+    /// The keyboard goes to the newest grabbing popup, else to the focused
+    /// toplevel.
+    fn keyboard_to_grab_or_focus(&mut self) {
+        let target = if self.keyboard_away {
+            None
+        } else {
+            self.grabs
+                .last()
+                .copied()
+                .or(self.focused)
+                .and_then(|id| self.index_of(id))
+                .map(|i| self.windows[i].root.clone())
+        };
+        let keyboard = self.keyboard.clone();
+        if keyboard.current_focus() != target {
+            keyboard.set_focus(self, target, SERIAL_COUNTER.next_serial());
         }
     }
 
     // ── Input from the tab ──────────────────────────────────────────────
 
+    /// The tab moved a toplevel's OS window: its geometry now starts here on
+    /// the output.
+    pub fn position(&mut self, toplevel: u32, x: i32, y: i32) {
+        if let Some(i) = self.index_of(toplevel) {
+            if let Role::Toplevel { origin, .. } = &mut self.windows[i].role {
+                *origin = (x, y);
+            }
+        }
+    }
+
     /// Keyboard focus follows the OS window the owner raised. Only one Linux
-    /// window in the session has it; the rest lose `activated`.
+    /// window in the session has it; the rest lose `activated`. Focus moving
+    /// to another app's window, or off Linux windows, ends the grabs of the
+    /// apps that lost it.
     pub fn focus(&mut self, toplevel: Option<u32>) {
-        let target = toplevel.and_then(|id| self.by_id(id)).map(|t| (t.id, t.surface.wl_surface().clone()));
-        self.focused = target.as_ref().map(|(id, _)| *id);
-        let keyboard = self.keyboard.clone();
-        keyboard.set_focus(self, target.map(|(_, s)| s), SERIAL_COUNTER.next_serial());
+        let target = toplevel
+            .and_then(|id| self.index_of(id))
+            .filter(|i| !self.windows[*i].is_popup())
+            .map(|i| (self.windows[i].id, self.windows[i].client()));
+        if target.as_ref().map(|t| t.0) != self.focused {
+            // Another window took the keyboard: the grabs of the apps that
+            // lost it end.
+            self.dismiss_grabbed(target.as_ref().and_then(|t| t.1.clone()));
+        }
+        self.keyboard_away = false;
+        self.focused = target.map(|(id, _)| id);
+        self.keyboard_to_grab_or_focus();
         let focused = self.focused;
-        for t in &self.toplevels {
-            let changed = t.surface.with_pending_state(|s| {
-                if Some(t.id) == focused {
+        for w in &self.windows {
+            let Role::Toplevel { surface, .. } = &w.role else {
+                continue;
+            };
+            let changed = surface.with_pending_state(|s| {
+                if Some(w.id) == focused {
                     s.states.set(xdg_toplevel::State::Activated)
                 } else {
                     s.states.unset(xdg_toplevel::State::Activated)
                 }
             });
-            if changed && t.surface.is_initial_configure_sent() {
-                t.surface.send_pending_configure();
+            if changed && surface.is_initial_configure_sent() {
+                surface.send_pending_configure();
             }
         }
     }
 
-    pub fn pointer_motion(&mut self, toplevel: u32, x: f64, y: f64) {
-        let Some(surface) = self.by_id(toplevel).map(|t| t.surface.wl_surface().clone()) else { return };
-        let event = MotionEvent { location: (x, y).into(), serial: SERIAL_COUNTER.next_serial(), time: self.now() };
+    /// The surface of window `id` under a point in the window's root surface
+    /// coordinates, with that surface's offset: the topmost one whose bounds
+    /// and input region hold the point.
+    fn surface_under(&self, id: u32, x: f64, y: f64) -> Option<(WlSurface, (f64, f64))> {
+        let w = &self.windows[self.index_of(id)?];
+        let mut hit = None;
+        let point = (x.floor() as i32, y.floor() as i32);
+        with_surface_tree_upward(
+            &w.root,
+            (0, 0),
+            |_, states, parent| TraversalAction::DoChildren(own_offset(*parent, states)),
+            |surf, states, parent| {
+                let (ox, oy) = own_offset(*parent, states);
+                let Some(img) = self.images.get(&surf.id()).filter(|i| !i.is_empty()) else {
+                    return;
+                };
+                let local = (point.0 - ox, point.1 - oy);
+                if local.0 < 0 || local.1 < 0 || local.0 >= img.width as i32 || local.1 >= img.height as i32 {
+                    return;
+                }
+                let mut attrs = states.cached_state.get::<SurfaceAttributes>();
+                let accepts = attrs.current().input_region.as_ref().is_none_or(|r| r.contains(local));
+                if accepts {
+                    // Later surfaces are nearer: the last hit wins.
+                    hit = Some((surf.clone(), (ox as f64, oy as f64)));
+                }
+            },
+            |_, _, _| true,
+        );
+        hit.or_else(|| Some((w.root.clone(), (0.0, 0.0))))
+    }
+
+    pub fn pointer_motion(&mut self, id: u32, x: f64, y: f64) {
+        let Some(focus) = self.surface_under(id, x, y) else {
+            return;
+        };
+        let event = MotionEvent {
+            location: (x, y).into(),
+            serial: SERIAL_COUNTER.next_serial(),
+            time: self.now(),
+        };
         let pointer = self.pointer.clone();
-        pointer.motion(self, Some((surface, (0.0, 0.0).into())), &event);
+        pointer.motion(self, Some((focus.0, focus.1.into())), &event);
         pointer.frame(self);
     }
 
-    pub fn pointer_button(&mut self, toplevel: u32, button: u32, pressed: bool) {
-        if self.by_id(toplevel).is_none() {
-            return;
+    pub fn pointer_button(&mut self, id: u32, button: u32, pressed: bool) {
+        let Some(i) = self.index_of(id) else { return };
+        // A press in one app's window ends the other apps' grabs, and gives
+        // the keyboard back if a press outside took it.
+        if pressed {
+            let client = self.windows[i].client();
+            self.dismiss_grabbed(client);
+            if self.keyboard_away {
+                self.keyboard_away = false;
+                self.keyboard_to_grab_or_focus();
+            }
         }
-        let state = if pressed { ButtonState::Pressed } else { ButtonState::Released };
-        let event = ButtonEvent { serial: SERIAL_COUNTER.next_serial(), time: self.now(), button, state };
+        let state = if pressed {
+            ButtonState::Pressed
+        } else {
+            ButtonState::Released
+        };
+        let event = ButtonEvent {
+            serial: SERIAL_COUNTER.next_serial(),
+            time: self.now(),
+            button,
+            state,
+        };
         let pointer = self.pointer.clone();
         pointer.button(self, &event);
         pointer.frame(self);
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn pointer_axis(&mut self, toplevel: u32, dx: f64, dy: f64, v120x: i32, v120y: i32, wheel: bool) {
-        if self.by_id(toplevel).is_none() {
+    pub fn pointer_axis(&mut self, id: u32, dx: f64, dy: f64, v120x: i32, v120y: i32, wheel: bool) {
+        if self.index_of(id).is_none() {
             return;
         }
         let mut frame = AxisFrame::new(self.now()).source(if wheel { AxisSource::Wheel } else { AxisSource::Finger });
@@ -452,30 +875,45 @@ impl SessionState {
 
     pub fn pointer_leave(&mut self) {
         let location = self.pointer.current_location();
-        let event = MotionEvent { location, serial: SERIAL_COUNTER.next_serial(), time: self.now() };
+        let event = MotionEvent {
+            location,
+            serial: SERIAL_COUNTER.next_serial(),
+            time: self.now(),
+        };
         let pointer = self.pointer.clone();
         pointer.motion(self, None, &event);
         pointer.frame(self);
     }
 
-    /// A key on the focused toplevel. `keycode` is the Linux (evdev) code;
-    /// xkb's are 8 higher. The host's xkb state tracks the modifiers.
+    /// A key, to the newest grabbing popup or the focused toplevel.
+    /// `keycode` is the Linux (evdev) code; xkb's are 8 higher. The host's
+    /// xkb state tracks the modifiers.
     pub fn key(&mut self, keycode: u32, pressed: bool) {
-        if self.focused.is_none() || keycode == 0 || keycode > 767 {
+        if (self.focused.is_none() && self.grabs.is_empty()) || keycode == 0 || keycode > 767 {
             return;
         }
         let state = if pressed { KeyState::Pressed } else { KeyState::Released };
         let keyboard = self.keyboard.clone();
         let time = self.now();
-        keyboard.input::<(), _>(self, (keycode + 8).into(), state, SERIAL_COUNTER.next_serial(), time, |_, _, _| {
-            FilterResult::Forward
-        });
+        keyboard.input::<(), _>(
+            self,
+            (keycode + 8).into(),
+            state,
+            SERIAL_COUNTER.next_serial(),
+            time,
+            |_, _, _| FilterResult::Forward,
+        );
     }
 
     /// The OS window's size and state, as `xdg_toplevel.configure`, within
     /// the app's own limits. The app answers with an ack and a new buffer.
     pub fn configure(&mut self, toplevel: u32, width: u32, height: u32, maximized: bool) {
-        let Some(t) = self.by_id(toplevel) else { return };
+        let Some(i) = self.index_of(toplevel) else {
+            return;
+        };
+        let Role::Toplevel { surface, min, max, .. } = &self.windows[i].role else {
+            return;
+        };
         let clamp = |v: u32, min: u32, max: u32| {
             let v = v.max(min).max(1);
             if max > 0 {
@@ -484,9 +922,9 @@ impl SessionState {
                 v
             }
         };
-        let w = clamp(width, t.min.0, t.max.0).min(16384) as i32;
-        let h = clamp(height, t.min.1, t.max.1).min(16384) as i32;
-        t.surface.with_pending_state(|s| {
+        let w = clamp(width, min.0, max.0).min(16384) as i32;
+        let h = clamp(height, min.1, max.1).min(16384) as i32;
+        surface.with_pending_state(|s| {
             s.size = Some((w, h).into());
             if maximized {
                 s.states.set(xdg_toplevel::State::Maximized);
@@ -494,16 +932,16 @@ impl SessionState {
                 s.states.unset(xdg_toplevel::State::Maximized);
             }
         });
-        if t.surface.is_initial_configure_sent() {
-            t.surface.send_pending_configure();
+        if surface.is_initial_configure_sent() {
+            surface.send_pending_configure();
         }
     }
 
     /// The OS close button. The app decides: it may close, ask to save, or
     /// refuse. The OS window closes when the toplevel goes, not here.
     pub fn close(&mut self, toplevel: u32) {
-        if let Some(t) = self.by_id(toplevel) {
-            t.surface.send_close();
+        if let Some(Role::Toplevel { surface, .. }) = self.index_of(toplevel).map(|i| &self.windows[i].role) {
+            surface.send_close();
         }
     }
 }
@@ -514,15 +952,25 @@ impl CompositorHandler for SessionState {
     }
 
     fn client_compositor_state<'a>(&self, client: &'a Client) -> &'a CompositorClientState {
-        &client.get_data::<ClientState>().expect("every client is inserted with ClientState").compositor
+        &client
+            .get_data::<ClientState>()
+            .expect("every client is inserted with ClientState")
+            .compositor
     }
 
     fn commit(&mut self, surface: &WlSurface) {
-        // xdg-shell: the first commit of a new toplevel waits for a configure.
-        // No size: the app picks its own until the window manager resizes it.
-        if let Some(i) = self.toplevel_index(surface) {
-            if !self.toplevels[i].surface.is_initial_configure_sent() {
-                self.toplevels[i].surface.send_configure();
+        // xdg-shell: the first commit of a new toplevel or popup waits for a
+        // configure. No size for a toplevel: the app picks its own until the
+        // window manager resizes it.
+        if let Some(i) = self.index_of_root(surface) {
+            match &self.windows[i].role {
+                Role::Toplevel { surface: t, .. } if !t.is_initial_configure_sent() => {
+                    t.send_configure();
+                }
+                Role::Popup { surface: p, .. } if !p.is_initial_configure_sent() => {
+                    let _ = p.send_configure();
+                }
+                _ => {}
             }
         }
         // A synchronized subsurface's state applies with its parent's commit,
@@ -530,7 +978,9 @@ impl CompositorHandler for SessionState {
         if is_sync_subsurface(surface) {
             return;
         }
-        let mut committed: Vec<(WlSurface, Option<BufferAssignment>, Vec<Damage>, bool)> = Vec::new();
+        let mut changed: Vec<(ObjectId, Vec<Rect>)> = Vec::new();
+        let mut wants_frame: Vec<WlSurface> = Vec::new();
+        let images = &mut self.images;
         with_surface_tree_upward(
             surface,
             (),
@@ -538,38 +988,54 @@ impl CompositorHandler for SessionState {
             |surf, states, _| {
                 let mut attrs = states.cached_state.get::<SurfaceAttributes>();
                 let current = attrs.current();
-                committed.push((
-                    surf.clone(),
-                    current.buffer.take(),
-                    std::mem::take(&mut current.damage),
-                    !current.frame_callbacks.is_empty(),
-                ));
+                let buffer = current.buffer.take();
+                let damage = std::mem::take(&mut current.damage);
+                if !current.frame_callbacks.is_empty() {
+                    wants_frame.push(surf.clone());
+                }
+                match buffer {
+                    Some(BufferAssignment::NewBuffer(buffer)) => {
+                        let image = images.entry(surf.id()).or_default();
+                        if let Some(rects) = copy_buffer(&buffer, &damage, image) {
+                            changed.push((surf.id(), rects));
+                        }
+                        // Copied (or unreadable); either way the client may
+                        // reuse it.
+                        buffer.release();
+                    }
+                    Some(BufferAssignment::Removed) => {
+                        images.remove(&surf.id());
+                    }
+                    None => {}
+                }
             },
             |_, _, _| true,
         );
-        for (surf, buffer, damage, wants_frame) in committed {
-            let index = self.toplevel_index(&surf);
-            match buffer {
-                Some(BufferAssignment::NewBuffer(buffer)) => {
-                    if let Some(i) = index {
-                        self.take_toplevel_buffer(i, &buffer, &damage);
-                    }
-                    // Copied (or not shown at all, for now: subsurfaces and
-                    // cursors); either way the client may reuse it.
-                    buffer.release();
-                }
-                Some(BufferAssignment::Removed) => {
-                    if let Some(i) = index {
-                        self.unmap(i);
-                    }
-                }
-                None => {}
-            }
-            if let Some(i) = index {
-                self.read_cached(i);
-            }
-            if wants_frame && !self.pending_callbacks.contains(&surf) {
+        // Surfaces that belong to no window (cursors, a popup's parent gone)
+        // keep only their frame callbacks.
+        if let Some(i) = self.index_of_root(&root_of(surface)) {
+            // The geometry first: a window is announced with the geometry
+            // committed with its first buffer, so its OS window opens at the
+            // app's size, not the size of its image with the shadows.
+            self.read_cached(i);
+            self.refresh_window(i, &changed);
+        }
+        for surf in wants_frame {
+            if !self.pending_callbacks.contains(&surf) {
                 self.pending_callbacks.push(surf);
+            }
+        }
+    }
+
+    /// A surface went away. If it was part of a window's picture, the window
+    /// is drawn again without it.
+    fn destroyed(&mut self, surface: &WlSurface) {
+        let id = surface.id();
+        self.images.remove(&id);
+        for w in self.windows.iter_mut() {
+            if w.layout.iter().any(|p| p.id == id) {
+                w.layout.retain(|p| p.id != id);
+                w.canvas.damage_all();
             }
         }
     }
@@ -591,8 +1057,7 @@ impl XdgShellHandler for SessionState {
     }
 
     fn new_toplevel(&mut self, surface: ToplevelSurface) {
-        let id = self.next_toplevel;
-        self.next_toplevel = self.next_toplevel.wrapping_add(1).max(1);
+        let id = self.new_id();
         // The window manager can maximize and minimize; it has no
         // fullscreen of its own, so a fullscreen request maximizes.
         surface.with_pending_state(|s| {
@@ -600,37 +1065,116 @@ impl XdgShellHandler for SessionState {
             s.capabilities.set(xdg_toplevel::WmCapabilities::Minimize);
             s.capabilities.set(xdg_toplevel::WmCapabilities::Fullscreen);
         });
-        self.toplevels.push(Toplevel {
+        self.windows.push(Window {
             id,
-            surface,
-            title: String::new(),
-            app_id: String::new(),
+            root: surface.wl_surface().clone(),
+            role: Role::Toplevel {
+                surface,
+                title: String::new(),
+                app_id: String::new(),
+                // Until the app asks for the OS title bar, it draws its own.
+                decorations: Decorations::Client,
+                min: (0, 0),
+                max: (0, 0),
+                origin: (0, 0),
+            },
             canvas: Canvas::default(),
             mapped: false,
             in_flight: false,
-            // Until the app asks for the OS title bar, it draws its own.
-            decorations: Decorations::Client,
             geometry: None,
-            min: (0, 0),
-            max: (0, 0),
+            layout: Vec::new(),
         });
     }
 
-    fn new_popup(&mut self, surface: PopupSurface, _positioner: PositionerState) {
-        // Popups aren't shown yet. Configuring them keeps their app from
-        // waiting on one forever.
-        let _ = surface.send_configure();
+    /// A menu, dropdown or tooltip. It is placed from its positioner, kept
+    /// on the output, and configured on its first commit.
+    fn new_popup(&mut self, surface: PopupSurface, positioner: PositionerState) {
+        let parent = surface
+            .get_parent_surface()
+            .and_then(|p| self.index_of_root(&p))
+            .map(|i| self.windows[i].id);
+        let Some(parent) = parent else {
+            // Its parent isn't a window here: configure it anyway, so the
+            // app doesn't wait forever, but never show it.
+            let _ = surface.send_configure();
+            return;
+        };
+        let geometry = self.place_popup(parent, positioner);
+        surface.with_pending_state(|s| {
+            s.geometry = geometry;
+            s.positioner = positioner;
+        });
+        let id = self.new_id();
+        self.windows.push(Window {
+            id,
+            root: surface.wl_surface().clone(),
+            role: Role::Popup {
+                surface,
+                parent,
+                position: (geometry.loc.x, geometry.loc.y),
+                grab: false,
+            },
+            canvas: Canvas::default(),
+            mapped: false,
+            in_flight: false,
+            geometry: None,
+            layout: Vec::new(),
+        });
     }
 
-    fn grab(&mut self, _surface: PopupSurface, _seat: WlSeat, _serial: Serial) {}
+    /// A menu takes the keyboard and closes when the owner clicks outside
+    /// the app.
+    fn grab(&mut self, surface: PopupSurface, _seat: WlSeat, _serial: Serial) {
+        let Some(i) = self.index_of_root(surface.wl_surface()) else {
+            return;
+        };
+        let id = self.windows[i].id;
+        if let Role::Popup { grab, .. } = &mut self.windows[i].role {
+            *grab = true;
+        }
+        if !self.grabs.contains(&id) {
+            self.grabs.push(id);
+        }
+        self.keyboard_to_grab_or_focus();
+        self.announce_if_mapped(i);
+    }
 
-    fn reposition_request(&mut self, _surface: PopupSurface, _positioner: PositionerState, _token: u32) {}
+    fn reposition_request(&mut self, surface: PopupSurface, positioner: PositionerState, token: u32) {
+        let Some(i) = self.index_of_root(surface.wl_surface()) else {
+            return;
+        };
+        let Role::Popup { parent, .. } = self.windows[i].role else {
+            return;
+        };
+        let geometry = self.place_popup(parent, positioner);
+        surface.with_pending_state(|s| {
+            s.geometry = geometry;
+            s.positioner = positioner;
+        });
+        surface.send_repositioned(token);
+        if let Role::Popup { position, .. } = &mut self.windows[i].role {
+            *position = (geometry.loc.x, geometry.loc.y);
+        }
+        self.announce_if_mapped(i);
+    }
+
+    fn popup_destroyed(&mut self, surface: PopupSurface) {
+        if let Some(i) = self.index_of_root(surface.wl_surface()) {
+            self.remove_window(i);
+        }
+    }
 
     fn move_request(&mut self, surface: ToplevelSurface, _seat: WlSeat, _serial: Serial) {
         self.request(&surface, "move", None);
     }
 
-    fn resize_request(&mut self, surface: ToplevelSurface, _seat: WlSeat, _serial: Serial, edges: xdg_toplevel::ResizeEdge) {
+    fn resize_request(
+        &mut self,
+        surface: ToplevelSurface,
+        _seat: WlSeat,
+        _serial: Serial,
+        edges: xdg_toplevel::ResizeEdge,
+    ) {
         let edges = match edges {
             xdg_toplevel::ResizeEdge::Top => "n",
             xdg_toplevel::ResizeEdge::Bottom => "s",
@@ -668,9 +1212,8 @@ impl XdgShellHandler for SessionState {
     // `show_window_menu` is left to its default: ignored.
 
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
-        if let Some(i) = self.toplevel_index(surface.wl_surface()) {
-            self.unmap(i);
-            self.toplevels.remove(i);
+        if let Some(i) = self.index_of_root(surface.wl_surface()) {
+            self.remove_window(i);
         }
     }
 
@@ -685,22 +1228,29 @@ impl XdgShellHandler for SessionState {
 
 impl SessionState {
     fn read_names(&mut self, surface: &ToplevelSurface) {
-        let Some(i) = self.toplevel_index(surface.wl_surface()) else { return };
-        let (title, app_id) = with_states(surface.wl_surface(), |states| {
+        let Some(i) = self.index_of_root(surface.wl_surface()) else {
+            return;
+        };
+        let (new_title, new_app_id) = with_states(surface.wl_surface(), |states| {
             let data = states
                 .data_map
                 .get::<XdgToplevelSurfaceData>()
                 .expect("a toplevel has toplevel data")
                 .lock()
                 .expect("toplevel data lock");
-            (data.title.clone().unwrap_or_default(), data.app_id.clone().unwrap_or_default())
+            (
+                data.title.clone().unwrap_or_default(),
+                data.app_id.clone().unwrap_or_default(),
+            )
         });
-        let t = &mut self.toplevels[i];
-        if t.title == title && t.app_id == app_id {
+        let Role::Toplevel { title, app_id, .. } = &mut self.windows[i].role else {
+            return;
+        };
+        if *title == new_title && *app_id == new_app_id {
             return;
         }
-        t.title = title;
-        t.app_id = app_id;
+        *title = new_title;
+        *app_id = new_app_id;
         self.announce_if_mapped(i);
     }
 }

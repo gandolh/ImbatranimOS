@@ -6,7 +6,7 @@ import {
   WaylandHostService,
   type SessionListener,
 } from './wayland-host.service';
-import type { HostOutbound } from './wayland.protocol';
+import { PROTOCOL_VERSION, type HostOutbound } from './wayland.protocol';
 
 /**
  * A stand-in host, as a script: connects to the control socket it is given,
@@ -17,7 +17,7 @@ const net = require('net');
 const path = process.argv[process.argv.indexOf('--control') + 1];
 const s = net.connect(path);
 const json = (o) => { const b = Buffer.from(JSON.stringify(o)); const h = Buffer.alloc(5); h.writeUInt32LE(b.length + 1); h[4] = 1; s.write(Buffer.concat([h, b])); };
-json({ type: 'hello', version: 1 });
+json({ type: 'hello', version: ${PROTOCOL_VERSION} });
 let buf = Buffer.alloc(0);
 s.on('data', (d) => {
   buf = Buffer.concat([buf, d]);

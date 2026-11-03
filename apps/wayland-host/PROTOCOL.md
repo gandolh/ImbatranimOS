@@ -54,16 +54,23 @@ refused on both sides.
 | `key` | `session`, `keycode`, `pressed` | A Linux (evdev) key code, to the focused toplevel. The host's xkb state (a US keymap) tracks modifiers; apps repeat keys themselves. |
 | `configure` | `session`, `toplevel`, `width`, `height`, `maximized` | The OS window's size for the app's window geometry, clamped to the app's limits, sent as `xdg_toplevel.configure`. |
 | `close` | `session`, `toplevel` | The OS close button: `xdg_toplevel.close`. The app decides. |
+| `position` | `session`, `toplevel`, `x`, `y` | Where the toplevel's window geometry starts on the output (the tab's viewport), after the OS window moved or resized. Popups are kept on the output from it. |
+| `press_outside` | `session` | The owner pressed outside every Linux window. The keyboard leaves the session's apps, which close the menus they track themselves, and popups holding a grab get `popup_done`. The next press in a Linux window or the next `focus` gives the keyboard back. |
+
+In the pointer messages, `toplevel` names a toplevel or a popup: their ids
+share one space within a session.
 
 ### JSON, host to backend
 
 | `type` | Fields |
 |---|---|
-| `hello` | `version` (1) |
+| `hello` | `version` (2) |
 | `session_ready` | `session`, `display` (the socket name, `wayland-<session>`) |
 | `session_failed` | `session`, `reason` |
 | `toplevel_created`, `toplevel_updated` | `session`, `toplevel`, `title`, `app_id`, `width`, `height`, `geometry`, `decorations`, `min_width`, `min_height`, `max_width`, `max_height` |
 | `toplevel_destroyed` | `session`, `toplevel` |
+| `popup_created`, `popup_updated` | `session`, `popup`, `parent`, `x`, `y`, `width`, `height`, `geometry`, `grab` |
+| `popup_destroyed` | `session`, `popup` |
 | `cursor` | `session`, `name` |
 | `request` | `session`, `toplevel`, `action`, `edges` |
 
@@ -75,6 +82,20 @@ none). `decorations` is `server` when the app asked for the OS title bar
 (xdg-decoration) and `client` when it draws its own or never asked. The
 limits are the app's on its geometry, 0 for none. Toplevel ids are unique
 within a session.
+
+A popup (a menu, a dropdown, a tooltip: `xdg_popup`) is created when it
+first shows a buffer. `parent` is the toplevel or popup it opened from; `x`
+and `y` are its window geometry's top-left relative to the parent's window
+geometry, after the host kept it on the output (the positioner's flip, slide
+and resize, against the output less the parent's `position`). `width`,
+`height` and `geometry` are as for a toplevel. `grab` says it holds an
+explicit grab: it has the keyboard, and a press in another app's window or
+`press_outside` closes it. Popups get frames, acks and pointer input like
+toplevels, by their id.
+
+A window's image is its root surface's buffer with its subsurfaces composed
+over and under it in stacking order, at their offsets, clipped to the root's
+size; a synchronized subsurface's state shows with its parent's commit.
 
 `cursor` is the CSS name of the cursor the app asked for with cursor-shape-v1
 (`default` when it set a cursor surface instead, `none` when hidden).
@@ -132,11 +153,11 @@ Terminal's checks (the session cookie, Origin, and a 30 s sweep that closes
 the socket when the sign-in ends). One socket per session id.
 
 Server to tab: binary frames (`[2] + body`), and JSON text: the host's
-toplevel messages without `session`, and `{"type":"unavailable","reason"}`
+toplevel and popup messages without `session`, and `{"type":"unavailable","reason"}`
 before a close with code 4503.
 
 Tab to server, JSON text: `{"type":"viewport","width","height"}`, and the
-input messages above (`focus` to `close`) without `session`; the backend
+input messages above (`focus` to `press_outside`) without `session`; the backend
 checks each field and adds the session.
 
 Close codes: 4401 the sign-in ended, 4409 the session id already has a socket

@@ -6,13 +6,12 @@ import {
 } from '../../shared/store/windowStore'
 import { isDesktopShortcut } from './desktopKeys'
 import { linuxWindowChrome } from './kind'
-import { evdevButton, evdevCode } from './keymap'
+import { evdevCode } from './keymap'
 import { canvasFor, sendToLinuxApps, useLinuxWindowsStore } from './linuxWindowsStore'
+import { attachPointer } from './pointerInput'
 
 /** A resize sends at most one configure this often while the edge is dragged. */
 const CONFIGURE_THROTTLE_MS = 50
-/** Wayland's scroll value for one wheel notch (libinput's 15 degrees). */
-const WHEEL_NOTCH_VALUE = 15
 
 type Grab =
   | { kind: 'move'; x: number; y: number; posX: number; posY: number }
@@ -72,74 +71,24 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
     if (!el || toplevel === undefined) return
     const pressedKeys = new Set<number>()
     const send = (m: object) => sendToLinuxApps(m)
-    const surfacePoint = (e: MouseEvent) => {
-      const r = canvasFor(toplevel).getBoundingClientRect()
-      return { x: e.clientX - r.left, y: e.clientY - r.top }
-    }
-
-    const onPointerMove = (e: PointerEvent) => {
-      const p = pointer.current
-      p.x = e.clientX
-      p.y = e.clientY
-      if (p.grab) {
+    const detachPointer = attachPointer(el, toplevel, () => canvasFor(toplevel), {
+      onDown: () => {
+        el.focus({ preventScroll: true })
+        pointer.current.down = true
+      },
+      onMove: (e) => {
+        const p = pointer.current
+        p.x = e.clientX
+        p.y = e.clientY
+        if (!p.grab) return false
         runGrab(windowId, p.grab, e.clientX, e.clientY)
-        return
-      }
-      send({ type: 'pointer_motion', toplevel, ...surfacePoint(e) })
-    }
-    const onPointerDown = (e: PointerEvent) => {
-      const button = evdevButton(e.button)
-      if (button === undefined) return
-      el.focus({ preventScroll: true })
-      el.setPointerCapture(e.pointerId)
-      pointer.current.down = true
-      send({ type: 'pointer_motion', toplevel, ...surfacePoint(e) })
-      send({ type: 'pointer_button', toplevel, button, pressed: true })
-    }
-    const onPointerUp = (e: PointerEvent) => {
-      const button = evdevButton(e.button)
-      const p = pointer.current
-      p.down = false
-      p.grab = null
-      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId)
-      if (button !== undefined) send({ type: 'pointer_button', toplevel, button, pressed: false })
-    }
-    const onPointerLeave = () => {
-      if (!pointer.current.down) send({ type: 'pointer_leave' })
-    }
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      const legacy = e as WheelEvent & { wheelDeltaX?: number; wheelDeltaY?: number }
-      const notches = (d: number | undefined) => d !== undefined && d !== 0 && d % 120 === 0
-      let dx: number, dy: number, v120x: number, v120y: number, wheel: boolean
-      if (
-        e.deltaMode === WheelEvent.DOM_DELTA_PIXEL &&
-        (notches(legacy.wheelDeltaY) || notches(legacy.wheelDeltaX))
-      ) {
-        // A mouse wheel: whole notches of 120.
-        v120x = -(legacy.wheelDeltaX ?? 0)
-        v120y = -(legacy.wheelDeltaY ?? 0)
-        dx = (v120x / 120) * WHEEL_NOTCH_VALUE
-        dy = (v120y / 120) * WHEEL_NOTCH_VALUE
-        wheel = true
-      } else if (e.deltaMode === WheelEvent.DOM_DELTA_LINE) {
-        // Lines, three to a notch.
-        v120x = Math.round(e.deltaX * 40)
-        v120y = Math.round(e.deltaY * 40)
-        dx = e.deltaX * (WHEEL_NOTCH_VALUE / 3)
-        dy = e.deltaY * (WHEEL_NOTCH_VALUE / 3)
-        wheel = true
-      } else {
-        // A touchpad: smooth pixels.
-        v120x = 0
-        v120y = 0
-        dx = e.deltaX
-        dy = e.deltaY
-        wheel = false
-      }
-      send({ type: 'pointer_axis', toplevel, dx, dy, v120x, v120y, wheel })
-    }
-    const onContextMenu = (e: MouseEvent) => e.preventDefault()
+        return true
+      },
+      onUp: () => {
+        pointer.current.down = false
+        pointer.current.grab = null
+      },
+    })
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.isComposing || isDesktopShortcut(e)) return
       const code = evdevCode(e.code)
@@ -165,30 +114,50 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
       pressedKeys.clear()
     }
 
-    el.addEventListener('pointermove', onPointerMove)
-    el.addEventListener('pointerdown', onPointerDown)
-    el.addEventListener('pointerup', onPointerUp)
-    el.addEventListener('pointercancel', onPointerUp)
-    el.addEventListener('pointerleave', onPointerLeave)
-    el.addEventListener('wheel', onWheel, { passive: false })
-    el.addEventListener('contextmenu', onContextMenu)
     el.addEventListener('keydown', onKeyDown)
     el.addEventListener('keyup', onKeyUp)
     el.addEventListener('blur', onBlur)
     return () => {
       onBlur()
-      el.removeEventListener('pointermove', onPointerMove)
-      el.removeEventListener('pointerdown', onPointerDown)
-      el.removeEventListener('pointerup', onPointerUp)
-      el.removeEventListener('pointercancel', onPointerUp)
-      el.removeEventListener('pointerleave', onPointerLeave)
-      el.removeEventListener('wheel', onWheel)
-      el.removeEventListener('contextmenu', onContextMenu)
+      detachPointer()
       el.removeEventListener('keydown', onKeyDown)
       el.removeEventListener('keyup', onKeyUp)
       el.removeEventListener('blur', onBlur)
     }
   }, [toplevel, windowId])
+
+  // Where the app's window starts on the output, for the host to keep its
+  // popups on screen. Read from the page after the window manager moves,
+  // resizes or maximizes the OS window.
+  useEffect(() => {
+    const el = holder.current
+    if (!el || toplevel === undefined) return
+    let last = ''
+    let frame = 0
+    const report = () => {
+      frame = 0
+      const r = el.getBoundingClientRect()
+      if (r.width === 0) return
+      const x = Math.round(r.left)
+      const y = Math.round(r.top)
+      const key = `${x},${y}`
+      if (key === last) return
+      last = key
+      sendToLinuxApps({ type: 'position', toplevel, x, y })
+    }
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(report)
+    }
+    const unsubscribe = useWindowStore.subscribe(schedule)
+    const observer = new ResizeObserver(schedule)
+    observer.observe(el)
+    schedule()
+    return () => {
+      unsubscribe()
+      observer.disconnect()
+      if (frame) cancelAnimationFrame(frame)
+    }
+  }, [toplevel])
 
   // The OS window's size is the app's window size: tell it on every change.
   useEffect(() => {
@@ -250,6 +219,7 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
       className="relative h-full w-full overflow-hidden bg-black outline-none"
       style={{ cursor, touchAction: 'none' }}
       data-linux-window=""
+      data-linux-toplevel-id={toplevel}
       aria-label="Linux app window"
     />
   )

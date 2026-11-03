@@ -115,6 +115,23 @@ export function toHostMessage(
     case 'close':
       if (!isU32(m.toplevel)) return null;
       return { type: 'close', session, toplevel: m.toplevel };
+    case 'position':
+      if (
+        !isU32(m.toplevel) ||
+        !isIntIn(m.x, -MAX_VIEWPORT, MAX_VIEWPORT) ||
+        !isIntIn(m.y, -MAX_VIEWPORT, MAX_VIEWPORT)
+      ) {
+        return null;
+      }
+      return {
+        type: 'position',
+        session,
+        toplevel: m.toplevel,
+        x: m.x,
+        y: m.y,
+      };
+    case 'press_outside':
+      return { type: 'press_outside', session };
     default:
       return null;
   }

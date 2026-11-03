@@ -37,8 +37,21 @@ type ToplevelMessage = {
   max_width: number
   max_height: number
 }
+type PopupMessage = {
+  type: 'popup_created' | 'popup_updated'
+  popup: number
+  parent: number
+  x: number
+  y: number
+  width: number
+  height: number
+  geometry: Geometry
+  grab: boolean
+}
 type ServerMessage =
   | ToplevelMessage
+  | PopupMessage
+  | { type: 'popup_destroyed'; popup: number }
   | { type: 'toplevel_destroyed'; toplevel: number }
   | { type: 'cursor'; name: string }
   | { type: 'request'; toplevel: number; action: string; edges?: string }
@@ -99,6 +112,19 @@ export class LinuxWindowsConnection {
   /** The toplevel the host was last told has keyboard focus. */
   private focused: number | null = null
 
+  /**
+   * A press outside every Linux window takes the keyboard from their apps,
+   * as a click elsewhere does on any desktop, so their open menus close. A
+   * press in a Linux window goes to its app, which closes its own menus.
+   */
+  private readonly onPressAnywhere = (e: PointerEvent) => {
+    const popups = Object.values(useLinuxWindowsStore.getState().popups)
+    if (popups.length === 0) return
+    const target = e.target as Element | null
+    if (target?.closest?.('[data-linux-popup], [data-linux-window]')) return
+    this.send({ type: 'press_outside' })
+  }
+
   private readonly onResize = () => {
     if (this.viewportTimer) clearTimeout(this.viewportTimer)
     this.viewportTimer = setTimeout(() => {
@@ -110,6 +136,7 @@ export class LinuxWindowsConnection {
     if (!this.stopped) return
     this.stopped = false
     window.addEventListener('resize', this.onResize)
+    document.addEventListener('pointerdown', this.onPressAnywhere, true)
     // Keyboard focus follows the window manager's focused window.
     this.unsubscribeWindows = useWindowStore.subscribe(() => this.syncFocus())
     setLinuxSender((m) => this.send(m))
@@ -119,6 +146,7 @@ export class LinuxWindowsConnection {
   stop(): void {
     this.stopped = true
     window.removeEventListener('resize', this.onResize)
+    document.removeEventListener('pointerdown', this.onPressAnywhere, true)
     this.unsubscribeWindows?.()
     this.unsubscribeWindows = null
     setLinuxSender(null)
@@ -185,7 +213,8 @@ export class LinuxWindowsConnection {
     if (typeof data !== 'string') {
       const frame = parseFrame(data)
       if (!frame) return
-      if (!windowForToplevel(frame.toplevel)) return
+      const isPopup = frame.toplevel in useLinuxWindowsStore.getState().popups
+      if (!isPopup && !windowForToplevel(frame.toplevel)) return
       const canvas = canvasFor(frame.toplevel)
       const prev = this.painting.get(frame.toplevel) ?? Promise.resolve()
       const next = prev.then(() => paintFrame(canvas, frame)).catch(() => undefined)
@@ -201,6 +230,8 @@ export class LinuxWindowsConnection {
     if (m.type === 'toplevel_created') this.created(m)
     else if (m.type === 'toplevel_updated') this.updated(m)
     else if (m.type === 'toplevel_destroyed') this.destroyed(m.toplevel)
+    else if (m.type === 'popup_created' || m.type === 'popup_updated') this.popup(m)
+    else if (m.type === 'popup_destroyed') this.popupGone(m.popup)
     else if (m.type === 'cursor') useLinuxWindowsStore.getState().setCursor(m.name)
     else if (m.type === 'request') this.request(m.toplevel, m.action, m.edges)
   }
@@ -246,6 +277,25 @@ export class LinuxWindowsConnection {
     const windows = useWindowStore.getState()
     windows.unregisterCloseGuard(t.windowId)
     windows.closeWindow(t.windowId)
+  }
+
+  private popup(m: PopupMessage): void {
+    useLinuxWindowsStore.getState().setPopup({
+      popup: m.popup,
+      parent: m.parent,
+      x: m.x,
+      y: m.y,
+      width: m.width,
+      height: m.height,
+      geometry: m.geometry,
+      grab: m.grab,
+    })
+  }
+
+  private popupGone(popup: number): void {
+    useLinuxWindowsStore.getState().removePopup(popup)
+    this.painting.delete(popup)
+    dropCanvas(popup)
   }
 
   /**

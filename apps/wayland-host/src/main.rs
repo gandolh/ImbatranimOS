@@ -10,6 +10,7 @@
 mod pixels;
 mod protocol;
 mod session;
+mod stubs;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -82,6 +83,8 @@ impl Host {
                 self.with(&session, |s| s.configure(toplevel, width, height, maximized))
             }
             Inbound::Close { session, toplevel } => self.with(&session, |s| s.close(toplevel)),
+            Inbound::Position { session, toplevel, x, y } => self.with(&session, |s| s.position(toplevel, x, y)),
+            Inbound::PressOutside { session } => self.with(&session, |s| s.press_outside()),
         }
     }
 

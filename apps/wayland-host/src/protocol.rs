@@ -12,7 +12,7 @@ pub const KIND_FRAME: u8 = 2;
 /// Refuse anything larger: a full 4K frame deflated is far below this.
 pub const MAX_MESSAGE: usize = 64 * 1024 * 1024;
 
-pub const PROTOCOL_VERSION: u32 = 1;
+pub const PROTOCOL_VERSION: u32 = 2;
 
 /// Pixel encodings of a frame's rectangles.
 pub const ENC_DEFLATE_RGBA: u8 = 1;
@@ -85,6 +85,19 @@ pub enum Inbound {
     },
     /// The OS window's close button: ask the app to close.
     Close { session: String, toplevel: u32 },
+    /// The OS window moved or resized: its toplevel's window geometry now
+    /// starts here on the output. Popups are kept on the output from it.
+    Position {
+        session: String,
+        toplevel: u32,
+        x: i32,
+        y: i32,
+    },
+    /// The owner pressed outside every Linux window: the keyboard leaves the
+    /// session's apps (they close the menus they track themselves) and popups
+    /// holding a grab close, until the next press in a Linux window or focus
+    /// change.
+    PressOutside { session: String },
 }
 
 /// How a toplevel's title bar is drawn.
@@ -124,6 +137,27 @@ pub struct ToplevelInfo {
     pub max_height: u32,
 }
 
+/// What a popup is, as the backend and the tab see it. Its id shares the
+/// toplevels' id space: frames and input name it the same way.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct PopupInfo {
+    pub popup: u32,
+    /// The toplevel or popup it opened from.
+    pub parent: u32,
+    /// Its window geometry's top-left, relative to the parent's window
+    /// geometry, after it was kept on the output.
+    pub x: i32,
+    pub y: i32,
+    /// The image's size.
+    pub width: u32,
+    pub height: u32,
+    /// The part of the image that is the popup (without shadows).
+    pub geometry: Geometry,
+    /// It holds an explicit grab: it has the keyboard, and a press outside
+    /// its app closes it.
+    pub grab: bool,
+}
+
 /// Host to backend (JSON kind). Frames travel as [`KIND_FRAME`].
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -152,6 +186,20 @@ pub enum Outbound {
     ToplevelDestroyed {
         session: String,
         toplevel: u32,
+    },
+    PopupCreated {
+        session: String,
+        #[serde(flatten)]
+        info: PopupInfo,
+    },
+    PopupUpdated {
+        session: String,
+        #[serde(flatten)]
+        info: PopupInfo,
+    },
+    PopupDestroyed {
+        session: String,
+        popup: u32,
     },
     /// The cursor the app asked for, as a CSS cursor name.
     Cursor {
@@ -335,6 +383,27 @@ mod tests {
         })
     }
 
+    fn sample_popup() -> Vec<u8> {
+        encode_json(&Outbound::PopupCreated {
+            session: "abcdefghijklmnop".into(),
+            info: PopupInfo {
+                popup: 9,
+                parent: 7,
+                x: 12,
+                y: -4,
+                width: 200,
+                height: 120,
+                geometry: Geometry {
+                    x: 8,
+                    y: 8,
+                    width: 184,
+                    height: 104,
+                },
+                grab: true,
+            },
+        })
+    }
+
     #[test]
     fn input_messages_decode() {
         let mut d = Decoder::default();
@@ -343,6 +412,8 @@ mod tests {
             r#"{"type":"focus","session":"abcdefghijklmnop","toplevel":null}"#,
             r#"{"type":"pointer_axis","session":"abcdefghijklmnop","toplevel":2,"dx":0,"dy":15,"v120x":0,"v120y":120,"wheel":true}"#,
             r#"{"type":"key","session":"abcdefghijklmnop","keycode":30,"pressed":true}"#,
+            r#"{"type":"position","session":"abcdefghijklmnop","toplevel":2,"x":-30,"y":40}"#,
+            r#"{"type":"press_outside","session":"abcdefghijklmnop"}"#,
         ] {
             push_message(&mut bytes, KIND_JSON, json.as_bytes());
         }
@@ -353,6 +424,8 @@ mod tests {
         );
         assert!(matches!(d.next_inbound(), Ok(Some(Inbound::PointerAxis { v120y: 120, wheel: true, .. }))));
         assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Key { keycode: 30, pressed: true, .. }))));
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Position { toplevel: 2, x: -30, y: 40, .. }))));
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::PressOutside { .. }))));
     }
 
     #[test]
@@ -426,7 +499,11 @@ mod tests {
     /// fails one side or the other until both and PROTOCOL.md agree.
     #[test]
     fn fixtures_match_the_encoder() {
-        let cases = [("frame.bin", sample_frame()), ("toplevel-created.bin", sample_created())];
+        let cases = [
+            ("frame.bin", sample_frame()),
+            ("toplevel-created.bin", sample_created()),
+            ("popup-created.bin", sample_popup()),
+        ];
         for (name, bytes) in cases {
             let path = fixtures_dir().join(name);
             if std::env::var_os("UPDATE_FIXTURES").is_some() {

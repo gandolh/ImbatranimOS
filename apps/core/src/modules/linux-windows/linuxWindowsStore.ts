@@ -20,6 +20,26 @@ export type LinuxToplevel = {
   max: { width: number; height: number }
 }
 
+/**
+ * A menu, dropdown or tooltip a Linux app opened: drawn above its parent,
+ * where the host placed it. Its id shares the toplevels' id space.
+ */
+export type LinuxPopup = {
+  popup: number
+  /** The toplevel or popup it opened from. */
+  parent: number
+  /** Its window geometry's top-left, relative to the parent's. */
+  x: number
+  y: number
+  /** The image. */
+  width: number
+  height: number
+  /** The part of the image that is the popup; the rest is shadow. */
+  geometry: Geometry
+  /** It holds an explicit grab: the host sends it the keys. */
+  grab: boolean
+}
+
 /** A move or resize the app started from its own title bar or edge. */
 export type LinuxRequest = { windowId: string; action: string; edges?: string; seq: number }
 
@@ -30,12 +50,16 @@ type LinuxWindowsState = {
   cursor: string
   /** The latest drag the app asked for; the window body starts it. */
   request: LinuxRequest | null
+  /** Open popups, by id. */
+  popups: Record<number, LinuxPopup>
   add: (t: LinuxToplevel) => void
   update: (windowId: string, patch: Partial<LinuxToplevel>) => void
   remove: (windowId: string) => void
   clear: () => void
   setCursor: (cursor: string) => void
   setRequest: (r: Omit<LinuxRequest, 'seq'>) => void
+  setPopup: (p: LinuxPopup) => void
+  removePopup: (popup: number) => void
 }
 
 let requestSeq = 0
@@ -44,6 +68,7 @@ export const useLinuxWindowsStore = create<LinuxWindowsState>()((set) => ({
   byWindow: {},
   cursor: 'default',
   request: null,
+  popups: {},
   add: (t) => set((s) => ({ byWindow: { ...s.byWindow, [t.windowId]: t } })),
   update: (windowId, patch) =>
     set((s) => {
@@ -57,9 +82,17 @@ export const useLinuxWindowsStore = create<LinuxWindowsState>()((set) => ({
       delete next[windowId]
       return { byWindow: next }
     }),
-  clear: () => set({ byWindow: {}, request: null, cursor: 'default' }),
+  clear: () => set({ byWindow: {}, request: null, cursor: 'default', popups: {} }),
   setCursor: (cursor) => set({ cursor }),
   setRequest: (r) => set({ request: { ...r, seq: ++requestSeq } }),
+  setPopup: (p) => set((s) => ({ popups: { ...s.popups, [p.popup]: p } })),
+  removePopup: (popup) =>
+    set((s) => {
+      if (!(popup in s.popups)) return s
+      const next = { ...s.popups }
+      delete next[popup]
+      return { popups: next }
+    }),
 }))
 
 export function windowForToplevel(toplevel: number): LinuxToplevel | undefined {

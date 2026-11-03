@@ -62,6 +62,25 @@ describe('the Wayland host control protocol', () => {
     ]);
   });
 
+  it("decodes the host's popup fixture", () => {
+    const [d] = new Decoder().push(fixture('popup-created.bin'));
+    expect(d).toEqual({
+      kind: 'json',
+      message: {
+        type: 'popup_created',
+        session: 'abcdefghijklmnop',
+        popup: 9,
+        parent: 7,
+        x: 12,
+        y: -4,
+        width: 200,
+        height: 120,
+        geometry: { x: 8, y: 8, width: 184, height: 104 },
+        grab: true,
+      },
+    });
+  });
+
   it('frames JSON for the host with a length and a kind byte', () => {
     const bytes = encodeJson({
       type: 'session_close',

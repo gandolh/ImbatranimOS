@@ -129,6 +129,9 @@ const WindowSlot = memo(function WindowSlot({
   const closeWindow = useWindowStore((s) => s.closeWindow)
   // A Linux app that draws its own title bar gets the frame only.
   const frameOnly = useLinuxWindowsStore((s) => s.byWindow[windowId]?.decorations === 'client')
+  // While a Linux app's window is open, windows open and close without the
+  // zoom (see Window's fadeOnly).
+  const linuxOpen = useLinuxWindowsStore((s) => Object.keys(s.byWindow).length > 0)
   const [remountKey, setRemountKey] = useState(0)
 
   const reload = useCallback(() => setRemountKey((k) => k + 1), [])
@@ -149,6 +152,7 @@ const WindowSlot = memo(function WindowSlot({
       isFocused={isFocused}
       onActiveWorkspace={onActiveWorkspace}
       frameOnly={frameOnly}
+      fadeOnly={linuxOpen || isLinuxWindow(appId)}
     >
       {isLinuxWindow(appId) ? (
         // A Linux app's window: no add-on and no system handle, just its picture.

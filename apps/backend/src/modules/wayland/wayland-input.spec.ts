@@ -47,6 +47,21 @@ describe("checking the tab's Linux window input", () => {
     expect(toHostMessage(S, { type: 'session_close' })).toBeNull();
   });
 
+  it("passes a window's position and a press outside the Linux windows", () => {
+    expect(
+      toHostMessage(S, { type: 'position', toplevel: 3, x: -20, y: 40 }),
+    ).toEqual({ type: 'position', session: S, toplevel: 3, x: -20, y: 40 });
+    expect(
+      toHostMessage(S, { type: 'position', toplevel: 3, x: 1.5, y: 40 }),
+    ).toBeNull();
+    expect(
+      toHostMessage(S, { type: 'position', toplevel: 3, x: 0, y: 1e9 }),
+    ).toBeNull();
+    expect(
+      toHostMessage(S, { type: 'press_outside', session: 'other' }),
+    ).toEqual({ type: 'press_outside', session: S });
+  });
+
   it('clamps a configured size into the viewport limits', () => {
     expect(
       toHostMessage(S, {

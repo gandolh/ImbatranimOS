@@ -19,7 +19,7 @@ export const WS_KIND_FRAME = 2;
 /** Refuse anything larger, as the host does. */
 export const MAX_MESSAGE = 64 * 1024 * 1024;
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /**
  * A desktop session id: random, per tab, and part of a socket's file name
@@ -72,7 +72,15 @@ export type HostInbound =
       height: number;
       maximized: boolean;
     }
-  | { type: 'close'; session: string; toplevel: number };
+  | { type: 'close'; session: string; toplevel: number }
+  | {
+      type: 'position';
+      session: string;
+      toplevel: number;
+      x: number;
+      y: number;
+    }
+  | { type: 'press_outside'; session: string };
 
 /** Host → backend, JSON kind. */
 export type HostOutbound =
@@ -80,6 +88,7 @@ export type HostOutbound =
   | { type: 'session_ready'; session: string; display: string }
   | { type: 'session_failed'; session: string; reason: string }
   | ToplevelMessage
+  | PopupMessage
   | { type: 'cursor'; session: string; name: string }
   | {
       type: 'request';
@@ -106,6 +115,25 @@ export type ToplevelMessage =
       max_height: number;
     }
   | { type: 'toplevel_destroyed'; session: string; toplevel: number };
+
+/**
+ * A menu, dropdown or tooltip. Its id shares the toplevels' id space, so
+ * frames, acks and pointer input name it the same way.
+ */
+export type PopupMessage =
+  | {
+      type: 'popup_created' | 'popup_updated';
+      session: string;
+      popup: number;
+      parent: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      geometry: { x: number; y: number; width: number; height: number };
+      grab: boolean;
+    }
+  | { type: 'popup_destroyed'; session: string; popup: number };
 
 export type Decoded =
   | { kind: 'json'; message: HostOutbound }
@@ -199,7 +227,7 @@ function decodeMessage(message: Buffer): Decoded {
   throw new ProtocolError(`unknown kind ${kind}`);
 }
 
-/** The toplevel a frame body is for (its first field). */
+/** The window (toplevel or popup) a frame body is for (its first field). */
 export function frameToplevel(body: Buffer): number {
   return body.readUInt32LE(0);
 }

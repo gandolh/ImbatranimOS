@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; thirteen open briefs (the Linux apps layer 04-06, the two themes 08-15; 01-03 done); what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; twelve open briefs (the Linux apps layer 05-06, the two themes 08-15; 01-04 done); what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -66,7 +66,11 @@ done: the Wayland host shows a Linux app's window in an OS window, one
 socket per tab, frames as lossless WebP. 03 is done: pointer, US keyboard,
 focus, resize and close, and title bars that follow the app (the Win7 bar on
 request, else a frame). Both were walked again in the dev container on
-2026-11-03 with foot and gtk3-demo, 19 checks passing. 04-06 follow.
+2026-11-03 with foot and gtk3-demo, 19 checks passing. 04 is done: popups
+and subsurfaces, and Firefox in an OS window, walked in the dev container
+(menus, tabs, a download, a video; PSS about 500 MB idle, 160 kB/s
+scrolling). While a Linux window is open, windows open with the fade only:
+Chromium's renderer crashed when a zoom ran beside one. 05-06 follow.
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
 Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the
@@ -81,6 +85,11 @@ The server ISO is deferred by the owner (2026-10-04).
 
 - Linux apps: a CJK font for the base profile, or not (DejaVu has none;
   Noto CJK is tens of MB). Brief 01's outcome has the run that showed it.
+- Linux apps: in Chrome on the dev container, open an app beside Firefox
+  playing a video, a few times. Chromium crashed there before the fade-only
+  change and still did once in five (brief 04's outcome); Chrome with a GPU
+  may not at all. Also look at a Linux window on a screen with
+  `devicePixelRatio` above 1 (soft, known).
 
 - Delete the old local development database at `data/db.sqlite` in the repo
   root (gitignored): it is from before the Ward move and still holds the old

@@ -4644,3 +4644,18 @@ window; the close button closes foot. Two things the walk showed about the machi
 host: every app that exits after its shell is gone stays a zombie, since PID 1 (node, or turbo in
 dev) never reaps orphans (06 adds tini); and the walk script had to hold Shift itself, since
 Playwright's `type()` sends capitals without it and the desktop passes physical keys.
+
+## [2026-11-03] brief | 04 done: popups, subsurfaces, Firefox in an OS window
+
+The host composes each window from its surface tree, which Firefox needs to show at all (its
+content is a subsurface), and places `xdg_popup`s from their positioner, kept on the output from
+where the tab says the parent sits; the tab draws them in a layer above every window (`9a607b6`,
+1.81.0). Firefox takes no grab for its menus and closes them when it loses the keyboard, so a press
+outside every Linux window takes the keyboard from the apps; it draws `<select>` dropdowns and
+tooltips in its own window. Stubs: xdg-activation, text-input, viewporter, fractional-scale. A
+window is announced with its first geometry, so Firefox stopped growing 52 px per launch. Walked in
+the dev container, every line passing. Measured: PSS 506 MB idle, 593 MB with five tabs; Firefox
+CPU 3%, 22% scrolling, 17% on a video; 0, 160 and 239 kB/s on the WebSocket; 13 frames/s scrolling,
+28 on the video. Chromium's renderer crashed when a window's zoom ran beside a drawing Linux window;
+while one is open, windows open with the fade only (1 crash in 5 left, opening an app beside a
+playing video). Owner: check Chrome with a GPU.

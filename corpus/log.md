@@ -4615,3 +4615,17 @@ nixpkgs source, a boot fallback, following the channel for the index. Record in
 [decisions-linux-apps.md](wiki/decisions-linux-apps.md); brief 01's spec and 05's index step are
 amended, and 01 is rebuilt to match (`383beba`). The pin's snapshot name is empty until the owner
 looks it up; the build stops with instructions meanwhile.
+
+## [2026-11-03] brief | 01 done: Nix and Firefox proven in both containers
+
+The pin is filled: `nixos-26.05.13446.7dcdd87373d7`, and its commit moved to `7dcdd873` (the
+2026-11-02 guess from GitHub was a later branch head). Built and run in a session whose Docker
+could build through a registry mirror and the session's HTTPS proxy (`a1ddefe`, 1.78.0). From the
+desktop's Terminal, in both the prod image and the dev container, `nix profile add nixpkgs#firefox`
+installed in 1 m 29 s and 57 s (322 paths, 446 MiB download, 1.4 GiB unpacked), and the headless
+screenshot was readable in the Image Viewer, again after `down`/`up` and after a rebuild. Peak RSS
+of a screenshot run 208 to 235 MB. The prod image grows 393 to 488 MB (dev 4.72 to 4.93 GB). The
+run found `nix store gc` keeping 1,828 derivations; `keep-derivations = false` took the image's
+`/nix` from 24 to 15 MB. Seen and left: CJK text has no font (owner's call, in status), Firefox's
+sandbox can't make user namespaces, and one screenshot run in fourteen exited 11 after writing the
+picture. 04-06 proceed.

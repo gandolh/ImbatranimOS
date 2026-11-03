@@ -224,3 +224,87 @@ it once more. `time` is busybox's: its first line is the install time, and
 `-v` adds the peak resident set size. If this busybox has no `-v`, read peak
 RAM from System Monitor during the screenshot. The dev container is the same
 with `--profile dev` and the `dev` service.
+
+## Outcome (2026-11-03): proven in the prod image and the dev container
+
+The owner's run, done in a cloud session whose Docker daemon could build
+(`a1ddefe`, version 1.78.0). Spec 6 passes in both containers, from the
+desktop's own Terminal in headless Chromium: `nix profile add
+nixpkgs#firefox` installs, `firefox --headless --screenshot` writes a
+readable `~/shot.png`, the Image Viewer opens it from Files, and the same
+line works again after `down` and `up` and after an image rebuild (the
+picture byte-identical each time).
+
+**The pin.** `https://channels.nixos.org/nixos-26.05` pointed at
+`nixos-26.05.13446.7dcdd87373d7`, whose `git-revision` is `7dcdd873…`, not
+the `9bb52223…` taken from GitHub on 2026-11-02, so the commit moved too.
+
+**Nix on musl works single-user**: Alpine's 2.31.5, as built. The base
+profile came from the cache at image build (DejaVu and
+`glibc-locales-2.42-103`, 4.5 MiB download), and a new volume got it from
+the image: no "base profile" warning at boot.
+
+**One fix the proof showed.** `nix store gc` kept 1,828 `.drv` files, the
+base profile's whole derivation closure, because Nix's `keep-derivations`
+defaults to true. Nothing is built here, so `nix.conf` now sets it false:
+the image's `/nix` went from 24 MB to 15 MB and 4 store paths. Installs on
+an existing volume keep the derivations they made before.
+
+| | prod | dev |
+|---|---|---|
+| Image, `main` (`docker images`) | 393 MB (89.2 MB compressed) | 4.72 GB (913 MB) |
+| Image, this branch | 488 MB (119 MB) | 4.93 GB (971 MB) |
+| Growth | +95 MB (+30 MB compressed) | +210 MB (+58 MB) |
+| Firefox install, `time` | 1 m 29 s | 57 s |
+| `/nix` after Firefox | 2.1 GB | 2.1 GB |
+| Screenshot run, peak RSS | 235 MB first, 208 to 210 MB after | 221 MB |
+
+- The image's files grow 290 to 337 MB (+47 MB, `du -sx /`); Docker's
+  figure also counts files rewritten across layers. By layer: Nix's
+  (Alpine's `nix` and 25 libraries, the base profile, the 9.4 MB package
+  index) 57 MB, `libxkbcommon` with `xkeyboard-config` 5.9 MB, the Wayland
+  host 1.9 MB.
+- Firefox 159.0 is 322 paths, a 445.9 MiB download unpacking to
+  1,402.8 MiB; the largest are Firefox itself (386 MB), python3 (135 MB),
+  systemd (63 MB), perl (61 MB) and onnxruntime (51 MB). The decisions
+  page's "about 300 MB" for Firefox was low. The other 470 MB of `/nix` is
+  the pinned nixpkgs source, unrooted, which a garbage collection removes.
+- Peak RSS is busybox `time -v`'s: the largest single process (Firefox's
+  parent), not the sum of its content processes.
+- A screenshot run takes 3.5 s the first time and under 1 s after.
+
+**Seen, not fixed:**
+
+- The page's Chinese line is boxes: DejaVu has no CJK glyphs. A CJK font
+  in the base profile is the owner's call (Noto CJK is tens of MB).
+- Firefox logs `Sandbox: CanCreateUserNamespace() clone() failure: EPERM`
+  and runs with its sandbox's namespace layer off, as expected in an
+  unprivileged container. It is the same limit as Nix's build sandbox.
+- One run in fourteen (the first after the image rebuild) exited with
+  status 11 after writing the screenshot, with GDK's "Error reading events
+  from display: Broken pipe". Headless Firefox never opens the display in
+  its parent process (`WAYLAND_DEBUG=1` shows no traffic), and thirteen
+  further runs, one in a freshly created container, exited 0.
+- Firefox keeps its profile in `~/.config/mozilla` and `~/.cache/mozilla`
+  (12 MB after these runs): the app's own data, so it is in backups.
+  Nothing of Nix's is in the home.
+
+**How this session differed from the owner's machine** (none of it is in
+the repo): Docker Hub rate-limited the session, so base images came through
+`mirror.gcr.io`; builds and containers ran on the host network through the
+session's HTTPS proxy, whose CA was bind-mounted over the system bundle for
+each build step and for the containers, never written into an image.
+GitHub's tarball downloads were blocked while git reads weren't, so the
+pinned commit's tree came by `git fetch` and reached Nix through a user
+registry entry (`path:`), at build and in the containers; the image's own
+system registry entry (`github:`) is unchanged and so untested end to end
+here. busybox `wget` can't tunnel HTTPS through that proxy, so the
+snapshot's `git-revision` and `packages.json.br` were fetched on the host
+from the same URLs and handed to `setup-image.sh` by a stand-in `wget`; its
+check against the pin ran as written. Firefox got a policy trusting the
+proxy's CA. On the owner's machine, with direct network access, none of
+this applies, and the install's time there includes the nixpkgs source
+download (about 40 MB) that this one didn't.
+
+Checks: `npm run typecheck` (26 tasks) and `npm run lint` (25), the
+backend's unit tests (828 in 50 suites) and e2e suite (184).

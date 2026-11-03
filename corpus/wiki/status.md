@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; fourteen open briefs (the Linux apps layer 01-06, the two themes 08-15); what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; thirteen open briefs (the Linux apps layer 04-06, the two themes 08-15; 01-03 done); what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -56,18 +56,16 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 headless, the Wayland host showing a window, input and title bars, popups and
 Firefox in a window, the Linux apps pane, lifecycle and sleep
 ([decisions-linux-apps.md](decisions-linux-apps.md)). Their branch is
-`claude/linux-apps-layer` (2026-11-02). 01 is built and stays in `todo/`:
-its proof in a container (Firefox headless under Nix, the measurements) is
-the owner's to run, with the commands in the brief. Nix state lives in
-`/nix`, not the home, so backups keep restoring. Since 2026-11-03 the image
-is self-contained: the base profile and package index are baked in and boot
-never downloads; the pin's snapshot name is the owner's to fill in. 02 is done: the Wayland
-host shows a Linux app's window in an OS window, one socket per tab, frames
-as lossless WebP. 03 is done: pointer, US keyboard, focus, resize and close,
-and title bars that follow the app (the Win7 bar on request, else a frame).
-Both were walked outside the container with foot and gtk3-demo; the
-dev-container walk and the image build are the owner's. 04-06 wait on 01's
-in-container proof.
+`claude/linux-apps-layer` (2026-11-02, PR 1). 01 is done (2026-11-03): proven
+in the prod image and the dev container, pinned at
+`nixos-26.05.13446.7dcdd87373d7` (`7dcdd873`). The image is self-contained
+(base profile and package index baked in; boot never downloads) and grows
+from 393 MB to 488 MB; Firefox is a 446 MiB download and 1.4 GiB in `/nix`.
+Nix state lives in `/nix`, not the home, so backups keep restoring. 02 is
+done: the Wayland host shows a Linux app's window in an OS window, one
+socket per tab, frames as lossless WebP. 03 is done: pointer, US keyboard,
+focus, resize and close, and title bars that follow the app (the Win7 bar on
+request, else a frame). 04-06 follow.
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
 Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the
@@ -79,6 +77,9 @@ grill.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner
+
+- Linux apps: a CJK font for the base profile, or not (DejaVu has none;
+  Noto CJK is tens of MB). Brief 01's outcome has the run that showed it.
 
 - Delete the old local development database at `data/db.sqlite` in the repo
   root (gitignored): it is from before the Ward move and still holds the old

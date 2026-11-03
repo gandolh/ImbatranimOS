@@ -4598,3 +4598,15 @@ keeps Space Grotesk and both keep Inter for content. `--font-ui` follows the the
 `--k-font-ui` in the token blocks, and the window frame, command palette and snipping tool no
 longer name Space Grotesk. `assets/fonts/README.md` now records all three fonts' sources: the two
 older files turned out to be byte-for-byte Fontsource 5.3.0's. Built in `5e2ae74` (1.76.0).
+
+## [2026-11-03] brief | 12 done: rounded corners and Apricot's chrome
+
+Five radius tokens (`rounded-window`, `-menu`, `-control`, `-item`, `-tile`) are soft in Apricot
+and 0px in Classic, where the zero-radius rule now applies alone. Six shadow variables keep
+Classic's old recipes and give Apricot the canvas's warm ones. A new `apricot:` variant carries
+Apricot's chrome: a padded taskbar without separators, a centred current-task dot, a Start menu
+floating 8px clear, no accent border on the focused window, and desktop icons on light tiles.
+Classic's windows are pixel-identical. File Manager's table rows stay square, and Settings' own
+buttons wait for 14. ui-conventions rules 8 and 9 and checklist item 3 are rewritten. Built in
+`547b223` (1.78.0). Vite's watcher missed a kit edit once; restart it after touching
+`packages/ui`.

@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; ten open briefs (the Linux apps layer 01-06, in a cloud session on its own branch; the two themes 12-15, 08-11 done 2026-11-03); what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; nine open briefs (the Linux apps layer 01-06, in a cloud session on its own branch; the two themes 13-15, 08-12 done 2026-11-03); what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -71,9 +71,12 @@ Classic kept ([decisions-themes.md](decisions-themes.md)), one at a time on
 - 10: selected, current and chosen states use the soft pair; actions and
   indicators keep the strong one.
 - 11: Figtree is Apricot's UI font; `--font-ui` follows the theme.
+- 12: five radius tokens and six shadow variables, soft in Apricot and as
+  before in Classic; Apricot's taskbar, Start menu, focused window and icon
+  tiles follow the canvas.
 
-Left: corners and chrome, wallpapers, the
-Settings picker, and a check of every app in the four combinations. They
+Left: wallpapers, the Settings picker, and a check of every app in the four
+combinations. They
 deploy together after 15. 07 (research) is superseded by the grill.
 The server ISO is deferred by the owner (2026-10-04).
 

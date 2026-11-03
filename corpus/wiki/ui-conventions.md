@@ -1,5 +1,5 @@
 ---
-summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-11-03 for the strong and soft accent: selected states take the soft pair, actions the strong one; refreshed 2026-10-21 for the shared kit (2026-10-21): a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for the async close guards themed confirm work (2026-08-07) (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for the work of 2026-08-05: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
+summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-11-03 for the themes: the strong and soft accent, the five token radii and the shadow variables; refreshed 2026-10-21 for the shared kit (2026-10-21): a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for the async close guards themed confirm work (2026-08-07) (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for the work of 2026-08-05: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
 updated: 2026-11-03
 ---
 
@@ -50,10 +50,13 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
      border keeps the state visible.
 7. **Dark is the shipped default** (`appearanceStore.ts:28`, `index.css:79-100`). Light is the same token names swapped under `:root[data-theme='light']` (`index.css:103-123`)
    — tokens alone buy you light mode. Never add a `dark:` variant; never test only in dark.
-8. Forbidden: hex, Tailwind palette colours (`bg-red-500`, `text-slate-400`), gradients, and `rounded-*` —
-   `index.css:126` forces `* { border-radius: 0 !important }`, so radius classes are dead code.
-9. **Shadows only on floating layers**, and only the existing recipes: dialog `shadow-[0_24px_60px_rgba(0,0,0,0.55)]` (`ui/Dialog.tsx:33`), popup
-   `shadow-[0_10px_28px_rgba(0,0,0,0.4)]` (`ui/Select.tsx:53`), toast `shadow-[0_6px_24px_rgba(0,0,0,0.35)]` (`notifications/ToastHost.tsx:27`). In-window content is flat —
+8. Forbidden: hex, Tailwind palette colours (`bg-red-500`, `text-slate-400`), gradients, and numeric `rounded-*`. **Corners are the five token radii** (2026-11-03):
+   `rounded-window` (frames, dialogs), `rounded-menu` (Start, context menus, popups, toasts), `rounded-control` (buttons, inputs, tooltips), `rounded-item` (list
+   rows, menu items), `rounded-tile` (desktop icons) — soft in Apricot, `0px` in Classic, where `index.css` also forces `border-radius: 0 !important`. The one
+   derived use is the Checkbox's half control radius. A maximised or snapped window drops `rounded-window`. Theme-only styling uses the `apricot:` variant.
+9. **Shadows only on floating layers**, and only the shadow variables (`index.css`), as `shadow-(--k-shadow-…)`: `window` / `window-focused` (frames), `menu` (Start),
+   `popup` (context menus, Select), `dialog` (dialogs, Alt+Tab), `tile` (desktop icons, Apricot only). Classic keeps the old recipes as their values; Apricot's
+   are warm-tinted. Toasts, tooltips and tray popovers still carry literal recipes. In-window content is flat —
    separation is a 1px `border-outline-variant` plus a surface-container step.
 10. Never invent a colour to mean a state. Levels are told apart by **icon shape**; only `error` gets colour (`notifications/levelStyle.ts:11-18`). Success is `text-primary`,
     not green.
@@ -186,7 +189,7 @@ Rules 47 and 48 (the `desktopLayer` seam, and a way back for desktop objects) ar
 1. Does the add-on import **only** `@imbatranim/core` + `lucide-react` + its declared deps, with no deep path into core?
 2. Did I reuse every applicable core export (`Button`, `Input`, `Select`, `Checkbox`, `Dialog`, `ScrollArea`, `useConfirm`, `usePrompt`, `notify`, `useVirtualList`) instead of
    hand-rolling one?
-3. Are **all** colours semantic token classes — zero hex, zero Tailwind palette colours, zero gradients, zero `dark:` variants, zero `rounded-*`?
+3. Are **all** colours semantic token classes — zero hex, zero Tailwind palette colours, zero gradients, zero `dark:` variants, no numeric `rounded-*`?
 4. Does the accent appear only via `primary`/`on-primary`/`primary-container`, so switching accent in Settings restyles it with no code change?
 5. Did I open it in **light** theme and confirm nothing is invisible or unreadable?
 6. Is type inside the 11/12/13px scale, `font-ui` for chrome and `font-content` for user prose, at toolbar density (`px-2 py-1`, `gap-1`)?

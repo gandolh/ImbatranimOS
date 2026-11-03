@@ -40,3 +40,25 @@ The add-on imports nothing from core.
 ## Files you OWN
 
 `apps/add-ons/code-editor/src/**`, `corpus/wiki/status.md`, `corpus/log.md`.
+
+## Outcome (2026-11-03)
+
+**Built in the code-editor commit after `c6e7bfd`.**
+- `lib/osMonacoTheme.ts` builds the theme data from a resolver (base
+  `vs`/`vs-dark` by mode, `inherit: true`, no rules).
+- `lib/useOsMonacoTheme.ts` defines it as `imbatranim-os` before the first
+  render. It redefines it and calls `setTheme` one animation frame after the
+  mode or accent changes.
+- Both `CodeEditor.tsx` and `DiffTool.tsx` use it. Diff no longer reads
+  `prefers-color-scheme`.
+
+**Checked:**
+- Typecheck; lint (one old warning in `DiffTool.tsx`, an unused
+  eslint-disable).
+- code-editor's tests (26, four new for the mapping). The editor test mocks
+  the hook, since Monaco can't load in jsdom.
+- In the browser, with a file open, the editor background was `#fffdf9` in
+  Apricot light. Switching to dark in Settings with the editor open turned it
+  `#231d1a`, Classic dark `#141416`, and back again, all without reopening.
+- Not checked live: typed syntax colours (the headless keyboard didn't reach
+  Monaco) and the Diff window (it needs two files).

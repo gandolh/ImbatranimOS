@@ -4656,3 +4656,10 @@ The two calls that change house rules are recorded in
 21 being the Settings overflow todo. Found while checking: Diff picks its
 Monaco theme from the device's `prefers-color-scheme`, not the OS mode; 16
 fixes it.
+
+## [2026-11-03] brief | 16 done: the Code Editor and Diff match the theme
+
+Monaco now draws on the window's own surface in every theme and mode, from a theme built out of the
+tokens (editor and gutter, text, current line, translucent soft-accent selection, accent cursor,
+widgets); syntax colours stay Monaco's. It restyles live on a mode or theme switch. Diff also
+stopped following the device's `prefers-color-scheme` and follows the OS mode.

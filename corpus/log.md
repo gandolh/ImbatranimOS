@@ -4993,3 +4993,12 @@ gateway now tells the tab whether its socket resumed a session, so a new session
 whose toplevel ids start over, gets no old place; a resumed one drops what its resync didn't claim.
 Six connection tests; walked with foot in the dev container (moved, resized, reloaded, back in
 place). Built ahead of 31-33, which need the host's Rust.
+
+## [2026-11-03] brief | 35 done: desktop entries in the user's language, with their actions
+
+The backend parses localized keys and desktop actions and names each Start entry and action in the
+first of the browser's languages the file has, matched as the spec matches locales; the desktop sends
+`navigator.languages` (`70cd3fa`, 1.130.0). Actions launch through a new route behind the same session check,
+from Start's new entry menu and a Linux window's task button. Walked with Firefox and LXTerminal: the
+Romanian and Esperanto names show; Firefox's actions are offered and New Window starts it. A second
+window from a running Firefox needs a D-Bus session bus the layer doesn't have: a new todo.

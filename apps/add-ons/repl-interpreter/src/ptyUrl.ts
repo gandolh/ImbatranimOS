@@ -1,3 +1,5 @@
+import { desktopSessionId } from '@imbatranim/ui'
+
 /**
  * Build the terminal WebSocket URL for both dev and prod.
  *
@@ -12,7 +14,9 @@
  * geometry before the first resize frame arrives.
  */
 export function buildPtyUrl(cols: number, rows: number): string {
-  const query = `?cols=${cols}&rows=${rows}`
+  // The desktop session (this tab) goes along so the shell's WAYLAND_DISPLAY
+  // names this tab's socket: a Linux app started here opens its windows here.
+  const query = `?cols=${cols}&rows=${rows}&session=${encodeURIComponent(desktopSessionId())}`
   const base = import.meta.env.VITE_API_URL as string | undefined
 
   if (base) {

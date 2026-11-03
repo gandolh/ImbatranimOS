@@ -9,6 +9,9 @@ import { AppErrorBoundary } from './AppErrorBoundary'
 import { AppErrorFallback } from './AppErrorFallback'
 import { useRegistryVersion } from '../../registry/marketplace'
 import { focusIntoNewWindowSoon } from './focusIntoWindow'
+import { isLinuxWindow } from '../../../modules/linux-windows/kind'
+import { LinuxWindowBody } from '../../../modules/linux-windows/LinuxWindowBody'
+import { useLinuxWindowsStore } from '../../../modules/linux-windows/linuxWindowsStore'
 
 // Field separator for the per-window projection key. `␟` (SYMBOL FOR UNIT
 // SEPARATOR) cannot occur in a uuid or an app-id slug, so splitting is safe.
@@ -124,6 +127,11 @@ const WindowSlot = memo(function WindowSlot({
   onActiveWorkspace: boolean
 }) {
   const closeWindow = useWindowStore((s) => s.closeWindow)
+  // A Linux app that draws its own title bar gets the frame only.
+  const frameOnly = useLinuxWindowsStore((s) => s.byWindow[windowId]?.decorations === 'client')
+  // While a Linux app's window is open, windows open and close without the
+  // zoom (see Window's fadeOnly).
+  const linuxOpen = useLinuxWindowsStore((s) => Object.keys(s.byWindow).length > 0)
   const [remountKey, setRemountKey] = useState(0)
 
   const reload = useCallback(() => setRemountKey((k) => k + 1), [])
@@ -143,8 +151,13 @@ const WindowSlot = memo(function WindowSlot({
       minSize={minSize}
       isFocused={isFocused}
       onActiveWorkspace={onActiveWorkspace}
+      frameOnly={frameOnly}
+      fadeOnly={linuxOpen || isLinuxWindow(appId)}
     >
-      {AppComponent ? (
+      {isLinuxWindow(appId) ? (
+        // A Linux app's window: no add-on and no system handle, just its picture.
+        <LinuxWindowBody windowId={windowId} />
+      ) : AppComponent ? (
         <AppErrorBoundary
           // Bumping the key remounts the boundary AND the app beneath it, which
           // is what makes Reload a real recovery rather than a re-render of the

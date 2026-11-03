@@ -1,9 +1,9 @@
 ---
-summary: Dated snapshot (2026-11-02) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; fourteen open briefs (the Linux apps layer 01-06, the two themes 08-15); what the owner owes, open todos, and where the history lives.
-updated: 2026-11-02
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; eight open briefs (the two themes 08-15; the Linux apps layer 01-06 done 2026-11-03); what the owner owes, open todos, and where the history lives.
+updated: 2026-11-03
 ---
 
-# Status — 2026-11-02
+# Status — 2026-11-03
 
 **The web OS is built and in daily use.** One container is the computer: Alpine
 and Node, the desktop and the API on one port, everything as the unprivileged
@@ -55,8 +55,30 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 01-06 are the Linux apps layer, in build order: Nix in the image with Firefox
 headless, the Wayland host showing a window, input and title bars, popups and
 Firefox in a window, the Linux apps pane, lifecycle and sleep
-([decisions-linux-apps.md](decisions-linux-apps.md)). They wait for a quiet
-machine (Rust and Nix builds).
+([decisions-linux-apps.md](decisions-linux-apps.md)). Their branch is
+`claude/linux-apps-layer` (2026-11-02, PR 1). 01 is done (2026-11-03): proven
+in the prod image and the dev container, pinned at
+`nixos-26.05.13446.7dcdd87373d7` (`7dcdd873`). The image is self-contained
+(base profile and package index baked in; boot never downloads) and grows
+from 393 MB to 488 MB; Firefox is a 446 MiB download and 1.4 GiB in `/nix`.
+Nix state lives in `/nix`, not the home, so backups keep restoring. 02 is
+done: the Wayland host shows a Linux app's window in an OS window, one
+socket per tab, frames as lossless WebP. 03 is done: pointer, US keyboard,
+focus, resize and close, and title bars that follow the app (the Win7 bar on
+request, else a frame). Both were walked again in the dev container on
+2026-11-03 with foot and gtk3-demo, 19 checks passing. 04 is done: popups
+and subsurfaces, and Firefox in an OS window, walked in the dev container
+(menus, tabs, a download, a video; PSS about 500 MB idle, 160 kB/s
+scrolling). While a Linux window is open, windows open with the fade only:
+Chromium's renderer crashed when a zoom ran beside one. 05 is done:
+Settings → Linux apps searches the release's list (streamed into a 12 MB
+index), installs and removes from the tab that holds the session, and frees
+space; installed apps appear in Start and launch into the tab. 06 is done:
+an app lives with its tab (a reload within 30 s finds it, closing the tab
+stops it), sleeps under the cover screen, and goes quiet when hidden or
+minimized; tini is PID 1. The layer is on its branch and not merged. The
+grill of 2026-11-03 settled what it left open
+([decisions-linux-apps-built.md](decisions-linux-apps-built.md)).
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
 Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the
@@ -68,6 +90,16 @@ grill.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner
+
+- Linux apps: review and merge PR 1 (`claude/linux-apps-layer`, briefs
+  01-06). Then, in Chrome on the dev container, open an app beside Firefox
+  playing a video, a few times. Chromium crashed there before the fade-only
+  change and still did once in five (brief 04's outcome); Chrome with a GPU
+  may not at all. Also look at a Linux window on a screen with
+  `devicePixelRatio` above 1 (soft, known).
+- Linux apps, in Chrome on the dev container: a hidden tab carrying no
+  frames (the walk could only simulate hiding), and the keys the browser
+  keeps (brief 03's list).
 
 - Delete the old local development database at `data/db.sqlite` in the repo
   root (gitignored): it is from before the Ward move and still holds the old

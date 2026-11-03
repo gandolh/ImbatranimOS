@@ -52,6 +52,18 @@ export const envSchema = z
     // game from a local checkout; never needed in production.
     MARKETPLACE_ALLOW_LOCAL_REPOS: envBool(false),
 
+    // --- Linux apps ---------------------------------------------
+    //
+    // The Wayland host the backend starts when a desktop session first opens
+    // its Linux windows socket. Built from apps/wayland-host; the image puts
+    // it here. Missing, Linux apps are unavailable and nothing else changes.
+    WAYLAND_HOST_BIN: z
+      .string()
+      .default('/usr/local/bin/imbatranim-wayland-host'),
+    // How a window's changed pixels travel: lossless WebP (the default) or
+    // deflate-compressed RGBA. Kept switchable for measuring.
+    WAYLAND_HOST_ENCODING: z.enum(['webp', 'deflate']).default('webp'),
+
     // Trust X-Forwarded-* from a front proxy so req.ip / protocol are real
     // (needed for correct secure-cookie behaviour behind Caddy/nginx). Keep
     // false when exposed directly.

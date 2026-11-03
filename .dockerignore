@@ -18,3 +18,6 @@ apps/docs
 **/.env
 **/.env.*
 !**/.env.example
+# The Wayland host's Cargo output (gigabytes of debug builds). The image
+# builds it in its own stage from the sources.
+apps/wayland-host/target

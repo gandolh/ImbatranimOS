@@ -4557,3 +4557,140 @@ in the four combinations. In Apricot, `primary` becomes a deep shade of the acce
 ring and border use stays readable; the pastel moves to `primary-container`, which 10 uses for
 selected states. They don't depend on 01-06 (Linux apps), which wait for a quiet machine, and run
 before them.
+
+## [2026-11-02] brief | 01 built; the in-container proof is owed
+
+Nix is in the prod and dev images (`c5ef3b2`, branch `claude/linux-apps-layer`): Alpine's own
+`nix` 2.31.5, single-user as `imbatranim`, sandbox off, `max-jobs = 0`, `/nix` on its own volume,
+the nixpkgs pin in `infrastructure/nix/nixpkgs-pin.env` (`nixos-26.05` at `9bb5222`) written into
+the system flake registry, and a base profile of DejaVu fonts and the UTF-8 locale archive that the
+entrypoint installs in the background. One change from the spec: Nix's profile and caches live in
+`/nix/var/imbatranim` (the `NIX_*_HOME` variables and `use-xdg-base-directories`), not in
+`~/.nix-profile` and `~/.cache/nix`, because restore refuses a backup holding a link out of the
+home. The build environment couldn't pull images or reach the Nix cache, so the container proof
+and the Spec 7 numbers are the owner's to run; the brief stays in `todo/` with the commands.
+Proven outside a container with Nix 2.34.6: the config, the registry, profile installs under
+`max-jobs = 0`, fonts found through the generated `fonts.conf`, nothing written to the home.
+
+## [2026-11-02] brief | 02 done: the Wayland host shows a window
+
+`apps/wayland-host` (Rust, smithay 0.7, Wayland server side only) is the display Linux apps
+connect to; the backend starts it on the first tab, talks to it over a control socket
+(`apps/wayland-host/PROTOCOL.md`) and relays each tab's windows over `/api/wayland` behind the
+Terminal's checks (`f43b42e`). Each tab has a desktop session id in `sessionStorage`, its own
+Wayland display and socket, and Terminal shells carry it in `WAYLAND_DISPLAY`. A Linux window is a
+canvas in a new kind of OS window. Frames are lossless WebP: 1.2 KB/s for a ticking clock against
+2.0 KB/s deflated, equal when scrolling, about 10% more host CPU. foot needed
+`wl_data_device_manager`, added. The Terminal add-on sends the session id and the kit list in
+core's marketplace host names the new export, both outside the brief's file list. Walked outside the
+container with foot and headless Chromium; the dev-container walk and the image build are the
+owner's.
+
+## [2026-11-02] brief | 03 done: Linux windows take input; title bars follow the app
+
+The host's seat has a US keyboard and a pointer, with cursor-shape-v1 and xdg-decoration
+(`3996293`). Keys go by `KeyboardEvent.code` to evdev codes; the desktop keeps its Global and
+Window management shortcuts and the app gets the rest, Escape included. Focus follows the window
+manager's focused window; resizing the OS window configures the app within its limits; the close
+button asks the app. An app asking for server-side decoration gets the Win7 title bar; one drawing
+its own gets a frame only (a `frameOnly` prop on `Window`), and its own bar's move and resize
+requests drive the window manager's drag. Walked outside the container with foot and gtk3-demo, 14
+checks passing; the browser's reserved keys are listed in the brief from Chrome's documentation,
+untested. Popups and subsurfaces are 04's.
+
+## [2026-11-02] brief | 04-06 not started: they wait on 01's proof
+
+The build environment can't pull images or reach the Nix cache, so 01's container proof is owed, and
+04 (Firefox in a window) must not be built on an unproven 01. 04, 05 and 06 stay in `todo/` untouched.
+
+## [2026-11-03] decision | The image is self-contained; boot never downloads
+
+Grilled with the owner on the open PR: as few dependencies as possible outside the image. Nix stays,
+in the image. The base profile (fonts, locale archive) is installed into the image's `/nix` at build
+and copied into a new volume; boot downloads nothing and logs a volume that lacks it. The pinned
+snapshot's `packages.json.br` is baked in for 05, from a snapshot the pin now names on
+`releases.nixos.org`. Apps and the nixpkgs source still download on first install; the dev test
+clients stay. Rejected: a `file://` cache in the image, baking Firefox, dropping Nix, shipping the
+nixpkgs source, a boot fallback, following the channel for the index. Record in
+[decisions-linux-apps.md](wiki/decisions-linux-apps.md); brief 01's spec and 05's index step are
+amended, and 01 is rebuilt to match (`383beba`). The pin's snapshot name is empty until the owner
+looks it up; the build stops with instructions meanwhile.
+
+## [2026-11-03] brief | 01 done: Nix and Firefox proven in both containers
+
+The pin is filled: `nixos-26.05.13446.7dcdd87373d7`, and its commit moved to `7dcdd873` (the
+2026-11-02 guess from GitHub was a later branch head). Built and run in a session whose Docker
+could build through a registry mirror and the session's HTTPS proxy (`a1ddefe`, 1.78.0). From the
+desktop's Terminal, in both the prod image and the dev container, `nix profile add nixpkgs#firefox`
+installed in 1 m 29 s and 57 s (322 paths, 446 MiB download, 1.4 GiB unpacked), and the headless
+screenshot was readable in the Image Viewer, again after `down`/`up` and after a rebuild. Peak RSS
+of a screenshot run 208 to 235 MB. The prod image grows 393 to 488 MB (dev 4.72 to 4.93 GB). The
+run found `nix store gc` keeping 1,828 derivations; `keep-derivations = false` took the image's
+`/nix` from 24 to 15 MB. Seen and left: CJK text has no font (owner's call, in status), Firefox's
+sandbox can't make user namespaces, and one screenshot run in fourteen exited 11 after writing the
+picture. 04-06 proceed.
+
+## [2026-11-03] walk | 02 and 03 walked again, in the dev container
+
+The walk the owner owed, in headless Chromium against the dev container (dev image at 1.79.0), with
+real pointer and keyboard events, 19 checks passing. 02: foot opens an OS window (`linux:foot`)
+whose canvas follows its clock; a second tab gets its own socket and no Linux windows; closing the
+first tab ends its apps and removes its socket while the second's stays. 03: foot gets the Win7
+title bar; typing and Enter, Shift for capitals and symbols, Backspace, ArrowUp, Tab completion and
+Ctrl-C each did their job, checked by the files the commands made; the wheel scrolls the scrollback
+and a drag selects; resizing the OS window reflows foot (38×100 to 44×121); Ctrl+K opens the
+palette while foot has the keyboard; gtk3-demo gets a frame only and its header bar drags the OS
+window; the close button closes foot. Two things the walk showed about the machine rather than the
+host: every app that exits after its shell is gone stays a zombie, since PID 1 (node, or turbo in
+dev) never reaps orphans (06 adds tini); and the walk script had to hold Shift itself, since
+Playwright's `type()` sends capitals without it and the desktop passes physical keys.
+
+## [2026-11-03] brief | 04 done: popups, subsurfaces, Firefox in an OS window
+
+The host composes each window from its surface tree, which Firefox needs to show at all (its
+content is a subsurface), and places `xdg_popup`s from their positioner, kept on the output from
+where the tab says the parent sits; the tab draws them in a layer above every window (`9a607b6`,
+1.81.0). Firefox takes no grab for its menus and closes them when it loses the keyboard, so a press
+outside every Linux window takes the keyboard from the apps; it draws `<select>` dropdowns and
+tooltips in its own window. Stubs: xdg-activation, text-input, viewporter, fractional-scale. A
+window is announced with its first geometry, so Firefox stopped growing 52 px per launch. Walked in
+the dev container, every line passing. Measured: PSS 506 MB idle, 593 MB with five tabs; Firefox
+CPU 3%, 22% scrolling, 17% on a video; 0, 160 and 239 kB/s on the WebSocket; 13 frames/s scrolling,
+28 on the video. Chromium's renderer crashed when a window's zoom ran beside a drawing Linux window;
+while one is open, windows open with the fade only (1 crash in 5 left, opening an app beside a
+playing video). Owner: check Chrome with a GPU.
+
+## [2026-11-03] brief | 05 done: the Linux apps pane, and Start entries
+
+Settings → Linux apps searches the pinned release's package list, installs and removes with the
+job's log in the pane, shows the store's size and frees space (`457db5d`, 1.83.0). The 381 MB list
+is streamed into a 12 MB index on the `/nix` volume (7 s, 174 MB peak, once per pin; parsing it
+whole would cost 1.6 GB). Changes and launches come only from a tab whose desktop session is live
+(owner). Installed apps' `.desktop` files become `linux:<id>` Start entries, launched in their own
+process group into the tab's session; Linux windows now find their icon through the same id.
+Walked in the dev container, 12 checks passing, Free space taking the store from 2.1 to 1.6 GB.
+
+## [2026-11-03] brief | 06 done: Linux apps live with their tab, and sleep under the cover
+
+A session outlives its socket by 30 s; a reload takes it back and the host announces its windows
+again (`ab44333`, 1.85.0). After that, or when the sign-in ends, its apps' groups (Start's, and the
+socket's clients' through `SO_PEERCRED`) get SIGTERM, SIGKILL 5 s later. The cover screen freezes
+them (SIGSTOP) and the host sends nothing meanwhile; a Linux window drawing at least 64×64 pixels
+holds the idle cover off; a hidden tab or minimized window gets no frames. tini is PID 1. Walked in
+the dev container, 9 checks passing: Firefox survived a reload with its tabs; the cover stopped its
+10 processes; hidden, the socket went from 237 kB/s to 0 and Firefox from 17% to 7.5%; a video held
+the 5-minute cover off and a still page let it engage; closing the tab left nothing at 38 s. Found:
+BusyBox `sh` passes no SIGHUP to background jobs, so a Terminal's `app &` outlives its shell until
+the session ends, against the decision's assumption; the owner's call, in status.
+
+## [2026-11-03] decision | The Linux apps layer, grilled after the build
+
+With the owner, on what briefs 01-06 left open. A Terminal's background jobs live with the tab's
+session, as Start's apps do: BusyBox `sh` passes no SIGHUP to its jobs, so this revises the
+2026-10-23 hang-up rule instead of changing the PTY or the shell. Installs, removals, Free space and
+launches come only from the tab that holds the session; reading stays open to any signed-in tab
+(confirming the build). While a Linux window is open, windows open and close without the zoom, until
+Chrome with a GPU is checked. No CJK font in the image; one installs from the pane. Left for later
+briefs: lossy frames for video, Linux windows' places across a reload. Record in
+[decisions-linux-apps-built.md](wiki/decisions-linux-apps-built.md), split from
+decisions-linux-apps.md, which had passed 200 lines. PR 1 is the owner's to review and merge.

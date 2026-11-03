@@ -19,6 +19,7 @@ import {
   FileCog,
   Power,
   Store,
+  Boxes,
 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { Checkbox } from '../../shared/components/ui'
@@ -33,6 +34,7 @@ import { StartupSettings } from './StartupSettings'
 import { LocalPasswordForm } from '../auth/LocalScreens'
 import { AboutMachine } from './AboutMachine'
 import { MarketplaceSettings } from './MarketplaceSettings'
+import { LinuxAppsSettings } from './LinuxAppsSettings'
 import { useRegistryVersion } from '../../shared/registry/marketplace'
 
 const WALLPAPERS: { id: Wallpaper; name: string; preview: React.CSSProperties }[] = [
@@ -265,6 +267,12 @@ export function Settings() {
         <section className="mb-10">
           <SectionHeader icon={Store} title="Marketplace" />
           <MarketplaceSettings />
+        </section>
+
+        {/* Linux apps ─────────────────────────────────────────── */}
+        <section className="mb-10">
+          <SectionHeader icon={Boxes} title="Linux apps" />
+          <LinuxAppsSettings />
         </section>
 
         {/* Storage ────────────────────────────────────────────── */}

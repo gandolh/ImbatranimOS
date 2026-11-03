@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { isShellSuspended } from '../../modules/auth/store/authStore'
 import { v4 as uuidv4 } from 'uuid'
 import { useIntentStore } from './intentStore'
+import { isLinuxWindow } from '../../modules/linux-windows/kind'
 
 export type SnapRegion = 'left' | 'right' | 'top' | 'tl' | 'tr' | 'bl' | 'br'
 
@@ -210,17 +211,22 @@ export function loadActiveWorkspace(): WorkspaceId {
 }
 
 export function saveLayout(windows: WindowInstance[]): void {
-  const data: PersistedWindow[] = windows.map((w) => ({
-    appId: w.appId,
-    title: w.title,
-    workspaceId: w.workspaceId,
-    position: w.position,
-    size: w.size,
-    isMaximized: w.isMaximized,
-    isVisible: w.isVisible,
-    zIndex: w.zIndex,
-    snapState: w.snapState,
-  }))
+  // A Linux app's window shows a running program, not something to reopen:
+  // the program belongs to the backend's session, which reopens its windows
+  // itself. Restoring one would leave an empty frame.
+  const data: PersistedWindow[] = windows
+    .filter((w) => !isLinuxWindow(w.appId))
+    .map((w) => ({
+      appId: w.appId,
+      title: w.title,
+      workspaceId: w.workspaceId,
+      position: w.position,
+      size: w.size,
+      isMaximized: w.isMaximized,
+      isVisible: w.isVisible,
+      zIndex: w.zIndex,
+      snapState: w.snapState,
+    }))
   try {
     sessionStore()?.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(data))
   } catch {
@@ -1011,7 +1017,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   },
 
   restoreLayout: () => {
-    const persisted = loadLayout()
+    const persisted = loadLayout().filter((p) => !isLinuxWindow(p.appId))
     if (persisted.length === 0) return
 
     const maxZ = persisted.reduce((acc, w) => Math.max(acc, w.zIndex), 0)

@@ -51,6 +51,9 @@ services:
       - BROWSER_PROXY_PORT=8081
     volumes:
       - imbatranim-home:/home/imbatranim
+      # Nix's store and profiles: the Linux apps the user installs. Outside
+      # the home on purpose, so Settings → Backup skips it.
+      - imbatranim-nix:/nix
     restart: unless-stopped
     # Mirrors the Dockerfile HEALTHCHECK (the image already carries one); stated
     # here too so `docker compose ps` reports health and the interval is tunable.
@@ -113,6 +116,14 @@ services:
           target: /app/apps
           ignore:
             - "**/node_modules/**"
+            # Rust, built into the image (below), never synced.
+            - "wayland-host/**"
+        # The Wayland host is compiled in its own image stage, so a change to
+        # it rebuilds the image.
+        - action: rebuild
+          path: ../apps/wayland-host
+          ignore:
+            - "target/**"
         # The shared workspace packages (the @imbatranim/ui SDK) are
         # source too — the old bind-mount flow never covered them at all.
         - action: sync
@@ -135,7 +146,11 @@ services:
           path: Dockerfile
     volumes:
       - imbatranim-home-dev:/home/imbatranim
+      # Its own Nix store, as the dev home is its own home.
+      - imbatranim-nix-dev:/nix
 
 volumes:
   imbatranim-home:
   imbatranim-home-dev:
+  imbatranim-nix:
+  imbatranim-nix-dev:

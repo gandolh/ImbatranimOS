@@ -9,6 +9,7 @@ import { useAppearanceStore, applyAppearance } from './shared/store/appearanceSt
 import { CommandPalette } from './shared/components/CommandPalette'
 import { ToastHost } from './shared/components/notifications'
 import { BackgroundServices } from './shared/components/BackgroundServices'
+import { LinuxWindowsService } from './modules/linux-windows/LinuxWindowsService'
 import { useDocumentedShortcuts, useRegisteredHotkeys } from './shared/hooks/useRegisteredHotkeys'
 import { ShortcutsOverlay } from './shared/components/shortcuts/ShortcutsOverlay'
 import { AltTabSwitcher } from './shared/components/switcher/AltTabSwitcher'
@@ -243,6 +244,8 @@ export default function App() {
       <FilePortalHost />
       {/* Desktop-lifetime add-on services — alarms/reminders fire without windows */}
       <BackgroundServices />
+      {/* This tab's Linux apps: their windows arrive over one socket. */}
+      <LinuxWindowsService />
       <ShortcutsOverlay />
       <AltTabSwitcher />
       {/* SWARM:S3 command palette mount */}

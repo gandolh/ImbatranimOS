@@ -109,3 +109,72 @@ and lifecycle and sleep are 06. Run it after 01.
 
 - The marketplace backend and host.
 - Every add-on.
+
+## Outcome (2026-11-02)
+
+Built in `f43b42e` on `claude/linux-apps-layer`, and walked outside the
+container: the environment it was built in can't pull images, so the walk
+ran the backend, the Vite dev server, the host and Ubuntu's foot 1.16.2
+directly, in headless Chromium driven by Playwright. Owed by the owner: the
+same walk in Chrome on the dev container, and the prod image build with its
+size growth (commands at the end).
+
+- **The host.** smithay 0.7 with only `wayland_frontend`; no renderer,
+  winit or udev. Each desktop session is its own `Display` with its own
+  globals, so a session's clients can't see another's output or windows.
+  Added beyond the spec: `wl_data_device_manager`, because foot exits with
+  "no clipboard available" without it; it copies and pastes between one
+  session's Linux apps only. Subsurfaces, popups and cursors get their
+  buffers released but aren't shown. The binary is 1.6 MB and links
+  `libxkbcommon` and `libgcc_s` dynamically; the Alpine stage builds with
+  `-C target-feature=-crt-static` for that.
+- **Encoding: lossless WebP.** Measured on foot running
+  `while sleep 1; do date; done` (700×474) over 21 s, through a stand-in
+  backend: WebP 24,374 bytes (about 1.2 KB/s), deflate 41,667 bytes (about
+  2.0 KB/s). Each tick sends two rectangles (the new line and the cursor)
+  at about one frame a second, since frames go only when something changed.
+  The first full frame: 218 bytes in WebP, 6,879 in deflate. With foot
+  scrolling `yes` for 10 s both ran about 27 frames a second and 2.25 MB/s,
+  and the host used 0.90 s of CPU with WebP against 0.81 s with deflate.
+  WebP wins on idle bytes and costs about 10% more host CPU when busy;
+  `WAYLAND_HOST_ENCODING=deflate` switches it for later measurements.
+- **Frame rate and backpressure.** One frame in flight per window, at most
+  every 33 ms. The backend acks once `bufferedAmount` is under 512 KiB; until
+  then the host holds the window's frame callbacks and folds new damage into
+  the next frame, so intermediate frames are never queued.
+- **Session id.** `desktopSessionId()` in `@imbatranim/ui`: 16 random bytes,
+  base64url, in `sessionStorage`. A duplicated tab copies it; the backend
+  allows one socket per id and closes a second with 4409, and that tab takes
+  a new id.
+- **Two departures from "files you must not touch".** The Terminal add-on's
+  `ptyUrl.ts` sends the session id (one import and one query parameter): the
+  PTY socket's URL is built there and nowhere else. And core's marketplace
+  `sharedKit.ts` lists the two new kit exports, which its typecheck requires
+  of every kit export.
+- **Not done here:** the taskbar button of a Linux window shows its title and
+  no icon (the taskbar finds icons in the app registry, which Linux apps
+  aren't in). The OS close button closes the OS window only; the app keeps
+  running until the tab closes. Brief 03 makes it ask the app.
+
+Walked (outside the container): foot started from the Terminal opened an OS
+window titled "foot" with app id `linux:foot`, its canvas changed every
+second with the clock; a second tab in the same browser had its own session
+id and no Linux windows; closing the first tab ended foot (one process
+before, none 3 s after) and removed its socket, and the second tab's socket
+stayed.
+
+Checks: `npm run typecheck` and `npm run lint` (51 tasks), the backend's
+unit tests (824, 16 new) and e2e suite (184), core's tests (577 in 42
+files), `@imbatranim/ui`'s (39) and the Terminal's (25), `cargo test` (9)
+and `cargo clippy --all-targets -- -D warnings`. One e2e run failed once on
+the marketplace's service-app test while other suites ran beside it and
+passed alone; that is the open todo on timeouts under load.
+
+The owner's run:
+
+```bash
+docker compose -f infrastructure/docker-compose.yml build imbatranimos   # note the size before and after
+docker images imbatranimos:1.0 --format '{{.Size}}'
+npm run dev     # then, in Chrome at http://localhost:5173, in the Terminal:
+#   foot sh -c 'while sleep 1; do date; done' &
+```

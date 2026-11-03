@@ -3,6 +3,7 @@ import { getEnabledApps } from '../registry/enabledApps'
 import { useWindowStore } from '../store/windowStore'
 import { focusIntoWindowSoon } from '../components/window/focusIntoWindow'
 import type { CommandSource, CommandItem } from './CommandSourcesRegistry'
+import { isLinuxLauncher, launchLinuxApp } from '../../modules/linux-windows/launchers'
 
 const GROUP = 'Apps'
 
@@ -41,6 +42,11 @@ export const appsSource: CommandSource = {
     const appId = item.id.replace(/^app:/, '')
     const app = APP_REGISTRY.find((a) => a.id === appId)
     if (!app) return
+    // A Linux app's Start entry starts the program; its windows open on their own.
+    if (isLinuxLauncher(appId)) {
+      void launchLinuxApp(appId)
+      return
+    }
 
     const { openWindow, windows } = useWindowStore.getState()
 

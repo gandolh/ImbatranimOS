@@ -238,6 +238,14 @@ const useRegistryStore = create<{
   clashes: [],
 }))
 
+/**
+ * Tell the components that render from `APP_REGISTRY` that it changed, for
+ * entries spliced in outside this file (Start's Linux entries).
+ */
+export function noteRegistryChanged(): void {
+  useRegistryStore.setState((s) => ({ version: s.version + 1 }))
+}
+
 /** Subscribe a component to marketplace apps arriving in or leaving `APP_REGISTRY`. */
 export function useRegistryVersion(): number {
   return useRegistryStore((s) => s.version)

@@ -35,14 +35,15 @@ holds a dated line per area and the open briefs
 | "what does the wiki say about X" | query | `corpus-flow` §5 — index first, ≤3 pages |
 | VPS / reverse-proxy deploy of the docs site or the OS | deploy | `bootstrap-vps-deploy` |
 
-**The identity lock overrides the design skills.** Win7-classic layout, B&W
-tokens + one accent, dark-first, zero border radius — locked in
-[decisions-iso-era.md](wiki/decisions-iso-era.md), enforced by
+**The identity lock overrides the design skills.** Win7-classic layout in two
+themes, Apricot by default and Classic, each light or dark — locked in
+[decisions-themes.md](wiki/decisions-themes.md) (2026-11-02, revisiting
+[decisions-iso-era.md](wiki/decisions-iso-era.md)), enforced by
 [ui-conventions.md](wiki/ui-conventions.md). `impeccable`, the taste presets
 (`minimalist-ui`, `industrial-brutalist-ui`, `high-end-visual-design`) and
 `design-md-library` may be used **inside** that identity, never to propose a new
-one. A design pass that suggests rounding corners, a second accent or a gradient
-has misread the project. `apps/docs` (the public Docusaurus site) is the one
+one. A design pass that suggests a third theme, glass, a gradient outside a
+wallpaper, or corners beyond the five token radii has misread the project. `apps/docs` (the public Docusaurus site) is the one
 surface with its own look — light-only, no toggle — and is not bound by the
 desktop's token rules.
 

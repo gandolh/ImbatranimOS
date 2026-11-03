@@ -1,11 +1,11 @@
 ---
-summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-11-03 for the themes: the strong and soft accent, the five token radii and the shadow variables; refreshed 2026-10-21 for the shared kit (2026-10-21): a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for the async close guards themed confirm work (2026-08-07) (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for the work of 2026-08-05: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
+summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-11-03 for the two themes and their modes: the strong and soft accent, the five token radii, the shadow variables, the per-theme UI font, a check in Apricot light and Classic dark; refreshed 2026-10-21 for the shared kit (2026-10-21): a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for the async close guards themed confirm work (2026-08-07) (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for the work of 2026-08-05: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
 updated: 2026-11-03
 ---
 
 # ImbatranimOS UI conventions — the house style, as rules
 
-Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic layout, B&W tokens + ONE accent (crimson), dark-first, zero border radius. Implement inside it. **A marketplace kit app follows every rule here exactly as an add-on does** (2026-10-21): it renders in the desktop's tree with the shared kit; only its imports are read from `globalThis.__imbatranimShared` and its utilities come from its own stylesheet, compiled against `packages/ui/src/theme.css` ([marketplace/README.md](../../marketplace/README.md#kit-apps)).
+Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic layout, drawn in one of two **themes** (2026-11-02, [decisions-themes.md](decisions-themes.md)): Apricot, the default (cream, pastel accents, soft token radii, Figtree), and Classic (B&W + crimson, square, Space Grotesk), each in a light and a dark **mode**, light by default. Implement inside it, in tokens, so one component works in all four combinations. **A marketplace kit app follows every rule here exactly as an add-on does** (2026-10-21): it renders in the desktop's tree with the shared kit; only its imports are read from `globalThis.__imbatranimShared` and its utilities come from its own stylesheet, compiled against `packages/ui/src/theme.css` ([marketplace/README.md](../../marketplace/README.md#kit-apps)).
 
 **Copy `apps/add-ons/clock`** — the best-behaved app: pure SDK kit, correct tokens, honest `minSize`, `notify()` for async events. `file-manager` is the richest but violates §8. `sticky-notes` **was** the inherited counter-example; the sticky-notes work (2026-08-05) (2026-08-05) rewrote it to the rules below, so it is now safe to read — and it is the only worked example of a **desktop layer** ([§47](ui-desktop-layer.md)).
 
@@ -35,9 +35,9 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
    `on-error`, `error-container`, `on-error-container`; and `secondary` / `on-secondary` / `secondary-container` / `on-secondary-container`, which are **aliases** of
    on-surface-variant / surface / surface-container-high / on-surface (`theme.css`) — real classes, but prefer the surface names, because `text-secondary` reads like a
    second accent and there isn't one. As utilities: `bg-surface-container-low`, `text-on-surface-variant`, `border-outline-variant`, `bg-primary text-on-primary`.
-6. **The accent is a runtime CSS var, never a literal.** `--accent`/`--accent-on` are stamped on `<html>` by `applyAppearance()`
-   (`apps/core/src/shared/store/appearanceStore.ts:53-55`), and `--color-primary` maps to `var(--accent)` (`theme.css`). So `bg-primary` tracks the user's accent choice; a
-   hex does not. Four presets (`appearanceStore.ts:20-25`), crimson default (:27).
+6. **The accent is a runtime CSS var, never a literal.** `applyAppearance()` (`appearanceStore.ts`) stamps it on `<html>`, and `theme.css` maps `primary` to it. So
+   `bg-primary` tracks the user's accent choice; a hex does not. Each theme has its own presets (`ACCENT_PRESETS`): Classic's four (crimson default), Apricot's five
+   pastels (Apricot default), and the accent is saved per theme.
 
    **Strong and soft** (2026-11-03). Each accent has two pairs, both stamped by `applyAppearance()`: strong `primary` / `on-primary` (`--accent`) and soft
    `primary-container` / `on-primary-container` (`--accent-soft`). In Classic the two are the same colour. In Apricot light, strong is a deep shade with white on it and
@@ -48,8 +48,8 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
      `StorageSettings.tsx`), an unread badge, a thin indicator such as the taskbar's current-task line, and the calendar's today marker.
    - **Text, focus rings and borders stay `primary`**, including the border around a selected chip: the pastel fill alone sits under 3:1 against cream, the
      border keeps the state visible.
-7. **Dark is the shipped default** (`appearanceStore.ts:28`, `index.css:79-100`). Light is the same token names swapped under `:root[data-theme='light']` (`index.css:103-123`)
-   — tokens alone buy you light mode. Never add a `dark:` variant; never test only in dark.
+7. **Themes and modes are the same token names with other values**: four blocks in `index.css`, keyed on `[data-os-theme]` and `[data-theme]` (which keeps its name
+   and means the mode). Tokens alone buy you all four. Never add a `dark:` variant or branch on the theme in component code; theme-only chrome uses `apricot:`.
 8. Forbidden: hex, Tailwind palette colours (`bg-red-500`, `text-slate-400`), gradients, and numeric `rounded-*`. **Corners are the five token radii** (2026-11-03):
    `rounded-window` (frames, dialogs), `rounded-menu` (Start, context menus, popups, toasts), `rounded-control` (buttons, inputs, tooltips), `rounded-item` (list
    rows, menu items), `rounded-tile` (desktop icons) — soft in Apricot, `0px` in Classic, where `index.css` also forces `border-radius: 0 !important`. The one
@@ -63,8 +63,8 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 
 ## 3. Typography and spacing
 
-11. `font-ui` = Space Grotesk (chrome, labels, numbers); `font-content` = Inter (user-authored prose); `font-mono` for code panes (`MarkdownEditor.tsx:179`). Declared in
-    `theme.css`.
+11. `font-ui` follows the theme — Figtree in Apricot, Space Grotesk in Classic (`--k-font-ui`) — for chrome, labels, numbers; never name either family. `font-content`
+    = Inter (user-authored prose) in both; `font-mono` for code panes (`MarkdownEditor.tsx:179`). A canvas reads `--font-ui` from `<html>` at draw time.
 12. Root is **13px** (`index.css:141`); the scale is explicit arbitrary sizes — `text-[11px]` labels/meta/status bars/toolbars/tabs · `text-[12px]` buttons/list rows/menu
     items/dialog titles · `text-[13px]` body, inputs, checkbox labels · `text-[10px]`/`text-[9px]` shell chrome only (`taskbar/StartMenu.tsx:103,132`). Larger type only for a
     real display value: `text-3xl` calculator readout (`calculator/src/BasicPad.tsx:106`), `text-[36px]` timer (`clock/src/tabs/Timer.tsx:36`), both with `tabular-nums`.
@@ -191,7 +191,7 @@ Rules 47 and 48 (the `desktopLayer` seam, and a way back for desktop objects) ar
    hand-rolling one?
 3. Are **all** colours semantic token classes — zero hex, zero Tailwind palette colours, zero gradients, zero `dark:` variants, no numeric `rounded-*`?
 4. Does the accent appear only via `primary`/`on-primary`/`primary-container`, so switching accent in Settings restyles it with no code change?
-5. Did I open it in **light** theme and confirm nothing is invisible or unreadable?
+5. Did I open it in **Apricot light** and **Classic dark** and confirm nothing is invisible, unreadable or clipped, and selection uses the soft fill?
 6. Is type inside the 11/12/13px scale, `font-ui` for chrome and `font-content` for user prose, at toolbar density (`px-2 py-1`, `gap-1`)?
 7. Is the root `flex h-full flex-col` with `min-h-0` on every flexed wrapper, and no `h-screen`/`100vh` anywhere?
 8. Does scrolling happen inside a `ScrollArea` in the body — never on the window itself — with `viewportRef` wired if the list is virtualized?

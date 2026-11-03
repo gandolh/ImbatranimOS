@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; seven open briefs (the Linux apps layer 01-06, in a cloud session on its own branch; the themes' check, 15; 08-14 done 2026-11-03); what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); six open briefs, the Linux apps layer 01-06, in a cloud session on its own branch; what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -22,10 +22,14 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
   the desktop and is not a lock. Shared-origin risk accepted: a script on a
   sibling app can send requests the browser signs with `imb_session`
   ([decisions-estate-era.md](decisions-estate-era.md)).
-- **The shell.** A Windows-7-classic layout in flat black and white with an
-  accent ([decisions-iso-era.md](decisions-iso-era.md)), workspaces, startup
-  apps, default apps and Open with, notifications, the palette and global
-  search ([ui-conventions.md](ui-conventions.md)). Keyboard focus follows the
+- **The shell.** A Windows-7-classic layout in two themes (2026-11-03,
+  [decisions-themes.md](decisions-themes.md)): Apricot, the default (cream,
+  pastel accents, soft corners, Figtree, a sunset-hills wallpaper), and Classic
+  (flat black and white with crimson, square, Space Grotesk), each light or
+  dark, picked in Settings → Appearance (built in briefs 08-15, not yet
+  deployed). Workspaces, startup apps, default apps and Open with,
+  notifications, the palette and global search
+  ([ui-conventions.md](ui-conventions.md)). Keyboard focus follows the
   window the owner raised or opened, from the taskbar, Alt+Tab (also over a
   Terminal), Start or the palette, and a click that opens another window
   leaves it in front (2026-10-27 to 2026-10-28).
@@ -60,31 +64,18 @@ is building them on the branch `claude/linux-apps-layer` (pull request #1 on
 origin), not on `main`. Merging it will conflict on the version bump,
 `log.md` and this page.
 
-08-15 build the two themes settled on 2026-11-02, Apricot by default and
-Classic kept ([decisions-themes.md](decisions-themes.md)), one at a time on
-`main`. Done 2026-11-03:
-- 08: the stores hold a theme, a mode, and an accent and wallpaper per theme.
-  `<html>` carries `data-os-theme`, and a machine saved before themes moves
-  once to Apricot light.
-- 09: Apricot's surfaces and, per accent, a strong pair (`primary`) and a soft
-  pastel pair (`primary-container`), held to 4.5:1 by a contrast test.
-- 10: selected, current and chosen states use the soft pair; actions and
-  indicators keep the strong one.
-- 11: Figtree is Apricot's UI font; `--font-ui` follows the theme.
-- 12: five radius tokens and six shadow variables, soft in Apricot and as
-  before in Classic; Apricot's taskbar, Start menu, focused window and icon
-  tiles follow the canvas.
-- 13: Apricot's wallpapers: sunset hills (an SVG scene, dusk in dark mode),
-  plain and soft dots.
-- 14: Settings → Appearance picks the theme from preview cards, then Mode,
-  Accent and Wallpaper, each a radio group.
-
-Left: 15, a check of every app in the four combinations. They
-deploy together after 15. 07 (research) is superseded by the grill.
+08-15, the two themes, were built 2026-11-03 on `main` (1.70.0 to 1.86.0)
+and deploy together; each brief's outcome is in `briefs/done/`, and 15's lists
+the owner's steps and six design questions. 07 (research) is superseded by
+the grill.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner
 
+- Deploy the two themes (briefs 08-15) together, then retake the README
+  images (`docs/images/shots.md`) and re-vendor `packages/ui/src` into
+  imbatranim-office and Hollow before moving their Marketplace pins
+  (brief 15's outcome).
 - Delete the old local development database at `data/db.sqlite` in the repo
   root (gitignored): it is from before the Ward move and still holds the old
   password hash. Delete any old downloaded `imbatranim-home-*.tar.gz` backups

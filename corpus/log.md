@@ -4628,3 +4628,14 @@ element, and Classic's square rule skips an Apricot card. Every group is a label
 that theme's own accent and wallpaper at once. Built in `1542261` (1.82.0), with a new test. Filed
 [settings-apps-rows-overflow-on-a-phone](todos/settings-apps-rows-overflow-on-a-phone.md): the Apps
 rows below the section make Settings scroll sideways at 390 px.
+
+## [2026-11-03] brief | 15 done: every app checked in the themes; 08-15 complete
+
+Every built-in app and add-on was opened in Apricot light, Apricot dark and Classic dark. All read
+correctly; the apps' own chips, tabs and toggles were the one stray (square inside rounded
+windows) and got the control radius (`26afbcb`, 0px in Classic). The Terminal's ANSI palettes
+pass on Apricot's surfaces and the tests now check them there (`b91f1ce`). ui-conventions,
+routing.md's identity lock and the token comment (`b45a1e9`) now describe the two themes and their
+modes. The theme briefs 08-15 are all done, version 1.86.0. Nothing is deployed; the owner deploys
+08-15 together, retakes the README images, and re-vendors the kit in imbatranim-office and Hollow
+before moving their pins. Six design questions are in brief 15's outcome.

@@ -53,3 +53,34 @@ todo `keyboard-gaps-left-after-the-focus-fixes`.
 - `apps/core/src/shared/components/window/focusIntoWindow.ts` and its test
 - the callers above, only where a wrapper goes away
 - `apps/core/src/shared/components/taskbar/Taskbar.tsx` (the comment)
+
+## Outcome (2026-11-03)
+
+**Built in `2162640` (version 1.115.0).**
+- `openApp` calls `focusIntoWindowSoon` when it brings up a single-instance
+  window that was already open (after the focus, the show and the intent). A
+  new window is left to its mount (`focusIntoNewWindowSoon`), so it gets the
+  keyboard once.
+- Gone: `openWithKeyboard` and its tests; the wrappers in
+  `createSystemHandle.ts`, `ToastHost.tsx` and `Desktop.tsx` (both of its
+  calls); and the taskbar's own copy in `launchApp`, which did the same
+  thing by hand. Its comment now says a new window gets the keyboard from its
+  mount. `Taskbar.test.tsx`'s two Start tests became one: Start launches
+  through `openApp` and adds no move of its own.
+- No caller in the list must raise without the keyboard: each is a person
+  choosing that window. Startup apps open only on a fresh desktop, so they
+  open new windows. `openApp` therefore has no option for it.
+- Settings → Marketplace's Open buttons and the refusal panel's link needed
+  nothing: they call `openApp`.
+
+**Checked:**
+- `openAppKeyboard.test.tsx` (6), with the real `openApp` and window store
+  and a Window.tsx-shaped fixture: a raise moves the keyboard a frame later;
+  a new window and a refusal move nothing; the palette's recent files,
+  Start's recent files (whose close hands focus back to the Start button
+  first) and a Notification panel row each end with the keyboard in the open
+  Todo window they raised. Four of the six fail with the new line removed.
+- In the dev container: Settings open behind Calculator, the keyboard in
+  Calculator; the desktop's Change wallpaper raised Settings with the
+  keyboard in it.
+- Typecheck, lint and core's full suite (647) pass.

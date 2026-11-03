@@ -32,7 +32,8 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
   ([ui-conventions.md](ui-conventions.md)). Keyboard focus follows the
   window the owner raised or opened, from the taskbar, Alt+Tab (also over a
   Terminal), Start or the palette, and a click that opens another window
-  leaves it in front (2026-10-27 to 2026-10-28).
+  leaves it in front (2026-10-27 to 2026-10-28); since 2026-11-03 `openApp`
+  itself gives a window it raises the keyboard, whoever called it.
 - **Add-ons and the seam** (2026-08-06). Each app gets an injected `system`
   handle and imports nothing from core; per-window error boundaries; an
   ephemeral session with durable dotfiles ([os-layering.md](os-layering.md)).
@@ -108,7 +109,9 @@ with the owner. A run on branch `claude/tender-franklin-h8lc35` (one PR, not
 merged) builds them in number order; done there so far: 23 (the Linux apps
 pane rounds in Apricot; a Linux window's surface keeps no ring), 24 (the tray
 and Sticky Notes' desktop layer read a wrong answer as nothing), 25 (Files'
-listing fills its pane, so its menu reaches below the rows). As written:
+listing fills its pane, so its menu reaches below the rows), 26 (`openApp`
+gives a window it raises the keyboard; the per-caller wrappers are gone). As
+written:
 - 23-27, small fixes: the Linux apps pane in the themes (no accent ring on a
   Linux window's surface), the tray surviving a wrong stats answer, Files'
   background menu below a short listing, `openApp` moving the keyboard into a

@@ -4930,3 +4930,12 @@ folder the listing, which carries the background menu and click-to-clear, is the
 (`8323063`, 1.113.0). Walked in the dev container: a two-file folder's listing is 384 px, the pane's
 height, and a right-click near the pane's bottom opens New Folder, New File and Paste; a click there
 clears the selection. A first component test of File Manager covers the menus.
+
+## [2026-11-03] brief | 26 done: `openApp` moves the keyboard into a window it raises
+
+`openApp` calls `focusIntoWindowSoon` when it brings up an already open window, so the palette,
+the Notification panel, Start's recent files, the desktop's Change wallpaper and the marketplace's
+Open buttons all give it the keyboard (`2162640`, 1.115.0). `openWithKeyboard`, its three wrappers and the
+taskbar's hand-made copy are gone; a new window still gets the keyboard once, from its mount. A test
+drives the palette, Start's recent files and the Notification panel against an open window; the
+desktop menu was walked in the dev container.

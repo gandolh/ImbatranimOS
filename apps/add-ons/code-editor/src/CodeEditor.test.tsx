@@ -58,6 +58,8 @@ class FakeModel {
 const models: FakeModel[] = []
 
 vi.mock('./monacoSetup', () => ({}))
+// The OS theme is defined through the real Monaco, which can't load here.
+vi.mock('./lib/useOsMonacoTheme', () => ({ useOsMonacoTheme: () => 'vs' }))
 vi.mock('@monaco-editor/react', () => ({
   default: function FakeEditor({ onMount }: { onMount: (e: unknown, m: unknown) => void }) {
     useEffect(() => {

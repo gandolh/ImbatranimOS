@@ -15,12 +15,12 @@ import {
   usePrompt,
   useSaveHotkey,
   useSystem,
-  useSystemAppearance,
   useUnsavedGuard,
 } from '@imbatranim/ui'
 // Side-effect: point @monaco-editor/react at the bundled Monaco and wire the
 // same-origin web workers. MUST run before the editor first renders.
 import './monacoSetup'
+import { useOsMonacoTheme } from './lib/useOsMonacoTheme'
 import { languageForPath } from './language'
 import { MenuButton } from './components/MenuButton'
 import { SearchPanel } from './components/SearchPanel'
@@ -130,8 +130,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
   // Subscribed, not read once at mount: changing the desktop appearance in
   // Settings has to restyle an already-open editor, which a `useMemo(…, [])`
   // over `matchMedia` could not do (it froze Monaco's theme at mount).
-  const { theme: appearanceTheme } = useSystemAppearance()
-  const theme = appearanceTheme === 'dark' ? 'vs-dark' : 'vs'
+  const theme = useOsMonacoTheme()
 
   const options = useMemo(
     () => ({

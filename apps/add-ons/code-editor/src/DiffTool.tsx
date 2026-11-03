@@ -14,6 +14,7 @@ import {
   useUnsavedGuard,
 } from '@imbatranim/ui'
 import './monacoSetup'
+import { useOsMonacoTheme } from './lib/useOsMonacoTheme'
 import { languageForPath } from './language'
 
 /**
@@ -201,13 +202,8 @@ export function DiffTool({ windowId: _windowId }: { windowId: string }) {
   useSaveHotkey(() => void save())
   const unsavedDialog = useUnsavedGuard(dirty, right ? fileName(right.path) : 'Diff', save)
 
-  const theme = useMemo(
-    () =>
-      typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches
-        ? 'vs-dark'
-        : 'vs',
-    []
-  )
+  // The OS's colours and mode, not the device's `prefers-color-scheme`.
+  const theme = useOsMonacoTheme()
 
   const options = useMemo<monaco.editor.IDiffEditorConstructionOptions>(
     () => ({

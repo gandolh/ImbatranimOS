@@ -4958,3 +4958,12 @@ it loads (`f44b968`, 1.119.0). With better-sqlite3 forced to compile, the produc
 525.74 MB with the old strip and 508.81 MB with the new one, the same as a prebuilt build, and both
 builds leave the same files. node-pty, which always compiles on Linux, loses its makefiles too. Both
 images start, create their database and run a Terminal.
+
+## [2026-11-03] brief | 28 done: the file dialogs can start in a folder
+
+`pickOpen` and `pickSave` take `startIn: { root, path }`; the portal carries it and `FilePicker`
+resolves it through the same `/files` listing it browses with: the folder, a file's folder, or the
+home root for anything the user couldn't walk to (`6fa7771`, 1.121.0; kit 1.1.0, `SHARED_KIT_VERSION`
+unchanged). Eleven tests drive the real handle and portal; a Save as in the dev container started
+beside a file and saved there. imbatranim-office's "Save as opens where the file is" can now sync the
+kit and use it.

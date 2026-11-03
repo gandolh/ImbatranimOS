@@ -113,7 +113,8 @@ and Sticky Notes' desktop layer read a wrong answer as nothing), 25 (Files'
 listing fills its pane, so its menu reaches below the rows), 26 (`openApp`
 gives a window it raises the keyboard; the per-caller wrappers are gone), 27
 (the strip keeps only each native module's binary; a source build no longer
-grows the image). As written:
+grows the image), 28 (`startIn` on `pickOpen`/`pickSave`, kit 1.1.0, ready
+for imbatranim-office's Save as brief). As written:
 - 23-27, small fixes: the Linux apps pane in the themes (no accent ring on a
   Linux window's surface), the tray surviving a wrong stats answer, Files'
   background menu below a short listing, `openApp` moving the keyboard into a

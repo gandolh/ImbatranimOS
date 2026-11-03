@@ -1,6 +1,6 @@
 ---
-summary: Two themes ship. Apricot (cream and peach, pastel accents, rounded corners, Figtree) is the default, and Classic (today's black and white with crimson) stays selectable in Settings. Light is the default mode, there is no glass, and a machine with saved settings moves to Apricot light once on upgrade. Settled with the owner 2026-11-02 in the grill on brief 07, revisiting the locked identity; the layout is unchanged.
-updated: 2026-11-02
+summary: Two themes ship. Apricot (cream and peach, pastel accents, rounded corners, Figtree) is the default, and Classic (today's black and white with crimson) stays selectable in Settings. Light is the default mode, there is no glass, and a machine with saved settings moves to Apricot light once on upgrade. Settled with the owner 2026-11-02 in the grill on brief 07, revisiting the locked identity; the layout is unchanged. On 2026-11-03 Apricot's rounding was extended to list rows and in-window boxes, and selection keeps a deep border while today stays strong.
+updated: 2026-11-03
 ---
 
 # Decisions: themes (2026-11-02)
@@ -79,3 +79,31 @@ Rejected: keeping what is saved, which would leave the owner's machine on
 Classic dark.
 **Why**: it is a single-owner machine, the owner asked for the new look, and
 Classic is one click away.
+
+## Apricot rounds list rows and in-window boxes too
+_2026-11-03_ — After building briefs 08-15, the owner chose to carry Apricot's
+corners into window content. In Apricot:
+- list rows (File Manager's list, search results, the playlist, the palette)
+  are rounded and inset from the list's edges, as on the canvas;
+- bordered boxes and cards inside windows take the control radius.
+
+Panels that fill a whole side of a window (sidebars, toolbars, status bars)
+stay square. Classic is square throughout, as before. This narrows the house
+rule "in-window content is flat" ([ui-conventions.md](ui-conventions.md) rule
+9) to Classic.
+Rejected: rounding everything but File Manager, whose list is a table; keeping
+rows and boxes square.
+**Why**: square boxes and full-width bars beside rounded buttons read as
+unfinished in Apricot.
+- *Consequence*: File Manager's list view leaves `<table>` layout, and its
+  keyboard, column and virtualisation behaviour has to be kept.
+
+## Selection keeps a deep border; today stays strong
+_2026-11-03_ — In Apricot, a selected chip or toggle has the pastel fill with
+a border in the strong accent. The calendars' "today" marker stays the strong
+accent with white text, as a marker, not a selection.
+Rejected: borderless pastel chips as on the canvas; a pastel today.
+**Why**: the pastel is about 1.8:1 against cream, so without the border the
+chosen chip is hard to spot. A strong today keeps the current day apart from
+the date the owner selected.
+

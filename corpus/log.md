@@ -4639,3 +4639,20 @@ routing.md's identity lock and the token comment (`b45a1e9`) now describe the tw
 modes. The theme briefs 08-15 are all done, version 1.86.0. Nothing is deployed; the owner deploys
 08-15 together, retakes the README images, and re-vendors the kit in imbatranim-office and Hollow
 before moving their pins. Six design questions are in brief 15's outcome.
+
+## [2026-11-03] decision | Theme follow-ups grilled; briefs 16-21
+
+The owner answered brief 15's six design questions, one at a time:
+- The Code Editor and Diff take a Monaco theme built from the tokens.
+- Apricot rounds and insets list rows everywhere, File Manager's included,
+  and rounds bordered boxes inside windows; edge-to-edge panels stay square.
+- Toasts, tooltips, the tray's popovers and the sign-in card get warm shadows
+  in Apricot.
+- Today stays a strong marker, and selected chips keep their deep border.
+- Every control gets the accent focus ring.
+
+The two calls that change house rules are recorded in
+[decisions-themes.md](wiki/decisions-themes.md). Briefs 16-21 hold the work,
+21 being the Settings overflow todo. Found while checking: Diff picks its
+Monaco theme from the device's `prefers-color-scheme`, not the OS mode; 16
+fixes it.

@@ -4950,3 +4950,11 @@ A version-only rebuild of the dev image: 4 min 31 s before, 4.3 s after. The dev
 hot-reloads; the prod image builds and reports its version. The watch rules were proved on a
 miniature (Compose's bake refused the sandbox's host networking): a bump left the container alone, a
 dependency change rebuilt it. Found: `watch` also starts the prod service; a todo.
+
+## [2026-11-03] brief | 27 done: the image is the same size after a source build
+
+The proddeps strip and the ISO payload's now empty each native module's `build/` but for the binary
+it loads (`f44b968`, 1.119.0). With better-sqlite3 forced to compile, the production image measured
+525.74 MB with the old strip and 508.81 MB with the new one, the same as a prebuilt build, and both
+builds leave the same files. node-pty, which always compiles on Linux, loses its makefiles too. Both
+images start, create their database and run a Terminal.

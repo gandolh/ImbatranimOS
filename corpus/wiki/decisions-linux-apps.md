@@ -1,5 +1,5 @@
 ---
-summary: Linux GUI apps run in the container and show as ordinary OS windows; their windows reach the tab as pixels, narrowing os-layering's "data, never pixels". Our own Wayland host in Rust (smithay) does the Wayland part, the backend relays it over the signed-in WebSocket, and the compositor stays in the browser. The OS stays Alpine; Linux apps come from Nix, installed by the user at runtime without sudo, reversing the build-time-only app stance. An app lives with its tab, survives a reload, and sleeps (SIGSTOP) under the idle cover screen. Firefox is the first app; Spotify was dropped. Settled with the owner 2026-10-23 in the Spotify grilling; the image made self-contained 2026-11-03 (base profile and package index baked in, no download at boot).
+summary: Linux GUI apps run in the container and show as ordinary OS windows; their windows reach the tab as pixels, narrowing os-layering's "data, never pixels". Our own Wayland host in Rust (smithay) does the Wayland part, the backend relays it over the signed-in WebSocket, and the compositor stays in the browser. The OS stays Alpine; Linux apps come from Nix, installed by the user at runtime without sudo, reversing the build-time-only app stance. An app lives with its tab, survives a reload, and sleeps (SIGSTOP) under the idle cover screen. Firefox is the first app; Spotify was dropped. Settled with the owner 2026-10-23 in the Spotify grilling; the image made self-contained 2026-11-03 (base profile and package index baked in, no download at boot). The calls made once the layer was built (2026-11-03) are in decisions-linux-apps-built.md.
 updated: 2026-11-03
 ---
 
@@ -102,7 +102,9 @@ _2026-10-23_ — A Linux app belongs to the tab that started it. A reload
 reconnects to an app started from Start within a short grace period (about
 30 s); closing the tab ends it. An app started from a Terminal follows Unix
 hang-up rules: it ends with its shell, which a reload ends, unless it was
-started with `setsid`, `nohup` or `disown`. While the tab is open, the app is frozen (SIGSTOP) when the cover
+started with `setsid`, `nohup` or `disown` (revised 2026-11-03 in
+[decisions-linux-apps-built.md](decisions-linux-apps-built.md): a background
+job lives with the session too). While the tab is open, the app is frozen (SIGSTOP) when the cover
 screen comes up, by idle timeout or by hand, and resumed when the desktop is
 uncovered. A Linux app that is still drawing holds the idle cover off, the way
 a playing video does. Separately, a hidden tab or a minimized window gets no
@@ -141,7 +143,8 @@ The pin names the release snapshot on `releases.nixos.org` as well as its
 commit, so the baked index always matches what installs.
 Rejected: a signed `file://` binary cache in the image (heals any volume
 offline, but carries the base twice); baking Firefox (about 300 MB against
-the ~150 MB target, and reverses runtime installs); dropping Nix for Alpine
+the ~150 MB target, and reverses runtime installs; measured 2026-11-03 it is
+1.4 GiB unpacked); dropping Nix for Alpine
 packages baked at build (reverses the 2026-10-23 call); shipping the nixpkgs
 source; a download fallback at boot; following the channel URL for the
 index (it moves every few days and would stop matching the pin).
@@ -153,4 +156,3 @@ and a machine that boots offline.
   commit, and the build stops until the snapshot is set.
 - *Consequence*: an existing volume keeps its base across pin moves; fonts
   and locales don't need to match the pin.
-

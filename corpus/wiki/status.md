@@ -76,7 +76,9 @@ index), installs and removes from the tab that holds the session, and frees
 space; installed apps appear in Start and launch into the tab. 06 is done:
 an app lives with its tab (a reload within 30 s finds it, closing the tab
 stops it), sleeps under the cover screen, and goes quiet when hidden or
-minimized; tini is PID 1. The layer is on its branch and not merged.
+minimized; tini is PID 1. The layer is on its branch and not merged. The
+grill of 2026-11-03 settled what it left open
+([decisions-linux-apps-built.md](decisions-linux-apps-built.md)).
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
 Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the
@@ -89,18 +91,12 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner
 
-- Linux apps: a CJK font for the base profile, or not (DejaVu has none;
-  Noto CJK is tens of MB). Brief 01's outcome has the run that showed it.
-- Linux apps: in Chrome on the dev container, open an app beside Firefox
+- Linux apps: review and merge PR 1 (`claude/linux-apps-layer`, briefs
+  01-06). Then, in Chrome on the dev container, open an app beside Firefox
   playing a video, a few times. Chromium crashed there before the fade-only
   change and still did once in five (brief 04's outcome); Chrome with a GPU
   may not at all. Also look at a Linux window on a screen with
   `devicePixelRatio` above 1 (soft, known).
-- Linux apps: an app started with `&` in the Terminal outlives its shell
-  (BusyBox `sh` passes no SIGHUP to its jobs) and lives until the tab's
-  session ends, where the 2026-10-23 decision expected it to end with the
-  shell. Keep that, or have the PTY's end hang up the shell's whole session
-  (a PTY change)? Brief 06's outcome has the test.
 - Linux apps, in Chrome on the dev container: a hidden tab carrying no
   frames (the walk could only simulate hiding), and the keys the browser
   keeps (brief 03's list).

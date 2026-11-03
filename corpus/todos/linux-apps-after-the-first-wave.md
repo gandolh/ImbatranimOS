@@ -33,12 +33,12 @@ Found while building it (2026-11-03, briefs 01, 04-06 of the new numbering):
 
 - **Video bandwidth.** Firefox playing a synthetic 480 px video cost 239 kB/s
   in lossless WebP at 28 frames/s; a real film would cost several times
-  that. The codec item above is now measured, not guessed (04's table).
+  that. The owner's direction (2026-11-03): a later brief sends large,
+  fast-changing regions lossy and keeps text sharp, with 04's table as its
+  baseline.
 - **Window places after a reload.** Linux windows come back where a new
   window opens: the saved layout leaves them out.
-- **The Terminal's background jobs** outlive their shell (BusyBox `sh`),
-  against the decision; owner's call, in status.md.
 - **Localized `.desktop` names and desktop actions** (New Window) aren't
-  read; a CJK font isn't in the base profile.
+  read.
 - **The zoom-less windows** while a Linux window is open stay until a
   Chromium without the renderer crash is confirmed (04's outcome).

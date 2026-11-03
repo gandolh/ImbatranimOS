@@ -4682,3 +4682,15 @@ the dev container, 9 checks passing: Firefox survived a reload with its tabs; th
 the 5-minute cover off and a still page let it engage; closing the tab left nothing at 38 s. Found:
 BusyBox `sh` passes no SIGHUP to background jobs, so a Terminal's `app &` outlives its shell until
 the session ends, against the decision's assumption; the owner's call, in status.
+
+## [2026-11-03] decision | The Linux apps layer, grilled after the build
+
+With the owner, on what briefs 01-06 left open. A Terminal's background jobs live with the tab's
+session, as Start's apps do: BusyBox `sh` passes no SIGHUP to its jobs, so this revises the
+2026-10-23 hang-up rule instead of changing the PTY or the shell. Installs, removals, Free space and
+launches come only from the tab that holds the session; reading stays open to any signed-in tab
+(confirming the build). While a Linux window is open, windows open and close without the zoom, until
+Chrome with a GPU is checked. No CJK font in the image; one installs from the pane. Left for later
+briefs: lossy frames for video, Linux windows' places across a reload. Record in
+[decisions-linux-apps-built.md](wiki/decisions-linux-apps-built.md), split from
+decisions-linux-apps.md, which had passed 200 lines. PR 1 is the owner's to review and merge.

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Input, desktopSessionId, useConfirm } from '@imbatranim/ui'
+import { Button, Input, Select, desktopSessionId, useConfirm } from '@imbatranim/ui'
+import {
+  KEYBOARD_LAYOUTS,
+  useLinuxAppsPrefs,
+  type KeyboardLayoutId,
+} from '../linux-windows/keyboardLayout'
 import { api } from '../../lib/axios'
 import { reloadLinuxLaunchers } from '../linux-windows/launchers'
 
@@ -150,6 +155,9 @@ export function LinuxAppsSettings() {
     if (ok) await start('/linux-apps/free-space', {})
   }
 
+  const keyboardLayout = useLinuxAppsPrefs((p) => p.keyboardLayout)
+  const setKeyboardLayout = useLinuxAppsPrefs((p) => p.setKeyboardLayout)
+
   if (status.isLoading) {
     return <p className="text-on-surface-variant text-[12px]">Loading…</p>
   }
@@ -298,6 +306,20 @@ export function LinuxAppsSettings() {
         ) : (
           <p className="text-on-surface-variant text-[12px]">No Linux apps installed yet.</p>
         )}
+      </div>
+
+      {/* Keyboard layout */}
+      <div className="max-w-[260px]" data-linux-keyboard-layout="">
+        <Select
+          label="Keyboard layout"
+          value={keyboardLayout}
+          onValueChange={(id) => setKeyboardLayout(id as KeyboardLayoutId)}
+          options={KEYBOARD_LAYOUTS.map((l) => ({ value: l.id, label: l.label }))}
+        />
+        <p className="text-on-surface-variant mt-1 text-[11px]">
+          What Linux apps type. Running apps switch at once; the desktop&apos;s own apps use your
+          browser&apos;s layout.
+        </p>
       </div>
 
       {/* Disk */}

@@ -52,6 +52,23 @@ use smithay::wayland::tablet_manager::TabletSeatHandler;
 use crate::pixels::{clip_signed, Canvas, Encoding, Layer, ShmFormat, SurfaceImage};
 use crate::protocol::{encode_frame_body, Decorations, Geometry, Outbound, PopupInfo, Rect, ToplevelInfo};
 
+/// The keyboard layouts the tab may choose (Settings → Linux apps): the id it
+/// sends, and the xkb layout and variant that build the keymap. Keys stay
+/// physical (the tab sends evdev codes); the layout only decides the
+/// characters. Romanian is the standard layout (ș and ț with a comma below).
+pub const KEYBOARD_LAYOUTS: &[(&str, &str, &str)] = &[("us", "us", ""), ("ro", "ro", "std")];
+
+/// The layout a session starts with.
+pub const DEFAULT_LAYOUT: &str = "us";
+
+/// The xkb names for a layout id, or None for one the host doesn't offer.
+pub fn xkb_config(id: &str) -> Option<XkbConfig<'static>> {
+    KEYBOARD_LAYOUTS
+        .iter()
+        .find(|(known, _, _)| *known == id)
+        .map(|(_, layout, variant)| XkbConfig { layout, variant, ..XkbConfig::default() })
+}
+
 /// Key repeat the host announces (`wl_keyboard.repeat_info`). Apps repeat
 /// keys themselves; the browser's own repeats are dropped before they get
 /// here.
@@ -254,6 +271,8 @@ pub struct SessionState {
     seat_state: SeatState<SessionState>,
     _seat: Seat<SessionState>,
     keyboard: KeyboardHandle<SessionState>,
+    /// The layout the keyboard's keymap was built from (`KEYBOARD_LAYOUTS`).
+    layout_id: String,
     pointer: PointerHandle<SessionState>,
     output: Output,
     output_size: (i32, i32),
@@ -300,10 +319,10 @@ impl SessionState {
         let stubs = crate::stubs::Stubs::new(dh);
         let mut seat_state = SeatState::new();
         let mut seat = seat_state.new_wl_seat(dh, "seat0");
-        // A US keymap; a layout setting is later work.
+        // US until the tab says which layout its owner chose.
         let keyboard = seat
-            .add_keyboard(XkbConfig::default(), REPEAT_DELAY_MS, REPEAT_RATE_HZ)
-            .expect("the default US keymap compiles");
+            .add_keyboard(xkb_config(DEFAULT_LAYOUT).expect("US is a layout"), REPEAT_DELAY_MS, REPEAT_RATE_HZ)
+            .expect("the US keymap compiles");
         let pointer = seat.add_pointer();
         let output = Output::new(
             format!("imbatranim-{}", &id[..8]),
@@ -327,6 +346,7 @@ impl SessionState {
             seat_state,
             _seat: seat,
             keyboard,
+            layout_id: DEFAULT_LAYOUT.to_string(),
             pointer,
             output,
             output_size: (1, 1),
@@ -535,6 +555,25 @@ impl SessionState {
         self.frozen = frozen;
         if !frozen {
             self.redraw_all();
+        }
+    }
+
+    /// Switch the session's keyboard to the layout `id`. smithay builds the
+    /// keymap and sends it to every client (`wl_keyboard.keymap`), so running
+    /// apps type the new characters without a restart. An id the host doesn't
+    /// offer, or a keymap that doesn't build, leaves the keyboard as it was.
+    pub fn set_keyboard_layout(&mut self, id: &str) {
+        if self.layout_id == id {
+            return;
+        }
+        let Some(config) = xkb_config(id) else {
+            eprintln!("wayland-host: ignored an unknown keyboard layout {id:?}");
+            return;
+        };
+        let keyboard = self.keyboard.clone();
+        match keyboard.set_xkb_config(self, config) {
+            Ok(()) => self.layout_id = id.to_string(),
+            Err(_) => eprintln!("wayland-host: the {id} keymap did not build"),
         }
     }
 
@@ -1456,3 +1495,53 @@ delegate_cursor_shape!(SessionState);
 delegate_seat!(SessionState);
 delegate_output!(SessionState);
 delegate_data_device!(SessionState);
+
+#[cfg(test)]
+mod tests {
+    use super::{xkb_config, KEYBOARD_LAYOUTS};
+    use smithay::input::keyboard::xkb;
+
+    /// What a key types in a layout's keymap: the evdev code, plus Shift.
+    fn types(layout: &str, evdev: u32, shift: bool) -> String {
+        let config = xkb_config(layout).expect("a layout the host offers");
+        let context = xkb::Context::new(xkb::CONTEXT_NO_FLAGS);
+        let keymap = xkb::Keymap::new_from_names(
+            &context,
+            config.rules,
+            config.model,
+            config.layout,
+            config.variant,
+            config.options.clone(),
+            xkb::KEYMAP_COMPILE_NO_FLAGS,
+        )
+        .expect("the keymap builds");
+        let mut state = xkb::State::new(&keymap);
+        // xkb's key codes are the evdev ones plus 8.
+        const KEY_LEFTSHIFT: u32 = 42;
+        if shift {
+            state.update_key((KEY_LEFTSHIFT + 8).into(), xkb::KeyDirection::Down);
+        }
+        state.key_get_utf8((evdev + 8).into())
+    }
+
+    #[test]
+    fn every_layout_offered_builds_its_keymap() {
+        for (id, _, _) in KEYBOARD_LAYOUTS {
+            assert_eq!(types(id, 30, false), "a", "{id}: KEY_A types a");
+        }
+        assert!(xkb_config("xx").is_none());
+    }
+
+    #[test]
+    fn romanian_types_its_letters_on_the_same_physical_keys() {
+        // KEY_SEMICOLON, KEY_APOSTROPHE, KEY_LEFTBRACE, KEY_RIGHTBRACE, KEY_BACKSLASH.
+        let keys = [39, 40, 26, 27, 43];
+        let lower: Vec<String> = keys.iter().map(|&k| types("ro", k, false)).collect();
+        let upper: Vec<String> = keys.iter().map(|&k| types("ro", k, true)).collect();
+        assert_eq!(lower, ["ș", "ț", "ă", "î", "â"]);
+        assert_eq!(upper, ["Ș", "Ț", "Ă", "Î", "Â"]);
+        // US on the same keys, unchanged.
+        let us: Vec<String> = keys.iter().map(|&k| types("us", k, false)).collect();
+        assert_eq!(us, [";", "'", "[", "]", "\\"]);
+    }
+}

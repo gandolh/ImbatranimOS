@@ -51,7 +51,8 @@ refused on both sides.
 | `pointer_button` | `session`, `toplevel`, `button`, `pressed` | A Linux button code, `BTN_LEFT` (0x110) to `BTN_TASK` (0x117). |
 | `pointer_axis` | `session`, `toplevel`, `dx`, `dy`, `v120x`, `v120y`, `wheel` | Scroll in surface pixels; from a wheel, also in 120ths of a notch. |
 | `pointer_leave` | `session` | The pointer left the session's Linux windows. |
-| `key` | `session`, `keycode`, `pressed` | A Linux (evdev) key code, to the focused toplevel. The host's xkb state (a US keymap) tracks modifiers; apps repeat keys themselves. |
+| `key` | `session`, `keycode`, `pressed` | A Linux (evdev) key code, to the focused toplevel. The host's xkb state (the session's keymap, US until `keyboard_layout` says otherwise) tracks modifiers; apps repeat keys themselves. |
+| `keyboard_layout` | `session`, `layout` | The keyboard layout chosen in Settings → Linux apps: `us` or `ro` (Romanian, standard). The host builds its xkb keymap and sends it to every client (`wl_keyboard.keymap`), so running apps type in it at once. Keys stay physical; an unknown id changes nothing. |
 | `configure` | `session`, `toplevel`, `width`, `height`, `maximized` | The OS window's size for the app's window geometry, clamped to the app's limits, sent as `xdg_toplevel.configure`. |
 | `close` | `session`, `toplevel` | The OS close button: `xdg_toplevel.close`. The app decides. |
 | `position` | `session`, `toplevel`, `x`, `y` | Where the toplevel's window geometry starts on the output (the tab's viewport), after the OS window moved or resized. Popups are kept on the output from it. |
@@ -172,8 +173,9 @@ resync announces are ones the tab had and go back to their places, and `false`
 for a new session, whose toplevel ids may repeat an old session's.
 
 Tab to server, JSON text: `{"type":"viewport","width","height"}`, the
-input messages above (`focus` to `press_outside`), `visibility` and
-`toplevel_visible`, without `session`; the backend checks each field and adds
+input messages above (`focus` to `press_outside`), `visibility`,
+`toplevel_visible` and `keyboard_layout` (sent on connect and on every
+change), without `session`; the backend checks each field and adds
 the session. `{"type":"cover","covered"}` is the backend's own: it freezes or
 wakes the session's apps and sends the host `freeze`.
 

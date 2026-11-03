@@ -88,6 +88,9 @@ impl Host {
             Inbound::Resync { session } => self.with(&session, |s| s.resync()),
             Inbound::Freeze { session, frozen } => self.with(&session, |s| s.set_frozen(frozen)),
             Inbound::Visibility { session, visible } => self.with(&session, |s| s.set_visible(visible)),
+            Inbound::KeyboardLayout { session, layout } => {
+                self.with(&session, |s| s.set_keyboard_layout(&layout))
+            }
             Inbound::ToplevelVisible { session, toplevel, visible } => {
                 self.with(&session, |s| s.set_toplevel_visible(toplevel, visible))
             }

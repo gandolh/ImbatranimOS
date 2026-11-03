@@ -8,6 +8,7 @@ import {
   useWindowStore,
 } from '../../shared/store/windowStore'
 import { useAuthStore } from '../auth/store/authStore'
+import { useLinuxAppsPrefs } from './keyboardLayout'
 import { LINUX_APP_PREFIX, linuxWindowChrome } from './kind'
 import { paintFrame, parseFrame } from './frames'
 import {
@@ -126,6 +127,7 @@ export class LinuxWindowsConnection {
   /** Whether each toplevel's OS window shows, as the host was last told. */
   private shown = new Map<number, boolean>()
   private unsubscribeAuth: (() => void) | null = null
+  private unsubscribeLayout: (() => void) | null = null
   /** The desktop session the socket is for: with a toplevel's id, a window's key. */
   private session = ''
   /**
@@ -175,6 +177,11 @@ export class LinuxWindowsConnection {
     this.unsubscribeAuth = useAuthStore.subscribe((s, prev) => {
       if (s.locked !== prev.locked) this.send({ type: 'cover', covered: s.locked })
     })
+    // A new layout reaches the running apps at once: the host sends them the
+    // keymap, no restart.
+    this.unsubscribeLayout = useLinuxAppsPrefs.subscribe((s, prev) => {
+      if (s.keyboardLayout !== prev.keyboardLayout) this.sendLayout()
+    })
     setLinuxSender((m) => this.send(m))
     this.connect()
   }
@@ -186,6 +193,8 @@ export class LinuxWindowsConnection {
     document.removeEventListener('visibilitychange', this.onVisibility)
     this.unsubscribeAuth?.()
     this.unsubscribeAuth = null
+    this.unsubscribeLayout?.()
+    this.unsubscribeLayout = null
     this.unsubscribeWindows?.()
     this.unsubscribeWindows = null
     setLinuxSender(null)
@@ -211,6 +220,7 @@ export class LinuxWindowsConnection {
       // Where this tab stands now, which a resumed session may not know.
       this.send({ type: 'cover', covered: useAuthStore.getState().locked })
       this.onVisibility()
+      this.sendLayout()
     }
     ws.onmessage = (ev: MessageEvent<ArrayBuffer | string>) => this.onMessage(ev.data)
     ws.onclose = (ev) => {
@@ -238,6 +248,11 @@ export class LinuxWindowsConnection {
       this.retries++
     }
     this.retryTimer = setTimeout(() => this.connect(), delay)
+  }
+
+  /** The keyboard layout the owner chose for Linux apps. */
+  private sendLayout(): void {
+    this.send({ type: 'keyboard_layout', layout: useLinuxAppsPrefs.getState().keyboardLayout })
   }
 
   private send(message: object): void {

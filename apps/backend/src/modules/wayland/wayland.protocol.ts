@@ -84,6 +84,7 @@ export type HostInbound =
   | { type: 'resync'; session: string }
   | { type: 'freeze'; session: string; frozen: boolean }
   | { type: 'visibility'; session: string; visible: boolean }
+  | { type: 'keyboard_layout'; session: string; layout: 'us' | 'ro' }
   | {
       type: 'toplevel_visible';
       session: string;

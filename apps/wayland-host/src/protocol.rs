@@ -115,6 +115,9 @@ pub enum Inbound {
         toplevel: u32,
         visible: bool,
     },
+    /// The keyboard layout chosen in Settings → Linux apps, by its id (see
+    /// `session::KEYBOARD_LAYOUTS`): the session's apps get its keymap.
+    KeyboardLayout { session: String, layout: String },
 }
 
 /// How a toplevel's title bar is drawn.
@@ -439,6 +442,7 @@ mod tests {
             r#"{"type":"press_outside","session":"abcdefghijklmnop"}"#,
             r#"{"type":"freeze","session":"abcdefghijklmnop","frozen":true}"#,
             r#"{"type":"toplevel_visible","session":"abcdefghijklmnop","toplevel":4,"visible":false}"#,
+            r#"{"type":"keyboard_layout","session":"abcdefghijklmnop","layout":"ro"}"#,
         ] {
             push_message(&mut bytes, KIND_JSON, json.as_bytes());
         }
@@ -453,6 +457,10 @@ mod tests {
         assert!(matches!(d.next_inbound(), Ok(Some(Inbound::PressOutside { .. }))));
         assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Freeze { frozen: true, .. }))));
         assert!(matches!(d.next_inbound(), Ok(Some(Inbound::ToplevelVisible { toplevel: 4, visible: false, .. }))));
+        assert_eq!(
+            d.next_inbound(),
+            Ok(Some(Inbound::KeyboardLayout { session: "abcdefghijklmnop".into(), layout: "ro".into() }))
+        );
     }
 
     #[test]

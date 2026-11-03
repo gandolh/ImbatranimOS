@@ -1,13 +1,13 @@
 ---
-summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-10-21 for the shared kit (2026-10-21): a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for the async close guards themed confirm work (2026-08-07) (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for the work of 2026-08-05: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
-updated: 2026-11-02
+summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-11-03 for the strong and soft accent: selected states take the soft pair, actions the strong one; refreshed 2026-10-21 for the shared kit (2026-10-21): a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for the async close guards themed confirm work (2026-08-07) (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for the work of 2026-08-05: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
+updated: 2026-11-03
 ---
 
 # ImbatranimOS UI conventions — the house style, as rules
 
 Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic layout, B&W tokens + ONE accent (crimson), dark-first, zero border radius. Implement inside it. **A marketplace kit app follows every rule here exactly as an add-on does** (2026-10-21): it renders in the desktop's tree with the shared kit; only its imports are read from `globalThis.__imbatranimShared` and its utilities come from its own stylesheet, compiled against `packages/ui/src/theme.css` ([marketplace/README.md](../../marketplace/README.md#kit-apps)).
 
-**Copy `apps/add-ons/clock`** — the best-behaved app: pure SDK kit, correct tokens, honest `minSize`, `notify()` for async events. `file-manager` is the richest but violates §8. `sticky-notes` **was** the inherited counter-example; the sticky-notes work (2026-08-05) (2026-08-05) rewrote it to the rules below, so it is now safe to read — and it is the only worked example of a **desktop layer** (§47).
+**Copy `apps/add-ons/clock`** — the best-behaved app: pure SDK kit, correct tokens, honest `minSize`, `notify()` for async events. `file-manager` is the richest but violates §8. `sticky-notes` **was** the inherited counter-example; the sticky-notes work (2026-08-05) (2026-08-05) rewrote it to the rules below, so it is now safe to read — and it is the only worked example of a **desktop layer** ([§47](ui-desktop-layer.md)).
 
 ## 1. The import rule
 
@@ -38,6 +38,16 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 6. **The accent is a runtime CSS var, never a literal.** `--accent`/`--accent-on` are stamped on `<html>` by `applyAppearance()`
    (`apps/core/src/shared/store/appearanceStore.ts:53-55`), and `--color-primary` maps to `var(--accent)` (`theme.css`). So `bg-primary` tracks the user's accent choice; a
    hex does not. Four presets (`appearanceStore.ts:20-25`), crimson default (:27).
+
+   **Strong and soft** (2026-11-03). Each accent has two pairs, both stamped by `applyAppearance()`: strong `primary` / `on-primary` (`--accent`) and soft
+   `primary-container` / `on-primary-container` (`--accent-soft`). In Classic the two are the same colour. In Apricot light, strong is a deep shade with white on it and
+   soft is the pastel with dark text, which fails as text or a border on cream. So:
+   - **A selected, current or chosen state is soft**: `bg-primary-container text-on-primary-container`. Examples: the selected file row (`FileList.tsx`), the
+     highlighted Start menu or context-menu item, the chosen option of a segmented control, a toggle or tab that is on (`<Button variant="selected">`).
+   - **An action or an indicator is strong**: a primary action (`<Button variant="primary">` for Install, Save, OK), a progress fill (`bg-primary`,
+     `StorageSettings.tsx`), an unread badge, a thin indicator such as the taskbar's current-task line, and the calendar's today marker.
+   - **Text, focus rings and borders stay `primary`**, including the border around a selected chip: the pastel fill alone sits under 3:1 against cream, the
+     border keeps the state visible.
 7. **Dark is the shipped default** (`appearanceStore.ts:28`, `index.css:79-100`). Light is the same token names swapped under `:root[data-theme='light']` (`index.css:103-123`)
    — tokens alone buy you light mode. Never add a `dark:` variant; never test only in dark.
 8. Forbidden: hex, Tailwind palette colours (`bg-red-500`, `text-slate-400`), gradients, and `rounded-*` —
@@ -169,21 +179,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 
 ## 9. Painting on the desktop
 
-47. **An app may paint outside its window, and only through `desktopLayer`.** Set `desktopLayer` on your manifest (`contract.ts:41`, added by the sticky-notes work (2026-08-05)) and core mounts it on
-    the desktop with no import of your package — the same seam as `commandSources`. `Desktop.tsx` collects the layers from `useEnabledApps()` and renders each inside one
-    `pointer-events-none absolute inset-0` wrapper with `<Suspense fallback={null}>`, placed **after** the icon container and **before** `WindowContainer`. The three rules that
-    follow from that, all of them load-bearing:
-    - It is mounted **always**, whether or not the app's window is open. Return `null` cheaply when you have nothing to draw; do not poll, and share the app's existing
-      react-query cache rather than opening a second one.
-    - The wrapper is `pointer-events-none`, so the layer never eats a click meant for the wallpaper or an icon. Every interactive element inside opts back in with
-      `pointer-events-auto` on itself (`sticky-notes/src/DesktopNote.tsx:97`) — including any dialog the layer renders (`DesktopNotes.tsx`).
-    - It sits **above** the icon grid (which spans the whole desktop and would otherwise intercept everything) and **below** every window, so windows always win the z-order.
-      Verify that by resolving a point inside an open window with `elementFromPoint`, not by eyeballing it.
-48. **A desktop object needs a way back.** Anything the user can drag must be clamped inside the desktop on commit (`sticky-notes/src/noteGeometry.ts`, which keeps the clamp
-    pure and tested because a note dropped off the edge cannot be recovered by any gesture) — a note dropped past the edge is
-    unreachable after a reload — and must be removable from the desktop without being destroyed. Keep the two verbs distinct and label them so: "take off the desktop (the note
-    is kept)" vs. "delete". Persist a drag or resize **once on release**, never per pointer move, and use `setPointerCapture` so a fast gesture off the element does not drop
-    (`sticky-notes/src/usePointerDrag.ts`).
+Rules 47 and 48 (the `desktopLayer` seam, and a way back for desktop objects) are on [ui-desktop-layer.md](ui-desktop-layer.md), split out 2026-11-03.
 
 ## 10. Pre-flight checklist — all fourteen must be "yes"
 

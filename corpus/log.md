@@ -4580,3 +4580,13 @@ text colour and accent pair to 4.5:1. Three canvas values were moved just enough
 apricot `#a84f25` → `#a04b23`, light `onVar` `#7a5f4e` → `#735949`, dark error `#ff6b6b` →
 `#ff7171`. Classic's windows are pixel-identical. Built in `b35e1b8` (1.72.0); the outcome lists
 every preset's hexes.
+
+## [2026-11-03] brief | 10 done: selected states use the soft accent
+
+Every `bg-primary` use was sorted. Selected, current and chosen states (rows, highlighted menu items,
+tabs, segmented controls, chips and toggles that are on, the checked Checkbox) moved to
+`primary-container`, the pastel in Apricot. Actions, progress fills, badges and thin indicators
+stay strong. The kit's `Button` gains a `selected` variant for toggles that used `primary` as
+their "on" look. Classic renders as before; the rule is in
+[ui-conventions.md](wiki/ui-conventions.md) rule 6. Built in `592b788` (1.74.0). Two calls left to
+the owner: "today" in the calendars stays strong, and a selected chip keeps its deep border.

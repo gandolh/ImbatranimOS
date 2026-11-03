@@ -67,7 +67,7 @@ export function ConverterPad({ windowId: _windowId }: { windowId: string }) {
             className={cn(
               'font-ui border px-2 py-0.5 text-[11px]',
               cat.id === categoryId
-                ? 'border-primary bg-primary text-on-primary'
+                ? 'border-primary bg-primary-container text-on-primary-container'
                 : 'border-outline-variant text-on-surface hover:bg-surface-container'
             )}
           >

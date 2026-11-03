@@ -169,7 +169,9 @@ export function SearchResults({
                   onDoubleClick={() => onOpen(hit)}
                   className={cn(
                     'flex cursor-default items-center gap-2 px-2 py-1 select-none',
-                    selected ? 'bg-primary text-on-primary' : 'hover:bg-surface-container'
+                    selected
+                      ? 'bg-primary-container text-on-primary-container'
+                      : 'hover:bg-surface-container'
                   )}
                 >
                   <span className="shrink-0">
@@ -179,7 +181,7 @@ export function SearchResults({
                   <span
                     className={cn(
                       'font-ui ml-auto shrink-0 truncate pl-2 text-[11px]',
-                      selected ? 'text-on-primary/80' : 'text-on-surface-variant'
+                      selected ? 'text-on-primary-container/80' : 'text-on-surface-variant'
                     )}
                   >
                     {folder}

@@ -64,7 +64,7 @@ export function TaskbarContextMenu({
                   'border-outline-variant flex h-[24px] flex-1 items-center justify-center border text-[11px] tabular-nums',
                   id === currentWorkspace
                     ? 'bg-surface-container-high text-on-surface-variant cursor-default'
-                    : 'hover:bg-primary hover:text-on-primary hover:border-primary'
+                    : 'hover:bg-primary-container hover:text-on-primary-container hover:border-primary'
                 )}
               >
                 {id}

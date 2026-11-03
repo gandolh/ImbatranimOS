@@ -47,7 +47,7 @@ export function WorkspacePips() {
             className={cn(
               'relative flex h-[22px] w-[22px] items-center justify-center border text-[10px] tabular-nums transition-colors',
               active
-                ? 'border-primary bg-primary text-on-primary'
+                ? 'border-primary bg-primary-container text-on-primary-container'
                 : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-high'
             )}
           >

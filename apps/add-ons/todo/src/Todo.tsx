@@ -276,7 +276,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
           className={cn(
             'font-ui border px-1.5 py-0.5 text-[11px]',
             listId === null
-              ? 'border-primary bg-primary text-on-primary'
+              ? 'border-primary bg-primary-container text-on-primary-container'
               : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
           )}
         >
@@ -290,7 +290,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             className={cn(
               'font-ui max-w-28 truncate border px-1.5 py-0.5 text-[11px]',
               listId === l.id
-                ? 'border-primary bg-primary text-on-primary'
+                ? 'border-primary bg-primary-container text-on-primary-container'
                 : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
             )}
           >
@@ -371,7 +371,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
           className={cn(
             'font-ui border px-1.5 py-0.5 text-[11px]',
             selectMode
-              ? 'border-primary bg-primary text-on-primary'
+              ? 'border-primary bg-primary-container text-on-primary-container'
               : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
           )}
         >

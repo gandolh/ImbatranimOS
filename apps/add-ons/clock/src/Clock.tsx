@@ -23,7 +23,7 @@ const TAB_LABEL: Record<Tab, string> = {
 
 function TabIcon({ tab, active }: { tab: Tab; active: boolean }) {
   const size = 12
-  const className = active ? 'text-on-primary' : 'text-on-surface-variant'
+  const className = active ? 'text-on-primary-container' : 'text-on-surface-variant'
   switch (tab) {
     case 'clock':
       return <Clock4 size={size} className={className} />
@@ -110,7 +110,7 @@ export function Clock({ windowId: _windowId }: { windowId: string }) {
               className={cn(
                 'font-ui flex items-center gap-1 border px-2 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors',
                 active
-                  ? 'border-primary bg-primary text-on-primary'
+                  ? 'border-primary bg-primary-container text-on-primary-container'
                   : 'text-on-surface-variant hover:border-outline-variant hover:text-on-surface border-transparent'
               )}
             >
@@ -120,7 +120,9 @@ export function Clock({ windowId: _windowId }: { windowId: string }) {
                 <span
                   className={cn(
                     'font-ui inline-flex h-3.5 min-w-3.5 items-center justify-center px-0.5 text-[9px] leading-none font-semibold tabular-nums',
-                    active ? 'bg-on-primary text-primary' : 'bg-primary text-on-primary'
+                    active
+                      ? 'bg-on-primary-container text-primary-container'
+                      : 'bg-primary text-on-primary'
                   )}
                 >
                   {count}

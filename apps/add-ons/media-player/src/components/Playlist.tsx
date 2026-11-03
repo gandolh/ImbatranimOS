@@ -46,7 +46,7 @@ export function Playlist({ tracks, activePath, durations, resume, root, onSelect
                   className={cn(
                     'font-ui border-outline-variant flex w-full cursor-pointer items-center gap-1.5 border-b px-2 py-1.5 text-left text-[11px]',
                     active
-                      ? 'bg-primary text-on-primary'
+                      ? 'bg-primary-container text-on-primary-container'
                       : 'text-on-surface hover:bg-surface-container-high'
                   )}
                 >

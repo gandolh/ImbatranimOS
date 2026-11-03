@@ -337,7 +337,7 @@ function PickerChip({
       className={cn(
         'font-ui border px-1.5 py-0.5 text-[11px]',
         active
-          ? 'border-primary bg-primary text-on-primary'
+          ? 'border-primary bg-primary-container text-on-primary-container'
           : 'border-outline-variant text-on-surface hover:bg-surface-container'
       )}
     >

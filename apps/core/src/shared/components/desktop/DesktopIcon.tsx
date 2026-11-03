@@ -105,7 +105,7 @@ export function DesktopIcon({
         className={cn(
           'flex h-12 w-12 items-center justify-center border transition-colors',
           selected
-            ? 'border-primary bg-primary text-on-primary'
+            ? 'border-primary bg-primary-container text-on-primary-container'
             : 'border-outline-variant bg-surface-container-low/80 text-on-surface backdrop-blur-sm'
         )}
       >
@@ -119,7 +119,7 @@ export function DesktopIcon({
           'w-full overflow-hidden px-1 py-0.5 text-[11px]',
           'line-clamp-2 break-words',
           selected
-            ? 'bg-primary text-on-primary'
+            ? 'bg-primary-container text-on-primary-container'
             : 'text-on-surface [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]'
         )}
       >

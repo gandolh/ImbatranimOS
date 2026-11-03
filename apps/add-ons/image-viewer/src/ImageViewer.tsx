@@ -498,7 +498,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
         </Tooltip>
         <Tooltip content="Fit to window">
           <Button
-            variant={zoomMode === 'fit' ? 'primary' : 'ghost'}
+            variant={zoomMode === 'fit' ? 'selected' : 'ghost'}
             size="sm"
             className="h-5 w-5 p-0"
             onClick={fitToWindow}
@@ -508,7 +508,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
         </Tooltip>
         <Tooltip content="Actual size (100%)">
           <Button
-            variant={zoomMode === 'manual' && zoom === 1 ? 'primary' : 'ghost'}
+            variant={zoomMode === 'manual' && zoom === 1 ? 'selected' : 'ghost'}
             size="sm"
             className="font-ui h-5 px-1.5 text-[11px]"
             onClick={zoomActual}

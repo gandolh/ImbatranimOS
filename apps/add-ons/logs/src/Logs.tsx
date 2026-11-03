@@ -136,7 +136,7 @@ export function Logs() {
             className={cn(
               'border-outline-variant border px-2 py-1 text-[11px] transition-colors',
               level === l.id
-                ? 'bg-primary text-on-primary border-primary'
+                ? 'bg-primary-container text-on-primary-container border-primary'
                 : 'hover:bg-surface-container-high'
             )}
           >
@@ -150,7 +150,9 @@ export function Logs() {
           title="Re-read the newest entries every few seconds"
           className={cn(
             'border-outline-variant border px-2 py-1 text-[11px] transition-colors',
-            follow ? 'bg-primary text-on-primary border-primary' : 'hover:bg-surface-container-high'
+            follow
+              ? 'bg-primary-container text-on-primary-container border-primary'
+              : 'hover:bg-surface-container-high'
           )}
         >
           Follow

@@ -255,7 +255,7 @@ export function ScientificPad({
               className={cn(
                 'font-ui border-outline-variant h-6 flex-1 border text-[10px] font-semibold uppercase',
                 angleMode === mode
-                  ? 'bg-primary text-on-primary border-primary'
+                  ? 'bg-primary-container text-on-primary-container border-primary'
                   : 'text-on-surface hover:bg-surface-container-high'
               )}
             >

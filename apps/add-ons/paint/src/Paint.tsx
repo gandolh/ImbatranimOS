@@ -630,7 +630,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
               <Tooltip key={t.id} content={t.label}>
                 <Button
                   size="sm"
-                  variant={tool === t.id ? 'primary' : 'ghost'}
+                  variant={tool === t.id ? 'selected' : 'ghost'}
                   className="h-7 w-7 p-0"
                   aria-label={t.label}
                   aria-pressed={tool === t.id}

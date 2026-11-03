@@ -83,7 +83,10 @@ export function CalcToolbar({
 
       <button
         type="button"
-        className={cn(key, tapeOpen && 'bg-primary text-on-primary border-primary')}
+        className={cn(
+          key,
+          tapeOpen && 'bg-primary-container text-on-primary-container border-primary'
+        )}
         onClick={onToggleTape}
         aria-pressed={tapeOpen}
         aria-label="Tape"

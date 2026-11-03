@@ -212,7 +212,7 @@ export function CommandPalette({ open, onClose }: Props) {
                               'flex cursor-pointer flex-col gap-0.5 px-3 py-2',
                               'border-outline-variant/40 border-b',
                               isSelected
-                                ? 'bg-primary text-on-primary'
+                                ? 'bg-primary-container text-on-primary-container'
                                 : 'text-on-surface hover:bg-surface-container-low'
                             )}
                             onMouseEnter={() => setSelectedIndex(globalIdx)}
@@ -228,7 +228,9 @@ export function CommandPalette({ open, onClose }: Props) {
                               <span
                                 className={cn(
                                   'font-[Space_Grotesk,sans-serif] text-[11px] leading-none',
-                                  isSelected ? 'text-on-primary/70' : 'text-on-surface-variant'
+                                  isSelected
+                                    ? 'text-on-primary-container/70'
+                                    : 'text-on-surface-variant'
                                 )}
                               >
                                 {item.subtitle}

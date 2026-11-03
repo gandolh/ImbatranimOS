@@ -78,7 +78,7 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
               onClick={() => setTab(t.id)}
               className={`font-ui flex items-center gap-1.5 border px-3 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors ${
                 active
-                  ? 'border-primary bg-primary text-on-primary'
+                  ? 'border-primary bg-primary-container text-on-primary-container'
                   : 'text-on-surface-variant hover:border-outline-variant hover:text-on-surface border-transparent'
               }`}
             >

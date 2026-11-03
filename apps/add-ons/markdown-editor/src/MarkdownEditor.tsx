@@ -432,7 +432,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
                 className={cn(
                   'font-ui flex items-center px-2 py-1 text-[11px]',
                   mode === option.mode
-                    ? 'bg-primary text-on-primary'
+                    ? 'bg-primary-container text-on-primary-container'
                     : 'text-on-surface hover:bg-surface-container-high'
                 )}
               >
@@ -451,7 +451,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
             className={cn(
               'ml-1 flex h-6 w-6 items-center justify-center',
               settings.outlineOpen
-                ? 'bg-primary text-on-primary'
+                ? 'bg-primary-container text-on-primary-container'
                 : 'text-on-surface hover:bg-surface-container-high'
             )}
           >
@@ -469,7 +469,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
               className={cn(
                 'flex h-6 w-6 items-center justify-center',
                 settings.syncScroll
-                  ? 'bg-primary text-on-primary'
+                  ? 'bg-primary-container text-on-primary-container'
                   : 'text-on-surface hover:bg-surface-container-high'
               )}
             >

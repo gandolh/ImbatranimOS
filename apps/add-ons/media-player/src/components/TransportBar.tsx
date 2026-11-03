@@ -178,7 +178,7 @@ export function TransportBar({
 
         <Tooltip content={shuffle ? 'Shuffle is on' : 'Shuffle'}>
           <Button
-            variant={shuffle ? 'primary' : 'ghost'}
+            variant={shuffle ? 'selected' : 'ghost'}
             size="sm"
             className="ml-1 h-6 w-6 shrink-0 p-0"
             aria-label="Shuffle"
@@ -198,7 +198,7 @@ export function TransportBar({
           }
         >
           <Button
-            variant={repeat === 'off' ? 'ghost' : 'primary'}
+            variant={repeat === 'off' ? 'ghost' : 'selected'}
             size="sm"
             className="h-6 w-6 shrink-0 p-0"
             // Three states, so `aria-pressed` cannot carry it: the mode goes in the label
@@ -215,7 +215,7 @@ export function TransportBar({
         {subtitlesOn !== null && (
           <Tooltip content={subtitlesOn ? 'Hide subtitles' : 'Show subtitles'}>
             <Button
-              variant={subtitlesOn ? 'primary' : 'ghost'}
+              variant={subtitlesOn ? 'selected' : 'ghost'}
               size="sm"
               className="h-6 w-6 shrink-0 p-0"
               aria-label="Subtitles"

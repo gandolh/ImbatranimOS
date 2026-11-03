@@ -51,7 +51,7 @@ export function Outline({
                   className={cn(
                     'font-ui block w-full truncate px-2 py-0.5 text-left text-[11px]',
                     index === activeIndex
-                      ? 'bg-primary text-on-primary'
+                      ? 'bg-primary-container text-on-primary-container'
                       : 'text-on-surface hover:bg-surface-container-high'
                   )}
                   style={{ paddingLeft: 8 + (heading.level - 1) * 8 }}

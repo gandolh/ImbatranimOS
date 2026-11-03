@@ -324,7 +324,7 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
                 className={cn(
                   'border-outline-variant px-2.5 py-1 text-[11px] font-medium capitalize not-first:border-l',
                   view === mode
-                    ? 'bg-primary text-on-primary'
+                    ? 'bg-primary-container text-on-primary-container'
                     : 'text-on-surface hover:bg-surface-container-high'
                 )}
               >

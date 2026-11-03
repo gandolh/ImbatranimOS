@@ -92,7 +92,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
               'flex items-center gap-1 px-1.5 py-1 text-[10px] outline-none',
               'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
               dnd
-                ? 'bg-primary text-on-primary'
+                ? 'bg-primary-container text-on-primary-container'
                 : 'text-on-surface-variant hover:bg-surface-container-high'
             )}
           >

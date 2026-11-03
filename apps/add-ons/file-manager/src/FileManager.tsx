@@ -757,7 +757,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           {FS_ROOTS.map((r) => (
             <Button
               key={r.id}
-              variant={r.id === root ? 'primary' : 'default'}
+              variant={r.id === root ? 'selected' : 'default'}
               size="sm"
               onClick={() => switchRoot(r.id)}
             >
@@ -862,7 +862,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           }
         >
           <Button
-            variant={view.showHidden ? 'primary' : 'ghost'}
+            variant={view.showHidden ? 'selected' : 'ghost'}
             size="sm"
             className="h-5 w-5 p-0"
             aria-pressed={view.showHidden}
@@ -889,7 +889,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
 
         <Tooltip content={previewPane.open ? 'Hide preview pane' : 'Show preview pane'}>
           <Button
-            variant={previewPane.open ? 'primary' : 'ghost'}
+            variant={previewPane.open ? 'selected' : 'ghost'}
             size="sm"
             className="h-5 w-5 p-0"
             // The other two toolbar toggles already name themselves; this one

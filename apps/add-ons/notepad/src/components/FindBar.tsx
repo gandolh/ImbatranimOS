@@ -103,7 +103,7 @@ export function FindBar({
           <ArrowDown size={11} />
         </Button>
         <Button
-          variant={caseSensitive ? 'primary' : 'ghost'}
+          variant={caseSensitive ? 'selected' : 'ghost'}
           size="sm"
           className="h-5 w-5 p-0"
           aria-label="Match case"
@@ -113,7 +113,7 @@ export function FindBar({
           <CaseSensitive size={12} />
         </Button>
         <Button
-          variant={showReplace ? 'primary' : 'ghost'}
+          variant={showReplace ? 'selected' : 'ghost'}
           size="sm"
           className="h-5 w-5 p-0"
           aria-label="Toggle replace"

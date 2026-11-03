@@ -323,7 +323,10 @@ export function NoteEditor({
           </Button>
           <button
             onClick={() => setMode('edit')}
-            className={cn('p-1.5', mode === 'edit' && 'bg-primary text-on-primary')}
+            className={cn(
+              'p-1.5',
+              mode === 'edit' && 'bg-primary-container text-on-primary-container'
+            )}
             title="Edit"
             aria-pressed={mode === 'edit'}
           >
@@ -331,7 +334,10 @@ export function NoteEditor({
           </button>
           <button
             onClick={() => setMode('preview')}
-            className={cn('p-1.5', mode === 'preview' && 'bg-primary text-on-primary')}
+            className={cn(
+              'p-1.5',
+              mode === 'preview' && 'bg-primary-container text-on-primary-container'
+            )}
             title="Preview as Markdown"
             aria-pressed={mode === 'preview'}
           >

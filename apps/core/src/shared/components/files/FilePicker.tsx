@@ -137,7 +137,7 @@ export function FilePicker({
           <Button
             key={r.id}
             size="sm"
-            variant={r.id === root && !showRecent ? 'primary' : 'ghost'}
+            variant={r.id === root && !showRecent ? 'selected' : 'ghost'}
             className="h-5 gap-1 px-1.5"
             onClick={() => {
               setShowRecent(false)
@@ -152,7 +152,7 @@ export function FilePicker({
         {mode === 'open' && (
           <Button
             size="sm"
-            variant={showRecent ? 'primary' : 'ghost'}
+            variant={showRecent ? 'selected' : 'ghost'}
             className="h-5 gap-1 px-1.5"
             onClick={() => setShowRecent(true)}
           >

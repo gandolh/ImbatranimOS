@@ -60,7 +60,7 @@ function DayPicker({
               className={cn(
                 'font-ui h-6 w-6 border text-[10px] font-semibold transition-colors',
                 on
-                  ? 'border-primary bg-primary text-on-primary'
+                  ? 'border-primary bg-primary-container text-on-primary-container'
                   : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
               )}
             >

@@ -70,7 +70,7 @@ export function OpenWithDialog({
               className={cn(
                 'border-outline-variant/50 flex w-full items-center gap-2 border-b px-2 py-1.5 text-left text-[12px] last:border-b-0',
                 picked === candidate.appId
-                  ? 'bg-primary text-on-primary'
+                  ? 'bg-primary-container text-on-primary-container'
                   : 'hover:bg-surface-container-high'
               )}
             >

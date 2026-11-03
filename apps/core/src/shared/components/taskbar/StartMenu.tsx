@@ -137,8 +137,8 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
               }}
               className={cn(
                 'group flex items-center gap-3 px-4 py-1.5 text-left outline-none',
-                'hover:bg-primary hover:text-on-primary',
-                'focus-visible:bg-primary focus-visible:text-on-primary'
+                'hover:bg-primary-container hover:text-on-primary-container',
+                'focus-visible:bg-primary-container focus-visible:text-on-primary-container'
               )}
             >
               <span className="border-outline-variant bg-surface-container-lowest flex h-7 w-7 shrink-0 items-center justify-center border group-hover:border-transparent group-hover:bg-white/15">
@@ -146,7 +146,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-[12px] font-medium">{app.name}</span>
-                <span className="text-on-surface-variant group-hover:text-on-primary/80 block truncate text-[10px]">
+                <span className="text-on-surface-variant group-hover:text-on-primary-container/80 block truncate text-[10px]">
                   {app.description}
                 </span>
               </span>
@@ -187,8 +187,8 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                 }}
                 className={cn(
                   'group flex w-full items-center gap-3 px-4 py-1 text-left outline-none',
-                  'hover:bg-primary hover:text-on-primary',
-                  'focus-visible:bg-primary focus-visible:text-on-primary'
+                  'hover:bg-primary-container hover:text-on-primary-container',
+                  'focus-visible:bg-primary-container focus-visible:text-on-primary-container'
                 )}
               >
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center">
@@ -198,7 +198,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                   <span className="block truncate text-[11px]">
                     {f.path.split('/').pop() ?? f.path}
                   </span>
-                  <span className="text-on-surface-variant group-hover:text-on-primary/80 block truncate text-[9px]">
+                  <span className="text-on-surface-variant group-hover:text-on-primary-container/80 block truncate text-[9px]">
                     {f.path}
                   </span>
                 </span>

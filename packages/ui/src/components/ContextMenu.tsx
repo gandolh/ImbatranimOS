@@ -96,7 +96,7 @@ export function ContextMenu({ x, y, items, onClose, label = 'Context menu' }: Co
                   ? 'text-on-surface-variant/50'
                   : item.danger
                     ? 'text-error data-[highlighted]:bg-error data-[highlighted]:text-on-error'
-                    : 'text-on-surface data-[highlighted]:bg-primary data-[highlighted]:text-on-primary'
+                    : 'text-on-surface data-[highlighted]:bg-primary-container data-[highlighted]:text-on-primary-container'
               )
               if (isCheckbox) {
                 return (

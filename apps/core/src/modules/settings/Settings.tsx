@@ -137,7 +137,7 @@ export function Settings() {
                       'flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 text-[12px] font-medium transition-colors outline-none',
                       'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
                       active
-                        ? 'border-primary bg-primary text-on-primary'
+                        ? 'border-primary bg-primary-container text-on-primary-container'
                         : 'border-outline-variant bg-surface-container-low text-on-surface hover:bg-surface-container-high'
                     )}
                   >
@@ -206,7 +206,7 @@ export function Settings() {
                   >
                     <div className="aspect-[16/10] w-full" style={wp.preview} />
                     {active && (
-                      <div className="bg-primary text-on-primary absolute top-2 right-2 flex h-5 w-5 items-center justify-center">
+                      <div className="bg-primary-container text-on-primary-container absolute top-2 right-2 flex h-5 w-5 items-center justify-center">
                         <Check size={12} strokeWidth={3} />
                       </div>
                     )}

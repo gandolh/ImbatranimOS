@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); nine open briefs: the Linux apps layer 01-06, in a cloud session on its own branch, and the theme follow-ups 19-21; what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); eight open briefs: the Linux apps layer 01-06, in a cloud session on its own branch, and the theme follow-ups 20-21; what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -75,7 +75,7 @@ deployed with 08-15:
 - 16 (done): a Monaco theme from the tokens, with Diff following the OS mode;
 - 17 (done): rounded, inset list rows in Apricot, File Manager's included;
 - 18 (done): warm shadows for toasts, tooltips, the tray and sign-in;
-- 19: rounded boxes inside windows;
+- 19 (done): rounded boxes inside windows;
 - 20: the accent focus ring on every control;
 - 21: Settings fits a phone.
 The server ISO is deferred by the owner (2026-10-04).

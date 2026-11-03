@@ -50,14 +50,14 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
      border keeps the state visible.
 7. **Themes and modes are the same token names with other values**: four blocks in `index.css`, keyed on `[data-os-theme]` and `[data-theme]` (which keeps its name
    and means the mode). Tokens alone buy you all four. Never add a `dark:` variant or branch on the theme in component code; theme-only chrome uses `apricot:`.
-8. Forbidden: hex, Tailwind palette colours (`bg-red-500`, `text-slate-400`), gradients, and numeric `rounded-*`. **Corners are the five token radii** (2026-11-03):
+8. Forbidden: hex, Tailwind palette colours (`bg-red-500`, `text-slate-400`), gradients, and numeric `rounded-*`. **Corners are the six token radii** (2026-11-03):
    `rounded-window` (frames, dialogs), `rounded-menu` (Start, context menus, popups, toasts), `rounded-control` (buttons, inputs, tooltips), `rounded-item` (list
-   rows, menu items, in a list padded by `px-(--k-list-inset)`), `rounded-tile` (desktop icons) — soft in Apricot, `0px` in Classic, where `index.css` also forces `border-radius: 0 !important`. The one
-   derived use is the Checkbox's half control radius. A maximised or snapped window drops `rounded-window`. Theme-only styling uses the `apricot:` variant.
+   rows, menu items, in a list padded by `px-(--k-list-inset)`), `rounded-tile` (desktop icons, widgets), `rounded-small` (checkboxes, swatches, key caps) — soft in Apricot, `0px` in Classic, where `index.css` also forces `border-radius: 0 !important`. In Apricot,
+   bordered boxes and cards inside windows take `rounded-control` too; edge-to-edge panels stay square. A maximised or snapped window drops `rounded-window`. Theme-only styling uses the `apricot:` variant.
 9. **Shadows only on floating layers**, and only the shadow variables (`index.css`), as `shadow-(--k-shadow-…)`: `window` / `window-focused` (frames), `menu` (Start),
    `popup` (context menus, Select), `dialog` (dialogs, Alt+Tab), `tile` (desktop icons, Apricot only). Classic keeps the old recipes as their values; Apricot's
-   are warm-tinted. Also `toast`, `tooltip`, `tray` (the tray's popovers) and `card` (the sign-in card), 2026-11-03. In-window content is flat —
-   separation is a 1px `border-outline-variant` plus a surface-container step.
+   are warm-tinted. Also `toast`, `tooltip`, `tray` (the tray's popovers) and `card` (the sign-in card), 2026-11-03. In-window content is flat (no shadow) —
+   separation is a 1px `border-outline-variant` plus a surface-container step, with the corners of rule 8.
 10. Never invent a colour to mean a state. Levels are told apart by **icon shape**; only `error` gets colour (`notifications/levelStyle.ts:11-18`). Success is `text-primary`,
     not green.
 

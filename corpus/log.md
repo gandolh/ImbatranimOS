@@ -4677,3 +4677,11 @@ were. Classic is pixel-identical.
 Toasts, tooltips, the tray's popovers and the sign-in card take `--k-shadow-*` variables: Classic
 keeps its exact old shadows, Apricot gets the canvas's warm ones. No literal shadow is left in the
 desktop, the add-ons or the kit.
+
+## [2026-11-03] brief | 19 done: rounded boxes inside windows in Apricot
+
+A scripted list of every full-bordered element without a radius (119 strings) was sorted by hand:
+boxes, cards, inputs, buttons and progress tracks take the control radius in Apricot; tiny ones
+(checkboxes, swatches, key caps, tags) a new sixth token, `rounded-small` (4px, 0 in Classic);
+frames already rounded, the rubber band, Paint's canvas and Minesweeper's cells were left. Classic
+is pixel-identical.

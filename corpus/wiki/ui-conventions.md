@@ -146,7 +146,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
     (`sticky-notes/src/StickyNotes.tsx:298-354`) — nesting forces a `stopPropagation` on every control and produces `<button>`-in-`<button>` (§42).
 36. Focus must be visible, as a ring not an outline: `outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset` (`ui/Select.tsx:39`,
     `StartMenu.tsx:117`, `Settings.tsx:106`). `Button` ships it per variant — do not override it away. No control falls back to the browser's outline
-    (audited 2026-11-03); native checkboxes, radios, colour and range inputs take `focus-visible:outline-2 outline-primary outline-offset-2` instead.
+    (audited 2026-11-03); native checkboxes, radios, colour and range inputs take `focus-visible:outline-2 outline-primary outline-offset-2` instead. Exception (owner, 2026-11-03): a Linux window's surface has no ring; the app draws its own focus.
 37. Icon-only controls need an accessible name: `aria-label` (`ToastHost.tsx:44`, `Settings.tsx:131`) or a `Tooltip`, plus `title` when it is also a mouse affordance
     (`window/Window.tsx:296`). Never ship a bare glyph button.
 38. Toggles carry `aria-pressed` (`MarkdownEditor.tsx:135`, `Settings.tsx:132`); grouped toggles get `role="group"` (`MarkdownEditor.tsx:129`).

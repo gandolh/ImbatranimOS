@@ -41,3 +41,31 @@ focus. Promoted from the todo `linux-apps-ui-in-the-themes`.
 - `apps/core/src/modules/settings/LinuxAppsSettings.tsx`
 - `apps/core/src/modules/linux-windows/LinuxWindowBody.tsx` (the focus
   opt-out only)
+
+## Outcome (2026-11-03)
+
+**Built in `3fb02f4` (version 1.109.0).** As specified:
+- the two error notices, the search results list, the log box and the
+  installed list take `rounded-control`; the Unfree badge takes
+  `rounded-small`;
+- both lists inset their rows by `--k-list-inset` with `apricot:py-1`, round
+  them with `rounded-item`, and their dividers are
+  `apricot:divide-transparent`, as brief 17 did. The rows have no fill, so
+  the rounding shows only on their edges and spacing.
+
+`LinuxWindowBody.tsx`'s surface needed no opt-out: brief 20 added rings class
+by class, not through a global style, so nothing reached it. It gained a
+comment saying why it has none, so the next audit of rule 36 doesn't add one;
+rule 36 in ui-conventions names the exception.
+
+**Checked** in the dev container (rebuilt from this tree, Chromium):
+- Apricot light: computed radii 8 px on the boxes and rows, 4 px on the
+  badge; the shot shows the rounded box with inset rows and no dividers.
+- Classic dark: every radius 0, and the pane inside the window is identical,
+  pixel for pixel, to the same pane drawn from the file before the change
+  (swapped in through Vite). Classic's dividers stay `currentColor`, white on
+  dark, as before; nothing here touched them.
+- foot, opened from a Terminal, then focused by script after a key press:
+  its surface is `:focus-visible` with no box-shadow and no outline; the
+  title bar's Minimize shows the accent ring (2 px inset).
+- Typecheck, lint, and core's settings and linux-windows tests (40) pass.

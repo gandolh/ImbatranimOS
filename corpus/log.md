@@ -4903,3 +4903,13 @@ An estate-wide grill with the owner turned every open todo into a brief or close
   window zoom beside Linux windows a todo that waits on the owner's check in Chrome with a GPU.
 
 The seven todos promoted are deleted; links to them in this log are now plain text.
+
+## [2026-11-03] brief | 23 done: the Linux apps pane rounds in Apricot
+
+Settings → Linux apps' two error notices, search results list, log box and installed list take the
+control radius, the Unfree badge the small one, and both lists inset and round their rows with
+dividers gone in Apricot (`3fb02f4`, 1.109.0). Classic is pixel-identical inside the window. A Linux
+window's surface needed no opt-out (brief 20's rings are per class); a comment there, and rule 36,
+say why it has none. Walked in the dev container: radii 8/4 px in Apricot and 0 in Classic; foot's
+surface focused with no ring while its title bar's Minimize shows one. Run on branch
+`claude/tender-franklin-h8lc35`, which carries 23-36 in one PR.

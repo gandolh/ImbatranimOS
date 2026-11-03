@@ -4,13 +4,21 @@ How each image was made, so the next refresh is a re-run. Re-take an image when 
 
 | File | Shows | How to reach that state | Viewport | Data | Taken |
 |---|---|---|---|---|---|
-| desktop.gif | Start → Terminal runs `whoami` and `ls`; File Manager and System Monitor open; each window is dragged into place | the beats below, one Playwright screenshot per beat, joined with ffmpeg | 1280×800 @1x, GIF 960 px wide, 12 fps, 14 s | demo files below | 2026-10-31 |
-| terminal.webp | Terminal after `whoami`, `grep PRETTY_NAME /etc/os-release`, `ls`, `sudo -v`, `ps -o pid,user,comm` | double-click the Terminal icon, type the commands, screenshot the `[data-app-id="terminal"]` element | 1440×900 @2x, window 700×460 | demo files below | 2026-10-09 |
-| files.webp | File Manager on Home with the preview pane on and `notes.txt` selected | double-click File Manager, drag its bottom-right corner to about 816×524, click the preview-pane button, click `notes.txt`, screenshot the window element | 1440×900 @2x | demo files below | 2026-10-09 |
-| system-monitor.webp | System Monitor, Overview tab | double-click System Monitor, resize to about 622×617, screenshot the window, crop the empty bottom (`crop=iw:1016:0:0`) | 1440×900 @2x | live numbers | 2026-10-09 |
-| marketplace.webp | Settings, Marketplace section: install from a URL, and the catalog: Hollow and Office with its five apps | Start → Settings, resize to about 721×761, scroll the Marketplace heading to just below the top, screenshot the window, keep the top 1046 px (`crop=iw:1046:0:0`) | 1440×900 @2x | the catalog in `marketplace/` | 2026-10-31 |
+| desktop.gif | Start → Terminal runs `whoami` and `ls`; File Manager and System Monitor open; each window is dragged into place | the beats below, one Playwright screenshot per beat, joined with ffmpeg | 1280×800 @1x, GIF 960 px wide, 12 fps, 14 s | demo files below | 2026-11-03 |
+| terminal.webp | Terminal after `whoami`, `grep PRETTY_NAME /etc/os-release`, `ls`, `sudo -v`, `ps -o pid,user,comm` | double-click the Terminal icon, type the commands, screenshot the `[data-app-id="terminal"]` element | 1440×900 @2x, window 700×460 | demo files below | 2026-11-03 |
+| files.webp | File Manager on Home with the preview pane on and `notes.txt` selected | double-click File Manager, drag its bottom-right corner to about 816×524, click the preview-pane button, click `notes.txt`, screenshot the window element | 1440×900 @2x | demo files below | 2026-11-03 |
+| system-monitor.webp | System Monitor, Overview tab | double-click System Monitor, resize to about 622×617, screenshot the window, crop the empty bottom (`crop=iw:1016:0:0`) | 1440×900 @2x | live numbers | 2026-11-03 |
+| marketplace.webp | Settings, Marketplace section: install from a URL, and the catalog: Hollow and Office with its five apps | Start → Settings, resize to about 721×761, scroll the Marketplace heading to just below the top, screenshot the window, keep the top 1046 px (`crop=iw:1046:0:0`) | 1440×900 @2x | the catalog in `marketplace/` | 2026-11-03 |
 
 ## Setup
+
+All five images were retaken on 2026-11-03 from the rebuilt dev container, in the default theme
+and mode, **Apricot light**, with the sunset-hills wallpaper. A machine whose saved appearance
+predates the themes moves to Apricot light on its first sign-in, so the dev volume needed nothing.
+Keep that look when retaking them, or say in the README which theme an image shows.
+
+Resize a window from about 6 px inside its bottom-right corner: the corner handle is easiest to
+grab there. Moving the window and every other step is as below.
 
 The images of 2026-10-09 come from the dev container. On 2026-10-31 `desktop.gif` and `marketplace.webp` were taken again from a host run, because the workspace could not pull the Node base image: the backend built with `npm run build -w apps/backend` and started with `node dist/main` as a Linux user named `imbatranim` with the demo files in its home and the database outside it, and the desktop from `VITE_API_URL=/api npm run dev -w apps/core`. Either way the windows show the same user and files.
 

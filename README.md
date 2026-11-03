@@ -3,7 +3,7 @@
 A small Linux computer whose screen is a browser tab. One Docker container runs Alpine Linux with a real shell, real files and real processes, and you use it through a Windows 7-style desktop in any browser. It is for anyone with Docker who wants a personal machine they can open from anywhere.
 
 <p align="center">
-  <img src="docs/images/desktop.gif" width="100%" alt="The ImbatranimOS desktop: Start opens a Terminal that runs whoami, which prints imbatranim, and ls, which lists the home folder; then File Manager and System Monitor open and each window is dragged into place">
+  <img src="docs/images/desktop.gif" width="100%" alt="The ImbatranimOS desktop in its default theme, Apricot, over a sunset-hills wallpaper: Start opens a Terminal that runs whoami, which prints imbatranim, and ls, which lists the home folder; then File Manager and System Monitor open and each window is dragged into place">
 </p>
 
 **Status:** v1, declared on 2026-10-07; a personal project in daily use, still changing. The owner's machine runs on the production site at `/imbatranim-os/`, but it has one owner, so all you will see there is the sign-in screen. Run your own with the three commands below.
@@ -26,7 +26,7 @@ Web desktops such as daedalOS run entirely in the tab and keep their files in br
 |---|---|
 | ![Terminal window: whoami prints imbatranim, os-release names Alpine Linux, sudo is not found, and ps lists a few processes, all owned by imbatranim](docs/images/terminal.webp) | ![File Manager on the home folder showing Projects, Sample folder and notes.txt, with notes.txt selected and its text in the preview pane](docs/images/files.webp) |
 | **System Monitor: live numbers from the machine** | **Marketplace: the catalog, and installs from a URL** |
-| ![System Monitor overview: CPU, memory, swap and disk bars with live graphs, plus uptime and network totals](docs/images/system-monitor.webp) | ![Settings, Marketplace section: a field for a GitHub URL, then the catalog: Hollow, and Office with its five apps Docs, CAD, Slides, Sheets and PDF, each with an Install button](docs/images/marketplace.webp) |
+| ![System Monitor overview: CPU, memory, swap and disk bars with live graphs, plus uptime and network totals](docs/images/system-monitor.webp) | ![Settings, Marketplace section: a field for a GitHub URL, then the catalog: Hollow, installed, and Office with its five apps Docs, CAD, Slides, Sheets and PDF and an Install button](docs/images/marketplace.webp) |
 
 ## How it works
 

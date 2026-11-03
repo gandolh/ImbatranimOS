@@ -52,7 +52,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
    and means the mode). Tokens alone buy you all four. Never add a `dark:` variant or branch on the theme in component code; theme-only chrome uses `apricot:`.
 8. Forbidden: hex, Tailwind palette colours (`bg-red-500`, `text-slate-400`), gradients, and numeric `rounded-*`. **Corners are the five token radii** (2026-11-03):
    `rounded-window` (frames, dialogs), `rounded-menu` (Start, context menus, popups, toasts), `rounded-control` (buttons, inputs, tooltips), `rounded-item` (list
-   rows, menu items), `rounded-tile` (desktop icons) — soft in Apricot, `0px` in Classic, where `index.css` also forces `border-radius: 0 !important`. The one
+   rows, menu items, in a list padded by `px-(--k-list-inset)`), `rounded-tile` (desktop icons) — soft in Apricot, `0px` in Classic, where `index.css` also forces `border-radius: 0 !important`. The one
    derived use is the Checkbox's half control radius. A maximised or snapped window drops `rounded-window`. Theme-only styling uses the `apricot:` variant.
 9. **Shadows only on floating layers**, and only the shadow variables (`index.css`), as `shadow-(--k-shadow-…)`: `window` / `window-focused` (frames), `menu` (Start),
    `popup` (context menus, Select), `dialog` (dialogs, Alt+Tab), `tile` (desktop icons, Apricot only). Classic keeps the old recipes as their values; Apricot's

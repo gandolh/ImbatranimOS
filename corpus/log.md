@@ -4663,3 +4663,11 @@ Monaco now draws on the window's own surface in every theme and mode, from a the
 tokens (editor and gutter, text, current line, translucent soft-accent selection, accent cursor,
 widgets); syntax colours stay Monaco's. It restyles live on a mode or theme switch. Diff also
 stopped following the device's `prefers-color-scheme` and follows the OS mode.
+
+## [2026-11-03] brief | 17 done: rounded, inset list rows in Apricot
+
+The selectable lists pad their sides and round their rows in Apricot, without dividers. That
+covers File Manager's list and search results, the playlist, the outline, the palette, Open with
+and Git's lists. File Manager's list stayed a `<table>`: in Apricot it separates its borders and
+puts the row fill on rounded cells, which keeps its virtualisation and keyboard handling as they
+were. Classic is pixel-identical.

@@ -95,8 +95,10 @@ Rejected: rounding everything but File Manager, whose list is a table; keeping
 rows and boxes square.
 **Why**: square boxes and full-width bars beside rounded buttons read as
 unfinished in Apricot.
-- *Consequence*: File Manager's list view leaves `<table>` layout, and its
-  keyboard, column and virtualisation behaviour has to be kept.
+- *Consequence*: File Manager's list is a table, and a collapsed table can't
+  round a row. In Apricot it switches to separated borders and puts the row's
+  fill on its cells (brief 17, 2026-11-03), rather than leaving `<table>` as
+  first planned. Its keyboard, columns and virtualisation are unchanged.
 
 ## Selection keeps a deep border; today stays strong
 _2026-11-03_ — In Apricot, a selected chip or toggle has the pastel fill with

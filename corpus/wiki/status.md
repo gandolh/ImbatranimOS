@@ -120,7 +120,8 @@ kit 1.2.0: a kit app's server starts when the app asks, not when its window
 opens), 34 (Linux windows come back to their places after a reload; the
 gateway tells the tab whether its session resumed), 35 (Start's Linux entries
 in the browser's language, with their desktop actions; a second Firefox
-window waits on a D-Bus session bus, a new todo). As written:
+window waits on a D-Bus session bus, a new todo), 32 (a keyboard layout for
+Linux apps, US or Romanian, switched live). As written:
 - 23-27, small fixes: the Linux apps pane in the themes (no accent ring on a
   Linux window's surface), the tray surviving a wrong stats answer, Files'
   background menu below a short listing, `openApp` moving the keyboard into a

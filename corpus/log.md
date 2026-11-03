@@ -5002,3 +5002,11 @@ first of the browser's languages the file has, matched as the spec matches local
 from Start's new entry menu and a Linux window's task button. Walked with Firefox and LXTerminal: the
 Romanian and Esperanto names show; Firefox's actions are offered and New Window starts it. A second
 window from a running Firefox needs a D-Bus session bus the layer doesn't have: a new todo.
+
+## [2026-11-03] brief | 32 done: a keyboard layout for Linux apps
+
+Settings → Linux apps chooses US or Romanian (standard), a new dotfile; the tab sends it on connect
+and on change, the backend passes known ids, and the host switches the session's xkb keymap with
+smithay, which sends it to every client (`1aa34ea`, 1.132.0). `cargo test` checks both keymaps and the Romanian
+letters on their physical keys. Walked with foot: Romanian typed șțăîâȘȚĂÎÂ, then US typed ;'[]\ into
+the same running app.

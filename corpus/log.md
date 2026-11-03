@@ -4967,3 +4967,10 @@ home root for anything the user couldn't walk to (`6fa7771`, 1.121.0; kit 1.1.0,
 unchanged). Eleven tests drive the real handle and portal; a Save as in the dev container started
 beside a file and saved there. imbatranim-office's "Save as opens where the file is" can now sync the
 kit and use it.
+
+## [2026-11-03] brief | 30 done: the full test run uses fewer workers
+
+`npm test` is `turbo test test:e2e --concurrency=50%` (`7dee332`, 1.123.0); getting-started says why and that
+the one-run override is calling turbo directly, since turbo refuses the flag twice. On 4 cores, six
+packages' tests through `npm test` peaked at 2 tasks at once against 6 without the flag. The full run
+under load is the owner's. Built ahead of 29, the larger brief.

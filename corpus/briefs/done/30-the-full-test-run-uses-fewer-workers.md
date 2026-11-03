@@ -43,3 +43,23 @@ The fixed sleep stays as it is. Promoted from the todo
 
 - `package.json` (the `test` script)
 - `docs/getting-started.md` (the line about the full run)
+
+## Outcome (2026-11-03)
+
+**Built in `7dee332` (version 1.123.0).** The root `test` script is
+`turbo test test:e2e --concurrency=50%`. `getting-started.md`'s scripts
+table says so and why, and how to run once without it: turbo refuses
+`--concurrency` twice ("cannot be used multiple times"), so
+`npm test -- --concurrency=…` fails, and the override is
+`npx turbo test test:e2e --concurrency=100%`.
+
+**Checked:**
+- `npm test -- --dry=json` doesn't show it: turbo's dry-run JSON has no
+  concurrency field, and its run summary's `command` omits the flag. So the
+  cap was measured instead, from the run summary's task start and end times:
+  `npm test` on six packages' tests with `--force` on this 4-core machine
+  ran at most **2** tasks at once; the same run without the flag ran **6**.
+- `npx turbo test --filter=@imbatranim/notepad --concurrency=50%` passes (45
+  tests).
+- Not run: the full run under load. Whether half the cores is enough is the
+  owner's check on their next full run.

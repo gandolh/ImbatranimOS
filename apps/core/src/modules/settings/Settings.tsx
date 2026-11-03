@@ -172,7 +172,10 @@ export function Settings() {
                   >
                     <span
                       className="flex h-6 w-6 items-center justify-center"
-                      style={{ backgroundColor: preset.hex, color: preset.on }}
+                      style={{
+                        backgroundColor: preset[mode].soft,
+                        color: preset[mode].softOn,
+                      }}
                     >
                       {active && <Check size={13} strokeWidth={3} />}
                     </span>

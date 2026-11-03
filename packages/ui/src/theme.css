@@ -10,7 +10,9 @@
  * the desktop never does, and that variable must still exist.
  *
  * The values point at runtime variables the desktop's index.css sets: --k-*
- * per theme ([data-theme] on <html>) and --accent / --accent-on.
+ * per theme and mode ([data-os-theme] and [data-theme] on <html>), the strong
+ * accent --accent / --accent-on and the soft one --accent-soft /
+ * --accent-soft-on. In Classic the strong and soft pairs are the same colour.
  */
 @theme static {
   /* Surfaces + text — resolved from the active theme block (index.css) */
@@ -36,8 +38,8 @@
   --color-surface-tint: var(--accent);
   --color-primary: var(--accent);
   --color-on-primary: var(--accent-on);
-  --color-primary-container: var(--accent);
-  --color-on-primary-container: var(--accent-on);
+  --color-primary-container: var(--accent-soft);
+  --color-on-primary-container: var(--accent-soft-on);
   --color-inverse-primary: var(--accent);
   --color-heritage: var(--accent);
 

@@ -8,7 +8,8 @@ import { describe, expect, it } from 'vitest'
  * The shared kit moved the desktop's `@theme` block out of `index.css` into the
  * kit (`packages/ui/src/theme.css`), so a marketplace kit app builds against
  * the same token names. No value was to change. `BEFORE` is the block as it
- * stood in `index.css` before the move, token for token.
+ * stood in `index.css` before the move, token for token, apart from the
+ * changes noted on their entries.
  *
  * The one intended difference is `@theme static`: every token is emitted as a
  * CSS variable even when no desktop class uses it, because a kit app's
@@ -37,8 +38,11 @@ const BEFORE: [string, string][] = [
   ['--color-surface-tint', 'var(--accent)'],
   ['--color-primary', 'var(--accent)'],
   ['--color-on-primary', 'var(--accent-on)'],
-  ['--color-primary-container', 'var(--accent)'],
-  ['--color-on-primary-container', 'var(--accent-on)'],
+  // The one change since the move (2026-11-03): the container pair maps to the
+  // soft accent, the pastel with dark text on it in Apricot. Classic sets the
+  // soft pair equal to the strong one, so there it resolves as before.
+  ['--color-primary-container', 'var(--accent-soft)'],
+  ['--color-on-primary-container', 'var(--accent-soft-on)'],
   ['--color-inverse-primary', 'var(--accent)'],
   ['--color-heritage', 'var(--accent)'],
   ['--color-secondary', 'var(--k-on-surface-variant)'],

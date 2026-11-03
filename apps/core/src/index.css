@@ -40,15 +40,63 @@
  * the kit's: packages/ui/src/theme.css, imported at the top.
  */
 
-/* ── Accent presets: default lives here so first paint is branded ────────────── */
+/* ── Accent: Apricot light's, so the first paint is branded before the stores load ── */
 :root {
-  --accent: #c0263a; /* crimson — shipped default */
-  --accent-on: #ffffff; /* white text/icon on accent (>= 4.5:1 for all presets) */
+  --accent: #a04b23; /* strong: text, rings, borders, primary actions; white on it */
+  --accent-on: #ffffff;
+  --accent-soft: #f2a97e; /* soft: selected and current things; dark text on it */
+  --accent-soft-on: #33241b;
 }
 
-/* ── Dark theme (default) ────────────────────────────────────────────────────── */
+/* ── Apricot, light — also the bare default (the sign-in screen, nothing saved) ─ */
 :root,
-:root[data-theme='dark'] {
+:root[data-os-theme='apricot'][data-theme='light'] {
+  --k-surface: #fbf3ea;
+  --k-surface-dim: #e9d6c4;
+  --k-surface-bright: #fffdf9;
+  --k-surface-container-lowest: #fffdf9;
+  --k-surface-container-low: #fdf7f0;
+  --k-surface-container: #f6ebdf;
+  --k-surface-container-high: #f0e1d2;
+  --k-surface-container-highest: #e9d6c3;
+  --k-on-surface: #3a2a20;
+  --k-on-surface-variant: #735949; /* the canvas's #7a5f4e, deepened to clear 4.5:1 on highest */
+  --k-inverse-surface: #3a2a20;
+  --k-inverse-on-surface: #fbf3ea;
+  --k-outline: #c4a58c;
+  --k-outline-variant: #ead8c6;
+  --k-error: #ba1a1a;
+  --k-error-container: #ffdad6;
+  --k-on-error-container: #93000a;
+
+  color-scheme: light;
+}
+
+/* ── Apricot, dark ───────────────────────────────────────────────────────────── */
+:root[data-os-theme='apricot'][data-theme='dark'] {
+  --k-surface: #1f1916;
+  --k-surface-dim: #181310;
+  --k-surface-bright: #2e2622;
+  --k-surface-container-lowest: #231d1a;
+  --k-surface-container-low: #27201c;
+  --k-surface-container: #2c2420;
+  --k-surface-container-high: #352b26;
+  --k-surface-container-highest: #3e332d;
+  --k-on-surface: #f6eadf;
+  --k-on-surface-variant: #c6b09f;
+  --k-inverse-surface: #f6eadf;
+  --k-inverse-on-surface: #231d1a;
+  --k-outline: #6e5c50;
+  --k-outline-variant: #3f352f;
+  --k-error: #ff7171; /* Classic's #ff6b6b, lifted to clear 4.5:1 on highest */
+  --k-error-container: #3a1516;
+  --k-on-error-container: #ffb4ab;
+
+  color-scheme: dark;
+}
+
+/* ── Classic, dark ───────────────────────────────────────────────────────────── */
+:root[data-os-theme='classic'][data-theme='dark'] {
   --k-surface: #0d0d0e;
   --k-surface-dim: #070708;
   --k-surface-bright: #1b1b1d;
@@ -70,8 +118,8 @@
   color-scheme: dark;
 }
 
-/* ── Light theme ─────────────────────────────────────────────────────────────── */
-:root[data-theme='light'] {
+/* ── Classic, light ──────────────────────────────────────────────────────────── */
+:root[data-os-theme='classic'][data-theme='light'] {
   --k-surface: #f3f3f1;
   --k-surface-dim: #e0e0dc;
   --k-surface-bright: #ffffff;

@@ -35,8 +35,9 @@ async function load() {
   return { prefs, setItem, ...appearance, ...wallpaper }
 }
 
-function written(setItem: ReturnType<typeof vi.spyOn>, key: string): unknown[] {
-  return setItem.mock.calls.filter(([k]) => k === key).map(([, v]) => JSON.parse(v as string))
+/** The values written under `key`, parsed. */
+function written(setItem: { mock: { calls: [string, string][] } }, key: string): unknown[] {
+  return setItem.mock.calls.filter(([k]) => k === key).map(([, v]) => JSON.parse(v) as unknown)
 }
 
 beforeEach(() => {

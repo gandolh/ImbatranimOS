@@ -9,35 +9,68 @@ export type Mode = 'light' | 'dark'
 
 export const THEME_IDS: readonly ThemeId[] = ['apricot', 'classic']
 
+/**
+ * One accent's colours in one mode. `strong` feeds `primary` (text, focus
+ * rings, borders, primary actions) with `strongOn` on it; `soft` feeds
+ * `primary-container` (selected and current things) with `softOn` on it.
+ */
+export type AccentColours = { strong: string; strongOn: string; soft: string; softOn: string }
+
 export type AccentPreset = {
   id: string
   name: string
-  /** Accent fill. */
-  hex: string
-  /** Text/icon color to sit on the accent fill. */
-  on: string
+  light: AccentColours
+  dark: AccentColours
+}
+
+/** Classic's accents are one fill with white on it, in every slot and both modes. */
+function classic(id: string, name: string, hex: string): AccentPreset {
+  const colours = { strong: hex, strongOn: '#ffffff', soft: hex, softOn: '#ffffff' }
+  return { id, name, light: colours, dark: colours }
+}
+
+const APRICOT_ON = '#33241b'
+
+/**
+ * Apricot's accents are pastels, which only pass with dark text on them. In
+ * light mode `strong` is a deep shade of the same hue with white on it, so
+ * every text, ring and border use of `primary` stays readable on cream; in
+ * dark mode the pastel itself reads on the dark surfaces.
+ */
+function apricot(id: string, name: string, pastel: string, deep: string): AccentPreset {
+  const soft = { soft: pastel, softOn: APRICOT_ON }
+  return {
+    id,
+    name,
+    light: { strong: deep, strongOn: '#ffffff', ...soft },
+    dark: { strong: pastel, strongOn: APRICOT_ON, ...soft },
+  }
 }
 
 /**
  * Each theme's accents.
  *
  * Classic: white on each fill clears 4.5:1 —
- *   crimson #c0263a ~6.5  ·  cobalt #1f5fd6 ~5.8  ·  emerald #0f7a40 ~5.5  ·  signal #d24317 ~4.6
- * Apricot: pastels from the 2026-11-02 canvas, which only pass with dark text on them.
+ *   crimson #c0263a ~5.9  ·  cobalt #1f5fd6 ~5.7  ·  emerald #0f7a40 ~5.4  ·  signal #d24317 ~4.6
+ * Apricot: the pastels from the 2026-11-02 canvas. The deep shades keep each
+ * pastel's hue, take the canvas's own deep apricot (#a84f25) as the model, and
+ * are as light as they can be while clearing 4.5:1 as text on every surface up
+ * to `high` and under white text. The canvas's #a84f25 itself reaches only
+ * 4.3:1 on `high`, hence #a04b23. contrast.test.ts holds them to it.
  */
 export const ACCENT_PRESETS: Record<ThemeId, AccentPreset[]> = {
   apricot: [
-    { id: 'apricot', name: 'Apricot', hex: '#f2a97e', on: '#33241b' },
-    { id: 'rose', name: 'Rose', hex: '#eea6b5', on: '#33241b' },
-    { id: 'butter', name: 'Butter', hex: '#f3d27a', on: '#33241b' },
-    { id: 'sage', name: 'Sage', hex: '#a9c9a4', on: '#33241b' },
-    { id: 'sky', name: 'Sky', hex: '#a7c7e7', on: '#33241b' },
+    apricot('apricot', 'Apricot', '#f2a97e', '#a04b23'),
+    apricot('rose', 'Rose', '#eea6b5', '#b23656'),
+    apricot('butter', 'Butter', '#f3d27a', '#7f5f1b'),
+    apricot('sage', 'Sage', '#a9c9a4', '#4e6c48'),
+    apricot('sky', 'Sky', '#a7c7e7', '#376891'),
   ],
   classic: [
-    { id: 'crimson', name: 'Crimson', hex: '#c0263a', on: '#ffffff' },
-    { id: 'cobalt', name: 'Cobalt', hex: '#1f5fd6', on: '#ffffff' },
-    { id: 'emerald', name: 'Emerald', hex: '#0f7a40', on: '#ffffff' },
-    { id: 'signal', name: 'Signal Orange', hex: '#d24317', on: '#ffffff' },
+    classic('crimson', 'Crimson', '#c0263a'),
+    classic('cobalt', 'Cobalt', '#1f5fd6'),
+    classic('emerald', 'Emerald', '#0f7a40'),
+    classic('signal', 'Signal Orange', '#d24317'),
   ],
 }
 
@@ -108,6 +141,11 @@ export function currentAccent(state: AppearanceState): AccentPreset {
   return presets.find((p) => p.id === state.accents[state.theme]) ?? presets[0]
 }
 
+/** The current accent's colours in the current mode. */
+export function accentColours(state: AppearanceState): AccentColours {
+  return currentAccent(state)[state.mode]
+}
+
 export const useAppearanceStore = create<AppearanceStore>()(
   persist(
     (set) => ({
@@ -142,14 +180,16 @@ export const useAppearanceStore = create<AppearanceStore>()(
 
 /**
  * Push the theme, mode and accent onto the document root so the CSS vars
- * resolve. `data-theme` keeps its name (the token blocks, the Terminal and the
+ * resolve: both accent pairs, strong and soft. `data-theme` keeps its name (the token blocks, the Terminal and the
  * docs site read it) and carries the mode; `data-os-theme` carries the theme.
  */
 export function applyAppearance(state: AppearanceState): void {
-  const preset = currentAccent(state)
+  const accent = accentColours(state)
   const root = document.documentElement
   root.setAttribute('data-os-theme', state.theme)
   root.setAttribute('data-theme', state.mode)
-  root.style.setProperty('--accent', preset.hex)
-  root.style.setProperty('--accent-on', preset.on)
+  root.style.setProperty('--accent', accent.strong)
+  root.style.setProperty('--accent-on', accent.strongOn)
+  root.style.setProperty('--accent-soft', accent.soft)
+  root.style.setProperty('--accent-soft-on', accent.softOn)
 }

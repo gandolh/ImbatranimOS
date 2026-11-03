@@ -106,8 +106,14 @@ COPY --parents packages/*/package.json ./
 RUN npm ci --omit=dev --workspace=backend
 # Strip native build intermediates now that the .node binaries are compiled:
 # object files, gyp obj.target dirs, and the C sources for node-pty +
-# better-sqlite3 (~60MB). The runtime only needs build/Release/*.node.
-# Hoisting puts everything in /app/node_modules.
+# better-sqlite3 (~60MB). Hoisting puts everything in /app/node_modules.
+# Each native module's build/ keeps only the binary the runtime loads:
+# better-sqlite3's prebuilt download leaves just that, but its source build
+# (prebuild-install failing, as under heavy load) also leaves the generated
+# sqlite sources, sqlite3.a, test_extension.node, .deps and makefiles, ~13MB
+# that grew the image with no change of its own. node-pty has no Linux
+# prebuilds, so it always compiles and always left its makefiles. A build/
+# without its binary fails the build here rather than at run time.
 # Also drop:
 #   - typescript: backend's devDep leaks in via the workspace tree (~23MB) even
 #     with --omit=dev; the runtime never needs the compiler. rm -rf is a no-op
@@ -119,6 +125,12 @@ RUN cd node_modules \
  && find . -name '*.o' -delete \
  && find . -type d -name obj.target -prune -exec rm -rf {} + \
  && rm -rf better-sqlite3/deps better-sqlite3/src node-pty/src node-pty/deps \
+ && for keep in better-sqlite3/build/Release/better_sqlite3.node node-pty/build/Release/pty.node; do \
+      build="${keep%%/Release/*}"; \
+      [ -d "$build" ] || continue; \
+      mv "$keep" /tmp/keep.node && rm -rf "$build" && mkdir -p "$(dirname "$keep")" \
+        && mv /tmp/keep.node "$keep" || exit 1; \
+    done \
  && rm -rf typescript \
  && find . -type d -name prebuilds | while read -r pb; do \
       for d in "$pb"/*; do \
@@ -135,7 +147,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.118.0"
+      org.opencontainers.image.version="1.119.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -192,7 +204,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.118.0
+    IMAGE_VERSION=1.119.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).

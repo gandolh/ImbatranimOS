@@ -63,6 +63,17 @@ done
 	find . -name '*.o' -delete
 	find . -type d -name obj.target -prune -exec rm -rf {} +
 	rm -rf better-sqlite3/deps better-sqlite3/src node-pty/src node-pty/deps
+	# Each native module's build/ keeps only the binary the runtime loads,
+	# whether it was downloaded or compiled (mirrors the Dockerfile's
+	# proddeps strip, which says why). A build/ without it aborts here.
+	for keep in better-sqlite3/build/Release/better_sqlite3.node node-pty/build/Release/pty.node; do
+		build="${keep%%/Release/*}"
+		[ -d "$build" ] || continue
+		mv "$keep" "$PROD/keep.node"
+		rm -rf "$build"
+		mkdir -p "$(dirname "$keep")"
+		mv "$PROD/keep.node" "$keep"
+	done
 	rm -rf typescript
 )
 # Drop foreign-arch prebuilt addons — dead weight on an x86_64 ISO (and they

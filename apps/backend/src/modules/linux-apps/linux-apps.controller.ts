@@ -12,7 +12,7 @@ import {
 import type { Response } from 'express';
 import { createReadStream } from 'fs';
 import { InstallDto, RemoveDto, SessionDto } from './dto/linux-apps.dto';
-import { LinuxAppsService } from './linux-apps.service';
+import { LinuxAppsService, parseLanguages } from './linux-apps.service';
 
 /**
  * `/api/linux-apps`: the Linux apps pane and Start's Linux entries. Behind
@@ -72,10 +72,13 @@ export class LinuxAppsController {
     return this.apps.freeSpace(body.session);
   }
 
-  /** GET /api/linux-apps/launchers → Start's Linux entries. */
+  /**
+   * GET /api/linux-apps/launchers?languages=ro-RO,ro → Start's Linux entries,
+   * named in the first of the browser's languages each one has.
+   */
   @Get('launchers')
-  launchers() {
-    return this.apps.launchers();
+  launchers(@Query('languages') languages?: string) {
+    return this.apps.launchers(parseLanguages(languages));
   }
 
   /**
@@ -101,5 +104,19 @@ export class LinuxAppsController {
   @Post('launchers/:id/launch')
   launch(@Param('id') id: string, @Body() body: SessionDto) {
     return this.apps.launch(id, body.session);
+  }
+
+  /**
+   * POST /api/linux-apps/launchers/:id/actions/:action/launch { session } →
+   * one of the entry's desktop actions (Firefox's New Window), started the
+   * way the entry is, from the tab that holds the session.
+   */
+  @Post('launchers/:id/actions/:action/launch')
+  launchAction(
+    @Param('id') id: string,
+    @Param('action') action: string,
+    @Body() body: SessionDto,
+  ) {
+    return this.apps.launch(id, body.session, action);
   }
 }

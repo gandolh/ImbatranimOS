@@ -22,10 +22,13 @@ export function TaskbarContextMenu({
   onMinimize,
   onClose,
   onDismiss,
+  appActions = [],
 }: {
   x: number
   y: number
   windowTitle: string
+  /** The app's own actions, a Linux app's desktop actions (Firefox's New Window). */
+  appActions?: { label: string; onSelect: () => void }[]
   currentWorkspace: WorkspaceId
   isMaximized: boolean
   onMoveToWorkspace: (id: WorkspaceId) => void
@@ -44,6 +47,7 @@ export function TaskbarContextMenu({
         </div>
       ),
     },
+    ...(appActions.length > 0 ? [...appActions, { type: 'separator' as const }] : []),
     {
       type: 'custom',
       key: 'workspaces',

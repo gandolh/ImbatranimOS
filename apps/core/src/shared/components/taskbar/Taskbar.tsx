@@ -16,6 +16,7 @@ import { StartMenu } from './StartMenu'
 import { Tray } from './Tray'
 import { WorkspacePips } from './WorkspacePips'
 import { TaskbarContextMenu } from './TaskbarContextMenu'
+import { launchLinuxApp, linuxLauncherActions } from '../../../modules/linux-windows/launchers'
 import { focusIntoWindowSoon } from '../window/focusIntoWindow'
 
 // Field separator for the task-button projection; cannot occur in a uuid, slug,
@@ -226,6 +227,13 @@ export function Taskbar() {
           x={menu.x}
           y={menu.y}
           windowTitle={menuWindow.title}
+          appActions={linuxLauncherActions(menuWindow.appId).map((a) => ({
+            label: a.name,
+            onSelect: () => {
+              void launchLinuxApp(menuWindow.appId, a.id)
+              setMenu(null)
+            },
+          }))}
           currentWorkspace={menuWindow.workspaceId}
           isMaximized={menuWindow.isMaximized}
           onMoveToWorkspace={(id: WorkspaceId) => {

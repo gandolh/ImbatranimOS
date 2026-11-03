@@ -15,7 +15,7 @@ import { terminalEnv } from '../pty/pty.constants';
 import { isValidSessionId } from '../wayland/wayland.protocol';
 import { WaylandGateway } from '../wayland/wayland.gateway';
 import { SessionApps } from '../wayland/session-apps';
-import { execArgv, parseDesktopEntry } from './desktop-entry';
+import { execArgv, parseDesktopEntry, pickLocalized } from './desktop-entry';
 import {
   linuxAppsPaths,
   parsePin,
@@ -84,13 +84,35 @@ export interface Job {
 
 export interface Launcher {
   id: string;
+  /** In the first of the browser's languages the entry has, else the plain one. */
   name: string;
   comment: string;
   hasIcon: boolean;
+  /** Its desktop actions (Firefox's New Window), named the same way. */
+  actions: { id: string; name: string }[];
 }
 
 /** A launcher's id: its desktop file's name, without `.desktop`. */
 const LAUNCHER_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+
+/** A desktop action's id, as the spec allows them. */
+const ACTION_ID = /^[A-Za-z0-9-]{1,128}$/;
+
+/** A browser language tag, loosely: BCP 47's letters, digits and dashes. */
+const LANGUAGE_TAG = /^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8}){0,4}$/;
+
+/**
+ * The browser's languages, as the desktop sends them (`ro-RO,ro,en`): the
+ * well-formed ones, at most ten. Anything else reads as no preference.
+ */
+export function parseLanguages(raw: unknown): string[] {
+  if (typeof raw !== 'string') return [];
+  return raw
+    .split(',')
+    .map((t) => t.trim())
+    .filter((t) => LANGUAGE_TAG.test(t))
+    .slice(0, 10);
+}
 
 /** Icon sizes in hicolor, largest first; `scalable` holds SVGs. */
 const ICON_DIRS = [
@@ -443,7 +465,12 @@ export class LinuxAppsService implements OnModuleDestroy {
       : null;
   }
 
-  async launchers(): Promise<Launcher[]> {
+  /**
+   * Start's Linux entries, named in the first of `languages` (the browser's,
+   * which the desktop sends) that each entry has. An action whose `Exec`
+   * names no program is left out, as an entry is.
+   */
+  async launchers(languages: readonly string[] = []): Promise<Launcher[]> {
     const dir = this.applicationsDir();
     if (!dir) return [];
     const files = await fs.readdir(dir).catch(() => [] as string[]);
@@ -458,9 +485,15 @@ export class LinuxAppsService implements OnModuleDestroy {
       if (!entry || !execArgv(entry.exec)) continue;
       out.push({
         id,
-        name: entry.name,
-        comment: entry.comment,
+        name: pickLocalized(entry.name, entry.names, languages),
+        comment: pickLocalized(entry.comment, entry.comments, languages),
         hasIcon: (await this.iconFile(entry.icon)) !== null,
+        actions: entry.actions
+          .filter((a) => execArgv(a.exec))
+          .map((a) => ({
+            id: a.id,
+            name: pickLocalized(a.name, a.names, languages),
+          })),
       });
     }
     return out;
@@ -522,15 +555,30 @@ export class LinuxAppsService implements OnModuleDestroy {
   }
 
   /**
-   * Start a launcher's app in the clicking tab's session: its `Exec`, with
-   * the field codes removed, in its own process group (the session's end
-   * stops the group), with the Terminal's environment for Linux apps.
+   * Start a launcher's app in the clicking tab's session: its `Exec`, or one
+   * of its desktop actions' (`action`), with the field codes removed, in its
+   * own process group (the session's end stops the group), with the
+   * Terminal's environment for Linux apps.
    */
-  async launch(id: string, session: unknown): Promise<{ pid: number }> {
+  async launch(
+    id: string,
+    session: unknown,
+    action?: string,
+  ): Promise<{ pid: number }> {
     const sid = this.requireSession(session);
     const entry = await this.entry(id);
-    const argv = entry ? execArgv(entry.exec) : null;
-    if (!entry || !argv) throw new NotFoundException('No such Linux app');
+    if (!entry) throw new NotFoundException('No such Linux app');
+    let exec = entry.exec;
+    if (action !== undefined) {
+      const found = ACTION_ID.test(action)
+        ? entry.actions.find((a) => a.id === action)
+        : undefined;
+      if (!found)
+        throw new NotFoundException(`${entry.name} has no such action`);
+      exec = found.exec;
+    }
+    const argv = execArgv(exec);
+    if (!argv) throw new NotFoundException('No such Linux app');
     const env = terminalEnv(childEnv(), sid);
     const child = spawn(argv[0], argv.slice(1), {
       env,

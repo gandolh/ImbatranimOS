@@ -45,7 +45,11 @@ export function DesktopNotes() {
     return () => window.removeEventListener('resize', measure)
   }, [])
 
-  const placed = (notes ?? []).filter((note) => note.onDesktop)
+  // Only an array is a list of notes. A wrong API base answers with the page's
+  // HTML, and calling .filter on that took the whole desktop down with it
+  // (2026-11-03): this layer runs on the desktop, outside any window's
+  // error boundary.
+  const placed = (Array.isArray(notes) ? notes : []).filter((note) => note.onDesktop)
 
   return (
     <div ref={ref} className="absolute inset-0">

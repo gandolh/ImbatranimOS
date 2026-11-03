@@ -290,7 +290,7 @@ export function NoteEditor({
         <div className="flex min-w-0 items-center gap-2">
           <button
             onClick={onBack}
-            className="hover:bg-surface-container-high p-1"
+            className="hover:bg-surface-container-high focus-visible:ring-primary p-1 outline-none focus-visible:ring-2 focus-visible:ring-inset"
             title="Close this file"
           >
             <ArrowLeft size={16} />
@@ -324,7 +324,7 @@ export function NoteEditor({
           <button
             onClick={() => setMode('edit')}
             className={cn(
-              'rounded-control p-1.5',
+              'focus-visible:ring-primary rounded-control p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset',
               mode === 'edit' && 'bg-primary-container text-on-primary-container'
             )}
             title="Edit"
@@ -335,7 +335,7 @@ export function NoteEditor({
           <button
             onClick={() => setMode('preview')}
             className={cn(
-              'rounded-control p-1.5',
+              'focus-visible:ring-primary rounded-control p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset',
               mode === 'preview' && 'bg-primary-container text-on-primary-container'
             )}
             title="Preview as Markdown"
@@ -397,7 +397,7 @@ export function NoteEditor({
           <textarea
             ref={textRef}
             className={cn(
-              'h-full w-full resize-none bg-transparent p-4 font-mono text-[13px] outline-none',
+              'focus-visible:ring-primary h-full w-full resize-none bg-transparent p-4 font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
               // `whitespace-pre` + horizontal scroll is what "wrap off" means for a
               // log file; without it a 4000-character line is unreadable either way.
               wrap ? 'whitespace-pre-wrap' : 'overflow-x-auto whitespace-pre'
@@ -445,7 +445,7 @@ export function NoteEditor({
           aria-label="Word wrap"
           title={wrap ? 'Word wrap on' : 'Word wrap off'}
           className={cn(
-            'flex items-center gap-1 px-1',
+            'focus-visible:ring-primary flex items-center gap-1 px-1 outline-none focus-visible:ring-2 focus-visible:ring-inset',
             wrap ? 'text-on-surface' : 'text-on-surface-variant'
           )}
         >

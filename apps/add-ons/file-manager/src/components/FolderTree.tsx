@@ -21,7 +21,7 @@ export function FolderTree({ root, rootLabel, currentPath, onNavigate }: FolderT
       <button
         onClick={() => onNavigate('')}
         className={cn(
-          'rounded-item flex items-center gap-1 px-2 py-0.5 text-left',
+          'focus-visible:ring-primary rounded-item flex items-center gap-1 px-2 py-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset',
           currentPath === ''
             ? 'bg-primary-container text-on-primary-container'
             : 'text-on-surface hover:bg-surface-container'
@@ -111,7 +111,7 @@ function TreeNode({ root, entry, depth, currentPath, onNavigate }: TreeNodeProps
             e.stopPropagation()
             setExpanded((v) => !v)
           }}
-          className="text-on-surface-variant flex h-5 w-4 shrink-0 items-center justify-center"
+          className="text-on-surface-variant focus-visible:ring-primary flex h-5 w-4 shrink-0 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset"
           aria-label={open ? 'Collapse' : 'Expand'}
         >
           <ChevronRight
@@ -122,7 +122,7 @@ function TreeNode({ root, entry, depth, currentPath, onNavigate }: TreeNodeProps
         </button>
         <button
           onClick={() => onNavigate(entry.path)}
-          className="flex min-w-0 flex-1 items-center gap-1 py-0.5 text-left"
+          className="focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-1 py-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           {open ? (
             <FolderOpen size={14} strokeWidth={1.5} className="text-primary-container shrink-0" />

@@ -137,7 +137,7 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
           aria-label="Change colour"
           aria-pressed={paletteOpen}
           title="Change colour"
-          className="text-on-surface-variant hover:text-on-surface shrink-0 p-0.5"
+          className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary shrink-0 p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <Palette size={11} />
         </button>
@@ -147,7 +147,7 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
           onClick={() => onPatch(note.id, { onDesktop: false })}
           aria-label="Take off the desktop"
           title="Take off the desktop (the note is kept)"
-          className="text-on-surface-variant hover:text-on-surface shrink-0 p-0.5"
+          className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary shrink-0 p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <X size={11} />
         </button>
@@ -157,7 +157,7 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
           onClick={() => onDelete(note)}
           aria-label="Delete note"
           title="Delete note"
-          className="text-on-surface-variant hover:text-error shrink-0 p-0.5"
+          className="text-on-surface-variant hover:text-error focus-visible:ring-primary shrink-0 p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <Trash2 size={11} />
         </button>
@@ -173,7 +173,7 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
             }}
             aria-label="Default colour"
             className={cn(
-              'rounded-small bg-surface-container h-4 w-4 border',
+              'focus-visible:ring-primary rounded-small bg-surface-container h-4 w-4 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
               note.color === null ? 'border-on-surface' : 'border-outline-variant'
             )}
           />
@@ -187,7 +187,7 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
               }}
               aria-label={color}
               className={cn(
-                'rounded-small h-4 w-4 border',
+                'focus-visible:ring-primary rounded-small h-4 w-4 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
                 COLOR_SWATCH[color],
                 note.color === color ? 'border-on-surface' : 'border-outline-variant'
               )}
@@ -202,7 +202,7 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
         placeholder="Write something…"
         spellCheck={false}
         aria-label="Note text"
-        className="font-content text-on-surface placeholder:text-on-surface-variant min-h-0 flex-1 resize-none bg-transparent p-1.5 text-[12px] outline-none"
+        className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-h-0 flex-1 resize-none bg-transparent p-1.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
       />
 
       {/* Resize handle. A corner grip rather than CSS resize, so the new size can

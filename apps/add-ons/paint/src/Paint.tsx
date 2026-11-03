@@ -587,7 +587,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
             aria-label={`Colour ${hex}`}
             onClick={() => setColor(hex)}
             className={cn(
-              'rounded-small border-outline-variant h-5 w-5 border',
+              'focus-visible:ring-primary rounded-small border-outline-variant h-5 w-5 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
               color === hex && 'ring-primary ring-2 ring-offset-1'
             )}
             style={{ backgroundColor: hex }}
@@ -598,7 +598,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
           aria-label="Custom colour"
           value={color}
           onChange={(e) => setColor(e.target.value)}
-          className="rounded-small border-outline-variant h-6 w-7 cursor-pointer border bg-transparent p-0.5"
+          className="rounded-small border-outline-variant focus-visible:outline-primary h-6 w-7 cursor-pointer border bg-transparent p-0.5 focus-visible:outline-2 focus-visible:outline-offset-2"
         />
         <div className="flex-1" />
         <label className="font-ui text-on-surface-variant flex items-center gap-1 text-[11px]">
@@ -688,7 +688,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
                 }}
                 onBlur={commitText}
                 placeholder="Type, Enter commits"
-                className="border-primary font-ui absolute border bg-white/90 px-1 text-[12px] text-black outline-none"
+                className="border-primary font-ui focus-visible:ring-primary absolute border bg-white/90 px-1 text-[12px] text-black outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 style={{ left: textAt.x * zoom, top: textAt.y * zoom, minWidth: 120 }}
               />
             )}

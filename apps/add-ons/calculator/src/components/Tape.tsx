@@ -30,7 +30,7 @@ export function Tape({
           disabled={entries.length === 0}
           aria-label="Clear tape"
           title="Clear tape"
-          className="hover:text-on-surface flex items-center gap-1 disabled:opacity-40"
+          className="hover:text-on-surface focus-visible:ring-primary flex items-center gap-1 outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:opacity-40"
         >
           <Eraser size={10} />
         </button>
@@ -48,7 +48,7 @@ export function Tape({
                   type="button"
                   onClick={() => onReuse(entry.value, entry.result)}
                   title={`Reuse ${entry.value}`}
-                  className="font-ui hover:bg-surface-container-high flex w-full items-baseline gap-2 px-2 py-0.5 text-left text-[10px] tabular-nums"
+                  className="font-ui hover:bg-surface-container-high focus-visible:ring-primary flex w-full items-baseline gap-2 px-2 py-0.5 text-left text-[10px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 >
                   <span className="text-on-surface-variant min-w-0 flex-1 truncate">
                     {entry.expression}

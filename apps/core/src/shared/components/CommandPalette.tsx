@@ -163,7 +163,7 @@ export function CommandPalette({ open, onClose }: Props) {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search apps, files, bookmarks…"
               className={cn(
-                'flex-1 bg-transparent outline-none',
+                'focus-visible:ring-primary flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-inset',
                 'text-on-surface font-ui text-[13px]',
                 'placeholder:text-on-surface-variant'
               )}

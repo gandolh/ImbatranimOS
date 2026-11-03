@@ -264,7 +264,8 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
     })
   }
 
-  const tab = 'font-ui flex h-full items-center px-2.5 text-[12px] capitalize whitespace-nowrap'
+  const tab =
+    'font-ui flex h-full items-center px-2.5 text-[12px] capitalize whitespace-nowrap outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
 
   return (
     <div className="bg-surface-container-lowest flex h-full flex-col">
@@ -274,7 +275,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
           type="button"
           onClick={() => setListId(null)}
           className={cn(
-            'font-ui rounded-control border px-1.5 py-0.5 text-[11px]',
+            'focus-visible:ring-primary font-ui rounded-control border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
             listId === null
               ? 'border-primary bg-primary-container text-on-primary-container'
               : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
@@ -288,7 +289,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             type="button"
             onClick={() => setListId(l.id)}
             className={cn(
-              'font-ui rounded-control max-w-28 truncate border px-1.5 py-0.5 text-[11px]',
+              'focus-visible:ring-primary font-ui rounded-control max-w-28 truncate border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
               listId === l.id
                 ? 'border-primary bg-primary-container text-on-primary-container'
                 : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
@@ -302,7 +303,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
           onClick={() => void handleNewList()}
           aria-label="New list"
           title="New list"
-          className="text-on-surface-variant hover:text-on-surface p-0.5"
+          className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <ListPlus size={13} />
         </button>
@@ -312,7 +313,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             onClick={() => void handleDeleteList()}
             aria-label="Delete this list"
             title="Delete this list (tasks are kept)"
-            className="text-on-surface-variant hover:text-error ml-auto p-0.5"
+            className="text-on-surface-variant hover:text-error focus-visible:ring-primary ml-auto p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             <Trash2 size={12} />
           </button>
@@ -348,7 +349,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             value={sort}
             onChange={(e) => setSort(e.target.value as SortMode)}
             aria-label="Sort order"
-            className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface border px-1 py-0.5 text-[11px] outline-none"
+            className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface focus-visible:ring-primary border px-1 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             {SORT_MODES.map((mode) => (
               <option key={mode} value={mode}>
@@ -369,7 +370,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
           }}
           aria-pressed={selectMode}
           className={cn(
-            'font-ui rounded-control border px-1.5 py-0.5 text-[11px]',
+            'focus-visible:ring-primary font-ui rounded-control border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
             selectMode
               ? 'border-primary bg-primary-container text-on-primary-container'
               : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
@@ -386,7 +387,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
               type="button"
               onClick={handleBulkComplete}
               disabled={selected.size === 0}
-              className="rounded-control border-outline-variant text-on-surface font-ui flex items-center gap-1 border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
+              className="rounded-control border-outline-variant text-on-surface font-ui focus-visible:ring-primary flex items-center gap-1 border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:opacity-50"
             >
               <CheckCheck size={11} />
               Complete
@@ -395,7 +396,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
               type="button"
               onClick={() => void handleBulkMove()}
               disabled={selected.size === 0}
-              className="rounded-control border-outline-variant text-on-surface font-ui flex items-center gap-1 border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
+              className="rounded-control border-outline-variant text-on-surface font-ui focus-visible:ring-primary flex items-center gap-1 border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:opacity-50"
             >
               <FolderInput size={11} />
               Move
@@ -404,7 +405,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
               type="button"
               onClick={() => void handleBulkDelete()}
               disabled={selected.size === 0}
-              className="rounded-control border-outline-variant text-error font-ui flex items-center gap-1 border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
+              className="rounded-control border-outline-variant text-error font-ui focus-visible:ring-primary flex items-center gap-1 border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:opacity-50"
             >
               <Trash2 size={11} />
               Delete
@@ -415,7 +416,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             type="button"
             onClick={() => void handleClearCompleted()}
             disabled={knowsCompletedCount && completedCount === 0}
-            className="rounded-control border-outline-variant text-on-surface-variant hover:text-on-surface font-ui border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
+            className="rounded-control border-outline-variant text-on-surface-variant hover:text-on-surface font-ui focus-visible:ring-primary border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:opacity-50"
           >
             Clear completed{knowsCompletedCount && completedCount > 0 ? ` (${completedCount})` : ''}
           </button>
@@ -468,7 +469,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             // Focused on open: the brief asks for keyboard-first adding, and this is
             // the field you always want.
             autoFocus
-            className="font-content text-on-surface placeholder:text-on-surface-variant min-w-0 flex-1 bg-transparent text-[13px] outline-none"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
             placeholder={
               listId === null
                 ? 'Add a task…'
@@ -493,7 +494,10 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             aria-pressed={addDueOpen}
             aria-label="Set a due date for new tasks"
             title="Set a due date for new tasks"
-            className={cn('shrink-0 p-0.5', addDue ? 'text-primary' : 'text-on-surface-variant')}
+            className={cn(
+              'focus-visible:ring-primary shrink-0 p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset',
+              addDue ? 'text-primary' : 'text-on-surface-variant'
+            )}
           >
             <CalendarClock size={13} />
           </button>
@@ -502,7 +506,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             onClick={handleAdd}
             disabled={!addText.trim()}
             aria-label="Add task"
-            className="text-on-surface-variant hover:text-on-surface shrink-0 p-0.5 disabled:opacity-40"
+            className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary shrink-0 p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:opacity-40"
           >
             <Plus size={14} />
           </button>
@@ -517,14 +521,14 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
               value={addDue}
               aria-label="Due date for new tasks"
               onChange={(e) => setAddDue(e.target.value)}
-              className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface border px-1.5 py-0.5 text-[12px] outline-none"
+              className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary border px-1.5 py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
             />
             {addDue && (
               <button
                 type="button"
                 onClick={() => setAddDue('')}
                 aria-label="Clear the due date"
-                className="text-on-surface-variant hover:text-error p-0.5"
+                className="text-on-surface-variant hover:text-error focus-visible:ring-primary p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
               >
                 <X size={12} />
               </button>

@@ -109,7 +109,7 @@ function ResTab({
       type="button"
       onClick={onClick}
       className={cn(
-        'font-ui -mb-px cursor-pointer border-b-2 px-3 py-1.5 text-[12px] outline-none',
+        'focus-visible:ring-primary font-ui -mb-px cursor-pointer border-b-2 px-3 py-1.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
         active
           ? 'border-primary text-primary'
           : 'text-on-surface-variant hover:text-on-surface border-transparent'

@@ -30,7 +30,7 @@ export function AgendaWidget() {
       <button
         type="button"
         onClick={() => system.intents.openApp('calendar')}
-        className="font-ui text-on-surface-variant hover:text-on-surface w-fit text-left text-[9px] font-semibold tracking-widest uppercase outline-none"
+        className="font-ui text-on-surface-variant hover:text-on-surface focus-visible:ring-primary w-fit text-left text-[9px] font-semibold tracking-widest uppercase outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         Today
       </button>

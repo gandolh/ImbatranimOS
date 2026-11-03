@@ -102,7 +102,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
                 onClose()
               }
             }}
-            className="font-content text-on-surface placeholder:text-on-surface-variant w-full bg-transparent py-0.5 text-[12px] outline-none"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary w-full bg-transparent py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
         </div>
 
@@ -118,7 +118,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
             })
           }}
           title="Limit the search to a folder"
-          className="rounded-control border-outline-variant text-on-surface-variant hover:text-on-surface font-ui flex shrink-0 items-center gap-1 border px-1.5 py-0.5 text-[11px]"
+          className="rounded-control border-outline-variant text-on-surface-variant hover:text-on-surface font-ui focus-visible:ring-primary flex shrink-0 items-center gap-1 border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <FolderOpen size={11} />
           in {scopeLabel}
@@ -131,7 +131,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
               setScope('')
               if (query.trim()) void run(query, '')
             }}
-            className="text-on-surface-variant hover:text-on-surface shrink-0"
+            className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             <X size={11} />
           </button>
@@ -142,7 +142,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
           type="button"
           aria-label="Close find in files"
           onClick={onClose}
-          className="text-on-surface-variant hover:text-on-surface shrink-0"
+          className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <X size={12} />
         </button>
@@ -178,7 +178,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
             <button
               type="button"
               onClick={() => onOpenAt(group.path, group.matches[0]?.line ?? 1)}
-              className="hover:bg-surface-container flex w-full items-center gap-2 px-2 py-0.5 text-left"
+              className="hover:bg-surface-container focus-visible:ring-primary flex w-full items-center gap-2 px-2 py-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset"
             >
               <span className="font-content text-on-surface truncate text-[12px] font-semibold">
                 {group.name}
@@ -198,7 +198,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
                 type="button"
                 onClick={() => onOpenAt(group.path, m.line)}
                 className={cn(
-                  'hover:bg-surface-container flex w-full items-baseline gap-2 py-0.5 pr-2 pl-6 text-left'
+                  'focus-visible:ring-primary hover:bg-surface-container flex w-full items-baseline gap-2 py-0.5 pr-2 pl-6 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset'
                 )}
               >
                 <span className="text-on-surface-variant w-10 shrink-0 text-right font-mono text-[11px]">

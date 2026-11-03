@@ -158,7 +158,7 @@ function NoteEditor({ noteId, windowId }: { noteId: number; windowId: string }) 
       )}
 
       <textarea
-        className="font-content text-on-surface placeholder:text-on-surface-variant flex-1 resize-none bg-transparent p-3 text-[14px] outline-none"
+        className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary flex-1 resize-none bg-transparent p-3 text-[14px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
         value={content}
         onChange={(e) => handleChange(e.target.value)}
         placeholder="Start typing…"
@@ -185,7 +185,7 @@ function ColorRow({
         onClick={() => onPick(null)}
         aria-label="Default colour"
         className={cn(
-          'rounded-small bg-surface-container h-4 w-4 border',
+          'focus-visible:ring-primary rounded-small bg-surface-container h-4 w-4 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
           value === null ? 'border-on-surface' : 'border-outline-variant'
         )}
       />
@@ -196,7 +196,7 @@ function ColorRow({
           onClick={() => onPick(color)}
           aria-label={color}
           className={cn(
-            'rounded-small h-4 w-4 border',
+            'focus-visible:ring-primary rounded-small h-4 w-4 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
             COLOR_SWATCH[color],
             value === color ? 'border-on-surface' : 'border-outline-variant'
           )}
@@ -255,7 +255,7 @@ function NoteList({ windowId }: { windowId: string }) {
             }}
             placeholder="Search notes…"
             aria-label="Search notes"
-            className="font-content text-on-surface placeholder:text-on-surface-variant min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
           {query !== '' && (
             <Button

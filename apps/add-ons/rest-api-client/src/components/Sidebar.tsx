@@ -30,7 +30,7 @@ export function Sidebar({
                 <button
                   type="button"
                   onClick={() => onOpenSaved(req)}
-                  className="hover:bg-surface-container flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1 text-left outline-none"
+                  className="hover:bg-surface-container focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 >
                   <span className="text-secondary shrink-0 font-mono text-[10px] font-semibold">
                     {req.method}
@@ -43,7 +43,7 @@ export function Sidebar({
                   type="button"
                   onClick={() => onDeleteSaved(req.id)}
                   title="Delete"
-                  className="text-on-surface-variant hover:text-error shrink-0 opacity-0 group-hover:opacity-100"
+                  className="text-on-surface-variant hover:text-error focus-visible:ring-primary shrink-0 opacity-0 outline-none group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-inset"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -60,7 +60,7 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={onClearHistory}
-                className="text-on-surface-variant hover:text-error font-ui text-[10px]"
+                className="text-on-surface-variant hover:text-error font-ui focus-visible:ring-primary text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 title="Clear history"
               >
                 Clear
@@ -76,7 +76,7 @@ export function Sidebar({
                 key={entry.id}
                 type="button"
                 onClick={() => onOpenHistory(entry)}
-                className="hover:bg-surface-container flex w-full items-center gap-1.5 px-2 py-1 text-left outline-none"
+                className="hover:bg-surface-container focus-visible:ring-primary flex w-full items-center gap-1.5 px-2 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset"
               >
                 <span
                   className={cn(

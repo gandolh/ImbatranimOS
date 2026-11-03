@@ -467,7 +467,7 @@ export function TrackStage({
             <button
               type="button"
               onClick={startOver}
-              className="font-ui text-primary flex items-center gap-1 text-[11px] underline"
+              className="font-ui text-primary focus-visible:ring-primary flex items-center gap-1 text-[11px] underline outline-none focus-visible:ring-2 focus-visible:ring-inset"
             >
               <RotateCcw size={11} />
               Start over

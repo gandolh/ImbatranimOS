@@ -1004,7 +1004,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
                   onContextMenu={openBackgroundMenu}
                   onKeyDown={handleListKeys}
                   tabIndex={0}
-                  className="min-h-full outline-none"
+                  className="focus-visible:ring-primary min-h-full outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 >
                   {/* A folder whose every entry is a dotfile would otherwise read as
                     "Empty folder", which is a lie the user cannot act on. */}

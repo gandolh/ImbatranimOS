@@ -28,7 +28,8 @@ export function CaptureLauncher({
   const row =
     'rounded-control flex w-full items-center gap-2 border px-2.5 py-2 text-left text-[12px] font-medium ' +
     'border-outline-variant text-on-surface hover:bg-surface-container-high ' +
-    'disabled:cursor-not-allowed disabled:opacity-50'
+    'disabled:cursor-not-allowed disabled:opacity-50' +
+    ' outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
 
   return (
     <div className="bg-surface-container-lowest flex h-full flex-col gap-2 overflow-auto p-3">

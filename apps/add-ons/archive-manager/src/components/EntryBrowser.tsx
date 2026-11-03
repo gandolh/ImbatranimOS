@@ -54,7 +54,7 @@ export function EntryBrowser({
             }}
             placeholder="Search inside this archive…"
             aria-label="Search inside this archive"
-            className="font-content text-on-surface placeholder:text-on-surface-variant min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
           {query !== '' && (
             <Button
@@ -155,7 +155,7 @@ function EntryRow({
     >
       <input
         type="checkbox"
-        className="accent-primary shrink-0"
+        className="accent-primary focus-visible:outline-primary shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2"
         checked={checked}
         // A directory is not an extractable member on its own; its files are.
         disabled={entry.directory}

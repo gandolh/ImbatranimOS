@@ -139,7 +139,7 @@ export function SearchResults({
           role="listbox"
           aria-label={`Search results in ${scope}`}
           onKeyDown={handleKeyDown}
-          className="min-h-full px-(--k-list-inset) outline-none"
+          className="focus-visible:ring-primary min-h-full px-(--k-list-inset) outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           {error ? (
             <Empty icon={<AlertTriangle size={32} strokeWidth={1} />} label="Search failed." />

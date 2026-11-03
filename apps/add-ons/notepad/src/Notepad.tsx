@@ -152,7 +152,7 @@ export function Notepad({ windowId }: { windowId: string }) {
       )}
 
       <button
-        className="font-ui text-[10px] underline"
+        className="font-ui focus-visible:ring-primary text-[10px] underline outline-none focus-visible:ring-2 focus-visible:ring-inset"
         onClick={() =>
           handleOpenInNewWindow({ root: initialRoot ?? 'home', path: 'untitled.txt', isNew: true })
         }

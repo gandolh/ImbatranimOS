@@ -61,7 +61,7 @@ export function TaskbarContextMenu({
                 onClick={() => onMoveToWorkspace(id)}
                 aria-label={`Move to workspace ${id}`}
                 className={cn(
-                  'rounded-control border-outline-variant flex h-[24px] flex-1 items-center justify-center border text-[11px] tabular-nums',
+                  'focus-visible:ring-primary rounded-control border-outline-variant flex h-[24px] flex-1 items-center justify-center border text-[11px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset',
                   id === currentWorkspace
                     ? 'bg-surface-container-high text-on-surface-variant cursor-default'
                     : 'hover:bg-primary-container hover:text-on-primary-container hover:border-primary'

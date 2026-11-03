@@ -47,7 +47,7 @@ export function StatsWidget() {
       <button
         type="button"
         onClick={() => system.intents.openApp('system-monitor')}
-        className="font-ui text-on-surface-variant hover:text-on-surface flex w-full items-baseline justify-between text-left text-[9px] font-semibold tracking-widest uppercase outline-none"
+        className="font-ui text-on-surface-variant hover:text-on-surface focus-visible:ring-primary flex w-full items-baseline justify-between text-left text-[9px] font-semibold tracking-widest uppercase outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         <span>CPU</span>
         <span className="text-on-surface font-mono text-[11px] normal-case tabular-nums">

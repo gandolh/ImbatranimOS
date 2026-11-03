@@ -58,7 +58,7 @@ function TimerCard({ timer, now }: { timer: TimerEntry; now: number }) {
             onClick={() => remove(timer.id)}
             title="Remove timer"
             aria-label={timer.label ? `Remove the ${timer.label} timer` : 'Remove this timer'}
-            className="text-on-surface-variant hover:text-error shrink-0 p-1"
+            className="text-on-surface-variant hover:text-error focus-visible:ring-primary shrink-0 p-1 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             <X size={12} strokeWidth={2} />
           </button>

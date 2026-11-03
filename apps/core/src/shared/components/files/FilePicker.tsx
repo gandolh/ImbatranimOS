@@ -256,6 +256,7 @@ export function FilePicker({
         {extensions && extensions.length > 0 && mode !== 'directory' && (
           <label className="font-ui text-on-surface-variant flex items-center gap-1 text-[11px]">
             <input
+              className="focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2"
               type="checkbox"
               checked={showAll}
               onChange={(ev) => setShowAll(ev.target.checked)}
@@ -277,7 +278,7 @@ export function FilePicker({
         {mode === 'save' && (
           <>
             <input
-              className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface min-w-0 flex-1 border px-1.5 py-0.5 text-[12px] outline-none"
+              className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface focus-visible:ring-primary min-w-0 flex-1 border px-1.5 py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
               value={name}
               placeholder="File name"
               aria-label="File name"

@@ -391,7 +391,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
               title={c}
               onClick={() => setColor(c)}
               className={cn(
-                'rounded-small h-6 w-6 border outline-none',
+                'focus-visible:ring-primary rounded-small h-6 w-6 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
                 color === c ? 'border-primary ring-primary ring-1' : 'border-outline-variant'
               )}
               style={{ background: c }}
@@ -478,7 +478,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
           <button
             type="button"
             aria-label="Dismiss warning"
-            className="text-on-surface-variant hover:text-on-surface shrink-0 underline"
+            className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary shrink-0 underline outline-none focus-visible:ring-2 focus-visible:ring-inset"
             onClick={() => setNoticeOpen(false)}
           >
             Dismiss
@@ -511,6 +511,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
         {textDraft && (
           <input
             autoFocus
+            className="focus-visible:ring-primary outline-none focus-visible:ring-2"
             value={textDraft.value}
             onChange={(e) => setTextDraft((t) => (t ? { ...t, value: e.target.value } : t))}
             onBlur={commitText}

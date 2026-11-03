@@ -53,7 +53,7 @@ export function AppErrorFallback({
 
       <button
         onClick={() => setShowDetails((v) => !v)}
-        className="text-on-surface-variant hover:text-on-surface text-[11px] underline underline-offset-2"
+        className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary text-[11px] underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         {showDetails ? 'Hide details' : 'Show details'}
       </button>

@@ -126,7 +126,7 @@ export function WeekView({ anchor, occurrences, onCreate, onOpen }: WeekViewProp
                     if (e.key === 'Enter' || e.key === ' ') onOpen(occurrence)
                   }}
                   className={cn(
-                    'text-on-surface absolute truncate border-l-2 px-1 text-[10px] leading-[18px]',
+                    'focus-visible:ring-primary text-on-surface absolute truncate border-l-2 px-1 text-[10px] leading-[18px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
                     eventColorClass(occurrence.event.color)
                   )}
                   style={{
@@ -184,7 +184,7 @@ export function WeekView({ anchor, occurrences, onCreate, onOpen }: WeekViewProp
                       const start = day.hour(hour).minute(0).second(0).millisecond(0)
                       onCreate(start.valueOf(), start.add(1, 'hour').valueOf(), false)
                     }}
-                    className="border-outline-variant hover:bg-surface-container absolute inset-x-0 cursor-pointer border-b"
+                    className="border-outline-variant hover:bg-surface-container focus-visible:ring-primary absolute inset-x-0 cursor-pointer border-b outline-none focus-visible:ring-2 focus-visible:ring-inset"
                     style={{ top: hour * HOUR_HEIGHT, height: HOUR_HEIGHT }}
                   />
                 ))}
@@ -214,7 +214,7 @@ export function WeekView({ anchor, occurrences, onCreate, onOpen }: WeekViewProp
                         }
                       }}
                       className={cn(
-                        'text-on-surface absolute inset-x-0.5 z-10 cursor-pointer overflow-hidden border-l-2 px-1 py-px text-[10px]',
+                        'focus-visible:ring-primary text-on-surface absolute inset-x-0.5 z-10 cursor-pointer overflow-hidden border-l-2 px-1 py-px text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
                         eventColorClass(occurrence.event.color)
                       )}
                       style={{ top, height }}

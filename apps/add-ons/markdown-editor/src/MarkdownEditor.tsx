@@ -433,7 +433,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
                 aria-pressed={mode === option.mode}
                 aria-label={option.label}
                 className={cn(
-                  'font-ui flex items-center px-2 py-1 text-[11px]',
+                  'focus-visible:ring-primary font-ui flex items-center px-2 py-1 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
                   mode === option.mode
                     ? 'bg-primary-container text-on-primary-container'
                     : 'text-on-surface hover:bg-surface-container-high'
@@ -452,7 +452,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
             aria-pressed={settings.outlineOpen}
             onClick={() => update({ outlineOpen: !settings.outlineOpen })}
             className={cn(
-              'rounded-control ml-1 flex h-6 w-6 items-center justify-center',
+              'focus-visible:ring-primary rounded-control ml-1 flex h-6 w-6 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset',
               settings.outlineOpen
                 ? 'bg-primary-container text-on-primary-container'
                 : 'text-on-surface hover:bg-surface-container-high'
@@ -470,7 +470,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
               aria-pressed={settings.syncScroll}
               onClick={() => update({ syncScroll: !settings.syncScroll })}
               className={cn(
-                'rounded-control flex h-6 w-6 items-center justify-center',
+                'focus-visible:ring-primary rounded-control flex h-6 w-6 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset',
                 settings.syncScroll
                   ? 'bg-primary-container text-on-primary-container'
                   : 'text-on-surface hover:bg-surface-container-high'
@@ -524,7 +524,7 @@ export function MarkdownEditor({ windowId: _windowId }: { windowId: string }) {
               <div className="min-h-0 min-w-0" style={{ flex: `${editorFlex} 1 0%` }}>
                 <textarea
                   ref={attachEditor}
-                  className="text-on-surface h-full w-full resize-none bg-transparent p-4 font-mono text-[13px] outline-none"
+                  className="text-on-surface focus-visible:ring-primary h-full w-full resize-none bg-transparent p-4 font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
                   value={text}
                   onChange={(e) => {
                     setText(e.target.value)

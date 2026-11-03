@@ -60,7 +60,8 @@ const RANGE_CLASSES =
   'h-1 cursor-pointer appearance-none bg-surface-container-high accent-primary ' +
   '[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-primary ' +
   '[&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary ' +
-  'disabled:cursor-not-allowed disabled:opacity-50'
+  'disabled:cursor-not-allowed disabled:opacity-50 ' +
+  'focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2'
 
 function VolumeIcon({ volume, muted }: { volume: number; muted: boolean }) {
   if (muted || volume === 0) return <VolumeX size={14} />
@@ -230,7 +231,7 @@ export function TransportBar({
         <select
           aria-label="Playback speed"
           title="Playback speed"
-          className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface-variant h-6 shrink-0 border px-1 text-[11px] tabular-nums outline-none"
+          className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface-variant focus-visible:ring-primary h-6 shrink-0 border px-1 text-[11px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset"
           value={playbackRate}
           disabled={disabled}
           onChange={(e) => onRateChange(Number(e.target.value))}

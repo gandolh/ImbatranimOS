@@ -813,7 +813,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
                     void closeTab(tab.id)
                   }}
                   className={cn(
-                    'hover:bg-surface-container-highest flex h-4 w-4 items-center justify-center',
+                    'focus-visible:ring-primary hover:bg-surface-container-highest flex h-4 w-4 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset',
                     isDirty ? 'text-on-surface' : 'text-on-surface-variant'
                   )}
                 >

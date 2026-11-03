@@ -44,7 +44,7 @@ export function Playlist({ tracks, activePath, durations, resume, root, onSelect
                   type="button"
                   onClick={() => onSelect(track.path)}
                   className={cn(
-                    'font-ui border-outline-variant rounded-item apricot:border-transparent flex w-full cursor-pointer items-center gap-1.5 border-b px-2 py-1.5 text-left text-[11px]',
+                    'focus-visible:ring-primary font-ui border-outline-variant rounded-item apricot:border-transparent flex w-full cursor-pointer items-center gap-1.5 border-b px-2 py-1.5 text-left text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
                     active
                       ? 'bg-primary-container text-on-primary-container'
                       : 'text-on-surface hover:bg-surface-container-high'

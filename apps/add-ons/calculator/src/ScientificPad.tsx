@@ -194,7 +194,7 @@ export function ScientificPad({
 
   const key =
     'font-ui border-outline-variant text-on-surface hover:bg-surface-container-high ' +
-    'rounded-control flex h-7 items-center justify-center border text-[11px]'
+    'rounded-control flex h-7 items-center justify-center border text-[11px] outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
 
   return (
     <div className="flex h-full flex-col">
@@ -253,7 +253,7 @@ export function ScientificPad({
               onClick={() => setAngleMode(mode)}
               aria-pressed={angleMode === mode}
               className={cn(
-                'font-ui border-outline-variant rounded-control h-6 flex-1 border text-[10px] font-semibold uppercase',
+                'focus-visible:ring-primary font-ui border-outline-variant rounded-control h-6 flex-1 border text-[10px] font-semibold uppercase outline-none focus-visible:ring-2 focus-visible:ring-inset',
                 angleMode === mode
                   ? 'bg-primary-container text-on-primary-container border-primary'
                   : 'text-on-surface hover:bg-surface-container-high'
@@ -265,7 +265,7 @@ export function ScientificPad({
           <button
             type="button"
             onClick={() => dispatch({ type: 'clear' })}
-            className="rounded-control font-ui border-outline-variant text-on-surface hover:bg-surface-container-high h-6 flex-1 border text-[10px] font-semibold"
+            className="rounded-control font-ui border-outline-variant text-on-surface hover:bg-surface-container-high focus-visible:ring-primary h-6 flex-1 border text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             C
           </button>
@@ -274,7 +274,7 @@ export function ScientificPad({
             aria-label="Backspace"
             title="Backspace"
             onClick={() => dispatch({ type: 'backspace' })}
-            className="rounded-control font-ui border-outline-variant text-on-surface hover:bg-surface-container-high h-6 flex-1 border text-[11px]"
+            className="rounded-control font-ui border-outline-variant text-on-surface hover:bg-surface-container-high focus-visible:ring-primary h-6 flex-1 border text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             ⌫
           </button>

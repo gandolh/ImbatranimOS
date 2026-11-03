@@ -89,7 +89,7 @@ export function MenuButton({
                   item.onSelect()
                 }}
                 className={cn(
-                  'font-ui flex w-full items-center gap-2 px-2.5 py-1 text-left text-[12px]',
+                  'focus-visible:ring-primary font-ui flex w-full items-center gap-2 px-2.5 py-1 text-left text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
                   item.disabled
                     ? 'text-on-surface-variant/50 cursor-not-allowed'
                     : 'text-on-surface hover:bg-surface-container'

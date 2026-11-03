@@ -68,7 +68,7 @@ export function OpenWithDialog({
               onClick={() => setPicked(candidate.appId)}
               aria-pressed={picked === candidate.appId}
               className={cn(
-                'border-outline-variant/50 rounded-item apricot:border-transparent flex w-full items-center gap-2 border-b px-2 py-1.5 text-left text-[12px] last:border-b-0',
+                'focus-visible:ring-primary border-outline-variant/50 rounded-item apricot:border-transparent flex w-full items-center gap-2 border-b px-2 py-1.5 text-left text-[12px] outline-none last:border-b-0 focus-visible:ring-2 focus-visible:ring-inset',
                 picked === candidate.appId
                   ? 'bg-primary-container text-on-primary-container'
                   : 'hover:bg-surface-container-high'
@@ -85,7 +85,7 @@ export function OpenWithDialog({
         {claimants.length > 0 && !showAll && (
           <button
             onClick={() => setShowAll(true)}
-            className="text-on-surface-variant hover:text-on-surface self-start text-[11px] underline underline-offset-2"
+            className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary self-start text-[11px] underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             Show all apps
           </button>

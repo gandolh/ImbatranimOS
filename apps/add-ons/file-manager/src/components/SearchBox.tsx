@@ -83,7 +83,7 @@ export function SearchBox({
             }
           }}
           className={cn(
-            'font-content text-on-surface w-44 bg-transparent py-0.5 text-[12px] outline-none',
+            'focus-visible:ring-primary font-content text-on-surface w-44 bg-transparent py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
             'placeholder:text-on-surface-variant',
             // Chrome draws its own clear affordance for type=search; we ship one
             // that matches the rest of the OS instead of showing both.
@@ -95,7 +95,7 @@ export function SearchBox({
             type="button"
             aria-label="Clear search"
             onClick={onClear}
-            className="text-on-surface-variant hover:text-on-surface shrink-0"
+            className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             <X size={11} />
           </button>
@@ -115,7 +115,7 @@ export function SearchBox({
           aria-pressed={contentMode}
           onClick={onToggleContentMode}
           className={cn(
-            'rounded-control flex h-[22px] w-[22px] shrink-0 items-center justify-center border',
+            'focus-visible:ring-primary rounded-control flex h-[22px] w-[22px] shrink-0 items-center justify-center border outline-none focus-visible:ring-2 focus-visible:ring-inset',
             contentMode
               ? 'border-primary bg-primary-container text-on-primary-container'
               : 'border-outline-variant text-on-surface-variant hover:text-on-surface'

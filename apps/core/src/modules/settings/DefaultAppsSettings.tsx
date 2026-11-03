@@ -72,7 +72,7 @@ export function DefaultAppsSettings() {
             }}
             placeholder="Find a file type…"
             aria-label="Find a file type"
-            className="font-content text-on-surface placeholder:text-on-surface-variant min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
           {query !== '' && (
             <Button variant="ghost" size="sm" aria-label="Clear" onClick={() => setQuery('')}>
@@ -119,7 +119,7 @@ export function DefaultAppsSettings() {
                   disabled={!overridden}
                   title={overridden ? 'Back to the built-in default' : 'This is the default'}
                   className={cn(
-                    'shrink-0 text-[11px] underline underline-offset-2',
+                    'focus-visible:ring-primary shrink-0 text-[11px] underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset',
                     overridden
                       ? 'text-on-surface-variant hover:text-on-surface'
                       : 'text-on-surface-variant/40 cursor-default no-underline'

@@ -170,7 +170,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
               aria-label="Clear recent files"
               title="Clear recent files"
               onClick={() => void clearRecentFiles()}
-              className="text-on-surface-variant hover:text-on-surface outline-none"
+              className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary outline-none focus-visible:ring-2 focus-visible:ring-inset"
             >
               <Trash2 size={11} strokeWidth={1.75} />
             </button>

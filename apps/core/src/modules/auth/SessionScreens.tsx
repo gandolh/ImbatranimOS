@@ -35,7 +35,7 @@ export function ScreenCover({ onDismiss }: { onDismiss: () => void }) {
             away from here and not a button beside "Uncover". */}
         <button
           type="button"
-          className="font-content text-on-surface-variant text-center text-[11px] underline"
+          className="font-content text-on-surface-variant focus-visible:ring-primary text-center text-[11px] underline outline-none focus-visible:ring-2 focus-visible:ring-inset"
           onClick={() => void localSignOut().finally(() => window.location.reload())}
         >
           Sign out instead

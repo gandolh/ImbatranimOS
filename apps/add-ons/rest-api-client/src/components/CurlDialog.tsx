@@ -98,7 +98,7 @@ export function CurlDialog({
     >
       <div className="flex w-[38rem] max-w-full flex-col gap-2">
         <textarea
-          className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface min-h-[9rem] w-full resize-y border px-2 py-1.5 font-mono text-[12px] outline-none"
+          className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface focus-visible:ring-primary min-h-[9rem] w-full resize-y border px-2 py-1.5 font-mono text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           placeholder={"curl 'https://api.example.com/users' -H 'accept: application/json'"}
           value={text}
           spellCheck={false}

@@ -131,7 +131,7 @@ export function FileGrid({
                       }}
                       onBlur={onRenameCommit}
                       onClick={(e) => e.stopPropagation()}
-                      className="rounded-control border-primary bg-surface-container-lowest font-content text-on-surface w-full border px-1 py-0 text-center text-[11px] outline-none"
+                      className="rounded-control border-primary bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary w-full border px-1 py-0 text-center text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
                     />
                   ) : (
                     // Two lines then ellipsis: a long filename must not change the

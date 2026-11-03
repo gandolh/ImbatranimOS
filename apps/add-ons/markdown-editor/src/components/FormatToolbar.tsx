@@ -92,7 +92,7 @@ export function FormatToolbar({
                   onApply(kind)
                 }}
                 className={cn(
-                  'text-on-surface flex h-6 w-6 shrink-0 items-center justify-center',
+                  'focus-visible:ring-primary text-on-surface flex h-6 w-6 shrink-0 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset',
                   'hover:bg-surface-container-high disabled:opacity-40'
                 )}
               >
@@ -114,7 +114,7 @@ export function FormatToolbar({
             onInsertImage()
           }}
           className={cn(
-            'text-on-surface flex h-6 w-6 shrink-0 items-center justify-center',
+            'focus-visible:ring-primary text-on-surface flex h-6 w-6 shrink-0 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset',
             'hover:bg-surface-container-high disabled:opacity-40'
           )}
         >

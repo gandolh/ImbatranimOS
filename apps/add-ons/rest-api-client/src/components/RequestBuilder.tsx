@@ -202,7 +202,7 @@ export function RequestBuilder({
             <button
               type="button"
               onClick={onAddMissingVars}
-              className="font-ui shrink-0 underline underline-offset-2"
+              className="font-ui focus-visible:ring-primary shrink-0 underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
             >
               Add {missingVars.length === 1 ? 'it' : 'them'} to the environment
             </button>
@@ -228,7 +228,7 @@ export function RequestBuilder({
                 type="checkbox"
                 checked={row.enabled}
                 onChange={(e) => updateRow(row.id, { enabled: e.target.checked })}
-                className="accent-primary"
+                className="accent-primary focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2"
                 aria-label={`Enable ${row.name || 'header'}`}
               />
               <Input
@@ -323,7 +323,7 @@ export function RequestBuilder({
                         )
                       )
                     }
-                    className="accent-primary"
+                    className="accent-primary focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2"
                     aria-label={`Enable ${field.name || 'field'}`}
                   />
                   <Input

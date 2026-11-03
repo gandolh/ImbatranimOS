@@ -312,7 +312,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
                 aria-pressed={form.color === 'none'}
                 onClick={() => setForm((f) => ({ ...f, color: 'none' }))}
                 className={cn(
-                  'rounded-small bg-primary h-5 w-5 border',
+                  'focus-visible:ring-primary rounded-small bg-primary h-5 w-5 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
                   form.color === 'none' ? 'border-on-surface' : 'border-outline-variant'
                 )}
               />
@@ -324,7 +324,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
                   aria-pressed={form.color === color}
                   onClick={() => setForm((f) => ({ ...f, color }))}
                   className={cn(
-                    'rounded-small h-5 w-5 border',
+                    'focus-visible:ring-primary rounded-small h-5 w-5 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
                     COLOR_SWATCH[color],
                     form.color === color ? 'border-on-surface' : 'border-outline-variant'
                   )}
@@ -359,7 +359,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
                     name="edit-scope"
                     checked={scope === option.value}
                     onChange={() => setScope(option.value)}
-                    className="accent-primary mt-0.5"
+                    className="accent-primary focus-visible:outline-primary mt-0.5 focus-visible:outline-2 focus-visible:outline-offset-2"
                   />
                   <span>
                     <span className="text-on-surface font-semibold">{option.label}</span>

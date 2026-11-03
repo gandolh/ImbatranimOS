@@ -76,7 +76,7 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`font-ui rounded-control flex items-center gap-1.5 border px-3 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors ${
+              className={`focus-visible:ring-primary font-ui rounded-control flex items-center gap-1.5 border px-3 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset ${
                 active
                   ? 'border-primary bg-primary-container text-on-primary-container'
                   : 'text-on-surface-variant hover:border-outline-variant hover:text-on-surface border-transparent'

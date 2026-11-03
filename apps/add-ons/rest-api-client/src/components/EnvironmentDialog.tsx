@@ -140,7 +140,7 @@ export function EnvironmentDialog({
                       className="border-outline-variant flex items-center gap-1 border-b px-1 py-1 last:border-b-0"
                     >
                       <input
-                        className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface w-40 shrink-0 border px-1.5 py-1 font-mono text-[12px] outline-none"
+                        className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface focus-visible:ring-primary w-40 shrink-0 border px-1.5 py-1 font-mono text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
                         placeholder="name"
                         value={entry.name}
                         spellCheck={false}
@@ -163,7 +163,7 @@ export function EnvironmentDialog({
                       />
                       <input
                         className={cn(
-                          'rounded-control border-outline-variant bg-surface-container-lowest text-on-surface min-w-0 flex-1 border px-1.5 py-1 font-mono text-[12px] outline-none'
+                          'focus-visible:ring-primary rounded-control border-outline-variant bg-surface-container-lowest text-on-surface min-w-0 flex-1 border px-1.5 py-1 font-mono text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset'
                         )}
                         placeholder="value"
                         value={show ? entry.value : maskValue(entry.value)}
@@ -193,7 +193,7 @@ export function EnvironmentDialog({
                       <label className="font-ui text-on-surface-variant flex shrink-0 items-center gap-1 px-1 text-[11px]">
                         <input
                           type="checkbox"
-                          className="accent-primary"
+                          className="accent-primary focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2"
                           checked={entry.secret}
                           onChange={(e) =>
                             update({

@@ -37,7 +37,7 @@ export function CalcToolbar({
 }) {
   const key =
     'font-ui rounded-control border-outline-variant text-on-surface hover:bg-surface-container-high ' +
-    'h-6 border px-1.5 text-[10px] font-semibold disabled:opacity-40'
+    'h-6 border px-1.5 text-[10px] font-semibold disabled:opacity-40 outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
 
   return (
     <div className="border-outline-variant bg-surface-container-low flex flex-none items-center gap-1 border-b px-2 py-1">

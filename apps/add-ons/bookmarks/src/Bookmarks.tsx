@@ -555,7 +555,7 @@ export function Bookmarks({ windowId: _windowId }: { windowId: string }) {
             }}
             placeholder="Search bookmarks…"
             aria-label="Search bookmarks"
-            className="font-content text-on-surface placeholder:text-on-surface-variant min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
           {query !== '' && (
             <Button

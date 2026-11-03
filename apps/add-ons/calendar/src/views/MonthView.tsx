@@ -68,7 +68,7 @@ export function MonthView({ anchor, occurrences, onCreate, onOpen }: MonthViewPr
                     }
                   }}
                   className={cn(
-                    'border-outline-variant hover:bg-surface-container flex cursor-pointer flex-col items-start gap-0.5 overflow-hidden border-r p-1 text-left last:border-r-0',
+                    'focus-visible:ring-primary border-outline-variant hover:bg-surface-container flex cursor-pointer flex-col items-start gap-0.5 overflow-hidden border-r p-1 text-left outline-none last:border-r-0 focus-visible:ring-2 focus-visible:ring-inset',
                     !inMonth && 'text-on-surface-variant/60'
                   )}
                 >
@@ -101,7 +101,7 @@ export function MonthView({ anchor, occurrences, onCreate, onOpen }: MonthViewPr
                           }
                         }}
                         className={cn(
-                          'text-on-surface w-full truncate border-l-2 px-1 py-px text-[10px]',
+                          'focus-visible:ring-primary text-on-surface w-full truncate border-l-2 px-1 py-px text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
                           eventColorClass(occurrence.event.color)
                         )}
                       >

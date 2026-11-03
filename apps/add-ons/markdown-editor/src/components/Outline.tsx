@@ -49,7 +49,7 @@ export function Outline({
                   onClick={() => onSelect(heading)}
                   title={heading.title}
                   className={cn(
-                    'font-ui rounded-item block w-full truncate px-2 py-0.5 text-left text-[11px]',
+                    'focus-visible:ring-primary font-ui rounded-item block w-full truncate px-2 py-0.5 text-left text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
                     index === activeIndex
                       ? 'bg-primary-container text-on-primary-container'
                       : 'text-on-surface hover:bg-surface-container-high'

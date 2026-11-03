@@ -82,7 +82,7 @@ export function AgendaView({ anchor, occurrences, onOpen, query }: AgendaViewPro
                   key={`${event.id}-${occurrence.occurrenceDate}`}
                   type="button"
                   onClick={() => onOpen(occurrence)}
-                  className="border-outline-variant hover:bg-surface-container flex w-full items-start gap-2 border-b px-3 py-1.5 text-left"
+                  className="border-outline-variant hover:bg-surface-container focus-visible:ring-primary flex w-full items-start gap-2 border-b px-3 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 >
                   <span
                     className={cn(

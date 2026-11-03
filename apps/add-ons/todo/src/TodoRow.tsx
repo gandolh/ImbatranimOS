@@ -99,7 +99,7 @@ export function TodoRow({
             checked={selection.selected}
             onChange={() => selection.onToggle(todo.id)}
             aria-label={`Select ${todo.text}`}
-            className="accent-primary shrink-0"
+            className="accent-primary focus-visible:outline-primary shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2"
           />
         ) : (
           // Hidden from assistive tech: dragging is a mouse affordance, and the
@@ -123,7 +123,7 @@ export function TodoRow({
           type="button"
           onClick={() => onPatch(todo.id, { completed: !completed })}
           className={cn(
-            'rounded-small flex h-4 w-4 shrink-0 items-center justify-center border',
+            'focus-visible:ring-primary rounded-small flex h-4 w-4 shrink-0 items-center justify-center border outline-none focus-visible:ring-2 focus-visible:ring-inset',
             completed
               ? 'border-primary-container bg-primary-container'
               : 'border-outline-variant bg-transparent'
@@ -145,7 +145,7 @@ export function TodoRow({
         {editing ? (
           <input
             ref={inputRef}
-            className="font-content text-on-surface min-w-0 flex-1 bg-transparent text-[13px] outline-none"
+            className="font-content text-on-surface focus-visible:ring-primary min-w-0 flex-1 bg-transparent text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commitEdit}
@@ -174,7 +174,7 @@ export function TodoRow({
             onClick={() => setDueOpen((open) => !open)}
             title="Change the due date"
             className={cn(
-              'rounded-small font-ui shrink-0 border px-1 text-[10px] tabular-nums',
+              'focus-visible:ring-primary rounded-small font-ui shrink-0 border px-1 text-[10px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset',
               completed
                 ? 'border-outline-variant text-on-surface-variant opacity-50'
                 : overdue
@@ -312,7 +312,7 @@ function ListPicker({
       <button
         type="button"
         onClick={onClose}
-        className="text-on-surface-variant hover:text-on-surface font-ui text-[11px]"
+        className="text-on-surface-variant hover:text-on-surface font-ui focus-visible:ring-primary text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         Cancel
       </button>
@@ -335,7 +335,7 @@ function PickerChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'font-ui rounded-control border px-1.5 py-0.5 text-[11px]',
+        'focus-visible:ring-primary font-ui rounded-control border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
         active
           ? 'border-primary bg-primary-container text-on-primary-container'
           : 'border-outline-variant text-on-surface hover:bg-surface-container'
@@ -366,7 +366,7 @@ function DueEditor({
         autoFocus
         aria-label="Due date"
         onChange={(e) => setDate(e.target.value)}
-        className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface border px-1.5 py-0.5 text-[12px] outline-none"
+        className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary border px-1.5 py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
       />
       <input
         type="time"
@@ -374,13 +374,13 @@ function DueEditor({
         aria-label="Due time (optional)"
         onChange={(e) => setTime(e.target.value)}
         disabled={!date}
-        className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface border px-1.5 py-0.5 text-[12px] outline-none disabled:opacity-50"
+        className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary border px-1.5 py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:opacity-50"
       />
       <button
         type="button"
         onClick={() => onChange(dueAtFromInput(date, time || undefined))}
         disabled={!date}
-        className="rounded-control border-primary bg-primary text-on-primary font-ui border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
+        className="rounded-control border-primary bg-primary text-on-primary font-ui focus-visible:ring-primary border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:opacity-50"
       >
         Set
       </button>
@@ -388,7 +388,7 @@ function DueEditor({
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="rounded-control border-outline-variant text-on-surface font-ui border px-1.5 py-0.5 text-[11px]"
+          className="rounded-control border-outline-variant text-on-surface font-ui focus-visible:ring-primary border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           Clear
         </button>
@@ -396,7 +396,7 @@ function DueEditor({
       <button
         type="button"
         onClick={onClose}
-        className="text-on-surface-variant font-ui px-1 text-[11px]"
+        className="text-on-surface-variant font-ui focus-visible:ring-primary px-1 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         Cancel
       </button>

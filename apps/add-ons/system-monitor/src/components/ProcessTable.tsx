@@ -128,7 +128,7 @@ export function ProcessTable({
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Filter by name or pid"
           aria-label="Filter processes"
-          className="font-ui text-on-surface placeholder:text-on-surface-variant min-w-0 flex-1 bg-transparent text-[11px] outline-none"
+          className="font-ui text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
         />
         <span className="font-ui text-on-surface-variant shrink-0 text-[10px] tabular-nums">
           {filter ? `${visible.length} / ${processes.length}` : `${processes.length}`}
@@ -189,7 +189,7 @@ export function ProcessTable({
                     <button
                       onClick={() => void handleKill(p)}
                       disabled={killMutation.isPending && killMutation.variables?.pid === p.pid}
-                      className="text-on-surface-variant hover:text-error transition-colors disabled:opacity-40"
+                      className="text-on-surface-variant hover:text-error focus-visible:ring-primary transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:opacity-40"
                       aria-label={`End ${p.name}, pid ${p.pid}`}
                       title={
                         isSelf

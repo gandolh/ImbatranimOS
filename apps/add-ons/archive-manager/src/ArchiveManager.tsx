@@ -284,7 +284,7 @@ export function ArchiveManager({ windowId: _windowId }: { windowId: string }) {
           title="Close"
           aria-label="Close"
           onClick={close}
-          className="rounded-control hover:bg-error hover:text-on-error border-outline-variant flex h-7 w-7 items-center justify-center border transition-colors"
+          className="rounded-control hover:bg-error hover:text-on-error border-outline-variant focus-visible:ring-primary flex h-7 w-7 items-center justify-center border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <X size={14} strokeWidth={1.75} />
         </button>
@@ -414,7 +414,7 @@ export function ArchiveManager({ windowId: _windowId }: { windowId: string }) {
             <button
               onClick={close}
               className={cn(
-                'rounded-control border-outline-variant hover:bg-surface-container-high self-end border px-3 py-1.5',
+                'focus-visible:ring-primary rounded-control border-outline-variant hover:bg-surface-container-high self-end border px-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset',
                 'text-[12px] font-semibold transition-colors'
               )}
             >

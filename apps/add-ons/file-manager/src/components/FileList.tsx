@@ -156,7 +156,7 @@ export function FileList({
                     }}
                     onBlur={onRenameCommit}
                     onClick={(e) => e.stopPropagation()}
-                    className="rounded-control border-primary bg-surface-container-lowest font-content text-on-surface w-full border px-1 py-0 text-[12px] outline-none"
+                    className="rounded-control border-primary bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary w-full border px-1 py-0 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
                   />
                 ) : (
                   <span className="select-none">{entry.name}</span>
@@ -212,7 +212,7 @@ export function FileList({
                       <a
                         href={fs.downloadUrl(root, entry.path)}
                         download={entry.name}
-                        className="rounded-control text-on-surface hover:border-outline-variant hover:bg-surface-container inline-flex h-5 w-5 cursor-pointer items-center justify-center border border-transparent"
+                        className="rounded-control text-on-surface hover:border-outline-variant hover:bg-surface-container focus-visible:ring-primary inline-flex h-5 w-5 cursor-pointer items-center justify-center border border-transparent outline-none focus-visible:ring-2 focus-visible:ring-inset"
                       >
                         <Download size={11} />
                       </a>

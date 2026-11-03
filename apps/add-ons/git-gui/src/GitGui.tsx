@@ -688,7 +688,7 @@ function ChangeSection({
                 >
                   <input
                     type="checkbox"
-                    className="accent-primary shrink-0 cursor-pointer"
+                    className="accent-primary focus-visible:outline-primary shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
                     checked={checked.has(key)}
                     aria-label={`Select ${e.path}`}
                     onChange={() => onToggle(key)}

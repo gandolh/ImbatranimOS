@@ -40,7 +40,7 @@ export function Calculator({ windowId }: { windowId: string }) {
             onClick={() => setMode(tab.id)}
             aria-pressed={mode === tab.id}
             className={cn(
-              'font-ui flex-1 border-b-2 px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors',
+              'focus-visible:ring-primary font-ui flex-1 border-b-2 px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset',
               mode === tab.id
                 ? 'border-primary text-on-surface'
                 : 'text-on-surface-variant hover:text-on-surface border-transparent'

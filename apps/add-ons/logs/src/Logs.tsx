@@ -114,7 +114,7 @@ export function Logs() {
             }}
             placeholder="Filter the log…"
             aria-label="Filter the log"
-            className="font-content text-on-surface placeholder:text-on-surface-variant min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
           {query !== '' && (
             <Button
@@ -134,7 +134,7 @@ export function Logs() {
             onClick={() => setLevel((current) => (current === l.id ? null : l.id))}
             aria-pressed={level === l.id}
             className={cn(
-              'border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors',
+              'focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset',
               level === l.id
                 ? 'bg-primary-container text-on-primary-container border-primary'
                 : 'hover:bg-surface-container-high'
@@ -149,7 +149,7 @@ export function Logs() {
           aria-pressed={follow}
           title="Re-read the newest entries every few seconds"
           className={cn(
-            'border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors',
+            'focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset',
             follow
               ? 'bg-primary-container text-on-primary-container border-primary'
               : 'hover:bg-surface-container-high'
@@ -227,7 +227,7 @@ function Row({ entry, open, onToggle }: { entry: LogEntry; open: boolean; onTogg
       <button
         onClick={onToggle}
         aria-expanded={open}
-        className="hover:bg-surface-container-low flex w-full items-center gap-2 px-2 py-1 text-left text-[11px]"
+        className="hover:bg-surface-container-low focus-visible:ring-primary flex w-full items-center gap-2 px-2 py-1 text-left text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         {open ? (
           <ChevronDown size={11} className="text-on-surface-variant shrink-0" />

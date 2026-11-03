@@ -17,11 +17,11 @@ type FolderTreeProps = {
  */
 export function FolderTree({ root, rootLabel, currentPath, onNavigate }: FolderTreeProps) {
   return (
-    <div className="font-ui flex h-full flex-col gap-0.5 py-1 text-[12px]">
+    <div className="font-ui flex h-full flex-col gap-0.5 px-(--k-list-inset) py-1 text-[12px]">
       <button
         onClick={() => onNavigate('')}
         className={cn(
-          'flex items-center gap-1 px-2 py-0.5 text-left',
+          'rounded-item flex items-center gap-1 px-2 py-0.5 text-left',
           currentPath === ''
             ? 'bg-primary-container text-on-primary-container'
             : 'text-on-surface hover:bg-surface-container'
@@ -99,7 +99,7 @@ function TreeNode({ root, entry, depth, currentPath, onNavigate }: TreeNodeProps
     <div>
       <div
         className={cn(
-          'flex items-center gap-0.5',
+          'rounded-item flex items-center gap-0.5',
           isActive
             ? 'bg-primary-container text-on-primary-container'
             : 'text-on-surface hover:bg-surface-container'

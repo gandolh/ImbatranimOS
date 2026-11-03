@@ -284,9 +284,11 @@ export const Window = React.memo(function Window({
           }}
           className={cn(
             'bg-surface-container-low overflow-hidden',
+            // Square against the screen's edges: maximised or snapped.
+            !instance.isMaximized && !instance.snapState && 'rounded-window',
             isFocused
-              ? 'border-primary border shadow-[0_18px_50px_rgba(0,0,0,0.5)]'
-              : 'border-outline-variant border shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
+              ? 'border-primary apricot:border-outline-variant border shadow-(--k-shadow-window-focused)'
+              : 'border-outline-variant border shadow-(--k-shadow-window)'
           )}
           onClickCapture={handleWindowClickCapture}
           onClick={handleWindowClick}
@@ -327,7 +329,7 @@ export const Window = React.memo(function Window({
             <span className="flex min-w-0 items-center gap-2 pr-2 select-none">
               <span
                 className={cn(
-                  'h-2.5 w-2.5 shrink-0',
+                  'rounded-control h-2.5 w-2.5 shrink-0',
                   isFocused ? 'bg-primary' : 'bg-outline-variant'
                 )}
               />
@@ -393,7 +395,7 @@ function TitleBarButton({ onClick, title, isClose = false, children }: TitleBarB
       onClick={onClick}
       title={title}
       className={cn(
-        'flex h-7 w-7 items-center justify-center',
+        'rounded-control flex h-7 w-7 items-center justify-center',
         'cursor-pointer border-none text-current outline-none',
         'transition-colors duration-75',
         isClose ? 'hover:bg-error hover:text-on-error' : 'hover:bg-surface-container-highest',

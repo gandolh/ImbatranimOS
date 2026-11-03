@@ -61,6 +61,12 @@ const BEFORE: [string, string][] = [
   // per token block, Figtree in Apricot and Space Grotesk in Classic.
   ['--font-ui', 'var(--k-font-ui)'],
   ['--font-content', "'Inter', ui-sans-serif, system-ui, sans-serif"],
+  // The corner radii (2026-11-03): per theme, 0px in Classic.
+  ['--radius-window', 'var(--k-radius-window)'],
+  ['--radius-menu', 'var(--k-radius-menu)'],
+  ['--radius-control', 'var(--k-radius-control)'],
+  ['--radius-item', 'var(--k-radius-item)'],
+  ['--radius-tile', 'var(--k-radius-tile)'],
   ['--spacing-half', '4px'],
   ['--spacing-base', '8px'],
   ['--spacing-double', '16px'],

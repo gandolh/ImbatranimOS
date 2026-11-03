@@ -33,7 +33,7 @@ export function Select({
         )}
         <BaseSelect.Trigger
           className={cn(
-            'border-outline-variant bg-surface-container-low flex w-full items-center justify-between border px-2.5 py-1.5',
+            'border-outline-variant bg-surface-container-low rounded-control flex w-full items-center justify-between border px-2.5 py-1.5',
             'font-ui text-on-surface text-[12px]',
             'hover:bg-surface-container-high cursor-pointer transition-colors outline-none',
             'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
@@ -68,9 +68,9 @@ export function Select({
           <BaseSelect.Positioner sideOffset={1} className="z-[1000]">
             <BaseSelect.Popup
               className={cn(
-                'border-outline-variant bg-surface-container-lowest min-w-[8rem] border',
-                'shadow-[0_10px_28px_rgba(0,0,0,0.4)]',
-                'py-0.5 outline-none'
+                'border-outline-variant bg-surface-container-lowest rounded-menu min-w-[8rem] border',
+                'shadow-(--k-shadow-popup)',
+                'px-(--k-list-inset) py-0.5 outline-none'
               )}
             >
               <BaseSelect.List>
@@ -79,7 +79,7 @@ export function Select({
                     key={opt.value}
                     value={opt.value}
                     className={cn(
-                      'flex cursor-pointer items-center px-2 py-1',
+                      'rounded-item flex cursor-pointer items-center px-2 py-1',
                       'font-ui text-on-surface text-[12px]',
                       'outline-none',
                       'data-[highlighted]:bg-primary-container data-[highlighted]:text-on-primary-container',

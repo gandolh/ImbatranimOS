@@ -111,7 +111,7 @@ export function Taskbar() {
   return (
     <div
       data-testid="taskbar"
-      className="border-outline-variant bg-surface-container-low font-ui fixed inset-x-0 bottom-0 z-[9000] flex items-stretch border-t"
+      className="border-outline-variant bg-surface-container-low font-ui apricot:gap-1.5 apricot:px-2 apricot:py-1.5 fixed inset-x-0 bottom-0 z-[9000] flex items-stretch border-t"
       style={{ height: TASKBAR_HEIGHT }}
     >
       {/* Start button */}
@@ -122,8 +122,8 @@ export function Taskbar() {
         aria-expanded={startOpen}
         aria-label="Start"
         className={cn(
-          'group relative flex items-center gap-2 px-4 outline-none',
-          'border-outline-variant border-r',
+          'group rounded-control relative flex items-center gap-2 px-4 outline-none',
+          'border-outline-variant apricot:border-r-0 border-r',
           'hover:bg-surface-container-high',
           'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
           startOpen && 'bg-surface-container-high'
@@ -132,7 +132,7 @@ export function Taskbar() {
         {/* accent edge when open */}
         <span
           className={cn(
-            'bg-primary absolute inset-x-0 top-0 h-[2px] transition-opacity',
+            'bg-primary apricot:hidden absolute inset-x-0 top-0 h-[2px] transition-opacity',
             startOpen ? 'opacity-100' : 'opacity-0'
           )}
         />
@@ -156,8 +156,8 @@ export function Taskbar() {
         aria-label="Search"
         title="Search (Ctrl+K)"
         className={cn(
-          'group relative flex items-center gap-2 px-3 outline-none',
-          'border-outline-variant border-r',
+          'group rounded-control relative flex items-center gap-2 px-3 outline-none',
+          'border-outline-variant apricot:border-r-0 apricot:bg-surface-container border-r',
           'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high',
           'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
         )}
@@ -166,7 +166,7 @@ export function Taskbar() {
       </button>
 
       {/* Running-window buttons */}
-      <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">
+      <div className="apricot:px-0 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">
         {visibleWindows.map((win) => {
           const app = APP_REGISTRY.find((a) => a.id === win.appId)
           const Icon = app?.icon
@@ -182,20 +182,22 @@ export function Taskbar() {
               }}
               title={win.title}
               className={cn(
-                'relative flex h-[34px] max-w-[168px] min-w-[44px] shrink-0 items-center gap-2 px-2.5 outline-none',
+                'rounded-control relative flex h-[34px] max-w-[168px] min-w-[44px] shrink-0 items-center gap-2 px-2.5 outline-none',
                 'border border-transparent text-[12px]',
                 'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
                 isFocused
-                  ? 'border-outline-variant bg-surface-container-high text-on-surface'
+                  ? 'border-outline-variant apricot:border-transparent bg-surface-container-high text-on-surface'
                   : minimized
                     ? 'text-on-surface-variant hover:bg-surface-container'
                     : 'text-on-surface hover:bg-surface-container'
               )}
             >
-              {/* focus indicator — accent bar along the bottom */}
+              {/* focus indicator — an accent bar along the bottom; in Apricot a
+                  short centred dot */}
               <span
                 className={cn(
                   'bg-primary absolute inset-x-0 bottom-0 h-[2px] transition-opacity',
+                  'apricot:inset-x-auto apricot:left-1/2 apricot:bottom-[3px] apricot:h-[3px] apricot:w-3.5 apricot:-translate-x-1/2 apricot:rounded-control',
                   isFocused ? 'opacity-100' : 'opacity-0'
                 )}
               />
@@ -215,7 +217,7 @@ export function Taskbar() {
       <WorkspacePips />
 
       {/* System tray */}
-      <div className="border-outline-variant flex items-stretch border-l">
+      <div className="border-outline-variant apricot:border-l-0 flex items-stretch border-l">
         <Tray />
       </div>
 

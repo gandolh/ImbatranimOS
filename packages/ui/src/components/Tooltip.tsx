@@ -30,7 +30,7 @@ export function Tooltip({ content, children, side = 'top' }: TooltipProps) {
           <BaseTooltip.Positioner side={side} sideOffset={4} className="z-[1100]">
             <BaseTooltip.Popup
               className={cn(
-                'border-outline-variant bg-inverse-surface border px-2 py-1',
+                'border-outline-variant bg-inverse-surface rounded-control border px-2 py-1',
                 'font-ui text-inverse-on-surface text-[11px]',
                 'shadow-[0_6px_18px_rgba(0,0,0,0.4)]'
               )}

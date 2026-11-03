@@ -103,10 +103,11 @@ export function DesktopIcon({
       {/* Icon box */}
       <div
         className={cn(
-          'flex h-12 w-12 items-center justify-center border transition-colors',
+          'rounded-tile flex h-12 w-12 items-center justify-center border transition-colors',
           selected
             ? 'border-primary bg-primary-container text-on-primary-container'
-            : 'border-outline-variant bg-surface-container-low/80 text-on-surface backdrop-blur-sm'
+            : // Apricot puts each icon on a light tile, drawn in the strong accent.
+              'border-outline-variant bg-surface-container-low/80 text-on-surface apricot:border-transparent apricot:bg-surface-container-lowest apricot:text-primary apricot:shadow-(--k-shadow-tile) backdrop-blur-sm'
         )}
       >
         <Icon size={22} strokeWidth={1.5} className="text-current" />
@@ -115,7 +116,7 @@ export function DesktopIcon({
       {/* Label */}
       <span
         className={cn(
-          'font-ui text-center leading-tight',
+          'font-ui rounded-item text-center leading-tight',
           'w-full overflow-hidden px-1 py-0.5 text-[11px]',
           'line-clamp-2 break-words',
           selected

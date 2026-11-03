@@ -44,7 +44,7 @@ export function Button({ variant = 'default', size = 'md', className, ...props }
   return (
     <BaseButton
       className={cn(
-        'font-ui inline-flex cursor-pointer items-center gap-1.5 border font-medium',
+        'font-ui rounded-control inline-flex cursor-pointer items-center gap-1.5 border font-medium',
         'transition-none outline-none select-none',
         'disabled:cursor-not-allowed disabled:opacity-50',
         variantClasses[variant],

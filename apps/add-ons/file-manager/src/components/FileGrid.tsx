@@ -109,7 +109,7 @@ export function FileGrid({
                     onContextMenu(entry, e)
                   }}
                   className={cn(
-                    'flex cursor-pointer flex-col items-center gap-1 px-1 py-2 text-center transition-colors',
+                    'rounded-item flex cursor-pointer flex-col items-center gap-1 px-1 py-2 text-center transition-colors',
                     isSelected
                       ? 'bg-primary-container text-on-primary-container'
                       : 'hover:bg-surface-container'

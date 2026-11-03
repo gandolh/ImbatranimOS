@@ -76,8 +76,8 @@ export function ContextMenu({ x, y, items, onClose, label = 'Context menu' }: Co
               e.stopPropagation()
             }}
             className={cn(
-              'border-outline-variant bg-surface-container-lowest min-w-40 border py-1',
-              'shadow-[0_10px_28px_rgba(0,0,0,0.4)] outline-none'
+              'border-outline-variant bg-surface-container-lowest rounded-menu min-w-40 border px-(--k-list-inset) py-1',
+              'shadow-(--k-shadow-popup) outline-none'
             )}
           >
             {items.map((item, i) => {
@@ -91,7 +91,7 @@ export function ContextMenu({ x, y, items, onClose, label = 'Context menu' }: Co
               }
               const isCheckbox = item.checked !== undefined
               const itemClass = cn(
-                'font-ui flex w-full cursor-default items-center gap-2 px-3 py-1 text-left text-[12px] outline-none select-none',
+                'font-ui rounded-item flex w-full cursor-default items-center gap-2 px-3 py-1 text-left text-[12px] outline-none select-none',
                 item.disabled
                   ? 'text-on-surface-variant/50'
                   : item.danger

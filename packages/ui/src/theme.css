@@ -64,6 +64,14 @@
   --font-ui: var(--k-font-ui);
   --font-content: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
+  /* Corners — per theme (index.css): Apricot's soft radii, 0 in Classic.
+     Only these five; numeric rounded-* classes are not used. */
+  --radius-window: var(--k-radius-window);
+  --radius-menu: var(--k-radius-menu);
+  --radius-control: var(--k-radius-control);
+  --radius-item: var(--k-radius-item);
+  --radius-tile: var(--k-radius-tile);
+
   /* Spacing */
   --spacing-half: 4px;
   --spacing-base: 8px;

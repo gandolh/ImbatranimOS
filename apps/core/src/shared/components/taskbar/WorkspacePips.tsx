@@ -26,7 +26,7 @@ export function WorkspacePips() {
 
   return (
     <div
-      className="border-outline-variant flex items-center gap-1 border-l px-2"
+      className="border-outline-variant apricot:border-l-0 flex items-center gap-1 border-l px-2"
       role="group"
       aria-label="Workspaces"
     >
@@ -45,7 +45,7 @@ export function WorkspacePips() {
             }
             title={`Workspace ${id} (Ctrl+Alt+${id})`}
             className={cn(
-              'relative flex h-[22px] w-[22px] items-center justify-center border text-[10px] tabular-nums transition-colors',
+              'rounded-control relative flex h-[22px] w-[22px] items-center justify-center border text-[10px] tabular-nums transition-colors',
               active
                 ? 'border-primary bg-primary-container text-on-primary-container'
                 : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-high'

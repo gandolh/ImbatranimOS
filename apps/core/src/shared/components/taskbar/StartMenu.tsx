@@ -108,8 +108,10 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       onKeyDown={handleMenuKeyDown}
       className={cn(
         'absolute bottom-full left-0 z-[9001] mb-1 flex w-[280px] flex-col',
+        // Apricot's menu floats clear of the taskbar and the screen's edge.
+        'apricot:left-2 apricot:mb-2 rounded-menu overflow-hidden',
         'border-outline-variant bg-surface-container-low border',
-        'shadow-[0_-8px_32px_rgba(0,0,0,0.45)]'
+        'shadow-(--k-shadow-menu)'
       )}
     >
       {/* Brand header */}
@@ -124,7 +126,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       </div>
 
       {/* App list */}
-      <div className="flex max-h-[52vh] flex-col overflow-y-auto py-1">
+      <div className="apricot:px-1.5 flex max-h-[52vh] flex-col overflow-y-auto py-1">
         {enabledApps.map((app) => {
           const Icon = app.icon
           return (
@@ -136,12 +138,12 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                 onClose()
               }}
               className={cn(
-                'group flex items-center gap-3 px-4 py-1.5 text-left outline-none',
+                'group rounded-item flex items-center gap-3 px-4 py-1.5 text-left outline-none',
                 'hover:bg-primary-container hover:text-on-primary-container',
                 'focus-visible:bg-primary-container focus-visible:text-on-primary-container'
               )}
             >
-              <span className="border-outline-variant bg-surface-container-lowest flex h-7 w-7 shrink-0 items-center justify-center border group-hover:border-transparent group-hover:bg-white/15">
+              <span className="border-outline-variant bg-surface-container-lowest rounded-control flex h-7 w-7 shrink-0 items-center justify-center border group-hover:border-transparent group-hover:bg-white/15">
                 <Icon size={16} strokeWidth={1.75} />
               </span>
               <span className="min-w-0">
@@ -157,7 +159,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
 
       {/* Recent files — hidden entirely while the list is empty */}
       {recent.length > 0 && (
-        <div className="border-outline-variant border-t py-1">
+        <div className="border-outline-variant apricot:px-1.5 border-t py-1">
           <div className="flex items-center justify-between px-4 pt-1 pb-0.5">
             <span className="text-on-surface-variant flex items-center gap-1.5 text-[9px] font-semibold tracking-widest uppercase">
               <History size={10} strokeWidth={2} />
@@ -186,7 +188,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                   onClose()
                 }}
                 className={cn(
-                  'group flex w-full items-center gap-3 px-4 py-1 text-left outline-none',
+                  'group rounded-item flex w-full items-center gap-3 px-4 py-1 text-left outline-none',
                   'hover:bg-primary-container hover:text-on-primary-container',
                   'focus-visible:bg-primary-container focus-visible:text-on-primary-container'
                 )}

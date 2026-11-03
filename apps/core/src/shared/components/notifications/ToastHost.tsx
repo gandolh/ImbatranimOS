@@ -51,7 +51,7 @@ function Toast({ item }: { item: NotificationItem }) {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHeld(false)
       }}
       className={cn(
-        'font-ui pointer-events-auto relative flex w-80 items-start gap-2.5 overflow-hidden',
+        'font-ui rounded-menu pointer-events-auto relative flex w-80 items-start gap-2.5 overflow-hidden',
         'border-outline-variant bg-surface-container-low border py-2.5 pr-2 pl-3',
         'shadow-[0_6px_24px_rgba(0,0,0,0.35)]'
       )}

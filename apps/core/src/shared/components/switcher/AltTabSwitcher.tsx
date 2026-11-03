@@ -148,7 +148,7 @@ export function AltTabSwitcher() {
       className="fixed inset-0 z-[10001] flex items-center justify-center"
       aria-hidden
     >
-      <div className="border-outline-variant bg-surface-container flex max-w-[80vw] gap-2 overflow-x-auto border p-3 shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
+      <div className="border-outline-variant bg-surface-container rounded-window flex max-w-[80vw] gap-2 overflow-x-auto border p-3 shadow-(--k-shadow-dialog)">
         {cells.map((w, i) => {
           const app = APP_REGISTRY.find((a) => a.id === w.appId)
           const Icon = app?.icon

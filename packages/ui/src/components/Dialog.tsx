@@ -29,8 +29,8 @@ export function Dialog({
         <BaseDialog.Popup
           className={cn(
             'fixed top-1/2 left-1/2 z-[1001] -translate-x-1/2 -translate-y-1/2',
-            'border-outline-variant bg-surface-container-lowest min-w-[320px] border',
-            'shadow-[0_24px_60px_rgba(0,0,0,0.55)]',
+            'border-outline-variant bg-surface-container-lowest rounded-window min-w-[320px] overflow-hidden border',
+            'shadow-(--k-shadow-dialog)',
             'outline-none',
             className
           )}
@@ -40,7 +40,7 @@ export function Dialog({
               <BaseDialog.Title className="font-ui text-on-surface text-[13px] font-semibold">
                 {title}
               </BaseDialog.Title>
-              <BaseDialog.Close className="border-outline-variant bg-surface-container-low font-ui text-on-surface hover:bg-error hover:text-on-error flex h-5 w-5 cursor-pointer items-center justify-center border text-[12px]">
+              <BaseDialog.Close className="border-outline-variant bg-surface-container-low font-ui text-on-surface hover:bg-error hover:text-on-error rounded-control flex h-5 w-5 cursor-pointer items-center justify-center border text-[12px]">
                 ×
               </BaseDialog.Close>
             </div>

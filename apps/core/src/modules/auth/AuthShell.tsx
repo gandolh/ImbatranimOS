@@ -25,7 +25,7 @@ export function AuthShell({
       {/* subtle vignette so the card reads as a lit panel */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.35)_100%)]" />
 
-      <div className="border-outline-variant bg-surface-container-low relative w-[360px] border shadow-[0_28px_80px_rgba(0,0,0,0.55)]">
+      <div className="border-outline-variant bg-surface-container-low rounded-window relative w-[360px] overflow-hidden border shadow-[0_28px_80px_rgba(0,0,0,0.55)]">
         {/* accent top edge */}
         <div className="bg-primary h-[3px] w-full" />
 

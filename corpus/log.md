@@ -4557,3 +4557,15 @@ in the four combinations. In Apricot, `primary` becomes a deep shade of the acce
 ring and border use stays readable; the pastel moves to `primary-container`, which 10 uses for
 selected states. They don't depend on 01-06 (Linux apps), which wait for a quiet machine, and run
 before them.
+
+## [2026-11-03] brief | 08 done: themes and mode in the stores
+
+The appearance store holds a theme, a mode and an accent per theme. The wallpaper store holds a
+wallpaper per theme. `<html>` carries `data-os-theme` beside `data-theme`, which now means the
+mode. Both stores are at version 1: a machine saved before themes moves once to Apricot light,
+keeping its accent and wallpaper as Classic's, whether the old blob comes from the mirror or the
+server. Nothing looks different yet. `system.appearance.get().accent` now carries the accent's
+hex, as its type always said, instead of its id. Classic light and dark screenshots of the File
+Manager and Settings windows match the ones taken before, pixel for pixel. Built in `93604c2`
+(1.70.0). The capture recipe that 09-15 reuse is in the brief's outcome. Run alongside briefs
+01-06, which a cloud session is building on `claude/linux-apps-layer`.

@@ -109,3 +109,66 @@ before them, since 01-06 wait for a quiet machine.
 
 - `apps/core/src/index.css`, `packages/ui/src/theme.css`,
   `apps/core/src/theme.test.ts` (09 and 11 own them).
+
+## Outcome (2026-11-03)
+
+**Built in `93604c2` (version 1.70.0), checked against a host run in headless
+Chrome.** The appearance store holds `theme` (`apricot | classic`), `mode`
+(`light | dark`) and `accents` per theme. The old `ThemeMode` is `Mode`.
+`ACCENT_PRESETS` is per theme, with Apricot's five pastels and `#33241b` on
+them. The wallpaper store holds `wallpapers` per theme, and
+`useCurrentWallpaper()` reads the current theme's. `applyAppearance(state)`
+sets `data-os-theme`, `data-theme`, `--accent` and `--accent-on`.
+
+The one-time move: both stores are at `version: 1`. `migrate` and a custom
+`merge` both go through `readAppearance` / `readWallpapers`. These read the
+pre-theme shape (a `theme` that is a mode, or a flat `wallpaper`) and the
+current one, falling back per field. So a blob saved with no `version`
+(which persist hands to `merge` without calling `migrate`) moves too. Persist
+writes the migrated shape back once, whichever way the old blob arrives: the
+localStorage mirror at import, or the server's copy after `hydratePrefs`.
+`setAccent` and `setWallpaper` ignore an id that isn't the current theme's.
+
+**A visible change for add-ons and kit apps:** `system.appearance.get().accent`
+used to carry the accent's id (`'crimson'`), though the type and the sandbox
+tests already described a hex. It now carries the current accent's hex.
+Nothing in this repo read the id. A kit app in another repo that compared it
+against ids would see the change.
+
+Settings: the Light/Dark control (still labelled "Theme", relabelled by 14)
+sets the mode, and the accent swatches list the current theme's presets. The
+wallpaper picker still lists Classic's three. In Apricot, picking one does
+nothing until 13 brings Apricot's set.
+
+**Checked:**
+- Typecheck, lint and prettier pass on the touched files. The new
+  `appearanceStore.test.ts` has nine tests: empty storage gives Apricot light
+  and writes nothing; an old blob moves once from the mirror and from the
+  server's copy; a version-1 blob is left alone; accent and wallpaper are
+  set per theme; `applyAppearance` sets both attributes. Also run:
+  `prefs.test.ts`, `sandboxBridge.test.ts`, the marketplace host and scope
+  tests, and the auth tests.
+- In the browser, an old blob (`dark`, `emerald`, `linen`) on the server and
+  in the mirror came back after a reload as Apricot light. The server's copy
+  was rewritten at version 1 with `classic: 'emerald'` and `classic:
+  'linen'`.
+- Settings' Dark button changed `data-theme` only.
+- A fresh profile's sign-in screen carried `apricot` / `light`.
+- Classic light and dark screenshots, before and after, were the same in the
+  File Manager and Settings windows (0 pixels). On the desktop and the open
+  Start menu, they differed only in the tray's live stats and clock.
+
+**How the screenshots are taken** (09-15 reuse it):
+- The backend runs from `npm run build -w apps/backend` and `node dist/main`,
+  with `HOME`, `DB_PATH`, `NOTES_DIR` and `CONFIGS_DIR` in a scratch folder.
+  The scratch home holds the demo folders, dated 2026-10-09.
+- Vite runs from `apps/core`.
+- A throwaway owner claims the scratch machine.
+- A script writes the two dotfiles through `PUT /api/prefs` and localStorage,
+  clears sessionStorage, reloads, and closes windows by `button[title=Close]`.
+  It opens desktop icons by `[role=button][aria-label=…]` and Settings from
+  Start.
+- It shoots the whole screen plus the `[data-app-id]` window elements at
+  1280×800. Window elements are compared because each new window opens a
+  step further along.
+- `compare -metric AE -fuzz 2%`.

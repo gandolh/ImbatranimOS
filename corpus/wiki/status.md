@@ -1,9 +1,9 @@
 ---
-summary: Dated snapshot (2026-11-02) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; fourteen open briefs (the Linux apps layer 01-06, the two themes 08-15); what the owner owes, open todos, and where the history lives.
-updated: 2026-11-02
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; thirteen open briefs (the Linux apps layer 01-06, in a cloud session on its own branch; the two themes 09-15, 08 done 2026-11-03); what the owner owes, open todos, and where the history lives.
+updated: 2026-11-03
 ---
 
-# Status — 2026-11-02
+# Status — 2026-11-03
 
 **The web OS is built and in daily use.** One container is the computer: Alpine
 and Node, the desktop and the API on one port, everything as the unprivileged
@@ -55,16 +55,20 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 01-06 are the Linux apps layer, in build order: Nix in the image with Firefox
 headless, the Wayland host showing a window, input and title bars, popups and
 Firefox in a window, the Linux apps pane, lifecycle and sleep
-([decisions-linux-apps.md](decisions-linux-apps.md)). They wait for a quiet
-machine (Rust and Nix builds).
+([decisions-linux-apps.md](decisions-linux-apps.md)). A Claude cloud session
+is building them on the branch `claude/linux-apps-layer` (pull request #1 on
+origin), not on `main`. Merging it will conflict on the version bump,
+`log.md` and this page.
 
 08-15 build the two themes settled on 2026-11-02, Apricot by default and
-Classic kept ([decisions-themes.md](decisions-themes.md)): the stores and the
-one-time move, Apricot's colours and accents, soft selection fills, Figtree,
-corners and chrome, wallpapers, the Settings picker, and a check of every app
-in the four combinations. They don't depend on 01-06 and run before them, one
-at a time; they deploy together after 15. 07 (research) is superseded by the
-grill.
+Classic kept ([decisions-themes.md](decisions-themes.md)), one at a time on
+`main`. 08 is done (2026-11-03): the stores hold a theme, a mode and an accent
+and wallpaper per theme, `<html>` carries `data-os-theme`, and a machine saved
+before themes moves once to Apricot light. Nothing looks different yet, and
+until 09 Apricot draws with Classic's values. Left: Apricot's colours and
+accents, soft selection fills, Figtree, corners and chrome, wallpapers, the
+Settings picker, and a check of every app in the four combinations. They
+deploy together after 15. 07 (research) is superseded by the grill.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner

@@ -4974,3 +4974,13 @@ kit and use it.
 the one-run override is calling turbo directly, since turbo refuses the flag twice. On 4 cores, six
 packages' tests through `npm test` peaked at 2 tasks at once against 6 without the flag. The full run
 under load is the owner's. Built ahead of 29, the larger brief.
+
+## [2026-11-03] brief | 29 done: a kit app asks for its server when it needs one
+
+The kit has `system.server.request()` (optional on the handle, kit 1.2.0): it starts the descriptor's
+server and resolves its URLs, or rejects with a sentence the app can show (`98f93cc`, 1.125.0). `KitAppHost`
+no longer leases before rendering or throws on a failed lease; each window's claim leases on the first
+ask, reuses it, retries after a failure, and releases on close. `NativeAppHost` keeps leasing at open
+through the same claim. Six new host tests; every package typechecks and lints. The backend's
+marketplace e2e is the owner's run. imbatranim-office's "CAD asks for its server on its first DWG"
+can now use it.

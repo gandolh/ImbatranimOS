@@ -74,3 +74,48 @@ Promoted from imbatranim-office's todo
 - `apps/core/src/modules/marketplace/useServerLease.ts`
 - `apps/core/src/system/createSystemHandle.ts` (wiring the call)
 - their tests
+
+## Outcome (2026-11-03)
+
+**Built in `98f93cc` (version 1.125.0; kit `@imbatranim/ui` 1.1.0 → 1.2.0).**
+1. **The call** is `system.server.request()`, in a new `SystemServer`
+   namespace in `system.ts` with its doc comment; it resolves
+   `{ http, ws }` (`SystemServerAddress`, what `host.server` held) or
+   rejects with an `Error` the app can show as it is. `server` is
+   **optional** on `SystemHandle`: required would break every handle fake an
+   app's tests build (imbatranim-office's included), and an older desktop has
+   none, so an app checks for it. `scopeHandle` lets `server` through for
+   every app, so a static app's ask rejects with "<app> has no server: its
+   descriptor runs none." rather than a capability error.
+2. **The host stops leasing first.** `useServerLease`'s logic became
+   `createServerClaim`. `KitApp` makes one claim per window in its state,
+   not in an effect, because the app's effects run before the host's and may
+   ask in their first; it reaches the app as `server` on the scoped handle.
+   The "Starting its server…" wait and the throw on a failed lease are gone,
+   and a kit app's `host.server` is now always `null` (its doc says so).
+   Rejections carry the backend's reason ("Office's server didn't start: 4
+   app servers are running already; close one of those apps first").
+3. **The lease's life.** The first ask takes the lease, a later one reuses
+   it, one after a failure tries again; the window's unmount releases it, and
+   a lease that arrives after the window closed is released at once. The
+   desktop runs under StrictMode, whose test remount closes and reopens the
+   claim. The backend still stops a descriptor's server when its last lease
+   goes; `MAX_SERVERS` and the crash restart are untouched.
+4. **Native apps:** `NativeAppHost` shares the code path, so it keeps leasing
+   at open through `useServerLease`, now a thin hook over the same claim.
+   Its tests pass unchanged.
+5. `createSystemHandle` wires a `server.request()` that rejects (a built-in
+   app has no server); `KitAppHost` puts the window's claim in its place.
+
+**Checked:**
+- `KitAppHost.test.tsx` (17; the old "leases before rendering" case replaced
+  by six): a `service` kit app renders with no lease; its first ask leases by
+  the descriptor's id and resolves the server's URLs; a second reuses it (one
+  POST); a failing start rejects with the backend's sentence, the window
+  stays with no crash toast, and the next ask succeeds; two windows hold a
+  lease each and each close releases its own; a lease answered after close
+  is released; a static kit app never leases and its ask says why.
+- Typecheck and lint of every package (turbo, 50 tasks); core's full suite
+  (663) and the kit's (39).
+- Not run: the backend's marketplace e2e, heavy, for the owner's full run;
+  the backend did not change.

@@ -120,4 +120,6 @@ on it. Rejected: a per-app `server: true` flag, which keeps the four other
 Office apps static but still makes every CAD window wait for the cold start,
 even for a DXF. The cost: a kit contract change (the kit grows a call to
 lease the app's server) and a change to how `KitAppHost` hosts kit apps.
+Built the same day as `system.server.request()` (kit 1.2.0); a kit app's
+`host.server` is now always null.
 

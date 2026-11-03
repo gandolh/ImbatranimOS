@@ -21,6 +21,7 @@ import { PrefsModule } from './modules/prefs/prefs.module';
 import { BrowserModule } from './modules/browser/browser.module';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { WaylandModule } from './modules/wayland/wayland.module';
+import { LinuxAppsModule } from './modules/linux-apps/linux-apps.module';
 import { UpgradeRoutesModule } from './upgrade-routes';
 
 // Prod image only: serve the built frontend from STATIC_ROOT on the API
@@ -61,6 +62,7 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
     BrowserModule,
     MarketplaceModule,
     WaylandModule,
+    LinuxAppsModule,
   ],
 })
 export class AppModule {}

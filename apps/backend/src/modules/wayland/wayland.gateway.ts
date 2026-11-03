@@ -91,6 +91,14 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.wss.close();
   }
 
+  /**
+   * True while a tab holds this desktop session's socket: it is signed in,
+   * open, and its Linux apps have a display.
+   */
+  hasSession(id: string): boolean {
+    return this.live.has(id);
+  }
+
   private onUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void {
     // See PtyGateway: an unhandled socket error while the session is checked
     // would take the process down.

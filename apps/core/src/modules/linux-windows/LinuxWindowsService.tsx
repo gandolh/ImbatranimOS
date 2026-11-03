@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { LinuxWindowsConnection } from './connection'
 import { LinuxPopupLayer } from './LinuxPopupLayer'
+import { reloadLinuxLaunchers } from './launchers'
 
 /**
  * Mounted once by the desktop, which only renders once signed in: opens this
@@ -11,6 +12,7 @@ export function LinuxWindowsService() {
   useEffect(() => {
     const connection = new LinuxWindowsConnection()
     connection.start()
+    void reloadLinuxLaunchers()
     return () => connection.stop()
   }, [])
   return <LinuxPopupLayer />

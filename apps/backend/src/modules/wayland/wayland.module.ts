@@ -10,5 +10,7 @@ import { WaylandHostService } from './wayland-host.service';
  */
 @Module({
   providers: [WaylandHostService, WaylandGateway],
+  // The Linux apps pane launches into a live session, and installs only from one.
+  exports: [WaylandGateway],
 })
 export class WaylandModule {}

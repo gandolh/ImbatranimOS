@@ -4629,3 +4629,18 @@ run found `nix store gc` keeping 1,828 derivations; `keep-derivations = false` t
 `/nix` from 24 to 15 MB. Seen and left: CJK text has no font (owner's call, in status), Firefox's
 sandbox can't make user namespaces, and one screenshot run in fourteen exited 11 after writing the
 picture. 04-06 proceed.
+
+## [2026-11-03] walk | 02 and 03 walked again, in the dev container
+
+The walk the owner owed, in headless Chromium against the dev container (dev image at 1.79.0), with
+real pointer and keyboard events, 19 checks passing. 02: foot opens an OS window (`linux:foot`)
+whose canvas follows its clock; a second tab gets its own socket and no Linux windows; closing the
+first tab ends its apps and removes its socket while the second's stays. 03: foot gets the Win7
+title bar; typing and Enter, Shift for capitals and symbols, Backspace, ArrowUp, Tab completion and
+Ctrl-C each did their job, checked by the files the commands made; the wheel scrolls the scrollback
+and a drag selects; resizing the OS window reflows foot (38×100 to 44×121); Ctrl+K opens the
+palette while foot has the keyboard; gtk3-demo gets a frame only and its header bar drags the OS
+window; the close button closes foot. Two things the walk showed about the machine rather than the
+host: every app that exits after its shell is gone stays a zombie, since PID 1 (node, or turbo in
+dev) never reaps orphans (06 adds tini); and the walk script had to hold Shift itself, since
+Playwright's `type()` sends capitals without it and the desktop passes physical keys.

@@ -59,7 +59,7 @@
 
 /* ── Apricot, light — also the bare default (the sign-in screen, nothing saved) ─ */
 :root,
-:root[data-os-theme='apricot'][data-theme='light'] {
+[data-os-theme='apricot'][data-theme='light'] {
   --k-surface: #fbf3ea;
   --k-surface-dim: #e9d6c4;
   --k-surface-bright: #fffdf9;
@@ -100,7 +100,7 @@
 }
 
 /* ── Apricot, dark ───────────────────────────────────────────────────────────── */
-:root[data-os-theme='apricot'][data-theme='dark'] {
+[data-os-theme='apricot'][data-theme='dark'] {
   --k-surface: #1f1916;
   --k-surface-dim: #181310;
   --k-surface-bright: #2e2622;
@@ -141,7 +141,7 @@
 }
 
 /* ── Classic, dark ───────────────────────────────────────────────────────────── */
-:root[data-os-theme='classic'][data-theme='dark'] {
+[data-os-theme='classic'][data-theme='dark'] {
   --k-surface: #0d0d0e;
   --k-surface-dim: #070708;
   --k-surface-bright: #1b1b1d;
@@ -165,7 +165,7 @@
 }
 
 /* ── Classic, light ──────────────────────────────────────────────────────────── */
-:root[data-os-theme='classic'][data-theme='light'] {
+[data-os-theme='classic'][data-theme='light'] {
   --k-surface: #f3f3f1;
   --k-surface-dim: #e0e0dc;
   --k-surface-bright: #ffffff;
@@ -192,7 +192,7 @@
 /* The radii are Tailwind tokens in the kit's theme.css (rounded-window and so
    on); Apricot's shadows change with the mode, so they sit in its blocks above. */
 :root,
-:root[data-os-theme='apricot'] {
+[data-os-theme='apricot'] {
   --k-radius-window: 12px;
   --k-radius-menu: 14px;
   --k-radius-control: 8px;
@@ -203,7 +203,7 @@
   --k-list-inset: 6px;
 }
 
-:root[data-os-theme='classic'] {
+[data-os-theme='classic'] {
   --k-radius-window: 0px;
   --k-radius-menu: 0px;
   --k-radius-control: 0px;
@@ -219,8 +219,9 @@
   --k-shadow-tile: none;
 }
 
-/* Classic is square everywhere, so nothing can drift into a curve there. */
-:root[data-os-theme='classic'] * {
+/* Classic is square everywhere, so nothing can drift into a curve there —
+   except inside an element scoped to Apricot (Settings' theme card). */
+:root[data-os-theme='classic'] *:not([data-os-theme='apricot'], [data-os-theme='apricot'] *) {
   border-radius: 0 !important;
 }
 

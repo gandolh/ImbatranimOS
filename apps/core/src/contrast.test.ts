@@ -17,7 +17,7 @@ const indexCss = readFileSync(join(__dirname, 'index.css'), 'utf8').replace(/\/\
 function tokens(theme: ThemeId, mode: Mode): Record<string, string> {
   const selector = `[data-os-theme='${theme}'][data-theme='${mode}']`
   const block = [...indexCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find(([, sel]) =>
-    sel.split(',').some((s) => s.trim() === `:root${selector}`)
+    sel.split(',').some((s) => s.trim() === selector)
   )
   if (!block) throw new Error(`no token block for ${selector}`)
   return Object.fromEntries(

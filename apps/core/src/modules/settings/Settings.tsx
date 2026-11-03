@@ -1,14 +1,7 @@
 import { useCallback, useState } from 'react'
-import { useCurrentWallpaper, useWallpaperStore } from '../../shared/store/wallpaperStore'
-import { WALLPAPERS } from '../../shared/components/desktop/wallpapers'
-import { useAppearanceStore, ACCENT_PRESETS, type Mode } from '../../shared/store/appearanceStore'
 import {
   Monitor,
   Palette,
-  Moon,
-  Sun,
-  Check,
-  Image,
   LayoutGrid,
   Keyboard,
   HardDrive,
@@ -17,7 +10,6 @@ import {
   Power,
   Store,
 } from 'lucide-react'
-import { cn } from '../../lib/cn'
 import { Checkbox } from '../../shared/components/ui'
 import { APP_REGISTRY } from '../../shared/registry/registry'
 import { NON_DISABLEABLE } from '../../shared/registry/enabledApps'
@@ -29,13 +21,9 @@ import { DefaultAppsSettings } from './DefaultAppsSettings'
 import { StartupSettings } from './StartupSettings'
 import { LocalPasswordForm } from '../auth/LocalScreens'
 import { AboutMachine } from './AboutMachine'
+import { AppearanceSettings } from './AppearanceSettings'
 import { MarketplaceSettings } from './MarketplaceSettings'
 import { useRegistryVersion } from '../../shared/registry/marketplace'
-
-const MODES: { id: Mode; name: string; icon: typeof Moon }[] = [
-  { id: 'dark', name: 'Dark', icon: Moon },
-  { id: 'light', name: 'Light', icon: Sun },
-]
 
 function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: string }) {
   return (
@@ -48,27 +36,12 @@ function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: str
   )
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="font-ui text-on-surface-variant mb-3 text-[11px] font-semibold tracking-widest uppercase">
-      {children}
-    </p>
-  )
-}
-
 export function Settings() {
   // Lifted so the footer and the About panel show the same version from one fetch,
   // rather than either hardcoding it or fetching twice.
   const [imageVersion, setImageVersion] = useState<string | null>(null)
   const onVersion = useCallback((v: string) => setImageVersion(v), [])
 
-  const wallpaper = useCurrentWallpaper()
-  const setWallpaper = useWallpaperStore((s) => s.setWallpaper)
-  const theme = useAppearanceStore((s) => s.theme)
-  const mode = useAppearanceStore((s) => s.mode)
-  const accent = useAppearanceStore((s) => s.accents[s.theme])
-  const setMode = useAppearanceStore((s) => s.setMode)
-  const setAccent = useAppearanceStore((s) => s.setAccent)
   const disabledApps = useAddonStore((s) => s.disabled)
   const toggleApp = useAddonStore((s) => s.toggle)
   // The Apps list includes installed marketplace apps.
@@ -86,103 +59,7 @@ export function Settings() {
         <section className="mb-10">
           <SectionHeader icon={Palette} title="Appearance" />
 
-          {/* Theme */}
-          <div className="mb-8">
-            <FieldLabel>Theme</FieldLabel>
-            <div className="flex gap-3">
-              {MODES.map((t) => {
-                const Icon = t.icon
-                const active = mode === t.id
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setMode(t.id)}
-                    className={cn(
-                      'flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 text-[12px] font-medium transition-colors outline-none',
-                      'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
-                      active
-                        ? 'border-primary bg-primary-container text-on-primary-container'
-                        : 'border-outline-variant bg-surface-container-low text-on-surface hover:bg-surface-container-high'
-                    )}
-                  >
-                    <Icon size={15} strokeWidth={1.75} />
-                    {t.name}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Accent */}
-          <div className="mb-8">
-            <FieldLabel>Accent color</FieldLabel>
-            <div className="flex flex-wrap gap-3">
-              {ACCENT_PRESETS[theme].map((preset) => {
-                const active = accent === preset.id
-                return (
-                  <button
-                    key={preset.id}
-                    onClick={() => setAccent(preset.id)}
-                    title={preset.name}
-                    aria-label={preset.name}
-                    aria-pressed={active}
-                    className={cn(
-                      'group flex items-center gap-2 border px-2.5 py-2 transition-colors outline-none',
-                      'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
-                      active
-                        ? 'border-primary bg-surface-container-high'
-                        : 'border-outline-variant bg-surface-container-low hover:bg-surface-container'
-                    )}
-                  >
-                    <span
-                      className="flex h-6 w-6 items-center justify-center"
-                      style={{
-                        backgroundColor: preset[mode].soft,
-                        color: preset[mode].softOn,
-                      }}
-                    >
-                      {active && <Check size={13} strokeWidth={3} />}
-                    </span>
-                    <span className="text-on-surface pr-1 text-[12px] font-medium">
-                      {preset.name}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Wallpaper */}
-          <div>
-            <FieldLabel>Desktop pattern</FieldLabel>
-            <div className="grid grid-cols-3 gap-4">
-              {WALLPAPERS[theme].map((wp) => {
-                const active = wallpaper === wp.id
-                return (
-                  <button
-                    key={wp.id}
-                    onClick={() => setWallpaper(wp.id)}
-                    className={cn(
-                      'group relative overflow-hidden border transition-colors outline-none',
-                      'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
-                      active ? 'border-primary' : 'border-outline-variant hover:border-outline'
-                    )}
-                  >
-                    <div className="aspect-[16/10] w-full" style={wp.preview} />
-                    {active && (
-                      <div className="bg-primary-container text-on-primary-container absolute top-2 right-2 flex h-5 w-5 items-center justify-center">
-                        <Check size={12} strokeWidth={3} />
-                      </div>
-                    )}
-                    <div className="border-outline-variant bg-surface-container-low flex items-center gap-1.5 border-t px-2 py-1.5">
-                      <Image size={12} strokeWidth={1.75} className="text-on-surface-variant" />
-                      <span className="text-on-surface text-[11px] font-medium">{wp.name}</span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+          <AppearanceSettings />
         </section>
 
         {/* Apps ────────────────────────────────────────────────── */}

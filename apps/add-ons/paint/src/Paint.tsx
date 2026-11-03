@@ -587,7 +587,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
             aria-label={`Colour ${hex}`}
             onClick={() => setColor(hex)}
             className={cn(
-              'border-outline-variant h-5 w-5 border',
+              'rounded-small border-outline-variant h-5 w-5 border',
               color === hex && 'ring-primary ring-2 ring-offset-1'
             )}
             style={{ backgroundColor: hex }}
@@ -598,7 +598,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
           aria-label="Custom colour"
           value={color}
           onChange={(e) => setColor(e.target.value)}
-          className="border-outline-variant h-6 w-7 cursor-pointer border bg-transparent p-0.5"
+          className="rounded-small border-outline-variant h-6 w-7 cursor-pointer border bg-transparent p-0.5"
         />
         <div className="flex-1" />
         <label className="font-ui text-on-surface-variant flex items-center gap-1 text-[11px]">

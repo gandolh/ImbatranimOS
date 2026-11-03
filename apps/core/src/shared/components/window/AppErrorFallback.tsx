@@ -58,7 +58,7 @@ export function AppErrorFallback({
         {showDetails ? 'Hide details' : 'Show details'}
       </button>
       {showDetails && (
-        <pre className="border-outline-variant bg-surface-container-lowest text-on-surface-variant max-h-32 w-full max-w-md overflow-auto border p-2 text-left font-mono text-[11px] whitespace-pre-wrap">
+        <pre className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface-variant max-h-32 w-full max-w-md overflow-auto border p-2 text-left font-mono text-[11px] whitespace-pre-wrap">
           {error.message || String(error)}
         </pre>
       )}

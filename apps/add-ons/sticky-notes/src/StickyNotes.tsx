@@ -185,7 +185,7 @@ function ColorRow({
         onClick={() => onPick(null)}
         aria-label="Default colour"
         className={cn(
-          'bg-surface-container h-4 w-4 border',
+          'rounded-small bg-surface-container h-4 w-4 border',
           value === null ? 'border-on-surface' : 'border-outline-variant'
         )}
       />
@@ -196,7 +196,7 @@ function ColorRow({
           onClick={() => onPick(color)}
           aria-label={color}
           className={cn(
-            'h-4 w-4 border',
+            'rounded-small h-4 w-4 border',
             COLOR_SWATCH[color],
             value === color ? 'border-on-surface' : 'border-outline-variant'
           )}
@@ -245,7 +245,7 @@ function NoteList({ windowId }: { windowId: string }) {
           <Plus size={12} strokeWidth={2} />
           New note
         </Button>
-        <div className="border-outline-variant bg-surface-container-lowest flex min-w-0 flex-1 items-center gap-1 border px-1.5">
+        <div className="rounded-control border-outline-variant bg-surface-container-lowest flex min-w-0 flex-1 items-center gap-1 border px-1.5">
           <Search size={11} className="text-on-surface-variant shrink-0" />
           <input
             value={query}

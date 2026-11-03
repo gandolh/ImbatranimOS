@@ -170,7 +170,7 @@ export function CommandPalette({ open, onClose }: Props) {
               autoComplete="off"
               spellCheck={false}
             />
-            <kbd className="border-outline-variant bg-surface-container text-on-surface-variant font-ui border px-1 py-0.5 text-[11px]">
+            <kbd className="rounded-small border-outline-variant bg-surface-container text-on-surface-variant font-ui border px-1 py-0.5 text-[11px]">
               ESC
             </kbd>
           </div>

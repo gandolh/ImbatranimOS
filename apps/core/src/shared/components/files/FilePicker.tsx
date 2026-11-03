@@ -277,7 +277,7 @@ export function FilePicker({
         {mode === 'save' && (
           <>
             <input
-              className="border-outline-variant bg-surface-container-lowest font-ui text-on-surface min-w-0 flex-1 border px-1.5 py-0.5 text-[12px] outline-none"
+              className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface min-w-0 flex-1 border px-1.5 py-0.5 text-[12px] outline-none"
               value={name}
               placeholder="File name"
               aria-label="File name"

@@ -344,7 +344,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
   }, [textDraft, onBack])
 
   const tbBtn =
-    'flex h-8 w-8 items-center justify-center border outline-none transition-colors ' +
+    'rounded-control flex h-8 w-8 items-center justify-center border outline-none transition-colors ' +
     'border-outline-variant text-on-surface hover:bg-surface-container-high ' +
     'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
 
@@ -391,7 +391,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
               title={c}
               onClick={() => setColor(c)}
               className={cn(
-                'h-6 w-6 border outline-none',
+                'rounded-small h-6 w-6 border outline-none',
                 color === c ? 'border-primary ring-primary ring-1' : 'border-outline-variant'
               )}
               style={{ background: c }}
@@ -541,7 +541,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
         )}
 
         {status && (
-          <div className="bg-surface-container-high border-outline-variant text-on-surface absolute bottom-4 left-1/2 -translate-x-1/2 border px-4 py-2 text-[12px] font-semibold">
+          <div className="rounded-control bg-surface-container-high border-outline-variant text-on-surface absolute bottom-4 left-1/2 -translate-x-1/2 border px-4 py-2 text-[12px] font-semibold">
             {status}
           </div>
         )}

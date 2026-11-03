@@ -94,7 +94,7 @@ export function ConverterPad({ windowId: _windowId }: { windowId: string }) {
           onClick={swap}
           aria-label="Swap the two units"
           title="Swap"
-          className="border-outline-variant text-on-surface-variant hover:text-on-surface border p-1"
+          className="rounded-control border-outline-variant text-on-surface-variant hover:text-on-surface border p-1"
         >
           <ArrowLeftRight size={13} />
         </button>
@@ -145,13 +145,13 @@ function Side({
           inputMode="decimal"
           aria-label={`${label} value`}
           onChange={(e) => onValue(e.target.value)}
-          className="border-outline-variant bg-surface-container-lowest text-on-surface min-w-0 flex-1 border px-2 py-1 text-right font-mono text-[15px] outline-none"
+          className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface min-w-0 flex-1 border px-2 py-1 text-right font-mono text-[15px] outline-none"
         />
         <select
           value={unit}
           aria-label={`${label} unit`}
           onChange={(e) => onUnit(e.target.value)}
-          className="border-outline-variant bg-surface-container-lowest font-ui text-on-surface shrink-0 border px-1 text-[11px] outline-none"
+          className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface shrink-0 border px-1 text-[11px] outline-none"
         >
           {units.map((u) => (
             <option key={u.id} value={u.id}>

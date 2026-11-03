@@ -26,7 +26,7 @@ export function CaptureLauncher({
   busy: boolean
 }) {
   const row =
-    'flex w-full items-center gap-2 border px-2.5 py-2 text-left text-[12px] font-medium ' +
+    'rounded-control flex w-full items-center gap-2 border px-2.5 py-2 text-left text-[12px] font-medium ' +
     'border-outline-variant text-on-surface hover:bg-surface-container-high ' +
     'disabled:cursor-not-allowed disabled:opacity-50'
 

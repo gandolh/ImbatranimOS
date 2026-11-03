@@ -99,12 +99,12 @@ export function StartupSettings() {
       </div>
 
       {chosen.length === 0 ? (
-        <p className="border-outline-variant text-on-surface-variant border border-dashed px-3 py-4 text-[12px]">
+        <p className="rounded-control border-outline-variant text-on-surface-variant border border-dashed px-3 py-4 text-[12px]">
           Nothing opens at startup. Tick an app below, or arrange the windows you want and press{' '}
           <span className="text-on-surface font-semibold">Use my current windows</span>.
         </p>
       ) : (
-        <ol className="border-outline-variant border">
+        <ol className="rounded-control border-outline-variant border">
           {chosen.map((id, index) => {
             const app = byId.get(id)
             if (!app) return null
@@ -118,7 +118,7 @@ export function StartupSettings() {
                 <span className="text-on-surface-variant w-5 shrink-0 text-right text-[11px] tabular-nums">
                   {index + 1}
                 </span>
-                <span className="border-outline-variant bg-surface-container-lowest text-on-surface flex h-6 w-6 shrink-0 items-center justify-center border">
+                <span className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface flex h-6 w-6 shrink-0 items-center justify-center border">
                   <AppIcon size={13} strokeWidth={1.75} />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -180,13 +180,13 @@ export function StartupSettings() {
           <p className="font-ui text-on-surface-variant mb-2 text-[11px] font-semibold tracking-widest uppercase">
             Add an app
           </p>
-          <div className="border-outline-variant max-h-56 overflow-auto border">
+          <div className="rounded-control border-outline-variant max-h-56 overflow-auto border">
             {available.map((app) => (
               <div
                 key={app.id}
                 className="border-outline-variant/50 flex items-center gap-2 border-b px-2 py-1.5 last:border-b-0"
               >
-                <span className="border-outline-variant bg-surface-container-lowest text-on-surface flex h-6 w-6 shrink-0 items-center justify-center border">
+                <span className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface flex h-6 w-6 shrink-0 items-center justify-center border">
                   <app.icon size={13} strokeWidth={1.75} />
                 </span>
                 <span className="text-on-surface min-w-0 flex-1 truncate text-[12px]">

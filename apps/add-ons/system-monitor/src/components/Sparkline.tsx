@@ -26,7 +26,7 @@ export function Sparkline({
     // Not enough samples yet. Said out loud rather than rendering an empty box,
     // which reads as a broken component.
     return (
-      <div className="border-outline-variant bg-surface-container-lowest text-on-surface-variant flex h-[28px] items-center justify-center border font-mono text-[9px]">
+      <div className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface-variant flex h-[28px] items-center justify-center overflow-hidden border font-mono text-[9px]">
         collecting…
       </div>
     )
@@ -36,7 +36,7 @@ export function Sparkline({
   const peak = Math.max(...history)
 
   return (
-    <div className="border-outline-variant bg-surface-container-lowest relative border">
+    <div className="rounded-control border-outline-variant bg-surface-container-lowest relative overflow-hidden border">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"

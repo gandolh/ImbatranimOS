@@ -104,7 +104,7 @@ export function Logs() {
         <ScrollText size={14} strokeWidth={1.75} className="text-primary shrink-0" />
         <span className="text-[12px] font-bold tracking-tight">{APP_NAME}</span>
 
-        <div className="border-outline-variant bg-surface-container-lowest flex min-w-[140px] flex-1 items-center gap-1 border px-1.5">
+        <div className="rounded-control border-outline-variant bg-surface-container-lowest flex min-w-[140px] flex-1 items-center gap-1 border px-1.5">
           <Search size={11} className="text-on-surface-variant shrink-0" />
           <input
             value={query}

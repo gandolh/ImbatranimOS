@@ -284,7 +284,7 @@ export function ArchiveManager({ windowId: _windowId }: { windowId: string }) {
           title="Close"
           aria-label="Close"
           onClick={close}
-          className="hover:bg-error hover:text-on-error border-outline-variant flex h-7 w-7 items-center justify-center border transition-colors"
+          className="rounded-control hover:bg-error hover:text-on-error border-outline-variant flex h-7 w-7 items-center justify-center border transition-colors"
         >
           <X size={14} strokeWidth={1.75} />
         </button>
@@ -307,7 +307,7 @@ export function ArchiveManager({ windowId: _windowId }: { windowId: string }) {
             {percent !== null && (
               <>
                 <div
-                  className="border-outline-variant h-2 w-full border"
+                  className="rounded-control border-outline-variant h-2 w-full overflow-hidden border"
                   role="progressbar"
                   aria-valuenow={percent}
                   aria-valuemin={0}
@@ -385,7 +385,7 @@ export function ArchiveManager({ windowId: _windowId }: { windowId: string }) {
             </div>
 
             {outcome.contents.length > 0 && (
-              <div className="border-outline-variant min-h-0 flex-1 overflow-auto border">
+              <div className="rounded-control border-outline-variant min-h-0 flex-1 overflow-auto border">
                 <ul className="divide-outline-variant/50 divide-y">
                   {outcome.contents.map((entry) => (
                     <li
@@ -414,7 +414,7 @@ export function ArchiveManager({ windowId: _windowId }: { windowId: string }) {
             <button
               onClick={close}
               className={cn(
-                'border-outline-variant hover:bg-surface-container-high self-end border px-3 py-1.5',
+                'rounded-control border-outline-variant hover:bg-surface-container-high self-end border px-3 py-1.5',
                 'text-[12px] font-semibold transition-colors'
               )}
             >

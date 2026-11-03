@@ -44,7 +44,7 @@ export function EntryBrowser({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <div className="border-outline-variant bg-surface-container-lowest flex min-w-0 flex-1 items-center gap-1 border px-1.5">
+        <div className="rounded-control border-outline-variant bg-surface-container-lowest flex min-w-0 flex-1 items-center gap-1 border px-1.5">
           <Search size={11} className="text-on-surface-variant shrink-0" />
           <input
             value={query}
@@ -105,7 +105,7 @@ export function EntryBrowser({
         </Banner>
       )}
 
-      <ScrollArea className="border-outline-variant min-h-0 flex-1 border">
+      <ScrollArea className="rounded-control border-outline-variant min-h-0 flex-1 border">
         {visible.length === 0 ? (
           <div className="text-on-surface-variant px-2 py-3 text-[12px]">
             {listing.entries.length === 0

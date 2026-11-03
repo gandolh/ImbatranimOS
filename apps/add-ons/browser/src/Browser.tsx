@@ -227,7 +227,7 @@ function BrowserFrame({ origin }: { origin: string }) {
           </Button>
         </Tooltip>
         <input
-          className="border-outline-variant bg-surface-container-lowest font-content text-on-surface focus:border-primary min-w-0 flex-1 border px-2 py-1 text-[12px] outline-none"
+          className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface focus:border-primary min-w-0 flex-1 border px-2 py-1 text-[12px] outline-none"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           onFocus={(e) => e.target.select()}

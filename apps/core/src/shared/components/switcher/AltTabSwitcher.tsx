@@ -157,7 +157,7 @@ export function AltTabSwitcher() {
             <div
               key={w.id}
               className={cn(
-                'flex w-[120px] shrink-0 flex-col items-center gap-2 border px-2 py-3',
+                'rounded-control flex w-[120px] shrink-0 flex-col items-center gap-2 border px-2 py-3',
                 selected
                   ? 'border-primary bg-surface-container-high'
                   : 'border-outline-variant bg-surface-container-low'

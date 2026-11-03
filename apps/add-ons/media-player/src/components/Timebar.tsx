@@ -48,7 +48,7 @@ export function Timebar({ currentTime, duration, buffered, disabled, onSeek }: T
     <div className="relative flex-1">
       {hoverTime !== null && seekable && (
         <div
-          className="border-outline-variant bg-inverse-surface text-inverse-on-surface font-ui pointer-events-none absolute -top-6 z-10 border px-1 py-0.5 text-[10px] tabular-nums"
+          className="rounded-control border-outline-variant bg-inverse-surface text-inverse-on-surface font-ui pointer-events-none absolute -top-6 z-10 border px-1 py-0.5 text-[10px] tabular-nums"
           style={{
             left: `${Math.min(100, Math.max(0, (hoverTime / duration) * 100))}%`,
             transform: 'translateX(-50%)',

@@ -25,7 +25,7 @@ export function AboutPanel({ about }: { about: AboutInfo }) {
       {rows.map(([label, value]) => (
         <div
           key={label}
-          className="border-outline-variant bg-surface-container-low flex items-center justify-between border px-3 py-2"
+          className="rounded-control border-outline-variant bg-surface-container-low flex items-center justify-between border px-3 py-2"
         >
           <span className="font-ui text-on-surface-variant text-[10px] font-semibold tracking-wider uppercase">
             {label}

@@ -59,7 +59,7 @@ export function MenuButton({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'font-ui border border-transparent px-2 py-0.5 text-[12px]',
+          'rounded-control font-ui border border-transparent px-2 py-0.5 text-[12px]',
           'focus-visible:ring-primary outline-none focus-visible:ring-2',
           open
             ? 'border-outline-variant bg-surface-container-high text-on-surface'
@@ -72,7 +72,7 @@ export function MenuButton({
       {open && (
         <div
           role="menu"
-          className="border-outline-variant bg-surface-container-lowest absolute top-full left-0 z-50 min-w-56 border py-1 shadow-md"
+          className="rounded-menu border-outline-variant bg-surface-container-lowest absolute top-full left-0 z-50 min-w-56 border py-1 shadow-md"
           style={align === 'right' ? { left: 'auto', right: 0 } : undefined}
         >
           {items.map((item, i) =>

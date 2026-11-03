@@ -76,7 +76,7 @@ function DayPicker({
                 type="button"
                 onClick={() => onChange(preset.mask)}
                 className={cn(
-                  'font-ui border px-1.5 py-0.5 text-[10px] transition-colors',
+                  'rounded-control font-ui border px-1.5 py-0.5 text-[10px] transition-colors',
                   mask === preset.mask
                     ? 'border-outline text-on-surface'
                     : 'border-outline-variant text-on-surface-variant hover:text-on-surface'

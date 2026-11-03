@@ -111,7 +111,7 @@ export function StorageSettings() {
               {formatBytes(disk.freeBytes)} free
             </span>
           </div>
-          <div className="border-outline-variant bg-surface-container-low h-2 w-full border">
+          <div className="rounded-control border-outline-variant bg-surface-container-low h-2 w-full overflow-hidden border">
             <div
               className={cn('h-full', disk.percent >= 90 ? 'bg-error' : 'bg-primary')}
               style={{ width: `${Math.min(100, disk.percent)}%` }}
@@ -146,7 +146,7 @@ export function StorageSettings() {
         </Button>
       </div>
 
-      <div className="border-outline-variant border">
+      <div className="rounded-control border-outline-variant border">
         {sorted === null ? (
           <div className="text-on-surface-variant font-ui p-3 text-center text-[12px]">
             Measuring…

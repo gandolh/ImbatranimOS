@@ -230,7 +230,7 @@ export function TransportBar({
         <select
           aria-label="Playback speed"
           title="Playback speed"
-          className="border-outline-variant bg-surface-container-lowest font-ui text-on-surface-variant h-6 shrink-0 border px-1 text-[11px] tabular-nums outline-none"
+          className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface-variant h-6 shrink-0 border px-1 text-[11px] tabular-nums outline-none"
           value={playbackRate}
           disabled={disabled}
           onChange={(e) => onRateChange(Number(e.target.value))}

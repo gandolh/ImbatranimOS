@@ -545,7 +545,7 @@ export function Bookmarks({ windowId: _windowId }: { windowId: string }) {
           <Download size={12} strokeWidth={2} />
           Export
         </Button>
-        <div className="border-outline-variant bg-surface-container-lowest flex min-w-0 flex-1 items-center gap-1 border px-1.5">
+        <div className="rounded-control border-outline-variant bg-surface-container-lowest flex min-w-0 flex-1 items-center gap-1 border px-1.5">
           <Search size={11} className="text-on-surface-variant shrink-0" />
           <input
             value={query}

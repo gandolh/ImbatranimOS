@@ -60,7 +60,7 @@ function WidgetFrame({
     <div
       ref={frameRef}
       className={cn(
-        'group border-outline-variant bg-surface-container-low/90 pointer-events-auto absolute border shadow-sm',
+        'rounded-tile group border-outline-variant bg-surface-container-low/90 pointer-events-auto absolute border shadow-sm',
         'cursor-grab select-none active:cursor-grabbing'
       )}
       style={{

@@ -387,7 +387,7 @@ export function Terminal(_props: { windowId: string }) {
                 }}
                 placeholder="Find in scrollback"
                 aria-label="Find in scrollback"
-                className="border-outline-variant bg-surface-container-lowest font-ui text-on-surface w-44 border px-1 py-0 text-[11px] outline-none"
+                className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface w-44 border px-1 py-0 text-[11px] outline-none"
               />
               <Button
                 variant="ghost"

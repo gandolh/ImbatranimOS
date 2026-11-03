@@ -301,7 +301,7 @@ export function NoteEditor({
           </span>
           {/* The root is shown, always. It is the whole point of this brief: you can
               see which filesystem you are editing. */}
-          <span className="border-outline-variant text-on-surface-variant shrink-0 border px-1 text-[9px] font-semibold tracking-wider uppercase">
+          <span className="rounded-small border-outline-variant text-on-surface-variant shrink-0 border px-1 text-[9px] font-semibold tracking-wider uppercase">
             {root}
           </span>
         </div>

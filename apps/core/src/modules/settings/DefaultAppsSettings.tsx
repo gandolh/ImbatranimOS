@@ -62,7 +62,7 @@ export function DefaultAppsSettings() {
       </p>
 
       <div className="mb-3 flex items-center gap-2">
-        <div className="border-outline-variant bg-surface-container-lowest flex min-w-0 flex-1 items-center gap-1 border px-1.5">
+        <div className="rounded-control border-outline-variant bg-surface-container-lowest flex min-w-0 flex-1 items-center gap-1 border px-1.5">
           <Search size={11} className="text-on-surface-variant shrink-0" />
           <input
             value={query}
@@ -92,7 +92,7 @@ export function DefaultAppsSettings() {
         </Button>
       </div>
 
-      <div className="border-outline-variant max-h-80 overflow-auto border">
+      <div className="rounded-control border-outline-variant max-h-80 overflow-auto border">
         {rows.length === 0 ? (
           <p className="text-on-surface-variant px-2 py-3 text-[12px]">
             Nothing matches “{query.trim()}”.

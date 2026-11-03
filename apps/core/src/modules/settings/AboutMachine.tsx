@@ -109,14 +109,14 @@ export function AboutMachine({ onVersion }: { onVersion?: (version: string) => v
   return (
     <div className="grid gap-2">
       {loading && (
-        <div className="border-outline-variant bg-surface-container-low text-on-surface-variant flex items-center gap-2 border px-3 py-2.5 text-[12px]">
+        <div className="rounded-control border-outline-variant bg-surface-container-low text-on-surface-variant flex items-center gap-2 border px-3 py-2.5 text-[12px]">
           <Loader2 size={13} className="animate-spin" />
           Reading this machine…
         </div>
       )}
 
       {error && !loading && (
-        <div className="border-outline-variant bg-surface-container-low flex items-center justify-between gap-3 border px-3 py-2.5">
+        <div className="rounded-control border-outline-variant bg-surface-container-low flex items-center justify-between gap-3 border px-3 py-2.5">
           <span className="text-error font-content text-[12px]">{error}</span>
           <Button
             variant="default"
@@ -133,7 +133,7 @@ export function AboutMachine({ onVersion }: { onVersion?: (version: string) => v
       {rows.map((item) => (
         <div
           key={item.label}
-          className="border-outline-variant bg-surface-container-low flex items-center justify-between gap-3 border px-3 py-2.5"
+          className="rounded-control border-outline-variant bg-surface-container-low flex items-center justify-between gap-3 border px-3 py-2.5"
         >
           <span className="text-on-surface-variant text-[10px] font-semibold tracking-widest uppercase">
             {item.label}

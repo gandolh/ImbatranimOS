@@ -28,7 +28,7 @@ import { useRegistryVersion } from '../../shared/registry/marketplace'
 function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: string }) {
   return (
     <div className="mb-5 flex items-center gap-3">
-      <div className="border-outline-variant bg-surface-container text-primary flex h-9 w-9 items-center justify-center border">
+      <div className="rounded-control border-outline-variant bg-surface-container text-primary flex h-9 w-9 items-center justify-center border">
         <Icon size={18} strokeWidth={1.75} />
       </div>
       <h2 className="font-ui text-on-surface text-base font-semibold">{title}</h2>
@@ -77,9 +77,9 @@ export function Settings() {
               return (
                 <div
                   key={app.id}
-                  className="border-outline-variant bg-surface-container-low flex items-center gap-3 border px-3 py-2.5"
+                  className="rounded-control border-outline-variant bg-surface-container-low flex items-center gap-3 border px-3 py-2.5"
                 >
-                  <span className="border-outline-variant bg-surface-container-lowest text-on-surface flex h-7 w-7 shrink-0 items-center justify-center border">
+                  <span className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface flex h-7 w-7 shrink-0 items-center justify-center border">
                     <AppIcon size={15} strokeWidth={1.75} />
                   </span>
                   <span className="min-w-0 flex-1">

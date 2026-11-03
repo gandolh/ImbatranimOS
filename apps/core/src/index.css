@@ -213,6 +213,7 @@
   --k-radius-control: 8px;
   --k-radius-item: 8px;
   --k-radius-tile: 12px;
+  --k-radius-small: 4px;
   /* Side padding around rounded rows in menus, popups and lists, so a highlight
      clears the edge. */
   --k-list-inset: 6px;
@@ -224,6 +225,7 @@
   --k-radius-control: 0px;
   --k-radius-item: 0px;
   --k-radius-tile: 0px;
+  --k-radius-small: 0px;
   --k-list-inset: 0px;
 
   --k-shadow-window: 0 10px 30px rgba(0, 0, 0, 0.35);

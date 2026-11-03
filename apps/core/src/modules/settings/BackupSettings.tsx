@@ -164,7 +164,7 @@ export function BackupSettings() {
         </p>
 
         {info && (
-          <dl className="border-outline-variant bg-surface-container-lowest mb-4 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 border p-3 text-[12px]">
+          <dl className="rounded-control border-outline-variant bg-surface-container-lowest mb-4 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 border p-3 text-[12px]">
             <dt className="text-on-surface-variant">Home directory</dt>
             <dd className="tabular-nums">
               {formatBytes(info.homeBytes)}
@@ -235,7 +235,7 @@ export function BackupSettings() {
         )}
 
         {preview && (
-          <div className="border-outline-variant mt-4 border p-3">
+          <div className="rounded-control border-outline-variant mt-4 border p-3">
             <p className="text-[12px] font-semibold">
               Backup from {new Date(preview.manifest.createdAt).toLocaleString()}
             </p>

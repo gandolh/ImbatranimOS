@@ -67,7 +67,7 @@ export function FindBar({
           placeholder="Find"
           aria-label="Find"
           className={cn(
-            'border-outline-variant bg-surface-container-lowest font-ui text-on-surface w-40 border px-1 py-0 text-[11px] outline-none',
+            'rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface w-40 border px-1 py-0 text-[11px] outline-none',
             // The only signal that a search failed. Colour alone would not do it, so
             // the count beside it says "No results" in words too.
             noMatches && 'border-error'
@@ -152,7 +152,7 @@ export function FindBar({
             }}
             placeholder="Replace with"
             aria-label="Replace with"
-            className="border-outline-variant bg-surface-container-lowest font-ui text-on-surface w-40 border px-1 py-0 text-[11px] outline-none"
+            className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface w-40 border px-1 py-0 text-[11px] outline-none"
           />
           <Button
             variant="default"

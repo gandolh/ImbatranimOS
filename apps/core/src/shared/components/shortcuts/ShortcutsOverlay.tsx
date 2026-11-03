@@ -30,7 +30,7 @@ export function ShortcutList() {
           <h3 className="font-ui text-on-surface-variant mb-1.5 text-[11px] font-semibold tracking-wider uppercase">
             {scope}
           </h3>
-          <div className="border-outline-variant border">
+          <div className="rounded-control border-outline-variant border">
             {list.map((s, i) => (
               <div
                 key={s.id}
@@ -46,7 +46,7 @@ export function ShortcutList() {
                     </div>
                   )}
                 </div>
-                <kbd className="font-ui text-on-surface-variant bg-surface-container-low border-outline-variant shrink-0 border px-1.5 py-0.5 text-[11px] tabular-nums">
+                <kbd className="rounded-small font-ui text-on-surface-variant bg-surface-container-low border-outline-variant shrink-0 border px-1.5 py-0.5 text-[11px] tabular-nums">
                   {formatKeys(s.keys, mac)}
                 </kbd>
               </div>

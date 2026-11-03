@@ -312,7 +312,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
                 aria-pressed={form.color === 'none'}
                 onClick={() => setForm((f) => ({ ...f, color: 'none' }))}
                 className={cn(
-                  'bg-primary h-5 w-5 border',
+                  'rounded-small bg-primary h-5 w-5 border',
                   form.color === 'none' ? 'border-on-surface' : 'border-outline-variant'
                 )}
               />
@@ -324,7 +324,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
                   aria-pressed={form.color === color}
                   onClick={() => setForm((f) => ({ ...f, color }))}
                   className={cn(
-                    'h-5 w-5 border',
+                    'rounded-small h-5 w-5 border',
                     COLOR_SWATCH[color],
                     form.color === color ? 'border-on-surface' : 'border-outline-variant'
                   )}
@@ -342,12 +342,12 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
               placeholder="Optional notes"
               rows={3}
-              className="border-outline-variant bg-surface-container-lowest font-content text-on-surface focus:border-primary focus:ring-primary/40 w-full resize-none border px-2.5 py-1.5 text-[13px] outline-none focus:ring-2"
+              className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface focus:border-primary focus:ring-primary/40 w-full resize-none border px-2.5 py-1.5 text-[13px] outline-none focus:ring-2"
             />
           </label>
 
           {askScope && (
-            <div className="border-outline-variant bg-surface-container-low flex flex-col gap-1.5 border p-2">
+            <div className="rounded-control border-outline-variant bg-surface-container-low flex flex-col gap-1.5 border p-2">
               <span className="font-ui text-on-surface-variant flex items-center gap-1 text-[11px] font-semibold tracking-wider uppercase">
                 <Repeat size={11} />
                 Apply to

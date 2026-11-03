@@ -67,6 +67,7 @@ const BEFORE: [string, string][] = [
   ['--radius-control', 'var(--k-radius-control)'],
   ['--radius-item', 'var(--k-radius-item)'],
   ['--radius-tile', 'var(--k-radius-tile)'],
+  ['--radius-small', 'var(--k-radius-small)'],
   ['--spacing-half', '4px'],
   ['--spacing-base', '8px'],
   ['--spacing-double', '16px'],

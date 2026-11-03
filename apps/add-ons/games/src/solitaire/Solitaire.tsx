@@ -31,7 +31,7 @@ function CardFace({ card, selected }: { card: Card; selected: boolean }) {
   return (
     <div
       className={cn(
-        'border-outline-variant bg-surface-container-lowest h-16 w-12 border px-1 py-0.5 select-none',
+        'rounded-control border-outline-variant bg-surface-container-lowest h-16 w-12 border px-1 py-0.5 select-none',
         // Identity, not skins: red suits carry the accent, black suits the ink.
         isRed(card.suit) ? 'text-primary' : 'text-on-surface',
         selected && 'ring-primary ring-2 ring-inset'
@@ -50,7 +50,7 @@ function CardFace({ card, selected }: { card: Card; selected: boolean }) {
 
 function CardBack() {
   return (
-    <div className="border-outline-variant bg-surface-container-high h-16 w-12 border select-none">
+    <div className="rounded-control border-outline-variant bg-surface-container-high h-16 w-12 border select-none">
       <div className="bg-primary/15 m-1 h-[calc(100%-8px)]" />
     </div>
   )
@@ -58,7 +58,7 @@ function CardBack() {
 
 function EmptySlot({ label }: { label?: string }) {
   return (
-    <div className="border-outline-variant text-on-surface-variant/50 flex h-16 w-12 items-center justify-center border border-dashed text-[14px] select-none">
+    <div className="rounded-control border-outline-variant text-on-surface-variant/50 flex h-16 w-12 items-center justify-center border border-dashed text-[14px] select-none">
       {label ?? ''}
     </div>
   )

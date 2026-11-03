@@ -39,9 +39,9 @@ export function ConsentCard({
   }
 
   return (
-    <div className="border-outline-variant bg-surface-container-low mt-3 border px-3 py-3">
+    <div className="rounded-control border-outline-variant bg-surface-container-low mt-3 border px-3 py-3">
       <div className="flex items-center gap-3">
-        <span className="border-outline-variant bg-surface-container-lowest text-on-surface flex h-7 w-7 shrink-0 items-center justify-center border">
+        <span className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface flex h-7 w-7 shrink-0 items-center justify-center border">
           {createElement(marketplaceIcon(manifest.icon), { size: 15, strokeWidth: 1.75 })}
         </span>
         <span className="min-w-0 flex-1">

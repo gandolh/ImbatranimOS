@@ -548,7 +548,7 @@ export function GitGui({ windowId: _windowId }: { windowId: string }) {
           <div className="border-outline-variant mt-auto flex shrink-0 flex-col gap-1.5 border-t p-2">
             <textarea
               className={cn(
-                'border-outline-variant bg-surface-container-lowest text-on-surface min-h-[48px] w-full resize-none border px-2 py-1.5',
+                'rounded-control border-outline-variant bg-surface-container-lowest text-on-surface min-h-[48px] w-full resize-none border px-2 py-1.5',
                 'font-content text-[13px] outline-none',
                 'placeholder:text-on-surface-variant',
                 'focus:border-primary focus:ring-primary/40 focus:ring-2'

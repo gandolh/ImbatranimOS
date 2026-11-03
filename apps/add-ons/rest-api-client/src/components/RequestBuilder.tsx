@@ -287,7 +287,7 @@ export function RequestBuilder({
           {!bodyDisabled && bodyMode === 'text' && (
             <textarea
               className={cn(
-                'border-outline-variant bg-surface-container-lowest min-h-[7rem] w-full resize-y border px-2.5 py-1.5',
+                'rounded-control border-outline-variant bg-surface-container-lowest min-h-[7rem] w-full resize-y border px-2.5 py-1.5',
                 'text-on-surface font-mono text-[12px] outline-none',
                 'placeholder:text-on-surface-variant focus:border-primary'
               )}

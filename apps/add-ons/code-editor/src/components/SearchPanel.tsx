@@ -78,7 +78,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
     <div className="border-outline-variant bg-surface-container-low flex h-56 shrink-0 flex-col border-t">
       {/* Query row */}
       <div className="border-outline-variant flex items-center gap-2 border-b px-2 py-1">
-        <div className="border-outline-variant bg-surface-container-lowest flex flex-1 items-center gap-1 border px-1.5">
+        <div className="rounded-control border-outline-variant bg-surface-container-lowest flex flex-1 items-center gap-1 border px-1.5">
           {running ? (
             <Loader2 size={12} className="text-primary shrink-0 animate-spin" />
           ) : (
@@ -118,7 +118,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
             })
           }}
           title="Limit the search to a folder"
-          className="border-outline-variant text-on-surface-variant hover:text-on-surface font-ui flex shrink-0 items-center gap-1 border px-1.5 py-0.5 text-[11px]"
+          className="rounded-control border-outline-variant text-on-surface-variant hover:text-on-surface font-ui flex shrink-0 items-center gap-1 border px-1.5 py-0.5 text-[11px]"
         >
           <FolderOpen size={11} />
           in {scopeLabel}

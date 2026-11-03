@@ -194,7 +194,7 @@ export function ScientificPad({
 
   const key =
     'font-ui border-outline-variant text-on-surface hover:bg-surface-container-high ' +
-    'flex h-7 items-center justify-center border text-[11px]'
+    'rounded-control flex h-7 items-center justify-center border text-[11px]'
 
   return (
     <div className="flex h-full flex-col">
@@ -265,7 +265,7 @@ export function ScientificPad({
           <button
             type="button"
             onClick={() => dispatch({ type: 'clear' })}
-            className="font-ui border-outline-variant text-on-surface hover:bg-surface-container-high h-6 flex-1 border text-[10px] font-semibold"
+            className="rounded-control font-ui border-outline-variant text-on-surface hover:bg-surface-container-high h-6 flex-1 border text-[10px] font-semibold"
           >
             C
           </button>
@@ -274,7 +274,7 @@ export function ScientificPad({
             aria-label="Backspace"
             title="Backspace"
             onClick={() => dispatch({ type: 'backspace' })}
-            className="font-ui border-outline-variant text-on-surface hover:bg-surface-container-high h-6 flex-1 border text-[11px]"
+            className="rounded-control font-ui border-outline-variant text-on-surface hover:bg-surface-container-high h-6 flex-1 border text-[11px]"
           >
             ⌫
           </button>

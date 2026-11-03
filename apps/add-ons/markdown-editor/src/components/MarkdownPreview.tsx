@@ -229,7 +229,7 @@ export function MarkdownPreview({
         <span
           data-src-line={line}
           data-external-image={raw || 'empty'}
-          className="border-outline-variant bg-surface-container font-ui text-on-surface-variant inline-flex max-w-full items-center gap-1 border px-1.5 py-0.5 text-[10px]"
+          className="rounded-small border-outline-variant bg-surface-container font-ui text-on-surface-variant inline-flex max-w-full items-center gap-1 border px-1.5 py-0.5 text-[10px]"
         >
           <ImageOff size={11} />
           <span className="truncate">{alt || 'image'} — external image blocked by policy</span>

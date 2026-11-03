@@ -101,7 +101,7 @@ function Toast({ item }: { item: NotificationItem }) {
                   activate(action.payload)
                 }}
                 className={cn(
-                  'border-outline-variant text-on-surface hover:bg-primary hover:text-on-primary hover:border-primary border px-2 py-0.5 text-[11px] outline-none',
+                  'rounded-control border-outline-variant text-on-surface hover:bg-primary hover:text-on-primary hover:border-primary border px-2 py-0.5 text-[11px] outline-none',
                   'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
                 )}
               >

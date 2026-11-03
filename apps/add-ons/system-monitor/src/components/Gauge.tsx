@@ -22,7 +22,7 @@ export function Gauge({ label, percent, detail }: GaugeProps) {
           {clamped.toFixed(1)}%
         </span>
       </div>
-      <div className="border-outline-variant bg-surface-container-lowest h-3 w-full border">
+      <div className="rounded-control border-outline-variant bg-surface-container-lowest h-3 w-full overflow-hidden border">
         <div
           className={`h-full ${barColor} transition-[width] duration-300 ease-out`}
           style={{ width: `${clamped}%` }}

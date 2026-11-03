@@ -98,7 +98,7 @@ export function CurlDialog({
     >
       <div className="flex w-[38rem] max-w-full flex-col gap-2">
         <textarea
-          className="border-outline-variant bg-surface-container-lowest text-on-surface min-h-[9rem] w-full resize-y border px-2 py-1.5 font-mono text-[12px] outline-none"
+          className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface min-h-[9rem] w-full resize-y border px-2 py-1.5 font-mono text-[12px] outline-none"
           placeholder={"curl 'https://api.example.com/users' -H 'accept: application/json'"}
           value={text}
           spellCheck={false}
@@ -111,7 +111,7 @@ export function CurlDialog({
 
         {parsed?.kind === 'err' && <p className="text-error text-[12px]">{parsed.message}</p>}
         {parsed?.kind === 'ok' && (
-          <div className="border-outline-variant bg-surface-container-low border px-2 py-1.5 text-[11px]">
+          <div className="rounded-control border-outline-variant bg-surface-container-low border px-2 py-1.5 text-[11px]">
             <div className="font-ui text-on-surface-variant mb-1 font-semibold tracking-wider uppercase">
               This will load
             </div>

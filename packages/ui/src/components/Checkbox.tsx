@@ -12,9 +12,8 @@ export function Checkbox({ label, className, id, ...props }: CheckboxProps) {
       <BaseCheckbox.Root
         id={id}
         className={cn(
-          // Half the control radius: the full one would make a 16px box a circle.
           'border-outline-variant bg-surface-container-lowest flex h-4 w-4 shrink-0 items-center justify-center border',
-          'rounded-[calc(var(--radius-control)/2)]',
+          'rounded-small',
           'transition-colors outline-none',
           'focus-visible:ring-primary focus-visible:ring-offset-surface focus-visible:ring-2 focus-visible:ring-offset-1',
           'data-[checked]:border-primary data-[checked]:bg-primary-container',

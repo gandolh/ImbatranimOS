@@ -61,7 +61,7 @@ export function StatsWidget() {
           {memPercent !== undefined ? `${Math.round(memPercent)}%` : '—'}
         </span>
       </div>
-      <div className="border-outline-variant bg-surface-container-lowest h-2 border">
+      <div className="rounded-control border-outline-variant bg-surface-container-lowest h-2 overflow-hidden border">
         <div
           className="bg-primary h-full transition-[width]"
           style={{ width: `${Math.min(100, memPercent ?? 0)}%` }}

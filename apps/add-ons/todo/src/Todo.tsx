@@ -338,7 +338,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
         <div className="ml-auto flex items-center gap-1 pr-1.5">
           {overdueCount > 0 && (
             <span
-              className="border-error text-error font-ui border px-1 text-[10px]"
+              className="rounded-small border-error text-error font-ui border px-1 text-[10px]"
               title={`${overdueCount} overdue`}
             >
               {overdueCount} late
@@ -348,7 +348,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             value={sort}
             onChange={(e) => setSort(e.target.value as SortMode)}
             aria-label="Sort order"
-            className="border-outline-variant bg-surface-container-lowest font-ui text-on-surface border px-1 py-0.5 text-[11px] outline-none"
+            className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface border px-1 py-0.5 text-[11px] outline-none"
           >
             {SORT_MODES.map((mode) => (
               <option key={mode} value={mode}>
@@ -386,7 +386,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
               type="button"
               onClick={handleBulkComplete}
               disabled={selected.size === 0}
-              className="border-outline-variant text-on-surface font-ui flex items-center gap-1 border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
+              className="rounded-control border-outline-variant text-on-surface font-ui flex items-center gap-1 border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
             >
               <CheckCheck size={11} />
               Complete
@@ -395,7 +395,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
               type="button"
               onClick={() => void handleBulkMove()}
               disabled={selected.size === 0}
-              className="border-outline-variant text-on-surface font-ui flex items-center gap-1 border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
+              className="rounded-control border-outline-variant text-on-surface font-ui flex items-center gap-1 border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
             >
               <FolderInput size={11} />
               Move
@@ -404,7 +404,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
               type="button"
               onClick={() => void handleBulkDelete()}
               disabled={selected.size === 0}
-              className="border-outline-variant text-error font-ui flex items-center gap-1 border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
+              className="rounded-control border-outline-variant text-error font-ui flex items-center gap-1 border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
             >
               <Trash2 size={11} />
               Delete
@@ -415,7 +415,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
             type="button"
             onClick={() => void handleClearCompleted()}
             disabled={knowsCompletedCount && completedCount === 0}
-            className="border-outline-variant text-on-surface-variant hover:text-on-surface font-ui border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
+            className="rounded-control border-outline-variant text-on-surface-variant hover:text-on-surface font-ui border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
           >
             Clear completed{knowsCompletedCount && completedCount > 0 ? ` (${completedCount})` : ''}
           </button>
@@ -517,7 +517,7 @@ export function Todo({ windowId: _windowId }: { windowId: string }) {
               value={addDue}
               aria-label="Due date for new tasks"
               onChange={(e) => setAddDue(e.target.value)}
-              className="border-outline-variant bg-surface-container-lowest font-content text-on-surface border px-1.5 py-0.5 text-[12px] outline-none"
+              className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface border px-1.5 py-0.5 text-[12px] outline-none"
             />
             {addDue && (
               <button

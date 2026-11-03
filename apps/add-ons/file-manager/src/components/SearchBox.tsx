@@ -46,7 +46,7 @@ export function SearchBox({
     <div className="flex items-center gap-1">
       <div
         className={cn(
-          'border-outline-variant bg-surface-container-lowest flex items-center gap-1 border px-1.5',
+          'rounded-control border-outline-variant bg-surface-container-lowest flex items-center gap-1 border px-1.5',
           'focus-within:border-primary'
         )}
       >

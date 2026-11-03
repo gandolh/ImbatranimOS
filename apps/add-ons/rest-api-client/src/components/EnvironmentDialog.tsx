@@ -126,7 +126,7 @@ export function EnvironmentDialog({
             <div className="font-ui text-on-surface-variant mt-1 text-[11px] font-semibold tracking-wider uppercase">
               Variables
             </div>
-            <ScrollArea className="border-outline-variant max-h-64 min-h-0 border">
+            <ScrollArea className="rounded-control border-outline-variant max-h-64 min-h-0 border">
               {selected.vars.length === 0 ? (
                 <div className="text-on-surface-variant px-2 py-3 text-[12px]">
                   No variables yet
@@ -140,7 +140,7 @@ export function EnvironmentDialog({
                       className="border-outline-variant flex items-center gap-1 border-b px-1 py-1 last:border-b-0"
                     >
                       <input
-                        className="border-outline-variant bg-surface-container-lowest text-on-surface w-40 shrink-0 border px-1.5 py-1 font-mono text-[12px] outline-none"
+                        className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface w-40 shrink-0 border px-1.5 py-1 font-mono text-[12px] outline-none"
                         placeholder="name"
                         value={entry.name}
                         spellCheck={false}
@@ -163,7 +163,7 @@ export function EnvironmentDialog({
                       />
                       <input
                         className={cn(
-                          'border-outline-variant bg-surface-container-lowest text-on-surface min-w-0 flex-1 border px-1.5 py-1 font-mono text-[12px] outline-none'
+                          'rounded-control border-outline-variant bg-surface-container-lowest text-on-surface min-w-0 flex-1 border px-1.5 py-1 font-mono text-[12px] outline-none'
                         )}
                         placeholder="value"
                         value={show ? entry.value : maskValue(entry.value)}

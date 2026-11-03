@@ -145,7 +145,7 @@ export function RecentRepos({
       <div className="font-ui text-on-surface-variant mb-1 text-[11px] font-semibold tracking-wider uppercase">
         Recent
       </div>
-      <div className="border-outline-variant border">
+      <div className="rounded-control border-outline-variant border">
         {repos.map((repo) => (
           <div
             key={`${repo.root}:${repo.path}`}

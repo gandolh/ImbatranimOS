@@ -123,7 +123,7 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
                         <div
                           key={i}
                           title={`core ${i}: ${pc.toFixed(1)}%`}
-                          className="border-outline-variant bg-surface-container-lowest relative h-4 flex-1 border"
+                          className="rounded-control border-outline-variant bg-surface-container-lowest relative h-4 flex-1 overflow-hidden border"
                         >
                           <div
                             className="bg-primary absolute bottom-0 left-0 w-full"

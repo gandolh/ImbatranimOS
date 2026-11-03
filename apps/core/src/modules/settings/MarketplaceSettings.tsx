@@ -277,10 +277,10 @@ export function MarketplaceSettings() {
               key={row.descriptorId}
               // min-w-0: a grid item is as wide as its content by default, and
               // a long job reason would widen every row past the window.
-              className="border-outline-variant bg-surface-container-low min-w-0 border px-3 py-2.5"
+              className="rounded-control border-outline-variant bg-surface-container-low min-w-0 border px-3 py-2.5"
             >
               <div className="flex items-center gap-3">
-                <span className="border-outline-variant bg-surface-container-lowest text-on-surface flex h-7 w-7 shrink-0 items-center justify-center border">
+                <span className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface flex h-7 w-7 shrink-0 items-center justify-center border">
                   <Icon size={15} strokeWidth={1.75} />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -435,7 +435,7 @@ export function MarketplaceSettings() {
                 </>
               )}
               {log?.id === row.descriptorId && (
-                <pre className="border-outline-variant bg-surface-container-lowest text-on-surface custom-scrollbar mt-2 max-h-60 overflow-auto border p-2 text-[10px] whitespace-pre-wrap select-text">
+                <pre className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface custom-scrollbar mt-2 max-h-60 overflow-auto border p-2 text-[10px] whitespace-pre-wrap select-text">
                   {log.text}
                 </pre>
               )}

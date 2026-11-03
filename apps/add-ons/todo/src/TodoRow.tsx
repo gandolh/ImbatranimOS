@@ -123,7 +123,7 @@ export function TodoRow({
           type="button"
           onClick={() => onPatch(todo.id, { completed: !completed })}
           className={cn(
-            'flex h-4 w-4 shrink-0 items-center justify-center border',
+            'rounded-small flex h-4 w-4 shrink-0 items-center justify-center border',
             completed
               ? 'border-primary-container bg-primary-container'
               : 'border-outline-variant bg-transparent'
@@ -174,7 +174,7 @@ export function TodoRow({
             onClick={() => setDueOpen((open) => !open)}
             title="Change the due date"
             className={cn(
-              'font-ui shrink-0 border px-1 text-[10px] tabular-nums',
+              'rounded-small font-ui shrink-0 border px-1 text-[10px] tabular-nums',
               completed
                 ? 'border-outline-variant text-on-surface-variant opacity-50'
                 : overdue
@@ -366,7 +366,7 @@ function DueEditor({
         autoFocus
         aria-label="Due date"
         onChange={(e) => setDate(e.target.value)}
-        className="border-outline-variant bg-surface-container-lowest font-content text-on-surface border px-1.5 py-0.5 text-[12px] outline-none"
+        className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface border px-1.5 py-0.5 text-[12px] outline-none"
       />
       <input
         type="time"
@@ -374,13 +374,13 @@ function DueEditor({
         aria-label="Due time (optional)"
         onChange={(e) => setTime(e.target.value)}
         disabled={!date}
-        className="border-outline-variant bg-surface-container-lowest font-content text-on-surface border px-1.5 py-0.5 text-[12px] outline-none disabled:opacity-50"
+        className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface border px-1.5 py-0.5 text-[12px] outline-none disabled:opacity-50"
       />
       <button
         type="button"
         onClick={() => onChange(dueAtFromInput(date, time || undefined))}
         disabled={!date}
-        className="border-primary bg-primary text-on-primary font-ui border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
+        className="rounded-control border-primary bg-primary text-on-primary font-ui border px-1.5 py-0.5 text-[11px] disabled:opacity-50"
       >
         Set
       </button>
@@ -388,7 +388,7 @@ function DueEditor({
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="border-outline-variant text-on-surface font-ui border px-1.5 py-0.5 text-[11px]"
+          className="rounded-control border-outline-variant text-on-surface font-ui border px-1.5 py-0.5 text-[11px]"
         >
           Clear
         </button>

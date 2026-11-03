@@ -460,7 +460,7 @@ export function TrackStage({
         )}
 
         {resumedFrom !== null && (
-          <div className="border-outline-variant bg-surface-container-low absolute top-2 left-1/2 flex -translate-x-1/2 items-center gap-2 border px-2 py-1">
+          <div className="rounded-control border-outline-variant bg-surface-container-low absolute top-2 left-1/2 flex -translate-x-1/2 items-center gap-2 border px-2 py-1">
             <span className="font-ui text-on-surface-variant text-[11px]">
               Resumed at {formatTime(resumedFrom)}
             </span>

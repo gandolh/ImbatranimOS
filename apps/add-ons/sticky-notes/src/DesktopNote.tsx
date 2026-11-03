@@ -112,7 +112,7 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
   return (
     <div
       className={cn(
-        'pointer-events-auto absolute flex flex-col border shadow-sm',
+        'rounded-control pointer-events-auto absolute flex flex-col border shadow-sm',
         noteColorClass(note.color),
         busy && 'opacity-90'
       )}
@@ -173,7 +173,7 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
             }}
             aria-label="Default colour"
             className={cn(
-              'bg-surface-container h-4 w-4 border',
+              'rounded-small bg-surface-container h-4 w-4 border',
               note.color === null ? 'border-on-surface' : 'border-outline-variant'
             )}
           />
@@ -187,7 +187,7 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
               }}
               aria-label={color}
               className={cn(
-                'h-4 w-4 border',
+                'rounded-small h-4 w-4 border',
                 COLOR_SWATCH[color],
                 note.color === color ? 'border-on-surface' : 'border-outline-variant'
               )}

@@ -4984,3 +4984,12 @@ ask, reuses it, retries after a failure, and releases on close. `NativeAppHost` 
 through the same claim. Six new host tests; every package typechecks and lints. The backend's
 marketplace e2e is the owner's run. imbatranim-office's "CAD asks for its server on its first DWG"
 can now use it.
+
+## [2026-11-03] brief | 34 done: Linux windows keep their places after a reload
+
+The layout saves a Linux window's place under its session and toplevel id, and the connection opens
+the window the session announces again there; restoring still opens no Linux window (`1258820`, 1.127.0). The
+gateway now tells the tab whether its socket resumed a session, so a new session under the same id,
+whose toplevel ids start over, gets no old place; a resumed one drops what its resync didn't claim.
+Six connection tests; walked with foot in the dev container (moved, resized, reloaded, back in
+place). Built ahead of 31-33, which need the host's Rust.

@@ -117,7 +117,8 @@ grows the image), 28 (`startIn` on `pickOpen`/`pickSave`, kit 1.1.0, ready
 for imbatranim-office's Save as brief), 30 (`npm test` caps turbo at half the
 cores; built before 29, which was larger), 29 (`system.server.request()`,
 kit 1.2.0: a kit app's server starts when the app asks, not when its window
-opens). As written:
+opens), 34 (Linux windows come back to their places after a reload; the
+gateway tells the tab whether its session resumed). As written:
 - 23-27, small fixes: the Linux apps pane in the themes (no accent ring on a
   Linux window's surface), the tray surviving a wrong stats answer, Files'
   background menu below a short listing, `openApp` moving the keyboard into a

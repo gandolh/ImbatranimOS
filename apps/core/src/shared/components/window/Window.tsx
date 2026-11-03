@@ -124,11 +124,14 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
     se: 'bottom-0 right-0 w-2 h-2',
     sw: 'bottom-0 left-0 w-2 h-2',
   }
+  // Apricot's rounded frame clips its corners, hit-testing included, so an 8px
+  // handle there is mostly unreachable; the corners grab 12px instead.
+  const corner = direction.length === 2 ? 'apricot:h-3 apricot:w-3' : ''
 
   return (
     <div
       {...bind()}
-      className={cn('absolute z-10', cursorMap[direction], positionClasses[direction])}
+      className={cn('absolute z-10', cursorMap[direction], positionClasses[direction], corner)}
       style={{ touchAction: 'none' }}
     />
   )

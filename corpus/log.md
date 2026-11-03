@@ -4618,3 +4618,13 @@ moved over unchanged. Apricot gets the canvas's sunset hills as an inline SVG be
 (sky gradient, sun or moon, clouds, three hills, stars at dusk) that fills any desktop size and
 recolours from `--k-wall-*` variables on a mode switch, plus Plain and Soft dots. Checked at
 1280×800, 390×844 and 2560×1440; Classic is pixel-identical. Built in `e41d80c` (1.80.0).
+
+## [2026-11-03] brief | 14 done: the theme picker in Settings
+
+Settings → Appearance reads Theme, Mode, Accent, Wallpaper. Each theme card draws a small desktop
+in its own theme's values: the token blocks now match `[data-os-theme][data-theme]` on any
+element, and Classic's square rule skips an Apricot card. Every group is a labelled radio group
+(Tab reaches the chosen option, arrows move, Space/Enter choose), and choosing a card brings back
+that theme's own accent and wallpaper at once. Built in `1542261` (1.82.0), with a new test. Filed
+[settings-apps-rows-overflow-on-a-phone](todos/settings-apps-rows-overflow-on-a-phone.md): the Apps
+rows below the section make Settings scroll sideways at 390 px.

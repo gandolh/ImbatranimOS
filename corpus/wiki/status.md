@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; eight open briefs (the Linux apps layer 01-06, in a cloud session on its own branch; the two themes 14-15, 08-13 done 2026-11-03); what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; seven open briefs (the Linux apps layer 01-06, in a cloud session on its own branch; the themes' check, 15; 08-14 done 2026-11-03); what the owner owes, open todos, and where the history lives.
 updated: 2026-11-03
 ---
 
@@ -76,9 +76,10 @@ Classic kept ([decisions-themes.md](decisions-themes.md)), one at a time on
   tiles follow the canvas.
 - 13: Apricot's wallpapers: sunset hills (an SVG scene, dusk in dark mode),
   plain and soft dots.
+- 14: Settings → Appearance picks the theme from preview cards, then Mode,
+  Accent and Wallpaper, each a radio group.
 
-Left: the Settings picker, and a check of every app in the four
-combinations. They
+Left: 15, a check of every app in the four combinations. They
 deploy together after 15. 07 (research) is superseded by the grill.
 The server ISO is deferred by the owner (2026-10-04).
 
@@ -104,6 +105,7 @@ The server ISO is deferred by the owner (2026-10-04).
 - [linux-apps-after-the-first-wave](../todos/linux-apps-after-the-first-wave.md)
 - [native-build-leftovers-in-the-image](../todos/native-build-leftovers-in-the-image.md)
 - [office-pin-after-the-row-1000-fix](../todos/office-pin-after-the-row-1000-fix.md)
+- [settings-apps-rows-overflow-on-a-phone](../todos/settings-apps-rows-overflow-on-a-phone.md)
 - [tray-crash-on-a-wrong-api-base](../todos/tray-crash-on-a-wrong-api-base.md)
 
 ## History

@@ -135,9 +135,10 @@ describe('buildXtermTheme', () => {
     expect(light.brightWhite).not.toBe(dark.brightWhite)
   })
 
-  it('keeps every light-mode ANSI colour dark enough to read on the light surface', () => {
+  it('keeps every light-mode ANSI colour dark enough to read on the light surfaces', () => {
     // The regression this guards: a "bright" colour that is brighter than the page.
-    // Relative luminance per WCAG; the light surface (#f3f3f1) is ~0.89.
+    // Relative luminance per WCAG; Classic's light surface (#f3f3f1) is ~0.89 and
+    // Apricot's cream (#fbf3ea, 2026-11-03) is lighter still.
     const lum = (hex: string) => {
       const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
       const lin = c.map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
@@ -162,24 +163,27 @@ describe('buildXtermTheme', () => {
       'brightCyan',
       'brightWhite',
     ] as const
-    const surface = lum('#f3f3f1')
-    for (const key of ansiKeys) {
-      const value = light[key]
-      const contrast = (surface + 0.05) / (lum(value) + 0.05)
-      // 3:1 — the large-text/UI threshold. Terminal glyphs are small but this is
-      // the floor below which a colour is simply not readable.
-      expect(contrast, `${key} (${value}) on #f3f3f1`).toBeGreaterThan(3)
+    for (const page of ['#f3f3f1', '#fbf3ea']) {
+      const surface = lum(page)
+      for (const key of ansiKeys) {
+        const value = light[key]
+        const contrast = (surface + 0.05) / (lum(value) + 0.05)
+        // 3:1 — the large-text/UI threshold. Terminal glyphs are small but this is
+        // the floor below which a colour is simply not readable.
+        expect(contrast, `${key} (${value}) on ${page}`).toBeGreaterThan(3)
+      }
     }
   })
 
-  it('keeps every dark-mode ANSI colour light enough to read on the dark surface', () => {
+  it('keeps every dark-mode ANSI colour light enough to read on the dark surfaces', () => {
     const lum = (hex: string) => {
       const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
       const lin = c.map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
       return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
     }
     const dark = buildXtermTheme('dark', resolve)
-    const surface = lum('#0d0d0e')
+    // Classic's dark surface and Apricot's dusk one (2026-11-03).
+    const pages = ['#0d0d0e', '#1f1916']
     // `black`/`brightBlack` are conventionally near-background (they are what
     // dimmed text uses) so they are excluded — a terminal palette where ANSI black
     // is readable on black is not a terminal palette.
@@ -199,9 +203,12 @@ describe('buildXtermTheme', () => {
       'brightCyan',
       'brightWhite',
     ] as const
-    for (const key of keys) {
-      const contrast = (lum(dark[key]) + 0.05) / (surface + 0.05)
-      expect(contrast, `${key} (${dark[key]}) on #0d0d0e`).toBeGreaterThan(3)
+    for (const page of pages) {
+      const surface = lum(page)
+      for (const key of keys) {
+        const contrast = (lum(dark[key]) + 0.05) / (surface + 0.05)
+        expect(contrast, `${key} (${dark[key]}) on ${page}`).toBeGreaterThan(3)
+      }
     }
   })
 })

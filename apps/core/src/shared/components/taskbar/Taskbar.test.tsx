@@ -107,18 +107,13 @@ describe('Taskbar activation', () => {
     expect(focusIntoWindowSoon).not.toHaveBeenCalled()
   })
 
-  it('moves focus into an open single-instance app that Start brought up', () => {
+  it('launches from Start through openApp, which moves the keyboard itself', () => {
+    // openApp gives a window it raises the keyboard (openAppKeyboard.test.tsx);
+    // the taskbar adds no second move of its own.
     openApp.mockReturnValue('a')
     click('Start')
     click('Start: Notepad')
-    expect(openApp).toHaveBeenCalledWith('notepad')
-    expect(focusIntoWindowSoon).toHaveBeenCalledExactlyOnceWith('a')
-  })
-
-  it('leaves a window that Start just opened to its app', () => {
-    openApp.mockReturnValue('new-window')
-    click('Start')
-    click('Start: Notepad')
+    expect(openApp).toHaveBeenCalledExactlyOnceWith('notepad')
     expect(focusIntoWindowSoon).not.toHaveBeenCalled()
   })
 })

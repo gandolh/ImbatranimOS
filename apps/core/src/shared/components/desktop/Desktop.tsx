@@ -4,7 +4,6 @@ import { useEnabledApps } from '../../registry/enabledApps'
 import { TASKBAR_HEIGHT } from '../../store/windowStore'
 import { useDesktopStore } from '../../store/desktopStore'
 import { openApp } from '../../intents/openApp'
-import { openWithKeyboard } from '../window/focusIntoWindow'
 import { clampToDesktop, layoutIcons } from './layoutIcons'
 import { iconsInRect, isDrag, normalizeRect, type DragRect } from './marquee'
 import { isTextEntry } from '../../hooks/shortcutRegistry'
@@ -114,15 +113,15 @@ export function Desktop({ wallpaper }: DesktopProps) {
    * sits invisible on another, so the app looks lost. Found by workspaces's probe.
    */
   function handleOpen(appId: string) {
-    // An app already open comes to the front with the keyboard.
-    openWithKeyboard(() => openApp(appId))
+    // An app already open comes to the front with the keyboard (openApp).
+    openApp(appId)
   }
 
   /** Open every selected icon (or just this one), the single-instance path. */
   const openSelection = useCallback(
     (fallbackId?: string) => {
       const ids = selected.size > 0 ? [...selected] : fallbackId ? [fallbackId] : []
-      for (const id of ids) openWithKeyboard(() => openApp(id))
+      for (const id of ids) openApp(id)
       setSelected(new Set())
     },
     [selected]

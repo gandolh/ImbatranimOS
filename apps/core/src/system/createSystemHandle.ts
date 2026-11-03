@@ -24,7 +24,7 @@ import { accentColours, useAppearanceStore } from '../shared/store/appearanceSto
 import { useIntentStore } from '../shared/store/intentStore'
 import { isTopWindow, useWindowStore } from '../shared/store/windowStore'
 import { openApp } from '../shared/intents/openApp'
-import { focusIntoWindowSoon, openWithKeyboard } from '../shared/components/window/focusIntoWindow'
+import { focusIntoWindowSoon } from '../shared/components/window/focusIntoWindow'
 import { isShellSuspended } from '../modules/auth/store/authStore'
 import { useShortcutStore } from '../shared/hooks/shortcutRegistry'
 import { eventMatchesBinding, parseBinding } from '../shared/hooks/useGlobalHotkeys'
@@ -198,9 +198,9 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
     window: win,
 
     intents: {
-      // A window this raises gets the keyboard; a new one takes it as it
-      // mounts.
-      openApp: (target, payload) => openWithKeyboard(() => openApp(target, payload)),
+      // A window this raises gets the keyboard from openApp; a new one takes
+      // it as it mounts.
+      openApp: (target, payload) => openApp(target, payload),
       consume: <T>() =>
         windowId === null
           ? undefined

@@ -1,4 +1,4 @@
-import { topVisibleWindowId, useWindowStore } from '../../store/windowStore'
+import { topVisibleWindowId } from '../../store/windowStore'
 
 /**
  * Moving the keyboard into a window the desktop raised.
@@ -11,9 +11,10 @@ import { topVisibleWindowId, useWindowStore } from '../../store/windowStore'
  * {@link focusIntoWindowSoon} after their store calls; the click path never
  * does, because the click has already decided.
  *
- * The keyboard-focus fix widened it to every path: a desktop icon, a toast's action, an
- * app's `system.window.focus()` or `system.intents.openApp` raise a window and
- * call the same helper, and a NEW window gets the keyboard from its own mount
+ * Every path that raises a window does it: `openApp` itself for a window it
+ * brings up (so a desktop icon, a toast's action, the palette, Start's recent
+ * files and an app's `system.intents.openApp` all get it), and
+ * `system.window.focus()`. A NEW window gets the keyboard from its own mount
  * ({@link focusIntoNewWindowSoon}), whatever opened it.
  */
 
@@ -144,18 +145,4 @@ export function focusIntoNewWindowSoon(windowId: string): () => void {
     })
   })
   return () => cancelAnimationFrame(frame)
-}
-
-/**
- * Runs `open`, an `openApp` call from a path that is not a click inside the
- * window it brings up (a desktop icon, a toast, an app's intent). When that
- * window was already open, it was raised, and the keyboard follows it as it
- * does from the taskbar. A new window takes the keyboard from its own mount
- * instead, once its content is there. Returns what `open` returned.
- */
-export function openWithKeyboard(open: () => string): string {
-  const openBefore = new Set(useWindowStore.getState().windows.map((w) => w.id))
-  const id = open()
-  if (id && openBefore.has(id)) focusIntoWindowSoon(id)
-  return id
 }

@@ -1,21 +1,16 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { topVisibleWindowId, openWindows } = vi.hoisted(() => ({
+const { topVisibleWindowId } = vi.hoisted(() => ({
   topVisibleWindowId: vi.fn<() => string | null>(),
-  openWindows: { ids: [] as string[] },
 }))
-vi.mock('../../store/windowStore', () => ({
-  topVisibleWindowId,
-  useWindowStore: { getState: () => ({ windows: openWindows.ids.map((id) => ({ id })) }) },
-}))
+vi.mock('../../store/windowStore', () => ({ topVisibleWindowId }))
 
 import {
   focusIntoNewWindowSoon,
   focusIntoWindow,
   focusIntoWindowSoon,
   forgetWindowFocus,
-  openWithKeyboard,
   rememberWindowFocus,
 } from './focusIntoWindow'
 
@@ -49,7 +44,6 @@ function taskbarButton(): HTMLButtonElement {
 
 beforeEach(() => {
   topVisibleWindowId.mockReset()
-  openWindows.ids = []
 })
 
 afterEach(() => {
@@ -272,38 +266,5 @@ describe('focusIntoNewWindowSoon', () => {
     cancel()
     flushFrame()
     expect(document.activeElement).toBe(start)
-  })
-})
-
-describe('openWithKeyboard', () => {
-  let frames: FrameRequestCallback[]
-
-  beforeEach(() => {
-    frames = []
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => frames.push(cb))
-  })
-
-  it('puts the keyboard in a window that was already open and came up', () => {
-    const { content } = mountWindow('a', '<input id="cmd" />')
-    taskbarButton()
-    openWindows.ids = ['a']
-    topVisibleWindowId.mockReturnValue('a')
-
-    expect(openWithKeyboard(() => 'a')).toBe('a')
-    expect(frames).toHaveLength(1)
-    frames[0](0)
-    expect(document.activeElement).toBe(content.querySelector('#cmd'))
-  })
-
-  it('leaves a new window to its own mount', () => {
-    openWindows.ids = ['a']
-    expect(openWithKeyboard(() => 'new')).toBe('new')
-    expect(frames).toHaveLength(0)
-  })
-
-  it('does nothing for a refused open', () => {
-    openWindows.ids = ['a']
-    expect(openWithKeyboard(() => '')).toBe('')
-    expect(frames).toHaveLength(0)
   })
 })

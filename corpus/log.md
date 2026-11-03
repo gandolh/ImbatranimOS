@@ -4724,3 +4724,12 @@ before `npm ci`, so each image build reinstalls every dependency and the `dev` s
 of `node_modules`; Compose watch also rebuilds the container on every commit. The brief keys the
 `npm ci` layer on the dependencies alone, drops the `chown -R` over `node_modules`, and stops
 watch from rebuilding for a version-only change.
+
+## [2026-11-03] docs | README images retaken in Apricot light; window corners fixed
+
+The dev image was rebuilt (the version bump busts its `npm ci` layer on every commit; brief 22)
+and all five README images retaken from the dev container in Apricot light, following
+`docs/images/shots.md`; every frame was checked for personal data. Retaking them found a brief-12
+bug: Apricot's rounded, overflow-hidden frame clips hit-testing too, so the 8 px corner resize
+handles were reachable only 5-7 px inside the corner. In Apricot the corner handles are now 12 px;
+Classic's are unchanged.

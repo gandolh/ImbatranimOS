@@ -88,7 +88,8 @@ The server ISO is deferred by the owner (2026-10-04).
 
 - Push imbatranim-office's `main` (to `aa626c2` or later), then this repo,
   then deploy the two themes (briefs 08-21) with vps-deploy
-  (`node cli.ts imbatranim-os all`). The Office catalog entry pins
+  (`node cli.ts imbatranim-os all`). The README images are already retaken
+  in Apricot light (2026-11-03). The Office catalog entry pins
   `aa626c2`, which only exists locally until the push. The office kit is
   synced and the pin moved (2026-11-03). Hollow needs nothing: it doesn't use
   the kit.

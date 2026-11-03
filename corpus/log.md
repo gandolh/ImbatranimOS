@@ -4913,3 +4913,12 @@ window's surface needed no opt-out (brief 20's rings are per class); a comment t
 say why it has none. Walked in the dev container: radii 8/4 px in Apricot and 0 in Classic; foot's
 surface focused with no ring while its title bar's Minimize shows one. Run on branch
 `claude/tender-franklin-h8lc35`, which carries 23-36 in one PR.
+
+## [2026-11-03] brief | 24 done: a wrong stats answer leaves the desktop standing
+
+The tray reads `/system/stats` through `readTrayStats`, which draws CPU and memory only from finite
+numbers and reads the disk percent apart; an HTML body, an empty object or a failed request draws the
+tray without them (`7f4c520`, 1.111.0). A host run with `VITE_API_URL` unset then blanked in Sticky
+Notes' desktop layer on the same HTML; it now takes only an array, and the desktop drew (icons,
+taskbar, a "Couldn't save your settings" toast). Desktop layers have no error boundary; filed as a
+todo.

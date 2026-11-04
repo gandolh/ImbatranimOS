@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-04) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, not merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups), 31 (XWayland) and 33 (HiDPI) still open; the theme follow-ups 16-21 are done; what the owner owes, open todos, and where the history lives.
+summary: Dated snapshot (2026-11-04) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, not merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups), 31 (XWayland) and 33 (HiDPI) still open; the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos (not built); what the owner owes and where the history lives.
 updated: 2026-11-04
 ---
 
@@ -126,10 +126,15 @@ outcome is in `briefs/done/`:
   lossless.
 
 Still open, not started: **31** (X11 apps through XWayland) and **33** (sharp
-Linux windows on HiDPI screens). The run's findings became todos:
-`desktop-layers-have-no-error-boundary`,
-`npm-run-dev-also-starts-the-prod-service` and `linux-apps-dbus-session-bus`
-(a second Firefox window from a running one needs it).
+Linux windows on HiDPI screens).
+
+37-44, written 2026-11-04 from a grill with the owner, not built: 37
+production gets its own Compose profile, 38 a crashed desktop layer leaves
+the desktop standing (with a notice), 39 Linux apps' sound as one stream, 40
+a tray volume over all sound (reversing the 2026-07-31 rejection), 41 plain
+text copy and paste both ways, 42 a D-Bus session bus with notifications, 43
+an Updates page (26.05 fixes, release upgrades, Go back), 44 Linux apps on
+the VPS inside a capped container. 40 runs after 39.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner
@@ -164,14 +169,8 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Open todos
 
-Four Linux apps items each need a grill with the owner before a brief, and
-one waits on the owner's check:
-- [linux-apps-sound](../todos/linux-apps-sound.md)
-- [linux-apps-clipboard](../todos/linux-apps-clipboard.md)
-- [linux-apps-on-the-vps](../todos/linux-apps-on-the-vps.md)
-- [linux-apps-move-the-nix-pin](../todos/linux-apps-move-the-nix-pin.md)
-- [window-zoom-beside-linux-windows](../todos/window-zoom-beside-linux-windows.md)
-  (Chrome with a real GPU)
+None. On 2026-11-04 the owner's grill turned the open todos into
+briefs 37-44 and dropped the window-zoom check.
 
 ## History
 

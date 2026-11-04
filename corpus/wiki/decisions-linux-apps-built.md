@@ -1,6 +1,6 @@
 ---
-summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image.
-updated: 2026-11-03
+summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image. Grilled again 2026-11-04: a tray volume over all sound (reversing the 2026-07-31 rejection), Linux apps on the VPS in a capped container, and the zoom beside Linux windows stays off for good.
+updated: 2026-11-04
 ---
 
 # Decisions: Linux apps, after the build (2026-11-03)
@@ -62,3 +62,28 @@ Noto Sans CJK in it (65 MB, about 13% more image).
 **Why**: the slim image, and a font is one install away for whoever needs
 it.
 
+## A tray volume over all of the OS's sound
+_2026-11-04_ — The tray gets a volume slider and a mute that apply to every
+sound the OS makes: the media player add-on and the Linux apps' stream
+(briefs 39 and 40). This reverses [real-os-gaps.md](real-os-gaps.md)'s
+2026-07-31 rejection of a global volume, which said to revisit once a second
+sound source existed; Linux sound is that source.
+Rejected: no OS volume at all (the browser's tab mute and the computer's
+volume), and a mute for Linux sound alone.
+**Why**: the owner wants one place to turn the OS down, now that two things
+in it make sound.
+
+## Linux apps on the VPS, in a capped container
+_2026-11-04_ — Linux apps are turned on for the VPS, and vps-deploy caps the
+whole imbatranimOS container for CPU and memory so it can't take the other
+services' share (brief 44 measures and proposes the numbers). Nothing inside
+the OS limits sessions or apps.
+Rejected: off until a bigger box; on with no cap; per-session and per-app
+limits inside the OS.
+**Why**: one Firefox window is 0.5-0.6 GB and the box had 2.1 GiB free on
+2026-11-04; a cap at the container keeps a heavy page from slowing every site
+on the box, without new limits in the OS.
+
+## The zoom beside Linux windows stays off
+_2026-11-04_ — The owner dropped the check with a GPU Chrome; the fade-only
+rule above is final, and its todo is closed.

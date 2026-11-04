@@ -1,6 +1,6 @@
 ---
-summary: Where the OS still stops feeling like an OS (2026-07-31 research) — the three places the illusion breaks first, the Tier-2 features worth doing later, and the standing rejection list (root-requiring features, a package manager, a services view, a global mixer, man pages, printing, a clipboard manager, screen recording, an SSH app) with the reason each is out, so they are not re-litigated.
-updated: 2026-11-02
+summary: Where the OS still stops feeling like an OS (2026-07-31 research) — the three places the illusion breaks first, the Tier-2 features worth doing later, and the standing rejection list (root-requiring features, a package manager, a services view, man pages, printing, a clipboard manager, screen recording, an SSH app) with the reason each is out, so they are not re-litigated. The global mixer was reversed on 2026-11-04 once Linux apps brought a second sound source.
+updated: 2026-11-04
 ---
 
 # Real-OS gaps — what is missing, and what we refuse
@@ -77,10 +77,10 @@ Where the illusion breaks first, for a new user:
   docs, and busybox has no `man`. It would need mandoc + man-pages (~10-25 MB)
   to then document GNU flags the busybox userland does not have. Lightweight
   loses *and* accuracy loses. `--help` in the Terminal wins.
-- **A global volume / mute / mixer** — there is no audio *system*; the only
-  sound is the media player's own `<audio>`. The host OS and browser own the
-  real mixer, so a tray slider scaling one app's element volume is theatre.
-  Revisit when a second sound source exists.
+- ~~**A global volume / mute / mixer**~~ — rejected 2026-07-31 while the media
+  player's `<audio>` was the only sound. **Reversed 2026-11-04**: Linux apps'
+  sound is a second source, and the tray gets one volume and a mute over both
+  ([decisions-linux-apps-built.md](decisions-linux-apps-built.md)).
 - **Printing via a spooler** — CUPS is a daemon plus drivers plus privileged
   setup. The meaningful 5% is "Print to PDF" per app, which belongs in the app
   briefs.

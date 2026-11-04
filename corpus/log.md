@@ -5025,3 +5025,17 @@ Done on the branch (PR 2): 22-30, 32, 34, 35, 36. Not started: 31 (XWayland) and
 in the Wayland host. Owed to the owner: the full `npm test` (turbo, the backend e2e), the real
 `npm run dev` watch check (proved here on a miniature), the Firefox kB/s run for 36, and the three
 new todos. Image builds here used a scratchpad copy of the Dockerfile with the sandbox proxy's CA.
+
+## [2026-11-04] todo | Briefs 37-44 from the open todos
+
+A grill with the owner settled all eight open todos. Briefs: 37 production gets its own Compose
+profile (the owner's pick over naming the dev service in `scripts/dev.mjs`), 38 a desktop layer that
+crashes hides and one notice names the add-on, 39 Linux apps' sound as one mixed stream, 40 a tray
+volume and mute over the media player and Linux sound, 41 plain-text copy and paste both ways on the
+keys, 42 a D-Bus session bus per session with notifications into the OS (no file-chooser portal), 43
+an Updates page styled after Windows Update and macOS (fixes on 26.05, "Upgrade to 26.11" shown
+separately, everything moves together, Go back keeps one previous pin), 44 Linux apps on the VPS with
+the whole container capped in vps-deploy. The window-zoom check with a GPU Chrome was dropped: the
+fade-only rule is final. Three decisions in
+[decisions-linux-apps-built.md](wiki/decisions-linux-apps-built.md); the global-mixer rejection in
+[real-os-gaps.md](wiki/real-os-gaps.md) is marked reversed. The eight todos are deleted.

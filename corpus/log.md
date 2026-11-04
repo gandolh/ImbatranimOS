@@ -5010,3 +5010,18 @@ and on change, the backend passes known ids, and the host switches the session's
 smithay, which sends it to every client (`1aa34ea`, 1.132.0). `cargo test` checks both keymaps and the Romanian
 letters on their physical keys. Walked with foot: Romanian typed șțăîâȘȚĂÎÂ, then US typed ;'[]\ into
 the same running app.
+
+## [2026-11-04] brief | 36 done: video regions go lossy, and text stays sharp
+
+The host's canvas sends a region of at least 240×135 that was redrawn in six of the last eight frames
+as JPEG (encoding 3, the pure-Rust `jpeg-encoder`), splits it out of merged damage so text beside it
+stays lossless, and sends it lossless once a quarter of a second after it stops (`6b00b3d`, 1.134.0). A window
+not playing anything is lossless byte for byte as before. Nineteen host tests; the tab decodes JPEG
+like WebP. The Firefox kB/s run was not taken.
+
+## [2026-11-04] resume | The run on claude/tender-franklin-h8lc35 stops at thirteen briefs
+
+Done on the branch (PR 2): 22-30, 32, 34, 35, 36. Not started: 31 (XWayland) and 33 (HiDPI), both
+in the Wayland host. Owed to the owner: the full `npm test` (turbo, the backend e2e), the real
+`npm run dev` watch check (proved here on a miniature), the Firefox kB/s run for 36, and the three
+new todos. Image builds here used a scratchpad copy of the Dockerfile with the sandbox proxy's CA.

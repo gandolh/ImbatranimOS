@@ -8,6 +8,8 @@
 export const WS_KIND_FRAME = 2
 export const ENC_DEFLATE_RGBA = 1
 export const ENC_WEBP_LOSSLESS = 2
+/** A large region that changes on most frames (a video), sent lossy. */
+export const ENC_JPEG = 3
 
 export type FrameRect = {
   x: number
@@ -60,7 +62,7 @@ async function inflate(data: Uint8Array): Promise<Uint8Array> {
 
 /**
  * Decode one rectangle into something a 2D canvas can draw. Deflate carries
- * raw RGBA; WebP decodes off the main thread in `createImageBitmap`.
+ * raw RGBA; WebP and JPEG decode off the main thread in `createImageBitmap`.
  */
 export async function decodeRect(rect: FrameRect): Promise<ImageData | ImageBitmap | null> {
   if (rect.w === 0 || rect.h === 0) return null
@@ -73,8 +75,11 @@ export async function decodeRect(rect: FrameRect): Promise<ImageData | ImageBitm
       rect.h
     )
   }
-  if (rect.encoding === ENC_WEBP_LOSSLESS) {
-    return createImageBitmap(new Blob([rect.data as BlobPart], { type: 'image/webp' }))
+  if (rect.encoding === ENC_WEBP_LOSSLESS || rect.encoding === ENC_JPEG) {
+    // Drawn the same way: the host sends a video's region as JPEG while it
+    // plays, then lossless WebP once it is still.
+    const type = rect.encoding === ENC_JPEG ? 'image/jpeg' : 'image/webp'
+    return createImageBitmap(new Blob([rect.data as BlobPart], { type }))
   }
   return null
 }

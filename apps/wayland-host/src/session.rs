@@ -430,6 +430,8 @@ impl SessionState {
         let quiet: Vec<bool> = (0..self.windows.len()).map(|i| !self.is_live(i)).collect();
         let images = &self.images;
         for (i, w) in self.windows.iter_mut().enumerate() {
+            // A region sent lossy that has gone still gets its lossless frame.
+            w.canvas.tick();
             if !w.mapped || w.in_flight || quiet[i] || !w.canvas.has_damage() {
                 continue;
             }

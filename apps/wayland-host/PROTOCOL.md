@@ -142,13 +142,22 @@ Each rectangle:
 | Field | Size | |
 |---|---|---|
 | x, y, w, h | 4 × u32 | in image pixels |
-| encoding | u8 | 1 deflate (zlib) RGBA, 2 lossless WebP |
+| encoding | u8 | 1 deflate (zlib) RGBA, 2 lossless WebP, 3 JPEG (lossy) |
 | length | u32 | |
 | data | length | |
 
 Deflate data inflates to exactly `w × h × 4` bytes of RGBA, row by row. The
 first frame of a toplevel, and the first after its size changes, covers the
 whole image.
+
+JPEG is only sent with `--encoding webp`, for a region that keeps changing (a
+video): one at least 240×135 that was redrawn in six of the window's last
+eight frames, and only where every pixel is opaque. Only that region goes
+lossy; the rest of a rectangle around it (text beside a video) is sent as
+lossless WebP in its own rectangles. Once the region has been still for
+eight ticks (about a quarter of a second) it is sent once more, lossless, so
+a paused video ends up sharp. A window that isn't playing anything is sent
+lossless exactly as before. The constants are in `pixels.rs`.
 
 ## Flow control
 

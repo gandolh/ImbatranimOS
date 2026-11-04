@@ -17,6 +17,8 @@ pub const PROTOCOL_VERSION: u32 = 3;
 /// Pixel encodings of a frame's rectangles.
 pub const ENC_DEFLATE_RGBA: u8 = 1;
 pub const ENC_WEBP_LOSSLESS: u8 = 2;
+/// A JPEG: a large region that changes on most frames (a video), sent lossy.
+pub const ENC_JPEG: u8 = 3;
 
 /// Backend to host.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]

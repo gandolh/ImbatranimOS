@@ -1,9 +1,10 @@
 //! A window's pixels: the RGBA copy the host keeps of each toplevel, the
-//! damage waiting to be sent, and the two lossless encodings.
+//! damage waiting to be sent, the two lossless encodings, and the lossy one a
+//! region that keeps changing (a video) is sent in.
 
 use std::io::Write;
 
-use crate::protocol::{EncodedRect, Rect, ENC_DEFLATE_RGBA, ENC_WEBP_LOSSLESS};
+use crate::protocol::{EncodedRect, Rect, ENC_DEFLATE_RGBA, ENC_JPEG, ENC_WEBP_LOSSLESS};
 
 /// `wl_shm` formats the host reads. Both are little-endian 32-bit words, so
 /// the bytes in memory are B, G, R, A (or B, G, R, unused).
@@ -32,6 +33,53 @@ impl Encoding {
 /// More rectangles than this and the damage collapses to its bounding box:
 /// past a handful, the per-rectangle overhead costs more than it saves.
 const MAX_RECTS: usize = 16;
+
+// When a region goes lossy (the WebP path only; deflate stays as it is).
+//
+// A video playing in a window sends the same large rectangle on almost every
+// frame, and lossless WebP of camera pixels is several times a JPEG's size
+// (239 kB/s for a 480 px synthetic video at 28 frames a second, measured
+// 2026-11-03; a real film costs more). Text and UI change in small pieces,
+// or in large ones only now and then, and stay lossless.
+
+/// "Large": at least this many pixels, about a 240×135 thumbnail. Smaller
+/// changes (a caret, a spinner, a typed line) aren't worth the artifacts.
+const LOSSY_MIN_AREA: u64 = 240 * 135;
+/// "Changes on most frames": the region was redrawn in at least this many of
+/// the window's last eight frames. A burst of two or three (a page loading, a
+/// menu opening) stays lossless.
+const LOSSY_HOT_FRAMES: u32 = 6;
+/// A redraw counts as the same region when it covers at least half of it.
+const LOSSY_SAME_REGION: f64 = 0.5;
+/// A redraw of the region at most this much larger becomes the region (a
+/// video that moved or grew); a larger one is the region merged with other
+/// damage (text beside it), and the region keeps its bounds, so the text
+/// stays lossless.
+const LOSSY_FOLLOW_GROWTH: f64 = 1.5;
+/// Ticks (33 ms each) the region must stay still after a lossy frame before
+/// it is sent once more, lossless, so a paused video ends up sharp: about a
+/// quarter of a second.
+const LOSSY_SETTLE_TICKS: u32 = 8;
+/// JPEG quality: high enough that faces and gradients hold up.
+const JPEG_QUALITY: u8 = 80;
+
+/// A large region of the window that is being redrawn again and again.
+#[derive(Debug, Clone, Copy)]
+struct Hot {
+    rect: Rect,
+    /// One bit per frame, newest lowest: was the region redrawn in it.
+    history: u8,
+    /// Ticks since it was last redrawn.
+    quiet: u32,
+    /// Part of it went out lossy since it was last sent lossless.
+    lossy_sent: bool,
+}
+
+impl Hot {
+    fn is_hot(&self) -> bool {
+        self.history.count_ones() >= LOSSY_HOT_FRAMES
+    }
+}
 
 /// One surface's last committed buffer, as premultiplied RGBA. Every surface
 /// of a window (its root, its subsurfaces) keeps one; the window's [`Canvas`]
@@ -115,6 +163,10 @@ pub struct Canvas {
     pub height: u32,
     rgba: Vec<u8>,
     damage: Vec<Rect>,
+    /// The region being watched for going lossy, if any.
+    hot: Option<Hot>,
+    /// The next frame goes all lossless: a lossy region settled.
+    settle: bool,
 }
 
 impl Canvas {
@@ -137,6 +189,60 @@ impl Canvas {
             w: width,
             h: height,
         }];
+        self.hot = None;
+        self.settle = false;
+    }
+
+    /// One tick of the host's frame clock went by. A region sent lossy that
+    /// has been still for a while is damaged once more, to go out lossless:
+    /// a paused video ends up sharp.
+    pub fn tick(&mut self) {
+        let Some(hot) = self.hot.as_mut() else { return };
+        hot.quiet = hot.quiet.saturating_add(1);
+        if hot.lossy_sent && hot.quiet >= LOSSY_SETTLE_TICKS {
+            let rect = hot.rect;
+            self.hot = None;
+            self.settle = true;
+            self.add_damage(rect);
+        }
+    }
+
+    /// Watch this frame's damage for a large region that keeps being redrawn,
+    /// and say which part of the window to send lossy, if any.
+    fn observe(&mut self, rects: &[Rect]) -> Option<Rect> {
+        let big = rects.iter().copied().filter(|r| area(*r) >= LOSSY_MIN_AREA).max_by_key(|r| area(*r));
+        match (&mut self.hot, big) {
+            (Some(hot), Some(b)) if overlap(hot.rect, b) >= LOSSY_SAME_REGION => {
+                hot.history = (hot.history << 1) | 1;
+                if area(b) as f64 <= area(hot.rect) as f64 * LOSSY_FOLLOW_GROWTH {
+                    hot.rect = b;
+                }
+                hot.quiet = 0;
+            }
+            (Some(hot), b) => {
+                hot.history <<= 1;
+                // A new large region takes the place of one that went cold
+                // without having been sent lossy.
+                if let Some(b) = b {
+                    if !hot.lossy_sent && !hot.is_hot() {
+                        *hot = Hot { rect: b, history: 1, quiet: 0, lossy_sent: false };
+                    }
+                }
+            }
+            (None, Some(b)) => {
+                self.hot = Some(Hot { rect: b, history: 1, quiet: 0, lossy_sent: false });
+            }
+            (None, None) => {}
+        }
+        self.hot.filter(|h| h.is_hot()).map(|h| h.rect)
+    }
+
+    /// Whether every pixel of `r` is opaque. A JPEG has no alpha.
+    fn opaque(&self, r: Rect) -> bool {
+        (r.y..r.y + r.h).all(|row| {
+            let start = (row as usize * self.width as usize + r.x as usize) * 4;
+            self.rgba[start..start + r.w as usize * 4].chunks_exact(4).all(|p| p[3] == 255)
+        })
     }
 
     pub fn damage_all(&mut self) {
@@ -170,30 +276,53 @@ impl Canvas {
     }
 
     /// Redraw the damaged rectangles from `layers`, bottom to top, then take
-    /// the damage and encode each rectangle of it.
+    /// the damage and encode each rectangle of it. With WebP, the part of a
+    /// rectangle inside a region that keeps changing goes lossy (JPEG), and
+    /// the rest of it lossless; a window that isn't playing anything is
+    /// lossless, byte for byte, as before.
     pub fn take_frame(&mut self, layers: &[Layer], encoding: Encoding) -> Vec<EncodedRect> {
         let rects = std::mem::take(&mut self.damage);
         for r in &rects {
             self.compose(*r, layers);
         }
-        rects
-            .into_iter()
-            .map(|rect| {
-                let pixels = self.extract(rect);
-                match encoding {
-                    Encoding::Deflate => EncodedRect {
-                        rect,
-                        encoding: ENC_DEFLATE_RGBA,
-                        data: deflate(&pixels),
-                    },
-                    Encoding::Webp => EncodedRect {
-                        rect,
-                        encoding: ENC_WEBP_LOSSLESS,
-                        data: webp_lossless(&pixels, rect.w, rect.h),
-                    },
+        let lossy = if encoding == Encoding::Webp && !std::mem::take(&mut self.settle) {
+            self.observe(&rects)
+        } else {
+            None
+        };
+        let mut out = Vec::with_capacity(rects.len());
+        for rect in rects {
+            let inside = lossy.and_then(|h| intersect(rect, h)).filter(|r| self.opaque(*r));
+            match inside {
+                Some(part) => {
+                    out.push(EncodedRect { rect: part, encoding: ENC_JPEG, data: jpeg(&self.extract(part), part.w, part.h) });
+                    for rest in subtract(rect, part) {
+                        out.push(self.encode_lossless(rest, encoding));
+                    }
+                    if let Some(hot) = self.hot.as_mut() {
+                        hot.lossy_sent = true;
+                    }
                 }
-            })
-            .collect()
+                None => out.push(self.encode_lossless(rect, encoding)),
+            }
+        }
+        out
+    }
+
+    fn encode_lossless(&self, rect: Rect, encoding: Encoding) -> EncodedRect {
+        let pixels = self.extract(rect);
+        match encoding {
+            Encoding::Deflate => EncodedRect {
+                rect,
+                encoding: ENC_DEFLATE_RGBA,
+                data: deflate(&pixels),
+            },
+            Encoding::Webp => EncodedRect {
+                rect,
+                encoding: ENC_WEBP_LOSSLESS,
+                data: webp_lossless(&pixels, rect.w, rect.h),
+            },
+        }
     }
 
     /// Clear `r` and paint each layer over it. Pixels are premultiplied, as
@@ -304,6 +433,48 @@ fn contains(outer: Rect, inner: Rect) -> bool {
         && inner.y + inner.h <= outer.y + outer.h
 }
 
+fn area(r: Rect) -> u64 {
+    r.w as u64 * r.h as u64
+}
+
+fn intersect(a: Rect, b: Rect) -> Option<Rect> {
+    let x0 = a.x.max(b.x);
+    let y0 = a.y.max(b.y);
+    let x1 = (a.x + a.w).min(b.x + b.w);
+    let y1 = (a.y + a.h).min(b.y + b.h);
+    // Lazily: for disjoint rectangles the widths would underflow.
+    (x1 > x0 && y1 > y0).then(|| Rect { x: x0, y: y0, w: x1 - x0, h: y1 - y0 })
+}
+
+/// How much of `a` the rectangle `b` covers, from 0 to 1.
+fn overlap(a: Rect, b: Rect) -> f64 {
+    match (intersect(a, b), area(a)) {
+        (Some(i), total) if total > 0 => area(i) as f64 / total as f64,
+        _ => 0.0,
+    }
+}
+
+/// `outer` minus `inner` (which lies inside it): up to four rectangles, the
+/// bands above and below it and the pieces to its left and right.
+fn subtract(outer: Rect, inner: Rect) -> Vec<Rect> {
+    let mut out = Vec::with_capacity(4);
+    let (ox1, oy1) = (outer.x + outer.w, outer.y + outer.h);
+    let (ix1, iy1) = (inner.x + inner.w, inner.y + inner.h);
+    if inner.y > outer.y {
+        out.push(Rect { x: outer.x, y: outer.y, w: outer.w, h: inner.y - outer.y });
+    }
+    if iy1 < oy1 {
+        out.push(Rect { x: outer.x, y: iy1, w: outer.w, h: oy1 - iy1 });
+    }
+    if inner.x > outer.x {
+        out.push(Rect { x: outer.x, y: inner.y, w: inner.x - outer.x, h: inner.h });
+    }
+    if ix1 < ox1 {
+        out.push(Rect { x: ix1, y: inner.y, w: ox1 - ix1, h: inner.h });
+    }
+    out
+}
+
 fn union(a: Rect, b: Rect) -> Rect {
     let x0 = a.x.min(b.x);
     let y0 = a.y.min(b.y);
@@ -318,6 +489,16 @@ pub fn deflate(pixels: &[u8]) -> Vec<u8> {
     let mut enc = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::fast());
     enc.write_all(pixels).expect("writing to a Vec");
     enc.finish().expect("writing to a Vec")
+}
+
+/// A JPEG of opaque RGBA pixels (the alpha is dropped), which the browser's
+/// `createImageBitmap` reads as it reads WebP.
+pub fn jpeg(pixels: &[u8], width: u32, height: u32) -> Vec<u8> {
+    let mut out = Vec::new();
+    jpeg_encoder::Encoder::new(&mut out, JPEG_QUALITY)
+        .encode(pixels, width as u16, height as u16, jpeg_encoder::ColorType::Rgba)
+        .expect("RGBA8 of the stated size encodes");
+    out
 }
 
 /// Lossless WebP, what the browser's `createImageBitmap` reads.
@@ -530,5 +711,138 @@ mod tests {
         assert_eq!(px(3, 3), &[255, 0, 0, 255]);
         // 128 premultiplied white over blue: 128 + 255 * 127 / 255.
         assert_eq!(px(0, 0), &[128, 128, 255, 255]);
+    }
+
+    // ── Lossy regions ───────────────────────────────────────────────────────
+
+    /// A 640×480 window, opaque, its first frame (everything) already sent.
+    fn video_window(alpha: u8) -> (SurfaceImage, Canvas) {
+        let pool = bgra_pool(640, 480, 640 * 4, |x, y| [(x * 7) as u8, (y * 3) as u8, (x ^ y) as u8, alpha]);
+        let (img, mut c) = one_layer(&pool, 640, 480, 640 * 4);
+        c.tick();
+        let first = c.take_frame(&[Layer { x: 0, y: 0, image: &img }], Encoding::Webp);
+        assert!(first.iter().all(|r| r.encoding == ENC_WEBP_LOSSLESS));
+        (img, c)
+    }
+
+    /// The video's rectangle: 480×270 at (80, 60).
+    const VIDEO: Rect = Rect { x: 80, y: 60, w: 480, h: 270 };
+
+    /// One tick of the clock with `damage` drawn, as the session runs it.
+    fn frame(c: &mut Canvas, img: &SurfaceImage, damage: &[Rect]) -> Vec<EncodedRect> {
+        c.tick();
+        for r in damage {
+            c.damage(r.x as i32, r.y as i32, r.w, r.h);
+        }
+        c.take_frame(&[Layer { x: 0, y: 0, image: img }], Encoding::Webp)
+    }
+
+    fn encodings(frame: &[EncodedRect]) -> Vec<u8> {
+        frame.iter().map(|r| r.encoding).collect()
+    }
+
+    #[test]
+    fn a_window_that_isnt_playing_anything_stays_lossless_byte_for_byte() {
+        let (img, mut c) = video_window(255);
+        // A typed line, then a caret, again and again: small.
+        for _ in 0..12 {
+            let f = frame(&mut c, &img, &[Rect { x: 10, y: 400, w: 300, h: 18 }]);
+            assert_eq!(encodings(&f), [ENC_WEBP_LOSSLESS]);
+            assert_eq!(f[0].data, webp_lossless(&c.extract(f[0].rect), f[0].rect.w, f[0].rect.h));
+        }
+        // A page loading: a large redraw now and then, not on most frames.
+        for i in 0..12 {
+            let damage = if i % 4 == 0 { vec![VIDEO] } else { vec![] };
+            for r in frame(&mut c, &img, &damage) {
+                assert_eq!(r.encoding, ENC_WEBP_LOSSLESS);
+            }
+        }
+        // Still: nothing more is sent.
+        for _ in 0..20 {
+            assert!(frame(&mut c, &img, &[]).is_empty());
+        }
+    }
+
+    #[test]
+    fn a_large_region_redrawn_on_most_frames_goes_lossy() {
+        let (img, mut c) = video_window(255);
+        let sent: Vec<Vec<u8>> = (0..8).map(|_| encodings(&frame(&mut c, &img, &[VIDEO]))).collect();
+        // Lossless until it has changed in six of the last eight frames.
+        assert_eq!(sent[..5], vec![vec![ENC_WEBP_LOSSLESS]; 5]);
+        assert_eq!(sent[5..], vec![vec![ENC_JPEG]; 3]);
+        let f = frame(&mut c, &img, &[VIDEO]);
+        assert_eq!(f[0].rect, VIDEO);
+        assert_eq!(&f[0].data[..2], &[0xff, 0xd8], "a JPEG");
+        let lossless = webp_lossless(&c.extract(VIDEO), VIDEO.w, VIDEO.h);
+        assert!(f[0].data.len() < lossless.len());
+    }
+
+    #[test]
+    fn text_beside_a_video_stays_lossless() {
+        let (img, mut c) = video_window(255);
+        for _ in 0..6 {
+            frame(&mut c, &img, &[VIDEO]);
+        }
+        // The video and a line of text below it, merged into one rectangle.
+        let merged = Rect { x: 0, y: 40, w: 640, h: 330 };
+        let f = frame(&mut c, &img, &[merged]);
+        let jpeg: Vec<Rect> = f.iter().filter(|r| r.encoding == ENC_JPEG).map(|r| r.rect).collect();
+        assert_eq!(jpeg, [VIDEO]);
+        // Everything else in the rectangle went out, lossless.
+        let rest: u64 = f.iter().filter(|r| r.encoding == ENC_WEBP_LOSSLESS).map(|r| area(r.rect)).sum();
+        assert_eq!(rest + area(VIDEO), area(merged));
+        assert!(f.iter().filter(|r| r.encoding != ENC_JPEG).all(|r| intersect(r.rect, VIDEO).is_none()));
+    }
+
+    #[test]
+    fn a_region_that_stops_changing_is_sent_once_more_lossless() {
+        let (img, mut c) = video_window(255);
+        for _ in 0..8 {
+            frame(&mut c, &img, &[VIDEO]);
+        }
+        // Paused: nothing is drawn. A quarter of a second later, one frame.
+        for _ in 0..LOSSY_SETTLE_TICKS - 1 {
+            assert!(frame(&mut c, &img, &[]).is_empty());
+        }
+        let sharp = frame(&mut c, &img, &[]);
+        assert_eq!(encodings(&sharp), [ENC_WEBP_LOSSLESS]);
+        assert_eq!(sharp[0].rect, VIDEO);
+        assert_eq!(sharp[0].data, webp_lossless(&c.extract(VIDEO), VIDEO.w, VIDEO.h));
+        // Then quiet, and a new play starts from lossless again.
+        for _ in 0..20 {
+            assert!(frame(&mut c, &img, &[]).is_empty());
+        }
+        assert_eq!(encodings(&frame(&mut c, &img, &[VIDEO])), [ENC_WEBP_LOSSLESS]);
+    }
+
+    #[test]
+    fn a_region_with_transparency_or_on_deflate_stays_lossless() {
+        let (img, mut c) = video_window(200);
+        for _ in 0..10 {
+            assert_eq!(encodings(&frame(&mut c, &img, &[VIDEO])), [ENC_WEBP_LOSSLESS]);
+        }
+        let pool = bgra_pool(640, 480, 640 * 4, |_, _| [1, 2, 3, 255]);
+        let (img, mut c) = one_layer(&pool, 640, 480, 640 * 4);
+        for _ in 0..10 {
+            c.tick();
+            c.damage(VIDEO.x as i32, VIDEO.y as i32, VIDEO.w, VIDEO.h);
+            let f = c.take_frame(&[Layer { x: 0, y: 0, image: &img }], Encoding::Deflate);
+            assert!(f.iter().all(|r| r.encoding == ENC_DEFLATE_RGBA));
+        }
+    }
+
+    #[test]
+    fn subtracting_a_rectangle_leaves_the_rest_whole() {
+        let outer = Rect { x: 0, y: 0, w: 100, h: 50 };
+        let inner = Rect { x: 20, y: 10, w: 30, h: 20 };
+        let parts = subtract(outer, inner);
+        assert_eq!(parts.iter().map(|r| area(*r)).sum::<u64>() + area(inner), area(outer));
+        for (i, a) in parts.iter().enumerate() {
+            assert!(intersect(*a, inner).is_none());
+            for b in &parts[i + 1..] {
+                assert!(intersect(*a, *b).is_none());
+            }
+        }
+        assert!(subtract(outer, outer).is_empty());
     }
 }

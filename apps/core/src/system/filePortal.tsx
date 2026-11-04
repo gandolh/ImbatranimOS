@@ -23,6 +23,8 @@ type PickRequest = {
   title: string
   extensions?: string[]
   suggestedName?: string
+  /** The folder to open in (or a file in it); FilePicker checks it can be reached. */
+  startIn?: FileChoice
   resolve: (choice: FileChoice | null) => void
 }
 
@@ -75,6 +77,7 @@ export function FilePortalHost() {
         mode={head.mode}
         extensions={head.extensions}
         suggestedName={head.suggestedName}
+        startIn={head.startIn}
         onPick={(choice) => settle(choice)}
       />
     </Dialog>

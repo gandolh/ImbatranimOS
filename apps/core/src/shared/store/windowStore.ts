@@ -49,10 +49,19 @@ export function nextWorkspace(current: WorkspaceId, delta: number): WorkspaceId 
   return (((zero + WORKSPACE_COUNT) % WORKSPACE_COUNT) + 1) as WorkspaceId
 }
 
+/**
+ * The running Linux window an OS window shows: the session's own id for its
+ * toplevel. It stays the same across a reload while the session lives (the
+ * host announces the same toplevels again), so it keys the window's place.
+ */
+export type LinuxWindowKey = { session: string; toplevel: number }
+
 export type WindowInstance = {
   id: string
   appId: string
   title: string
+  /** Set on a Linux window: which running window it shows. */
+  linux?: LinuxWindowKey
   /** Which virtual desktop this window lives on. Never undefined. */
   workspaceId: WorkspaceId
   isVisible: boolean
@@ -148,6 +157,8 @@ export type PersistedWindow = {
   isVisible: boolean
   zIndex: number
   snapState?: SnapRegion
+  /** A Linux window's key: its place is kept, the window is never reopened. */
+  linux?: LinuxWindowKey
 }
 
 /**
@@ -210,23 +221,64 @@ export function loadActiveWorkspace(): WorkspaceId {
   }
 }
 
+function persisted(w: WindowInstance): PersistedWindow {
+  return {
+    appId: w.appId,
+    title: w.title,
+    workspaceId: w.workspaceId,
+    position: w.position,
+    size: w.size,
+    isMaximized: w.isMaximized,
+    isVisible: w.isVisible,
+    zIndex: w.zIndex,
+    snapState: w.snapState,
+    ...(w.linux ? { linux: w.linux } : {}),
+  }
+}
+
+const sameLinuxWindow = (a: LinuxWindowKey, b: LinuxWindowKey) =>
+  a.session === b.session && a.toplevel === b.toplevel
+
+/**
+ * Linux windows' places waiting for their windows: read from the layout at a
+ * reload, or kept as the socket dropped. A Linux app's window shows a running
+ * program, not something to reopen: the backend's session reopens its windows
+ * itself when the tab takes it back, and each takes its place from here
+ * (`takeLinuxPlace`). Whatever its session doesn't announce again is dropped
+ * (`dropLinuxPlaces`), never reopened.
+ */
+let linuxPlaces: PersistedWindow[] = []
+
+/** The kept place of the Linux window `key`, taken: it is used once. */
+export function takeLinuxPlace(key: LinuxWindowKey): PersistedWindow | null {
+  const i = linuxPlaces.findIndex((p) => p.linux && sameLinuxWindow(p.linux, key))
+  if (i === -1) return null
+  const [place] = linuxPlaces.splice(i, 1)
+  return place
+}
+
+/** Forget the places no window came back for. */
+export function dropLinuxPlaces(): void {
+  linuxPlaces = []
+}
+
+/** Keep these Linux windows' places for when they come back (the socket dropped). */
+export function keepLinuxPlaces(windows: WindowInstance[]): void {
+  for (const w of windows) {
+    if (!w.linux) continue
+    const key = w.linux
+    linuxPlaces = linuxPlaces.filter((p) => !p.linux || !sameLinuxWindow(p.linux, key))
+    linuxPlaces.push(persisted(w))
+  }
+}
+
 export function saveLayout(windows: WindowInstance[]): void {
-  // A Linux app's window shows a running program, not something to reopen:
-  // the program belongs to the backend's session, which reopens its windows
-  // itself. Restoring one would leave an empty frame.
-  const data: PersistedWindow[] = windows
-    .filter((w) => !isLinuxWindow(w.appId))
-    .map((w) => ({
-      appId: w.appId,
-      title: w.title,
-      workspaceId: w.workspaceId,
-      position: w.position,
-      size: w.size,
-      isMaximized: w.isMaximized,
-      isVisible: w.isVisible,
-      zIndex: w.zIndex,
-      snapState: w.snapState,
-    }))
+  // A Linux window is saved for its place only, and only once it knows which
+  // running window it shows; the places still waiting for theirs ride along.
+  const data: PersistedWindow[] = [
+    ...windows.filter((w) => !isLinuxWindow(w.appId) || w.linux).map(persisted),
+    ...linuxPlaces,
+  ]
   try {
     sessionStore()?.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(data))
   } catch {
@@ -459,6 +511,11 @@ type WindowStore = {
   showDesktopStash: Partial<Record<WorkspaceId, string[]>>
   persistLayout: () => void
   restoreLayout: () => void
+  /**
+   * Mark a just-opened window as showing the Linux window `key`, and put it
+   * where `place` says (a kept place: position, size, maximized, workspace).
+   */
+  adoptLinuxWindow: (id: string, key: LinuxWindowKey, place?: PersistedWindow | null) => void
 }
 
 /**
@@ -1016,8 +1073,31 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     saveLayout(windows)
   },
 
+  adoptLinuxWindow: (id, key, place) => {
+    set((state) => ({
+      windows: state.windows.map((w) =>
+        w.id !== id
+          ? w
+          : place
+            ? {
+                ...w,
+                linux: key,
+                position: place.position,
+                size: place.size,
+                isMaximized: place.isMaximized,
+                workspaceId: clampWorkspace(place.workspaceId),
+              }
+            : { ...w, linux: key }
+      ),
+    }))
+  },
+
   restoreLayout: () => {
-    const persisted = loadLayout().filter((p) => !isLinuxWindow(p.appId))
+    const layout = loadLayout()
+    // Linux windows are never reopened from here; their places wait for the
+    // windows their session announces again.
+    linuxPlaces = layout.filter((p) => isLinuxWindow(p.appId) && p.linux)
+    const persisted = layout.filter((p) => !isLinuxWindow(p.appId))
     if (persisted.length === 0) return
 
     const maxZ = persisted.reduce((acc, w) => Math.max(acc, w.zIndex), 0)

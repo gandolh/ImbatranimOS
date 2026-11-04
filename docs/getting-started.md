@@ -58,10 +58,10 @@ What protects an exposed machine: a single owner, an scrypt-hashed password, a s
 
 ```bash
 npm install          # once, at the repo root: one lockfile for every workspace
-npm run dev          # the dev container: docker compose ... --profile dev watch
+npm run dev          # the dev container: scripts/dev.mjs runs docker compose ... --profile dev watch
 ```
 
-`npm run dev` builds the `dev` image and runs `turbo dev` inside it: Nest in watch mode on port 3001, Vite with hot reload on <http://localhost:5173>, and the Browser's proxy origin on 3002. Compose `watch` syncs your edits from `apps/`, `packages/` and `marketplace/` into the container. A change to `package.json`, the lockfile, `turbo.json` or the Dockerfile rebuilds the image instead.
+`npm run dev` builds the `dev` image and runs `turbo dev` inside it: Nest in watch mode on port 3001, Vite with hot reload on <http://localhost:5173>, and the Browser's proxy origin on 3002. Compose `watch` syncs your edits from `apps/`, `packages/` and `marketplace/` into the container. A change to a dependency (`package.json` or the lockfile), `turbo.json` or the Dockerfile rebuilds the image instead, and the rebuild reinstalls `node_modules` only when a dependency changed. The version bump every commit makes is not such a change: `npm run dev` keeps copies of `package.json`, the lockfile and the Dockerfile without the version in `infrastructure/.dev-deps/`, and Compose watches those. Running `docker compose ... watch` yourself skips that, and the copies go stale.
 
 The dev container keeps its home in its own volume and has a fixed owner for local development. The name and password are in [infrastructure/README.md](../infrastructure/README.md#the-dev-containers-sign-in).
 
@@ -78,7 +78,7 @@ All run from the repo root through Turborepo.
 | `npm run build` | Builds the backend and the desktop (cached; a second run is instant) |
 | `npm run lint` | Lints every package |
 | `npm run typecheck` | Typechecks every package |
-| `npm test` | Every package's unit tests, plus the backend's end-to-end suite |
+| `npm test` | Every package's unit tests, plus the backend's end-to-end suite, at most half as many at once as the machine has cores (`--concurrency=50%`): under load, more failed tests on fixed timeouts that pass alone. For one run without the cap, call turbo yourself: `npx turbo test test:e2e --concurrency=100%` (turbo refuses the flag twice, so `npm test -- --concurrency=…` won't do) |
 | `npm run format:check` | Prettier check across the packages |
 | `npm run docs` | Builds the documentation site in `apps/docs` (corpus pages plus the generated API reference) |
 | `npm run version:bump -- --stage` | Bumps the minor version; the project runs it before each commit |

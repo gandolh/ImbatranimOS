@@ -16,6 +16,7 @@ import { StartMenu } from './StartMenu'
 import { Tray } from './Tray'
 import { WorkspacePips } from './WorkspacePips'
 import { TaskbarContextMenu } from './TaskbarContextMenu'
+import { launchLinuxApp, linuxLauncherActions } from '../../../modules/linux-windows/launchers'
 import { focusIntoWindowSoon } from '../window/focusIntoWindow'
 
 // Field separator for the task-button projection; cannot occur in a uuid, slug,
@@ -77,15 +78,15 @@ export function Taskbar() {
    * Was `openWindow` directly, which bypassed the single-instance check — see
    * the same fix in `Desktop.tsx`. Two launchers had each grown their own
    * three-line version of "open an app", and both were missing the rule.
+   *
+   * The keyboard follows: `openApp` moves it into a single-instance app that
+   * was already open and came to the front, a frame later, once the menu has
+   * handed focus back to the Start button. A new window gets it from its own
+   * mount, once its content is there, unless the app already focused
+   * something of its own.
    */
   function launchApp(appId: string) {
-    const open = new Set(useWindowStore.getState().windows.map((w) => w.id))
-    const id = openApp(appId)
-    // A single-instance app that was already open came to the front: put the
-    // keyboard in it. The menu hands focus back to the Start
-    // button as it closes, so this waits a frame. A new window is left to
-    // its app, which decides its own first focus as it mounts.
-    if (open.has(id)) focusIntoWindowSoon(id)
+    openApp(appId)
   }
 
   /**
@@ -226,6 +227,13 @@ export function Taskbar() {
           x={menu.x}
           y={menu.y}
           windowTitle={menuWindow.title}
+          appActions={linuxLauncherActions(menuWindow.appId).map((a) => ({
+            label: a.name,
+            onSelect: () => {
+              void launchLinuxApp(menuWindow.appId, a.id)
+              setMenu(null)
+            },
+          }))}
           currentWorkspace={menuWindow.workspaceId}
           isMaximized={menuWindow.isMaximized}
           onMoveToWorkspace={(id: WorkspaceId) => {

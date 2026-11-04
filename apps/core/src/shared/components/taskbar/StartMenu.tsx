@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ContextMenu } from '@imbatranim/ui'
 import { motion } from 'framer-motion'
 import { History, Lock, LogOut, Power, Trash2 } from 'lucide-react'
 import { cn } from '../../../lib/cn'
@@ -9,6 +10,7 @@ import { clearLayout, useWindowStore } from '../../store/windowStore'
 import { localSignOut } from '../../../modules/auth/api/authApi'
 import { clearRecentFiles, useRecentFilesQuery } from '../../../lib/recentFiles'
 import { openApp } from '../../intents/openApp'
+import { launchLinuxApp, linuxLauncherActions } from '../../../modules/linux-windows/launchers'
 
 type StartMenuProps = {
   onClose: () => void
@@ -25,16 +27,21 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
   // for, and openApp would refuse them anyway). Six is a glance, not a list.
   const { data: recentFiles } = useRecentFilesQuery()
   const recent = (recentFiles ?? []).slice(0, 6)
+  // An entry's own menu: a Linux app's desktop actions (Firefox's New Window).
+  const [entryMenu, setEntryMenu] = useState<{ appId: string; x: number; y: number } | null>(null)
 
   useEffect(() => {
     function onPointerDown(e: MouseEvent) {
+      // An entry's menu draws outside Start (in a portal) and handles its own
+      // dismissal; a press in it must not close Start under it.
+      if (entryMenu) return
       const t = e.target as Node
       if (menuRef.current?.contains(t)) return
       if (anchorRef.current?.contains(t)) return
       onClose()
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && !entryMenu) onClose()
     }
     document.addEventListener('mousedown', onPointerDown)
     document.addEventListener('keydown', onKey)
@@ -42,7 +49,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       document.removeEventListener('mousedown', onPointerDown)
       document.removeEventListener('keydown', onKey)
     }
-  }, [onClose, anchorRef])
+  }, [onClose, anchorRef, entryMenu])
 
   // Move focus into the menu on open and restore it to the trigger on close, so
   // the menu is operable and the keyboard user is not stranded when it dismisses.
@@ -137,6 +144,12 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                 onOpenApp(app.id)
                 onClose()
               }}
+              onContextMenu={(e) => {
+                if (linuxLauncherActions(app.id).length === 0) return
+                e.preventDefault()
+                setEntryMenu({ appId: app.id, x: e.clientX, y: e.clientY })
+              }}
+              data-start-entry={app.id}
               className={cn(
                 'group rounded-item flex items-center gap-3 px-4 py-1.5 text-left outline-none',
                 'hover:bg-primary-container hover:text-on-primary-container',
@@ -237,6 +250,31 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
         <span>ImbatranimOS</span>
         <Power size={11} strokeWidth={1.75} className="opacity-60" />
       </div>
+      {entryMenu && (
+        <ContextMenu
+          x={entryMenu.x}
+          y={entryMenu.y}
+          label={`Actions for ${enabledApps.find((a) => a.id === entryMenu.appId)?.name ?? 'app'}`}
+          onClose={() => setEntryMenu(null)}
+          items={[
+            {
+              label: 'Open',
+              onSelect: () => {
+                onOpenApp(entryMenu.appId)
+                onClose()
+              },
+            },
+            { type: 'separator' },
+            ...linuxLauncherActions(entryMenu.appId).map((a) => ({
+              label: a.name,
+              onSelect: () => {
+                void launchLinuxApp(entryMenu.appId, a.id)
+                onClose()
+              },
+            })),
+          ]}
+        />
+      )}
     </motion.div>
   )
 }

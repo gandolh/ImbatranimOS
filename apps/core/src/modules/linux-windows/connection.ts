@@ -1,6 +1,14 @@
 import { desktopSessionId, renewDesktopSessionId } from '@imbatranim/ui'
-import { TASKBAR_HEIGHT, topVisibleWindowId, useWindowStore } from '../../shared/store/windowStore'
+import {
+  TASKBAR_HEIGHT,
+  dropLinuxPlaces,
+  keepLinuxPlaces,
+  takeLinuxPlace,
+  topVisibleWindowId,
+  useWindowStore,
+} from '../../shared/store/windowStore'
 import { useAuthStore } from '../auth/store/authStore'
+import { useLinuxAppsPrefs } from './keyboardLayout'
 import { LINUX_APP_PREFIX, linuxWindowChrome } from './kind'
 import { paintFrame, parseFrame } from './frames'
 import {
@@ -58,6 +66,7 @@ type ServerMessage =
   | { type: 'cursor'; name: string }
   | { type: 'request'; toplevel: number; action: string; edges?: string }
   | { type: 'unavailable'; reason: string }
+  | { type: 'session'; resumed: boolean }
 
 /** Where Linux apps' windows are drawn: the desktop above the taskbar. */
 function viewport(): { width: number; height: number } {
@@ -118,6 +127,15 @@ export class LinuxWindowsConnection {
   /** Whether each toplevel's OS window shows, as the host was last told. */
   private shown = new Map<number, boolean>()
   private unsubscribeAuth: (() => void) | null = null
+  private unsubscribeLayout: (() => void) | null = null
+  /** The desktop session the socket is for: with a toplevel's id, a window's key. */
+  private session = ''
+  /**
+   * The backend said this socket took back a running session (a reload or a
+   * reconnect inside its grace): the windows it announces until the host's
+   * resync is over are ones the tab had, and go back to their kept places.
+   */
+  private resuming = false
 
   private readonly onVisibility = () => {
     this.send({ type: 'visibility', visible: document.visibilityState !== 'hidden' })
@@ -159,6 +177,11 @@ export class LinuxWindowsConnection {
     this.unsubscribeAuth = useAuthStore.subscribe((s, prev) => {
       if (s.locked !== prev.locked) this.send({ type: 'cover', covered: s.locked })
     })
+    // A new layout reaches the running apps at once: the host sends them the
+    // keymap, no restart.
+    this.unsubscribeLayout = useLinuxAppsPrefs.subscribe((s, prev) => {
+      if (s.keyboardLayout !== prev.keyboardLayout) this.sendLayout()
+    })
     setLinuxSender((m) => this.send(m))
     this.connect()
   }
@@ -170,6 +193,8 @@ export class LinuxWindowsConnection {
     document.removeEventListener('visibilitychange', this.onVisibility)
     this.unsubscribeAuth?.()
     this.unsubscribeAuth = null
+    this.unsubscribeLayout?.()
+    this.unsubscribeLayout = null
     this.unsubscribeWindows?.()
     this.unsubscribeWindows = null
     setLinuxSender(null)
@@ -183,7 +208,9 @@ export class LinuxWindowsConnection {
 
   private connect(): void {
     if (this.stopped) return
-    const ws = new WebSocket(buildWaylandUrl(desktopSessionId(), viewport()))
+    this.session = desktopSessionId()
+    this.resuming = false
+    const ws = new WebSocket(buildWaylandUrl(this.session, viewport()))
     ws.binaryType = 'arraybuffer'
     this.ws = ws
     ws.onopen = () => {
@@ -193,6 +220,7 @@ export class LinuxWindowsConnection {
       // Where this tab stands now, which a resumed session may not know.
       this.send({ type: 'cover', covered: useAuthStore.getState().locked })
       this.onVisibility()
+      this.sendLayout()
     }
     ws.onmessage = (ev: MessageEvent<ArrayBuffer | string>) => this.onMessage(ev.data)
     ws.onclose = (ev) => {
@@ -220,6 +248,11 @@ export class LinuxWindowsConnection {
       this.retries++
     }
     this.retryTimer = setTimeout(() => this.connect(), delay)
+  }
+
+  /** The keyboard layout the owner chose for Linux apps. */
+  private sendLayout(): void {
+    this.send({ type: 'keyboard_layout', layout: useLinuxAppsPrefs.getState().keyboardLayout })
   }
 
   private send(message: object): void {
@@ -278,8 +311,22 @@ export class LinuxWindowsConnection {
     else if (m.type === 'toplevel_destroyed') this.destroyed(m.toplevel)
     else if (m.type === 'popup_created' || m.type === 'popup_updated') this.popup(m)
     else if (m.type === 'popup_destroyed') this.popupGone(m.popup)
-    else if (m.type === 'cursor') useLinuxWindowsStore.getState().setCursor(m.name)
-    else if (m.type === 'request') this.request(m.toplevel, m.action, m.edges)
+    else if (m.type === 'session') this.sessionStarted(m.resumed)
+    else if (m.type === 'cursor') {
+      // A resync ends with the cursor: every window still running has been
+      // announced, so a place none of them took is a window that's gone.
+      if (this.resuming) {
+        this.resuming = false
+        dropLinuxPlaces()
+      }
+      useLinuxWindowsStore.getState().setCursor(m.name)
+    } else if (m.type === 'request') this.request(m.toplevel, m.action, m.edges)
+  }
+
+  /** A fresh session has none of the windows the tab kept places for. */
+  private sessionStarted(resumed: boolean): void {
+    this.resuming = resumed
+    if (!resumed) dropLinuxPlaces()
   }
 
   private created(m: ToplevelMessage): void {
@@ -289,13 +336,22 @@ export class LinuxWindowsConnection {
     }
     const s = shape(m)
     const chrome = linuxWindowChrome(s.decorations === 'server')
+    const key = { session: this.session, toplevel: m.toplevel }
+    // A window the tab had before a reload goes back where it was; a new one
+    // opens where any new window does.
+    const place = this.resuming ? takeLinuxPlace(key) : null
     const windows = useWindowStore.getState()
     const windowId = windows.openWindow(
       LINUX_APP_PREFIX + (m.app_id || 'app'),
       s.title,
-      { width: s.geometry.width + chrome.width, height: s.geometry.height + chrome.height },
-      { width: 120, height: 80 }
+      place?.size ?? {
+        width: s.geometry.width + chrome.width,
+        height: s.geometry.height + chrome.height,
+      },
+      { width: 120, height: 80 },
+      place?.position
     )
+    windows.adoptLinuxWindow(windowId, key, place)
     // The close button asks the app; the window closes when its toplevel
     // goes, which may be never (the app asked to save, or refused).
     windows.registerCloseGuard(windowId, () => {
@@ -377,6 +433,10 @@ export class LinuxWindowsConnection {
 
   private closeAllWindows(): void {
     const all = Object.values(useLinuxWindowsStore.getState().byWindow)
+    // The session may come back (a reconnect inside its grace): its windows
+    // then go back where they were.
+    const ids = new Set(all.map((t) => t.windowId))
+    keepLinuxPlaces(useWindowStore.getState().windows.filter((w) => ids.has(w.id)))
     useLinuxWindowsStore.getState().clear()
     this.painting.clear()
     this.focused = null

@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState, type ComponentType } from 'react'
-import { SystemProvider, useSystem, type KitAppProps, type NativeHostContext } from '@imbatranim/ui'
+import {
+  SystemProvider,
+  useSystem,
+  type KitAppProps,
+  type NativeHostContext,
+  type SystemHandle,
+  type SystemServer,
+} from '@imbatranim/ui'
 import { kitBuildKey, type MarketplaceApp } from '../../shared/registry/marketplace'
 import { apiUrl } from './apiUrl'
 import { addKitStyles } from './kitStyles'
@@ -7,7 +14,7 @@ import { RefusalPanel } from './RefusalPanel'
 import { importKitModule } from './kitModule'
 import { kitRefusal, protocolRefusal } from './refusals'
 import { scopeHandle, type KitAppModule } from './scopeHandle'
-import { useServerLease } from './useServerLease'
+import { createServerClaim } from './useServerLease'
 
 /**
  * Anything React can render as a component: a function or class, or the
@@ -29,10 +36,17 @@ function isComponent(value: unknown): value is ComponentType<KitAppProps> {
  * (the window says so in a {@link RefusalPanel}, and nothing is
  * leased, fetched or added); put the shared modules on the global the app's
  * module reads them from; add the build's stylesheets to the page, once per
- * build; import the module; lease the server if it has one; render `App`
- * inside a `SystemProvider` holding the scoped handle, so `useSystem()` in the
- * app (and in the kit's hooks it calls) is fenced to the capabilities its
- * descriptor asked for.
+ * build; import the module; render `App` inside a `SystemProvider` holding the
+ * scoped handle, so `useSystem()` in the app (and in the kit's hooks it calls)
+ * is fenced to the capabilities its descriptor asked for.
+ *
+ * The descriptor's server is not started here (2026-11-03). The app asks with
+ * `system.server.request()` when it needs it, so a window that never does
+ * neither waits for a cold start nor fails with it; the app shows its own
+ * progress, and a failed start rejects that call and leaves the window open.
+ * The window holds the server from that first call until it closes. Before,
+ * the host leased first and threw when the lease failed, so every window of a
+ * suite with a server waited on it and fell over with it.
  *
  * The window's own `AppErrorBoundary`, `SystemProvider` and `Suspense` (from
  * `WindowContainer`) sit outside this: a throw in the app's render is a crash
@@ -53,23 +67,26 @@ function KitApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
   if (!entryPath) throw new Error(`${app.name} has no module to load`)
 
   const system = useSystem()
-  const lease = useServerLease(app)
+  // Made with the window, not in an effect: the app's own effects run before
+  // this component's, and it may ask for its server in its first one.
+  const [claim] = useState(() => createServerClaim(app))
+  useEffect(() => {
+    claim.open()
+    return () => claim.close()
+  }, [claim])
   const [loaded, setLoaded] = useState<{ App: ComponentType<KitAppProps> } | null>(null)
   const [failure, setFailure] = useState<Error | null>(null)
 
   if (failure) throw failure
-  if (lease.state === 'failed') throw lease.error
 
   const entry = useMemo(() => apiUrl(entryPath), [entryPath])
-  const scoped = useMemo(
-    () => scopeHandle(system, app.capabilities, app.name),
-    [system, app.capabilities, app.name]
-  )
-  const server = lease.state === 'ready' ? lease.server : undefined
-  const host = useMemo<NativeHostContext | null>(
-    () =>
-      server === undefined ? null : { appId: app.id, assetBase: new URL('.', entry).href, server },
-    [app.id, entry, server]
+  const scoped = useMemo(() => {
+    const server: SystemServer = { request: () => claim.request() }
+    return scopeHandle(withServer(system, server), app.capabilities, app.name)
+  }, [system, claim, app.capabilities, app.name])
+  const host = useMemo<NativeHostContext>(
+    () => ({ appId: app.id, assetBase: new URL('.', entry).href, server: null }),
+    [app.id, entry]
   )
 
   useEffect(() => {
@@ -100,10 +117,10 @@ function KitApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
     }
   }, [app, entry])
 
-  if (!loaded || !host) {
+  if (!loaded) {
     return (
       <div className="text-on-surface-variant flex h-full items-center justify-center p-3 text-sm">
-        {lease.state === 'starting' ? 'Starting its server…' : 'Loading…'}
+        Loading…
       </div>
     )
   }
@@ -114,4 +131,12 @@ function KitApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
       <App windowId={windowId} host={host} />
     </SystemProvider>
   )
+}
+
+/** The window's handle, with this window's claim on the app's server as `server`. */
+function withServer(system: SystemHandle, server: SystemServer): SystemHandle {
+  return new Proxy(system, {
+    get: (target, prop, receiver) =>
+      prop === 'server' ? server : (Reflect.get(target, prop, receiver) as unknown),
+  })
 }

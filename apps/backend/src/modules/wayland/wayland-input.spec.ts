@@ -80,4 +80,24 @@ describe("checking the tab's Linux window input", () => {
       maximized: true,
     });
   });
+
+  it('passes a keyboard layout the host offers, and nothing else', () => {
+    expect(toHostMessage(S, { type: 'keyboard_layout', layout: 'ro' })).toEqual(
+      {
+        type: 'keyboard_layout',
+        session: S,
+        layout: 'ro',
+      },
+    );
+    expect(toHostMessage(S, { type: 'keyboard_layout', layout: 'us' })).toEqual(
+      {
+        type: 'keyboard_layout',
+        session: S,
+        layout: 'us',
+      },
+    );
+    for (const layout of ['de', '', 'ro,us', 1, null, undefined]) {
+      expect(toHostMessage(S, { type: 'keyboard_layout', layout })).toBeNull();
+    }
+  });
 });

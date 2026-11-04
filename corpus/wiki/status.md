@@ -1,6 +1,6 @@
 ---
-summary: Dated snapshot (2026-11-03) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); open briefs 22-36 (the dev image, five fixes, two kit changes for imbatranim-office, a turbo cap, six Linux apps follow-ups); the theme follow-ups 16-21 are done; what the owner owes, open todos, and where the history lives.
-updated: 2026-11-03
+summary: Dated snapshot (2026-11-04) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, not merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups), 31 (XWayland) and 33 (HiDPI) still open; the theme follow-ups 16-21 are done; what the owner owes, open todos, and where the history lives.
+updated: 2026-11-04
 ---
 
 # Status — 2026-11-03
@@ -32,7 +32,8 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
   ([ui-conventions.md](ui-conventions.md)). Keyboard focus follows the
   window the owner raised or opened, from the taskbar, Alt+Tab (also over a
   Terminal), Start or the palette, and a click that opens another window
-  leaves it in front (2026-10-27 to 2026-10-28).
+  leaves it in front (2026-10-27 to 2026-10-28); since 2026-11-03 `openApp`
+  itself gives a window it raises the keyboard, whoever called it.
 - **Add-ons and the seam** (2026-08-06). Each app gets an injected `system`
   handle and imports nothing from core; per-window error boundaries; an
   ephemeral session with durable dotfiles ([os-layering.md](os-layering.md)).
@@ -98,25 +99,37 @@ deployed with 08-15:
 - 19 (done): rounded boxes inside windows;
 - 20 (done): the accent focus ring on every control;
 - 21 (done): Settings fits a phone.
-22 makes the dev image survive a version bump: every commit's bump changes
-the manifests the `npm ci` layer copies, so each rebuild reinstalls everything
-and re-owns `node_modules`, and Compose watch rebuilds on every commit
-(owner, 2026-11-03).
+22 (done 2026-11-03, on this run's branch) makes the dev image survive a
+version bump: `npm ci` runs on version-free manifests, the dev stage no
+longer re-owns `node_modules`, and `npm run dev` (`scripts/dev.mjs`) has
+Compose watch version-free copies. A version-only rebuild went from 4 min
+31 s to 4 s.
 
 23-36 were written on 2026-11-03 from the open todos, in an estate-wide grill
-with the owner, and none is started; the owner picks the order:
-- 23-27, small fixes: the Linux apps pane in the themes (no accent ring on a
-  Linux window's surface), the tray surviving a wrong stats answer, Files'
-  background menu below a short listing, `openApp` moving the keyboard into a
-  raised window, and the image's size after a source build;
-- 28 and 29, for imbatranim-office: the file dialogs' `startIn`, and a kit
-  app asking for its server on demand
-  ([decisions-marketplace-suites.md](decisions-marketplace-suites.md));
-  imbatranim-office's own briefs then use them;
-- 30: the full test run caps turbo at half the cores;
-- 31-36, Linux apps after the first wave: XWayland, a keyboard layout,
-  HiDPI, window places after a reload, localized desktop entries with their
-  actions, and lossy video regions.
+with the owner. A run on branch `claude/tender-franklin-h8lc35` (PR 2, not
+merged) built thirteen of them, with 22, on 2026-11-03 and 2026-11-04; each
+outcome is in `briefs/done/`:
+- 23-27, small fixes: the Linux apps pane rounds in Apricot (a Linux window's
+  surface keeps no ring); the tray and Sticky Notes' desktop layer read a
+  wrong answer as nothing; Files' listing fills its pane; `openApp` gives a
+  window it raises the keyboard; the strip keeps only each native module's
+  binary;
+- 28 and 29, for imbatranim-office: `startIn` on the file dialogs (kit
+  1.1.0) and `system.server.request()`, a kit app's server started when the
+  app asks (kit 1.2.0); imbatranim-office's own briefs can now use them;
+- 30: `npm test` caps turbo at half the cores (the full run under load is the
+  owner's check);
+- 32, 34, 35, 36, Linux apps: a keyboard layout (US or Romanian, switched
+  live), window places kept across a reload (the gateway now tells the tab
+  whether its session resumed), Start entries in the browser's language with
+  their desktop actions, and video regions sent as JPEG while text stays
+  lossless.
+
+Still open, not started: **31** (X11 apps through XWayland) and **33** (sharp
+Linux windows on HiDPI screens). The run's findings became todos:
+`desktop-layers-have-no-error-boundary`,
+`npm-run-dev-also-starts-the-prod-service` and `linux-apps-dbus-session-bus`
+(a second Firefox window from a running one needs it).
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner

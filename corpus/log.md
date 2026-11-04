@@ -4903,3 +4903,125 @@ An estate-wide grill with the owner turned every open todo into a brief or close
   window zoom beside Linux windows a todo that waits on the owner's check in Chrome with a GPU.
 
 The seven todos promoted are deleted; links to them in this log are now plain text.
+
+## [2026-11-03] brief | 23 done: the Linux apps pane rounds in Apricot
+
+Settings → Linux apps' two error notices, search results list, log box and installed list take the
+control radius, the Unfree badge the small one, and both lists inset and round their rows with
+dividers gone in Apricot (`3fb02f4`, 1.109.0). Classic is pixel-identical inside the window. A Linux
+window's surface needed no opt-out (brief 20's rings are per class); a comment there, and rule 36,
+say why it has none. Walked in the dev container: radii 8/4 px in Apricot and 0 in Classic; foot's
+surface focused with no ring while its title bar's Minimize shows one. Run on branch
+`claude/tender-franklin-h8lc35`, which carries 23-36 in one PR.
+
+## [2026-11-03] brief | 24 done: a wrong stats answer leaves the desktop standing
+
+The tray reads `/system/stats` through `readTrayStats`, which draws CPU and memory only from finite
+numbers and reads the disk percent apart; an HTML body, an empty object or a failed request draws the
+tray without them (`7f4c520`, 1.111.0). A host run with `VITE_API_URL` unset then blanked in Sticky
+Notes' desktop layer on the same HTML; it now takes only an array, and the desktop drew (icons,
+taskbar, a "Couldn't save your settings" toast). Desktop layers have no error boundary; filed as a
+todo.
+
+## [2026-11-03] brief | 25 done: Files' background menu reaches the empty space
+
+File Manager's scroll area became a size container and its listing `min-h-[100cqh]`, so in a short
+folder the listing, which carries the background menu and click-to-clear, is the pane's height
+(`8323063`, 1.113.0). Walked in the dev container: a two-file folder's listing is 384 px, the pane's
+height, and a right-click near the pane's bottom opens New Folder, New File and Paste; a click there
+clears the selection. A first component test of File Manager covers the menus.
+
+## [2026-11-03] brief | 26 done: `openApp` moves the keyboard into a window it raises
+
+`openApp` calls `focusIntoWindowSoon` when it brings up an already open window, so the palette,
+the Notification panel, Start's recent files, the desktop's Change wallpaper and the marketplace's
+Open buttons all give it the keyboard (`2162640`, 1.115.0). `openWithKeyboard`, its three wrappers and the
+taskbar's hand-made copy are gone; a new window still gets the keyboard once, from its mount. A test
+drives the palette, Start's recent files and the Notification panel against an open window; the
+desktop menu was walked in the dev container.
+
+## [2026-11-03] brief | 22 done: the dev image survives a version bump
+
+A `manifests` stage blanks the root version in the manifests (`scripts/normalise-manifests.mjs`)
+and `deps` runs `npm ci` on its output; the dev stage copies sources with `--chown` and gives the
+user only `.turbo`, `apps/backend` and Vite's two caches; `npm run dev` runs `scripts/dev.mjs`, which
+keeps version-free copies of the manifests and the Dockerfile for Compose watch (`6f36e2b`, 1.117.0).
+A version-only rebuild of the dev image: 4 min 31 s before, 4.3 s after. The dev image starts and
+hot-reloads; the prod image builds and reports its version. The watch rules were proved on a
+miniature (Compose's bake refused the sandbox's host networking): a bump left the container alone, a
+dependency change rebuilt it. Found: `watch` also starts the prod service; a todo.
+
+## [2026-11-03] brief | 27 done: the image is the same size after a source build
+
+The proddeps strip and the ISO payload's now empty each native module's `build/` but for the binary
+it loads (`f44b968`, 1.119.0). With better-sqlite3 forced to compile, the production image measured
+525.74 MB with the old strip and 508.81 MB with the new one, the same as a prebuilt build, and both
+builds leave the same files. node-pty, which always compiles on Linux, loses its makefiles too. Both
+images start, create their database and run a Terminal.
+
+## [2026-11-03] brief | 28 done: the file dialogs can start in a folder
+
+`pickOpen` and `pickSave` take `startIn: { root, path }`; the portal carries it and `FilePicker`
+resolves it through the same `/files` listing it browses with: the folder, a file's folder, or the
+home root for anything the user couldn't walk to (`6fa7771`, 1.121.0; kit 1.1.0, `SHARED_KIT_VERSION`
+unchanged). Eleven tests drive the real handle and portal; a Save as in the dev container started
+beside a file and saved there. imbatranim-office's "Save as opens where the file is" can now sync the
+kit and use it.
+
+## [2026-11-03] brief | 30 done: the full test run uses fewer workers
+
+`npm test` is `turbo test test:e2e --concurrency=50%` (`7dee332`, 1.123.0); getting-started says why and that
+the one-run override is calling turbo directly, since turbo refuses the flag twice. On 4 cores, six
+packages' tests through `npm test` peaked at 2 tasks at once against 6 without the flag. The full run
+under load is the owner's. Built ahead of 29, the larger brief.
+
+## [2026-11-03] brief | 29 done: a kit app asks for its server when it needs one
+
+The kit has `system.server.request()` (optional on the handle, kit 1.2.0): it starts the descriptor's
+server and resolves its URLs, or rejects with a sentence the app can show (`98f93cc`, 1.125.0). `KitAppHost`
+no longer leases before rendering or throws on a failed lease; each window's claim leases on the first
+ask, reuses it, retries after a failure, and releases on close. `NativeAppHost` keeps leasing at open
+through the same claim. Six new host tests; every package typechecks and lints. The backend's
+marketplace e2e is the owner's run. imbatranim-office's "CAD asks for its server on its first DWG"
+can now use it.
+
+## [2026-11-03] brief | 34 done: Linux windows keep their places after a reload
+
+The layout saves a Linux window's place under its session and toplevel id, and the connection opens
+the window the session announces again there; restoring still opens no Linux window (`1258820`, 1.127.0). The
+gateway now tells the tab whether its socket resumed a session, so a new session under the same id,
+whose toplevel ids start over, gets no old place; a resumed one drops what its resync didn't claim.
+Six connection tests; walked with foot in the dev container (moved, resized, reloaded, back in
+place). Built ahead of 31-33, which need the host's Rust.
+
+## [2026-11-03] brief | 35 done: desktop entries in the user's language, with their actions
+
+The backend parses localized keys and desktop actions and names each Start entry and action in the
+first of the browser's languages the file has, matched as the spec matches locales; the desktop sends
+`navigator.languages` (`70cd3fa`, 1.130.0). Actions launch through a new route behind the same session check,
+from Start's new entry menu and a Linux window's task button. Walked with Firefox and LXTerminal: the
+Romanian and Esperanto names show; Firefox's actions are offered and New Window starts it. A second
+window from a running Firefox needs a D-Bus session bus the layer doesn't have: a new todo.
+
+## [2026-11-03] brief | 32 done: a keyboard layout for Linux apps
+
+Settings → Linux apps chooses US or Romanian (standard), a new dotfile; the tab sends it on connect
+and on change, the backend passes known ids, and the host switches the session's xkb keymap with
+smithay, which sends it to every client (`1aa34ea`, 1.132.0). `cargo test` checks both keymaps and the Romanian
+letters on their physical keys. Walked with foot: Romanian typed șțăîâȘȚĂÎÂ, then US typed ;'[]\ into
+the same running app.
+
+## [2026-11-04] brief | 36 done: video regions go lossy, and text stays sharp
+
+The host's canvas sends a region of at least 240×135 that was redrawn in six of the last eight frames
+as JPEG (encoding 3, the pure-Rust `jpeg-encoder`), splits it out of merged damage so text beside it
+stays lossless, and sends it lossless once a quarter of a second after it stops (`6b00b3d`, 1.134.0). A window
+not playing anything is lossless byte for byte as before. Nineteen host tests; the tab decodes JPEG
+like WebP. The Firefox kB/s run was not taken.
+
+## [2026-11-04] resume | The run on claude/tender-franklin-h8lc35 stops at thirteen briefs
+
+Done on the branch (PR 2): 22-30, 32, 34, 35, 36. Not started: 31 (XWayland) and 33 (HiDPI), both
+in the Wayland host. Owed to the owner: the full `npm test` (turbo, the backend e2e), the real
+`npm run dev` watch check (proved here on a miniature), the Firefox kB/s run for 36, and the three
+new todos. Image builds here used a scratchpad copy of the Dockerfile with the sandbox proxy's CA.

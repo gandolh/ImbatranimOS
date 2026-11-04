@@ -5,7 +5,11 @@ import { join } from 'path';
 import { brotliCompressSync } from 'zlib';
 import type { WaylandGateway } from '../wayland/wayland.gateway';
 import { SessionApps } from '../wayland/session-apps';
-import { LinuxAppsService, parseProfileList } from './linux-apps.service';
+import {
+  LinuxAppsService,
+  parseLanguages,
+  parseProfileList,
+} from './linux-apps.service';
 
 // Every spawn the service makes goes through this; nothing really runs.
 const mockSpawn = jest.fn<ChildProcess, unknown[]>();
@@ -60,7 +64,23 @@ function machine() {
   const apps = join(store, 'aaa-firefox-159.0', 'share', 'applications');
   writeFileSync(
     join(apps, 'firefox.desktop'),
-    '[Desktop Entry]\nType=Application\nName=Firefox\nIcon=firefox\nExec=firefox --name firefox %U\n',
+    [
+      '[Desktop Entry]',
+      'Type=Application',
+      'Name=Firefox',
+      'Name[ro]=Firefox (ro)',
+      'Icon=firefox',
+      'Exec=firefox --name firefox %U',
+      'Actions=new-window;broken;',
+      '[Desktop Action new-window]',
+      'Name=New Window',
+      'Name[ro]=Fereastră nouă',
+      'Exec=firefox --new-window %U',
+      '[Desktop Action broken]',
+      'Name=Broken',
+      'Exec="unclosed',
+      '',
+    ].join('\n'),
   );
   writeFileSync(
     join(apps, 'hidden.desktop'),
@@ -157,9 +177,16 @@ describe('LinuxAppsService', () => {
     expect(spawn).not.toHaveBeenCalled();
   });
 
-  it('lists Start entries from the profile, with their icons', async () => {
+  it('lists Start entries from the profile, with their icons and actions', async () => {
     expect(await apps.launchers()).toEqual([
-      { id: 'firefox', name: 'Firefox', comment: '', hasIcon: true },
+      {
+        id: 'firefox',
+        name: 'Firefox',
+        comment: '',
+        hasIcon: true,
+        // The action whose Exec names no program is left out, as an entry is.
+        actions: [{ id: 'new-window', name: 'New Window' }],
+      },
     ]);
     expect((await apps.icon('firefox')).type).toBe('image/png');
     await expect(apps.icon('../../etc/passwd')).rejects.toThrow(/No icon/);
@@ -184,6 +211,75 @@ describe('LinuxAppsService', () => {
       `wayland-${SESSION}`,
     );
     expect(sessionApps.groups(SESSION)).toEqual([4242]);
+  });
+
+  it("starts one of a launcher's actions the same way, and only one it has", async () => {
+    const fake = {
+      pid: 4343,
+      once: jest.fn((ev: string, cb: () => void) => ev === 'spawn' && cb()),
+      unref: jest.fn(),
+    };
+    mockSpawn.mockReturnValue(fake as never);
+    await expect(
+      apps.launch('firefox', SESSION, 'new-window'),
+    ).resolves.toEqual({
+      pid: 4343,
+    });
+    const [cmd, args] = mockSpawn.mock.calls[0] as [string, string[]];
+    expect([cmd, ...args]).toEqual(['firefox', '--new-window']);
+    expect(sessionApps.groups(SESSION)).toEqual([4343]);
+
+    await expect(apps.launch('firefox', SESSION, 'nope')).rejects.toThrow(
+      /no such action/,
+    );
+    await expect(apps.launch('firefox', SESSION, '../x')).rejects.toThrow(
+      /no such action/,
+    );
+    await expect(apps.launch('firefox', SESSION, 'broken')).rejects.toThrow(
+      /No such Linux app/,
+    );
+    // From a tab that doesn't hold a live session, nothing starts.
+    await expect(
+      apps.launch('firefox', 'zzzzzzzzzzzzzzzz', 'new-window'),
+    ).rejects.toThrow(/session/);
+    expect(mockSpawn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Start entries in the browser's languages", () => {
+  let m: ReturnType<typeof machine>;
+  let apps: LinuxAppsService;
+
+  beforeEach(() => {
+    m = machine();
+    apps = new LinuxAppsService(
+      { hasSession: () => true } as unknown as WaylandGateway,
+      new SessionApps(),
+    );
+    apps.paths = m.paths;
+  });
+
+  afterEach(() => {
+    apps.onModuleDestroy();
+    rmSync(m.root, { recursive: true, force: true });
+  });
+
+  it('names entries and actions in the first language they have', async () => {
+    const [firefox] = await apps.launchers(['ro-RO', 'en']);
+    expect(firefox.name).toBe('Firefox (ro)');
+    expect(firefox.actions).toEqual([
+      { id: 'new-window', name: 'Fereastră nouă' },
+    ]);
+    const [plain] = await apps.launchers(['de-DE']);
+    expect(plain.name).toBe('Firefox');
+  });
+
+  it('reads the languages the desktop sends, and ignores what is not one', () => {
+    expect(parseLanguages('ro-RO, ro,en')).toEqual(['ro-RO', 'ro', 'en']);
+    expect(parseLanguages('ro;q=0.9,*,<x>,sr-Latn-RS')).toEqual(['sr-Latn-RS']);
+    expect(parseLanguages(undefined)).toEqual([]);
+    expect(parseLanguages(['ro'])).toEqual([]);
+    expect(parseLanguages(Array(20).fill('en').join(','))).toHaveLength(10);
   });
 });
 

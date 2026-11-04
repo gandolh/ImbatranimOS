@@ -170,7 +170,12 @@ describe('WaylandGateway', () => {
     const body = Buffer.alloc(14);
     body.writeUInt32LE(3, 0);
     l.frame(body);
-    await until(() => c.messages.length === 2);
+    await until(() => c.messages.length === 3);
+    // A new session says so first.
+    expect(c.messages.shift()?.text).toEqual({
+      type: 'session',
+      resumed: false,
+    });
     expect(c.messages[0].text).toEqual({
       type: 'toplevel_created',
       toplevel: 3,
@@ -267,11 +272,15 @@ describe('WaylandGateway', () => {
       width: 1200,
       height: 800,
     });
-    // The reloaded tab gets the session's windows as before.
+    // The reloaded tab is told the session resumed, then gets its windows.
     host.listeners
       .get(SESSION)!
       .message({ type: 'toplevel_destroyed', session: SESSION, toplevel: 9 });
-    await until(() => again.messages.length > 0);
+    await until(() => again.messages.length > 1);
+    expect(again.messages.shift()?.text).toEqual({
+      type: 'session',
+      resumed: true,
+    });
     expect(again.messages[0].text).toEqual({
       type: 'toplevel_destroyed',
       toplevel: 9,

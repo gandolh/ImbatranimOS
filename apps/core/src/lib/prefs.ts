@@ -52,6 +52,8 @@ export const DOTFILE_KEYS = [
   'imbatranimos:startup',
   // Which retired built-ins' ids have been moved to the suite's.
   'imbatranimos:app-id-migrations',
+  // Linux apps' preferences: the keyboard layout they type in.
+  'imbatranimos:linux-apps',
 ] as const
 
 type Cache = Map<string, string>

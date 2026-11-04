@@ -5,11 +5,19 @@ import { APP_REGISTRY } from '../registry/registry'
 import { NON_DISABLEABLE } from '../registry/enabledApps'
 import { useAddonStore } from '../store/addonStore'
 import { isLinuxLauncher, launchLinuxApp } from '../../modules/linux-windows/launchers'
+import { focusIntoWindowSoon } from '../components/window/focusIntoWindow'
 
 /**
  * Opens an app window with optional payload.
  * If the target is single-instance and already open, focuses the existing window
  * and re-delivers the payload. Otherwise creates a new window.
+ *
+ * Either way the window ends up with the keyboard. A raised window gets it
+ * here, a frame later (whatever menu or palette started this hands focus back
+ * to its trigger as it closes); a new one takes it from its own mount, once
+ * its content is there (`focusIntoNewWindowSoon`), so it gets it exactly once.
+ * Doing it here and not per launcher means no launcher can forget it: the
+ * palette, the Notification panel and Start's recent files each did.
  * @param appId - The app ID from APP_REGISTRY
  * @param payload - Optional payload to deliver to the app (app-specific shape)
  * @returns The window ID of the opened/focused window, or '' when the app is
@@ -68,6 +76,7 @@ export function openApp(appId: string, payload?: unknown): string {
       if (payload !== undefined) {
         intentStore.setIntent(existingWindow.id, payload)
       }
+      focusIntoWindowSoon(existingWindow.id)
       return existingWindow.id
     }
   }

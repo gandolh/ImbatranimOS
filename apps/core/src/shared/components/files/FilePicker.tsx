@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowUp, File as FileIcon, Folder, HardDrive, History } from 'lucide-react'
 import { api } from '../../../lib/axios'
 import { useRecentFilesQuery } from '../../../lib/recentFiles'
@@ -20,6 +20,42 @@ const ROOTS = [
   { id: 'notes', label: 'Notes' },
 ]
 
+type Start = { root: string; dir: string; entries: PickerEntry[] }
+
+/** A folder's listing from the authed `/files` endpoint, or null when it refuses. */
+async function listFolder(root: string, path: string): Promise<PickerEntry[] | null> {
+  try {
+    const res = await api.get<PickerEntry[]>('/files', { params: { root, path } })
+    return Array.isArray(res.data) ? res.data : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Where a `startIn` opens: the folder it names, or the folder holding the file
+ * it names. Null when it names nothing the dialog could reach by walking (a
+ * root it doesn't offer, `..`, a path the backend's jail refuses, a folder
+ * that is gone); the dialog then opens at the home root. The check is the
+ * same listing the dialog browses with, so the jail stays the backend's.
+ */
+async function resolveStart(start: { root: string; path: string }): Promise<Start | null> {
+  if (!ROOTS.some((r) => r.id === start.root)) return null
+  const parts = start.path.split('/').filter((p) => p !== '' && p !== '.')
+  if (parts.includes('..')) return null
+  const path = parts.join('/')
+  const folder = await listFolder(start.root, path)
+  if (folder) return { root: start.root, dir: path, entries: folder }
+  if (parts.length === 0) return null
+  const parent = parts.slice(0, -1).join('/')
+  const name = parts[parts.length - 1]
+  const siblings = await listFolder(start.root, parent)
+  if (siblings?.some((e) => e.type === 'file' && e.name === name)) {
+    return { root: start.root, dir: parent, entries: siblings }
+  }
+  return null
+}
+
 /**
  * Browse the container's own filesystem and choose a file.
  *
@@ -35,6 +71,7 @@ export function FilePicker({
   onPick,
   mode = 'open',
   suggestedName,
+  startIn,
 }: {
   /** Preferred extensions, lowercase and without the dot. A hint, not a jail. */
   extensions?: string[]
@@ -45,9 +82,16 @@ export function FilePicker({
    */
   mode?: 'open' | 'save' | 'directory'
   suggestedName?: string
+  /** The folder to open in, or a file in it; see {@link resolveStart}. */
+  startIn?: { root: string; path: string }
 }) {
   const [root, setRoot] = useState('home')
   const [dir, setDir] = useState('')
+  // A start is resolved once, before the first listing, so the dialog doesn't
+  // flash the home root on its way to the folder.
+  const [starting, setStarting] = useState(Boolean(startIn))
+  // The start's listing, already fetched: the listing effect skips that one fetch.
+  const preloaded = useRef<string | null>(null)
   const [showAll, setShowAll] = useState(false)
   const [name, setName] = useState(suggestedName ?? '')
   // Recent tab — open mode only: picking a recent in save mode
@@ -78,6 +122,30 @@ export function FilePicker({
   const error = loaded?.location === location ? loaded.error : null
 
   useEffect(() => {
+    if (!startIn) return
+    let cancelled = false
+    void resolveStart(startIn).then((found) => {
+      if (cancelled) return
+      if (found) {
+        const at = `${found.root}::${found.dir}`
+        preloaded.current = at
+        setRoot(found.root)
+        setDir(found.dir)
+        setLoaded({ location: at, entries: found.entries, error: null })
+      }
+      setStarting(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [startIn])
+
+  useEffect(() => {
+    if (starting) return
+    if (preloaded.current === location) {
+      preloaded.current = null
+      return
+    }
     let cancelled = false
     api
       .get<PickerEntry[]>('/files', { params: { root, path: dir } })
@@ -90,7 +158,7 @@ export function FilePicker({
     return () => {
       cancelled = true
     }
-  }, [location, root, dir])
+  }, [location, root, dir, starting])
 
   const visible = useMemo(() => {
     const filtered =

@@ -32,7 +32,7 @@ impl Stubs {
             // Tokens are handed out; activation requests are ignored, since
             // only the owner raises windows.
             activation: XdgActivationState::new::<SessionState>(dh),
-            // Input methods: none yet. The keyboard is the US keymap.
+            // Input methods: none yet. The keyboard is the chosen layout's keymap.
             _text_input: TextInputManagerState::new::<SessionState>(dh),
             // Cropping and scaling of a buffer. The output's scale is 1, so
             // apps size buffers to the window; a viewport they set anyway is

@@ -35,6 +35,16 @@ export type PickOpenOptions = {
   title?: string
   /** Preferred extensions, lowercase without the dot. A hint, not a jail. */
   extensions?: string[]
+  /**
+   * The folder the dialog opens in, instead of the home root: a Save as that
+   * starts beside the open document, say. A `path` that names a file means
+   * the folder it is in. A start the app couldn't reach by walking the dialog
+   * (an unknown root, a path outside the root's jail, a folder that no longer
+   * exists) opens at the home root, without an error; either way the user can
+   * walk anywhere they could before. Since kit 1.1.0; an older desktop
+   * ignores it and opens at the home root.
+   */
+  startIn?: FileChoice
 }
 
 export type PickSaveOptions = PickOpenOptions & { suggestedName?: string }
@@ -323,6 +333,36 @@ export interface SystemSchedule {
   claim(domain: ScheduleDomain, itemId: string, occurrenceMs: number): Promise<boolean>
 }
 
+// ── The app's server ──────────────────────────────────────────────────────────
+
+/** Where an app's server answers, through the desktop's session-checked proxy. */
+export type SystemServerAddress = { http: string; ws: string }
+
+/**
+ * `system.server` — the app's own server, for a marketplace app whose
+ * descriptor runs one (a `service`). The server is the descriptor's: every
+ * app of a suite shares it.
+ *
+ * Nothing is started until an app asks: an app that never needs its server
+ * never waits for it and never fails on it, and a window that does need it
+ * shows its own progress while it starts.
+ */
+export interface SystemServer {
+  /**
+   * Ask for the app's server. Starts it if it isn't running and resolves once
+   * it answers, with the URLs to reach it over HTTP and WebSocket. The window
+   * holds the server from its first call until it closes, so a second call
+   * resolves with the same server at once; the server stops when the last
+   * window holding it closes.
+   *
+   * Rejects with an `Error` whose message the app can show as it is: the
+   * server didn't start (with the desktop's reason, such as every server slot
+   * being taken), the app's descriptor runs no server, or the window has
+   * closed. The window stays open; a later call tries again.
+   */
+  request(): Promise<SystemServerAddress>
+}
+
 // ── Events ────────────────────────────────────────────────────────────────────
 
 /**
@@ -354,6 +394,13 @@ export interface SystemHandle {
   readonly shortcuts: SystemShortcuts
   readonly appearance: SystemAppearance
   readonly schedule: SystemSchedule
+  /**
+   * The app's server, asked for when the app needs it. Since kit 1.2.0, and
+   * optional for that reason: a desktop from before it has none, so an app
+   * that may run there checks for it. Every app has it, needing no
+   * capability; one whose descriptor runs no server gets a rejection.
+   */
+  readonly server?: SystemServer
   /** Raise a notification as this app. Returns the notification id. */
   notify(input: SystemNotifyInput): string
   /** Subscribe to a compositor event. Returns the unsubscribe function. */

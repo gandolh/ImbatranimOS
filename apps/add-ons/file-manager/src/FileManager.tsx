@@ -986,7 +986,12 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           />
         ) : (
           <UploadDropzone onFiles={handleUploadFiles} className="min-w-0 flex-1 overflow-hidden">
-            <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+            {/* The scroll area is a size container so the listing below can be
+                exactly as tall as the pane (100cqh). `min-h-full` can't do it:
+                the scroll content around the listing has no definite height,
+                so in a short folder the listing ended under its last row, and a
+                right-click or click below it reached nothing. */}
+            <ScrollArea className="[container-type:size] h-full w-full" viewportRef={viewportRef}>
               {isLoading && (
                 <div className="text-on-surface-variant font-ui flex items-center justify-center py-12 text-[12px]">
                   Loading…
@@ -1004,7 +1009,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
                   onContextMenu={openBackgroundMenu}
                   onKeyDown={handleListKeys}
                   tabIndex={0}
-                  className="focus-visible:ring-primary min-h-full outline-none focus-visible:ring-2 focus-visible:ring-inset"
+                  data-fm-listing=""
+                  className="focus-visible:ring-primary min-h-[100cqh] outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 >
                   {/* A folder whose every entry is a dotfile would otherwise read as
                     "Empty folder", which is a lie the user cannot act on. */}

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { parseFrame, ENC_WEBP_LOSSLESS } from './frames'
+import { describe, expect, it, vi } from 'vitest'
+import { decodeRect, parseFrame, ENC_JPEG, ENC_WEBP_LOSSLESS } from './frames'
 
 /** A frame as the socket carries it: kind 2, then the body PROTOCOL.md lays out. */
 function frameBytes(rects: { x: number; y: number; w: number; h: number; data: number[] }[]) {
@@ -45,5 +45,26 @@ describe('parseFrame', () => {
     const other = whole.slice(0)
     new DataView(other).setUint8(0, 1)
     expect(parseFrame(other)).toBeNull()
+  })
+
+  it('decodes a lossy JPEG region the way it decodes WebP', async () => {
+    const seen: string[] = []
+    vi.stubGlobal('createImageBitmap', async (blob: Blob) => {
+      seen.push(blob.type)
+      return { width: 1, height: 1 }
+    })
+    const rect = (encoding: number) => ({
+      x: 0,
+      y: 0,
+      w: 1,
+      h: 1,
+      encoding,
+      data: new Uint8Array([1]),
+    })
+    expect(await decodeRect(rect(ENC_JPEG))).not.toBeNull()
+    expect(await decodeRect(rect(ENC_WEBP_LOSSLESS))).not.toBeNull()
+    expect(await decodeRect(rect(9))).toBeNull()
+    expect(seen).toEqual(['image/jpeg', 'image/webp'])
+    vi.unstubAllGlobals()
   })
 })

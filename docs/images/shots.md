@@ -24,7 +24,7 @@ The images of 2026-10-09 come from the dev container. On 2026-10-31 `desktop.gif
 
 All images come from a machine whose user is `imbatranim`, so the Terminal, Files and System Monitor show the container's own user, home folder and processes, not the host's.
 
-1. `docker compose -f infrastructure/docker-compose.yml --profile dev build dev` if the image is older than the code, then `docker compose -f infrastructure/docker-compose.yml --profile dev up -d dev`. Wait for Vite on <http://localhost:5173>.
+1. `docker compose -f infrastructure/docker-compose.yml --profile dev up -d --build dev`. Without `watch` nothing syncs your edits, so the image must hold the code you are shooting; `--build` costs seconds when only the code or the version changed, because the dependencies reinstall only when a dependency changes. Wait for Vite on <http://localhost:5173>.
 2. Make the demo files:
 
    ```bash

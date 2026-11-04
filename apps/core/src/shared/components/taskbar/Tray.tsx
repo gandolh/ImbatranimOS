@@ -7,16 +7,10 @@ import { cn } from '../../../lib/cn'
 import { api } from '../../../lib/axios'
 import { notify, useNotificationStore } from '../../store/notificationStore'
 import { NotificationPanel } from '../notifications/NotificationPanel'
+import { readTrayStats } from './trayStats'
 
 /** Warn once the volume passes this. */
 const DISK_WARN_PERCENT = 90
-
-// Mirrors the backend's /api/system/stats response (system.service.ts).
-type SystemStats = {
-  cpu: { percent: number; cores: number }
-  memory: { totalBytes: number; usedBytes: number; availableBytes: number; percent: number }
-  disk: { path: string; totalBytes: number; usedBytes: number; freeBytes: number; percent: number }
-}
 
 const toGb = (bytes: number) => (bytes / 1024 ** 3).toFixed(1)
 
@@ -126,12 +120,14 @@ export function Tray() {
     return () => clearInterval(id)
   }, [])
 
-  const { data: stats } = useQuery<SystemStats>({
+  // A failed request leaves `data` undefined, which reads as nothing too.
+  const { data } = useQuery<unknown>({
     queryKey: ['system-stats'],
     queryFn: () => api.get('/system/stats').then((r) => r.data),
     refetchInterval: 60_000,
     staleTime: 55_000,
   })
+  const { load, diskPercent } = readTrayStats(data)
 
   // Warn once per session when the volume is nearly full. Driven off the poll
   // the Tray already runs — the percentage was being fetched every minute and
@@ -139,27 +135,26 @@ export function Tray() {
   // mysteriously failing. A second poller would be waste.
   const warnedRef = useRef(false)
   useEffect(() => {
-    const percent = stats?.disk?.percent
-    if (percent === undefined || percent < DISK_WARN_PERCENT) return
+    if (diskPercent === null || diskPercent < DISK_WARN_PERCENT) return
     if (warnedRef.current) return
     warnedRef.current = true
     notify({
       title: 'Disk almost full',
-      body: `The volume is ${Math.round(percent)}% full. Free some space — Settings › Storage shows what is using it.`,
+      body: `The volume is ${Math.round(diskPercent)}% full. Free some space — Settings › Storage shows what is using it.`,
       level: 'warning',
     })
-  }, [stats?.disk?.percent])
+  }, [diskPercent])
 
   return (
     <div className="flex h-full items-center gap-1 pr-1">
-      {stats && (
+      {load && (
         <span
           className="text-on-surface-variant hidden px-2 text-[11px] tabular-nums sm:inline"
           style={{ whiteSpace: 'nowrap' }}
           title="CPU / RAM"
+          data-tray-load=""
         >
-          {Math.round(stats.cpu.percent)}% · {toGb(stats.memory.usedBytes)}/
-          {toGb(stats.memory.totalBytes)} GB
+          {Math.round(load.cpuPercent)}% · {toGb(load.memUsedBytes)}/{toGb(load.memTotalBytes)} GB
         </span>
       )}
 

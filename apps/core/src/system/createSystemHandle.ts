@@ -24,7 +24,7 @@ import { accentColours, useAppearanceStore } from '../shared/store/appearanceSto
 import { useIntentStore } from '../shared/store/intentStore'
 import { isTopWindow, useWindowStore } from '../shared/store/windowStore'
 import { openApp } from '../shared/intents/openApp'
-import { focusIntoWindowSoon, openWithKeyboard } from '../shared/components/window/focusIntoWindow'
+import { focusIntoWindowSoon } from '../shared/components/window/focusIntoWindow'
 import { isShellSuspended } from '../modules/auth/store/authStore'
 import { useShortcutStore } from '../shared/hooks/shortcutRegistry'
 import { eventMatchesBinding, parseBinding } from '../shared/hooks/useGlobalHotkeys'
@@ -176,6 +176,7 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
           mode: 'open',
           title: opts.title ?? 'Open file',
           extensions: opts.extensions,
+          startIn: opts.startIn,
         }),
       pickSave: (opts = {}) =>
         requestPick({
@@ -183,6 +184,7 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
           title: opts.title ?? 'Save as',
           extensions: opts.extensions,
           suggestedName: opts.suggestedName,
+          startIn: opts.startIn,
         }),
       pickDirectory: (opts = {}) =>
         requestPick({ mode: 'directory', title: opts.title ?? 'Choose a folder' }),
@@ -198,9 +200,9 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
     window: win,
 
     intents: {
-      // A window this raises gets the keyboard; a new one takes it as it
-      // mounts.
-      openApp: (target, payload) => openWithKeyboard(() => openApp(target, payload)),
+      // A window this raises gets the keyboard from openApp; a new one takes
+      // it as it mounts.
+      openApp: (target, payload) => openApp(target, payload),
       consume: <T>() =>
         windowId === null
           ? undefined
@@ -248,6 +250,14 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
     schedule: {
       claim: (domain: ScheduleDomain, itemId, occurrenceMs) =>
         claimScheduleOccurrence(domain, itemId, occurrenceMs),
+    },
+
+    // No server here: a built-in app runs none. The kit app's host
+    // (KitAppHost) puts its window's own claim on the descriptor's server in
+    // this member's place, on the handle the app receives.
+    server: {
+      request: () =>
+        Promise.reject(new Error(`${appId} has no server: it isn't a marketplace app.`)),
     },
 
     // Stamped with this handle's app: a capability cannot toast in another

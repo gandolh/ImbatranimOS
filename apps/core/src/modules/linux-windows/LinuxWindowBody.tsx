@@ -212,6 +212,9 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
     useWindowStore.getState().focusWindow(windowId)
   }, [request, windowId])
 
+  // No accent focus ring here, on purpose (owner, 2026-11-03): this surface is
+  // the Linux app's own, and the app draws its own focus inside its frames.
+  // A ring would sit over the app's pixels. The title bar's controls keep theirs.
   return (
     <div
       ref={holder}

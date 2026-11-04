@@ -30,8 +30,20 @@ export type KitAppModule = {
   App: ComponentType<KitAppProps>
 }
 
-/** Members of the handle that are not capabilities: every app has them. */
-const ALWAYS = new Set(['protocolVersion', 'appId', 'windowId', 'window', 'appearance', 'on'])
+/**
+ * Members of the handle that are not capabilities: every app has them. `server`
+ * among them: an app whose descriptor runs no server gets a rejection that
+ * says so when it asks, not a capability error.
+ */
+const ALWAYS = new Set([
+  'protocolVersion',
+  'appId',
+  'windowId',
+  'window',
+  'appearance',
+  'on',
+  'server',
+])
 
 /**
  * The handle, minus the capabilities the descriptor did not ask for. Asking

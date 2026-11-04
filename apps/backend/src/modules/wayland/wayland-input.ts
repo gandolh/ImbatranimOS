@@ -22,6 +22,12 @@ const isFiniteIn = (v: unknown, limit: number): v is number =>
 const isIntIn = (v: unknown, min: number, max: number): v is number =>
   typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
 
+/**
+ * The keyboard layouts Settings → Linux apps offers, by the id the tab sends.
+ * The host builds each one's xkb keymap; anything else never reaches it.
+ */
+export const KEYBOARD_LAYOUTS = ['us', 'ro'] as const;
+
 /** A viewport dimension from the tab: a positive integer, clamped. */
 export function clampSize(v: unknown): number {
   const n = Math.floor(Number(v));
@@ -142,6 +148,15 @@ export function toHostMessage(
         session,
         toplevel: m.toplevel,
         visible: m.visible,
+      };
+    case 'keyboard_layout':
+      if (!(KEYBOARD_LAYOUTS as readonly unknown[]).includes(m.layout)) {
+        return null;
+      }
+      return {
+        type: 'keyboard_layout',
+        session,
+        layout: m.layout as (typeof KEYBOARD_LAYOUTS)[number],
       };
     default:
       return null;

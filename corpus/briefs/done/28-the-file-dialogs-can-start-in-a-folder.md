@@ -50,3 +50,36 @@ syncs the kit and uses it. Promoted from imbatranim-office's todo
 - `apps/core/src/system/filePortal.tsx`
 - `apps/core/src/shared/components/files/FilePicker.tsx`
 - their tests
+
+## Outcome (2026-11-03)
+
+**Built in `6fa7771` (version 1.121.0; kit `@imbatranim/ui` 1.0.0 → 1.1.0).**
+- `startIn?: FileChoice` on `PickOpenOptions`, so `pickOpen` and
+  `pickSave` take it; its doc comment says what a file path means, what
+  falls back, and that an older desktop ignores it. `pickDirectory` takes
+  its own options and was left as it is.
+- `createSystemHandle` passes it to `requestPick`, the portal's request
+  carries it, and `FilePicker` resolves it once before its first listing
+  (`resolveStart`): list `path` as a folder; failing that, list its parent
+  and accept it if `path` is a file there; else the home root. The check is
+  the same authed `/files` listing the dialog browses with, so the jail is
+  the backend's. A root the dialog doesn't offer and a `..` segment fall
+  back before any request. While it resolves the dialog shows "Loading…", not
+  the home root, and the start's listing is reused rather than fetched twice.
+- The kit's package version went to 1.1.0 (package.json and the lockfile's
+  entry). `SHARED_KIT_VERSION`, which a kit app must match exactly, is a
+  different number and was not touched: changing it would refuse every kit
+  app built for the current one.
+
+**Checked:**
+- `filePortal.test.tsx` (11), the real handle, portal and picker over a fake
+  `/files` that refuses unknown paths: `pickSave` opens in a named folder
+  (one request, no home detour), in a named file's folder, and in the Notes
+  root; a root it doesn't offer, a missing folder, a missing file, a path the
+  jail refuses and a `..` path each open at the home root with no error and
+  no request carrying `..`; no `startIn` opens at home as before; Save
+  lands in the start folder and Up is enabled; `pickOpen` takes it too.
+- In the dev container, Code Editor's Save as patched (in the container
+  only) to start beside `Two/a.txt`: the dialog opened at `/Two` and saved
+  there.
+- Typecheck, lint; core's full suite (658) and the kit's (39) pass.

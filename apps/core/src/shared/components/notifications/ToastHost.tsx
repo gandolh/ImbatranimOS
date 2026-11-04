@@ -3,7 +3,6 @@ import { X } from 'lucide-react'
 import { cn } from '../../../lib/cn'
 import { TASKBAR_HEIGHT } from '../../store/windowStore'
 import { openApp } from '../../intents/openApp'
-import { openWithKeyboard } from '../window/focusIntoWindow'
 import { useNotificationStore, type NotificationItem } from '../../store/notificationStore'
 import { NotificationIcon } from './NotificationIcon'
 import { levelStripeClass } from './levelStyle'
@@ -37,7 +36,7 @@ function Toast({ item }: { item: NotificationItem }) {
   const activate = (payload?: unknown) => {
     const appId = item.appId
     if (!appId) return
-    openWithKeyboard(() => openApp(appId, payload))
+    openApp(appId, payload)
     close()
   }
 

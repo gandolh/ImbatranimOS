@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-05) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups), 31 (XWayland) and 33 (HiDPI) still open; the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
+summary: Dated snapshot (2026-11-05) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups), 33 (HiDPI) still open; 31 done 2026-11-05 (X11 apps through Xwayland, which comes with the first app that speaks X11); the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
 updated: 2026-11-05
 ---
 
@@ -125,8 +125,10 @@ outcome is in `briefs/done/`:
   their desktop actions, and video regions sent as JPEG while text stays
   lossless.
 
-Still open, not started: **31** (X11 apps through XWayland) and **33** (sharp
-Linux windows on HiDPI screens).
+31 is done (2026-11-05, `e365ca8`): X11 apps open through Xwayland, started
+on a session's first X client; it comes with the first app that speaks X11,
+not in the image ([decisions-linux-apps-built.md](decisions-linux-apps-built.md)).
+Still open, not started: **33** (sharp Linux windows on HiDPI screens).
 
 37-44 were written 2026-11-04 from a grill with the owner. Done on
 2026-11-05 (each outcome in `briefs/done/`): 37 production's own Compose
@@ -184,6 +186,8 @@ The server ISO is deferred by the owner (2026-10-04).
 
 - `linux-notification-click-runs-its-action` (2026-11-05): a click on a
   Linux app's notification should run its `default` action.
+- `x11-apps-clipboard-and-cursors` (2026-11-05): copy and paste between X11
+  apps and the rest, and X11 apps' own cursors.
 
 On 2026-11-04 the owner's grill turned the earlier todos into briefs 37-44
 and dropped the window-zoom check.

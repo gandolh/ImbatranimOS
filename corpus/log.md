@@ -5100,3 +5100,14 @@ Measured in a local production image: at rest 67 MiB anon, one Firefox idle 590 
 the backend raises it again at 5 s and 30 s (`2ecb1cb`). Under the cap a page allocating past it got
 Firefox killed, its windows closed and one "Firefox was stopped" notice shown; the backend never
 restarted. Setting the cap in vps-deploy is the owner's step.
+
+## [2026-11-05] brief | 31 done: X11 apps open through Xwayland
+
+Each session reserves an X display (lock file and socket, nothing running) and its apps get
+`DISPLAY`; the first X client starts Xwayland, which the host manages through smithay on a
+per-session event loop, and which stays for the session (16 MB idle) (`e365ca8`, 1.154.0). smithay
+binds its own sockets, so the host starts Xwayland through a launcher that adds the reserved one.
+Xwayland measured 421 MiB unpacked on its own and 5 MiB beside Firefox, so it isn't in the image:
+the Linux apps pane installs it with the first app that speaks X11 and removes it with the last
+(decisions-linux-apps-built.md). Walked with xterm: typing, a menu popup, move, maximize, close,
+Xwayland restarting after a kill, Firefox still on Wayland. Todo `x11-apps-clipboard-and-cursors`.

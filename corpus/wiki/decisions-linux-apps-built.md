@@ -1,5 +1,5 @@
 ---
-summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image. Grilled again 2026-11-04: a tray volume over all sound (reversing the 2026-07-31 rejection), Linux apps on the VPS in a capped container, and the zoom beside Linux windows stays off for good. 2026-11-05: the session bus is Alpine's dbus, and the backend speaks D-Bus with a client of its own.
+summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image. Grilled again 2026-11-04: a tray volume over all sound (reversing the 2026-07-31 rejection), Linux apps on the VPS in a capped container, and the zoom beside Linux windows stays off for good. 2026-11-05: the session bus is Alpine's dbus, and the backend speaks D-Bus with a client of its own; Xwayland, for X11 apps, isn't in the image but comes with the first app that speaks X11.
 updated: 2026-11-05
 ---
 
@@ -103,3 +103,20 @@ and glibc) or installed on first use (free while Firefox is installed, an
 belongs in the image at the smallest size; and the backend only has to serve
 one interface, which a short, tested client does without adding a supply
 chain to the server.
+
+## Xwayland comes with the first app that speaks X11
+_2026-11-05_ — Xwayland isn't in the image. The Linux apps pane installs it
+into a profile of its own (`imbatranim-xwayland`) right after an install
+that leaves libX11 in the user's profile, and removes it after a removal
+that leaves none. Measured at the pin while building brief 31: 155 paths,
+421 MiB unpacked, a 126 MiB download, nearly all of it beyond the base
+profile (libdecor brings GTK 3 and systemd), and 5 MiB beyond Firefox's
+closure.
+Rejected: the base profile in the image (421 MiB against the ~150 MB
+target); installing it when the first X client connects (a 126 MiB download
+while the app waits for its display); installing it with every app (420 MiB
+for an app that speaks only Wayland, such as foot); installing it only with
+apps that speak X11 alone (libX11 but no libwayland), which misses apps that
+speak both and still pick X11, such as older Electron apps.
+**Why**: the image stays slim, an X11 app pays for X11 when it first needs
+it, and an app that already carries GTK pays almost nothing.

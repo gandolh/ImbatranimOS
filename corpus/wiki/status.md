@@ -128,23 +128,15 @@ outcome is in `briefs/done/`:
 Still open, not started: **31** (X11 apps through XWayland) and **33** (sharp
 Linux windows on HiDPI screens).
 
-37-44 were written 2026-11-04 from a grill with the owner. 37 is done
-(2026-11-05): production is in the Compose profile `prod`, so `npm run dev`
-starts only the dev container; commands that name the service, the
-deploy's included, work unchanged. 38 is done (2026-11-05): each desktop
-layer has its own error boundary, and a crash hides the layer and says so
-once. 41 is done (2026-11-05): plain text copies both ways between Linux
-apps and the real clipboard, pasting on Ctrl+V, Ctrl+Shift+V or
-Shift+Insert; the selection now follows the keyboard, which also fixed copy
-and paste between two Linux apps. 42 is done (2026-11-05): each session runs
-its own D-Bus session bus (Alpine's dbus), so Firefox keeps one instance, and
-Linux apps' notifications show as OS notifications. 44 is done (2026-11-05):
-measured, a 1 GiB / 1 CPU container cap proposed for vps-deploy
-(`infrastructure/README.md`), Linux apps go before the backend when memory
-runs out, and an app killed for memory leaves one notice. Not built: 39
-Linux apps' sound as one stream, 40 a tray volume over all sound (reversing
-the 2026-07-31 rejection), 43
-an Updates page (26.05 fixes, release upgrades, Go back). 40 runs after 39.
+37-44 were written 2026-11-04 from a grill with the owner. Done on
+2026-11-05 (each outcome in `briefs/done/`): 37 production's own Compose
+profile; 38 a crashed desktop layer hides itself and says so; 41 plain-text
+copy and paste with Linux apps (the selection now follows the keyboard); 42
+a D-Bus session bus per session, so Firefox keeps one instance, and Linux
+apps' notifications in the OS; 44 the VPS cap's numbers (1 GiB / 1 CPU in
+`infrastructure/README.md`), Linux apps first when memory runs out, and a
+notice when one is killed. Not built: 39 Linux apps' sound, 40 a tray
+volume over all sound (after 39), 43 an Updates page.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner

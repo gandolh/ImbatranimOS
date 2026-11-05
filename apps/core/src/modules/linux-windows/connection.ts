@@ -12,6 +12,7 @@ import { useLinuxAppsPrefs } from './keyboardLayout'
 import { LINUX_APP_PREFIX, linuxWindowChrome } from './kind'
 import { paintFrame, parseFrame } from './frames'
 import { linuxClipboard } from './clipboard'
+import { LinuxNotifications } from './linuxNotifications'
 import {
   canvasFor,
   dropAllCanvases,
@@ -69,6 +70,8 @@ type ServerMessage =
   | { type: 'unavailable'; reason: string }
   | { type: 'session'; resumed: boolean }
   | { type: 'clipboard'; text: string }
+  | { type: 'notification'; id: number; app: string; summary: string; body: string }
+  | { type: 'notification_close'; id: number }
 
 /** Where Linux apps' windows are drawn: the desktop above the taskbar. */
 function viewport(): { width: number; height: number } {
@@ -138,6 +141,8 @@ export class LinuxWindowsConnection {
    * resync is over are ones the tab had, and go back to their kept places.
    */
   private resuming = false
+  /** The session's Linux apps' notifications, as OS notifications. */
+  private notifications: LinuxNotifications | null = null
 
   private readonly onVisibility = () => {
     this.send({ type: 'visibility', visible: document.visibilityState !== 'hidden' })
@@ -185,6 +190,7 @@ export class LinuxWindowsConnection {
       if (s.keyboardLayout !== prev.keyboardLayout) this.sendLayout()
     })
     setLinuxSender((m) => this.send(m))
+    this.notifications = new LinuxNotifications((m) => this.send(m))
     this.connect()
   }
 
@@ -200,6 +206,8 @@ export class LinuxWindowsConnection {
     this.unsubscribeWindows?.()
     this.unsubscribeWindows = null
     setLinuxSender(null)
+    this.notifications?.dispose()
+    this.notifications = null
     if (this.retryTimer) clearTimeout(this.retryTimer)
     if (this.viewportTimer) clearTimeout(this.viewportTimer)
     const ws = this.ws
@@ -325,11 +333,14 @@ export class LinuxWindowsConnection {
     } else if (m.type === 'request') this.request(m.toplevel, m.action, m.edges)
     else if (m.type === 'clipboard' && typeof m.text === 'string')
       void linuxClipboard.fromLinux(m.text)
+    else if (m.type === 'notification') this.notifications?.show(m)
+    else if (m.type === 'notification_close') this.notifications?.close(m.id)
   }
 
   /** A fresh session has none of the windows the tab kept places for. */
   private sessionStarted(resumed: boolean): void {
     this.resuming = resumed
+    if (!resumed) this.notifications?.forget()
     if (!resumed) dropLinuxPlaces()
   }
 

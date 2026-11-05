@@ -147,7 +147,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.146.0"
+      org.opencontainers.image.version="1.147.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -155,7 +155,11 @@ LABEL org.opencontainers.image.title="ImbatranimOS" \
 # libxkbcommon: the Wayland host links it for the keymap it sends Linux apps.
 # tini: PID 1 (below), so the processes an app leaves behind when its parent
 # dies are reaped instead of piling up as zombies under node.
-RUN apk add --no-cache git libxkbcommon tini
+# dbus: each tab's Linux session runs its own session bus (about 0.7 MB;
+# Nix's is an 80 MiB closure). Only session buses run, as the OS user, so the
+# setuid helper that starts system services goes.
+RUN apk add --no-cache git libxkbcommon tini dbus \
+    && rm -f /usr/libexec/dbus-daemon-launch-helper
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 # Linux apps come from Nix, run single-user as imbatranim. Every piece of Nix
@@ -204,7 +208,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.146.0
+    IMAGE_VERSION=1.147.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -232,7 +236,9 @@ FROM deps AS dev
 # for the Wayland host. foot (with a font) and gtk3-demo are Linux apps to
 # test the host with, in the dev image only: foot asks for the OS title bar,
 # gtk3-demo draws its own.
-RUN apk add --no-cache git libxkbcommon tini foot font-dejavu gtk+3.0-demo
+# dbus: the session buses, as in the prod stage.
+RUN apk add --no-cache git libxkbcommon tini dbus foot font-dejavu gtk+3.0-demo \
+    && rm -f /usr/libexec/dbus-daemon-launch-helper
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
 # Linux apps under Nix, as in the prod stage (the reasons are there).

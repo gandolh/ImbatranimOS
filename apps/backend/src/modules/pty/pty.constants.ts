@@ -1,5 +1,6 @@
 import { homedir, userInfo } from 'os';
 import { isValidSessionId } from '../wayland/wayland.protocol';
+import { sessionBusAddress } from '../linux-apps/session-bus.paths';
 
 /**
  * Path the terminal WebSocket listens on. Lives under the `/api` prefix so it
@@ -64,8 +65,9 @@ export function resolveHome(env: NodeJS.ProcessEnv = process.env): string {
  * environment minus its secrets) plus the user's Nix profile at the front of
  * `PATH`, so a Linux app installed with `nix profile add` runs by name, and
  * `WAYLAND_DISPLAY` naming the socket of the desktop session (the tab) the
- * Terminal is in, so a Linux app started here shows its windows in that tab.
- * An invalid or missing session id adds no display.
+ * Terminal is in, so a Linux app started here shows its windows in that tab,
+ * and `DBUS_SESSION_BUS_ADDRESS` naming that session's bus. An invalid or
+ * missing session id adds neither.
  *
  * The profile goes on the shell's `PATH` only, never the backend's: the
  * backend runs `git` and `tar` by name, and a Nix-installed copy of either must
@@ -79,10 +81,19 @@ export function terminalEnv(
   desktopSession?: string | null,
 ): NodeJS.ProcessEnv {
   const env = { ...base };
+  const runtimeDir = env.XDG_RUNTIME_DIR?.trim();
   if (desktopSession && isValidSessionId(desktopSession)) {
     env.WAYLAND_DISPLAY = `wayland-${desktopSession}`;
+    // The session's own bus: apps keep one instance and talk to the OS on it.
+    if (runtimeDir) {
+      env.DBUS_SESSION_BUS_ADDRESS = sessionBusAddress(
+        runtimeDir,
+        desktopSession,
+      );
+    }
   } else {
     delete env.WAYLAND_DISPLAY;
+    delete env.DBUS_SESSION_BUS_ADDRESS;
   }
   const stateHome = env.NIX_STATE_HOME?.trim();
   if (stateHome) {

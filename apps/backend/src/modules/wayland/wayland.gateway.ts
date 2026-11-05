@@ -60,6 +60,17 @@ interface LiveSession {
 }
 
 /**
+ * Another module's part in each session's life: the Linux apps' session bus
+ * starts with a session and hears its tab's messages about it.
+ */
+export type SessionHooks = {
+  /** A new session is live (not a resumed one). */
+  started?(session: string): void;
+  /** A message from the tab the host doesn't take; true when handled. */
+  tabMessage?(session: string, message: Record<string, unknown>): boolean;
+};
+
+/**
  * `/api/wayland`: one desktop session's Linux windows, relayed between its
  * tab and the Wayland host.
  *
@@ -92,6 +103,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
   killAfterMs = WAYLAND_KILL_AFTER_MS;
   private unregister: (() => void) | null = null;
   private sweepTimer: NodeJS.Timeout | null = null;
+  private readonly hooks: SessionHooks[] = [];
 
   constructor(
     private readonly upgrades: UpgradeRoutes,
@@ -111,6 +123,16 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       WAYLAND_REVOKE_SWEEP_MS,
     );
     this.sweepTimer.unref();
+  }
+
+  addSessionHooks(hooks: SessionHooks): void {
+    this.hooks.push(hooks);
+  }
+
+  /** Send a JSON message to a live session's tab, when it has one open. */
+  sendToTab(session: string, message: object): void {
+    const s = this.live.get(session);
+    if (s) this.safeSend(s, JSON.stringify(message));
   }
 
   onModuleDestroy(): void {
@@ -248,6 +270,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
     }
     // A new session: none of its windows is one the tab had before.
     this.safeSend(s, JSON.stringify({ type: 'session', resumed: false }));
+    for (const h of this.hooks) h.started?.(id);
   }
 
   private attach(s: LiveSession, ws: WebSocket): void {
@@ -340,6 +363,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       if (typeof m.covered === 'boolean') this.cover(s, m.covered);
       return;
     }
+    for (const h of this.hooks) if (h.tabMessage?.(s.id, m)) return;
     const forHost = toHostMessage(s.id, m);
     if (forHost) this.host.send(forHost);
   }

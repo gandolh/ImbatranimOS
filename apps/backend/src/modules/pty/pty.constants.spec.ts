@@ -40,4 +40,19 @@ describe('terminalEnv', () => {
     expect(terminalEnv({}, '../../etc/passwd').WAYLAND_DISPLAY).toBeUndefined();
     expect(terminalEnv({}, 'short').WAYLAND_DISPLAY).toBeUndefined();
   });
+
+  it("names the tab's session bus, and never one for a missing session", () => {
+    const base = { XDG_RUNTIME_DIR: '/run/user/1000' };
+    expect(terminalEnv(base, 'abcdefghijklmnop').DBUS_SESSION_BUS_ADDRESS).toBe(
+      'unix:path=/run/user/1000/imbatranim-bus/abcdefghijklmnop',
+    );
+    expect(
+      terminalEnv({ ...base, DBUS_SESSION_BUS_ADDRESS: 'unix:path=/x' })
+        .DBUS_SESSION_BUS_ADDRESS,
+    ).toBeUndefined();
+    // No runtime directory, no bus to name.
+    expect(
+      terminalEnv({}, 'abcdefghijklmnop').DBUS_SESSION_BUS_ADDRESS,
+    ).toBeUndefined();
+  });
 });

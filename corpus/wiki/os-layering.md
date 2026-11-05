@@ -155,24 +155,17 @@ Apps are **first-party for the foreseeable future** (in-repo, build-time,
 loop), **not** a *malicious* one. That is cheaply contained with **per-window
 React error boundaries + main-thread hygiene** — per-window error boundaries (2026-08-06). No iframes today.
 
-**Per-window error boundaries (2026-08-06) is DONE (2026-08-06)** —
-brief. The boundary sits
-*inside* the window frame, so a crashed app keeps a title bar that drags and a
-close button that works; Reload is a **key change**, not a state reset, because
+**Per-window error boundaries (done 2026-08-06).** The boundary sits *inside*
+the window frame, so a crashed app keeps a title bar that drags and a close
+button that works; Reload is a **key change**, not a state reset, because
 clearing the error in place re-renders the state that just threw. Crash toasts
 are deduped per app so a render loop cannot bury the one message that matters.
-The half it explicitly does **not** solve is unchanged and still true: an
-error boundary catches throws, not hangs, and a spinning app still freezes the
-tab. That needs the transport swap below, not a watchdog.
-
-**Desktop layers have their own boundary (2026-11-05).** An add-on's
-`desktopLayer` is mounted straight into the desktop, outside any window, so a
-throw there used to take the whole page down. Each layer now sits in its own
-boundary, keyed by app id: a crashed layer draws nothing, one notification
-names the add-on ("Sticky Notes stopped working on the desktop."), and it stays
-hidden until the desktop mounts again or the add-on is turned off and on. No
-retry, for the same reason Reload is a remount. The tray keeps no boundary: it
-is core's own code.
+**Desktop layers** (2026-11-05) each get their own boundary, keyed by app id: a
+crashed layer draws nothing, one notification says "<name> stopped working on
+the desktop.", and it stays hidden until the desktop mounts again. The tray,
+core's own code, has none. What boundaries don't solve: they catch throws, not
+hangs, and a spinning app still freezes the tab. That needs the transport swap
+below, not a watchdog.
 
 Hard sandboxing (sandboxed iframes / workers, real crash + security isolation)
 is the **transport swap** of the `system` handle, and is **gated on third-party

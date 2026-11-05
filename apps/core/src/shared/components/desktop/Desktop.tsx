@@ -11,6 +11,7 @@ import type { Wallpaper } from '../../store/wallpaperStore'
 import { wallpaperById } from './wallpapers'
 import { WindowContainer } from '../window/WindowContainer'
 import { WidgetLayer } from './WidgetLayer'
+import { DesktopLayerBoundary } from './DesktopLayerBoundary'
 import { WindowlessSystemProvider } from '../../../system/WindowlessSystemProvider'
 import { DesktopContextMenu, DesktopIconContextMenu } from './DesktopContextMenu'
 import { useElementSize } from '../../hooks/useElementSize'
@@ -53,7 +54,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
     () =>
       enabledApps
         .filter((app) => app.desktopLayer !== undefined)
-        .map((app) => ({ id: app.id, Layer: app.desktopLayer! })),
+        .map((app) => ({ id: app.id, name: app.name, Layer: app.desktopLayer! })),
     [enabledApps]
   )
   // A primitive, not an array: `useEnabledApps()` returns a fresh array on every
@@ -291,20 +292,24 @@ export function Desktop({ wallpaper }: DesktopProps) {
         Above the icon grid on purpose: that grid is an `inset-0` div, so anything
         below it would never receive a click. The wrapper is `pointer-events-none`
         so the layer cannot swallow clicks meant for the wallpaper or an icon —
-        each layer opts back in on its own elements. Wrapped in Suspense because a
-        layer may be lazy, and mounted for every enabled app whether or not its
-        window is open, which is the whole point of a desktop surface.
+        each layer opts back in on its own elements. Mounted for every enabled app
+        whether or not its window is open, which is the whole point of a desktop
+        surface. Each layer has its own error boundary, so one that throws hides
+        itself and leaves the desktop standing, and its own Suspense, because a
+        layer may be lazy and one still loading shouldn't hide the others.
       */}
       <div className="pointer-events-none absolute inset-0">
-        <Suspense fallback={null}>
-          {desktopLayers.map(({ id, Layer }) => (
-            // Windowless handle: a desktop layer belongs to its app
-            // but to no window, exactly like a background service.
-            <WindowlessSystemProvider key={id} appId={id}>
-              <Layer />
-            </WindowlessSystemProvider>
-          ))}
-        </Suspense>
+        {desktopLayers.map(({ id, name, Layer }) => (
+          <DesktopLayerBoundary key={id} appId={id} appName={name}>
+            <Suspense fallback={null}>
+              {/* Windowless handle: a desktop layer belongs to its app
+                  but to no window, exactly like a background service. */}
+              <WindowlessSystemProvider appId={id}>
+                <Layer />
+              </WindowlessSystemProvider>
+            </Suspense>
+          </DesktopLayerBoundary>
+        ))}
       </div>
 
       {/* Hosted widgets — same stacking slot as the add-on layers:

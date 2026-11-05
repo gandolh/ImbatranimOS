@@ -74,6 +74,9 @@ export type AppConfig = {
    * - It sits **above** the icon grid, because the icon container spans the whole
    *   desktop and would otherwise intercept every click aimed at the layer. Draw
    *   only where the user has actually put something.
+   * - A layer that throws is hidden until the desktop mounts again, and one
+   *   notification says "<name> stopped working on the desktop." The rest of
+   *   the desktop stays.
    */
   desktopLayer?: ComponentType | LazyExoticComponent<ComponentType>
   /**

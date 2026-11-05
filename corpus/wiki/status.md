@@ -142,14 +142,16 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner
 
-- Push imbatranim-office's `main` (to `aa626c2` or later), then this repo,
+- Push imbatranim-office's `main` (to `1b4394f` or later), then this repo,
   then deploy the two themes (briefs 08-21) and the Linux apps layer (01-06)
   together with vps-deploy
   (`node cli.ts imbatranim-os all`). The README images are already retaken
   in Apricot light (2026-11-03). The Office catalog entry pins
-  `aa626c2`, which only exists locally until the push. The office kit is
-  synced and the pin moved (2026-11-03). Hollow needs nothing: it doesn't use
-  the kit.
+  `1b4394f` (2026-11-05: Save as in the file's folder, the suite a `service`
+  whose server only CAD starts on its first DWG, Sheets' save waiting for the
+  first calculation), which only exists locally until the push. The office
+  kit is synced to this repo's `3dd0a8d`. Hollow needs nothing: it doesn't
+  use the kit.
 - Linux apps, in Chrome on the dev container: open an app beside Firefox
   playing a video, a few times. Chromium crashed there before the fade-only
   change and still did once in five (brief 04's outcome); Chrome with a GPU

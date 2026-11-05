@@ -5055,3 +5055,11 @@ Each add-on's desktop layer mounts in its own error boundary, keyed by app id, w
 working on the desktop.", the crash goes to the system log, and the layer stays hidden until the
 desktop mounts again. A jsdom test mounts the desktop with a throwing layer beside a working one; it
 fails without the boundary. [os-layering.md](wiki/os-layering.md) has the rule.
+
+## [2026-11-05] marketplace | The Office pin moves to imbatranim-office `1b4394f`
+
+`marketplace/imbatranim-office.json` is that repo's descriptor template at `1b4394f`: a `service`
+again, with the DWG server, which only CAD asks for on a window's first DWG (`system.server`, brief
+29); CAD opens `.dwg` again. The pinned commit also has Save as opening in the file's folder
+(`startIn`, brief 28) and Sheets' save waiting for the first calculation. Walked in the dev container
+from a local descriptor before the move. imbatranim-office must be pushed before this repo.

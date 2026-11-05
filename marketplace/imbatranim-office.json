@@ -5,15 +5,20 @@
   "description": "Office apps built and installed together.",
   "source": {
     "repo": "https://github.com/gandolh/imbatranim-office",
-    "ref": "aa626c29cf4adbd5034eb7fc6533088d1932ac79"
+    "ref": "1b4394f5982ad9f8406386c03939d87a592e6812"
   },
-  "type": "static",
+  "type": "service",
   "runtime": "native",
   "sharedKit": 1,
   "build": {
     "install": ["npm", "ci"],
     "command": ["npm", "run", "build:os"],
     "output": "dist/os"
+  },
+  "server": {
+    "command": ["node", "server/src/index.ts"],
+    "portEnv": "PORT",
+    "health": "/health"
   },
   "apps": [
     {
@@ -41,8 +46,8 @@
     {
       "id": "office-cad",
       "name": "CAD",
-      "description": "2D drafting: DXF drawings with a command line, object snaps and layers.",
-      "meta": ["office", "cad", "dxf", "drafting"],
+      "description": "2D drafting: DXF drawings, and DWG converted by the suite server, with a command line, object snaps and layers.",
+      "meta": ["office", "cad", "dxf", "dwg", "drafting"],
       "entry": "cad/app.mjs",
       "window": {
         "defaultSize": {
@@ -55,7 +60,7 @@
         }
       },
       "icon": "drafting-compass",
-      "opens": ["dxf"],
+      "opens": ["dxf", "dwg"],
       "multiInstance": true,
       "capabilities": ["fs", "intents", "notify", "shortcuts"],
       "styles": ["cad/app.css"]
@@ -95,16 +100,7 @@
       "id": "office-sheets",
       "name": "Sheets",
       "description": "Edit spreadsheets (xlsx, csv)",
-      "meta": [
-        "sheets",
-        "spreadsheet",
-        "excel",
-        "xlsx",
-        "csv",
-        "grid",
-        "table",
-        "formula"
-      ],
+      "meta": ["sheets", "spreadsheet", "excel", "xlsx", "csv", "grid", "table", "formula"],
       "entry": "sheets/app.mjs",
       "window": {
         "defaultSize": {
@@ -126,17 +122,7 @@
       "id": "office-pdf",
       "name": "PDF",
       "description": "Read, annotate, fill in, sign and organise PDF documents",
-      "meta": [
-        "pdf",
-        "document",
-        "read",
-        "reader",
-        "view",
-        "search",
-        "annotate",
-        "forms",
-        "sign"
-      ],
+      "meta": ["pdf", "document", "read", "reader", "view", "search", "annotate", "forms", "sign"],
       "entry": "pdf/app.mjs",
       "window": {
         "defaultSize": {

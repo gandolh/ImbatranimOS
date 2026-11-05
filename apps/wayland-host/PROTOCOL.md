@@ -62,6 +62,7 @@ refused on both sides.
 | `freeze` | `session`, `frozen` | The backend froze the session's apps (SIGSTOP) under the cover screen, or woke them: meanwhile no frames go and no frame callbacks are answered; after, every window is sent whole. |
 | `visibility` | `session`, `visible` | The tab was hidden or shown: a hidden session gets no frames and its apps no frame callbacks, so well-behaved apps stop drawing; shown again, every window is sent whole. |
 | `toplevel_visible` | `session`, `toplevel`, `visible` | The same for one toplevel and its popups: its OS window was minimized, or moved to another workspace, or shown again. |
+| `clipboard` | `session`, `text` | A paste key in a Linux window: the tab read its clipboard. The host offers the text (at most 1 MiB of UTF-8, as `text/plain;charset=utf-8`, `text/plain`, `UTF8_STRING`, `TEXT` and `STRING`) as the session's selection, to the app with the keyboard first. The key follows in the next message. |
 
 In the pointer messages, `toplevel` names a toplevel or a popup: their ids
 share one space within a session.
@@ -70,7 +71,7 @@ share one space within a session.
 
 | `type` | Fields |
 |---|---|
-| `hello` | `version` (3) |
+| `hello` | `version` (4) |
 | `session_ready` | `session`, `display` (the socket name, `wayland-<session>`) |
 | `session_failed` | `session`, `reason` |
 | `toplevel_created`, `toplevel_updated` | `session`, `toplevel`, `title`, `app_id`, `width`, `height`, `geometry`, `decorations`, `min_width`, `min_height`, `max_width`, `max_height` |
@@ -80,6 +81,7 @@ share one space within a session.
 | `clients` | `session`, `pids` |
 | `cursor` | `session`, `name` |
 | `request` | `session`, `toplevel`, `action`, `edges` |
+| `clipboard` | `session`, `text` |
 
 A toplevel is created when it first shows a buffer, and destroyed when the
 app destroys it or removes its buffer. `width` and `height` are its image's
@@ -109,6 +111,14 @@ socket (read with `SO_PEERCRED`) whenever one connects or goes. The backend
 uses them, with the process groups of the apps it started from Start, to
 freeze the session's apps under the cover screen and to stop them when the
 session ends; it doesn't forward them to the tab.
+
+`clipboard` is text an app copied: when an app with the keyboard sets the
+`wl_data_device` selection and offers a text type, the host reads it through
+a pipe (preferring `text/plain;charset=utf-8`, then `UTF8_STRING`,
+`text/plain`, `TEXT`, `STRING`) and sends it once the app closes its end.
+More than 1 MiB, or nothing within 5 s, sends nothing. Other types (images,
+files) are never read. The selection follows the keyboard: the focused app
+is offered the current one, and only it may set a new one.
 
 `cursor` is the CSS name of the cursor the app asked for with cursor-shape-v1
 (`default` when it set a cursor surface instead, `none` when hidden).
@@ -183,9 +193,18 @@ for a new session, whose toplevel ids may repeat an old session's.
 
 Tab to server, JSON text: `{"type":"viewport","width","height"}`, the
 input messages above (`focus` to `press_outside`), `visibility`,
-`toplevel_visible` and `keyboard_layout` (sent on connect and on every
-change), without `session`; the backend checks each field and adds
-the session. `{"type":"cover","covered"}` is the backend's own: it freezes or
+`toplevel_visible`, `keyboard_layout` (sent on connect and on every
+change) and `clipboard`, without `session`; the backend checks each field
+and adds the session. A message is at most 2 MiB, room for a paste's 1 MiB
+of text. The host's `clipboard` reaches the tab as `{"type":"clipboard","text"}`
+and the tab writes it to the clipboard.
+
+The tab reads its clipboard only on a paste key in a Linux window (Ctrl+V,
+Ctrl+Shift+V, Shift+Insert), and holds the keys after it until the read
+settles: the `clipboard` message goes before the key. It sends none when the
+text is what the two sides last agreed on (text a Linux app copied, or the
+last paste), so an app pasting its own copy keeps its richer types; nor when
+the read is refused, empty, over the limit or takes over 10 s. `{"type":"cover","covered"}` is the backend's own: it freezes or
 wakes the session's apps and sends the host `freeze`.
 
 A session outlives its socket by 30 s. A socket for the same session id

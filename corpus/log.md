@@ -5111,3 +5111,18 @@ Xwayland measured 421 MiB unpacked on its own and 5 MiB beside Firefox, so it is
 the Linux apps pane installs it with the first app that speaks X11 and removes it with the last
 (decisions-linux-apps-built.md). Walked with xterm: typing, a menu popup, move, maximize, close,
 Xwayland restarting after a kill, Firefox still on Wayland. Todo `x11-apps-clipboard-and-cursors`.
+
+## [2026-11-06] research | The OS's own apps as Linux apps? Recommended no
+
+The owner asked whether the OS's apps should become native ones served like Firefox through the
+Wayland host. Researched without building anything, in `wiki/research-native-apps-via-wayland.md`.
+Server cost per app comes from the repo's measurements: Firefox is 0.5-0.6 GB and up to 41% of a
+core while scrolling (host encoding included), and the 1 GiB cap holds one. On the phone, a Linux
+window takes physical key codes on a canvas, so Android's on-screen keyboard can't type into it. The suite's 2026-10-21
+calls and the 2026-10-23 "a web app's pixels are off-soul" stand against the move. Nix closures at
+the pin were summed from `cache.nixos.org` narinfo, a method that reproduces brief 01's Firefox
+exactly. LibreOffice is 858-1,023 MiB to download and 2.6-3.3 GiB unpacked (1.9-2.5 GiB more beside
+Firefox). QCAD is 169/663 MiB, LibreCAD 333/1,138 and zathura 183/526. Recommendation: no. Native
+programs stay optional installs from Settings → Linux apps. The owner is asked to confirm in
+`wiki/open-questions.md`, which also asks whether Open with for a Linux app is wanted. No brief was
+written.

@@ -1,11 +1,28 @@
 ---
-summary: Nothing open as of 2026-10-06; the resolved web-OS era questions (install story, HTTPS, image size, accent, registry, shared origin) with where each answer lives.
-updated: 2026-11-02
+summary: One open question (2026-11-06) — confirm that the OS's own apps and the office suite stay kit apps rather than becoming streamed Linux apps (research-native-apps-via-wayland.md), and whether Open with for a Linux app is wanted; below it, the resolved web-OS era questions (install story, HTTPS, image size, accent, registry, shared origin) with where each answer lives.
+updated: 2026-11-06
 ---
 
 # Open questions
 
-_Nothing is open._ The last three were answered on 2026-10-06: the crimson
+## Open
+
+**The OS's own apps as Linux apps?** (asked 2026-11-06, researched the same
+day in [research-native-apps-via-wayland.md](research-native-apps-via-wayland.md)).
+The research recommends **no**. Files, Settings, Terminal, Notes, the other
+add-ons, the office suite and the marketplace apps stay in the tab, and
+native programs such as LibreOffice or QCAD stay optional installs from
+Settings → Linux apps. Reasons: the 1 GiB cap holds one Firefox, the Android
+phone's on-screen keyboard can't type into a Linux window, and the calls locked on 2026-10-21
+(office) and 2026-10-23 (Linux apps) stand against it. The owner confirms or
+overrules. A yes would revisit those calls with a `log.md` entry. Also for
+the owner: should installed Linux apps become Open with handlers (Files
+handing an `.odt` to LibreOffice)? That is the one build the research found
+worth doing, and it gets a brief only if asked for.
+
+## Resolved
+
+_Nothing else is open._ The last three were answered on 2026-10-06: the crimson
 accent stands (already recorded in decisions.md), build-from-source is final,
 and the shared origin is accepted while the desktop drops Ward
 ([decisions-estate-era.md](decisions-estate-era.md),

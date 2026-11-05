@@ -5126,3 +5126,28 @@ Firefox). QCAD is 169/663 MiB, LibreCAD 333/1,138 and zathura 183/526. Recommend
 programs stay optional installs from Settings → Linux apps. The owner is asked to confirm in
 `wiki/open-questions.md`, which also asks whether Open with for a Linux app is wanted. No brief was
 written.
+
+## [2026-11-06] research | Native apps via Wayland, measured: the no stands, narrowed
+
+The owner asked to test the claims behind the "no" instead of inferring them. Measured on the dev
+container with headless Chrome over CDP, a Node proxy that delays each direction 50 or 100 ms as a
+phone link, and Chrome's Android emulation. Results are in `wiki/research-native-apps-via-wayland-measured.md`.
+Keystroke to frame, median: xterm 20 ms, Writer 20 ms and Firefox's address bar 42 ms locally;
+122-141 ms with 50 ms each way; 223-242 ms with 100 ms. Notepad's textarea stays at 9-12 ms
+throughout. PSS per app: xterm with Xwayland 20 MiB, LibreOffice Writer 306 MiB (installed from the
+pane; `nixpkgs#libreoffice` is the GTK 3 build), Firefox 547 MiB. Scrolling a long page in Firefox
+cost Firefox 25%, the host 28% and the backend 10% of a core, at 2.8 MB/s. The tab costs under
+45 MiB for either kind. A tap on a Linux window focuses nothing editable, and soft-keyboard text
+(insertText, composition, keyCode 229 with no `code`) sends no key. That is a bug in Linux apps
+whatever the owner decides, so it is filed as todo `linux-apps-take-the-phones-keyboard`. The
+recommendation stands, narrowed: typing and the phone decide it for every Linux app, and the cap
+only for big programs. Another session's uncommitted research-remote-ui-rendering page and draft
+brief 45 were left out of this commit.
+
+Resume:
+- The owner's two-minute check on a real Android phone (the measured page, §3), recorded in the todo.
+- Firefox and Writer together under the 1 GiB cap (production image, `compose.cap.yml`), not measured yet.
+- A real 4G link: jitter, loss, and whether 2.8 MB/s of scrolling fits or flow control drops frames.
+- LibreOffice is still installed in the dev Nix volume (store 3.8 GB). Remove it from Settings →
+  Linux apps, then Free space, if it isn't wanted. Writer's first window showed a black band on two
+  edges once, not looked into.

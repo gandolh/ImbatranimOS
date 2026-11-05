@@ -14,7 +14,12 @@ add-ons, the office suite and the marketplace apps stay in the tab, and
 native programs such as LibreOffice or QCAD stay optional installs from
 Settings → Linux apps. Reasons: the 1 GiB cap holds one Firefox, the Android
 phone's on-screen keyboard can't type into a Linux window, and the calls locked on 2026-10-21
-(office) and 2026-10-23 (Linux apps) stand against it. The owner confirms or
+(office) and 2026-10-23 (Linux apps) stand against it. Measured the same day
+([research-native-apps-via-wayland-measured.md](research-native-apps-via-wayland-measured.md)):
+every key waits a round trip (120-245 ms on an emulated phone link, against
+about 10 ms in a kit field), the keyboard gap is confirmed in emulation and is
+now a todo, and the cap matters for big programs only (Firefox 547 MiB,
+Writer 306 MiB, xterm 20 MiB). The no stands, narrowed. The owner confirms or
 overrules. A yes would revisit those calls with a `log.md` entry. Also for
 the owner: should installed Linux apps become Open with handlers (Files
 handing an `.odt` to LibreOffice)? That is the one build the research found

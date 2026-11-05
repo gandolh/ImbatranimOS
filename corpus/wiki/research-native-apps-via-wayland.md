@@ -1,5 +1,5 @@
 ---
-summary: Research (2026-11-06) on the owner's question whether the OS's own apps (the add-ons, Files, Settings, Terminal, imbatranim-office's Docs, Sheets, Slides, PDF and CAD, the marketplace apps) should become Linux apps streamed through the Wayland host like Firefox, or be swapped for native ones such as LibreOffice. Recommendation, for the owner to confirm, no. The 1 GiB cap holds one Firefox, the Android phone's on-screen keyboard can't type into a Linux window, every keystroke would cross the link, and locked calls (office 2026-10-21, Linux apps 2026-10-23, themes) stand against it. Native programs stay optional installs from Settings → Linux apps. Has server cost, user and code tables, and Nix closure sizes at the pin for LibreOffice, OnlyOffice, Gnumeric, zathura, Evince, qpdfview, QCAD and LibreCAD.
+summary: Research (2026-11-06) on the owner's question whether the OS's own apps (the add-ons, Files, Settings, Terminal, imbatranim-office's Docs, Sheets, Slides, PDF and CAD, the marketplace apps) should become Linux apps streamed through the Wayland host like Firefox, or be swapped for native ones such as LibreOffice. Recommendation, for the owner to confirm, no. The 1 GiB cap holds one Firefox, the Android phone's on-screen keyboard can't type into a Linux window, every keystroke would cross the link, and locked calls (office 2026-10-21, Linux apps 2026-10-23, themes) stand against it. Native programs stay optional installs from Settings → Linux apps. Has server cost, user and code tables, and Nix closure sizes at the pin for LibreOffice, OnlyOffice, Gnumeric, zathura, Evince, qpdfview, QCAD and LibreCAD. Measured the same day (research-native-apps-via-wayland-measured.md): the latency and phone-keyboard claims hold, the memory claim narrows to big programs, and the no stands, narrowed.
 updated: 2026-11-06
 ---
 
@@ -21,17 +21,18 @@ OS change. The owner is asked to confirm in
 
 ## 1. What each costs the machine
 
-Numbers are for one open app. Firefox is the only Linux app this repo has
-measured. LibreOffice, QCAD and the rest have no memory or CPU figures here.
+Numbers are for one open app. Firefox, xterm and LibreOffice Writer were
+measured on 2026-11-06 ([the measured page](research-native-apps-via-wayland-measured.md)).
+QCAD and the rest have no memory or CPU figures here.
 
 | | Kit app or add-on (in the tab) | Linux app (streamed) | Source |
 |---|---|---|---|
-| Server memory | Nothing per app. The container at rest is 388 MiB `memory.current`, 67 MiB anon | Firefox, one window: 506-593 MB PSS; 590 MiB anon idle in the container | [infrastructure/README.md](../../infrastructure/README.md) "the container cap"; [brief 04](../briefs/done/04-popups-and-firefox-in-a-window.md) |
+| Server memory | Nothing per app. The container at rest is 388 MiB `memory.current`, 67 MiB anon | Firefox, one window: 506-593 MB PSS; 590 MiB anon idle in the container. Writer 306 MiB PSS; xterm with Xwayland 20 MiB (2026-11-06) | [infrastructure/README.md](../../infrastructure/README.md) "the container cap"; [brief 04](../briefs/done/04-popups-and-firefox-in-a-window.md); the measured page |
 | Server CPU, idle | 0 | Firefox 1.8-2.9% of a core, Wayland host 0.2% | brief 04 |
-| Server CPU, busy | 0: the engine runs in the owner's browser | Scrolling: Firefox 22.4% + host 19.1% (WebP encoding). Video: 16.5% + 6.2% | brief 04 |
+| Server CPU, busy | 0: the engine runs in the owner's browser | Scrolling: Firefox 22.4% + host 19.1% (WebP encoding); on 2026-11-06 Firefox 25% + host 28% + the backend 10% relaying frames. Video: 16.5% + 6.2% | brief 04 |
 | Link, idle | 0 | 0 | brief 04 |
-| Link, busy | File reads and saves | 160 kB/s scrolling; 239 kB/s for a flat synthetic 480 px video, lossless (a real film costs several times that; JPEG regions since brief 36, not re-measured); typing in foot ~1.2 KB/s; `yes` scrolling 2.25 MB/s at 27 frames/s | brief 04, [brief 02](../briefs/done/02-the-wayland-host-shows-a-window.md), [brief 36](../briefs/done/36-video-regions-go-lossy-and-text-stays-sharp.md) |
-| One keystroke | Stays in the tab | Tab → `/api/wayland` → backend → control socket → host → the app draws → the host encodes (at most one frame per 33 ms, one in flight, acked under 512 KiB buffered) → back → `createImageBitmap`. At least one round trip on the link plus up to 33 ms. Not measured | [PROTOCOL.md](../../apps/wayland-host/PROTOCOL.md) "Flow control" |
+| Link, busy | File reads and saves | 160 kB/s scrolling; 2.8 MB/s at 21 frames/s scrolling a long text page fast (2026-11-06); 239 kB/s for a flat synthetic 480 px video, lossless (a real film costs several times that; JPEG regions since brief 36, not re-measured); typing in foot ~1.2 KB/s; `yes` scrolling 2.25 MB/s at 27 frames/s | brief 04, [brief 02](../briefs/done/02-the-wayland-host-shows-a-window.md), [brief 36](../briefs/done/36-video-regions-go-lossy-and-text-stays-sharp.md) |
+| One keystroke | Stays in the tab | Tab → `/api/wayland` → backend → control socket → host → the app draws → the host encodes (at most one frame per 33 ms, one in flight, acked under 512 KiB buffered) → back → `createImageBitmap`. One round trip on the link plus up to 33 ms. Measured 2026-11-06: median 20-42 ms locally, 122-141 ms with 50 ms added each way, 223-242 ms with 100 ms; Notepad's field 9-12 ms throughout | [PROTOCOL.md](../../apps/wayland-host/PROTOCOL.md) "Flow control"; the measured page |
 | Second tab | Its own copy, in that browser | A second copy on the server: an app belongs to its tab's desktop session | [decisions-linux-apps.md](decisions-linux-apps.md) |
 | Disk | The suite's one marketplace build | Nix volume: Firefox 1.4 GiB, LibreOffice 1.9-2.5 GiB more beside it (§3) | brief 01, §3 |
 
@@ -49,15 +50,11 @@ Encoding adds to the load: a busy window costs the Wayland host up to a fifth
 of a laptop core, out of the cap's one CPU, and a VPS vCPU is likely slower
 than that core.
 
-How to measure the latency gap if wanted: time from a `key` message reaching
-the backend to the first frame after it, on the dev container, then add a
-phone link's round trip.
-
 ## 2. What it changes for the owner
 
 | | Kit app | Linux app today | Source |
 |---|---|---|---|
-| Typing on Android (the main phone) | DOM inputs: the on-screen keyboard, autocorrect, IME | Doesn't work. The window is a canvas in a focusable `div` reading physical `KeyboardEvent.code`. There is no input element, so Android shows no on-screen keyboard | `apps/core/src/modules/linux-windows/LinuxWindowBody.tsx`, `keymap.ts` (inferred from the code on 2026-11-06, not tried on a phone) |
+| Typing on Android (the main phone) | DOM inputs: the on-screen keyboard, autocorrect, IME | Doesn't work. The window is a canvas in a focusable `div` reading physical `KeyboardEvent.code`. There is no input element, so Android shows no on-screen keyboard | `apps/core/src/modules/linux-windows/LinuxWindowBody.tsx`, `keymap.ts`; confirmed in Chrome's Android emulation on 2026-11-06 (the measured page §3), a real phone not tried |
 | IME, composed text | The browser's | None: the host offers no `zwp_text_input`. Layouts are US or Romanian only | brief 04 outcome; [brief 32](../briefs/done/32-a-keyboard-layout-for-linux-apps.md) |
 | Phone link | Typing never waits on the link | Every key and pointer move makes a round trip (§1) | §1 |
 | Dropped link | The open document keeps editing, and saves wait for the link | The window freezes and takes no input until the socket returns (30 s reload grace) | [decisions-linux-apps.md](decisions-linux-apps.md) |
@@ -122,8 +119,8 @@ How these were measured: each closure's narinfo files from `cache.nixos.org`
 were summed, starting from the snapshot's `store-paths.xz` on
 `releases.nixos.org`, on 2026-11-06. The method reproduces brief 01's Firefox
 install exactly (322 paths, 446 MiB, 1,402 MiB). These are sums, not installs.
-`nixpkgs#libreoffice` builds one of the two LibreOffice variants, and which
-one wasn't evaluated. Every closure above holds libwayland. QCAD, LibreCAD,
+`nixpkgs#libreoffice` is the GTK 3 build (installed from the pane on
+2026-11-06). Every closure above holds libwayland. QCAD, LibreCAD,
 qpdfview and the Qt 6 LibreOffice carry qtwayland, and OnlyOffice doesn't.
 The VPS's free disk isn't recorded in this repo, and the
 first install also unpacks the 470 MB nixpkgs source until `nix store gc`.
@@ -158,7 +155,8 @@ first install also unpacks the 470 MB nixpkgs source until `nix store gc`.
 The optional installs would feel more at home with four things that don't
 exist yet. They are not proposed as briefs: Open with for a Linux app
 (`desktop-entry.ts` strips the field codes), sound (brief 39), HiDPI (brief
-33), and typing on Android (an input element and a text-input protocol).
+33), and typing on Android (an input element and a text-input protocol;
+todo `linux-apps-take-the-phones-keyboard`, a bug whatever the answer here).
 
 ## 5. Recommendation
 
@@ -166,13 +164,17 @@ exist yet. They are not proposed as briefs: Open with for a Linux app
 stays an optional install from Settings → Linux apps. The three strongest
 reasons:
 
-1. **The VPS can't carry it.** The 1 GiB cap holds one Firefox. A streamed
-   editor beside it is the first process the kernel kills, along with the
-   unsaved document, and each window adds encoding CPU. Kit apps cost the
-   server nothing.
+1. **The VPS can't carry the big ones.** The 1 GiB cap holds one Firefox
+   (547 MiB PSS). With Writer beside it, anon memory would be about 860 of
+   the 1,024 MiB before any file cache (summed, not run under the cap), and
+   Writer is the first process the kernel kills, along with the unsaved
+   document. Each window adds encoding CPU. Small tools are cheap (xterm
+   with Xwayland: 20 MiB). Kit apps cost the server nothing.
 2. **The phone loses.** On Android, the on-screen keyboard can't type into a
-   Linux window today (inferred from the code, not tried on a phone), and every keystroke would make a round trip over a mobile link.
-   Linux windows are also soft on the phone's HiDPI screen and silent.
+   Linux window today (confirmed in emulation on 2026-11-06). Every
+   keystroke waits a round trip: 120-245 ms per key with 50-100 ms each way,
+   against about 10 ms in a kit field. Linux windows are also soft on the
+   phone's HiDPI screen and silent.
 3. **The repo's own locked calls stand against it.** The office decision of
    2026-10-21 (a network hop makes editors lag; no LibreOffice; every app is
    web UI), the Linux apps decision of 2026-10-23 (a web app's pixels are
@@ -181,3 +183,21 @@ reasons:
 If the owner wants installed native programs to fit better, the first thing
 to build is Open with for a Linux app, so that Files can hand an `.odt` to
 LibreOffice. That would get a brief when asked.
+
+## 6. Measured 2026-11-06
+
+Tested the same day on the dev container, with an emulated phone link (50 or
+100 ms added each way) and Chrome's Android emulation, no real phone or VPS
+cap ([method and tables](research-native-apps-via-wayland-measured.md)).
+
+- **Keystroke to frame**, median: xterm 20 ms, Writer 20 ms and Firefox's
+  address bar 42 ms locally; 122-141 ms with 50 ms each way; 223-242 ms with
+  100 ms. Notepad's field is 9-12 ms in all three.
+- **Server memory**: xterm with Xwayland 20 MiB, Writer 306 MiB, Firefox
+  547 MiB PSS. In the tab, either kind costs under 45 MiB.
+- **Phone keyboard**: confirmed. A tap focuses nothing editable, and soft
+  keyboard text is dropped. Filed as todo `linux-apps-take-the-phones-keyboard`.
+
+**The recommendation stands, narrowed**: the no rests on typing over the
+phone link and the phone's keyboard, which hold for every Linux app, and on
+the cap, which holds only for the big programs.

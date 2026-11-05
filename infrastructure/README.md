@@ -266,6 +266,73 @@ nix profile add nixpkgs#firefox    # `nix profile install` is the older name
   `foot &` in the Terminal opens a window. How the pieces talk:
   [`apps/wayland-host/PROTOCOL.md`](../apps/wayland-host/PROTOCOL.md).
 
+## Linux apps on the VPS: the container cap
+
+On the VPS the whole container is capped for memory and CPU (the owner's
+call, 2026-11-04), so a heavy page in Firefox can't take the other
+services' share of the box. vps-deploy's `imbatranim-os` stack sets the cap;
+nothing inside the OS limits sessions or apps. This compose file stays
+uncapped for a machine of your own.
+
+**Measured** on 2026-11-05 with a local production image, one session,
+Firefox from the Nix store; memory from the container's cgroup v2
+(`memory.current`, and `anon` and `file` in `memory.stat`), CPU from
+`cpu.stat` over 5 s on a laptop core. A short run, not a benchmark:
+
+| State | `memory.current` | anon | file cache | CPU |
+|---|---|---|---|---|
+| At rest, desktop signed in, no Linux app | 388 MiB | 67 MiB | 162 MiB | 0% |
+| One Firefox window, idle | 1.16 GiB | 590 MiB | 391 MiB | about 1% |
+| Firefox playing a 480p WebM, uncapped | 1.2 GiB | 619 MiB | 401 MiB | about 42% |
+| The same under the cap below | 621 MiB | 489 MiB | 100 MiB | about 45% of the cap |
+
+Uncapped, the kernel keeps file cache it has no reason to give back; under
+the cap it gives it back, the video keeps playing and the cgroup records no
+memory pressure.
+
+**Proposed cap**, for vps-deploy's stack:
+
+```yaml
+mem_limit: 1g
+memswap_limit: 1g   # no swap beyond the cap: the box's swap is already in use
+cpus: 1.0
+```
+
+The box had 3.7 GiB, 2.1 GiB of it available, on 2026-11-04, with this
+container at 307 MB. At 1 GiB the OS can take about 0.7 GiB more, so the
+other stacks keep about 1.4 GiB at worst. Keeping all of today's 2.1 GiB
+isn't possible with a Firefox running at all (one window is 0.5-0.6 GB); 1 GiB
+holds one Firefox playing video with room to spare, and a second heavy one
+is what the cap is for. One CPU leaves the box's other vCPU to the rest. A
+VPS vCPU is likely slower than the laptop core measured, so a video may use
+more of the cap there.
+
+**At the cap**, the kernel kills a process inside the container, and Linux
+apps go first: every app launched from Start, and every Terminal shell (so
+what it starts), gets `oom_score_adj` 1000; the backend, the Wayland host and
+the session buses stay at 0. Firefox sets its own main process back to 0
+while it starts, so the backend raises it again at 5 s and 30 s; Firefox's
+content processes keep the scores Firefox gives them (133, 200). Forced past
+the cap locally (a page allocating until it couldn't), the kernel killed
+Firefox twice over, its windows closed, the tab showed "Firefox was stopped.
+The machine ran out of memory.", and the backend and the container carried
+on.
+
+To try the cap locally, an override beside the compose file (uncommitted):
+
+```yaml
+# infrastructure/compose.cap.yml
+services:
+  imbatranimos:
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 1.0
+```
+
+```bash
+docker compose -f infrastructure/docker-compose.yml -f infrastructure/compose.cap.yml up -d imbatranimos
+```
+
 ## Native modules note
 
 `better-sqlite3` and `node-pty` are native addons, compiled in the `deps` /

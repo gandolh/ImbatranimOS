@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-05) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups), 31 (XWayland) and 33 (HiDPI) still open; the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41 and 42 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications); what the owner owes and where the history lives.
+summary: Dated snapshot (2026-11-05) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups), 31 (XWayland) and 33 (HiDPI) still open; the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
 updated: 2026-11-05
 ---
 
@@ -138,11 +138,13 @@ apps and the real clipboard, pasting on Ctrl+V, Ctrl+Shift+V or
 Shift+Insert; the selection now follows the keyboard, which also fixed copy
 and paste between two Linux apps. 42 is done (2026-11-05): each session runs
 its own D-Bus session bus (Alpine's dbus), so Firefox keeps one instance, and
-Linux apps' notifications show as OS notifications. Not built: 39 Linux apps'
-sound as one stream, 40 a tray volume over all sound (reversing the
-2026-07-31 rejection), 43
-an Updates page (26.05 fixes, release upgrades, Go back), 44 Linux apps on
-the VPS inside a capped container. 40 runs after 39.
+Linux apps' notifications show as OS notifications. 44 is done (2026-11-05):
+measured, a 1 GiB / 1 CPU container cap proposed for vps-deploy
+(`infrastructure/README.md`), Linux apps go before the backend when memory
+runs out, and an app killed for memory leaves one notice. Not built: 39
+Linux apps' sound as one stream, 40 a tray volume over all sound (reversing
+the 2026-07-31 rejection), 43
+an Updates page (26.05 fixes, release upgrades, Go back). 40 runs after 39.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner
@@ -162,6 +164,10 @@ The server ISO is deferred by the owner (2026-10-04).
   change and still did once in five (brief 04's outcome); Chrome with a GPU
   may not at all. Also look at a Linux window on a screen with
   `devicePixelRatio` above 1 (soft, known).
+- Before Linux apps go on at the VPS: set the cap from
+  `infrastructure/README.md` ("the container cap": `mem_limit: 1g`,
+  `memswap_limit: 1g`, `cpus: 1.0`) in vps-deploy's `imbatranim-os` stack
+  (brief 44; no vps-deploy brief written yet).
 - Copy and paste with Linux apps (brief 41), in a normal Chrome on the dev
   container: copy text in Firefox and paste it into Notepad and into a page
   outside the OS; copy text outside and Ctrl+V it into Firefox (Chrome asks

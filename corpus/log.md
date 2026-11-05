@@ -5090,3 +5090,13 @@ of its own (the owner's pick over an npm library), checked against a real bus wi
 Walked: Firefox's New Window and a link from another process go to the running Firefox, and a web
 notification shows in the OS; clearing it tells Firefox. Firefox needs `actions` advertised to use the
 server at all; clicks run no action yet (todo `linux-notification-click-runs-its-action`).
+
+## [2026-11-05] brief | 44 done: Linux apps on the VPS, inside a capped container
+
+Measured in a local production image: at rest 67 MiB anon, one Firefox idle 590 MiB, playing a video
+619 MiB and about 42% of a laptop core. Proposed for vps-deploy: `mem_limit: 1g`,
+`memswap_limit: 1g`, `cpus: 1.0` (in `infrastructure/README.md`). Linux apps and Terminal shells get
+`oom_score_adj` 1000 (`2c41b55`); Firefox lowers its own main process back to 0 while it starts, so
+the backend raises it again at 5 s and 30 s (`2ecb1cb`). Under the cap a page allocating past it got
+Firefox killed, its windows closed and one "Firefox was stopped" notice shown; the backend never
+restarted. Setting the cap in vps-deploy is the owner's step.

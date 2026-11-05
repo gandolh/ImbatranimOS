@@ -12,7 +12,7 @@ import { useLinuxAppsPrefs } from './keyboardLayout'
 import { LINUX_APP_PREFIX, linuxWindowChrome } from './kind'
 import { paintFrame, parseFrame } from './frames'
 import { linuxClipboard } from './clipboard'
-import { LinuxNotifications } from './linuxNotifications'
+import { LinuxNotifications, notifyAppStopped } from './linuxNotifications'
 import {
   canvasFor,
   dropAllCanvases,
@@ -72,6 +72,7 @@ type ServerMessage =
   | { type: 'clipboard'; text: string }
   | { type: 'notification'; id: number; app: string; summary: string; body: string }
   | { type: 'notification_close'; id: number }
+  | { type: 'app_stopped'; app: string; reason: 'memory' }
 
 /** Where Linux apps' windows are drawn: the desktop above the taskbar. */
 function viewport(): { width: number; height: number } {
@@ -335,6 +336,7 @@ export class LinuxWindowsConnection {
       void linuxClipboard.fromLinux(m.text)
     else if (m.type === 'notification') this.notifications?.show(m)
     else if (m.type === 'notification_close') this.notifications?.close(m.id)
+    else if (m.type === 'app_stopped') notifyAppStopped(m.app)
   }
 
   /** A fresh session has none of the windows the tab kept places for. */

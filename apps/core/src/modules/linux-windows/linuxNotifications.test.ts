@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useNotificationStore } from '../../shared/store/notificationStore'
-import { LinuxNotifications } from './linuxNotifications'
+import { LinuxNotifications, notifyAppStopped } from './linuxNotifications'
 
 const store = () => useNotificationStore.getState()
 
@@ -56,5 +56,18 @@ describe("a Linux app's notifications", () => {
     bridge.forget()
     store().clearAll()
     expect(sent).toEqual([])
+  })
+})
+
+describe('an app stopped for memory', () => {
+  it('leaves one warning naming it', () => {
+    notifyAppStopped('Firefox')
+    expect(store().notifications).toMatchObject([
+      {
+        title: 'Firefox was stopped',
+        body: 'The machine ran out of memory. Your other apps and the desktop are still running.',
+        level: 'warning',
+      },
+    ])
   })
 })

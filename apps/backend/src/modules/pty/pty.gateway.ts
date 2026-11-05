@@ -27,6 +27,7 @@ import {
 } from './pty.constants';
 import { childEnv } from '../../child-env';
 import { UpgradeRoutes } from '../../upgrade-routes';
+import { raiseOomScore } from '../linux-apps/oom';
 
 /**
  * How often to re-check that each live terminal's session is still valid, so
@@ -172,6 +173,9 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         cwd: resolveHome(),
         env: terminalEnv(childEnv(), desktopSession),
       });
+      // What the shell starts (Linux apps among it) goes before the
+      // backend when memory runs out.
+      raiseOomScore(ptyProcess.pid);
     } catch (err) {
       this.logger.error(`Failed to spawn shell: ${(err as Error).message}`);
       try {

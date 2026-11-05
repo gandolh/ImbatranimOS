@@ -13,6 +13,7 @@ import { promisify } from 'util';
 import { childEnv } from '../../child-env';
 import { terminalEnv } from '../pty/pty.constants';
 import { isValidSessionId } from '../wayland/wayland.protocol';
+import { OomKills, raiseOomScore } from './oom';
 import { WaylandGateway } from '../wayland/wayland.gateway';
 import { SessionApps } from '../wayland/session-apps';
 import { execArgv, parseDesktopEntry, pickLocalized } from './desktop-entry';
@@ -154,6 +155,9 @@ export class LinuxAppsService implements OnModuleDestroy {
   private jobChild: ChildProcess | null = null;
   private nextJobId = 1;
   private storeSize: { bytes: number; at: number } | null = null;
+
+  /** Out-of-memory kills in the container, to tell why an app died. */
+  private readonly oomKills = new OomKills();
 
   constructor(
     private readonly wayland: WaylandGateway,
@@ -587,7 +591,11 @@ export class LinuxAppsService implements OnModuleDestroy {
       detached: true,
     });
     const pid = await new Promise<number>((ok, fail) => {
-      child.once('spawn', () => ok(child.pid!));
+      child.once('spawn', () => {
+        // Before it forks its own processes, which inherit the score.
+        raiseOomScore(child.pid!);
+        ok(child.pid!);
+      });
       child.once('error', (err) =>
         fail(
           new BadRequestException(`Cannot start ${entry.name}: ${err.message}`),
@@ -597,7 +605,17 @@ export class LinuxAppsService implements OnModuleDestroy {
     child.unref();
     // Its group ends with the session, and freezes under the cover screen.
     this.sessionApps.record(sid, pid);
-    child.once('exit', () => this.sessionApps.exited(sid, pid));
+    child.once('exit', (_code, signal) => {
+      this.sessionApps.exited(sid, pid);
+      // Killed by the kernel for memory: its windows have gone, say why.
+      if (signal === 'SIGKILL' && this.oomKills.happened()) {
+        this.wayland.sendToTab(sid, {
+          type: 'app_stopped',
+          app: entry.name,
+          reason: 'memory',
+        });
+      }
+    });
     this.logger.log(
       `Started ${entry.name} (${id}) in a session's display, group ${pid}`,
     );

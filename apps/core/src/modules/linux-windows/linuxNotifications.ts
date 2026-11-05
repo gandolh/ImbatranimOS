@@ -75,3 +75,15 @@ export class LinuxNotifications {
     for (const osId of this.quiet) if (!present.has(osId)) this.quiet.delete(osId)
   }
 }
+
+/**
+ * The kernel killed a Linux app because the machine ran out of memory (the
+ * container's cap on the VPS): its windows have closed, and this says why.
+ */
+export function notifyAppStopped(app: string): void {
+  useNotificationStore.getState().notify({
+    title: `${app.trim() || 'A Linux app'} was stopped`,
+    body: 'The machine ran out of memory. Your other apps and the desktop are still running.',
+    level: 'warning',
+  })
+}

@@ -10,6 +10,14 @@ import { readFileSync, writeFileSync } from 'node:fs';
  */
 export const LINUX_APP_OOM_SCORE_ADJ = 1000;
 
+/**
+ * When a launched app's score is raised again: an app may set its own back
+ * while it starts (Firefox's main process does, to 0), and an unprivileged
+ * process may lower its score to where it began. Raised again once it is up,
+ * it stays.
+ */
+export const REAPPLY_OOM_SCORE_AFTER_MS = [5_000, 30_000] as const;
+
 /** Raise a process's score; a process already gone is skipped. */
 export function raiseOomScore(
   pid: number,

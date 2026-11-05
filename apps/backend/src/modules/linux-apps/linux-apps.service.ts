@@ -13,7 +13,7 @@ import { promisify } from 'util';
 import { childEnv } from '../../child-env';
 import { terminalEnv } from '../pty/pty.constants';
 import { isValidSessionId } from '../wayland/wayland.protocol';
-import { OomKills, raiseOomScore } from './oom';
+import { OomKills, raiseOomScore, REAPPLY_OOM_SCORE_AFTER_MS } from './oom';
 import { WaylandGateway } from '../wayland/wayland.gateway';
 import { SessionApps } from '../wayland/session-apps';
 import { execArgv, parseDesktopEntry, pickLocalized } from './desktop-entry';
@@ -605,7 +605,18 @@ export class LinuxAppsService implements OnModuleDestroy {
     child.unref();
     // Its group ends with the session, and freezes under the cover screen.
     this.sessionApps.record(sid, pid);
+    // Firefox (and apps like it) sets its own main process's score back to
+    // 0 while it starts, which ties it with the backend; once it is up, the
+    // score stays where it is put. Its content processes keep the ones
+    // Firefox gives them.
+    const reRaise = REAPPLY_OOM_SCORE_AFTER_MS.map((ms) =>
+      setTimeout(() => {
+        if (child.exitCode === null && child.signalCode === null)
+          raiseOomScore(pid);
+      }, ms).unref(),
+    );
     child.once('exit', (_code, signal) => {
+      for (const t of reRaise) clearTimeout(t);
       this.sessionApps.exited(sid, pid);
       // Killed by the kernel for memory: its windows have gone, say why.
       if (signal === 'SIGKILL' && this.oomKills.happened()) {

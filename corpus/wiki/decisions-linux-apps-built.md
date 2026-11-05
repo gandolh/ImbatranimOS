@@ -1,6 +1,6 @@
 ---
-summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image. Grilled again 2026-11-04: a tray volume over all sound (reversing the 2026-07-31 rejection), Linux apps on the VPS in a capped container, and the zoom beside Linux windows stays off for good.
-updated: 2026-11-04
+summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image. Grilled again 2026-11-04: a tray volume over all sound (reversing the 2026-07-31 rejection), Linux apps on the VPS in a capped container, and the zoom beside Linux windows stays off for good. 2026-11-05: the session bus is Alpine's dbus, and the backend speaks D-Bus with a client of its own.
+updated: 2026-11-05
 ---
 
 # Decisions: Linux apps, after the build (2026-11-03)
@@ -87,3 +87,19 @@ on the box, without new limits in the OS.
 ## The zoom beside Linux windows stays off
 _2026-11-04_ — The owner dropped the check with a GPU Chrome; the fade-only
 rule above is final, and its todo is closed.
+
+## The session bus comes from Alpine, and the backend speaks D-Bus itself
+_2026-11-05_ — Each tab's session bus is Alpine's `dbus` package in the image
+(about 0.7 MB, its setuid system-bus helper removed), and the backend answers
+`org.freedesktop.Notifications` through a small D-Bus client of its own
+(`linux-apps/dbus/`, about 600 lines with the wire format), both the owner's
+calls while building brief 42.
+Rejected: Nix's `dbus` in the base profile (an 80 MiB closure, systemd-minimal
+and glibc) or installed on first use (free while Firefox is installed, an
+80 MiB download otherwise, and removable by a clean-up); the npm libraries
+`@homebridge/dbus-native` (maintained, six dependencies) and `dbus-next`
+(unmaintained since 2022).
+**Why**: the bus is infrastructure every session needs at once, so it
+belongs in the image at the smallest size; and the backend only has to serve
+one interface, which a short, tested client does without adding a supply
+chain to the server.

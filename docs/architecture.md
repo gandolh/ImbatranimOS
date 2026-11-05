@@ -56,6 +56,16 @@ permission (Chrome once for the site, Firefox on every paste). If you refuse,
 the app pastes whatever it had copied itself. Images and files don't cross,
 and neither does text over 1 MiB.
 
+### Notifications and the session bus
+
+Each tab's Linux apps share a D-Bus session bus of their own, started with
+the tab's desktop session and stopped with it. Through it Firefox keeps one
+instance (New Window opens a window of the running Firefox), apps open links
+in the running browser, and an app's notification, a website's in Firefox
+included, shows as an ordinary OS notification titled with the app's name.
+Clearing it in the notification centre tells the app. Clicking it does
+nothing yet.
+
 ## No root, by design
 
 Everything inside the container, the shell you get in Terminal and the process that serves the desktop, runs as `imbatranim`, an unprivileged user created in the image. There is no sudo, and the container is not meant to run as root or privileged. Features that would need root are on the project's rejection list ([corpus/wiki/real-os-gaps.md](../corpus/wiki/real-os-gaps.md)).

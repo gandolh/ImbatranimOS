@@ -5080,3 +5080,13 @@ The owner asked to keep one dev container and reuse it. It was rebuilt on 2026-1
 Linux apps layer and Firefox is installed in its Nix volume (2.2 GB). Code changes are copied into
 it, and a new Wayland host binary is built in the Rust image and copied in, rather than rebuilding
 the dev image per brief.
+
+## [2026-11-05] brief | 42 done: a session bus per session, and notifications
+
+Each tab's Linux session starts its own `dbus-daemon` (Alpine's, 0.7 MB, the owner's pick over Nix's
+80 MiB closure), recorded with the session's apps so it sleeps and stops with them; apps get its
+address (`9a46223`, 1.147.0). The backend answers `org.freedesktop.Notifications` with a D-Bus client
+of its own (the owner's pick over an npm library), checked against a real bus with GLib's `gdbus`.
+Walked: Firefox's New Window and a link from another process go to the running Firefox, and a web
+notification shows in the OS; clearing it tells Firefox. Firefox needs `actions` advertised to use the
+server at all; clicks run no action yet (todo `linux-notification-click-runs-its-action`).

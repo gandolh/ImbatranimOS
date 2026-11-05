@@ -5047,3 +5047,11 @@ container (`79cb518`, 1.137.0). The start commands stay as written: Compose turn
 service's profile, and vps-deploy's stack names `imbatranimos` in every call (build, up, ps, logs),
 so it needs no change. `config --services` lists nothing, `dev` or `imbatranimos` per profile; the
 README's command started production healthy from the existing image.
+
+## [2026-11-05] brief | 38 done: a desktop layer that crashes leaves the desktop standing
+
+Each add-on's desktop layer mounts in its own error boundary, keyed by app id, with its own Suspense
+(`dde5e62`, 1.139.0). A layer that throws draws nothing, one notification says "<name> stopped
+working on the desktop.", the crash goes to the system log, and the layer stays hidden until the
+desktop mounts again. A jsdom test mounts the desktop with a throwing layer beside a working one; it
+fails without the boundary. [os-layering.md](wiki/os-layering.md) has the rule.

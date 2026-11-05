@@ -1,6 +1,6 @@
 ---
 summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build. BUILT 2026-08-06 — the seam is live in all 26 apps and eslint-enforced; its sandboxed iframe transport exists since sandboxed apps from a URL (2026-10-07) (2026-10-07) for apps installed from a URL.
-updated: 2026-11-02
+updated: 2026-11-05
 ---
 
 # OS layering — the compositor seam
@@ -164,6 +164,15 @@ are deduped per app so a render loop cannot bury the one message that matters.
 The half it explicitly does **not** solve is unchanged and still true: an
 error boundary catches throws, not hangs, and a spinning app still freezes the
 tab. That needs the transport swap below, not a watchdog.
+
+**Desktop layers have their own boundary (2026-11-05).** An add-on's
+`desktopLayer` is mounted straight into the desktop, outside any window, so a
+throw there used to take the whole page down. Each layer now sits in its own
+boundary, keyed by app id: a crashed layer draws nothing, one notification
+names the add-on ("Sticky Notes stopped working on the desktop."), and it stays
+hidden until the desktop mounts again or the add-on is turned off and on. No
+retry, for the same reason Reload is a remount. The tray keeps no boundary: it
+is core's own code.
 
 Hard sandboxing (sandboxed iframes / workers, real crash + security isolation)
 is the **transport swap** of the `system` handle, and is **gated on third-party

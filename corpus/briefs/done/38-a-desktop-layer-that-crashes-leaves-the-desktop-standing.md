@@ -41,3 +41,31 @@ way a window says "stopped working".
 - `apps/core/src/shared/components/desktop/Desktop.tsx` and a small boundary
   component beside it
 - Its tests
+
+## Outcome (2026-11-05)
+
+Done in `dde5e62` (1.139.0).
+
+1. `DesktopLayerBoundary.tsx` beside `Desktop.tsx`. `Desktop.tsx` mounts each
+   layer as boundary → Suspense → `WindowlessSystemProvider` → layer, keyed by
+   app id. Suspense moved inside the boundary, one per layer, so a lazy layer
+   still loading no longer hides the others.
+2. A crash posts one notification, level error, under the add-on's id:
+   "<name> stopped working on the desktop.", with the error's message as the
+   body. It also goes to `/logs/client-error`, as a window's crash does. An
+   instance flag keeps it to one per crash; the window crash-toast guard
+   (per app, 5 s) isn't used, so a window crash just before doesn't swallow
+   the layer's notice.
+3. No retry: the boundary stays crashed until it mounts again (reload, or the
+   add-on turned off and on removes and re-adds its keyed boundary).
+4. The `desktopLayer` doc in `contract.ts` says what happens to a layer that
+   throws.
+
+**Checked:**
+- `Desktop.test.tsx` (jsdom) mounts the real `Desktop` with the enabled apps
+  mocked: a working layer draws; a throwing layer beside it draws nothing, the
+  other layer and the icons stay, one notification names the add-on, and a
+  second render adds none. The second test fails with the old `Desktop.tsx`.
+- Core typecheck, eslint on `desktop/`, the desktop and window tests (66).
+- Sticky Notes' real layer was not mounted in a test; the stand-in layer
+  covers the path it takes.

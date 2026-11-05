@@ -46,6 +46,16 @@ about 30 seconds, and closing the tab ends it 30 seconds later. An app
 started from Start lives that long too. While the cover screen is up, the
 tab's Linux apps are paused, and they carry on when you uncover the desktop.
 
+### Copy and paste with Linux apps
+
+Plain text copies both ways between Linux apps, the rest of the OS and the
+computer the browser runs on. Copy in a Linux app as usual and the text is on
+the clipboard. To paste into a Linux app, use Ctrl+V, Ctrl+Shift+V or
+Shift+Insert: the desktop reads the clipboard first, so the browser asks for
+permission (Chrome once for the site, Firefox on every paste). If you refuse,
+the app pastes whatever it had copied itself. Images and files don't cross,
+and neither does text over 1 MiB.
+
 ## No root, by design
 
 Everything inside the container, the shell you get in Terminal and the process that serves the desktop, runs as `imbatranim`, an unprivileged user created in the image. There is no sudo, and the container is not meant to run as root or privileged. Features that would need root are on the project's rejection list ([corpus/wiki/real-os-gaps.md](../corpus/wiki/real-os-gaps.md)).

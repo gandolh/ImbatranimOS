@@ -5063,3 +5063,20 @@ again, with the DWG server, which only CAD asks for on a window's first DWG (`sy
 29); CAD opens `.dwg` again. The pinned commit also has Save as opening in the file's folder
 (`startIn`, brief 28) and Sheets' save waiting for the first calculation. Walked in the dev container
 from a local descriptor before the move. imbatranim-office must be pushed before this repo.
+
+## [2026-11-05] brief | 41 done: copy and paste between Linux apps and the desktop
+
+Plain text both ways, on the keys (`afafa4a`, `31cc78e`, protocol version 4). An app's copy is read
+through a pipe on the host's event loop and written to the tab's clipboard; Ctrl+V, Ctrl+Shift+V or
+Shift+Insert in a Linux window reads the clipboard first and hands the text over before the key.
+The tab skips a paste whose text both sides already agree on, so an app keeps its own richer copy.
+The host never called `set_data_device_focus`, so no app was ever offered the selection; it now
+follows the keyboard. Walked in the rebuilt dev container with Firefox and a stand-in clipboard
+(headless Chrome refuses the real one); the real-clipboard check is the owner's.
+
+## [2026-11-05] dev | The dev container is kept and reused
+
+The owner asked to keep one dev container and reuse it. It was rebuilt on 2026-11-05 with the
+Linux apps layer and Firefox is installed in its Nix volume (2.2 GB). Code changes are copied into
+it, and a new Wayland host binary is built in the Rust image and copied in, rather than rebuilding
+the dev image per brief.

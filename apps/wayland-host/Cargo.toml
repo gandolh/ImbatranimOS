@@ -12,13 +12,17 @@ path = "src/main.rs"
 
 [dependencies]
 # Only the Wayland server side. No renderer, winit, udev or backend features:
-# the host never draws, it reads the buffers clients hand it.
-smithay = { version = "0.7.0", default-features = false, features = ["wayland_frontend"] }
+# the host never draws, it reads the buffers clients hand it. `xwayland` is
+# the X11 window manager for Xwayland, which runs only once an X client
+# connects (src/xwayland.rs).
+smithay = { version = "0.7.0", default-features = false, features = ["wayland_frontend", "xwayland"] }
 flate2 = "1.1"
 image-webp = "0.2.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 jpeg-encoder = "0.7.1"
+# Already built for smithay: fd flags and the X lock files' liveness check.
+rustix = { version = "1.0.7", default-features = false, features = ["std", "process"] }
 
 [profile.release]
 opt-level = 3

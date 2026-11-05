@@ -145,6 +145,14 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
   }
 
   /**
+   * The X display (`DISPLAY=:<n>`) of a desktop session's X11 apps, or null
+   * when the session has none (yet).
+   */
+  x11Display(session: string): number | null {
+    return this.host.x11Display(session);
+  }
+
+  /**
    * True while a tab holds this desktop session's socket: it is signed in,
    * open, and its Linux apps have a display.
    */

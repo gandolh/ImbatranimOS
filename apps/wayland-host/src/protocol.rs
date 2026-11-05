@@ -12,7 +12,7 @@ pub const KIND_FRAME: u8 = 2;
 /// Refuse anything larger: a full 4K frame deflated is far below this.
 pub const MAX_MESSAGE: usize = 64 * 1024 * 1024;
 
-pub const PROTOCOL_VERSION: u32 = 4;
+pub const PROTOCOL_VERSION: u32 = 5;
 
 /// Pixel encodings of a frame's rectangles.
 pub const ENC_DEFLATE_RGBA: u8 = 1;
@@ -193,6 +193,9 @@ pub enum Outbound {
     SessionReady {
         session: String,
         display: String,
+        /// The X display the session reserved for X11 apps (`DISPLAY=:<n>`),
+        /// or None when it has none. Xwayland starts on its first client.
+        x11_display: Option<u32>,
     },
     SessionFailed {
         session: String,

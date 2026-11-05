@@ -66,8 +66,9 @@ export function resolveHome(env: NodeJS.ProcessEnv = process.env): string {
  * `PATH`, so a Linux app installed with `nix profile add` runs by name, and
  * `WAYLAND_DISPLAY` naming the socket of the desktop session (the tab) the
  * Terminal is in, so a Linux app started here shows its windows in that tab,
- * and `DBUS_SESSION_BUS_ADDRESS` naming that session's bus. An invalid or
- * missing session id adds neither.
+ * `DISPLAY` naming the X display that session reserved (`x11Display`), so an
+ * X11 app does too, through Xwayland, and `DBUS_SESSION_BUS_ADDRESS` naming
+ * that session's bus. An invalid or missing session id adds none of them.
  *
  * The profile goes on the shell's `PATH` only, never the backend's: the
  * backend runs `git` and `tar` by name, and a Nix-installed copy of either must
@@ -79,11 +80,20 @@ export function resolveHome(env: NodeJS.ProcessEnv = process.env): string {
 export function terminalEnv(
   base: NodeJS.ProcessEnv,
   desktopSession?: string | null,
+  x11Display?: number | null,
 ): NodeJS.ProcessEnv {
   const env = { ...base };
   const runtimeDir = env.XDG_RUNTIME_DIR?.trim();
+  delete env.DISPLAY;
   if (desktopSession && isValidSessionId(desktopSession)) {
     env.WAYLAND_DISPLAY = `wayland-${desktopSession}`;
+    if (
+      typeof x11Display === 'number' &&
+      Number.isInteger(x11Display) &&
+      x11Display >= 0
+    ) {
+      env.DISPLAY = `:${x11Display}`;
+    }
     // The session's own bus: apps keep one instance and talk to the OS on it.
     if (runtimeDir) {
       env.DBUS_SESSION_BUS_ADDRESS = sessionBusAddress(

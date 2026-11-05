@@ -19,7 +19,7 @@ export const WS_KIND_FRAME = 2;
 /** Refuse anything larger, as the host does. */
 export const MAX_MESSAGE = 64 * 1024 * 1024;
 
-export const PROTOCOL_VERSION = 4;
+export const PROTOCOL_VERSION = 5;
 
 /**
  * A desktop session id: random, per tab, and part of a socket's file name
@@ -96,7 +96,13 @@ export type HostInbound =
 /** Host → backend, JSON kind. */
 export type HostOutbound =
   | { type: 'hello'; version: number }
-  | { type: 'session_ready'; session: string; display: string }
+  | {
+      type: 'session_ready';
+      session: string;
+      display: string;
+      /** The X display reserved for the session's X11 apps, or null. */
+      x11_display: number | null;
+    }
   | { type: 'session_failed'; session: string; reason: string }
   | ToplevelMessage
   | PopupMessage

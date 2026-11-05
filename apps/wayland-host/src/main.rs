@@ -5,6 +5,8 @@
 //! gets its own Wayland display and its own socket,
 //! `$XDG_RUNTIME_DIR/wayland-<session id>`. Windows go to the backend as
 //! images; the backend relays them to the tab over the signed-in WebSocket.
+//! A session also reserves an X display; Xwayland starts on it when the
+//! first X11 app connects (xwayland.rs, session/x11.rs).
 //! PROTOCOL.md describes the control socket.
 
 mod clipboard;
@@ -12,11 +14,14 @@ mod pixels;
 mod protocol;
 mod session;
 mod stubs;
+mod xwayland;
 
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::io::{ErrorKind, PipeReader, Read, Write};
+use std::os::fd::AsFd;
 use std::os::unix::net::UnixStream;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -30,6 +35,7 @@ use smithay::wayland::socket::ListeningSocketSource;
 use pixels::Encoding;
 use protocol::{encode_frame, encode_json, valid_session_id, Decoder, Inbound, Outbound, PROTOCOL_VERSION};
 use session::{ClientState, SessionState};
+use xwayland::XwaylandConfig;
 
 /// Frames go out at most this often per window: about 30 per second.
 const TICK: Duration = Duration::from_millis(33);
@@ -38,10 +44,35 @@ const TICK: Duration = Duration::from_millis(33);
 /// its end by then (frozen under the cover screen, or stuck) sends nothing.
 const CLIPBOARD_READ_TIMEOUT: Duration = Duration::from_secs(5);
 
+/// How long a closing session waits for its Xwayland window manager's
+/// connection to close, so that connection's event source goes too.
+const X11_SHUTDOWN_WAIT: Duration = Duration::from_millis(20);
+const X11_SHUTDOWN_TRIES: u32 = 10;
+
 struct Session {
     display: Display<SessionState>,
     state: SessionState,
+    /// The session's own loop, for Xwayland and its window manager, whose
+    /// handlers take the session's state. The host's loop dispatches it
+    /// whenever it has events.
+    x11_loop: EventLoop<'static, SessionState>,
     tokens: Vec<RegistrationToken>,
+}
+
+impl Session {
+    /// Let go of the session's X display and Xwayland before the session
+    /// goes.
+    fn shutdown_x11(&mut self) {
+        if self.state.x11_begin_shutdown() {
+            for _ in 0..X11_SHUTDOWN_TRIES {
+                if self.state.x11_wm_closed() {
+                    break;
+                }
+                let _ = self.x11_loop.dispatch(Some(X11_SHUTDOWN_WAIT), &mut self.state);
+            }
+        }
+        self.state.x11_finish_shutdown();
+    }
 }
 
 struct Host {
@@ -50,6 +81,8 @@ struct Host {
     decoder: Decoder,
     out: Vec<u8>,
     encoding: Encoding,
+    /// How sessions start Xwayland, when the backend named one.
+    xwayland: Option<Rc<XwaylandConfig>>,
     started: Instant,
     handle: LoopHandle<'static, Host>,
     signal: LoopSignal,
@@ -115,13 +148,14 @@ impl Host {
             log("refused a session with an invalid id");
             return;
         }
-        if self.sessions.contains_key(&id) {
+        if let Some(s) = self.sessions.get(&id) {
+            let x11_display = s.borrow().state.x11_display();
             let display = format!("wayland-{id}");
-            self.send(&Outbound::SessionReady { session: id, display });
+            self.send(&Outbound::SessionReady { session: id, display, x11_display });
             return;
         }
         match self.try_open(&id, width, height) {
-            Ok(display) => self.send(&Outbound::SessionReady { session: id, display }),
+            Ok((display, x11_display)) => self.send(&Outbound::SessionReady { session: id, display, x11_display }),
             Err(reason) => {
                 log(&format!("session {}…: {reason}", &id[..8]));
                 self.send(&Outbound::SessionFailed { session: id, reason });
@@ -129,13 +163,17 @@ impl Host {
         }
     }
 
-    fn try_open(&mut self, id: &str, width: u32, height: u32) -> Result<String, String> {
+    fn try_open(&mut self, id: &str, width: u32, height: u32) -> Result<(String, Option<u32>), String> {
         let mut display: Display<SessionState> = Display::new().map_err(|e| e.to_string())?;
-        let state = SessionState::new(id.to_string(), &display.handle(), width, height, self.started);
         let name = format!("wayland-{id}");
         let listener = ListeningSocketSource::with_name(&name).map_err(|e| e.to_string())?;
         let poll_fd = display.backend().poll_fd().try_clone_to_owned().map_err(|e| e.to_string())?;
-        let session = Rc::new(RefCell::new(Session { display, state, tokens: Vec::new() }));
+        let x11_loop: EventLoop<'static, SessionState> = EventLoop::try_new().map_err(|e| e.to_string())?;
+        let x11_fd = x11_loop.as_fd().try_clone_to_owned().map_err(|e| e.to_string())?;
+        let x11 = self.xwayland.clone().map(|config| (config, x11_loop.handle()));
+        let state = SessionState::new(id.to_string(), &display.handle(), width, height, self.started, x11);
+        let x11_display = state.x11_display();
+        let session = Rc::new(RefCell::new(Session { display, state, x11_loop, tokens: Vec::new() }));
 
         let for_clients = Rc::clone(&session);
         let listen_token = self
@@ -169,16 +207,31 @@ impl Host {
             })
             .map_err(|e| e.error.to_string())?;
 
-        session.borrow_mut().tokens = vec![listen_token, dispatch_token];
+        let for_x11 = Rc::clone(&session);
+        let x11_token = self
+            .handle
+            .insert_source(Generic::new(x11_fd, Interest::READ, Mode::Level), move |_, _, _host| {
+                let mut guard = for_x11.borrow_mut();
+                let s = &mut *guard;
+                if let Err(e) = s.x11_loop.dispatch(Some(Duration::ZERO), &mut s.state) {
+                    log(&format!("X11 dispatch failed: {e}"));
+                }
+                Ok(PostAction::Continue)
+            })
+            .map_err(|e| e.error.to_string())?;
+
+        session.borrow_mut().tokens = vec![listen_token, dispatch_token, x11_token];
         self.sessions.insert(id.to_string(), session);
-        Ok(name)
+        Ok((name, x11_display))
     }
 
     /// Removing the sources drops the listening socket (which unlinks it) and
     /// the display, which disconnects every client of the session.
     fn close(&mut self, id: &str) {
         if let Some(session) = self.sessions.remove(id) {
-            for token in session.borrow_mut().tokens.drain(..) {
+            let mut s = session.borrow_mut();
+            s.shutdown_x11();
+            for token in s.tokens.drain(..) {
                 self.handle.remove(token);
             }
         }
@@ -317,15 +370,19 @@ impl Host {
 struct Args {
     control: String,
     encoding: Encoding,
+    /// The real Xwayland's path. Without it, sessions reserve no X display.
+    xwayland: Option<PathBuf>,
 }
 
 fn parse_args() -> Result<Args, String> {
     let mut control = None;
     let mut encoding = Encoding::Deflate;
+    let mut xwayland = None;
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         match a.as_str() {
             "--control" => control = args.next(),
+            "--xwayland" => xwayland = Some(PathBuf::from(args.next().ok_or("--xwayland needs a path")?)),
             "--encoding" => {
                 let v = args.next().unwrap_or_default();
                 encoding = Encoding::parse(&v).ok_or(format!("unknown encoding {v}"))?;
@@ -333,10 +390,12 @@ fn parse_args() -> Result<Args, String> {
             other => return Err(format!("unknown argument {other}")),
         }
     }
-    Ok(Args { control: control.ok_or("--control <socket path> is required")?, encoding })
+    Ok(Args { control: control.ok_or("--control <socket path> is required")?, encoding, xwayland })
 }
 
 fn main() {
+    // Started by smithay as `Xwayland`: become the real one (xwayland.rs).
+    xwayland::run_as_launcher_if_called();
     let args = match parse_args() {
         Ok(a) => a,
         Err(e) => {
@@ -355,6 +414,18 @@ fn main() {
             std::process::exit(1);
         }
     };
+    // The launcher's link sits beside the control socket, in the backend's
+    // private directory.
+    let xwayland = args.xwayland.and_then(|binary| {
+        let dir = std::path::Path::new(&args.control).parent()?.join("xwayland");
+        match XwaylandConfig::new(binary, dir) {
+            Ok(config) => Some(Rc::new(config)),
+            Err(e) => {
+                log(&format!("X11 apps are off: cannot prepare Xwayland's launcher: {e}"));
+                None
+            }
+        }
+    });
     let reader = control.try_clone().expect("clone the control socket");
     control.set_nonblocking(true).expect("non-blocking control socket");
 
@@ -365,6 +436,7 @@ fn main() {
         decoder: Decoder::default(),
         out: Vec::new(),
         encoding: args.encoding,
+        xwayland,
         started: Instant::now(),
         handle: event_loop.handle(),
         signal: event_loop.get_signal(),

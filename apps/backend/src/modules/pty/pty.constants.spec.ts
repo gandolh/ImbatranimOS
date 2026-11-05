@@ -41,6 +41,17 @@ describe('terminalEnv', () => {
     expect(terminalEnv({}, 'short').WAYLAND_DISPLAY).toBeUndefined();
   });
 
+  it("names the session's X display for X11 apps, and none without a session", () => {
+    expect(terminalEnv({}, 'abcdefghijklmnop', 2).DISPLAY).toBe(':2');
+    expect(terminalEnv({}, 'abcdefghijklmnop', 0).DISPLAY).toBe(':0');
+    // No display reserved, or no session: none, not the backend's own.
+    expect(
+      terminalEnv({ DISPLAY: ':9' }, 'abcdefghijklmnop', null).DISPLAY,
+    ).toBeUndefined();
+    expect(terminalEnv({ DISPLAY: ':9' }, null, 2).DISPLAY).toBeUndefined();
+    expect(terminalEnv({}, 'abcdefghijklmnop', 1.5).DISPLAY).toBeUndefined();
+  });
+
   it("names the tab's session bus, and never one for a missing session", () => {
     const base = { XDG_RUNTIME_DIR: '/run/user/1000' };
     expect(terminalEnv(base, 'abcdefghijklmnop').DBUS_SESSION_BUS_ADDRESS).toBe(

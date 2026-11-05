@@ -265,6 +265,14 @@ nix profile add nixpkgs#firefox    # `nix profile install` is the older name
   tab disconnects its apps. The dev image adds `foot` to test with:
   `foot &` in the Terminal opens a window. How the pieces talk:
   [`apps/wayland-host/PROTOCOL.md`](../apps/wayland-host/PROTOCOL.md).
+- **X11 apps.** Each tab also reserves an X display (`/tmp/.X11-unix/X<n>`,
+  in `DISPLAY`), and the Wayland host starts Xwayland on it when the first
+  X11 app connects. Xwayland isn't in the image: the Linux apps pane installs
+  it into its own profile, `$NIX_STATE_HOME/profiles/imbatranim-xwayland`,
+  with the first app whose closure holds libX11, and removes it with the
+  last. Measured 2026-11-05 at the pin: Xwayland 24.1.14 is a 126 MiB
+  download that unpacks to 421 MiB on its own (libdecor brings GTK 3), and
+  adds 5 MiB to a store that holds Firefox.
 
 ## Linux apps on the VPS: the container cap
 

@@ -17,6 +17,11 @@ export interface LinuxAppsPaths {
   cacheDir: string;
   /** The store, whose size the pane shows. */
   store: string;
+  /**
+   * Xwayland's own profile, for X11 apps. It comes with the first app that
+   * speaks X11 and goes with the last (`xwayland.ts`).
+   */
+  xwaylandProfile: string;
 }
 
 export function linuxAppsPaths(
@@ -30,7 +35,13 @@ export function linuxAppsPaths(
     profile: join(state, 'profile'),
     cacheDir: join(dirname(state), 'linux-apps'),
     store: env.LINUX_APPS_STORE?.trim() || '/nix/store',
+    xwaylandProfile: join(state, 'profiles', 'imbatranim-xwayland'),
   };
+}
+
+/** The Xwayland the Wayland host starts, when its profile is installed. */
+export function xwaylandBinary(paths: LinuxAppsPaths): string {
+  return join(paths.xwaylandProfile, 'bin', 'Xwayland');
 }
 
 /** `KEY=value` lines, as `nixpkgs-pin.env` holds them. */

@@ -20,9 +20,10 @@ All integers are little-endian.
 
 The backend listens on `$XDG_RUNTIME_DIR/imbatranim-wayland/control.sock`
 (the directory is mode 0700) and starts the host with
-`--control <that path> [--encoding webp|deflate]`. The host connects once;
-when either side closes, the host exits and the backend tells every open
-session.
+`--control <that path> [--encoding webp|deflate] [--xwayland <path>]`, the
+last naming the Xwayland binary in its Nix profile (see "X11 apps" below;
+without it, sessions get no X display). The host connects once; when either
+side closes, the host exits and the backend tells every open session.
 
 Every message is:
 
@@ -71,8 +72,8 @@ share one space within a session.
 
 | `type` | Fields |
 |---|---|
-| `hello` | `version` (4) |
-| `session_ready` | `session`, `display` (the socket name, `wayland-<session>`) |
+| `hello` | `version` (5) |
+| `session_ready` | `session`, `display` (the socket name, `wayland-<session>`), `x11_display` (the X display number reserved for the session's X11 apps, or `null`) |
 | `session_failed` | `session`, `reason` |
 | `toplevel_created`, `toplevel_updated` | `session`, `toplevel`, `title`, `app_id`, `width`, `height`, `geometry`, `decorations`, `min_width`, `min_height`, `max_width`, `max_height` |
 | `toplevel_destroyed` | `session`, `toplevel` |
@@ -107,7 +108,8 @@ over and under it in stacking order, at their offsets, clipped to the root's
 size; a synchronized subsurface's state shows with its parent's commit.
 
 `clients` lists the pids of the processes connected to the session's
-socket (read with `SO_PEERCRED`) whenever one connects or goes. The backend
+socket (read with `SO_PEERCRED`), and of the X11 apps with a window (their
+`_NET_WM_PID`), whenever one comes or goes. The backend
 uses them, with the process groups of the apps it started from Start, to
 freeze the session's apps under the cover screen and to stop them when the
 session ends; it doesn't forward them to the tab.
@@ -125,6 +127,51 @@ is offered the current one, and only it may set a new one.
 `request` passes an app's `xdg_toplevel` requests to the window manager:
 `move`, `resize` (with `edges`: `n`, `s`, `e`, `w`, `ne`, `nw`, `se`, `sw`),
 `maximize`, `unmaximize`, `minimize`, `fullscreen` and `unfullscreen`.
+
+### X11 apps
+
+A session reserves an X display when it opens, as an X server would: the
+first free `n` from 0 gets the lock file `/tmp/.X<n>-lock` and a listening
+socket at `/tmp/.X11-unix/X<n>`. `session_ready` names it, and the backend
+gives the tab's Terminal shells and the apps it starts from Start
+`DISPLAY=:<n>` beside `WAYLAND_DISPLAY`. Nothing runs on it yet: a session
+with no X client starts no Xwayland.
+
+The first X client to connect starts Xwayland (smithay's, rootless, one
+more Wayland client of the session), and the host becomes its window
+manager. smithay starts Xwayland on sockets of its own, so the host runs it
+through a launcher: smithay runs `Xwayland` from `PATH`, which finds a link
+to the host's own binary (in `imbatranim-wayland/xwayland/`, beside the
+control socket), and the host, started under that name, runs the real
+Xwayland with smithay's arguments plus `-listenfd` for the socket the client
+is waiting on. When the binary is missing (no app that speaks X11 is
+installed), the waiting client is refused and the next one waited for.
+
+Xwayland then stays until the session ends (about 16 MB idle). If it exits
+or crashes, its windows go and the same display is reserved again, so the
+`DISPLAY` already handed out keeps working. When the session ends, the host
+closes the window manager's connection, Xwayland exits, and the lock file
+and socket are removed.
+
+An X11 window becomes a toplevel like a Wayland app's: the same messages,
+ids, frames and input. Its `title` is the X title, its `app_id` the
+`WM_CLASS` class in lower case (`XTerm` → `xterm`, which usually names its
+desktop file), its `geometry` the whole image, its limits the size hints,
+and `decorations` is `client` only when it asked for none through Motif
+hints. `position` moves the X window to where the tab shows it, since X11
+apps place their menus in screen coordinates; `configure` resizes it there
+and sets its maximized state; `close` sends `WM_DELETE_WINDOW` (or destroys
+a window that doesn't take it); `focus` gives it the X input focus and
+raises it. Its move, resize, maximize, minimize and fullscreen requests
+(`_NET_WM_MOVERESIZE` and `_NET_WM_STATE`) come as `request`.
+
+An override-redirect window (a menu, a tooltip) becomes a popup of the X11
+window it is transient for, else of the X11 window with the keyboard, else
+of the newest one, at its X position relative to that window's. It holds no
+grab: X11 menus grab inside Xwayland.
+
+Not yet: the X11 clipboard isn't bridged to the session's (copy and paste
+works between X11 apps only), and an X11 app's cursor shows as `default`.
 
 ### Frames, host to backend
 

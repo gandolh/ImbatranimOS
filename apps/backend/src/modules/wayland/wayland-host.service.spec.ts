@@ -24,7 +24,7 @@ s.on('data', (d) => {
   while (buf.length >= 4 && buf.length >= 4 + buf.readUInt32LE(0)) {
     const n = buf.readUInt32LE(0); const m = JSON.parse(buf.subarray(5, 4 + n)); buf = buf.subarray(4 + n);
     if (m.type === 'session_open') {
-      json({ type: 'session_ready', session: m.session, display: 'wayland-' + m.session });
+      json({ type: 'session_ready', session: m.session, display: 'wayland-' + m.session, x11_display: m.width === 640 ? 4 : null });
       json({ type: 'toplevel_created', session: m.session, toplevel: 1, title: 't', app_id: 'a', width: m.width, height: m.height });
       const sid = Buffer.from(m.session); const body = Buffer.alloc(14); body.writeUInt32LE(1, 0);
       const p = Buffer.concat([Buffer.from([sid.length]), sid, body]); const h = Buffer.alloc(5); h.writeUInt32LE(p.length + 1); h[4] = 2;
@@ -93,11 +93,15 @@ describe('WaylandHostService', () => {
     ]);
     expect(a.messages[1]).toMatchObject({ width: 640, height: 480 });
     expect(b.messages[1]).toMatchObject({ width: 800, height: 600 });
+    // Each session's X display, for its X11 apps' DISPLAY; none for B.
+    expect(svc.x11Display('sessionAAAAAAAAAAAA')).toBe(4);
+    expect(svc.x11Display('sessionBBBBBBBBBBBB')).toBeNull();
     // The control socket's directory is private to the user.
     expect(statSync(join(dir, 'imbatranim-wayland')).mode & 0o777).toBe(0o700);
 
     // The fake exits on the first close; every remaining session hears it.
     svc.close('sessionAAAAAAAAAAAA');
+    expect(svc.x11Display('sessionAAAAAAAAAAAA')).toBeNull();
     await until(() => b.gone() !== null);
     expect(a.gone()).toBeNull();
     svc.onModuleDestroy();

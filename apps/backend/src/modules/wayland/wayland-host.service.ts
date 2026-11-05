@@ -6,6 +6,7 @@ import { createServer, type Server, type Socket } from 'net';
 import { join } from 'path';
 import type { Env } from '../../config/env.schema';
 import { childEnv } from '../../child-env';
+import { linuxAppsPaths, xwaylandBinary } from '../linux-apps/linux-apps.paths';
 import {
   Decoder,
   encodeJson,
@@ -43,8 +44,18 @@ export class WaylandHostService implements OnModuleDestroy {
   /** Written before the host connected; sent once it does. */
   private queued: Buffer[] = [];
   private readonly sessions = new Map<string, SessionListener>();
+  /** Each session's X display for X11 apps, as the host reserved it. */
+  private readonly x11Displays = new Map<string, number>();
 
   constructor(private readonly config: ConfigService<Env, true>) {}
+
+  /**
+   * The X display (`DISPLAY=:<n>`) a session's X11 apps use, once the host
+   * has opened the session; null before, or when it has none.
+   */
+  x11Display(session: string): number | null {
+    return this.x11Displays.get(session) ?? null;
+  }
 
   /**
    * Ask the host for a session's display, starting the host if needed.
@@ -64,6 +75,7 @@ export class WaylandHostService implements OnModuleDestroy {
   }
 
   close(session: string): void {
+    this.x11Displays.delete(session);
     if (!this.sessions.delete(session)) return;
     this.send({ type: 'session_close', session });
   }
@@ -96,14 +108,15 @@ export class WaylandHostService implements OnModuleDestroy {
 
     const bin = this.config.get('WAYLAND_HOST_BIN', { infer: true });
     const encoding = this.config.get('WAYLAND_HOST_ENCODING', { infer: true });
-    const child = spawn(
-      bin,
-      ['--control', controlPath, '--encoding', encoding],
-      {
-        env: childEnv(),
-        stdio: ['ignore', 'ignore', 'pipe'],
-      },
-    );
+    const args = ['--control', controlPath, '--encoding', encoding];
+    // X11 apps, through the Xwayland Nix installs with the first app that
+    // speaks X11. The host checks for it when an X client connects.
+    const nix = linuxAppsPaths();
+    if (nix) args.push('--xwayland', xwaylandBinary(nix));
+    const child = spawn(bin, args, {
+      env: childEnv(),
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
     this.child = child;
     child.stderr?.setEncoding('utf8');
     child.stderr?.on('data', (text: string) => {
@@ -161,6 +174,12 @@ export class WaylandHostService implements OnModuleDestroy {
         this.logger.log('Wayland host connected');
         continue;
       }
+      if (m.type === 'session_ready') {
+        const n = m.x11_display;
+        if (typeof n === 'number' && Number.isInteger(n) && n >= 0)
+          this.x11Displays.set(m.session, n);
+        else this.x11Displays.delete(m.session);
+      }
       if ('session' in m) this.sessions.get(m.session)?.message(m);
     }
   }
@@ -177,6 +196,7 @@ export class WaylandHostService implements OnModuleDestroy {
     this.server = null;
     this.queued = [];
     this.decoder = new Decoder();
+    this.x11Displays.clear();
     if (child && child.exitCode === null && child.signalCode === null)
       child.kill('SIGTERM');
     const listeners = [...this.sessions.values()];

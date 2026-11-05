@@ -46,6 +46,19 @@ about 30 seconds, and closing the tab ends it 30 seconds later. An app
 started from Start lives that long too. While the cover screen is up, the
 tab's Linux apps are paused, and they carry on when you uncover the desktop.
 
+### X11 apps
+
+Programs that speak only X11, such as `xterm`, open in OS windows like any
+other Linux app, through Xwayland. Xwayland comes with the first app you
+install that can speak X11 and goes with the last one: about 5 MB more
+beside a GTK app such as Firefox, about 420 MB for an X11 app on its own.
+Each tab reserves an X display, which its Terminal shells and the apps it
+starts from Start get in `DISPLAY`; Xwayland starts when the first X11 app
+connects to it and stays until the tab's session ends. Apps that speak both,
+Firefox among them, still use Wayland. Two things don't cross yet: copy and
+paste between an X11 app and anything else, and an X11 app's own mouse
+cursors (the arrow shows).
+
 ### Copy and paste with Linux apps
 
 Plain text copies both ways between Linux apps, the rest of the OS and the

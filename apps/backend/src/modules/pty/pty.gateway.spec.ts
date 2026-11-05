@@ -5,6 +5,7 @@ import { connect, type AddressInfo, type Server, type Socket } from 'net';
 import { WebSocket } from 'ws';
 import * as pty from 'node-pty';
 import { PtyGateway } from './pty.gateway';
+import { WaylandGateway } from '../wayland/wayland.gateway';
 import { MAX_SESSIONS } from './pty.constants';
 import { LocalIdentityService } from '../auth/ws-auth';
 import type { Caller } from '../identity/identity.types';
@@ -58,6 +59,7 @@ describe('PtyGateway upgrade handler', () => {
         PtyGateway,
         UpgradeRoutes,
         { provide: LocalIdentityService, useValue: identityMock },
+        { provide: WaylandGateway, useValue: { x11Display: () => null } },
         {
           provide: ConfigService,
           useValue: {
@@ -195,6 +197,7 @@ describe('PtyGateway revocation sweep', () => {
         PtyGateway,
         UpgradeRoutes,
         { provide: LocalIdentityService, useValue: identityMock },
+        { provide: WaylandGateway, useValue: { x11Display: () => null } },
         {
           provide: ConfigService,
           useValue: {

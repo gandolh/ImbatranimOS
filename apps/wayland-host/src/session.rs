@@ -1,10 +1,15 @@
 //! One desktop session (one browser tab): its own Wayland display, globals,
-//! output, seat and clients. Nothing here is shared with another session, so
-//! a client on tab A's socket can never reach tab B.
+//! output, seat and clients, and the X display its X11 apps get (`x11`).
+//! Nothing here is shared with another session, so a client on tab A's
+//! socket can never reach tab B.
 
+mod x11;
+
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{PipeReader, Write};
 use std::os::fd::OwnedFd;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
@@ -17,7 +22,7 @@ use smithay::delegate_seat;
 use smithay::delegate_shm;
 use smithay::delegate_xdg_decoration;
 use smithay::delegate_xdg_shell;
-use smithay::input::keyboard::{FilterResult, KeyboardHandle, XkbConfig};
+use smithay::input::keyboard::{FilterResult, KeyboardHandle, KeyboardTarget, KeysymHandle, ModifiersState, XkbConfig};
 use smithay::input::pointer::{
     AxisFrame, ButtonEvent, CursorImageStatus, MotionEvent, PointerHandle,
 };
@@ -30,8 +35,9 @@ use smithay::backend::input::{Axis, AxisSource, ButtonState, KeyState};
 use smithay::reexports::wayland_server::protocol::{
     wl_buffer::WlBuffer, wl_output::WlOutput, wl_seat::WlSeat, wl_shm, wl_surface::WlSurface,
 };
+use smithay::reexports::calloop::LoopHandle;
 use smithay::reexports::wayland_server::{Client, DisplayHandle, Resource};
-use smithay::utils::{Logical, Point, Rectangle, Serial, Transform, SERIAL_COUNTER};
+use smithay::utils::{IsAlive, Logical, Point, Rectangle, Serial, Transform, SERIAL_COUNTER};
 use smithay::wayland::buffer::BufferHandler;
 use smithay::wayland::compositor::{
     get_parent, is_sync_subsurface, with_states, with_surface_tree_upward, BufferAssignment, CompositorClientState,
@@ -50,11 +56,15 @@ use smithay::wayland::shell::xdg::{
     XdgToplevelSurfaceData,
 };
 use smithay::wayland::shm::{with_buffer_contents, ShmHandler, ShmState};
+use smithay::wayland::seat::WaylandFocus;
 use smithay::wayland::tablet_manager::TabletSeatHandler;
+use smithay::wayland::xwayland_shell::XWaylandShellState;
+use smithay::xwayland::{X11Surface, XWaylandClientData};
 
 use crate::clipboard::{text_mime, MAX_CLIPBOARD_BYTES, OFFERED_MIME_TYPES};
 use crate::pixels::{clip_signed, Canvas, Encoding, Layer, ShmFormat, SurfaceImage};
 use crate::protocol::{encode_frame_body, Decorations, Geometry, Outbound, PopupInfo, Rect, ToplevelInfo};
+use crate::xwayland::XwaylandConfig;
 
 /// The keyboard layouts the tab may choose (Settings → Linux apps): the id it
 /// sends, and the xkb layout and variant that build the keymap. Keys stay
@@ -93,11 +103,25 @@ impl ClientData for ClientState {
     }
 }
 
+/// Who a toplevel is: a Wayland app's xdg toplevel, or an X11 app's window
+/// through Xwayland. Both become OS windows the same way.
+enum ToplevelShell {
+    Xdg(ToplevelSurface),
+    X11(X11Surface),
+}
+
+/// Who a popup is: an xdg popup, or an X11 override-redirect window (a menu
+/// or a tooltip that places itself).
+enum PopupShell {
+    Xdg(PopupSurface),
+    X11(X11Surface),
+}
+
 /// What a window is to the app: a toplevel (an OS window) or a popup (a
 /// menu, a dropdown, a tooltip) drawn above its parent.
 enum Role {
     Toplevel {
-        surface: ToplevelSurface,
+        shell: ToplevelShell,
         title: String,
         app_id: String,
         decorations: Decorations,
@@ -108,7 +132,7 @@ enum Role {
         origin: (i32, i32),
     },
     Popup {
-        surface: PopupSurface,
+        shell: PopupShell,
         /// The window (toplevel or popup) it opened from.
         parent: u32,
         /// Its window geometry's top-left, relative to the parent's.
@@ -211,6 +235,87 @@ impl Window {
     fn client(&self) -> Option<ClientId> {
         self.root.client().map(|c| c.id())
     }
+
+    /// The X11 window behind it, for one that came through Xwayland.
+    fn x11(&self) -> Option<&X11Surface> {
+        match &self.role {
+            Role::Toplevel { shell: ToplevelShell::X11(x), .. } | Role::Popup { shell: PopupShell::X11(x), .. } => Some(x),
+            _ => None,
+        }
+    }
+
+    /// What gets the keyboard when this window has it. An X11 window is
+    /// focused in X as well, so Xwayland sends its keys to that window.
+    fn keyboard_target(&self) -> KeyboardFocus {
+        match self.x11() {
+            Some(x) => KeyboardFocus::X11(x.clone()),
+            None => KeyboardFocus::Wayland(self.root.clone()),
+        }
+    }
+}
+
+/// The keyboard's focus: a Wayland surface, or an X11 window (whose surface
+/// is Xwayland's, and which X focuses as well).
+#[derive(Debug, Clone, PartialEq)]
+pub enum KeyboardFocus {
+    Wayland(WlSurface),
+    X11(X11Surface),
+}
+
+impl WaylandFocus for KeyboardFocus {
+    fn wl_surface(&self) -> Option<Cow<'_, WlSurface>> {
+        match self {
+            KeyboardFocus::Wayland(s) => Some(Cow::Borrowed(s)),
+            KeyboardFocus::X11(x) => x.wl_surface().map(Cow::Owned),
+        }
+    }
+}
+
+impl IsAlive for KeyboardFocus {
+    fn alive(&self) -> bool {
+        match self {
+            KeyboardFocus::Wayland(s) => s.alive(),
+            KeyboardFocus::X11(x) => x.alive(),
+        }
+    }
+}
+
+impl KeyboardTarget<SessionState> for KeyboardFocus {
+    fn enter(&self, seat: &Seat<SessionState>, data: &mut SessionState, keys: Vec<KeysymHandle<'_>>, serial: Serial) {
+        match self {
+            KeyboardFocus::Wayland(s) => KeyboardTarget::enter(s, seat, data, keys, serial),
+            KeyboardFocus::X11(x) => KeyboardTarget::enter(x, seat, data, keys, serial),
+        }
+    }
+
+    fn leave(&self, seat: &Seat<SessionState>, data: &mut SessionState, serial: Serial) {
+        match self {
+            KeyboardFocus::Wayland(s) => KeyboardTarget::leave(s, seat, data, serial),
+            KeyboardFocus::X11(x) => KeyboardTarget::leave(x, seat, data, serial),
+        }
+    }
+
+    fn key(
+        &self,
+        seat: &Seat<SessionState>,
+        data: &mut SessionState,
+        key: KeysymHandle<'_>,
+        state: KeyState,
+        serial: Serial,
+        time: u32,
+    ) {
+        match self {
+            KeyboardFocus::Wayland(s) => KeyboardTarget::key(s, seat, data, key, state, serial, time),
+            KeyboardFocus::X11(x) => KeyboardTarget::key(x, seat, data, key, state, serial, time),
+        }
+    }
+
+    fn modifiers(&self, seat: &Seat<SessionState>, data: &mut SessionState, modifiers: ModifiersState, serial: Serial) {
+        match self {
+            KeyboardFocus::Wayland(s) => KeyboardTarget::modifiers(s, seat, data, modifiers, serial),
+            KeyboardFocus::X11(x) => KeyboardTarget::modifiers(x, seat, data, modifiers, serial),
+        }
+    }
 }
 
 /// The surface tree's root: a toplevel's or a popup's surface.
@@ -272,6 +377,9 @@ pub struct SessionState {
     _decoration: XdgDecorationState,
     _cursor_shape: CursorShapeManagerState,
     stubs: crate::stubs::Stubs,
+    xwayland_shell: XWaylandShellState,
+    /// The X display for X11 apps, and Xwayland once one connects.
+    x11: x11::X11,
     seat_state: SeatState<SessionState>,
     seat: Seat<SessionState>,
     dh: DisplayHandle,
@@ -301,6 +409,9 @@ pub struct SessionState {
     /// The processes connected to the socket: pid (0 when unknown) and
     /// whether each has gone.
     clients: Vec<(u32, Arc<ClientState>)>,
+    /// The pids last sent in `clients`: the socket's clients and the X11
+    /// apps with windows.
+    announced_pids: Option<Vec<u32>>,
     /// The backend froze the session's apps under the cover screen.
     frozen: bool,
     /// The tab is showing; a hidden one gets no frames.
@@ -314,7 +425,17 @@ pub struct SessionState {
 }
 
 impl SessionState {
-    pub fn new(id: String, dh: &DisplayHandle, width: u32, height: u32, started: Instant) -> SessionState {
+    /// A session's state. With `x11`, it reserves an X display for X11 apps,
+    /// handled on the session's own event loop (`x11_loop`); without, X11
+    /// apps get none.
+    pub fn new(
+        id: String,
+        dh: &DisplayHandle,
+        width: u32,
+        height: u32,
+        started: Instant,
+        x11: Option<(Rc<XwaylandConfig>, LoopHandle<'static, SessionState>)>,
+    ) -> SessionState {
         let compositor = CompositorState::new::<SessionState>(dh);
         let xdg = XdgShellState::new::<SessionState>(dh);
         let shm = ShmState::new::<SessionState>(dh, vec![]);
@@ -325,6 +446,8 @@ impl SessionState {
         let decoration = XdgDecorationState::new::<SessionState>(dh);
         let cursor_shape = CursorShapeManagerState::new::<SessionState>(dh);
         let stubs = crate::stubs::Stubs::new(dh);
+        // Only Xwayland's own client may bind it.
+        let xwayland_shell = XWaylandShellState::new::<SessionState>(dh);
         let mut seat_state = SeatState::new();
         let mut seat = seat_state.new_wl_seat(dh, "seat0");
         // US until the tab says which layout its owner chose.
@@ -351,6 +474,8 @@ impl SessionState {
             _decoration: decoration,
             _cursor_shape: cursor_shape,
             stubs,
+            xwayland_shell,
+            x11: x11::X11::new(x11),
             seat_state,
             seat,
             dh: dh.clone(),
@@ -367,6 +492,7 @@ impl SessionState {
             grabs: Vec::new(),
             keyboard_away: false,
             clients: Vec::new(),
+            announced_pids: None,
             frozen: false,
             visible: true,
             cursor: "default".into(),
@@ -375,6 +501,7 @@ impl SessionState {
             started,
         };
         state.set_output_size(width, height);
+        state.x11_reserve(None);
         state
     }
 
@@ -525,11 +652,29 @@ impl SessionState {
         }
     }
 
-    fn announce_clients(&mut self) {
-        let mut pids: Vec<u32> = self.clients.iter().map(|(p, _)| *p).filter(|p| *p != 0).collect();
+    /// The session's app processes: those connected to the socket, and the
+    /// X11 apps with a window (by their `_NET_WM_PID`), whose connection is to
+    /// Xwayland. The backend freezes and stops them with the session.
+    fn client_pids(&self) -> Vec<u32> {
+        let wayland = self.clients.iter().map(|(p, _)| *p);
+        let x11 = self.windows.iter().filter_map(|w| w.x11().and_then(|x| x.pid()));
+        let mut pids: Vec<u32> = wayland.chain(x11).filter(|p| *p != 0).collect();
         pids.sort_unstable();
         pids.dedup();
+        pids
+    }
+
+    fn announce_clients(&mut self) {
+        let pids = self.client_pids();
+        self.announced_pids = Some(pids.clone());
         self.outbox.push(Outbound::Clients { session: self.id.clone(), pids });
+    }
+
+    /// Announce the pids again if an X11 window's coming or going changed them.
+    fn refresh_clients(&mut self) {
+        if self.announced_pids.as_ref() != Some(&self.client_pids()) {
+            self.announce_clients();
+        }
     }
 
     /// A tab took the session back (after a reload): every window is
@@ -712,6 +857,12 @@ impl SessionState {
         let Some(i) = self.index_of_root(surface.wl_surface()) else {
             return;
         };
+        self.request_at(i, action, edges);
+    }
+
+    /// Pass a toplevel's request (move, resize, maximize...) to the window
+    /// manager in the tab.
+    fn request_at(&mut self, i: usize, action: &str, edges: Option<String>) {
         let toplevel = self.windows[i].id;
         self.outbox.push(Outbound::Request {
             session: self.id.clone(),
@@ -762,7 +913,11 @@ impl SessionState {
     }
 
     /// The window geometry and size limits the app set with its last commit.
+    /// An X11 window's come from X instead (`x11.rs`).
     fn read_cached(&mut self, index: usize) {
+        if self.windows[index].x11().is_some() {
+            return;
+        }
         let surface = self.windows[index].root.clone();
         let (geometry, min, max) = with_states(&surface, |states| {
             let mut cached = states.cached_state.get::<SurfaceCachedState>();
@@ -873,7 +1028,7 @@ impl SessionState {
         }
         let mut ids = Vec::new();
         for i in doomed {
-            if let Role::Popup { surface, .. } = &self.windows[i].role {
+            if let Role::Popup { shell: PopupShell::Xdg(surface), .. } = &self.windows[i].role {
                 surface.send_popup_done();
             }
             ids.push(self.windows[i].id);
@@ -905,7 +1060,7 @@ impl SessionState {
                 .copied()
                 .or(self.focused)
                 .and_then(|id| self.index_of(id))
-                .map(|i| self.windows[i].root.clone())
+                .map(|i| self.windows[i].keyboard_target())
         };
         let keyboard = self.keyboard.clone();
         if keyboard.current_focus() != target {
@@ -919,8 +1074,13 @@ impl SessionState {
     /// the output.
     pub fn position(&mut self, toplevel: u32, x: i32, y: i32) {
         if let Some(i) = self.index_of(toplevel) {
-            if let Role::Toplevel { origin, .. } = &mut self.windows[i].role {
+            if let Role::Toplevel { origin, shell, .. } = &mut self.windows[i].role {
                 *origin = (x, y);
+                // X11 apps place their menus in screen coordinates, so X
+                // learns where the window is.
+                if let ToplevelShell::X11(window) = shell {
+                    x11::move_to(window, (x, y));
+                }
             }
         }
     }
@@ -944,20 +1104,29 @@ impl SessionState {
         self.keyboard_to_grab_or_focus();
         let focused = self.focused;
         for w in &self.windows {
-            let Role::Toplevel { surface, .. } = &w.role else {
-                continue;
-            };
-            let changed = surface.with_pending_state(|s| {
-                if Some(w.id) == focused {
-                    s.states.set(xdg_toplevel::State::Activated)
-                } else {
-                    s.states.unset(xdg_toplevel::State::Activated)
+            let active = Some(w.id) == focused;
+            match &w.role {
+                Role::Toplevel { shell: ToplevelShell::Xdg(surface), .. } => {
+                    let changed = surface.with_pending_state(|s| {
+                        if active {
+                            s.states.set(xdg_toplevel::State::Activated)
+                        } else {
+                            s.states.unset(xdg_toplevel::State::Activated)
+                        }
+                    });
+                    if changed && surface.is_initial_configure_sent() {
+                        surface.send_pending_configure();
+                    }
                 }
-            });
-            if changed && surface.is_initial_configure_sent() {
-                surface.send_pending_configure();
+                Role::Toplevel { shell: ToplevelShell::X11(window), .. } => {
+                    if window.is_activated() != active {
+                        let _ = window.set_activated(active);
+                    }
+                }
+                Role::Popup { .. } => {}
             }
         }
+        self.x11_raise_focused();
     }
 
     /// The surface of window `id` under a point in the window's root surface
@@ -1095,7 +1264,7 @@ impl SessionState {
         let Some(i) = self.index_of(toplevel) else {
             return;
         };
-        let Role::Toplevel { surface, min, max, .. } = &self.windows[i].role else {
+        let Role::Toplevel { shell, min, max, origin, .. } = &self.windows[i].role else {
             return;
         };
         let clamp = |v: u32, min: u32, max: u32| {
@@ -1108,6 +1277,13 @@ impl SessionState {
         };
         let w = clamp(width, min.0, max.0).min(16384) as i32;
         let h = clamp(height, min.1, max.1).min(16384) as i32;
+        let surface = match shell {
+            ToplevelShell::Xdg(surface) => surface,
+            ToplevelShell::X11(window) => {
+                x11::resize(window, *origin, (w, h), maximized);
+                return;
+            }
+        };
         surface.with_pending_state(|s| {
             s.size = Some((w, h).into());
             if maximized {
@@ -1124,8 +1300,13 @@ impl SessionState {
     /// The OS close button. The app decides: it may close, ask to save, or
     /// refuse. The OS window closes when the toplevel goes, not here.
     pub fn close(&mut self, toplevel: u32) {
-        if let Some(Role::Toplevel { surface, .. }) = self.index_of(toplevel).map(|i| &self.windows[i].role) {
-            surface.send_close();
+        match self.index_of(toplevel).map(|i| &self.windows[i].role) {
+            Some(Role::Toplevel { shell: ToplevelShell::Xdg(surface), .. }) => surface.send_close(),
+            // WM_DELETE_WINDOW, or the window is destroyed when it doesn't take it.
+            Some(Role::Toplevel { shell: ToplevelShell::X11(window), .. }) => {
+                let _ = window.close();
+            }
+            _ => {}
         }
     }
 }
@@ -1136,6 +1317,10 @@ impl CompositorHandler for SessionState {
     }
 
     fn client_compositor_state<'a>(&self, client: &'a Client) -> &'a CompositorClientState {
+        // Xwayland is a client smithay inserts with its own data.
+        if let Some(xwayland) = client.get_data::<XWaylandClientData>() {
+            return &xwayland.compositor_state;
+        }
         &client
             .get_data::<ClientState>()
             .expect("every client is inserted with ClientState")
@@ -1148,10 +1333,10 @@ impl CompositorHandler for SessionState {
         // window manager resizes it.
         if let Some(i) = self.index_of_root(surface) {
             match &self.windows[i].role {
-                Role::Toplevel { surface: t, .. } if !t.is_initial_configure_sent() => {
+                Role::Toplevel { shell: ToplevelShell::Xdg(t), .. } if !t.is_initial_configure_sent() => {
                     t.send_configure();
                 }
-                Role::Popup { surface: p, .. } if !p.is_initial_configure_sent() => {
+                Role::Popup { shell: PopupShell::Xdg(p), .. } if !p.is_initial_configure_sent() => {
                     let _ = p.send_configure();
                 }
                 _ => {}
@@ -1253,7 +1438,7 @@ impl XdgShellHandler for SessionState {
             id,
             root: surface.wl_surface().clone(),
             role: Role::Toplevel {
-                surface,
+                shell: ToplevelShell::Xdg(surface),
                 title: String::new(),
                 app_id: String::new(),
                 // Until the app asks for the OS title bar, it draws its own.
@@ -1294,7 +1479,7 @@ impl XdgShellHandler for SessionState {
             id,
             root: surface.wl_surface().clone(),
             role: Role::Popup {
-                surface,
+                shell: PopupShell::Xdg(surface),
                 parent,
                 position: (geometry.loc.x, geometry.loc.y),
                 grab: false,
@@ -1483,7 +1668,7 @@ impl XdgDecorationHandler for SessionState {
 }
 
 impl SeatHandler for SessionState {
-    type KeyboardFocus = WlSurface;
+    type KeyboardFocus = KeyboardFocus;
     type PointerFocus = WlSurface;
     type TouchFocus = WlSurface;
 
@@ -1495,8 +1680,10 @@ impl SeatHandler for SessionState {
     /// app that draws its own cursor surface gets the default arrow.
     /// The clipboard follows the keyboard: the app with focus is offered the
     /// current selection, and only it may set a new one.
-    fn focus_changed(&mut self, seat: &Seat<Self>, focused: Option<&WlSurface>) {
-        let client = focused.and_then(|surface| self.dh.get_client(surface.id()).ok());
+    fn focus_changed(&mut self, seat: &Seat<Self>, focused: Option<&KeyboardFocus>) {
+        let client = focused
+            .and_then(WaylandFocus::wl_surface)
+            .and_then(|surface| self.dh.get_client(surface.id()).ok());
         set_data_device_focus(&self.dh, seat, client);
     }
 

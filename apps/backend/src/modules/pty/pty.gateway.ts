@@ -28,6 +28,7 @@ import {
 import { childEnv } from '../../child-env';
 import { UpgradeRoutes } from '../../upgrade-routes';
 import { raiseOomScore } from '../linux-apps/oom';
+import { WaylandGateway } from '../wayland/wayland.gateway';
 
 /**
  * How often to re-check that each live terminal's session is still valid, so
@@ -70,6 +71,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     private readonly identity: LocalIdentityService,
     private readonly config: ConfigService<Env, true>,
     private readonly upgrades: UpgradeRoutes,
+    private readonly wayland: WaylandGateway,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -171,7 +173,11 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         cols,
         rows,
         cwd: resolveHome(),
-        env: terminalEnv(childEnv(), desktopSession),
+        env: terminalEnv(
+          childEnv(),
+          desktopSession,
+          desktopSession ? this.wayland.x11Display(desktopSession) : null,
+        ),
       });
       // What the shell starts (Linux apps among it) goes before the
       // backend when memory runs out.

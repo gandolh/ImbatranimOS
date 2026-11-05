@@ -1,4 +1,5 @@
 import type { ChildProcess } from 'child_process';
+import { EventEmitter } from 'events';
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -13,10 +14,44 @@ import {
 
 // Every spawn the service makes goes through this; nothing really runs.
 const mockSpawn = jest.fn<ChildProcess, unknown[]>();
-jest.mock('child_process', (): typeof import('child_process') => ({
-  ...jest.requireActual<typeof import('child_process')>('child_process'),
-  spawn: ((...args: unknown[]) => mockSpawn(...args)) as never,
-}));
+// The service's promisified execFile: the real one unless a test says.
+const mockRun = jest.fn((...args: unknown[]) => {
+  const { execFile } =
+    jest.requireActual<typeof import('child_process')>('child_process');
+  const { promisify } = jest.requireActual<typeof import('util')>('util');
+  return (
+    promisify(execFile) as (
+      ...a: unknown[]
+    ) => Promise<{ stdout: string; stderr: string }>
+  )(...args);
+});
+jest.mock('child_process', (): typeof import('child_process') => {
+  const actual =
+    jest.requireActual<typeof import('child_process')>('child_process');
+  const { promisify } = jest.requireActual<typeof import('util')>('util');
+  const execFile = ((...args: unknown[]) =>
+    (actual.execFile as (...a: unknown[]) => unknown)(...args)) as never;
+  // Read when the service promisifies it, after this file has run.
+  Object.assign(execFile, {
+    [promisify.custom]: (...args: unknown[]) => mockRun(...args),
+  });
+  return {
+    ...actual,
+    spawn: ((...args: unknown[]) => mockSpawn(...args)) as never,
+    execFile,
+  };
+});
+
+/** A Nix command that exits with `code` once the test has looked at it. */
+function finishing(code: number): ChildProcess {
+  const child = Object.assign(new EventEmitter(), {
+    pid: 5151,
+    stdout: new EventEmitter(),
+    stderr: new EventEmitter(),
+  });
+  setImmediate(() => child.emit('close', code, null));
+  return child as unknown as ChildProcess;
+}
 
 const SESSION = 'abcdefghijklmnop';
 const COMMIT = 'c'.repeat(40);
@@ -107,6 +142,7 @@ function machine() {
       profile,
       cacheDir: join(root, 'cache'),
       store,
+      xwaylandProfile: join(root, 'state', 'profiles', 'imbatranim-xwayland'),
     },
   };
 }
@@ -122,7 +158,10 @@ describe('LinuxAppsService', () => {
     live = new Set([SESSION]);
     sessionApps = new SessionApps();
     apps = new LinuxAppsService(
-      { hasSession: (id: string) => live.has(id) } as unknown as WaylandGateway,
+      {
+        hasSession: (id: string) => live.has(id),
+        x11Display: () => 3,
+      } as unknown as WaylandGateway,
       sessionApps,
     );
     apps.paths = m.paths;
@@ -210,7 +249,72 @@ describe('LinuxAppsService', () => {
     expect((opts as { env: NodeJS.ProcessEnv }).env.WAYLAND_DISPLAY).toBe(
       `wayland-${SESSION}`,
     );
+    // The session's X display, for an X11 app.
+    expect((opts as { env: NodeJS.ProcessEnv }).env.DISPLAY).toBe(':3');
     expect(sessionApps.groups(SESSION)).toEqual([4242]);
+  });
+
+  const settled = async () => {
+    while (apps.getJob()?.state === 'running')
+      await new Promise((r) => setImmediate(r));
+    return apps.getJob()!;
+  };
+  const pathInfo = (lines: string[]) =>
+    mockRun.mockImplementationOnce((cmd: unknown, args: unknown) => {
+      expect([cmd, ...(args as string[]).slice(0, 2)]).toEqual([
+        'nix',
+        'path-info',
+        '--recursive',
+      ]);
+      return Promise.resolve({ stdout: lines.join('\n'), stderr: '' });
+    });
+
+  it('installs Xwayland after an app that speaks X11, in its own profile', async () => {
+    mockSpawn.mockImplementation(() => finishing(0));
+    pathInfo(['/nix/store/' + 'a'.repeat(32) + '-libx11-1.8.14']);
+    await apps.install('firefox', SESSION);
+    const job = await settled();
+    expect(job.state).toBe('done');
+    const commands = mockSpawn.mock.calls.map((c) => c[1] as string[]);
+    expect(commands).toEqual([
+      ['profile', 'add', 'nixpkgs#firefox'],
+      [
+        'profile',
+        'add',
+        '--profile',
+        m.paths.xwaylandProfile,
+        'nixpkgs#xwayland',
+      ],
+    ]);
+    expect(job.log).toMatch(/Xwayland comes with it/);
+  });
+
+  it('leaves Xwayland out after an app that speaks only Wayland', async () => {
+    mockSpawn.mockImplementation(() => finishing(0));
+    pathInfo(['/nix/store/' + 'a'.repeat(32) + '-wayland-1.25.0']);
+    await apps.install('firefox', SESSION);
+    expect((await settled()).state).toBe('done');
+    expect(mockSpawn).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes Xwayland with the last app that speaks X11', async () => {
+    const bin = join(m.paths.xwaylandProfile, 'bin');
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, 'Xwayland'), '');
+    mockRun.mockImplementationOnce(() =>
+      Promise.resolve({
+        stdout: JSON.stringify({ elements: { firefox: {} } }),
+        stderr: '',
+      }),
+    );
+    mockSpawn.mockImplementation(() => finishing(0));
+    pathInfo([]);
+    await apps.remove('firefox', SESSION);
+    expect((await settled()).state).toBe('done');
+    expect(mockSpawn.mock.calls.map((c) => c[1])).toEqual([
+      ['profile', 'remove', 'firefox'],
+      ['profile', 'remove', '--profile', m.paths.xwaylandProfile, '--all'],
+    ]);
   });
 
   it("starts one of a launcher's actions the same way, and only one it has", async () => {
@@ -253,7 +357,10 @@ describe("Start entries in the browser's languages", () => {
   beforeEach(() => {
     m = machine();
     apps = new LinuxAppsService(
-      { hasSession: () => true } as unknown as WaylandGateway,
+      {
+        hasSession: () => true,
+        x11Display: () => null,
+      } as unknown as WaylandGateway,
       new SessionApps(),
     );
     apps.paths = m.paths;

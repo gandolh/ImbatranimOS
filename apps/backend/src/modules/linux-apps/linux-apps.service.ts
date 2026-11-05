@@ -14,12 +14,14 @@ import { childEnv } from '../../child-env';
 import { terminalEnv } from '../pty/pty.constants';
 import { isValidSessionId } from '../wayland/wayland.protocol';
 import { OomKills, raiseOomScore, REAPPLY_OOM_SCORE_AFTER_MS } from './oom';
+import { closureSpeaksX11 } from './xwayland';
 import { WaylandGateway } from '../wayland/wayland.gateway';
 import { SessionApps } from '../wayland/session-apps';
 import { execArgv, parseDesktopEntry, pickLocalized } from './desktop-entry';
 import {
   linuxAppsPaths,
   parsePin,
+  xwaylandBinary,
   type LinuxAppsPaths,
 } from './linux-apps.paths';
 import {
@@ -339,7 +341,9 @@ export class LinuxAppsService implements OnModuleDestroy {
     // when impure.
     if (row[4] === 1) args.push('--impure');
     args.push(`nixpkgs#${attr}`);
-    return this.startJob('install', attr, args);
+    return this.startJob('install', attr, args, (job) =>
+      this.xwaylandStep(job),
+    );
   }
 
   async remove(name: unknown, session: unknown): Promise<Job> {
@@ -350,7 +354,61 @@ export class LinuxAppsService implements OnModuleDestroy {
     const installed = await this.installed();
     if (!installed.some((a) => a.name === name))
       throw new NotFoundException(`${name} is not installed`);
-    return this.startJob('remove', name, ['profile', 'remove', name]);
+    return this.startJob('remove', name, ['profile', 'remove', name], (job) =>
+      this.xwaylandStep(job),
+    );
+  }
+
+  /**
+   * Xwayland comes with the first app that speaks X11 (its closure holds
+   * libX11) and goes with the last, in a profile of its own. Alone it is
+   * 421 MiB unpacked, but about 5 MiB beside a GTK app such as Firefox, so
+   * the image doesn't carry it (decisions-linux-apps-built.md). The step an
+   * install or removal ends with, or null when Xwayland stays as it is.
+   */
+  private async xwaylandStep(job: Job): Promise<string[] | null> {
+    const p = this.paths;
+    if (!p) return null;
+    const wanted = await this.profileSpeaksX11();
+    if (wanted === null) return null;
+    const installed = existsSync(xwaylandBinary(p));
+    if (wanted && !installed) {
+      job.log += '\nAn installed app speaks X11, so Xwayland comes with it.\n';
+      return [
+        'profile',
+        'add',
+        '--profile',
+        p.xwaylandProfile,
+        'nixpkgs#xwayland',
+      ];
+    }
+    if (!wanted && installed) {
+      job.log += '\nNo installed app speaks X11 any more, so Xwayland goes.\n';
+      return ['profile', 'remove', '--profile', p.xwaylandProfile, '--all'];
+    }
+    return null;
+  }
+
+  /** Whether the user's profile holds libX11; null when it can't be read. */
+  private async profileSpeaksX11(): Promise<boolean | null> {
+    const p = this.paths;
+    if (!p) return null;
+    const target = await fs.realpath(p.profile).catch(() => null);
+    if (!target) return false;
+    try {
+      const { stdout } = await run(
+        'nix',
+        ['path-info', '--recursive', target],
+        {
+          env: this.nixEnv(),
+          maxBuffer: 16 * 1024 * 1024,
+          timeout: 60_000,
+        },
+      );
+      return closureSpeaksX11(stdout);
+    } catch {
+      return null;
+    }
   }
 
   freeSpace(session: unknown): Job {
@@ -359,10 +417,15 @@ export class LinuxAppsService implements OnModuleDestroy {
     return this.startJob('free-space', '', null);
   }
 
+  /**
+   * Run a job: `nixArgs` (or a garbage collection), then the Nix command
+   * `then` returns, if any, in the same job and log.
+   */
   private startJob(
     action: JobAction,
     target: string,
     nixArgs: string[] | null,
+    then?: (job: Job) => Promise<string[] | null>,
   ): Job {
     const job: Job = {
       id: this.nextJobId++,
@@ -378,7 +441,27 @@ export class LinuxAppsService implements OnModuleDestroy {
     const [cmd, args] = nixArgs
       ? ['nix', nixArgs]
       : ['nix-collect-garbage', ['-d']];
-    job.log = `$ ${cmd} ${args.join(' ')}\n`;
+    this.runStep(job, cmd, args, (error) => {
+      if (error || !then) return this.finishJob(job, error);
+      then(job).then(
+        (next) =>
+          next
+            ? this.runStep(job, 'nix', next, (e) => this.finishJob(job, e))
+            : this.finishJob(job, null),
+        (err: Error) => this.finishJob(job, err.message),
+      );
+    });
+    return job;
+  }
+
+  /** One command of a job, its output in the job's log. */
+  private runStep(
+    job: Job,
+    cmd: string,
+    args: string[],
+    done: (error: string | null) => void,
+  ): void {
+    job.log += `$ ${cmd} ${args.join(' ')}\n`;
     let child: ChildProcess;
     try {
       child = spawn(cmd, args, {
@@ -388,8 +471,8 @@ export class LinuxAppsService implements OnModuleDestroy {
         detached: true,
       });
     } catch (err) {
-      this.finishJob(job, (err as Error).message);
-      return job;
+      done((err as Error).message);
+      return;
     }
     this.jobChild = child;
     const append = (chunk: Buffer) => {
@@ -404,22 +487,25 @@ export class LinuxAppsService implements OnModuleDestroy {
       this.killJob();
     }, JOB_TIMEOUT_MS);
     timer.unref();
-    child.on('error', (err) => {
+    // A failed spawn emits 'error' and may still emit 'close': one answer.
+    let answered = false;
+    const answer = (error: string | null) => {
+      if (answered) return;
+      answered = true;
       clearTimeout(timer);
-      this.finishJob(job, `cannot run ${cmd}: ${err.message}`);
-    });
-    child.on('close', (code, signal) => {
-      clearTimeout(timer);
-      this.finishJob(
-        job,
+      if (this.jobChild === child) this.jobChild = null;
+      done(error);
+    };
+    child.on('error', (err) => answer(`cannot run ${cmd}: ${err.message}`));
+    child.on('close', (code, signal) =>
+      answer(
         code === 0
           ? null
           : signal
             ? `${cmd} was stopped (${signal})`
             : `${cmd} exited with ${code}`,
-      );
-    });
-    return job;
+      ),
+    );
   }
 
   private finishJob(job: Job, error: string | null): void {
@@ -583,7 +669,7 @@ export class LinuxAppsService implements OnModuleDestroy {
     }
     const argv = execArgv(exec);
     if (!argv) throw new NotFoundException('No such Linux app');
-    const env = terminalEnv(childEnv(), sid);
+    const env = terminalEnv(childEnv(), sid, this.wayland.x11Display(sid));
     const child = spawn(argv[0], argv.slice(1), {
       env,
       cwd: resolve(env.HOME ?? '/'),

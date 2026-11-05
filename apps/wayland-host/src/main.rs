@@ -7,14 +7,15 @@
 //! images; the backend relays them to the tab over the signed-in WebSocket.
 //! PROTOCOL.md describes the control socket.
 
+mod clipboard;
 mod pixels;
 mod protocol;
 mod session;
 mod stubs;
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
-use std::io::{ErrorKind, Read, Write};
+use std::io::{ErrorKind, PipeReader, Read, Write};
 use std::os::unix::net::UnixStream;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -32,6 +33,10 @@ use session::{ClientState, SessionState};
 
 /// Frames go out at most this often per window: about 30 per second.
 const TICK: Duration = Duration::from_millis(33);
+
+/// How long an app gets to write the text it copied. One that hasn't closed
+/// its end by then (frozen under the cover screen, or stuck) sends nothing.
+const CLIPBOARD_READ_TIMEOUT: Duration = Duration::from_secs(5);
 
 struct Session {
     display: Display<SessionState>,
@@ -94,6 +99,7 @@ impl Host {
             Inbound::ToplevelVisible { session, toplevel, visible } => {
                 self.with(&session, |s| s.set_toplevel_visible(toplevel, visible))
             }
+            Inbound::Clipboard { session, text } => self.with(&session, |s| s.set_clipboard(text)),
         }
     }
 
@@ -197,15 +203,64 @@ impl Host {
     /// sessions want to say, write as much as the control socket takes.
     fn after_dispatch(&mut self) {
         let mut outbound = Vec::new();
-        for session in self.sessions.values() {
+        let mut clipboard_reads = Vec::new();
+        for (id, session) in &self.sessions {
             let mut s = session.borrow_mut();
+            // Before the flush, so the app hears the request this round.
+            if let Some(reader) = s.state.start_clipboard_read() {
+                clipboard_reads.push((id.clone(), reader));
+            }
             let _ = s.display.flush_clients();
             outbound.append(&mut s.state.outbox);
         }
         for msg in outbound {
             self.send(&msg);
         }
+        for (id, reader) in clipboard_reads {
+            self.read_clipboard(id, reader);
+        }
         self.flush_control();
+    }
+
+    /// Read the text an app copied from the pipe it writes into, on the event
+    /// loop, and send it to the tab once the app closes its end. Over the
+    /// limit, or not done within [`CLIPBOARD_READ_TIMEOUT`], nothing goes.
+    fn read_clipboard(&mut self, session: String, reader: PipeReader) {
+        let token = Rc::new(Cell::new(None::<RegistrationToken>));
+        let mut collector = clipboard::Collector::default();
+        let registered = self.handle.insert_source(Generic::new(reader, Interest::READ, Mode::Level), {
+            let token = Rc::clone(&token);
+            move |_, reader, host| {
+                let mut buf = [0u8; 64 * 1024];
+                // Ready to read, so this returns without waiting.
+                let done = match (&**reader).read(&mut buf) {
+                    Ok(0) => {
+                        if let Some(text) = std::mem::take(&mut collector).finish() {
+                            host.send(&Outbound::Clipboard { session: session.clone(), text });
+                        }
+                        true
+                    }
+                    Ok(n) => !collector.push(&buf[..n]),
+                    Err(e) if e.kind() == ErrorKind::Interrupted => false,
+                    Err(_) => true,
+                };
+                if done {
+                    token.set(None);
+                    return Ok(PostAction::Remove);
+                }
+                Ok(PostAction::Continue)
+            }
+        });
+        let Ok(registered) = registered else {
+            return;
+        };
+        token.set(Some(registered));
+        let _ = self.handle.insert_source(Timer::from_duration(CLIPBOARD_READ_TIMEOUT), move |_, _, host| {
+            if let Some(t) = token.take() {
+                host.handle.remove(t);
+            }
+            TimeoutAction::Drop
+        });
     }
 
     fn flush_control(&mut self) {

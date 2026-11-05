@@ -19,8 +19,17 @@ export const FRAME_ACK_POLL_MS = 50;
 /** As the Terminal: a sign-out reaches an open socket within this window. */
 export const WAYLAND_REVOKE_SWEEP_MS = 30_000;
 
-/** Messages from the tab are small JSON (the viewport; input later). */
-export const MAX_CLIENT_MESSAGE = 64 * 1024;
+/**
+ * Messages from the tab are small JSON, except a paste's text: up to
+ * MAX_CLIPBOARD_BYTES of it, with room for JSON escaping.
+ */
+export const MAX_CLIENT_MESSAGE = 2 * 1024 * 1024;
+
+/**
+ * The most clipboard text that crosses to the Linux apps, in UTF-8 bytes. The
+ * host refuses more, and the tab doesn't send it.
+ */
+export const MAX_CLIPBOARD_BYTES = 1024 * 1024;
 
 /**
  * A session outlives its socket this long, so a reload finds its apps

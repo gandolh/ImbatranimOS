@@ -4,6 +4,7 @@ import {
   TITLEBAR_MIN_VISIBLE,
   useWindowStore,
 } from '../../shared/store/windowStore'
+import { isPasteKey, linuxKeys } from './clipboard'
 import { isDesktopShortcut } from './desktopKeys'
 import { linuxWindowChrome } from './kind'
 import { evdevCode } from './keymap'
@@ -70,7 +71,6 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
     const el = holder.current
     if (!el || toplevel === undefined) return
     const pressedKeys = new Set<number>()
-    const send = (m: object) => sendToLinuxApps(m)
     const detachPointer = attachPointer(el, toplevel, () => canvasFor(toplevel), {
       onDown: () => {
         el.focus({ preventScroll: true })
@@ -98,7 +98,10 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
       // The app repeats keys itself (wl_keyboard.repeat_info).
       if (e.repeat || pressedKeys.has(code)) return
       pressedKeys.add(code)
-      send({ type: 'key', keycode: code, pressed: true })
+      const press = { type: 'key', keycode: code, pressed: true }
+      // A paste key brings the clipboard's text over before the app sees it.
+      if (isPasteKey(e)) linuxKeys.paste(press)
+      else linuxKeys.key(press)
     }
     const onKeyUp = (e: KeyboardEvent) => {
       const code = evdevCode(e.code)
@@ -106,11 +109,11 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
       e.preventDefault()
       e.stopPropagation()
       pressedKeys.delete(code)
-      send({ type: 'key', keycode: code, pressed: false })
+      linuxKeys.key({ type: 'key', keycode: code, pressed: false })
     }
     // Keys held when the keyboard leaves would stay down in the app.
     const onBlur = () => {
-      for (const code of pressedKeys) send({ type: 'key', keycode: code, pressed: false })
+      for (const code of pressedKeys) linuxKeys.key({ type: 'key', keycode: code, pressed: false })
       pressedKeys.clear()
     }
 

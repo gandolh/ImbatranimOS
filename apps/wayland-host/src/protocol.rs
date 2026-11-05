@@ -12,7 +12,7 @@ pub const KIND_FRAME: u8 = 2;
 /// Refuse anything larger: a full 4K frame deflated is far below this.
 pub const MAX_MESSAGE: usize = 64 * 1024 * 1024;
 
-pub const PROTOCOL_VERSION: u32 = 3;
+pub const PROTOCOL_VERSION: u32 = 4;
 
 /// Pixel encodings of a frame's rectangles.
 pub const ENC_DEFLATE_RGBA: u8 = 1;
@@ -120,6 +120,9 @@ pub enum Inbound {
     /// The keyboard layout chosen in Settings → Linux apps, by its id (see
     /// `session::KEYBOARD_LAYOUTS`): the session's apps get its keymap.
     KeyboardLayout { session: String, layout: String },
+    /// The tab read its clipboard for a paste key in a Linux window: offer
+    /// this text as the session's selection. The key follows.
+    Clipboard { session: String, text: String },
 }
 
 /// How a toplevel's title bar is drawn.
@@ -244,6 +247,11 @@ pub enum Outbound {
         action: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         edges: Option<String>,
+    },
+    /// An app copied text: the tab writes it to its clipboard.
+    Clipboard {
+        session: String,
+        text: String,
     },
 }
 
@@ -411,6 +419,10 @@ mod tests {
         })
     }
 
+    fn sample_clipboard() -> Vec<u8> {
+        encode_json(&Outbound::Clipboard { session: "abcdefghijklmnop".into(), text: "copied ș\n\"x\"".into() })
+    }
+
     fn sample_popup() -> Vec<u8> {
         encode_json(&Outbound::PopupCreated {
             session: "abcdefghijklmnop".into(),
@@ -445,6 +457,7 @@ mod tests {
             r#"{"type":"freeze","session":"abcdefghijklmnop","frozen":true}"#,
             r#"{"type":"toplevel_visible","session":"abcdefghijklmnop","toplevel":4,"visible":false}"#,
             r#"{"type":"keyboard_layout","session":"abcdefghijklmnop","layout":"ro"}"#,
+            r#"{"type":"clipboard","session":"abcdefghijklmnop","text":"pasted ș\n"}"#,
         ] {
             push_message(&mut bytes, KIND_JSON, json.as_bytes());
         }
@@ -462,6 +475,10 @@ mod tests {
         assert_eq!(
             d.next_inbound(),
             Ok(Some(Inbound::KeyboardLayout { session: "abcdefghijklmnop".into(), layout: "ro".into() }))
+        );
+        assert_eq!(
+            d.next_inbound(),
+            Ok(Some(Inbound::Clipboard { session: "abcdefghijklmnop".into(), text: "pasted ș\n".into() }))
         );
     }
 
@@ -540,6 +557,7 @@ mod tests {
             ("frame.bin", sample_frame()),
             ("toplevel-created.bin", sample_created()),
             ("popup-created.bin", sample_popup()),
+            ("clipboard.bin", sample_clipboard()),
         ];
         for (name, bytes) in cases {
             let path = fixtures_dir().join(name);

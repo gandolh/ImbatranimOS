@@ -11,6 +11,7 @@ import { useAuthStore } from '../auth/store/authStore'
 import { useLinuxAppsPrefs } from './keyboardLayout'
 import { LINUX_APP_PREFIX, linuxWindowChrome } from './kind'
 import { paintFrame, parseFrame } from './frames'
+import { linuxClipboard } from './clipboard'
 import {
   canvasFor,
   dropAllCanvases,
@@ -67,6 +68,7 @@ type ServerMessage =
   | { type: 'request'; toplevel: number; action: string; edges?: string }
   | { type: 'unavailable'; reason: string }
   | { type: 'session'; resumed: boolean }
+  | { type: 'clipboard'; text: string }
 
 /** Where Linux apps' windows are drawn: the desktop above the taskbar. */
 function viewport(): { width: number; height: number } {
@@ -321,6 +323,8 @@ export class LinuxWindowsConnection {
       }
       useLinuxWindowsStore.getState().setCursor(m.name)
     } else if (m.type === 'request') this.request(m.toplevel, m.action, m.edges)
+    else if (m.type === 'clipboard' && typeof m.text === 'string')
+      void linuxClipboard.fromLinux(m.text)
   }
 
   /** A fresh session has none of the windows the tab kept places for. */

@@ -3,6 +3,8 @@
 //! a client on tab A's socket can never reach tab B.
 
 use std::collections::HashMap;
+use std::io::{PipeReader, Write};
+use std::os::fd::OwnedFd;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
@@ -38,9 +40,10 @@ use smithay::wayland::compositor::{
 use smithay::wayland::cursor_shape::CursorShapeManagerState;
 use smithay::wayland::output::OutputHandler;
 use smithay::wayland::selection::data_device::{
-    ClientDndGrabHandler, DataDeviceHandler, DataDeviceState, ServerDndGrabHandler,
+    request_data_device_client_selection, set_data_device_focus, set_data_device_selection, ClientDndGrabHandler,
+    DataDeviceHandler, DataDeviceState, ServerDndGrabHandler,
 };
-use smithay::wayland::selection::SelectionHandler;
+use smithay::wayland::selection::{SelectionHandler, SelectionSource, SelectionTarget};
 use smithay::wayland::shell::xdg::decoration::{XdgDecorationHandler, XdgDecorationState};
 use smithay::wayland::shell::xdg::{
     PopupSurface, PositionerState, SurfaceCachedState, ToplevelSurface, XdgShellHandler, XdgShellState,
@@ -49,6 +52,7 @@ use smithay::wayland::shell::xdg::{
 use smithay::wayland::shm::{with_buffer_contents, ShmHandler, ShmState};
 use smithay::wayland::tablet_manager::TabletSeatHandler;
 
+use crate::clipboard::{text_mime, MAX_CLIPBOARD_BYTES, OFFERED_MIME_TYPES};
 use crate::pixels::{clip_signed, Canvas, Encoding, Layer, ShmFormat, SurfaceImage};
 use crate::protocol::{encode_frame_body, Decorations, Geometry, Outbound, PopupInfo, Rect, ToplevelInfo};
 
@@ -269,7 +273,11 @@ pub struct SessionState {
     _cursor_shape: CursorShapeManagerState,
     stubs: crate::stubs::Stubs,
     seat_state: SeatState<SessionState>,
-    _seat: Seat<SessionState>,
+    seat: Seat<SessionState>,
+    dh: DisplayHandle,
+    /// An app just set the clipboard and offered text in this type: read it
+    /// once the selection is stored (smithay tells us before it stores it).
+    clipboard_to_read: Option<String>,
     keyboard: KeyboardHandle<SessionState>,
     /// The layout the keyboard's keymap was built from (`KEYBOARD_LAYOUTS`).
     layout_id: String,
@@ -310,8 +318,8 @@ impl SessionState {
         let compositor = CompositorState::new::<SessionState>(dh);
         let xdg = XdgShellState::new::<SessionState>(dh);
         let shm = ShmState::new::<SessionState>(dh, vec![]);
-        // Copy and paste between the session's own Linux apps only; the
-        // desktop's clipboard is a later piece of work. Some apps (foot)
+        // The clipboard: between the session's apps, and as plain text with
+        // the tab's real clipboard (crate::clipboard). Some apps (foot)
         // refuse to start without this global.
         let data_device = DataDeviceState::new::<SessionState>(dh);
         let decoration = XdgDecorationState::new::<SessionState>(dh);
@@ -344,7 +352,9 @@ impl SessionState {
             _cursor_shape: cursor_shape,
             stubs,
             seat_state,
-            _seat: seat,
+            seat,
+            dh: dh.clone(),
+            clipboard_to_read: None,
             keyboard,
             layout_id: DEFAULT_LAYOUT.to_string(),
             pointer,
@@ -1434,6 +1444,30 @@ impl SessionState {
 /// xdg-decoration: an app that asks gets the OS title bar; one that asks to
 /// draw its own, or never asks, gets a frame. With no preference stated, the
 /// host picks the OS title bar.
+/// The clipboard bridge with the tab. Plain text only (crate::clipboard).
+impl SessionState {
+    /// The app that just set the clipboard offered text: ask it to write the
+    /// text into a pipe, and return the end the host reads. Called after a
+    /// round of dispatch, when smithay has stored the new selection.
+    pub fn start_clipboard_read(&mut self) -> Option<PipeReader> {
+        let mime = self.clipboard_to_read.take()?;
+        let (reader, writer) = std::io::pipe().ok()?;
+        request_data_device_client_selection(&self.seat, mime, OwnedFd::from(writer)).ok()?;
+        Some(reader)
+    }
+
+    /// The tab read its clipboard for a paste: offer the text as the
+    /// session's selection, to the app with the keyboard and to whichever
+    /// app takes it next. Larger than the limit, nothing changes.
+    pub fn set_clipboard(&mut self, text: String) {
+        if text.is_empty() || text.len() > MAX_CLIPBOARD_BYTES {
+            return;
+        }
+        let mime_types = OFFERED_MIME_TYPES.iter().map(|m| m.to_string()).collect();
+        set_data_device_selection(&self.dh, &self.seat, mime_types, Arc::from(text));
+    }
+}
+
 impl XdgDecorationHandler for SessionState {
     fn new_decoration(&mut self, toplevel: ToplevelSurface) {
         self.set_decorations(&toplevel, DecorationMode::ServerSide);
@@ -1459,6 +1493,13 @@ impl SeatHandler for SessionState {
 
     /// cursor-shape-v1 names a cursor; the tab shows it as a CSS cursor. An
     /// app that draws its own cursor surface gets the default arrow.
+    /// The clipboard follows the keyboard: the app with focus is offered the
+    /// current selection, and only it may set a new one.
+    fn focus_changed(&mut self, seat: &Seat<Self>, focused: Option<&WlSurface>) {
+        let client = focused.and_then(|surface| self.dh.get_client(surface.id()).ok());
+        set_data_device_focus(&self.dh, seat, client);
+    }
+
     fn cursor_image(&mut self, _seat: &Seat<Self>, image: CursorImageStatus) {
         let name = match image {
             CursorImageStatus::Hidden => "none".to_string(),
@@ -1477,7 +1518,38 @@ impl TabletSeatHandler for SessionState {}
 impl OutputHandler for SessionState {}
 
 impl SelectionHandler for SessionState {
-    type SelectionUserData = ();
+    /// The text the tab handed over for a paste.
+    type SelectionUserData = Arc<str>;
+
+    /// An app set the clipboard. When it offers text, the host reads it after
+    /// this round (see `start_clipboard_read`) and sends it to the tab.
+    fn new_selection(&mut self, ty: SelectionTarget, source: Option<SelectionSource>, _seat: Seat<Self>) {
+        if ty != SelectionTarget::Clipboard {
+            return;
+        }
+        self.clipboard_to_read = source.and_then(|s| text_mime(&s.mime_types()));
+    }
+
+    /// An app pastes the tab's text: write it on a thread of its own, so an
+    /// app that reads slowly (or never) can't stall the session.
+    fn send_selection(
+        &mut self,
+        ty: SelectionTarget,
+        mime_type: String,
+        fd: OwnedFd,
+        _seat: Seat<Self>,
+        user_data: &Arc<str>,
+    ) {
+        if ty != SelectionTarget::Clipboard || !OFFERED_MIME_TYPES.contains(&mime_type.as_str()) {
+            return;
+        }
+        let text = Arc::clone(user_data);
+        std::thread::spawn(move || {
+            // An app that closes its end early gets nothing more: EPIPE, as
+            // Rust ignores SIGPIPE.
+            let _ = std::fs::File::from(fd).write_all(text.as_bytes());
+        });
+    }
 }
 
 impl DataDeviceHandler for SessionState {

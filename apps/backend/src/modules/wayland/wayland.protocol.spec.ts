@@ -81,6 +81,18 @@ describe('the Wayland host control protocol', () => {
     });
   });
 
+  it("decodes the host's clipboard fixture", () => {
+    const [d] = new Decoder().push(fixture('clipboard.bin'));
+    expect(d).toEqual({
+      kind: 'json',
+      message: {
+        type: 'clipboard',
+        session: 'abcdefghijklmnop',
+        text: 'copied ș\n"x"',
+      },
+    });
+  });
+
   it('frames JSON for the host with a length and a kind byte', () => {
     const bytes = encodeJson({
       type: 'session_close',

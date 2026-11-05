@@ -1,4 +1,5 @@
 import { toHostMessage } from './wayland-input';
+import { MAX_CLIPBOARD_BYTES } from './wayland.constants';
 
 const S = 'abcdefghijklmnop';
 
@@ -98,6 +99,23 @@ describe("checking the tab's Linux window input", () => {
     );
     for (const layout of ['de', '', 'ro,us', 1, null, undefined]) {
       expect(toHostMessage(S, { type: 'keyboard_layout', layout })).toBeNull();
+    }
+  });
+
+  it("passes a paste's clipboard text up to the limit, and nothing else", () => {
+    expect(toHostMessage(S, { type: 'clipboard', text: 'pasted ș\n' })).toEqual(
+      { type: 'clipboard', session: S, text: 'pasted ș\n' },
+    );
+    const atLimit = 'a'.repeat(MAX_CLIPBOARD_BYTES);
+    expect(toHostMessage(S, { type: 'clipboard', text: atLimit })).toEqual({
+      type: 'clipboard',
+      session: S,
+      text: atLimit,
+    });
+    // Counted in UTF-8 bytes: ș is two.
+    const overInBytes = 'ș'.repeat(MAX_CLIPBOARD_BYTES / 2 + 1);
+    for (const text of ['', overInBytes, 1, null, undefined, ['x']]) {
+      expect(toHostMessage(S, { type: 'clipboard', text })).toBeNull();
     }
   });
 });

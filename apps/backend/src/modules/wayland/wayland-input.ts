@@ -1,5 +1,5 @@
 import type { HostInbound } from './wayland.protocol';
-import { MAX_VIEWPORT } from './wayland.constants';
+import { MAX_CLIPBOARD_BYTES, MAX_VIEWPORT } from './wayland.constants';
 
 /**
  * What the tab may say on `/api/wayland`, checked field by field before the
@@ -158,6 +158,16 @@ export function toHostMessage(
         session,
         layout: m.layout as (typeof KEYBOARD_LAYOUTS)[number],
       };
+    case 'clipboard':
+      // The tab's clipboard text for a paste key in a Linux window.
+      if (
+        typeof m.text !== 'string' ||
+        m.text.length === 0 ||
+        Buffer.byteLength(m.text, 'utf8') > MAX_CLIPBOARD_BYTES
+      ) {
+        return null;
+      }
+      return { type: 'clipboard', session, text: m.text };
     default:
       return null;
   }

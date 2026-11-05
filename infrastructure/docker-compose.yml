@@ -9,6 +9,12 @@
 services:
   # Slim single-container product: desktop + API + (future) WS on one port.
   imbatranimos:
+    # Its own profile, so `npm run dev` (`--profile dev`) starts the dev
+    # container alone. Without one, Compose starts every profile-less service
+    # with any profile asked for, and the first dev run built and started
+    # production beside it. Naming the service, as the commands above do,
+    # turns the profile on by itself.
+    profiles: ["prod"]
     build:
       context: ..
       dockerfile: infrastructure/Dockerfile

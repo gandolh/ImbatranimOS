@@ -14,6 +14,12 @@ docker compose -f infrastructure/docker-compose.yml up imbatranimos
 npm run dev     # scripts/dev.mjs: docker compose --profile dev watch
 ```
 
+Each service has its own Compose profile: production is `prod`, the dev
+container is `dev`. A command that names a service, like the first one above,
+turns its profile on by itself; `--profile prod up` does the same. With no
+profile and no service named, Compose starts nothing, so `npm run dev` never
+builds or starts production beside the dev container.
+
 The first visit sets the owner's name and password (no default password ever
 exists), and every visit after that asks for it. Set `SETUP_TOKEN` to make the
 first claim also need a token only you know (see Identity below).

@@ -44,3 +44,30 @@ only when its profile is asked for.
 - `infrastructure/docker-compose.yml`
 - `README.md`, `infrastructure/README.md`, docs that name the start command
 - `scripts/dev.mjs` only if it needs to change
+
+## Outcome (2026-11-05)
+
+Done in `79cb518` (1.137.0).
+
+1. `imbatranimos` has `profiles: ["prod"]`, with a comment on why.
+2. **The start commands stay as written.** Every one names the service
+   (`up imbatranimos`), and Compose turns a named service's profile on by
+   itself, so the README, `docs/getting-started.md`, `docs/backup.md` and the
+   infrastructure README needed no new flag. The infrastructure README now
+   explains the two profiles, and getting-started says `npm run dev` never
+   builds production.
+3. **vps-deploy is unaffected; no owner step.** Its `imbatranim-os` stack
+   (`ContainerService`) names the service in every compose call: `build
+   imbatranimos`, `up -d imbatranimos`, `ps --format '{{.State}}'
+   imbatranimos`, `logs --tail 40 imbatranimos`. Checked locally with Compose
+   v5.6.1: `build` (dry run), `up -d`, `ps` and `logs` by name, with no
+   `--profile`, all reach the service.
+
+**Checked:**
+- `config --services`: no profile lists nothing, `--profile dev` only `dev`,
+  `--profile prod` only `imbatranimos`.
+- The README's command, run as written (detached) against the existing
+  `imbatranimos:1.0` image, started production: healthy, `/health` 200. Then
+  `down`; the test's empty `infrastructure_imbatranim-nix` volume was removed.
+- **Not run:** a fresh-machine `npm run dev` (it would build the dev image);
+  the `config --services` result is what decides it.

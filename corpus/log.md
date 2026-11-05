@@ -5039,3 +5039,11 @@ the whole container capped in vps-deploy. The window-zoom check with a GPU Chrom
 fade-only rule is final. Three decisions in
 [decisions-linux-apps-built.md](wiki/decisions-linux-apps-built.md); the global-mixer rejection in
 [real-os-gaps.md](wiki/real-os-gaps.md) is marked reversed. The eight todos are deleted.
+
+## [2026-11-05] brief | 37 done: production gets its own Compose profile
+
+`imbatranimos` is in the `prod` profile, so `npm run dev` (`--profile dev`) starts only the dev
+container (`79cb518`, 1.137.0). The start commands stay as written: Compose turns on a named
+service's profile, and vps-deploy's stack names `imbatranimos` in every call (build, up, ps, logs),
+so it needs no change. `config --services` lists nothing, `dev` or `imbatranimos` per profile; the
+README's command started production healthy from the existing image.

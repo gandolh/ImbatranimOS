@@ -159,7 +159,7 @@ The server ISO is deferred by the owner (2026-10-04).
 - Before Linux apps go on at the VPS: set the cap from
   `infrastructure/README.md` ("the container cap": `mem_limit: 1g`,
   `memswap_limit: 1g`, `cpus: 1.0`) in vps-deploy's `imbatranim-os` stack
-  (brief 44; no vps-deploy brief written yet).
+  (brief 44; vps-deploy's brief 16, written 2026-11-05, not built).
 - Copy and paste with Linux apps (brief 41), in a normal Chrome on the dev
   container: copy text in Firefox and paste it into Notepad and into a page
   outside the OS; copy text outside and Ctrl+V it into Firefox (Chrome asks

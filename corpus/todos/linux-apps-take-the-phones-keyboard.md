@@ -1,7 +1,7 @@
 ---
 title: Linux apps take the phone's on-screen keyboard
 created: 2026-11-06
-status: open
+status: promoted
 tags: [linux-apps, phone, input]
 ---
 

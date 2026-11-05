@@ -175,3 +175,7 @@ Not measured yet (2026-11-06): the VPS under its cap with Firefox and Writer
 together, a real phone, a real 4G link (jitter, loss, and whether 2.8 MB/s of
 scrolling fits, or flow control drops frames), scrolling over the delayed
 link, HiDPI, and a Qt app.
+
+The owner's follow-up idea, a UI description instead of pixels, is in
+[research-remote-ui-rendering.md](research-remote-ui-rendering.md); its brief 45
+answers §3 through text-input-v3.

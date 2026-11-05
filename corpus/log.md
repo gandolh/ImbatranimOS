@@ -5151,3 +5151,21 @@ Resume:
 - LibreOffice is still installed in the dev Nix volume (store 3.8 GB). Remove it from Settings →
   Linux apps, then Free space, if it isn't wanted. Writer's first window showed a black band on two
   edges once, not looked into.
+
+## [2026-11-06] research | Remote UI rendering: none worth building; brief 45
+
+The owner's idea: the React desktop renders a description of a Linux app's
+UI, sent from the server (maybe through WASM), instead of streamed pixels.
+[research-remote-ui-rendering.md](wiki/research-remote-ui-rendering.md):
+Wayland only carries finished buffers (the host takes `wl_shm` only), so a
+description would have to come from the toolkit (GTK 4 Broadway, still PNG
+for text and icons and deprecated in 4.18; Qt WebGL streaming, gone after
+Qt 5.15), the accessibility tree (can't draw documents) or the app running
+as WASM in the tab (every app ported; ZetaOffice in beta at 53 MB). No
+prototype. The owner's goals are cheaper in today's pipeline: the phone
+keyboard through text-input-v3 (brief 45, a prototype, which takes in the
+todo `linux-apps-take-the-phones-keyboard`), HiDPI through brief 33, and
+light/dark plus accent through the Settings portal (not briefed). Written by
+a research agent that didn't commit; committed with the index after the
+native-apps measurements landed.
+

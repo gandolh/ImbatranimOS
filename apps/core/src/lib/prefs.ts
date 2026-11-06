@@ -56,6 +56,8 @@ export const DOTFILE_KEYS = [
   'imbatranimos:linux-apps',
   // The OS volume and mute from the tray.
   'imbatranimos:sound',
+  // Which apps Start pins.
+  'imbatranimos:start-pins',
 ] as const
 
 type Cache = Map<string, string>

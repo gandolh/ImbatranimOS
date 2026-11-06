@@ -14,10 +14,27 @@ vi.mock('../../../modules/linux-windows/launchers', () => ({
         ]
       : [],
 }))
-vi.mock('../../registry/enabledApps', () => ({
-  useEnabledApps: () => [
+const { searchAllSources, activateItem, enabled } = vi.hoisted(() => ({
+  searchAllSources: vi.fn(),
+  activateItem: vi.fn(),
+  enabled: [
     { id: 'linux:firefox', name: 'Firefox', description: 'A Linux app', icon: () => null },
     { id: 'notepad', name: 'Notepad', description: 'Text', icon: () => null },
+    { id: 'terminal', name: 'Terminal', description: 'Shell', icon: () => null },
+    { id: 'marketplace-app', name: 'Zed Draw', description: 'Installed', icon: () => null },
+    { id: 'settings', name: 'Settings', description: 'Prefs', icon: () => null },
+  ] as { id: string; name: string; description: string; icon: () => null }[],
+}))
+vi.mock('../../registry/enabledApps', () => ({ useEnabledApps: () => [...enabled] }))
+vi.mock('../../commands/CommandSourcesRegistry', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../commands/CommandSourcesRegistry')>()),
+  searchAllSources,
+  activateItem,
+}))
+vi.mock('../../commands/coreSources', () => ({
+  rankApps: <T extends { group: string }>(items: T[]) => [
+    ...items.filter((i) => i.group === 'Apps'),
+    ...items.filter((i) => i.group !== 'Apps'),
   ],
 }))
 vi.mock('../../../lib/recentFiles', () => ({
@@ -27,6 +44,7 @@ vi.mock('../../../lib/recentFiles', () => ({
 vi.mock('../brand/Logo', () => ({ Logo: () => null }))
 
 import { StartMenu } from './StartMenu'
+import { DEFAULT_START_PINS, useStartPinsStore } from '../../store/startPinsStore'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 Element.prototype.getAnimations ??= () => []
 
@@ -69,6 +87,9 @@ beforeEach(async () => {
   onClose.mockReset()
   onOpenApp.mockReset()
   launchLinuxApp.mockReset()
+  searchAllSources.mockReset()
+  activateItem.mockReset()
+  useStartPinsStore.setState({ pins: DEFAULT_START_PINS })
   await act(async () => {
     root.render(<StartMenu onClose={onClose} onOpenApp={onOpenApp} anchorRef={{ current: null }} />)
   })
@@ -86,6 +107,7 @@ describe("Start's entry menu", () => {
     await act(async () => {})
     expect(menuItems().map((i) => i.textContent)).toEqual([
       'Open',
+      'Pin to Start',
       'New Window',
       'New Private Window',
     ])
@@ -112,10 +134,158 @@ describe("Start's entry menu", () => {
     expect(launchLinuxApp).not.toHaveBeenCalled()
   })
 
-  it("leaves an entry without actions to the browser's menu", async () => {
-    const ev = rightClick(entry('notepad'))
+  it('offers Open and Unpin on a pinned entry that has no actions', async () => {
+    rightClick(entry('notepad'))
     await act(async () => {})
-    expect(ev.defaultPrevented).toBe(false)
-    expect(menuItems()).toEqual([])
+    expect(menuItems().map((i) => i.textContent)).toEqual(['Open', 'Unpin'])
+  })
+
+  it('pins and unpins from the menu', async () => {
+    rightClick(entry('linux:firefox'))
+    await act(async () => {})
+    await act(async () => (menuItems()[1] as HTMLElement).click())
+    expect(useStartPinsStore.getState().pins).toContain('linux:firefox')
+    rightClick(entry('notepad'))
+    await act(async () => {})
+    await act(async () => (menuItems()[1] as HTMLElement).click())
+    expect(useStartPinsStore.getState().pins).not.toContain('notepad')
+  })
+})
+
+const pinnedIds = () =>
+  [...container.querySelectorAll('[data-start-pinned]')].map((e) =>
+    e.getAttribute('data-start-entry')
+  )
+const listIds = () =>
+  [...container.querySelectorAll('[data-start-list]')].map((e) =>
+    e.getAttribute('data-start-entry')
+  )
+
+describe("Start's grid and A-Z list", () => {
+  it('pins the default apps that exist and skips the ones that do not', () => {
+    // Files, Browser and Code Editor are not in this fixture's roster.
+    expect(pinnedIds()).toEqual(['terminal', 'notepad', 'settings'])
+  })
+
+  it('lists every app A to Z with letter headers, installed and Linux ones included', () => {
+    expect(listIds()).toEqual([
+      'linux:firefox',
+      'notepad',
+      'settings',
+      'terminal',
+      'marketplace-app',
+    ])
+    const letters = [...container.querySelectorAll('[role="group"][aria-label]')]
+      .map((g) => g.getAttribute('aria-label'))
+      .filter((l) => l?.length === 1)
+    expect(letters).toEqual(['F', 'N', 'S', 'T', 'Z'])
+  })
+
+  it('shows an app that is switched off nowhere', async () => {
+    const off = enabled.splice(1, 1)[0] // Notepad
+    try {
+      await act(async () => {
+        root.render(
+          <StartMenu onClose={onClose} onOpenApp={onOpenApp} anchorRef={{ current: null }} />
+        )
+      })
+      expect(container.querySelector('[data-start-entry="notepad"]')).toBeNull()
+    } finally {
+      enabled.splice(1, 0, off)
+    }
+  })
+
+  it('draws the controls in the order search, grid, list, session', () => {
+    const order = [...container.querySelectorAll('[data-start-nav]')].map(
+      (e) => e.getAttribute('data-start-entry') ?? e.getAttribute('role')
+    )
+    expect(order[0]).toBe('searchbox')
+    expect(order.slice(1, 4)).toEqual(['terminal', 'notepad', 'settings'])
+    expect(order.slice(4, 9)).toEqual([
+      'linux:firefox',
+      'notepad',
+      'settings',
+      'terminal',
+      'marketplace-app',
+    ])
+  })
+})
+
+function type(input: HTMLInputElement, value: string) {
+  const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+  act(() => {
+    set.call(input, value)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+const search = () => container.querySelector<HTMLInputElement>('input[role="searchbox"]')!
+const key = (el: HTMLElement, k: string) =>
+  act(() => {
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
+  })
+
+describe("Start's search", () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    searchAllSources.mockResolvedValue([
+      { id: 'file:home:file:notes/zed.txt', label: 'zed.txt', group: 'Files' },
+      { id: 'app:notepad', label: 'Notepad', subtitle: 'Text', group: 'Apps' },
+    ])
+  })
+  afterEach(() => vi.useRealTimers())
+
+  async function run(q: string) {
+    type(search(), q)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100)
+    })
+  }
+
+  it('takes the keyboard as Start opens on a device with a physical keyboard', () => {
+    expect(document.activeElement).toBe(search())
+  })
+
+  it('ranks apps before files and swaps the grid and list for the results', async () => {
+    await run('te')
+    const rows = [...container.querySelectorAll('[data-start-result]')].map((e) =>
+      e.getAttribute('data-start-result')
+    )
+    expect(rows).toEqual(['app:notepad', 'file:home:file:notes/zed.txt'])
+    expect(container.querySelector('[data-start-pinned]')).toBeNull()
+    expect(container.querySelector('[data-start-list]')).toBeNull()
+  })
+
+  it('opens the top result on Enter, an app through Start and a file through the palette source', async () => {
+    await run('te')
+    key(search(), 'Enter')
+    await act(async () => {})
+    expect(onOpenApp).toHaveBeenCalledWith('notepad')
+    expect(onClose).toHaveBeenCalled()
+    expect(activateItem).not.toHaveBeenCalled()
+  })
+
+  it('opens a file result by its source', async () => {
+    searchAllSources.mockResolvedValue([
+      { id: 'file:home:file:a.txt', label: 'a.txt', group: 'Files' },
+    ])
+    await run('a.t')
+    await act(async () => container.querySelector<HTMLElement>('[data-start-result]')!.click())
+    expect(activateItem).toHaveBeenCalledWith(expect.objectContaining({ group: 'Files' }))
+  })
+
+  it('moves from the search field into the results with the arrow keys', async () => {
+    await run('te')
+    key(search(), 'ArrowDown')
+    expect(document.activeElement?.getAttribute('data-start-result')).toBe('app:notepad')
+    key(document.activeElement as HTMLElement, 'ArrowDown')
+    expect(document.activeElement?.getAttribute('data-start-result')).toBe(
+      'file:home:file:notes/zed.txt'
+    )
+  })
+
+  it('says so when nothing matches', async () => {
+    searchAllSources.mockResolvedValue([])
+    await run('qqq')
+    expect(container.textContent).toContain('Nothing found')
   })
 })

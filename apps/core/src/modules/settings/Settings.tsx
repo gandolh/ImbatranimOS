@@ -10,6 +10,7 @@ import {
   Power,
   Store,
   Boxes,
+  RefreshCw,
 } from 'lucide-react'
 import { Checkbox } from '../../shared/components/ui'
 import { APP_REGISTRY } from '../../shared/registry/registry'
@@ -25,6 +26,7 @@ import { AboutMachine } from './AboutMachine'
 import { AppearanceSettings } from './AppearanceSettings'
 import { MarketplaceSettings } from './MarketplaceSettings'
 import { LinuxAppsSettings } from './LinuxAppsSettings'
+import { UpdatesSettings } from './UpdatesSettings'
 import { useRegistryVersion } from '../../shared/registry/marketplace'
 
 function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: string }) {
@@ -119,6 +121,12 @@ export function Settings() {
         <section className="mb-10">
           <SectionHeader icon={Boxes} title="Linux apps" />
           <LinuxAppsSettings />
+        </section>
+
+        {/* Updates (for Linux apps) ──────────────────────────── */}
+        <section className="mb-10">
+          <SectionHeader icon={RefreshCw} title="Updates" />
+          <UpdatesSettings />
         </section>
 
         {/* Storage ────────────────────────────────────────────── */}

@@ -21,6 +21,8 @@ import { execArgv, parseDesktopEntry, pickLocalized } from './desktop-entry';
 import {
   linuxAppsPaths,
   parsePin,
+  pinIndexDir,
+  pinStateFile,
   xwaylandBinary,
   type LinuxAppsPaths,
 } from './linux-apps.paths';
@@ -31,6 +33,13 @@ import {
   type PackageRow,
   type SearchResult,
 } from './package-index';
+import {
+  effectivePin,
+  imagePin,
+  readPinState,
+  type Pin,
+  type PinState,
+} from './pins';
 
 const run = promisify(execFile);
 
@@ -68,21 +77,55 @@ export interface InstalledApp {
   /** The nixpkgs attribute it came from. */
   attr: string;
   version: string;
+  /** Installed from `nixpkgs#…`, so it follows the pin when the pin moves. */
+  nixpkgs: boolean;
 }
 
-export type JobAction = 'install' | 'remove' | 'free-space';
+export type JobAction =
+  | 'install'
+  | 'remove'
+  | 'free-space'
+  | 'check'
+  | 'update'
+  | 'upgrade'
+  | 'go-back';
 
 export interface Job {
   id: number;
   action: JobAction;
-  /** The attribute installed, the element removed, or empty. */
+  /** The attribute installed, the element removed, the snapshot moved to, or empty. */
   target: string;
   state: 'running' | 'done' | 'failed';
+  /** What a job of several steps is doing now. */
+  phase: string | null;
   log: string;
   startedAt: number;
   finishedAt: number | null;
   /** A sentence, when it failed. */
   error: string | null;
+}
+
+/** What a job's body runs its steps with. */
+export interface JobSteps {
+  job: Job;
+  /** A command, its output in the job's log; rejects when it fails. */
+  run(cmd: string, args: string[]): Promise<void>;
+  log(text: string): void;
+  /** Names the step the job is on, in its log and in `job.phase`. */
+  phase(text: string): void;
+}
+
+/** The pins as the service reads them on each call. */
+export interface PinsNow {
+  /** `nixpkgs-pin.env` as the image installed it. */
+  pinFile: Record<string, string>;
+  image: Pin | null;
+  state: PinState;
+  /** The pin Nix installs from, or null when the image's pin file is incomplete. */
+  effective: Pin | null;
+  fromImage: boolean;
+  /** Where the effective pin's package list is. */
+  indexDir: string;
 }
 
 export interface Launcher {
@@ -152,6 +195,8 @@ export class LinuxAppsService implements OnModuleDestroy {
   private rows: PackageRow[] | null = null;
   private building: Promise<PackageRow[]> | null = null;
   private indexError: string | null = null;
+  /** Counts moves of the pin, so a list read before one isn't kept after it. */
+  private indexEpoch = 0;
   private idleTimer: NodeJS.Timeout | null = null;
   private job: Job | null = null;
   private jobChild: ChildProcess | null = null;
@@ -173,23 +218,46 @@ export class LinuxAppsService implements OnModuleDestroy {
 
   // ── The index ─────────────────────────────────────────────────────
 
+  /** The image's pin, the state file, and which of them Nix installs from. */
+  async pins(): Promise<PinsNow | null> {
+    const p = this.paths;
+    if (!p) return null;
+    const values = parsePin(
+      await fs.readFile(p.pinFile, 'utf8').catch(() => ''),
+    );
+    const image = imagePin(values);
+    const state = await readPinState(pinStateFile(p));
+    const { pin, fromImage } = effectivePin(image, state);
+    return {
+      pinFile: values,
+      image,
+      state,
+      effective: pin,
+      fromImage,
+      indexDir: fromImage || !pin ? p.indexDir : pinIndexDir(p, pin.commit),
+    };
+  }
+
   private async readCommits(): Promise<{
     release: string | null;
     pin: string | null;
     index: string | null;
+    indexDir: string | null;
   }> {
-    const p = this.paths;
-    if (!p) return { release: null, pin: null, index: null };
-    const pin = parsePin(await fs.readFile(p.pinFile, 'utf8').catch(() => ''));
+    const pins = await this.pins();
+    if (!pins) return { release: null, pin: null, index: null, indexDir: null };
     const index = (
       await fs
-        .readFile(join(p.indexDir, 'git-revision'), 'utf8')
+        .readFile(join(pins.indexDir, 'git-revision'), 'utf8')
         .catch(() => '')
     ).trim();
+    // An image pin file without a snapshot name still names a commit.
     return {
-      release: pin.NIXPKGS_RELEASE || null,
-      pin: pin.NIXPKGS_COMMIT || null,
+      release:
+        pins.effective?.release ?? (pins.pinFile.NIXPKGS_RELEASE || null),
+      pin: pins.effective?.commit ?? (pins.pinFile.NIXPKGS_COMMIT || null),
       index: index || null,
+      indexDir: pins.indexDir,
     };
   }
 
@@ -198,7 +266,14 @@ export class LinuxAppsService implements OnModuleDestroy {
     const available =
       !!this.paths && existsSync(join(this.paths.indexDir, 'packages.json.br'));
     let index: IndexState;
-    if (!available || !c.index || !c.pin) index = 'missing';
+    if (
+      !available ||
+      !c.index ||
+      !c.pin ||
+      !c.indexDir ||
+      !existsSync(join(c.indexDir, 'packages.json.br'))
+    )
+      index = 'missing';
     else if (c.index !== c.pin) index = 'mismatch';
     else if (this.rows) index = 'ready';
     else if (this.indexError) index = 'failed';
@@ -233,40 +308,98 @@ export class LinuxAppsService implements OnModuleDestroy {
         throw new ConflictException(
           `The package list is from ${c.index.slice(0, 12)}, but the pin is ${c.pin.slice(0, 12)}`,
         );
-      const cached = join(p.cacheDir, `index-${c.index}.json`);
-      try {
-        const rows = JSON.parse(
-          await fs.readFile(cached, 'utf8'),
-        ) as PackageRow[];
-        if (Array.isArray(rows)) return rows;
-      } catch {
-        // Not made yet, or damaged: make it.
-      }
-      const started = Date.now();
-      const rows = await buildIndex(join(p.indexDir, 'packages.json.br'));
-      this.logger.log(
-        `Package index built: ${rows.length} packages in ${Date.now() - started} ms`,
-      );
-      await fs.mkdir(p.cacheDir, { recursive: true });
-      const tmp = `${cached}.${process.pid}.tmp`;
-      await fs.writeFile(tmp, JSON.stringify(rows));
-      await fs.rename(tmp, cached);
-      // Older pins' copies go.
-      for (const f of await fs.readdir(p.cacheDir)) {
-        if (f.startsWith('index-') && f !== basename(cached))
-          await fs.rm(join(p.cacheDir, f), { force: true });
-      }
-      return rows;
+      return this.loadRows(c.index, c.indexDir!);
     })();
+    const epoch = this.indexEpoch;
     try {
-      this.rows = await this.building;
+      const rows = await this.building;
+      // A move while it was read: the next call reads the new pin's.
+      if (epoch !== this.indexEpoch) return rows;
+      this.rows = rows;
       this.indexError = null;
-      return this.rows;
+      return rows;
     } catch (err) {
       this.indexError = (err as Error).message;
       throw err;
     } finally {
       this.building = null;
+    }
+  }
+
+  /**
+   * A pin's rows: the compact copy on the /nix volume, or built from the
+   * pin's `packages.json.br` (a few seconds) and kept as one.
+   */
+  private async loadRows(commit: string, dir: string): Promise<PackageRow[]> {
+    const p = this.paths!;
+    const cached = join(p.cacheDir, `index-${commit}.json`);
+    try {
+      const rows = JSON.parse(
+        await fs.readFile(cached, 'utf8'),
+      ) as PackageRow[];
+      if (Array.isArray(rows)) return rows;
+    } catch {
+      // Not made yet, or damaged: make it.
+    }
+    const started = Date.now();
+    const rows = await buildIndex(join(dir, 'packages.json.br'));
+    this.logger.log(
+      `Package index built: ${rows.length} packages in ${Date.now() - started} ms`,
+    );
+    await fs.mkdir(p.cacheDir, { recursive: true });
+    const tmp = `${cached}.${process.pid}.tmp`;
+    await fs.writeFile(tmp, JSON.stringify(rows));
+    await fs.rename(tmp, cached);
+    return rows;
+  }
+
+  /**
+   * The rows of any pin the machine keeps (the current one, the previous
+   * one, or one a check found), for comparing versions.
+   */
+  async rowsFor(commit: string): Promise<PackageRow[]> {
+    const pins = await this.pins();
+    if (!pins) throw new NotFoundException('Linux apps are not available here');
+    if (commit === pins.effective?.commit) return this.ensureIndex();
+    const dir =
+      commit === pins.image?.commit
+        ? this.paths!.indexDir
+        : pinIndexDir(this.paths!, commit);
+    return this.loadRows(commit, dir);
+  }
+
+  /** After a move: the next search reads the new pin's list. */
+  invalidateIndex(): void {
+    this.indexEpoch++;
+    this.rows = null;
+    this.indexError = null;
+  }
+
+  /**
+   * Only the pins the machine keeps keep their lists: the current and the
+   * previous one, and what the last check found. Older ones go.
+   */
+  async pruneIndexes(): Promise<void> {
+    const p = this.paths;
+    const pins = await this.pins();
+    if (!p || !pins) return;
+    const keep = new Set(
+      [
+        pins.effective?.commit,
+        pins.state.previous?.commit,
+        pins.state.update?.commit,
+        pins.state.upgrade?.commit,
+      ].filter((c): c is string => !!c),
+    );
+    for (const f of await fs.readdir(p.cacheDir).catch(() => [] as string[])) {
+      const m = /^index-([0-9a-f]{40})\.json$/.exec(f);
+      if (m && !keep.has(m[1]))
+        await fs.rm(join(p.cacheDir, f), { force: true });
+    }
+    const pinsDir = join(p.cacheDir, 'pins');
+    for (const f of await fs.readdir(pinsDir).catch(() => [] as string[])) {
+      if (!keep.has(f))
+        await fs.rm(join(pinsDir, f), { recursive: true, force: true });
     }
   }
 
@@ -309,7 +442,7 @@ export class LinuxAppsService implements OnModuleDestroy {
     return this.job;
   }
 
-  private requireSession(session: unknown): string {
+  requireSession(session: unknown): string {
     if (!isValidSessionId(session) || !this.wayland.hasSession(session)) {
       throw new ConflictException(
         'Linux apps are installed and started from a desktop tab whose session is open. Reload this tab and try again.',
@@ -318,10 +451,14 @@ export class LinuxAppsService implements OnModuleDestroy {
     return session;
   }
 
-  private requireNoJob(): void {
+  requireNoJob(): void {
     if (this.job?.state === 'running')
       throw new ConflictException(
-        'Another install or removal is running. Wait for it to finish.',
+        this.job.action === 'install' ||
+          this.job.action === 'remove' ||
+          this.job.action === 'free-space'
+          ? 'Another install or removal is running. Wait for it to finish.'
+          : 'An update is running. Wait for it to finish.',
       );
   }
 
@@ -341,9 +478,10 @@ export class LinuxAppsService implements OnModuleDestroy {
     // when impure.
     if (row[4] === 1) args.push('--impure');
     args.push(`nixpkgs#${attr}`);
-    return this.startJob('install', attr, args, (job) =>
-      this.xwaylandStep(job),
-    );
+    return this.runJob('install', attr, async (steps) => {
+      await steps.run('nix', args);
+      await this.xwaylandSteps(steps);
+    });
   }
 
   async remove(name: unknown, session: unknown): Promise<Job> {
@@ -354,17 +492,24 @@ export class LinuxAppsService implements OnModuleDestroy {
     const installed = await this.installed();
     if (!installed.some((a) => a.name === name))
       throw new NotFoundException(`${name} is not installed`);
-    return this.startJob('remove', name, ['profile', 'remove', name], (job) =>
-      this.xwaylandStep(job),
-    );
+    return this.runJob('remove', name, async (steps) => {
+      await steps.run('nix', ['profile', 'remove', name]);
+      await this.xwaylandSteps(steps);
+    });
+  }
+
+  /** The step an install, a removal or a Go back ends with. */
+  async xwaylandSteps(steps: JobSteps): Promise<void> {
+    const next = await this.xwaylandStep(steps.job);
+    if (next) await steps.run('nix', next);
   }
 
   /**
    * Xwayland comes with the first app that speaks X11 (its closure holds
    * libX11) and goes with the last, in a profile of its own. Alone it is
    * 421 MiB unpacked, but about 5 MiB beside a GTK app such as Firefox, so
-   * the image doesn't carry it (decisions-linux-apps-built.md). The step an
-   * install or removal ends with, or null when Xwayland stays as it is.
+   * the image doesn't carry it (decisions-linux-apps-built.md). The command
+   * for that, or null when Xwayland stays as it is.
    */
   private async xwaylandStep(job: Job): Promise<string[] | null> {
     const p = this.paths;
@@ -414,43 +559,51 @@ export class LinuxAppsService implements OnModuleDestroy {
   freeSpace(session: unknown): Job {
     this.requireSession(session);
     this.requireNoJob();
-    return this.startJob('free-space', '', null);
+    return this.runJob('free-space', '', (steps) =>
+      steps.run('nix-collect-garbage', ['-d']),
+    );
   }
 
   /**
-   * Run a job: `nixArgs` (or a garbage collection), then the Nix command
-   * `then` returns, if any, in the same job and log.
+   * Run a job: `body` runs its commands through `steps`, one at a time, each
+   * one's output in the job's log. The job fails with the first error.
+   * Only one job runs at a time; callers check `requireNoJob` first.
    */
-  private startJob(
+  runJob(
     action: JobAction,
     target: string,
-    nixArgs: string[] | null,
-    then?: (job: Job) => Promise<string[] | null>,
+    body: (steps: JobSteps) => Promise<void>,
   ): Job {
     const job: Job = {
       id: this.nextJobId++,
       action,
       target,
       state: 'running',
+      phase: null,
       log: '',
       startedAt: Date.now(),
       finishedAt: null,
       error: null,
     };
     this.job = job;
-    const [cmd, args] = nixArgs
-      ? ['nix', nixArgs]
-      : ['nix-collect-garbage', ['-d']];
-    this.runStep(job, cmd, args, (error) => {
-      if (error || !then) return this.finishJob(job, error);
-      then(job).then(
-        (next) =>
-          next
-            ? this.runStep(job, 'nix', next, (e) => this.finishJob(job, e))
-            : this.finishJob(job, null),
-        (err: Error) => this.finishJob(job, err.message),
-      );
-    });
+    const steps: JobSteps = {
+      job,
+      run: (cmd, args) =>
+        new Promise<void>((ok, fail) =>
+          this.runStep(job, cmd, args, (error) =>
+            error ? fail(new Error(error)) : ok(),
+          ),
+        ),
+      log: (text) => appendLog(job, text),
+      phase: (text) => {
+        job.phase = text;
+        appendLog(job, `${job.log ? '\n' : ''}${text}\n`);
+      },
+    };
+    body(steps).then(
+      () => this.finishJob(job, null),
+      (err: Error) => this.finishJob(job, err.message),
+    );
     return job;
   }
 
@@ -475,11 +628,7 @@ export class LinuxAppsService implements OnModuleDestroy {
       return;
     }
     this.jobChild = child;
-    const append = (chunk: Buffer) => {
-      job.log += chunk.toString('utf8');
-      if (job.log.length > LOG_MAX)
-        job.log = job.log.slice(job.log.length - LOG_MAX);
-    };
+    const append = (chunk: Buffer) => appendLog(job, chunk.toString('utf8'));
     child.stdout?.on('data', append);
     child.stderr?.on('data', append);
     const timer = setTimeout(() => {
@@ -511,6 +660,7 @@ export class LinuxAppsService implements OnModuleDestroy {
   private finishJob(job: Job, error: string | null): void {
     if (job.state !== 'running') return;
     job.state = error ? 'failed' : 'done';
+    job.phase = null;
     job.error = error;
     job.finishedAt = Date.now();
     this.jobChild = null;
@@ -720,6 +870,13 @@ export class LinuxAppsService implements OnModuleDestroy {
   }
 }
 
+/** Adds to a job's log, keeping its end. */
+function appendLog(job: Job, text: string): void {
+  job.log += text;
+  if (job.log.length > LOG_MAX)
+    job.log = job.log.slice(job.log.length - LOG_MAX);
+}
+
 /**
  * `nix profile list --json`: `{"elements": {"<name>": {"attrPath",
  * "storePaths", ...}}}` (Nix 2.31). Elements without an attribute path
@@ -738,7 +895,11 @@ export function parseProfileList(json: string): InstalledApp[] {
   for (const [name, raw] of Object.entries(
     elements as Record<string, unknown>,
   )) {
-    const e = raw as { attrPath?: unknown; storePaths?: unknown };
+    const e = raw as {
+      attrPath?: unknown;
+      storePaths?: unknown;
+      originalUrl?: unknown;
+    };
     const attrPath = typeof e.attrPath === 'string' ? e.attrPath : '';
     const attr =
       attrPath.replace(/^(legacyPackages|packages)\.[^.]+\./, '') || name;
@@ -748,7 +909,12 @@ export function parseProfileList(json: string): InstalledApp[] {
         : '';
     // /nix/store/<hash>-<name>-<version>
     const version = /-(\d[^-]*)$/.exec(basename(store))?.[1] ?? '';
-    out.push({ name, attr, version });
+    out.push({
+      name,
+      attr,
+      version,
+      nixpkgs: e.originalUrl === 'flake:nixpkgs',
+    });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }

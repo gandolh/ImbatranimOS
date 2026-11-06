@@ -1,4 +1,4 @@
-import { IsString, Length, Matches } from 'class-validator';
+import { IsIn, IsString, Length, Matches } from 'class-validator';
 
 /** The desktop session (one tab) the request comes from. */
 const SESSION = /^[A-Za-z0-9_-]{16,64}$/;
@@ -21,4 +21,15 @@ export class RemoveDto extends SessionDto {
   @IsString()
   @Length(1, 200)
   name!: string;
+}
+
+export class MoveDto extends SessionDto {
+  /** A newer snapshot of this release, or a newer release. */
+  @IsIn(['update', 'upgrade'])
+  kind!: 'update' | 'upgrade';
+
+  /** The commit the last check offered; anything else is refused. */
+  @IsString()
+  @Matches(/^[0-9a-f]{40}$/)
+  commit!: string;
 }

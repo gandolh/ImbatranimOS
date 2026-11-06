@@ -8,6 +8,7 @@ import {
 } from '../linux-windows/keyboardLayout'
 import { api } from '../../lib/axios'
 import { reloadLinuxLaunchers } from '../linux-windows/launchers'
+import { UPDATE_ACTIONS } from './updates'
 
 type Status = {
   available: boolean
@@ -20,7 +21,7 @@ type Result = { attr: string; pname: string; version: string; description: strin
 type Installed = { name: string; attr: string; version: string }
 type Job = {
   id: number
-  action: 'install' | 'remove' | 'free-space'
+  action: 'install' | 'remove' | 'free-space' | 'check' | 'update' | 'upgrade' | 'go-back'
   target: string
   state: 'running' | 'done' | 'failed'
   log: string
@@ -148,7 +149,7 @@ export function LinuxAppsSettings() {
     const ok = await confirm({
       title: 'Free space?',
       message:
-        'This deletes old versions of your Linux apps and anything no app uses. You can no longer go back to an earlier version afterwards.',
+        'This deletes old versions of your Linux apps, the release Updates keeps for Go back, and anything no app uses. You can no longer go back to an earlier version afterwards.',
       confirmLabel: 'Free space',
       destructive: true,
     })
@@ -263,8 +264,15 @@ export function LinuxAppsSettings() {
 
       {error && <p className="text-error text-[12px]">{error}</p>}
 
-      {/* The current or last job */}
-      {job.data && (
+      {/* The current or last job; an update's is shown under Updates. */}
+      {running && UPDATE_ACTIONS.has(job.data!.action) && (
+        <p className="text-on-surface-variant text-[12px]" data-linux-job="update">
+          {job.data!.action === 'check'
+            ? 'Checking for updates. Installs and removals wait a moment.'
+            : 'Linux apps are being updated (see Updates below). Installs and removals wait until it finishes.'}
+        </p>
+      )}
+      {job.data && !UPDATE_ACTIONS.has(job.data.action) && (
         <div>
           <p
             className="text-on-surface mb-2 text-[12px] font-medium"

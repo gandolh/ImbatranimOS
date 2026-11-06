@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { WaylandModule } from '../wayland/wayland.module';
 import { LinuxAppsController } from './linux-apps.controller';
+import { LinuxAppUpdatesService } from './linux-app-updates.service';
 import { LinuxAppsService } from './linux-apps.service';
 import { SessionBusService } from './session-bus.service';
 
@@ -12,7 +13,7 @@ import { SessionBusService } from './session-bus.service';
 @Module({
   imports: [WaylandModule],
   controllers: [LinuxAppsController],
-  providers: [LinuxAppsService, SessionBusService],
+  providers: [LinuxAppsService, LinuxAppUpdatesService, SessionBusService],
   exports: [LinuxAppsService],
 })
 export class LinuxAppsModule {}

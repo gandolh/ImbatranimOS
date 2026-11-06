@@ -225,7 +225,21 @@ nix profile add nixpkgs#firefox    # `nix profile install` is the older name
   `https://releases.nixos.org/nixos/<version>/<snapshot>/`, copy the snapshot
   name and its `git-revision` into the file, and rebuild. The build stops
   with that instruction while the snapshot is empty. Installed apps stay at
-  their old commit until `nix profile upgrade`.
+  their old commit until the next Update.
+- **Updates.** Settings → Updates moves the pin without a new image. Check
+  asks `channels.nixos.org` for the newest snapshot of the release, and of
+  the next release (26.05, then 26.11), and lists the installed apps whose
+  versions change. Update or Upgrade writes the new commit into the user
+  flake registry, `$NIX_CONFIG_HOME/registry.json` on the Nix volume (Nix
+  reads it before the image's), downloads that snapshot's package list, and
+  rebuilds every installed app and Xwayland on it with `nix profile upgrade`.
+  The previous pin's profile generation stays for Go back, which rolls the
+  profiles back to it; a later move deletes anything older and runs
+  `nix store gc`, so two pins are kept, never three. The record is
+  `/nix/var/imbatranim/linux-apps/pins.json`, beside the package lists. An
+  image whose pin is at least as new as the moved one wins at boot: the
+  registry entry and Go back are dropped. Only the buttons reach the
+  network; boot never does. Free space deletes the generation Go back needs.
 - **Building the image needs the network**: `releases.nixos.org`,
   `github.com` and `cache.nixos.org`, besides the Alpine and npm mirrors.
 - **No build sandbox, and no building.** [`nix/nix.conf`](./nix/nix.conf)

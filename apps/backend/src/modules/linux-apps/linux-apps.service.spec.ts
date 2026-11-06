@@ -391,11 +391,12 @@ describe("Start entries in the browser's languages", () => {
 });
 
 describe("reading the profile's list", () => {
-  it('takes each element with its attribute and version', () => {
+  it('takes each element with its attribute, version and source', () => {
     const json = JSON.stringify({
       elements: {
         firefox: {
           attrPath: 'legacyPackages.x86_64-linux.firefox',
+          originalUrl: 'flake:nixpkgs',
           storePaths: ['/nix/store/abc-firefox-159.0'],
         },
         'CuboCore.corefm': {
@@ -406,8 +407,14 @@ describe("reading the profile's list", () => {
       version: 3,
     });
     expect(parseProfileList(json)).toEqual([
-      { name: 'CuboCore.corefm', attr: 'CuboCore.corefm', version: '5.0.0' },
-      { name: 'firefox', attr: 'firefox', version: '159.0' },
+      // Not from `nixpkgs#…`, so a pin move leaves it alone.
+      {
+        name: 'CuboCore.corefm',
+        attr: 'CuboCore.corefm',
+        version: '5.0.0',
+        nixpkgs: false,
+      },
+      { name: 'firefox', attr: 'firefox', version: '159.0', nixpkgs: true },
     ]);
     expect(parseProfileList('not json')).toEqual([]);
   });

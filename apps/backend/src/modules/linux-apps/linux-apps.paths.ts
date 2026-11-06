@@ -39,6 +39,19 @@ export function linuxAppsPaths(
   };
 }
 
+/**
+ * The Updates page's record of the pin it moved (pins.ts), on the /nix
+ * volume beside the compact index.
+ */
+export function pinStateFile(paths: LinuxAppsPaths): string {
+  return join(paths.cacheDir, 'pins.json');
+}
+
+/** A moved pin's `packages.json.br` and `git-revision`, as the image keeps its own. */
+export function pinIndexDir(paths: LinuxAppsPaths, commit: string): string {
+  return join(paths.cacheDir, 'pins', commit);
+}
+
 /** The Xwayland the Wayland host starts, when its profile is installed. */
 export function xwaylandBinary(paths: LinuxAppsPaths): string {
   return join(paths.xwaylandProfile, 'bin', 'Xwayland');

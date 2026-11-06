@@ -1,3 +1,5 @@
+> SUPERSEDED 2026-11-06, before any work: the owner keeps this in the backlog until its open questions are grilled, so it became the todo [todo-sticky-notes-and-bookmarks-join-accessories](../../todos/todo-sticky-notes-and-bookmarks-join-accessories.md), which holds the draft. Promoting that todo makes a new brief with a new number. Spec kept for the record.
+
 # Brief 60 — Todo, Sticky Notes and Bookmarks join Accessories
 
 ## Context

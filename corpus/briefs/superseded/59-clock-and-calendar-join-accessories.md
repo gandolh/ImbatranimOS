@@ -1,3 +1,5 @@
+> SUPERSEDED 2026-11-06, before any work: the owner keeps this in the backlog until its open questions are grilled, so it became the todo [clock-and-calendar-join-accessories](../../todos/clock-and-calendar-join-accessories.md), which holds the draft. Promoting that todo makes a new brief with a new number. Spec kept for the record.
+
 # Brief 59 — Clock and Calendar join Accessories
 
 ## Context

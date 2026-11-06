@@ -1,3 +1,5 @@
+> SUPERSEDED 2026-11-06, before any work: the owner keeps this in the backlog until its open questions are grilled, so it became the todo [git-gui-and-rest-api-client-join-developer](../../todos/git-gui-and-rest-api-client-join-developer.md), which holds the draft. Promoting that todo makes a new brief with a new number. Spec kept for the record.
+
 # Brief 61 — Git GUI and REST API Client join Developer
 
 ## Context

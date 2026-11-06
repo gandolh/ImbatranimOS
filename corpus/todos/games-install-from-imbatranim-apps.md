@@ -1,10 +1,33 @@
-# Brief 51 — Games install from imbatranim-apps
+---
+title: Games install from imbatranim-apps
+created: 2026-11-06
+status: open
+tags: [imbatranim-apps]
+---
 
-## Context
+# Games install from imbatranim-apps
+
+Minesweeper and Solitaire leave the image and install from imbatranim-apps as the Games group, the first and cheapest move. It also settles how a group is laid out and installs, which every later move builds on.
+
+Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
+questions below when the work starts, then promote this to a numbered brief.
+
+## Open questions (grill before starting)
+
+Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); groups are the install unit, and Games is one.
+
+1. **Is the descriptor id `games`, named "Games", a static v2 suite on the shared kit?** Proposed: yes.
+2. **Which layout: (a) one root workspace, with each group installed by a scoped `npm ci --workspace=<group>`, or (b) self-contained group folders with their own lockfile?** Proposed: measure both on Games; take (a) if the scoped install really leaves Office's dependencies out, otherwise (b). Office must keep building either way.
+3. **Do the ids stay `minesweeper` and `solitaire`?** Proposed: yes, so pins, startup entries and best times come back on install.
+4. **Do the icons stay Bomb and Spade, as new `bomb` and `spade` entries in `ICONS`?** Proposed: yes, instead of `gamepad-2`.
+
+## Draft brief
+
+### Context
 
 On 2026-11-06 the owner asked for the apps we made to become opt-in installs
 from imbatranim-apps, so a fresh OS starts cleaner.
-[research-imbatranim-apps.md](../../wiki/research-imbatranim-apps.md) lists
+[research-imbatranim-apps.md](../wiki/research-imbatranim-apps.md) lists
 every app and proposes waves. This brief is the pilot. It moves the two
 cheapest apps, Minesweeper and Solitaire, as the Games group, and it settles
 how a group lives in the apps repo.
@@ -23,7 +46,7 @@ Together they are 16 kB of the desktop build, so the image barely changes.
 The point is to prove the path.
 
 **The layout is the open part**
-([research-imbatranim-apps-layout.md](../../wiki/research-imbatranim-apps-layout.md#2-install-groups-and-start-folders)).
+([research-imbatranim-apps-layout.md](../wiki/research-imbatranim-apps-layout.md#2-install-groups-and-start-folders)).
 The office build is anchored at the repo root. `osBuildConfig` in
 `packages/shared/src/build/osBuild.ts` finds apps under `<root>/apps`, the kit
 under `<root>/vendor/imbatranim-ui` (a `vendorDir` option exists), and its
@@ -31,46 +54,19 @@ helpers under `<root>/packages/shared/src`, which is hard-coded. A group in
 its own folder with its own lockfile would import those helpers from outside
 its `node_modules`, so `vite` wouldn't resolve.
 
-## Depends on
+### Depends on
 
-Brief 50 (the repo is imbatranim-apps).
+[The rename](imbatranim-office-becomes-imbatranim-apps.md) (the repo is imbatranim-apps).
 
-## Owner decisions
-
-Approved by the owner on 2026-11-06 ("looks good, write the briefs"): the
-research's defaults, groups included. The calls, with the default this brief
-builds:
-
-1. **The install unit:** groups, one descriptor each (default); one
-   descriptor per app; or one suite for everything. If the owner picks
-   anything but groups, steps 1 and 3 change and this brief needs a rewrite
-   first.
-2. **The descriptor:** id `games`, name "Games", a `schemaVersion: 2` static
-   suite on the shared kit. Default: yes.
-3. **The layout, measured on Games before choosing:**
-   - (a) one root workspace, where the group descriptor runs a scoped
-     `npm ci --workspace=<group>` and builds that workspace;
-   - (b) a self-contained group folder with its own lockfile and the build
-     helper as a `file:` package, or its own copy of it.
-
-   Default: (a) if the scoped install really leaves Office's dependencies
-   out, otherwise (b). Either way, Office must keep building from the same
-   commit.
-4. **The ids stay `minesweeper` and `solitaire`.** The owner's pins,
-   startup entries and best times come back when Games is installed, and no
-   `RETIRED_APP_IDS` pair is needed. Default: yes.
-5. **The icons stay Bomb and Spade.** They join the catalog's `ICONS` as
-   `bomb` and `spade`, instead of falling back to `gamepad-2`. Default: yes.
-
-## What to do
+### What to do
 
 1. **The layout spike** (apps repo, scratch clone). Lay out Games both ways
-   from decision 3. For each, measure:
+   from question 2. For each, measure:
    - the install's `node_modules` size, time, and whether Office's
      dependencies came along;
    - the build time and output size.
 
-   Pick per decision 3 and write the numbers into the outcome.
+   Pick per question 2 and write the numbers into the outcome.
 2. **Port** (apps repo). Make Minesweeper and Solitaire kit apps that export
    `App`:
    - take the engines, components, stats store and tests across unchanged;
@@ -106,14 +102,14 @@ builds:
 6. **Image bytes.** Record the production image size before and after
    (`docker image inspect --format '{{.Size}}'`).
 7. **Corpus.** Record the layout call in
-   [decisions-marketplace-suites.md](../../wiki/decisions-marketplace-suites.md)
+   [decisions-marketplace-suites.md](../wiki/decisions-marketplace-suites.md)
    and the apps repo's decisions page. Also update:
    - the research pages: wave 1 done for Games, and the measured layout;
    - status.md and log.md in both repos.
 
    Don't add a glossary term for "group" until the owner settles the word.
 
-## Files you OWN
+### Files you OWN
 
 - in the apps repo: the new Games group, the build helper's root handling,
   its README and corpus
@@ -122,7 +118,7 @@ builds:
   (deleted), the two lines in `apps/core/src/manifest.ts`,
   `package-lock.json`, the corpus pages in step 7
 
-## Files you must NOT touch
+### Files you must NOT touch
 
 - The Office apps' code and its descriptor, beyond what the build helper's
   root handling needs. Office's output must stay the same.
@@ -131,7 +127,7 @@ builds:
   brief.
 - Any other add-on.
 
-## Acceptance
+### Acceptance
 
 - Office's `build:os` output is unchanged (same files), and its tests and
   lint pass.

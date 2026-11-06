@@ -1,3 +1,5 @@
+> SUPERSEDED 2026-11-06, before any work: the owner keeps this in the backlog until its open questions are grilled, so it became the todo [calculator-paint-and-snipping-tool-install-as-accessories](../../todos/calculator-paint-and-snipping-tool-install-as-accessories.md), which holds the draft. Promoting that todo makes a new brief with a new number. Spec kept for the record.
+
 # Brief 56 — Calculator, Paint and Snipping Tool install as Accessories
 
 ## Context

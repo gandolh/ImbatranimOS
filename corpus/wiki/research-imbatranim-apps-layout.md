@@ -1,5 +1,5 @@
 ---
-summary: How imbatranim-apps would hold the apps that leave the image (2026-11-06), split out of research-imbatranim-apps.md. The three kinds of app are runtime needs of one app, not install units: client only, a WASM engine from an npm package under a kit UI (needs the desktop CSP to allow wasm-unsafe-eval and the office repo to drop its no-WebAssembly invariant), and kit apps with a server. Install groups (Office, Accessories, Games, Developer) are one descriptor and one Start folder each; the layout is unproven because the office build is anchored at the repo root, so brief 51 measures one workspace with scoped installs against self-contained groups. The rename keeps the descriptor id imbatranim-office and app ids office-*; brief-board names its project after the folder.
+summary: How imbatranim-apps would hold the apps that leave the image (2026-11-06), split out of research-imbatranim-apps.md. The three kinds of app are runtime needs of one app, not install units: client only, a WASM engine from an npm package under a kit UI (needs the desktop CSP to allow wasm-unsafe-eval and the office repo to drop its no-WebAssembly invariant), and kit apps with a server. Install groups (Office, Accessories, Games, Developer) are one descriptor and one Start folder each; the layout is unproven because the office build is anchored at the repo root, so the Games todo measures one workspace with scoped installs against self-contained groups. The rename keeps the descriptor id imbatranim-office and app ids office-*; brief-board names its project after the folder.
 updated: 2026-11-06
 ---
 
@@ -71,7 +71,7 @@ Rejected:
 `<root>/vendor/imbatranim-ui`, and its own helpers under
 `<root>/packages/shared`. A group in its own folder with its own lockfile
 would import those helpers from outside its `node_modules`, so `vite`
-wouldn't resolve. There are two ways out, and brief 51 measures both:
+wouldn't resolve. There are two ways out, and the Games todo measures both:
 
 - **(a) One workspace.** One root lockfile, with each group descriptor running
   a scoped `npm ci --workspace=<group>`. This works only if npm really limits
@@ -100,11 +100,11 @@ wouldn't resolve. There are two ways out, and brief 51 measures both:
 
 ## 4. Moving one app: the checklist
 
-Every move brief (51, 56-62) follows these steps. Each brief adds only what
-is particular to its apps.
+Every move in the backlog (Games and the seven after it) follows these steps;
+each adds only what is particular to its apps.
 
-1. **Port.** In the group's folder of imbatranim-apps, using the layout brief
-   51 settled:
+1. **Port.** In the group's folder of imbatranim-apps, using the layout the Games
+   todo settled:
    - the app becomes a kit app that exports `App`, and its engines,
      components, stores and tests come across unchanged;
    - dependencies outside the shared kit (`zustand`, `dayjs`, `monaco-editor`)

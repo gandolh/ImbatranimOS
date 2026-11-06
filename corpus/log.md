@@ -5363,3 +5363,30 @@ The two calls with no default (wave 2's data, wave 3's modules) got Claude's
 default, that the backend modules stay in the OS and only the apps move. It
 is the open question, and briefs 59-62 ask for it first. "Group" joins
 glossary-marketplace. Briefs 50 and 51 now say approved.
+
+## [2026-11-06] backlog | The imbatranim-apps briefs become todos
+
+The owner, on briefs 50-62: "write the open questions, we'll grill about
+them when starting to work on them. Keep them in backlog". brief-board puts
+only todos in Backlog, and a brief in `todo/` is To Do, where a brief run
+would build it on the drafted defaults without the grill. So each brief
+became a todo in `todos/` (status open, tag `imbatranim-apps`):
+- its open questions come first, each with a proposed answer;
+- the draft brief follows, its links pointing at the other todos instead of
+  numbers.
+
+New questions came out of the rewrite:
+- the sign-in cost per hook app;
+- a Start folder for the base apps;
+- an Install button in the chooser;
+- what happens if Monaco can't build under the cap;
+- alarms while Accessories is uninstalled;
+- Archive Manager staying in the base.
+
+The briefs moved to `briefs/superseded/` with a note naming their todo, so
+numbers 50-62 stay unused. The open questions are listed by todo in
+[open-questions.md](wiki/open-questions.md); the research's §7 is now the
+backlog table. Board tickets were never created for 50-62. The todos become
+Backlog tickets at the next sync the owner asks for. imbatranim-office did
+the same with its 04 and 05.
+

@@ -1,3 +1,5 @@
+> SUPERSEDED 2026-11-06, before any work: the owner keeps this in the backlog until its open questions are grilled, so it became the todo [image-viewer-and-media-player-join-accessories](../../todos/image-viewer-and-media-player-join-accessories.md), which holds the draft. Promoting that todo makes a new brief with a new number. Spec kept for the record.
+
 # Brief 57 — Image Viewer and Media Player join Accessories
 
 ## Context

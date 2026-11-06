@@ -1,5 +1,5 @@
 ---
-summary: Research (2026-11-06) on the owner's plan to rename imbatranim-office to imbatranim-apps and make it the home of every app that can be installed, so the image starts smaller and cleaner. Measured, the image barely shrinks (the desktop build with all 25 built-in apps is 16.8 MB of a 324 MB image, and what could leave is about 14.5 MB, 13.9 MB of it the Code Editor's Monaco); the gains that hold are a shorter Start menu, about 29,000 source and 8,000 test lines leaving the OS repo, and apps released on their own. Has a table of every app with its size, backend module and the hooks the catalog can't carry yet; proposes seven apps for the base, nine client-only apps for a first wave, eight blocked on the kit contract, their data or an OS-side module, and Markdown Editor folded into Notepad; lists the owner decisions; the three kinds of app, the install groups and the rename are in research-imbatranim-apps-layout.md. PDF Viewer and norPDF already became Office's PDF. Briefs 50 (the rename) and 51 (Games as the first group).
+summary: Research (2026-11-06) on the owner's plan to rename imbatranim-office to imbatranim-apps and make it the home of every app that can be installed, so the image starts smaller and cleaner. Measured, the image barely shrinks (the desktop build with all 25 built-in apps is 16.8 MB of a 324 MB image, and what could leave is about 14.5 MB, 13.9 MB of it the Code Editor's Monaco); the gains that hold are a shorter Start menu, about 29,000 source and 8,000 test lines leaving the OS repo, and apps released on their own. Has a table of every app with its size, backend module and the hooks the catalog can't carry yet; proposes seven apps for the base, nine client-only apps for a first wave, eight blocked on the kit contract, their data or an OS-side module, and Markdown Editor folded into Notepad; lists the owner decisions; the three kinds of app, the install groups and the rename are in research-imbatranim-apps-layout.md. PDF Viewer and norPDF already became Office's PDF. The work is fifteen backlog todos, each with its open questions to grill when it starts.
 updated: 2026-11-06
 ---
 
@@ -19,7 +19,7 @@ already "≤ ~400 MB, with cold start and RAM as the real measure"
 that cost neither until opened. What the move does buy: a Start menu with
 seven apps instead of 25, about 29,000 source and 8,000 test lines out of the
 OS repo, and apps released without an OS deploy. Nine apps can move with no
-change to the kit contract, one folds into Notepad, and eight can't move yet. Briefs 50 and 51 start it.
+change to the kit contract, one folds into Notepad, and eight can't move yet. The work waits in the backlog as todos (§7).
 
 ## 1. What the image holds
 
@@ -58,7 +58,7 @@ doesn't: `background`, `widgets`, `commandSources`, `service`.
 | System Monitor | 933 / 120 | 11 kB | system (1,101) | `widgets`, `service`, `/proc` | **Base** |
 | Logs | 418 / 87 | 7 kB | logs (1,141) | shows sign-in attempts | **Base** |
 | Browser | 388 / 68 | 6 kB | browser (1,185) | the machine's own proxy | **Base** |
-| Minesweeper, Solitaire | 1,131 / 319 | 16 kB | — | none | **Wave 1**, Games (brief 51) |
+| Minesweeper, Solitaire | 1,131 / 319 | 16 kB | — | none | **Wave 1**, Games (first) |
 | Calculator | 2,594 / 712 | 35 kB | — | none | **Wave 1**, Accessories |
 | Paint | 914 / 118 | 15 kB | — | none | **Wave 1**, Accessories |
 | Snipping Tool | 1,396 / 161 | 21 kB | — | none (hands off to Paint) | **Wave 1**, Accessories |
@@ -147,7 +147,7 @@ The owner approved the defaults on 2026-11-06 ("looks good, write the
 briefs"), adding: "It's fine if we don't see a high decrease in size, at
 least some of them are uninstallable and the desktop feels more clean."
 
-1. Rename to imbatranim-apps; a new board project (brief 50).
+1. Rename to imbatranim-apps; a new board project.
 2. Groups as the install unit: Office, Accessories, Games, Developer.
 3. The base: Settings, Files, Terminal, Notepad, System Monitor, Logs,
    Browser.
@@ -158,31 +158,38 @@ least some of them are uninstallable and the desktop feels more clean."
    default from the same day: the backend modules of wave 2 (data) and
    wave 3 (system work) stay in the OS, and only the apps move. See
    [the checklist page](research-imbatranim-apps-layout.md#4-moving-one-app-the-checklist).
-   The owner can overrule it before briefs 59-62 run.
+   It is the first open question in each of the four todos that move them.
 8. WASM engines from npm packages, after a `'wasm-unsafe-eval'` CSP change.
 9. Start folders by group.
 10. Default-disabled built-ins: not taken.
 
-## 7. Briefs
+## 7. The backlog
 
-All filed on 2026-11-06. Briefs 52-55 need nothing from the apps repo; the
-moves wait for 50 and 51.
+Written as briefs on 2026-11-06, then kept in the backlog at the owner's
+word ("write the open questions, we'll grill about them when starting to
+work on them. Keep them in backlog"). Each is a todo whose open questions
+come first and whose draft brief follows; promoting one after its grill
+makes a numbered brief. The drafts were briefs 50-62, now in
+`briefs/superseded/` with a note, so those numbers stay unused. The three
+that need nothing from the apps repo (Notepad, WASM, hooks) and Start
+folders can go in any order; the moves wait for the rename and Games.
 
-| Brief | What |
-|---|---|
-| [50](../briefs/todo/50-imbatranim-office-becomes-imbatranim-apps.md) | The rename |
-| [51](../briefs/todo/51-games-install-from-imbatranim-apps.md) | Games, settling the group layout |
-| [52](../briefs/todo/52-notepad-takes-over-markdown-editors-job.md) | Notepad takes over Markdown Editor; the notes leftover |
-| [53](../briefs/todo/53-kit-apps-may-run-webassembly.md) | The desktop CSP allows WASM |
-| [54](../briefs/todo/54-catalog-apps-bring-background-widgets-layers-and-commands.md) | Catalog apps bring background services, widgets, layers, commands |
-| [55](../briefs/todo/55-start-shows-a-folder-per-group.md) | Start folders |
-| [56](../briefs/todo/56-calculator-paint-and-snipping-tool-install-as-accessories.md) | Calculator, Paint, Snipping Tool |
-| [57](../briefs/todo/57-image-viewer-and-media-player-join-accessories.md) | Image Viewer, Media Player |
-| [58](../briefs/todo/58-code-editor-and-diff-install-as-developer.md) | Code Editor and Diff; Monaco under the cap |
-| [59](../briefs/todo/59-clock-and-calendar-join-accessories.md) | Clock, Calendar (needs 54) |
-| [60](../briefs/todo/60-todo-sticky-notes-and-bookmarks-join-accessories.md) | Todo, Sticky Notes, Bookmarks (needs 54) |
-| [61](../briefs/todo/61-git-gui-and-rest-api-client-join-developer.md) | Git GUI, REST API Client |
-| [62](../briefs/todo/62-archive-manager-joins-accessories.md) | Archive Manager |
+| # | Todo | What |
+|---|---|---|
+| 1 | [imbatranim-office-becomes-imbatranim-apps](../todos/imbatranim-office-becomes-imbatranim-apps.md) | The rename |
+| 2 | [games-install-from-imbatranim-apps](../todos/games-install-from-imbatranim-apps.md) | Games, settling the group layout |
+| 3 | [notepad-takes-over-markdown-editors-job](../todos/notepad-takes-over-markdown-editors-job.md) | Notepad takes over Markdown Editor; the notes leftover |
+| 4 | [kit-apps-may-run-webassembly](../todos/kit-apps-may-run-webassembly.md) | The desktop CSP allows WASM |
+| 5 | [catalog-apps-bring-background-widgets-layers-and-commands](../todos/catalog-apps-bring-background-widgets-layers-and-commands.md) | Catalog apps bring background services, widgets, layers, commands |
+| 6 | [start-shows-a-folder-per-group](../todos/start-shows-a-folder-per-group.md) | Start folders |
+| 7 | [calculator-paint-and-snipping-tool-install-as-accessories](../todos/calculator-paint-and-snipping-tool-install-as-accessories.md) | Calculator, Paint, Snipping Tool |
+| 8 | [image-viewer-and-media-player-join-accessories](../todos/image-viewer-and-media-player-join-accessories.md) | Image Viewer, Media Player |
+| 9 | [code-editor-and-diff-install-as-developer](../todos/code-editor-and-diff-install-as-developer.md) | Code Editor and Diff; Monaco under the cap |
+| 10 | [clock-and-calendar-join-accessories](../todos/clock-and-calendar-join-accessories.md) | Clock, Calendar (after the hooks) |
+| 11 | [todo-sticky-notes-and-bookmarks-join-accessories](../todos/todo-sticky-notes-and-bookmarks-join-accessories.md) | Todo, Sticky Notes, Bookmarks (after the hooks) |
+| 12 | [git-gui-and-rest-api-client-join-developer](../todos/git-gui-and-rest-api-client-join-developer.md) | Git GUI, REST API Client |
+| 13 | [archive-manager-joins-accessories](../todos/archive-manager-joins-accessories.md) | Archive Manager |
 
-In imbatranim-office (to be renamed), after 53: `04-cad-reads-dwg-in-the-tab`
-(and the suite may lose its server) and `05-pdf-decodes-jpeg2000-and-jbig2-images`.
+In imbatranim-office (to be renamed), after the WASM todo:
+`cad-reads-dwg-in-the-tab` (the suite may lose its server) and
+`pdf-decodes-jpeg2000-and-jbig2-images`, both in its `corpus/todos/`.

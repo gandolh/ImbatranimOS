@@ -1,8 +1,29 @@
-# Brief 52 — Notepad takes over Markdown Editor's job
+---
+title: Notepad takes over Markdown Editor's job
+created: 2026-11-06
+status: open
+tags: [imbatranim-apps]
+---
 
-## Context
+# Notepad takes over Markdown Editor's job
 
-[research-imbatranim-apps.md](../../wiki/research-imbatranim-apps.md#4-drop-or-merge)
+Notepad takes over Markdown Editor's job (it already calls itself a markdown editor), and Markdown Editor leaves the OS. The leftover notes DTO goes too. This repo only.
+
+Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
+questions below when the work starts, then promote this to a numbered brief.
+
+## Open questions (grill before starting)
+
+Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); Markdown Editor goes and Notepad opens markdown.
+
+1. **Which of Markdown Editor's pieces does Notepad take: the split view with scroll sync, the outline, the format toolbar, code highlighting in the preview, and images and links resolved next to the file?** Proposed: all five. `.md` and `.markdown` open in split; every other file keeps today's edit/preview toggle and opens in edit.
+2. **Do Markdown Editor's pins, startup entries, recents and `.md` default move to Notepad once, through a `RETIRED_APP_IDS` pair?** Proposed: yes.
+
+## Draft brief
+
+### Context
+
+[research-imbatranim-apps.md](../wiki/research-imbatranim-apps.md#4-drop-or-merge)
 found two apps for one job:
 - Notepad (`apps/add-ons/notepad`, 1,338 source lines) describes itself as
   "Markdown text editor". It has an edit/preview toggle with `react-markdown`
@@ -27,20 +48,7 @@ While here, a leftover: `apps/backend/src/modules/notes/` holds only
 notes module was deleted in August 2026, when recent files became their own
 service (old brief 94).
 
-## Owner decisions
-
-Approved 2026-11-06: Markdown Editor goes and Notepad opens markdown. The
-smaller calls, with the default this brief builds:
-
-1. **What Notepad takes from Markdown Editor.** Default: all five pieces
-   above. The edit/preview toggle gains a third mode, split. `.md` and
-   `.markdown` files open in split; every other file keeps today's toggle
-   and opens in edit.
-2. **The id.** `markdown-editor` maps to `notepad` in `RETIRED_APP_IDS`
-   (`apps/core/src/shared/store/retiredApps.ts`), so pins, startup entries,
-   recents and an `.md` override move to Notepad once. Default: yes.
-
-## What to do
+### What to do
 
 1. Port the five pieces into Notepad, keeping their tests. Use Notepad's
    store and file handling; don't keep a second editor beside it. Notepad's
@@ -63,19 +71,19 @@ smaller calls, with the default this brief builds:
    - A `.txt` opens as before.
 5. Corpus: the research page's drop list, status, log.
 
-## Files you OWN
+### Files you OWN
 
 - `apps/add-ons/notepad/`, `apps/add-ons/markdown-editor/` (deleted),
   `apps/core/src/manifest.ts` (one line), `retiredApps.ts`, `associations.ts`
   and their tests, `apps/backend/src/modules/notes/` (deleted),
   `package-lock.json`, the corpus pages in step 5
 
-## Files you must NOT touch
+### Files you must NOT touch
 
 - Other add-ons, apart from tests that name Markdown Editor.
 - The kit (`packages/ui`).
 
-## Acceptance
+### Acceptance
 
 - The full test run is green; the build has no `MarkdownEditor` chunk.
 - The walk in step 4 holds.

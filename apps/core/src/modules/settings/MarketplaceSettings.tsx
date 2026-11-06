@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, SHARED_KIT_VERSION, cn, useConfirm } from '@imbatranim/ui'
+import { Button, Checkbox, SHARED_KIT_VERSION, cn, useConfirm } from '@imbatranim/ui'
 import { api } from '../../lib/axios'
 import { openApp } from '../../shared/intents/openApp'
 import { useWindowStore } from '../../shared/store/windowStore'
@@ -168,16 +168,34 @@ export function MarketplaceSettings({
     await refresh()
   }
 
+  /** The uninstall prompt's "Also remove its data", read once the prompt is answered. */
+  const removeData = useRef(false)
+
   const uninstall = async (row: Row) => {
     const names = row.apps.map((a) => a.name).join(', ')
+    removeData.current = false
     const ok = await confirm({
       title: `Uninstall ${row.name}?`,
-      message:
-        row.apps[0].runtime === 'sandboxed'
-          ? 'Its files are deleted and its window closes.'
-          : row.suite
-            ? `Its apps (${names}) go with it: the downloaded source and build are deleted, and their windows close. Anything they saved through the file system stays.`
-            : 'Its downloaded source and build are deleted, and its window closes. Anything it saved through the file system stays.',
+      message: (
+        <>
+          {row.apps[0].runtime === 'sandboxed'
+            ? 'Its files are deleted and its window closes.'
+            : row.suite
+              ? `Its apps (${names}) go with it: the downloaded source and build are deleted, and their windows close.`
+              : 'Its downloaded source and build are deleted, and its window closes.'}{' '}
+          {row.suite
+            ? 'Their caches go too. Their settings and data stay for a reinstall unless you tick the box; files they saved elsewhere stay either way.'
+            : 'Its cache goes too. Its settings and data stay for a reinstall unless you tick the box; files it saved elsewhere stay either way.'}
+          <span className="mt-3 block">
+            <Checkbox
+              label="Also remove its data"
+              onCheckedChange={(checked) => {
+                removeData.current = checked === true
+              }}
+            />
+          </span>
+        </>
+      ),
       confirmLabel: 'Uninstall',
       destructive: true,
     })
@@ -186,7 +204,9 @@ export function MarketplaceSettings({
     const { windows, closeWindow } = useWindowStore.getState()
     for (const w of windows) if (ids.has(w.appId)) closeWindow(w.id)
     try {
-      await api.delete(`/marketplace/apps/${row.descriptorId}`)
+      await api.delete(
+        `/marketplace/apps/${row.descriptorId}${removeData.current ? '?removeData=1' : ''}`
+      )
       setError(null)
     } catch (err) {
       setError(errorMessage(err))

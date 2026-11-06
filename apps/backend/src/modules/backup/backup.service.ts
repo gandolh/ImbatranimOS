@@ -18,6 +18,7 @@ import Database from 'better-sqlite3';
 import { DbService, LEDGER_VERSION } from '../../db/db.service';
 import { browserProfileKeyPath } from '../browser/browser-profile.service';
 import { marketplaceAppsDir } from '../marketplace/marketplace.service';
+import { KIND_DIRS, VENDOR_DIR } from '../app-data/app-data.paths';
 import { FilesService } from '../files/files.service';
 import { TRASH_DIR } from '../files/trash.service';
 import { ArchiveService, parseTarListLine } from '../archive/archive.service';
@@ -192,6 +193,9 @@ export class BackupService {
       `./${RESTORE_STAGING_PREFIX}*`,
       `./${RESTORE_ROLLBACK_PREFIX}*`,
       './.archive-tmp-*',
+      // Apps' caches: anything in them can be rebuilt, so they aren't worth
+      // the space. Their settings, data and state are carried.
+      `./${KIND_DIRS.cache}/${VENDOR_DIR}`,
     ];
     // The live database, if it lives inside the home volume — the snapshot
     // replaces it. If DB_PATH points outside the home it is not in the archive

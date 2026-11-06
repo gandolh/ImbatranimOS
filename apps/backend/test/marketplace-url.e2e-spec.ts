@@ -250,6 +250,7 @@ interface Inspected {
 
 describe('apps installed from a URL (e2e)', () => {
   let work: string;
+  let prevFilesRoot: string | undefined;
   let repo: string;
   let appsDir: string;
   let app: INestApplication<Server>;
@@ -262,6 +263,9 @@ describe('apps installed from a URL (e2e)', () => {
 
   beforeAll(async () => {
     work = mkdtempSync(join(tmpdir(), 'imb-marketplace-url-'));
+    // Uninstalling removes apps' cache folders from the home: this one.
+    prevFilesRoot = process.env.FILES_ROOT;
+    process.env.FILES_ROOT = join(work, 'home');
     repo = join(work, 'repo');
     mkdirSync(repo);
     commit = makeRepo(repo);
@@ -363,6 +367,8 @@ describe('apps installed from a URL (e2e)', () => {
   afterAll(async () => {
     await app.close();
     rmSync(work, { recursive: true, force: true });
+    if (prevFilesRoot === undefined) delete process.env.FILES_ROOT;
+    else process.env.FILES_ROOT = prevFilesRoot;
   });
 
   const inspect = (url: string) =>

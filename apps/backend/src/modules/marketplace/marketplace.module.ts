@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AppDataModule } from '../app-data/app-data.module';
 import { MarketplaceController } from './marketplace.controller';
 import { MarketplaceServers } from './marketplace-servers.service';
 import { MarketplaceUrlApps } from './marketplace-url.service';
@@ -17,6 +18,7 @@ import { SandboxTokens } from './sandbox-tokens';
  * modules.
  */
 @Module({
+  imports: [AppDataModule],
   controllers: [MarketplaceController],
   providers: [
     MarketplaceService,

@@ -19,6 +19,7 @@ import {
   downloadUrl,
 } from '../lib/fileBytes'
 import { recordRecentFile, removeRecentFile } from '../lib/recentFiles'
+import { createSystemData } from '../lib/appData'
 import { claimScheduleOccurrence, type ScheduleDomain } from '../lib/scheduleClaim'
 import { notify } from '../shared/store/notificationStore'
 import { accentColours, useAppearanceStore } from '../shared/store/appearanceStore'
@@ -240,6 +241,10 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
       recordRecent: (root, path) => recordRecentFile(root, path, appId, http),
       removeRecent: (root, path) => removeRecentFile(root, path, http),
     },
+
+    // The app's own folders, named by the backend from the token its copy's
+    // client carries. A windowless copy has a token of its own too.
+    data: createSystemData(http),
 
     // The escape hatch: the shared axios client, narrowed to the protocol's
     // surface, so its interceptors (the 401 → lock-screen drop) still apply.

@@ -59,6 +59,7 @@ interface Listed {
 
 describe('kit apps (e2e)', () => {
   let work: string;
+  let prevFilesRoot: string | undefined;
   let catalog: string;
   let appsDir: string;
   let repoUrl: string;
@@ -72,6 +73,9 @@ describe('kit apps (e2e)', () => {
 
   beforeAll(async () => {
     work = mkdtempSync(join(tmpdir(), 'imb-marketplace-kit-'));
+    // Uninstalling removes apps' cache folders from the home: this one.
+    prevFilesRoot = process.env.FILES_ROOT;
+    process.env.FILES_ROOT = join(work, 'home');
     const repo = join(work, 'repo');
     commits = makeKitRepo(repo);
     repoUrl = `file://${repo}`;
@@ -157,6 +161,8 @@ describe('kit apps (e2e)', () => {
   afterAll(async () => {
     await app.close();
     rmSync(work, { recursive: true, force: true });
+    if (prevFilesRoot === undefined) delete process.env.FILES_ROOT;
+    else process.env.FILES_ROOT = prevFilesRoot;
   });
 
   const listing = async () => {

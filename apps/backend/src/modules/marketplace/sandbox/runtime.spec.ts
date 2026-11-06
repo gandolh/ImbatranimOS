@@ -48,6 +48,12 @@ type FrameSystem = {
   };
   readonly appearance: { get(): Appearance };
   readonly fs?: unknown;
+  readonly data: {
+    read(path: string, opts?: unknown): Promise<unknown>;
+    write(path: string, content: string, opts?: unknown): Promise<unknown>;
+    list(path?: string, opts?: unknown): Promise<unknown>;
+    remove(path: string, opts?: unknown): Promise<unknown>;
+  };
   notify(input: {
     title: string;
     body?: string;
@@ -760,6 +766,69 @@ describe('sandbox runtime: the system handle', () => {
     port.postMessage({ t: 'return', id: calls[0].id, ok: true, value: null });
     await tick();
     expect(frame.warnings).toEqual([]);
+  });
+
+  it('forwards system.data with no capability, and resolves with the desktop’s answer', async () => {
+    const { frame, port, system } = await mounted({
+      ...INIT,
+      capabilities: [],
+    });
+
+    const read = system.data.read('save.json', {
+      kind: 'state',
+      sneaky: () => 1,
+    });
+    const write = system.data.write('save.json', '{"n":1}', {
+      expected: null,
+    });
+    const list = system.data.list();
+    const removed = system.data.remove('old.json');
+    const calls = frame.drain(port);
+    expect(calls.map((c) => [c.path, c.args])).toEqual([
+      ['data.read', ['save.json', { kind: 'state' }]],
+      ['data.write', ['save.json', '{"n":1}', { expected: null }]],
+      ['data.list', ['', {}]],
+      ['data.remove', ['old.json', {}]],
+    ]);
+
+    const answer = (i: number, value: unknown) =>
+      port.postMessage({ t: 'return', id: calls[i].id, ok: true, value });
+    answer(0, { content: '{}', version: 'v1' });
+    answer(1, { version: 'v2' });
+    answer(2, []);
+    answer(3, null);
+    expect(await read).toEqual({ content: '{}', version: 'v1' });
+    expect(await write).toEqual({ version: 'v2' });
+    expect(await list).toEqual([]);
+    expect(await removed).toBeUndefined();
+    expect(frame.warnings).toEqual([]);
+  });
+
+  it('rejects a stale data write with a FileConflictError carrying the current version', async () => {
+    const { frame, port, system } = await mounted();
+    const write = system.data.write('a.json', 'x', { expected: 'v1' });
+    const read = system.data.read('../x');
+    const [first, second] = frame.drain(port);
+    port.postMessage({
+      t: 'return',
+      id: first.id,
+      ok: false,
+      error: { message: 'It changed.', conflict: true, current: 'v9' },
+    });
+    port.postMessage({
+      t: 'return',
+      id: second.id,
+      ok: false,
+      error: 'data.read failed (400): That path leads out',
+    });
+    await expect(write).rejects.toMatchObject({
+      name: 'FileConflictError',
+      message: 'It changed.',
+      current: 'v9',
+    });
+    await expect(read).rejects.toThrow(
+      /^data\.read failed \(400\): That path leads out$/,
+    );
   });
 
   it('throws a scopeHandle-style error for a member the app did not ask for', async () => {

@@ -1,4 +1,4 @@
-import { Button, useSystem } from '@imbatranim/ui'
+import { Button, FileConflictError, useSystem } from '@imbatranim/ui'
 import { AlertTriangle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RequestBuilder } from './components/RequestBuilder'
@@ -8,7 +8,7 @@ import { EnvironmentDialog } from './components/EnvironmentDialog'
 import { CurlDialog } from './components/CurlDialog'
 import { AuthDialog } from './components/AuthDialog'
 import { sendProxyRequest } from './api/httpProxyApi'
-import { DATA_FILE, EMPTY_DATA, loadData, saveData, type LoadResult } from './api/collectionsApi'
+import { EMPTY_DATA, loadData, saveData, type LoadResult } from './api/collectionsApi'
 import type {
   BodyMode,
   FormField,
@@ -26,7 +26,11 @@ import { activeFields, buildMultipart, bytesToBase64, contentTypeFor } from './l
 
 type BuilderTab = 'headers' | 'body'
 type OpenDialog = 'env' | 'curl-import' | 'curl-export' | 'auth' | null
-type LoadState = { status: 'loading' } | LoadResult
+/**
+ * `conflict`: another window saved the doc since this one read it, so nothing
+ * more is saved until a reload.
+ */
+type LoadState = { status: 'loading' } | { status: 'conflict' } | LoadResult
 
 /** Whether a whole-file save may replace what is on disk: only what was read, or nothing. */
 const canWrite = (load: LoadState) => load.status === 'ok' || load.status === 'missing'
@@ -75,13 +79,23 @@ export function RestApiClient(_props: { windowId: string }) {
     loadRef.current = load
   }, [load])
   const loadSeq = useRef(0)
+  /** The doc's version as last read or saved, null for none yet: each save sends it. */
+  const versionRef = useRef<string | null>(null)
+  /** Saves go one after another, each over the version the one before left. */
+  const savingRef = useRef<Promise<void>>(Promise.resolve())
 
   /** Read the doc; only its answer touches state, and only if it is still the latest. */
   const fetchLoad = useCallback(() => {
     const seq = ++loadSeq.current
-    void loadData(system.http).then((result) => {
+    void loadData(system).then((result) => {
       if (seq !== loadSeq.current) return
-      if (result.status === 'ok') setData(result.data)
+      if (result.status === 'ok') {
+        setData(result.data)
+        versionRef.current = result.version
+      } else if (result.status === 'missing') {
+        versionRef.current = null
+      }
+      loadRef.current = result
       setLoad(result)
     })
   }, [system])
@@ -100,14 +114,31 @@ export function RestApiClient(_props: { windowId: string }) {
     fetchLoad()
   }, [fetchLoad])
 
-  /** Save `next`, or refuse and return false while the doc has not been read. */
+  /**
+   * Save `next`, or refuse and return false while the doc has not been read.
+   *
+   * Each save names the version it builds on. When another window saved the
+   * doc in between, the save is refused: this window says so and saves
+   * nothing more until it reloads, rather than replacing what the other one
+   * saved.
+   */
   const persist = useCallback(
     (next: RestClientData): boolean => {
       if (!canWrite(loadRef.current)) return false
       setData(next)
-      void saveData(system.http, next).catch((err) =>
-        system.notify({ level: 'error', title: 'Save failed', body: extractError(err) })
-      )
+      savingRef.current = savingRef.current.then(async () => {
+        if (!canWrite(loadRef.current)) return
+        try {
+          versionRef.current = await saveData(system, next, versionRef.current)
+        } catch (err) {
+          if (err instanceof FileConflictError) {
+            loadRef.current = { status: 'conflict' }
+            setLoad(loadRef.current)
+            return
+          }
+          system.notify({ level: 'error', title: 'Save failed', body: extractError(err) })
+        }
+      })
       return true
     },
     [system]
@@ -260,7 +291,9 @@ export function RestApiClient(_props: { windowId: string }) {
         body:
           loadRef.current.status === 'loading'
             ? 'Saved requests are still loading. Try again in a moment.'
-            : 'Saved requests are unavailable, so nothing can be added to them.',
+            : loadRef.current.status === 'conflict'
+              ? 'Saved requests changed in another window. Reload them first.'
+              : 'Saved requests are unavailable, so nothing can be added to them.',
       })
     }
   }, [method, url, headers, body, bodyMode, form, filePath, persist, system])
@@ -342,6 +375,9 @@ export function RestApiClient(_props: { windowId: string }) {
     })
   }, [])
 
+  /** The doc that would not parse, old or moved, for Notepad to repair. */
+  const repairFile = load.status === 'failed' && load.malformed ? load.file : undefined
+
   return (
     <div className="bg-surface text-on-surface font-content flex h-full min-h-0 w-full flex-col">
       {load.status === 'failed' && (
@@ -351,13 +387,13 @@ export function RestApiClient(_props: { windowId: string }) {
         >
           <AlertTriangle size={13} className="shrink-0" />
           <span className="min-w-0 flex-1">Saved requests are unavailable: {load.error}</span>
-          {load.malformed && (
+          {repairFile && (
             <Button
               size="sm"
               onClick={() =>
                 system.intents.openApp('notepad', {
-                  openPath: DATA_FILE.path,
-                  root: DATA_FILE.root,
+                  openPath: repairFile.path,
+                  root: repairFile.root,
                 })
               }
             >
@@ -366,6 +402,21 @@ export function RestApiClient(_props: { windowId: string }) {
           )}
           <Button size="sm" onClick={retryLoad}>
             Retry
+          </Button>
+        </div>
+      )}
+      {load.status === 'conflict' && (
+        <div
+          role="alert"
+          className="bg-error-container text-on-error-container flex shrink-0 items-center gap-2 px-3 py-1.5 text-[12px]"
+        >
+          <AlertTriangle size={13} className="shrink-0" />
+          <span className="min-w-0 flex-1">
+            Saved requests changed in another window, so your last change wasn't saved. Reload to
+            see theirs.
+          </span>
+          <Button size="sm" onClick={retryLoad}>
+            Reload
           </Button>
         </div>
       )}

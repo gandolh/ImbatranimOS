@@ -132,6 +132,20 @@ describe('an app’s calls carry its own token', () => {
     expect(backend.seen.find((s) => s.url.endsWith('/schedule/claim'))?.token).toBe(second)
   })
 
+  it('system.data calls carry the copy’s token, a windowless copy’s too', async () => {
+    const win = createSystemHandle('hollow', openTestWindow('hollow'))
+    const service = createSystemHandle('hollow', null)
+    await win.data!.write('save.json', '{}', { expected: null })
+    await service.data!.list('', { kind: 'state' })
+    const [first, second] = registrations().map(tokenOf)
+    expect(first).not.toBe(second)
+    const write = backend.seen.find((s) => s.url.includes('/system/data/data/file'))
+    expect(write?.method).toBe('PUT')
+    expect(write?.token).toBe(first)
+    expect(JSON.parse(write!.body)).toEqual({ path: 'save.json', content: '{}', expected: null })
+    expect(backend.seen.find((s) => s.url.includes('/system/data/state/list'))?.token).toBe(second)
+  })
+
   it('Settings, Files and the Terminal call as the user, with no token', () => {
     for (const id of ['settings', 'file-manager', 'terminal']) {
       expect(appInstanceOf(createSystemHandle(id, null))).toBeUndefined()

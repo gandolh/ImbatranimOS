@@ -58,6 +58,11 @@ export { queryClient } from './queryClient'
 // injects a handle and how apps + SDK hooks reach it.
 export { PROTOCOL_VERSION } from './system'
 export type {
+  DataEntry,
+  DataFile,
+  DataKind,
+  DataOptions,
+  DataWriteOptions,
   FileChoice,
   OpenerCandidate,
   OpenerResolution,
@@ -69,6 +74,7 @@ export type {
   ShortcutScope,
   SystemAppearance,
   SystemAppearanceState,
+  SystemData,
   SystemEvent,
   SystemEventMap,
   SystemFs,

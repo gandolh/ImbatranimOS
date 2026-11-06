@@ -323,6 +323,43 @@ describe('MarketplaceSettings: a descriptor with several apps', () => {
     useWindowStore.setState({ windows: before.windows, closeWindow: before.closeWindow })
   })
 
+  it('uninstalling keeps the data unless "Also remove its data" is ticked', async () => {
+    await renderSuite(suite(true))
+    const dialogButton = (label: string) =>
+      [...document.querySelectorAll('button')]
+        .filter((b) => b.textContent === label)
+        .find((b) => b.closest('[role="dialog"], [role="alertdialog"]'))
+    const settle = () =>
+      act(async () => {
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+    await act(async () => buttons('Uninstall')[0].click())
+    expect(document.body.textContent).toContain('Their settings and data stay for a reinstall')
+    expect(document.body.textContent).toContain('Also remove its data')
+    await act(async () => dialogButton('Uninstall')!.click())
+    await settle()
+    expect(del).toHaveBeenLastCalledWith('/marketplace/apps/office')
+
+    await act(async () => buttons('Uninstall')[0].click())
+    const box = document.querySelector<HTMLElement>('[role="dialog"] [role="checkbox"]')
+    expect(box).not.toBeNull()
+    expect(box!.getAttribute('aria-checked')).toBe('false')
+    await act(async () => box!.click())
+    await act(async () => dialogButton('Uninstall')!.click())
+    await settle()
+    expect(del).toHaveBeenLastCalledWith('/marketplace/apps/office?removeData=1')
+
+    // A new prompt starts unticked.
+    await act(async () => buttons('Uninstall')[0].click())
+    expect(
+      document.querySelector('[role="dialog"] [role="checkbox"]')!.getAttribute('aria-checked')
+    ).toBe('false')
+    await act(async () => dialogButton('Uninstall')!.click())
+    await settle()
+    expect(del).toHaveBeenLastCalledWith('/marketplace/apps/office')
+  })
+
   it('says a kit suite built for another shared kit needs an update', async () => {
     await renderSuite([
       officeApp('office-docs', 'Docs', true, { sharedKit: 99 }),

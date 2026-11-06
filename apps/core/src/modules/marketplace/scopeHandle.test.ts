@@ -24,6 +24,12 @@ describe('scopeHandle', () => {
     expect(typeof scoped.on).toBe('function')
   })
 
+  it('gives every app its data folders, with no capability to ask for', () => {
+    const scoped = scopeHandle(base, [], 'Hollow')
+    expect(scoped.data).toBe(base.data)
+    expect(typeof scoped.data?.read).toBe('function')
+  })
+
   it.each(['fs', 'http', 'intents', 'notify', 'shortcuts', 'schedule'] as const)(
     'refuses system.%s when it was not granted, by name',
     (cap) => {

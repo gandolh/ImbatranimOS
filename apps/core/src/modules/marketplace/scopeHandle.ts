@@ -35,6 +35,7 @@ export type KitAppModule = {
  * among them: an app whose descriptor runs no server gets a rejection that
  * says so when it asks, not a capability error. `sound` too: reading the OS
  * volume is harmless, and an app that plays sound needs it to follow the tray.
+ * And `data`: an app's own folders reach nothing but its own.
  */
 const ALWAYS = new Set([
   'protocolVersion',
@@ -45,6 +46,7 @@ const ALWAYS = new Set([
   'sound',
   'on',
   'server',
+  'data',
 ])
 
 /**

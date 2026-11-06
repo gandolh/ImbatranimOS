@@ -69,6 +69,14 @@ function fakeSystem() {
     }),
   }
   const notify = vi.fn((_input: unknown) => 'note-1')
+  const data = {
+    read: vi.fn(async (_path: string, _opts?: unknown) => ({ content: '{}', version: 'v1' })),
+    write: vi.fn(async (_path: string, _content: string, _opts?: unknown) => ({ version: 'v2' })),
+    list: vi.fn(async (_path?: string, _opts?: unknown) => [
+      { name: 'a.json', path: 'a.json', type: 'file', size: 2, modifiedAt: 'then' },
+    ]),
+    remove: vi.fn(async (_path: string, _opts?: unknown) => undefined),
+  }
   const system = {
     protocolVersion: PROTOCOL_VERSION,
     appId: 'x-0123456789ab',
@@ -80,6 +88,7 @@ function fakeSystem() {
     schedule: {},
     window: win,
     appearance: { get: () => ({ theme: 'dark', accent: '#ff8800' }) },
+    data,
     notify,
     on: (event: string, cb: (payload: unknown) => void) => {
       const set = handlers.get(event) ?? new Set()
@@ -92,7 +101,7 @@ function fakeSystem() {
     for (const cb of handlers.get(event) ?? []) cb(payload)
   }
   const subscribed = () => [...handlers.values()].reduce((n, set) => n + set.size, 0)
-  return { system, win, notify, emit, subscribed, guard: () => guard }
+  return { system, win, notify, data, emit, subscribed, guard: () => guard }
 }
 
 let clock: number
@@ -223,6 +232,123 @@ describe('sandboxBridge: calls', () => {
     const answer = p.sent.find((m) => m.t === 'return')!
     expect(answer).toMatchObject({ ok: false, error: 'window.hide failed' })
     expect(error).toHaveBeenCalled()
+  })
+})
+
+describe('sandboxBridge: system.data', () => {
+  /** The frame calls `path`; the answer comes once the OS has answered. */
+  async function callData(path: string, args: unknown[], id = Math.random()) {
+    p.send({ t: 'call', id, path, args })
+    expect(p.sent.filter((m) => m.id === id)).toEqual([])
+    await new Promise((r) => setTimeout(r, 0))
+    const answer = p.sent.filter((m) => m.t === 'return' && m.id === id)
+    expect(answer).toHaveLength(1)
+    return answer[0]
+  }
+
+  it('forwards each call to the window’s own data folders, with no capability', async () => {
+    bridge([])
+    expect(await callData('data.read', ['save.json'])).toMatchObject({
+      ok: true,
+      value: { content: '{}', version: 'v1' },
+    })
+    expect(
+      await callData('data.write', ['save.json', '{"n":1}', { expected: 'v1', kind: 'state' }])
+    ).toMatchObject({ ok: true, value: { version: 'v2' } })
+    expect(await callData('data.list', [undefined, { kind: 'cache' }])).toMatchObject({
+      ok: true,
+      value: [{ name: 'a.json' }],
+    })
+    expect(await callData('data.remove', ['old.json'])).toMatchObject({ ok: true, value: null })
+
+    expect(s.data.read).toHaveBeenCalledWith('save.json', {})
+    expect(s.data.write).toHaveBeenCalledWith('save.json', '{"n":1}', {
+      kind: 'state',
+      expected: 'v1',
+    })
+    expect(s.data.list).toHaveBeenCalledWith('', { kind: 'cache' })
+    expect(s.data.remove).toHaveBeenCalledWith('old.json', {})
+  })
+
+  it('passes a null version on, for a file the app read as missing', async () => {
+    bridge([])
+    await callData('data.write', ['new.json', 'x', { expected: null }])
+    expect(s.data.write).toHaveBeenCalledWith('new.json', 'x', { expected: null })
+  })
+
+  it('rebuilds the options from the fields it allows', async () => {
+    bridge([])
+    await callData('data.read', ['a', { kind: 'config', headers: { evil: 1 }, root: '/' }])
+    expect(s.data.read).toHaveBeenCalledWith('a', { kind: 'config' })
+  })
+
+  it.each([
+    ['data.read', [42]],
+    ['data.read', ['']],
+    ['data.read', ['p'.repeat(513)]],
+    ['data.read', ['a', { kind: 'secrets' }]],
+    ['data.read', ['a', 'data']],
+    ['data.write', ['a', 42]],
+    ['data.write', ['a', 'x', { expected: 7 }]],
+    ['data.remove', [undefined]],
+    ['data.list', [42]],
+  ])('refuses %s with %j before it reaches the OS', (path, args) => {
+    bridge([])
+    const answer = call(path, args)
+    expect(answer).toMatchObject({ ok: false })
+    expect(typeof answer.error).toBe('string')
+    for (const fn of Object.values(s.data)) expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('answers a stale write with the conflict and the current version', async () => {
+    bridge([])
+    const { FileConflictError } = await import('@imbatranim/ui')
+    s.data.write.mockRejectedValueOnce(new FileConflictError('v9', 'It changed.'))
+    expect(await callData('data.write', ['a', 'x', { expected: 'v1' }])).toMatchObject({
+      ok: false,
+      error: { message: 'It changed.', conflict: true, current: 'v9' },
+    })
+  })
+
+  it('answers a refusal with the OS’s sentence and status, never the request', async () => {
+    bridge([])
+    s.data.read.mockRejectedValueOnce(
+      Object.assign(new Error('Request failed'), {
+        config: { headers: { 'X-Imbatranim-App-Token': 'secret' } },
+        response: { status: 400, data: { message: "That path leads out of the app's folder" } },
+      })
+    )
+    const answer = await callData('data.read', ['link'])
+    expect(answer).toMatchObject({
+      ok: false,
+      error: "data.read failed (400): That path leads out of the app's folder",
+    })
+    expect(JSON.stringify(answer)).not.toContain('secret')
+  })
+
+  it('answers a mode refusal without the path it names', async () => {
+    bridge([])
+    s.data.read.mockRejectedValueOnce(
+      Object.assign(new Error('Request failed'), {
+        response: {
+          status: 403,
+          data: { code: 'MODE_REFUSED', message: 'x-1 may not read /home/imbatranim/.x/a' },
+        },
+      })
+    )
+    const answer = await callData('data.read', ['a'])
+    expect(answer).toMatchObject({ ok: false, error: 'data.read was refused (403)' })
+  })
+
+  it('sends nothing for an answer that lands after dispose', async () => {
+    const b = bridge([])
+    let finish!: (v: unknown) => void
+    s.data.read.mockReturnValueOnce(new Promise((r) => (finish = r)) as never)
+    p.send({ t: 'call', id: 'late', path: 'data.read', args: ['a'] })
+    b.dispose()
+    finish({ content: '', version: 'v' })
+    await new Promise((r) => setTimeout(r, 0))
+    expect(p.sent.filter((m) => m.id === 'late')).toEqual([])
   })
 })
 

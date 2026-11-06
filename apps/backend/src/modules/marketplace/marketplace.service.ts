@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  InternalServerErrorException,
   Injectable,
   Logger,
   NotFoundException,
@@ -13,6 +14,7 @@ import { dirname, join, posix, relative, resolve, sep } from 'path';
 
 import type { Env } from '../../config/env.schema';
 import { DbService } from '../../db/db.service';
+import { AppDataService } from '../app-data/app-data.service';
 import type { AppManifest } from './app-manifest';
 import { z } from 'zod';
 
@@ -221,6 +223,7 @@ export class MarketplaceService implements OnModuleInit {
     private readonly servers: MarketplaceServers,
     private readonly tokens: SandboxTokens,
     private readonly pendings: PendingInspections,
+    private readonly data: AppDataService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -554,7 +557,16 @@ export class MarketplaceService implements OnModuleInit {
     return result;
   }
 
-  async uninstall(id: string): Promise<void> {
+  /**
+   * Remove an installed descriptor: its server, row, builds and log, and the
+   * caches of its apps. Their settings, data and state stay for a reinstall,
+   * unless `removeData`, which takes those folders first: if they can't be
+   * removed, the app stays installed and the error says so.
+   */
+  async uninstall(
+    id: string,
+    { removeData = false }: { removeData?: boolean } = {},
+  ): Promise<void> {
     if (!isAppId(id)) throw new NotFoundException();
     const job = this.jobs.get(id);
     if (job && job.state !== 'failed') {
@@ -564,13 +576,24 @@ export class MarketplaceService implements OnModuleInit {
     }
     const row = this.row(id);
     if (!row && !job) throw new NotFoundException();
+    const apps = appsOfRow(row, id);
     await this.servers.stop(id);
+    if (removeData) {
+      try {
+        await this.data.removeFolders(apps, KEPT_DATA_KINDS);
+      } catch (err) {
+        throw new InternalServerErrorException(
+          `Its data could not be removed, so it is still installed: ${String(err)}`,
+        );
+      }
+    }
     this.dbs.db.prepare('DELETE FROM marketplace_apps WHERE id = ?').run(id);
     this.jobs.delete(id);
     // A URL app's open windows lose their files now, not in six hours.
     this.tokens.revokeApp(id);
     await this.removeBuilds(id, null);
     await fs.rm(this.logPath(id), { force: true });
+    await this.data.removeCaches(apps);
   }
 
   private async build(d: Descriptor, job: Job): Promise<void> {
@@ -865,6 +888,19 @@ export class MarketplaceService implements OnModuleInit {
       }
     }
   }
+}
+
+/** The kinds of an app's data that outlive an uninstall unless the owner asks. */
+const KEPT_DATA_KINDS = ['config', 'data', 'state'] as const;
+
+/**
+ * The apps a row holds: its build's apps, or the row's own id for one whose
+ * record is damaged or that never got a row (an install that failed). A URL
+ * app's row holds the one app.
+ */
+function appsOfRow(row: InstalledRow | undefined, id: string): string[] {
+  const apps = row ? recordedBuild(row)?.entries.keys() : undefined;
+  return apps ? [...apps] : [id];
 }
 
 export function isAppId(id: string): boolean {

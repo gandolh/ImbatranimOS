@@ -324,6 +324,8 @@
 
   // ── The `system` handle (packages/ui/src/system.ts), over the port ───────
 
+  // `data` is the app's own folders, named by the window's token on the
+  // desktop's side: it reaches nothing but this app's.
   const ALWAYS = new Set([
     'protocolVersion',
     'appId',
@@ -331,6 +333,7 @@
     'window',
     'appearance',
     'on',
+    'data',
   ]);
   // Handle members a URL app can never have: each hands over the owner's
   // files or session, or reaches other apps.
@@ -338,30 +341,80 @@
   const EVENTS = ['focus', 'blur', 'visibility', 'appearance-changed'];
 
   let nextCallId = 1;
-  const calls = new Map(); // id → path, until the desktop returns
+  // id → { path, settle }, until the desktop returns; `settle` only for a
+  // call whose answer the app awaits.
+  const calls = new Map();
   let cache = null; // { focused, visible, appearance }
   const listeners = new Map(EVENTS.map((name) => [name, new Set()]));
   let closeGuard = null; // { guard } for the current registration
 
-  // Every call is fire-and-forget, like the in-process handle: a failure is a
-  // console warning, never a throw into the app.
+  // A window or notify call is fire-and-forget, like the in-process handle:
+  // a failure is a console warning, never a throw into the app.
   function call(path, args) {
     const id = nextCallId++;
-    calls.set(id, path);
+    calls.set(id, { path, settle: null });
     if (!send({ t: 'call', id, path, args })) calls.delete(id);
   }
 
+  // A call whose answer the app awaits (`data`): a promise of the value, or
+  // of an Error. A stale write rejects with one named FileConflictError
+  // carrying `current`, as the kit's class does.
+  function request(path, args) {
+    return new Promise((resolve, reject) => {
+      const id = nextCallId++;
+      calls.set(id, {
+        path,
+        settle: (ok, value) => (ok ? resolve(value) : reject(value)),
+      });
+      if (!send({ t: 'call', id, path, args })) {
+        calls.delete(id);
+        reject(new Error(`system.${path} failed: the desktop is out of reach`));
+      }
+    });
+  }
+
+  // The desktop's sentence already names the call.
+  function failure(path, error) {
+    const conflict = isObject(error) && error.conflict === true;
+    const text = errorText(
+      (isObject(error) ? error.message : error) ?? `${path} failed`,
+    );
+    const err = new Error(text);
+    if (conflict) {
+      err.name = 'FileConflictError';
+      err.current = typeof error.current === 'string' ? error.current : null;
+    }
+    return err;
+  }
+
   function onReturn(message) {
-    if (!calls.has(message.id)) return;
-    const path = calls.get(message.id);
+    const pending = calls.get(message.id);
+    if (!pending) return;
     calls.delete(message.id);
+    if (pending.settle) {
+      if (message.ok === true) pending.settle(true, message.value);
+      else pending.settle(false, failure(pending.path, message.error));
+      return;
+    }
     if (message.ok === true) return;
     const error = isObject(message.error)
       ? message.error.message
       : message.error;
     console.warn(
-      `[imbatranim] system.${path} failed: ${errorText(error ?? 'no reason given')}`,
+      `[imbatranim] system.${pending.path} failed: ${errorText(error ?? 'no reason given')}`,
     );
+  }
+
+  // The options `system.data` takes, copied field by field so nothing else
+  // (a getter, a function) reaches the port.
+  function dataOptions(opts, withExpected) {
+    const out = {};
+    if (!isObject(opts)) return out;
+    if (opts.kind !== undefined) out.kind = opts.kind;
+    if (withExpected && opts.expected !== undefined) {
+      out.expected = opts.expected;
+    }
+    return out;
   }
 
   function uuid() {
@@ -472,6 +525,26 @@
       },
       appearance: {
         get: () => ({ ...cache.appearance }),
+      },
+      data: {
+        read(path, opts) {
+          return request('data.read', [path, dataOptions(opts, false)]);
+        },
+        write(path, content, opts) {
+          return request('data.write', [
+            path,
+            content,
+            dataOptions(opts, true),
+          ]);
+        },
+        list(path, opts) {
+          return request('data.list', [path ?? '', dataOptions(opts, false)]);
+        },
+        remove(path, opts) {
+          return request('data.remove', [path, dataOptions(opts, false)]).then(
+            () => undefined,
+          );
+        },
       },
       notify(input) {
         // `actions` deliver an openApp payload, which is `intents`: dropped.

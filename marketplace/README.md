@@ -66,10 +66,15 @@ container. Nothing is rebuilt into the OS image. Backups leave
   that also runs a server (below).
 - **`capabilities`**: the parts of `system` the app may use: `fs`, `http`,
   `intents`, `notify`, `shortcuts`, `schedule`. `window`, `appearance`,
-  `sound` and `on` are always there. Touching one not listed throws an error
+  `sound`, `data` and `on` are always there. Touching one not listed throws an error
   naming it. An app that makes sound plays at its own volume times
   `system.sound.get().volume` and is silent while it says `muted` (since kit
-  1.3.0; on an older desktop `sound` is missing).
+  1.3.0; on an older desktop `sound` is missing). An app keeps its settings,
+  data, state and cache as text files in folders of its own through
+  `system.data` (since kit 1.4.0): `read` returns a version, and a `write`
+  that names it is refused with `FileConflictError` when another window
+  saved first. Uninstalling removes the cache, and the rest only when the
+  owner asks.
 - **`icon`**: one of `package`, `gamepad-2`, `joystick`, `puzzle`, `swords`,
   `sprout`, `castle`, `rocket`, `dices`, `ghost`, `trophy`, `map`, `bomb`,
   `spade`, or for
@@ -504,7 +509,8 @@ with `host.server` always `null`. The differences:
   from `import.meta.url`.
 - `localStorage` and `sessionStorage` work but live in memory and are gone
   when the window closes. `document.cookie` is empty. IndexedDB is not
-  available.
+  available. What should last goes in `system.data`, the app's own folders,
+  which works here as in any app; its calls answer with promises.
 - Pointer lock works. Pop-ups, downloads, fullscreen, the clipboard, forms
   and navigating the desktop do not.
 - WebAssembly compiles, but there are no threads: the frame isn't

@@ -1,9 +1,13 @@
-import type {
-  SystemAppearanceState,
-  SystemEvent,
-  SystemHandle,
-  SystemNotifyInput,
-  SystemNotifyLevel,
+import {
+  FileConflictError,
+  type DataKind,
+  type DataOptions,
+  type DataWriteOptions,
+  type SystemAppearanceState,
+  type SystemEvent,
+  type SystemHandle,
+  type SystemNotifyInput,
+  type SystemNotifyLevel,
 } from '@imbatranim/ui'
 import type { Capability } from '../../shared/registry/marketplace'
 
@@ -129,6 +133,14 @@ export const CLOSE_AGAIN_MS = 10_000
 const TITLE_MAX = 200
 const BODY_MAX = 2000
 const FAILED_MAX = 500
+/** The longest path inside an app's folder, as the backend allows. */
+const DATA_PATH_MAX = 512
+/** The longest text a data write carries: the backend's 5 MB, in UTF-16 units at most. */
+const DATA_CONTENT_MAX = 5 * 1024 * 1024
+const DATA_VERSION_MAX = 128
+const DATA_KINDS: readonly DataKind[] = ['config', 'data', 'state', 'cache']
+/** How much of a refusal's own message reaches the frame. */
+const REFUSAL_MAX = 300
 const NOTIFY_LEVELS: readonly SystemNotifyLevel[] = ['info', 'success', 'warning', 'error']
 const FORWARDED_EVENTS: readonly SystemEvent[] = [
   'focus',
@@ -147,9 +159,16 @@ type FrameMessage =
   | { t: 'mounted' }
   | { t: 'failed'; message: string }
 
+/**
+ * Why a call failed: a sentence, or for a data write over a newer file the
+ * sentence and the file's version now, so the frame can throw the kit's
+ * `FileConflictError`.
+ */
+type CallFailure = string | { message: string; conflict: true; current: string | null }
+
 type ParentMessage =
   | { t: 'return'; id: CallId; ok: true; value: unknown }
-  | { t: 'return'; id: CallId; ok: false; error: string }
+  | { t: 'return'; id: CallId; ok: false; error: CallFailure }
   | { t: 'event'; name: SystemEvent; payload: unknown }
   | { t: 'close-ask'; id: number }
   | { t: 'unmount' }
@@ -219,6 +238,63 @@ function notifyInput(raw: unknown): SystemNotifyInput {
   if (body !== undefined) input.body = body
   if (level !== undefined) input.level = level as SystemNotifyLevel
   return input
+}
+
+/** A path inside the app's folder, as `system.data` takes one. */
+function dataPath(raw: unknown, call: string, allowEmpty = false): string {
+  if (raw === undefined && allowEmpty) return ''
+  if (typeof raw !== 'string' || raw.length > DATA_PATH_MAX || (!allowEmpty && raw === '')) {
+    throw new CallError(`${call}: path must be a string of 1 to ${DATA_PATH_MAX} characters`)
+  }
+  return raw
+}
+
+/** `system.data`'s options, rebuilt from the fields it allows. */
+function dataOptions(raw: unknown, call: string): DataOptions {
+  if (raw === undefined) return {}
+  if (!isRecord(raw)) throw new CallError(`${call}: options must be { kind? }`)
+  if (raw.kind === undefined) return {}
+  if (!DATA_KINDS.includes(raw.kind as DataKind)) {
+    throw new CallError(`${call}: kind must be one of ${DATA_KINDS.join(', ')}`)
+  }
+  return { kind: raw.kind as DataKind }
+}
+
+function dataWriteOptions(raw: unknown): DataWriteOptions {
+  const opts: DataWriteOptions = dataOptions(raw, 'data.write')
+  if (!isRecord(raw) || raw.expected === undefined) return opts
+  const { expected } = raw
+  if (expected !== null && (typeof expected !== 'string' || expected.length > DATA_VERSION_MAX)) {
+    throw new CallError('data.write: expected must be the version read, or null')
+  }
+  opts.expected = expected
+  return opts
+}
+
+/** What the frame learns of a failed data call: the OS's own sentence, never the request. */
+function dataFailure(path: string, err: unknown): CallFailure {
+  if (err instanceof FileConflictError) {
+    return { message: err.message, conflict: true, current: err.current }
+  }
+  const res = (err as { response?: { status?: unknown; data?: { message?: unknown } } } | null)
+    ?.response
+  if (res && typeof res.status === 'number') {
+    // A mode refusal names the absolute path it refused: the frame learns
+    // only that it was refused.
+    if (res.status === 403) return `${path} was refused (403)`
+    const said = res.data?.message
+    const text = typeof said === 'string' ? said : Array.isArray(said) ? said.join(', ') : ''
+    return `${path} failed (${res.status})${text ? `: ${text.slice(0, REFUSAL_MAX)}` : ''}`
+  }
+  return `${path} failed`
+}
+
+function isThenable(value: unknown): value is PromiseLike<unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { then?: unknown }).then === 'function'
+  )
 }
 
 /**
@@ -348,6 +424,30 @@ export function createSandboxBridge({
         else system.window.show()
         return null
       }
+      case 'data.read':
+      case 'data.write':
+      case 'data.list':
+      case 'data.remove': {
+        // The app's own folders, named by the window's token: every app has
+        // them, a URL app included, and they reach nothing else.
+        const data = system.data
+        if (!data) throw new CallError('this desktop has no system.data')
+        switch (path) {
+          case 'data.read':
+            return data.read(dataPath(list[0], path), dataOptions(list[1], path))
+          case 'data.write': {
+            const content: unknown = list[1]
+            if (typeof content !== 'string' || content.length > DATA_CONTENT_MAX) {
+              throw new CallError('data.write: content must be a string of at most 5 MB')
+            }
+            return data.write(dataPath(list[0], path), content, dataWriteOptions(list[2]))
+          }
+          case 'data.list':
+            return data.list(dataPath(list[0], path, true), dataOptions(list[1], path))
+          default:
+            return data.remove(dataPath(list[0], path), dataOptions(list[1], path)).then(() => null)
+        }
+      }
       default:
         throw new CallError(`unknown call: ${path.slice(0, 100)}`)
     }
@@ -356,18 +456,32 @@ export function createSandboxBridge({
   const handle = (message: FrameMessage) => {
     switch (message.t) {
       case 'call': {
+        const { id, path } = message
         let value: unknown
         try {
-          value = call(message.path, message.args)
+          value = call(path, message.args)
         } catch (err) {
           // A CallError is the frame's mistake; anything else is ours, and the
           // frame learns only that the call failed.
-          const error = err instanceof CallError ? err.message : `${message.path} failed`
+          const error = err instanceof CallError ? err.message : `${path} failed`
           if (!(err instanceof CallError)) console.error(`[sandbox] ${system.appId}:`, err)
-          post({ t: 'return', id: message.id, ok: false, error })
+          post({ t: 'return', id, ok: false, error })
           return
         }
-        post({ t: 'return', id: message.id, ok: true, value })
+        if (!isThenable(value)) {
+          post({ t: 'return', id, ok: true, value })
+          return
+        }
+        // A call to the OS answers later. One that lands after dispose finds
+        // the port closed, and the frame gone with it.
+        Promise.resolve(value).then(
+          (settled) => {
+            if (!disposed) post({ t: 'return', id, ok: true, value: settled })
+          },
+          (err: unknown) => {
+            if (!disposed) post({ t: 'return', id, ok: false, error: dataFailure(path, err) })
+          }
+        )
         return
       }
       case 'close-guard':

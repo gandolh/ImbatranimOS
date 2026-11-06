@@ -23,6 +23,8 @@ import request from 'supertest';
 import WebSocket from 'ws';
 
 import { DbModule } from '../src/db/db.module';
+import { DATA_KINDS } from '../src/modules/app-data/app-data.paths';
+import { AppDataService } from '../src/modules/app-data/app-data.service';
 import { MarketplaceModule } from '../src/modules/marketplace/marketplace.module';
 import { MarketplaceServers } from '../src/modules/marketplace/marketplace-servers.service';
 import { MarketplaceService } from '../src/modules/marketplace/marketplace.service';
@@ -158,6 +160,7 @@ interface Listed {
 
 describe('the marketplace (e2e)', () => {
   let work: string;
+  let prevFilesRoot: string | undefined;
   let appsDir: string;
   let app: INestApplication<Server>;
   let http: ReturnType<typeof request>;
@@ -167,6 +170,9 @@ describe('the marketplace (e2e)', () => {
 
   beforeAll(async () => {
     work = mkdtempSync(join(tmpdir(), 'imb-marketplace-'));
+    // Uninstalling removes apps' cache folders from the home: this one.
+    prevFilesRoot = process.env.FILES_ROOT;
+    process.env.FILES_ROOT = join(work, 'home');
     const repo = join(work, 'repo');
     mkdirSync(repo);
     ref = makeRepo(repo);
@@ -275,6 +281,8 @@ describe('the marketplace (e2e)', () => {
     delete process.env.SETUP_TOKEN;
     await app.close();
     rmSync(work, { recursive: true, force: true });
+    if (prevFilesRoot === undefined) delete process.env.FILES_ROOT;
+    else process.env.FILES_ROOT = prevFilesRoot;
   });
 
   const installAndWait = async (id: string) => {
@@ -471,14 +479,39 @@ describe('the marketplace (e2e)', () => {
   }, 60_000);
 
   it('uninstalls: the row, the build and the log go', async () => {
+    // Each app kept a file of every kind in its folders.
+    const data = app.get(AppDataService);
+    const as = (appId: string) => ({
+      appId,
+      instanceId: `${appId}-1`,
+      windowId: null,
+      groups: [appId, appId],
+    });
+    for (const id of ['demo', 'sim']) {
+      for (const kind of DATA_KINDS) {
+        await data.write(as(id), kind, 'kept.json', kind);
+      }
+    }
+
+    // Without the box: the cache goes, the rest stays for a reinstall.
     await http
       .delete('/api/marketplace/apps/demo')
       .set('Cookie', cookie)
       .expect(204);
+    // With it: every kind goes.
     await http
-      .delete('/api/marketplace/apps/sim')
+      .delete('/api/marketplace/apps/sim?removeData=1')
       .set('Cookie', cookie)
       .expect(204);
+    expect(existsSync(data.folder('demo', 'cache'))).toBe(false);
+    for (const kind of ['config', 'data', 'state'] as const) {
+      expect((await data.read(as('demo'), kind, 'kept.json'))?.content).toBe(
+        kind,
+      );
+    }
+    for (const kind of DATA_KINDS) {
+      expect(existsSync(data.folder('sim', kind))).toBe(false);
+    }
     const list = await http
       .get('/api/marketplace')
       .set('Cookie', cookie)

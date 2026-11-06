@@ -231,6 +231,31 @@ describe('BackupService', () => {
       expect(list.some((m) => m.includes('Trash'))).toBe(false);
     });
 
+    it('skips apps’ caches, but carries their settings, data and state and other caches', async () => {
+      const put = async (rel: string) => {
+        await fs.mkdir(join(home, rel, '..'), { recursive: true });
+        await fs.writeFile(join(home, rel), rel);
+      };
+      await put('.cache/imbatranim/hollow/thumbs.json');
+      await put('.config/imbatranim/hollow/settings.json');
+      await put('.local/share/imbatranim/hollow/save.json');
+      await put('.local/state/imbatranim/hollow/recent.json');
+      await put('.cache/fontconfig/cache.txt');
+      await put('Documents/.cache/imbatranim/mine.txt');
+      const list = await members(await takeBackup());
+      expect(list.some((m) => m.startsWith('.cache/imbatranim'))).toBe(false);
+      expect(list).toEqual(
+        expect.arrayContaining([
+          '.config/imbatranim/hollow/settings.json',
+          '.local/share/imbatranim/hollow/save.json',
+          '.local/state/imbatranim/hollow/recent.json',
+          '.cache/fontconfig/cache.txt',
+          'Documents/.cache/imbatranim/mine.txt',
+        ]),
+      );
+      expect((await service.info()).excluded).toContain('./.cache/imbatranim');
+    });
+
     it('the exclusions are ANCHORED — a user’s own .imbatranim/db.sqlite survives', async () => {
       // The bare pattern `.imbatranim/db.sqlite` matches at any path boundary in
       // both tars, so an unanchored exclusion would silently eat this file.

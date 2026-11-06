@@ -23,6 +23,8 @@ import request from 'supertest';
 
 import { DbModule } from '../src/db/db.module';
 import { DbService } from '../src/db/db.service';
+import { DATA_KINDS } from '../src/modules/app-data/app-data.paths';
+import { AppDataService } from '../src/modules/app-data/app-data.service';
 import { MarketplaceModule } from '../src/modules/marketplace/marketplace.module';
 import { MarketplaceServers } from '../src/modules/marketplace/marketplace-servers.service';
 import { MarketplaceService } from '../src/modules/marketplace/marketplace.service';
@@ -79,6 +81,7 @@ function rawStatus(
 
 describe('one catalog entry, several apps (e2e)', () => {
   let work: string;
+  let prevFilesRoot: string | undefined;
   let catalog: string;
   let appsDir: string;
   let repoUrl: string;
@@ -93,6 +96,9 @@ describe('one catalog entry, several apps (e2e)', () => {
 
   beforeAll(async () => {
     work = mkdtempSync(join(tmpdir(), 'imb-marketplace-suite-'));
+    // Uninstalling removes apps' cache folders from the home: this one.
+    prevFilesRoot = process.env.FILES_ROOT;
+    process.env.FILES_ROOT = join(work, 'home');
     const repo = join(work, 'repo');
     commits = makeSuiteRepo(repo);
     repoUrl = `file://${repo}`;
@@ -213,6 +219,8 @@ describe('one catalog entry, several apps (e2e)', () => {
   afterAll(async () => {
     await app.close();
     rmSync(work, { recursive: true, force: true });
+    if (prevFilesRoot === undefined) delete process.env.FILES_ROOT;
+    else process.env.FILES_ROOT = prevFilesRoot;
   });
 
   const listing = async () => {
@@ -503,10 +511,31 @@ describe('one catalog entry, several apps (e2e)', () => {
   }, 60_000);
 
   it('uninstalls the descriptor: both apps, the build and the log go', async () => {
+    const data = app.get(AppDataService);
+    const as = (appId: string) => ({
+      appId,
+      instanceId: `${appId}-1`,
+      windowId: null,
+      groups: [appId, 'suite'],
+    });
+    for (const id of ['suite-alpha', 'suite-beta']) {
+      for (const kind of DATA_KINDS) await data.write(as(id), kind, 'f', kind);
+    }
+    await data.write(as('solo'), 'data', 'f', 'not in the suite');
+
+    // "Also remove its data" covers each app of the group.
     await http
-      .delete('/api/marketplace/apps/suite')
+      .delete('/api/marketplace/apps/suite?removeData=1')
       .set('Cookie', cookie)
       .expect(204);
+    for (const id of ['suite-alpha', 'suite-beta']) {
+      for (const kind of DATA_KINDS) {
+        expect(existsSync(data.folder(id, kind))).toBe(false);
+      }
+    }
+    expect((await data.read(as('solo'), 'data', 'f'))?.content).toBe(
+      'not in the suite',
+    );
     expect((await listed('suite-alpha')).installed).toBeNull();
     expect((await listed('suite-beta')).installed).toBeNull();
     expect(builds('suite')).toEqual([]);

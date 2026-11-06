@@ -10,6 +10,7 @@ import { PtyModule } from './modules/pty/pty.module';
 import { FilesModule } from './modules/files/files.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { AppIdentityModule } from './modules/app-identity/app-identity.module';
+import { AppDataModule } from './modules/app-data/app-data.module';
 import { GitModule } from './modules/git/git.module';
 import { HttpProxyModule } from './modules/http-proxy/http-proxy.module';
 import { ArchiveModule } from './modules/archive/archive.module';
@@ -47,6 +48,7 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
     PrefsModule,
     IdentityModule,
     AppIdentityModule,
+    AppDataModule,
     UpgradeRoutesModule,
     StickyNotesModule,
     TodosModule,

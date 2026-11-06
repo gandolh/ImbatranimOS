@@ -8,6 +8,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Req,
   Res,
 } from '@nestjs/common';
@@ -116,11 +117,18 @@ export class MarketplaceController {
     return this.marketplace.install(id);
   }
 
-  /** DELETE /api/marketplace/apps/:id → stop its server, delete its builds. */
+  /**
+   * DELETE /api/marketplace/apps/:id → stop its server, delete its builds and
+   * its apps' caches. `?removeData=1` also deletes their settings, data and
+   * state, which otherwise stay for a reinstall.
+   */
   @Delete('apps/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async uninstall(@Param('id') id: string): Promise<void> {
-    await this.marketplace.uninstall(id);
+  async uninstall(
+    @Param('id') id: string,
+    @Query('removeData') removeData?: string,
+  ): Promise<void> {
+    await this.marketplace.uninstall(id, { removeData: removeData === '1' });
   }
 
   /** GET /api/marketplace/apps/:id/log → the last build's log, and the server's output. */

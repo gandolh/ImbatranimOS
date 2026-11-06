@@ -67,3 +67,23 @@ and Compress by opening the app
 ## Acceptance
 
 - Tests green; the walk holds; the build has no Archive Manager chunk.
+
+## Outcome (2026-11-06)
+
+Built and committed: `712538b`. Files opens nine archive types like folders
+(`archiveView`, `extractJob`, `ExtractDialog`). The Archive Manager add-on is
+deleted. `RETIRED_APP_IDS` gains `archive-manager` and `file-manager`, and
+`file-manager` is now in `BUILT_IN_TARGETS`.
+
+- **Walk 2b (2026-11-06):** passed.
+- **Accepted gaps:**
+  - A lone `.gz`, `.xz` or `.bz2` file fails with "Unsupported archive
+    format", because the backend's `detectFormat` only knows zip and tar
+    flavours. Todo: [files-extracts-lone-compressed-files](../../todos/files-extracts-lone-compressed-files.md).
+  - A refused zip-slip archive leaves an empty destination folder.
+  - The kit's `fs.pickDirectory` has no start-folder option, so the extract
+    dialog cannot pre-select the archive's folder. Todo:
+    [pick-directory-starts-in-a-folder](../../todos/pick-directory-starts-in-a-folder.md).
+- Ticket: ready for deploy.
+
+Left for the owner: push imbatranim-apps first, then this repo, then deploy.

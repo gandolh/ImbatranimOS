@@ -5540,3 +5540,17 @@ passed 11 of 11. The owner chose a stricter default for built-in apps' files
 while 68 was in review; brief 70 flips it with the grant flows. A todo notes
 that the Marketplace's header filter does not drop COOP, COEP or CORP.
 Deploy and 67's phone checks are the owner's.
+
+## [2026-11-06] done | Briefs 64, 65, 66 done: Games group, Notepad takes Markdown, Files opens archives
+
+Built from the main session and committed on 2026-11-06: 64 as imbatranim-apps
+`647580f` plus OS `6a6a8d9`, 65 as `e8016ed` plus the fix `f743f0c` (a retired
+app's Start pin moves to its replacement), 66 as `712538b`. Games settled the
+group layout as one root workspace; the recipe is in
+[imbatranim-apps-group-recipe.md](wiki/imbatranim-apps-group-recipe.md). Walk
+2a (Games install in 8.5 s and 125 MB, Office PDFs from imbatranim-apps
+`8a42180`, the WASM fixture) and walk 2b (65, 66) passed. Office's pin moved to
+`8a42180` in `a80c295`. Accepted gaps in 66: a lone `.gz`, `.xz` or `.bz2`
+fails, and a refused zip-slip archive leaves an empty folder; both are todos
+or noted in the outcome. Owner: push imbatranim-apps first, then this repo,
+then deploy.

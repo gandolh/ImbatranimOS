@@ -75,3 +75,22 @@ brief 94).
 - Full test run green; the build has no `MarkdownEditor` chunk; the walk holds.
 - **Owner check** after a deploy: an `.md` from Files opens in Notepad's
   split view on the phone and the desktop.
+
+## Outcome (2026-11-06)
+
+Built and committed: `e8016ed` (1.198.0) and the fix `f743f0c`. Notepad opens
+`.md` files in a split view with the ported preview, outline, toolbar and
+scroll sync. The view choice is stored under `imbatranim:notepad:view`;
+`rehype-highlight` ^7.0.2 became Notepad's dependency. The Markdown Editor
+add-on and its backend notes module are deleted. `RETIRED_APP_IDS` gains
+`markdown-editor` and `notepad`, and the `BUILT_IN_TARGETS` rule covers the
+move. The main session also fixed Notepad's shortcut text and the tour.
+Harmless comments about the old editor remain in `FileManager.tsx` (around
+line 1081) and `files.service.ts` (around line 729).
+
+- **Walk 2b (2026-11-06):** passed except one thing. Start pins were not
+  migrated for retired ids. `f743f0c` fixes it: a retired app's Start pin moves
+  to its replacement (`retiredApps.ts`).
+- Ticket: ready for deploy.
+
+Left for the owner: push imbatranim-apps first, then this repo, then deploy.

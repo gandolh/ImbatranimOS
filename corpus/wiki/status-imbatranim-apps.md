@@ -1,5 +1,5 @@
 ---
-summary: Dated status (2026-11-06) of the imbatranim-apps plan, briefs 63-76 - which are built and where (63 rename, 67 WebAssembly, 68 app identity, 72 Start, 73 chooser link), what the owner still owes, and what is open. Plan and brief table in research-imbatranim-apps.md.
+summary: Dated status (2026-11-06) of the imbatranim-apps plan, briefs 63-76 - which are built and where (63 rename, 64 Games, 65 Notepad, 66 Files archives, 67 WebAssembly, 68 app identity, 72 Start, 73 chooser link), what the owner still owes, and what is open. Plan and brief table in research-imbatranim-apps.md.
 updated: 2026-11-06
 ---
 
@@ -24,8 +24,19 @@ Each outcome is in `briefs/done/`.
   height.
 - **73** (`2f5a039`, ready for deploy): Open With links to the Marketplace
   row.
+- **64** (imbatranim-apps `647580f`, OS `6a6a8d9`, ready for deploy): Games
+  install from imbatranim-apps; the layout is one root workspace
+  ([recipe](imbatranim-apps-group-recipe.md)). Walk 2a: 8.5 s, 125 MB.
+- **65** (`e8016ed`, fix `f743f0c`, 1.198.0, ready for deploy): Notepad opens
+  `.md` in a split view; Markdown Editor is gone.
+- **66** (`712538b`, ready for deploy): Files opens archives like folders;
+  Archive Manager is gone. Gaps: a lone `.gz`, `.xz` or `.bz2`; an empty folder
+  after a refused zip-slip.
+- **Office pin** (`a80c295`, 1.202.0): imbatranim-apps `8a42180`, with the PDF
+  decoders; walk 2a rendered JPEG2000 and JBIG2.
+- Owner: push imbatranim-apps first, then this repo, then deploy.
 - Walk 1 passed 11 of 11 on 2026-11-06 (identity, isolation headers, Start,
-  chooser link). Walk 2 is pending: Games install, Office PDFs, the WASM
-  fixture.
-- Open: 64, 65, 66, 69, 70, 71, 74, 75, 76 are not covered here; see their
+  chooser link). Walk 2 (Games install, Office PDFs, the WASM fixture; then
+  65 and 66) passed.
+- Open: 69, 70, 71, 74, 75, 76 are not covered here; see their
   briefs and the log.

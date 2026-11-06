@@ -1,5 +1,5 @@
 ---
-summary: How imbatranim-apps holds the apps that leave the image (2026-11-06), split out of research-imbatranim-apps.md. The three kinds of app are runtime needs, not install units: client only, a WASM engine from an npm package under a kit UI (needs the desktop CSP to allow wasm-unsafe-eval), and kit apps with a server. Install groups after the grill are Office, Games, Developer (Git GUI, REST API Client) and Accessories (Todo, Bookmarks); Start has no folders. The layout is unproven because the office build is anchored at the repo root, so the Games todo measures it. The rename keeps the descriptor id imbatranim-office. §4 is the checklist every move follows, with where backend modules go.
+summary: How imbatranim-apps holds the apps that leave the image (2026-11-06), split out of research-imbatranim-apps.md. The three kinds of app are runtime needs, not install units: client only, a WASM engine from an npm package under a kit UI (needs the desktop CSP to allow wasm-unsafe-eval), and kit apps with a server. Install groups after the grill are Office, Games, Developer (Git GUI, REST API Client) and Accessories (Todo, Bookmarks); Start has no folders. The layout is proven as one root workspace (brief 64 measured both ways; the group recipe is in imbatranim-apps-group-recipe.md). The rename keeps the descriptor id imbatranim-office. §4 is the checklist every move follows, with where backend modules go.
 updated: 2026-11-06
 ---
 
@@ -63,18 +63,28 @@ Rejected:
   `node_modules`, about 853 MB in the local checkout.
 - One descriptor per app: twenty pins to bump, and a clone and install each.
 
-**The layout is unproven.** Office's build is anchored at the repo root.
-`osBuildConfig` finds apps under `<root>/apps`, the kit snapshot under
-`<root>/vendor/imbatranim-ui`, and its own helpers under
-`<root>/packages/shared`. A group in its own folder with its own lockfile
-would import those helpers from outside its `node_modules`, so `vite`
-wouldn't resolve. There are two ways out, and the Games todo measures both:
+### The layout is settled: (a)
 
-- **(a) One workspace.** One root lockfile, with each group descriptor running
-  a scoped `npm ci --workspace=<group>`. This works only if npm really limits
-  the install.
-- **(b) Self-contained groups.** Each group has its own lockfile and its own
-  copy of the build helper, or the helper as a `file:` package.
+Brief 64 (2026-11-06) measured both ways on Games, each from a shallow clone
+with an empty npm cache, as the Marketplace installs:
+
+| | (a) one root workspace | (b) self-contained group |
+|---|---|---|
+| `node_modules` | 120,242,235 B, 43 packages | 116,911,011 B, 37 packages |
+| Install, empty cache (3 runs) | 3.7 / 4.0 / 5.4 s | 3.4 / 3.6 / 4.4 s |
+| Install, warm cache | ~3.0 s | ~2.7 s |
+| npm cache left behind | 29.5 MB | 29.2 MB |
+| Build | 0.75-0.97 s | 0.76-0.87 s |
+| Output | 40,364 B, 5 files | identical but one chunk hash |
+| Office dependencies installed | none | none |
+
+The two cost the same, so the choice rested on upkeep. (a) won: one root
+lockfile, and one copy of the build helper that every group imports. (b) lost
+because each group would carry its own lockfile and its own helper copy (or a
+`file:` package), and every later group would repeat that. Games is the first
+group built this way, and the later ones follow the
+[group recipe](imbatranim-apps-group-recipe.md). In the real install on the
+dev container, Games took 8.5 s and 125 MB.
 
 ## 3. The rename
 
@@ -100,8 +110,8 @@ wouldn't resolve. There are two ways out, and the Games todo measures both:
 Every move in the backlog (Games and the seven after it) follows these steps;
 each adds only what is particular to its apps.
 
-1. **Port.** In the group's folder of imbatranim-apps, using the layout the Games
-   todo settled:
+1. **Port.** In the group's folder of imbatranim-apps, using the layout brief 64
+   settled ([recipe](imbatranim-apps-group-recipe.md)):
    - the app becomes a kit app that exports `App`, and its engines,
      components, stores and tests come across unchanged;
    - dependencies outside the shared kit (`zustand`, `dayjs`, `monaco-editor`)

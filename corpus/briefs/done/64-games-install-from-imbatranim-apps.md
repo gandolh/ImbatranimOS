@@ -123,3 +123,30 @@ Brief 63 (the repo is imbatranim-apps).
 - **Owner check** after the pushes (apps repo first, then the OS) and a
   deploy: Start on the VPS has no games until Games is installed, and then
   both play.
+
+## Outcome (2026-11-06)
+
+Built and committed: imbatranim-apps `647580f` (the Games group, with
+Minesweeper and Solitaire, a `groups.test.ts` and a `sharedDir` option on
+`osBuildConfig`) and OS `6a6a8d9` (the pin in `games.json`, `bomb` and `spade`
+icons, `apps/add-ons/games` and its `manifest.ts` line and lockfile entries
+deleted, README, tour and the Marketplace icon list). The desktop bundle is 18
+KB smaller.
+
+- **Layout decision: (a), one root workspace.** The measured table and the
+  reasons are in
+  [research-imbatranim-apps-layout.md](../../wiki/research-imbatranim-apps-layout.md#the-layout-is-settled-a);
+  the recipe for the next groups is
+  [imbatranim-apps-group-recipe.md](../../wiki/imbatranim-apps-group-recipe.md).
+- **Correction to the brief:** the games need the `shortcuts` capability,
+  because the fenced App tests exercise the hotkeys.
+- **Walk 2a passed (2026-11-06):** Games installed from a `file://` clone of
+  imbatranim-apps at `647580f` in 8.5 s and 125 MB; the choices came back.
+  The dev container had `MARKETPLACE_ALLOW_LOCAL_REPOS=false`, so the walker
+  restarted the servers with it on. Sync only adds files, so `/app` may hold
+  stale deleted add-ons; the next walk should sync with deletes or say so.
+- Ticket: ready for deploy.
+
+Left for the owner: push imbatranim-apps first, then this repo, then deploy.
+Then check that Start on the VPS has no games until Games is installed, and
+that both play afterwards.

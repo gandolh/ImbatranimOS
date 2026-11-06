@@ -179,9 +179,9 @@ Player, Code Editor and Diff, and Clock and Calendar.
 | Brief | What |
 |---|---|
 | [63](../briefs/done/63-imbatranim-office-becomes-imbatranim-apps.md), from `imbatranim-office-becomes-imbatranim-apps` | The rename (first) |
-| [64](../briefs/todo/64-games-install-from-imbatranim-apps.md), from `games-install-from-imbatranim-apps` | Games; settles the group layout (second) |
-| [65](../briefs/todo/65-notepad-takes-over-markdown-editors-job.md), from `notepad-takes-over-markdown-editors-job` | Notepad takes over Markdown Editor |
-| [66](../briefs/todo/66-files-handles-archives-and-archive-manager-goes.md), from `files-handles-archives-and-archive-manager-goes` | Files opens archives like folders; Archive Manager goes |
+| [64](../briefs/done/64-games-install-from-imbatranim-apps.md), from `games-install-from-imbatranim-apps` | Games; settles the group layout (second) |
+| [65](../briefs/done/65-notepad-takes-over-markdown-editors-job.md), from `notepad-takes-over-markdown-editors-job` | Notepad takes over Markdown Editor |
+| [66](../briefs/done/66-files-handles-archives-and-archive-manager-goes.md), from `files-handles-archives-and-archive-manager-goes` | Files opens archives like folders; Archive Manager goes |
 | [67](../briefs/done/67-kit-apps-may-run-webassembly-with-threads.md), from `kit-apps-may-run-webassembly` | The desktop allows WASM |
 | [69](../briefs/todo/69-apps-get-data-folders-of-their-own.md), from `apps-get-a-data-folder-of-their-own` | A data folder per app (`system.data`) |
 | [71](../briefs/todo/71-catalog-apps-bring-background-services-and-commands.md), from `catalog-apps-bring-background-services-and-commands` | Catalog apps bring background services and palette sources |

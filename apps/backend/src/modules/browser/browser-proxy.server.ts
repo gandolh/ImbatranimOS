@@ -17,6 +17,7 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { logging, server as wisp } from '@mercuryworkshop/wisp-js/server';
 
 import { browserProxyOriginOf, type Env } from '../../config/env.schema';
+import { FRAME_EMBEDDER_POLICY } from '../../security-headers';
 import { LocalIdentityService } from '../auth/ws-auth';
 import { authorizeUpgrade } from '../pty/pty-upgrade';
 import { GuardedTcpSocket, RefusedUdpSocket } from './guarded-socket';
@@ -130,6 +131,15 @@ export class BrowserProxyServer
   ): Promise<void> {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
+    // The desktop is cross-origin isolated, so the frame it holds here must
+    // be too: an embedder policy of its own, and a resource policy that lets
+    // another origin frame it (`frame-ancestors` below still names the only
+    // one that may). The headers go on every file, so the service worker
+    // and bare-mux's shared worker are isolated like the page that starts
+    // them. Proxied pages get theirs from the service worker (sw.js).
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', FRAME_EMBEDDER_POLICY);
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.writeHead(405, { Allow: 'GET, HEAD' }).end();
       return;

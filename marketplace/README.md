@@ -61,6 +61,7 @@ container. Nothing is rebuilt into the OS image. Backups leave
   directory (`dist/app.mjs`, not `app.mjs`). That directory is served, and
   nothing outside it is; it may hold at most 256 MB. Other files the module
   needs (chunks, assets, WASM) go beside it and are loaded relative to it.
+  WASM follows the reviewers' rule in [WebAssembly](#webassembly).
 - **`type`**: `"static"` for an app that is only its module; `"service"` for one
   that also runs a server (below).
 - **`capabilities`**: the parts of `system` the app may use: `fs`, `http`,
@@ -320,8 +321,9 @@ import into a read from `globalThis.__imbatranimShared.modules[specifier]`
 as the module evaluates. With Vite or Rollup, one way is a plugin that
 resolves each specifier to a small virtual module re-exporting that object's
 properties by name. An import map won't work: it is an inline script, which
-the desktop's CSP (`script-src 'self'`) refuses, and it would have to exist
-before the page loads its first module.
+the desktop's CSP (`script-src 'self' 'wasm-unsafe-eval'`, no
+`'unsafe-inline'`) refuses, and it would have to exist before the page loads
+its first module.
 
 ### Building against a snapshot
 
@@ -375,6 +377,45 @@ the desktop checks is the one the live build was made against, so a changed
 Trust doesn't change. A catalog app already runs in the desktop's page with
 nothing between it and the page; sharing the page's React gives it nothing
 it couldn't already reach.
+
+## WebAssembly
+
+A catalog app, `mount` or kit, may compile WebAssembly in the desktop's
+page: the desktop's CSP has `'wasm-unsafe-eval'`. That lets the app's own
+scripts compile a `.wasm`; it doesn't let a string run as JavaScript
+(`eval` and `new Function` are still refused). The `.wasm` goes beside the
+module and is loaded relative to it, and the marketplace serves it as
+`application/wasm`, which `instantiateStreaming` needs:
+
+```js
+const url = new URL("./codec.wasm", import.meta.url);
+const { instance } = await WebAssembly.instantiateStreaming(fetch(url));
+```
+
+**The reviewers' rule.** The CSP can't tell one `.wasm` from another, so
+what may ship is decided here, at review. A catalog app's WASM comes from an
+npm package, pinned by the app's lockfile, as the package published it. It
+is never compiled during the install and never committed to the app's
+repository. A descriptor whose build breaks this isn't merged.
+
+**Threads.** The desktop is cross-origin isolated
+(`Cross-Origin-Opener-Policy: same-origin`,
+`Cross-Origin-Embedder-Policy: require-corp`), so `crossOriginIsolated` is
+true in its page and `SharedArrayBuffer` and shared `WebAssembly.Memory`
+work: an app can hand memory to its workers, which is what WASM threads are
+built on. Start a worker from a file beside the module
+(`new Worker(new URL("./worker.mjs", import.meta.url), { type: "module" })`);
+it is served with the same headers. Check `crossOriginIsolated` before
+relying on threads and fall back to one when it is false: a browser that
+can't isolate the page runs it without.
+
+Isolation asks nothing new of an app: everything it loads already comes from
+the desktop's origin under the CSP. One thing does change: a window an app
+opens on another site is cut off from the desktop's page both ways (it has
+no `window.opener`, and the handle `window.open` returned reads as closed).
+
+An app from a URL has WASM in its sandbox, but no threads (see
+[What the sandbox means for the app](#what-the-sandbox-means-for-the-app)).
 
 ## Apps from a URL
 
@@ -465,6 +506,8 @@ with `host.server` always `null`. The differences:
   available.
 - Pointer lock works. Pop-ups, downloads, fullscreen, the clipboard, forms
   and navigating the desktop do not.
+- WebAssembly compiles, but there are no threads: the frame isn't
+  cross-origin isolated, so `SharedArrayBuffer` doesn't exist there.
 - While its window is in the background, a transparent shield covers the
   app: the owner's first click only brings it to the front.
 - The app must not take the keyboard while its window is in the background

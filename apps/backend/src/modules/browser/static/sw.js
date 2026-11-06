@@ -107,6 +107,42 @@ scramjet.cookieStore.setCookies = (...args) => {
   return result;
 };
 
+// The desktop is cross-origin isolated, so every document in the Browser's
+// frame must send an embedder policy of its own (browser-proxy.server.ts).
+// Scramjet strips the site's own and adds one only while this worker is
+// isolated itself; this makes sure every proxied page, frame and worker has
+// one. `require-corp` asks nothing of a proxied page, since all it loads
+// comes through this worker from this origin; a load that slips past the
+// rewriter to another origin is refused instead of fetched directly.
+const ISOLATED_DESTINATIONS = new Set([
+  'document',
+  'iframe',
+  'frame',
+  'worker',
+  'sharedworker',
+]);
+
+function isolated(request, response) {
+  if (
+    !ISOLATED_DESTINATIONS.has(request.destination) &&
+    request.mode !== 'navigate'
+  ) {
+    return response;
+  }
+  try {
+    const headers = new Headers(response.headers);
+    headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  } catch {
+    // A response that can't be rebuilt (an opaque one) goes as it came.
+    return response;
+  }
+}
+
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
@@ -118,7 +154,7 @@ self.addEventListener('fetch', (event) => {
       await scramjet.loadConfig();
       if (scramjet.route(event)) {
         await jarReady();
-        return scramjet.fetch(event);
+        return isolated(event.request, await scramjet.fetch(event));
       }
       return fetch(event.request);
     })(),

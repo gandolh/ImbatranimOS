@@ -7,7 +7,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import type { Server } from 'http';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
-import { securityHeaders } from '../src/security-headers';
+import { EMBEDDER_POLICY, securityHeaders } from '../src/security-headers';
 
 /**
  * Verifies the hardening added in The v1 release work: the hand-rolled security-headers
@@ -69,6 +69,15 @@ describe('Security hardening (e2e)', () => {
       expect(csp).toContain('connect-src');
       expect(csp).toMatch(/connect-src 'self'(;|$)/);
       expect(csp).not.toMatch(/connect-src[^;]*\bwss?:/);
+    });
+
+    it('makes the desktop cross-origin isolated, and lets its scripts compile WASM', async () => {
+      const res = await http.get('/health').expect(200);
+      expect(res.headers['cross-origin-opener-policy']).toBe('same-origin');
+      expect(res.headers['cross-origin-embedder-policy']).toBe(EMBEDDER_POLICY);
+      expect(res.headers['content-security-policy']).toContain(
+        "script-src 'self' 'wasm-unsafe-eval';",
+      );
     });
 
     it('does NOT set HSTS in-app (that is the reverse proxy job)', async () => {

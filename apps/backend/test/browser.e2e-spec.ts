@@ -154,6 +154,32 @@ describe('the Browser proxy origin (e2e)', () => {
       .expect('Content-Type', 'application/wasm');
   });
 
+  it('isolates every response, so the isolated desktop can frame it', async () => {
+    const responses = [
+      await proxy().get('/host.html').expect(200),
+      await proxy().head('/host.html').expect(200),
+      await proxy().get('/sw.js').expect(200),
+      await proxy().get('/baremux/worker.js').expect(200),
+      await proxy().get('/scram/scramjet.wasm.wasm').expect(200),
+      await proxy().get('/nope').expect(404),
+      await proxy().post('/host.html').expect(405),
+    ];
+    for (const res of responses) {
+      expect(res.headers['cross-origin-opener-policy']).toBe('same-origin');
+      expect(res.headers['cross-origin-embedder-policy']).toBe('require-corp');
+      expect(res.headers['cross-origin-resource-policy']).toBe('cross-origin');
+    }
+    // A revalidation keeps them too.
+    const etag = responses[0].headers['etag'];
+    const revalidated = await proxy()
+      .get('/host.html')
+      .set('If-None-Match', etag)
+      .expect(304);
+    expect(revalidated.headers['cross-origin-embedder-policy']).toBe(
+      'require-corp',
+    );
+  });
+
   it('serves nothing off its list: no API, no files, no traversal, no writes', async () => {
     for (const path of [
       '/',

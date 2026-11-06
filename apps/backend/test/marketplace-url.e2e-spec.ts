@@ -210,6 +210,10 @@ function expectSandboxHeaders(
   expect(headers['access-control-allow-origin']).toBe('*');
   expect(headers['access-control-allow-credentials']).toBeUndefined();
   expect(headers['cross-origin-resource-policy']).toBe('cross-origin');
+  // A frame inside the isolated desktop sends a policy of its own; the
+  // desktop's opener policy, set before the override, is taken off.
+  expect(headers['cross-origin-embedder-policy']).toBe('require-corp');
+  expect(headers['cross-origin-opener-policy']).toBeUndefined();
   expect(headers['x-content-type-options']).toBe('nosniff');
   expect(headers['referrer-policy']).toBe('no-referrer');
   expect(headers['x-dns-prefetch-control']).toBe('off');

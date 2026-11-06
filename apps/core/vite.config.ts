@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import type { ISOLATION_HEADERS } from '../backend/src/security-headers.ts'
 
 const CORE_DIR = fileURLToPath(new URL('.', import.meta.url))
 const BACKEND_DIR = fileURLToPath(new URL('../backend', import.meta.url))
@@ -37,6 +38,19 @@ export default defineConfig(({ mode }) => {
   return {
     base,
     plugins: [react(), tailwindcss()],
-    server: { proxy: devProxy(base, backendPort) },
+    server: {
+      proxy: devProxy(base, backendPort),
+      // In dev this server, not the backend, serves the desktop's page and
+      // its workers, so it sends the isolation headers the backend sends in
+      // the deploy. Without them `crossOriginIsolated` is false here. They
+      // are a copy (a value import from the backend makes Vite warn on every
+      // start), held to EMBEDDER_POLICY by the type check: switch that one,
+      // and this one fails to compile until it matches. The CSP stays the
+      // deploy's alone: Vite's HMR preamble is inline script.
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+      } satisfies typeof ISOLATION_HEADERS,
+    },
   }
 })

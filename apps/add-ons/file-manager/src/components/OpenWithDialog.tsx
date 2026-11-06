@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Checkbox, Dialog, cn, useSystem } from '@imbatranim/ui'
-import { marketplaceGap } from '../lib/marketplaceOpeners'
+import { marketplaceGap, marketplaceIntent, marketplaceTarget } from '../lib/marketplaceOpeners'
 
 /**
  * "Open with…" — the chooser, and the place a default gets set.
@@ -29,7 +29,7 @@ export function OpenWithDialog({
   onPick: (appId: string) => void
   onClose: () => void
 }) {
-  const { associations } = useSystem().intents
+  const { associations, openApp } = useSystem().intents
   const claimants = useMemo(() => associations.candidatesFor(fileName), [associations, fileName])
   const everything = useMemo(() => associations.allCandidates(), [associations])
   const [showAll, setShowAll] = useState(claimants.length === 0)
@@ -37,6 +37,7 @@ export function OpenWithDialog({
   const [picked, setPicked] = useState<string>(claimants[0]?.appId ?? '')
 
   const key = associations.keyFor(fileName)
+  const target = marketplaceTarget(key)
   const options = showAll ? everything : claimants.length > 0 ? claimants : everything
 
   function confirm() {
@@ -60,8 +61,24 @@ export function OpenWithDialog({
           <p className="text-on-surface-variant text-[12px]">
             {/* An office file with Office not installed says where to get it
                 rather than steering it into the text editor. */}
-            {marketplaceGap(key) ??
-              'No app claims this file type. Pick one — the text editor opens most things.'}
+            {target ? (
+              <>
+                No installed app opens .{key} files.{' '}
+                <button
+                  onClick={() => {
+                    openApp('settings', marketplaceIntent(target.descriptorId))
+                    onClose()
+                  }}
+                  className="text-primary focus-visible:ring-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
+                >
+                  {target.name} in Settings → Marketplace
+                </button>{' '}
+                does.
+              </>
+            ) : (
+              (marketplaceGap(key) ??
+              'No app claims this file type. Pick one — the text editor opens most things.')
+            )}
           </p>
         )}
 

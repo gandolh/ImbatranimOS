@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, SHARED_KIT_VERSION, useConfirm } from '@imbatranim/ui'
+import { Button, SHARED_KIT_VERSION, cn, useConfirm } from '@imbatranim/ui'
 import { api } from '../../lib/axios'
 import { openApp } from '../../shared/intents/openApp'
 import { useWindowStore } from '../../shared/store/windowStore'
@@ -78,7 +78,12 @@ function rowsOf(apps: MarketplaceApp[]): Row[] {
  * apps under the heading, each with its own Open. Enabling and disabling an
  * app stays per app, in Settings → Apps.
  */
-export function MarketplaceSettings() {
+export function MarketplaceSettings({
+  focusRow = null,
+}: {
+  /** A row to scroll to and highlight; a new `n` asks again for the same `id`. */
+  focusRow?: { id: string; n: number } | null
+} = {}) {
   const queryClient = useQueryClient()
   const query = useQuery({
     queryKey: ['marketplace'],
@@ -135,6 +140,20 @@ export function MarketplaceSettings() {
       setError(apiMessage(err, "Couldn't reach that repository."))
     }
   }
+
+  const [highlight, setHighlight] = useState<string | null>(null)
+  const rowRefs = useRef(new Map<string, HTMLElement>())
+  const loaded = !!listing
+  useEffect(() => {
+    if (!focusRow || !loaded) return
+    // An id not in the catalog finds no row, and nothing happens.
+    const el = rowRefs.current.get(focusRow.id)
+    if (!el) return
+    el.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+    setHighlight(focusRow.id)
+    const timer = setTimeout(() => setHighlight(null), 2500)
+    return () => clearTimeout(timer)
+  }, [focusRow, loaded])
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['marketplace'] })
   const setError = setActionError
@@ -275,9 +294,19 @@ export function MarketplaceSettings() {
           return (
             <div
               key={row.descriptorId}
+              data-descriptor-id={row.descriptorId}
+              ref={(el) => {
+                if (el) rowRefs.current.set(row.descriptorId, el)
+                else rowRefs.current.delete(row.descriptorId)
+              }}
               // min-w-0: a grid item is as wide as its content by default, and
               // a long job reason would widen every row past the window.
-              className="rounded-control border-outline-variant bg-surface-container-low min-w-0 border px-3 py-2.5"
+              className={cn(
+                'rounded-control bg-surface-container-low min-w-0 border px-3 py-2.5 transition-colors',
+                highlight === row.descriptorId
+                  ? 'border-primary ring-primary ring-2'
+                  : 'border-outline-variant'
+              )}
             >
               <div className="flex items-center gap-3">
                 <span className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface flex h-7 w-7 shrink-0 items-center justify-center border">

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Monitor,
   Palette,
@@ -12,6 +12,7 @@ import {
   Boxes,
   RefreshCw,
 } from 'lucide-react'
+import { useSystem } from '@imbatranim/ui'
 import { Checkbox } from '../../shared/components/ui'
 import { APP_REGISTRY } from '../../shared/registry/registry'
 import { NON_DISABLEABLE } from '../../shared/registry/enabledApps'
@@ -50,6 +51,19 @@ export function Settings() {
   const toggleApp = useAddonStore((s) => s.toggle)
   // The Apps list includes installed marketplace apps.
   useRegistryVersion()
+
+  // An intent `{ marketplace: <descriptor id> }` asks for that row of the
+  // Marketplace pane. The counter lets the same row be asked for again.
+  const system = useSystem()
+  const [focusRow, setFocusRow] = useState<{ id: string; n: number } | null>(null)
+  useEffect(
+    () =>
+      system.intents.onIntent((payload) => {
+        const id = (payload as { marketplace?: unknown } | null | undefined)?.marketplace
+        if (typeof id === 'string') setFocusRow((prev) => ({ id, n: (prev?.n ?? 0) + 1 }))
+      }),
+    [system]
+  )
 
   return (
     <div className="bg-surface text-on-surface flex h-full flex-col select-none">
@@ -114,7 +128,7 @@ export function Settings() {
         {/* Marketplace ──────────────────────────────────────────── */}
         <section className="mb-10">
           <SectionHeader icon={Store} title="Marketplace" />
-          <MarketplaceSettings />
+          <MarketplaceSettings focusRow={focusRow} />
         </section>
 
         {/* Linux apps ─────────────────────────────────────────── */}

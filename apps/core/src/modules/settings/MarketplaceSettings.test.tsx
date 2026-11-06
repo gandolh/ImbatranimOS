@@ -90,12 +90,12 @@ afterEach(() => {
   syncMarketplaceApps([])
 })
 
-async function render() {
+async function render(focusRow: { id: string; n: number } | null = null) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   await act(async () => {
     root.render(
       <QueryClientProvider client={client}>
-        <MarketplaceSettings />
+        <MarketplaceSettings focusRow={focusRow} />
       </QueryClientProvider>
     )
   })
@@ -403,5 +403,25 @@ describe('MarketplaceSettings: a descriptor with several apps', () => {
     )
     expect(container.querySelector('button[aria-label="Open Settings"]')).toBeNull()
     expect(container.querySelector('button[aria-label="Open Sheets"]')).not.toBeNull()
+  })
+})
+
+describe('MarketplaceSettings: scrolling to a row from an intent', () => {
+  const scroll = vi.fn()
+  beforeEach(() => {
+    scroll.mockClear()
+    Element.prototype.scrollIntoView = scroll
+  })
+
+  it('scrolls to the row and highlights it', async () => {
+    await render({ id: ID, n: 1 })
+    expect(scroll).toHaveBeenCalledTimes(1)
+    expect(container.querySelector(`[data-descriptor-id="${ID}"]`)?.className).toContain('ring-2')
+  })
+
+  it('does nothing when the id is not in the catalog', async () => {
+    await render({ id: 'not-there', n: 1 })
+    expect(scroll).not.toHaveBeenCalled()
+    expect(container.querySelector('.ring-2')).toBeNull()
   })
 })

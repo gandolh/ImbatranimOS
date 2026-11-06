@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { OpenerResolution } from '@imbatranim/ui'
 import { buildMenuItems, type BuildMenuItemsCtx } from './buildMenuItems'
-import { marketplaceGap } from './marketplaceOpeners'
+import { marketplaceGap, marketplaceIntent, marketplaceTarget } from './marketplaceOpeners'
 import { newFileOpener } from './newFileTemplates'
 import type { Associations } from './openWith'
 
@@ -132,5 +132,17 @@ describe('marketplaceGap', () => {
   it('says nothing for a type no Marketplace app is known to open', () => {
     expect(marketplaceGap('bin')).toBeNull()
     expect(marketplaceGap('constructor')).toBeNull()
+  })
+})
+
+describe('the chooser link to the Marketplace', () => {
+  it('targets the Office descriptor for an office type, and nothing for a refused one', () => {
+    expect(marketplaceTarget('docx')).toEqual({ name: 'Office', descriptorId: 'imbatranim-office' })
+    expect(marketplaceTarget('ppt')).toBeNull()
+    expect(marketplaceTarget('toString')).toBeNull()
+  })
+
+  it('asks Settings for that descriptor with a marketplace intent', () => {
+    expect(marketplaceIntent('imbatranim-office')).toEqual({ marketplace: 'imbatranim-office' })
   })
 })

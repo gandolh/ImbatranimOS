@@ -5583,3 +5583,13 @@ Next after 70: 74, then 75 and 76 (the group recipe is in
 `wiki/imbatranim-apps-group-recipe.md`). Owner steps: rename the GitHub
 repo imbatranim-office to imbatranim-apps; push imbatranim-apps first,
 then this repo, then deploy.
+
+## [2026-11-06] maintenance | Two of brief 69's review fixes landed after the pause
+
+`f1abb2c`: a data file name over 200 bytes is a 400, not a 500 (the staged
+sibling is 54 bytes longer). `3e357e8`: a data file is
+synced before the rename and its folder after it. Still open from that
+review: uninstall revoking every token of the row's apps, refusing a token
+for a catalog app that isn't installed, and one lock per app folder; and
+cleaning stale `.part` files.
+

@@ -87,6 +87,9 @@ export function folderOf(
  * or a NUL is refused rather than resolved. `''` is the folder itself, which
  * only a listing may name.
  */
+/** The longest name one path segment may have, in UTF-8 bytes. */
+export const MAX_DATA_NAME_BYTES = 200;
+
 export function normaliseDataPath(raw: unknown, allowRoot = false): string {
   if (typeof raw !== 'string' || raw.length > MAX_DATA_PATH) {
     throw new BadRequestException(
@@ -99,6 +102,14 @@ export function normaliseDataPath(raw: unknown, allowRoot = false): string {
   const segments = raw.split('/').filter((s) => s !== '' && s !== '.');
   if (segments.includes('..')) {
     throw new BadRequestException("A data path can't leave the app's folder");
+  }
+  // A write stages `.<name>.imbatranim-<uuid>.part` beside the file, 54 bytes
+  // longer than the name, and Linux allows 255 bytes per name: a longer name
+  // would pass here and then fail as an error from the file system.
+  if (segments.some((s) => Buffer.byteLength(s) > MAX_DATA_NAME_BYTES)) {
+    throw new BadRequestException(
+      `A name in a data path is at most ${MAX_DATA_NAME_BYTES} bytes`,
+    );
   }
   const path = segments.join('/');
   if (path === '' && !allowRoot) {

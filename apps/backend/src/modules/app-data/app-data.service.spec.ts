@@ -406,4 +406,17 @@ describe('AppDataService', () => {
     expect(() => normaliseDataPath('x'.repeat(513))).toThrow();
     expect(() => normaliseDataPath(42)).toThrow();
   });
+
+  it('refuses a name too long to stage beside, in bytes', () => {
+    expect(normaliseDataPath('a'.repeat(200) + '/b')).toBe(
+      'a'.repeat(200) + '/b',
+    );
+    expect(() => normaliseDataPath('a'.repeat(201))).toThrow(
+      /at most 200 bytes/,
+    );
+    // 101 two-byte letters are 202 bytes, though only 101 characters.
+    expect(() => normaliseDataPath('ș'.repeat(101))).toThrow(
+      /at most 200 bytes/,
+    );
+  });
 });

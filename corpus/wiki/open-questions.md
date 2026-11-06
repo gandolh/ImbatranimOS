@@ -1,5 +1,5 @@
 ---
-summary: One open item (2026-11-06): the owner's calls on which apps leave the image for imbatranim-apps, listed in research-imbatranim-apps.md (rename, install groups, the base, openers, Markdown Editor, wave 2 data, wave 3 modules, WASM, Start folders), before briefs 50 and 51 run. Below it, the resolved questions: the OS's own apps as streamed Linux apps (no, with Open with for Linux apps as brief 46), and the web-OS era ones (install story, HTTPS, image size, the repl module).
+summary: One open item (2026-11-06): whether the backend modules of the apps that leave the image (Clock, Calendar, Todo, Sticky Notes, Bookmarks, Git GUI, REST API Client, Archive Manager) stay in the OS while only the apps move, Claude's default in briefs 59-62; the rest of the imbatranim-apps plan was approved the same day. Below it, the resolved questions: the OS's own apps as streamed Linux apps (no, with Open with for Linux apps as brief 46), and the web-OS era ones (install story, HTTPS, image size, the repl module).
 updated: 2026-11-06
 ---
 
@@ -7,12 +7,13 @@ updated: 2026-11-06
 
 ## Open
 
-**Which apps leave the image for imbatranim-apps** (2026-11-06). The owner
-asked to rename imbatranim-office to imbatranim-apps and move the apps we
-made there as opt-in installs. The ten calls, each with a default, are in
-[research-imbatranim-apps.md](research-imbatranim-apps.md#6-owner-decisions).
-Briefs 50 (the rename) and 51 (Games as the first group) carry defaults and
-can run once the owner confirms them.
+**Do the blocked apps' backend modules stay in the OS?** (2026-11-06) The
+owner approved the imbatranim-apps plan's defaults ("looks good, write the
+briefs"), but two calls had none: where wave 2's data lives and what happens
+to wave 3's system modules. Claude's default is that the modules stay in the
+OS and only the apps move
+([research-imbatranim-apps.md](research-imbatranim-apps.md#6-owner-decisions)).
+Briefs 59-62 build on it and ask the owner to confirm it first.
 
 ## Resolved
 

@@ -5330,3 +5330,36 @@ behaviour. Wiki: status.md (the Linux layer's first paragraph moved to
 [status-linux-apps-layer.md](wiki/status-linux-apps-layer.md) to stay under
 the cap), the research pages' rows and
 [decisions-linux-apps-input-files-look.md](wiki/decisions-linux-apps-input-files-look.md).
+
+## [2026-11-06] briefs | The apps leave the image: briefs 52-62
+
+The owner approved the research's defaults ("looks good, write the
+briefs"): "It's fine if we don't see a high decrease in size, at least some
+of them are uninstallable and the desktop feels more clean." They also asked
+for briefs, or a grill, on the blocked apps. Filed:
+- **52-55, which need nothing from the apps repo:** Notepad takes over
+  Markdown Editor (and the leftover notes DTO goes); the desktop CSP allows
+  WASM; catalog apps can bring background services, widgets, desktop layers
+  and command sources (kit 1.4.0); Start shows a folder per group.
+- **56-62, the moves:** Calculator, Paint and Snipping Tool, then Image
+  Viewer and Media Player into Accessories; Code Editor and Diff into
+  Developer, starting with Monaco's build under the 1 GiB cap; Clock and
+  Calendar, then Todo, Sticky Notes and Bookmarks, into Accessories; Git GUI
+  and REST API Client into Developer; Archive Manager into Accessories.
+- **In imbatranim-office:** briefs 04 (CAD reads DWG in the tab, and the
+  suite may lose its server) and 05 (PDF's JPEG2000 and JBIG2 decoders).
+
+The steps every move shares are a checklist in
+[research-imbatranim-apps-layout.md](wiki/research-imbatranim-apps-layout.md#4-moving-one-app-the-checklist).
+Facts found while writing:
+- `openApp` on a missing id only warns, so Files' Compare, Extract and
+  Compress need hiding when their apps aren't installed;
+- text falls back to the Code Editor (`TEXT_FALLBACK_APP`), which becomes
+  Notepad;
+- Sticky Notes uses `desktopLayer`, a fourth hook the catalog lacks;
+- the office server converts DWG and nothing else.
+
+The two calls with no default (wave 2's data, wave 3's modules) got Claude's
+default, that the backend modules stay in the OS and only the apps move. It
+is the open question, and briefs 59-62 ask for it first. "Group" joins
+glossary-marketplace. Briefs 50 and 51 now say approved.

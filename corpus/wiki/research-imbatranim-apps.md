@@ -143,32 +143,46 @@ the repo root; and the rename keeps the descriptor id `imbatranim-office`.
 
 ## 6. Owner decisions
 
-1. Rename to imbatranim-apps; keep the board project name or start a new one.
-2. Groups as the install unit (default), per app, or one suite.
-3. The base: Settings, Files, Terminal, Notepad, System Monitor, Logs, Browser
-   (default), or smaller.
-4. A fresh OS without an image viewer and media player (default: yes, the
-   Marketplace sentence covers it), or keep those two in the base.
-5. Markdown Editor folded into Notepad (default: yes); Bookmarks into the
-   Browser (default: no).
-6. Wave 2 data: an OS-side store, a group server, or files.
-7. Wave 3: the modules stay in the OS as capabilities, or the apps stay built
-   in.
-8. WASM engines: allow `'wasm-unsafe-eval'`, npm-provided WASM only (default:
-   yes, with CAD's DWG reader as the first).
-9. Start folders by group (default: yes).
-10. Or none of it: default-disabled built-ins.
+The owner approved the defaults on 2026-11-06 ("looks good, write the
+briefs"), adding: "It's fine if we don't see a high decrease in size, at
+least some of them are uninstallable and the desktop feels more clean."
+
+1. Rename to imbatranim-apps; a new board project (brief 50).
+2. Groups as the install unit: Office, Accessories, Games, Developer.
+3. The base: Settings, Files, Terminal, Notepad, System Monitor, Logs,
+   Browser.
+4. A fresh OS has no image viewer or media player; the chooser names
+   Accessories.
+5. Markdown Editor folds into Notepad; Bookmarks stays its own app.
+6. and 7. **Not yet confirmed.** The two calls had no default. Claude's
+   default from the same day: the backend modules of wave 2 (data) and
+   wave 3 (system work) stay in the OS, and only the apps move. See
+   [the checklist page](research-imbatranim-apps-layout.md#4-moving-one-app-the-checklist).
+   The owner can overrule it before briefs 59-62 run.
+8. WASM engines from npm packages, after a `'wasm-unsafe-eval'` CSP change.
+9. Start folders by group.
+10. Default-disabled built-ins: not taken.
 
 ## 7. Briefs
 
-Filed: [brief 50](../briefs/todo/50-imbatranim-office-becomes-imbatranim-apps.md)
-(the rename) and [brief 51](../briefs/todo/51-games-install-from-imbatranim-apps.md)
-(Games as the first group, settling the layout). The rest is not filed and
-waits for the decisions above:
-- Accessories;
-- Developer, including Monaco's build under the cap;
-- Markdown Editor into Notepad;
-- Start folders;
-- the WASM CSP change with CAD's DWG reader;
-- the contract growth for wave 2;
-- the notes leftover.
+All filed on 2026-11-06. Briefs 52-55 need nothing from the apps repo; the
+moves wait for 50 and 51.
+
+| Brief | What |
+|---|---|
+| [50](../briefs/todo/50-imbatranim-office-becomes-imbatranim-apps.md) | The rename |
+| [51](../briefs/todo/51-games-install-from-imbatranim-apps.md) | Games, settling the group layout |
+| [52](../briefs/todo/52-notepad-takes-over-markdown-editors-job.md) | Notepad takes over Markdown Editor; the notes leftover |
+| [53](../briefs/todo/53-kit-apps-may-run-webassembly.md) | The desktop CSP allows WASM |
+| [54](../briefs/todo/54-catalog-apps-bring-background-widgets-layers-and-commands.md) | Catalog apps bring background services, widgets, layers, commands |
+| [55](../briefs/todo/55-start-shows-a-folder-per-group.md) | Start folders |
+| [56](../briefs/todo/56-calculator-paint-and-snipping-tool-install-as-accessories.md) | Calculator, Paint, Snipping Tool |
+| [57](../briefs/todo/57-image-viewer-and-media-player-join-accessories.md) | Image Viewer, Media Player |
+| [58](../briefs/todo/58-code-editor-and-diff-install-as-developer.md) | Code Editor and Diff; Monaco under the cap |
+| [59](../briefs/todo/59-clock-and-calendar-join-accessories.md) | Clock, Calendar (needs 54) |
+| [60](../briefs/todo/60-todo-sticky-notes-and-bookmarks-join-accessories.md) | Todo, Sticky Notes, Bookmarks (needs 54) |
+| [61](../briefs/todo/61-git-gui-and-rest-api-client-join-developer.md) | Git GUI, REST API Client |
+| [62](../briefs/todo/62-archive-manager-joins-accessories.md) | Archive Manager |
+
+In imbatranim-office (to be renamed), after 53: `04-cad-reads-dwg-in-the-tab`
+(and the suite may lose its server) and `05-pdf-decodes-jpeg2000-and-jbig2-images`.

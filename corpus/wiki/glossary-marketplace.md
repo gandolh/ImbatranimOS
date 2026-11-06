@@ -1,5 +1,5 @@
 ---
-summary: The vocabulary for apps that come from outside this repo: marketplace catalog, descriptor, suite descriptor, marketplace app, kit app, shared kit, URL app and app manifest, and imbatranim-office, with the synonyms each displaces and two proposed terms that were never adopted. Split out of glossary.md on 2026-10-21.
+summary: The vocabulary for apps that come from outside this repo: marketplace catalog, descriptor, suite descriptor, marketplace app, kit app, shared kit, group (2026-11-06), URL app and app manifest, and imbatranim-office, with the synonyms each displaces and two proposed terms that were never adopted. Split out of glossary.md on 2026-10-21.
 updated: 2026-11-02
 ---
 
@@ -57,6 +57,12 @@ descriptor's display name, not the repo's. Its own corpus holds the suite's
 vocabulary.
 _Avoid_: the craft suite, the office add-ons (true only until each app is
 retired, the built-in retirement (2026-10-28)).
+
+**Group** (2026-11-06):
+A suite descriptor for apps from imbatranim-apps that are installed together
+and shown as one folder in Start: Office, Accessories, Games, Developer.
+_Avoid_: bundle, pack, category; suite for the install unit (a suite
+descriptor is the mechanism); folder for anything but Start's side of it.
 
 **URL app** / **app manifest** (2026-10-07):
 An app installed from its own repo's URL, unreviewed, prebuilt and run in a

@@ -97,3 +97,49 @@ wouldn't resolve. There are two ways out, and brief 51 measures both:
   - `@imbatranim-office/root`;
   - one message in vps-deploy's `rollout.ts`.
 - **App ids keep `office-`.** They name the Office group, not the repo.
+
+## 4. Moving one app: the checklist
+
+Every move brief (51, 56-62) follows these steps. Each brief adds only what
+is particular to its apps.
+
+1. **Port.** In the group's folder of imbatranim-apps, using the layout brief
+   51 settled:
+   - the app becomes a kit app that exports `App`, and its engines,
+     components, stores and tests come across unchanged;
+   - dependencies outside the shared kit (`zustand`, `dayjs`, `monaco-editor`)
+     become the group's own, pinned to the versions the OS resolves.
+2. **Same id.** The app keeps its built-in id, so pins, startup entries,
+   Open-with choices and recents come back on install. It needs no
+   `RETIRED_APP_IDS` pair.
+3. **Catalog.** Add the app to the group's descriptor in `marketplace/`:
+   - name, description, meta, window sizes, `multiInstance` and `opens`,
+     copied from the manifest;
+   - capabilities from the `system` calls it makes;
+   - its icon in `ICONS` (`apps/core/src/shared/registry/marketplace.tsx`);
+   - a new pin.
+4. **Remove the built-in.** Delete its `apps/add-ons/` folder, its line in
+   `manifest.ts`, its lockfile entries and the tests that name it.
+5. **Without it.** Whatever opened it must say where it comes from, not do
+   nothing. `openApp` on a missing id only warns in the console, so check
+   every caller. File types it opened go into `SUITE_TYPES` in
+   `marketplaceOpeners.ts` with the group's name.
+6. **Walk.** In the dev container, from a `file://` copy of the repo:
+   - **before**, set up the owner's choices and some data;
+   - **after removing it**, check that nothing breaks;
+   - **install the group**: record the time and the size, and check that the
+     choices and data came back;
+   - **uninstall**: check that it is gone and the data is still there.
+7. **Corpus.** Update the research pages' tables, the group's line in the
+   apps repo, status and log in both repos.
+
+**Backend modules stay in the OS** (2026-11-06, Claude's default; the owner
+can overrule). When an app with its own backend module moves (Clock,
+Calendar, Todo, Sticky Notes, Bookmarks, Git GUI, REST API Client, Archive
+Manager), the module stays in the OS and the installed app calls it as
+before. Its data survives an uninstall, the way a Linux program's
+`~/.config` does, and nothing is migrated. Rejected for now, and still
+possible later:
+- a per-app store in the OS (a migration);
+- files in the home folder (a migration, plus writes from two tabs at once);
+- a server per group (about 100 MB idle and a cold start on the 1 GiB box).

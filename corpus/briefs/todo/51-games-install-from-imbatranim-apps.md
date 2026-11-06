@@ -37,8 +37,8 @@ Brief 50 (the repo is imbatranim-apps).
 
 ## Owner decisions
 
-Not settled yet. The owner asked for opt-in installs on 2026-11-06; grouping
-them is this research's proposal. The calls, with the default this brief
+Approved by the owner on 2026-11-06 ("looks good, write the briefs"): the
+research's defaults, groups included. The calls, with the default this brief
 builds:
 
 1. **The install unit:** groups, one descriptor each (default); one

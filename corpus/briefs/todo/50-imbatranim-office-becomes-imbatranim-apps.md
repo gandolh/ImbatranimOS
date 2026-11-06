@@ -22,9 +22,9 @@ root package name `@imbatranim-office/root`, and in
 
 ## Owner decisions
 
-Not settled yet. On 2026-11-06 the owner wrote "we might rename the
-imbatranim-office to imbatranim-apps"; this brief assumes yes and that name.
-The calls, with the default this brief builds:
+Approved by the owner on 2026-11-06. They first wrote "we might rename the
+imbatranim-office to imbatranim-apps", then "looks good, write the briefs"
+for the research's defaults. The calls, with the default this brief builds:
 
 1. **The catalog descriptor keeps its id `imbatranim-office`** and its name
    "Office". Installed rows, build directories and the server are keyed by

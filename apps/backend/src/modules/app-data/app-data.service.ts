@@ -359,6 +359,9 @@ export class AppDataService {
   /**
    * Stage beside the file and rename over it, so a failure part-way leaves
    * the old bytes in place. The staged copy is private and never listed.
+   * The bytes are flushed to disk before the rename, and the folder after
+   * it: without that, a crash or power loss right after a save could leave
+   * the file empty, and an app's data file may be the user's only copy.
    */
   private async writeAtomically(abs: string, bytes: Buffer): Promise<void> {
     const staged = join(
@@ -366,8 +369,17 @@ export class AppDataService {
       `.${basename(abs)}.imbatranim-${randomUUID()}.part`,
     );
     try {
-      await diskFull(() => fs.writeFile(staged, bytes, { mode: 0o600 }));
+      await diskFull(async () => {
+        const file = await fs.open(staged, 'w', 0o600);
+        try {
+          await file.writeFile(bytes);
+          await file.sync();
+        } finally {
+          await file.close();
+        }
+      });
       await diskFull(() => fs.rename(staged, abs));
+      await syncFolder(dirname(abs));
     } catch (err) {
       await fs.rm(staged, { force: true });
       throw err;
@@ -411,6 +423,23 @@ export class AppDataService {
 
 function within(root: string, p: string): boolean {
   return p === root || p.startsWith(root + sep);
+}
+
+/**
+ * Flush a folder's entries to disk, so a rename into it survives a crash.
+ * Best effort: some file systems refuse to open a folder for syncing, and
+ * the rename has already happened by then.
+ */
+async function syncFolder(path: string): Promise<void> {
+  let dir: fs.FileHandle | undefined;
+  try {
+    dir = await fs.open(path, 'r');
+    await dir.sync();
+  } catch {
+    // The data is written; only its durability across a crash is weaker.
+  } finally {
+    await dir?.close().catch(() => undefined);
+  }
 }
 
 function leaves(): BadRequestException {

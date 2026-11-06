@@ -23,17 +23,10 @@ Settled on 2026-11-06:
   like any other;
 - Recent files stays.
 
-1. **Which apps are pinned on a fresh OS?** Proposed: Files, Terminal,
-   Browser, Code Editor, Notepad and Settings. Pin and unpin from an app's
-   right-click or long-press menu in Start.
-2. **What does the search find?** Proposed: apps by name and meta words, then
-   files, using the command palette's sources so the two never disagree.
-   Enter opens the first result.
-3. **Focus on open?** Proposed: the search field takes the keyboard when
-   Start opens with a physical keyboard, so typing just works. On a touch
-   device it doesn't, so the phone's keyboard doesn't cover Start.
-4. **Are Linux apps marked?** Proposed: a small "Linux" tag in the A-Z
-   list, since they behave differently (a streamed window).
+1. **Which apps are pinned on a fresh OS?** Answered 2026-11-06: yes.
+2. **What does the search find?** Answered 2026-11-06: yes.
+3. **Focus on open?** Answered 2026-11-06: yes.
+4. **Are Linux apps marked?** Answered 2026-11-06: no tag; Linux apps look like every other app in the list.
 
 ## Draft brief
 

@@ -15,9 +15,7 @@ this to a numbered brief.
 
 ## Open questions (grill before starting)
 
-1. **Where does the link land?** Proposed: Settings opens on Marketplace,
-   scrolled to the group's row with it highlighted for a moment, and with
-   the Install button in reach.
+1. **Where does the link land?** Answered 2026-11-06: yes.
 
 ## Draft brief
 

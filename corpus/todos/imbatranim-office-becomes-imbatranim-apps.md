@@ -16,9 +16,9 @@ questions below when the work starts, then promote this to a numbered brief.
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); the repo becomes imbatranim-apps.
 
-1. **Does the catalog descriptor keep the id `imbatranim-office` and the name "Office"?** Proposed: yes. Installed rows, build directories and the server are keyed by it, and app ids keep `office-`.
-2. **Does the board get a new project, `imbatranim-apps`, or keep `imbatranim-office` through `corpus/board-name`?** Proposed: a new project. Every office ticket is Done, so nothing in flight is left behind.
-3. **Does the whole repo stay AGPL-3.0-only?** Proposed: yes, as the OS is.
+1. **Does the catalog descriptor keep the id `imbatranim-office` and the name "Office"?** Answered 2026-11-06: yes.
+2. **Does the board get a new project, `imbatranim-apps`, or keep `imbatranim-office` through `corpus/board-name`?** Answered 2026-11-06: a new project, `imbatranim-apps`.
+3. **Does the whole repo stay AGPL-3.0-only?** Answered 2026-11-06: yes.
 
 ## Draft brief
 

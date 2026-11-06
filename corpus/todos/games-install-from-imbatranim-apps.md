@@ -16,10 +16,10 @@ questions below when the work starts, then promote this to a numbered brief.
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); groups are the install unit, and Games is one.
 
-1. **Is the descriptor id `games`, named "Games", a static v2 suite on the shared kit?** Proposed: yes.
-2. **Which layout: (a) one root workspace, with each group installed by a scoped `npm ci --workspace=<group>`, or (b) self-contained group folders with their own lockfile?** Proposed: measure both on Games; take (a) if the scoped install really leaves Office's dependencies out, otherwise (b). Office must keep building either way.
-3. **Do the ids stay `minesweeper` and `solitaire`?** Proposed: yes, so pins, startup entries and best times come back on install.
-4. **Do the icons stay Bomb and Spade, as new `bomb` and `spade` entries in `ICONS`?** Proposed: yes, instead of `gamepad-2`.
+1. **Is the descriptor id `games`, named "Games", a static v2 suite on the shared kit?** Answered 2026-11-06: yes.
+2. **Which layout: (a) one root workspace, with each group installed by a scoped `npm ci --workspace=<group>`, or (b) self-contained group folders with their own lockfile?** Answered 2026-11-06: measure both, take the cheaper that keeps Office building.
+3. **Do the ids stay `minesweeper` and `solitaire`?** Answered 2026-11-06: yes.
+4. **Do the icons stay Bomb and Spade, as new `bomb` and `spade` entries in `ICONS`?** Answered 2026-11-06: yes.
 
 ## Draft brief
 

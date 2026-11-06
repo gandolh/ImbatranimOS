@@ -25,16 +25,10 @@ Settled on 2026-11-06:
 - Archive Manager is dropped, and a richer archive app could come later as
   its own todo.
 
-1. **Which formats open like a folder?** Proposed: the nine Archive Manager
-   opens today (zip tar gz tgz bz2 tbz2 tbz xz txz). A single-file `.gz` or
-   `.xz` with no tar inside offers Extract instead, since there is no folder
-   to show.
-2. **Where does Extract put things?** Proposed: Archive Manager's rule if it
-   has one; otherwise a folder named after the archive beside it, with a
-   number added when that name is taken.
+1. **Which formats open like a folder?** Answered 2026-11-06: the nine types open like folders; a lone `.gz` or `.xz` offers Extract.
+2. **Where does Extract put things?** Answered 2026-11-06: Extract asks where, with a folder picker that defaults to the OS's existing rule (a folder named after the archive beside it, numbered when taken; `deriveDest` and `freeDest` in `archive.service.ts`).
 3. **Do Archive Manager's pins and startup entry move to Files once, through
-   a `RETIRED_APP_IDS` pair?** Proposed: yes, and a `.zip` default set to
-   Archive Manager becomes Files.
+   a `RETIRED_APP_IDS` pair?** Answered 2026-11-06: yes, once.
 
 ## Draft brief
 

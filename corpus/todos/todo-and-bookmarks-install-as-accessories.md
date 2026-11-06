@@ -22,12 +22,8 @@ Settled on 2026-11-06:
   files in each app's folder, and the modules are deleted;
 - data stays on uninstall unless "Also remove its data" is ticked.
 
-1. **Which file format?** Proposed: JSON. For Todo, one file per list; for
-   Bookmarks, one file of groups and links. Bookmarks' HTML import stays.
-2. **When does the data move?** Proposed: the OS backend writes each table's
-   rows into the app's folder once at boot, after the release that ships
-   this, and removes the module in the same release. A failed write keeps
-   the rows and says so in Logs.
+1. **Which file format?** Answered 2026-11-06: yes.
+2. **When does the data move?** Answered 2026-11-06: yes.
 
 ## Draft brief
 

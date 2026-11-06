@@ -18,8 +18,8 @@ Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good,
 
 Confirmed in the grill on 2026-11-06: worth doing now, for PDF's decoders and the WASM app type, even with DWG staying on the server.
 
-1. **Is "WASM only from an npm package, never compiled at install or committed" a rule for the catalog's reviewers rather than code, since the CSP can't tell one `.wasm` from another?** Proposed: yes.
-2. **Do WASM threads stay off (no COOP or COEP headers) until an app needs them?** Proposed: yes; adding them is its own brief.
+1. **Is "WASM only from an npm package, never compiled at install or committed" a rule for the catalog's reviewers rather than code, since the CSP can't tell one `.wasm` from another?** Answered 2026-11-06: yes, a reviewers' rule.
+2. **Do WASM threads stay off (no COOP or COEP headers) until an app needs them?** Answered 2026-11-06: turn threads on now. The desktop sends `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` (everything it loads is already same-origin under the CSP), and every frame it serves sends matching headers: the Browser app's proxy origin and the sandboxed URL-app frames. The brief tests the Browser app, URL apps, Linux windows, Office and PDF in Chrome on Android, Chrome on the desktop and Safari on iPhone, and stops to report if something breaks that the headers can't fix. `credentialless` is the fallback to try if `require-corp` blocks the proxy.
 
 ## Draft brief
 

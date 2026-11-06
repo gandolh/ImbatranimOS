@@ -18,21 +18,17 @@ numbered brief.
 
 Settled: real files in a folder per app, at `~/.local/share/imbatranim/<app-id>/`.
 
-1. **The call's shape?** Proposed: `system.data` with `read`, `write`, `list`
-   and `remove`, on paths inside the app's folder. `read` returns a version,
-   and `write` takes the version it read and is refused when the file
-   changed since.
-2. **Always present, or a capability an app must list?** Proposed: always
-   present, like `window`, since every app may keep data.
+1. **The call's shape?** Answered 2026-11-06: yes.
+2. **Always present, or a capability an app must list?** Answered 2026-11-06: yes, always present; who may read a file is decided by its owner and mode ([apps-run-as-their-own-identity](apps-run-as-their-own-identity.md)).
 3. **What happens to the folder on uninstall?** Answered 2026-11-06: it
    stays. The uninstall prompt (Settings → Marketplace) has an unticked
    "Also remove its data" box, and for a group it covers each app's folder.
    A reinstall finds the data where it was, as Linux keeps `~/.config`.
-4. **Do URL apps (the sandboxed ones) get one too?** Proposed: not now. Their
-   frame can't reach the API with the session, so that would be its own
-   brief.
+4. **Do URL apps (the sandboxed ones) get one too?** Answered 2026-11-06: yes, URL apps get one too, through their frame bridge, scoped by their token.
 
 ## Draft brief
+
+> Depends on [apps-run-as-their-own-identity](apps-run-as-their-own-identity.md): a data file gets its owner and mode from there. The scoping in step 1 is the minimum either way.
 
 ### Context
 

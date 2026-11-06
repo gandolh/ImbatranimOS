@@ -17,7 +17,7 @@ questions below when the work starts, then promote this to a numbered brief.
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); Markdown Editor goes and Notepad opens markdown.
 
 1. **Which of Markdown Editor's pieces does Notepad take?** Answered 2026-11-06: all five (split view with synced scrolling, outline, format toolbar, code highlighting in the preview, images and links resolved next to the file). `.md` and `.markdown` open in split; every other file keeps today's edit/preview toggle and opens in edit.
-2. **Do Markdown Editor's pins, startup entries, recents and `.md` default move to Notepad once, through a `RETIRED_APP_IDS` pair?** Proposed: yes.
+2. **Do Markdown Editor's pins, startup entries, recents and `.md` default move to Notepad once, through a `RETIRED_APP_IDS` pair?** Answered 2026-11-06: yes, once.
 
 ## Draft brief
 

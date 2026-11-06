@@ -70,3 +70,12 @@ the owner controls both repos and the catalog pins a commit.
   desktop's React or `@imbatranim/ui`; bundle what it needs"
   ([`marketplace/README.md`](../../marketplace/README.md)). The kit becomes a
   contract the OS has to version.
+
+## The repo is renamed imbatranim-apps
+_2026-11-06_ — The repo `imbatranim-office` is now `imbatranim-apps`, the home
+of every app installed on the OS, with Office as its first group (brief 63).
+The calls above hold for the Office group. The descriptor keeps its id
+`imbatranim-office` and its name "Office"; app ids keep `office-`.
+**Why**: installed rows, build directories and the server are keyed by the
+descriptor id. The descriptor's `source.repo` still names the old URL until the
+GitHub repository is renamed; GitHub redirects it meanwhile.

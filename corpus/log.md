@@ -5520,3 +5520,11 @@ review found nothing above minor and a walk in Firefox passed. The toast's ×
 still doesn't signal the app (closing is removal from the panel, as since
 brief 42). This closes the main-session run: briefs 45-49 built from the main
 session with subagents on 2026-11-06.
+
+## [2026-11-06] rename | Brief 63: imbatranim-office becomes imbatranim-apps
+
+The Apps repo's words, folder and corpus were renamed; this repo's glossary
+entry, decisions-office-suite page and two code comments follow. The descriptor
+keeps its id and file name, and its `source.repo` still names the old URL: `git
+ls-remote` on the new name did not answer, so the GitHub rename is the owner's
+first step. brief-board gets the project at the next sync.

@@ -93,3 +93,17 @@ vps-deploy's `scripts/rollout.ts` names it once, in a past rollout's message.
 - Both corpora lint clean; Office builds, tests and lints as before.
 - **Owner check:** after the GitHub rename and a push of both repos, Settings
   → Marketplace on the VPS still installs and opens Office.
+
+## Outcome (2026-11-06)
+
+Built from the main session by a subagent. The Apps repo is renamed in its
+README, docs, corpus and root package name (`@imbatranim-apps/root`), and its
+local checkout and `origin` now use `imbatranim-apps`; in imbatranimOS the
+marketplace glossary, the office-suite decisions page and two code comments
+(`retiredApps.ts`, `marketplaceOpeners.ts`) name it. Left as the brief says:
+workspace package names, ids, `os/descriptor.template.json`, and
+`marketplace/imbatranim-office.json`'s `source.repo`, because `git ls-remote`
+on the new GitHub name didn't answer yet. Checks: both corpora's lint.
+Owner steps: rename the GitHub repo to `imbatranim-apps`; then `source.repo`
+(here) and the template URL (in the Apps repo) follow; push the Apps repo
+before this one. brief-board learns the new project name at the next sync.

@@ -1,6 +1,6 @@
 /**
  * File types only a Marketplace app opens, by the name the Marketplace lists
- * it under. The built-in office apps moved to imbatranim-office,
+ * it under. The built-in office apps moved to imbatranim-apps,
  * so with Office not installed a `.docx` has no claimant, and the Open With
  * chooser names where to get one instead of offering the text editor.
  *

@@ -5,7 +5,7 @@ import { useDesktopStore } from './desktopStore'
 import { useStartupStore } from './startupStore'
 
 /**
- * Built-in apps that left for imbatranim-office, and the one-time move of the
+ * Built-in apps that left for imbatranim-apps, and the one-time move of the
  * owner's choices to the suite's ids (decisions-office-suite.md).
  *
  * Each retirement run adds its pair here: the built-in's id, then the suite

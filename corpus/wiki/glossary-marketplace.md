@@ -1,5 +1,5 @@
 ---
-summary: The vocabulary for apps that come from outside this repo: marketplace catalog, descriptor, suite descriptor, marketplace app, kit app, shared kit, group (2026-11-06), URL app and app manifest, and imbatranim-office, with the synonyms each displaces and two proposed terms that were never adopted. Split out of glossary.md on 2026-10-21.
+summary: The vocabulary for apps that come from outside this repo: marketplace catalog, descriptor, suite descriptor, marketplace app, kit app, shared kit, group (2026-11-06), URL app and app manifest, and imbatranim-apps, with the synonyms each displaces and two proposed terms that were never adopted. Split out of glossary.md on 2026-10-21.
 updated: 2026-11-02
 ---
 
@@ -50,12 +50,13 @@ component set, the shared kit is the versioned bundle of instances an outside
 build compiles against.
 _Avoid_: SDK, runtime, shared deps, "the kit" when the versioned set is meant.
 
-**imbatranim-office**:
-The separate repo that holds the office apps (Docs, Sheets, Slides, PDF and
-CAD) from 2026-10-21, installed through one suite descriptor. "Office" is that
-descriptor's display name, not the repo's. Its own corpus holds the suite's
-vocabulary.
-_Avoid_: the craft suite, the office add-ons (true only until each app is
+**imbatranim-apps**:
+The separate repo that holds the apps installed on the OS, in groups. Office
+(Docs, Sheets, Slides, PDF and CAD) is the first, from 2026-10-21, installed
+through one suite descriptor. "Office" is that descriptor's and group's display
+name, not the repo's. Its own corpus holds the vocabulary.
+_Avoid_: imbatranim-office (the repo's name until 2026-11-06; the descriptor
+keeps that id), the craft suite, the office add-ons (true only until each app is
 retired, the built-in retirement (2026-10-28)).
 
 **Group** (2026-11-06):

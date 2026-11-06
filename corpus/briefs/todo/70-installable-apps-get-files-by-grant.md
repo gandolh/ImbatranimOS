@@ -26,7 +26,22 @@ Brief 68 (the backend knows which app and instance is calling).
 ## Owner decisions (settled 2026-11-06)
 
 1. **Who is scoped.** Installable apps see their own folders plus granted
-   files and folders only. Built-in apps keep full access to home.
+   files and folders only. ~~Built-in apps keep full access to home.~~
+   **Revisited later on 2026-11-06, after brief 68 was built:** built-in
+   apps are scoped too. The owner chose the stricter default over brief
+   68's: a path with no mode row is the user's with folders `rwx--x--x` and
+   files `rw-------`, so group `system` (the built-ins) no longer has
+   blanket access; each built-in reaches only what it opens through Files,
+   Start's recents, Open With or a picker, plus its own data folder (brief
+   69). Settings, Files and the Terminal still act as the user
+   (`ACTS_AS_USER`, brief 68), since they are the file manager and the
+   shell. **This brief flips the default** (in brief 68's `ModeStore`
+   defaults, `modes.ts`) together with the grant flows, so no built-in loses
+   access before it can be granted. List every built-in's file flows (open,
+   save, save as, recents, open folder, a Git repo, a media folder, Paint's
+   images, the Code Editor's folder tree) and give each a grant path; a
+   built-in that needs a whole folder (the Code Editor, Git GUI, Media
+   Player's playlist) gets a folder grant from an OS folder picker.
 2. **What makes a grant.** An OS-made open (Files, Start's recents, Open With)
    or a pick. It lasts for that window.
 3. **No lasting grants.** Reopening a recent file goes through the OS, which

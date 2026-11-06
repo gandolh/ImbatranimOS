@@ -1,5 +1,5 @@
 ---
-summary: No open questions. The last one (2026-11-06, the OS's own apps as streamed Linux apps) was answered no, with Open with for Linux apps as brief 46; below it, the resolved web-OS era questions (install story, HTTPS, image size, accent, registry, shared origin) with where each answer lives.
+summary: One open item (2026-11-06): the owner's calls on which apps leave the image for imbatranim-apps, listed in research-imbatranim-apps.md (rename, install groups, the base, openers, Markdown Editor, wave 2 data, wave 3 modules, WASM, Start folders), before briefs 50 and 51 run. Below it, the resolved questions: the OS's own apps as streamed Linux apps (no, with Open with for Linux apps as brief 46), and the web-OS era ones (install story, HTTPS, image size, the repl module).
 updated: 2026-11-06
 ---
 
@@ -7,7 +7,12 @@ updated: 2026-11-06
 
 ## Open
 
-_Nothing is open._
+**Which apps leave the image for imbatranim-apps** (2026-11-06). The owner
+asked to rename imbatranim-office to imbatranim-apps and move the apps we
+made there as opt-in installs. The ten calls, each with a default, are in
+[research-imbatranim-apps.md](research-imbatranim-apps.md#6-owner-decisions).
+Briefs 50 (the rename) and 51 (Games as the first group) carry defaults and
+can run once the owner confirms them.
 
 ## Resolved
 

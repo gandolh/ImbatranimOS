@@ -5267,3 +5267,33 @@ the dev volume, so Update, Go back and a second move are the owner's walk.
 The decision is in
 [decisions-linux-apps-built.md](wiki/decisions-linux-apps-built.md).
 
+## [2026-11-06] research | Which apps leave the image for imbatranim-apps
+
+The owner asked to rename imbatranim-office to imbatranim-apps, make it the
+repo for every installable app, list the apps that should move there so the
+image starts smaller and cleaner, allow three kinds of app (client only, a
+WASM module, suites like Office), and check whether older apps such as the
+PDF viewer should go. New pages:
+[research-imbatranim-apps.md](wiki/research-imbatranim-apps.md) and
+[research-imbatranim-apps-layout.md](wiki/research-imbatranim-apps-layout.md).
+Measured: `imbatranimos:1.0` is 324 MB, and the desktop build with all 25
+built-in apps is 16.8 MB of it, 13.9 MB of that Monaco; what could leave is
+about 14.5 MB. The gains that hold are a Start menu of seven apps instead of
+25, about 29,000 source and 8,000 test lines out of this repo, and apps
+released on their own. Proposed:
+- a base of Settings, Files, Terminal, Notepad, System Monitor, Logs and the
+  Browser;
+- nine client-only apps in a first wave;
+- eight apps blocked on the kit contract (`background`, `widgets`,
+  `commandSources`), their own data in the OS's database, or OS-side modules
+  that do system work (git, the outbound proxy, archives);
+- Markdown Editor folded into Notepad.
+
+PDF Viewer and norPDF already became Office's PDF (2026-10-21, removed
+2026-10-28). WASM engines would come from npm packages, behind a
+`'wasm-unsafe-eval'` CSP change and a revisit of the office repo's
+no-WebAssembly rule. Office's build is anchored at its repo root, so how a
+group installs is unproven. Briefs 50 (the rename) and 51 (Games as the
+first group, measuring the layout) were written; the owner's ten calls are
+the open question. Found on the way: `apps/backend/src/modules/notes/` holds
+only a DTO nothing imports.

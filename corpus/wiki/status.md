@@ -120,7 +120,9 @@ session's first X client, installed with the first app that speaks X11
 (2026-11-06, `26dc24e`, ready for deploy): Linux windows draw at the screen's
 pixels (scale: the ratio's ceiling); X11 apps stay at 1. The owner capped the
 scale at 2 the same day (`031b56b`, ships with 33): a phone at a ratio of
-about 3 draws at 2, a little soft, under the VPS's memory cap.
+about 3 draws at 2, a little soft, under the VPS's memory cap. 50-51
+(2026-11-06): imbatranim-office becomes imbatranim-apps, Games its first group;
+both wait on the owner's calls in [research-imbatranim-apps.md](research-imbatranim-apps.md).
 
 37-44 were written 2026-11-04 from a grill with the owner; each outcome is
 in `briefs/done/`. Done 2026-11-05: 37 production's own Compose profile; 38

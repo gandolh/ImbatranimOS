@@ -463,9 +463,11 @@ pub fn clip_signed(x: i32, y: i32, w: i32, h: i32, width: u32, height: u32) -> O
 
 // ── Scale ───────────────────────────────────────────────────────────────
 
-/// The highest output scale the host advertises. A phone's ratio of 3.5 asks
-/// for 4; above it, frames would cost far more than a screen shows.
-pub const MAX_SCALE: u32 = 4;
+/// The highest output scale the host advertises. A phone at a ratio of about
+/// 3 draws at 2, a little soft, for under half the pixels of 3 in frames and
+/// in buffer memory, which the VPS's 1 GiB cap has to hold (owner,
+/// 2026-11-06).
+pub const MAX_SCALE: u32 = 2;
 
 /// The output scale for a tab's `devicePixelRatio`: its ceiling, so an app
 /// draws at least as many pixels as the screen shows, at most [`MAX_SCALE`].
@@ -804,8 +806,8 @@ mod tests {
             (1.5, 2),
             (2.0, 2),
             (2.000_001, 2),
-            (2.625, 3),
-            (3.5, 4),
+            (2.625, 2),
+            (3.5, 2),
             (8.0, MAX_SCALE),
         ] {
             assert_eq!(output_scale(ratio), scale, "ratio {ratio}");
@@ -828,7 +830,7 @@ mod tests {
     fn a_windows_scale_is_its_root_buffer_over_its_surface() {
         assert_eq!(window_scale(640, 640), 1);
         assert_eq!(window_scale(1280, 640), 2);
-        assert_eq!(window_scale(1921, 640), 3);
+        assert_eq!(window_scale(1921, 640), MAX_SCALE);
         assert_eq!(window_scale(9000, 640), MAX_SCALE);
         assert_eq!(window_scale(640, 0), 1);
     }

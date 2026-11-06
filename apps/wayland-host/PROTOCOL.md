@@ -137,9 +137,10 @@ are the tab's CSS pixels, so a window has the same size at every scale.
 Only frames are in image pixels.
 
 The output's scale is the ceiling of the tab's `devicePixelRatio`, from 1 to
-4 (a ratio a hundredth above a whole number counts as that number), and its
+2 (a ratio a hundredth above a whole number counts as that number), and its
 mode is the viewport times the scale, so apps see the viewport as its
-logical size. Apps learn it the three ways they listen: every surface enters
+logical size. A phone at a ratio of about 3 gets scale 2: a little soft, for
+under half the pixels of scale 3 under the VPS's memory cap. Apps learn it the three ways they listen: every surface enters
 the output (`wl_surface.enter`, where GTK reads it), the preferred buffer
 scale (`wl_surface` version 6), and the fractional scale's preferred scale,
 the same whole number (an app that binds `wp_fractional_scale_v1`, as Firefox
@@ -151,7 +152,7 @@ A surface's size in surface coordinates is its viewport's destination when
 it set one (`wp_viewport.set_destination`; an app drawing at the fractional
 scale does), else its buffer's size over its buffer scale. A viewport's
 source rectangle (cropping) is not applied. A window's `scale` is its root
-surface's buffer pixels per surface coordinate, rounded, from 1 to 4: 2 for
+surface's buffer pixels per surface coordinate, rounded, from 1 to 2: 2 for
 an app that drew for a scale-2 output, 1 for one that didn't. Its image is
 `width × scale` by `height × scale` pixels; a subsurface drawn at another
 scale is resampled to the window's, nearest pixel. Surface damage is grown to

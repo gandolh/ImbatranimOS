@@ -96,3 +96,49 @@ Brief 68 (the backend knows which app and instance is calling).
 - Tests green.
 - Office's walk is unchanged for the owner, apart from the refusal the
   walk's last step expects.
+
+## Progress (2026-11-06)
+
+First half built: `98958a2` (grant table, checks, core granting on
+`openApp` and the pickers; built-ins not flipped) and `708c042` (the REST
+API Client picks its files). See `log.md`.
+
+**A gap to close first.** `system.intents.openApp` from an app makes core
+grant the payload's file as the user, so an app can grant itself any path by
+opening itself with it (and core records the recent as the user too). Fix:
+`openApp` takes the requesting copy's client; an app-made open grants (and
+records the recent) with the app's token, so the backend allows only what
+the app holds, plus a file in that app's own recent files when the target is
+the same app (`RecentService` lookup in `GrantsController`'s hand-on
+branch). Core's launchers and Files keep granting as the user. Tests: an app
+can't open itself with a file it doesn't hold; it reopens its own recent in
+a new window; another app can't use those recents.
+
+**Built-ins' file flows** (inventory 2026-11-06; fine today, break at the
+flip). Each needs a grant path or an owner call before `modes.ts` flips:
+- *Listing the opened file's folder* (a file grant never lists): Media
+  Player's queue, siblings and subtitles (`api/listDir.ts`,
+  `TrackStage.tsx`); Image Viewer's prev/next (`ImageViewer.tsx`);
+  Notepad's 1 MiB size guard (`Notepad.tsx`, swallowed), image attach and
+  the Markdown preview's relative images and links (`NoteEditor.tsx`,
+  `MarkdownPreview.tsx`). **Owner call:** does an OS-made open also give
+  read on the file's folder (all apps, or apps that declare it), or do these
+  degrade to one file?
+- *A persisted path re-read in a new window*: the Code Editor's tab session
+  (`lib/tabSession.ts`), Git GUI's recent repos (`/git/recents`), the REST
+  client's saved requests with a file, Notepad's "open in new window" (the
+  new window gets no grant). Reopen through the app's own recents (the gap
+  fix above), or a hand-on from the old window.
+- *A folder grant needed*: Git GUI's typed path (drop it for Browse, as the
+  REST client did); the Code Editor's find-in-files without a scope (it
+  works after "Search in folder").
+- *Intent payloads that aren't `{ root, openPath }`*: the Diff tool's
+  `{ leftRoot, leftPath, rightRoot, rightPath }` (Files' Compare) and Git
+  GUI's `{ leftText, rightRoot, rightPath }`; `openApp` must grant each file.
+- *Fixed places*: the Snipping Tool saves to `Pictures/Screenshots`; the REST
+  client's old `~/.config/rest-client` doc (403 already reads as missing;
+  add the notice).
+- *The `notes` root*: nothing special-cases it; Notepad's startup probe
+  falls back to home quietly, and Git GUI offers it as a typed root.
+- No flow drags files from Files into an app. Paint, Bookmarks, Calendar and
+  the Snipping Tool's open go through pickers or intents and are fine.

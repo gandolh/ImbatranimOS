@@ -241,6 +241,25 @@ describe('AppDataService', () => {
         ['a/c.json'],
       );
     });
+
+    it('clears a staged copy left over from an unfinished write, not a fresh one', async () => {
+      await data.write(hollow, 'data', 'b.json', '1');
+      const stale = shared(
+        '.b.json.imbatranim-1f1f1f1f-1f1f-1f1f-1f1f-1f1f1f1f1f1f.part',
+      );
+      const fresh = shared(
+        '.b.json.imbatranim-2f2f2f2f-2f2f-2f2f-2f2f-2f2f2f2f2f2f.part',
+      );
+      await fs.writeFile(stale, 'half');
+      await fs.writeFile(fresh, 'half');
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      await fs.utimes(stale, twoHoursAgo, twoHoursAgo);
+      expect((await data.list(hollow, 'data')).map((e) => e.path)).toEqual([
+        'b.json',
+      ]);
+      await expect(fs.stat(stale)).rejects.toThrow();
+      await expect(fs.stat(fresh)).resolves.toBeTruthy();
+    });
   });
 
   describe('versions', () => {

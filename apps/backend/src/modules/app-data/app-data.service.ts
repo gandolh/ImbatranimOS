@@ -193,7 +193,10 @@ export class AppDataService {
     this.modes.assert(identity, 'list', abs);
     const out: DataEntry[] = [];
     for (const dirent of await fs.readdir(abs, { withFileTypes: true })) {
-      if (STAGED_NAME.test(dirent.name)) continue;
+      if (STAGED_NAME.test(dirent.name)) {
+        if (dirent.isFile()) await this.dropIfStale(join(abs, dirent.name));
+        continue;
+      }
       if (!dirent.isFile() && !dirent.isDirectory()) continue;
       const entry = await this.lstat(join(abs, dirent.name));
       if (!entry) continue; // gone since the listing
@@ -386,6 +389,18 @@ export class AppDataService {
     }
   }
 
+  /**
+   * A staged copy older than an hour is a leftover from a write that never
+   * finished (a crash between staging and the rename); a listing clears it.
+   * A fresh one may belong to a write in progress, so it stays. Best effort.
+   */
+  private async dropIfStale(staged: string): Promise<void> {
+    const stat = await this.lstat(staged);
+    if (!stat?.isFile()) return;
+    if (Date.now() - stat.mtimeMs < STALE_STAGED_MS) return;
+    await fs.rm(staged, { force: true }).catch(() => undefined);
+  }
+
   /** Run `work` once every earlier call for the same path is done. */
   private async inTurn<T>(key: string, work: () => Promise<T>): Promise<T> {
     const before = this.turns.get(key) ?? Promise.resolve();
@@ -430,6 +445,9 @@ function within(root: string, p: string): boolean {
  * Best effort: some file systems refuse to open a folder for syncing, and
  * the rename has already happened by then.
  */
+/** How old a staged copy must be before a listing treats it as left over. */
+const STALE_STAGED_MS = 60 * 60 * 1000;
+
 async function syncFolder(path: string): Promise<void> {
   let dir: fs.FileHandle | undefined;
   try {

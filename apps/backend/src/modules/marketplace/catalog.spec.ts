@@ -185,6 +185,8 @@ describe('a version 1 descriptor is one app', () => {
         multiInstance: false,
         capabilities: ['fs', 'notify'],
         styles: [],
+        background: false,
+        commandSources: false,
       },
     ]);
     expect(r.data.sharedKit).toBeNull();
@@ -296,6 +298,8 @@ describe('descriptorSchema version 2', () => {
       multiInstance: false,
       capabilities: [],
       styles: [],
+      background: false,
+      commandSources: false,
     });
     expect(r.data.sharedKit).toBeNull();
   });
@@ -577,5 +581,95 @@ describe('descriptorSchema: kit apps', () => {
     ],
   ])('refuses %s', (_label, d) => {
     expect(parse(d).success).toBe(false);
+  });
+});
+
+describe('descriptorSchema: hooks', () => {
+  it('reads background and commandSources on a kit app, false when left out', () => {
+    const r = parse(
+      suite({ sharedKit: 1 }, [
+        app({ background: true, commandSources: true }),
+        app({ id: 'office-sheets', entry: 'sheets/app.mjs' }),
+      ]),
+    );
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(
+      r.data.apps.map((a) => [a.id, a.background, a.commandSources]),
+    ).toEqual([
+      ['office-docs', true, true],
+      ['office-sheets', false, false],
+    ]);
+  });
+
+  it('reads a version 1 descriptor as declaring no hooks', () => {
+    const r = parse(valid());
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.apps[0]).toMatchObject({
+      background: false,
+      commandSources: false,
+    });
+  });
+
+  it.each(['background', 'commandSources'])(
+    'names the mount app that declares %s',
+    (hook) => {
+      const r = parse(suite({}, [app(), app({ id: 'b-app', [hook]: true })]));
+      expect(r.success).toBe(false);
+      if (r.success) return;
+      expect(r.error.issues[0].path).toEqual(['apps', 1, hook]);
+      expect(r.error.issues[0].message).toBe(
+        `only a kit app (with sharedKit) may declare ${hook}`,
+      );
+    },
+  );
+
+  it.each([
+    [
+      'background on a version 1 descriptor',
+      valid({ background: true }),
+      'background needs schemaVersion 2 and sharedKit',
+    ],
+    [
+      'commandSources on a version 1 descriptor',
+      valid({ commandSources: true }),
+      'commandSources needs schemaVersion 2 and sharedKit',
+    ],
+  ])('refuses %s, saying why', (_label, d, message) => {
+    const r = parse(d);
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0].message).toBe(message);
+  });
+
+  it.each([
+    ['a hook that is not a boolean', [app({ background: 'yes' })]],
+    ['a misspelt hook', [app({ backround: true })]],
+  ])('refuses %s', (_label, apps) => {
+    expect(parse(suite({ sharedKit: 1 }, apps)).success).toBe(false);
+  });
+
+  it('refuses a hook declared for the whole descriptor rather than an app', () => {
+    expect(
+      parse(suite({ sharedKit: 1, background: true }, [app()])).success,
+    ).toBe(false);
+  });
+
+  it('names a field the desktop does not understand in the catalog problems', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'imb-catalog-hooks-'));
+    try {
+      writeFileSync(
+        join(dir, 'office.json'),
+        JSON.stringify(suite({ sharedKit: 1 }, [app({ commandSource: true })])),
+      );
+      const { descriptors, problems } = loadCatalog(dir, {
+        allowLocalRepos: false,
+      });
+      expect(descriptors.size).toBe(0);
+      expect(problems).toHaveLength(1);
+      expect(problems[0].problem).toMatch(/^apps\.0: .*commandSource/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

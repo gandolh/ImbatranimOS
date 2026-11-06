@@ -85,6 +85,9 @@ container. Nothing is rebuilt into the OS image. Backups leave
   `apps/core/src/shared/registry/marketplace.tsx` first.
 - **`minSystemVersion`**: the `system` protocol version the app needs
   (`PROTOCOL_VERSION` in `packages/ui/src/system.ts`, 2 today).
+- Unknown keys are refused, at the descriptor's top level and in each app
+  of `apps`, so a misspelt or misplaced field is listed under the pane's
+  catalog problems with its name instead of being ignored.
 
 ## The module
 
@@ -273,6 +276,10 @@ sees the desktop's modules.
   once. Only a descriptor with `sharedKit` may list them. After the build
   each one must exist, as the entries must: if one is missing, the install
   fails and the build that was live stays live.
+- **`background`** and **`commandSources`**: per app, `true` when its module
+  exports that hook (see [Hooks](#hooks)). Only a descriptor with `sharedKit`
+  may declare them, and only on an app; a version 1 descriptor that sets
+  either is refused.
 
 ### The module
 
@@ -297,6 +304,84 @@ kit's hooks work, fenced to the descriptor's `capabilities`. The kit's hooks
 use capabilities too: `useOpenIntent` needs `intents`, and `useFileDialog`
 and `saveOverRead` need `fs`. A throw while rendering shows the error panel
 in that window only, as it does for a built-in app.
+
+### Hooks
+
+A kit app can do things with no window open: run a background service, and
+add results to the command palette and Start's search. Each is a named export
+of its module beside `App`, declared on the app in the descriptor:
+
+```json
+{
+  "id": "todo",
+  "entry": "todo/app.mjs",
+  "capabilities": ["notify", "schedule"],
+  "background": true,
+  "commandSources": true
+}
+```
+
+```ts
+import type { ComponentType } from "react";
+import type {
+  CommandSource,
+  KitAppProps,
+  KitBackgroundProps,
+} from "@imbatranim/ui";
+
+export const App: ComponentType<KitAppProps>;
+// background: true. KitBackgroundProps = { host: NativeHostContext }
+export const Background: ComponentType<KitBackgroundProps>;
+// commandSources: true.
+export const commandSources: CommandSource[];
+```
+
+Only an app that declares a hook has its module imported before a window
+opens. The desktop imports it once sign-in is done and the page is idle, so
+the desktop never waits for it, and a service or a palette entry may start a
+moment after the desktop does. The module is evaluated once, so `App`,
+`Background` and `commandSources` share its top-level state. The recorded
+declaration is the live build's: a descriptor that adds a hook at a new ref
+changes nothing until that ref is installed.
+
+- **`Background`** is mounted from sign-in to sign-out while the app is
+  enabled, like a built-in app's background service: it renders nothing and
+  exists for its effects, which must be cheap (one slow interval, no
+  per-frame work). `useSystem()` gives it a `WindowlessSystemHandle`: a
+  running copy of the app with its own identity and no window, fenced to the
+  app's `capabilities`. `windowId` is `null`, the `window` writes do nothing,
+  and `system.server.request()` rejects: only a window holds the app's
+  server. Anything the owner should see goes through `system.notify`.
+- **`commandSources`** is a list of `CommandSource`s: a `group` (the section
+  header, which no other source may already use), `search(query, ctx)` and
+  `activate(item)`. They are searched by the palette and Start's search while
+  the app is enabled. `ctx.http` is the app's own, carrying its identity,
+  and only there when `capabilities` lists `http`; reading it otherwise
+  throws. A result's `id` only needs to be unique within its source.
+  `activate` gets the result back as `search` made it. A source catches its
+  own failures (a network error) and answers `[]`.
+
+Turning the app off in **Settings → Apps** takes both away at once, and
+turning it on brings them back. Uninstalling stops them; an update or a
+rebuild starts the new build's.
+
+Each failure costs that app's hooks only, with one notification in its
+name:
+
+- a declared hook the module doesn't export is refused by name ("Todo
+  declares a background service, but its module does not export
+  Background, a React component."), and the app's windows still open;
+- a module that doesn't load stops its hooks until the page reloads or a
+  new build loads;
+- a `Background` that throws is stopped until the app is turned off and on,
+  the page reloads, or a new build loads;
+- a source that throws or rejects is hidden until the app is turned off and
+  on, the page reloads, or a new build loads.
+
+The hook types (`CommandSource`, `CommandSourceContext`, `CommandItem`,
+`KitAppModule`, `KitBackgroundProps`, `WindowlessSystemHandle`) are in kit
+1.5.0. Widgets and desktop layers aren't hooks yet: they stay with the
+built-in apps until an installable app needs one.
 
 ### The shared modules
 
@@ -337,7 +422,8 @@ There is no package registry. A kit app's repository commits a copy of
 `packages/ui/src` from a named commit of this repository, and uses it for
 types, tests and Tailwind's token names. The files that matter most are
 `index.ts` (the exports), `sharedKit.ts` (`SHARED_KIT_VERSION`,
-`NativeHostContext`, `KitAppProps`), `system.ts` (the handle) and
+`NativeHostContext`, `KitAppProps` and the hooks' types),
+`commandSource.ts` (a command source), `system.ts` (the handle) and
 `theme.css` (the tokens). At bundle time the specifiers stay external, so
 none of the snapshot ships: the desktop's own kit runs. When
 `SHARED_KIT_VERSION` goes up, take a new snapshot, rebuild, and update

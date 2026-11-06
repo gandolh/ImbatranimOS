@@ -4,7 +4,6 @@ import {
   useSystem,
   type KitAppProps,
   type NativeHostContext,
-  type SystemHandle,
   type SystemServer,
 } from '@imbatranim/ui'
 import { kitBuildKey, type MarketplaceApp } from '../../shared/registry/marketplace'
@@ -12,20 +11,9 @@ import { apiUrl } from './apiUrl'
 import { addKitStyles } from './kitStyles'
 import { RefusalPanel } from './RefusalPanel'
 import { importKitModule } from './kitModule'
-import { kitRefusal, protocolRefusal } from './refusals'
-import { scopeHandle, type KitAppModule } from './scopeHandle'
+import { isComponent, kitRefusal, protocolRefusal } from './refusals'
+import { scopeHandle, withServer, type KitAppModule } from './scopeHandle'
 import { createServerClaim } from './useServerLease'
-
-/**
- * Anything React can render as a component: a function or class, or the
- * object `memo` / `forwardRef` / `lazy` return.
- */
-function isComponent(value: unknown): value is ComponentType<KitAppProps> {
-  return (
-    typeof value === 'function' ||
-    (typeof value === 'object' && value !== null && '$$typeof' in value)
-  )
-}
 
 /**
  * A window holding a marketplace **kit app**: a component the
@@ -103,7 +91,7 @@ function KitApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
       .then(([mod]) => {
         if (cancelled) return
         const App = (mod as Partial<KitAppModule> | null)?.App
-        if (!isComponent(App)) {
+        if (!isComponent<KitAppProps>(App)) {
           throw new Error(`${app.name}'s module does not export App, a React component`)
         }
         // Wrapped: a bare function handed to a state setter would be called as an updater.
@@ -131,12 +119,4 @@ function KitApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
       <App windowId={windowId} host={host} />
     </SystemProvider>
   )
-}
-
-/** The window's handle, with this window's claim on the app's server as `server`. */
-function withServer(system: SystemHandle, server: SystemServer): SystemHandle {
-  return new Proxy(system, {
-    get: (target, prop, receiver) =>
-      prop === 'server' ? server : (Reflect.get(target, prop, receiver) as unknown),
-  })
 }

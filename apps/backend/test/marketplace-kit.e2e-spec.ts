@@ -26,6 +26,7 @@ import { MarketplaceModule } from '../src/modules/marketplace/marketplace.module
 import { MarketplaceService } from '../src/modules/marketplace/marketplace.service';
 import { PtyModule } from '../src/modules/pty/pty.module';
 import { UpgradeRoutesModule } from '../src/upgrade-routes';
+import { hooksDescriptor, makeHooksRepo } from './fixtures/hooks-repo';
 import { kitDescriptor, makeKitRepo, type KitRepo } from './fixtures/kit-repo';
 import { makeSuiteRepo, suiteDescriptor } from './fixtures/suite-repo';
 
@@ -35,8 +36,9 @@ import { makeSuiteRepo, suiteDescriptor } from './fixtures/suite-repo';
  * stylesheets; the listing says the shared kit version the live build was
  * made against and where each app's stylesheets are served; the row records
  * both; a build that leaves a listed stylesheet out fails and keeps the live
- * build; and a descriptor without `sharedKit` lists and records exactly as
- * one catalog entry, several apps left it.
+ * build; a descriptor without `sharedKit` lists and records exactly as
+ * one catalog entry, several apps left it; and the hooks a kit app declares
+ * are listed, and recorded with the build that declared them.
  */
 const DESKTOP = 'http://localhost:5173';
 const PASSWORD = 'correct horse battery';
@@ -45,6 +47,8 @@ interface Listed {
   id: string;
   descriptorId: string;
   sharedKit: number | null;
+  background: boolean;
+  commandSources: boolean;
   catalogSharedKit: number | null;
   ref: string;
   installed: {
@@ -64,6 +68,8 @@ describe('kit apps (e2e)', () => {
   let appsDir: string;
   let repoUrl: string;
   let commits: KitRepo;
+  let hooksRepoUrl: string;
+  let hooksCommit: string;
   let app: INestApplication<Server>;
   let http: ReturnType<typeof request>;
   let cookie: string;
@@ -87,6 +93,26 @@ describe('kit apps (e2e)', () => {
     const suiteRepo = join(work, 'suite-repo');
     const suite = makeSuiteRepo(suiteRepo);
     write(suiteDescriptor(`file://${suiteRepo}`, suite.whole));
+    // Hooks: a kit app declaring both, and one declaring an export it lacks.
+    const hooksRepo = join(work, 'hooks-repo');
+    hooksCommit = makeHooksRepo(hooksRepo);
+    hooksRepoUrl = `file://${hooksRepo}`;
+    write(hooksDescriptor(hooksRepoUrl, hooksCommit));
+    // Refused: a hook on a descriptor that is not a kit's.
+    write(
+      suiteDescriptor(`file://${suiteRepo}`, suite.whole, {
+        id: 'hooked',
+        apps: [
+          {
+            id: 'hooked-one',
+            name: 'One',
+            entry: 'alpha/app.mjs',
+            background: true,
+            capabilities: [],
+          },
+        ],
+      }),
+    );
     // Refused: styles on a descriptor that is not a kit's.
     write(
       suiteDescriptor(`file://${suiteRepo}`, suite.whole, {
@@ -205,11 +231,18 @@ describe('kit apps (e2e)', () => {
     });
     expect(problems).toEqual([
       {
+        file: 'hooked.json',
+        problem:
+          'apps.0.background: only a kit app (with sharedKit) may declare background',
+      },
+      {
         file: 'styled.json',
         problem:
           'apps.0.styles: only a kit app (with sharedKit) may list styles',
       },
     ]);
+    // An app that declares no hook lists none.
+    expect(notes).toMatchObject({ background: false, commandSources: false });
   });
 
   it('installs the kit apps with their stylesheets, and serves them as CSS', async () => {
@@ -327,6 +360,79 @@ describe('kit apps (e2e)', () => {
       'suite-alpha': 'alpha/app.mjs',
       'suite-beta': 'beta/app.mjs',
     });
+  }, 30_000);
+
+  it('lists the hooks a kit app declares, and records them with its build', async () => {
+    expect(await listed('kit-ticker')).toMatchObject({
+      background: true,
+      commandSources: true,
+      installed: null,
+    });
+    await install('kit-hooks');
+    const ticker = await listed('kit-ticker');
+    expect(ticker.job).toBeNull();
+    expect(ticker).toMatchObject({ background: true, commandSources: true });
+    expect(await listed('kit-hookless')).toMatchObject({
+      background: true,
+      commandSources: false,
+    });
+    // Only the hooks each app declared.
+    expect(JSON.parse(row('kit-hooks').entries)).toEqual({
+      'kit-ticker': {
+        entry: 'ticker/app.mjs',
+        styles: [],
+        sharedKit: 1,
+        background: true,
+        commandSources: true,
+      },
+      'kit-hookless': {
+        entry: 'hookless/app.mjs',
+        styles: [],
+        sharedKit: 1,
+        background: true,
+      },
+    });
+    const mod = await http
+      .get(`/api/${ticker.installed!.entryPath!}`)
+      .set('Cookie', cookie)
+      .expect(200);
+    expect(mod.text).toContain('export function Background');
+    expect(mod.text).toContain('export const commandSources');
+
+    // The descriptor drops a hook without a new build: the live build's
+    // declaration stands until the next install.
+    write(
+      hooksDescriptor(hooksRepoUrl, hooksCommit, {
+        apps: [
+          {
+            id: 'kit-ticker',
+            name: 'Ticker',
+            entry: 'ticker/app.mjs',
+            capabilities: ['notify'],
+          },
+          {
+            id: 'kit-hookless',
+            name: 'Hookless',
+            entry: 'hookless/app.mjs',
+            capabilities: [],
+          },
+        ],
+      }),
+    );
+    try {
+      expect(await listed('kit-ticker')).toMatchObject({
+        background: true,
+        commandSources: true,
+      });
+    } finally {
+      write(hooksDescriptor(hooksRepoUrl, hooksCommit));
+    }
+
+    await http
+      .delete('/api/marketplace/apps/kit-hooks')
+      .set('Cookie', cookie)
+      .expect(204);
+    expect((await listed('kit-ticker')).installed).toBeNull();
   }, 30_000);
 
   it('uninstalls the kit descriptor: both apps, and their stylesheets are no longer served', async () => {

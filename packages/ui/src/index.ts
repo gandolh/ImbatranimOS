@@ -100,7 +100,17 @@ export { SystemProvider, useSystem } from './systemContext'
 // The shared kit: what a marketplace kit app reads from the
 // desktop at runtime instead of bundling, and the props it is rendered with.
 export { SHARED_KIT_MODULES, SHARED_KIT_VERSION } from './sharedKit'
-export type { KitAppProps, NativeHostContext, SharedKitModule } from './sharedKit'
+export type {
+  KitAppModule,
+  KitAppProps,
+  KitBackgroundProps,
+  NativeHostContext,
+  SharedKitModule,
+  WindowlessSystemHandle,
+} from './sharedKit'
+// What a command source is: a built-in add-on's manifest lists them, a kit
+// app's module exports them.
+export type { CommandItem, CommandSource, CommandSourceContext } from './commandSource'
 
 // Capability-consuming SDK hooks — the old core hooks, re-homed onto the
 // handle. No windowId arguments: the handle already knows its window.

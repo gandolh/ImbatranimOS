@@ -1,5 +1,4 @@
-import type { ComponentType } from 'react'
-import type { KitAppProps, NativeHostContext, SystemHandle } from '@imbatranim/ui'
+import type { NativeHostContext, SystemHandle, SystemServer } from '@imbatranim/ui'
 import type { Capability } from '../../shared/registry/marketplace'
 
 /**
@@ -24,11 +23,11 @@ export type NativeAppModule = {
  * What a kit app's module exports instead: a component the
  * desktop renders in the window, in its own tree, with its own React and kit
  * (read from `__imbatranimShared`). React mounts and unmounts it; anything it
- * starts outside React it stops in an effect cleanup.
+ * starts outside React it stops in an effect cleanup. Beside it, the hooks its
+ * descriptor declares: `Background` and `commandSources`. Defined in the kit,
+ * so an outside repo's snapshot has it.
  */
-export type KitAppModule = {
-  App: ComponentType<KitAppProps>
-}
+export type { KitAppModule } from '@imbatranim/ui'
 
 /**
  * Members of the handle that are not capabilities: every app has them. `server`
@@ -74,5 +73,13 @@ export function scopeHandle(
       }
       return Reflect.get(target, prop, receiver) as unknown
     },
+  })
+}
+
+/** `system` with `server` in place of the handle's own. */
+export function withServer(system: SystemHandle, server: SystemServer): SystemHandle {
+  return new Proxy(system, {
+    get: (target, prop, receiver) =>
+      prop === 'server' ? server : (Reflect.get(target, prop, receiver) as unknown),
   })
 }

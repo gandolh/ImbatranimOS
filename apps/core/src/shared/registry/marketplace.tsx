@@ -68,6 +68,14 @@ export type MarketplaceApp = {
   multiInstance: boolean
   /** File types it offers to open, after the built-in apps that claim them. */
   opens: string[]
+  /**
+   * A kit app whose module exports `Background`, which the desktop mounts with
+   * no window. For an installed app, what its live build declared. A backend
+   * from before hooks sends none, which reads as false. See {@link declaresHooks}.
+   */
+  background?: boolean
+  /** A kit app whose module exports `commandSources`, read like `background`. */
+  commandSources?: boolean
   minSystemVersion: number
   /**
    * A kit app's shared kit version: a component the desktop
@@ -146,6 +154,17 @@ export function isSandboxed(app: Pick<MarketplaceApp, 'runtime'>): boolean {
  */
 export function isKitApp(app: Pick<MarketplaceApp, 'runtime' | 'sharedKit'>): boolean {
   return !isSandboxed(app) && typeof app.sharedKit === 'number'
+}
+
+/**
+ * True for a kit app that declares a hook: its module loads after sign-in, with
+ * no window open, so its background service runs and its commands are searched
+ * (`kitHooks.tsx`). Only a declared hook loads a module before a window opens.
+ */
+export function declaresHooks(
+  app: Pick<MarketplaceApp, 'runtime' | 'sharedKit' | 'background' | 'commandSources'>
+): boolean {
+  return isKitApp(app) && (app.background === true || app.commandSources === true)
 }
 
 /**
@@ -268,7 +287,48 @@ export function useBuiltInClashes(): string[] {
   return useRegistryStore((s) => s.clashes)
 }
 
+/**
+ * The apps of the last sync that declare a hook, in the registry and
+ * runnable: what `kitHooks.tsx` loads.
+ */
+let hookApps: MarketplaceApp[] = []
+
+/** The apps whose hooks `kitHooks.tsx` loads, as the last sync left them. */
+export function kitHookApps(): readonly MarketplaceApp[] {
+  return hookApps
+}
+
+/**
+ * Each kit app's loaded background service, by app id, with the entry it came
+ * from. A sync makes every entry anew; one of the same build gets the same
+ * service back, so installing another app does not remount it.
+ */
+const services = new Map<string, { entryPath: string; Service: ComponentType }>()
+
+/** True while the build of `appId` whose entry is `entryPath` is the one the registry holds. */
+export function isCurrentBuild(appId: string, entryPath: string): boolean {
+  return hookApps.some((a) => a.id === appId && a.installed?.entryPath === entryPath)
+}
+
+/**
+ * Put a kit app's background service on its registry entry, where
+ * `BackgroundServices` mounts it as it mounts a built-in's. `kitHooks.tsx`
+ * calls this once the app's module has loaded. Nothing when the app's build
+ * has changed since the load started: its own load follows. The next sync
+ * that leaves the build out takes the service with it.
+ */
+export function setKitService(app: MarketplaceApp, Service: ComponentType): void {
+  const entryPath = app.installed?.entryPath
+  if (!entryPath || !isCurrentBuild(app.id, entryPath)) return
+  services.set(app.id, { entryPath, Service })
+  const config = APP_REGISTRY.find((a) => a.id === app.id)
+  if (!config) return
+  config.background = Service
+  noteRegistryChanged()
+}
+
 function toAppConfig(app: MarketplaceApp): AppConfig {
+  const service = services.get(app.id)
   const component = lazy(async () => {
     // The host is its own chunk, and the game's code is fetched only when a
     // window opens: nothing of either is in the eager bundle.
@@ -317,6 +377,10 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
     // built-in stays the default and this one is offered in Open With.
     // Undefined rather than empty, or "Show all" would list every app.
     ...(app.opens?.length ? { opens: [...app.opens] } : {}),
+    // Its background service, when one of this build has loaded already.
+    ...(service && service.entryPath === app.installed?.entryPath
+      ? { background: service.Service }
+      : {}),
     defaultSize: { width: app.window.defaultSize.w, height: app.window.defaultSize.h },
     minSize: { width: app.window.minSize.w, height: app.window.minSize.h },
   }
@@ -344,19 +408,57 @@ export function syncMarketplaceApps(apps: MarketplaceApp[]): void {
   const builtIn = new Set(APP_REGISTRY.map((a) => a.id))
   const added: string[] = []
   const kitBuilds = new Set<string>()
+  const hooked: MarketplaceApp[] = []
   for (const app of apps) {
     if (!isRunnable(app) || builtIn.has(app.id) || added.includes(app.id)) continue
     APP_REGISTRY.push(toAppConfig(app))
     added.push(app.id)
     if (isKitApp(app)) kitBuilds.add(kitBuildKey(app)!)
+    if (declaresHooks(app)) hooked.push(app)
   }
-  // A build that left (updated, uninstalled) takes its stylesheets with it.
+  // A build that left (updated, uninstalled) takes its stylesheets with it,
+  // and its background service.
   pruneKitStyles(kitBuilds)
+  hookApps = hooked
+  for (const [id, { entryPath }] of services) {
+    if (!isCurrentBuild(id, entryPath)) services.delete(id)
+  }
   useRegistryStore.setState((s) => ({
     version: s.version + 1,
     ids: added,
     clashes: clashesWith(apps, builtIn),
   }))
+  syncKitHooks()
+}
+
+/** The chunk that loads kit apps' hooks: imported only once one declares a hook. */
+let kitHooksChunk: Promise<typeof import('../../modules/marketplace/kitHooks')> | null = null
+
+/**
+ * Load the hooks of the apps that declare them, and unload those of the apps
+ * that left, once the desktop is idle: sign-in never waits on an app's module,
+ * so a background service or a palette entry may start a beat after the
+ * desktop does. Nothing at all, not even the chunk, while no app declares a
+ * hook.
+ */
+function syncKitHooks(): void {
+  if (hookApps.length === 0 && !kitHooksChunk) return
+  whenIdle(() => {
+    kitHooksChunk ??= import('../../modules/marketplace/kitHooks')
+    kitHooksChunk.then(
+      (m) => m.syncKitHooks(),
+      () => {
+        // The desktop's own chunk did not arrive: the next sync tries again.
+        kitHooksChunk = null
+      }
+    )
+  })
+}
+
+/** Run `task` when the page is idle, and within two seconds whatever happens. */
+function whenIdle(task: () => void): void {
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(task, { timeout: 2000 })
+  else setTimeout(task, 0)
 }
 
 /** The listed ids a built-in app already has, installed or not. */

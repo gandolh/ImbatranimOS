@@ -2,15 +2,64 @@ import { appsSource } from './appsSource'
 import { getEnabledApps } from '../registry/enabledApps'
 import { filesSource } from './filesSource'
 import { recentFilesSource } from './recentFilesSource'
-import { registerCommandSource, COMMAND_SOURCES } from './CommandSourcesRegistry'
+import {
+  registerCommandSource,
+  unregisterCommandSource,
+  COMMAND_SOURCES,
+  type CommandSource,
+} from './CommandSourcesRegistry'
 
 // The core-owned sources, registered once (guarded against HMR double
 // registration). The command palette and Start's search both import this file,
-// so the two read the same sources and never disagree. App-owned sources
-// (bookmarks) come from the add-on manifests and are registered by
-// src/manifest.ts.
+// so the two read the same sources and never disagree. Built-in add-ons'
+// sources (bookmarks) come from their manifests and are registered by
+// src/manifest.ts; an installed kit app's arrive with its module, through
+// registerAppSources below.
 for (const source of [appsSource, filesSource, recentFilesSource]) {
   if (!COMMAND_SOURCES.find((s) => s.group === source.group)) registerCommandSource(source)
+}
+
+/** The sources each installed app brought, by app id, as registered. */
+const appSources = new Map<string, CommandSource[]>()
+
+/**
+ * Put an installed app's command sources in the palette and Start's search,
+ * after every source already there, replacing any it had. Each is searched,
+ * and its results activated, only while the app is enabled, so turning the
+ * app off takes its results away at once. A source whose group another
+ * source already has is left out: a result finds its source by its group.
+ * Returns the groups left out.
+ */
+export function registerAppSources(appId: string, sources: readonly CommandSource[]): string[] {
+  unregisterAppSources(appId)
+  const enabled = () => getEnabledApps().some((a) => a.id === appId)
+  const taken = new Set(COMMAND_SOURCES.map((s) => s.group))
+  const added: CommandSource[] = []
+  const refused: string[] = []
+  for (const source of sources) {
+    if (taken.has(source.group)) {
+      refused.push(source.group)
+      continue
+    }
+    taken.add(source.group)
+    const gated: CommandSource = {
+      group: source.group,
+      search: (query, ctx) => (enabled() ? source.search(query, ctx) : Promise.resolve([])),
+      activate: (item) => {
+        if (enabled()) source.activate(item)
+      },
+    }
+    registerCommandSource(gated)
+    added.push(gated)
+  }
+  appSources.set(appId, added)
+  return refused
+}
+
+/** Take an app's sources out of the palette and Start: it was uninstalled or rebuilt. */
+export function unregisterAppSources(appId: string): void {
+  for (const source of appSources.get(appId) ?? []) unregisterCommandSource(source)
+  appSources.delete(appId)
 }
 
 const APP_LIMIT = 5

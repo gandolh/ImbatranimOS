@@ -1,5 +1,8 @@
 import { recordedBuild } from './marketplace.service';
 
+/** No hook declared: what every row from before hooks reads as. */
+const NO_HOOKS = { background: false, commandSources: false };
+
 /**
  * What an installed row says its live build holds. The listing
  * reads this, not the descriptor, so editing a descriptor without a
@@ -14,7 +17,10 @@ describe('recordedBuild', () => {
     });
     expect(r?.output).toBe('games/hollow/client/dist/os');
     expect([...r!.entries]).toEqual([
-      ['hollow', { entry: 'hollow.mjs', styles: [], sharedKit: null }],
+      [
+        'hollow',
+        { entry: 'hollow.mjs', styles: [], sharedKit: null, ...NO_HOOKS },
+      ],
     ]);
   });
 
@@ -29,10 +35,13 @@ describe('recordedBuild', () => {
     });
     expect(r?.output).toBe('dist/os');
     expect([...r!.entries]).toEqual([
-      ['office-docs', { entry: 'docs/app.mjs', styles: [], sharedKit: null }],
+      [
+        'office-docs',
+        { entry: 'docs/app.mjs', styles: [], sharedKit: null, ...NO_HOOKS },
+      ],
       [
         'office-sheets',
-        { entry: 'sheets/app.js', styles: [], sharedKit: null },
+        { entry: 'sheets/app.js', styles: [], sharedKit: null, ...NO_HOOKS },
       ],
     ]);
   });
@@ -53,9 +62,45 @@ describe('recordedBuild', () => {
     expect([...r!.entries]).toEqual([
       [
         'office-docs',
-        { entry: 'docs/app.mjs', styles: ['docs/app.css'], sharedKit: 1 },
+        {
+          entry: 'docs/app.mjs',
+          styles: ['docs/app.css'],
+          sharedKit: 1,
+          ...NO_HOOKS,
+        },
       ],
-      ['office-sheets', { entry: 'sheets/app.mjs', styles: [], sharedKit: 1 }],
+      [
+        'office-sheets',
+        { entry: 'sheets/app.mjs', styles: [], sharedKit: 1, ...NO_HOOKS },
+      ],
+    ]);
+  });
+
+  it("reads the hooks a kit app's build declared", () => {
+    const r = recordedBuild({
+      id: 'kit',
+      entry: 'dist/os',
+      entries: JSON.stringify({
+        'kit-ticker': {
+          entry: 'ticker/app.mjs',
+          styles: [],
+          sharedKit: 1,
+          background: true,
+          commandSources: true,
+        },
+        'kit-quiet': {
+          entry: 'quiet/app.mjs',
+          styles: [],
+          sharedKit: 1,
+          commandSources: true,
+        },
+      }),
+    });
+    expect(
+      [...r!.entries].map(([id, a]) => [id, a.background, a.commandSources]),
+    ).toEqual([
+      ['kit-ticker', true, true],
+      ['kit-quiet', false, true],
     ]);
   });
 
@@ -88,6 +133,10 @@ describe('recordedBuild', () => {
     [
       'a kit app whose module is not one',
       '{"office-docs":{"entry":"docs/app.css","styles":[],"sharedKit":1}}',
+    ],
+    [
+      'a kit app whose hook is not true',
+      '{"office-docs":{"entry":"docs/app.mjs","styles":[],"sharedKit":1,"background":false}}',
     ],
     [
       'a kit app with a field it does not know',

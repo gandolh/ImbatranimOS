@@ -83,7 +83,9 @@ export interface InstalledRow {
    * module inside `entry`, as the build that is live produced them. Null for
    * every other row. A kit app's is an object instead of the
    * module's path: `{ entry, styles, sharedKit }`, its stylesheets and the
-   * shared kit version its build was made against. See {@link recordedBuild}.
+   * shared kit version its build was made against, with `background: true`
+   * and `commandSources: true` beside them for the hooks it declared. See
+   * {@link recordedBuild}.
    */
   entries: string | null;
   installed_at: number;
@@ -132,6 +134,14 @@ export interface MarketplaceApp {
   multiInstance: boolean;
   /** The file types it offers to open (Open With). Empty when none. */
   opens: string[];
+  /**
+   * A kit app whose module exports `Background`, which the desktop mounts
+   * with no window. Installed: what the live build declared, like
+   * `sharedKit`. False for a mount app and a URL app; older desktops ignore it.
+   */
+  background: boolean;
+  /** A kit app whose module exports `commandSources`, read like `background`. */
+  commandSources: boolean;
   minSystemVersion: number;
   /**
    * The shared kit version a kit app was built against, or null
@@ -328,6 +338,11 @@ export class MarketplaceService implements OnModuleInit {
           capabilities: a.capabilities,
           multiInstance: a.multiInstance,
           opens: a.opens,
+          // What the live build declared: a descriptor that adds a hook at a
+          // new ref changes nothing until that ref is installed, so the desktop
+          // never looks for an export the module it has cannot hold.
+          background: built ? built.background : a.background,
+          commandSources: built ? built.commandSources : a.commandSources,
           minSystemVersion: d.minSystemVersion,
           sharedKit: built ? built.sharedKit : d.sharedKit,
           catalogSharedKit: d.sharedKit,
@@ -413,6 +428,9 @@ export class MarketplaceService implements OnModuleInit {
       capabilities: manifest.capabilities as CatalogApp['capabilities'],
       multiInstance: false,
       opens: [],
+      // Hooks are a kit app's, and an app from a URL is never one.
+      background: false,
+      commandSources: false,
       minSystemVersion: manifest.minSystemVersion,
       // Never a kit app: an app from a URL runs sandboxed, and the shared
       // modules never reach a frame.
@@ -705,7 +723,8 @@ export class MarketplaceService implements OnModuleInit {
     await this.servers.stop(d.id);
     // A version 1 row is written exactly as before one catalog entry, several apps: the entry, and
     // no entries. A version 2 row names the output and each app's module; a
-    // kit app's also its stylesheets and its shared kit version.
+    // kit app's also its stylesheets, its shared kit version and the hooks
+    // it declared (only those it did, so a row without hooks reads as before).
     const suite = d.schemaVersion === 2;
     const kit = d.sharedKit;
     this.dbs.db
@@ -733,7 +752,11 @@ export class MarketplaceService implements OnModuleInit {
                         entry: a.entry,
                         styles: a.styles,
                         sharedKit: kit,
-                      } satisfies RecordedApp),
+                        ...(a.background && { background: true as const }),
+                        ...(a.commandSources && {
+                          commandSources: true as const,
+                        }),
+                      } satisfies z.infer<typeof recordedKitApp>),
                 ]),
               ),
             )
@@ -915,13 +938,19 @@ export interface RecordedApp {
   styles: string[];
   /** The shared kit version a kit app was built against. Null for a mount app. */
   sharedKit: number | null;
+  /** The build declared a background service. False for a mount app. */
+  background: boolean;
+  /** The build declared command sources. False for a mount app. */
+  commandSources: boolean;
 }
 
-/** A kit app's value in `entries`. */
+/** A kit app's value in `entries`. A hook it did not declare is left out. */
 const recordedKitApp = z.strictObject({
   entry: appEntrySchema,
   styles: z.array(styleSchema).max(MAX_APP_STYLES),
   sharedKit: sharedKitSchema,
+  background: z.literal(true).optional(),
+  commandSources: z.literal(true).optional(),
 });
 
 /**
@@ -941,7 +970,13 @@ export function recordedBuild(
       entries: new Map([
         [
           row.id,
-          { entry: posix.basename(row.entry), styles: [], sharedKit: null },
+          {
+            entry: posix.basename(row.entry),
+            styles: [],
+            sharedKit: null,
+            background: false,
+            commandSources: false,
+          },
         ],
       ]),
     };
@@ -964,6 +999,8 @@ export function recordedBuild(
         entry: posix.normalize(value),
         styles: [],
         sharedKit: null,
+        background: false,
+        commandSources: false,
       });
       continue;
     }
@@ -973,6 +1010,8 @@ export function recordedBuild(
       entry: posix.normalize(kit.data.entry),
       styles: kit.data.styles.map((p) => posix.normalize(p)),
       sharedKit: kit.data.sharedKit,
+      background: kit.data.background === true,
+      commandSources: kit.data.commandSources === true,
     });
   }
   return { output: row.entry, entries };

@@ -1,3 +1,7 @@
+import type { ComponentType } from 'react'
+import type { CommandSource } from './commandSource'
+import type { SystemHandle } from './system'
+
 /**
  * The shared kit: what a marketplace **kit app** links against at
  * runtime instead of bundling. The desktop puts its own instances of React,
@@ -53,3 +57,35 @@ export type NativeHostContext = {
 
 /** The props the desktop renders a kit app's `App` export with. */
 export type KitAppProps = { windowId: string; host: NativeHostContext }
+
+/**
+ * The handle a kit app's `Background` reads with `useSystem()` (since kit
+ * 1.5.0): a running copy of the app with no window. `window` is the inert
+ * one (its writes do nothing), `intents.consume` finds nothing, and
+ * `server.request()` rejects: only a window holds the app's server. The rest
+ * is fenced to the descriptor's capabilities, as a window's handle is.
+ */
+export type WindowlessSystemHandle = SystemHandle & { readonly windowId: null }
+
+/** The props the desktop renders a kit app's `Background` export with. */
+export type KitBackgroundProps = { host: NativeHostContext }
+
+/**
+ * What a kit app's module exports (since kit 1.5.0 for the hooks). `App` is
+ * the window. `Background` and `commandSources` are hooks: the desktop looks
+ * for each only when the app's descriptor declares it (`background: true`,
+ * `commandSources: true`), and loads such a module after sign-in, with no
+ * window open. A declared hook the module does not export is refused by name.
+ */
+export type KitAppModule = {
+  App: ComponentType<KitAppProps>
+  /**
+   * Mounted with no window from sign-in until sign-out while the app is
+   * enabled. Renders nothing; it exists for its effects, which are cheap: one
+   * slow interval, no per-frame work. One that throws is hidden with one
+   * notification until it is turned off and on, or the page reloads.
+   */
+  Background?: ComponentType<KitBackgroundProps>
+  /** Searched by the command palette and Start while the app is enabled. */
+  commandSources?: readonly CommandSource[]
+}

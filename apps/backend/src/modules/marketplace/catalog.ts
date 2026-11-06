@@ -20,7 +20,11 @@ import { z } from 'zod';
  * Since the shared kit a version 2 descriptor's apps may be kit apps (top-level
  * `sharedKit`): components the desktop renders with its own React and UI kit
  * rather than modules that `mount` themselves, each with the stylesheets it
- * lists in `styles`.
+ * lists in `styles`. A kit app may also declare hooks (`background`,
+ * `commandSources`): exports the desktop runs with no window open.
+ *
+ * A descriptor and each of its apps are strict: a field this backend does
+ * not understand is refused with its name, never dropped.
  */
 
 /** The `system` capabilities a descriptor may ask for. */
@@ -193,7 +197,9 @@ function sourceSchema(options: { allowLocalRepos: boolean }) {
 
 /** Version 1: one descriptor, one app. */
 function descriptorV1Schema(options: { allowLocalRepos: boolean }) {
-  return z.object({
+  // Strict: a field this backend does not know is refused rather than
+  // dropped, so a misspelt or misplaced one fails where it is written.
+  return z.strictObject({
     schemaVersion: z.literal(1),
     id: idSchema,
     name: z.string().min(1).max(60),
@@ -217,11 +223,24 @@ function descriptorV1Schema(options: { allowLocalRepos: boolean }) {
     sharedKit: z
       .undefined({ error: 'sharedKit needs schemaVersion 2' })
       .optional(),
+    // A hook is a kit app's export, and only a version 2 descriptor has kit apps.
+    background: z
+      .undefined({ error: 'background needs schemaVersion 2 and sharedKit' })
+      .optional(),
+    commandSources: z
+      .undefined({
+        error: 'commandSources needs schemaVersion 2 and sharedKit',
+      })
+      .optional(),
   });
 }
 
-/** One app of a version 2 descriptor: what the desktop shows and opens. */
-export const suiteAppSchema = z.object({
+/**
+ * One app of a version 2 descriptor: what the desktop shows and opens.
+ * Strict, like the descriptor around it: a field the desktop does not
+ * understand (a misspelt hook) is refused, not ignored.
+ */
+export const suiteAppSchema = z.strictObject({
   id: idSchema,
   name: z.string().min(1).max(60),
   description: z.string().max(300).default(''),
@@ -245,6 +264,17 @@ export const suiteAppSchema = z.object({
         new Set(list.map((p) => posix.normalize(p))).size === list.length,
       'lists a stylesheet twice',
     ),
+  /**
+   * A kit app whose module exports `Background`, a component the desktop
+   * mounts with no window from sign-in to sign-out while the app is
+   * enabled. Only a declared hook loads the module before a window opens.
+   */
+  background: z.boolean().default(false),
+  /**
+   * A kit app whose module exports `commandSources`, searched by the command
+   * palette and Start's search while the app is enabled.
+   */
+  commandSources: z.boolean().default(false),
 });
 
 /**
@@ -252,7 +282,7 @@ export const suiteAppSchema = z.object({
  * build shares; each item of `apps` is one app.
  */
 function descriptorV2Schema(options: { allowLocalRepos: boolean }) {
-  return z.object({
+  return z.strictObject({
     schemaVersion: z.literal(2),
     id: idSchema,
     name: z.string().min(1).max(60),
@@ -350,6 +380,8 @@ function fromV1(d: DescriptorV1): Descriptor {
         multiInstance: false,
         capabilities: d.capabilities,
         styles: [],
+        background: false,
+        commandSources: false,
       },
     ],
     minSystemVersion: d.minSystemVersion,
@@ -412,6 +444,17 @@ export function descriptorSchema(options: { allowLocalRepos: boolean }) {
             path: ['apps', i, 'styles'],
             message: 'only a kit app (with sharedKit) may list styles',
           });
+        }
+        // A hook is a named export the desktop renders or calls with its own
+        // React and kit, which a module that exports `mount` never shares.
+        for (const hook of ['background', 'commandSources'] as const) {
+          if (d.sharedKit === null && a[hook]) {
+            ctx.addIssue({
+              code: 'custom',
+              path: ['apps', i, hook],
+              message: `only a kit app (with sharedKit) may declare ${hook}`,
+            });
+          }
         }
       });
     });

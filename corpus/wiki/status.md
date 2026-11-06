@@ -184,10 +184,9 @@ over all sound, 43 an Updates page. The server ISO is deferred by the owner
 
 ## Open todos
 
-- `linux-notification-click-runs-its-action` (2026-11-05): a click on a
-  Linux app's notification should run its `default` action.
-- `x11-apps-clipboard-and-cursors` (2026-11-05): copy and paste between X11
-  apps and the rest, and X11 apps' own cursors.
+None. On 2026-11-06 the owner promoted the last two: brief 48 (X11 apps
+share the clipboard and show their own cursors) and brief 49 (a click on a
+Linux app's notification runs its action).
 
 On 2026-11-04 the owner's grill turned the earlier todos into briefs 37-44
 and dropped the window-zoom check.

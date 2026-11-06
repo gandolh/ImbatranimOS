@@ -5230,3 +5230,13 @@ idle cover off. Walked headless with a Web Audio beep page and a 360p video
 in Firefox: 50 packets a second without breaks beside 10 Mbit/s of frames,
 sound about 40 ms ahead of the picture before device latency.
 
+
+## [2026-11-06] todo | Briefs 48 and 49 from the Linux apps todos
+
+The owner promoted both open Linux apps todos: brief 48, X11 apps share the
+clipboard (plain text, through brief 41's path) and show their own cursors
+(the cursor surface sent as a small image with its hotspot, only when it
+changes; GTK 3 apps that draw their own cursors gain it too); brief 49, a
+click on a Linux app's notification runs its `default` action
+(`ActionInvoked`, then `NotificationClosed` reason 2), with no extra action
+buttons.

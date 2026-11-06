@@ -334,3 +334,78 @@ describe('DbService — a database that will not open', () => {
     svc.onModuleDestroy();
   });
 });
+
+describe('DbService — the file modes table', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'imb-modes-'));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('a live database one step behind gains the table and keeps its data', () => {
+    const path = join(dir, 'live.sqlite');
+    const first = openService(path);
+    first.db.prepare("INSERT INTO todos (text) VALUES ('still here')").run();
+    first.db
+      .prepare(
+        `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, installed_at)
+         VALUES ('imbatranim-office', 'abc', 'b1', '/x', 'dist/a.js', 1)`,
+      )
+      .run();
+    // As the VPS has it before this step.
+    first.db.exec('DROP TABLE file_modes');
+    first.db.pragma(`user_version = ${LEDGER_VERSION - 1}`);
+    first.onModuleDestroy();
+
+    const svc = openService(path);
+    expect(svc.migrationFailure).toBeNull();
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
+      LEDGER_VERSION,
+    );
+    expect(svc.db.prepare('SELECT text FROM todos').all()).toEqual([
+      { text: 'still here' },
+    ]);
+    expect(svc.db.prepare('SELECT id FROM marketplace_apps').all()).toEqual([
+      { id: 'imbatranim-office' },
+    ]);
+    const cols = (
+      svc.db.prepare('PRAGMA table_info(file_modes)').all() as {
+        name: string;
+      }[]
+    ).map((c) => c.name);
+    expect(cols).toEqual(['path', 'owner', 'group_name', 'mode', 'updated_at']);
+    svc.onModuleDestroy();
+  });
+
+  it('running the step again keeps the rows already there', () => {
+    const svc = openService(join(dir, 'again.sqlite'));
+    svc.db
+      .prepare(
+        `INSERT INTO file_modes (path, owner, group_name, mode, updated_at)
+         VALUES ('/home/imbatranim/.local/share/imbatranim/notes', 'notes', 'notes', 448, 1)`,
+      )
+      .run();
+    svc.db.pragma(`user_version = ${LEDGER_VERSION - 1}`);
+    svc.migrate();
+    expect(svc.migrationFailure).toBeNull();
+    expect(svc.db.prepare('SELECT owner, mode FROM file_modes').all()).toEqual([
+      { owner: 'notes', mode: 448 },
+    ]);
+    svc.onModuleDestroy();
+  });
+
+  it('refuses a mode outside 0 to 0o7777', () => {
+    const svc = openService(join(dir, 'check.sqlite'));
+    const insert = svc.db.prepare(
+      `INSERT INTO file_modes (path, owner, group_name, mode, updated_at)
+       VALUES (?, NULL, 'system', ?, 1)`,
+    );
+    expect(() => insert.run('/a', 0o10000)).toThrow(/CHECK constraint/);
+    expect(() => insert.run('/b', -1)).toThrow(/CHECK constraint/);
+    svc.onModuleDestroy();
+  });
+});

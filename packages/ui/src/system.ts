@@ -21,6 +21,10 @@
  * - **Scope is the security model.** A handle is minted for one app in one
  *   window. `window.*` acts on that window alone; `notify` stamps that app's
  *   id. An app cannot address what its handle does not name.
+ * - **A handle is a running copy of its app.** Its calls to the backend
+ *   (`fs`, `http`, `schedule`) carry a token the desktop minted for that copy,
+ *   so the OS knows which app, and which copy, is calling. The app never sees
+ *   the token. `fs.downloadUrl` is a bare URL and goes out as the user's.
  * - Bump {@link PROTOCOL_VERSION} on any breaking change.
  */
 

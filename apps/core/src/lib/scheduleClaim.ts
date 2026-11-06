@@ -1,3 +1,4 @@
+import type { SystemHttp } from '@imbatranim/ui'
 import { api } from './axios'
 
 export type ScheduleDomain = 'clock' | 'calendar' | 'todo'
@@ -17,10 +18,11 @@ export type ScheduleDomain = 'clock' | 'calendar' | 'todo'
 export async function claimScheduleOccurrence(
   domain: ScheduleDomain,
   itemId: string,
-  occurrenceMs: number
+  occurrenceMs: number,
+  client: SystemHttp = api as unknown as SystemHttp
 ): Promise<boolean> {
   try {
-    const { data } = await api.post<{ claimed: boolean }>('/schedule/claim', {
+    const { data } = await client.post<{ claimed: boolean }>('/schedule/claim', {
       domain,
       itemId,
       occurrenceMs,

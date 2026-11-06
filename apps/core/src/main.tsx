@@ -1,3 +1,7 @@
+// First, before any other module (and so before any app's): core keeps the
+// page's network primitives as they are now, for the calls that carry an
+// app's token.
+import './system/network'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'

@@ -40,6 +40,7 @@ import {
   useAssociationStore,
 } from '../shared/registry/associations'
 import { requestPick } from './filePortal'
+import { ACTS_AS_USER, createAppInstance, type AppInstance } from './appInstance'
 
 /**
  * The in-process transport of the protocol.
@@ -133,8 +134,40 @@ function soundSnapshot(): SystemSoundState {
   return { volume, muted }
 }
 
+/** Each handle's running copy, for the code that mounts it to close. Not on the handle: an app can't end itself. */
+const instances = new WeakMap<SystemHandle, AppInstance>()
+
+/**
+ * The running copy behind a handle, or undefined for one whose calls are the
+ * user's ({@link ACTS_AS_USER}). A windowless mount closes it when it
+ * unmounts; a window's copy closes by itself when its window leaves the store.
+ */
+export function appInstanceOf(system: SystemHandle): AppInstance | undefined {
+  return instances.get(system)
+}
+
+/** Close a window's copy once its window, seen open, has left the store. */
+function closeWithWindow(instance: AppInstance, windowId: string): void {
+  const isOpen = () => useWindowStore.getState().windows.some((w) => w.id === windowId)
+  let seen = isOpen()
+  const unsubscribe = useWindowStore.subscribe(() => {
+    if (isOpen()) {
+      seen = true
+      return
+    }
+    if (!seen) return
+    unsubscribe()
+    instance.close()
+  })
+}
+
 export function createSystemHandle(appId: string, windowId: string | null): SystemHandle {
   const win = windowId === null ? windowlessWindow(appId) : windowFor(windowId)
+  // The app's own identity: its calls carry its token. Settings, Files and
+  // the Terminal call as the user, through the shared client.
+  const instance = ACTS_AS_USER.has(appId) ? null : createAppInstance(appId, windowId)
+  if (instance && windowId !== null) closeWithWindow(instance, windowId)
+  const http: SystemHttp = instance ? instance.http : (api as unknown as SystemHttp)
 
   const on = <E extends SystemEvent>(
     event: E,
@@ -174,15 +207,18 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
     }
   }
 
-  return {
+  const handle: SystemHandle = {
     protocolVersion: PROTOCOL_VERSION,
     appId,
     windowId,
 
     fs: {
-      read: (root, path) => fetchFileBytes(root, path),
-      readWithVersion: (root, path) => fetchFileBytesWithVersion(root, path),
-      upload: (root, path, bytes, name, opts) => uploadFileBytes(root, path, bytes, name, opts),
+      read: (root, path) => fetchFileBytes(root, path, http),
+      readWithVersion: (root, path) => fetchFileBytesWithVersion(root, path, http),
+      upload: (root, path, bytes, name, opts) =>
+        uploadFileBytes(root, path, bytes, name, opts, http),
+      // A bare URL for `<a href>`, `<img>` and `<audio>`: the browser fetches
+      // it with the cookie and no header, so it is the user's.
       downloadUrl: (root, path) => downloadUrl(root, path),
       pickOpen: (opts = {}) =>
         requestPick({
@@ -201,14 +237,15 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
         }),
       pickDirectory: (opts = {}) =>
         requestPick({ mode: 'directory', title: opts.title ?? 'Choose a folder' }),
-      recordRecent: (root, path) => recordRecentFile(root, path, appId),
-      removeRecent: (root, path) => removeRecentFile(root, path),
+      recordRecent: (root, path) => recordRecentFile(root, path, appId, http),
+      removeRecent: (root, path) => removeRecentFile(root, path, http),
     },
 
-    // The escape hatch is the axios client itself, narrowed to the protocol's
-    // surface. Structural: nothing is wrapped, so behaviour (interceptors,
-    // the 401 → lock-screen drop) is exactly the old `api` import's.
-    http: api as unknown as SystemHttp,
+    // The escape hatch: the shared axios client, narrowed to the protocol's
+    // surface, so its interceptors (the 401 → lock-screen drop) still apply.
+    // For an app with an identity, each call goes through its copy, which
+    // adds the token and answers with the protocol's response shape only.
+    http,
 
     window: win,
 
@@ -264,7 +301,7 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
 
     schedule: {
       claim: (domain: ScheduleDomain, itemId, occurrenceMs) =>
-        claimScheduleOccurrence(domain, itemId, occurrenceMs),
+        claimScheduleOccurrence(domain, itemId, occurrenceMs, http),
     },
 
     // No server here: a built-in app runs none. The kit app's host
@@ -281,4 +318,6 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
 
     on,
   }
+  if (instance) instances.set(handle, instance)
+  return handle
 }

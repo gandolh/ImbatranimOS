@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 12;
+export const LEDGER_VERSION = 13;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -221,6 +221,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         name: 'marketplace-entries',
         run: () => this.stepMarketplaceEntries(),
       },
+      { toVersion: 13, name: 'file-modes', run: () => this.stepFileModes() },
     ];
 
     const current = Number(this.db.pragma('user_version', { simple: true }));
@@ -671,6 +672,27 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     } catch (err) {
       if (!isAlreadyApplied(err, DUPLICATE_COLUMN)) throw err;
     }
+  }
+
+  /**
+   * Step 13 — the owner and Unix mode of a path in the apps' data area. The
+   * container has one Linux user, so app identities can't be Linux owners:
+   * the OS keeps them here and checks them in its own file API. A path with
+   * no row belongs to the user, as everything in home did before this step,
+   * so a database migrating to it needs no backfill. `owner` is an app id, or
+   * NULL for the user; `mode` holds the permission bits plus setuid, setgid
+   * and sticky (0 to 0o7777).
+   */
+  private stepFileModes() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS file_modes (
+        path TEXT PRIMARY KEY,
+        owner TEXT,
+        group_name TEXT NOT NULL,
+        mode INTEGER NOT NULL CHECK (mode BETWEEN 0 AND 4095),
+        updated_at INTEGER NOT NULL
+      );
+    `);
   }
 
   private stepDropOldAuth() {

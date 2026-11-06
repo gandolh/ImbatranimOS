@@ -8,6 +8,8 @@ import {
   LOCAL_SESSION_COOKIE,
   LocalIdentityService,
 } from '../local-identity/local-identity.service';
+import { AppIdentityGuard } from '../app-identity/app-identity.guard';
+import { AppTokens } from '../app-identity/app-tokens';
 import { SessionGuard } from './identity.guard';
 import { AuthenticationError, type Caller } from './identity.types';
 
@@ -93,15 +95,18 @@ export class FakeIdentityService extends LocalIdentityService {
 /**
  * The identity half of a test's `imports`. `@Global`, matching
  * `IdentityModule`, so a partial module graph still resolves the service
- * wherever a gateway injects it.
+ * wherever a gateway injects it. The real app-identity guard runs after the
+ * session guard, as in `IdentityModule`.
  */
 @Global()
 @Module({
   providers: [
     { provide: LocalIdentityService, useClass: FakeIdentityService },
+    AppTokens,
     { provide: APP_GUARD, useClass: SessionGuard },
+    { provide: APP_GUARD, useClass: AppIdentityGuard },
   ],
-  exports: [LocalIdentityService],
+  exports: [LocalIdentityService, AppTokens],
 })
 export class IdentityTestModule {}
 

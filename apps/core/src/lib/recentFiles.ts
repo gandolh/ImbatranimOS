@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import type { SystemHttp } from '@imbatranim/ui'
 import { api } from './axios'
 import { queryClient } from './queryClient'
 import { currentAppId } from '../shared/store/retiredApps'
@@ -45,17 +46,27 @@ export function useRecentFilesQuery() {
 /**
  * Record an open. Fire-and-forget on purpose: recents are a hint, and no open
  * flow should fail or slow down because the hint could not be written.
+ * `client` is an app's own `system.http` when the app records it.
  */
-export function recordRecentFile(root: string, path: string, appId: string): void {
-  void api
+export function recordRecentFile(
+  root: string,
+  path: string,
+  appId: string,
+  client: SystemHttp = api as unknown as SystemHttp
+): void {
+  void client
     .post('/files/recent', { root, path, appId })
     .then(invalidate)
     .catch(() => undefined)
 }
 
 /** Self-heal: drop an entry whose file turned out to be gone. */
-export function removeRecentFile(root: string, path: string): void {
-  void api
+export function removeRecentFile(
+  root: string,
+  path: string,
+  client: SystemHttp = api as unknown as SystemHttp
+): void {
+  void client
     .delete('/files/recent', { params: { root, path } })
     .then(invalidate)
     .catch(() => undefined)

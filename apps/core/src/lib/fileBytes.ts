@@ -1,5 +1,16 @@
-import { FileConflictError, UploadTooLargeError, type VersionedBytes } from '@imbatranim/ui'
+import {
+  FileConflictError,
+  UploadTooLargeError,
+  type SystemHttp,
+  type VersionedBytes,
+} from '@imbatranim/ui'
 import { api } from './axios'
+
+/**
+ * The client a call goes out on: core's shared one by default (the user's
+ * calls), or an app's own `system.http`, which carries that app's token.
+ */
+const shared = api as unknown as SystemHttp
 
 /** True when an error carries an HTTP status (axios-style), matching `status`. */
 function hasHttpStatus(err: unknown, status: number): boolean {
@@ -19,8 +30,12 @@ function hasHttpStatus(err: unknown, status: number): boolean {
  *
  * `GET /api/files/download?root=&path=` streams `application/octet-stream`.
  */
-export async function fetchFileBytes(root: string, path: string): Promise<ArrayBuffer> {
-  const res = await api.get<ArrayBuffer>('/files/download', {
+export async function fetchFileBytes(
+  root: string,
+  path: string,
+  client: SystemHttp = shared
+): Promise<ArrayBuffer> {
+  const res = await client.get<ArrayBuffer>('/files/download', {
     params: { root, path },
     responseType: 'arraybuffer',
   })
@@ -38,9 +53,10 @@ function versionFrom(headers: unknown): string | null {
 /** {@link fetchFileBytes} plus the `X-File-Version` the download carries. */
 export async function fetchFileBytesWithVersion(
   root: string,
-  path: string
+  path: string,
+  client: SystemHttp = shared
 ): Promise<VersionedBytes> {
-  const res = await api.get<ArrayBuffer>('/files/download', {
+  const res = await client.get<ArrayBuffer>('/files/download', {
     params: { root, path },
     responseType: 'arraybuffer',
   })
@@ -63,7 +79,8 @@ export async function uploadFileBytes(
   path: string,
   bytes: ArrayBuffer | Uint8Array,
   name: string,
-  opts: { expected?: string } = {}
+  opts: { expected?: string } = {},
+  client: SystemHttp = shared
 ): Promise<{ version: string | null }> {
   const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
   // Copy into a standalone ArrayBuffer so the Blob owns contiguous bytes.
@@ -76,7 +93,7 @@ export async function uploadFileBytes(
   if (opts.expected !== undefined) form.append('expected', opts.expected)
   form.append('file', blob, name)
   try {
-    const res = await api.post<{ version?: unknown }>('/files/upload', form, {
+    const res = await client.post<{ version?: unknown }>('/files/upload', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     const version = res.data?.version

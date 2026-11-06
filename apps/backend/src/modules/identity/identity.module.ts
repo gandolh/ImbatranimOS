@@ -1,6 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
+import { AppIdentityGuard } from '../app-identity/app-identity.guard';
+import { AppTokens } from '../app-identity/app-tokens';
 import { LocalIdentityController } from '../local-identity/local-identity.controller';
 import { LocalIdentityService } from '../local-identity/local-identity.service';
 import { SessionGuard } from './identity.guard';
@@ -19,14 +21,20 @@ import { MeController } from './me.controller';
  * `@Global` because the guard is global: a module that did not import this
  * one would still be guarded by it, and would then have no way to inject the
  * service for its own WS upgrade.
+ *
+ * {@link AppIdentityGuard} (which app is calling) is registered here, after
+ * `SessionGuard` in the same list: Nest runs global guards in the order they
+ * are registered, and an app token only resolves under its session.
  */
 @Global()
 @Module({
   controllers: [MeController, LocalIdentityController],
   providers: [
     LocalIdentityService,
+    AppTokens,
     { provide: APP_GUARD, useClass: SessionGuard },
+    { provide: APP_GUARD, useClass: AppIdentityGuard },
   ],
-  exports: [LocalIdentityService],
+  exports: [LocalIdentityService, AppTokens],
 })
 export class IdentityModule {}

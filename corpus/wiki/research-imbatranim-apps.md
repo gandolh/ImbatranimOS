@@ -178,7 +178,7 @@ Player, Code Editor and Diff, and Clock and Calendar.
 
 | Brief | What |
 |---|---|
-| [63](../briefs/todo/63-imbatranim-office-becomes-imbatranim-apps.md), from `imbatranim-office-becomes-imbatranim-apps` | The rename (first) |
+| [63](../briefs/done/63-imbatranim-office-becomes-imbatranim-apps.md), from `imbatranim-office-becomes-imbatranim-apps` | The rename (first) |
 | [64](../briefs/todo/64-games-install-from-imbatranim-apps.md), from `games-install-from-imbatranim-apps` | Games; settles the group layout (second) |
 | [65](../briefs/todo/65-notepad-takes-over-markdown-editors-job.md), from `notepad-takes-over-markdown-editors-job` | Notepad takes over Markdown Editor |
 | [66](../briefs/todo/66-files-handles-archives-and-archive-manager-goes.md), from `files-handles-archives-and-archive-manager-goes` | Files opens archives like folders; Archive Manager goes |

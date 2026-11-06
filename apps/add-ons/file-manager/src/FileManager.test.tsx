@@ -33,7 +33,34 @@ const ENTRIES: FsEntry[] = [
   { name: 'b.txt', path: 'b.txt', type: 'file', size: 3, modifiedAt: '2026-11-03T10:00:00Z' },
 ]
 
-function fakeSystem(): SystemHandle {
+const LISTING = {
+  format: 'zip',
+  entries: [
+    {
+      name: 'top.txt',
+      size: 4,
+      compressedSize: 4,
+      directory: false,
+      modified: null,
+      nameRepaired: false,
+    },
+    {
+      name: 'docs/a.md',
+      size: 2,
+      compressedSize: 2,
+      directory: false,
+      modified: null,
+      nameRepaired: false,
+    },
+  ],
+  refused: [],
+  encrypted: false,
+  truncated: false,
+}
+
+type FakeOpts = { intent?: unknown; post?: ReturnType<typeof vi.fn> }
+
+function fakeSystem(opts: FakeOpts = {}): SystemHandle {
   const noop = () => {}
   const unsubscribe = () => noop
   return {
@@ -53,11 +80,11 @@ function fakeSystem(): SystemHandle {
     },
     http: {
       get: vi.fn(async (url: string) => ({
-        data: url === '/files' ? ENTRIES : [],
+        data: url === '/files' ? ENTRIES : url === '/archive/list' ? LISTING : [],
         status: 200,
         headers: {},
       })),
-      post: vi.fn(),
+      post: opts.post ?? vi.fn(),
       put: vi.fn(),
       patch: vi.fn(),
       delete: vi.fn(),
@@ -74,7 +101,7 @@ function fakeSystem(): SystemHandle {
     },
     intents: {
       openApp: () => '',
-      consume: () => undefined,
+      consume: () => opts.intent as never,
       onIntent: unsubscribe,
       associations: {
         resolveOpener: () => ({ appId: 'notepad', reason: 'declared' }),
@@ -96,12 +123,12 @@ function fakeSystem(): SystemHandle {
 let container: HTMLDivElement
 let root: Root
 
-async function renderFileManager() {
+async function renderFileManager(opts: FakeOpts = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   await act(async () => {
     root.render(
       <QueryClientProvider client={client}>
-        <SystemProvider system={fakeSystem()}>
+        <SystemProvider system={fakeSystem(opts)}>
           <FileManager windowId="w1" />
         </SystemProvider>
       </QueryClientProvider>
@@ -164,5 +191,56 @@ describe('File Manager listing', () => {
     const labels = menuLabels()
     expect(labels).toContain('Rename')
     expect(labels).not.toContain('New Folder')
+  })
+})
+
+describe('File Manager inside an archive', () => {
+  const open = { intent: { openPath: 'pics.zip', root: 'home' } }
+  const button = (label: string) =>
+    [...document.querySelectorAll('button')].find((b) => b.textContent?.includes(label))
+
+  it('shows the archive as a read-only folder and says why writes are off', async () => {
+    await renderFileManager(open)
+    expect(container.textContent).toContain('Read-only: inside pics.zip')
+    expect(container.textContent).toContain('top.txt')
+    expect(container.textContent).toContain('docs')
+    expect(container.textContent).not.toContain('b.txt')
+    const newFolder = button('New Folder') as HTMLButtonElement
+    expect(newFolder.disabled).toBe(true)
+    expect(newFolder.title).toContain('read-only')
+  })
+
+  it('offers only Extract on a row, not Rename or Delete', async () => {
+    await renderFileManager(open)
+    const row = [...container.querySelectorAll('tr')].find((tr) =>
+      tr.textContent?.includes('top.txt')
+    )!
+    rightClick(row)
+    const labels = menuLabels()
+    expect(labels).toContain('Extract…')
+    expect(labels).toContain('Extract all…')
+    expect(labels).not.toContain('Rename')
+    expect(labels).not.toContain('Delete')
+  })
+
+  it('asks where, then starts the extraction of everything', async () => {
+    const post = vi.fn(async () => ({ data: { id: 'j1' } }))
+    await renderFileManager({ ...open, post })
+    await act(async () => {
+      button('Extract all')!.click()
+    })
+    expect(document.body.textContent).toContain('named after the archive')
+    await act(async () => {
+      ;[...document.querySelectorAll('button')]
+        .filter((b) => b.textContent === 'Extract')
+        .at(-1)!
+        .click()
+    })
+    expect(post).toHaveBeenCalledWith('/archive/extract-job', {
+      root: 'home',
+      path: 'pics.zip',
+      dest: undefined,
+      entries: undefined,
+    })
   })
 })

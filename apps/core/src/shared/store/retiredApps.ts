@@ -8,7 +8,7 @@ import { useStartupStore } from './startupStore'
  * Built-in apps that left, and the one-time move of the owner's choices to the
  * app that replaced them: a suite app when the built-in left for
  * imbatranim-office (decisions-office-suite.md), or another built-in when two
- * did one job (Markdown Editor into Notepad).
+ * did one job (Markdown Editor into Notepad, Archive Manager into Files).
  *
  * Each retirement run adds its pair here: the retired id, then the app that
  * replaces it. Two retired apps may map to one (PDF Viewer and norPDF both
@@ -23,14 +23,15 @@ export const RETIRED_APP_IDS: readonly (readonly [from: string, to: string])[] =
   ['norpdf', 'office-pdf'],
   ['pdf-viewer', 'office-pdf'],
   ['markdown-editor', 'notepad'],
+  ['archive-manager', 'file-manager'],
 ]
 
 /**
  * Replacements that were already installed built-ins. Hiding the retired app
- * says nothing about wanting no replacement (Notepad opens every text file), so
- * the disabled set only drops the retired id and never disables these.
+ * says nothing about wanting no replacement (Notepad opens every text file, Files every
+ * archive), so the disabled set only drops the retired id and never disables these.
  */
-const BUILT_IN_TARGETS: ReadonlySet<string> = new Set(['notepad'])
+const BUILT_IN_TARGETS: ReadonlySet<string> = new Set(['notepad', 'file-manager'])
 
 /** The dotfile that records which pairs have been moved. */
 export const APP_ID_MIGRATIONS_KEY = 'imbatranimos:app-id-migrations'

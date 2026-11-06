@@ -23,6 +23,7 @@ import type { ContextMenuItem } from '@imbatranim/ui'
 import type { FsEntry } from '../types'
 import { resolveOpenApp, openAppLabel, type Associations } from './openWith'
 import { newFileOpener, type NewFileKind } from './newFileTemplates'
+import { archiveKind } from './archiveView'
 
 export type BuildMenuItemsCtx = {
   /** The right-clicked entry, or null for the empty-background menu. */
@@ -54,10 +55,17 @@ export type BuildMenuItemsCtx = {
   onRefresh: () => void
   /** Show the "Open with" chooser for this entry. */
   onOpenWith: (entry: FsEntry) => void
-  /** Extract an archive file (Archive Manager). */
+  /** Extract an archive file, or, inside an archive, the clicked entry or selection. */
   onExtract: (entry: FsEntry) => void
-  /** Compress the current selection (or this entry) to a .zip (Archive Manager). */
+  /** Compress the current selection (or this entry) to a .zip. */
   onCompress: (entry: FsEntry) => void
+  /**
+   * Inside an archive's read-only folder view: the menu offers only opening
+   * folders and extracting, since nothing there can be changed.
+   */
+  inArchive?: boolean
+  /** Extract everything in the archive being viewed. */
+  onExtractAll?: () => void
   /**
    * Compare the two selected files in the Diff tool. Non-null only
    * when exactly two files are selected and the clicked entry is one of them —
@@ -67,9 +75,6 @@ export type BuildMenuItemsCtx = {
   /** Open a bitmap in Paint — an Edit verb beside the viewer's Open. */
   onEditInPaint: (entry: FsEntry) => void
 }
-
-/** Archive files the "Extract here" item is offered for. */
-const ARCHIVE_RE = /\.(zip|tar\.gz|tgz|tar)$/i
 
 /** Bitmaps Paint can edit — the viewer keeps the double-click. */
 const PAINTABLE_RE = /\.(png|jpe?g|gif|webp|bmp)$/i
@@ -104,7 +109,41 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
     onCompare,
     onEditInPaint,
     onCompress,
+    inArchive = false,
+    onExtractAll,
   } = ctx
+
+  if (inArchive) {
+    const extractAll: ContextMenuItem = {
+      label: 'Extract all…',
+      icon: <FileArchive size={13} />,
+      onSelect: () => onExtractAll?.(),
+    }
+    if (!entry) {
+      return [
+        extractAll,
+        { type: 'separator' },
+        { label: 'Refresh', icon: <RefreshCw size={13} />, onSelect: onRefresh },
+      ]
+    }
+    return [
+      ...(entry.type === 'directory'
+        ? [
+            {
+              label: 'Open',
+              icon: <FolderOpen size={13} />,
+              onSelect: () => onOpen(entry),
+            } as ContextMenuItem,
+          ]
+        : []),
+      {
+        label: verbCount > 1 ? `Extract ${verbCount} items…` : 'Extract…',
+        icon: <FileArchive size={13} />,
+        onSelect: () => onExtract(entry),
+      },
+      extractAll,
+    ]
+  }
 
   if (!entry) {
     return [
@@ -206,10 +245,10 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
           } as ContextMenuItem,
         ]
       : []),
-    ...(entry.type === 'file' && ARCHIVE_RE.test(entry.name)
+    ...(entry.type === 'file' && archiveKind(entry.name) !== null
       ? [
           {
-            label: 'Extract here',
+            label: 'Extract…',
             icon: <FileArchive size={13} />,
             onSelect: () => onExtract(entry),
           } as ContextMenuItem,

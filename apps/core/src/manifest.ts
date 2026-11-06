@@ -25,7 +25,6 @@ import { manifest as mediaPlayer } from '@imbatranim/media-player'
 import { manifest as codeEditor, diffManifest as diff } from '@imbatranim/code-editor'
 import { manifest as gitGui } from '@imbatranim/git-gui'
 import { manifest as restApiClient } from '@imbatranim/rest-api-client'
-import { manifest as archiveManager } from '@imbatranim/archive-manager'
 import { manifest as paint } from '@imbatranim/paint'
 import { manifest as logs } from '@imbatranim/logs'
 import type { AddonManifest, AppConfig } from './contract'
@@ -68,7 +67,6 @@ const MANIFESTS: AddonManifest[] = [
   paint,
   gitGui,
   restApiClient,
-  archiveManager,
   logs,
 ]
 

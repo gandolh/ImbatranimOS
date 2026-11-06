@@ -142,8 +142,8 @@ describe('notify is stamped', () => {
 
 describe('intents', () => {
   it('onIntent delivers a pending payload immediately, then re-deliveries', () => {
-    const id = openTestWindow('archive-manager')
-    const system = createSystemHandle('archive-manager', id)
+    const id = openTestWindow('file-manager')
+    const system = createSystemHandle('file-manager', id)
     useIntentStore.getState().setIntent(id, { openPath: 'a.zip', root: 'home' })
 
     const seen: unknown[] = []

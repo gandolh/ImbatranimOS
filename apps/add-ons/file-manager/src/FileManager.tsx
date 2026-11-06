@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   FolderPlus,
   Clipboard,
@@ -12,6 +13,8 @@ import {
   EyeOff,
   LayoutGrid,
   List,
+  Lock,
+  PackageOpen,
 } from 'lucide-react'
 import {
   Button,
@@ -43,6 +46,16 @@ import { FS_ROOTS } from './types'
 import type { FsEntry } from './types'
 import { resolveOpenApp } from './lib/openWith'
 import { OpenWithDialog } from './components/OpenWithDialog'
+import { ExtractDialog, type ExtractPrompt } from './components/ExtractDialog'
+import { compressPaths, errorMessage } from './api/archiveApi'
+import { runExtractJob } from './lib/extractJob'
+import {
+  archiveKind,
+  crumbTarget,
+  entryNamesFor,
+  folderEntries,
+  uniqueArchiveName,
+} from './lib/archiveView'
 import { buildMenuItems } from './lib/buildMenuItems'
 import {
   makeBlankFile,
@@ -70,6 +83,7 @@ import { useDeleteFlow } from './hooks/useDeleteFlow'
 import { usePaneResize } from './hooks/usePaneResize'
 import { useListKeyboardNav } from './hooks/useListKeyboardNav'
 import {
+  useArchiveListingQuery,
   useDirectoryQuery,
   useCreateDirectoryMutation,
   useDeleteEntryMutation,
@@ -84,6 +98,17 @@ type MenuState = {
   y: number
   entry: FsEntry | null
 }
+
+function dirOf(p: string): string {
+  const i = p.lastIndexOf('/')
+  return i === -1 ? '' : p.slice(0, i)
+}
+
+function baseOf(p: string): string {
+  return p.slice(p.lastIndexOf('/') + 1)
+}
+
+const READ_ONLY_NOTE = 'This is a read-only view of an archive. Extract it to change anything.'
 
 function triggerDownload(url: string, name: string) {
   const a = document.createElement('a')
@@ -100,6 +125,28 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const rootCfg = FS_ROOTS.find((r) => r.id === root) ?? FS_ROOTS[0]
   const [path, setPath] = useState('')
 
+  // An archive open as a read-only folder: `path` stays the folder the archive
+  // sits in, `inner` is where we are inside it.
+  const [archive, setArchive] = useState<{ path: string; name: string } | null>(null)
+  const [inner, setInner] = useState('')
+  const inArchive = archive !== null
+  /** The extract dialog's pending request: which archive, and which entries (absent = all). */
+  const [extractFor, setExtractFor] = useState<{
+    prompt: ExtractPrompt
+    archivePath: string
+    names?: string[]
+  } | null>(null)
+  /** The running extraction, for the progress strip. */
+  const [job, setJob] = useState<{ label: string; percent: number } | null>(null)
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+  const queryClient = useQueryClient()
+
   // Drain a one-shot navigate intent (from the command palette's file search)
   // exactly once — ref-guarded so StrictMode's double-mount can't consume twice.
   // `navigatePath` is separate from the editor apps' `openPath` intent: it moves
@@ -109,15 +156,32 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   useEffect(() => {
     if (navConsumedRef.current) return
     navConsumedRef.current = true
-    const intent = system.intents.consume<{ navigatePath?: string; root?: string }>()
-    if (intent?.navigatePath !== undefined && intent.root) {
-      // Draining a one-shot open-intent on mount is the intended "sync from an
-      // external system" use of an effect; it runs at most once (ref-guarded).
-      /* eslint-disable react-hooks/set-state-in-effect */
+    const intent = system.intents.consume<{
+      navigatePath?: string
+      openPath?: string
+      root?: string
+    }>()
+    // An archive opened from elsewhere (the desktop, a search, Open with) lands
+    // here like a double-click on it in its folder.
+    const kind = intent?.openPath ? archiveKind(intent.openPath) : null
+    // Draining a one-shot open-intent on mount is the intended "sync from an
+    // external system" use of an effect; it runs at most once (ref-guarded).
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (intent?.openPath && intent.root && kind) {
+      const at = intent.openPath
+      setRoot(intent.root)
+      setPath(dirOf(at))
+      if (kind === 'browse') setArchive({ path: at, name: baseOf(at) })
+      else
+        setExtractFor({
+          prompt: { archiveName: baseOf(at), what: 'everything' },
+          archivePath: at,
+        })
+    } else if (intent?.navigatePath !== undefined && intent.root) {
       setRoot(intent.root)
       setPath(intent.navigatePath)
-      /* eslint-enable react-hooks/set-state-in-effect */
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [system])
 
   // Search state. Ephemeral window state on purpose — a search is a
@@ -188,6 +252,12 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   } = usePaneResize(previewPane)
 
   const dirQuery = useDirectoryQuery(root, path)
+  const archiveQuery = useArchiveListingQuery(root, archive?.path ?? null)
+  const archiveListing = archiveQuery.data
+  const archiveEntries = useMemo(
+    () => (archiveListing ? folderEntries(archiveListing, inner) : []),
+    [archiveListing, inner]
+  )
   const createDirMutation = useCreateDirectoryMutation(root, path)
   const writeContentMutation = useWriteContentMutation(root, path)
   const { prompt: promptName, promptDialog } = usePrompt()
@@ -231,6 +301,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   function switchRoot(nextRoot: string) {
     setRoot(nextRoot)
     setPath('')
+    setArchive(null)
+    setInner('')
     selection.clear()
     clipboard.clear()
     clearSearch()
@@ -238,15 +310,138 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
 
   function navigate(nextPath: string) {
     setPath(nextPath)
+    setArchive(null)
+    setInner('')
     selection.clear()
     // Results are scoped to the folder they were found in; carrying the query
     // across a navigation would silently re-run it somewhere else.
     clearSearch()
   }
 
+  /** Open an archive file like a folder: read-only, from the folder it sits in. */
+  function openArchive(entry: FsEntry) {
+    setPath(dirOf(entry.path))
+    setArchive({ path: entry.path, name: entry.name })
+    setInner('')
+    selection.clear()
+    clearSearch()
+  }
+
+  /** The one reply to anything that would change an archive. */
+  function blockedInArchive(): boolean {
+    if (!inArchive) return false
+    setActionError(READ_ONLY_NOTE)
+    return true
+  }
+
+  /** A handler that does nothing inside an archive but say why. */
+  function guarded<A extends unknown[]>(fn: (...args: A) => void): (...args: A) => void {
+    return (...args) => {
+      if (!blockedInArchive()) fn(...args)
+    }
+  }
+
+  /** Ask where to extract `names` (absent = everything) from this archive. */
+  function askExtract(archivePath: string, archiveName: string, what: string, names?: string[]) {
+    if (job) {
+      failAction('An extraction is already running.')
+      return
+    }
+    setExtractFor({ prompt: { archiveName, what }, archivePath, names })
+  }
+
+  /** Extract from the archive on screen: the entry or selection clicked, else everything. */
+  function extractFromView(entry: FsEntry | null) {
+    if (!archive || !archiveListing) return
+    const targets = entry ? verbTargets(entry) : []
+    if (targets.length === 0) {
+      askExtract(archive.path, archive.name, 'everything')
+      return
+    }
+    const names = entryNamesFor(
+      archiveListing,
+      targets.map((t) => t.path)
+    )
+    askExtract(
+      archive.path,
+      archive.name,
+      targets.length === 1 ? targets[0].name : `${targets.length} items`,
+      names
+    )
+  }
+
+  /**
+   * Run the extraction as a polled job. Plain async, not tied to this window:
+   * the notification still goes out if Files is closed meanwhile.
+   */
+  async function runExtract(
+    archivePath: string,
+    prompt: ExtractPrompt,
+    names: string[] | undefined,
+    dest: string | undefined
+  ) {
+    const label = `Extracting ${prompt.what} from ${prompt.archiveName}`
+    setJob({ label, percent: 0 })
+    try {
+      const result = await runExtractJob(
+        system.http,
+        { root, path: archivePath, dest, entries: names },
+        (percent) => {
+          if (mountedRef.current) setJob({ label, percent })
+        }
+      )
+      system.notify({
+        title: 'Extraction complete',
+        body: `${prompt.archiveName} → ${result.dest}`,
+        level: 'success',
+      })
+      void queryClient.invalidateQueries({ queryKey: ['fs-list'] })
+    } catch (err) {
+      const message = `Could not extract ${prompt.archiveName}: ${errorMessage(err)}`
+      system.notify({ title: 'File Manager', body: message, level: 'error' })
+      if (mountedRef.current) setActionError(message)
+    } finally {
+      if (mountedRef.current) setJob(null)
+    }
+  }
+
+  /** A folder crumb inside an archive: out of it, or up and down within it. */
+  function handleCrumb(clicked: string) {
+    if (!archive) {
+      navigate(clicked)
+      return
+    }
+    const target = crumbTarget(archive.path, clicked)
+    if (target.leave) {
+      navigate(target.path)
+      return
+    }
+    setInner(target.inner)
+    selection.clear()
+  }
+
   function handleOpen(entry: FsEntry) {
+    if (inArchive) {
+      // Nothing inside an archive opens in place: folders are walked, and a
+      // file is offered for extraction.
+      if (entry.type === 'directory') {
+        setInner(entry.path)
+        selection.clear()
+      } else extractFromView(entry)
+      return
+    }
     if (entry.type === 'directory') {
       navigate(entry.path)
+      return
+    }
+    const kind = archiveKind(entry.name)
+    if (kind === 'browse') {
+      openArchive(entry)
+      return
+    }
+    if (kind === 'extract') {
+      // A lone .gz or .xz has no folder to show.
+      askExtract(entry.path, entry.name, 'everything')
       return
     }
     // Routing goes through the handle's association registry: the
@@ -271,6 +466,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   }
 
   function handleRename(entry: FsEntry) {
+    if (blockedInArchive()) return
     setRenamingPath(entry.path)
     setRenameValue(entry.name)
   }
@@ -319,6 +515,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   }
 
   async function handleNewFile() {
+    if (blockedInArchive()) return
     const name = await promptName({
       title: 'New file',
       message: 'Include the extension — it decides which app opens the file.',
@@ -348,6 +545,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   }
 
   function handleNewOfficeFile(kind: NewFileKind) {
+    if (blockedInArchive()) return
     // Born in the file manager: write a blank template at the current directory
     // under a non-colliding name, then open it straight into the editor.
     const existing = (dirQuery.data ?? []).map((e) => e.name)
@@ -367,6 +565,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   }
 
   async function handleUploadFiles(files: File[]) {
+    if (blockedInArchive()) return
     // Never silently overwrite: an upload (or a drag-drop) whose name already
     // exists here used to clobber the file on disk with no warning (M5). Ask
     // before replacing; if declined, upload only the names that collide with
@@ -475,9 +674,11 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         onNewOfficeFile: handleNewOfficeFile,
         onUpload: openFilePicker,
         onPaste: clipboard.paste,
-        onRefresh: () => dirQuery.refetch(),
+        onRefresh: () => (inArchive ? archiveQuery.refetch() : dirQuery.refetch()),
+        inArchive,
+        onExtractAll: () => extractFromView(null),
         onExtract: (entry) =>
-          system.intents.openApp('archive-manager', { action: 'extract', root, path: entry.path }),
+          inArchive ? extractFromView(entry) : askExtract(entry.path, entry.name, 'everything'),
         onEditInPaint: (entry) => {
           system.intents.openApp('paint', { openPath: entry.path, root })
         },
@@ -503,22 +704,35 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             selected.has(entry.path) && selected.size > 1
               ? orderedEntries.filter((e) => selected.has(e.path)).map((e) => e.path)
               : [entry.path]
-          const base = paths.length > 1 ? 'archive' : entry.name
-          system.intents.openApp('archive-manager', {
-            action: 'compress',
-            root,
-            paths,
-            dest: `${base}.zip`,
-            format: 'zip',
-          })
+          void handleCompress(paths, paths.length > 1 ? 'archive' : entry.name)
         },
       })
     : []
   /* eslint-enable react-hooks/refs */
 
-  const entries = dirQuery.data ?? []
-  const isLoading = dirQuery.isLoading
-  const isError = dirQuery.isError
+  /** Pack these paths into a new .zip in the folder on screen, beside what is there. */
+  async function handleCompress(paths: string[], base: string) {
+    const name = uniqueArchiveName(
+      base,
+      (dirQuery.data ?? []).map((e) => e.name)
+    )
+    const dest = path ? `${path}/${name}` : name
+    try {
+      const res = await compressPaths(system.http, root, paths, dest, 'zip')
+      system.notify({
+        title: 'Archive created',
+        body: `${res.entries} file${res.entries === 1 ? '' : 's'} → ${res.dest}`,
+        level: 'success',
+      })
+      void queryClient.invalidateQueries({ queryKey: ['fs-list'] })
+    } catch (err) {
+      failAction(`Could not create ${name}: ${errorMessage(err)}`)
+    }
+  }
+
+  const entries = inArchive ? archiveEntries : (dirQuery.data ?? [])
+  const isLoading = inArchive ? archiveQuery.isLoading : dirQuery.isLoading
+  const isError = inArchive ? archiveQuery.isError : dirQuery.isError
 
   // Filter, then sort, ONCE — and pass the result down. FileList used to re-sort
   // internally with its own call, which happened to agree only because both used
@@ -540,7 +754,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     : ''
 
   // ── Search ──────────────────────────────────────────────────────
-  const searchActive = query.trim().length > 0
+  const searchActive = !inArchive && query.trim().length > 0
   const search = useFileSearch(root, path, query, contentMode)
 
   /**
@@ -572,11 +786,14 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     searchActive && selectedHitPath
       ? ((hitDirQuery.data ?? []).find((e) => e.path === selectedHitPath) ?? null)
       : null
-  const previewEntries = searchActive
-    ? selectedHitEntry
-      ? [selectedHitEntry]
-      : []
-    : selectedEntries
+  // Nothing inside an archive is a file on disk to preview.
+  const previewEntries = inArchive
+    ? []
+    : searchActive
+      ? selectedHitEntry
+        ? [selectedHitEntry]
+        : []
+      : selectedEntries
 
   function focusSearch() {
     searchInputRef.current?.focus()
@@ -694,6 +911,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     trashOpen ||
     openWithFor !== null ||
     propsEntry !== null ||
+    extractFor !== null ||
     deleteFlow.dialogOpen
 
   const { handleVerbKeyDown } = useFileVerbKeys({
@@ -703,15 +921,15 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     modalOpen,
     menuOpen: menu !== null,
     onRename: handleRename,
-    onDelete: (permanent) => {
+    onDelete: guarded((permanent: boolean) => {
       // One selected row goes through the single flow so the dialog names the
       // file; several go through the batch flow, exactly as the toolbar does.
       if (selectedEntries.length === 1) deleteFlow.requestSingle(selectedEntries[0], permanent)
       else deleteFlow.requestBatch(permanent)
-    },
-    onCopy: clipboard.copy,
-    onCut: clipboard.cut,
-    onPaste: () => void clipboard.paste(),
+    }),
+    onCopy: guarded(clipboard.copy),
+    onCut: guarded(clipboard.cut),
+    onPaste: guarded(() => void clipboard.paste()),
     onSelectAll: selection.selectAll,
     onOpenMenu: (entry, point) => setMenu({ x: point.x, y: point.y, entry }),
     scrollToIndex: (index) =>
@@ -772,6 +990,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           variant="default"
           size="sm"
           className="flex items-center gap-1"
+          disabled={inArchive}
+          title={inArchive ? READ_ONLY_NOTE : undefined}
           onClick={() => setShowNewFolder(true)}
         >
           <FolderPlus size={12} />
@@ -782,6 +1002,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           variant="default"
           size="sm"
           className="flex items-center gap-1"
+          disabled={inArchive}
+          title={inArchive ? READ_ONLY_NOTE : undefined}
           onClick={openFilePicker}
         >
           <Upload size={12} />
@@ -800,7 +1022,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             variant="default"
             size="sm"
             className="flex items-center gap-1"
-            onClick={clipboard.paste}
+            onClick={guarded(() => void clipboard.paste())}
           >
             <Clipboard size={12} />
             Paste{' '}
@@ -810,7 +1032,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           </Button>
         )}
 
-        {selected.size > 1 && (
+        {selected.size > 1 && !inArchive && (
           <Button
             variant="destructive"
             size="sm"
@@ -847,9 +1069,14 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           variant="ghost"
           size="sm"
           className="h-5 w-5 p-0"
-          onClick={() => dirQuery.refetch()}
+          onClick={() => (inArchive ? archiveQuery.refetch() : dirQuery.refetch())}
         >
-          <RefreshCw size={12} className={cn(dirQuery.isFetching && 'animate-spin')} />
+          <RefreshCw
+            size={12}
+            className={cn(
+              (inArchive ? archiveQuery.isFetching : dirQuery.isFetching) && 'animate-spin'
+            )}
+          />
         </Button>
 
         <Tooltip
@@ -907,28 +1134,91 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       <Breadcrumb
         root={root}
         rootLabel={rootCfg.label}
-        path={path}
-        onNavigate={navigate}
+        // Inside an archive the bar reads folder / archive / inside-path, so a
+        // click on any crumb says where to go.
+        path={archive ? (inner ? `${archive.path}/${inner}` : archive.path) : path}
+        onNavigate={handleCrumb}
         right={
-          <SearchBox
-            value={query}
-            onChange={setQuery}
-            rootLabel={rootCfg.label}
-            path={path}
-            contentMode={contentMode}
-            onToggleContentMode={() => setContentMode((v) => !v)}
-            onRun={search.run}
-            onClear={clearSearch}
-            onStepIntoResults={() => {
-              if (search.hits.length === 0) return
-              setSelectedHitPath(search.hits[0].path)
-              resultsRef.current?.focus()
-            }}
-            searching={search.searching}
-            inputRef={searchInputRef}
-          />
+          inArchive ? undefined : (
+            <SearchBox
+              value={query}
+              onChange={setQuery}
+              rootLabel={rootCfg.label}
+              path={path}
+              contentMode={contentMode}
+              onToggleContentMode={() => setContentMode((v) => !v)}
+              onRun={search.run}
+              onClear={clearSearch}
+              onStepIntoResults={() => {
+                if (search.hits.length === 0) return
+                setSelectedHitPath(search.hits[0].path)
+                resultsRef.current?.focus()
+              }}
+              searching={search.searching}
+              inputRef={searchInputRef}
+            />
+          )
         }
       />
+
+      {archive && archiveListing && (
+        <div className="border-outline-variant bg-surface-container-low flex flex-wrap items-center gap-2 border-b px-2 py-1">
+          <Lock size={11} className="text-on-surface-variant shrink-0" aria-hidden />
+          <span className="font-ui text-on-surface-variant min-w-0 flex-1 text-[11px]">
+            Read-only: inside {archive.name}. Extract to open or change files.
+            {archiveListing.encrypted && ' It is encrypted, so it cannot be extracted.'}
+            {archiveListing.truncated &&
+              ' The list is cut short because the archive is very large.'}
+            {archiveListing.refused.length > 0 &&
+              ` ${archiveListing.refused.length} unsafe entr${archiveListing.refused.length === 1 ? 'y' : 'ies'} (${archiveListing.refused[0].name}) will make extraction fail.`}
+          </span>
+          <Button
+            variant="default"
+            size="sm"
+            className="flex items-center gap-1"
+            disabled={selected.size === 0 || archiveListing.encrypted || job !== null}
+            onClick={() => {
+              const first = selectedEntries[0]
+              if (first) extractFromView(first)
+            }}
+          >
+            <PackageOpen size={12} />
+            Extract selected ({selected.size})
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            className="flex items-center gap-1"
+            disabled={archiveListing.encrypted || job !== null}
+            onClick={() => extractFromView(null)}
+          >
+            <PackageOpen size={12} />
+            Extract all
+          </Button>
+        </div>
+      )}
+
+      {job && (
+        <div className="border-outline-variant bg-surface-container-low flex items-center gap-2 border-b px-2 py-1">
+          <span className="font-ui min-w-0 flex-1 truncate text-[11px]">{job.label}</span>
+          <div
+            className="rounded-control border-outline-variant h-2 w-32 shrink-0 overflow-hidden border"
+            role="progressbar"
+            aria-label={job.label}
+            aria-valuenow={job.percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className="bg-primary h-full transition-all"
+              style={{ width: `${job.percent}%` }}
+            />
+          </div>
+          <span className="font-ui text-on-surface-variant w-8 text-right text-[11px] tabular-nums">
+            {job.percent}%
+          </span>
+        </div>
+      )}
 
       {/* Action error banner (batch delete / upload failures) */}
       {actionError && (
@@ -999,7 +1289,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
               )}
               {isError && (
                 <div className="text-error font-ui flex items-center justify-center py-12 text-[12px]">
-                  Failed to load directory.
+                  {inArchive ? `Could not read ${archive.name}.` : 'Failed to load directory.'}
                 </div>
               )}
               {!isLoading && !isError && (
@@ -1054,9 +1344,9 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
                       onSelect={selectRow}
                       onOpen={handleOpen}
                       onRename={handleRename}
-                      onCopy={(entry) => clipboard.copy(verbTargets(entry))}
-                      onCut={(entry) => clipboard.cut(verbTargets(entry))}
-                      onDelete={deleteFlow.requestSingle}
+                      onCopy={guarded((entry: FsEntry) => clipboard.copy(verbTargets(entry)))}
+                      onCut={guarded((entry: FsEntry) => clipboard.cut(verbTargets(entry)))}
+                      onDelete={guarded(deleteFlow.requestSingle)}
                       onContextMenu={openEntryMenu}
                       renamingPath={renamingPath}
                       renameValue={renameValue}
@@ -1169,6 +1459,16 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           fileName={openWithFor.name}
           onPick={(appId) => openEntryWith(openWithFor, appId)}
           onClose={() => setOpenWithFor(null)}
+        />
+      )}
+      {extractFor && (
+        <ExtractDialog
+          request={extractFor.prompt}
+          root={root}
+          onExtract={(dest) =>
+            void runExtract(extractFor.archivePath, extractFor.prompt, extractFor.names, dest)
+          }
+          onClose={() => setExtractFor(null)}
         />
       )}
       {promptDialog}

@@ -15,6 +15,7 @@ import {
   uploadFile,
   writeContent,
 } from '../api/filesApi'
+import { listArchive } from '../api/archiveApi'
 
 export function fsListKey(root: string, path: string) {
   return ['fs-list', root, path] as const
@@ -31,6 +32,17 @@ export function useDirectoryQuery(root: string, path: string) {
   return useQuery({
     queryKey: fsListKey(root, path),
     queryFn: () => listDirectory(http, root, path),
+  })
+}
+
+/** An archive's contents, read once and kept: the listing changes only if the file does. */
+export function useArchiveListingQuery(root: string, path: string | null) {
+  const { http } = useSystem()
+  return useQuery({
+    queryKey: ['archive-list', root, path] as const,
+    queryFn: () => listArchive(http, root, path as string),
+    enabled: path !== null,
+    staleTime: 60_000,
   })
 }
 

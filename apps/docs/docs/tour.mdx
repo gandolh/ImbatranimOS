@@ -23,7 +23,7 @@ loads as a lazy chunk, so none of this weighs down the boot bundle.
       tag: 'not simulated',
       apps: [
         { name: 'Terminal', note: 'a real shell via node-pty over an authed WebSocket — an actual PTY, not xterm pointed at nothing' },
-        { name: 'Files', note: 'browses and edits the real home dir; traversal + symlink jailed, upload-capped' },
+        { name: 'Files', note: 'browses and edits the real home dir; traversal + symlink jailed, upload-capped; opens zip and tar archives like a folder, read-only, and extracts to a folder you pick (every entry re-validated, zip-slip-proof)' },
         { name: 'System Monitor', note: 'live CPU / RAM / disk / processes from real /proc, with uid-scoped kill' },
         { name: 'Settings', note: 'theme, accent (4 presets), backup and restore, startup and default apps, the marketplace; app enable/disable' },
         { name: 'Logs', note: 'what this machine has been doing, and who has tried to sign in' },
@@ -60,7 +60,6 @@ loads as a lazy chunk, so none of this weighs down the boot bundle.
         { name: 'Diff', note: 'compare two files side by side, edit and save the right one' },
         { name: 'Git GUI', note: 'status / stage / commit / diff / log over a shell-free, jailed backend git module' },
         { name: 'REST API Client', note: 'sends through an owner-authed backend proxy — the SPA CSP blocks direct fetches' },
-        { name: 'Archive Manager', note: 'zip + tar.gz extract/compress, every entry re-validated (zip-slip-proof)' },
         { name: 'Snipping Tool', note: 'Flameshot-style capture via DOM rasterization; region select + 5 annotation tools' },
       ],
     },

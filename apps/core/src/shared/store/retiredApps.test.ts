@@ -170,6 +170,31 @@ describe('migrateRetiredAppIds', () => {
     expect(useAddonStore.getState().disabled).toEqual(['notepad'])
   })
 
+  it('moves Archive Manager onto Files: pin, startup entry and the .zip default', () => {
+    useAssociationStore.setState({ overrides: { zip: 'archive-manager', tgz: 'archive-manager' } })
+    useDesktopStore.setState({
+      iconPositions: { 'archive-manager': { x: 8, y: 200, pinned: true } },
+    })
+    useStartupStore.setState({ apps: ['archive-manager', 'terminal'] })
+
+    migrateRetiredAppIds()
+
+    expect(useAssociationStore.getState().overrides).toEqual({
+      zip: 'file-manager',
+      tgz: 'file-manager',
+    })
+    expect(useDesktopStore.getState().iconPositions).toEqual({
+      'file-manager': { x: 8, y: 200, pinned: true },
+    })
+    expect(useStartupStore.getState().apps).toEqual(['file-manager', 'terminal'])
+  })
+
+  it('does not disable Files because Archive Manager was hidden', () => {
+    useAddonStore.setState({ disabled: ['archive-manager', 'games'] })
+    migrateRetiredAppIds()
+    expect(useAddonStore.getState().disabled).toEqual(['games'])
+  })
+
   it("keeps a place the owner gave the suite's icon over the built-in's", () => {
     useDesktopStore.setState({
       iconPositions: {
@@ -204,6 +229,7 @@ describe('currentAppId', () => {
   it("reads a retired built-in's id as its suite app's (recents)", () => {
     for (const [from, to] of RETIRED_APP_IDS) expect(currentAppId(from)).toBe(to)
     expect(currentAppId('markdown-editor')).toBe('notepad')
+    expect(currentAppId('archive-manager')).toBe('file-manager')
     expect(currentAppId('notepad')).toBe('notepad')
   })
 })

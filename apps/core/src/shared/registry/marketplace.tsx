@@ -1,6 +1,7 @@
 import { lazy, type ComponentType } from 'react'
 import { create } from 'zustand'
 import {
+  Bomb,
   Briefcase,
   Castle,
   Dices,
@@ -18,6 +19,7 @@ import {
   Rocket,
   Ruler,
   Sheet,
+  Spade,
   Sprout,
   Swords,
   Table,
@@ -202,6 +204,8 @@ const ICONS: Record<string, IconComponent> = {
   ghost: Ghost,
   trophy: Trophy,
   map: MapIcon,
+  bomb: Bomb,
+  spade: Spade,
   // Office.
   'file-text': FileText,
   'file-pen': FilePen,

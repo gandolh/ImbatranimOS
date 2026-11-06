@@ -71,7 +71,8 @@ container. Nothing is rebuilt into the OS image. Backups leave
   `system.sound.get().volume` and is silent while it says `muted` (since kit
   1.3.0; on an older desktop `sound` is missing).
 - **`icon`**: one of `package`, `gamepad-2`, `joystick`, `puzzle`, `swords`,
-  `sprout`, `castle`, `rocket`, `dices`, `ghost`, `trophy`, `map`, or for
+  `sprout`, `castle`, `rocket`, `dices`, `ghost`, `trophy`, `map`, `bomb`,
+  `spade`, or for
   office apps `file-text`, `file-pen`, `table`, `sheet`, `presentation`,
   `pen-tool`, `drafting-compass`, `ruler`, `briefcase`. The desktop shows
   `package` for any other name, and a test fails if a descriptor here uses

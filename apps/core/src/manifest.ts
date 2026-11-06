@@ -27,10 +27,6 @@ import { manifest as codeEditor, diffManifest as diff } from '@imbatranim/code-e
 import { manifest as gitGui } from '@imbatranim/git-gui'
 import { manifest as restApiClient } from '@imbatranim/rest-api-client'
 import { manifest as archiveManager } from '@imbatranim/archive-manager'
-import {
-  minesweeperManifest as minesweeper,
-  solitaireManifest as solitaire,
-} from '@imbatranim/games'
 import { manifest as paint } from '@imbatranim/paint'
 import { manifest as logs } from '@imbatranim/logs'
 import type { AddonManifest, AppConfig } from './contract'
@@ -71,8 +67,6 @@ const MANIFESTS: AddonManifest[] = [
   markdownEditor,
   codeEditor,
   diff,
-  minesweeper,
-  solitaire,
   paint,
   gitGui,
   restApiClient,

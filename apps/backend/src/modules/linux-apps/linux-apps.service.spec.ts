@@ -1,6 +1,13 @@
 import type { ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { brotliCompressSync } from 'zlib';
@@ -10,6 +17,7 @@ import {
   LinuxAppsService,
   parseLanguages,
   parseProfileList,
+  resolveFileInHome,
 } from './linux-apps.service';
 
 // Every spawn the service makes goes through this; nothing really runs.
@@ -225,6 +233,8 @@ describe('LinuxAppsService', () => {
         hasIcon: true,
         // The action whose Exec names no program is left out, as an entry is.
         actions: [{ id: 'new-window', name: 'New Window' }],
+        // No shared-mime-info database in this profile: nothing claims a type.
+        opens: [],
       },
     ]);
     expect((await apps.icon('firefox')).type).toBe('image/png');
@@ -252,6 +262,125 @@ describe('LinuxAppsService', () => {
     // The session's X display, for an X11 app.
     expect((opts as { env: NodeJS.ProcessEnv }).env.DISPLAY).toBe(':3');
     expect(sessionApps.groups(SESSION)).toEqual([4242]);
+  });
+
+  describe('as an Open with handler', () => {
+    let home: string;
+    let outside: string;
+    const oldHome = process.env.FILES_ROOT;
+    const fake = () => ({
+      pid: 4242,
+      once: jest.fn((ev: string, cb: () => void) => ev === 'spawn' && cb()),
+      unref: jest.fn(),
+    });
+
+    beforeEach(() => {
+      const share = join(m.paths.profile, 'share');
+      mkdirSync(join(share, 'mime'), { recursive: true });
+      writeFileSync(
+        join(share, 'mime', 'globs2'),
+        '50:application/vnd.oasis.opendocument.text:*.odt\n50:application/rtf:*.rtf\n',
+      );
+      writeFileSync(
+        join(share, 'applications', 'writer.desktop'),
+        [
+          '[Desktop Entry]',
+          'Type=Application',
+          'Name=Writer',
+          'Exec=soffice --writer %U',
+          'MimeType=application/vnd.oasis.opendocument.text;application/rtf;',
+        ].join('\n'),
+      );
+      writeFileSync(
+        join(share, 'applications', 'clock.desktop'),
+        [
+          '[Desktop Entry]',
+          'Type=Application',
+          'Name=Clock',
+          'Exec=clock',
+          'MimeType=application/rtf;',
+        ].join('\n'),
+      );
+      home = realpathSync(mkdtempSync(join(tmpdir(), 'home-')));
+      outside = realpathSync(mkdtempSync(join(tmpdir(), 'outside-')));
+      process.env.FILES_ROOT = home;
+      writeFileSync(join(home, 'letter.odt'), 'x');
+      writeFileSync(join(outside, 'secret.odt'), 'x');
+      symlinkSync(join(outside, 'secret.odt'), join(home, 'link.odt'));
+    });
+    afterEach(() => {
+      if (oldHome === undefined) delete process.env.FILES_ROOT;
+      else process.env.FILES_ROOT = oldHome;
+      rmSync(home, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    });
+
+    it('lists the types an entry opens, and none for an entry that takes no file', async () => {
+      const list = await apps.launchers();
+      expect(list.find((l) => l.id === 'writer')?.opens).toEqual([
+        'odt',
+        'rtf',
+      ]);
+      expect(list.find((l) => l.id === 'clock')?.opens).toEqual([]);
+      expect(list.find((l) => l.id === 'firefox')?.opens).toEqual([]);
+    });
+
+    it("hands the entry's Exec the file, as a path or a URL by its field code", async () => {
+      mockSpawn.mockReturnValue(fake() as never);
+      await apps.launch('writer', SESSION, undefined, {
+        root: 'home',
+        path: 'letter.odt',
+      });
+      const [cmd, args] = mockSpawn.mock.calls[0] as [string, string[]];
+      expect(cmd).toBe('soffice');
+      expect(args).toEqual(['--writer', `file://${join(home, 'letter.odt')}`]);
+    });
+
+    it('starts with no file as before, and refuses a file for an entry that takes none', async () => {
+      mockSpawn.mockReturnValue(fake() as never);
+      await apps.launch('writer', SESSION);
+      expect((mockSpawn.mock.calls[0] as [string, string[]])[1]).toEqual([
+        '--writer',
+      ]);
+      await expect(
+        apps.launch('clock', SESSION, undefined, {
+          root: 'home',
+          path: 'letter.odt',
+        }),
+      ).rejects.toThrow(/doesn't open files/);
+      expect(mockSpawn).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses a file outside the home, whatever the way there, with one answer', async () => {
+      const tries = [
+        '../' + outside.split('/').pop()! + '/secret.odt',
+        join(outside, 'secret.odt'),
+        'link.odt',
+        'missing.odt',
+        '.',
+        '/etc/passwd',
+        'a\0b',
+      ];
+      const messages = new Set<string>();
+      for (const path of tries) {
+        const err = await resolveFileInHome('home', path).catch(
+          (e: Error) => e,
+        );
+        expect(err).toBeInstanceOf(Error);
+        messages.add((err as Error).message);
+        await expect(
+          apps.launch('writer', SESSION, undefined, { root: 'home', path }),
+        ).rejects.toThrow();
+      }
+      expect([...messages]).toEqual(['That file cannot be opened']);
+      expect(mockSpawn).not.toHaveBeenCalled();
+    });
+
+    it('takes an absolute path that is inside the home', async () => {
+      await expect(
+        resolveFileInHome('home', join(home, 'letter.odt')),
+      ).resolves.toBe(join(home, 'letter.odt'));
+    });
   });
 
   const settled = async () => {

@@ -204,7 +204,12 @@ export type OpenerResolution = {
   reason: 'override' | 'declared' | 'text-fallback' | 'none'
 }
 
-export type OpenerCandidate = { appId: string; name: string }
+export type OpenerCandidate = {
+  appId: string
+  name: string
+  /** An installed Linux app, offered after the OS's own apps; never a default by itself. */
+  linux?: boolean
+}
 
 /**
  * `system.intents` — the shell: launching apps, and receiving what was thrown

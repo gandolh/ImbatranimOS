@@ -8,7 +8,8 @@ import {
 } from '@nestjs/common';
 import { execFile, spawn, type ChildProcess } from 'child_process';
 import { existsSync, promises as fs } from 'fs';
-import { basename, extname, join, resolve } from 'path';
+import { homedir } from 'os';
+import { basename, extname, join, resolve, sep } from 'path';
 import { promisify } from 'util';
 import { childEnv } from '../../child-env';
 import { terminalEnv } from '../pty/pty.constants';
@@ -17,7 +18,13 @@ import { OomKills, raiseOomScore, REAPPLY_OOM_SCORE_AFTER_MS } from './oom';
 import { closureSpeaksX11 } from './xwayland';
 import { WaylandGateway } from '../wayland/wayland.gateway';
 import { SessionApps } from '../wayland/session-apps';
-import { execArgv, parseDesktopEntry, pickLocalized } from './desktop-entry';
+import {
+  execArgv,
+  execTakesFile,
+  parseDesktopEntry,
+  pickLocalized,
+} from './desktop-entry';
+import { claimsOf, loadGlobs, type MimeGlobs } from './mime-globs';
 import {
   linuxAppsPaths,
   parsePin,
@@ -136,6 +143,48 @@ export interface Launcher {
   hasIcon: boolean;
   /** Its desktop actions (Firefox's New Window), named the same way. */
   actions: { id: string; name: string }[];
+  /**
+   * The extensions and whole file names it opens as a file (`odt`,
+   * `makefile`), from its `MimeType` and the profile's shared-mime-info
+   * globs. Empty for an entry that takes no file, or whose types the
+   * database doesn't know; Open with offers an entry only when it isn't.
+   */
+  opens: string[];
+}
+
+/** Where a launch's file may be: the Files roots, resolved as Files resolves them. */
+export type FileRoot = 'home' | 'notes';
+
+/** The user's home, as Files' home root is: `FILES_ROOT`, else the process user's. */
+function homeDir(): string {
+  return resolve(process.env.FILES_ROOT || homedir());
+}
+
+/** The same answer for a file that is missing, forbidden or not a file. */
+const NO_SUCH_FILE = 'That file cannot be opened';
+
+/**
+ * The real path of `path` (relative to Files' `root`, or absolute), if it is
+ * a file inside the user's home once every symlink is followed. Any other
+ * outcome, missing or outside the home or a directory, throws the same
+ * not-found, so the answer says nothing about what exists elsewhere.
+ */
+export async function resolveFileInHome(
+  root: FileRoot,
+  path: string,
+): Promise<string> {
+  const refuse = () => new NotFoundException(NO_SUCH_FILE);
+  if (path.includes('\0')) throw refuse();
+  const rootDir =
+    root === 'notes'
+      ? resolve(process.env.NOTES_DIR || resolve(process.cwd(), 'data/notes'))
+      : homeDir();
+  const real = await fs.realpath(resolve(rootDir, path)).catch(() => null);
+  const home = await fs.realpath(homeDir()).catch(() => null);
+  if (!real || !home || !real.startsWith(home + sep)) throw refuse();
+  const stat = await fs.stat(real).catch(() => null);
+  if (!stat?.isFile()) throw refuse();
+  return real;
 }
 
 /** A launcher's id: its desktop file's name, without `.desktop`. */
@@ -714,6 +763,7 @@ export class LinuxAppsService implements OnModuleDestroy {
     const dir = this.applicationsDir();
     if (!dir) return [];
     const files = await fs.readdir(dir).catch(() => [] as string[]);
+    const globs = await this.globs();
     const out: Launcher[] = [];
     for (const f of files.sort()) {
       if (!f.endsWith('.desktop')) continue;
@@ -734,9 +784,36 @@ export class LinuxAppsService implements OnModuleDestroy {
             id: a.id,
             name: pickLocalized(a.name, a.names, languages),
           })),
+        opens:
+          globs && execTakesFile(entry.exec)
+            ? claimsOf(globs, entry.mimeTypes)
+            : [],
       });
     }
     return out;
+  }
+
+  /** Whether the missing database has been logged, so it is said once per reason. */
+  private globsMissing: string | null = null;
+
+  /**
+   * The profile's shared-mime-info globs. Without them no Linux app is
+   * offered for a file type, and the log says why.
+   */
+  private async globs(): Promise<MimeGlobs | null> {
+    if (!this.paths) return null;
+    const found = await loadGlobs(this.paths.profile);
+    if ('globs' in found) {
+      this.globsMissing = null;
+      return found.globs;
+    }
+    if (this.globsMissing !== found.missing) {
+      this.globsMissing = found.missing;
+      this.logger.warn(
+        `No Linux app is offered in Open with: ${found.missing}, so file names can't be matched to types`,
+      );
+    }
+    return null;
   }
 
   private async entry(id: string) {
@@ -798,12 +875,15 @@ export class LinuxAppsService implements OnModuleDestroy {
    * Start a launcher's app in the clicking tab's session: its `Exec`, or one
    * of its desktop actions' (`action`), with the field codes removed, in its
    * own process group (the session's end stops the group), with the
-   * Terminal's environment for Linux apps.
+   * Terminal's environment for Linux apps. With `file` (a path inside Files'
+   * `file.root`) the entry's own `Exec` gets that file for its field codes,
+   * once the path is checked to be a file in the user's home.
    */
   async launch(
     id: string,
     session: unknown,
     action?: string,
+    file?: { root: FileRoot; path: string },
   ): Promise<{ pid: number }> {
     const sid = this.requireSession(session);
     const entry = await this.entry(id);
@@ -817,7 +897,13 @@ export class LinuxAppsService implements OnModuleDestroy {
         throw new NotFoundException(`${entry.name} has no such action`);
       exec = found.exec;
     }
-    const argv = execArgv(exec);
+    let real: string | undefined;
+    if (file) {
+      if (action !== undefined || !execTakesFile(exec))
+        throw new BadRequestException(`${entry.name} doesn't open files`);
+      real = await resolveFileInHome(file.root, file.path);
+    }
+    const argv = execArgv(exec, real);
     if (!argv) throw new NotFoundException('No such Linux app');
     const env = terminalEnv(childEnv(), sid, this.wayland.x11Display(sid));
     const child = spawn(argv[0], argv.slice(1), {

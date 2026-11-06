@@ -6,6 +6,8 @@
  * Spec: https://specifications.freedesktop.org/desktop-entry-spec/latest/
  */
 
+import { pathToFileURL } from 'url';
+
 /** A key's localized values, by locale as the file writes it (`ro`, `pt_BR`, `sr@latin`). */
 export type Localized = Record<string, string>;
 
@@ -28,6 +30,8 @@ export interface DesktopEntry {
   icon: string;
   /** The `Exec` line, unescaped as a string value; {@link execArgv} splits it. */
   exec: string;
+  /** The `MimeType` key's types, lowercased, as the entry lists them. */
+  mimeTypes: string[];
   /** The actions `Actions` lists that have a group with a `Name` and an `Exec`, in its order. */
   actions: DesktopAction[];
 }
@@ -141,6 +145,10 @@ export function parseDesktopEntry(text: string): DesktopEntry | null {
     comments: entry.localized.get('Comment') ?? {},
     icon: keys.get('Icon') ?? '',
     exec,
+    mimeTypes: (keys.get('MimeType') ?? '')
+      .split(';')
+      .map((t) => t.trim().toLowerCase())
+      .filter((t) => t !== ''),
     actions,
   };
 }
@@ -198,19 +206,28 @@ export function pickLocalized(
   return plain;
 }
 
+/** Whether an `Exec` value has a field code that takes a file: `%f`, `%F`, `%u` or `%U`. */
+export function execTakesFile(exec: string): boolean {
+  // `%%` is a literal percent sign, so it is read as a pair.
+  return /%[fFuU]/.test(exec.replace(/%%/g, ''));
+}
+
 /**
  * Split an `Exec` value into an argv, as the spec says: arguments are
  * separated by spaces, a double-quoted one may hold spaces and escapes
- * `"`, `` ` ``, `$` and `\` with a backslash, and field codes (`%f`, `%u`,
- * `%F`, `%U` and the rest) are removed, since a Start entry passes no files
- * or URLs. `%%` is a percent sign. Null when the line is malformed (an
+ * `"`, `` ` ``, `$` and `\` with a backslash. With `file` (an absolute
+ * path), `%f` and `%F` become the path and `%u` and `%U` its `file://` URL;
+ * without one, those codes are removed, as a Start entry passes no files. The
+ * other field codes are always removed. `%%` is a percent sign. Null when the line is malformed (an
  * unclosed quote) or names no program.
  */
-export function execArgv(exec: string): string[] | null {
+export function execArgv(exec: string, file?: string): string[] | null {
   const args: string[] = [];
   let cur = '';
   let started = false;
   let quoted = false;
+  // The program must be written out, not come from a field code.
+  let programFromCode = false;
   for (let i = 0; i < exec.length; i++) {
     const c = exec[i];
     if (quoted) {
@@ -235,6 +252,14 @@ export function execArgv(exec: string): string[] | null {
       if (code === '%') {
         cur += '%';
         started = true;
+      } else if (file !== undefined && (code === 'f' || code === 'F')) {
+        cur += file;
+        started = true;
+        if (args.length === 0) programFromCode = true;
+      } else if (file !== undefined && (code === 'u' || code === 'U')) {
+        cur += pathToFileURL(file).href;
+        started = true;
+        if (args.length === 0) programFromCode = true;
       }
       // Every other field code expands to nothing here.
     } else {
@@ -244,5 +269,6 @@ export function execArgv(exec: string): string[] | null {
   }
   if (quoted) return null;
   if (started) args.push(cur);
+  if (programFromCode) return null;
   return args.length > 0 && args[0] !== '' ? args : null;
 }

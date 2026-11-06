@@ -13,6 +13,7 @@ import type { Response } from 'express';
 import { createReadStream } from 'fs';
 import {
   InstallDto,
+  LaunchDto,
   MoveDto,
   RemoveDto,
   SessionDto,
@@ -143,9 +144,21 @@ export class LinuxAppsController {
       .pipe(res);
   }
 
+  /**
+   * POST /api/linux-apps/launchers/:id/launch { session, path?, root? } →
+   * starts the app; with `path`, hands it that file (Open with). A path that
+   * isn't a file in the user's home is refused with a 404, found or not.
+   */
   @Post('launchers/:id/launch')
-  launch(@Param('id') id: string, @Body() body: SessionDto) {
-    return this.apps.launch(id, body.session);
+  launch(@Param('id') id: string, @Body() body: LaunchDto) {
+    return this.apps.launch(
+      id,
+      body.session,
+      undefined,
+      body.path === undefined
+        ? undefined
+        : { root: body.root ?? 'home', path: body.path },
+    );
   }
 
   /**

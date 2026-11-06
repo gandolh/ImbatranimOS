@@ -11,6 +11,8 @@ const {
   linuxLauncherActions,
   launchLinuxApp,
   reloadLinuxLaunchers,
+  linuxAppsOpening,
+  linuxOpenedKeys,
 } = await import('./launchers')
 const { APP_REGISTRY } = await import('../../shared/registry/registry')
 const { openApp } = await import('../../shared/intents/openApp')
@@ -73,5 +75,33 @@ describe("Start's Linux entries", () => {
       '/linux-apps/launchers/firefox/actions/new-window/launch',
       expect.objectContaining({ session: expect.any(String) })
     )
+  })
+
+  it('hand an opened file to the program, and keep Start with no file', async () => {
+    syncLinuxLaunchers([
+      { id: 'writer', name: 'Writer', comment: '', hasIcon: false, opens: ['ODT', 'rtf'] },
+    ])
+    expect(openApp('linux:writer', { openPath: 'docs/a.odt', root: 'home' })).toBe('')
+    expect(post).toHaveBeenCalledWith('/linux-apps/launchers/writer/launch', {
+      session: expect.any(String),
+      path: 'docs/a.odt',
+      root: 'home',
+    })
+    post.mockClear()
+    expect(openApp('linux:writer')).toBe('')
+    expect(post).toHaveBeenCalledWith('/linux-apps/launchers/writer/launch', {
+      session: expect.any(String),
+    })
+  })
+
+  it('say which types they open, lowercase, and only those that open some', () => {
+    syncLinuxLaunchers([
+      { id: 'writer', name: 'Writer', comment: '', hasIcon: false, opens: ['ODT', 'rtf'] },
+      { id: 'gimp', name: 'GIMP', comment: '', hasIcon: false },
+    ])
+    expect(linuxAppsOpening(['odt', 'a.odt'])).toEqual(['linux:writer'])
+    expect(linuxAppsOpening([''])).toEqual([])
+    expect(linuxAppsOpening(null)).toEqual(['linux:writer'])
+    expect(linuxOpenedKeys().sort()).toEqual(['odt', 'rtf'])
   })
 })

@@ -4,6 +4,7 @@ import { prefsStorage } from '../../lib/prefs'
 import { APP_REGISTRY } from './registry'
 import { useAddonStore } from '../store/addonStore'
 import { NON_DISABLEABLE } from './enabledApps'
+import { linuxAppsOpening, linuxOpenedKeys } from '../../modules/linux-windows/launchers'
 
 /**
  * Which app opens which file, and how the user changes it.
@@ -216,6 +217,8 @@ export function isTextish(fileName: string): boolean {
 export interface OpenCandidate {
   appId: string
   name: string
+  /** An installed Linux app (Settings → Linux apps), not one of the OS's own. */
+  linux?: boolean
 }
 
 interface AssociationState {
@@ -263,7 +266,7 @@ function isAvailable(appId: string): boolean {
  * the user has hidden would be an offer the OS cannot keep, and disabling the app
  * that owned an extension has to fall back rather than dead-end.
  */
-export function candidatesFor(fileName: string): OpenCandidate[] {
+function declaredCandidates(fileName: string): OpenCandidate[] {
   const ext = extensionOf(fileName)
   const name = fileName.toLowerCase()
   return APP_REGISTRY.filter((app) => {
@@ -275,11 +278,34 @@ export function candidatesFor(fileName: string): OpenCandidate[] {
   }).map((app) => ({ appId: app.id, name: app.name }))
 }
 
-/** Every app that could plausibly open anything — the "Open with…" long list. */
+/** The installed Linux apps whose desktop entries claim this file's type. */
+function linuxCandidates(fileName: string): OpenCandidate[] {
+  return linuxAppsOpening([extensionOf(fileName), fileName.toLowerCase()])
+    .filter(isAvailable)
+    .map((appId) => ({ appId, name: openerName(appId) ?? appId, linux: true }))
+}
+
+/**
+ * What Open with offers for this file: the apps that declare it, then the
+ * installed Linux apps that claim its type, marked `linux`. A Linux app is
+ * only ever a choice: {@link resolveOpener} never picks one by itself.
+ */
+export function candidatesFor(fileName: string): OpenCandidate[] {
+  return [...declaredCandidates(fileName), ...linuxCandidates(fileName)]
+}
+
+/**
+ * Every app that could plausibly open anything — the "Open with…" long list,
+ * the Linux apps that open files last.
+ */
 export function allOpenerCandidates(): OpenCandidate[] {
-  return APP_REGISTRY.filter((app) => app.opens && app.opens.length > 0 && isAvailable(app.id)).map(
-    (app) => ({ appId: app.id, name: app.name })
-  )
+  const own = APP_REGISTRY.filter(
+    (app) => app.opens && app.opens.length > 0 && isAvailable(app.id)
+  ).map((app) => ({ appId: app.id, name: app.name }))
+  const linux = linuxAppsOpening(null)
+    .filter(isAvailable)
+    .map((appId) => ({ appId, name: openerName(appId) ?? appId, linux: true }))
+  return [...own, ...linux]
 }
 
 export interface Resolution {
@@ -304,7 +330,9 @@ export function resolveOpener(fileName: string): Resolution {
     return { appId: override, reason: 'override' }
   }
 
-  const declared = candidatesFor(fileName)
+  // Only apps the OS ships can be the default by themselves; a Linux app
+  // needs the user's choice (the override above).
+  const declared = declaredCandidates(fileName)
   if (declared.length > 0) {
     const preferred = PREFERRED_DEFAULT[key]
     const winner =
@@ -340,5 +368,6 @@ export function knownExtensions(): string[] {
   for (const app of APP_REGISTRY) {
     for (const claim of app.opens ?? []) seen.add(claim.toLowerCase())
   }
+  for (const claim of linuxOpenedKeys()) seen.add(claim)
   return [...seen].sort()
 }

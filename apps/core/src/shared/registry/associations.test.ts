@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   ASSOCIATIONS_KEY,
   TEXT_FALLBACK_APP,
@@ -14,6 +14,8 @@ import {
 import { useAddonStore } from '../store/addonStore'
 import { APP_REGISTRY } from './registry'
 import { DOTFILE_KEYS } from '../../lib/prefs'
+import { allOpenerCandidates, openerName } from './associations'
+import { syncLinuxLaunchers } from '../../modules/linux-windows/launchers'
 
 /**
  * Default apps and Open with — default apps.
@@ -247,5 +249,50 @@ describe('the Settings row list', () => {
     // Sorted and unique.
     expect([...new Set(known)]).toEqual(known)
     expect([...known].sort()).toEqual(known)
+  })
+})
+
+describe('installed Linux apps in Open with', () => {
+  const writer = {
+    id: 'writer',
+    name: 'Writer',
+    comment: '',
+    hasIcon: false,
+    opens: ['odt', 'md'],
+  }
+  afterEach(() => syncLinuxLaunchers([]))
+
+  it('come after the OS apps that open the type, marked as Linux apps', () => {
+    syncLinuxLaunchers([writer])
+    const md = candidatesFor('notes.md')
+    expect(md.length).toBeGreaterThan(1)
+    expect(md[md.length - 1]).toEqual({ appId: 'linux:writer', name: 'Writer', linux: true })
+    expect(md.slice(0, -1).some((c) => c.linux)).toBe(false)
+    expect(openerName('linux:writer')).toBe('Writer')
+    expect(allOpenerCandidates().at(-1)).toMatchObject({ appId: 'linux:writer', linux: true })
+  })
+
+  it('never become the default by themselves', () => {
+    syncLinuxLaunchers([writer])
+    // A type an OS app opens keeps its OS default.
+    expect(resolveOpener('notes.md').appId).toBe('markdown-editor')
+    // A type only a Linux app opens still asks: nothing opens without a choice.
+    expect(candidatesFor('letter.odt').map((c) => c.appId)).toEqual(['linux:writer'])
+    expect(resolveOpener('letter.odt')).toEqual({ appId: '', reason: 'none' })
+  })
+
+  it('become the default when the user says Always use this', () => {
+    syncLinuxLaunchers([writer])
+    useAssociationStore.getState().setDefault('odt', 'linux:writer')
+    expect(resolveOpener('letter.odt')).toEqual({ appId: 'linux:writer', reason: 'override' })
+    // Uninstalled, the choice stops applying instead of dead-ending.
+    syncLinuxLaunchers([])
+    expect(resolveOpener('letter.odt').reason).toBe('none')
+  })
+
+  it('add their types to the Settings rows', () => {
+    expect(knownExtensions()).not.toContain('odt')
+    syncLinuxLaunchers([writer])
+    expect(knownExtensions()).toContain('odt')
   })
 })

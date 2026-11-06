@@ -1,4 +1,9 @@
-import { execArgv, parseDesktopEntry, pickLocalized } from './desktop-entry';
+import {
+  execArgv,
+  execTakesFile,
+  parseDesktopEntry,
+  pickLocalized,
+} from './desktop-entry';
 
 describe('desktop entries', () => {
   it('reads [Desktop Entry] with its localized keys, and the actions it lists', () => {
@@ -40,6 +45,7 @@ describe('desktop entries', () => {
       comment: 'Web Browser',
       comments: { ro: 'Navigați pe web' },
       icon: 'firefox',
+      mimeTypes: [],
       exec: 'firefox --name firefox %U',
       actions: [
         {
@@ -139,6 +145,11 @@ describe('splitting an Exec line', () => {
     expect(execArgv('app 100%%')).toEqual(['app', '100%']);
   });
 
+  it('refuses an Exec whose program is a field code', () => {
+    expect(execArgv('%f', '/tmp/a.txt')).toBeNull();
+    expect(execArgv('app %f', '/tmp/a.txt')).toEqual(['app', '/tmp/a.txt']);
+  });
+
   it('keeps quoted arguments whole, with their escapes', () => {
     expect(
       execArgv('"/opt/My App/run" --title "a \\"b\\" \\$c \\\\d" x'),
@@ -150,5 +161,37 @@ describe('splitting an Exec line', () => {
     expect(execArgv('app "oops')).toBeNull();
     expect(execArgv('%U')).toBeNull();
     expect(execArgv('   ')).toBeNull();
+  });
+
+  it('expands %f and %F to the file and %u and %U to its URL when it has one', () => {
+    const file = '/home/u/My Docs/a b.odt';
+    expect(execArgv('soffice --writer %U', file)).toEqual([
+      'soffice',
+      '--writer',
+      'file:///home/u/My%20Docs/a%20b.odt',
+    ]);
+    expect(execArgv('app --file=%f %F %i', file)).toEqual([
+      'app',
+      `--file=${file}`,
+      file,
+    ]);
+    expect(execArgv('app %u', file)).toEqual([
+      'app',
+      'file:///home/u/My%20Docs/a%20b.odt',
+    ]);
+    // No file: the codes go, as Start has always had it.
+    expect(execArgv('soffice --writer %U')).toEqual(['soffice', '--writer']);
+  });
+
+  it('knows an entry that takes no file, and reads MimeType', () => {
+    expect(execTakesFile('app %U')).toBe(true);
+    expect(execTakesFile('app --x=%f')).toBe(true);
+    expect(execTakesFile('app --icon %i')).toBe(false);
+    expect(execTakesFile('app 100%%f')).toBe(false);
+    expect(execTakesFile('app')).toBe(false);
+    const e = parseDesktopEntry(
+      '[Desktop Entry]\nType=Application\nName=W\nExec=w %U\nMimeType=Application/RTF;text/plain;\n',
+    );
+    expect(e?.mimeTypes).toEqual(['application/rtf', 'text/plain']);
   });
 });

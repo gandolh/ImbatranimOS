@@ -40,9 +40,15 @@ export function openApp(appId: string, payload?: unknown): string {
     return ''
   }
 
-  // A Linux app's Start entry starts the program; its windows open on their own.
+  // A Linux app's Start entry starts the program; its windows open on their
+  // own. Open with hands it the file the payload names.
   if (isLinuxLauncher(appId)) {
-    void launchLinuxApp(appId)
+    const p = payload as { openPath?: unknown; root?: unknown } | null | undefined
+    const file =
+      typeof p?.openPath === 'string' && typeof p.root === 'string'
+        ? { root: p.root, path: p.openPath }
+        : undefined
+    void launchLinuxApp(appId, undefined, file)
     return ''
   }
 

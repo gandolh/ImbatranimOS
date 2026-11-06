@@ -1,4 +1,4 @@
-import { IsIn, IsString, Length, Matches } from 'class-validator';
+import { IsIn, IsOptional, IsString, Length, Matches } from 'class-validator';
 
 /** The desktop session (one tab) the request comes from. */
 const SESSION = /^[A-Za-z0-9_-]{16,64}$/;
@@ -32,4 +32,21 @@ export class MoveDto extends SessionDto {
   @IsString()
   @Matches(/^[0-9a-f]{40}$/)
   commit!: string;
+}
+
+export class LaunchDto extends SessionDto {
+  /**
+   * A file for the app to open, relative to Files' `root` (or absolute). The
+   * backend resolves it and refuses anything that isn't a file in the
+   * user's home.
+   */
+  @IsOptional()
+  @IsString()
+  @Length(1, 4096)
+  path?: string;
+
+  /** Which Files root `path` is relative to; the home by default. */
+  @IsOptional()
+  @IsIn(['home', 'notes'])
+  root?: 'home' | 'notes';
 }

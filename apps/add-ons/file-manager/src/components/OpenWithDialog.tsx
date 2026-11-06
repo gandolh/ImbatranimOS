@@ -12,6 +12,10 @@ import { marketplaceGap } from '../lib/marketplaceOpeners'
  * - **a double-click on something nothing claims**, where the claimants list is
  *   empty and the honest thing is to show everything immediately.
  *
+ * Installed Linux apps that claim the type come after the OS's own apps, marked
+ * as Linux apps; for a type only they claim (an `.odt`), a double-click opens
+ * this dialog with them first.
+ *
  * "Always use this" writes a dotfile, so the choice follows the
  * account rather than the browser — and it is keyed by *extension*, not by file:
  * per-file overrides are state nobody can find again later.
@@ -75,6 +79,7 @@ export function OpenWithDialog({
               )}
             >
               {candidate.name}
+              {candidate.linux && <span className="text-[10px] opacity-70">Linux app</span>}
               {claimants.some((c) => c.appId === candidate.appId) && showAll && (
                 <span className="ml-auto text-[10px] opacity-70">handles this type</span>
               )}

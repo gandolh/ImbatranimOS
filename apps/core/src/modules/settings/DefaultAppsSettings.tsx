@@ -110,7 +110,11 @@ export function DefaultAppsSettings() {
                   <Select
                     value={row.current.appId}
                     onValueChange={(appId) => setDefault(row.ext, String(appId))}
-                    options={row.candidates.map((c) => ({ value: c.appId, label: c.name }))}
+                    placeholder="Ask each time"
+                    options={row.candidates.map((c) => ({
+                      value: c.appId,
+                      label: c.linux ? `${c.name} (Linux app)` : c.name,
+                    }))}
                     aria-label={`Default app for .${row.ext} files`}
                   />
                 </div>

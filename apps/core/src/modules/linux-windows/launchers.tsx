@@ -26,10 +26,36 @@ export type LinuxLauncher = {
   comment: string
   hasIcon: boolean
   actions?: LinuxAction[]
+  /**
+   * The extensions and whole file names it opens as a file (`odt`), which
+   * the backend works out from its desktop entry and the shared-mime-info
+   * globs. Empty or missing when it takes no file.
+   */
+  opens?: string[]
 }
 
 let launcherIds = new Set<string>()
 let launcherActions = new Map<string, LinuxAction[]>()
+let launcherOpens = new Map<string, string[]>()
+
+/**
+ * The Linux apps that open a file, as app ids in Start's order: those
+ * claiming any of `keys` (a file's lowercase extension and whole name), or,
+ * with `null`, every one that opens any file.
+ */
+export function linuxAppsOpening(keys: string[] | null): string[] {
+  const out: string[] = []
+  for (const [appId, opens] of launcherOpens) {
+    if (keys === null ? opens.length > 0 : keys.some((k) => k !== '' && opens.includes(k)))
+      out.push(appId)
+  }
+  return out
+}
+
+/** Every extension or name some installed Linux app opens. */
+export function linuxOpenedKeys(): string[] {
+  return [...new Set([...launcherOpens.values()].flat())]
+}
 
 /**
  * The desktop actions of the Linux app `appId` (a launcher's, or a Linux
@@ -84,15 +110,19 @@ export function syncLinuxLaunchers(launchers: LinuxLauncher[]): void {
   const taken = new Set(APP_REGISTRY.map((a) => a.id))
   const next = new Set<string>()
   const actions = new Map<string, LinuxAction[]>()
+  const opensMap = new Map<string, string[]>()
   for (const l of launchers) {
     const app = toAppConfig(l)
     if (taken.has(app.id)) continue
     APP_REGISTRY.push(app)
     next.add(app.id)
     if (l.actions?.length) actions.set(app.id, l.actions)
+    const opens = (l.opens ?? []).map((o) => o.toLowerCase())
+    if (opens.length > 0) opensMap.set(app.id, opens)
   }
   launcherIds = next
   launcherActions = actions
+  launcherOpens = opensMap
   noteRegistryChanged()
 }
 
@@ -108,11 +138,19 @@ export async function reloadLinuxLaunchers(): Promise<void> {
   }
 }
 
+/** A file in one of Files' roots, for a Linux app to open. */
+export type LinuxFile = { root: string; path: string }
+
 /**
  * Start a launcher's program in this tab's session, or one of its desktop
- * actions (`actionId`), which starts the same way.
+ * actions (`actionId`), which starts the same way. With `file` the program
+ * opens it (Open with); the backend refuses a path outside the user's home.
  */
-export async function launchLinuxApp(appId: string, actionId?: string): Promise<void> {
+export async function launchLinuxApp(
+  appId: string,
+  actionId?: string,
+  file?: LinuxFile
+): Promise<void> {
   const id = appId.slice(LINUX_APP_PREFIX.length)
   const name = APP_REGISTRY.find((a) => a.id === appId)?.name ?? id
   const path =
@@ -120,7 +158,12 @@ export async function launchLinuxApp(appId: string, actionId?: string): Promise<
       ? `/linux-apps/launchers/${encodeURIComponent(id)}/launch`
       : `/linux-apps/launchers/${encodeURIComponent(id)}/actions/${encodeURIComponent(actionId)}/launch`
   try {
-    await api.post(path, { session: desktopSessionId() })
+    await api.post(
+      path,
+      file
+        ? { session: desktopSessionId(), path: file.path, root: file.root }
+        : { session: desktopSessionId() }
+    )
   } catch (err) {
     const data = (err as { response?: { data?: { message?: unknown } } }).response?.data
     notify({

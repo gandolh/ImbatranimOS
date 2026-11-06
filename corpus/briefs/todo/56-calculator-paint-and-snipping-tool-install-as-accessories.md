@@ -32,8 +32,13 @@ the default this brief builds:
 
 1. **The descriptor:** id `accessories`, name "Accessories", a static v2
    suite on the shared kit. Default: yes.
-2. **Snipping Tool without Paint.** When Paint is disabled, "Edit in Paint"
-   is hidden, instead of calling an app that isn't there. Default: yes.
+2. **Snipping Tool without Paint.** When Paint is disabled or not installed,
+   "Edit in Paint" is hidden, instead of calling an app that isn't there.
+   The kit has no call that lists apps today. If adding one is more than a
+   small read-only `system` addition, do this on the OS side instead:
+   `openApp` on a missing id shows a one-line notice naming the app, instead
+   of only warning in the console. That also covers every other caller.
+   Default: yes.
 
 ## What to do
 

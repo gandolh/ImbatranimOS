@@ -33,8 +33,9 @@ Approved 2026-11-06: Markdown Editor goes and Notepad opens markdown. The
 smaller calls, with the default this brief builds:
 
 1. **What Notepad takes from Markdown Editor.** Default: all five pieces
-   above. The edit/preview toggle gains a third mode, split, which is the
-   default for `.md` and `.markdown` files. Plain text keeps edit only.
+   above. The edit/preview toggle gains a third mode, split. `.md` and
+   `.markdown` files open in split; every other file keeps today's toggle
+   and opens in edit.
 2. **The id.** `markdown-editor` maps to `notepad` in `RETIRED_APP_IDS`
    (`apps/core/src/shared/store/retiredApps.ts`), so pins, startup entries,
    recents and an `.md` override move to Notepad once. Default: yes.
@@ -48,7 +49,8 @@ smaller calls, with the default this brief builds:
 2. Delete `apps/add-ons/markdown-editor`, its line in `manifest.ts`, its
    lockfile entries, and `markdown-editor` from `TEXT_APP_IDS` in
    `apps/core/src/shared/registry/associations.ts`. Add the
-   `RETIRED_APP_IDS` pair. Update the tests that name it (Files' and the
+   `RETIRED_APP_IDS` pair, and widen that list's comment: it says built-ins
+   "left for imbatranim-office", and this pair is built-in to built-in. Update the tests that name it (Files' and the
    association tests).
 3. Delete `apps/backend/src/modules/notes/`.
 4. Walk in the dev container:

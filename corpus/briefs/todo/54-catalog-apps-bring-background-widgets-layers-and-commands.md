@@ -42,7 +42,8 @@ calls, with the default this brief builds:
 3. **A failure stays contained.** A hook that throws is hidden with one
    notification, like a desktop layer today. A module that fails to load at
    sign-in costs only that app's hooks. Default: yes.
-4. **Kit version 1.4.0**, the props and types exported from the kit
+4. **The next kit minor at build time** (1.4.0 if nothing else has taken
+   it), the props and types exported from the kit
    (`CommandSource` and its context, `WidgetConfig`'s shape, the windowless
    handle). An older desktop ignores the new fields. Default: yes.
 
@@ -61,8 +62,8 @@ calls, with the default this brief builds:
      like a built-in;
    - disable and uninstall unmount them, as for a built-in;
    - a rebuild remounts them.
-3. Kit (`packages/ui`): export the types of decision 4, bump the kit to
-   1.4.0, and update `SHARED_KIT_MODULES` if a new module is shared.
+3. Kit (`packages/ui`): export the types of decision 4, bump the kit's
+   minor, and update `SHARED_KIT_MODULES` if a new module is shared.
 4. A test fixture, a kit app declaring all four hooks, proves:
    - the background ticks with no window open;
    - the widget can be added from the desktop menu;

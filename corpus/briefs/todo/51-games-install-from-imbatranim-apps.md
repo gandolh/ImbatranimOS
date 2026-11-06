@@ -37,12 +37,17 @@ Brief 50 (the repo is imbatranim-apps).
 
 ## Owner decisions
 
-From the 2026-11-06 ask: groups are the install unit, and Games is one. The
-smaller calls, with the default this brief builds:
+Not settled yet. The owner asked for opt-in installs on 2026-11-06; grouping
+them is this research's proposal. The calls, with the default this brief
+builds:
 
-1. **The descriptor:** id `games`, name "Games", a `schemaVersion: 2` static
+1. **The install unit:** groups, one descriptor each (default); one
+   descriptor per app; or one suite for everything. If the owner picks
+   anything but groups, steps 1 and 3 change and this brief needs a rewrite
+   first.
+2. **The descriptor:** id `games`, name "Games", a `schemaVersion: 2` static
    suite on the shared kit. Default: yes.
-2. **The layout, measured on Games before choosing:**
+3. **The layout, measured on Games before choosing:**
    - (a) one root workspace, where the group descriptor runs a scoped
      `npm ci --workspace=<group>` and builds that workspace;
    - (b) a self-contained group folder with its own lockfile and the build
@@ -51,21 +56,21 @@ smaller calls, with the default this brief builds:
    Default: (a) if the scoped install really leaves Office's dependencies
    out, otherwise (b). Either way, Office must keep building from the same
    commit.
-3. **The ids stay `minesweeper` and `solitaire`.** The owner's pins,
+4. **The ids stay `minesweeper` and `solitaire`.** The owner's pins,
    startup entries and best times come back when Games is installed, and no
    `RETIRED_APP_IDS` pair is needed. Default: yes.
-4. **The icons stay Bomb and Spade.** They join the catalog's `ICONS` as
+5. **The icons stay Bomb and Spade.** They join the catalog's `ICONS` as
    `bomb` and `spade`, instead of falling back to `gamepad-2`. Default: yes.
 
 ## What to do
 
 1. **The layout spike** (apps repo, scratch clone). Lay out Games both ways
-   from decision 2. For each, measure:
+   from decision 3. For each, measure:
    - the install's `node_modules` size, time, and whether Office's
      dependencies came along;
    - the build time and output size.
 
-   Pick per decision 2 and write the numbers into the outcome.
+   Pick per decision 3 and write the numbers into the outcome.
 2. **Port** (apps repo). Make Minesweeper and Solitaire kit apps that export
    `App`:
    - take the engines, components, stats store and tests across unchanged;

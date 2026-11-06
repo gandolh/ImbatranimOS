@@ -21,7 +21,10 @@ them.
    package's prebuilt `.wasm`, pinned by the lockfile, the way CAD's server
    already takes LibreDWG. The box has no compiler, and the office repo commits
    no prebuilt artifacts, so "our Rust compiled at install" or "a `.wasm` in
-   the repo" don't fit. Three changes make it possible:
+   the repo" don't fit. A Rust toolchain from Nix, now in the image, is the
+   alternative left out: its download, and `rustc` linking under the 1 GiB
+   cap, are unmeasured, and the installer's allowlisted `PATH` would have to
+   reach Nix first. Three changes make it possible:
    - the desktop CSP gains `'wasm-unsafe-eval'` (`security-headers.ts`; the URL
      apps' frame already has it, and `.wasm` is already served as
      `application/wasm`);
@@ -59,8 +62,8 @@ Linux apps are in. Folders like Windows 7's "All Programs" stay inside the
 locked identity.
 
 Rejected:
-- One suite for everything: a Calculator install would pull Office's 853 MB
-  `node_modules`.
+- One suite for everything: a Calculator install would pull Office's
+  `node_modules`, about 853 MB in the local checkout.
 - One descriptor per app: twenty pins to bump, and a clone and install each.
 
 **The layout is unproven.** Office's build is anchored at the repo root.

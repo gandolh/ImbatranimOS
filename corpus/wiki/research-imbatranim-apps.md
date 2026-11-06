@@ -112,8 +112,8 @@ the repo root; and the rename keeps the descriptor id `imbatranim-office`.
 - **Markdown Editor into Notepad.** This is the clearest overlap: Notepad
   already calls itself a markdown editor with a live preview. Notepad takes
   `.md` and whatever Markdown Editor does that it lacks (code highlighting
-  in the preview through `rehype-highlight`, to check). This removes 199 kB
-  and 3,700 lines.
+  in the preview through `rehype-highlight`, to check). This retires 199 kB
+  and 3,700 lines from the OS, some of which move into Notepad.
 - **Bookmarks into the Browser: a question.** It reads `/browser/config` and
   feeds the command palette, but it is also a link organiser of its own.
 - **The Browser and Firefox: keep both.** The built-in costs 6 kB plus its
@@ -129,7 +129,8 @@ the repo root; and the rename keeps the descriptor id `imbatranim-office`.
   Without Developer, `.json` and `.csv` fall to Notepad.
 - **Installs build on the box.** Each one runs `npm ci` and Vite in the live
   container, under the 1 GiB cap. Hollow's took 18 s plus under a second
-  (2026-10-07); Office's leaves 853 MB of `node_modules` on the home volume.
+  (2026-10-07); Office's leaves about 853 MB of `node_modules` on the home
+  volume (measured on the local checkout's install).
   Monaco's build under the cap is unmeasured.
 - **Backups leave builds out.** After a restore, every group shows "build
   missing" until reinstalled.

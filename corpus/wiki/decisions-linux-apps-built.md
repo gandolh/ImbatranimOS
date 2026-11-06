@@ -1,5 +1,5 @@
 ---
-summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image. Grilled again 2026-11-04: a tray volume over all sound (reversing the 2026-07-31 rejection), Linux apps on the VPS in a capped container, and the zoom beside Linux windows stays off for good. 2026-11-05: the session bus is Alpine's dbus, and the backend speaks D-Bus with a client of its own; Xwayland, for X11 apps, isn't in the image but comes with the first app that speaks X11. 2026-11-06: the Wayland host is each session's sound server, speaking PulseAudio's protocol itself, since PulseAudio or PipeWire would add about 250 MB to the image.
+summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image. Grilled again 2026-11-04: a tray volume over all sound (reversing the 2026-07-31 rejection), Linux apps on the VPS in a capped container, and the zoom beside Linux windows stays off for good. 2026-11-05: the session bus is Alpine's dbus, and the backend speaks D-Bus with a client of its own; Xwayland, for X11 apps, isn't in the image but comes with the first app that speaks X11. 2026-11-06: the Wayland host is each session's sound server, speaking PulseAudio's protocol itself, since PulseAudio or PipeWire would add about 250 MB to the image. Also 2026-11-06: Settings → Updates moves the nixpkgs pin at runtime in the user flake registry on the /nix volume, keeps two pins, goes back by rolling the profile back, and an image whose pin is at least as new wins.
 updated: 2026-11-06
 ---
 
@@ -141,3 +141,28 @@ socket; an existing server would cost more than the Nix layer itself against
 the slim image. The host already runs per session, starts and stops with it
 and sleeps with it, so one stream, mixed in the container (the owner's call
 of 2026-11-04), costs nothing more to run.
+
+## Updates move the pin at runtime, in the user registry
+_2026-11-06_ — Settings → Updates (brief 43) moves the nixpkgs pin without a
+new image. The moved pin lives in the user flake registry,
+`$NIX_CONFIG_HOME/registry.json` on the /nix volume, which Nix reads before
+the image's system registry, with a record beside the package lists
+(`linux-apps/pins.json`). A move rebuilds every installed app with
+`nix profile upgrade`, keeps the old pin's profile generation, and deletes
+every other one before a `nix store gc`, so two pins are on disk and never
+three. Go back is `nix profile rollback` to that generation. At boot an image
+whose pin is at least as new as the moved one wins, and the move and its Go
+back are dropped.
+Rejected: writing the image's `/etc/nix` files (root-owned; the shell user
+has no root); passing a locked `github:` ref to every install (the Terminal's
+`nixpkgs#…` would still get the image's pin, and `nix profile upgrade` never
+moves a locked ref); Go back as "registry back, upgrade again" (the old pin's
+nixpkgs source is collected after a move, so it downloads again, and it
+keeps apps installed since, which isn't the state the owner went back to).
+**Why**: the owner wants fixes without rebuilding the image, an undo, and
+the image to stay the floor (grill 2026-11-04).
+- *Consequence*: Free space (`nix-collect-garbage -d`) deletes the kept
+  generation, and Go back goes with it.
+- *Consequence*: after a new image whose pin wins, the installed apps stay
+  at their old commit until the next Update, as they always did.
+

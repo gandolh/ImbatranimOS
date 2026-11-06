@@ -5250,3 +5250,20 @@ slider and a mute over all of the OS's sound, saved as a dotfile
 media player plays at its own volume times the tray's and no longer reads
 the element back; Linux apps' sound follows it in the tab's gain. Sandboxed
 URL apps and the Files preview pane are not covered.
+
+## [2026-11-06] build | Brief 43 built: an Updates page for Linux apps
+
+`da8ae12` (1.170.0), ready for test. Settings → Updates, its own section
+after Linux apps, asks `channels.nixos.org` for the newest snapshot of the
+release and for the next release, downloads each find's package list
+(raw: releases.nixos.org sends it brotli-encoded, which `fetch` would
+inflate to 380 MB) and lists the installed apps whose versions change.
+Update or Upgrade writes the user flake registry on the /nix volume and
+rebuilds every app and Xwayland; Go back rolls the profiles back to the
+previous pin's generation. Two pins are kept; an image whose pin is at least
+as new wins at boot. Check was walked against the real channel (13627,
+firefox 159.0 → 159.0.1); the agent's auto mode refused the live Update on
+the dev volume, so Update, Go back and a second move are the owner's walk.
+The decision is in
+[decisions-linux-apps-built.md](wiki/decisions-linux-apps-built.md).
+

@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-06) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups); 33 done 2026-11-06 (Linux windows sharp on HiDPI screens, ready for deploy; the scale capped at 2 the same day); 39 done 2026-11-06 (Linux apps' sound in the tab, the host as each session's sound server, ready for deploy); 40 done 2026-11-06 (a tray volume and mute over all sound, kit 1.3.0, ready for deploy); 31 done 2026-11-05 (X11 apps through Xwayland, which comes with the first app that speaks X11); the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
+summary: Dated snapshot (2026-11-06) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups); 33 done 2026-11-06 (Linux windows sharp on HiDPI screens, ready for deploy; the scale capped at 2 the same day); 39 done 2026-11-06 (Linux apps' sound in the tab, the host as each session's sound server, ready for deploy); 40 done 2026-11-06 (a tray volume and mute over all sound, kit 1.3.0, ready for deploy); 43 done 2026-11-06 (Settings → Updates for Linux apps, the pin moved at runtime with Go back, ready for test); 31 done 2026-11-05 (X11 apps through Xwayland, which comes with the first app that speaks X11); the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
 updated: 2026-11-06
 ---
 
@@ -122,20 +122,17 @@ pixels (scale: the ratio's ceiling); X11 apps stay at 1. The owner capped the
 scale at 2 the same day (`031b56b`, ships with 33): a phone at a ratio of
 about 3 draws at 2, a little soft, under the VPS's memory cap.
 
-37-44 were written 2026-11-04 from a grill with the owner. Done on
-2026-11-05 (each outcome in `briefs/done/`): 37 production's own Compose
-profile; 38 a crashed desktop layer hides itself and says so; 41 plain-text
-copy and paste with Linux apps (the selection now follows the keyboard); 42
-a D-Bus session bus per session, so Firefox keeps one instance, and Linux
-apps' notifications in the OS; 44 the VPS cap's numbers (1 GiB / 1 CPU in
-`infrastructure/README.md`), Linux apps first when memory runs out, and a
-notice when one is killed. 39 is done (2026-11-06, `4acbf07`, ready for
-deploy): Linux apps' sound plays in the tab. The Wayland host is each
-session's PulseAudio-protocol server (no sound daemon in the image,
-[decisions-linux-apps-built.md](decisions-linux-apps-built.md)) and sends the
-mix as Opus; the first press or key starts it. 40 is done (2026-11-06,
-`d3da0e7`, ready for deploy): a tray volume and mute over both sounds, a
-dotfile, read by apps as `system.sound` (kit 1.3.0). Not built: 43 Updates.
+37-44 were written 2026-11-04 from a grill with the owner; each outcome is
+in `briefs/done/`. Done 2026-11-05: 37 production's own Compose profile; 38
+a crashed desktop layer hides itself; 41 plain-text copy and paste with Linux
+apps; 42 a session bus per session, with Linux apps' notifications in the
+OS; 44 the VPS cap (1 GiB / 1 CPU), Linux apps killed first. Done
+2026-11-06: 39 (`4acbf07`, ready for deploy) Linux apps' sound in the tab,
+the Wayland host as each session's PulseAudio-protocol server, sent as Opus
+([decisions-linux-apps-built.md](decisions-linux-apps-built.md)); 40
+(`d3da0e7`, ready for deploy) a tray volume and mute, `system.sound` (kit
+1.3.0); 43 (`da8ae12`, ready for test) Settings → Updates moves the pin and
+every Linux app together, with Go back; the live Update is the owner's walk.
 The server ISO is deferred by the owner (2026-10-04).
 
 ## Owed by the owner

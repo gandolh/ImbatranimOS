@@ -1,5 +1,5 @@
 ---
-summary: Linux apps calls made while building briefs 45-48 (2026-11-06) - cursor images and the X11 clipboard bridge (48), the host speaks text-input-v3 itself and the phone's hidden input focuses on tap, launchers carry file types and launch takes a home-jailed file, shared-mime-info joins the image, and the backend serves the Settings portal as a second bus service.
+summary: Linux apps calls made while building briefs 45-49 (2026-11-06) - cursor images and the X11 clipboard bridge (48), a notification click via a source and an activation registry (49), the host speaks text-input-v3 itself and the phone's hidden input focuses on tap, launchers carry file types and launch takes a home-jailed file, shared-mime-info joins the image, and the backend serves the Settings portal as a second bus service.
 updated: 2026-11-06
 ---
 
@@ -83,3 +83,17 @@ clipboard change.
   over 64 KiB into xterm stalls (smithay's INCR watches top-level windows only),
   accepted on 2026-11-06 with a todo:
   [x11-pastes-over-64-kib-reach-child-windows](../todos/x11-pastes-over-64-kib-reach-child-windows.md).
+
+## A notification click: a `source` and an activation registry, `default` only
+_2026-11-06_ — Brief 49. A notification can carry `source` (a Linux app's id),
+and a small activation registry in the shared notification code runs the click
+for it; use this pattern for any click that isn't "open appId". Only the
+`default` action is wired, with no action buttons. The tab raises the window
+by matching the bus `app_name` (lowercased) to `linux:<id>`, and only when
+exactly one such window exists.
+**Why**: the click lived in the shared `ToastHost` and store, so the Linux
+path hooks in there rather than forking the toast. Buttons ("Reply",
+"Snooze") would break the desktop-like look; `app_name` is all the bus gives.
+- *Consequence*: an `app_name` that isn't the app id raises nothing, and an app
+  can name another's window (the user's own click); stale history rows with a
+  `source` look clickable and do nothing; the toast's × doesn't signal the app.

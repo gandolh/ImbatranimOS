@@ -5505,3 +5505,18 @@ whose root cause was the host not waiting for X to confirm it owned CLIPBOARD
 into xterm still stalls, because smithay's INCR watches top-level windows only;
 the owner accepted it and the fix is the todo
 `x11-pastes-over-64-kib-reach-child-windows`.
+
+
+## [2026-11-06] done | Brief 49 done: a click on a Linux app's notification runs its action; main-session run closed
+
+Built on `main` in `f8ec1e5` (1.188.0), moved to `briefs/done/` with an
+outcome note, ready for deploy. A notification carries a `source` and a small
+activation registry; a click on one with a `default` action sends
+`ActionInvoked(default)` then `NotificationClosed(2)` and raises the app's
+window when exactly one matches. Kit notifications are unchanged, with no
+action buttons. The build agent blocked on the shared notification store; the
+controller ruled for the `source` field plus registry and resumed it. The
+review found nothing above minor and a walk in Firefox passed. The toast's ×
+still doesn't signal the app (closing is removal from the panel, as since
+brief 42). This closes the main-session run: briefs 45-49 built from the main
+session with subagents on 2026-11-06.

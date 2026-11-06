@@ -63,3 +63,35 @@ desktop's own. The smaller calls, with the default this brief builds:
 - The walk: the click reaches the page's `onclick`, and the toast closes.
 - **Owner steps:** push this repo, then `node cli.ts imbatranim-os all`
   from vps-deploy.
+
+## Outcome (2026-11-06)
+
+Built on `main` in `f8ec1e5` (1.188.0), ready for deploy. A notification
+carries an optional `source` (a Linux app's id) and a small activation
+registry; the toast and the panel row call it, so a click that isn't "open
+appId" has a path. For a notification with a `default` action the click sends
+`notification_action`; the backend emits `ActionInvoked(id, 'default')` and
+then `NotificationClosed(id, 2)`. The tab raises the app's window when
+exactly one Linux window matches the bus `app_name` (lowercased) against
+`linux:<id>`; otherwise focus stays. A notification with no `default` isn't
+clickable. Kit notifications are unchanged; no action buttons.
+
+The build agent blocked first: the toast click lives in the shared
+notification store and `ToastHost`, outside the brief's owned files. The
+controller ruled option (a), the `source` field plus registry in the shared
+code, and resumed the same agent with the lane widened.
+
+Checks run: backend tsc and jest for linux-apps (119 tests, including a real
+dbus `ActionInvoked`), core tsc and vitest (466), a review (no Critical or
+Important findings) and a walk (a Firefox web notification click ran
+`onclick`, raised the window and sent `ActionInvoked(default)` then
+`NotificationClosed` 2; a no-default notification isn't clickable; the Clock
+timer toast still opens Clock; the panel row doesn't double-fire). Skipped:
+`notify-send` isn't installed, so the walk used `dbus-send`.
+
+Accepted minors: an app's own `app_name` can raise another app's single
+window (the user's own click, a focus mix-up); an `app_name` that isn't the
+app id ("Mozilla Firefox") raises nothing, which is safe; a click during a
+websocket reconnect loses `ActionInvoked`; stale history rows with a `source`
+look clickable and do nothing. The toast's × still doesn't signal the app:
+`NotificationClosed` is sent on removal from the panel, as since brief 42.

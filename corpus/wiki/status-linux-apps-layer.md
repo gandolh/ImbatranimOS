@@ -32,3 +32,9 @@ stops it), sleeps under the cover screen, and goes quiet when hidden or
 minimized; tini is PID 1. The owner merged the branch into `main` on 2026-11-03 (PR 1, `0cba6ab`), and this repo's `main` merged it after the theme briefs. The
 grill of 2026-11-03 settled what it left open
 ([decisions-linux-apps-built.md](decisions-linux-apps-built.md)).
+
+49 (2026-11-06, `f8ec1e5`, 1.188.0, ready for deploy): a click on a Linux app's
+notification runs its `default` action (`ActionInvoked`, then `NotificationClosed`
+2) and raises the app's window when exactly one matches; the toast's × still
+doesn't signal the app. Calls in
+[decisions-linux-apps-input-files-look.md](decisions-linux-apps-input-files-look.md).

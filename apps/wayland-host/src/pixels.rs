@@ -102,6 +102,11 @@ impl SurfaceImage {
         self.width == 0 || self.height == 0
     }
 
+    /// The pixels, premultiplied RGBA rows of `width`.
+    pub fn rgba(&self) -> &[u8] {
+        &self.rgba
+    }
+
     /// Copy `damage` (buffer pixels; empty means all of it) out of a client's
     /// shm buffer. Returns what changed, in surface pixels: all of it when
     /// the size changed. None when the buffer can't be read.

@@ -14,7 +14,7 @@ pub const KIND_AUDIO: u8 = 3;
 /// Refuse anything larger: a full 4K frame deflated is far below this.
 pub const MAX_MESSAGE: usize = 64 * 1024 * 1024;
 
-pub const PROTOCOL_VERSION: u32 = 8;
+pub const PROTOCOL_VERSION: u32 = 9;
 
 /// The most text a text-input message carries, in UTF-8 bytes: text-input-v3
 /// caps surrounding text there, under the Wayland message size.
@@ -238,6 +238,22 @@ pub struct PopupInfo {
     pub grab: bool,
 }
 
+/// A cursor an app drew itself (a cursor surface), for the tab to show as a
+/// CSS cursor.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct CursorImage {
+    /// A PNG of the image, straight alpha, in base64.
+    pub png: String,
+    /// Its size in image pixels, at most `cursor::MAX_CURSOR_SIZE` each way.
+    pub width: u32,
+    pub height: u32,
+    /// Image pixels per CSS pixel: the scale the app drew it at.
+    pub scale: u32,
+    /// The hotspot in CSS pixels from the image's top-left, inside it.
+    pub hotspot_x: u32,
+    pub hotspot_y: u32,
+}
+
 /// A rectangle in surface coordinates that may sit partly outside them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 pub struct TextRect {
@@ -344,10 +360,13 @@ pub enum Outbound {
         session: String,
         pids: Vec<u32>,
     },
-    /// The cursor the app asked for, as a CSS cursor name.
+    /// The cursor the app asked for, as a CSS cursor name, with the image
+    /// when it drew its own (`name` is then `default`, the tab's fallback).
     Cursor {
         session: String,
         name: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        image: Option<CursorImage>,
     },
     /// The app asked the window manager for something: `move` and `resize`
     /// (with `edges`) start the OS window's own drag; `maximize`,
@@ -582,6 +601,28 @@ mod tests {
         })
     }
 
+    fn sample_cursor_image() -> Vec<u8> {
+        encode_json(&Outbound::Cursor {
+            session: "abcdefghijklmnop".into(),
+            name: "default".into(),
+            image: Some(CursorImage {
+                png: "iVBORw0KGgo=".into(),
+                width: 48,
+                height: 48,
+                scale: 2,
+                hotspot_x: 4,
+                hotspot_y: 20,
+            }),
+        })
+    }
+
+    #[test]
+    fn a_named_cursor_carries_no_image() {
+        let named = Outbound::Cursor { session: "abcdefghijklmnop".into(), name: "text".into(), image: None };
+        let json: serde_json::Value = serde_json::to_value(&named).unwrap();
+        assert_eq!(json, serde_json::json!({"type": "cursor", "session": "abcdefghijklmnop", "name": "text"}));
+    }
+
     fn sample_text_input() -> Vec<u8> {
         encode_json(&Outbound::TextInput {
             session: "abcdefghijklmnop".into(),
@@ -783,6 +824,7 @@ mod tests {
             ("clipboard.bin", sample_clipboard()),
             ("audio.bin", sample_audio()),
             ("text-input.bin", sample_text_input()),
+            ("cursor-image.bin", sample_cursor_image()),
         ];
         for (name, bytes) in cases {
             let path = fixtures_dir().join(name);

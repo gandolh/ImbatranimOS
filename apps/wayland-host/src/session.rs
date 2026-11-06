@@ -9,12 +9,12 @@ mod x11;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::io::{PipeReader, Write};
+use std::io::PipeReader;
 use std::os::fd::OwnedFd;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use smithay::delegate_compositor;
 use smithay::delegate_cursor_shape;
@@ -26,7 +26,7 @@ use smithay::delegate_xdg_decoration;
 use smithay::delegate_xdg_shell;
 use smithay::input::keyboard::{FilterResult, KeyboardHandle, KeyboardTarget, KeysymHandle, ModifiersState, XkbConfig};
 use smithay::input::pointer::{
-    AxisFrame, ButtonEvent, CursorImageStatus, MotionEvent, PointerHandle,
+    AxisFrame, ButtonEvent, CursorImageStatus, CursorImageSurfaceData, MotionEvent, PointerHandle,
 };
 use smithay::input::{Seat, SeatHandler, SeatState};
 use smithay::output::{Mode, Output, PhysicalProperties, Scale, Subpixel};
@@ -50,8 +50,9 @@ use smithay::wayland::cursor_shape::CursorShapeManagerState;
 use smithay::wayland::fractional_scale::with_fractional_scale;
 use smithay::wayland::output::OutputHandler;
 use smithay::wayland::selection::data_device::{
-    request_data_device_client_selection, set_data_device_focus, set_data_device_selection, ClientDndGrabHandler,
-    DataDeviceHandler, DataDeviceState, ServerDndGrabHandler,
+    clear_data_device_selection, current_data_device_selection_userdata, request_data_device_client_selection,
+    set_data_device_focus, set_data_device_selection, ClientDndGrabHandler, DataDeviceHandler, DataDeviceState,
+    ServerDndGrabHandler,
 };
 use smithay::wayland::selection::{SelectionHandler, SelectionSource, SelectionTarget};
 use smithay::wayland::shell::xdg::decoration::{XdgDecorationHandler, XdgDecorationState};
@@ -66,7 +67,10 @@ use smithay::wayland::viewporter::ViewportCachedState;
 use smithay::wayland::xwayland_shell::XWaylandShellState;
 use smithay::xwayland::{X11Surface, XWaylandClientData};
 
-use crate::clipboard::{text_mime, MAX_CLIPBOARD_BYTES, OFFERED_MIME_TYPES};
+use crate::clipboard::{
+    paste_from, text_mime, HostSelection, PasteFrom, MAX_CLIPBOARD_BYTES, OFFERED_MIME_TYPES, X11_OFFERED_MIME_TYPES,
+};
+use crate::cursor::{Cursor, Shown};
 use crate::pixels::{
     clip_signed, map_rect, output_scale, surface_size, window_scale, Canvas, Encoding, Layer, ShmFormat, SurfaceImage,
 };
@@ -449,6 +453,9 @@ pub struct SessionState {
     /// An app just set the clipboard and offered text in this type: read it
     /// once the selection is stored (smithay tells us before it stores it).
     clipboard_to_read: Option<String>,
+    /// The text type the Wayland app holding the clipboard offered, for X11
+    /// apps that paste it; None when it offered none or isn't holding it.
+    clipboard_wayland_mime: Option<String>,
     keyboard: KeyboardHandle<SessionState>,
     /// The layout the keyboard's keymap was built from (`KEYBOARD_LAYOUTS`).
     layout_id: String,
@@ -486,7 +493,12 @@ pub struct SessionState {
     frozen: bool,
     /// The tab is showing; a hidden one gets no frames.
     visible: bool,
-    cursor: String,
+    /// What the session's apps last asked the cursor to be, and whether it
+    /// (or the cursor surface's image) changed since the tab heard.
+    cursor_status: CursorImageStatus,
+    cursor_changed: bool,
+    /// The cursor the tab has.
+    cursor: Shown,
     /// Surfaces with frame callbacks waiting to be answered.
     pending_callbacks: Vec<WlSurface>,
     /// JSON messages for the backend, drained by the host.
@@ -553,6 +565,7 @@ impl SessionState {
             seat,
             dh: dh.clone(),
             clipboard_to_read: None,
+            clipboard_wayland_mime: None,
             keyboard,
             layout_id: DEFAULT_LAYOUT.to_string(),
             pointer,
@@ -570,7 +583,9 @@ impl SessionState {
             announced_pids: None,
             frozen: false,
             visible: true,
-            cursor: "default".into(),
+            cursor_status: CursorImageStatus::default_named(),
+            cursor_changed: false,
+            cursor: Shown::default(),
             pending_callbacks: Vec::new(),
             outbox: Vec::new(),
             started,
@@ -813,8 +828,8 @@ impl SessionState {
             w.canvas.damage_all();
         }
         self.visible = true;
-        let name = self.cursor.clone();
-        self.outbox.push(Outbound::Cursor { session: self.id.clone(), name });
+        let cursor = self.cursor.current().clone();
+        self.send_cursor(cursor);
         self.announce_clients();
         self.text_input_resync();
     }
@@ -1522,6 +1537,10 @@ impl CompositorHandler for SessionState {
             },
             |_, _, _| true,
         );
+        // A cursor surface's new image goes to the tab after this round.
+        if matches!(&self.cursor_status, CursorImageStatus::Surface(c) if c == surface) {
+            self.cursor_changed = true;
+        }
         // Surfaces that belong to no window (cursors, a popup's parent gone)
         // keep only their frame callbacks.
         if let Some(i) = self.index_of_root(&root_of(surface)) {
@@ -1543,6 +1562,9 @@ impl CompositorHandler for SessionState {
     fn destroyed(&mut self, surface: &WlSurface) {
         let id = surface.id();
         self.images.remove(&id);
+        if matches!(&self.cursor_status, CursorImageStatus::Surface(c) if c == surface) {
+            self.cursor_changed = true;
+        }
         for w in self.windows.iter_mut() {
             if w.layout.iter().any(|p| p.id == id) {
                 w.layout.retain(|p| p.id != id);
@@ -1752,10 +1774,8 @@ impl SessionState {
     }
 }
 
-/// xdg-decoration: an app that asks gets the OS title bar; one that asks to
-/// draw its own, or never asks, gets a frame. With no preference stated, the
-/// host picks the OS title bar.
-/// The clipboard bridge with the tab. Plain text only (crate::clipboard).
+/// The clipboard bridge with the tab and with X11 apps. Plain text only
+/// (crate::clipboard).
 impl SessionState {
     /// The app that just set the clipboard offered text: ask it to write the
     /// text into a pipe, and return the end the host reads. Called after a
@@ -1763,22 +1783,148 @@ impl SessionState {
     pub fn start_clipboard_read(&mut self) -> Option<PipeReader> {
         let mime = self.clipboard_to_read.take()?;
         let (reader, writer) = std::io::pipe().ok()?;
-        request_data_device_client_selection(&self.seat, mime, OwnedFd::from(writer)).ok()?;
+        match self.host_selection() {
+            None => request_data_device_client_selection(&self.seat, mime, OwnedFd::from(writer)).ok()?,
+            Some(HostSelection::X11 { .. }) => {
+                if !self.x11_read_clipboard(mime, OwnedFd::from(writer)) {
+                    return None;
+                }
+            }
+            // The tab's own text took its place this round.
+            Some(HostSelection::Tab(_)) => return None,
+        }
         Some(reader)
     }
 
     /// The tab read its clipboard for a paste: offer the text as the
-    /// session's selection, to the app with the keyboard and to whichever
-    /// app takes it next. Larger than the limit, nothing changes.
+    /// session's selection, to the app with the keyboard, to whichever app
+    /// takes it next, and to X11 apps. Larger than the limit, nothing
+    /// changes.
     pub fn set_clipboard(&mut self, text: String) {
         if text.is_empty() || text.len() > MAX_CLIPBOARD_BYTES {
             return;
         }
+        self.set_host_selection(HostSelection::Tab(Arc::from(text)));
+        self.x11_offer_clipboard(Some(&X11_OFFERED_MIME_TYPES));
+    }
+
+    /// The session's selection, when the host set it rather than a Wayland
+    /// app.
+    fn host_selection(&self) -> Option<HostSelection> {
+        current_data_device_selection_userdata(&self.seat).map(|held| held.clone())
+    }
+
+    fn set_host_selection(&mut self, held: HostSelection) {
+        self.clipboard_wayland_mime = None;
         let mime_types = OFFERED_MIME_TYPES.iter().map(|m| m.to_string()).collect();
-        set_data_device_selection(&self.dh, &self.seat, mime_types, Arc::from(text));
+        set_data_device_selection(&self.dh, &self.seat, mime_types, held);
+    }
+
+    /// Whether X11 apps should see text on the clipboard when Xwayland
+    /// starts: the tab's, or a Wayland app's that offered some.
+    fn clipboard_has_text_for_x11(&self) -> bool {
+        match self.host_selection() {
+            Some(HostSelection::Tab(_)) => true,
+            Some(HostSelection::X11 { .. }) => false,
+            None => self.clipboard_wayland_mime.is_some(),
+        }
+    }
+
+    /// An X11 app took `CLIPBOARD`. Offering text (`mime`), it becomes the
+    /// session's selection, which Wayland apps paste through the window
+    /// manager, and its text goes to the tab after this round. Offering
+    /// none (an image), the session's selection empties: only text crosses.
+    fn x11_took_clipboard(&mut self, mime: Option<String>) {
+        self.clipboard_to_read = mime.clone();
+        match mime {
+            Some(mime) => self.set_host_selection(HostSelection::X11 { mime }),
+            None => {
+                self.clipboard_wayland_mime = None;
+                clear_data_device_selection(&self.dh, &self.seat);
+            }
+        }
+    }
+
+    /// The X11 app that had `CLIPBOARD` let it go, or Xwayland went: a
+    /// session selection that was its copy empties.
+    fn x11_clipboard_gone(&mut self) {
+        if matches!(self.host_selection(), Some(HostSelection::X11 { .. })) {
+            clear_data_device_selection(&self.dh, &self.seat);
+        }
+    }
+
+    /// Write the clipboard's text into an app's pipe, from wherever it is.
+    /// A write of the host's own text runs on a thread of its own, so an app
+    /// that reads slowly (or never) can't stall the session.
+    fn paste(&mut self, from: PasteFrom, fd: OwnedFd) {
+        match from {
+            PasteFrom::Text(text) => {
+                std::thread::spawn(move || write_within(fd, text.as_bytes(), PASTE_WRITE_TIMEOUT));
+            }
+            PasteFrom::WaylandApp(mime) => {
+                let _ = request_data_device_client_selection(&self.seat, mime, fd);
+            }
+            PasteFrom::X11App(mime) => {
+                self.x11_read_clipboard(mime, fd);
+            }
+            // Dropping the fd closes the app's pipe: an empty paste.
+            PasteFrom::Nothing => {}
+        }
+    }
+
+    /// An X11 app pastes `CLIPBOARD` while the session's clipboard isn't an
+    /// X11 app's.
+    fn x11_paste(&mut self, fd: OwnedFd, target: &str) {
+        let held = self.host_selection();
+        let from = paste_from(held.as_ref(), self.clipboard_wayland_mime.as_deref(), true);
+        match from {
+            PasteFrom::Text(text) if is_latin1_target(target) => {
+                let bytes = latin1_bytes(&text);
+                std::thread::spawn(move || write_within(fd, &bytes, PASTE_WRITE_TIMEOUT));
+            }
+            from => self.paste(from, fd),
+        }
     }
 }
 
+/// The cursor the tab shows (crate::cursor).
+impl SessionState {
+    /// Tell the tab the cursor, if it changed this round: a name, or the
+    /// cursor surface's image and hotspot.
+    pub fn flush_cursor(&mut self) {
+        if !std::mem::take(&mut self.cursor_changed) {
+            return;
+        }
+        let next = match &self.cursor_status {
+            CursorImageStatus::Hidden => Cursor::named("none"),
+            CursorImageStatus::Named(icon) => Cursor::named(icon.name()),
+            CursorImageStatus::Surface(surface) if surface.is_alive() => {
+                let hotspot = with_states(surface, |states| {
+                    states
+                        .data_map
+                        .get::<CursorImageSurfaceData>()
+                        .and_then(|data| data.lock().ok().map(|d| d.hotspot))
+                })
+                .unwrap_or_default();
+                Cursor::drawn(self.images.get(&surface.id()), (hotspot.x, hotspot.y))
+            }
+            // Its surface is gone: the app will set another.
+            CursorImageStatus::Surface(_) => Cursor::named("default"),
+        };
+        if let Some(changed) = self.cursor.change(next) {
+            let changed = changed.clone();
+            self.send_cursor(changed);
+        }
+    }
+
+    fn send_cursor(&mut self, cursor: Cursor) {
+        self.outbox.push(Outbound::Cursor { session: self.id.clone(), name: cursor.name, image: cursor.image });
+    }
+}
+
+/// xdg-decoration: an app that asks gets the OS title bar; one that asks to
+/// draw its own, or never asks, gets a frame. With no preference stated, the
+/// host picks the OS title bar.
 impl XdgDecorationHandler for SessionState {
     fn new_decoration(&mut self, toplevel: ToplevelSurface) {
         self.set_decorations(&toplevel, DecorationMode::ServerSide);
@@ -1802,8 +1948,6 @@ impl SeatHandler for SessionState {
         &mut self.seat_state
     }
 
-    /// cursor-shape-v1 names a cursor; the tab shows it as a CSS cursor. An
-    /// app that draws its own cursor surface gets the default arrow.
     /// The clipboard follows the keyboard: the app with focus is offered the
     /// current selection, and only it may set a new one.
     fn focus_changed(&mut self, seat: &Seat<Self>, focused: Option<&KeyboardFocus>) {
@@ -1813,16 +1957,13 @@ impl SeatHandler for SessionState {
         set_data_device_focus(&self.dh, seat, client);
     }
 
+    /// An app named a cursor (cursor-shape-v1), hid it, or set a cursor
+    /// surface; smithay sets the default one when the pointer leaves an
+    /// app. The tab hears after this round (`flush_cursor`), so a surface
+    /// set and drawn in one go is sent once.
     fn cursor_image(&mut self, _seat: &Seat<Self>, image: CursorImageStatus) {
-        let name = match image {
-            CursorImageStatus::Hidden => "none".to_string(),
-            CursorImageStatus::Named(icon) => icon.name().to_string(),
-            CursorImageStatus::Surface(_) => "default".to_string(),
-        };
-        if name != self.cursor {
-            self.cursor = name.clone();
-            self.outbox.push(Outbound::Cursor { session: self.id.clone(), name });
-        }
+        self.cursor_status = image;
+        self.cursor_changed = true;
     }
 }
 
@@ -1831,37 +1972,43 @@ impl TabletSeatHandler for SessionState {}
 impl OutputHandler for SessionState {}
 
 impl SelectionHandler for SessionState {
-    /// The text the tab handed over for a paste.
-    type SelectionUserData = Arc<str>;
+    /// The selection the host set: the tab's text, or an X11 app's copy.
+    type SelectionUserData = HostSelection;
 
-    /// An app set the clipboard. When it offers text, the host reads it after
-    /// this round (see `start_clipboard_read`) and sends it to the tab.
+    /// A Wayland app set the clipboard. When it offers text, the host reads
+    /// it after this round (see `start_clipboard_read`) and sends it to the
+    /// tab, and X11 apps are offered it; otherwise X11 apps see an empty
+    /// clipboard.
     fn new_selection(&mut self, ty: SelectionTarget, source: Option<SelectionSource>, _seat: Seat<Self>) {
         if ty != SelectionTarget::Clipboard {
             return;
         }
-        self.clipboard_to_read = source.and_then(|s| text_mime(&s.mime_types()));
+        let set = source.is_some();
+        let mime = source.and_then(|s| text_mime(&s.mime_types()));
+        self.clipboard_to_read = mime.clone();
+        self.clipboard_wayland_mime = mime.clone();
+        match (set, mime.is_some()) {
+            (false, _) => self.x11_offer_clipboard(None),
+            (true, true) => self.x11_offer_clipboard(Some(&X11_OFFERED_MIME_TYPES)),
+            (true, false) => self.x11_offer_clipboard(Some(&[])),
+        }
     }
 
-    /// An app pastes the tab's text: write it on a thread of its own, so an
-    /// app that reads slowly (or never) can't stall the session.
+    /// A Wayland app pastes the host's selection: the tab's text, or an X11
+    /// app's, read from it as it goes.
     fn send_selection(
         &mut self,
         ty: SelectionTarget,
         mime_type: String,
         fd: OwnedFd,
         _seat: Seat<Self>,
-        user_data: &Arc<str>,
+        user_data: &HostSelection,
     ) {
         if ty != SelectionTarget::Clipboard || !OFFERED_MIME_TYPES.contains(&mime_type.as_str()) {
             return;
         }
-        let text = Arc::clone(user_data);
-        std::thread::spawn(move || {
-            // An app that closes its end early gets nothing more: EPIPE, as
-            // Rust ignores SIGPIPE.
-            let _ = std::fs::File::from(fd).write_all(text.as_bytes());
-        });
+        let from = paste_from(Some(user_data), None, false);
+        self.paste(from, fd);
     }
 }
 
@@ -1883,10 +2030,93 @@ delegate_seat!(SessionState);
 delegate_output!(SessionState);
 delegate_data_device!(SessionState);
 
+/// How long a paste may wait on an app that stopped reading its pipe.
+const PASTE_WRITE_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Write `data` into an app's pipe without blocking: when the pipe is full,
+/// wait for room until `timeout` has passed since the start, then give up and
+/// close it. An app that closes its end early (EPIPE) or any other error also
+/// ends the write. (The pipe stays non-blocking, as the window manager's
+/// pipe for an X11 app is.)
+fn write_within(fd: OwnedFd, data: &[u8], timeout: Duration) {
+    use rustix::event::{poll, PollFd, PollFlags};
+    use rustix::io::Errno;
+    let deadline = Instant::now() + timeout;
+    let mut rest = data;
+    while !rest.is_empty() {
+        match rustix::io::write(&fd, rest) {
+            Ok(0) => return,
+            Ok(n) => rest = &rest[n..],
+            Err(Errno::INTR) => {}
+            Err(Errno::AGAIN) => {
+                let left = deadline.saturating_duration_since(Instant::now());
+                if left.is_zero() {
+                    return;
+                }
+                let wait = rustix::event::Timespec { tv_sec: left.as_secs() as _, tv_nsec: left.subsec_nanos() as _ };
+                let mut fds = [PollFd::new(&fd, PollFlags::OUT)];
+                match poll(&mut fds, Some(&wait)) {
+                    Ok(_) | Err(Errno::INTR) => {}
+                    Err(_) => return,
+                }
+            }
+            Err(_) => return,
+        }
+    }
+}
+
+/// X11's `STRING` target is Latin-1; the other text targets are UTF-8.
+fn is_latin1_target(target: &str) -> bool {
+    target == "STRING"
+}
+
+/// Text as Latin-1: U+0000 to U+00FF as single bytes, anything else as `?`.
+fn latin1_bytes(text: &str) -> Vec<u8> {
+    text.chars().map(|c| u8::try_from(u32::from(c)).unwrap_or(b'?')).collect()
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{xkb_config, KEYBOARD_LAYOUTS};
+    use super::{is_latin1_target, latin1_bytes, write_within, xkb_config, KEYBOARD_LAYOUTS};
     use smithay::input::keyboard::xkb;
+    use std::time::{Duration, Instant};
+
+    fn nonblocking_pipe() -> (std::io::PipeReader, std::io::PipeWriter) {
+        let (reader, writer) = std::io::pipe().unwrap();
+        rustix::io::ioctl_fionbio(&writer, true).unwrap();
+        (reader, writer)
+    }
+
+    #[test]
+    fn string_target_is_latin1() {
+        assert!(is_latin1_target("STRING"));
+        for t in ["UTF8_STRING", "TEXT", "text/plain", "text/plain;charset=utf-8"] {
+            assert!(!is_latin1_target(t));
+        }
+        assert_eq!(latin1_bytes("aé\u{ff}\u{100}€😀"), vec![b'a', 0xe9, 0xff, b'?', b'?', b'?']);
+    }
+
+    #[test]
+    fn a_stalled_reader_is_abandoned_at_the_deadline() {
+        let (reader, writer) = nonblocking_pipe();
+        let start = Instant::now();
+        // Far more than a pipe holds; the reader never reads but stays open.
+        write_within(writer.into(), &vec![b'x'; 4 * 1024 * 1024], Duration::from_millis(200));
+        let took = start.elapsed();
+        assert!(took >= Duration::from_millis(150) && took < Duration::from_secs(3), "{took:?}");
+        drop(reader);
+    }
+
+    #[test]
+    fn a_normal_paste_is_written_whole() {
+        use std::io::Read;
+        let (reader, writer) = nonblocking_pipe();
+        write_within(writer.into(), b"hello", Duration::from_secs(1));
+        let mut got = String::new();
+        let mut reader = reader;
+        reader.read_to_string(&mut got).unwrap();
+        assert_eq!(got, "hello");
+    }
 
     /// What a key types in a layout's keymap: the evdev code, plus Shift.
     fn types(layout: &str, evdev: u32, shift: bool) -> String {

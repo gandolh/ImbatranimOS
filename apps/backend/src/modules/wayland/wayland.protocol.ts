@@ -21,7 +21,7 @@ export const WS_KIND_AUDIO = 3;
 /** Refuse anything larger, as the host does. */
 export const MAX_MESSAGE = 64 * 1024 * 1024;
 
-export const PROTOCOL_VERSION = 8;
+export const PROTOCOL_VERSION = 9;
 
 /**
  * A desktop session id: random, per tab, and part of a socket's file name
@@ -163,7 +163,7 @@ export type HostOutbound =
   | ToplevelMessage
   | PopupMessage
   | { type: 'clients'; session: string; pids: number[] }
-  | { type: 'cursor'; session: string; name: string }
+  | { type: 'cursor'; session: string; name: string; image?: CursorImage }
   | {
       type: 'request';
       session: string;
@@ -173,6 +173,23 @@ export type HostOutbound =
     }
   | { type: 'clipboard'; session: string; text: string }
   | TextInputMessage;
+
+/**
+ * A cursor an app drew itself, which the tab shows as a CSS cursor (the
+ * message's `name` is then `default`, the fallback).
+ */
+export type CursorImage = {
+  /** A PNG, straight alpha, in base64. */
+  png: string;
+  /** Its size in image pixels, at most 128 each way. */
+  width: number;
+  height: number;
+  /** Image pixels per CSS pixel: the scale the app drew it at. */
+  scale: number;
+  /** The hotspot in CSS pixels from the image's top-left. */
+  hotspot_x: number;
+  hotspot_y: number;
+};
 
 export type ToplevelMessage =
   | {

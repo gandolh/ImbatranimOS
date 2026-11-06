@@ -12,6 +12,7 @@ import { useLinuxAppsPrefs } from './keyboardLayout'
 import { LINUX_APP_PREFIX, linuxWindowChrome } from './kind'
 import { paintFrame, parseFrame } from './frames'
 import { linuxClipboard } from './clipboard'
+import { cursorCss, type LinuxCursorImage } from './cursor'
 import { linuxSound } from './sound'
 import { soundGain, useSoundStore } from '../../shared/store/soundStore'
 import { LinuxNotifications, notifyAppStopped } from './linuxNotifications'
@@ -70,7 +71,7 @@ type ServerMessage =
   | PopupMessage
   | { type: 'popup_destroyed'; popup: number }
   | { type: 'toplevel_destroyed'; toplevel: number }
-  | { type: 'cursor'; name: string }
+  | { type: 'cursor'; name: string; image?: LinuxCursorImage }
   | { type: 'request'; toplevel: number; action: string; edges?: string }
   | { type: 'unavailable'; reason: string }
   | { type: 'session'; resumed: boolean }
@@ -389,7 +390,7 @@ export class LinuxWindowsConnection {
         this.resuming = false
         dropLinuxPlaces()
       }
-      useLinuxWindowsStore.getState().setCursor(m.name)
+      useLinuxWindowsStore.getState().setCursor(cursorCss(m.name, m.image))
     } else if (m.type === 'request') this.request(m.toplevel, m.action, m.edges)
     else if (m.type === 'clipboard' && typeof m.text === 'string')
       void linuxClipboard.fromLinux(m.text)

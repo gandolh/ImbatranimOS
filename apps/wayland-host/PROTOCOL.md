@@ -74,7 +74,7 @@ share one space within a session.
 
 | `type` | Fields |
 |---|---|
-| `hello` | `version` (8) |
+| `hello` | `version` (9) |
 | `session_ready` | `session`, `display` (the socket name, `wayland-<session>`), `x11_display` (the X display number reserved for the session's X11 apps, or `null`) |
 | `session_failed` | `session`, `reason` |
 | `toplevel_created`, `toplevel_updated` | `session`, `toplevel`, `title`, `app_id`, `width`, `height`, `scale`, `geometry`, `decorations`, `min_width`, `min_height`, `max_width`, `max_height` |
@@ -82,7 +82,7 @@ share one space within a session.
 | `popup_created`, `popup_updated` | `session`, `popup`, `parent`, `x`, `y`, `width`, `height`, `scale`, `geometry`, `grab` |
 | `popup_destroyed` | `session`, `popup` |
 | `clients` | `session`, `pids` |
-| `cursor` | `session`, `name` |
+| `cursor` | `session`, `name`, and `image` (`png`, `width`, `height`, `scale`, `hotspot_x`, `hotspot_y`) when the app drew its own |
 | `request` | `session`, `toplevel`, `action`, `edges` |
 | `clipboard` | `session`, `text` |
 | `text_input` | `session`, `toplevel`, `enabled`, `purpose`, `hints`, `text`, `cursor`, `anchor`, `rect`, `cause` |
@@ -124,10 +124,22 @@ a pipe (preferring `text/plain;charset=utf-8`, then `UTF8_STRING`,
 `text/plain`, `TEXT`, `STRING`) and sends it once the app closes its end.
 More than 1 MiB, or nothing within 5 s, sends nothing. Other types (images,
 files) are never read. The selection follows the keyboard: the focused app
-is offered the current one, and only it may set a new one.
+is offered the current one, and only it may set a new one. An X11 app's
+`CLIPBOARD` is the session's selection too (see "X11 apps").
 
-`cursor` is the CSS name of the cursor the app asked for with cursor-shape-v1
-(`default` when it set a cursor surface instead, `none` when hidden).
+`cursor` is the cursor the app asked for: the CSS name it gave with
+cursor-shape-v1, or `none` when it hid the cursor. An app that draws its own
+on a cursor surface (every X11 app through Xwayland, GTK 3 apps) gets `name`
+`default` and an `image`: the surface's buffer as a PNG (straight alpha,
+base64), its `width` and `height` in image pixels, the `scale` it was drawn
+at (image pixels per CSS pixel, 1 or 2), and the hotspot in CSS pixels from
+its top-left, kept inside the image. The tab shows it as
+`cursor: url(...) x y, default`, through `image-set(... 2x)` at scale 2. A
+cursor surface over 128 pixels either way gets `default` with no image, and
+one with no buffer `none`. The host sends `cursor` once per round of events
+and only when it changed (a new name, image or hotspot), keeps it for
+`resync`, and sends `default` when the pointer leaves an app, which then
+sets its own again.
 `request` passes an app's `xdg_toplevel` requests to the window manager:
 `move`, `resize` (with `edges`: `n`, `s`, `e`, `w`, `ne`, `nw`, `se`, `sw`),
 `maximize`, `unmaximize`, `minimize`, `fullscreen` and `unfullscreen`.
@@ -255,8 +267,21 @@ window it is transient for, else of the X11 window with the keyboard, else
 of the newest one, at its X position relative to that window's. It holds no
 grab: X11 menus grab inside Xwayland.
 
-Not yet: the X11 clipboard isn't bridged to the session's (copy and paste
-works between X11 apps only), and an X11 app's cursor shows as `default`.
+The window manager bridges the clipboard, plain text only. When an X11 app
+takes `CLIPBOARD` offering text (`UTF8_STRING` or `TEXT`, which smithay names
+`text/plain;charset=utf-8` and `text/plain`), it becomes the session's
+selection: Wayland apps paste it through the window manager, and the host
+reads it the same way and sends it as `clipboard`, as for a Wayland app's
+copy. An X11 copy without text (an image) empties the session's selection;
+when the X11 app lets it go, or Xwayland exits, a selection that was its copy
+empties too. When the tab's text (a paste) or a Wayland app's text becomes
+the selection, the window manager takes `CLIPBOARD` and offers it to X11
+apps as `UTF8_STRING`, `TEXT` and `STRING`, writing the text as UTF-8; a
+Wayland copy without text leaves them an empty `CLIPBOARD`. Xwayland starting
+offers what the selection already holds. `PRIMARY` stays between X11 apps.
+
+X11 apps draw their own cursors: Xwayland sets them as cursor surfaces, which
+reach the tab as `cursor` images.
 
 ### Frames, host to backend
 

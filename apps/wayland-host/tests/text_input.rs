@@ -202,7 +202,7 @@ fn start() -> (Host, Control, Client) {
     let (stream, _) = listener.accept().unwrap();
     stream.set_read_timeout(Some(Duration::from_millis(100))).unwrap();
     let mut control = Control { stream, buf: Vec::new() };
-    assert_eq!(control.recv("hello")["version"], 8);
+    assert_eq!(control.recv("hello")["version"], 9);
     control.send(json!({"type": "session_open", "session": SID, "width": 800, "height": 600, "ratio": 1}));
     let ready = control.recv("session_ready");
     let socket = dir.join(ready["display"].as_str().unwrap());

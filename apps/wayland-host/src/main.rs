@@ -11,6 +11,7 @@
 //! PROTOCOL.md describes the control socket.
 
 mod clipboard;
+mod cursor;
 mod pixels;
 mod protocol;
 mod session;
@@ -475,8 +476,9 @@ impl Host {
             if let Some(reader) = s.state.start_clipboard_read() {
                 clipboard_reads.push((id.clone(), reader));
             }
-            // The focused text field's state, once per round.
+            // The focused text field's state and the cursor, once per round.
             s.state.flush_text_input();
+            s.state.flush_cursor();
             let _ = s.display.flush_clients();
             outbound.append(&mut s.state.outbox);
         }

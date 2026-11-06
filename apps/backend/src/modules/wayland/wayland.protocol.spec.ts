@@ -105,6 +105,26 @@ describe('the Wayland host control protocol', () => {
     });
   });
 
+  it("decodes the host's cursor image fixture", () => {
+    const [d] = new Decoder().push(fixture('cursor-image.bin'));
+    expect(d).toEqual({
+      kind: 'json',
+      message: {
+        type: 'cursor',
+        session: 'abcdefghijklmnop',
+        name: 'default',
+        image: {
+          png: 'iVBORw0KGgo=',
+          width: 48,
+          height: 48,
+          scale: 2,
+          hotspot_x: 4,
+          hotspot_y: 20,
+        },
+      },
+    });
+  });
+
   it("decodes the host's text input fixture", () => {
     const [d] = new Decoder().push(fixture('text-input.bin'));
     expect(d).toEqual({

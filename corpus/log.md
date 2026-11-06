@@ -5610,3 +5610,25 @@ held in brief 70's stash, so they wait for it.
 now drops every header the desktop's own policy sets (isolation, framing,
 nosniff, referrer), plus `Clear-Site-Data` (it would wipe the session and
 storage), `Service-Worker-Allowed` and HSTS. Raised by brief 71's walk agent.
+
+## [2026-11-06] build | Brief 70, first half: installed apps get files by grant
+
+`98958a2`, popped from the stash on `760ef6c`. The backend keeps a grant
+table (`file_grants`, ledger 14) per running copy (window id + app id), and
+the files, git, recents and grants routes check the caller: the user
+reaches everything, an app what its modes allow and what its copy was
+given. Trash, archives and backups are the user's alone; an app records and
+sees only its own recent files. Core gives as the user: `openApp` grants the
+file it opens to the window it opens it in, and the three pickers grant the
+pick before the app hears it. A copy's calls wait on its pending grants
+(`apps/core/src/system/fileGrants.ts`), so an app that reads its file with
+`intents.consume()` as it mounts finds the grant made.
+
+**Held back:** the stricter default for built-ins (`rwx--x--x`,
+`rw-------` in `modes.ts`). The stash had flipped it, but core grants
+nothing to a built-in for its own flows yet, so it waits for the second
+half. Left for that half: each built-in's grant path (the Code Editor's
+folder, Git GUI's repo, Media Player's playlist, Paint, Notepad, the
+DiffTool's two files, drag and drop from Files), the REST API Client's
+attach through `pickOpen`, the flip, and the Office walk. Tests: backend
+1090 unit, 93 e2e (files, grants, identity, marketplace); core 864.

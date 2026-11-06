@@ -5554,3 +5554,32 @@ group layout as one root workspace; the recipe is in
 fails, and a refused zip-slip archive leaves an empty folder; both are todos
 or noted in the outcome. Owner: push imbatranim-apps first, then this repo,
 then deploy.
+
+## [2026-11-06] resume | imbatranim-apps run paused at the owner's wrap-up
+
+Built from the main session with subagents and committed (not pushed): 63,
+64 (with imbatranim-apps `647580f`), 65, 66, 67, 68, 69 (`f31da1c`), 71
+(`93bf282`, kit 1.5.0), 72, 73, and Office pinned to imbatranim-apps
+`8a42180`. In Ready for deploy: 63-68, 72, 73. In progress:
+- **69** (data folders): committed and tested; its walk was stopped before
+  it finished. A review left a fix round: uninstall must revoke every
+  token of the row's apps (`AppTokens.revokeApp`, never called on uninstall)
+  and refuse registering a token for a catalog app that isn't installed,
+  with one lock per app folder, so an open window can't recreate removed
+  data; refuse data names over about 200 bytes with 400; fsync the staged
+  file and folder before the rename and clean stale `.part` files.
+- **70** (files by grant, built-ins scoped too: the owner's stricter
+  default): half built and **stashed**, not committed —
+  `git stash list` shows "brief 70 WIP (file grants, …)". It had done the
+  grant store, the mode default flip in `modes.ts`, file-access checks in
+  the files, archive, backup and git modules, and was on the trash and
+  recent controllers. Resume with `git stash pop`, then the core side
+  (intents, pickers, each built-in's grant path), the REST client's 403
+  notice and "migrated" marker (a review finding handed to 70), tests and a
+  walk.
+- **71** (background services and command sources): committed and tested;
+  its walk (the hooks fixture) didn't run.
+Next after 70: 74, then 75 and 76 (the group recipe is in
+`wiki/imbatranim-apps-group-recipe.md`). Owner steps: rename the GitHub
+repo imbatranim-office to imbatranim-apps; push imbatranim-apps first,
+then this repo, then deploy.

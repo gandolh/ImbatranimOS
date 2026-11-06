@@ -1,7 +1,8 @@
-import type { HostInbound } from './wayland.protocol';
+import type { HostInbound, TextEditMessage } from './wayland.protocol';
 import {
   MAX_CLIPBOARD_BYTES,
   MAX_RATIO,
+  MAX_TEXT_INPUT_BYTES,
   MAX_VIEWPORT,
 } from './wayland.constants';
 
@@ -47,6 +48,64 @@ export function clampRatio(v: unknown): number {
   const n = v === null || v === '' ? NaN : Number(v);
   if (!Number.isFinite(n) || n <= 0) return 1;
   return Math.min(n, MAX_RATIO);
+}
+
+/** A high surrogate with no low one after it, or a low one with no high before. */
+const LONE_SURROGATE =
+  /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+/**
+ * Text for a text-input event: at most MAX_TEXT_INPUT_BYTES of UTF-8, and no
+ * NUL, which a Wayland string can't carry, and no lone surrogate, which
+ * JSON.stringify writes as an escape the host's parser refuses.
+ */
+const isEditText = (v: unknown): v is string =>
+  typeof v === 'string' &&
+  !v.includes('\u0000') &&
+  !LONE_SURROGATE.test(v) &&
+  Buffer.byteLength(v, 'utf8') <= MAX_TEXT_INPUT_BYTES;
+
+/**
+ * The tab's edit of a Linux app's text field: each part optional, each one
+ * present checked whole. Anything unknown in it is left behind.
+ */
+function textEdit(
+  session: string,
+  m: Record<string, unknown>,
+): TextEditMessage | null {
+  if (!isU32(m.toplevel)) return null;
+  const out: TextEditMessage = {
+    type: 'text_edit',
+    session,
+    toplevel: m.toplevel,
+  };
+  if (m.delete !== undefined) {
+    const d = m.delete as Record<string, unknown> | null;
+    if (
+      !d ||
+      typeof d !== 'object' ||
+      !isIntIn(d.before, 0, MAX_TEXT_INPUT_BYTES) ||
+      !isIntIn(d.after, 0, MAX_TEXT_INPUT_BYTES)
+    ) {
+      return null;
+    }
+    out.delete = { before: d.before, after: d.after };
+  }
+  if (m.commit !== undefined) {
+    if (!isEditText(m.commit)) return null;
+    out.commit = m.commit;
+  }
+  if (m.preedit !== undefined) {
+    const p = m.preedit as Record<string, unknown> | null;
+    if (!p || typeof p !== 'object' || !isEditText(p.text)) return null;
+    const bytes = Buffer.byteLength(p.text, 'utf8');
+    const cursorOk = (c: unknown) => c === undefined || isIntIn(c, -1, bytes);
+    if (!cursorOk(p.cursor_begin) || !cursorOk(p.cursor_end)) return null;
+    out.preedit = { text: p.text };
+    if (p.cursor_begin !== undefined) out.preedit.cursor_begin = p.cursor_begin;
+    if (p.cursor_end !== undefined) out.preedit.cursor_end = p.cursor_end;
+  }
+  return out;
 }
 
 /** Turn one message from the tab into one for the host, or null. */
@@ -183,6 +242,8 @@ export function toHostMessage(
         return null;
       }
       return { type: 'clipboard', session, text: m.text };
+    case 'text_edit':
+      return textEdit(session, m);
     default:
       return null;
   }

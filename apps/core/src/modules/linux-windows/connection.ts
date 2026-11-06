@@ -24,6 +24,7 @@ import {
   useLinuxWindowsStore,
   windowForToplevel,
   type Geometry,
+  type LinuxTextInput,
   type LinuxToplevel,
 } from './linuxWindowsStore'
 
@@ -77,6 +78,7 @@ type ServerMessage =
   | { type: 'notification'; id: number; app: string; summary: string; body: string }
   | { type: 'notification_close'; id: number }
   | { type: 'app_stopped'; app: string; reason: 'memory' }
+  | ({ type: 'text_input' } & LinuxTextInput)
 
 type Viewport = { width: number; height: number; ratio: number }
 
@@ -394,6 +396,25 @@ export class LinuxWindowsConnection {
     else if (m.type === 'notification') this.notifications?.show(m)
     else if (m.type === 'notification_close') this.notifications?.close(m.id)
     else if (m.type === 'app_stopped') notifyAppStopped(m.app)
+    else if (m.type === 'text_input') this.textInput(m)
+  }
+
+  /**
+   * The app's text field with text-input focus: its window's hidden input
+   * follows it, for a phone's keyboard (hiddenTextInput.ts).
+   */
+  private textInput(m: { type: 'text_input' } & LinuxTextInput): void {
+    useLinuxWindowsStore.getState().setTextInput({
+      toplevel: m.toplevel,
+      enabled: m.enabled === true,
+      purpose: typeof m.purpose === 'string' ? m.purpose : 'normal',
+      hints: Array.isArray(m.hints) ? m.hints.filter((h) => typeof h === 'string') : [],
+      text: typeof m.text === 'string' ? m.text : null,
+      cursor: Number.isInteger(m.cursor) ? m.cursor : 0,
+      anchor: Number.isInteger(m.anchor) ? m.anchor : 0,
+      rect: m.rect ?? null,
+      cause: m.cause === 'other' ? 'other' : 'input_method',
+    })
   }
 
   /** A fresh session has none of the windows the tab kept places for. */

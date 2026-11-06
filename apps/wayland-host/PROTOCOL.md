@@ -65,6 +65,7 @@ refused on both sides.
 | `visibility` | `session`, `visible` | The tab was hidden or shown: a hidden session gets no frames and its apps no frame callbacks, so well-behaved apps stop drawing; shown again, every window is sent whole. |
 | `toplevel_visible` | `session`, `toplevel`, `visible` | The same for one toplevel and its popups: its OS window was minimized, or moved to another workspace, or shown again. |
 | `clipboard` | `session`, `text` | A paste key in a Linux window: the tab read its clipboard. The host offers the text (at most 1 MiB of UTF-8, as `text/plain;charset=utf-8`, `text/plain`, `UTF8_STRING`, `TEXT` and `STRING`) as the session's selection, to the app with the keyboard first. The key follows in the next message. |
+| `text_edit` | `session`, `toplevel`, and any of `delete` (`before`, `after`), `commit`, `preedit` (`text`, `cursor_begin`, `cursor_end`) | The tab's hidden input changed the text of the field with text-input focus in `toplevel` (see "Text input"). |
 
 In the pointer messages, `toplevel` names a toplevel or a popup: their ids
 share one space within a session.
@@ -73,7 +74,7 @@ share one space within a session.
 
 | `type` | Fields |
 |---|---|
-| `hello` | `version` (7) |
+| `hello` | `version` (8) |
 | `session_ready` | `session`, `display` (the socket name, `wayland-<session>`), `x11_display` (the X display number reserved for the session's X11 apps, or `null`) |
 | `session_failed` | `session`, `reason` |
 | `toplevel_created`, `toplevel_updated` | `session`, `toplevel`, `title`, `app_id`, `width`, `height`, `scale`, `geometry`, `decorations`, `min_width`, `min_height`, `max_width`, `max_height` |
@@ -84,6 +85,7 @@ share one space within a session.
 | `cursor` | `session`, `name` |
 | `request` | `session`, `toplevel`, `action`, `edges` |
 | `clipboard` | `session`, `text` |
+| `text_input` | `session`, `toplevel`, `enabled`, `purpose`, `hints`, `text`, `cursor`, `anchor`, `rect`, `cause` |
 
 A toplevel is created when it first shows a buffer, and destroyed when the
 app destroys it or removes its buffer. `width` and `height` are its image's
@@ -129,6 +131,48 @@ is offered the current one, and only it may set a new one.
 `request` passes an app's `xdg_toplevel` requests to the window manager:
 `move`, `resize` (with `edges`: `n`, `s`, `e`, `w`, `ne`, `nw`, `se`, `sw`),
 `maximize`, `unmaximize`, `minimize`, `fullscreen` and `unfullscreen`.
+
+### Text input
+
+The host speaks text-input-v3 (`zwp_text_input_manager_v3`) itself, for the
+phone's keyboard: the tab's hidden input is the session's input method, and
+these two messages are how it talks to the app. Text-input focus follows the
+keyboard's, on Wayland surfaces only (X11 apps get none): the app with the
+keyboard gets `enter` for its surface, and `leave` when the keyboard goes,
+which starts its fields over. Only one text input in the session is enabled
+at a time.
+
+`text_input` says what the enabled field is, after a commit by its app that
+changed it, or when focus moved. The host sends it at most once per round of
+events, so focus moving between two fields in one round arrives as the new
+field alone.
+
+| Field | |
+|---|---|
+| `toplevel` | The toplevel the field is in. A field in a popup names the popup's toplevel. |
+| `enabled` | The app wants text. When `false` (the app disabled it, or focus left the field, the window or the session's apps), the other fields are empty: `purpose` `normal`, `hints` `[]`, `text` `null`, `cursor` and `anchor` 0, `rect` `null`, `cause` `input_method`. |
+| `purpose` | The field's content purpose, by its name in the protocol: `normal`, `alpha`, `digits`, `number`, `phone`, `url`, `email`, `name`, `password`, `pin`, `date`, `time`, `datetime`, `terminal`. |
+| `hints` | Its content hints, by name: `completion`, `spellcheck`, `auto_capitalization`, `lowercase`, `uppercase`, `titlecase`, `hidden_text`, `sensitive_data`, `latin`, `multiline`. |
+| `text` | The text around the cursor, without the preedit (at most 4000 bytes, the protocol's limit), or `null` when the app doesn't say. |
+| `cursor`, `anchor` | The cursor and the selection's anchor, as byte offsets in `text` on character boundaries (equal without a selection). |
+| `rect` | The cursor's rectangle (`x`, `y`, `width`, `height`) in the toplevel's surface coordinates, or `null`. |
+| `cause` | What changed the text in this commit: `input_method` (an edit from the tab) or `other`. |
+
+`text_edit` changes the field's text: the host sends the app
+`delete_surrounding_text`, `commit_string` and `preedit_string` for the parts
+present and not empty, then `done` with the number of commits the app has
+made (the serial it expects). The app applies them together, in that order:
+`delete` removes `before` bytes before the cursor and `after` bytes after it,
+outside the selection (cut to the text the app reported); `commit` is
+inserted at the cursor, replacing the selection; `preedit` is shown at the
+cursor, underlined, until the next edit replaces it (an edit without one
+clears it), its cursor at byte offsets `cursor_begin` and `cursor_end` (-1 for
+none; left out, or not on a character boundary, at the end). An edit for a
+toplevel that no longer has the enabled field is dropped. Text over 4000
+bytes, or holding a NUL, is refused; the backend refuses it first.
+
+The text in either message is never logged, and goes only to the session's
+own socket.
 
 ### Scale
 
@@ -324,7 +368,7 @@ the socket when the sign-in ends). One socket per session id.
 Server to tab: binary frames (`[2] + body`) and sound packets (`[3] + body`,
 dropped while the socket holds over 1 MiB, never held back and never
 acknowledged), and JSON text: the host's
-toplevel and popup messages without `session`, and `{"type":"unavailable","reason"}`
+toplevel, popup and `text_input` messages without `session`, and `{"type":"unavailable","reason"}`
 before a close with code 4503. First of all, `{"type":"session","resumed"}`:
 `true` when the socket took back a running session (below), so the windows the
 resync announces are ones the tab had and go back to their places, and `false`
@@ -335,8 +379,8 @@ Tab to server, JSON text: `{"type":"viewport","width","height","ratio"}`
 when the ratio changes: another screen, a page zoom), the
 input messages above (`focus` to `press_outside`), `visibility`,
 `toplevel_visible`, `keyboard_layout` (sent on connect and on every
-change) and `clipboard`, without `session`; the backend checks each field
-and adds the session. A message is at most 2 MiB, room for a paste's 1 MiB
+change), `clipboard` and `text_edit`, without `session`; the backend checks
+each field and adds the session. A message is at most 2 MiB, room for a paste's 1 MiB
 of text. The host's `clipboard` reaches the tab as `{"type":"clipboard","text"}`
 and the tab writes it to the clipboard.
 

@@ -3,14 +3,12 @@
 //! changes what the tab shows.
 
 use smithay::delegate_fractional_scale;
-use smithay::delegate_text_input_manager;
 use smithay::delegate_viewporter;
 use smithay::delegate_xdg_activation;
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use smithay::reexports::wayland_server::DisplayHandle;
 use smithay::wayland::compositor::with_states;
 use smithay::wayland::fractional_scale::{with_fractional_scale, FractionalScaleHandler, FractionalScaleManagerState};
-use smithay::wayland::text_input::TextInputManagerState;
 use smithay::wayland::viewporter::ViewporterState;
 use smithay::wayland::xdg_activation::{
     XdgActivationHandler, XdgActivationState, XdgActivationToken, XdgActivationTokenData,
@@ -20,7 +18,6 @@ use crate::session::SessionState;
 
 pub struct Stubs {
     pub activation: XdgActivationState,
-    _text_input: TextInputManagerState,
     _viewporter: ViewporterState,
     _fractional_scale: FractionalScaleManagerState,
 }
@@ -32,8 +29,6 @@ impl Stubs {
             // Tokens are handed out; activation requests are ignored, since
             // only the owner raises windows.
             activation: XdgActivationState::new::<SessionState>(dh),
-            // Input methods: none yet. The keyboard is the chosen layout's keymap.
-            _text_input: TextInputManagerState::new::<SessionState>(dh),
             // Scaling of a buffer: a viewport's destination is the surface's
             // size (an app drawing at the fractional scale's preferred scale
             // sets one). Cropping to its source rectangle is not applied.
@@ -68,6 +63,5 @@ impl FractionalScaleHandler for SessionState {
 }
 
 delegate_xdg_activation!(SessionState);
-delegate_text_input_manager!(SessionState);
 delegate_viewporter!(SessionState);
 delegate_fractional_scale!(SessionState);

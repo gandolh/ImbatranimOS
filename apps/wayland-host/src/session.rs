@@ -1,8 +1,10 @@
 //! One desktop session (one browser tab): its own Wayland display, globals,
-//! output, seat and clients, and the X display its X11 apps get (`x11`).
+//! output, seat and clients, the X display its X11 apps get (`x11`), and its
+//! text fields' state for the tab's hidden input (`text_input`).
 //! Nothing here is shared with another session, so a client on tab A's
 //! socket can never reach tab B.
 
+mod text_input;
 mod x11;
 
 use std::borrow::Cow;
@@ -472,6 +474,8 @@ pub struct SessionState {
     grabs: Vec<u32>,
     /// A press outside every Linux window took the keyboard from them.
     keyboard_away: bool,
+    /// text-input-v3: the apps' text inputs and the field with focus.
+    text_inputs: text_input::TextInputs,
     /// The processes connected to the socket: pid (0 when unknown) and
     /// whether each has gone.
     clients: Vec<(u32, Arc<ClientState>)>,
@@ -513,6 +517,8 @@ impl SessionState {
         let decoration = XdgDecorationState::new::<SessionState>(dh);
         let cursor_shape = CursorShapeManagerState::new::<SessionState>(dh);
         let stubs = crate::stubs::Stubs::new(dh);
+        // Text fields: what the tab's hidden input needs, and its text back.
+        SessionState::create_text_input_global(dh);
         // Only Xwayland's own client may bind it.
         let xwayland_shell = XWaylandShellState::new::<SessionState>(dh);
         let mut seat_state = SeatState::new();
@@ -559,6 +565,7 @@ impl SessionState {
             focused: None,
             grabs: Vec::new(),
             keyboard_away: false,
+            text_inputs: Default::default(),
             clients: Vec::new(),
             announced_pids: None,
             frozen: false,
@@ -790,7 +797,8 @@ impl SessionState {
     }
 
     /// A tab took the session back (after a reload): every window is
-    /// announced again, toplevels before popups, and sent whole.
+    /// announced again, toplevels before popups, and sent whole, and the
+    /// focused text field's state after them.
     pub fn resync(&mut self) {
         for popups in [false, true] {
             for i in 0..self.windows.len() {
@@ -808,6 +816,7 @@ impl SessionState {
         let name = self.cursor.clone();
         self.outbox.push(Outbound::Cursor { session: self.id.clone(), name });
         self.announce_clients();
+        self.text_input_resync();
     }
 
     /// Everything is drawn again when the session comes back to life.
@@ -963,6 +972,8 @@ impl SessionState {
             self.grabs.retain(|g| *g != id);
             self.keyboard_to_grab_or_focus();
         }
+        // The keyboard may still name the window's surface, now gone.
+        self.text_input_follow_keyboard();
     }
 
     fn request(&mut self, surface: &ToplevelSurface, action: &str, edges: Option<String>) {
@@ -1183,6 +1194,7 @@ impl SessionState {
         if keyboard.current_focus() != target {
             keyboard.set_focus(self, target, SERIAL_COUNTER.next_serial());
         }
+        self.text_input_follow_keyboard();
     }
 
     // ── Input from the tab ──────────────────────────────────────────────

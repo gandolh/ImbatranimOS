@@ -8,6 +8,7 @@ import { isPasteKey, linuxKeys } from './clipboard'
 import { isDesktopShortcut } from './desktopKeys'
 import { linuxWindowChrome } from './kind'
 import { evdevCode } from './keymap'
+import { HiddenTextInput } from './hiddenTextInput'
 import { canvasFor, sendToLinuxApps, useLinuxWindowsStore } from './linuxWindowsStore'
 import { attachPointer } from './pointerInput'
 
@@ -34,6 +35,8 @@ type Grab =
  * outside. It passes the
  * pointer and keyboard to the app, tells the app its new size when the OS
  * window is resized, and runs the drags an app starts from its own title bar.
+ * A touch tap in a text field raises the phone's keyboard through a hidden
+ * input (hiddenTextInput.ts).
  */
 export function LinuxWindowBody({ windowId }: { windowId: string }) {
   const toplevel = useLinuxWindowsStore((s) => s.byWindow[windowId]?.toplevel)
@@ -72,9 +75,19 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
     const el = holder.current
     if (!el || toplevel === undefined) return
     const pressedKeys = new Set<number>()
+    const geometry = () =>
+      useLinuxWindowsStore.getState().byWindow[windowId]?.geometry ?? { x: 0, y: 0 }
+    const field = new HiddenTextInput(el, toplevel, geometry)
     const detachPointer = attachPointer(el, toplevel, () => canvasFor(toplevel), {
-      onDown: () => {
-        el.focus({ preventScroll: true })
+      onDown: (e) => {
+        if (e.pointerType === 'touch') {
+          // No compatibility mouse events: their mousedown would take focus
+          // from the hidden input. The window still gets its click.
+          e.preventDefault()
+          if (!field.touchDown(e)) el.focus({ preventScroll: true })
+        } else {
+          el.focus({ preventScroll: true })
+        }
         pointer.current.down = true
       },
       onMove: (e) => {
@@ -85,11 +98,16 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
         runGrab(windowId, p.grab, e.clientX, e.clientY)
         return true
       },
-      onUp: () => {
+      onUp: (e) => {
         pointer.current.down = false
         pointer.current.grab = null
+        // Inside the tap's user activation, which a phone's keyboard needs.
+        if (e.pointerType === 'touch') field.touchUp(e)
       },
     })
+    // The app's field with text-input focus: the hidden input follows it.
+    field.update(useLinuxWindowsStore.getState().textInput)
+    const unsubscribeText = useLinuxWindowsStore.subscribe((s) => field.update(s.textInput))
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.isComposing || isDesktopShortcut(e)) return
       const code = evdevCode(e.code)
@@ -124,6 +142,8 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
     return () => {
       onBlur()
       detachPointer()
+      unsubscribeText()
+      field.dispose()
       el.removeEventListener('keydown', onKeyDown)
       el.removeEventListener('keyup', onKeyUp)
       el.removeEventListener('blur', onBlur)

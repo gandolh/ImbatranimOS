@@ -44,6 +44,25 @@ export type LinuxPopup = {
   grab: boolean
 }
 
+/**
+ * The Linux app's text field with text-input focus, as its app last said (the
+ * host's `text_input`). Offsets are UTF-8 bytes in `text`; `rect` is the
+ * cursor in the toplevel's surface coordinates (CSS pixels). The text stays
+ * in this tab.
+ */
+export type LinuxTextInput = {
+  toplevel: number
+  enabled: boolean
+  purpose: string
+  hints: string[]
+  /** The text around the cursor, or null when the app doesn't say. */
+  text: string | null
+  cursor: number
+  anchor: number
+  rect: { x: number; y: number; width: number; height: number } | null
+  cause: 'input_method' | 'other'
+}
+
 /** A move or resize the app started from its own title bar or edge. */
 export type LinuxRequest = { windowId: string; action: string; edges?: string; seq: number }
 
@@ -56,6 +75,8 @@ type LinuxWindowsState = {
   request: LinuxRequest | null
   /** Open popups, by id. */
   popups: Record<number, LinuxPopup>
+  /** The text field with text-input focus, enabled or just left; null when none was. */
+  textInput: LinuxTextInput | null
   add: (t: LinuxToplevel) => void
   update: (windowId: string, patch: Partial<LinuxToplevel>) => void
   remove: (windowId: string) => void
@@ -64,6 +85,7 @@ type LinuxWindowsState = {
   setRequest: (r: Omit<LinuxRequest, 'seq'>) => void
   setPopup: (p: LinuxPopup) => void
   removePopup: (popup: number) => void
+  setTextInput: (t: LinuxTextInput | null) => void
 }
 
 let requestSeq = 0
@@ -73,6 +95,7 @@ export const useLinuxWindowsStore = create<LinuxWindowsState>()((set) => ({
   cursor: 'default',
   request: null,
   popups: {},
+  textInput: null,
   add: (t) => set((s) => ({ byWindow: { ...s.byWindow, [t.windowId]: t } })),
   update: (windowId, patch) =>
     set((s) => {
@@ -86,7 +109,7 @@ export const useLinuxWindowsStore = create<LinuxWindowsState>()((set) => ({
       delete next[windowId]
       return { byWindow: next }
     }),
-  clear: () => set({ byWindow: {}, request: null, cursor: 'default', popups: {} }),
+  clear: () => set({ byWindow: {}, request: null, cursor: 'default', popups: {}, textInput: null }),
   setCursor: (cursor) => set({ cursor }),
   setRequest: (r) => set({ request: { ...r, seq: ++requestSeq } }),
   setPopup: (p) => set((s) => ({ popups: { ...s.popups, [p.popup]: p } })),
@@ -97,6 +120,7 @@ export const useLinuxWindowsStore = create<LinuxWindowsState>()((set) => ({
       delete next[popup]
       return { popups: next }
     }),
+  setTextInput: (textInput) => set({ textInput }),
 }))
 
 export function windowForToplevel(toplevel: number): LinuxToplevel | undefined {

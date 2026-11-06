@@ -207,6 +207,9 @@ impl Host {
                 self.with(&session, |s| s.set_toplevel_visible(toplevel, visible))
             }
             Inbound::Clipboard { session, text } => self.with(&session, |s| s.set_clipboard(text)),
+            Inbound::TextEdit { session, toplevel, commit, preedit, delete } => {
+                self.with(&session, |s| s.text_edit(toplevel, commit, preedit, delete))
+            }
         }
     }
 
@@ -472,6 +475,8 @@ impl Host {
             if let Some(reader) = s.state.start_clipboard_read() {
                 clipboard_reads.push((id.clone(), reader));
             }
+            // The focused text field's state, once per round.
+            s.state.flush_text_input();
             let _ = s.display.flush_clients();
             outbound.append(&mut s.state.outbox);
         }

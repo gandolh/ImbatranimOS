@@ -39,6 +39,13 @@ export const MAX_CLIENT_MESSAGE = 2 * 1024 * 1024;
 export const MAX_CLIPBOARD_BYTES = 1024 * 1024;
 
 /**
+ * The most text a text-input message carries, in UTF-8 bytes: text-input-v3
+ * caps surrounding text there, under the Wayland message size, and the host
+ * refuses more. Deletes reach no further either.
+ */
+export const MAX_TEXT_INPUT_BYTES = 4000;
+
+/**
  * A session outlives its socket this long, so a reload finds its apps
  * again; closing the tab ends them after it (decisions-linux-apps.md).
  */

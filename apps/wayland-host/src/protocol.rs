@@ -14,7 +14,11 @@ pub const KIND_AUDIO: u8 = 3;
 /// Refuse anything larger: a full 4K frame deflated is far below this.
 pub const MAX_MESSAGE: usize = 64 * 1024 * 1024;
 
-pub const PROTOCOL_VERSION: u32 = 7;
+pub const PROTOCOL_VERSION: u32 = 8;
+
+/// The most text a text-input message carries, in UTF-8 bytes: text-input-v3
+/// caps surrounding text there, under the Wayland message size.
+pub const MAX_TEXT_INPUT_BYTES: usize = 4000;
 
 /// Pixel encodings of a frame's rectangles.
 pub const ENC_DEFLATE_RGBA: u8 = 1;
@@ -132,6 +136,38 @@ pub enum Inbound {
     /// The tab read its clipboard for a paste key in a Linux window: offer
     /// this text as the session's selection. The key follows.
     Clipboard { session: String, text: String },
+    /// The tab's hidden input changed the text of the field with text-input
+    /// focus, in `toplevel`: delete around the cursor, commit text, and show
+    /// a preedit, each when present. The app gets them with one `done`.
+    TextEdit {
+        session: String,
+        toplevel: u32,
+        #[serde(default)]
+        commit: Option<String>,
+        #[serde(default)]
+        preedit: Option<TextPreedit>,
+        #[serde(default)]
+        delete: Option<TextDelete>,
+    },
+}
+
+/// Text being composed, shown in the field (the app underlines it) until it
+/// is committed or replaced. The cursor's begin and end are byte offsets in
+/// `text`, -1 to hide it; left out, it sits at the end.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct TextPreedit {
+    pub text: String,
+    #[serde(default)]
+    pub cursor_begin: Option<i32>,
+    #[serde(default)]
+    pub cursor_end: Option<i32>,
+}
+
+/// Bytes to delete before and after the cursor (outside the selection).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub struct TextDelete {
+    pub before: u32,
+    pub after: u32,
 }
 
 /// A ratio the backend left out: a scale-1 screen.
@@ -200,6 +236,60 @@ pub struct PopupInfo {
     /// It holds an explicit grab: it has the keyboard, and a press outside
     /// its app closes it.
     pub grab: bool,
+}
+
+/// A rectangle in surface coordinates that may sit partly outside them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub struct TextRect {
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+}
+
+/// The text field with text-input focus, as its app last committed it.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct TextInputInfo {
+    /// The toplevel the field is in (a field in a popup names the popup's
+    /// toplevel, and its rectangle is moved into the toplevel's coordinates).
+    pub toplevel: u32,
+    /// The app wants text: a field has focus. When false, the rest is empty.
+    pub enabled: bool,
+    /// The field's purpose, by its text-input-v3 name: `normal`, `email`,
+    /// `url`, `phone`, `number`, `digits`, `password`, `pin`, `terminal`...
+    pub purpose: String,
+    /// Its content hints, by name: `multiline`, `sensitive_data`,
+    /// `hidden_text`, `auto_capitalization`, `spellcheck`...
+    pub hints: Vec<String>,
+    /// The text around the cursor, without any preedit, or None when the app
+    /// doesn't say. At most a text-input-v3 message's worth.
+    pub text: Option<String>,
+    /// The cursor and the selection's anchor, as byte offsets in `text`.
+    pub cursor: u32,
+    pub anchor: u32,
+    /// The cursor's rectangle in the toplevel's surface coordinates, if the
+    /// app gave one.
+    pub rect: Option<TextRect>,
+    /// What changed the text last: `input_method` (the tab's edits) or
+    /// `other` (the owner tapped elsewhere, the app changed it).
+    pub cause: String,
+}
+
+impl TextInputInfo {
+    /// The field in `toplevel` lost text-input focus, or its app disabled it.
+    pub fn disabled(toplevel: u32) -> TextInputInfo {
+        TextInputInfo {
+            toplevel,
+            enabled: false,
+            purpose: "normal".into(),
+            hints: Vec::new(),
+            text: None,
+            cursor: 0,
+            anchor: 0,
+            rect: None,
+            cause: "input_method".into(),
+        }
+    }
 }
 
 /// Host to backend (JSON kind). Frames travel as [`KIND_FRAME`].
@@ -274,6 +364,13 @@ pub enum Outbound {
     Clipboard {
         session: String,
         text: String,
+    },
+    /// The text field with text-input focus changed: after a commit by its
+    /// app that changed what the tab knows, or when focus moved.
+    TextInput {
+        session: String,
+        #[serde(flatten)]
+        info: TextInputInfo,
     },
 }
 
@@ -485,6 +582,72 @@ mod tests {
         })
     }
 
+    fn sample_text_input() -> Vec<u8> {
+        encode_json(&Outbound::TextInput {
+            session: "abcdefghijklmnop".into(),
+            info: TextInputInfo {
+                toplevel: 7,
+                enabled: true,
+                purpose: "email".into(),
+                hints: vec!["completion".into(), "spellcheck".into()],
+                text: Some("ana@ex ș".into()),
+                cursor: 6,
+                anchor: 4,
+                rect: Some(TextRect { x: 40, y: -2, width: 1, height: 18 }),
+                cause: "other".into(),
+            },
+        })
+    }
+
+    #[test]
+    fn text_edits_decode_with_their_parts_left_out() {
+        let mut bytes = Vec::new();
+        for json in [
+            r#"{"type":"text_edit","session":"abcdefghijklmnop","toplevel":3,"commit":"bună ","delete":{"before":3,"after":0}}"#,
+            r#"{"type":"text_edit","session":"abcdefghijklmnop","toplevel":3,"preedit":{"text":"zi","cursor_begin":2,"cursor_end":2}}"#,
+            r#"{"type":"text_edit","session":"abcdefghijklmnop","toplevel":3,"preedit":{"text":"zi"}}"#,
+            r#"{"type":"text_edit","session":"abcdefghijklmnop","toplevel":3}"#,
+        ] {
+            push_message(&mut bytes, KIND_JSON, json.as_bytes());
+        }
+        let mut d = Decoder::default();
+        d.push(&bytes);
+        assert_eq!(
+            d.next_inbound(),
+            Ok(Some(Inbound::TextEdit {
+                session: "abcdefghijklmnop".into(),
+                toplevel: 3,
+                commit: Some("bună ".into()),
+                preedit: None,
+                delete: Some(TextDelete { before: 3, after: 0 }),
+            }))
+        );
+        let preedit = |begin, end| Some(TextPreedit { text: "zi".into(), cursor_begin: begin, cursor_end: end });
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::TextEdit { preedit: p, commit: None, delete: None, .. })) if p == preedit(Some(2), Some(2))));
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::TextEdit { preedit: p, .. })) if p == preedit(None, None)));
+        assert!(matches!(
+            d.next_inbound(),
+            Ok(Some(Inbound::TextEdit { commit: None, preedit: None, delete: None, .. }))
+        ));
+    }
+
+    #[test]
+    fn a_disabled_field_says_nothing_about_its_text() {
+        let json = serde_json::to_value(Outbound::TextInput {
+            session: "abcdefghijklmnop".into(),
+            info: TextInputInfo::disabled(4),
+        })
+        .unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "type": "text_input", "session": "abcdefghijklmnop", "toplevel": 4, "enabled": false,
+                "purpose": "normal", "hints": [], "text": null, "cursor": 0, "anchor": 0, "rect": null,
+                "cause": "input_method"
+            })
+        );
+    }
+
     #[test]
     fn input_messages_decode() {
         let mut d = Decoder::default();
@@ -619,6 +782,7 @@ mod tests {
             ("popup-created.bin", sample_popup()),
             ("clipboard.bin", sample_clipboard()),
             ("audio.bin", sample_audio()),
+            ("text-input.bin", sample_text_input()),
         ];
         for (name, bytes) in cases {
             let path = fixtures_dir().join(name);

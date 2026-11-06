@@ -1,5 +1,9 @@
 import { clampRatio, toHostMessage } from './wayland-input';
-import { MAX_CLIPBOARD_BYTES, MAX_RATIO } from './wayland.constants';
+import {
+  MAX_CLIPBOARD_BYTES,
+  MAX_RATIO,
+  MAX_TEXT_INPUT_BYTES,
+} from './wayland.constants';
 
 const S = 'abcdefghijklmnop';
 
@@ -135,9 +139,89 @@ describe("checking the tab's Linux window input", () => {
       text: atLimit,
     });
     // Counted in UTF-8 bytes: ș is two.
+    expect(
+      toHostMessage(S, { type: 'text_edit', toplevel: 1, commit: '😀' }),
+    ).toMatchObject({ commit: '😀' });
     const overInBytes = 'ș'.repeat(MAX_CLIPBOARD_BYTES / 2 + 1);
     for (const text of ['', overInBytes, 1, null, undefined, ['x']]) {
       expect(toHostMessage(S, { type: 'clipboard', text })).toBeNull();
+    }
+  });
+
+  it('passes a text edit with any of its parts, checked, and nothing more', () => {
+    expect(
+      toHostMessage(S, {
+        type: 'text_edit',
+        toplevel: 3,
+        delete: { before: 4, after: 0, extra: 1 },
+        commit: 'bună ',
+        preedit: { text: 'ziu', cursor_begin: 3, cursor_end: 3 },
+        extra: 'dropped',
+      }),
+    ).toEqual({
+      type: 'text_edit',
+      session: S,
+      toplevel: 3,
+      delete: { before: 4, after: 0 },
+      commit: 'bună ',
+      preedit: { text: 'ziu', cursor_begin: 3, cursor_end: 3 },
+    });
+    // A bare edit clears the preedit; a preedit's cursor may be left out.
+    expect(toHostMessage(S, { type: 'text_edit', toplevel: 3 })).toEqual({
+      type: 'text_edit',
+      session: S,
+      toplevel: 3,
+    });
+    expect(
+      toHostMessage(S, {
+        type: 'text_edit',
+        toplevel: 3,
+        preedit: { text: 'ș' },
+      }),
+    ).toEqual({
+      type: 'text_edit',
+      session: S,
+      toplevel: 3,
+      preedit: { text: 'ș' },
+    });
+    // The cursor counts UTF-8 bytes (ș is two), and -1 hides it.
+    expect(
+      toHostMessage(S, {
+        type: 'text_edit',
+        toplevel: 3,
+        preedit: { text: 'ș', cursor_begin: -1, cursor_end: 2 },
+      }),
+    ).toMatchObject({ preedit: { cursor_begin: -1, cursor_end: 2 } });
+  });
+
+  it('drops a text edit with any part out of range or of the wrong type', () => {
+    const atLimit = 'a'.repeat(MAX_TEXT_INPUT_BYTES);
+    expect(
+      toHostMessage(S, { type: 'text_edit', toplevel: 1, commit: atLimit }),
+    ).toMatchObject({ commit: atLimit });
+    const overInBytes = 'ș'.repeat(MAX_TEXT_INPUT_BYTES / 2 + 1);
+    const bad: Record<string, unknown>[] = [
+      { toplevel: -1, commit: 'a' },
+      { commit: 'a' },
+      { toplevel: 1, commit: overInBytes },
+      { toplevel: 1, commit: 'a\u0000b' },
+      { toplevel: 1, commit: 'a\uD83D' },
+      { toplevel: 1, preedit: { text: '\uDE00b' } },
+      { toplevel: 1, commit: 5 },
+      { toplevel: 1, commit: null },
+      { toplevel: 1, delete: { before: -1, after: 0 } },
+      { toplevel: 1, delete: { before: 1 } },
+      { toplevel: 1, delete: { before: MAX_TEXT_INPUT_BYTES + 1, after: 0 } },
+      { toplevel: 1, delete: null },
+      { toplevel: 1, preedit: 'x' },
+      { toplevel: 1, preedit: { text: '\u0000' } },
+      { toplevel: 1, preedit: { text: overInBytes } },
+      { toplevel: 1, preedit: { text: 'ș', cursor_begin: 3 } },
+      { toplevel: 1, preedit: { text: 'ș', cursor_end: -2 } },
+      { toplevel: 1, preedit: { text: 'ș', cursor_end: 0.5 } },
+    ];
+    for (const m of bad) {
+      expect(toHostMessage(S, { type: 'text_edit', ...m })).toBeNull();
     }
   });
 });

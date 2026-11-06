@@ -105,6 +105,26 @@ describe('the Wayland host control protocol', () => {
     });
   });
 
+  it("decodes the host's text input fixture", () => {
+    const [d] = new Decoder().push(fixture('text-input.bin'));
+    expect(d).toEqual({
+      kind: 'json',
+      message: {
+        type: 'text_input',
+        session: 'abcdefghijklmnop',
+        toplevel: 7,
+        enabled: true,
+        purpose: 'email',
+        hints: ['completion', 'spellcheck'],
+        text: 'ana@ex ș',
+        cursor: 6,
+        anchor: 4,
+        rect: { x: 40, y: -2, width: 1, height: 18 },
+        cause: 'other',
+      },
+    });
+  });
+
   it('frames JSON for the host with a length and a kind byte', () => {
     const bytes = encodeJson({
       type: 'session_close',

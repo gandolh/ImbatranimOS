@@ -21,7 +21,7 @@ export const WS_KIND_AUDIO = 3;
 /** Refuse anything larger, as the host does. */
 export const MAX_MESSAGE = 64 * 1024 * 1024;
 
-export const PROTOCOL_VERSION = 7;
+export const PROTOCOL_VERSION = 8;
 
 /**
  * A desktop session id: random, per tab, and part of a socket's file name
@@ -106,7 +106,48 @@ export type HostInbound =
       toplevel: number;
       visible: boolean;
     }
-  | { type: 'clipboard'; session: string; text: string };
+  | { type: 'clipboard'; session: string; text: string }
+  | TextEditMessage;
+
+/**
+ * The tab's hidden input changed the text of the field with text-input focus
+ * in `toplevel`. Each part is optional; the app gets them with one `done`.
+ * Offsets and lengths are UTF-8 bytes.
+ */
+export type TextEditMessage = {
+  type: 'text_edit';
+  session: string;
+  toplevel: number;
+  /** Bytes to delete before and after the cursor, outside the selection. */
+  delete?: { before: number; after: number };
+  /** Text inserted at the cursor, replacing the selection. */
+  commit?: string;
+  /** Text being composed, shown at the cursor; its cursor, -1 for none. */
+  preedit?: { text: string; cursor_begin?: number; cursor_end?: number };
+};
+
+/**
+ * The text field with text-input focus, as its app last committed it. Its
+ * text stays on the session's socket and is never logged.
+ */
+export type TextInputMessage = {
+  type: 'text_input';
+  session: string;
+  toplevel: number;
+  enabled: boolean;
+  /** The text-input-v3 purpose: `normal`, `email`, `url`, `phone`... */
+  purpose: string;
+  /** Content hints by name: `multiline`, `sensitive_data`... */
+  hints: string[];
+  /** The text around the cursor, or null when the app doesn't say. */
+  text: string | null;
+  /** Byte offsets in `text`. */
+  cursor: number;
+  anchor: number;
+  /** The cursor's rectangle in the toplevel's surface coordinates. */
+  rect: { x: number; y: number; width: number; height: number } | null;
+  cause: 'input_method' | 'other';
+};
 
 /** Host → backend, JSON kind. */
 export type HostOutbound =
@@ -130,7 +171,8 @@ export type HostOutbound =
       action: string;
       edges?: string;
     }
-  | { type: 'clipboard'; session: string; text: string };
+  | { type: 'clipboard'; session: string; text: string }
+  | TextInputMessage;
 
 export type ToplevelMessage =
   | {

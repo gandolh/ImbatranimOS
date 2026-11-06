@@ -97,3 +97,49 @@ on brief-board; filed as imbatranimOS-45 later that day.
 - `apps/wayland-host/PROTOCOL.md`
 - `apps/backend/src/modules/wayland/` (relaying and checking the messages)
 - `apps/core/src/modules/linux-windows/` (the hidden input and the mapping)
+
+## Outcome (2026-11-06)
+
+Built in `30a16e7` (1.175.0) as a prototype. Ready for test on the board:
+the real Android phone is the owner's, nothing here could try it.
+
+1. **The host speaks text-input-v3 itself.** `session/text_input.rs` in the
+   Wayland host handles the protocol directly, because smithay's relay needs
+   an input-method-v2 client that doesn't exist here. The host sends a
+   `text_input` frame (toplevel, enabled, purpose, hints, text, cursor,
+   anchor in UTF-8 bytes, rectangle, cause) once per round, and only when it
+   changed; the tab sends `text_edit` back (delete before/after, commit,
+   preedit). Protocol version 8 (`PROTOCOL.md`, `protocol.rs`, the backend's
+   `wayland.protocol.ts`). Text over 4000 bytes or with a NUL is refused on
+   both sides.
+2. **The tab.** A hidden input (`hiddenTextInput.ts`, `textInput.ts`,
+   `LinuxWindowBody.tsx`) takes focus when the app enables a field, so Android
+   raises its keyboard. The tab diffs the input against a mirror of the app's
+   text after input and composition events, and holds the mirror 500 ms after
+   an edit. Keys with a physical code still go as keys, so the desktop is
+   unchanged. Touch only: a touch `pointerdown` is cancelled, so raising a
+   window relies on the click.
+3. **Decision: focus "on-tap" by default** (released after 1 s). The switch
+   `localStorage` `imbatranim.linuxTouchFocus = 'after-enable'` focuses
+   only after the app enables a field; `data-tap-to-focus-ms` tunes the
+   release.
+   Which one raises the keyboard reliably on the phone is the open question.
+4. **Not covered**: Qt apps, fields in popups, desktop IMEs.
+
+**Checks run.** `cargo`: 69 unit tests and 1 integration test (it needs
+`RUSTFLAGS="-C target-feature=-crt-static"` and `apk` musl-dev,
+libxkbcommon-dev, pkgconf, cmake, make); backend jest 36; tab tests 88; the
+verify gate's typecheck and tests passed. The headless walk (Chrome with
+touch emulation, 412x915, dsf 2.625, dev container) passed for A3 and A5 and
+for email and password fields. GNOME Text Editor sends no `multiline` hint,
+so its hidden input is an `INPUT`, and Firefox's address bar reports purpose
+`normal`, not `url`: both are the apps' behaviour, our mapping is right.
+Installed in the dev profile for the walk: gnome-text-editor 50.1 (about 55
+MiB new). The desktop regression (KeyA sends no `text_edit`) held.
+
+**Skipped.** A real phone; Qt; desktop IMEs.
+
+**For the owner, on the Android phone.** Which focus strategy raises the
+keyboard, and how long it takes; a typed word, a swiped word and an
+autocorrected word; Backspace in an empty field (does it arrive as keyCode
+229?); the email and password keyboards; flicker on a re-tap.

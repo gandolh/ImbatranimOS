@@ -144,6 +144,17 @@ whatever the answer to the research question: Firefox on the owner's phone
 can't be typed into. Todo:
 [linux-apps-take-the-phones-keyboard](../todos/linux-apps-take-the-phones-keyboard.md).
 
+**Since 2026-11-06, brief 45** (a prototype, `30a16e7`): the host answers
+text-input-v3 and a hidden input in the tab takes focus, so the tab can raise
+the keyboard. The same emulated walk passed: a tap focuses the hidden
+`textarea` for a multiline app, typed, composed and Backspace text reached the
+app ("hello worl"), email and password fields set their purpose, and a
+hardware key still goes as a key. GNOME Text Editor sends no `multiline` hint
+(an `INPUT`) and Firefox's address bar reports purpose `normal`, not `url`:
+app behaviour. A real phone is still untried; the steps below stay the
+owner's check, now to see the keyboard come up. Brief 45's outcome lists
+what to look at.
+
 **The real-phone check (the owner's, two minutes):**
 
 1. Start the dev container on the laptop.

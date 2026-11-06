@@ -54,17 +54,17 @@ than that core.
 
 | | Kit app | Linux app today | Source |
 |---|---|---|---|
-| Typing on Android (the main phone) | DOM inputs: the on-screen keyboard, autocorrect, IME | Doesn't work. The window is a canvas in a focusable `div` reading physical `KeyboardEvent.code`. There is no input element, so Android shows no on-screen keyboard | `apps/core/src/modules/linux-windows/LinuxWindowBody.tsx`, `keymap.ts`; confirmed in Chrome's Android emulation on 2026-11-06 (the measured page §3), a real phone not tried |
-| IME, composed text | The browser's | None: the host offers no `zwp_text_input`. Layouts are US or Romanian only | brief 04 outcome; [brief 32](../briefs/done/32-a-keyboard-layout-for-linux-apps.md) |
+| Typing on Android (the main phone) | DOM inputs: the on-screen keyboard, autocorrect, IME | Didn't work when measured (prototype fix: see the IME row). The window is a canvas in a focusable `div` reading physical `KeyboardEvent.code`. There is no input element, so Android shows no on-screen keyboard | `apps/core/src/modules/linux-windows/LinuxWindowBody.tsx`, `keymap.ts`; confirmed in Chrome's Android emulation on 2026-11-06 (the measured page §3), a real phone not tried |
+| IME, composed text | The browser's | A prototype since 2026-11-06: the host speaks text-input-v3 itself and a hidden input in the tab carries the phone's keyboard; Qt, popups and desktop IMEs not covered. Layouts are US or Romanian only | [brief 45](../briefs/done/45-the-phones-keyboard-types-into-a-linux-app.md); [brief 32](../briefs/done/32-a-keyboard-layout-for-linux-apps.md) |
 | Phone link | Typing never waits on the link | Every key and pointer move makes a round trip (§1) | §1 |
 | Dropped link | The open document keeps editing, and saves wait for the link | The window freezes and takes no input until the socket returns (30 s reload grace) | [decisions-linux-apps.md](decisions-linux-apps.md) |
 | Offline | Neither works offline after a reload: core has no service worker (checked 2026-11-06), and files live on the server for both | same | |
 | Clipboard | The browser's, rich content included | Plain text on the paste keys. X11 apps: open todo | [brief 41](../briefs/done/41-copy-and-paste-between-linux-apps-and-the-desktop.md) |
 | HiDPI | Sharp | Soft above `devicePixelRatio` 1 (brief 33, open) | [status.md](status.md) |
 | Sound | The browser's | Silent until brief 39 | status.md |
-| Files | Real home, file dialogs with `startIn`, Open with, default apps | Same home, same user (Firefox's download showed in Files). It can't be an Open with handler: Start entries strip `%f`/`%u` and pass no file | `apps/backend/src/modules/linux-apps/desktop-entry.ts` |
+| Files | Real home, file dialogs with `startIn`, Open with, default apps | Same home, same user (Firefox's download showed in Files). Since brief 46 (2026-11-06) a Linux app is an Open with handler: launchers carry their file types and launch takes a home-jailed file | `apps/backend/src/modules/linux-apps/desktop-entry.ts`, [brief 46](../briefs/done/46-open-with-offers-the-installed-linux-apps.md) |
 | Windows | Zoom on open and close, the Win7 bar, unsaved-changes guards | OS windows with title bars that keep their places across a reload. Fade only while one is open. Some keys stay with the browser. Close asks the app | [decisions-linux-apps-built.md](decisions-linux-apps-built.md), brief 03 |
-| Look | Apricot or Classic, light or dark, the radii, the UI font | The toolkit's own theme (Adwaita, Fusion) inside the frame | [decisions-themes.md](decisions-themes.md) |
+| Look | Apricot or Classic, light or dark, the radii, the UI font | Apps that read the Settings portal (libadwaita, Firefox) follow the mode and accent live since brief 47 (2026-11-06); others keep the toolkit's own theme (Adwaita, Fusion) | [decisions-themes.md](decisions-themes.md), [brief 47](../briefs/done/47-linux-apps-follow-the-desktops-mode-and-accent.md) |
 | Accessibility | The floor in [ui-conventions.md](ui-conventions.md) §7: real DOM, labels, the focus ring | One canvas labelled "Linux app window". A screen reader reads nothing inside | `LinuxWindowBody.tsx` |
 | Notifications | `system.notify` | Through the session bus. A click runs no action yet (todo) | [brief 42](../briefs/done/42-linux-apps-get-a-session-bus-and-notifications.md) |
 

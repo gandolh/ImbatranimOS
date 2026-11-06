@@ -96,3 +96,42 @@ with the default this brief builds:
   accent; Start, Files and the other kit apps are unchanged.
 - **Owner check** after a deploy: the same on the VPS, with one libadwaita
   app installed from Settings → Linux apps.
+
+## Outcome (2026-11-06)
+
+Built in `6113d57` (1.176.0). Ready for deploy on the board.
+
+1. **A second bus service, the Settings portal.** `linux-apps/dbus/settings.ts`
+   owns `org.freedesktop.portal.Desktop` on each session bus (its own D-Bus
+   connection), beside the Notifications service. It answers `ReadAll`,
+   `ReadOne`, the deprecated `Read` and `version` 2, and only the namespace
+   `org.freedesktop.appearance`: `color-scheme` 1 dark or 2 light, `accent-color`
+   as the current mode's `strong` colour in doubles, `contrast` 0. No prefs
+   dotfile means Apricot light.
+2. **Live changes.** `PrefsService.onChange` calls `SessionBusService`'s
+   `update()`, which emits `SettingChanged` only for keys that changed.
+   `SessionBusService` gains `PrefsService` as its third constructor
+   argument, and `LinuxAppsModule` imports `PrefsModule`. Prefs has no
+   per-user scoping, so every open session bus gets the change.
+3. **Decisions.** `ReadOne` and `Read` of an unknown key answer
+   `org.freedesktop.portal.Error.NotFound`, as the real portal does; `ReadAll`
+   of an unknown namespace answers empty. The accent table mirrors the core
+   presets, and a spec parses `appearanceStore.ts` to catch drift.
+
+**Checks run.** Backend jest 6 suites, 63 tests; tsc clean; the bus
+integration spec ran against a real `dbus` with the Settings case. The
+headless walk passed in full: GNOME Text Editor restyles live when the mode
+flips; Firefox follows dark after a reload; xterm stays white (it reads no
+portal). `gdbus ReadOne` gave color-scheme 2 (light) and an accent near
+(0.63, 0.29, 0.14) for Apricot light. Installed in the dev profile for the
+walk: gnome-text-editor 50.1 and shared-mime-info.
+
+**Found at the verify gate.** Brief 40 (`d3da0e7`) exported `useSystemSound`
+from the kit but missed the marketplace kit map, so core's `tsc` failed. Fixed
+in its own commit `8b371ae` (1.174.0), before this wave's briefs.
+
+**Skipped.** The walk covered libadwaita apps and Firefox; GTK3 and Qt apps
+were not part of it.
+
+**For the owner.** After the deploy, flip the mode and accent in Settings with
+a libadwaita app open and watch it follow.

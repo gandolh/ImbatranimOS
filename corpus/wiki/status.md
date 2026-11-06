@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-06) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups); 33 done 2026-11-06 (Linux windows sharp on HiDPI screens, ready for deploy; the scale capped at 2 the same day); 39 done 2026-11-06 (Linux apps' sound in the tab, the host as each session's sound server, ready for deploy); 40 done 2026-11-06 (a tray volume and mute over all sound, kit 1.3.0, ready for deploy); 43 done 2026-11-06 (Settings → Updates for Linux apps, the pin moved at runtime with Go back, ready for test); 31 done 2026-11-05 (X11 apps through Xwayland, which comes with the first app that speaks X11); the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
+summary: Dated snapshot (2026-11-06) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed; detail in status-linux-apps-layer.md); 45-47 done 2026-11-06 (the phone's keyboard types into a Linux app, ready for test; Open with offers Linux apps; Linux apps follow the mode and accent, both ready for deploy); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups); 33 done 2026-11-06 (Linux windows sharp on HiDPI screens, ready for deploy; the scale capped at 2 the same day); 39 done 2026-11-06 (Linux apps' sound in the tab, the host as each session's sound server, ready for deploy); 40 done 2026-11-06 (a tray volume and mute over all sound, kit 1.3.0, ready for deploy); 43 done 2026-11-06 (Settings → Updates for Linux apps, the pin moved at runtime with Go back, ready for test); 31 done 2026-11-05 (X11 apps through Xwayland, which comes with the first app that speaks X11); the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
 updated: 2026-11-06
 ---
 
@@ -57,33 +57,21 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 
 ## Open briefs
 
-01-06, the Linux apps layer, are done: Nix in the image with Firefox
-headless, the Wayland host showing a window, input and title bars, popups and
-Firefox in a window, the Linux apps pane, lifecycle and sleep
-([decisions-linux-apps.md](decisions-linux-apps.md)). Their branch is
-`claude/linux-apps-layer` (2026-11-02, PR 1). 01 is done (2026-11-03): proven
-in the prod image and the dev container, pinned at
-`nixos-26.05.13446.7dcdd87373d7` (`7dcdd873`). The image is self-contained
-(base profile and package index baked in; boot never downloads) and grows
-from 393 MB to 488 MB; Firefox is a 446 MiB download and 1.4 GiB in `/nix`.
-Nix state lives in `/nix`, not the home, so backups keep restoring. 02 is
-done: the Wayland host shows a Linux app's window in an OS window, one
-socket per tab, frames as lossless WebP. 03 is done: pointer, US keyboard,
-focus, resize and close, and title bars that follow the app (the Win7 bar on
-request, else a frame). Both were walked again in the dev container on
-2026-11-03 with foot and gtk3-demo, 19 checks passing. 04 is done: popups
-and subsurfaces, and Firefox in an OS window, walked in the dev container
-(menus, tabs, a download, a video; PSS about 500 MB idle, 160 kB/s
-scrolling). While a Linux window is open, windows open with the fade only:
-Chromium's renderer crashed when a zoom ran beside one. 05 is done:
-Settings → Linux apps searches the release's list (streamed into a 12 MB
-index), installs and removes from the tab that holds the session, and frees
-space; installed apps appear in Start and launch into the tab. 06 is done:
-an app lives with its tab (a reload within 30 s finds it, closing the tab
-stops it), sleeps under the cover screen, and goes quiet when hidden or
-minimized; tini is PID 1. The owner merged the branch into `main` on 2026-11-03 (PR 1, `0cba6ab`), and this repo's `main` merged it after the theme briefs. The
-grill of 2026-11-03 settled what it left open
-([decisions-linux-apps-built.md](decisions-linux-apps-built.md)).
+01-06, the Linux apps layer, are done and merged into `main` on 2026-11-03
+(PR 1, `0cba6ab`): Nix in the image with Firefox, the Wayland host, input,
+popups, the Linux apps pane, lifecycle and sleep. What each proved, with
+sizes: [status-linux-apps-layer.md](status-linux-apps-layer.md).
+
+45-47 (2026-11-06, one wave on `main`): 45 (`30a16e7`, 1.175.0, ready for
+test) the phone's keyboard types into a Linux app, the host speaking
+text-input-v3 itself, a prototype whose real-phone checks are the owner's; 46
+(`209747d`, 1.177.0, ready for deploy) Open with offers the installed Linux
+apps, launchers carrying their file types and `shared-mime-info` joining the
+image; 47 (`6113d57`, 1.176.0, ready for deploy) Linux apps follow the
+desktop's mode and accent through the Settings portal on the session bus. The
+wave's verify gate found the kit map missing `useSystemSound` (`8b371ae`,
+1.174.0). Decisions in
+[decisions-linux-apps-input-files-look.md](decisions-linux-apps-input-files-look.md).
 
 08-15, the two themes, were built 2026-11-03 on `main` (1.70.0 to 1.86.0)
 and deploy together; each brief's outcome is in `briefs/done/`, and 15's lists
@@ -168,6 +156,11 @@ The server ISO is deferred by the owner (2026-10-04).
   outside the OS; copy text outside and Ctrl+V it into Firefox (Chrome asks
   for clipboard permission once). The headless walk could only use a stand-in
   clipboard.
+- Brief 45, on the Android phone: which focus strategy raises the keyboard
+  (`localStorage` `imbatranim.linuxTouchFocus`, "on-tap" by default or
+  "after-enable") and how fast; a typed, a swiped and an autocorrected word;
+  Backspace in an empty field; the email and password keyboards. After the
+  next image build (brief 46): Open with on an `.odt` finds LibreOffice.
 - Linux apps, in Chrome on the dev container: a hidden tab carrying no
   frames (the walk could only simulate hiding), and the keys the browser
   keeps (brief 03's list).

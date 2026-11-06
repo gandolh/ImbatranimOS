@@ -166,3 +166,6 @@ the image to stay the floor (grill 2026-11-04).
 - *Consequence*: after a new image whose pin wins, the installed apps stay
   at their old commit until the next Update, as they always did.
 
+The calls of 2026-11-06 on the phone's keyboard, Open with and the Settings
+portal (briefs 45-47) are in
+[decisions-linux-apps-input-files-look.md](decisions-linux-apps-input-files-look.md).

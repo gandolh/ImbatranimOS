@@ -14,7 +14,7 @@ keyboard, stay sharp on HiDPI, wear the themes and cost the server less? Those
 are the costs [research-native-apps-via-wayland.md](research-native-apps-via-wayland.md)
 names. Research only; nothing was built. **Verdict: no remote-UI prototype
 now.** The one worth doing goes after the goal, not the mechanism: the phone
-keyboard through text-input-v3 ([brief 45](../briefs/todo/45-the-phones-keyboard-types-into-a-linux-app.md), drafted, not filed).
+keyboard through text-input-v3 ([brief 45](../briefs/done/45-the-phones-keyboard-types-into-a-linux-app.md), drafted, not filed).
 
 ## 1. The constraint: Wayland carries pixels, nothing above them
 
@@ -29,7 +29,7 @@ pointer events in surface coordinates and evdev key codes from a focusable
 events. Every key is a round trip.
 
 Above the buffers the host learns a window's title, `app_id`, geometry,
-popups, cursor name and copied text. **text-input-v3**, stubbed in `stubs.rs`,
+popups, cursor name and copied text. **text-input-v3**, handled by the host (brief 45),
 carries more: that a text field has focus, its purpose (email, number,
 password…), up to 4000 bytes around the cursor and the cursor's rectangle, and
 it takes composed and committed text back
@@ -187,7 +187,7 @@ apps already speak:
    `inputmode` from the purpose, mirrors the surrounding text for backspace and
    autocorrect, and sends composed text back. smithay 0.7's `text_input`
    relays to an input-method-v2 client, so the host needs an input method of
-   its own or its own handler. [Brief 45](../briefs/todo/45-the-phones-keyboard-types-into-a-linux-app.md)
+   its own or its own handler. [Brief 45](../briefs/done/45-the-phones-keyboard-types-into-a-linux-app.md)
    proves that a tap in a Linux text field raises Android's keyboard after the
    round trip, and that autocorrect and swipe typing land in the app.
 2. **HiDPI: [brief 33](../briefs/done/33-linux-windows-are-sharp-on-hidpi-screens.md)**, open.

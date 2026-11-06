@@ -82,3 +82,48 @@ something.
 - A launch with a path outside the home is refused.
 - **Owner check** after a deploy: the same walk on the VPS, with
   LibreOffice installed from Settings → Linux apps.
+
+## Outcome (2026-11-06)
+
+Built in `209747d` (1.177.0). Ready for deploy on the board.
+
+1. **Launchers carry the file types they open.** A launcher's `opens` comes
+   from the desktop entry's `MimeType` and the profile's
+   `share/mime/globs2` (or `globs`), only for entries whose Exec has `%f`,
+   `%F`, `%u` or `%U`. The backend does the matching (`mime-globs.ts`), and
+   skips case-sensitive globs, other wildcards and double extensions. With no
+   globs file nothing is offered and it warns once. `execArgv(exec, file?)`
+   substitutes the file; an `argv[0]` coming from a field code gives null.
+2. **Launch takes a home-jailed file.** `POST launchers/:id/launch` accepts
+   `{session, path?, root?: 'home'|'notes'}`; the path is resolved with
+   `realpath` and must be a regular file under `FILES_ROOT` or the home.
+   Every refusal is the same 404, "That file cannot be opened" (tests: `..`,
+   a symlink out, an absolute path elsewhere, a missing file). An entry with
+   no file code answers 400, "<name> doesn't open files".
+3. **The tab.** Open with in Files, the default-apps list and Settings →
+   Default apps show Linux candidates after the kit apps, marked "Linux app".
+   A double-click never auto-picks a Linux app (`resolveOpener` looks at kit
+   apps only); a saved override can. `.odt` has no kit opener, so it shows
+   the dialog with LibreOffice first.
+4. **Decision: an uninstalled saved Linux default falls back** to the next
+   candidate.
+5. **Decision (owner, 2026-11-06): `shared-mime-info` joins the image** (Alpine
+   package, prod and dev stages) as the fallback file-type list, because
+   LibreOffice's Nix install brings no `share/mime/globs2`. Rejected:
+   installing it into the Nix profile, and a manual step.
+
+**Checks run.** Backend jest 34 for this brief's specs; core vitest 480;
+file-manager 88; the verify gate's typechecks. The headless walk passed once
+`shared-mime-info` was in the dev profile (now the image's job): Files
+`.odt` Open with LibreOffice (marked) opened it in Writer; a double-click
+showed the dialog; "Always use this" plus a reload went straight to Writer;
+Default apps listed `.odt` as a Linux app; `.docx` still went to Docs;
+Start opened LibreOffice without a file; launches with `/etc/passwd`, `../`
+and a symlink all returned 404. Review (sonnet): the path jail is sound.
+Accepted, not fixed: root `notes` is jailed to the home (notes outside the
+home give 404, fails closed); `FILES_ROOT=/` refuses everything (fails
+closed). Fixed: the `argv[0]` guard.
+
+**For the owner.** The walk had `shared-mime-info` installed in the dev
+profile; the image now carries it, so check Open with on an `.odt` once after
+the next image build.

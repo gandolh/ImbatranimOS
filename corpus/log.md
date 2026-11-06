@@ -5297,3 +5297,36 @@ group installs is unproven. Briefs 50 (the rename) and 51 (Games as the
 first group, measuring the layout) were written; the owner's ten calls are
 the open question. Found on the way: `apps/backend/src/modules/notes/` holds
 only a DTO nothing imports.
+
+## [2026-11-06] done | Wave 1: the phone's keyboard, Open with for Linux apps, mode and accent
+
+Briefs 45, 46 and 47 are built on `main`, one commit each, and moved to
+`briefs/done/` with outcome notes. 45 (`30a16e7`, 1.175.0, ready for test):
+the Wayland host speaks text-input-v3 itself and the tab keeps a hidden input,
+so Android's keyboard can type into a Linux app (touch only, focus "on-tap"
+by default, protocol 8); the real-phone checks are the owner's. 47
+(`6113d57`, 1.176.0, ready for deploy): the backend serves the Settings portal
+on each session bus, so libadwaita apps and Firefox follow the mode and
+accent, live. 46 (`209747d`, 1.177.0, ready for deploy): launchers carry the
+file types they open and launch takes a home-jailed file, so Files' Open with
+offers LibreOffice for an `.odt`; it also adds Alpine's `shared-mime-info` to
+the image (owner's choice on 2026-11-06, over installing it into the profile
+or a manual step), as LibreOffice's Nix install has no `share/mime/globs2`.
+The verify gate found that brief 40 had exported `useSystemSound` from the kit
+without adding it to the marketplace kit map, so core's `tsc` failed; fixed in
+`8b371ae` (1.174.0), committed before the wave.
+
+Review of 46's path jail and 45's text-input validation: one important
+finding, fixed: a lone UTF-16 surrogate in a commit or preedit passed the
+backend and made the host's JSON parser refuse it, stopping the whole
+session; the backend now rejects it. Also fixed: `argv[0]` from a field code
+gives null, and the host's text-input arithmetic saturates. Accepted: root
+`notes` is jailed to the home (fails closed); `FILES_ROOT=/` refuses
+everything (fails closed); a text edit's delete lengths are not snapped to
+UTF-8 boundaries (the client warns; the host is safe). Walk (headless
+Chrome, dev container) passed for all three; Firefox's address bar reports
+purpose `normal` and GNOME Text Editor sends no `multiline` hint, app
+behaviour. Wiki: status.md (the Linux layer's first paragraph moved to
+[status-linux-apps-layer.md](wiki/status-linux-apps-layer.md) to stay under
+the cap), the research pages' rows and
+[decisions-linux-apps-input-files-look.md](wiki/decisions-linux-apps-input-files-look.md).

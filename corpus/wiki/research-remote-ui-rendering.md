@@ -46,7 +46,7 @@ is written for. "From wayland through the api" fits (b) best. The Terminal is
 
 | Option | Phone keyboard, IME | HiDPI | OS themes | Accessibility | Input handled |
 |---|---|---|---|---|---|
-| Today: pixels | None (canvas, no input element) | Soft above ratio 1 ([brief 33](../briefs/todo/33-linux-windows-are-sharp-on-hidpi-screens.md)) | Toolkit's own | One canvas | Server, every key a round trip |
+| Today: pixels | None (canvas, no input element) | Soft above ratio 1 ([brief 33](../briefs/done/33-linux-windows-are-sharp-on-hidpi-screens.md)) | Toolkit's own | One canvas | Server, every key a round trip |
 | GTK 4 Broadway | Hidden input on iOS and Android Chrome only, no IME | Integer scale; text and icons are images | GTK's own, drawn as CSS | None (divs and images) | Server, round trip |
 | Accessibility tree as React widgets | Yes, real inputs | Sharp (DOM) | Yes, the kit's | Yes, as far as the app exposes it | Echo local, app reacts after a round trip |
 | App as WASM in the tab | Qt 6: hidden input with composition; egui "doesn't always work"; LibreOffice WASM (Qt 5.15): none | Yes | Toolkit's own, in a canvas | Qt: basic, off by default; egui: experimental | In the tab |
@@ -190,7 +190,7 @@ apps already speak:
    its own or its own handler. [Brief 45](../briefs/todo/45-the-phones-keyboard-types-into-a-linux-app.md)
    proves that a tap in a Linux text field raises Android's keyboard after the
    round trip, and that autocorrect and swipe typing land in the app.
-2. **HiDPI: [brief 33](../briefs/todo/33-linux-windows-are-sharp-on-hidpi-screens.md)**, open.
+2. **HiDPI: [brief 33](../briefs/done/33-linux-windows-are-sharp-on-hidpi-screens.md)**, open.
 3. **Themes, partly: the Settings portal.** `org.freedesktop.appearance` has
    `color-scheme`, `accent-color` and `contrast`
    ([spec](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Settings.html));

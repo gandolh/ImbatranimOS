@@ -5190,3 +5190,17 @@ one unbriefed path: brief 47, Linux apps follow the desktop's light or dark
 mode and accent through the freedesktop Settings portal, served by the
 backend on each session bus beside the notifications server. Brief 46's
 five decisions were taken as written.
+
+## [2026-11-06] build | Brief 33 done: Linux windows sharp on HiDPI screens
+
+`26dc24e` (1.161.0), ready for deploy. The tab sends its `devicePixelRatio`
+with its viewport; the host makes its ceiling (1 to 4) the output's scale
+and tells every surface (`wl_surface.enter`, which nothing sent before, the
+preferred buffer scale and the fractional scale). Surfaces are sized in
+surface coordinates from their buffer scale or viewport, a window's canvas
+is its size times its root's scale, and the protocol (6) keeps every
+coordinate in CSS pixels; only frames are in image pixels, and the tab lays
+each canvas out at the window's CSS size. X11 apps stay at scale 1. One
+short run: scale 2 sent about 1.8 times the bytes of scale 1 (2.4 times per
+frame). Asked the owner on the board whether to cap the scale at 2 for
+phones. Walked in the dev container at deviceScaleFactor 2.

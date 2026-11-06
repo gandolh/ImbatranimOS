@@ -1,6 +1,6 @@
 ---
-summary: Dated snapshot (2026-11-05) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups), 33 (HiDPI) still open; 31 done 2026-11-05 (X11 apps through Xwayland, which comes with the first app that speaks X11); the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
-updated: 2026-11-05
+summary: Dated snapshot (2026-11-06) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups); 33 done 2026-11-06 (Linux windows sharp on HiDPI screens, ready for deploy); 31 done 2026-11-05 (X11 apps through Xwayland, which comes with the first app that speaks X11); the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
+updated: 2026-11-06
 ---
 
 # Status — 2026-11-03
@@ -125,10 +125,11 @@ outcome is in `briefs/done/`:
   their desktop actions, and video regions sent as JPEG while text stays
   lossless.
 
-31 is done (2026-11-05, `e365ca8`): X11 apps open through Xwayland, started
-on a session's first X client; it comes with the first app that speaks X11,
-not in the image ([decisions-linux-apps-built.md](decisions-linux-apps-built.md)).
-Still open, not started: **33** (sharp Linux windows on HiDPI screens).
+31 is done (2026-11-05, `e365ca8`): X11 apps open through Xwayland, on a
+session's first X client, installed with the first app that speaks X11
+([decisions-linux-apps-built.md](decisions-linux-apps-built.md)). 33 is done
+(2026-11-06, `26dc24e`, ready for deploy): Linux windows draw at the screen's
+pixels (scale: the ratio's ceiling); X11 apps stay at 1.
 
 37-44 were written 2026-11-04 from a grill with the owner. Done on
 2026-11-05 (each outcome in `briefs/done/`): 37 production's own Compose
@@ -138,8 +139,8 @@ a D-Bus session bus per session, so Firefox keeps one instance, and Linux
 apps' notifications in the OS; 44 the VPS cap's numbers (1 GiB / 1 CPU in
 `infrastructure/README.md`), Linux apps first when memory runs out, and a
 notice when one is killed. Not built: 39 Linux apps' sound, 40 a tray
-volume over all sound (after 39), 43 an Updates page.
-The server ISO is deferred by the owner (2026-10-04).
+volume over all sound (after 39), 43 an Updates page. The server ISO is
+deferred by the owner (2026-10-04).
 
 ## Owed by the owner
 
@@ -155,9 +156,9 @@ The server ISO is deferred by the owner (2026-10-04).
   use the kit.
 - Linux apps, in Chrome on the dev container: open an app beside Firefox
   playing a video, a few times. Chromium crashed there before the fade-only
-  change and still did once in five (brief 04's outcome); Chrome with a GPU
-  may not at all. Also look at a Linux window on a screen with
-  `devicePixelRatio` above 1 (soft, known).
+  change and once in five after (brief 04); Chrome with a GPU may not at all.
+- After brief 33's deploy: a Linux app on a screen whose `devicePixelRatio`
+  is above 1 is sharp and follows a page zoom; answer its board question.
 - Before Linux apps go on at the VPS: set the cap from
   `infrastructure/README.md` ("the container cap": `mem_limit: 1g`,
   `memswap_limit: 1g`, `cpus: 1.0`) in vps-deploy's `imbatranim-os` stack

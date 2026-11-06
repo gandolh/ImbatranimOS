@@ -5602,3 +5602,11 @@ the fresh ones. Still open from brief 69's review: uninstall revoking every
 token of the row's apps, refusing a token for a catalog app that isn't
 installed, and one lock per app folder. They touch the app-identity files
 held in brief 70's stash, so they wait for it.
+
+## [2026-11-06] maintenance | An app's server can't override the desktop's headers
+
+`94306ee`: the proxy to a native app's server (`GET
+/api/marketplace/apps/:id/server/*`) answers on the desktop's origin, and it
+now drops every header the desktop's own policy sets (isolation, framing,
+nosniff, referrer), plus `Clear-Site-Data` (it would wipe the session and
+storage), `Service-Worker-Allowed` and HSTS. Raised by brief 71's walk agent.

@@ -39,6 +39,12 @@ interface RequestBuilderProps {
   onBodyModeChange: (m: BodyMode) => void
   onFormChange: (f: FormField[]) => void
   onFilePathChange: (p: string) => void
+  /**
+   * Ask the OS's Open dialog for a file to send, starting near `current`.
+   * Resolves its path under home, or null when nothing was picked. The pick
+   * is what gives this window the file.
+   */
+  onChooseFile: (current?: string) => Promise<string | null>
   onTabChange: (t: BuilderTab) => void
   onSend: () => void
   onSave: () => void
@@ -51,6 +57,34 @@ interface RequestBuilderProps {
 }
 
 const NO_ENV = '__none__'
+
+/** The chosen file's path (or a note that there is none), and the button that picks one. */
+function FileChooser({
+  path,
+  label,
+  onChoose,
+}: {
+  path: string
+  label: string
+  onChoose: () => void
+}) {
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+      <span
+        className={cn(
+          'min-w-0 flex-1 truncate font-mono text-[12px]',
+          path ? 'text-on-surface' : 'text-on-surface-variant'
+        )}
+        title={path || undefined}
+      >
+        {path || 'No file chosen'}
+      </span>
+      <Button type="button" size="sm" onClick={onChoose} aria-label={label}>
+        Choose…
+      </Button>
+    </div>
+  )
+}
 
 export function RequestBuilder({
   method,
@@ -75,6 +109,7 @@ export function RequestBuilder({
   onBodyModeChange,
   onFormChange,
   onFilePathChange,
+  onChooseFile,
   onTabChange,
   onSend,
   onSave,
@@ -300,13 +335,18 @@ export function RequestBuilder({
           )}
 
           {!bodyDisabled && bodyMode === 'file' && (
-            <Input
-              label="File under your home folder"
-              placeholder="Documents/payload.bin"
-              value={filePath}
-              spellCheck={false}
-              onChange={(e) => onFilePathChange(e.target.value)}
-            />
+            <div className="flex flex-col gap-1">
+              <span className="text-on-surface-variant text-[12px]">File to send</span>
+              <FileChooser
+                path={filePath}
+                label="Choose the file to send"
+                onChoose={() => {
+                  void onChooseFile(filePath || undefined).then((p) => {
+                    if (p !== null) onFilePathChange(p)
+                  })
+                }}
+              />
+            </div>
           )}
 
           {!bodyDisabled && bodyMode === 'form' && (
@@ -350,18 +390,17 @@ export function RequestBuilder({
                       }
                     />
                   ) : (
-                    <Input
-                      className="flex-1"
-                      placeholder="Documents/photo.png"
-                      value={field.filePath}
-                      spellCheck={false}
-                      onChange={(e) =>
-                        onFormChange(
-                          form.map((f) =>
-                            f.id === field.id ? { ...f, filePath: e.target.value } : f
+                    <FileChooser
+                      path={field.filePath}
+                      label={`Choose a file for ${field.name || 'this field'}`}
+                      onChoose={() => {
+                        void onChooseFile(field.filePath || undefined).then((p) => {
+                          if (p === null) return
+                          onFormChange(
+                            form.map((f) => (f.id === field.id ? { ...f, filePath: p } : f))
                           )
-                        )
-                      }
+                        })
+                      }}
                     />
                   )}
                   <Button

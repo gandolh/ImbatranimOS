@@ -194,6 +194,24 @@ export function RestApiClient(_props: { windowId: string }) {
   )
 
   /** Compose the request body according to the chosen mode. */
+
+  // Files to send come through the OS's Open dialog, which gives this window
+  // each one it picks: an app reaches only the files it was given.
+  const chooseFile = useCallback(
+    async (current?: string): Promise<string | null> => {
+      const choice = await system.fs.pickOpen({
+        title: 'Choose a file to send',
+        startIn: current ? { root: 'home', path: current } : undefined,
+      })
+      if (!choice) return null
+      if (choice.root !== 'home') {
+        system.notify({ level: 'error', title: 'Choose a file under your home folder' })
+        return null
+      }
+      return choice.path
+    },
+    [system]
+  )
   const composeBody = useCallback(async (): Promise<{
     body?: string
     bodyBase64?: string
@@ -452,6 +470,7 @@ export function RestApiClient(_props: { windowId: string }) {
             onBodyModeChange={setBodyMode}
             onFormChange={setForm}
             onFilePathChange={setFilePath}
+            onChooseFile={chooseFile}
             onTabChange={setBuilderTab}
             onSend={() => void handleSend()}
             onSave={handleSave}

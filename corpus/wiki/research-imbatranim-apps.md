@@ -1,5 +1,5 @@
 ---
-summary: Research (2026-11-06) on the owner's plan to rename imbatranim-office to imbatranim-apps and make it the home of every app that can be installed, so the image starts smaller and cleaner. Measured, the image barely shrinks (the desktop build with all 25 built-in apps is 16.8 MB of a 324 MB image, and what could leave is about 14.5 MB, 13.9 MB of it the Code Editor's Monaco); the gains that hold are a shorter Start menu, about 29,000 source and 8,000 test lines leaving the OS repo, and apps released on their own. Has a table of every app with its size, backend module and the hooks the catalog can't carry yet; proposes seven apps for the base, nine client-only apps for a first wave, eight blocked on the kit contract, their data or an OS-side module, and Markdown Editor folded into Notepad; lists the owner decisions; the three kinds of app, the install groups and the rename are in research-imbatranim-apps-layout.md. PDF Viewer and norPDF already became Office's PDF. The work is fifteen backlog todos, each with its open questions to grill when it starts.
+summary: Research (2026-11-06) on the owner's plan to rename imbatranim-office to imbatranim-apps and make it the home of every app that can be installed, so a fresh OS starts cleaner; then grilled the same day. Measured, the image barely shrinks (all 25 built-in apps are 16.8 MB of a 324 MB image, 13.9 MB of it Monaco), and the owner accepted that. Has a table of every app with its size, backend module and what moving it takes. After the grill, 16 apps stay built in for a normal user (browsing, media, small coding); Minesweeper and Solitaire, Git GUI, the REST API Client, Todo and Bookmarks become installable beside Office; Markdown Editor folds into Notepad and Archive Manager into Files. The work is eleven backlog todos here and one in imbatranim-office (§7); the kinds of app, groups and the moving checklist are in research-imbatranim-apps-layout.md.
 updated: 2026-11-06
 ---
 
@@ -12,7 +12,11 @@ comes smaller and cleaner at first install", allow three kinds of app (client
 only, a WASM module, and suites like Office), and check whether older apps
 such as the PDF viewer should go. Research only; nothing was built.
 
-**Short answer.** The image barely shrinks: moving every app that can go
+**Outcome after the grill (2026-11-06).** §6 has the decisions. The proposal
+below was the starting point, and the table's last column shows where each
+app ended.
+
+**Short answer, as first proposed.** The image barely shrinks: moving every app that can go
 saves about 14.5 MB of 324, and 13.9 MB of that is Monaco. The 2026-07-16 bar is
 already "≤ ~400 MB, with cold start and RAM as the real measure"
 ([open-questions.md](open-questions.md)), and the add-ons are lazy chunks
@@ -143,53 +147,50 @@ the repo root; and the rename keeps the descriptor id `imbatranim-office`.
 
 ## 6. Owner decisions
 
-The owner approved the defaults on 2026-11-06 ("looks good, write the
-briefs"), adding: "It's fine if we don't see a high decrease in size, at
-least some of them are uninstallable and the desktop feels more clean."
+The owner approved the plan on 2026-11-06 ("looks good, write the briefs")
+and was grilled the same day. The durable calls are in
+[decisions-marketplace-suites.md](decisions-marketplace-suites.md) and
+[decisions-themes.md](decisions-themes.md):
+- **The base serves a normal user**: browsing, media, small coding. Sixteen
+  apps stay built in, and Code Editor, Image Viewer, Media Player,
+  Calculator, Clock, Calendar, Paint, Snipping Tool and Sticky Notes joined
+  the first seven.
+- **The OS keeps the minimum; apps add on top.** `archive`, `git` and
+  `http-proxy` stay as OS services. Files opens archives like folders, so
+  Archive Manager goes, and Markdown Editor folds into Notepad.
+- **Installable apps keep their data** as real files in
+  `~/.local/share/imbatranim/<app-id>/`. It is kept on uninstall unless the
+  owner ticks "Also remove its data", and alarms stop with their app.
+- **Groups are the install unit:** Office, Games, Developer and Accessories
+  (Todo and Bookmarks). Start gets search, pins and an A-Z list, with no
+  folders.
+- **WASM engines from npm may run in the tab.** PDF's image decoders come
+  first, and CAD's DWG stays on the server.
 
-1. Rename to imbatranim-apps; a new board project.
-2. Groups as the install unit: Office, Accessories, Games, Developer.
-3. The base: Settings, Files, Terminal, Notepad, System Monitor, Logs,
-   Browser.
-4. A fresh OS has no image viewer or media player; the chooser names
-   Accessories.
-5. Markdown Editor folds into Notepad; Bookmarks stays its own app.
-6. and 7. **Not yet confirmed.** The two calls had no default. Claude's
-   default from the same day: the backend modules of wave 2 (data) and
-   wave 3 (system work) stay in the OS, and only the apps move. See
-   [the checklist page](research-imbatranim-apps-layout.md#4-moving-one-app-the-checklist).
-   It is the first open question in each of the four todos that move them.
-8. WASM engines from npm packages, after a `'wasm-unsafe-eval'` CSP change.
-9. Start folders by group.
-10. Default-disabled built-ins: not taken.
+The calls left are engineering ones, proposed in each todo.
 
 ## 7. The backlog
 
-Written as briefs on 2026-11-06, then kept in the backlog at the owner's
-word ("write the open questions, we'll grill about them when starting to
-work on them. Keep them in backlog"). Each is a todo whose open questions
-come first and whose draft brief follows; promoting one after its grill
-makes a numbered brief. The drafts were briefs 50-62, now in
-`briefs/superseded/` with a note, so those numbers stay unused. The three
-that need nothing from the apps repo (Notepad, WASM, hooks) and Start
-folders can go in any order; the moves wait for the rename and Games.
+Each todo lists its open questions first and its draft brief after;
+promoting one after its grill makes a numbered brief. Briefs 50-62 were the
+first drafts, now in `briefs/superseded/`. Dropped in the grill: the todos
+that moved Calculator, Paint and Snipping Tool, Image Viewer and Media
+Player, Code Editor and Diff, and Clock and Calendar.
 
-| # | Todo | What |
-|---|---|---|
-| 1 | [imbatranim-office-becomes-imbatranim-apps](../todos/imbatranim-office-becomes-imbatranim-apps.md) | The rename |
-| 2 | [games-install-from-imbatranim-apps](../todos/games-install-from-imbatranim-apps.md) | Games, settling the group layout |
-| 3 | [notepad-takes-over-markdown-editors-job](../todos/notepad-takes-over-markdown-editors-job.md) | Notepad takes over Markdown Editor; the notes leftover |
-| 4 | [kit-apps-may-run-webassembly](../todos/kit-apps-may-run-webassembly.md) | The desktop CSP allows WASM |
-| 5 | [catalog-apps-bring-background-widgets-layers-and-commands](../todos/catalog-apps-bring-background-widgets-layers-and-commands.md) | Catalog apps bring background services, widgets, layers, commands |
-| 6 | [start-shows-a-folder-per-group](../todos/start-shows-a-folder-per-group.md) | Start folders |
-| 7 | [calculator-paint-and-snipping-tool-install-as-accessories](../todos/calculator-paint-and-snipping-tool-install-as-accessories.md) | Calculator, Paint, Snipping Tool |
-| 8 | [image-viewer-and-media-player-join-accessories](../todos/image-viewer-and-media-player-join-accessories.md) | Image Viewer, Media Player |
-| 9 | [code-editor-and-diff-install-as-developer](../todos/code-editor-and-diff-install-as-developer.md) | Code Editor and Diff; Monaco under the cap |
-| 10 | [clock-and-calendar-join-accessories](../todos/clock-and-calendar-join-accessories.md) | Clock, Calendar (after the hooks) |
-| 11 | [todo-sticky-notes-and-bookmarks-join-accessories](../todos/todo-sticky-notes-and-bookmarks-join-accessories.md) | Todo, Sticky Notes, Bookmarks (after the hooks) |
-| 12 | [git-gui-and-rest-api-client-join-developer](../todos/git-gui-and-rest-api-client-join-developer.md) | Git GUI, REST API Client |
-| 13 | [archive-manager-joins-accessories](../todos/archive-manager-joins-accessories.md) | Archive Manager |
+| Todo | What |
+|---|---|
+| [imbatranim-office-becomes-imbatranim-apps](../todos/imbatranim-office-becomes-imbatranim-apps.md) | The rename (first) |
+| [games-install-from-imbatranim-apps](../todos/games-install-from-imbatranim-apps.md) | Games; settles the group layout (second) |
+| [notepad-takes-over-markdown-editors-job](../todos/notepad-takes-over-markdown-editors-job.md) | Notepad takes over Markdown Editor |
+| [files-handles-archives-and-archive-manager-goes](../todos/files-handles-archives-and-archive-manager-goes.md) | Files opens archives like folders; Archive Manager goes |
+| [kit-apps-may-run-webassembly](../todos/kit-apps-may-run-webassembly.md) | The desktop allows WASM |
+| [apps-get-a-data-folder-of-their-own](../todos/apps-get-a-data-folder-of-their-own.md) | A data folder per app (`system.data`) |
+| [catalog-apps-bring-background-services-and-commands](../todos/catalog-apps-bring-background-services-and-commands.md) | Catalog apps bring background services and palette sources |
+| [start-gets-search-pins-and-an-a-to-z-list](../todos/start-gets-search-pins-and-an-a-to-z-list.md) | Start: search, pins, A-Z list |
+| [the-chooser-links-to-the-marketplace](../todos/the-chooser-links-to-the-marketplace.md) | The chooser links to the Marketplace |
+| [todo-and-bookmarks-install-as-accessories](../todos/todo-and-bookmarks-install-as-accessories.md) | Todo and Bookmarks as Accessories (after Games, hooks, data folder) |
+| [git-gui-and-rest-api-client-join-developer](../todos/git-gui-and-rest-api-client-join-developer.md) | Git GUI and REST API Client as Developer (after Games, data folder) |
 
-In imbatranim-office (to be renamed), after the WASM todo:
-`cad-reads-dwg-in-the-tab` (the suite may lose its server) and
-`pdf-decodes-jpeg2000-and-jbig2-images`, both in its `corpus/todos/`.
+In imbatranim-office, after the WASM todo:
+`pdf-decodes-jpeg2000-and-jbig2-images`. `cad-reads-dwg-in-the-tab` was
+dropped.

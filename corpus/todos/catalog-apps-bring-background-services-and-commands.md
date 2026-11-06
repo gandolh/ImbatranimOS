@@ -1,26 +1,26 @@
 ---
-title: Catalog apps bring background services, widgets, desktop layers and commands
+title: Catalog apps bring background services and command sources
 created: 2026-11-06
 status: open
 tags: [imbatranim-apps]
 ---
 
-# Catalog apps bring background services, widgets, desktop layers and commands
+# Catalog apps bring background services and command sources
 
-Catalog apps can bring the hooks five built-ins use and the catalog lacks: background services, desktop widgets, desktop layers and command-palette sources. A kit contract change that moves no app; Clock, Calendar, Todo, Sticky Notes and Bookmarks wait on it.
+A catalog app can bring a background service and command-palette sources, the two hooks Todo and Bookmarks need before they can leave the image. A kit contract change in this repo that moves no app. Widgets and desktop layers wait until an installable app needs them, since Clock, Calendar and Sticky Notes stay built in.
 
 Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
 
 ## Open questions (grill before starting)
 
-Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); the kit contract grows so these apps can leave.
+Settled in the grill on 2026-11-06: only `background` and `commandSources` are needed now; the questions below about widgets and layers apply when one is added. Before that, the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); the kit contract grows so these apps can leave.
 
 1. **Does the descriptor declare each hook (`background`, `widgets`, `desktopLayer`, `commandSources`), so only the apps that have one load at sign-in?** Proposed: yes.
 2. **Does the module export them by name next to `App`, with a declared hook it doesn't export refused by name?** Proposed: yes.
 3. **Does a failing hook stay contained (hidden, with one notification), and a module that fails at sign-in cost only its own hooks?** Proposed: yes.
 4. **Which kit version?** Proposed: the next minor at build time, exporting `CommandSource`, the widget shape and the windowless handle.
-5. **How much sign-in time may each installed hook app add?** Proposed: nothing noticeable; the brief measures with and without one, and the grill sets a limit if the numbers call for one.
+5. **How much sign-in time may each installed hook app add?** Answered 2026-11-06: none. Hook apps always load after the desktop is interactive, so sign-in never waits on them; a widget or a sticky note may appear a beat after the desktop. The brief still measures, to show sign-in is unchanged.
 
 ## Draft brief
 
@@ -48,7 +48,7 @@ and its module loads only when a window opens (`KitAppHost`, `kitModule.ts`,
 The owner approved moving those apps on 2026-11-06 ("looks good, write the
 briefs"). This brief is the contract change they wait for. It moves no app.
 [Clock and Calendar](clock-and-calendar-join-accessories.md) and
-[Todo, Sticky Notes and Bookmarks](todo-sticky-notes-and-bookmarks-join-accessories.md) move them.
+[Todo, Sticky Notes and Bookmarks](todo-and-bookmarks-install-as-accessories.md) move them.
 
 ### What to do
 

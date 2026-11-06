@@ -1,7 +1,7 @@
 ---
 title: Image Viewer and Media Player join Accessories
 created: 2026-11-06
-status: open
+status: dropped
 tags: [imbatranim-apps]
 ---
 
@@ -12,12 +12,14 @@ Image Viewer and Media Player join Accessories. A fresh OS then opens no images,
 Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
 
+> DROPPED 2026-11-06 in the imbatranim-apps grill: Image Viewer and Media Player stay built in ("png handling should be done by the system as an essential feature"). The chooser's Marketplace link answered here moved to [the-chooser-links-to-the-marketplace](the-chooser-links-to-the-marketplace.md).
+
 ## Open questions (grill before starting)
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); a fresh OS has no image viewer or media player; the chooser names Accessories.
 
 1. **Do Files' own previews keep showing images and playing media without Accessories?** Proposed: yes, untouched.
-2. **Should the chooser's sentence carry an Install button, or only name the group as it does for Office?** Proposed: only name it, as today; an Install button is its own todo if wanted.
+2. **Should the chooser's sentence carry an Install button?** Answered 2026-11-06: no button. The sentence gets a link that opens Settings → Marketplace on that group's row, for Office's types as well. Built here, since this todo adds the first non-Office types.
 
 ## Draft brief
 

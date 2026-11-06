@@ -16,7 +16,7 @@ questions below when the work starts, then promote this to a numbered brief.
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); the two go to Developer.
 
-1. **Do the `git` and `http-proxy` modules stay in the OS as its own capabilities, with only the apps moving?** Proposed: yes (Claude's default of 2026-11-06). A catalog app with `http` could already reach any OS route, the SSRF guard stays where it was reviewed, and git stays in the image for the installer. The alternative: a server in the Developer group, which costs a cold start and about 100 MB while open and takes the SSRF guard out of the OS.
+1. **Do the `git` and `http-proxy` modules stay in the OS?** Answered 2026-11-06: yes, as OS services trimmed to the work that needs the server (running git, the guarded request); the apps are the features and UI on top ([decisions-marketplace-suites.md](../wiki/decisions-marketplace-suites.md#the-os-keeps-the-minimum-apps-add-on-top-2026-11-06)). Anything in the modules that only serves the app moves to the app, such as Git GUI's recent repos (the `git` module's `recents` routes) and the REST client's collections file. Both go to the data folder, so this depends on [apps-get-a-data-folder-of-their-own](apps-get-a-data-folder-of-their-own.md).
 
 ## Draft brief
 
@@ -40,7 +40,10 @@ Follow the checklist in
 
 ### Depends on
 
-[Code Editor and Diff](code-editor-and-diff-install-as-developer.md) (the Developer group).
+[Games](games-install-from-imbatranim-apps.md) (the group layout) and
+[the data folder](apps-get-a-data-folder-of-their-own.md) (Git GUI's recent
+repos, the REST client's collections). This todo creates the Developer group
+(descriptor id `developer`), since the Code Editor stays built in.
 
 ### What to do
 

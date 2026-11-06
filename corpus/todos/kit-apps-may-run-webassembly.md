@@ -7,7 +7,7 @@ tags: [imbatranim-apps]
 
 # Kit apps may run WebAssembly
 
-The desktop's CSP lets kit apps run WebAssembly, so an app can use a WASM engine from an npm package in the tab. One header, a test fixture, and the decision recorded. Unblocks CAD's DWG and PDF's image decoders in imbatranim-office.
+The desktop's CSP lets kit apps run WebAssembly, so an app can use a WASM engine from an npm package in the tab. One header, a test fixture, and the decision recorded. Its first user is PDF's JPEG2000 and JBIG2 decoders in imbatranim-office; CAD's DWG stays on the server (owner, 2026-11-06).
 
 Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
@@ -15,6 +15,8 @@ questions below when the work starts, then promote this to a numbered brief.
 ## Open questions (grill before starting)
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); WASM engines from npm packages may run in the desktop's page.
+
+Confirmed in the grill on 2026-11-06: worth doing now, for PDF's decoders and the WASM app type, even with DWG staying on the server.
 
 1. **Is "WASM only from an npm package, never compiled at install or committed" a rule for the catalog's reviewers rather than code, since the CSP can't tell one `.wasm` from another?** Proposed: yes.
 2. **Do WASM threads stay off (no COOP or COEP headers) until an app needs them?** Proposed: yes; adding them is its own brief.
@@ -57,8 +59,8 @@ package, pinned by the lockfile. The owner approved it on 2026-11-06
    [decisions-marketplace.md](../wiki/decisions-marketplace.md), with the
    rejected alternative: the old policy, which forced WASM into a server.
 5. Corpus: the research pages, status, log. The office repo's "No
-   WebAssembly" invariant is changed by its own todo,
-`cad-reads-dwg-in-the-tab`, not here.
+   WebAssembly" invariant is changed by its todo
+`pdf-decodes-jpeg2000-and-jbig2-images`, not here.
 
 ### Files you OWN
 

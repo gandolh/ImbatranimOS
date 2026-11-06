@@ -5390,3 +5390,45 @@ backlog table. Board tickets were never created for 50-62. The todos become
 Backlog tickets at the next sync the owner asks for. imbatranim-office did
 the same with its 04 and 05.
 
+## [2026-11-06] grill | The imbatranim-apps backlog, grilled
+
+The owner asked to be grilled on the backlog the same day. One question at
+a time:
+- **Data:** installable apps keep their data as real files in a folder of
+  their own, `~/.local/share/imbatranim/<app-id>/`, like AppData. It is kept
+  on uninstall unless "Also remove its data" is ticked, and alarms stop with
+  their app.
+- **The OS keeps the minimum; apps add on top** (owner's words): `archive`,
+  `git` and `http-proxy` stay as OS services. Files opens archives like
+  folders, so Archive Manager is dropped.
+- **The base serves a normal user** ("browsing, media, etc, small coding"):
+  the Code Editor, Image Viewer, Media Player, Calculator, Clock, Calendar,
+  Paint, Snipping Tool and Sticky Notes stay built in. Installable: Games,
+  Git GUI and REST API Client (Developer), Todo and Bookmarks (Accessories),
+  Office.
+- **Start** ("we are not stuck with win7 style"): search, pinned apps and an
+  A-Z list, with no folders. This is recorded in decisions-themes.md as a
+  revisit of the Windows 7 way of finding things, for Start only.
+- **Smaller calls:** Notepad takes all five of Markdown Editor's pieces; hook
+  apps load after the desktop is interactive; the chooser links to the
+  Marketplace instead of an Install button; if Monaco can't build under the
+  cap it stays built in, which is now moot.
+- **WASM** is still worth allowing, for PDF's decoders. CAD's DWG stays on
+  the server, so imbatranim-office dropped its DWG todo.
+
+Todos:
+- dropped: the moves of Calculator, Paint and Snipping Tool; Image Viewer
+  and Media Player; Code Editor and Diff; Clock and Calendar;
+- replaced: the Archive Manager move became
+  `files-handles-archives-and-archive-manager-goes`, and the Start todo became
+  `start-gets-search-pins-and-an-a-to-z-list`;
+- narrowed: the hooks todo to background services and command sources;
+- new: `apps-get-a-data-folder-of-their-own`,
+  `todo-and-bookmarks-install-as-accessories` and
+  `the-chooser-links-to-the-marketplace`.
+
+Decisions went into decisions-marketplace-suites.md (a data folder per app;
+the OS keeps the minimum; the base for a normal user) and decisions-themes.md
+(Start). What is left in each todo is engineering calls with proposed
+answers.
+

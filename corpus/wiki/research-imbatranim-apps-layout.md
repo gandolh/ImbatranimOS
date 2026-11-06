@@ -1,5 +1,5 @@
 ---
-summary: How imbatranim-apps would hold the apps that leave the image (2026-11-06), split out of research-imbatranim-apps.md. The three kinds of app are runtime needs of one app, not install units: client only, a WASM engine from an npm package under a kit UI (needs the desktop CSP to allow wasm-unsafe-eval and the office repo to drop its no-WebAssembly invariant), and kit apps with a server. Install groups (Office, Accessories, Games, Developer) are one descriptor and one Start folder each; the layout is unproven because the office build is anchored at the repo root, so the Games todo measures one workspace with scoped installs against self-contained groups. The rename keeps the descriptor id imbatranim-office and app ids office-*; brief-board names its project after the folder.
+summary: How imbatranim-apps holds the apps that leave the image (2026-11-06), split out of research-imbatranim-apps.md. The three kinds of app are runtime needs, not install units: client only, a WASM engine from an npm package under a kit UI (needs the desktop CSP to allow wasm-unsafe-eval), and kit apps with a server. Install groups after the grill are Office, Games, Developer (Git GUI, REST API Client) and Accessories (Todo, Bookmarks); Start has no folders. The layout is unproven because the office build is anchored at the repo root, so the Games todo measures it. The rename keeps the descriptor id imbatranim-office. §4 is the checklist every move follows, with where backend modules go.
 updated: 2026-11-06
 ---
 
@@ -43,23 +43,20 @@ them.
 3. **Kit apps with a server.** Office today: a `service` descriptor whose
    server starts when an app asks for it (`system.server.request()`).
 
-## 2. Install groups and Start folders
+## 2. Install groups
 
-Proposed groups, each one catalog descriptor, each one folder in Start:
-
+After the grill on 2026-11-06, each group is one catalog descriptor and the
+unit you install:
 - **Office**: Docs, Sheets, Slides, PDF and CAD. The descriptor id stays
   `imbatranim-office`, because installed rows are keyed by it.
-- **Accessories**: Calculator, Paint, Snipping Tool, Image Viewer and Media
-  Player, and later Clock, Calendar, Todo and Sticky Notes.
 - **Games**: Minesweeper and Solitaire. Hollow keeps its own game-engine
-  descriptor but shows in the same folder.
-- **Developer**: Code Editor with Diff, and later Git GUI and REST API Client.
+  descriptor.
+- **Developer**: Git GUI and the REST API Client.
+- **Accessories**: Todo and Bookmarks.
 
-Installing a group is the opt-in. Each app inside it can still be switched
-off with the existing enable toggle. Start is a flat list in registry order
-today (`StartMenu.tsx`), with 30 or more entries once Office, Hollow and
-Linux apps are in. Folders like Windows 7's "All Programs" stay inside the
-locked identity.
+Installing a group is the opt-in, and each app in it can still be switched
+off. Start has no folders; it gets search, pinned apps and an A-Z list
+([decisions-themes.md](decisions-themes.md)).
 
 Rejected:
 - One suite for everything: a Calculator install would pull Office's
@@ -133,13 +130,10 @@ each adds only what is particular to its apps.
 7. **Corpus.** Update the research pages' tables, the group's line in the
    apps repo, status and log in both repos.
 
-**Backend modules stay in the OS** (2026-11-06, Claude's default; the owner
-can overrule). When an app with its own backend module moves (Clock,
-Calendar, Todo, Sticky Notes, Bookmarks, Git GUI, REST API Client, Archive
-Manager), the module stays in the OS and the installed app calls it as
-before. Its data survives an uninstall, the way a Linux program's
-`~/.config` does, and nothing is migrated. Rejected for now, and still
-possible later:
-- a per-app store in the OS (a migration);
-- files in the home folder (a migration, plus writes from two tabs at once);
-- a server per group (about 100 MB idle and a cold start on the 1 GiB box).
+**Backend modules** (the grill, 2026-11-06,
+[decisions-marketplace-suites.md](decisions-marketplace-suites.md)).
+An installable app's data moves into real files in its own folder,
+`~/.local/share/imbatranim/<app-id>/`, through `system.data`; its module is
+deleted once the data has moved (Todo, Bookmarks, Git GUI's recent repos).
+Modules that do system work stay as OS services (`archive`, `git`,
+`http-proxy`). Built-in apps keep their modules.

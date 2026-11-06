@@ -109,3 +109,25 @@ Rejected: borderless pastel chips as on the canvas; a pastel today.
 chosen chip is hard to spot. A strong today keeps the current day apart from
 the date the owner selected.
 
+
+## Start's contents follow current desktops, not Windows 7
+_2026-11-06_ — This revisits "every way of finding things stays the same"
+above, for Start's contents only. In the imbatranim-apps grill, the owner
+first chose Windows 7-style folders in Start, then said: "Pick best ui/ux, we
+are not stuck with win7 style". Start becomes:
+- a search field on top;
+- a grid of pinned apps;
+- one A-Z list of every app, built in, installed or Linux, with no folders.
+
+This is how Windows 11, ChromeOS and GNOME do it. The taskbar, the Start
+button, the tray and desktop icons stay where they are.
+
+Rejected:
+- folders per install group, expanded in place;
+- Windows 7's Accessories and System Tools folders for built-in apps.
+
+**Why:** search finds an app fastest on a desktop, and pins keep the few
+daily apps one click away. Folders made every app a tap deeper and made
+people remember which group installed it. Groups stay a Marketplace idea,
+the unit you install. Built in the todo
+[start-gets-search-pins-and-an-a-to-z-list](../todos/start-gets-search-pins-and-an-a-to-z-list.md).

@@ -1,5 +1,5 @@
 ---
-summary: Open (2026-11-06): the imbatranim-apps backlog, fifteen todos (thirteen here, two in imbatranim-office) whose open questions are grilled when each starts, listed here by todo; the call that spans four of them is whether the blocked apps' backend modules stay in the OS. Below it, the resolved questions: the OS's own apps as streamed Linux apps (no, with Open with for Linux apps as brief 46), and the web-OS era ones (install story, HTTPS, image size, the repl module).
+summary: Open (2026-11-06): the imbatranim-apps backlog, eleven todos here and one in imbatranim-office. The product calls were grilled the same day; what remains per todo are engineering calls with proposed answers, confirmed when each starts. Below it, the resolved questions: the OS's own apps as streamed Linux apps (no, with Open with for Linux apps as brief 46), and the web-OS era ones (install story, HTTPS, image size, the repl module).
 updated: 2026-11-06
 ---
 
@@ -8,30 +8,26 @@ updated: 2026-11-06
 ## Open
 
 **The imbatranim-apps backlog** (2026-11-06). The owner approved the plan
-([research-imbatranim-apps.md](research-imbatranim-apps.md)) and asked for
-its open questions to be written and grilled when each piece of work
-starts, the work kept in the backlog. Each todo lists its questions first,
-each with a proposed answer:
+([research-imbatranim-apps.md](research-imbatranim-apps.md)) and was grilled
+the same day on every product call; those answers are in the todos and in
+[decisions-marketplace-suites.md](decisions-marketplace-suites.md). What is
+left is engineering calls, each with a proposed answer, to confirm when the
+todo starts:
 
 - [imbatranim-office-becomes-imbatranim-apps](../todos/imbatranim-office-becomes-imbatranim-apps.md): the descriptor id, the board project, the licence.
-- [games-install-from-imbatranim-apps](../todos/games-install-from-imbatranim-apps.md): the descriptor, the group layout (one workspace or self-contained), kept ids, the icons.
-- [notepad-takes-over-markdown-editors-job](../todos/notepad-takes-over-markdown-editors-job.md): which of Markdown Editor's pieces Notepad takes, the id move.
+- [games-install-from-imbatranim-apps](../todos/games-install-from-imbatranim-apps.md): the descriptor, the group layout, kept ids, the icons.
+- [notepad-takes-over-markdown-editors-job](../todos/notepad-takes-over-markdown-editors-job.md): the id move (what comes across is settled: all five).
+- [files-handles-archives-and-archive-manager-goes](../todos/files-handles-archives-and-archive-manager-goes.md): formats that open as folders, where Extract puts things, the id move.
 - [kit-apps-may-run-webassembly](../todos/kit-apps-may-run-webassembly.md): the npm-only rule as policy, threads off.
-- [catalog-apps-bring-background-widgets-layers-and-commands](../todos/catalog-apps-bring-background-widgets-layers-and-commands.md): declared hooks, named exports, containment, the kit version, the sign-in cost.
-- [start-shows-a-folder-per-group](../todos/start-shows-a-folder-per-group.md): what makes a folder, in place or cascade, search, a folder for the base.
-- [calculator-paint-and-snipping-tool-install-as-accessories](../todos/calculator-paint-and-snipping-tool-install-as-accessories.md): the descriptor, Snipping Tool without Paint.
-- [image-viewer-and-media-player-join-accessories](../todos/image-viewer-and-media-player-join-accessories.md): Files' previews, an Install button in the chooser.
-- [code-editor-and-diff-install-as-developer](../todos/code-editor-and-diff-install-as-developer.md): the text fallback, Compare without Diff, the descriptor, what if Monaco can't build under the cap.
-- [clock-and-calendar-join-accessories](../todos/clock-and-calendar-join-accessories.md): **the modules stay in the OS**, widgets after an uninstall, alarms while uninstalled.
-- [todo-sticky-notes-and-bookmarks-join-accessories](../todos/todo-sticky-notes-and-bookmarks-join-accessories.md): **the modules stay in the OS**, sticky notes after an uninstall.
-- [git-gui-and-rest-api-client-join-developer](../todos/git-gui-and-rest-api-client-join-developer.md): **the modules stay in the OS**.
-- [archive-manager-joins-accessories](../todos/archive-manager-joins-accessories.md): **the module stays in the OS**, Files' menus without it, or keep it in the base.
+- [apps-get-a-data-folder-of-their-own](../todos/apps-get-a-data-folder-of-their-own.md): the call's shape, always present or listed, URL apps.
+- [catalog-apps-bring-background-services-and-commands](../todos/catalog-apps-bring-background-services-and-commands.md): declared hooks, named exports, containment, the kit version.
+- [start-gets-search-pins-and-an-a-to-z-list](../todos/start-gets-search-pins-and-an-a-to-z-list.md): default pins, what search finds, focus on open, the Linux tag.
+- [the-chooser-links-to-the-marketplace](../todos/the-chooser-links-to-the-marketplace.md): where the link lands.
+- [todo-and-bookmarks-install-as-accessories](../todos/todo-and-bookmarks-install-as-accessories.md): file format, when the data moves.
+- [git-gui-and-rest-api-client-join-developer](../todos/git-gui-and-rest-api-client-join-developer.md): (module question answered; the rest follows the checklist).
 
-In imbatranim-office: `cad-reads-dwg-in-the-tab` (a worker per file, the
-server going, the WASM invariant) and `pdf-decodes-jpeg2000-and-jbig2-images`
-(what ships, the fallbacks). The one call that touches four todos is the
-backend modules staying in the OS (Claude's default; the alternatives are
-in each).
+In imbatranim-office: `pdf-decodes-jpeg2000-and-jbig2-images` (what ships,
+the fallbacks).
 
 ## Resolved
 

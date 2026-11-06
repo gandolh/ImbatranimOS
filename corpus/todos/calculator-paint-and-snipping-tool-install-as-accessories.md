@@ -1,7 +1,7 @@
 ---
 title: Calculator, Paint and Snipping Tool install as Accessories
 created: 2026-11-06
-status: open
+status: dropped
 tags: [imbatranim-apps]
 ---
 
@@ -11,6 +11,8 @@ Calculator, Paint and Snipping Tool leave the image and install as the first app
 
 Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
+
+> DROPPED 2026-11-06 in the imbatranim-apps grill: Calculator, Paint and Snipping Tool stay built in, as basics for a normal user ([decisions-marketplace-suites.md](../wiki/decisions-marketplace-suites.md#the-os-keeps-the-minimum-apps-add-on-top-2026-11-06)).
 
 ## Open questions (grill before starting)
 

@@ -109,8 +109,8 @@ session's first X client, installed with the first app that speaks X11
 pixels (scale: the ratio's ceiling); X11 apps stay at 1. The owner capped the
 scale at 2 the same day (`031b56b`, ships with 33): a phone at a ratio of
 about 3 draws at 2, a little soft, under the VPS's memory cap. The
-imbatranim-apps plan (2026-11-06) waits in the backlog as todos, grilled as
-each starts; 50-62 were withdrawn to them ([open-questions.md](open-questions.md)).
+imbatranim-apps plan (2026-11-06) was grilled and waits in the backlog as
+todos; 50-62 were withdrawn to them ([open-questions.md](open-questions.md)).
 
 37-44 were written 2026-11-04 from a grill with the owner; each outcome is
 in `briefs/done/`. Done 2026-11-05: 37 production's own Compose profile; 38
@@ -178,8 +178,8 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Open todos
 
-Thirteen, the imbatranim-apps backlog (2026-11-06): drafted briefs whose
-open questions are grilled when each starts, listed in
+Eleven, the imbatranim-apps backlog (2026-11-06), grilled the same day;
+each keeps a few engineering questions to confirm when it starts, listed in
 [open-questions.md](open-questions.md). Briefs 48 and 49 came from the last
 two Linux apps todos the same day.
 

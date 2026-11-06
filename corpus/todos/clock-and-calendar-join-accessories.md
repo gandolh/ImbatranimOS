@@ -1,7 +1,7 @@
 ---
 title: Clock and Calendar join Accessories
 created: 2026-11-06
-status: open
+status: dropped
 tags: [imbatranim-apps]
 ---
 
@@ -12,15 +12,20 @@ Clock and Calendar join Accessories, bringing their background services and widg
 Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
 
+> DROPPED 2026-11-06 in the imbatranim-apps grill: Clock and Calendar stay built in and keep their backend modules.
+
 ## Open questions (grill before starting)
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); Clock and Calendar go to Accessories.
 
-1. **Do their backend modules (`clock`, `calendar`) stay in the OS, with only the apps moving?** Proposed: yes (Claude's default of 2026-11-06). Nothing is migrated, and the data survives an uninstall and comes back on reinstall. The alternatives: a per-app store in the OS (a migration), files in the home folder (a migration, and two tabs writing one file), or a server in the group (about 100 MB while it runs and a cold start, on the 1 GiB box).
+1. **Do their backend modules stay in the OS?** Answered 2026-11-06: no. Their data moves once into real files in the app's own folder, `~/.local/share/imbatranim/<app-id>/`, through [apps-get-a-data-folder-of-their-own](apps-get-a-data-folder-of-their-own.md), and the module is deleted.
 2. **Does a placed widget keep its spot and come back when the app is reinstalled, like a pinned icon?** Proposed: yes.
-3. **Should alarms and reminders still fire while Accessories is uninstalled, since their data is still there?** Proposed: no; uninstalling silences them until the app is back.
+3. **Should alarms and reminders still fire while Accessories is uninstalled?** Answered 2026-11-06: no. They belong to the apps and stop with them; a reinstall picks them up from the kept data. The uninstall prompt says how many alarms and reminders will stop.
+4. **Which file format?** Proposed: JSON for both, with Calendar's ICS import and export kept as they are.
 
 ## Draft brief
+
+> The draft below predates the 2026-11-06 grill and still says the modules stay. At promotion: add a one-time move of the module's data into the app's folder, delete the module, and depend on [apps-get-a-data-folder-of-their-own](apps-get-a-data-folder-of-their-own.md).
 
 ### Context
 
@@ -33,7 +38,7 @@ found blocked:
 | Clock | 2,132 / 609 | `clock` (544 lines: world clocks, alarms, import) | `background` (alarms), a widget | `http`, `intents`, `notify`, `schedule` |
 | Calendar | 3,266 / 1,184 | `calendar` (532 lines: events, import) | `background` (reminders), the Agenda widget | `fs`, `http`, `intents`, `notify`, `schedule` |
 
-[The hooks todo](catalog-apps-bring-background-widgets-layers-and-commands.md) lets a catalog app bring a background service and widgets. Their
+[The hooks todo](catalog-apps-bring-background-services-and-commands.md) lets a catalog app bring a background service and widgets. Their
 data stays where it is (question 1). The owner approved moving them on
 2026-11-06 ("looks good, write the briefs").
 
@@ -42,7 +47,7 @@ Follow the checklist in
 
 ### Depends on
 
-[The hooks](catalog-apps-bring-background-widgets-layers-and-commands.md) and [Calculator, Paint and Snipping Tool](calculator-paint-and-snipping-tool-install-as-accessories.md)
+[The hooks](catalog-apps-bring-background-services-and-commands.md) and [Calculator, Paint and Snipping Tool](calculator-paint-and-snipping-tool-install-as-accessories.md)
 (the Accessories group).
 
 ### What to do

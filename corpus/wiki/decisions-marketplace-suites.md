@@ -123,3 +123,77 @@ lease the app's server) and a change to how `KitAppHost` hosts kit apps.
 Built the same day as `system.server.request()` (kit 1.2.0); a kit app's
 `host.server` is now always null.
 
+
+## An app keeps its data in a folder of its own (2026-11-06)
+
+Decided in the imbatranim-apps grill. An installable app keeps its data as
+real files in a folder of its own, `~/.local/share/imbatranim/<app-id>/`.
+Todo and Bookmarks, the installable apps with data in a backend module
+today (rows in `~/.imbatranim/db.sqlite`), move their data there, and so do
+Git GUI's recent repos. Built-in apps (Clock, Calendar, Sticky Notes) keep
+their modules. This is how Windows
+gives a program AppData and Linux gives one `~/.local/share`. The OS gives
+every app its folder through `system`, scoped so an app sees only its own,
+and today's data moves there once.
+
+**Why:** the owner wants the OS laid out like a real one, with a predefined
+place per app. Real files fit "the OS is real": Files can show them, and
+backups take them with the home folder. The REST API Client already keeps
+its collections as a file (`~/.config/rest-client/collections.json`).
+
+Rejected:
+- the modules staying in the OS: no migration, but the OS keeps backend code
+  for apps that may not be installed;
+- a per-app space in the database: data the owner can't see or copy;
+- a server per group: about 100 MB and a cold start on the 1 GiB box.
+
+Consequences:
+- two tabs can save one file, so a save carries the version it read, and a
+  stale one is refused;
+- each module is deleted once its data has moved;
+- the schedule claims that stop two tabs toasting the same reminder stay in
+  the OS.
+
+## The OS keeps the minimum; apps add on top (2026-11-06)
+
+Decided in the same grill, by the owner: "We should keep as OS services the
+minimal work that needs them. The apps can be installable if they provide
+extra features that the OS don't need or just an UI."
+
+The OS keeps what it needs to work as an OS, plus the services that need
+the server:
+- Files extracts and compresses archives itself, through the `archive`
+  service, with no app installed. Archive Manager is an installable app that
+  adds browsing inside an archive and choosing what to extract.
+- The `git` and `http-proxy` services stay, trimmed to the work that needs
+  the server: running git on repos in the home folder, and sending a request
+  behind the SSRF guard. Git GUI and the REST API Client are the features
+  and UI on top, and their data (recent repos, collections) goes to their
+  data folder.
+- The same reading covers the rest. Files' previews show images and play
+  media without Image Viewer or Media Player, Notepad edits text without the
+  Code Editor, and the taskbar has its clock without Clock.
+
+**The base serves a normal user** (owner, same grill): "someone who uses it
+for normal use (browsing, media, etc), small coding (like web dev or system
+programming) and we should support basic functionalities native in the os".
+The OS is opinionated towards a development environment, so these are built
+in:
+- Settings, Files, Terminal, Notepad, System Monitor, Logs and the Browser;
+- the Code Editor with Diff;
+- Image Viewer and Media Player ("png handling should be done by the system
+  as an essential feature");
+- Calculator, Clock, Calendar, Paint, Snipping Tool and Sticky Notes.
+
+Installable from imbatranim-apps: Minesweeper and Solitaire, Git GUI, the
+REST API Client, Todo and Bookmarks, and Office. Markdown Editor folds into
+Notepad, and Archive Manager into Files.
+
+**Why:** a fresh OS should still do the basics a real one does. An app
+earns its place in the Marketplace by adding to that, not by holding a piece
+the OS needs.
+
+Rejected:
+- moving the services into group servers: a cold start and about 100 MB
+  while open, with the SSRF guard outside the OS;
+- keeping Git GUI, the REST API Client and Archive Manager built in.

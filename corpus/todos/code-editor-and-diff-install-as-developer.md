@@ -1,7 +1,7 @@
 ---
 title: Code Editor and Diff install as Developer
 created: 2026-11-06
-status: open
+status: dropped
 tags: [imbatranim-apps]
 ---
 
@@ -12,6 +12,8 @@ Code Editor and Diff leave the image as the Developer group. Monaco is 13.9 MB o
 Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
 
+> DROPPED 2026-11-06 in the imbatranim-apps grill: the Code Editor and Diff stay built in, because the OS is opinionated towards a development environment. Developer is now Git GUI and the REST API Client ([git-gui-and-rest-api-client-join-developer](git-gui-and-rest-api-client-join-developer.md)).
+
 ## Open questions (grill before starting)
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); Code Editor and Diff go to a Developer group.
@@ -19,7 +21,7 @@ Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good,
 1. **Does text fall back to Notepad, with Code Editor's types still counted as text when Developer isn't installed?** Proposed: yes.
 2. **Does Files hide Compare when Diff isn't installed?** Proposed: yes.
 3. **Is the descriptor id `developer`, named "Developer", a static v2 suite on the shared kit?** Proposed: yes.
-4. **If Monaco can't build under the 1 GiB cap, what then?** Proposed: the Code Editor stays built in. Committing built output would break build-from-source, and the box gets no upgrade.
+4. **If Monaco can't build under the 1 GiB cap, what then?** Answered 2026-11-06: the Code Editor and Diff stay built in, and the Developer group starts with Git GUI and the REST API Client. No prebuilt output, no bigger box, no editor swap.
 
 ## Draft brief
 

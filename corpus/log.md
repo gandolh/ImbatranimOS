@@ -5213,3 +5213,20 @@ times scale 1's pixels in frames and in the apps' buffers; at 2 it is a
 little soft, for under half of that, which matters under the VPS's 1 GiB
 cap. `031b56b` (1.163.0), `MAX_SCALE` in `pixels.rs`; it ships with brief
 33's deploy.
+
+## [2026-11-06] build | Brief 39 done: Linux apps' sound reaches the tab
+
+`4acbf07` (1.165.0), ready for deploy. The Wayland host is each session's
+sound server: it speaks PulseAudio's native protocol on
+`$XDG_RUNTIME_DIR/imbatranim-sound/<session>` (the `pulseaudio` crate), the
+backend gives apps `PULSE_SERVER`, and the host mixes their streams to 48 kHz
+stereo and sends 20 ms Opus packets (libopus linked in), message kind 3,
+protocol 7. PulseAudio and PipeWire were measured at about 256 MiB each in
+the image and not taken; the host binary grew 0.64 MB, the runtime image
+nothing, the build stage needs cmake. Silence sends nothing, the cover
+screen stops the clock. The tab decodes with WebCodecs behind a gain and an
+adaptive jitter buffer, after the first press or key; Linux sound holds the
+idle cover off. Walked headless with a Web Audio beep page and a 360p video
+in Firefox: 50 packets a second without breaks beside 10 Mbit/s of frames,
+sound about 40 ms ahead of the picture before device latency.
+

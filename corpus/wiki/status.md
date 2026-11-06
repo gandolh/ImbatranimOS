@@ -1,5 +1,5 @@
 ---
-summary: Dated snapshot (2026-11-06) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups); 33 done 2026-11-06 (Linux windows sharp on HiDPI screens, ready for deploy); 31 done 2026-11-05 (X11 apps through Xwayland, which comes with the first app that speaks X11); the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
+summary: Dated snapshot (2026-11-06) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups); 33 done 2026-11-06 (Linux windows sharp on HiDPI screens, ready for deploy; the scale capped at 2 the same day); 39 done 2026-11-06 (Linux apps' sound in the tab, the host as each session's sound server, ready for deploy); 31 done 2026-11-05 (X11 apps through Xwayland, which comes with the first app that speaks X11); the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
 updated: 2026-11-06
 ---
 
@@ -105,22 +105,14 @@ Compose watch version-free copies. A version-only rebuild went from 4 min
 23-36 were written on 2026-11-03 from the open todos, in an estate-wide grill
 with the owner. A run on branch `claude/tender-franklin-h8lc35` (PR 2, merged
 into `main`) built thirteen of them, with 22, on 2026-11-03 and 2026-11-04; each
-outcome is in `briefs/done/`:
-- 23-27, small fixes: the Linux apps pane rounds in Apricot (a Linux window's
-  surface keeps no ring); the tray and Sticky Notes' desktop layer read a
-  wrong answer as nothing; Files' listing fills its pane; `openApp` gives a
-  window it raises the keyboard; the strip keeps only each native module's
-  binary;
-- 28 and 29, for imbatranim-office: `startIn` on the file dialogs (kit
-  1.1.0) and `system.server.request()`, a kit app's server started when the
-  app asks (kit 1.2.0); imbatranim-office's own briefs can now use them;
-- 30: `npm test` caps turbo at half the cores (the full run under load is the
-  owner's check);
-- 32, 34, 35, 36, Linux apps: a keyboard layout (US or Romanian, switched
-  live), window places kept across a reload (the gateway now tells the tab
-  whether its session resumed), Start entries in the browser's language with
-  their desktop actions, and video regions sent as JPEG while text stays
-  lossless.
+outcome is in `briefs/done/`. 23-27 are small fixes (the Linux apps pane
+in Apricot, the tray and Sticky Notes reading a wrong answer as nothing,
+Files' listing, `openApp` giving the keyboard, the native-module strip); 28
+and 29 give imbatranim-office `startIn` (kit 1.1.0) and
+`system.server.request()` (kit 1.2.0); 30 caps turbo at half the cores; 32,
+34, 35 and 36 are Linux apps follow-ups (a US or Romanian layout, window
+places kept across a reload, Start entries in the browser's language, video
+regions as JPEG).
 
 31 is done (2026-11-05, `e365ca8`): X11 apps open through Xwayland, on a
 session's first X client, installed with the first app that speaks X11
@@ -137,9 +129,13 @@ copy and paste with Linux apps (the selection now follows the keyboard); 42
 a D-Bus session bus per session, so Firefox keeps one instance, and Linux
 apps' notifications in the OS; 44 the VPS cap's numbers (1 GiB / 1 CPU in
 `infrastructure/README.md`), Linux apps first when memory runs out, and a
-notice when one is killed. Not built: 39 Linux apps' sound, 40 a tray
-volume over all sound (after 39), 43 an Updates page. The server ISO is
-deferred by the owner (2026-10-04).
+notice when one is killed. 39 is done (2026-11-06, `4acbf07`, ready for
+deploy): Linux apps' sound plays in the tab. The Wayland host is each
+session's PulseAudio-protocol server (no sound daemon in the image,
+[decisions-linux-apps-built.md](decisions-linux-apps-built.md)) and sends the
+mix as Opus; the first press or key starts it. Not built: 40 a tray volume
+over all sound, 43 an Updates page. The server ISO is deferred by the owner
+(2026-10-04).
 
 ## Owed by the owner
 
@@ -159,6 +155,9 @@ deferred by the owner (2026-10-04).
 - After brief 33's deploy: a Linux app on a screen whose `devicePixelRatio`
   is above 1 is sharp and follows a page zoom (at most scale 2: on a phone
   near ratio 3 it is a little soft, by choice).
+- After brief 39's deploy, in a normal Chrome and on the Android phone: a
+  video in Firefox is heard after one click in the desktop, with its sound
+  and picture together (the walk was headless, with no real speakers).
 - Before Linux apps go on at the VPS: set the cap from
   `infrastructure/README.md` ("the container cap": `mem_limit: 1g`,
   `memswap_limit: 1g`, `cpus: 1.0`) in vps-deploy's `imbatranim-os` stack

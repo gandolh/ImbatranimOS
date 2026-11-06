@@ -1,6 +1,6 @@
 ---
-summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image. Grilled again 2026-11-04: a tray volume over all sound (reversing the 2026-07-31 rejection), Linux apps on the VPS in a capped container, and the zoom beside Linux windows stays off for good. 2026-11-05: the session bus is Alpine's dbus, and the backend speaks D-Bus with a client of its own; Xwayland, for X11 apps, isn't in the image but comes with the first app that speaks X11.
-updated: 2026-11-05
+summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image. Grilled again 2026-11-04: a tray volume over all sound (reversing the 2026-07-31 rejection), Linux apps on the VPS in a capped container, and the zoom beside Linux windows stays off for good. 2026-11-05: the session bus is Alpine's dbus, and the backend speaks D-Bus with a client of its own; Xwayland, for X11 apps, isn't in the image but comes with the first app that speaks X11. 2026-11-06: the Wayland host is each session's sound server, speaking PulseAudio's protocol itself, since PulseAudio or PipeWire would add about 250 MB to the image.
+updated: 2026-11-06
 ---
 
 # Decisions: Linux apps, after the build (2026-11-03)
@@ -120,3 +120,24 @@ apps that speak X11 alone (libX11 but no libwayland), which misses apps that
 speak both and still pick X11, such as older Electron apps.
 **Why**: the image stays slim, an X11 app pays for X11 when it first needs
 it, and an app that already carries GTK pays almost nothing.
+
+## The Wayland host is each session's sound server
+_2026-11-06_ — Linux apps' sound (brief 39) needs a sound server per session.
+No daemon runs for it: the Wayland host listens on a socket per session and
+speaks PulseAudio's native protocol there (the `pulseaudio` crate reads and
+writes the messages), mixes the session's streams itself, and encodes the
+mix as Opus with libopus linked into the binary. Apps reach it through
+`PULSE_SERVER`, which the backend sets beside `WAYLAND_DISPLAY`. Measured
+while building it: the host binary grew 0.64 MB, the runtime image nothing;
+the build stage needs cmake and make.
+Rejected, both named by the brief: Alpine's PulseAudio, or PipeWire with
+`pipewire-pulse` and WirePlumber, each about 256 MiB installed in the image,
+because mesa, llvm and gstreamer (or libcamera) come with them; Nix's
+PulseAudio in the base profile, a 245 MiB closure. Also rejected: a daemon
+built from source without those parts (a C build stage to keep up, and the
+host would still have to read its output and encode it).
+**Why**: Firefox, and Linux apps generally, only need the protocol on a
+socket; an existing server would cost more than the Nix layer itself against
+the slim image. The host already runs per session, starts and stops with it
+and sleeps with it, so one stream, mixed in the container (the owner's call
+of 2026-11-04), costs nothing more to run.

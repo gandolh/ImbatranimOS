@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { decodeRect, parseFrame, ENC_JPEG, ENC_WEBP_LOSSLESS } from './frames'
+import { decodeRect, paintFrame, parseFrame, ENC_JPEG, ENC_WEBP_LOSSLESS } from './frames'
 
 /** A frame as the socket carries it: kind 2, then the body PROTOCOL.md lays out. */
 function frameBytes(rects: { x: number; y: number; w: number; h: number; data: number[] }[]) {
@@ -66,5 +66,34 @@ describe('parseFrame', () => {
     expect(await decodeRect(rect(9))).toBeNull()
     expect(seen).toEqual(['image/jpeg', 'image/webp'])
     vi.unstubAllGlobals()
+  })
+})
+
+describe('paintFrame', () => {
+  /** What paintFrame touches of a canvas; no 2D context, so nothing is drawn. */
+  const fakeCanvas = () =>
+    ({
+      width: 0,
+      height: 0,
+      style: { width: '', height: '' },
+      getContext: () => null,
+    }) as unknown as HTMLCanvasElement
+
+  it('lays a scale-2 frame out at half its pixels, the same CSS size as at scale 1', async () => {
+    const sharp = fakeCanvas()
+    await paintFrame(sharp, { toplevel: 1, width: 1280, height: 960, rects: [] }, 2)
+    expect([sharp.width, sharp.height]).toEqual([1280, 960])
+    expect([sharp.style.width, sharp.style.height]).toEqual(['640px', '480px'])
+
+    const soft = fakeCanvas()
+    await paintFrame(soft, { toplevel: 1, width: 640, height: 480, rects: [] }, 1)
+    expect([soft.width, soft.height]).toEqual([640, 480])
+    expect([soft.style.width, soft.style.height]).toEqual(['640px', '480px'])
+  })
+
+  it('reads a missing or broken scale as 1', async () => {
+    const c = fakeCanvas()
+    await paintFrame(c, { toplevel: 1, width: 300, height: 200, rects: [] }, 0)
+    expect([c.style.width, c.style.height]).toEqual(['300px', '200px'])
   })
 })

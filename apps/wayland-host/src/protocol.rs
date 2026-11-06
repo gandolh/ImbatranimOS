@@ -12,7 +12,7 @@ pub const KIND_FRAME: u8 = 2;
 /// Refuse anything larger: a full 4K frame deflated is far below this.
 pub const MAX_MESSAGE: usize = 64 * 1024 * 1024;
 
-pub const PROTOCOL_VERSION: u32 = 5;
+pub const PROTOCOL_VERSION: u32 = 6;
 
 /// Pixel encodings of a frame's rectangles.
 pub const ENC_DEFLATE_RGBA: u8 = 1;
@@ -25,18 +25,25 @@ pub const ENC_JPEG: u8 = 3;
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Inbound {
     /// A desktop session (one tab) wants Linux apps: listen on its socket.
+    /// `ratio` is the tab's `devicePixelRatio`; the output's scale is its
+    /// ceiling (`pixels::output_scale`).
     SessionOpen {
         session: String,
         width: u32,
         height: u32,
+        #[serde(default = "one")]
+        ratio: f64,
     },
     /// The tab went away: disconnect its clients and remove its socket.
     SessionClose { session: String },
-    /// The tab's viewport changed size; the session's output follows it.
+    /// The tab's viewport changed size, or its `devicePixelRatio` changed
+    /// (another screen, a page zoom); the session's output follows it.
     Output {
         session: String,
         width: u32,
         height: u32,
+        #[serde(default = "one")]
+        ratio: f64,
     },
     /// The backend has passed a frame to the WebSocket and the socket has
     /// room again: the toplevel may send its next one.
@@ -125,6 +132,11 @@ pub enum Inbound {
     Clipboard { session: String, text: String },
 }
 
+/// A ratio the backend left out: a scale-1 screen.
+fn one() -> f64 {
+    1.0
+}
+
 /// How a toplevel's title bar is drawn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -150,9 +162,12 @@ pub struct ToplevelInfo {
     pub toplevel: u32,
     pub title: String,
     pub app_id: String,
-    /// The image's size.
+    /// The image's size, in surface coordinates (CSS pixels in the tab).
     pub width: u32,
     pub height: u32,
+    /// Image pixels per surface coordinate: a frame is `width × scale` by
+    /// `height × scale` pixels. 1 unless the app draws for a HiDPI output.
+    pub scale: u32,
     pub geometry: Geometry,
     pub decorations: Decorations,
     /// The app's limits on its window geometry; 0 means none.
@@ -173,9 +188,11 @@ pub struct PopupInfo {
     /// geometry, after it was kept on the output.
     pub x: i32,
     pub y: i32,
-    /// The image's size.
+    /// The image's size, in surface coordinates.
     pub width: u32,
     pub height: u32,
+    /// Image pixels per surface coordinate, as for a toplevel.
+    pub scale: u32,
     /// The part of the image that is the popup (without shadows).
     pub geometry: Geometry,
     /// It holds an explicit grab: it has the keyboard, and a press outside
@@ -412,6 +429,7 @@ mod tests {
                 app_id: "foot".into(),
                 width: 640,
                 height: 480,
+                scale: 1,
                 geometry: Geometry { x: 0, y: 0, width: 640, height: 480 },
                 decorations: Decorations::Server,
                 min_width: 0,
@@ -436,6 +454,7 @@ mod tests {
                 y: -4,
                 width: 200,
                 height: 120,
+                scale: 2,
                 geometry: Geometry {
                     x: 8,
                     y: 8,
@@ -461,6 +480,7 @@ mod tests {
             r#"{"type":"toplevel_visible","session":"abcdefghijklmnop","toplevel":4,"visible":false}"#,
             r#"{"type":"keyboard_layout","session":"abcdefghijklmnop","layout":"ro"}"#,
             r#"{"type":"clipboard","session":"abcdefghijklmnop","text":"pasted ș\n"}"#,
+            r#"{"type":"output","session":"abcdefghijklmnop","width":800,"height":600,"ratio":2.5}"#,
         ] {
             push_message(&mut bytes, KIND_JSON, json.as_bytes());
         }
@@ -482,6 +502,10 @@ mod tests {
         assert_eq!(
             d.next_inbound(),
             Ok(Some(Inbound::Clipboard { session: "abcdefghijklmnop".into(), text: "pasted ș\n".into() }))
+        );
+        assert_eq!(
+            d.next_inbound(),
+            Ok(Some(Inbound::Output { session: "abcdefghijklmnop".into(), width: 800, height: 600, ratio: 2.5 }))
         );
     }
 
@@ -527,7 +551,9 @@ mod tests {
             Ok(Some(Inbound::SessionOpen {
                 session: "abcdefghijklmnop".into(),
                 width: 1280,
-                height: 720
+                height: 720,
+                // Left out: a scale-1 screen.
+                ratio: 1.0,
             }))
         );
         assert_eq!(

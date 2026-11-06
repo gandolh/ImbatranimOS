@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest'
-import { wheelMessage } from './pointerInput'
+import { afterEach, describe, expect, it } from 'vitest'
+import { setLinuxSender } from './linuxWindowsStore'
+import { attachPointer, wheelMessage } from './pointerInput'
 
 const wheel = (init: WheelEventInit & { wheelDeltaX?: number; wheelDeltaY?: number }) =>
   Object.assign(new WheelEvent('wheel', init), {
@@ -32,5 +33,25 @@ describe('what a wheel event becomes for a Linux app', () => {
       v120y: 0,
       wheel: false,
     })
+  })
+})
+
+describe('where the pointer lands in a Linux window', () => {
+  afterEach(() => setLinuxSender(null))
+
+  it("is the CSS offset from the canvas's corner, whatever the canvas's pixels", () => {
+    const sent: object[] = []
+    setLinuxSender((m) => sent.push(m))
+    const el = document.createElement('div')
+    // A scale-2 window: 1280×960 pixels laid out at 640×480 CSS pixels.
+    const canvas = document.createElement('canvas')
+    canvas.width = 1280
+    canvas.height = 960
+    canvas.getBoundingClientRect = () =>
+      ({ left: 100, top: 50, width: 640, height: 480 }) as DOMRect
+    const detach = attachPointer(el, 7, () => canvas)
+    el.dispatchEvent(new MouseEvent('pointermove', { clientX: 420, clientY: 290 }))
+    detach()
+    expect(sent).toEqual([{ type: 'pointer_motion', toplevel: 7, x: 320, y: 240 }])
   })
 })

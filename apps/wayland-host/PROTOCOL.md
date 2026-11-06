@@ -39,9 +39,9 @@ Messages over 64 MiB are refused, and a malformed one ends the connection.
 
 | `type` | Fields | Meaning |
 |---|---|---|
-| `session_open` | `session`, `width`, `height` | A tab wants Linux apps. Listen on `$XDG_RUNTIME_DIR/wayland-<session>` with one output of the tab's viewport size. |
+| `session_open` | `session`, `width`, `height`, `ratio` | A tab wants Linux apps. Listen on `$XDG_RUNTIME_DIR/wayland-<session>` with one output of the tab's viewport size, its scale the ceiling of `ratio`, the tab's `devicePixelRatio` (see "Scale"). |
 | `session_close` | `session` | The tab went away. Disconnect the session's clients and remove its socket. |
-| `output` | `session`, `width`, `height` | The tab's viewport changed. |
+| `output` | `session`, `width`, `height`, `ratio` | The tab's viewport or its `devicePixelRatio` changed. |
 | `frame_ack` | `session`, `toplevel` | The toplevel's last frame went to the tab and the socket has room: it may send another. |
 
 A session id is 16 to 64 characters of `A-Z a-z 0-9 - _`; anything else is
@@ -72,12 +72,12 @@ share one space within a session.
 
 | `type` | Fields |
 |---|---|
-| `hello` | `version` (5) |
+| `hello` | `version` (6) |
 | `session_ready` | `session`, `display` (the socket name, `wayland-<session>`), `x11_display` (the X display number reserved for the session's X11 apps, or `null`) |
 | `session_failed` | `session`, `reason` |
-| `toplevel_created`, `toplevel_updated` | `session`, `toplevel`, `title`, `app_id`, `width`, `height`, `geometry`, `decorations`, `min_width`, `min_height`, `max_width`, `max_height` |
+| `toplevel_created`, `toplevel_updated` | `session`, `toplevel`, `title`, `app_id`, `width`, `height`, `scale`, `geometry`, `decorations`, `min_width`, `min_height`, `max_width`, `max_height` |
 | `toplevel_destroyed` | `session`, `toplevel` |
-| `popup_created`, `popup_updated` | `session`, `popup`, `parent`, `x`, `y`, `width`, `height`, `geometry`, `grab` |
+| `popup_created`, `popup_updated` | `session`, `popup`, `parent`, `x`, `y`, `width`, `height`, `scale`, `geometry`, `grab` |
 | `popup_destroyed` | `session`, `popup` |
 | `clients` | `session`, `pids` |
 | `cursor` | `session`, `name` |
@@ -86,7 +86,8 @@ share one space within a session.
 
 A toplevel is created when it first shows a buffer, and destroyed when the
 app destroys it or removes its buffer. `width` and `height` are its image's
-size in pixels; `geometry` (`x`, `y`, `width`, `height`) is the part of the
+size in surface coordinates, and `scale` the image pixels to each (see
+"Scale"); `geometry` (`x`, `y`, `width`, `height`) is the part of the
 image that is the window, without shadows (the whole image when the app set
 none). `decorations` is `server` when the app asked for the OS title bar
 (xdg-decoration) and `client` when it draws its own or never asked. The
@@ -127,6 +128,44 @@ is offered the current one, and only it may set a new one.
 `request` passes an app's `xdg_toplevel` requests to the window manager:
 `move`, `resize` (with `edges`: `n`, `s`, `e`, `w`, `ne`, `nw`, `se`, `sw`),
 `maximize`, `unmaximize`, `minimize`, `fullscreen` and `unfullscreen`.
+
+### Scale
+
+Everything in these messages is in surface coordinates: window sizes and
+geometry, limits, positions, popup offsets, the pointer and scrolling. They
+are the tab's CSS pixels, so a window has the same size at every scale.
+Only frames are in image pixels.
+
+The output's scale is the ceiling of the tab's `devicePixelRatio`, from 1 to
+4 (a ratio a hundredth above a whole number counts as that number), and its
+mode is the viewport times the scale, so apps see the viewport as its
+logical size. Apps learn it the three ways they listen: every surface enters
+the output (`wl_surface.enter`, where GTK reads it), the preferred buffer
+scale (`wl_surface` version 6), and the fractional scale's preferred scale,
+the same whole number (an app that binds `wp_fractional_scale_v1`, as Firefox
+may, uses only that one). When the ratio changes, every window's surfaces
+leave the output and enter it again, so apps that read the scale only on
+`enter` look again.
+
+A surface's size in surface coordinates is its viewport's destination when
+it set one (`wp_viewport.set_destination`; an app drawing at the fractional
+scale does), else its buffer's size over its buffer scale. A viewport's
+source rectangle (cropping) is not applied. A window's `scale` is its root
+surface's buffer pixels per surface coordinate, rounded, from 1 to 4: 2 for
+an app that drew for a scale-2 output, 1 for one that didn't. Its image is
+`width × scale` by `height × scale` pixels; a subsurface drawn at another
+scale is resampled to the window's, nearest pixel. Surface damage is grown to
+whole buffer pixels. When a window's scale changes, it is announced again
+(`toplevel_updated`, `popup_updated`) before its first frame at the new one,
+and that frame covers the whole image.
+
+The tab lays each window's canvas out at `width` by `height` CSS pixels,
+holding the frame's pixels: on a screen whose ratio is 2, one image pixel is
+one device pixel, and the window is as big as at scale 1.
+
+X11 apps draw at scale 1 (rootless Xwayland ignores the output's scale
+without `-hidpi`), so their windows have `scale` 1 and the tab enlarges them,
+as before.
 
 ### X11 apps
 
@@ -189,7 +228,7 @@ WebSocket, unchanged.
 | Field | Size | |
 |---|---|---|
 | toplevel | u32 | |
-| width | u32 | the window's whole image |
+| width | u32 | the window's whole image, in pixels (its `width × scale`) |
 | height | u32 | |
 | rectangle count | u16 | |
 | rectangles | | each below |
@@ -227,7 +266,7 @@ gets the latest picture rather than a queue, and the app draws less often.
 
 ## `/api/wayland`
 
-`GET /api/wayland?session=<id>&width=<w>&height=<h>`, upgraded, with the
+`GET /api/wayland?session=<id>&width=<w>&height=<h>&ratio=<r>`, upgraded, with the
 Terminal's checks (the session cookie, Origin, and a 30 s sweep that closes
 the socket when the sign-in ends). One socket per session id.
 
@@ -238,7 +277,9 @@ before a close with code 4503. First of all, `{"type":"session","resumed"}`:
 resync announces are ones the tab had and go back to their places, and `false`
 for a new session, whose toplevel ids may repeat an old session's.
 
-Tab to server, JSON text: `{"type":"viewport","width","height"}`, the
+Tab to server, JSON text: `{"type":"viewport","width","height","ratio"}`
+(the viewport in CSS pixels and the `devicePixelRatio`, sent on a resize and
+when the ratio changes: another screen, a page zoom), the
 input messages above (`focus` to `press_outside`), `visibility`,
 `toplevel_visible`, `keyboard_layout` (sent on connect and on every
 change) and `clipboard`, without `session`; the backend checks each field

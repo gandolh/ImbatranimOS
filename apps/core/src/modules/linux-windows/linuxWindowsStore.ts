@@ -8,9 +8,11 @@ export type LinuxToplevel = {
   windowId: string
   title: string
   appId: string
-  /** The app's image. */
+  /** The app's image, in CSS pixels. */
   width: number
   height: number
+  /** Image pixels per CSS pixel: 2 when the app draws for a scale-2 screen. */
+  scale: number
   /** The part of the image that is the window; the rest is shadow. */
   geometry: Geometry
   /** `server`: the OS title bar. `client`: the app draws its own. */
@@ -31,9 +33,11 @@ export type LinuxPopup = {
   /** Its window geometry's top-left, relative to the parent's. */
   x: number
   y: number
-  /** The image. */
+  /** The image, in CSS pixels. */
   width: number
   height: number
+  /** Image pixels per CSS pixel. */
+  scale: number
   /** The part of the image that is the popup; the rest is shadow. */
   geometry: Geometry
   /** It holds an explicit grab: the host sends it the keys. */

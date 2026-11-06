@@ -28,9 +28,10 @@ type Grab =
     }
 
 /**
- * The inside of a Linux window: the toplevel's canvas, one image pixel to one
- * CSS pixel (the session's output has scale 1), shifted so the app's window
- * geometry starts at the top-left and its shadows fall outside. It passes the
+ * The inside of a Linux window: the toplevel's canvas, one surface coordinate
+ * to one CSS pixel (`scale` image pixels to each, see `paintFrame`), shifted
+ * so the app's window geometry starts at the top-left and its shadows fall
+ * outside. It passes the
  * pointer and keyboard to the app, tells the app its new size when the OS
  * window is resized, and runs the drags an app starts from its own title bar.
  */

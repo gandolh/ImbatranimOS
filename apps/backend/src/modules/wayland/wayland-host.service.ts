@@ -65,12 +65,13 @@ export class WaylandHostService implements OnModuleDestroy {
     session: string,
     width: number,
     height: number,
+    ratio: number,
     listener: SessionListener,
   ): string | null {
     const failure = this.ensureStarted();
     if (failure) return failure;
     this.sessions.set(session, listener);
-    this.send({ type: 'session_open', session, width, height });
+    this.send({ type: 'session_open', session, width, height, ratio });
     return null;
   }
 

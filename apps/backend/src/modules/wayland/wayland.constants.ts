@@ -57,3 +57,8 @@ export const CLOSE_SESSION_ENDING = 4410;
 
 /** Where a viewport size from the tab is clamped. */
 export const MAX_VIEWPORT = 16384;
+/**
+ * Where a devicePixelRatio from the tab is clamped. The host's output scale
+ * is the ratio's ceiling, and stops at 4 well below this.
+ */
+export const MAX_RATIO = 8;

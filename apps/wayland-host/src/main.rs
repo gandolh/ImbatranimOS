@@ -99,10 +99,10 @@ impl Host {
 
     fn handle(&mut self, msg: Inbound) {
         match msg {
-            Inbound::SessionOpen { session, width, height } => self.open(session, width, height),
+            Inbound::SessionOpen { session, width, height, ratio } => self.open(session, width, height, ratio),
             Inbound::SessionClose { session } => self.close(&session),
-            Inbound::Output { session, width, height } => {
-                self.with(&session, |s| s.set_output_size(width, height))
+            Inbound::Output { session, width, height, ratio } => {
+                self.with(&session, |s| s.set_output(width, height, ratio))
             }
             Inbound::FrameAck { session, toplevel } => self.with(&session, |s| s.ack(toplevel)),
             Inbound::Focus { session, toplevel } => self.with(&session, |s| s.focus(toplevel)),
@@ -143,7 +143,7 @@ impl Host {
         }
     }
 
-    fn open(&mut self, id: String, width: u32, height: u32) {
+    fn open(&mut self, id: String, width: u32, height: u32, ratio: f64) {
         if !valid_session_id(&id) {
             log("refused a session with an invalid id");
             return;
@@ -154,7 +154,7 @@ impl Host {
             self.send(&Outbound::SessionReady { session: id, display, x11_display });
             return;
         }
-        match self.try_open(&id, width, height) {
+        match self.try_open(&id, width, height, ratio) {
             Ok((display, x11_display)) => self.send(&Outbound::SessionReady { session: id, display, x11_display }),
             Err(reason) => {
                 log(&format!("session {}…: {reason}", &id[..8]));
@@ -163,7 +163,7 @@ impl Host {
         }
     }
 
-    fn try_open(&mut self, id: &str, width: u32, height: u32) -> Result<(String, Option<u32>), String> {
+    fn try_open(&mut self, id: &str, width: u32, height: u32, ratio: f64) -> Result<(String, Option<u32>), String> {
         let mut display: Display<SessionState> = Display::new().map_err(|e| e.to_string())?;
         let name = format!("wayland-{id}");
         let listener = ListeningSocketSource::with_name(&name).map_err(|e| e.to_string())?;
@@ -171,7 +171,7 @@ impl Host {
         let x11_loop: EventLoop<'static, SessionState> = EventLoop::try_new().map_err(|e| e.to_string())?;
         let x11_fd = x11_loop.as_fd().try_clone_to_owned().map_err(|e| e.to_string())?;
         let x11 = self.xwayland.clone().map(|config| (config, x11_loop.handle()));
-        let state = SessionState::new(id.to_string(), &display.handle(), width, height, self.started, x11);
+        let state = SessionState::new(id.to_string(), &display.handle(), width, height, ratio, self.started, x11);
         let x11_display = state.x11_display();
         let session = Rc::new(RefCell::new(Session { display, state, x11_loop, tokens: Vec::new() }));
 

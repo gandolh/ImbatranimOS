@@ -1,5 +1,5 @@
-import { toHostMessage } from './wayland-input';
-import { MAX_CLIPBOARD_BYTES } from './wayland.constants';
+import { clampRatio, toHostMessage } from './wayland-input';
+import { MAX_CLIPBOARD_BYTES, MAX_RATIO } from './wayland.constants';
 
 const S = 'abcdefghijklmnop';
 
@@ -80,6 +80,28 @@ describe("checking the tab's Linux window input", () => {
       height: 1024,
       maximized: true,
     });
+  });
+
+  it("passes the tab's devicePixelRatio with its viewport, clamped", () => {
+    expect(
+      toHostMessage(S, {
+        type: 'viewport',
+        width: 800,
+        height: 600,
+        ratio: 2.625,
+      }),
+    ).toEqual({
+      type: 'output',
+      session: S,
+      width: 800,
+      height: 600,
+      ratio: 2.625,
+    });
+    for (const bad of [undefined, null, '', 'x', 0, -2, Infinity]) {
+      expect(clampRatio(bad)).toBe(1);
+    }
+    expect(clampRatio('1.5')).toBe(1.5);
+    expect(clampRatio(1e6)).toBe(MAX_RATIO);
   });
 
   it('passes a keyboard layout the host offers, and nothing else', () => {

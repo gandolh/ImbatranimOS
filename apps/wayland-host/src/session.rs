@@ -40,10 +40,12 @@ use smithay::reexports::wayland_server::{Client, DisplayHandle, Resource};
 use smithay::utils::{IsAlive, Logical, Point, Rectangle, Serial, Transform, SERIAL_COUNTER};
 use smithay::wayland::buffer::BufferHandler;
 use smithay::wayland::compositor::{
-    get_parent, is_sync_subsurface, with_states, with_surface_tree_upward, BufferAssignment, CompositorClientState,
-    CompositorHandler, CompositorState, Damage, SubsurfaceCachedState, SurfaceAttributes, TraversalAction,
+    get_parent, is_sync_subsurface, send_surface_state, with_states, with_surface_tree_downward,
+    with_surface_tree_upward, BufferAssignment, CompositorClientState, CompositorHandler, CompositorState, Damage,
+    SubsurfaceCachedState, SurfaceAttributes, SurfaceData, TraversalAction,
 };
 use smithay::wayland::cursor_shape::CursorShapeManagerState;
+use smithay::wayland::fractional_scale::with_fractional_scale;
 use smithay::wayland::output::OutputHandler;
 use smithay::wayland::selection::data_device::{
     request_data_device_client_selection, set_data_device_focus, set_data_device_selection, ClientDndGrabHandler,
@@ -58,11 +60,14 @@ use smithay::wayland::shell::xdg::{
 use smithay::wayland::shm::{with_buffer_contents, ShmHandler, ShmState};
 use smithay::wayland::seat::WaylandFocus;
 use smithay::wayland::tablet_manager::TabletSeatHandler;
+use smithay::wayland::viewporter::ViewportCachedState;
 use smithay::wayland::xwayland_shell::XWaylandShellState;
 use smithay::xwayland::{X11Surface, XWaylandClientData};
 
 use crate::clipboard::{text_mime, MAX_CLIPBOARD_BYTES, OFFERED_MIME_TYPES};
-use crate::pixels::{clip_signed, Canvas, Encoding, Layer, ShmFormat, SurfaceImage};
+use crate::pixels::{
+    clip_signed, map_rect, output_scale, surface_size, window_scale, Canvas, Encoding, Layer, ShmFormat, SurfaceImage,
+};
 use crate::protocol::{encode_frame_body, Decorations, Geometry, Outbound, PopupInfo, Rect, ToplevelInfo};
 use crate::xwayland::XwaylandConfig;
 
@@ -148,6 +153,12 @@ struct Window {
     id: u32,
     root: WlSurface,
     role: Role,
+    /// Its image's size in surface coordinates: the root surface's.
+    size: (u32, u32),
+    /// Image pixels per surface coordinate: the root surface's own scale (2
+    /// when an app draws for a scale-2 output, 1 for one that doesn't). The
+    /// canvas is `size × scale` pixels.
+    scale: u32,
     canvas: Canvas,
     /// Announced to the backend: it has a buffer and the tab shows it.
     mapped: bool,
@@ -165,19 +176,38 @@ struct Window {
 #[derive(Clone, PartialEq)]
 struct Placed {
     id: ObjectId,
+    /// Its offset in the window and its size, in surface coordinates.
     x: i32,
     y: i32,
     width: u32,
     height: u32,
+    /// Its buffer's size, in pixels.
+    pixels: (u32, u32),
 }
 
 impl Window {
+    fn new(id: u32, root: WlSurface, role: Role) -> Window {
+        Window {
+            id,
+            root,
+            role,
+            size: (0, 0),
+            scale: 1,
+            canvas: Canvas::default(),
+            mapped: false,
+            in_flight: false,
+            geometry: None,
+            layout: Vec::new(),
+            shown: true,
+        }
+    }
+
     fn is_popup(&self) -> bool {
         matches!(self.role, Role::Popup { .. })
     }
 
     fn whole_geometry(&self) -> Geometry {
-        let (width, height) = (self.canvas.width, self.canvas.height);
+        let (width, height) = self.size;
         self.geometry.unwrap_or(Geometry {
             x: 0,
             y: 0,
@@ -202,8 +232,9 @@ impl Window {
             toplevel: self.id,
             title: title.clone(),
             app_id: app_id.clone(),
-            width: self.canvas.width,
-            height: self.canvas.height,
+            width: self.size.0,
+            height: self.size.1,
+            scale: self.scale,
             geometry: self.whole_geometry(),
             decorations: *decorations,
             min_width: min.0,
@@ -225,8 +256,9 @@ impl Window {
             parent: *parent,
             x: position.0,
             y: position.1,
-            width: self.canvas.width,
-            height: self.canvas.height,
+            width: self.size.0,
+            height: self.size.1,
+            scale: self.scale,
             geometry: self.whole_geometry(),
             grab: *grab,
         })
@@ -327,9 +359,32 @@ fn root_of(surface: &WlSurface) -> WlSurface {
     s
 }
 
-/// Copy what a client's shm buffer changed into a surface's image. Returns
-/// the changed rectangles in surface pixels, or None when it can't be read.
-fn copy_buffer(buffer: &WlBuffer, damage: &[Damage], image: &mut SurfaceImage) -> Option<Vec<Rect>> {
+/// Tell a surface the output's scale, the ways apps listen for it: it is on
+/// the output (`wl_surface.enter`, which GTK takes its scale from), the
+/// preferred buffer scale (`wl_surface` 6), and the fractional scale (which
+/// an app that binds it prefers to the others). Each goes once per value.
+fn tell_scale(output: &Output, scale: u32, surface: &WlSurface, states: &SurfaceData) {
+    output.enter(surface);
+    send_surface_state(surface, states, scale as i32, Transform::Normal);
+    with_fractional_scale(states, |fs| fs.set_preferred_scale(scale as f64));
+}
+
+/// A surface's viewport size, as last committed, if it set one.
+fn viewport_size(states: &SurfaceData) -> Option<(i32, i32)> {
+    let viewport = states.cached_state.get::<ViewportCachedState>().current().size();
+    viewport.map(|v| (v.w, v.h))
+}
+
+/// Copy what a client's shm buffer changed into a surface's image, and set
+/// its size in surface coordinates from its buffer scale and viewport.
+/// Returns the changed rectangles in buffer pixels, or None when it can't be
+/// read.
+fn copy_buffer(
+    buffer: &WlBuffer,
+    damage: &[Damage],
+    (buffer_scale, viewport): (i32, Option<(i32, i32)>),
+    image: &mut SurfaceImage,
+) -> Option<Vec<Rect>> {
     with_buffer_contents(buffer, |ptr, len, data| {
         let format = match data.format {
             wl_shm::Format::Argb8888 => ShmFormat::Argb8888,
@@ -337,17 +392,20 @@ fn copy_buffer(buffer: &WlBuffer, damage: &[Damage], image: &mut SurfaceImage) -
             _ => return None,
         };
         let (w, h) = (data.width.max(0) as u32, data.height.max(0) as u32);
+        let (sw, sh) = surface_size((w, h), buffer_scale, viewport);
         let rects: Vec<Rect> = damage
             .iter()
             .filter_map(|d| match d {
-                Damage::Surface(r) => clip_signed(r.loc.x, r.loc.y, r.size.w, r.size.h, w, h),
+                // In surface coordinates: the buffer pixels under them.
+                Damage::Surface(r) => clip_signed(r.loc.x, r.loc.y, r.size.w, r.size.h, sw, sh)
+                    .map(|r| map_rect(r, (sw, sh), (w, h))),
                 Damage::Buffer(r) => clip_signed(r.loc.x, r.loc.y, r.size.w, r.size.h, w, h),
             })
             .collect();
         // SAFETY: smithay hands us the client's mapped pool for the
         // duration of this closure; we only read inside it.
         let pool = unsafe { std::slice::from_raw_parts(ptr, len) };
-        image.copy_from_shm(
+        let changed = image.copy_from_shm(
             pool,
             data.offset.max(0) as usize,
             w,
@@ -355,7 +413,10 @@ fn copy_buffer(buffer: &WlBuffer, damage: &[Damage], image: &mut SurfaceImage) -
             data.stride.max(0) as usize,
             format,
             &rects,
-        )
+        )?;
+        image.surface_width = sw;
+        image.surface_height = sh;
+        Some(changed)
     })
     .ok()
     .flatten()
@@ -391,7 +452,12 @@ pub struct SessionState {
     layout_id: String,
     pointer: PointerHandle<SessionState>,
     output: Output,
+    /// The output's size in surface coordinates: the tab's viewport in CSS
+    /// pixels. Its mode is this times `output_scale`.
     output_size: (i32, i32),
+    /// The output's scale: the ceiling of the tab's `devicePixelRatio`.
+    /// Apps that follow it draw buffers this many times the window's size.
+    output_scale: u32,
     /// Toplevels and popups, in the order they were made. Ids are shared, so
     /// a frame, an ack or an input event names either.
     windows: Vec<Window>,
@@ -433,6 +499,7 @@ impl SessionState {
         dh: &DisplayHandle,
         width: u32,
         height: u32,
+        ratio: f64,
         started: Instant,
         x11: Option<(Rc<XwaylandConfig>, LoopHandle<'static, SessionState>)>,
     ) -> SessionState {
@@ -485,6 +552,7 @@ impl SessionState {
             pointer,
             output,
             output_size: (1, 1),
+            output_scale: output_scale(ratio),
             windows: Vec::new(),
             next_window: 1,
             images: HashMap::new(),
@@ -500,7 +568,7 @@ impl SessionState {
             outbox: Vec::new(),
             started,
         };
-        state.set_output_size(width, height);
+        state.set_output(width, height, ratio);
         state.x11_reserve(None);
         state
     }
@@ -513,21 +581,53 @@ impl SessionState {
         &mut self.stubs
     }
 
-    /// The session's one output is the tab's viewport.
-    pub fn set_output_size(&mut self, width: u32, height: u32) {
+    /// The output's scale.
+    pub fn scale(&self) -> u32 {
+        self.output_scale
+    }
+
+    /// The session's one output is the tab's viewport, at the ceiling of the
+    /// tab's `devicePixelRatio`. Its mode is in device pixels (the viewport
+    /// times the scale), so apps see the viewport as its logical size.
+    pub fn set_output(&mut self, width: u32, height: u32, ratio: f64) {
         let size = (width.clamp(1, 16384) as i32, height.clamp(1, 16384) as i32);
+        let scale = output_scale(ratio);
         self.output_size = size;
         let mode = Mode {
-            size: size.into(),
+            size: (size.0 * scale as i32, size.1 * scale as i32).into(),
             refresh: 60_000,
         };
         self.output.change_current_state(
             Some(mode),
             Some(Transform::Normal),
-            Some(Scale::Integer(1)),
+            Some(Scale::Integer(scale as i32)),
             Some((0, 0).into()),
         );
         self.output.set_preferred(mode);
+        if scale != self.output_scale {
+            self.output_scale = scale;
+            self.rescale_surfaces();
+        }
+    }
+
+    /// The output's scale changed (the tab moved to another screen, or the
+    /// page zoomed): every window's surfaces hear it. They leave the output
+    /// and enter it again, so apps that only read the scale of the outputs
+    /// they are on look again; they then draw at the new scale, and their
+    /// windows are announced again with it.
+    fn rescale_surfaces(&mut self) {
+        for w in &self.windows {
+            with_surface_tree_downward(
+                &w.root,
+                (),
+                |_, _, _| TraversalAction::DoChildren(()),
+                |surface, states, _| {
+                    self.output.leave(surface);
+                    tell_scale(&self.output, self.output_scale, surface, states);
+                },
+                |_, _, _| true,
+            );
+        }
     }
 
     // ── Frames ──────────────────────────────────────────────────────────
@@ -549,8 +649,9 @@ impl SessionState {
                             id: surf.id(),
                             x,
                             y,
-                            width: img.width,
-                            height: img.height,
+                            width: img.surface_width,
+                            height: img.surface_height,
+                            pixels: (img.width, img.height),
                         });
                     }
                 }
@@ -572,10 +673,21 @@ impl SessionState {
             if !w.mapped || w.in_flight || quiet[i] || !w.canvas.has_damage() {
                 continue;
             }
+            // Each surface where it sits at the window's scale; one drawn at
+            // another scale is resampled to it.
+            let s = w.scale;
             let layers: Vec<Layer> = w
                 .layout
                 .iter()
-                .filter_map(|p| images.get(&p.id).map(|image| Layer { x: p.x, y: p.y, image }))
+                .filter_map(|p| {
+                    images.get(&p.id).map(|image| Layer {
+                        x: p.x * s as i32,
+                        y: p.y * s as i32,
+                        width: p.width * s,
+                        height: p.height * s,
+                        image,
+                    })
+                })
                 .collect();
             let rects = w.canvas.take_frame(&layers, encoding);
             out.push(encode_frame_body(w.id, w.canvas.width, w.canvas.height, &rects));
@@ -881,29 +993,34 @@ impl SessionState {
             .images
             .get(&root.id())
             .filter(|i| !i.is_empty())
-            .map(|i| (i.width, i.height));
-        let Some((width, height)) = root_size else {
+            .map(|i| ((i.surface_width, i.surface_height), window_scale(i.width, i.surface_width)));
+        let Some((size, scale)) = root_size else {
             // No buffer on the root: the app hid the window.
             self.windows[index].layout = layout;
             self.unmap(index);
             return;
         };
         let w = &mut self.windows[index];
-        let before = (w.canvas.width, w.canvas.height);
-        w.canvas.resize(width, height);
-        if w.layout != layout {
+        let before = (w.size, w.scale);
+        w.size = size;
+        w.scale = scale;
+        w.canvas.resize(size.0 * scale, size.1 * scale);
+        if w.layout != layout || before.1 != scale {
             w.canvas.damage_all();
         } else {
             for (id, rects) in changed {
                 if let Some(p) = layout.iter().find(|p| &p.id == id) {
+                    // From the surface's buffer pixels to where the window draws them.
+                    let drawn = (p.width * scale, p.height * scale);
                     for r in rects {
-                        w.canvas.damage(p.x + r.x as i32, p.y + r.y as i32, r.w, r.h);
+                        let r = map_rect(*r, p.pixels, drawn);
+                        w.canvas.damage(p.x * scale as i32 + r.x as i32, p.y * scale as i32 + r.y as i32, r.w, r.h);
                     }
                 }
             }
         }
         w.layout = layout;
-        let resized = before != (width, height);
+        let resized = before != (size, scale);
         if !w.mapped {
             w.mapped = true;
             self.announce(index, true);
@@ -1146,7 +1263,8 @@ impl SessionState {
                     return;
                 };
                 let local = (point.0 - ox, point.1 - oy);
-                if local.0 < 0 || local.1 < 0 || local.0 >= img.width as i32 || local.1 >= img.height as i32 {
+                let (w, h) = (img.surface_width as i32, img.surface_height as i32);
+                if local.0 < 0 || local.1 < 0 || local.0 >= w || local.1 >= h {
                     return;
                 }
                 let mut attrs = states.cached_state.get::<SurfaceAttributes>();
@@ -1350,22 +1468,26 @@ impl CompositorHandler for SessionState {
         let mut changed: Vec<(ObjectId, Vec<Rect>)> = Vec::new();
         let mut wants_frame: Vec<WlSurface> = Vec::new();
         let images = &mut self.images;
+        let (output, scale) = (&self.output, self.output_scale);
         with_surface_tree_upward(
             surface,
             (),
             |_, _, _| TraversalAction::DoChildren(()),
             |surf, states, _| {
+                tell_scale(output, scale, surf, states);
+                let viewport = viewport_size(states);
                 let mut attrs = states.cached_state.get::<SurfaceAttributes>();
                 let current = attrs.current();
                 let buffer = current.buffer.take();
                 let damage = std::mem::take(&mut current.damage);
+                let buffer_scale = current.buffer_scale;
                 if !current.frame_callbacks.is_empty() {
                     wants_frame.push(surf.clone());
                 }
                 match buffer {
                     Some(BufferAssignment::NewBuffer(buffer)) => {
                         let image = images.entry(surf.id()).or_default();
-                        if let Some(rects) = copy_buffer(&buffer, &damage, image) {
+                        if let Some(rects) = copy_buffer(&buffer, &damage, (buffer_scale, viewport), image) {
                             changed.push((surf.id(), rects));
                         }
                         // Copied (or unreadable); either way the client may
@@ -1375,7 +1497,15 @@ impl CompositorHandler for SessionState {
                     Some(BufferAssignment::Removed) => {
                         images.remove(&surf.id());
                     }
-                    None => {}
+                    None => {
+                        // A new buffer scale or viewport on the same buffer:
+                        // the same pixels at another size, which relays the
+                        // window out.
+                        if let Some(image) = images.get_mut(&surf.id()).filter(|i| !i.is_empty()) {
+                            let size = surface_size((image.width, image.height), buffer_scale, viewport);
+                            (image.surface_width, image.surface_height) = size;
+                        }
+                    }
                 }
             },
             |_, _, _| true,
@@ -1434,26 +1564,18 @@ impl XdgShellHandler for SessionState {
             s.capabilities.set(xdg_toplevel::WmCapabilities::Minimize);
             s.capabilities.set(xdg_toplevel::WmCapabilities::Fullscreen);
         });
-        self.windows.push(Window {
-            id,
-            root: surface.wl_surface().clone(),
-            role: Role::Toplevel {
-                shell: ToplevelShell::Xdg(surface),
-                title: String::new(),
-                app_id: String::new(),
-                // Until the app asks for the OS title bar, it draws its own.
-                decorations: Decorations::Client,
-                min: (0, 0),
-                max: (0, 0),
-                origin: (0, 0),
-            },
-            canvas: Canvas::default(),
-            mapped: false,
-            in_flight: false,
-            geometry: None,
-            layout: Vec::new(),
-            shown: true,
-        });
+        let root = surface.wl_surface().clone();
+        let role = Role::Toplevel {
+            shell: ToplevelShell::Xdg(surface),
+            title: String::new(),
+            app_id: String::new(),
+            // Until the app asks for the OS title bar, it draws its own.
+            decorations: Decorations::Client,
+            min: (0, 0),
+            max: (0, 0),
+            origin: (0, 0),
+        };
+        self.windows.push(Window::new(id, root, role));
     }
 
     /// A menu, dropdown or tooltip. It is placed from its positioner, kept
@@ -1475,22 +1597,14 @@ impl XdgShellHandler for SessionState {
             s.positioner = positioner;
         });
         let id = self.new_id();
-        self.windows.push(Window {
-            id,
-            root: surface.wl_surface().clone(),
-            role: Role::Popup {
-                shell: PopupShell::Xdg(surface),
-                parent,
-                position: (geometry.loc.x, geometry.loc.y),
-                grab: false,
-            },
-            canvas: Canvas::default(),
-            mapped: false,
-            in_flight: false,
-            geometry: None,
-            layout: Vec::new(),
-            shown: true,
-        });
+        let root = surface.wl_surface().clone();
+        let role = Role::Popup {
+            shell: PopupShell::Xdg(surface),
+            parent,
+            position: (geometry.loc.x, geometry.loc.y),
+            grab: false,
+        };
+        self.windows.push(Window::new(id, root, role));
     }
 
     /// A menu takes the keyboard and closes when the owner clicks outside

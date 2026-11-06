@@ -86,8 +86,14 @@ impl Hot {
 /// is composed from them.
 #[derive(Default)]
 pub struct SurfaceImage {
+    /// The buffer's size, in pixels.
     pub width: u32,
     pub height: u32,
+    /// Its size in surface coordinates, the units of window geometry and
+    /// input (CSS pixels in the tab): the buffer's size over its scale, or
+    /// its viewport's (see [`surface_size`]). The buffer's size at scale 1.
+    pub surface_width: u32,
+    pub surface_height: u32,
     rgba: Vec<u8>,
 }
 
@@ -121,6 +127,8 @@ impl SurfaceImage {
         if resized {
             self.width = width;
             self.height = height;
+            self.surface_width = width;
+            self.surface_height = height;
             self.rgba = vec![0; width as usize * height as usize * 4];
         }
         let full = Rect {
@@ -147,11 +155,24 @@ impl SurfaceImage {
     }
 }
 
-/// One surface of a window, where it sits in the window's image.
+/// One surface of a window, where it sits in the window's image and the size
+/// it is drawn at there, both in window pixels. A surface drawn at another
+/// size than its buffer's (a subsurface at another scale than its window) is
+/// resampled, nearest pixel.
 pub struct Layer<'a> {
     pub x: i32,
     pub y: i32,
+    pub width: u32,
+    pub height: u32,
     pub image: &'a SurfaceImage,
+}
+
+#[cfg(test)]
+impl<'a> Layer<'a> {
+    /// A surface drawn one buffer pixel to one window pixel.
+    pub fn at(x: i32, y: i32, image: &'a SurfaceImage) -> Layer<'a> {
+        Layer { x, y, width: image.width, height: image.height, image }
+    }
 }
 
 /// A window's image (a toplevel's or a popup's): its surfaces composed in
@@ -333,25 +354,39 @@ impl Canvas {
             let start = (row as usize * w + r.x as usize) * 4;
             self.rgba[start..start + r.w as usize * 4].fill(0);
         }
+        let mut scaled_row = Vec::new();
         for (i, layer) in layers.iter().enumerate() {
             let img = layer.image;
-            if img.is_empty() {
+            if img.is_empty() || layer.width == 0 || layer.height == 0 {
                 continue;
             }
             // The layer's rectangle in window pixels, cut to `r`.
             let x0 = (layer.x.max(r.x as i32)) as i64;
             let y0 = (layer.y.max(r.y as i32)) as i64;
-            let x1 = (layer.x as i64 + img.width as i64).min((r.x + r.w) as i64);
-            let y1 = (layer.y as i64 + img.height as i64).min((r.y + r.h) as i64);
+            let x1 = (layer.x as i64 + layer.width as i64).min((r.x + r.w) as i64);
+            let y1 = (layer.y as i64 + layer.height as i64).min((r.y + r.h) as i64);
             if x1 <= x0 || y1 <= y0 {
                 continue;
             }
             let span = (x1 - x0) as usize * 4;
+            let exact = layer.width == img.width && layer.height == img.height;
             for y in y0..y1 {
-                let sy = (y - layer.y as i64) as usize;
-                let sx = (x0 - layer.x as i64) as usize;
-                let src_start = (sy * img.width as usize + sx) * 4;
-                let src = &img.rgba[src_start..src_start + span];
+                let src: &[u8] = if exact {
+                    let sy = (y - layer.y as i64) as usize;
+                    let sx = (x0 - layer.x as i64) as usize;
+                    let src_start = (sy * img.width as usize + sx) * 4;
+                    &img.rgba[src_start..src_start + span]
+                } else {
+                    // Nearest pixel: the buffer pixel under each window pixel.
+                    let sy = ((y - layer.y as i64) * img.height as i64 / layer.height as i64) as usize;
+                    scaled_row.clear();
+                    for x in x0..x1 {
+                        let sx = ((x - layer.x as i64) * img.width as i64 / layer.width as i64) as usize;
+                        let at = (sy * img.width as usize + sx) * 4;
+                        scaled_row.extend_from_slice(&img.rgba[at..at + 4]);
+                    }
+                    &scaled_row
+                };
                 let dst_start = (y as usize * w + x0 as usize) * 4;
                 let dst = &mut self.rgba[dst_start..dst_start + span];
                 if i == 0 {
@@ -424,6 +459,57 @@ pub fn clip_signed(x: i32, y: i32, w: i32, h: i32, width: u32, height: u32) -> O
         return None;
     }
     clip(Rect { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, width, height)
+}
+
+// ── Scale ───────────────────────────────────────────────────────────────
+
+/// The highest output scale the host advertises. A phone's ratio of 3.5 asks
+/// for 4; above it, frames would cost far more than a screen shows.
+pub const MAX_SCALE: u32 = 4;
+
+/// The output scale for a tab's `devicePixelRatio`: its ceiling, so an app
+/// draws at least as many pixels as the screen shows, at most [`MAX_SCALE`].
+/// A ratio a hair above a whole number (float noise) counts as that number.
+pub fn output_scale(ratio: f64) -> u32 {
+    if !ratio.is_finite() || ratio <= 1.0 {
+        return 1;
+    }
+    ((ratio - 0.01).ceil() as u32).clamp(1, MAX_SCALE)
+}
+
+/// A surface's size in surface coordinates: its viewport's destination when
+/// it set one (an app drawing at the fractional scale's preferred scale),
+/// else its buffer's size over its buffer scale.
+pub fn surface_size(buffer: (u32, u32), buffer_scale: i32, viewport: Option<(i32, i32)>) -> (u32, u32) {
+    if let Some((w, h)) = viewport.filter(|(w, h)| *w > 0 && *h > 0) {
+        return (w as u32, h as u32);
+    }
+    let s = buffer_scale.max(1) as u32;
+    ((buffer.0 / s).max(1), (buffer.1 / s).max(1))
+}
+
+/// A window's image pixels per surface coordinate: its root buffer's width
+/// over its surface width, rounded, from 1 to [`MAX_SCALE`].
+pub fn window_scale(buffer_width: u32, surface_width: u32) -> u32 {
+    if surface_width == 0 {
+        return 1;
+    }
+    ((buffer_width as f64 / surface_width as f64).round() as u32).clamp(1, MAX_SCALE)
+}
+
+/// `r`, in a space `from` in size, on a space `to` in size, grown to whole
+/// pixels: damage in surface coordinates in buffer pixels, or a surface's
+/// changed pixels where its window draws them.
+pub fn map_rect(r: Rect, from: (u32, u32), to: (u32, u32)) -> Rect {
+    if from == to || from.0 == 0 || from.1 == 0 {
+        return r;
+    }
+    let (fw, fh, tw, th) = (from.0 as u64, from.1 as u64, to.0 as u64, to.1 as u64);
+    let x0 = r.x as u64 * tw / fw;
+    let y0 = r.y as u64 * th / fh;
+    let x1 = ((r.x as u64 + r.w as u64) * tw).div_ceil(fw);
+    let y1 = ((r.y as u64 + r.h as u64) * th).div_ceil(fh);
+    Rect { x: x0 as u32, y: y0 as u32, w: (x1 - x0) as u32, h: (y1 - y0) as u32 }
 }
 
 fn contains(outer: Rect, inner: Rect) -> bool {
@@ -562,11 +648,7 @@ mod tests {
         let mut c = Canvas::default();
         c.resize(4, 3);
         let frame = c.take_frame(
-            &[Layer {
-                x: 0,
-                y: 0,
-                image: &img,
-            }],
+            &[Layer::at(0, 0, &img)],
             Encoding::Deflate,
         );
         assert_eq!(frame.len(), 1);
@@ -593,11 +675,7 @@ mod tests {
         assert_eq!(rects, Some(vec![Rect { x: 1, y: 1, w: 2, h: 1 }]));
         c.damage(1, 1, 2, 1);
         let frame = c.take_frame(
-            &[Layer {
-                x: 0,
-                y: 0,
-                image: &img,
-            }],
+            &[Layer::at(0, 0, &img)],
             Encoding::Webp,
         );
         assert_eq!(frame[0].rect, Rect { x: 1, y: 1, w: 2, h: 1 });
@@ -624,11 +702,7 @@ mod tests {
         let pool = bgra_pool(64, 64, 256, |_, _| [0, 0, 0, 255]);
         let (img, mut c) = one_layer(&pool, 64, 64, 256);
         c.take_frame(
-            &[Layer {
-                x: 0,
-                y: 0,
-                image: &img,
-            }],
+            &[Layer::at(0, 0, &img)],
             Encoding::Deflate,
         );
         // A rectangle inside an earlier one adds nothing.
@@ -651,11 +725,7 @@ mod tests {
         );
         // Damage that starts outside the window is cut to it.
         c.take_frame(
-            &[Layer {
-                x: 0,
-                y: 0,
-                image: &img,
-            }],
+            &[Layer::at(0, 0, &img)],
             Encoding::Deflate,
         );
         c.damage(-10, 60, 20, 20);
@@ -685,21 +755,9 @@ mod tests {
         veil.copy_from_shm(&veil_pool, 0, 1, 1, 4, ShmFormat::Argb8888, &[])
             .unwrap();
         let layers = [
-            Layer {
-                x: 0,
-                y: 0,
-                image: &root,
-            },
-            Layer {
-                x: 3,
-                y: 3,
-                image: &red,
-            },
-            Layer {
-                x: 0,
-                y: 0,
-                image: &veil,
-            },
+            Layer::at(0, 0, &root),
+            Layer::at(3, 3, &red),
+            Layer::at(0, 0, &veil),
         ];
         let frame = c.take_frame(&layers, Encoding::Deflate);
         let mut raw = Vec::new();
@@ -713,6 +771,80 @@ mod tests {
         assert_eq!(px(0, 0), &[128, 128, 255, 255]);
     }
 
+    #[test]
+    fn a_surface_at_a_lower_scale_than_its_window_is_drawn_larger() {
+        // A 2×2 checker (red, blue / blue, red) at scale 1 in a scale-2
+        // window: each buffer pixel covers 2×2 window pixels.
+        let checker = bgra_pool(2, 2, 8, |x, y| if (x + y) % 2 == 0 { [0, 0, 255, 255] } else { [255, 0, 0, 255] });
+        let mut img = SurfaceImage::default();
+        img.copy_from_shm(&checker, 0, 2, 2, 8, ShmFormat::Argb8888, &[]).unwrap();
+        let mut c = Canvas::default();
+        c.resize(4, 4);
+        let frame = c.take_frame(&[Layer { x: 0, y: 0, width: 4, height: 4, image: &img }], Encoding::Deflate);
+        let mut raw = Vec::new();
+        flate2::read::ZlibDecoder::new(&frame[0].data[..]).read_to_end(&mut raw).unwrap();
+        let red = |x: usize, y: usize| raw[(y * 4 + x) * 4] == 255;
+        for (x, y) in [(0, 0), (1, 0), (0, 1), (1, 1), (2, 2), (3, 3)] {
+            assert!(red(x, y), "({x}, {y}) is red");
+        }
+        for (x, y) in [(2, 0), (3, 1), (0, 2), (1, 3)] {
+            assert!(!red(x, y), "({x}, {y}) is blue");
+        }
+    }
+
+    #[test]
+    fn the_output_scale_is_the_ratios_ceiling() {
+        for (ratio, scale) in [
+            (1.0, 1),
+            (0.5, 1),
+            (f64::NAN, 1),
+            (1.000_000_1, 1),
+            (1.1, 2),
+            (1.25, 2),
+            (1.5, 2),
+            (2.0, 2),
+            (2.000_001, 2),
+            (2.625, 3),
+            (3.5, 4),
+            (8.0, MAX_SCALE),
+        ] {
+            assert_eq!(output_scale(ratio), scale, "ratio {ratio}");
+        }
+    }
+
+    #[test]
+    fn a_surfaces_size_is_its_buffer_over_its_scale_or_its_viewport() {
+        assert_eq!(surface_size((200, 100), 1, None), (200, 100));
+        assert_eq!(surface_size((200, 100), 2, None), (100, 50));
+        // A broken scale counts as 1; a buffer smaller than its scale, as 1×1.
+        assert_eq!(surface_size((200, 100), 0, None), (200, 100));
+        assert_eq!(surface_size((1, 1), 2, None), (1, 1));
+        // A viewport's destination wins over the buffer scale.
+        assert_eq!(surface_size((200, 100), 1, Some((100, 50))), (100, 50));
+        assert_eq!(surface_size((200, 100), 2, Some((0, 50))), (100, 50));
+    }
+
+    #[test]
+    fn a_windows_scale_is_its_root_buffer_over_its_surface() {
+        assert_eq!(window_scale(640, 640), 1);
+        assert_eq!(window_scale(1280, 640), 2);
+        assert_eq!(window_scale(1921, 640), 3);
+        assert_eq!(window_scale(9000, 640), MAX_SCALE);
+        assert_eq!(window_scale(640, 0), 1);
+    }
+
+    #[test]
+    fn rectangles_map_between_scales_grown_to_whole_pixels() {
+        let r = Rect { x: 1, y: 1, w: 1, h: 1 };
+        assert_eq!(map_rect(r, (10, 10), (10, 10)), r);
+        // Surface damage at scale 2 covers twice the buffer pixels.
+        assert_eq!(map_rect(r, (10, 10), (20, 20)), Rect { x: 2, y: 2, w: 2, h: 2 });
+        // A ratio that isn't whole grows outward: 1..2 of 3 is 1.33..2.67 of 4.
+        assert_eq!(map_rect(r, (3, 3), (4, 4)), Rect { x: 1, y: 1, w: 2, h: 2 });
+        // Down: two buffer pixels of a scale-2 surface are one window pixel.
+        assert_eq!(map_rect(Rect { x: 2, y: 2, w: 2, h: 2 }, (20, 20), (10, 10)), r);
+    }
+
     // ── Lossy regions ───────────────────────────────────────────────────────
 
     /// A 640×480 window, opaque, its first frame (everything) already sent.
@@ -720,7 +852,7 @@ mod tests {
         let pool = bgra_pool(640, 480, 640 * 4, |x, y| [(x * 7) as u8, (y * 3) as u8, (x ^ y) as u8, alpha]);
         let (img, mut c) = one_layer(&pool, 640, 480, 640 * 4);
         c.tick();
-        let first = c.take_frame(&[Layer { x: 0, y: 0, image: &img }], Encoding::Webp);
+        let first = c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Webp);
         assert!(first.iter().all(|r| r.encoding == ENC_WEBP_LOSSLESS));
         (img, c)
     }
@@ -734,7 +866,7 @@ mod tests {
         for r in damage {
             c.damage(r.x as i32, r.y as i32, r.w, r.h);
         }
-        c.take_frame(&[Layer { x: 0, y: 0, image: img }], Encoding::Webp)
+        c.take_frame(&[Layer::at(0, 0, img)], Encoding::Webp)
     }
 
     fn encodings(frame: &[EncodedRect]) -> Vec<u8> {
@@ -826,7 +958,7 @@ mod tests {
         for _ in 0..10 {
             c.tick();
             c.damage(VIDEO.x as i32, VIDEO.y as i32, VIDEO.w, VIDEO.h);
-            let f = c.take_frame(&[Layer { x: 0, y: 0, image: &img }], Encoding::Deflate);
+            let f = c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Deflate);
             assert!(f.iter().all(|r| r.encoding == ENC_DEFLATE_RGBA));
         }
     }

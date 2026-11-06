@@ -17,6 +17,7 @@ import type { HostInbound } from './wayland.protocol';
 
 const SESSION = 'abcdefghijklmnop';
 const SHAPE = {
+  scale: 1,
   geometry: { x: 0, y: 0, width: 700, height: 474 },
   decorations: 'server' as const,
   min_width: 0,
@@ -29,7 +30,12 @@ const SHAPE = {
 class FakeHost {
   listeners = new Map<string, SessionListener>();
   sent: HostInbound[] = [];
-  opened: { session: string; width: number; height: number }[] = [];
+  opened: {
+    session: string;
+    width: number;
+    height: number;
+    ratio: number;
+  }[] = [];
   closed: string[] = [];
   unavailable: string | null = null;
 
@@ -37,10 +43,11 @@ class FakeHost {
     session: string,
     width: number,
     height: number,
+    ratio: number,
     listener: SessionListener,
   ) {
     if (this.unavailable) return this.unavailable;
-    this.opened.push({ session, width, height });
+    this.opened.push({ session, width, height, ratio });
     this.listeners.set(session, listener);
     return null;
   }
@@ -147,13 +154,14 @@ describe('WaylandGateway', () => {
   });
 
   it("opens the session's display at the tab's viewport and relays its windows", async () => {
-    const c = open(`session=${SESSION}&width=1280&height=720`);
+    const c = open(`session=${SESSION}&width=1280&height=720&ratio=2`);
     await c.opened;
     await until(() => host.opened.length === 1);
     expect(host.opened[0]).toEqual({
       session: SESSION,
       width: 1280,
       height: 720,
+      ratio: 2,
     });
 
     const l = host.listeners.get(SESSION)!;
@@ -194,13 +202,16 @@ describe('WaylandGateway', () => {
       toplevel: 3,
     });
 
-    c.ws.send(JSON.stringify({ type: 'viewport', width: 800, height: 600 }));
+    c.ws.send(
+      JSON.stringify({ type: 'viewport', width: 800, height: 600, ratio: 1.5 }),
+    );
     await until(() => host.sent.some((m) => m.type === 'output'));
     expect(host.sent).toContainEqual({
       type: 'output',
       session: SESSION,
       width: 800,
       height: 600,
+      ratio: 1.5,
     });
 
     c.ws.close();
@@ -266,11 +277,13 @@ describe('WaylandGateway', () => {
     await until(() => host.sent.some((m) => m.type === 'resync'));
     expect(host.opened).toHaveLength(1);
     expect(host.closed).not.toContain(SESSION);
+    // A tab that doesn't say its ratio gets a scale-1 output.
     expect(host.sent).toContainEqual({
       type: 'output',
       session: SESSION,
       width: 1200,
       height: 800,
+      ratio: 1,
     });
     // The reloaded tab is told the session resumed, then gets its windows.
     host.listeners

@@ -29,7 +29,6 @@ use smithay::xwayland::xwm::{Reorder, ResizeEdge, WmWindowProperty, XwmId};
 use smithay::xwayland::{X11Surface, X11Wm, XWayland, XWaylandEvent, XwmHandler};
 
 use super::{PopupShell, Role, SessionState, ToplevelShell, Window};
-use crate::pixels::Canvas;
 use crate::protocol::Decorations;
 use crate::xwayland::{set_inherited, Reservation, XwaylandConfig};
 
@@ -321,17 +320,7 @@ impl SessionState {
             return;
         };
         let id = self.new_id();
-        self.windows.push(Window {
-            id,
-            root,
-            role,
-            canvas: Canvas::default(),
-            mapped: false,
-            in_flight: false,
-            geometry: None,
-            layout: Vec::new(),
-            shown: true,
-        });
+        self.windows.push(Window::new(id, root, role));
         // Its surface may hold a buffer already: X named the window after
         // Xwayland committed it.
         self.refresh_window(self.windows.len() - 1, &[]);

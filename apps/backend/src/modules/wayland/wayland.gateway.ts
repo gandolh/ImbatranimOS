@@ -13,7 +13,7 @@ import { LocalIdentityService } from '../auth/ws-auth';
 import { authorizeUpgrade } from '../pty/pty-upgrade';
 import { UpgradeRoutes } from '../../upgrade-routes';
 import { WaylandHostService } from './wayland-host.service';
-import { clampSize, toHostMessage } from './wayland-input';
+import { clampRatio, clampSize, toHostMessage } from './wayland-input';
 import {
   clientGroups,
   liveGroups,
@@ -41,6 +41,13 @@ import {
   WS_KIND_FRAME,
   type HostOutbound,
 } from './wayland.protocol';
+
+/** The tab's viewport in CSS pixels and its devicePixelRatio, from the upgrade's query. */
+interface TabOutput {
+  width: number;
+  height: number;
+  ratio: number;
+}
 
 interface LiveSession {
   id: string;
@@ -172,8 +179,11 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
     const params = parseQuery(req.url);
     const session = params.get('session');
     if (!isValidSessionId(session)) return refuse('400 Bad Request');
-    const width = clampSize(params.get('width'));
-    const height = clampSize(params.get('height'));
+    const output: TabOutput = {
+      width: clampSize(params.get('width')),
+      height: clampSize(params.get('height')),
+      ratio: clampRatio(params.get('ratio')),
+    };
 
     void (async () => {
       const caller = await authorizeUpgrade(
@@ -188,7 +198,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       }
       socket.off('error', onSocketError);
       this.wss.handleUpgrade(req, socket, head, (ws) =>
-        this.onConnection(ws, session, width, height, req.headers.cookie),
+        this.onConnection(ws, session, output, req.headers.cookie),
       );
     })();
   }
@@ -196,8 +206,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
   private onConnection(
     ws: WebSocket,
     id: string,
-    width: number,
-    height: number,
+    output: TabOutput,
     cookie: string | undefined,
   ): void {
     const existing = this.live.get(id);
@@ -213,7 +222,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
         }
         if (this.live.get(id) === existing && !existing.ws) {
           clearInterval(wait);
-          this.onConnection(ws, id, width, height, cookie);
+          this.onConnection(ws, id, output, cookie);
         } else if (Date.now() - started > WAYLAND_TAKEOVER_WAIT_MS) {
           clearInterval(wait);
           ws.close(CLOSE_SESSION_IN_USE, 'session-in-use');
@@ -234,7 +243,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
         existing,
         JSON.stringify({ type: 'session', resumed: true }),
       );
-      this.host.send({ type: 'output', session: id, width, height });
+      this.host.send({ type: 'output', session: id, ...output });
       this.host.send({ type: 'resync', session: id });
       return;
     }
@@ -259,7 +268,8 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.live.set(id, s);
     this.attach(s, ws);
 
-    const failure = this.host.open(id, width, height, {
+    const { width, height, ratio } = output;
+    const failure = this.host.open(id, width, height, ratio, {
       message: (m) => this.onHostMessage(s, m),
       frame: (body) => this.onFrame(s, body),
       gone: (reason) => {

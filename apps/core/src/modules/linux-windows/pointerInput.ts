@@ -54,9 +54,11 @@ export type PointerHooks = {
 
 /**
  * Pass the pointer over `el` to the Linux window (toplevel or popup) `id`,
- * in the coordinates of its surface, which `canvas` shows one image pixel to
- * one CSS pixel. A press captures the pointer, so a drag that leaves the
- * element keeps going to the app. Returns the cleanup.
+ * in the coordinates of its surface. `canvas` shows the surface one surface
+ * coordinate to one CSS pixel at every scale (a scale-2 window's canvas holds
+ * twice the pixels at the same CSS size), so the point is the CSS offset from
+ * its corner. A press captures the pointer, so a drag that leaves the element
+ * keeps going to the app. Returns the cleanup.
  */
 export function attachPointer(
   el: HTMLElement,

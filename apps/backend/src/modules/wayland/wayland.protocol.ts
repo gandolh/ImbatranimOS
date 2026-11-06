@@ -19,7 +19,7 @@ export const WS_KIND_FRAME = 2;
 /** Refuse anything larger, as the host does. */
 export const MAX_MESSAGE = 64 * 1024 * 1024;
 
-export const PROTOCOL_VERSION = 5;
+export const PROTOCOL_VERSION = 6;
 
 /**
  * A desktop session id: random, per tab, and part of a socket's file name
@@ -33,9 +33,22 @@ export function isValidSessionId(id: unknown): id is string {
 
 /** Backend → host. */
 export type HostInbound =
-  | { type: 'session_open'; session: string; width: number; height: number }
+  | {
+      type: 'session_open';
+      session: string;
+      width: number;
+      height: number;
+      /** The tab's devicePixelRatio; the output's scale is its ceiling. */
+      ratio: number;
+    }
   | { type: 'session_close'; session: string }
-  | { type: 'output'; session: string; width: number; height: number }
+  | {
+      type: 'output';
+      session: string;
+      width: number;
+      height: number;
+      ratio: number;
+    }
   | { type: 'frame_ack'; session: string; toplevel: number }
   | { type: 'focus'; session: string; toplevel: number | null }
   | {
@@ -124,8 +137,11 @@ export type ToplevelMessage =
       toplevel: number;
       title: string;
       app_id: string;
+      /** The image's size in surface coordinates (CSS pixels). */
       width: number;
       height: number;
+      /** Image pixels per surface coordinate. */
+      scale: number;
       geometry: { x: number; y: number; width: number; height: number };
       decorations: 'server' | 'client';
       min_width: number;
@@ -149,6 +165,7 @@ export type PopupMessage =
       y: number;
       width: number;
       height: number;
+      scale: number;
       geometry: { x: number; y: number; width: number; height: number };
       grab: boolean;
     }

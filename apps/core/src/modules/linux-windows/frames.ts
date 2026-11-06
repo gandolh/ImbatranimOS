@@ -85,13 +85,26 @@ export async function decodeRect(rect: FrameRect): Promise<ImageData | ImageBitm
 }
 
 /**
- * Draw a frame onto a window's canvas. The canvas follows the window's size;
- * a new size clears it, and the host sends the whole window after a resize.
+ * Draw a frame onto a window's canvas. The canvas holds the frame's pixels
+ * and is laid out at `scale` of them to a CSS pixel: a window an app drew for
+ * a scale-2 output keeps its CSS size and shows one image pixel to one device
+ * pixel on a screen whose devicePixelRatio is 2. A new size clears it, and the
+ * host sends the whole window after a resize.
  */
-export async function paintFrame(canvas: HTMLCanvasElement, frame: Frame): Promise<void> {
+export async function paintFrame(
+  canvas: HTMLCanvasElement,
+  frame: Frame,
+  scale = 1
+): Promise<void> {
   const decoded = await Promise.all(frame.rects.map(decodeRect))
   if (canvas.width !== frame.width) canvas.width = frame.width
   if (canvas.height !== frame.height) canvas.height = frame.height
+  // Always set, so the CSS size changes with the pixels, never a frame apart.
+  const s = scale >= 1 ? scale : 1
+  const cssWidth = `${frame.width / s}px`
+  const cssHeight = `${frame.height / s}px`
+  if (canvas.style.width !== cssWidth) canvas.style.width = cssWidth
+  if (canvas.style.height !== cssHeight) canvas.style.height = cssHeight
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   frame.rects.forEach((rect, i) => {

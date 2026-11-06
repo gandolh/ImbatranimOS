@@ -1,5 +1,9 @@
 import type { HostInbound } from './wayland.protocol';
-import { MAX_CLIPBOARD_BYTES, MAX_VIEWPORT } from './wayland.constants';
+import {
+  MAX_CLIPBOARD_BYTES,
+  MAX_RATIO,
+  MAX_VIEWPORT,
+} from './wayland.constants';
 
 /**
  * What the tab may say on `/api/wayland`, checked field by field before the
@@ -35,6 +39,16 @@ export function clampSize(v: unknown): number {
   return Math.min(n, MAX_VIEWPORT);
 }
 
+/**
+ * The tab's devicePixelRatio: a positive number up to MAX_RATIO, and 1 when
+ * it is missing or malformed. The host makes its ceiling the output's scale.
+ */
+export function clampRatio(v: unknown): number {
+  const n = v === null || v === '' ? NaN : Number(v);
+  if (!Number.isFinite(n) || n <= 0) return 1;
+  return Math.min(n, MAX_RATIO);
+}
+
 /** Turn one message from the tab into one for the host, or null. */
 export function toHostMessage(
   session: string,
@@ -47,6 +61,7 @@ export function toHostMessage(
         session,
         width: clampSize(m.width),
         height: clampSize(m.height),
+        ratio: clampRatio(m.ratio),
       };
     case 'focus':
       if (m.toplevel !== null && !isU32(m.toplevel)) return null;

@@ -42,6 +42,7 @@ type ToplevelMessage = {
   app_id: string
   width: number
   height: number
+  scale: number
   geometry: Geometry
   decorations: 'server' | 'client'
   min_width: number
@@ -57,6 +58,7 @@ type PopupMessage = {
   y: number
   width: number
   height: number
+  scale: number
   geometry: Geometry
   grab: boolean
 }
@@ -74,17 +76,26 @@ type ServerMessage =
   | { type: 'notification_close'; id: number }
   | { type: 'app_stopped'; app: string; reason: 'memory' }
 
-/** Where Linux apps' windows are drawn: the desktop above the taskbar. */
-function viewport(): { width: number; height: number } {
+type Viewport = { width: number; height: number; ratio: number }
+
+/**
+ * Where Linux apps' windows are drawn: the desktop above the taskbar, in CSS
+ * pixels, and the screen's devicePixelRatio. The host makes the ratio's
+ * ceiling its output's scale, so apps draw as many pixels as the screen has.
+ */
+function viewport(): Viewport {
   return {
     width: Math.max(1, window.innerWidth),
     height: Math.max(1, window.innerHeight - TASKBAR_HEIGHT),
+    ratio: window.devicePixelRatio || 1,
   }
 }
 
 /** As the Terminal's socket URL: beside the API, ws or wss to match. */
-export function buildWaylandUrl(session: string, size: { width: number; height: number }): string {
-  const query = `?session=${encodeURIComponent(session)}&width=${size.width}&height=${size.height}`
+export function buildWaylandUrl(session: string, size: Viewport): string {
+  const query =
+    `?session=${encodeURIComponent(session)}&width=${size.width}&height=${size.height}` +
+    `&ratio=${size.ratio}`
   const base = import.meta.env.VITE_API_URL as string | undefined
   if (base) {
     const u = new URL(base, window.location.href)
@@ -101,6 +112,7 @@ function shape(m: ToplevelMessage): Omit<LinuxToplevel, 'windowId' | 'toplevel'>
     appId: m.app_id,
     width: m.width,
     height: m.height,
+    scale: m.scale || 1,
     geometry: m.geometry,
     decorations: m.decorations,
     min: { width: m.min_width, height: m.min_height },
@@ -162,6 +174,26 @@ export class LinuxWindowsConnection {
     this.send({ type: 'press_outside' })
   }
 
+  /**
+   * Matches the devicePixelRatio the tab is at. It changes when the window
+   * moves to another screen (no resize event) or the page zooms; the viewport
+   * then goes again with the new ratio, and the query follows the new one.
+   */
+  private ratioQuery: MediaQueryList | null = null
+
+  private watchRatio(): void {
+    this.ratioQuery?.removeEventListener('change', this.onRatioChange)
+    this.ratioQuery = null
+    if (this.stopped || typeof window.matchMedia !== 'function') return
+    this.ratioQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`)
+    this.ratioQuery.addEventListener('change', this.onRatioChange)
+  }
+
+  private readonly onRatioChange = () => {
+    this.watchRatio()
+    this.onResize()
+  }
+
   private readonly onResize = () => {
     if (this.viewportTimer) clearTimeout(this.viewportTimer)
     this.viewportTimer = setTimeout(() => {
@@ -173,6 +205,7 @@ export class LinuxWindowsConnection {
     if (!this.stopped) return
     this.stopped = false
     window.addEventListener('resize', this.onResize)
+    this.watchRatio()
     document.addEventListener('pointerdown', this.onPressAnywhere, true)
     document.addEventListener('visibilitychange', this.onVisibility)
     // Keyboard focus follows the window manager's focused window, and a
@@ -198,6 +231,7 @@ export class LinuxWindowsConnection {
   stop(): void {
     this.stopped = true
     window.removeEventListener('resize', this.onResize)
+    this.watchRatio()
     document.removeEventListener('pointerdown', this.onPressAnywhere, true)
     document.removeEventListener('visibilitychange', this.onVisibility)
     this.unsubscribeAuth?.()
@@ -303,11 +337,15 @@ export class LinuxWindowsConnection {
       const frame = parseFrame(data)
       if (!frame) return
       noteLinuxFrame(frame.rects.reduce((sum, r) => sum + r.w * r.h, 0))
-      const isPopup = frame.toplevel in useLinuxWindowsStore.getState().popups
-      if (!isPopup && !windowForToplevel(frame.toplevel)) return
+      const popup = useLinuxWindowsStore.getState().popups[frame.toplevel]
+      const toplevel = popup ? undefined : windowForToplevel(frame.toplevel)
+      if (!popup && !toplevel) return
+      // The scale as of this frame: the host announces a new one before the
+      // first frame drawn at it.
+      const scale = (popup ?? toplevel)?.scale ?? 1
       const canvas = canvasFor(frame.toplevel)
       const prev = this.painting.get(frame.toplevel) ?? Promise.resolve()
-      const next = prev.then(() => paintFrame(canvas, frame)).catch(() => undefined)
+      const next = prev.then(() => paintFrame(canvas, frame, scale)).catch(() => undefined)
       this.painting.set(frame.toplevel, next)
       return
     }
@@ -406,6 +444,7 @@ export class LinuxWindowsConnection {
       y: m.y,
       width: m.width,
       height: m.height,
+      scale: m.scale || 1,
       geometry: m.geometry,
       grab: m.grab,
     })

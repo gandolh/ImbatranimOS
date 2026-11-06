@@ -46,6 +46,7 @@ const created = (toplevel: number, app = 'foot') => ({
   app_id: app,
   width: 600,
   height: 400,
+  scale: 1,
   geometry: GEOMETRY,
   decorations: 'server',
   min_width: 0,

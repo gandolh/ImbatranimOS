@@ -4,6 +4,7 @@ import { cn } from '../../../lib/cn'
 import { TASKBAR_HEIGHT } from '../../store/windowStore'
 import { openApp } from '../../intents/openApp'
 import { useNotificationStore, type NotificationItem } from '../../store/notificationStore'
+import { activateNotification } from './activation'
 import { NotificationIcon } from './NotificationIcon'
 import { levelStripeClass } from './levelStyle'
 
@@ -24,7 +25,7 @@ function Toast({ item }: { item: NotificationItem }) {
     return () => clearTimeout(id)
   }, [item.id, item.level, dismissToast, held])
 
-  const clickable = Boolean(item.appId)
+  const clickable = Boolean(item.appId || item.source)
   const close = () => {
     markRead(item.id)
     dismissToast(item.id)
@@ -34,6 +35,11 @@ function Toast({ item }: { item: NotificationItem }) {
    * open comes to the front with the keyboard.
    */
   const activate = (payload?: unknown) => {
+    // A notification with its own click (a Linux app's) runs that instead.
+    if (activateNotification(item)) {
+      close()
+      return
+    }
     const appId = item.appId
     if (!appId) return
     openApp(appId, payload)

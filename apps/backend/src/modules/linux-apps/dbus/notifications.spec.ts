@@ -36,14 +36,20 @@ const call = (
   body,
 });
 
-const notify = (app: string, replaces: number, summary: string, body: string) =>
+const notify = (
+  app: string,
+  replaces: number,
+  summary: string,
+  body: string,
+  actions: string[] = [],
+) =>
   call('Notify', 'susssasa{sv}i', [
     app,
     replaces,
     'firefox',
     summary,
     body,
-    [],
+    actions,
     [],
     5000,
   ]);
@@ -60,8 +66,14 @@ describe('the notification service', () => {
       body: [2],
     });
     expect(shown).toEqual([
-      { id: 1, app: 'Firefox', summary: 'Hi', body: 'from a page' },
-      { id: 2, app: 'Firefox', summary: 'Again', body: '' },
+      {
+        id: 1,
+        app: 'Firefox',
+        summary: 'Hi',
+        body: 'from a page',
+        hasDefault: false,
+      },
+      { id: 2, app: 'Firefox', summary: 'Again', body: '', hasDefault: false },
     ]);
   });
 
@@ -105,6 +117,54 @@ describe('the notification service', () => {
     server.closedByUser(5);
     expect(signals).toEqual([['NotificationClosed', 1, CLOSED_DISMISSED]]);
     expect(closed).toEqual([]);
+  });
+
+  it('runs the default action on a click, then closes it as dismissed', () => {
+    const { server, shown, signals } = setup();
+    server.handle(notify('Firefox', 0, 'Hi', '', ['default', 'Open']));
+    expect(shown[0].hasDefault).toBe(true);
+    server.actionByUser(1, 'default');
+    expect(signals).toEqual([
+      ['ActionInvoked', 1, 'default'],
+      ['NotificationClosed', 1, CLOSED_DISMISSED],
+    ]);
+    // It is forgotten: a second click says nothing.
+    server.actionByUser(1, 'default');
+    expect(signals).toHaveLength(2);
+  });
+
+  it('only closes a notification without a default action on a click', () => {
+    const { server, shown, signals } = setup();
+    server.handle(notify('App', 0, 'S', '', ['reply', 'Reply']));
+    expect(shown[0].hasDefault).toBe(false);
+    server.actionByUser(1, 'default');
+    expect(signals).toEqual([['NotificationClosed', 1, CLOSED_DISMISSED]]);
+  });
+
+  it('ignores a click on an id it does not hold, and any key but default', () => {
+    const { server, signals } = setup();
+    server.handle(notify('App', 0, 'S', '', ['default', 'Open', 'x', 'X']));
+    server.actionByUser(9, 'default');
+    server.actionByUser(1, 'x');
+    expect(signals).toEqual([]);
+  });
+
+  it('writes ActionInvoked as (u, s)', () => {
+    const sent: unknown[] = [];
+    const server = new NotificationsServer(
+      (m) => sent.push(m),
+      { show: () => undefined, close: () => undefined },
+      '1',
+    );
+    server.handle(notify('A', 0, 'S', '', ['default', 'Open']));
+    server.actionByUser(1, 'default');
+    expect(sent[0]).toMatchObject({
+      path: NOTIFICATIONS.path,
+      interface: NOTIFICATIONS.interface,
+      member: 'ActionInvoked',
+      signature: 'us',
+      body: [1, 'default'],
+    });
   });
 
   it('answers what it can do, who it is, and its introspection', () => {

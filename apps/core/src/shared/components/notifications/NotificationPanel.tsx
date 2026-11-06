@@ -4,12 +4,13 @@ import { cn } from '../../../lib/cn'
 import { ScrollArea } from '../ui/ScrollArea'
 import { openApp } from '../../intents/openApp'
 import { useNotificationStore, type NotificationItem } from '../../store/notificationStore'
+import { activateNotification } from './activation'
 import { NotificationIcon } from './NotificationIcon'
 import { levelStripeClass, formatRelative } from './levelStyle'
 
 function Row({ item, onOpen }: { item: NotificationItem; onOpen: () => void }) {
   const remove = useNotificationStore((s) => s.remove)
-  const clickable = Boolean(item.appId)
+  const clickable = Boolean(item.appId || item.source)
 
   return (
     <div
@@ -127,7 +128,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
               key={item.id}
               item={item}
               onOpen={() => {
-                if (item.appId) openApp(item.appId)
+                if (!activateNotification(item) && item.appId) openApp(item.appId)
                 onClose()
               }}
             />

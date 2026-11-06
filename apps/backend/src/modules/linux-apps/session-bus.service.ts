@@ -195,8 +195,14 @@ export class SessionBusService implements OnModuleInit {
     this.settings.set(session, server);
   }
 
-  /** The owner closed a Linux app's notification in the OS. */
+  /** The owner closed or clicked a Linux app's notification in the OS. */
   private fromTab(session: string, m: Record<string, unknown>): boolean {
+    if (m.type === 'notification_action') {
+      if (isU32(m.id) && typeof m.key === 'string' && m.key.length <= 64) {
+        this.servers.get(session)?.actionByUser(m.id, m.key);
+      }
+      return true;
+    }
     if (m.type !== 'notification_closed') return false;
     if (isU32(m.id)) this.servers.get(session)?.closedByUser(m.id);
     return true;

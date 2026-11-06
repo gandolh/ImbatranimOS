@@ -127,7 +127,13 @@ withBus('the notification service on a real session bus', () => {
       ),
     ).toBe('(uint32 1,)');
     expect(shown).toEqual([
-      { id: 1, app: 'Firefox', summary: 'Hi ș', body: 'from GLib' },
+      {
+        id: 1,
+        app: 'Firefox',
+        summary: 'Hi ș',
+        body: 'from GLib',
+        hasDefault: false,
+      },
     ]);
 
     expect(await gdbus('CloseNotification', '1')).toBe('()');
@@ -137,6 +143,31 @@ withBus('the notification service on a real session bus', () => {
     }
     expect(signals.map((m) => [m.member, ...m.body])).toEqual([
       ['NotificationClosed', 1, CLOSED_BY_CALL],
+    ]);
+
+    // A click: a notification with a default action reaches the listener.
+    signals.length = 0;
+    expect(
+      await gdbus(
+        'Notify',
+        'Firefox',
+        '0',
+        '',
+        'Click',
+        '',
+        "['default', 'Open']",
+        '{}',
+        '0',
+      ),
+    ).toBe('(uint32 2,)');
+    expect(shown[1].hasDefault).toBe(true);
+    server.actionByUser(2, 'default');
+    for (let i = 0; i < 50 && signals.length < 2; i++) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    expect(signals.map((m) => [m.member, ...m.body])).toEqual([
+      ['ActionInvoked', 2, 'default'],
+      ['NotificationClosed', 2, 2],
     ]);
 
     await expect(gdbus('Frobnicate')).rejects.toThrow(/UnknownMethod/);

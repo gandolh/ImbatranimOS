@@ -6,10 +6,12 @@ import type { Message } from './wire';
  * notification becomes an ordinary OS notification in the tab, and closing
  * it there tells the app. Plain text only (no `body-markup`).
  *
- * It advertises `actions` though it invokes none yet: Firefox sends web
- * notifications (which carry a `default` action, the click) to a server
- * only when it has `actions`, and shows its own popup otherwise. A click on
- * the OS notification does nothing for now.
+ * It advertises `actions`: Firefox sends web notifications (which carry a
+ * `default` action, the click) to a server only when it has `actions`, and
+ * shows its own popup otherwise. Only `default` is offered to the owner, as
+ * a click on the OS notification: the server sends `ActionInvoked(id,
+ * 'default')`, then `NotificationClosed(id, 2)`. A notification without a
+ * `default` action just closes on click. No extra action buttons.
  *
  * https://specifications.freedesktop.org/notification-spec/latest/
  */
@@ -35,6 +37,8 @@ export type ShownNotification = {
   app: string;
   summary: string;
   body: string;
+  /** It has a `default` action: a click runs it. */
+  hasDefault: boolean;
 };
 
 export type NotificationsTab = {
@@ -82,7 +86,8 @@ const clip = (s: unknown, max: number) =>
 
 export class NotificationsServer {
   private nextId = 1;
-  private readonly open = new Set<number>();
+  /** Each open notification, with whether it offered a `default` action. */
+  private readonly open = new Map<number, boolean>();
   private readonly signal: SignalSender;
   private readonly tab: NotificationsTab;
   private readonly version: string;
@@ -123,22 +128,28 @@ export class NotificationsServer {
     if (call.signature !== 'susssasa{sv}i') {
       return badArgs('Notify', 'susssasa{sv}i');
     }
-    const [app, replaces, , summary, body] = call.body as [
+    const [app, replaces, , summary, body, actions] = call.body as [
       string,
       number,
       string,
       string,
       string,
+      unknown,
     ];
+    // Actions arrive as key, label pairs.
+    const hasDefault =
+      Array.isArray(actions) &&
+      actions.some((k, i) => i % 2 === 0 && k === 'default');
     // A replacement keeps its id, as the spec asks; an unknown one is new.
     const id =
       replaces > 0 && this.open.has(replaces) ? replaces : this.allocate();
-    this.open.add(id);
+    this.open.set(id, hasDefault);
     this.tab.show({
       id,
       app: clip(app, 100),
       summary: clip(summary, MAX_SUMMARY),
       body: clip(body, MAX_BODY),
+      hasDefault,
     });
     return { signature: 'u', body: [id] };
   }
@@ -159,6 +170,24 @@ export class NotificationsServer {
   /** The owner closed it in the OS. */
   closedByUser(id: number): void {
     if (this.open.delete(id)) this.closed(id, CLOSED_DISMISSED);
+  }
+
+  /**
+   * The owner clicked it in the OS: run its `default` action when it has
+   * one, then close it as dismissed. Only `default` is ever invoked.
+   */
+  actionByUser(id: number, key: string): void {
+    if (key !== 'default' || !this.open.has(id)) return;
+    if (this.open.get(id)) {
+      this.signal({
+        path: NOTIFICATIONS.path,
+        interface: NOTIFICATIONS.interface,
+        member: 'ActionInvoked',
+        signature: 'us',
+        body: [id, key],
+      });
+    }
+    this.closedByUser(id);
   }
 
   private closed(id: number, reason: number): void {

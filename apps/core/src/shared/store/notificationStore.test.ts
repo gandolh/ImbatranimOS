@@ -59,3 +59,14 @@ describe('notify with actions', () => {
     expect(item.actions).toHaveLength(1)
   })
 })
+
+describe('a notification with a source', () => {
+  it('keeps it, and leaves items without one unchanged', () => {
+    const s = useNotificationStore.getState()
+    s.notify({ title: 'A', source: { kind: 'linux', id: 2 } })
+    s.notify({ title: 'B' })
+    const [b, a] = useNotificationStore.getState().notifications
+    expect(a.source).toEqual({ kind: 'linux', id: 2 })
+    expect('source' in b).toBe(false)
+  })
+})

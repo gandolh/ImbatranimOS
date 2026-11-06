@@ -13,6 +13,9 @@ export type NotificationAction = {
   payload: unknown
 }
 
+/** The raiser of a notification whose click is its own: a Linux app, by its bus id. */
+export type NotificationSource = { kind: 'linux'; id: number }
+
 /** A recorded notification (lives in history until removed/cleared). */
 export type NotificationItem = {
   id: string
@@ -24,6 +27,11 @@ export type NotificationItem = {
   /** epoch ms */
   timestamp: number
   read: boolean
+  /**
+   * Who raised it, when a click runs something other than "open `appId`"
+   * (see components/notifications/activation.ts). Plain data, so it persists.
+   */
+  source?: NotificationSource
   /** Rendered on the live toast only; harmless (and inert) in history. */
   actions?: readonly NotificationAction[]
 }
@@ -33,6 +41,7 @@ export type NotifyInput = {
   title: string
   body?: string
   appId?: string
+  source?: NotificationSource
   level?: NotificationLevel
   actions?: readonly NotificationAction[]
 }
@@ -86,6 +95,7 @@ export const useNotificationStore = create<NotificationStore>()(
           // Only kept when non-empty, so every existing caller's item shape —
           // and its persisted JSON — is byte-identical to before.
           ...(input.actions?.length ? { actions: input.actions } : {}),
+          ...(input.source ? { source: input.source } : {}),
         }
         set((state) => ({
           notifications: [item, ...state.notifications].slice(0, MAX_HISTORY),

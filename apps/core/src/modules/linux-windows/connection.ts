@@ -76,7 +76,14 @@ type ServerMessage =
   | { type: 'unavailable'; reason: string }
   | { type: 'session'; resumed: boolean }
   | { type: 'clipboard'; text: string }
-  | { type: 'notification'; id: number; app: string; summary: string; body: string }
+  | {
+      type: 'notification'
+      id: number
+      app: string
+      summary: string
+      body: string
+      hasDefault?: boolean
+    }
   | { type: 'notification_close'; id: number }
   | { type: 'app_stopped'; app: string; reason: 'memory' }
   | ({ type: 'text_input' } & LinuxTextInput)

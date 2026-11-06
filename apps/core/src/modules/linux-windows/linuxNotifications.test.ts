@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useWindowStore } from '../../shared/store/windowStore'
+import { activateNotification } from '../../shared/components/notifications/activation'
 import { useNotificationStore } from '../../shared/store/notificationStore'
 import { LinuxNotifications, notifyAppStopped } from './linuxNotifications'
 
@@ -55,6 +57,65 @@ describe("a Linux app's notifications", () => {
     bridge.show({ id: 1, app: 'App', summary: 'S', body: '' })
     bridge.forget()
     store().clearAll()
+    expect(sent).toEqual([])
+  })
+})
+
+describe('a click on a notification', () => {
+  const win = (id: string, appId: string, isVisible = true) => ({ id, appId, isVisible })
+  let focusWindow: ReturnType<typeof vi.fn>
+  let showWindow: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    focusWindow = vi.fn()
+    showWindow = vi.fn()
+    useWindowStore.setState({ windows: [], focusWindow, showWindow } as never)
+  })
+
+  const click = () => activateNotification(store().notifications[0])
+
+  it("runs the default action and raises the app's only window", () => {
+    useWindowStore.setState({
+      windows: [win('w1', 'linux:firefox', false), win('w2', 'linux:foot')],
+    } as never)
+    bridge.show({ id: 4, app: 'Firefox', summary: 'Hi', body: '', hasDefault: true })
+    expect(store().notifications[0].source).toEqual({ kind: 'linux', id: 4 })
+    expect(click()).toBe(true)
+    expect(sent).toEqual([{ type: 'notification_action', id: 4, key: 'default' }])
+    expect(focusWindow).toHaveBeenCalledWith('w1')
+    expect(showWindow).toHaveBeenCalledWith('w1')
+    // The app answers by closing it, so the tab says nothing more, and a
+    // second click does nothing.
+    const item = store().notifications[0]
+    store().remove(item.id)
+    expect(activateNotification(item)).toBe(true)
+    expect(sent).toHaveLength(1)
+  })
+
+  it('leaves focus alone with no window or several for the app', () => {
+    bridge.show({ id: 1, app: 'Firefox', summary: 'A', body: '', hasDefault: true })
+    click()
+    expect(focusWindow).not.toHaveBeenCalled()
+    useWindowStore.setState({
+      windows: [win('w1', 'linux:firefox'), win('w2', 'linux:firefox')],
+    } as never)
+    bridge.show({ id: 2, app: 'Firefox', summary: 'B', body: '', hasDefault: true })
+    click()
+    expect(sent).toHaveLength(2)
+    expect(focusWindow).not.toHaveBeenCalled()
+  })
+
+  it('is not offered for a notification without a default action', () => {
+    bridge.show({ id: 1, app: 'App', summary: 'S', body: '' })
+    expect(store().notifications[0].source).toBeUndefined()
+    expect(click()).toBe(false)
+    expect(sent).toEqual([])
+  })
+
+  it("does nothing for an earlier session's notification", () => {
+    bridge.show({ id: 1, app: 'App', summary: 'S', body: '', hasDefault: true })
+    bridge.forget()
+    expect(click()).toBe(true)
     expect(sent).toEqual([])
   })
 })

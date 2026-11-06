@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { DbService } from '../../db/db.service';
 import type { PrefEntryDto, PrefsMap } from './dto/prefs.dto';
 
+/** Told after a dotfile is written (value) or reset (null). */
+export type PrefListener = (key: string, value: string | null) => void;
+
 /**
  * Durable user config — the dotfiles half of the ephemeral-session work's split.
  *
@@ -20,7 +23,29 @@ import type { PrefEntryDto, PrefsMap } from './dto/prefs.dto';
  */
 @Injectable()
 export class PrefsService {
+  private readonly listeners = new Set<PrefListener>();
+
   constructor(private readonly db: DbService) {}
+
+  /**
+   * Hear every write and reset, as the key and the new value (null once
+   * reset). Returns the way to stop listening. A listener that throws
+   * never fails the write.
+   */
+  onChange(listener: PrefListener): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private changed(key: string, value: string | null): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(key, value);
+      } catch {
+        // the write already happened
+      }
+    }
+  }
 
   /** Every dotfile, key → serialised JSON. */
   all(): PrefsMap {
@@ -86,10 +111,12 @@ export class PrefsService {
         if (row?.updatedAt) updatedAt[entry.key] = row.updatedAt;
       }
     }
+    for (const entry of entries) this.changed(entry.key, entry.value);
     return { written: entries.length, updatedAt };
   }
 
   remove(key: string): void {
     this.db.db.prepare('DELETE FROM prefs WHERE key = ?').run(key);
+    this.changed(key, null);
   }
 }

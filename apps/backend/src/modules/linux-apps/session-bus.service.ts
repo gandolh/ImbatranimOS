@@ -4,6 +4,8 @@ import { mkdirSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { BUS, DbusConnection } from './dbus/connection';
 import { NOTIFICATIONS, NotificationsServer } from './dbus/notifications';
+import { SETTINGS, APPEARANCE_PREF, SettingsServer } from './dbus/settings';
+import { PrefsService } from '../prefs/prefs.service';
 import { SessionApps } from '../wayland/session-apps';
 import { WaylandGateway } from '../wayland/wayland.gateway';
 import { sessionBusPath } from './session-bus.paths';
@@ -34,14 +36,21 @@ const isU32 = (v: unknown): v is number =>
 export class SessionBusService implements OnModuleInit {
   private readonly logger = new Logger(SessionBusService.name);
   private readonly servers = new Map<string, NotificationsServer>();
+  private readonly settings = new Map<string, SettingsServer>();
   private unavailable = false;
 
   constructor(
     private readonly gateway: WaylandGateway,
     private readonly apps: SessionApps,
+    private readonly prefs: PrefsService,
   ) {}
 
   onModuleInit(): void {
+    // The desktop's mode or accent changed: every open app restyles.
+    this.prefs.onChange((key, value) => {
+      if (key !== APPEARANCE_PREF) return;
+      for (const server of this.settings.values()) server.update(value);
+    });
     this.gateway.addSessionHooks({
       started: (session) => void this.start(session),
       tabMessage: (session, m) => this.fromTab(session, m),
@@ -67,6 +76,13 @@ export class SessionBusService implements OnModuleInit {
     } catch (e) {
       this.logger.warn(
         `Session bus without notifications: ${(e as Error).message}`,
+      );
+    }
+    try {
+      await this.serveSettings(session, path);
+    } catch (e) {
+      this.logger.warn(
+        `Session bus without appearance settings: ${(e as Error).message}`,
       );
     }
   }
@@ -151,6 +167,32 @@ export class SessionBusService implements OnModuleInit {
       throw new Error(`${NOTIFICATIONS.name} is taken`);
     }
     this.servers.set(session, server);
+  }
+
+  /** Answer the Settings portal with the desktop's mode and accent. */
+  private async serveSettings(session: string, path: string): Promise<void> {
+    const bus = await DbusConnection.open(path, process.getuid?.() ?? 0);
+    const server = new SettingsServer(
+      (m) => bus.signal(m),
+      this.prefs.get(APPEARANCE_PREF),
+    );
+    bus.onMethodCall((call) => server.handle(call));
+    bus.onClose(() => {
+      if (this.settings.get(session) === server) this.settings.delete(session);
+    });
+    const reply = await bus.call({
+      destination: BUS.name,
+      path: BUS.path,
+      interface: BUS.interface,
+      member: 'RequestName',
+      signature: 'su',
+      body: [SETTINGS.name, DO_NOT_QUEUE],
+    });
+    if (reply.body[0] !== PRIMARY_OWNER) {
+      bus.close();
+      throw new Error(`${SETTINGS.name} is taken`);
+    }
+    this.settings.set(session, server);
   }
 
   /** The owner closed a Linux app's notification in the OS. */

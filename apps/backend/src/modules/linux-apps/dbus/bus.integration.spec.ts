@@ -16,6 +16,7 @@ import {
   NotificationsServer,
   type ShownNotification,
 } from './notifications';
+import { APPEARANCE, SETTINGS, SettingsServer } from './settings';
 import type { Message } from './wire';
 
 /**
@@ -139,6 +140,81 @@ withBus('the notification service on a real session bus', () => {
     ]);
 
     await expect(gdbus('Frobnicate')).rejects.toThrow(/UnknownMethod/);
+    bus.close();
+    listener.close();
+  });
+
+  it("answers GLib's Settings reads, and signals a change", async () => {
+    const bus = await DbusConnection.open(path, process.getuid!());
+    const server = new SettingsServer((m) => bus.signal(m), null);
+    bus.onMethodCall((call) => server.handle(call));
+    const owned = await bus.call({
+      destination: BUS.name,
+      path: BUS.path,
+      interface: BUS.interface,
+      member: 'RequestName',
+      signature: 'su',
+      body: [SETTINGS.name, 4],
+    });
+    expect(owned.body).toEqual([1]);
+
+    const listener = await DbusConnection.open(path, process.getuid!());
+    const signals: Message[] = [];
+    listener.onSignal((m) => signals.push(m));
+    await listener.call({
+      destination: BUS.name,
+      path: BUS.path,
+      interface: BUS.interface,
+      member: 'AddMatch',
+      signature: 's',
+      body: ["type='signal',interface='org.freedesktop.portal.Settings'"],
+    });
+
+    const env = {
+      ...process.env,
+      DBUS_SESSION_BUS_ADDRESS: `unix:path=${path}`,
+    };
+    const gdbus = (method: string, ...args: string[]) =>
+      run(
+        'gdbus',
+        [
+          'call',
+          '--session',
+          '--dest',
+          SETTINGS.name,
+          '--object-path',
+          SETTINGS.path,
+          '--method',
+          `${SETTINGS.interface}.${method}`,
+          ...args,
+        ],
+        { env },
+      ).then((r) => r.stdout.trim());
+
+    expect(await gdbus('ReadOne', APPEARANCE, 'color-scheme')).toBe(
+      '(<uint32 2>,)',
+    );
+    expect(await gdbus('ReadOne', APPEARANCE, 'accent-color')).toMatch(
+      /^\(<\(0\.62\d*, 0\.29\d*, 0\.13\d*\)>,\)$/,
+    );
+    expect(await gdbus('Read', APPEARANCE, 'contrast')).toBe('(<<uint32 0>>,)');
+    expect(await gdbus('ReadAll', '[]')).toContain(
+      "'color-scheme': <uint32 2>",
+    );
+    expect(await gdbus('ReadAll', "['org.gnome.*']")).toBe('(@a{sa{sv}} {},)');
+
+    server.update(
+      JSON.stringify({
+        state: { theme: 'apricot', mode: 'dark', accents: {} },
+      }),
+    );
+    for (let i = 0; i < 50 && signals.length < 2; i++) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    expect(signals.map((m) => [m.member, m.body[0], m.body[1]])).toEqual([
+      ['SettingChanged', APPEARANCE, 'color-scheme'],
+      ['SettingChanged', APPEARANCE, 'accent-color'],
+    ]);
     bus.close();
     listener.close();
   });

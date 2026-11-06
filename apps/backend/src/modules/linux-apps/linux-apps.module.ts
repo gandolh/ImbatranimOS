@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PrefsModule } from '../prefs/prefs.module';
 import { WaylandModule } from '../wayland/wayland.module';
 import { LinuxAppsController } from './linux-apps.controller';
 import { LinuxAppUpdatesService } from './linux-app-updates.service';
@@ -11,7 +12,7 @@ import { SessionBusService } from './session-bus.service';
  * changes come only from one.
  */
 @Module({
-  imports: [WaylandModule],
+  imports: [WaylandModule, PrefsModule],
   controllers: [LinuxAppsController],
   providers: [LinuxAppsService, LinuxAppUpdatesService, SessionBusService],
   exports: [LinuxAppsService],

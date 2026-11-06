@@ -5471,3 +5471,23 @@ instance, and the URL app definition is revised. New todos:
 and `installable-apps-get-files-by-grant`. Every question in the fourteen
 todos is answered.
 
+## [2026-11-06] briefs | Briefs 63-76: the imbatranim-apps plan, promoted
+
+The owner confirmed the last three proposals, on file grants, and asked
+for every todo to be promoted. Fourteen briefs, in run order:
+- **63-64:** the rename, then Games, which settles the group layout;
+- **65-67:** Notepad takes over Markdown Editor; Files handles archives;
+  WASM with threads;
+- **68-70:** app identity and Unix modes; data folders by kind; file grants;
+- **71-73:** background and command hooks; Start's search, pins and A-Z
+  list; the chooser's Marketplace link;
+- **74:** URL apps run natively, verified or trusted;
+- **75-76:** Todo and Bookmarks as Accessories; Git GUI and the REST API
+  Client as Developer.
+
+imbatranim-office's PDF todo became its brief 06. Each todo is marked
+promoted, and the brief carries the full spec with the answers. Two follow-up
+todos are written by the briefs that need them: 68 adds the System Monitor
+processes view, and 74 retires the sandboxed frame path. Board tickets
+imbatranimOS-63 to 76 and imbatranim-office-06 were created in To Do.
+

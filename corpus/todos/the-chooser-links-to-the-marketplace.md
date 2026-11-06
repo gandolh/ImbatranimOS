@@ -1,7 +1,7 @@
 ---
 title: The Open With chooser links to the Marketplace
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps]
 ---
 
@@ -13,6 +13,8 @@ Decided in the imbatranim-apps grill on 2026-11-06: a link, not an Install
 button. Grill the open question below when the work starts, then promote
 this to a numbered brief.
 
+
+> PROMOTED 2026-11-06 to [brief 73](../briefs/todo/73-the-chooser-links-to-the-marketplace.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 1. **Where does the link land?** Answered 2026-11-06: yes.

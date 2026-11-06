@@ -1,7 +1,7 @@
 ---
 title: imbatranim-office becomes imbatranim-apps
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps]
 ---
 
@@ -12,6 +12,8 @@ Rename imbatranim-office to imbatranim-apps, the repo for every app that can be 
 Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
 
+
+> PROMOTED 2026-11-06 to [brief 63](../briefs/todo/63-imbatranim-office-becomes-imbatranim-apps.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); the repo becomes imbatranim-apps.

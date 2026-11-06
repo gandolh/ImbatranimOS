@@ -1,7 +1,7 @@
 ---
 title: Notepad takes over Markdown Editor's job
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps]
 ---
 
@@ -12,6 +12,8 @@ Notepad takes over Markdown Editor's job (it already calls itself a markdown edi
 Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
 
+
+> PROMOTED 2026-11-06 to [brief 65](../briefs/todo/65-notepad-takes-over-markdown-editors-job.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); Markdown Editor goes and Notepad opens markdown.

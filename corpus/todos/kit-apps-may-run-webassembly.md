@@ -1,7 +1,7 @@
 ---
 title: Kit apps may run WebAssembly
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps]
 ---
 
@@ -12,6 +12,8 @@ The desktop's CSP lets kit apps run WebAssembly, so an app can use a WASM engine
 Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
 
+
+> PROMOTED 2026-11-06 to [brief 67](../briefs/todo/67-kit-apps-may-run-webassembly-with-threads.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); WASM engines from npm packages may run in the desktop's page.

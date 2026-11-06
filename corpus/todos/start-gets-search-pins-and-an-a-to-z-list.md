@@ -1,7 +1,7 @@
 ---
 title: Start gets search, pinned apps and an A-Z list
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps]
 ---
 
@@ -15,6 +15,8 @@ Claude picked this. It replaces the "Start shows a folder per group" todo.
 Grill the open questions below when the work starts, then promote this to a
 numbered brief.
 
+
+> PROMOTED 2026-11-06 to [brief 72](../briefs/todo/72-start-gets-search-pins-and-an-a-to-z-list.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled on 2026-11-06:

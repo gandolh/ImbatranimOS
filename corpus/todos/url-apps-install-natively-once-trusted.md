@@ -1,7 +1,7 @@
 ---
 title: URL apps install natively once trusted
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps]
 ---
 
@@ -20,6 +20,8 @@ that URL apps always run sandboxed, prebuilt, with `notify` only
 open questions below when the work starts, then promote this to a numbered
 brief.
 
+
+> PROMOTED 2026-11-06 to [brief 74](../briefs/todo/74-url-apps-install-natively-once-verified-or-trusted.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled on 2026-11-06:

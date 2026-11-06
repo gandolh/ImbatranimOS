@@ -1,7 +1,7 @@
 ---
 title: Todo and Bookmarks install as Accessories
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps]
 ---
 
@@ -13,6 +13,8 @@ Decided in the imbatranim-apps grill on 2026-11-06. It replaces the todo that
 also moved Sticky Notes, which stays built in. Grill the open questions below
 when the work starts, then promote this to a numbered brief.
 
+
+> PROMOTED 2026-11-06 to [brief 75](../briefs/todo/75-todo-and-bookmarks-install-as-accessories.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled on 2026-11-06:

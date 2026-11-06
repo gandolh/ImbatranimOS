@@ -1,7 +1,7 @@
 ---
 title: Installable apps get files by grant
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps]
 ---
 
@@ -14,6 +14,8 @@ Decided in the imbatranim-apps grill on 2026-11-06
 Grill the open questions below when the work starts, then promote this to a
 numbered brief.
 
+
+> PROMOTED 2026-11-06 to [brief 70](../briefs/todo/70-installable-apps-get-files-by-grant.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled on 2026-11-06:
@@ -22,13 +24,13 @@ Settled on 2026-11-06:
 - a grant comes from an OS-made open or a pick, and lasts for the window;
 - the REST API Client's typed paths become a picker.
 
-1. **Does a recent file keep its grant?** Proposed: no lasting grant. Opening
+1. **Does a recent file keep its grant?** Answered 2026-11-06 (as proposed): no lasting grant. Opening
    it again from Start's recents or the app's own recents goes through the
    OS, which grants it again.
-2. **Read-only or read-write?** Proposed: as opened. Open With and Open give
+2. **Read-only or read-write?** Answered 2026-11-06 (as proposed): as opened. Open With and Open give
    read-write, since the app saves back to it, and Save As grants the picked
    path.
-3. **Folders?** Proposed: `pickDirectory` grants the folder and everything
+3. **Folders?** Answered 2026-11-06 (as proposed): `pickDirectory` grants the folder and everything
    under it, for that window.
 
 ## Draft brief

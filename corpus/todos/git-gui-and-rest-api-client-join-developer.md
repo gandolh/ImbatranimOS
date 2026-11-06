@@ -1,7 +1,7 @@
 ---
 title: Git GUI and REST API Client join Developer
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps]
 ---
 
@@ -12,6 +12,8 @@ Git GUI and REST API Client join Developer. Each leans on an OS-side module that
 Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
 
+
+> PROMOTED 2026-11-06 to [brief 76](../briefs/todo/76-git-gui-and-rest-api-client-install-as-developer.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); the two go to Developer.

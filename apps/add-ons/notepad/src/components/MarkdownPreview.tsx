@@ -143,7 +143,7 @@ export function MarkdownPreview({
       } catch (err) {
         // Unhighlighted monospace is what this app shipped for its whole life; a failed
         // chunk load should not take the preview with it.
-        console.error('[markdown-editor] failed to load the highlighter', err)
+        console.error('[notepad] failed to load the highlighter', err)
       }
     })()
     return () => {

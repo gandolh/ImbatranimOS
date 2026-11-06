@@ -58,8 +58,8 @@ describe('extension parsing', () => {
 
 describe('the before/after table — every mapping the old constant had', () => {
   const cases: [string, string][] = [
-    ['notes.md', 'markdown-editor'],
-    ['notes.markdown', 'markdown-editor'],
+    ['notes.md', 'notepad'],
+    ['notes.markdown', 'notepad'],
     ['a.txt', 'notepad'],
     ['out.log', 'notepad'],
     ['a.json', 'code-editor'],
@@ -94,7 +94,7 @@ describe('the before/after table — every mapping the old constant had', () => 
 
 describe('the user override wins', () => {
   it('over the declared default', () => {
-    expect(resolveOpener('a.md').appId).toBe('markdown-editor')
+    expect(resolveOpener('a.md').appId).toBe('notepad')
     useAssociationStore.getState().setDefault('md', 'code-editor')
     expect(resolveOpener('a.md')).toEqual({ appId: 'code-editor', reason: 'override' })
   })
@@ -102,18 +102,18 @@ describe('the user override wins', () => {
   it('and can be cleared back to the default', () => {
     useAssociationStore.getState().setDefault('md', 'code-editor')
     useAssociationStore.getState().clearDefault('md')
-    expect(resolveOpener('a.md').appId).toBe('markdown-editor')
+    expect(resolveOpener('a.md').appId).toBe('notepad')
   })
 
   it('is ignored when it names an app that does not exist', () => {
     useAssociationStore.getState().setDefault('md', 'an-app-that-was-removed')
-    expect(resolveOpener('a.md').appId).toBe('markdown-editor')
+    expect(resolveOpener('a.md').appId).toBe('notepad')
   })
 
   it('is ignored when the chosen app has been DISABLED', () => {
     useAssociationStore.getState().setDefault('md', 'code-editor')
     useAddonStore.setState({ disabled: ['code-editor'] })
-    expect(resolveOpener('a.md').appId).toBe('markdown-editor')
+    expect(resolveOpener('a.md').appId).toBe('notepad')
   })
 
   it('applies to an extensionless name too', () => {
@@ -124,13 +124,13 @@ describe('the user override wins', () => {
 
 describe('a disabled app is not a candidate', () => {
   it('drops out of the candidate list', () => {
-    expect(candidatesFor('a.md').map((c) => c.appId)).toContain('markdown-editor')
-    useAddonStore.setState({ disabled: ['markdown-editor'] })
-    expect(candidatesFor('a.md').map((c) => c.appId)).not.toContain('markdown-editor')
+    expect(candidatesFor('a.md').map((c) => c.appId)).toContain('notepad')
+    useAddonStore.setState({ disabled: ['notepad'] })
+    expect(candidatesFor('a.md').map((c) => c.appId)).not.toContain('notepad')
   })
 
   it('FALLS BACK rather than dead-ending when it owned the extension', () => {
-    useAddonStore.setState({ disabled: ['markdown-editor'] })
+    useAddonStore.setState({ disabled: ['notepad'] })
     // `.md` is text, so the fallback catches it — not a dead double-click.
     expect(resolveOpener('a.md')).toEqual({
       appId: TEXT_FALLBACK_APP,
@@ -141,10 +141,10 @@ describe('a disabled app is not a candidate', () => {
   it('hands a contested extension to the other claimant', () => {
     // No two built-ins share a type since the PDF viewer's retirement (norPDF and PDF Viewer
     // left together); a Marketplace app beside a built-in is the case now.
-    const markdown = APP_REGISTRY.find((a) => a.id === 'markdown-editor')!
+    const markdown = APP_REGISTRY.find((a) => a.id === 'notepad')!
     APP_REGISTRY.push({ ...markdown, id: 'other-markdown' })
     try {
-      useAddonStore.setState({ disabled: ['markdown-editor'] })
+      useAddonStore.setState({ disabled: ['notepad'] })
       expect(resolveOpener('a.md').appId).toBe('other-markdown')
     } finally {
       APP_REGISTRY.splice(
@@ -275,7 +275,7 @@ describe('installed Linux apps in Open with', () => {
   it('never become the default by themselves', () => {
     syncLinuxLaunchers([writer])
     // A type an OS app opens keeps its OS default.
-    expect(resolveOpener('notes.md').appId).toBe('markdown-editor')
+    expect(resolveOpener('notes.md').appId).toBe('notepad')
     // A type only a Linux app opens still asks: nothing opens without a choice.
     expect(candidatesFor('letter.odt').map((c) => c.appId)).toEqual(['linux:writer'])
     expect(resolveOpener('letter.odt')).toEqual({ appId: '', reason: 'none' })

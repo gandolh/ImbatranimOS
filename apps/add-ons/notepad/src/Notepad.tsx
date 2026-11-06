@@ -108,7 +108,7 @@ export function Notepad({ windowId }: { windowId: string }) {
   const pick = useCallback(async () => {
     const choice = await openFile({
       title: 'Open in Notepad',
-      extensions: ['txt', 'log', 'md', 'json', 'csv', 'conf', 'ini', 'yaml', 'yml'],
+      extensions: ['txt', 'log', 'md', 'markdown', 'json', 'csv', 'conf', 'ini', 'yaml', 'yml'],
     })
     if (!choice) return
     await openDoc({ root: rootOf(choice.root), path: choice.path })

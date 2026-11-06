@@ -19,7 +19,7 @@ export function baseName(path: string): string {
  * Another markdown file stays here, deliberately: following a link inside a
  * document set is reading, not launching, and bouncing to whatever app happens
  * to be associated with `.md` would break that. Everything else goes through
- * the brief-81 association registry — the same resolver the file manager's
+ * the association registry — the same resolver the file manager's
  * double-click uses — so a link to an image, a CSV or a PDF opens the app that
  * *declares* it rather than raising a toast telling the reader to go and find
  * the file themselves.

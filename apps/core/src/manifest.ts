@@ -22,7 +22,6 @@ import { manifest as clock } from '@imbatranim/clock'
 import { manifest as calendar } from '@imbatranim/calendar'
 import { manifest as imageViewer } from '@imbatranim/image-viewer'
 import { manifest as mediaPlayer } from '@imbatranim/media-player'
-import { manifest as markdownEditor } from '@imbatranim/markdown-editor'
 import { manifest as codeEditor, diffManifest as diff } from '@imbatranim/code-editor'
 import { manifest as gitGui } from '@imbatranim/git-gui'
 import { manifest as restApiClient } from '@imbatranim/rest-api-client'
@@ -64,7 +63,6 @@ const MANIFESTS: AddonManifest[] = [
   calendar,
   imageViewer,
   mediaPlayer,
-  markdownEditor,
   codeEditor,
   diff,
   paint,

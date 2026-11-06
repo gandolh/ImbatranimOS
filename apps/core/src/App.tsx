@@ -88,14 +88,14 @@ export default function App() {
       id: 'editing.markdown-format',
       keys: 'mod+b',
       description:
-        'Format the selection in Markdown Editor (also mod+I, mod+K, mod+E, mod+shift+1-3/7-9)',
+        'Format the selection in a Markdown file in Notepad (also mod+I, mod+K, mod+E, mod+shift+1-3/7-9)',
       scope: 'Editing',
-      // Bound on the Markdown Editor's own textarea so it is focus-scoped, and it
+      // Bound on Notepad's textarea for a Markdown file, so it is focus-scoped, and it
       // deliberately shadows the global mod+K palette binding while that textarea has
       // focus — inserting a link is the more likely intent with a text cursor in a
       // document. Documented here rather than from the add-on so the row does not appear
       // and vanish as editor windows open and close.
-      note: 'Only while the Markdown Editor text area has focus',
+      note: 'Only while a Markdown file in Notepad has the text cursor',
     },
     {
       id: 'files.verbs',

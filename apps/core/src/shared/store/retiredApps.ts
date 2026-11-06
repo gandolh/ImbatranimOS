@@ -5,12 +5,14 @@ import { useDesktopStore } from './desktopStore'
 import { useStartupStore } from './startupStore'
 
 /**
- * Built-in apps that left for imbatranim-apps, and the one-time move of the
- * owner's choices to the suite's ids (decisions-office-suite.md).
+ * Built-in apps that left, and the one-time move of the owner's choices to the
+ * app that replaced them: a suite app when the built-in left for
+ * imbatranim-office (decisions-office-suite.md), or another built-in when two
+ * did one job (Markdown Editor into Notepad).
  *
- * Each retirement run adds its pair here: the built-in's id, then the suite
- * app that replaces it. Two built-ins may map to one suite app (PDF Viewer
- * and norPDF both became Office's PDF).
+ * Each retirement run adds its pair here: the retired id, then the app that
+ * replaces it. Two retired apps may map to one (PDF Viewer and norPDF both
+ * became Office's PDF).
  */
 export const RETIRED_APP_IDS: readonly (readonly [from: string, to: string])[] = [
   ['docs', 'office-docs'],
@@ -20,7 +22,15 @@ export const RETIRED_APP_IDS: readonly (readonly [from: string, to: string])[] =
   // both were pinned.
   ['norpdf', 'office-pdf'],
   ['pdf-viewer', 'office-pdf'],
+  ['markdown-editor', 'notepad'],
 ]
+
+/**
+ * Replacements that were already installed built-ins. Hiding the retired app
+ * says nothing about wanting no replacement (Notepad opens every text file), so
+ * the disabled set only drops the retired id and never disables these.
+ */
+const BUILT_IN_TARGETS: ReadonlySet<string> = new Set(['notepad'])
 
 /** The dotfile that records which pairs have been moved. */
 export const APP_ID_MIGRATIONS_KEY = 'imbatranimos:app-id-migrations'
@@ -97,6 +107,12 @@ function moveChoices(from: string, to: string): void {
  */
 function moveDisabled(froms: readonly string[], to: string): void {
   let disabled: readonly string[] = useAddonStore.getState().disabled
+  if (BUILT_IN_TARGETS.has(to)) {
+    if (froms.some((id) => disabled.includes(id))) {
+      useAddonStore.setState({ disabled: disabled.filter((id) => !froms.includes(id)) })
+    }
+    return
+  }
   if (!froms.every((id) => disabled.includes(id))) return
   for (const from of froms) disabled = swapIn(disabled, from, to) ?? disabled
   useAddonStore.setState({ disabled: [...disabled] })

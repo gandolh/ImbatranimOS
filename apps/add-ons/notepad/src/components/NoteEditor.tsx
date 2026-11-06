@@ -1,7 +1,5 @@
-import { useCallback, useRef, useState } from 'react'
-import { ArrowLeft, Eye, Edit3, Loader2, Save, WrapText } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { ArrowLeft, Link2, Loader2, PanelLeft, Save, Unlink2, WrapText } from 'lucide-react'
 import {
   Button,
   cn,
@@ -9,6 +7,9 @@ import {
   fileName,
   reportFileFailure,
   ScrollArea,
+  Tooltip,
+  UploadTooLargeError,
+  useElementSize,
   useFileConflict,
   useSaveHotkey,
   useSystem,
@@ -17,6 +18,28 @@ import {
 import { useNoteFileQuery, useUpdateFileMutation } from '../queries/notepadQueries'
 import type { OpenDoc } from '../store/notepadStore'
 import { FindBar } from './FindBar'
+import { FormatToolbar } from './FormatToolbar'
+import { MarkdownPreview } from './MarkdownPreview'
+import { Outline } from './Outline'
+import { SplitDivider } from './SplitDivider'
+import { useLineTops } from '../hooks/useLineTops'
+import { useScrollSync } from '../hooks/useScrollSync'
+import { useMarkdownView } from '../store/markdownViewStore'
+import { defaultViewMode, isMarkdownFile, VIEW_MODE_OPTIONS, type ViewMode } from '../lib/viewMode'
+import { applyFormat, keyToFormat, type FormatKind } from '../lib/formatActions'
+import { caretLineOf, IMAGE_EXTENSIONS } from '../lib/editorText'
+import { baseName, linkTarget } from '../lib/linkTarget'
+import { parseHeadings } from '../lib/outline'
+import { toggleTaskAtLine } from '../lib/markdownMarkers'
+import {
+  assetDir,
+  dirOf,
+  extensionForMime,
+  imageMarkdown,
+  relativeFrom,
+  safeBaseName,
+  uniqueName,
+} from '../lib/assetPaths'
 import {
   caretPosition,
   findMatches,
@@ -26,6 +49,8 @@ import {
   replaceRange,
   textStats,
 } from '../lib/findReplace'
+
+type FsEntry = { name: string; path: string; type: 'file' | 'directory' }
 
 /**
  * The editor.
@@ -37,8 +62,7 @@ import {
  * "must preserve" and calls autosave "rejected" — but Notepad was the autosaving app,
  * so the brief's non-change was in fact its largest one.
  *
- * Explicit save now, matching Docs, Sheets, Code Editor, Markdown Editor and Image
- * Viewer: `useUnsavedGuard` for the dirty `•` and the close prompt, `useSaveHotkey`
+ * Explicit save now, matching the other editors: `useUnsavedGuard` for the dirty `•` and the close prompt, `useSaveHotkey`
  * for Ctrl+S. That is the right way round — there is no version history and no undo
  * across a reload, so a debounce meant a stray keystroke reached disk in one second
  * with nothing to recover from.
@@ -63,7 +87,19 @@ export function NoteEditor({
   // Tied to the baseline, not to the latest read: a refetch that is not adopted
   // (unsaved edits) must not move it, or the next save would overwrite blind.
   const [savedVersion, setSavedVersion] = useState<string | null>(null)
-  const [mode, setMode] = useState<'edit' | 'preview'>('edit')
+  // Markdown files open split, everything else in the editor. The split view, the
+  // outline, the format toolbar and image insertion belong to Markdown files; any file
+  // can still be previewed as Markdown.
+  const markdown = isMarkdownFile(path)
+  const [mode, setMode] = useState<ViewMode>(() => defaultViewMode(path))
+  const { settings, update, dragRatio, commitRatio } = useMarkdownView()
+  const [imageBusy, setImageBusy] = useState(false)
+  // Elements the sync hooks measure, held as state: a ref's `.current` does not re-run an
+  // effect when the node attaches, and the panes mount after the file has loaded.
+  const [editorEl, setEditorEl] = useState<HTMLTextAreaElement | null>(null)
+  const [previewEl, setPreviewEl] = useState<HTMLDivElement | null>(null)
+  const attachPreview = useCallback((el: HTMLDivElement | null) => setPreviewEl(el), [])
+  const [paneBox, attachPanes] = useElementSize()
   const [wrap, setWrap] = useState(true)
   const [caret, setCaret] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -75,7 +111,11 @@ export function NoteEditor({
   const [caseSensitive, setCaseSensitive] = useState(false)
   const [matchIndex, setMatchIndex] = useState(0)
 
-  const textRef = useRef<HTMLTextAreaElement>(null)
+  const textRef = useRef<HTMLTextAreaElement | null>(null)
+  const attachEditor = useCallback((el: HTMLTextAreaElement | null) => {
+    textRef.current = el
+    setEditorEl(el)
+  }, [])
   const findInputRef = useRef<HTMLInputElement>(null)
 
   // Load a (re)fetched file into the draft. Render-time adjustment rather than an
@@ -171,13 +211,12 @@ export function NoteEditor({
 
   /**
    * Apply a whole-text rewrite through the browser's own editing pipeline rather
-   * than a `value` assignment, so the native undo stack survives (L8) — the same
-   * spine markdown-editor uses. `insertText` fires an `input` event that reaches
+   * than a `value` assignment, so the native undo stack survives. `insertText` fires an `input` event that reaches
    * the textarea's `onChange`, so `content` still updates. If the command is
    * unavailable (older engines, tests) the state path is the fallback: worse
    * undo, identical text.
    */
-  const applyEdit = useCallback((nextText: string, caretTo: number) => {
+  const applyEdit = useCallback((nextText: string, caretTo: number, caretEnd = caretTo) => {
     const el = textRef.current
     if (!el) {
       setContent(nextText)
@@ -198,10 +237,186 @@ export function NoteEditor({
     })()
     if (!handled) setContent(nextText)
     requestAnimationFrame(() => {
-      el.setSelectionRange(caretTo, caretTo)
+      el.setSelectionRange(caretTo, caretEnd)
       setCaret(caretTo)
     })
   }, [])
+
+  // ── Markdown: formatting, images, outline, preview links ─────────────────
+  const docDir = dirOf(path)
+  const showEditor = mode === 'edit' || mode === 'split'
+  const showPreview = mode === 'preview' || mode === 'split'
+  const showOutline = markdown && settings.outlineOpen
+  const syncing = markdown && settings.syncScroll && mode === 'split'
+  // Parsed only when something reads it: a large log never pays for it while editing.
+  const headings = useMemo(
+    () => (showPreview || showOutline ? parseHeadings(content) : []),
+    [content, showPreview, showOutline]
+  )
+  const lineTops = useLineTops(editorEl, content, syncing)
+  useScrollSync({ editor: editorEl, preview: previewEl, lineTops, enabled: syncing })
+
+  const applyFormatting = useCallback(
+    (kind: FormatKind) => {
+      const el = textRef.current
+      if (!el) return
+      const next = applyFormat(kind, el.value, { start: el.selectionStart, end: el.selectionEnd })
+      applyEdit(next.text, next.start, next.end)
+    },
+    [applyEdit]
+  )
+
+  const insertAtCaret = useCallback(
+    (snippet: string) => {
+      const el = textRef.current
+      if (!el) return
+      const start = el.selectionStart
+      const end = el.selectionEnd
+      const at = start + snippet.length
+      applyEdit(el.value.slice(0, start) + snippet + el.value.slice(end), at)
+    },
+    [applyEdit]
+  )
+
+  /** Names already taken in a directory, plus whether it holds an `assets/` folder. */
+  const readDirectory = useCallback(
+    async (dirRoot: string, dirPath: string) => {
+      const res = await system.http.get<FsEntry[]>('/files', {
+        params: { root: dirRoot, path: dirPath },
+      })
+      return {
+        names: res.data.map((entry) => entry.name),
+        hasAssets: res.data.some((entry) => entry.type === 'directory' && entry.name === 'assets'),
+      }
+    },
+    [system]
+  )
+
+  /**
+   * Write an image into the document's own directory and link it relatively, so the
+   * link still works in git, in another editor, or on GitHub. A base64 data URI would
+   * be less code and produce a document nothing else reads comfortably.
+   */
+  const attachImageBytes = useCallback(
+    async (bytes: ArrayBuffer, suggestedName: string, mime: string) => {
+      setImageBusy(true)
+      try {
+        const here = await readDirectory(root, docDir)
+        const targetDir = assetDir(docDir, here.hasAssets)
+        const taken =
+          targetDir === docDir ? here.names : (await readDirectory(root, targetDir)).names
+        const base = safeBaseName(suggestedName)
+        const file = uniqueName(taken, base, extensionForMime(mime))
+        const target = targetDir === '' ? file : `${targetDir}/${file}`
+        await system.fs.upload(root, target, bytes, file)
+        insertAtCaret(imageMarkdown(base, relativeFrom(docDir, target)))
+        system.notify({
+          title: 'Image added',
+          body: `Written to ${target} and linked from the document.`,
+          level: 'success',
+        })
+      } catch (err) {
+        const tooLarge = err instanceof UploadTooLargeError
+        if (!tooLarge) console.error('[notepad] failed to attach image', err)
+        system.notify({
+          title: 'Could not add the image',
+          body: tooLarge
+            ? 'The image is larger than the upload limit.'
+            : 'Writing the file next to the document failed.',
+          level: 'error',
+        })
+      } finally {
+        setImageBusy(false)
+      }
+    },
+    [docDir, insertAtCaret, readDirectory, root, system]
+  )
+
+  const attachImageFile = useCallback(
+    async (file: File) => attachImageBytes(await file.arrayBuffer(), file.name, file.type),
+    [attachImageBytes]
+  )
+
+  /**
+   * Insert an image already on this machine. Same root as the document: link it where
+   * it lies. Different root: copy it in, because a relative link cannot cross roots.
+   */
+  const insertExistingImage = useCallback(async () => {
+    const choice = await system.fs.pickOpen({
+      title: 'Insert an image',
+      extensions: [...IMAGE_EXTENSIONS],
+    })
+    if (!choice) return
+    if (choice.root === root) {
+      insertAtCaret(
+        imageMarkdown(safeBaseName(fileName(choice.path)), relativeFrom(docDir, choice.path))
+      )
+      return
+    }
+    setImageBusy(true)
+    try {
+      const bytes = await system.fs.read(choice.root, choice.path)
+      const chosenName = fileName(choice.path)
+      const extension = chosenName.includes('.') ? chosenName.split('.').pop()! : 'png'
+      await attachImageBytes(bytes, chosenName, `image/${extension === 'jpg' ? 'jpeg' : extension}`)
+    } finally {
+      setImageBusy(false)
+    }
+  }, [attachImageBytes, docDir, insertAtCaret, root, system])
+
+  /** Scroll the editor so a heading is at the top, and put the caret on it. */
+  const goToHeading = useCallback(
+    (line: number, offset: number) => {
+      const el = textRef.current
+      if (el) {
+        el.focus()
+        el.setSelectionRange(offset, offset)
+        setCaret(offset)
+        // `scrollTo`, not `scrollTop =`: assigning to a property of a value held in state
+        // is what the immutability rule forbids.
+        if (lineTops.length >= line) el.scrollTo({ top: lineTops[line - 1] })
+      }
+      // In preview-only mode there is no editor to scroll, and in split mode the sync hook
+      // only reacts to a scroll event, so the preview is moved explicitly either way.
+      previewEl?.querySelector<HTMLElement>(`[data-src-line="${line}"]`)?.scrollIntoView({
+        block: 'start',
+      })
+    },
+    [lineTops, previewEl]
+  )
+
+  const toggleTaskLine = useCallback(
+    (line: number) => {
+      const next = toggleTaskAtLine(content, line)
+      if (next === content) return
+      const el = textRef.current
+      applyEdit(next, el?.selectionStart ?? caret, el?.selectionEnd ?? caret)
+    },
+    [applyEdit, caret, content]
+  )
+
+  /** A relative link clicked in the preview. */
+  const openRelative = useCallback(
+    (target: string) => {
+      const opener = linkTarget(system.intents.associations, target)
+      if (opener.kind === 'markdown') {
+        system.intents.openApp('notepad', { openPath: target, root })
+        return
+      }
+      if (opener.kind === 'app') {
+        // openApp is the choke point that also records the OS-wide recent, so a link
+        // followed from a document counts as opening it.
+        system.intents.openApp(opener.appId, { openPath: target, root })
+        return
+      }
+      system.notify({
+        title: 'Cannot open this link',
+        body: `Nothing in the system claims ${baseName(target)}.`,
+        level: 'info',
+      })
+    },
+    [root, system]
+  )
 
   const doReplaceOne = useCallback(() => {
     if (!current) return
@@ -321,28 +536,67 @@ export function NoteEditor({
             )}
             Save
           </Button>
-          <button
-            onClick={() => setMode('edit')}
-            className={cn(
-              'focus-visible:ring-primary rounded-control p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset',
-              mode === 'edit' && 'bg-primary-container text-on-primary-container'
-            )}
-            title="Edit"
-            aria-pressed={mode === 'edit'}
+          <div
+            className="border-outline-variant rounded-control flex items-center overflow-hidden border"
+            role="group"
           >
-            <Edit3 size={14} />
-          </button>
-          <button
-            onClick={() => setMode('preview')}
-            className={cn(
-              'focus-visible:ring-primary rounded-control p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset',
-              mode === 'preview' && 'bg-primary-container text-on-primary-container'
+            {VIEW_MODE_OPTIONS.filter((option) => markdown || option.mode !== 'split').map(
+              (option) => (
+                <Tooltip key={option.mode} content={option.label}>
+                  <button
+                    type="button"
+                    onClick={() => setMode(option.mode)}
+                    aria-pressed={mode === option.mode}
+                    aria-label={option.label}
+                    className={cn(
+                      'focus-visible:ring-primary flex items-center p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                      mode === option.mode
+                        ? 'bg-primary-container text-on-primary-container'
+                        : 'text-on-surface hover:bg-surface-container-high'
+                    )}
+                  >
+                    <option.icon size={14} />
+                  </button>
+                </Tooltip>
+              )
             )}
-            title="Preview as Markdown"
-            aria-pressed={mode === 'preview'}
-          >
-            <Eye size={14} />
-          </button>
+          </div>
+          {markdown && (
+            <Tooltip content={settings.outlineOpen ? 'Hide outline' : 'Show outline'}>
+              <button
+                type="button"
+                aria-label="Outline"
+                aria-pressed={settings.outlineOpen}
+                onClick={() => update({ outlineOpen: !settings.outlineOpen })}
+                className={cn(
+                  'focus-visible:ring-primary rounded-control p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                  settings.outlineOpen
+                    ? 'bg-primary-container text-on-primary-container'
+                    : 'text-on-surface hover:bg-surface-container-high'
+                )}
+              >
+                <PanelLeft size={14} />
+              </button>
+            </Tooltip>
+          )}
+          {markdown && mode === 'split' && (
+            <Tooltip content={settings.syncScroll ? 'Scroll sync is on' : 'Scroll sync is off'}>
+              <button
+                type="button"
+                aria-label="Sync scrolling"
+                aria-pressed={settings.syncScroll}
+                onClick={() => update({ syncScroll: !settings.syncScroll })}
+                className={cn(
+                  'focus-visible:ring-primary rounded-control p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                  settings.syncScroll
+                    ? 'bg-primary-container text-on-primary-container'
+                    : 'text-on-surface hover:bg-surface-container-high'
+                )}
+              >
+                {settings.syncScroll ? <Link2 size={14} /> : <Unlink2 size={14} />}
+              </button>
+            </Tooltip>
+          )}
         </div>
       </div>
 
@@ -387,15 +641,32 @@ export function NoteEditor({
         </div>
       )}
 
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      {markdown && showEditor && (
+        <FormatToolbar
+          onApply={applyFormatting}
+          onInsertImage={() => void insertExistingImage()}
+          imageBusy={imageBusy}
+          disabled={!editorEl}
+        />
+      )}
+
+      <div ref={attachPanes} className="relative flex min-h-0 flex-1 overflow-hidden">
+        {showOutline && (
+          <Outline
+            headings={headings}
+            activeLine={caretLineOf(content, caret)}
+            onSelect={(heading) => goToHeading(heading.line, heading.offset)}
+          />
+        )}
+
+        {/* Kept mounted (hidden) in preview-only mode, so the undo stack and the
+            selection survive a trip to the preview. */}
         <div
-          className={cn(
-            'absolute inset-0 transition-opacity duration-200',
-            mode === 'edit' ? 'z-10 opacity-100' : 'pointer-events-none z-0 opacity-0'
-          )}
+          className={cn('min-h-0 min-w-0', !showEditor && 'hidden')}
+          style={{ flex: `${showPreview ? settings.splitRatio : 1} 1 0%` }}
         >
           <textarea
-            ref={textRef}
+            ref={attachEditor}
             className={cn(
               'focus-visible:ring-primary h-full w-full resize-none bg-transparent p-4 font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
               // `whitespace-pre` + horizontal scroll is what "wrap off" means for a
@@ -407,27 +678,73 @@ export function NoteEditor({
               setContent(e.target.value)
               setCaret(e.target.selectionStart)
             }}
+            onKeyDown={(e) => {
+              if (!markdown || !(e.ctrlKey || e.metaKey) || e.altKey) return
+              const kind = keyToFormat(e)
+              if (!kind) return
+              e.preventDefault()
+              // Load-bearing: the shell binds mod+K globally to the command palette on
+              // `window`, so without this Ctrl+K inserted a link AND opened the palette.
+              // React attaches at the root container, so stopping here keeps the event
+              // from ever reaching the window listener.
+              e.stopPropagation()
+              applyFormatting(kind)
+            }}
             onKeyUp={syncCaret}
             onClick={syncCaret}
             onSelect={syncCaret}
+            onPaste={(e) => {
+              if (!markdown) return
+              const image = [...e.clipboardData.items].find((item) =>
+                item.type.startsWith('image/')
+              )
+              const file = image?.getAsFile()
+              if (!file) return
+              e.preventDefault()
+              void attachImageFile(file)
+            }}
+            onDragOver={(e) => {
+              if (markdown && e.dataTransfer.types.includes('Files')) e.preventDefault()
+            }}
+            onDrop={(e) => {
+              if (!markdown) return
+              const file = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'))
+              if (!file) return
+              e.preventDefault()
+              void attachImageFile(file)
+            }}
             placeholder="Type here. Ctrl+S saves, Ctrl+F finds."
             spellCheck={false}
             wrap={wrap ? 'soft' : 'off'}
           />
         </div>
 
-        <div
-          className={cn(
-            'absolute inset-0 transition-opacity duration-200',
-            mode === 'preview' ? 'z-10 opacity-100' : 'pointer-events-none z-0 opacity-0'
-          )}
-        >
-          <ScrollArea className="h-full">
-            <div className="prose prose-sm prose-headings:font-ui prose-p:font-content prose-a:text-primary max-w-none p-6">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-            </div>
-          </ScrollArea>
-        </div>
+        {showEditor && showPreview && (
+          <SplitDivider
+            ratio={settings.splitRatio}
+            containerWidth={paneBox.width}
+            onDrag={dragRatio}
+            onCommit={commitRatio}
+          />
+        )}
+
+        {showPreview && (
+          <div
+            className="min-h-0 min-w-0"
+            style={{ flex: `${showEditor ? 1 - settings.splitRatio : 1} 1 0%` }}
+          >
+            <ScrollArea className="h-full" viewportRef={attachPreview}>
+              <MarkdownPreview
+                text={content}
+                root={root}
+                docDir={docDir}
+                headings={headings}
+                onToggleTaskLine={toggleTaskLine}
+                onOpenRelative={openRelative}
+              />
+            </ScrollArea>
+          </div>
+        )}
       </div>
 
       {/* Status bar — the house recipe: line/col, counts, and the wrap toggle. */}

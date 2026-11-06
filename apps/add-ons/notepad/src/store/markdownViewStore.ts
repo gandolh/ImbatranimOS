@@ -1,13 +1,11 @@
 import { useCallback, useState } from 'react'
-import type { ViewMode } from '../viewMode'
 
 /**
- * Layout preferences that outlive the window: split ratio, outline rail, scroll sync,
- * and which of the three view modes to open in.
+ * Layout preferences that outlive the window: split ratio, outline rail and scroll
+ * sync. Which view a file opens in is not one of them: it follows the file's type.
  *
- * Hand-rolled localStorage rather than zustand-persist, matching file-manager's
- * `fileViewStore`: this add-on has no state library and does not need one for four
- * scalar settings. Every field is validated on read, because the stored value survives
+ * Plain localStorage rather than a persisted store, matching file-manager's
+ * `fileViewStore`: three scalar settings do not need more. Every field is validated on read, because the stored value survives
  * upgrades and a removed option must not come back out of storage.
  */
 
@@ -16,10 +14,9 @@ export type MarkdownViewSettings = {
   splitRatio: number
   outlineOpen: boolean
   syncScroll: boolean
-  mode: ViewMode
 }
 
-const STORAGE_KEY = 'imbatranim:markdown-editor:view'
+const STORAGE_KEY = 'imbatranim:notepad:view'
 
 export const MIN_RATIO = 0.2
 export const MAX_RATIO = 0.8
@@ -30,10 +27,7 @@ const DEFAULTS: MarkdownViewSettings = {
   // a short one, and the app opens on unknown documents.
   outlineOpen: false,
   syncScroll: true,
-  mode: 'split',
 }
-
-const MODES = new Set<string>(['editor', 'split', 'preview'])
 
 export function clampRatio(value: number): number {
   if (!Number.isFinite(value)) return DEFAULTS.splitRatio
@@ -51,7 +45,6 @@ function load(): MarkdownViewSettings {
       outlineOpen:
         typeof parsed.outlineOpen === 'boolean' ? parsed.outlineOpen : DEFAULTS.outlineOpen,
       syncScroll: typeof parsed.syncScroll === 'boolean' ? parsed.syncScroll : DEFAULTS.syncScroll,
-      mode: MODES.has(parsed.mode as string) ? (parsed.mode as ViewMode) : DEFAULTS.mode,
     }
   } catch {
     return DEFAULTS

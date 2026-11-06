@@ -157,14 +157,14 @@ export const TEXT_FALLBACK_APP = 'code-editor'
  * The apps that open text. Anything **they** claim is text by definition.
  *
  * Derived rather than listed, and that fixes a real hole: `.md` was not in
- * `TEXTISH_EXTENSIONS`, so disabling Markdown Editor made every `.md` dead-end —
+ * `TEXTISH_EXTENSIONS`, so disabling the app that claimed it made every `.md` dead-end —
  * precisely the "disabling the owner must fall back" case the brief calls out.
  * Enumerating every claimed text extension a second time would be the same class
  * of duplication `opens` exists to remove, so the question is asked of the
  * registry instead. Membership ignores whether the app is currently *enabled*:
- * `.md` is text whether or not you can still open it in Markdown Editor.
+ * `.md` is text whether or not you can still open it in Notepad.
  */
-const TEXT_APP_IDS = ['code-editor', 'notepad', 'markdown-editor'] as const
+const TEXT_APP_IDS = ['code-editor', 'notepad'] as const
 
 /**
  * The default when more than one app claims an extension.

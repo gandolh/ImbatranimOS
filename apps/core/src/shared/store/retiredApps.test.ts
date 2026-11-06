@@ -127,6 +127,49 @@ describe('migrateRetiredAppIds', () => {
     expect(useAddonStore.getState().disabled).toEqual(['office-pdf', 'games'])
   })
 
+  it('moves Markdown Editor onto Notepad: pin, startup entry and the .md default', () => {
+    useAssociationStore.setState({
+      overrides: { md: 'markdown-editor', markdown: 'markdown-editor' },
+    })
+    useDesktopStore.setState({
+      iconPositions: { 'markdown-editor': { x: 8, y: 120, pinned: true } },
+    })
+    useStartupStore.setState({ apps: ['markdown-editor', 'terminal'] })
+
+    migrateRetiredAppIds()
+
+    expect(useAssociationStore.getState().overrides).toEqual({ md: 'notepad', markdown: 'notepad' })
+    expect(useDesktopStore.getState().iconPositions).toEqual({
+      notepad: { x: 8, y: 120, pinned: true },
+    })
+    expect(useStartupStore.getState().apps).toEqual(['notepad', 'terminal'])
+  })
+
+  it("keeps the place the owner gave Notepad's icon over Markdown Editor's", () => {
+    useDesktopStore.setState({
+      iconPositions: {
+        'markdown-editor': { x: 8, y: 120, pinned: true },
+        notepad: { x: 8, y: 20, pinned: true },
+      },
+    })
+    migrateRetiredAppIds()
+    expect(useDesktopStore.getState().iconPositions).toEqual({
+      notepad: { x: 8, y: 20, pinned: true },
+    })
+  })
+
+  it('does not disable Notepad because Markdown Editor was hidden', () => {
+    useAddonStore.setState({ disabled: ['markdown-editor', 'games'] })
+    migrateRetiredAppIds()
+    expect(useAddonStore.getState().disabled).toEqual(['games'])
+
+    // A hidden Notepad stays hidden.
+    writePref(APP_ID_MIGRATIONS_KEY, '{}')
+    useAddonStore.setState({ disabled: ['notepad', 'markdown-editor'] })
+    migrateRetiredAppIds()
+    expect(useAddonStore.getState().disabled).toEqual(['notepad'])
+  })
+
   it("keeps a place the owner gave the suite's icon over the built-in's", () => {
     useDesktopStore.setState({
       iconPositions: {
@@ -160,6 +203,7 @@ describe('migrateRetiredAppIds', () => {
 describe('currentAppId', () => {
   it("reads a retired built-in's id as its suite app's (recents)", () => {
     for (const [from, to] of RETIRED_APP_IDS) expect(currentAppId(from)).toBe(to)
+    expect(currentAppId('markdown-editor')).toBe('notepad')
     expect(currentAppId('notepad')).toBe('notepad')
   })
 })

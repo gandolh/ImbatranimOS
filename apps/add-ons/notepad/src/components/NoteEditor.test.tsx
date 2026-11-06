@@ -12,6 +12,14 @@ import { NoteEditor } from './NoteEditor'
  * `react-dom/client` plus `act`, as in apps/core; no testing library.
  */
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+// jsdom has no Web Animations or ResizeObserver; the kit's ScrollArea and the split
+// divider's size hook ask for them.
+Element.prototype.getAnimations ??= () => []
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
 
 type Disk = { content: string; version: string }
 
@@ -47,12 +55,12 @@ function makeSystem(): SystemHandle {
 /** Let the scripted promises settle and React commit. */
 const settle = () => act(async () => new Promise((r) => setTimeout(r, 0)))
 
-async function mount() {
+async function mount(path = 'notes.txt') {
   await act(async () => {
     root.render(
       <QueryClientProvider client={queryClient}>
         <SystemProvider system={makeSystem()}>
-          <NoteEditor windowId="w1" doc={{ root: 'home', path: 'notes.txt' }} onBack={() => {}} />
+          <NoteEditor windowId="w1" doc={{ root: 'home', path }} onBack={() => {}} />
         </SystemProvider>
       </QueryClientProvider>
     )
@@ -164,5 +172,48 @@ describe('a save over a file that changed on disk', () => {
     type('two')
     await click('Save')
     expect(put.mock.calls[1][1]).toMatchObject({ content: 'two', expected: 'saved-one' })
+  })
+})
+
+describe('the view a file opens in', () => {
+  const pressed = (label: string) =>
+    container.querySelector(`[aria-label="${label}"]`)?.getAttribute('aria-pressed')
+
+  it('is split for a Markdown file, with the preview beside the editor', async () => {
+    disk = { content: '# Title\n\ntext', version: 'v1' }
+    await mount('README.md')
+    expect(pressed('Split view')).toBe('true')
+    expect(textarea()).not.toBeNull()
+    expect(container.querySelector('.md-preview h1')?.textContent).toBe('Title')
+    expect(container.querySelector('[aria-label="Sync scrolling"]')).not.toBeNull()
+  })
+
+  it('is the editor alone for a text file, which has no split view', async () => {
+    await mount('notes.txt')
+    expect(pressed('Edit')).toBe('true')
+    expect(container.querySelector('[aria-label="Split view"]')).toBeNull()
+    expect(container.querySelector('.md-preview')).toBeNull()
+    expect(container.querySelector('[aria-label="Outline"]')).toBeNull()
+  })
+
+  it('still previews a text file as Markdown on request', async () => {
+    disk = { content: '# Heading', version: 'v1' }
+    await mount('notes.txt')
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Preview as Markdown"]')!.click()
+    })
+    expect(container.querySelector('.md-preview h1')?.textContent).toBe('Heading')
+  })
+
+  it('lists the headings in the outline rail', async () => {
+    disk = { content: '# One\n\n## Two', version: 'v1' }
+    await mount('README.md')
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Outline"]')!.click()
+    })
+    const rail = [...container.querySelectorAll('button')].filter((b) =>
+      ['One', 'Two'].includes(b.textContent?.trim() ?? '')
+    )
+    expect(rail).toHaveLength(2)
   })
 })

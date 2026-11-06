@@ -287,14 +287,14 @@ describe('several apps from one descriptor', () => {
 
   it('offers a marketplace app in Open With after the built-in that claims the type', () => {
     // Markdown, not an office type: the built-in Docs, Slides, Sheets and PDF
-    // apps leave for the suite, Markdown Editor stays.
+    // apps leave for the suite, Notepad stays.
     syncMarketplaceApps([suiteApp('office-notes', { opens: ['md'] })])
     expect(APP_REGISTRY.find((a) => a.id === 'office-notes')?.opens).toEqual(['md'])
     const ids = candidatesFor('notes.md').map((c) => c.appId)
-    expect(ids).toContain('markdown-editor')
-    expect(ids.indexOf('office-notes')).toBeGreaterThan(ids.indexOf('markdown-editor'))
+    expect(ids).toContain('notepad')
+    expect(ids.indexOf('office-notes')).toBeGreaterThan(ids.indexOf('notepad'))
     // The built-in stays the default, until the owner picks the other.
-    expect(resolveOpener('notes.md').appId).toBe('markdown-editor')
+    expect(resolveOpener('notes.md').appId).toBe('notepad')
     useAssociationStore.getState().setDefault('md', 'office-notes')
     expect(resolveOpener('notes.md')).toEqual({ appId: 'office-notes', reason: 'override' })
     syncMarketplaceApps([])

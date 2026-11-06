@@ -5593,3 +5593,12 @@ review: uninstall revoking every token of the row's apps, refusing a token
 for a catalog app that isn't installed, and one lock per app folder; and
 cleaning stale `.part` files.
 
+
+## [2026-11-06] maintenance | Stale `.part` files are cleaned
+
+`9069d08`: listing a data folder removes a staged `.part` copy older than an
+hour (a write that died between staging and the rename) and still hides
+the fresh ones. Still open from brief 69's review: uninstall revoking every
+token of the row's apps, refusing a token for a catalog app that isn't
+installed, and one lock per app folder. They touch the app-identity files
+held in brief 70's stash, so they wait for it.

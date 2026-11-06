@@ -289,3 +289,17 @@ describe("Start's search", () => {
     expect(container.textContent).toContain('Nothing found')
   })
 })
+
+describe("Start's size", () => {
+  it('fits the space above the taskbar and scrolls its list inside', () => {
+    const menu = container.querySelector<HTMLElement>('[role="menu"][aria-label="Start menu"]')!
+    expect(menu.className).toContain('max-h-[calc(100vh-72px)]')
+    expect(menu.className).toContain('w-[320px]')
+    expect(menu.className).toContain('max-w-[calc(100vw-16px)]')
+    const list = container.querySelector<HTMLElement>(
+      '[role="group"][aria-label="Pinned"]'
+    )!.parentElement!
+    expect(list.className).toContain('overflow-y-auto')
+    expect(list.className).toContain('min-h-0')
+  })
+})

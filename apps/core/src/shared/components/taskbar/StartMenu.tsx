@@ -125,7 +125,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
     let stale = false
     const t = setTimeout(() => {
       void searchAllSources(q).then((items) => {
-        if (!stale) setResults({ for: query, items: rankApps(items).slice(0, 12) })
+        if (!stale) setResults({ for: query, items: rankApps(items, q).slice(0, 12) })
       })
     }, 80)
     return () => {
@@ -144,7 +144,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
     const q = query.trim()
     if (!q) return
     const items =
-      results.for === query ? results.items : rankApps(await searchAllSources(q)).slice(0, 12)
+      results.for === query ? results.items : rankApps(await searchAllSources(q), q).slice(0, 12)
     if (items[0]) openResult(items[0])
   }
 
@@ -210,7 +210,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       aria-label="Start menu"
       onKeyDown={handleMenuKeyDown}
       className={cn(
-        'absolute bottom-full left-0 z-[9001] mb-1 flex w-[320px] max-w-[calc(100vw-16px)] flex-col',
+        'absolute bottom-full left-0 z-[9001] mb-1 flex max-h-[calc(100vh-72px)] w-[320px] max-w-[calc(100vw-16px)] flex-col',
         // Apricot's menu floats clear of the taskbar and the screen's edge.
         'apricot:left-2 apricot:mb-2 rounded-menu overflow-hidden',
         'border-outline-variant bg-surface-container-low border',
@@ -252,7 +252,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
         </label>
       </div>
 
-      <div className="apricot:px-1.5 flex max-h-[52vh] flex-col overflow-y-auto py-1">
+      <div className="apricot:px-1.5 flex min-h-0 flex-1 flex-col overflow-y-auto py-1">
         {searching ? (
           <div role="group" aria-label="Search results">
             {results.for !== query ? null : results.items.length === 0 ? (

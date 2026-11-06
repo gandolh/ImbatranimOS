@@ -93,12 +93,9 @@ the grill.
 16-21, all done 2026-11-03, are the owner's answers to those questions (grilled 2026-11-03,
 [decisions-themes.md](decisions-themes.md)), run one at a time on `main` and
 deployed with 08-15:
-- 16 (done): a Monaco theme from the tokens, with Diff following the OS mode;
-- 17 (done): rounded, inset list rows in Apricot, File Manager's included;
-- 18 (done): warm shadows for toasts, tooltips, the tray and sign-in;
-- 19 (done): rounded boxes inside windows;
-- 20 (done): the accent focus ring on every control;
-- 21 (done): Settings fits a phone.
+a Monaco theme from the tokens (16), rounded inset list rows in Apricot (17),
+warm shadows (18), rounded boxes inside windows (19), the accent focus ring
+(20), and Settings on a phone (21).
 22 (done 2026-11-03, on this run's branch) makes the dev image survive a
 version bump: `npm ci` runs on version-free manifests, the dev stage no
 longer re-owns `node_modules`, and `npm run dev` (`scripts/dev.mjs`) has
@@ -129,7 +126,9 @@ outcome is in `briefs/done/`:
 session's first X client, installed with the first app that speaks X11
 ([decisions-linux-apps-built.md](decisions-linux-apps-built.md)). 33 is done
 (2026-11-06, `26dc24e`, ready for deploy): Linux windows draw at the screen's
-pixels (scale: the ratio's ceiling); X11 apps stay at 1.
+pixels (scale: the ratio's ceiling); X11 apps stay at 1. The owner capped the
+scale at 2 the same day (`031b56b`, ships with 33): a phone at a ratio of
+about 3 draws at 2, a little soft, under the VPS's memory cap.
 
 37-44 were written 2026-11-04 from a grill with the owner. Done on
 2026-11-05 (each outcome in `briefs/done/`): 37 production's own Compose
@@ -158,7 +157,8 @@ deferred by the owner (2026-10-04).
   playing a video, a few times. Chromium crashed there before the fade-only
   change and once in five after (brief 04); Chrome with a GPU may not at all.
 - After brief 33's deploy: a Linux app on a screen whose `devicePixelRatio`
-  is above 1 is sharp and follows a page zoom; answer its board question.
+  is above 1 is sharp and follows a page zoom (at most scale 2: on a phone
+  near ratio 3 it is a little soft, by choice).
 - Before Linux apps go on at the VPS: set the cap from
   `infrastructure/README.md` ("the container cap": `mem_limit: 1g`,
   `memswap_limit: 1g`, `cpus: 1.0`) in vps-deploy's `imbatranim-os` stack

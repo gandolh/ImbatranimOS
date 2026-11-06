@@ -5204,3 +5204,12 @@ each canvas out at the window's CSS size. X11 apps stay at scale 1. One
 short run: scale 2 sent about 1.8 times the bytes of scale 1 (2.4 times per
 frame). Asked the owner on the board whether to cap the scale at 2 for
 phones. Walked in the dev container at deviceScaleFactor 2.
+
+## [2026-11-06] decision | Linux windows' scale capped at 2
+
+The owner answered brief 33's board question: the output scale stops at 2,
+not 4. A phone at a `devicePixelRatio` of about 3 asked for scale 3, nine
+times scale 1's pixels in frames and in the apps' buffers; at 2 it is a
+little soft, for under half of that, which matters under the VPS's 1 GiB
+cap. `031b56b` (1.163.0), `MAX_SCALE` in `pixels.rs`; it ships with brief
+33's deploy.

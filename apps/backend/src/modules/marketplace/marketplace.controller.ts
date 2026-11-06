@@ -73,7 +73,13 @@ const DROPPED_REQUEST_HEADERS = new Set([
   'upgrade',
 ]);
 
-/** Response headers an app's server may not set on the desktop's origin. */
+/**
+ * Response headers an app's server may not set on the desktop's origin: the
+ * hop-by-hop ones, cookies, and every header the desktop's own policy sets
+ * (security-headers.ts), so a proxied answer keeps the desktop's isolation,
+ * framing and CSP. Clear-Site-Data would wipe the desktop's session and
+ * storage; Service-Worker-Allowed and HSTS reach past the app's path.
+ */
 const DROPPED_RESPONSE_HEADERS = new Set([
   'set-cookie',
   'connection',
@@ -82,6 +88,15 @@ const DROPPED_RESPONSE_HEADERS = new Set([
   'content-security-policy',
   'access-control-allow-origin',
   'access-control-allow-credentials',
+  'cross-origin-opener-policy',
+  'cross-origin-embedder-policy',
+  'cross-origin-resource-policy',
+  'x-frame-options',
+  'x-content-type-options',
+  'referrer-policy',
+  'clear-site-data',
+  'service-worker-allowed',
+  'strict-transport-security',
 ]);
 
 /**

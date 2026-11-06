@@ -80,6 +80,9 @@ const server = createServer((req, res) => {
   if (req.url === '/health') { res.end('ok'); return; }
   if (req.url.startsWith('/headers')) {
     res.setHeader('set-cookie', 'stolen=1');
+    res.setHeader('clear-site-data', '"cookies", "storage"');
+    res.setHeader('cross-origin-embedder-policy', 'unsafe-none');
+    res.setHeader('x-frame-options', 'ALLOWALL');
     res.setHeader('content-type', 'application/json');
     res.end(JSON.stringify(req.headers));
     return;
@@ -443,6 +446,12 @@ describe('the marketplace (e2e)', () => {
       .expect(200);
     expect((headers.body as { cookie?: string }).cookie).toBeUndefined();
     expect(headers.headers['set-cookie']).toBeUndefined();
+    // Nor clear the desktop's data or loosen its isolation and framing.
+    expect(headers.headers['clear-site-data']).toBeUndefined();
+    expect(headers.headers['cross-origin-embedder-policy']).not.toBe(
+      'unsafe-none',
+    );
+    expect(headers.headers['x-frame-options']).not.toBe('ALLOWALL');
 
     const url = `ws://127.0.0.1:${port}/api/marketplace/apps/sim/server/play?room=1`;
     expect(await openWs(url, {})).toBe(401);

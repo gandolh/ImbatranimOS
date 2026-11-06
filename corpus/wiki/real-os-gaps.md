@@ -80,7 +80,8 @@ Where the illusion breaks first, for a new user:
 - ~~**A global volume / mute / mixer**~~ — rejected 2026-07-31 while the media
   player's `<audio>` was the only sound. **Reversed 2026-11-04**: Linux apps'
   sound is a second source, and the tray gets one volume and a mute over both
-  ([decisions-linux-apps-built.md](decisions-linux-apps-built.md)).
+  ([decisions-linux-apps-built.md](decisions-linux-apps-built.md)); built
+  2026-11-06 (brief 40).
 - **Printing via a spooler** — CUPS is a daemon plus drivers plus privileged
   setup. The meaningful 5% is "Print to PDF" per app, which belongs in the app
   briefs.

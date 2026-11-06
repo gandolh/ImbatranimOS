@@ -5240,3 +5240,13 @@ changes; GTK 3 apps that draw their own cursors gain it too); brief 49, a
 click on a Linux app's notification runs its `default` action
 (`ActionInvoked`, then `NotificationClosed` reason 2), with no extra action
 buttons.
+
+## [2026-11-06] build | Brief 40 done: a tray volume for every sound
+
+`d3da0e7` (1.168.0), ready for deploy. A speaker in the tray opens a 0-100
+slider and a mute over all of the OS's sound, saved as a dotfile
+(`imbatranimos:sound`). The kit grows a read-only `system.sound` with a
+`sound-changed` event, optional on the handle, so it goes to 1.3.0. The
+media player plays at its own volume times the tray's and no longer reads
+the element back; Linux apps' sound follows it in the tab's gain. Sandboxed
+URL apps and the Files preview pane are not covered.

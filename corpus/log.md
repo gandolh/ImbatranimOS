@@ -5632,3 +5632,13 @@ folder, Git GUI's repo, Media Player's playlist, Paint, Notepad, the
 DiffTool's two files, drag and drop from Files), the REST API Client's
 attach through `pickOpen`, the flip, and the Office walk. Tests: backend
 1090 unit, 93 e2e (files, grants, identity, marketplace); core 864.
+
+`708c042` (same brief): the REST API Client's body file and a form field's
+file come from `pickOpen` (a "Choose…" button beside the chosen path),
+which gives the window the file. A pick outside home is refused with a
+notice, since the send reads from home. A saved request keeps its path; a
+new window holds no grant for it, so after the flip a send of an old saved
+request asks for the file again (the 403 names the path). The brief 69
+review's "migrated marker" for the old `~/.config/rest-client` doc is moot
+after the flip: the app can't read that place at all, so nothing stale
+comes back. What it needs then is a notice that the old doc is there.

@@ -5182,3 +5182,11 @@ should become Open with handlers: yes, brief 46 (imbatranimOS-46), after
 the kit apps and never the default unless picked. Brief 45 (the phone's
 keyboard into a Linux app): build it, with the recommendation for each of
 its other decisions.
+
+## [2026-11-06] decision | Remote UI research closed; brief 47; brief 46 decided
+
+The owner closed the remote-UI research (no prototype) and asked for its
+one unbriefed path: brief 47, Linux apps follow the desktop's light or dark
+mode and accent through the freedesktop Settings portal, served by the
+backend on each session bus beside the notifications server. Brief 46's
+five decisions were taken as written.

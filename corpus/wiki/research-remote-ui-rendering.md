@@ -197,8 +197,8 @@ apps already speak:
    libadwaita reads the first two (`adw-settings-impl-portal.c`). The backend
    already answers D-Bus on each session bus
    ([decisions-linux-apps-built.md](decisions-linux-apps-built.md)), so mode
-   and accent could follow Apricot and Classic; radii and fonts can't. Not briefed.
+   and accent could follow Apricot and Classic; radii and fonts can't. Brief 47.
 
-What would change the verdict: Newton or an equivalent merged, with an
+Closed 2026-11-06 (owner): no prototype; briefs 45, 33 and 47. What would change the verdict: Newton or an equivalent merged, with an
 AccessKit web adapter; ZetaOffice out of beta with the phone keyboard, plus a
 revisit of the office calls; or the owner wanting URL apps to look native.

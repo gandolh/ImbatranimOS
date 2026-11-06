@@ -28,24 +28,24 @@ something.
 
 ## Owner decisions before building
 
-Each has the default this brief builds if the owner says nothing else.
+**All answered 2026-11-06:** the owner took the default for each of the five.
 
-1. **Where they show up.** Default: in Open with, for the types their
+1. **Where they show up.** **Decided:** in Open with, for the types their
    desktop entry's `MimeType` declares, **after the kit apps** and marked
    as Linux apps. A kit app that opens the type stays the default.
-2. **As a default.** Default: **never chosen automatically**, but "Always
+2. **As a default.** **Decided:** **never chosen automatically**, but "Always
    use this" may pick a Linux app, which is the owner's explicit choice
    (an `.odt` to LibreOffice, say). Settings → Default apps lists them the
    same way.
-3. **A type no kit app opens** (odt, ods, odp, doc, ppt, rtf). Default: a
+3. **A type no kit app opens** (odt, ods, odp, doc, ppt, rtf). **Decided:** a
    double-click opens Open with as it does today, with the claiming Linux
    apps first. Nothing opens without a choice.
-4. **From a file name to its types.** Default: the backend reads the
+4. **From a file name to its types.** **Decided:** the backend reads the
    shared-mime-info globs from the Nix profile the Linux apps are
    installed into, the same data their own desktops use. No hand-written
    table. With no globs file there, no Linux app is offered, and the
    backend log says why.
-5. **On the phone.** Default: offered there too, the same as Start offers
+5. **On the phone.** **Decided:** offered there too, the same as Start offers
    them. Typing into one on Android waits on brief 45.
 
 ## What to do

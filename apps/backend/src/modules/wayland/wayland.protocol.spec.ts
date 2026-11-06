@@ -35,6 +35,16 @@ describe('the Wayland host control protocol', () => {
     expect([...d.body.subarray(35)]).toEqual([0xde, 0xad, 0xbe, 0xef]);
   });
 
+  it("decodes the host's sound fixture", () => {
+    const [d] = new Decoder().push(fixture('audio.bin'));
+    expect(d.kind).toBe('audio');
+    if (d.kind !== 'audio') return;
+    expect(d.session).toBe('abcdefghijklmnop');
+    // The sequence number, then the Opus packet.
+    expect(d.body.readUInt32LE(0)).toBe(513);
+    expect([...d.body.subarray(4)]).toEqual([0xfc, 0xff, 0xfe]);
+  });
+
   it("decodes the host's JSON fixture, one byte at a time", () => {
     const bytes = fixture('toplevel-created.bin');
     const decoder = new Decoder();

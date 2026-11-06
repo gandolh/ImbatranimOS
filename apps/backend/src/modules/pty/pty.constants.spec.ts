@@ -66,4 +66,17 @@ describe('terminalEnv', () => {
       terminalEnv({}, 'abcdefghijklmnop').DBUS_SESSION_BUS_ADDRESS,
     ).toBeUndefined();
   });
+
+  it("names the tab's sound server, with its cookie outside the home", () => {
+    const base = { XDG_RUNTIME_DIR: '/run/user/1000' };
+    const env = terminalEnv(base, 'abcdefghijklmnop');
+    expect(env.PULSE_SERVER).toBe(
+      'unix:/run/user/1000/imbatranim-sound/abcdefghijklmnop',
+    );
+    expect(env.PULSE_COOKIE).toBe('/run/user/1000/imbatranim-sound/cookie');
+    // Without a session, not the backend's own either.
+    const none = terminalEnv({ ...base, PULSE_SERVER: 'unix:/x' });
+    expect(none.PULSE_SERVER).toBeUndefined();
+    expect(none.PULSE_COOKIE).toBeUndefined();
+  });
 });

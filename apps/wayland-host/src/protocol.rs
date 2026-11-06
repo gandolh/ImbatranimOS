@@ -8,11 +8,13 @@ use serde::{Deserialize, Serialize};
 /// byte, then the payload.
 pub const KIND_JSON: u8 = 1;
 pub const KIND_FRAME: u8 = 2;
+/// A session's sound: one Opus packet.
+pub const KIND_AUDIO: u8 = 3;
 
 /// Refuse anything larger: a full 4K frame deflated is far below this.
 pub const MAX_MESSAGE: usize = 64 * 1024 * 1024;
 
-pub const PROTOCOL_VERSION: u32 = 6;
+pub const PROTOCOL_VERSION: u32 = 7;
 
 /// Pixel encodings of a frame's rectangles.
 pub const ENC_DEFLATE_RGBA: u8 = 1;
@@ -340,6 +342,17 @@ pub fn encode_frame_body(toplevel: u32, width: u32, height: u32, rects: &[Encode
 /// Encode a frame message, framed: the session id (one length byte, then the
 /// id) and the body from [`encode_frame_body`].
 pub fn encode_frame(session: &str, body: &[u8]) -> Vec<u8> {
+    encode_for_session(KIND_FRAME, session, body)
+}
+
+/// Encode a sound message, framed like a frame: the session id, then the
+/// body (the packet's sequence number, `u32`, and the Opus packet), which the
+/// backend forwards to the WebSocket after its own kind byte.
+pub fn encode_audio(session: &str, body: &[u8]) -> Vec<u8> {
+    encode_for_session(KIND_AUDIO, session, body)
+}
+
+fn encode_for_session(kind: u8, session: &str, body: &[u8]) -> Vec<u8> {
     let sid = session.as_bytes();
     let sid_len = u8::try_from(sid.len()).expect("session ids are at most 64 bytes");
     let mut payload = Vec::with_capacity(1 + sid.len() + body.len());
@@ -347,7 +360,7 @@ pub fn encode_frame(session: &str, body: &[u8]) -> Vec<u8> {
     payload.extend_from_slice(sid);
     payload.extend_from_slice(body);
     let mut out = Vec::with_capacity(payload.len() + 5);
-    push_message(&mut out, KIND_FRAME, &payload);
+    push_message(&mut out, kind, &payload);
     out
 }
 
@@ -438,6 +451,12 @@ mod tests {
                 max_height: 0,
             },
         })
+    }
+
+    fn sample_audio() -> Vec<u8> {
+        let mut body = 513u32.to_le_bytes().to_vec();
+        body.extend_from_slice(&[0xfc, 0xff, 0xfe]);
+        encode_audio("abcdefghijklmnop", &body)
     }
 
     fn sample_clipboard() -> Vec<u8> {
@@ -537,6 +556,18 @@ mod tests {
     }
 
     #[test]
+    fn sound_messages_have_the_documented_layout() {
+        let msg = sample_audio();
+        let len = u32::from_le_bytes(msg[0..4].try_into().unwrap()) as usize;
+        assert_eq!(len, msg.len() - 4);
+        assert_eq!(msg[4], KIND_AUDIO);
+        assert_eq!(msg[5], 16);
+        assert_eq!(&msg[6..22], b"abcdefghijklmnop");
+        assert_eq!(u32::from_le_bytes(msg[22..26].try_into().unwrap()), 513);
+        assert_eq!(&msg[26..], &[0xfc, 0xff, 0xfe]);
+    }
+
+    #[test]
     fn inbound_messages_decode_across_split_reads() {
         let json = br#"{"type":"session_open","session":"abcdefghijklmnop","width":1280,"height":720}"#;
         let mut bytes = Vec::new();
@@ -587,6 +618,7 @@ mod tests {
             ("toplevel-created.bin", sample_created()),
             ("popup-created.bin", sample_popup()),
             ("clipboard.bin", sample_clipboard()),
+            ("audio.bin", sample_audio()),
         ];
         for (name, bytes) in cases {
             let path = fixtures_dir().join(name);

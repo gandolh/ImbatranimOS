@@ -21,6 +21,7 @@ import {
   signalGroups,
 } from './session-apps';
 import {
+  AUDIO_DROP_ABOVE,
   CLOSE_REVOKED,
   CLOSE_SESSION_ENDING,
   CLOSE_SESSION_IN_USE,
@@ -38,6 +39,7 @@ import {
 import {
   frameToplevel,
   isValidSessionId,
+  WS_KIND_AUDIO,
   WS_KIND_FRAME,
   type HostOutbound,
 } from './wayland.protocol';
@@ -272,6 +274,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
     const failure = this.host.open(id, width, height, ratio, {
       message: (m) => this.onHostMessage(s, m),
       frame: (body) => this.onFrame(s, body),
+      audio: (body) => this.onAudio(s, body),
       gone: (reason) => {
         this.safeSend(s, JSON.stringify({ type: 'unavailable', reason }));
         this.end(s, CLOSE_UNAVAILABLE, 'host-gone');
@@ -338,6 +341,19 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
     });
     s.awaitingAck.add(toplevel);
     this.ackWhenDrained(s);
+  }
+
+  /**
+   * A packet of the session's sound goes to the tab as it is, unless the
+   * socket is far behind: then it would play late, so it is dropped. Never
+   * held back, and never part of a window's frame acks.
+   */
+  private onAudio(s: LiveSession, body: Buffer): void {
+    if (!s.ws || s.ws.readyState !== s.ws.OPEN) return;
+    if (s.ws.bufferedAmount > AUDIO_DROP_ABOVE) return;
+    s.ws.send(Buffer.concat([Buffer.from([WS_KIND_AUDIO]), body]), {
+      binary: true,
+    });
   }
 
   /**

@@ -20,6 +20,8 @@ import {
 export interface SessionListener {
   message(message: HostOutbound): void;
   frame(body: Buffer): void;
+  /** A packet of the session's sound: sequence number, then Opus. */
+  audio(body: Buffer): void;
   /** The host exited or was never there; the session is gone. */
   gone(reason: string): void;
 }
@@ -162,6 +164,10 @@ export class WaylandHostService implements OnModuleDestroy {
     for (const d of decoded) {
       if (d.kind === 'frame') {
         this.sessions.get(d.session)?.frame(d.body);
+        continue;
+      }
+      if (d.kind === 'audio') {
+        this.sessions.get(d.session)?.audio(d.body);
         continue;
       }
       const m = d.message;

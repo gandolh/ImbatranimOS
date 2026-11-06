@@ -78,10 +78,12 @@ RUN VITE_BASE=$VITE_BASE VITE_API_URL=$VITE_API_URL npx turbo build
 # wayland-host — the Wayland host Linux apps connect to (Rust, smithay).
 # Built in its own stage; only the binary reaches the prod and dev images.
 # libxkbcommon is linked dynamically, so musl's static default is turned off
-# and the runtime stages install the library instead.
+# and the runtime stages install the library instead. libopus, for Linux
+# apps' sound, is built here from the source its crate bundles (cmake, make)
+# and linked in, so the runtime stages need nothing for it.
 # ---------------------------------------------------------------------------
 FROM rust:1.97-alpine AS wayland-host
-RUN apk add --no-cache musl-dev libxkbcommon-dev pkgconf
+RUN apk add --no-cache musl-dev libxkbcommon-dev pkgconf cmake make
 WORKDIR /src
 COPY apps/wayland-host/Cargo.toml apps/wayland-host/Cargo.lock ./
 COPY apps/wayland-host/src ./src
@@ -147,7 +149,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.164.0"
+      org.opencontainers.image.version="1.165.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -208,7 +210,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.164.0
+    IMAGE_VERSION=1.165.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).

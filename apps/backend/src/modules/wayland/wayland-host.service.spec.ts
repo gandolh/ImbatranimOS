@@ -64,6 +64,7 @@ describe('WaylandHostService', () => {
     const l: SessionListener = {
       message: (m) => messages.push(m),
       frame: (b) => frames.push(b),
+      audio: () => undefined,
       gone: (r) => {
         goneReason = r;
       },

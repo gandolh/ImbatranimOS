@@ -218,6 +218,21 @@ describe('WaylandGateway', () => {
     await until(() => host.closed.includes(SESSION));
   });
 
+  it("sends the session's sound as it comes, with no acks", async () => {
+    const c = open(`session=${SESSION}`);
+    await c.opened;
+    await until(() => host.listeners.has(SESSION));
+    const body = Buffer.from([7, 0, 0, 0, 0xfc, 0xff, 0xfe]);
+    host.listeners.get(SESSION)!.audio(body);
+    await until(() => c.messages.some((m) => m.binary));
+    const sound = c.messages.find((m) => m.binary)!.binary!;
+    expect(sound[0]).toBe(3);
+    expect(sound.subarray(1)).toEqual(body);
+    expect(host.sent.some((m) => m.type === 'frame_ack')).toBe(false);
+    c.ws.close();
+    await until(() => host.closed.includes(SESSION));
+  });
+
   it("passes the tab's input to the host, checked, with the session", async () => {
     const c = open(`session=${SESSION}`);
     await c.opened;

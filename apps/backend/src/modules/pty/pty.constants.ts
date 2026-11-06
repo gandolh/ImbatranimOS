@@ -1,6 +1,7 @@
 import { homedir, userInfo } from 'os';
 import { isValidSessionId } from '../wayland/wayland.protocol';
 import { sessionBusAddress } from '../linux-apps/session-bus.paths';
+import { soundServerEnv } from '../linux-apps/sound-server.paths';
 
 /**
  * Path the terminal WebSocket listens on. Lives under the `/api` prefix so it
@@ -67,8 +68,9 @@ export function resolveHome(env: NodeJS.ProcessEnv = process.env): string {
  * `WAYLAND_DISPLAY` naming the socket of the desktop session (the tab) the
  * Terminal is in, so a Linux app started here shows its windows in that tab,
  * `DISPLAY` naming the X display that session reserved (`x11Display`), so an
- * X11 app does too, through Xwayland, and `DBUS_SESSION_BUS_ADDRESS` naming
- * that session's bus. An invalid or missing session id adds none of them.
+ * X11 app does too, through Xwayland, `DBUS_SESSION_BUS_ADDRESS` naming
+ * that session's bus, and `PULSE_SERVER` its sound server, so the app's sound
+ * plays in that tab. An invalid or missing session id adds none of them.
  *
  * The profile goes on the shell's `PATH` only, never the backend's: the
  * backend runs `git` and `tar` by name, and a Nix-installed copy of either must
@@ -100,10 +102,13 @@ export function terminalEnv(
         runtimeDir,
         desktopSession,
       );
+      Object.assign(env, soundServerEnv(runtimeDir, desktopSession));
     }
   } else {
     delete env.WAYLAND_DISPLAY;
     delete env.DBUS_SESSION_BUS_ADDRESS;
+    delete env.PULSE_SERVER;
+    delete env.PULSE_COOKIE;
   }
   const stateHome = env.NIX_STATE_HOME?.trim();
   if (stateHome) {

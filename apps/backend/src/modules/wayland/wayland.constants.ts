@@ -16,6 +16,13 @@ export const MAX_WAYLAND_SESSIONS = 8;
 export const FRAME_ACK_LOW_WATER = 512 * 1024;
 export const FRAME_ACK_POLL_MS = 50;
 
+/**
+ * Sound packets are dropped while the tab's socket holds more than this: a
+ * link that far behind would play them seconds late. Sound is about 16 kB/s,
+ * so it never holds frames up itself.
+ */
+export const AUDIO_DROP_ABOVE = 1024 * 1024;
+
 /** As the Terminal: a sign-out reaches an open socket within this window. */
 export const WAYLAND_REVOKE_SWEEP_MS = 30_000;
 

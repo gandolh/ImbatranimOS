@@ -7,12 +7,13 @@ Linux app ──Wayland──▶ Wayland host ──control socket──▶ back
 ```
 
 This file is the one description of the control socket and of what
-`/api/wayland` carries. The Rust side is `src/protocol.rs`; the backend's is
+`/api/wayland` carries, and of the session's sound (see "Sound"). The Rust
+side is `src/protocol.rs`; the backend's is
 `apps/backend/src/modules/wayland/wayland.protocol.ts`; the desktop decodes
 frames in `apps/core/src/modules/linux-windows/frames.ts`. The fixtures in
-`protocol-fixtures/` are written by the Rust tests
-(`UPDATE_FIXTURES=1 cargo test`) and decoded by the backend's, so a layout
-change fails one side until both agree with this file.
+`protocol-fixtures/` are written by the Rust tests (`UPDATE_FIXTURES=1 cargo
+test`) and decoded by the backend's, so a layout change fails one side until
+both agree with this file.
 
 All integers are little-endian.
 
@@ -30,7 +31,7 @@ Every message is:
 | Field | Size | |
 |---|---|---|
 | length | u32 | bytes that follow (kind and payload) |
-| kind | u8 | 1 JSON, 2 frame |
+| kind | u8 | 1 JSON, 2 frame, 3 sound |
 | payload | length − 1 | |
 
 Messages over 64 MiB are refused, and a malformed one ends the connection.
@@ -72,7 +73,7 @@ share one space within a session.
 
 | `type` | Fields |
 |---|---|
-| `hello` | `version` (6) |
+| `hello` | `version` (7) |
 | `session_ready` | `session`, `display` (the socket name, `wayland-<session>`), `x11_display` (the X display number reserved for the session's X11 apps, or `null`) |
 | `session_failed` | `session`, `reason` |
 | `toplevel_created`, `toplevel_updated` | `session`, `toplevel`, `title`, `app_id`, `width`, `height`, `scale`, `geometry`, `decorations`, `min_width`, `min_height`, `max_width`, `max_height` |
@@ -224,6 +225,55 @@ works between X11 apps only), and an X11 app's cursor shows as `default`.
 The backend strips the session id and sends `[2] + body` to that session's
 WebSocket, unchanged.
 
+### Sound, host to backend
+
+Laid out as a frame: the session id's length (u8), the id, then the body.
+The backend strips the id and sends `[3] + body` to that session's
+WebSocket, unchanged.
+
+| Field | Size | |
+|---|---|---|
+| sequence | u32 | the packet's 20 ms frame number in the session's mix |
+| packet | the rest | one Opus packet: 20 ms (960 samples) of 48 kHz stereo |
+
+## Sound
+
+Each session runs a sound server of its own, in the host: it listens on
+`$XDG_RUNTIME_DIR/imbatranim-sound/<session>` (the directory is mode 0700)
+from `session_open` until `session_close`, and speaks PulseAudio's native
+protocol there. The backend gives the session's apps (Start and the
+Terminal) `PULSE_SERVER=unix:<that path>`, and `PULSE_COOKIE` naming a file
+beside it, so libpulse keeps its cookie out of the home folder; no cookie is
+checked, the directory is the access control. Apps play through libpulse as
+on any desktop (Firefox does); nothing else is installed for it.
+
+What the server does: the handshake (no shared memory: samples come inline
+on the socket), one sink, `tab`, at 48 kHz stereo float, which the server
+info names as the default, and no sources, so recording is refused; playback
+streams of unsigned 8-bit, 16-bit, 32-bit, 24-in-32-bit or float samples,
+1 to 32 channels, at any rate up to 384 kHz (mono plays on both sides, other
+layouts are folded into stereo, other rates are resampled, linearly); cork,
+flush, trigger, prebuffer and drain, the buffer attributes PulseAudio would
+pick, requests for more data, `STARTED`, underflows and overflows; a
+stream's volume and mute; timing queries. Introspection lists come back
+empty, an app's own sink volume and anything else it asks is acknowledged
+and ignored or refused.
+
+While a stream plays (uncorked, past its prebuffer, not dry), the host mixes
+every stream of the session in real time, every 10 ms for whatever time
+passed (at most 200 ms after a stall), and each whole 20 ms of the mix
+becomes one Opus packet at 128 kbit/s. A frame quieter than a 16-bit
+sample's last bit is not sent, though it keeps its sequence number, and with
+nothing playing the clock stops; when it starts again the sequence skips one,
+so a gap in the numbers always marks a break in the sound. Apps are told the
+sink's latency is 60 ms, about what the trip and the tab's buffer add, so a
+video player shows each picture beside its sound.
+
+Under the cover screen (`freeze`) the clock stops and the part of a frame
+not sent is dropped; the apps are frozen anyway. On waking the mix starts
+again from then, without playing the time it slept. Hiding the tab or
+minimizing a window doesn't stop the sound.
+
 ## The body of a frame
 
 | Field | Size | |
@@ -271,7 +321,9 @@ gets the latest picture rather than a queue, and the app draws less often.
 Terminal's checks (the session cookie, Origin, and a 30 s sweep that closes
 the socket when the sign-in ends). One socket per session id.
 
-Server to tab: binary frames (`[2] + body`), and JSON text: the host's
+Server to tab: binary frames (`[2] + body`) and sound packets (`[3] + body`,
+dropped while the socket holds over 1 MiB, never held back and never
+acknowledged), and JSON text: the host's
 toplevel and popup messages without `session`, and `{"type":"unavailable","reason"}`
 before a close with code 4503. First of all, `{"type":"session","resumed"}`:
 `true` when the socket took back a running session (below), so the windows the

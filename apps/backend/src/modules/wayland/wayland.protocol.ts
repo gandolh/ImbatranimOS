@@ -5,21 +5,23 @@
  * Rust encoder and read by this file's tests.
  *
  * Every message is a little-endian `u32` length of what follows, a kind byte,
- * then the payload: JSON (kind 1) either way, or a frame (kind 2) from the
- * host, which is a length-prefixed session id followed by the body the
- * WebSocket carries after its own kind byte.
+ * then the payload: JSON (kind 1) either way, or from the host a frame (kind
+ * 2) or a sound packet (kind 3), each a length-prefixed session id followed by
+ * the body the WebSocket carries after its own kind byte.
  */
 
 export const KIND_JSON = 1;
 export const KIND_FRAME = 2;
+export const KIND_AUDIO = 3;
 
-/** A WebSocket binary message starts with this, then the frame body. */
+/** A WebSocket binary message starts with one of these, then the body. */
 export const WS_KIND_FRAME = 2;
+export const WS_KIND_AUDIO = 3;
 
 /** Refuse anything larger, as the host does. */
 export const MAX_MESSAGE = 64 * 1024 * 1024;
 
-export const PROTOCOL_VERSION = 6;
+export const PROTOCOL_VERSION = 7;
 
 /**
  * A desktop session id: random, per tab, and part of a socket's file name
@@ -173,7 +175,9 @@ export type PopupMessage =
 
 export type Decoded =
   | { kind: 'json'; message: HostOutbound }
-  | { kind: 'frame'; session: string; body: Buffer };
+  | { kind: 'frame'; session: string; body: Buffer }
+  /** One Opus packet of a session's sound: its sequence number, then the packet. */
+  | { kind: 'audio'; session: string; body: Buffer };
 
 export function encodeJson(message: HostInbound): Buffer {
   const json = Buffer.from(JSON.stringify(message), 'utf8');
@@ -249,16 +253,21 @@ function decodeMessage(message: Buffer): Decoded {
     }
     return { kind: 'json', message: parsed as HostOutbound };
   }
-  if (kind === KIND_FRAME) {
-    if (payload.length < 1) throw new ProtocolError('frame without a session');
+  if (kind === KIND_FRAME || kind === KIND_AUDIO) {
+    const what = kind === KIND_FRAME ? 'frame' : 'audio';
+    if (payload.length < 1)
+      throw new ProtocolError(`${what} without a session`);
     const sidLen = payload[0];
-    if (payload.length < 1 + sidLen + 14)
-      throw new ProtocolError('short frame');
+    // A frame's header is 14 bytes; a sound packet's sequence number 4.
+    if (payload.length < 1 + sidLen + (kind === KIND_FRAME ? 14 : 5))
+      throw new ProtocolError(`short ${what}`);
     const session = payload.subarray(1, 1 + sidLen).toString('ascii');
-    // Copied rather than a view, so one small frame doesn't keep a whole
+    // Copied rather than a view, so one small message doesn't keep a whole
     // read buffer alive.
     const body = Buffer.from(payload.subarray(1 + sidLen));
-    return { kind: 'frame', session, body };
+    return kind === KIND_FRAME
+      ? { kind: 'frame', session, body }
+      : { kind: 'audio', session, body };
   }
   throw new ProtocolError(`unknown kind ${kind}`);
 }

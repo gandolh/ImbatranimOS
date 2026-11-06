@@ -12,6 +12,7 @@ import { useLinuxAppsPrefs } from './keyboardLayout'
 import { LINUX_APP_PREFIX, linuxWindowChrome } from './kind'
 import { paintFrame, parseFrame } from './frames'
 import { linuxClipboard } from './clipboard'
+import { linuxSound } from './sound'
 import { LinuxNotifications, notifyAppStopped } from './linuxNotifications'
 import {
   canvasFor,
@@ -157,6 +158,9 @@ export class LinuxWindowsConnection {
   /** The session's Linux apps' notifications, as OS notifications. */
   private notifications: LinuxNotifications | null = null
 
+  /** Browsers let a page make sound after a gesture: a press or a key does it. */
+  private readonly onGesture = () => linuxSound.unlock()
+
   private readonly onVisibility = () => {
     this.send({ type: 'visibility', visible: document.visibilityState !== 'hidden' })
   }
@@ -207,6 +211,8 @@ export class LinuxWindowsConnection {
     window.addEventListener('resize', this.onResize)
     this.watchRatio()
     document.addEventListener('pointerdown', this.onPressAnywhere, true)
+    document.addEventListener('pointerdown', this.onGesture, true)
+    document.addEventListener('keydown', this.onGesture, true)
     document.addEventListener('visibilitychange', this.onVisibility)
     // Keyboard focus follows the window manager's focused window, and a
     // minimized window goes quiet.
@@ -233,6 +239,8 @@ export class LinuxWindowsConnection {
     window.removeEventListener('resize', this.onResize)
     this.watchRatio()
     document.removeEventListener('pointerdown', this.onPressAnywhere, true)
+    document.removeEventListener('pointerdown', this.onGesture, true)
+    document.removeEventListener('keydown', this.onGesture, true)
     document.removeEventListener('visibilitychange', this.onVisibility)
     this.unsubscribeAuth?.()
     this.unsubscribeAuth = null
@@ -248,6 +256,7 @@ export class LinuxWindowsConnection {
     const ws = this.ws
     this.ws = null
     ws?.close(1000, 'stopped')
+    linuxSound.dispose()
     this.closeAllWindows()
   }
 
@@ -271,6 +280,7 @@ export class LinuxWindowsConnection {
     ws.onclose = (ev) => {
       if (this.ws !== ws) return
       this.ws = null
+      linuxSound.reset()
       this.closeAllWindows()
       this.scheduleReconnect(ev.code)
     }
@@ -334,6 +344,7 @@ export class LinuxWindowsConnection {
 
   private onMessage(data: ArrayBuffer | string): void {
     if (typeof data !== 'string') {
+      if (linuxSound.receive(data)) return
       const frame = parseFrame(data)
       if (!frame) return
       noteLinuxFrame(frame.rects.reduce((sum, r) => sum + r.w * r.h, 0))

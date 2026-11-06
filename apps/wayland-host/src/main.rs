@@ -6,13 +6,15 @@
 //! `$XDG_RUNTIME_DIR/wayland-<session id>`. Windows go to the backend as
 //! images; the backend relays them to the tab over the signed-in WebSocket.
 //! A session also reserves an X display; Xwayland starts on it when the
-//! first X11 app connects (xwayland.rs, session/x11.rs).
+//! first X11 app connects (xwayland.rs, session/x11.rs), and runs a sound
+//! server its apps play to, whose mix goes to the tab as Opus (sound/).
 //! PROTOCOL.md describes the control socket.
 
 mod clipboard;
 mod pixels;
 mod protocol;
 mod session;
+mod sound;
 mod stubs;
 mod xwayland;
 
@@ -20,7 +22,8 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::io::{ErrorKind, PipeReader, Read, Write};
 use std::os::fd::AsFd;
-use std::os::unix::net::UnixStream;
+use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
+use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -33,8 +36,11 @@ use smithay::reexports::wayland_server::Display;
 use smithay::wayland::socket::ListeningSocketSource;
 
 use pixels::Encoding;
-use protocol::{encode_frame, encode_json, valid_session_id, Decoder, Inbound, Outbound, PROTOCOL_VERSION};
+use protocol::{
+    encode_audio, encode_frame, encode_json, valid_session_id, Decoder, Inbound, Outbound, PROTOCOL_VERSION,
+};
 use session::{ClientState, SessionState};
+use sound::Sound;
 use xwayland::XwaylandConfig;
 
 /// Frames go out at most this often per window: about 30 per second.
@@ -49,6 +55,20 @@ const CLIPBOARD_READ_TIMEOUT: Duration = Duration::from_secs(5);
 const X11_SHUTDOWN_WAIT: Duration = Duration::from_millis(20);
 const X11_SHUTDOWN_TRIES: u32 = 10;
 
+/// How often the sound mix runs while something plays. It takes whatever
+/// real time has passed, so a late tick plays no slower.
+const SOUND_TICK: Duration = Duration::from_millis(10);
+/// An app that lets this much of the sound server's messages pile up isn't
+/// reading them: its connection closes.
+const SOUND_MAX_UNSENT: usize = 1024 * 1024;
+
+/// An app's connection to a session's sound server: the source that reads
+/// it, and a second handle on the socket to write with.
+struct SoundClient {
+    token: RegistrationToken,
+    writer: UnixStream,
+}
+
 struct Session {
     display: Display<SessionState>,
     state: SessionState,
@@ -57,6 +77,10 @@ struct Session {
     /// whenever it has events.
     x11_loop: EventLoop<'static, SessionState>,
     tokens: Vec<RegistrationToken>,
+    sound: Sound,
+    sound_clients: HashMap<u32, SoundClient>,
+    /// The sound server's socket, removed with the session.
+    sound_path: Option<PathBuf>,
 }
 
 impl Session {
@@ -73,6 +97,48 @@ impl Session {
         }
         self.state.x11_finish_shutdown();
     }
+
+    /// Write what the sound server has for an app, as far as its socket
+    /// takes it now; the rest goes after the next tick. False when the app
+    /// isn't reading and should go.
+    fn flush_sound_client(&mut self, id: u32) -> bool {
+        let (Some(client), Some(out)) = (self.sound_clients.get(&id), self.sound.output(id)) else {
+            return true;
+        };
+        while !out.is_empty() {
+            match (&client.writer).write(out) {
+                Ok(0) => break,
+                Ok(n) => {
+                    out.drain(..n);
+                }
+                Err(e) if e.kind() == ErrorKind::WouldBlock => break,
+                Err(e) if e.kind() == ErrorKind::Interrupted => continue,
+                Err(_) => return false,
+            }
+        }
+        out.len() <= SOUND_MAX_UNSENT
+    }
+
+    /// Forget an app's sound connection; its source goes on its own.
+    fn drop_sound_client(&mut self, id: u32) {
+        self.sound.disconnect(id);
+        self.sound_clients.remove(&id);
+    }
+}
+
+/// Listen for a session's apps' sound, in a directory only the OS user can
+/// enter. A socket left behind by a host that was killed is replaced.
+fn listen_for_sound(path: &std::path::Path) -> std::io::Result<UnixListener> {
+    let dir = path.parent().ok_or(ErrorKind::InvalidInput)?;
+    std::fs::DirBuilder::new().recursive(true).mode(0o700).create(dir)?;
+    std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))?;
+    match std::fs::remove_file(path) {
+        Err(e) if e.kind() != ErrorKind::NotFound => return Err(e),
+        _ => {}
+    }
+    let listener = UnixListener::bind(path)?;
+    listener.set_nonblocking(true)?;
+    Ok(listener)
 }
 
 struct Host {
@@ -86,6 +152,8 @@ struct Host {
     started: Instant,
     handle: LoopHandle<'static, Host>,
     signal: LoopSignal,
+    /// The sound mix's timer, while some session plays sound.
+    sound_clock: Option<RegistrationToken>,
 }
 
 fn log(msg: &str) {
@@ -124,7 +192,13 @@ impl Host {
             Inbound::Position { session, toplevel, x, y } => self.with(&session, |s| s.position(toplevel, x, y)),
             Inbound::PressOutside { session } => self.with(&session, |s| s.press_outside()),
             Inbound::Resync { session } => self.with(&session, |s| s.resync()),
-            Inbound::Freeze { session, frozen } => self.with(&session, |s| s.set_frozen(frozen)),
+            Inbound::Freeze { session, frozen } => {
+                if let Some(s) = self.sessions.get(&session) {
+                    let mut s = s.borrow_mut();
+                    s.state.set_frozen(frozen);
+                    s.sound.set_frozen(frozen);
+                }
+            }
             Inbound::Visibility { session, visible } => self.with(&session, |s| s.set_visible(visible)),
             Inbound::KeyboardLayout { session, layout } => {
                 self.with(&session, |s| s.set_keyboard_layout(&layout))
@@ -173,7 +247,15 @@ impl Host {
         let x11 = self.xwayland.clone().map(|config| (config, x11_loop.handle()));
         let state = SessionState::new(id.to_string(), &display.handle(), width, height, ratio, self.started, x11);
         let x11_display = state.x11_display();
-        let session = Rc::new(RefCell::new(Session { display, state, x11_loop, tokens: Vec::new() }));
+        let session = Rc::new(RefCell::new(Session {
+            display,
+            state,
+            x11_loop,
+            tokens: Vec::new(),
+            sound: Sound::default(),
+            sound_clients: HashMap::new(),
+            sound_path: None,
+        }));
 
         let for_clients = Rc::clone(&session);
         let listen_token = self
@@ -220,9 +302,130 @@ impl Host {
             })
             .map_err(|e| e.error.to_string())?;
 
-        session.borrow_mut().tokens = vec![listen_token, dispatch_token, x11_token];
+        let mut tokens = vec![listen_token, dispatch_token, x11_token];
+        // Sound is optional: a session whose socket can't be made is silent.
+        let runtime_dir = std::env::var_os("XDG_RUNTIME_DIR").map(PathBuf::from).unwrap_or_default();
+        let sound_path = sound::socket_path(&runtime_dir, id);
+        match listen_for_sound(&sound_path) {
+            Ok(listener) => {
+                let for_sound = Rc::clone(&session);
+                let token = self
+                    .handle
+                    .insert_source(Generic::new(listener, Interest::READ, Mode::Level), move |_, listener, host| {
+                        loop {
+                            match listener.accept() {
+                                Ok((stream, _)) => host.add_sound_client(&for_sound, stream),
+                                Err(e) if e.kind() == ErrorKind::Interrupted => continue,
+                                Err(_) => break,
+                            }
+                        }
+                        Ok(PostAction::Continue)
+                    })
+                    .map_err(|e| e.error.to_string())?;
+                tokens.push(token);
+                session.borrow_mut().sound_path = Some(sound_path);
+            }
+            Err(e) => log(&format!("session {}… has no sound: {e}", &id[..8])),
+        }
+        session.borrow_mut().tokens = tokens;
         self.sessions.insert(id.to_string(), session);
         Ok((name, x11_display))
+    }
+
+    /// An app connected to a session's sound server.
+    fn add_sound_client(&mut self, session: &Rc<RefCell<Session>>, stream: UnixStream) {
+        let Ok(writer) = stream.try_clone() else {
+            return;
+        };
+        if stream.set_nonblocking(true).is_err() {
+            return;
+        }
+        let Some(id) = session.borrow_mut().sound.connect() else {
+            log("a sound client was refused: too many in the session");
+            return;
+        };
+        let for_client = Rc::clone(session);
+        let token = self.handle.insert_source(Generic::new(stream, Interest::READ, Mode::Level), move |_, stream, _| {
+            let mut guard = for_client.borrow_mut();
+            let s = &mut *guard;
+            let mut buf = [0u8; 64 * 1024];
+            loop {
+                // Ready to read, so this returns without waiting.
+                match (&**stream).read(&mut buf) {
+                    Ok(0) => {
+                        s.drop_sound_client(id);
+                        return Ok(PostAction::Remove);
+                    }
+                    Ok(n) => {
+                        if !s.sound.receive(id, &buf[..n]) {
+                            s.drop_sound_client(id);
+                            return Ok(PostAction::Remove);
+                        }
+                    }
+                    Err(e) if e.kind() == ErrorKind::WouldBlock => break,
+                    Err(e) if e.kind() == ErrorKind::Interrupted => continue,
+                    Err(_) => {
+                        s.drop_sound_client(id);
+                        return Ok(PostAction::Remove);
+                    }
+                }
+            }
+            if !s.flush_sound_client(id) {
+                s.drop_sound_client(id);
+                return Ok(PostAction::Remove);
+            }
+            Ok(PostAction::Continue)
+        });
+        let mut s = session.borrow_mut();
+        match token {
+            Ok(token) => {
+                s.sound_clients.insert(id, SoundClient { token, writer });
+            }
+            Err(_) => s.sound.disconnect(id),
+        }
+    }
+
+    /// Start the sound mix's timer when a session has something playing.
+    /// It stops itself once none has.
+    fn ensure_sound_clock(&mut self) {
+        if self.sound_clock.is_some() || !self.sessions.values().any(|s| s.borrow().sound.wants_clock()) {
+            return;
+        }
+        let token = self.handle.insert_source(Timer::from_duration(SOUND_TICK), |_, _, host: &mut Host| {
+            host.sound_tick();
+            if host.sessions.values().any(|s| s.borrow().sound.wants_clock()) {
+                TimeoutAction::ToDuration(SOUND_TICK)
+            } else {
+                host.sound_clock = None;
+                TimeoutAction::Drop
+            }
+        });
+        self.sound_clock = token.ok();
+    }
+
+    /// Mix every session's sound up to now, send the packets, and write the
+    /// sound server's messages to its apps.
+    fn sound_tick(&mut self) {
+        let now = Instant::now();
+        let mut packets = Vec::new();
+        for (id, session) in &self.sessions {
+            let mut s = session.borrow_mut();
+            s.sound.tick(now);
+            for body in s.sound.take_packets() {
+                packets.push(encode_audio(id, &body));
+            }
+            for client in s.sound.client_ids() {
+                if !s.flush_sound_client(client) {
+                    if let Some(c) = s.sound_clients.remove(&client) {
+                        self.handle.remove(c.token);
+                    }
+                    s.sound.disconnect(client);
+                }
+            }
+        }
+        for p in packets {
+            self.out.extend_from_slice(&p);
+        }
     }
 
     /// Removing the sources drops the listening socket (which unlinks it) and
@@ -233,6 +436,12 @@ impl Host {
             s.shutdown_x11();
             for token in s.tokens.drain(..) {
                 self.handle.remove(token);
+            }
+            for (_, client) in s.sound_clients.drain() {
+                self.handle.remove(client.token);
+            }
+            if let Some(path) = s.sound_path.take() {
+                let _ = std::fs::remove_file(path);
             }
         }
     }
@@ -272,6 +481,7 @@ impl Host {
         for (id, reader) in clipboard_reads {
             self.read_clipboard(id, reader);
         }
+        self.ensure_sound_clock();
         self.flush_control();
     }
 
@@ -440,6 +650,7 @@ fn main() {
         started: Instant::now(),
         handle: event_loop.handle(),
         signal: event_loop.get_signal(),
+        sound_clock: None,
     };
     host.send(&Outbound::Hello { version: PROTOCOL_VERSION });
 

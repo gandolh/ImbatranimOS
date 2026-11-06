@@ -178,8 +178,8 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Open todos
 
-Eleven, the imbatranim-apps backlog (2026-11-06), grilled the same day;
-each keeps a few engineering questions to confirm when it starts, listed in
+Fourteen, the imbatranim-apps backlog (2026-11-06), grilled the same day
+with every question answered and ready to promote, listed in
 [open-questions.md](open-questions.md). Briefs 48 and 49 came from the last
 two Linux apps todos the same day.
 

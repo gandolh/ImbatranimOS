@@ -64,11 +64,30 @@ and shown as one folder in Start: Office, Accessories, Games, Developer.
 _Avoid_: bundle, pack, category; suite for the install unit (a suite
 descriptor is the mechanism); folder for anything but Start's side of it.
 
-**URL app** / **app manifest** (2026-10-07):
-An app installed from its own repo's URL, unreviewed, prebuilt and run in a
-sandboxed frame; the `imbatranim.json` it carries.
-_Avoid_: sandboxed app (the sandbox is how it runs, not what it is), add-on or
+**URL app** / **app manifest** (2026-10-07, revised 2026-11-06):
+An app installed from its own repo's URL instead of the catalog; the
+`imbatranim.json` it carries. Since 2026-11-06 it runs natively once verified
+or trusted, and until the sandbox is retired an untrusted one runs in a
+sandboxed frame.
+_Avoid_: sandboxed app (the sandbox is how it ran, not what it is), add-on or
 plugin.
+
+**Verified app** (2026-11-06):
+A URL app listed in imbatranim-apps' `verified.json` at the commit the OS
+release pins; it installs without a warning.
+_Avoid_: signed, approved, official app (the catalog's own apps are
+Marketplace apps).
+
+**Trusted app** (2026-11-06):
+An unverified URL app the owner chose to trust at a given commit after the
+warning; a new commit needs trust again.
+_Avoid_: allowed, whitelisted, sideloaded.
+
+**App identity**, **instance** (2026-11-06):
+The app id a running app acts as, like a Unix user, and one running copy of
+it, like a pid. Files in the apps' data area carry an owner identity, a group
+and a mode.
+_Avoid_: uid, process, session (a session is the signed-in tab).
 
 ## Proposed, never adopted
 

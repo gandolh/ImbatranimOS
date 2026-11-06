@@ -1,0 +1,135 @@
+---
+summary: Locked calls from the 2026-11-06 imbatranim-apps grill on how apps are trusted and kept apart, shaped by Unix, Windows, Android and macOS practice (research-unix-and-windows-conventions.md). Apps run as their own identity with Unix modes on their files (rwx for owner, group, others; a private group per app plus its install group; private by default), kept and enforced by the OS since the container has one Linux user. Installable apps keep data in XDG-style folders per kind and see other files only by grant (opened through the OS or picked). URL apps run natively once trusted, which revisits 2026-10-07: verified ones come from a verified.json in imbatranim-apps pinned per OS release, the rest need the owner's trust each version. WASM threads are on (COOP/COEP).
+updated: 2026-11-06
+---
+
+# Decisions: app identity and trust (2026-11-06)
+
+Settled with the owner in the imbatranim-apps grill on 2026-11-06, then
+checked against how Unix, Windows, Android and macOS do the same things
+([research-unix-and-windows-conventions.md](research-unix-and-windows-conventions.md)).
+The work is in the todos named below. Changing one of these needs an
+explicit revisit and a `log.md` entry.
+
+## Apps run as their own identity, and files carry Unix modes
+
+Each running app has an identity: its app id acts as a user, and each
+running copy has an instance id that acts as a pid. Every call it makes to
+the OS carries both. Files in the apps' data area carry an owner and a mode.
+
+- **Modes are full Unix modes:** read, write and execute for owner, group and
+  others.
+- **Groups follow Unix's user-private-group scheme.** Each app has a group of
+  its own, plus its install group as a second one, so Office's five apps
+  share `imbatranim-office`. A suite's shared folder is setgid, so new files
+  join its group.
+- **Private by default:** new data files are `rw-------` and folders
+  `rwx------`, as under umask 077.
+- **Built-in apps share the group `system`.**
+
+The owner, acting through Files or the Terminal, sees everything, as the
+owner of the home folder.
+
+**Why:** the owner asked for "a mix between processes from an unix system
+and permissions unix system". Android isolates apps the same way, with one
+Linux user per app.
+
+**Why not real Linux users:** the container has one Linux user and no root,
+and no brief may grant root. So the OS keeps owner and mode in its database
+and enforces them in its own file API.
+
+**The limit:** apps run in the desktop's page, so the OS checks each call,
+but a hostile app could still reach around it, as threads in one Unix
+process can. Each app's token is kept out of the others' reach, and the
+catalog's review and the trust prompt guard the rest.
+
+Rejected:
+- owner and others read only, with no groups (the first proposal);
+- moving every app into its own frame for real isolation, which would undo
+  the shared kit and the native look.
+
+Built in `apps-run-as-their-own-identity`.
+
+## Installable apps keep data in folders by kind
+
+Owner's pick: real files in a folder per app. The research split it the XDG
+way:
+- `~/.config/imbatranim/<app-id>/` for settings;
+- `~/.local/share/imbatranim/<app-id>/` for data;
+- `~/.local/state/imbatranim/<app-id>/` for history and recents;
+- `~/.cache/imbatranim/<app-id>/` for anything that can be rebuilt.
+
+`system.data` takes the kind. Uninstalling removes the cache always, and the
+rest only when the owner ticks "Also remove its data". Windows also leaves
+AppData behind when a program is uninstalled. Backups skip the caches.
+
+The `imbatranim/` level keeps app ids from clashing with Linux programs'
+folders, as Windows' vendor folder does. This refines the folder in
+[decisions-marketplace-suites.md](decisions-marketplace-suites.md#an-app-keeps-its-data-in-a-folder-of-its-own-2026-11-06).
+Built in `apps-get-a-data-folder-of-their-own`.
+
+## Installable apps see other files only by grant
+
+An installable app sees its own folders, plus any file or folder the owner
+gives it:
+- one opened with it through the OS (Files, Start's recents, Open With);
+- one picked in `system.fs.pick*`.
+
+A grant lasts for that window. Built-in apps keep full access to home.
+
+**Why:** Android's scoped storage, Flatpak's document portal and the macOS
+sandbox's user-selected files all work this way. The OS already has the
+pickers as a portal (2026-08-06), and Office already opens and saves only
+what it was handed or picked.
+
+Rejected: full home access for installable apps.
+
+The REST API Client's typed file paths become a picker. Built in
+`installable-apps-get-files-by-grant`.
+
+## URL apps run natively once trusted (revisits 2026-10-07)
+
+This revisits [decisions-marketplace.md](decisions-marketplace.md)'s
+"Sandboxed apps from a URL": an app from a URL treated as malicious, run
+prebuilt in an opaque-origin frame with `notify` only. The owner wants
+every app to run like the others, as plugins.
+
+- **Verified apps** are listed in a `verified.json` in imbatranim-apps, each
+  entry a repo and a pinned commit. The OS reads the file at a commit pinned
+  with each OS release, so the git hash vouches for it (apt reaches the same
+  goal with signed metadata) and nothing changes between OS updates. They
+  install like Marketplace apps.
+- **Unverified apps** show a warning first. It names the publisher (the
+  GitHub owner and repo), lists the capabilities, and says plainly that a
+  trusted app acts as the owner, Terminal included. "Trust and install"
+  sits behind a "More info" step, as Windows SmartScreen does. Every new
+  commit asks again.
+- **Choices are trust or cancel.** There is no sandboxed option, so the frame
+  path can be retired once nothing uses it.
+- **Settings shows where each app came from:** a Verified badge or "Trusted
+  by you", with its source.
+- **A trusted app builds from source at its pinned commit** like any
+  Marketplace app, under the same identity and file-grant rules.
+
+**Why:** the owner: "If it is not verified, it should show a pop-up at
+installation like windows does with un-checked sources, if you say you trust
+it, you can go forward to install it natively."
+
+Rejected:
+- keeping URL apps sandboxed;
+- drawing their UI natively from a sandbox (remote-dom);
+- a verified list read live from GitHub, where a compromised account could
+  mark anything verified.
+
+Built in `url-apps-install-natively-once-trusted`.
+
+## WASM threads are on
+
+The desktop sends `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp`, and every frame it serves
+sends matching headers. That is the Browser app's proxy origin; URL-app
+frames go when the sandbox is retired. `credentialless` is the fallback if
+`require-corp` blocks the proxy.
+
+Rejected: threads off until an app needs them. Built in
+`kit-apps-may-run-webassembly`.

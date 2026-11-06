@@ -39,6 +39,14 @@ Settled on 2026-11-06:
 3. **What does a native URL app run as?** Answered 2026-11-06: yes.
 4. **Updates.** Answered 2026-11-06: yes.
 
+5. **What does the warning show, and how is trust shown later?** From the research (2026-11-06): the publisher (GitHub owner and repo), the capabilities, and a plain line that a trusted app acts as the owner, Terminal included. "Trust and install" sits behind a "More info" step, as Windows SmartScreen does. Settings → Marketplace shows each app's source with a Verified badge or "Trusted by you" ([decisions-app-identity-and-trust.md](../wiki/decisions-app-identity-and-trust.md#url-apps-run-natively-once-trusted-revisits-2026-10-07)).
+
 ## Draft brief
 
-Written after the grill settles the questions above.
+Written at promotion, from the answers above. The parts:
+- `verified.json` in imbatranim-apps (format, and the OS's pinned read);
+- the install flow for a URL: verified installs; unverified shows the warning;
+- the native build from the app repo's descriptor;
+- re-asking on a new commit;
+- the badges in Settings;
+- then the sandboxed frame path retired in its own todo.

@@ -190,6 +190,9 @@ Player, Code Editor and Diff, and Clock and Calendar.
 | [the-chooser-links-to-the-marketplace](../todos/the-chooser-links-to-the-marketplace.md) | The chooser links to the Marketplace |
 | [todo-and-bookmarks-install-as-accessories](../todos/todo-and-bookmarks-install-as-accessories.md) | Todo and Bookmarks as Accessories (after Games, hooks, data folder) |
 | [git-gui-and-rest-api-client-join-developer](../todos/git-gui-and-rest-api-client-join-developer.md) | Git GUI and REST API Client as Developer (after Games, data folder) |
+| [apps-run-as-their-own-identity](../todos/apps-run-as-their-own-identity.md) | Unix-style identity and file modes for apps |
+| [installable-apps-get-files-by-grant](../todos/installable-apps-get-files-by-grant.md) | Installable apps see other files only by grant |
+| [url-apps-install-natively-once-trusted](../todos/url-apps-install-natively-once-trusted.md) | URL apps run natively: verified, or trusted after a warning |
 
 In imbatranim-office, after the WASM todo:
 `pdf-decodes-jpeg2000-and-jbig2-images`. `cad-reads-dwg-in-the-tab` was

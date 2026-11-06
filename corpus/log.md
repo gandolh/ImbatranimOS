@@ -5432,3 +5432,42 @@ the OS keeps the minimum; the base for a normal user) and decisions-themes.md
 (Start). What is left in each todo is engineering calls with proposed
 answers.
 
+## [2026-11-06] grill | The imbatranim-apps todos' last questions, and Unix and Windows practice
+
+The owner asked to finish the grill so the todos can become briefs. The
+engineering calls took their proposals, with these changes:
+- Extract asks where;
+- WASM threads go on now (COOP/COEP);
+- no Linux tag in Start.
+
+Three larger calls came out of it:
+- **Apps run as their own identity, with Unix modes** (rwx, owner, group,
+  others), enforced by the OS, since the container has one Linux user.
+- **URL apps run natively once trusted.** This revisits 2026-10-07. Verified
+  apps come from a `verified.json` in imbatranim-apps pinned per OS release;
+  the rest need trust each commit, and the sandbox is retired later.
+- **Installable apps see other files only by grant** (an OS-made open or a
+  pick), after the research.
+
+The owner then asked for Unix and Windows practice:
+[research-unix-and-windows-conventions.md](wiki/research-unix-and-windows-conventions.md)
+(XDG, AppData, Unix modes and private groups, Android's user per app,
+scoped storage, SmartScreen, Gatekeeper, Flathub, apt, TERM then KILL).
+From it:
+- data folders split by kind under `imbatranim/<app-id>/`, with caches
+  disposable;
+- a private group per app plus its install group, umask-077 defaults and a
+  setgid shared folder;
+- a warning that names the publisher, with trust behind More info, and
+  Verified or Trusted-by-you badges;
+- End that asks first, then forces.
+
+The calls are in the new
+[decisions-app-identity-and-trust.md](wiki/decisions-app-identity-and-trust.md),
+with a pointer from decisions-marketplace.md's 2026-10-07 section.
+glossary-marketplace gains verified app, trusted app, app identity and
+instance, and the URL app definition is revised. New todos:
+`apps-run-as-their-own-identity`, `url-apps-install-natively-once-trusted`
+and `installable-apps-get-files-by-grant`. Every question in the fourteen
+todos is answered.
+

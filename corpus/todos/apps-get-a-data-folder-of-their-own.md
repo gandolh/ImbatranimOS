@@ -16,7 +16,7 @@ numbered brief.
 
 ## Open questions (grill before starting)
 
-Settled: real files in a folder per app, at `~/.local/share/imbatranim/<app-id>/`.
+Settled: real files in folders per app, split by kind the XDG way (research, 2026-11-06): `~/.config/imbatranim/<app-id>/` settings, `~/.local/share/imbatranim/<app-id>/` data, `~/.local/state/imbatranim/<app-id>/` history and recents, `~/.cache/imbatranim/<app-id>/` anything rebuildable. `system.data` takes the kind (default `data`). Uninstall always removes the cache; backups skip caches ([decisions-app-identity-and-trust.md](../wiki/decisions-app-identity-and-trust.md#installable-apps-keep-data-in-folders-by-kind)).
 
 1. **The call's shape?** Answered 2026-11-06: yes.
 2. **Always present, or a capability an app must list?** Answered 2026-11-06: yes, always present; who may read a file is decided by its owner and mode ([apps-run-as-their-own-identity](apps-run-as-their-own-identity.md)).

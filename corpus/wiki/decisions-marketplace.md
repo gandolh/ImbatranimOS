@@ -100,6 +100,8 @@ brief required, and the build added some calls of its own.
 
 ## Sandboxed apps from a URL (2026-10-07): apps from a URL (2026-10-07)
 
+Revisited 2026-11-06: URL apps run natively once verified or trusted ([decisions-app-identity-and-trust.md](decisions-app-identity-and-trust.md)).
+
 The owner parked arbitrary-URL installs on 2026-10-06 and asked for them on
 2026-10-07. An app from a URL nobody reviewed is treated as **malicious**, not
 just buggy. That flips os-layering's threat model for these apps only, and

@@ -29,10 +29,10 @@ Settled on 2026-11-06:
   catalog's review guards the rest. The owner acting through Files or the
   Terminal sees everything, like the owner of the home folder.
 
-1. **Which modes?** Answered 2026-11-06: full Unix modes, read, write and execute for owner, group and others. An app's group is its install group (the descriptor id, so Office's five apps share `imbatranim-office`); built-in apps share `system`. Data files start `rw-------`. The suite's apps can share by `rw-rw----`.
+1. **Which modes?** Answered 2026-11-06: full Unix modes, read, write and execute for owner, group and others. Each app has a private group of its own (Unix's user-private-group scheme) plus its install group as a supplementary group (the descriptor id, so Office's five apps share `imbatranim-office`); built-in apps share `system`. New data is private, as under umask 077 (`rw-------`, folders `rwx------`); a suite's shared folder is setgid `rwxrws---`, so new files join its group.
 2. **Where do owner and mode live?** Answered 2026-11-06: yes.
-3. **Do running apps show as processes?** Answered 2026-11-06: yes, as its own todo after this one.
-4. **What does `fs` see?** Answered 2026-11-06: yes.
+3. **Do running apps show as processes?** Answered 2026-11-06: yes, as its own todo after this one. End works like TERM then KILL: it asks the app to close (unsaved work prompts), then forces it after a timeout.
+4. **What does `fs` see?** (Superseded the same day by [installable-apps-get-files-by-grant](installable-apps-get-files-by-grant.md): installable apps see only their folders and granted files.) Answered 2026-11-06: yes.
 
 ## Draft brief
 

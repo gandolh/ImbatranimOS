@@ -20,6 +20,8 @@ Settled: the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good,
 
 ## Draft brief
 
+> At promotion: the REST API Client attaches files through `pickOpen` instead of typed paths, since installable apps get files by grant ([installable-apps-get-files-by-grant](installable-apps-get-files-by-grant.md)).
+
 ### Context
 
 Two developer tools that

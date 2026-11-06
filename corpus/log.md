@@ -5169,3 +5169,16 @@ light/dark plus accent through the Settings portal (not briefed). Written by
 a research agent that didn't commit; committed with the index after the
 native-apps measurements landed.
 
+
+## [2026-11-06] decision | Native apps for heavy work only; briefs 45 and 46
+
+The owner answered the open question from the native-apps research: the
+OS's own apps and the office suite stay kit apps. "We should have as native
+apps only the heavy lifting workloads and keep the simple work on client
+side." Recorded in
+[decisions-linux-apps.md](wiki/decisions-linux-apps.md#native-only-for-heavy-work-the-oss-own-apps-stay-in-the-tab);
+the open question moved to resolved. Asked whether installed Linux apps
+should become Open with handlers: yes, brief 46 (imbatranimOS-46), after
+the kit apps and never the default unless picked. Brief 45 (the phone's
+keyboard into a Linux app): build it, with the recommendation for each of
+its other decisions.

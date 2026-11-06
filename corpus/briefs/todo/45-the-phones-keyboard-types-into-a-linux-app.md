@@ -17,13 +17,16 @@ text around the cursor and the cursor's rectangle, and they take composed and
 committed text back. The host registers the protocol as a stub today
 (`stubs.rs`: "Input methods: none yet"). This brief is a prototype: it proves
 the path on a phone before anyone polishes it. Drafted 2026-11-06, not filed
-on brief-board.
+on brief-board; filed as imbatranimOS-45 later that day.
 
 ## Owner decisions before building
 
-1. **Build it at all?** It improves Linux apps as optional installs, which
-   [open-questions.md](../../wiki/open-questions.md) asks the owner to
-   confirm. Recommended: yes, since Android is the main phone.
+**Answered 2026-11-06:** build it, with the recommendation for each of 2-5.
+
+1. **Build it at all?** **Yes** (owner, 2026-11-06). Linux apps stay
+   optional installs for heavy work, the "no" the owner confirmed the same
+   day ([decisions-linux-apps.md](../../wiki/decisions-linux-apps.md#native-only-for-heavy-work-the-oss-own-apps-stay-in-the-tab)),
+   and Android is the main phone.
 2. **When does text go through the hidden input?** Only after a touch tap in
    a Linux window, or always while a field is active (which also gives
    desktop users the browser's dead keys and IMEs)? Recommended: touch only

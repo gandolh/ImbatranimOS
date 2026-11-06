@@ -157,6 +157,7 @@ exist yet. They are not proposed as briefs: Open with for a Linux app
 (`desktop-entry.ts` strips the field codes), sound (brief 39), HiDPI (brief
 33), and typing on Android (an input element and a text-input protocol;
 todo `linux-apps-take-the-phones-keyboard`, a bug whatever the answer here).
+The owner confirmed the no on 2026-11-06 and asked for Open with: brief 46.
 
 ## 5. Recommendation
 

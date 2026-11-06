@@ -1,5 +1,5 @@
 ---
-summary: One open question (2026-11-06) — confirm that the OS's own apps and the office suite stay kit apps rather than becoming streamed Linux apps (research-native-apps-via-wayland.md), and whether Open with for a Linux app is wanted; below it, the resolved web-OS era questions (install story, HTTPS, image size, accent, registry, shared origin) with where each answer lives.
+summary: No open questions. The last one (2026-11-06, the OS's own apps as streamed Linux apps) was answered no, with Open with for Linux apps as brief 46; below it, the resolved web-OS era questions (install story, HTTPS, image size, accent, registry, shared origin) with where each answer lives.
 updated: 2026-11-06
 ---
 
@@ -7,25 +7,14 @@ updated: 2026-11-06
 
 ## Open
 
-**The OS's own apps as Linux apps?** (asked 2026-11-06, researched the same
-day in [research-native-apps-via-wayland.md](research-native-apps-via-wayland.md)).
-The research recommends **no**. Files, Settings, Terminal, Notes, the other
-add-ons, the office suite and the marketplace apps stay in the tab, and
-native programs such as LibreOffice or QCAD stay optional installs from
-Settings → Linux apps. Reasons: the 1 GiB cap holds one Firefox, the Android
-phone's on-screen keyboard can't type into a Linux window, and the calls locked on 2026-10-21
-(office) and 2026-10-23 (Linux apps) stand against it. Measured the same day
-([research-native-apps-via-wayland-measured.md](research-native-apps-via-wayland-measured.md)):
-every key waits a round trip (120-245 ms on an emulated phone link, against
-about 10 ms in a kit field), the keyboard gap is confirmed in emulation and is
-now a todo, and the cap matters for big programs only (Firefox 547 MiB,
-Writer 306 MiB, xterm 20 MiB). The no stands, narrowed. The owner confirms or
-overrules. A yes would revisit those calls with a `log.md` entry. Also for
-the owner: should installed Linux apps become Open with handlers (Files
-handing an `.odt` to LibreOffice)? That is the one build the research found
-worth doing, and it gets a brief only if asked for.
+_Nothing is open._
 
 ## Resolved
+
+Resolved 2026-11-06 (owner): the OS's own apps and the office suite stay
+kit apps; native Linux apps only for heavy work. Recorded in
+[decisions-linux-apps.md](decisions-linux-apps.md#native-only-for-heavy-work-the-oss-own-apps-stay-in-the-tab).
+Installed Linux apps as Open with handlers: yes, brief 46.
 
 _Nothing else is open._ The last three were answered on 2026-10-06: the crimson
 accent stands (already recorded in decisions.md), build-from-source is final,

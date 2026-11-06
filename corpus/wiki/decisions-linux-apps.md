@@ -1,6 +1,6 @@
 ---
-summary: Linux GUI apps run in the container and show as ordinary OS windows; their windows reach the tab as pixels, narrowing os-layering's "data, never pixels". Our own Wayland host in Rust (smithay) does the Wayland part, the backend relays it over the signed-in WebSocket, and the compositor stays in the browser. The OS stays Alpine; Linux apps come from Nix, installed by the user at runtime without sudo, reversing the build-time-only app stance. An app lives with its tab, survives a reload, and sleeps (SIGSTOP) under the idle cover screen. Firefox is the first app; Spotify was dropped. Settled with the owner 2026-10-23 in the Spotify grilling; the image made self-contained 2026-11-03 (base profile and package index baked in, no download at boot). The calls made once the layer was built (2026-11-03) are in decisions-linux-apps-built.md.
-updated: 2026-11-03
+summary: Linux GUI apps run in the container and show as ordinary OS windows; their windows reach the tab as pixels, narrowing os-layering's "data, never pixels". Our own Wayland host in Rust (smithay) does the Wayland part, the backend relays it over the signed-in WebSocket, and the compositor stays in the browser. The OS stays Alpine; Linux apps come from Nix, installed by the user at runtime without sudo, reversing the build-time-only app stance. An app lives with its tab, survives a reload, and sleeps (SIGSTOP) under the idle cover screen. Firefox is the first app; Spotify was dropped. Settled with the owner 2026-10-23 in the Spotify grilling; the image made self-contained 2026-11-03 (base profile and package index baked in, no download at boot). The calls made once the layer was built (2026-11-03) are in decisions-linux-apps-built.md. Confirmed 2026-11-06: native apps only for heavy work, the OS's own apps and the suite stay in the tab; Open with for Linux apps is brief 46.
+updated: 2026-11-06
 ---
 
 # Decisions: Linux apps in OS windows (2026-10-23)
@@ -156,3 +156,23 @@ and a machine that boots offline.
   commit, and the build stops until the snapshot is set.
 - *Consequence*: an existing volume keeps its base across pin moves; fonts
   and locales don't need to match the pin.
+
+## Native only for heavy work; the OS's own apps stay in the tab
+_2026-11-06_ — The OS's own apps (Files, Settings, Terminal, Notes, the other
+add-ons) and the office suite stay kit apps in the tab. A Linux app is an
+optional install for heavy work that no kit app does, such as LibreOffice for
+ODF and the old binary formats, or QCAD for full 2D drafting, installed beside
+the kit apps, never in place of them. In the owner's words: "We should have
+as native apps only the heavy lifting workloads and keep the simple work on
+client side."
+Rejected: rebuilding the OS's apps or the suite as native programs streamed
+through the Wayland host, measured in
+[research-native-apps-via-wayland-measured.md](research-native-apps-via-wayland-measured.md).
+**Why**: every key in a streamed window waits a round trip (120-245 ms on an
+emulated phone link, about 10 ms in a kit field), Android's on-screen
+keyboard can't type into a Linux window (brief 45), and the 1 GiB cap holds
+one Firefox or one Writer. The office (2026-10-21) and Linux-apps
+(2026-10-23) calls stand.
+- *Consequence*: the one build taken from it is brief 46, installed Linux
+  apps as Open with handlers, after the kit apps and never the default
+  unless the owner picks one.

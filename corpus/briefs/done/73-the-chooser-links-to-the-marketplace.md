@@ -38,3 +38,14 @@ the todo `the-chooser-links-to-the-marketplace`.
 ## Acceptance
 
 - Tests green; the walk holds.
+
+## Outcome (2026-11-06)
+
+Built by a sonnet subagent, commit `2f5a039`. The Open With dialog gets a link
+to the Marketplace that opens Settings on the app's row, scrolled into view
+and ringed for 2.5 s. `marketplaceOpeners.ts` gains `marketplaceTarget` and
+`marketplaceIntent` (office types point at the `imbatranim-office`
+descriptor); the open goes through `openApp('settings', {marketplace: id})`.
+Tests: `newFileTemplates` and `MarketplaceSettings`. Walk 1 (2026-11-06, 11 of
+11) covered the link. The Office-uninstalled `.docx` case is the one the
+build named as the walk. Left for the owner: deploy.

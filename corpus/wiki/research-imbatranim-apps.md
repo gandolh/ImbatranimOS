@@ -182,14 +182,14 @@ Player, Code Editor and Diff, and Clock and Calendar.
 | [64](../briefs/todo/64-games-install-from-imbatranim-apps.md), from `games-install-from-imbatranim-apps` | Games; settles the group layout (second) |
 | [65](../briefs/todo/65-notepad-takes-over-markdown-editors-job.md), from `notepad-takes-over-markdown-editors-job` | Notepad takes over Markdown Editor |
 | [66](../briefs/todo/66-files-handles-archives-and-archive-manager-goes.md), from `files-handles-archives-and-archive-manager-goes` | Files opens archives like folders; Archive Manager goes |
-| [67](../briefs/todo/67-kit-apps-may-run-webassembly-with-threads.md), from `kit-apps-may-run-webassembly` | The desktop allows WASM |
+| [67](../briefs/done/67-kit-apps-may-run-webassembly-with-threads.md), from `kit-apps-may-run-webassembly` | The desktop allows WASM |
 | [69](../briefs/todo/69-apps-get-data-folders-of-their-own.md), from `apps-get-a-data-folder-of-their-own` | A data folder per app (`system.data`) |
 | [71](../briefs/todo/71-catalog-apps-bring-background-services-and-commands.md), from `catalog-apps-bring-background-services-and-commands` | Catalog apps bring background services and palette sources |
-| [72](../briefs/todo/72-start-gets-search-pins-and-an-a-to-z-list.md), from `start-gets-search-pins-and-an-a-to-z-list` | Start: search, pins, A-Z list |
-| [73](../briefs/todo/73-the-chooser-links-to-the-marketplace.md), from `the-chooser-links-to-the-marketplace` | The chooser links to the Marketplace |
+| [72](../briefs/done/72-start-gets-search-pins-and-an-a-to-z-list.md), from `start-gets-search-pins-and-an-a-to-z-list` | Start: search, pins, A-Z list |
+| [73](../briefs/done/73-the-chooser-links-to-the-marketplace.md), from `the-chooser-links-to-the-marketplace` | The chooser links to the Marketplace |
 | [75](../briefs/todo/75-todo-and-bookmarks-install-as-accessories.md), from `todo-and-bookmarks-install-as-accessories` | Todo and Bookmarks as Accessories (after Games, hooks, data folder) |
 | [76](../briefs/todo/76-git-gui-and-rest-api-client-install-as-developer.md), from `git-gui-and-rest-api-client-join-developer` | Git GUI and REST API Client as Developer (after Games, data folder) |
-| [68](../briefs/todo/68-apps-run-as-their-own-identity.md), from `apps-run-as-their-own-identity` | Unix-style identity and file modes for apps |
+| [68](../briefs/done/68-apps-run-as-their-own-identity.md), from `apps-run-as-their-own-identity` | Unix-style identity and file modes for apps |
 | [70](../briefs/todo/70-installable-apps-get-files-by-grant.md), from `installable-apps-get-files-by-grant` | Installable apps see other files only by grant |
 | [74](../briefs/todo/74-url-apps-install-natively-once-verified-or-trusted.md), from `url-apps-install-natively-once-trusted` | URL apps run natively: verified, or trusted after a warning |
 

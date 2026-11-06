@@ -1,6 +1,6 @@
 ---
-summary: Rules 47 and 48 of the house UI style, split out of ui-conventions.md on 2026-11-03 with their numbers kept — an app paints outside its window only through `desktopLayer` (mounted always, pointer-events opt-in, above the icons and below every window), and a desktop object is clamped on commit, can leave the desktop without being deleted, and persists once on release.
-updated: 2026-11-03
+summary: Rules 47 and 48 of the house UI style, split out of ui-conventions.md on 2026-11-03 with their numbers kept — an app paints outside its window only through `desktopLayer` (mounted always, pointer-events opt-in, above the icons and below every window), and a desktop object is clamped on commit, can leave the desktop without being deleted, and persists once on release; also the Start menu's layout (search, pins, A-Z list) and the command sources it shares with the palette (added 2026-11-06).
+updated: 2026-11-06
 ---
 
 # UI conventions: painting on the desktop
@@ -24,3 +24,15 @@ first rule below. The sticky-notes work (2026-08-05) is the worked example.
     unreachable after a reload — and must be removable from the desktop without being destroyed. Keep the two verbs distinct and label them so: "take off the desktop (the note
     is kept)" vs. "delete". Persist a drag or resize **once on release**, never per pointer move, and use `setPointerCapture` so a fast gesture off the element does not drop
     (`sticky-notes/src/usePointerDrag.ts`).
+
+## Start's layout and shared sources (2026-11-06)
+
+Brief 72. Start is a search box, a Pinned grid (three columns), an A-Z list
+with letter headings, then Recent; it is 320px wide, at most the viewport
+less 16px. Pins live in the `imbatranimos:start-pins` dotfile; the defaults
+are Files, Terminal, Browser, Code Editor, Notepad and Settings. Start and the
+command palette read the same core sources (`shared/commands/coreSources.ts`),
+so a search finds the same things in both. Right-click, or Android's
+long-press, opens Open, Pin or Unpin and the Linux actions. Focus lands on
+the first entry on a coarse pointer, on the search box otherwise. Known
+smell: `role=menu` holds a searchbox.

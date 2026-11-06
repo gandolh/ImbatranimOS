@@ -48,7 +48,21 @@ Rejected:
 - moving every app into its own frame for real isolation, which would undo
   the shared kit and the native look.
 
-Built in `apps-run-as-their-own-identity`.
+Built in `apps-run-as-their-own-identity` (brief 68, `2522407`, 2026-11-06):
+- **Tokens are minted by the client** and kept in memory, sent as
+  `X-Imbatranim-App-Token`. A refusal (`APP_TOKEN_REFUSED`) makes the client
+  mint a new one; a token lasts 6 hours idle, and a closed app's instance
+  lives on for a 2 s grace.
+- **Settings, Files and Terminal act as the owner** (`ACTS_AS_USER`).
+- **Owner's stricter default (2026-11-06):** built-in apps lose blanket home
+  access, with folders `rwx--x--x` and files `rw-------`. It takes effect in
+  brief 70, together with the grant flows for built-ins (a folder picker for
+  Code Editor, Git GUI and the media apps). This replaces "built-in apps keep
+  full access to home" below once brief 70 lands.
+- **Limits against a hostile app:** its token is in the page's memory, so a
+  script in the same page can read it; the checks guard the OS's calls, not
+  the page. The catalog's review and the trust prompt guard the rest.
+- `revokeApp` is not called on uninstall yet.
 
 ## Installable apps keep data in folders by kind
 
@@ -132,4 +146,12 @@ frames go when the sandbox is retired. `credentialless` is the fallback if
 `require-corp` blocks the proxy.
 
 Rejected: threads off until an app needs them. Built in
-`kit-apps-may-run-webassembly`.
+`kit-apps-may-run-webassembly` (brief 67, `932d92e`, 2026-11-06):
+- **WASM compiles** under `'wasm-unsafe-eval'` on `script-src`.
+- **One switch:** `EMBEDDER_POLICY` in `security-headers.ts` is `require-corp`;
+  `credentialless` is the fallback if it blocks something real.
+- **Frames always send `require-corp`**, whatever the switch says; the
+  URL-app frame carries no COOP.
+- **URL apps get WASM without threads.**
+- **Cost:** a popup opened from a proxied page loses `window.opener`, so a
+  site's popup sign-in can break in the Browser.

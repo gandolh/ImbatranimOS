@@ -61,3 +61,24 @@ the todo `start-gets-search-pins-and-an-a-to-z-list`.
 ## Acceptance
 
 - Tests green; the walk holds in all four looks at both widths.
+
+## Outcome (2026-11-06)
+
+Built by a sonnet subagent, commit `d6ae13d`, with a fix at `baf3f5e` after
+walk 1. Start is now a search box, a Pinned grid (three columns), an A-Z list
+with letter headings, then Recent; Cover and Log are off. Pins live in the
+`imbatranimos:start-pins` dotfile (defaults: Files, Terminal, Browser, Code
+Editor, Notepad, Settings). Start and the command palette share one set of
+sources (`shared/commands/coreSources.ts`). Right-click, and Android's
+long-press, opens a menu to Open, Pin or Unpin, plus Linux actions. Focus goes
+to the first entry on a coarse pointer, to the search box otherwise. Width is
+320px, at most the viewport less 16px. A known smell: `role=menu` holds a
+searchbox.
+
+Walk 1 (2026-11-06, 11 of 11) found three things, fixed in `baf3f5e`: the
+search ranking, duplicate entries (now deduplicated by path), and the panel's
+maximum height. Checks before the fix: vitest on `src/shared` and `src/lib`
+420 green, tsc clean. Not stated in the notes: a re-walk after the fix, and
+the full list the build planned (320px in both themes, light and dark, a
+phone width, touch focus).
+Left for the owner: deploy.

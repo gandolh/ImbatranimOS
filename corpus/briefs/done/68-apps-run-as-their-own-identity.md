@@ -111,3 +111,26 @@ and 70 (file grants) use them.
 
 - Tests green; the full test run is unchanged for built-in apps and Office.
 - The outcome lists, plainly, what a hostile in-page app could still do.
+
+## Outcome (2026-11-06)
+
+Built from the main session by an opus subagent, commit `2522407` (1.196.0).
+Every call an app makes carries `X-Imbatranim-App-Token`; the backend resolves
+it to `req.appIdentity` (`callingApp`, `@CallingApp`). A `ModeStore` and a
+`file_modes` table keep owner and mode per file. Tokens are minted by the
+client and held in memory (6 h idle); a refused token (`APP_TOKEN_REFUSED`)
+makes the client mint a new one; a closed app's instance lives on for a 2 s
+grace. Settings, Files and Terminal act as the owner (`ACTS_AS_USER`).
+`revokeApp` is not called on uninstall yet. A System Monitor processes view,
+fed by `AppTokens.instances(sid)`, is a todo idea.
+
+Owner decision the same day: a stricter default than the brief's. Built-in
+apps lose blanket home access (folders `rwx--x--x`, files `rw-------`). Brief
+70 flips the default together with the grant flows for built-ins (a folder
+picker for Code Editor, Git GUI and the media apps); until then the brief's
+default stands in the build. Recorded in brief 70 (`0e0aa71`) and the ticket.
+
+Checks: the notes give no test counts for this brief. Walk 1 (2026-11-06,
+11 of 11) covered identity. A hostile app can still reach around the
+checks (see [decisions-app-identity-and-trust.md](../../wiki/decisions-app-identity-and-trust.md)).
+Left for the owner: deploy; brief 70's flip of the default.

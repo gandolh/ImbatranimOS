@@ -5528,3 +5528,15 @@ entry, decisions-office-suite page and two code comments follow. The descriptor
 keeps its id and file name, and its `source.repo` still names the old URL: `git
 ls-remote` on the new name did not answer, so the GitHub rename is the owner's
 first step. brief-board gets the project at the next sync.
+
+## [2026-11-06] done | Briefs 67, 68, 72, 73 done: WebAssembly, app identity, Start, the chooser link
+
+Built from the main session with subagents and committed on 2026-11-06: 67 as
+`932d92e` (WASM on, COOP/COEP on the desktop, `require-corp` on every frame),
+68 as `2522407` (a token per app, owner and mode per file), 72 as `d6ae13d`
+plus `baf3f5e` (Start with search, pins and an A-Z list; the fix came from
+walk 1), 73 as `2f5a039` (Open With links to the Marketplace row). Walk 1
+passed 11 of 11. The owner chose a stricter default for built-in apps' files
+while 68 was in review; brief 70 flips it with the grant flows. A todo notes
+that the Marketplace's header filter does not drop COOP, COEP or CORP.
+Deploy and 67's phone checks are the owner's.

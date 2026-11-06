@@ -14,7 +14,7 @@ button. Grill the open question below when the work starts, then promote
 this to a numbered brief.
 
 
-> PROMOTED 2026-11-06 to [brief 73](../briefs/todo/73-the-chooser-links-to-the-marketplace.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
+> PROMOTED 2026-11-06 to [brief 73](../briefs/done/73-the-chooser-links-to-the-marketplace.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 1. **Where does the link land?** Answered 2026-11-06: yes.

@@ -83,3 +83,30 @@ todo `kit-apps-may-run-webassembly`
   error shows.
 - Step 4's walk holds on all three browsers, or the outcome says what broke
   and what was kept.
+
+## Outcome (2026-11-06)
+
+Built from the main session by an opus subagent, commit `932d92e` (1.192.0).
+The desktop's CSP gains `'wasm-unsafe-eval'` on `script-src`, and every
+response sends `Cross-Origin-Opener-Policy: same-origin` plus
+`Cross-Origin-Embedder-Policy: require-corp` (an `EMBEDDER_POLICY` constant in
+`security-headers.ts`, the one switch; the Vite dev server's headers are typed
+to it). Frames always send `require-corp` (the sandbox frame without COOP; the
+Browser's proxy origin and its service worker send COOP, COEP and CORP). URL
+apps get WebAssembly but no threads. A WASM fixture repo and a "WebAssembly"
+section in the Marketplace README came with it. Inventory of what
+cross-origin isolation touches: the Browser and the URL sandbox were affected
+and are handled; games, Office, Linux windows, Files and Monaco are same-origin.
+Cost: a popup opened from a proxied page loses `window.opener`.
+
+Checks run: jest 362, e2e 59 (new `security-headers` and `sw` specs and a
+`marketplace-wasm` e2e, plus the security, browser and marketplace-url e2e).
+Walk 1 (sonnet, 2026-11-06) passed 11 of 11 and covered the isolation
+headers. Not stated in the notes: whether the rest of the dev walk (the WASM
+fixture's threads rows, the two-site Browser check with its popup sign-in
+note, a URL app, a Linux window, Office docx and PDF, Files image and video)
+was done; it moved to walk 2.
+
+Left for the owner: deploy; then phone checks on Android and on iPhone
+(Safari, where the service worker's COEP is unknown). Follow-up: a todo,
+`marketplace-drops-cross-origin-headers`.

@@ -212,8 +212,14 @@ export class ModeStore {
     });
   }
 
+  /** The rows of these paths, by key; a path with no row is left out. */
+  rows(paths: readonly string[]): Map<string, ModeEntry> {
+    return this.rowsFor(paths.map(modeKey));
+  }
+
   private rowsFor(paths: string[]): Map<string, ModeEntry> {
     const unique = [...new Set(paths)];
+    if (unique.length === 0) return new Map();
     const rows = this.dbs.db
       .prepare(
         `SELECT path, owner, group_name, mode FROM file_modes

@@ -35,7 +35,10 @@ export interface ModeEntry {
  * A folder with no row: the user's, `rwxrwx--x` in group `system`. Built-in
  * apps (all in `system`) keep the full reach into home they had, and an
  * installed app can pass through the user's folders to its own, but can't
- * list them.
+ * list them: what it sees of the user's files is what it was given (a file
+ * opened with it, or one picked in the OS's dialog), plus its own folders.
+ * Built-ins lose that reach (`rwx--x--x`, `rw-------`) once each has a way
+ * to be given its files.
  */
 export const IMPLIED_DIRECTORY: ModeEntry = Object.freeze({
   owner: null,
@@ -54,6 +57,10 @@ export const IMPLIED_FILE: ModeEntry = Object.freeze({
 export const PRIVATE_FILE_MODE = 0o600;
 /** An app's new folder, as under umask 077: `rwx------`. */
 export const PRIVATE_DIRECTORY_MODE = 0o700;
+/** What the user makes in a setgid folder, shared with its group: `rw-rw----`. */
+export const SHARED_FILE_MODE = 0o660;
+/** A folder the user makes in a setgid folder: `rwxrwx---`, plus the bit. */
+export const SHARED_DIRECTORY_MODE = 0o770;
 
 export function impliedEntry(kind: EntryKind): ModeEntry {
   return kind === 'directory' ? IMPLIED_DIRECTORY : IMPLIED_FILE;
@@ -84,7 +91,9 @@ export function permits(
  * group carries down), else the app's own private group. `mode` is the
  * permission bits asked for, the private default when absent: setgid decides
  * only the group, so a suite that wants its shared folder's files readable by
- * the suite asks for `0o660` itself.
+ * the suite asks for `0o660` itself. The user making something in a setgid
+ * folder shares it with the folder's group (`rw-rw----`, `rwxrws---`), as a
+ * shared folder's umask would.
  *
  * Null when the user makes something outside a setgid folder: no row is
  * needed, the implied entry already says it is the user's.
@@ -97,13 +106,10 @@ export function newEntry(
 ): ModeEntry | null {
   const inherits = (parent.mode & S_ISGID) !== 0;
   if (identity === null && !inherits) return null;
-  const base =
-    mode ??
-    (identity === null
-      ? impliedEntry(kind).mode
-      : kind === 'directory'
-        ? PRIVATE_DIRECTORY_MODE
-        : PRIVATE_FILE_MODE);
+  const shared =
+    kind === 'directory' ? SHARED_DIRECTORY_MODE : SHARED_FILE_MODE;
+  const own = kind === 'directory' ? PRIVATE_DIRECTORY_MODE : PRIVATE_FILE_MODE;
+  const base = mode ?? (identity === null ? shared : own);
   assertMode(base);
   const setgid = inherits && kind === 'directory' ? S_ISGID : 0;
   return {

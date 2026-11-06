@@ -74,11 +74,22 @@ export class RecentService {
     tx();
   }
 
-  /** Remove one entry (self-heal after a 404 reopen). */
-  remove(root: string, path: string): void {
+  /**
+   * Remove one entry (self-heal after a 404 reopen). With `appId`, only if
+   * that app recorded it: an app tidies its own entries, not another's.
+   */
+  remove(root: string, path: string, appId?: string): void {
+    if (appId === undefined) {
+      this.db.db
+        .prepare(`DELETE FROM recent_files WHERE root = ? AND path = ?`)
+        .run(root, path);
+      return;
+    }
     this.db.db
-      .prepare(`DELETE FROM recent_files WHERE root = ? AND path = ?`)
-      .run(root, path);
+      .prepare(
+        `DELETE FROM recent_files WHERE root = ? AND path = ? AND app_id = ?`,
+      )
+      .run(root, path, appId);
   }
 
   /** The privacy affordance: wipe the list. */

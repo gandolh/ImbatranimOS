@@ -7,7 +7,8 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import * as fs from 'fs/promises';
-import { sep } from 'path';
+import { join, relative, sep } from 'path';
+import type { AppIdentity } from '../app-identity/app-identity.types';
 import { FilesService } from '../files/files.service';
 import { DbService } from '../../db/db.service';
 import { childEnv } from '../../child-env';
@@ -148,10 +149,26 @@ export function isTimeout(result: unknown): boolean {
 
 @Injectable()
 export class GitService {
+  /** The app a call is made for; null is the user. Set by {@link as}. */
+  private readonly caller: AppIdentity | null = null;
+
   constructor(
     private readonly filesService: FilesService,
     private readonly db: DbService,
   ) {}
+
+  /**
+   * This service, for one caller: every repo it opens is checked against
+   * that app. An app reaches a repo only when it may list and write the
+   * repo's whole work tree, its top-level folder: one it was given (picked in
+   * the folder chooser) or one in its own folders. A folder given inside a
+   * bigger repo doesn't open that repo. The user (null) opens any repo in
+   * the jail.
+   */
+  as(caller: AppIdentity | null): GitService {
+    if (caller === null) return this;
+    return Object.create(this, { caller: { value: caller } }) as GitService;
+  }
 
   // ---------------------------------------------------------------------------
   // execa seam — THE ONLY place a git process is spawned.
@@ -269,6 +286,15 @@ export class GitService {
           'Repository top-level is outside the allowed root',
         );
       }
+      if (this.caller !== null) {
+        const key = join(rootDir, relative(realRoot, realTop));
+        for (const op of ['list', 'write'] as const) {
+          this.filesService.assertCan(this.caller, op, key, root, path ?? '');
+        }
+      }
+    } else if (this.caller !== null) {
+      // An app's call needs the top-level to be checked against.
+      throw new NotFoundException('Not a git work tree');
     }
     return abs;
   }

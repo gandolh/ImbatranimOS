@@ -22,6 +22,8 @@ import { basename } from 'path';
 import { tmpdir } from 'os';
 import { pipeline } from 'node:stream';
 import * as fs from 'fs/promises';
+import type { AppIdentity } from '../app-identity/app-identity.types';
+import { CallingApp } from '../app-identity/calling-app';
 import { FilesService } from './files.service';
 import { TrashService } from './trash.service';
 import { MulterExceptionFilter } from './multer-exception.filter';
@@ -42,6 +44,12 @@ import {
 const MAX_UPLOAD_BYTES =
   Number(process.env.FILES_MAX_UPLOAD_BYTES) || 100 * 1024 * 1024;
 
+/**
+ * The files API. Every route takes the calling app: none is the user (the
+ * desktop, Files, the Terminal), who may do anything in the jail; an app may
+ * do what its own modes allow and what its window was given (a file opened
+ * with it, or one picked in the OS's dialog). See `FileAccess`.
+ */
 @Controller('files')
 export class FilesController {
   constructor(
@@ -51,8 +59,17 @@ export class FilesController {
 
   /** GET /api/files?root=&path=  → Entry[] */
   @Get()
-  list(@Query() q: ListQueryDto) {
-    return this.filesService.list(q.root, q.path ?? '');
+  list(@CallingApp() who: AppIdentity | null, @Query() q: ListQueryDto) {
+    return this.filesService.list(q.root, q.path ?? '', who);
+  }
+
+  /**
+   * GET /api/files/stat?root=&path= → Entry: one entry, for a file the caller
+   * may read or a folder it may list.
+   */
+  @Get('stat')
+  stat(@CallingApp() who: AppIdentity | null, @Query() q: RootPathQueryDto) {
+    return this.filesService.stat(q.root, q.path, who);
   }
 
   /**
@@ -68,23 +85,28 @@ export class FilesController {
    * two consumers.
    */
   @Get('size')
-  dirSize(@Query() q: RootPathQueryDto) {
-    return this.filesService.dirSize(q.root, q.path);
+  dirSize(@CallingApp() who: AppIdentity | null, @Query() q: RootPathQueryDto) {
+    return this.filesService.dirSize(q.root, q.path, who);
   }
 
   @Get('search')
-  search(@Query() q: SearchQueryDto) {
-    return this.filesService.search(q.root, q.query, {
-      content: q.content,
-      path: q.path,
-      matches: q.matches,
-    });
+  search(@CallingApp() who: AppIdentity | null, @Query() q: SearchQueryDto) {
+    return this.filesService.search(
+      q.root,
+      q.query,
+      {
+        content: q.content,
+        path: q.path,
+        matches: q.matches,
+      },
+      who,
+    );
   }
 
   /** GET /api/files/content?root=&path= → { path, content } (text) */
   @Get('content')
-  content(@Query() q: RootPathQueryDto) {
-    return this.filesService.readFile(q.root, q.path);
+  content(@CallingApp() who: AppIdentity | null, @Query() q: RootPathQueryDto) {
+    return this.filesService.readFile(q.root, q.path, who);
   }
 
   /**
@@ -97,6 +119,7 @@ export class FilesController {
    */
   @Get('download')
   async download(
+    @CallingApp() who: AppIdentity | null,
     @Query() q: RootPathQueryDto,
     @Req() req: Request,
     @Res() res: Response,
@@ -104,6 +127,7 @@ export class FilesController {
     const { abs, size, version } = await this.filesService.statFile(
       q.root,
       q.path,
+      who,
     );
     // The token a save sends back as `expected`.
     res.setHeader('X-File-Version', version);
@@ -157,6 +181,7 @@ export class FilesController {
     }),
   )
   async upload(
+    @CallingApp() who: AppIdentity | null,
     @UploadedFile() file: { path: string; originalname: string },
     @Body('root') root: string,
     @Body('path') path: string,
@@ -174,36 +199,44 @@ export class FilesController {
       virtualPath,
       file.path,
       expected || undefined,
+      who,
     );
   }
 
   /** PUT /api/files/content  body: { root, path, content } → Entry */
   @Put('content')
-  writeContent(@Body() dto: WriteContentDto) {
+  writeContent(
+    @CallingApp() who: AppIdentity | null,
+    @Body() dto: WriteContentDto,
+  ) {
     return this.filesService.writeFile(
       dto.root,
       dto.path,
       dto.content,
       dto.expected,
+      who,
     );
   }
 
   /** POST /api/files/directory  body: { root, path } → Entry */
   @Post('directory')
-  createDirectory(@Body() dto: CreateDirectoryDto) {
-    return this.filesService.createDirectory(dto.root, dto.path);
+  createDirectory(
+    @CallingApp() who: AppIdentity | null,
+    @Body() dto: CreateDirectoryDto,
+  ) {
+    return this.filesService.createDirectory(dto.root, dto.path, who);
   }
 
   /** POST /api/files/move  body: { root, from, to } → Entry */
   @Post('move')
-  move(@Body() dto: MoveDto) {
-    return this.filesService.move(dto.root, dto.from, dto.to);
+  move(@CallingApp() who: AppIdentity | null, @Body() dto: MoveDto) {
+    return this.filesService.move(dto.root, dto.from, dto.to, who);
   }
 
   /** POST /api/files/copy  body: { root, from, to } → Entry */
   @Post('copy')
-  copy(@Body() dto: CopyDto) {
-    return this.filesService.copy(dto.root, dto.from, dto.to);
+  copy(@CallingApp() who: AppIdentity | null, @Body() dto: CopyDto) {
+    return this.filesService.copy(dto.root, dto.from, dto.to, who);
   }
 
   /** DELETE /api/files?root=&path= → 204 */
@@ -215,14 +248,24 @@ export class FilesController {
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteItem(
+    @CallingApp() who: AppIdentity | null,
     @Query() q: RootPathQueryDto,
     @Query('trash') trash?: string,
   ) {
     if (trash === '1' && q.root === 'home') {
+      // Trashing is deleting, as far as who may: it leaves the folder.
+      const { key } = await this.filesService.check(
+        who,
+        'delete',
+        q.root,
+        q.path,
+        { follow: false },
+      );
       await this.trashService.trash(q.path);
+      this.filesService.forget(key);
       return;
     }
-    await this.filesService.delete(q.root, q.path);
+    await this.filesService.delete(q.root, q.path, who);
   }
 }
 

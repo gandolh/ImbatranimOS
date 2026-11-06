@@ -9,6 +9,7 @@ import {
   Res,
   UploadedFile,
   UseFilters,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -16,6 +17,7 @@ import { diskStorage } from 'multer';
 import { tmpdir } from 'os';
 import { pipeline } from 'stream/promises';
 import type { Response } from 'express';
+import { UserOnlyGuard } from '../app-identity/calling-app';
 import { MulterExceptionFilter } from '../files/multer-exception.filter';
 import { BackupService } from './backup.service';
 import { RestoreApplyDto } from './dto/backup.dto';
@@ -41,8 +43,12 @@ const MAX_BACKUP_UPLOAD_BYTES =
  * owner's scrypt hash, and the session table stores only hashes of cookies, so
  * a copy yields no usable session. A re-prompt here would be theatre. Restore is different, and does require a typed
  * confirmation, because it is destructive rather than merely revealing.
+ *
+ * Settings' own (it acts as the user): an app's call is refused, since the
+ * download holds every file and restore replaces them.
  */
 @Controller('backup')
+@UseGuards(UserOnlyGuard)
 export class BackupController {
   constructor(private readonly backup: BackupService) {}
 

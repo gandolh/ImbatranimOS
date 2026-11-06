@@ -138,8 +138,16 @@ describe('ModeStore', () => {
     expect(store.may(notepad, 'read', `${HOME}/todo.txt`)).toBe(true);
     expect(store.may(notepad, 'write', `${HOME}/todo.txt`)).toBe(true);
     expect(store.may(notepad, 'list', HOME)).toBe(true);
+    expect(store.may(null, 'read', `${HOME}/todo.txt`)).toBe(true);
     store.create(hollow, `${DATA}/hollow`, 'directory');
     expect(store.may(notepad, 'list', `${DATA}/hollow`)).toBe(false);
+    expect(store.may(hollow, 'list', `${DATA}/hollow`)).toBe(true);
+  });
+
+  it('a folder in group system admits the built-ins, not an installed app', () => {
+    store.set(`${HOME}/Shared`, { owner: null, group: 'system', mode: 0o770 });
+    expect(store.may(notepad, 'list', `${HOME}/Shared`)).toBe(true);
+    expect(store.may(hollow, 'list', `${HOME}/Shared`)).toBe(false);
   });
 
   it('in a sticky folder only the entry’s owner deletes it', () => {

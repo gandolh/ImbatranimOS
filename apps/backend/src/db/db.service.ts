@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 13;
+export const LEDGER_VERSION = 14;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -222,6 +222,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         run: () => this.stepMarketplaceEntries(),
       },
       { toVersion: 13, name: 'file-modes', run: () => this.stepFileModes() },
+      { toVersion: 14, name: 'file-grants', run: () => this.stepFileGrants() },
     ];
 
     const current = Number(this.db.pragma('user_version', { simple: true }));
@@ -692,6 +693,28 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         mode INTEGER NOT NULL CHECK (mode BETWEEN 0 AND 4095),
         updated_at INTEGER NOT NULL
       );
+    `);
+  }
+
+  /**
+   * Step 14 — the files and folders each running copy of an app was given
+   * (a file opened with it, or one picked in the OS's dialog). Keyed by the
+   * copy's instance id (its window's id) and the absolute path; `kind` says
+   * whether the grant is one file or a folder and what is under it. Kept on
+   * disk so an open window keeps its file across a backend restart.
+   */
+  private stepFileGrants() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS file_grants (
+        instance_id TEXT NOT NULL,
+        app_id TEXT NOT NULL,
+        path TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('file', 'folder')),
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (instance_id, path)
+      );
+      CREATE INDEX IF NOT EXISTS file_grants_created_at
+        ON file_grants (created_at);
     `);
   }
 

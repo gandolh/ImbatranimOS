@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Optional,
   PayloadTooLargeException,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -13,6 +14,10 @@ import type { Dirent, Stats } from 'fs';
 import * as os from 'os';
 import { randomUUID } from 'crypto';
 import type { Readable } from 'stream';
+
+import type { AppIdentity } from '../app-identity/app-identity.types';
+import type { ModeOp } from '../app-identity/mode-store.service';
+import { FileAccess, type Access } from './file-access';
 
 /**
  * Cap for the text-content endpoint. Reading into a UTF-8 string materialises
@@ -138,8 +143,37 @@ function notesRoot(): string {
   return resolve(process.env.NOTES_DIR || resolve(process.cwd(), 'data/notes'));
 }
 
+/** A path resolved inside a root: where it is, and the key its modes and grants are kept under. */
+export interface Located {
+  rootDir: string;
+  /** The jailed path, as named (a link in it is not followed). */
+  abs: string;
+  /**
+   * The absolute path the modes and grants check: the real path of the
+   * target (its parent's, for a call that acts on a link itself), under the
+   * root as configured, so a link inside the home can't lead past a check.
+   */
+  key: string;
+}
+
+/**
+ * The jailed file API, with the caller checked.
+ *
+ * Every method a route calls takes the calling app last: null (the default)
+ * is the user, who may do anything in the jail; an app may do what its modes
+ * allow (its own folders) and what its running copy was given (see
+ * {@link FileAccess}). The OS's own callers (archives, backups, git) leave it
+ * out and act as the user.
+ */
 @Injectable()
 export class FilesService {
+  /**
+   * The checks are optional only so the OS's own users can build the service
+   * by hand (`new FilesService()` in their specs): without them, any call that
+   * names an app is refused rather than let through.
+   */
+  constructor(@Optional() private readonly access?: FileAccess) {}
+
   /**
    * The real home root: FILES_ROOT env override, else the process user's home
    * dir. In the container this IS /home/imbatranim. Resolved per-call so an
@@ -245,10 +279,7 @@ export class FilesService {
    *  5. Symlink jail: realpath both the root and the target (or its nearest
    *     existing ancestor) and re-verify containment — kills symlink escapes.
    */
-  async resolveSafe(
-    root: string,
-    virtualPath = '',
-  ): Promise<{ rootDir: string; abs: string }> {
+  async resolveSafe(root: string, virtualPath = ''): Promise<Located> {
     const rootDir = this.getRootDir(root);
     let vp = this.fullyDecode(virtualPath ?? '');
     if (vp.includes('\0')) throw new BadRequestException('Invalid path');
@@ -267,7 +298,7 @@ export class FilesService {
       throw new BadRequestException('Path traversal detected');
     }
 
-    return { rootDir, abs };
+    return { rootDir, abs, key: join(rootDir, relative(realRoot, realTarget)) };
   }
 
   /**
@@ -282,10 +313,7 @@ export class FilesService {
    * inside the jail (symlink-proof), but the leaf is taken lexically so it can
    * be `lstat`/`unlink`ed as the link it is, never its target.
    */
-  async resolveSafeNoFollow(
-    root: string,
-    virtualPath = '',
-  ): Promise<{ rootDir: string; abs: string }> {
+  async resolveSafeNoFollow(root: string, virtualPath = ''): Promise<Located> {
     const rootDir = this.getRootDir(root);
     let vp = this.fullyDecode(virtualPath ?? '');
     if (vp.includes('\0')) throw new BadRequestException('Invalid path');
@@ -296,7 +324,7 @@ export class FilesService {
       throw new BadRequestException('Path traversal detected');
     }
     // No leaf (the root itself) — nothing to follow; defer to resolveSafe.
-    if (abs === rootDir) return { rootDir, abs };
+    if (abs === rootDir) return { rootDir, abs, key: rootDir };
 
     const realRoot = await this.realpathAllowingMissing(rootDir);
     const realParent = await this.realpathAllowingMissing(dirname(abs));
@@ -306,7 +334,127 @@ export class FilesService {
     // Return the lexical abs (like resolveSafe) — the containment check above
     // used the realpath, but lstat/unlink never follow the final component, so
     // the leaf link is operated on in place.
-    return { rootDir, abs };
+    return {
+      rootDir,
+      abs,
+      key: join(rootDir, relative(realRoot, realParent), basename(abs)),
+    };
+  }
+
+  // ── who may ──────────────────────────────────────────────────────────────
+
+  /** Why `who` may do `op` to `key`, or null. The user always may. */
+  can(who: AppIdentity | null, op: ModeOp, key: string): Access | null {
+    if (who === null) return 'user';
+    // Without the checks there is no way to tell, so an app is refused.
+    return this.access?.how(who, op, key) ?? null;
+  }
+
+  /** {@link can}, refusing with a 403 that names the path as `who` gave it. */
+  assertCan(
+    who: AppIdentity | null,
+    op: ModeOp,
+    key: string,
+    root: string,
+    path: string,
+  ): Access {
+    if (who === null) return 'user';
+    if (!this.access) {
+      throw new Error('The files service was built without its checks');
+    }
+    return this.access.assert(who, op, key, { root, path });
+  }
+
+  /** Resolve a path and check `who` may do `op` to it; the key it was checked under. */
+  async check(
+    who: AppIdentity | null,
+    op: ModeOp,
+    root: string,
+    virtualPath: string,
+    { follow = true }: { follow?: boolean } = {},
+  ): Promise<Located & { access: Access }> {
+    const located = follow
+      ? await this.resolveSafe(root, virtualPath)
+      : await this.resolveSafeNoFollow(root, virtualPath);
+    const access = this.assertCan(who, op, located.key, root, virtualPath);
+    return { ...located, access };
+  }
+
+  /** Record what `who` just made at `key` (see `FileAccess.made`). */
+  private recordMade(
+    who: AppIdentity | null,
+    access: Access,
+    key: string,
+    kind: 'file' | 'directory',
+  ): void {
+    this.access?.made(who, access, key, kind);
+  }
+
+  /** Forget the modes kept for a path that went away (deleted, trashed). */
+  forget(key: string): void {
+    this.access?.removed(key);
+  }
+
+  /**
+   * The folders between `dir`'s nearest existing ancestor and `dir`, which a
+   * write is about to make, outermost first. Each is checked as a `create`
+   * when the write is allowed by the app's own modes; one it was given
+   * carries the folders the owner typed with the file.
+   */
+  private async missingFolders(dir: string): Promise<string[]> {
+    const missing: string[] = [];
+    let at = dir;
+    while (!(await this.exists(at))) {
+      missing.unshift(at);
+      const up = dirname(at);
+      if (up === at) break;
+      at = up;
+    }
+    return missing;
+  }
+
+  /**
+   * Check, then record, the write of a file at `abs`: `write` over one that
+   * is there, `create` (and each missing folder above it) for a new one.
+   * Returns the record to make once the bytes are in place.
+   */
+  private async checkWrite(
+    who: AppIdentity | null,
+    located: Located,
+    root: string,
+    virtualPath: string,
+  ): Promise<() => void> {
+    const { abs, key } = located;
+    const existing = await fs.stat(abs).catch(() => null);
+    if (existing) {
+      if (existing.isDirectory()) {
+        this.assertCan(who, 'write', key, root, virtualPath);
+        throw new BadRequestException('Path is a directory');
+      }
+      this.assertCan(who, 'write', key, root, virtualPath);
+      return () => undefined;
+    }
+    const folders = await this.missingFolders(dirname(abs));
+    const keyOf = (p: string) => join(dirname(key), relative(dirname(abs), p));
+    // Given the file (or a folder above it), the folders typed with it come
+    // with it. Otherwise the app may make the outermost folder in its own
+    // folders, and what is made inside that is its own.
+    let access = this.can(who, 'create', key);
+    if (
+      access === null &&
+      folders.length > 0 &&
+      this.can(who, 'create', keyOf(folders[0])) === 'mode'
+    ) {
+      access = 'mode';
+    }
+    access ??= this.assertCan(who, 'create', key, root, virtualPath);
+    const made = access;
+    return () => {
+      for (const folder of folders) {
+        this.recordMade(who, made, keyOf(folder), 'directory');
+      }
+      this.recordMade(who, made, key, 'file');
+    };
   }
 
   private async exists(p: string): Promise<boolean> {
@@ -348,8 +496,12 @@ export class FilesService {
     };
   }
 
-  async list(root: string, virtualPath = ''): Promise<FileEntry[]> {
-    const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
+  async list(
+    root: string,
+    virtualPath = '',
+    who: AppIdentity | null = null,
+  ): Promise<FileEntry[]> {
+    const { rootDir, abs } = await this.check(who, 'list', root, virtualPath);
     if (!(await this.exists(abs)))
       throw new NotFoundException('Directory not found');
     const stat = await fs.stat(abs);
@@ -423,12 +575,24 @@ export class FilesService {
     root: string,
     query: string,
     opts: { content?: boolean; path?: string; matches?: boolean } = {},
+    who: AppIdentity | null = null,
   ): Promise<SearchResult> {
     // Jail the root exactly like every other endpoint (throws on escape).
     const { rootDir } = await this.resolveSafe(root, '');
     // The scope is jailed the same way — a traversal `path` throws here, and
-    // the walk can only ever descend from what came back.
-    const { abs: startDir } = await this.resolveSafe(root, opts.path ?? '');
+    // the walk can only ever descend from what came back. An app searches
+    // only a folder it may list, and the walk skips what it may not see.
+    const { abs: startDir, key: startKey } = await this.check(
+      who,
+      'list',
+      root,
+      opts.path ?? '',
+    );
+    // The walk never follows a link, so a path under the start keys as its
+    // place under the start's key.
+    const keyOf = (abs: string) => join(startKey, relative(startDir, abs));
+    const may = (op: ModeOp, abs: string) =>
+      this.can(who, op, keyOf(abs)) !== null;
 
     const needle = query.toLowerCase();
     const wantContent = opts.content === true;
@@ -489,7 +653,7 @@ export class FilesService {
         const nameMatched = name.toLowerCase().includes(needle);
         let matched = nameMatched;
         let matches: SearchMatch[] | undefined;
-        if (wantContent && entry.isFile()) {
+        if (wantContent && entry.isFile() && may('read', abs)) {
           // Even a name match is scanned when line data was asked for: a hit
           // whose name matches but whose body also does should still show the
           // lines, or the panel would list it with nothing under it.
@@ -514,7 +678,7 @@ export class FilesService {
           if (capHit()) return;
         }
 
-        if (isDir) {
+        if (isDir && may('list', abs)) {
           await walk(abs, depth + 1);
           if (truncated) return;
         }
@@ -586,8 +750,9 @@ export class FilesService {
   async readFile(
     root: string,
     virtualPath: string,
+    who: AppIdentity | null = null,
   ): Promise<{ path: string; content: string; version: string }> {
-    const { abs } = await this.resolveSafe(root, virtualPath);
+    const { abs } = await this.check(who, 'read', root, virtualPath);
     if (!(await this.exists(abs)))
       throw new NotFoundException('File not found');
     const stat = await fs.stat(abs);
@@ -610,8 +775,9 @@ export class FilesService {
   async statFile(
     root: string,
     virtualPath: string,
+    who: AppIdentity | null = null,
   ): Promise<{ abs: string; size: number; version: string }> {
-    const { abs } = await this.resolveSafe(root, virtualPath);
+    const { abs } = await this.check(who, 'read', root, virtualPath);
     if (!(await this.exists(abs)))
       throw new NotFoundException('File not found');
     const stat = await fs.stat(abs);
@@ -646,8 +812,11 @@ export class FilesService {
     virtualPath: string,
     content: string,
     expected?: string,
+    who: AppIdentity | null = null,
   ): Promise<FileEntry> {
-    const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
+    const located = await this.resolveSafe(root, virtualPath);
+    const { rootDir, abs } = located;
+    const record = await this.checkWrite(who, located, root, virtualPath);
     await this.assertVersion(abs, expected);
     await withDiskSpaceCheck(() => fs.mkdir(dirname(abs), { recursive: true }));
     // Atomic like an upload: `fs.writeFile` onto `abs` truncated it
@@ -655,6 +824,7 @@ export class FilesService {
     await this.writeAtomically(abs, (staged) =>
       fs.writeFile(staged, content, 'utf-8'),
     );
+    record();
     return this.toEntry(rootDir, abs);
   }
 
@@ -681,9 +851,12 @@ export class FilesService {
     virtualPath: string,
     tmpPath: string,
     expected?: string,
+    who: AppIdentity | null = null,
   ): Promise<FileEntry> {
     try {
-      const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
+      const located = await this.resolveSafe(root, virtualPath);
+      const { rootDir, abs } = located;
+      const record = await this.checkWrite(who, located, root, virtualPath);
       await this.assertVersion(abs, expected);
       await withDiskSpaceCheck(async () => {
         await fs.mkdir(dirname(abs), { recursive: true });
@@ -692,6 +865,7 @@ export class FilesService {
       // The multer temp file is copied rather than renamed into place, because
       // it genuinely can be on another mount.
       await this.writeAtomically(abs, (staged) => fs.copyFile(tmpPath, staged));
+      record();
       return this.toEntry(rootDir, abs);
     } finally {
       await fs.rm(tmpPath, { force: true });
@@ -761,16 +935,53 @@ export class FilesService {
     }
   }
 
-  async createDirectory(root: string, virtualPath: string): Promise<FileEntry> {
-    const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
-    if (await this.exists(abs)) throw new BadRequestException('Already exists');
+  async createDirectory(
+    root: string,
+    virtualPath: string,
+    who: AppIdentity | null = null,
+  ): Promise<FileEntry> {
+    const { rootDir, abs, key } = await this.resolveSafe(root, virtualPath);
+    const folders = await this.missingFolders(abs);
+    const keyOf = (p: string) => join(key, relative(abs, p));
+    // Each folder made is checked, the outermost first, whose parent is
+    // there. Once an app makes one in its own folders, those inside it are
+    // its own too.
+    const accesses: Access[] = [];
+    for (const folder of folders) {
+      accesses.push(
+        accesses[0] === 'mode'
+          ? 'mode'
+          : this.assertCan(who, 'create', keyOf(folder), root, virtualPath),
+      );
+    }
+    if (folders.length === 0) {
+      this.assertCan(who, 'create', key, root, virtualPath);
+      throw new BadRequestException('Already exists');
+    }
     await withDiskSpaceCheck(() => fs.mkdir(abs, { recursive: true }));
+    folders.forEach((folder, i) =>
+      this.recordMade(who, accesses[i], keyOf(folder), 'directory'),
+    );
     return this.toEntry(rootDir, abs);
   }
 
-  async move(root: string, from: string, to: string): Promise<FileEntry> {
-    const { rootDir, abs: absFrom } = await this.resolveSafe(root, from);
-    const { abs: absTo } = await this.resolveSafe(root, to);
+  async move(
+    root: string,
+    from: string,
+    to: string,
+    who: AppIdentity | null = null,
+  ): Promise<FileEntry> {
+    const {
+      rootDir,
+      abs: absFrom,
+      key: keyFrom,
+    } = await this.check(who, 'delete', root, from, { follow: false });
+    const { abs: absTo, key: keyTo } = await this.check(
+      who,
+      'create',
+      root,
+      to,
+    );
     if (!(await this.exists(absFrom)))
       throw new NotFoundException('Source not found');
     // Moving a directory into itself (a → a/b) is a raw EINVAL 500; reject it.
@@ -783,12 +994,30 @@ export class FilesService {
       await fs.mkdir(dirname(absTo), { recursive: true });
       await fs.rename(absFrom, absTo);
     });
+    // What it is goes with it: an app's folder renamed stays the app's.
+    this.access?.moved(keyFrom, keyTo);
     return this.toEntry(rootDir, absTo);
   }
 
-  async copy(root: string, from: string, to: string): Promise<FileEntry> {
-    const { rootDir, abs: absFrom } = await this.resolveSafe(root, from);
-    const { abs: absTo } = await this.resolveSafe(root, to);
+  async copy(
+    root: string,
+    from: string,
+    to: string,
+    who: AppIdentity | null = null,
+  ): Promise<FileEntry> {
+    const located = await this.resolveSafe(root, from);
+    const { rootDir, abs: absFrom, key: keyFrom } = located;
+    const { abs: absTo, key: keyTo } = await this.resolveSafe(root, to);
+    const source = await fs.stat(absFrom).catch(() => null);
+    // A folder is copied whole, so it needs listing; a file, reading.
+    this.assertCan(
+      who,
+      source?.isDirectory() ? 'list' : 'read',
+      keyFrom,
+      root,
+      from,
+    );
+    const access = this.assertCan(who, 'create', keyTo, root, to);
     if (!(await this.exists(absFrom)))
       throw new NotFoundException('Source not found');
     // Copying a directory into itself (a → a/b) recurses / EINVALs into a 500.
@@ -808,14 +1037,46 @@ export class FilesService {
         await fs.copyFile(absFrom, absTo);
       }
     });
+    this.recordMade(
+      who,
+      access,
+      keyTo,
+      stat.isDirectory() ? 'directory' : 'file',
+    );
+    // A folder an app copies inside its own folders is its own all the way
+    // down, or it couldn't read what it just made.
+    if (access === 'mode' && stat.isDirectory()) {
+      const inside = await fs.readdir(absTo, {
+        recursive: true,
+        withFileTypes: true,
+      });
+      // Outermost first, so each folder's record is there for what is in it.
+      const depth = (d: Dirent) => join(d.parentPath, d.name).split(sep).length;
+      inside.sort((a, b) => depth(a) - depth(b));
+      for (const inner of inside) {
+        const at = join(inner.parentPath, inner.name);
+        this.recordMade(
+          who,
+          access,
+          join(keyTo, relative(absTo, at)),
+          inner.isDirectory() ? 'directory' : 'file',
+        );
+      }
+    }
     return this.toEntry(rootDir, absTo);
   }
 
-  async delete(root: string, virtualPath: string): Promise<void> {
+  async delete(
+    root: string,
+    virtualPath: string,
+    who: AppIdentity | null = null,
+  ): Promise<void> {
     // No-follow resolve + lstat: a broken symlink (its target ENOENTs) or one
     // pointing out of the jail must still be removable — we operate on the link
     // itself, never its target.
-    const { abs } = await this.resolveSafeNoFollow(root, virtualPath);
+    const { abs, key } = await this.check(who, 'delete', root, virtualPath, {
+      follow: false,
+    });
     let stat: Stats;
     try {
       stat = await fs.lstat(abs);
@@ -829,6 +1090,25 @@ export class FilesService {
     } else {
       await fs.unlink(abs);
     }
+    this.forget(key);
+  }
+
+  /**
+   * One entry, as a listing has it: a file the caller may read, or a folder
+   * it may list. Lets an app given one file learn its size without listing
+   * the folder it is in.
+   */
+  async stat(
+    root: string,
+    virtualPath: string,
+    who: AppIdentity | null = null,
+  ): Promise<FileEntry> {
+    const { rootDir, abs, key } = await this.resolveSafe(root, virtualPath);
+    if (this.can(who, 'read', key) === null) {
+      this.assertCan(who, 'list', key, root, virtualPath);
+    }
+    if (!(await this.exists(abs))) throw new NotFoundException('Not found');
+    return this.toEntry(rootDir, abs);
   }
 
   /**
@@ -843,8 +1123,12 @@ export class FilesService {
    * `truncated: true` rather than hanging. Symlinks are never followed, so the
    * walk cannot leave the jail or loop.
    */
-  async dirSize(root: string, virtualPath = ''): Promise<DirSize> {
-    const { abs } = await this.resolveSafe(root, virtualPath);
+  async dirSize(
+    root: string,
+    virtualPath = '',
+    who: AppIdentity | null = null,
+  ): Promise<DirSize> {
+    const { abs } = await this.check(who, 'list', root, virtualPath);
     const bounds = this.searchBounds();
     const deadline = Date.now() + bounds.budgetMs;
 

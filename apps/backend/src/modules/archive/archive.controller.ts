@@ -1,13 +1,25 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { UserOnlyGuard } from '../app-identity/calling-app';
 import { ArchiveService } from './archive.service';
 import { CompressDto, ExtractDto, ListDto } from './dto/archive.dto';
 
 /**
  * Archive extract/compress, run server-side inside the FS jail. Authenticated
  * by the global `SessionGuard` (no `@Public()`); mutating POSTs also
- * pass the guard's Origin/CSRF check.
+ * pass the guard's Origin/CSRF check. Files' own (it acts as the user): an
+ * app's call is refused, since an archive reads and writes anywhere in the
+ * jail.
  */
 @Controller('archive')
+@UseGuards(UserOnlyGuard)
 export class ArchiveController {
   constructor(private readonly archive: ArchiveService) {}
 

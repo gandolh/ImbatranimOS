@@ -37,7 +37,8 @@ const FS: Record<string, Entry[]> = {
   'notes::': [file('todo.md')],
 }
 
-const { get } = vi.hoisted(() => ({
+const { get, post } = vi.hoisted(() => ({
+  post: vi.fn(async () => ({ data: undefined })),
   get: vi.fn(async (_url: string, config: { params: { root: string; path: string } }) => {
     const listing = FS[`${config.params.root}::${config.params.path}`]
     if (!listing)
@@ -45,7 +46,7 @@ const { get } = vi.hoisted(() => ({
     return { data: listing }
   }),
 }))
-vi.mock('../lib/axios', () => ({ api: { get } }))
+vi.mock('../lib/axios', () => ({ api: { get, post } }))
 vi.mock('../lib/recentFiles', () => ({
   useRecentFilesQuery: () => ({ data: [] }),
   recordRecentFile: vi.fn(),
@@ -158,6 +159,16 @@ describe('startIn on the file dialogs', () => {
       [...document.querySelectorAll('button')].find((b) => b.textContent === 'Save')!.click()
     )
     await expect(pending).resolves.toEqual({ root: 'home', path: 'Drawings/plan.dxf' })
+    // The pick is given to the copy that asked, by the OS (the shared client, as the user).
+    expect(post).toHaveBeenCalledWith(
+      '/files/grants',
+      expect.objectContaining({
+        appId: 'cad',
+        root: 'home',
+        path: 'Drawings/plan.dxf',
+        expect: 'file',
+      })
+    )
   })
 
   it('pickOpen takes it too', async () => {

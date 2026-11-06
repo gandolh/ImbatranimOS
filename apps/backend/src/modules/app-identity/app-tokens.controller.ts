@@ -21,12 +21,13 @@ import {
 } from './app-identity.types';
 import { APP_TOKEN_SHAPE, AppTokens } from './app-tokens';
 import { callingApp, type IdentifiedRequest } from './calling-app';
+import { FileGrants } from './file-grants.service';
 import { groupsOf } from './install-group';
 
 /** An app id, as the marketplace and the built-ins write them. */
-const APP_ID = /^[a-z][a-z0-9-]{1,39}$/;
+export const APP_ID = /^[a-z][a-z0-9-]{1,39}$/;
 /** Core's window ids are UUIDs; a windowless copy gets a random id of the same shape. */
-const INSTANCE_ID = /^[A-Za-z0-9-]{1,64}$/;
+export const INSTANCE_ID = /^[A-Za-z0-9-]{1,64}$/;
 
 export class RegisterAppTokenDto {
   @IsString()
@@ -59,7 +60,8 @@ type Req = IdentifiedRequest & { caller?: Caller };
  *
  * - `POST` registers a token core minted for a running copy of an app. Only
  *   the user may (a call with no app token): an app can't start an identity.
- * - `DELETE self` ends the token the call carries, as closing the copy does.
+ * - `DELETE self` ends the token the call carries, as closing the copy does,
+ *   and with it what the copy was given.
  * - `GET self` says who the call is from: the user, or which app and copy.
  */
 @Controller('system/app-tokens')
@@ -67,6 +69,7 @@ export class AppTokensController {
   constructor(
     private readonly tokens: AppTokens,
     private readonly dbs: DbService,
+    private readonly grants: FileGrants,
   ) {}
 
   @Post()
@@ -97,11 +100,13 @@ export class AppTokensController {
   @Delete('self')
   @HttpCode(204)
   revoke(@Req() req: Req): void {
-    if (callingApp(req) === null) {
+    const app = callingApp(req);
+    if (app === null) {
       throw new BadRequestException('This call carries no app token');
     }
     // The guard resolved it, so it is a single, well-formed header.
     this.tokens.revoke(req.headers[APP_TOKEN_HEADER] as string);
+    this.grants.revokeInstance(app.instanceId);
   }
 
   @Get('self')

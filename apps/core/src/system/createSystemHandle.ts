@@ -1,5 +1,6 @@
 import {
   PROTOCOL_VERSION,
+  type FileChoice,
   type ShortcutBinding,
   type ShortcutDoc,
   type SystemAppearanceState,
@@ -42,6 +43,7 @@ import {
 } from '../shared/registry/associations'
 import { requestPick } from './filePortal'
 import { ACTS_AS_USER, createAppInstance, type AppInstance } from './appInstance'
+import { grantFile, type GrantExpect } from './fileGrants'
 
 /**
  * The in-process transport of the protocol.
@@ -170,6 +172,17 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
   if (instance && windowId !== null) closeWithWindow(instance, windowId)
   const http: SystemHttp = instance ? instance.http : (api as unknown as SystemHttp)
 
+  // What the user picks in the OS's dialog is given to this copy before the
+  // app hears the answer. A copy acting as the user needs nothing given.
+  const given =
+    (expect: GrantExpect) =>
+    async (choice: FileChoice | null): Promise<FileChoice | null> => {
+      if (choice && instance) {
+        await grantFile({ appId, instanceId: instance.instanceId }, choice, expect)
+      }
+      return choice
+    }
+
   const on = <E extends SystemEvent>(
     event: E,
     cb: (payload: SystemEventMap[E]) => void
@@ -227,7 +240,7 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
           title: opts.title ?? 'Open file',
           extensions: opts.extensions,
           startIn: opts.startIn,
-        }),
+        }).then(given('file')),
       pickSave: (opts = {}) =>
         requestPick({
           mode: 'save',
@@ -235,9 +248,11 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
           extensions: opts.extensions,
           suggestedName: opts.suggestedName,
           startIn: opts.startIn,
-        }),
+        }).then(given('file')),
       pickDirectory: (opts = {}) =>
-        requestPick({ mode: 'directory', title: opts.title ?? 'Choose a folder' }),
+        requestPick({ mode: 'directory', title: opts.title ?? 'Choose a folder' }).then(
+          given('folder')
+        ),
       recordRecent: (root, path) => recordRecentFile(root, path, appId, http),
       removeRecent: (root, path) => removeRecentFile(root, path, http),
     },

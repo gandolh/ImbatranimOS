@@ -6,16 +6,21 @@ import {
   HttpStatus,
   Param,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { UserOnlyGuard } from '../app-identity/calling-app';
 import { TrashService, type TrashEntry } from './trash.service';
 
 /**
  * Trash routes.
  *
  * No `@Public()` anywhere: these read and move the user's files, so they sit
- * behind the same global session guard as the rest of the files surface.
+ * behind the same global session guard as the rest of the files surface. The
+ * Trash holds whatever was deleted, so only the user (Files) may look in it,
+ * bring things back or empty it; an app's call is refused.
  */
 @Controller('files/trash')
+@UseGuards(UserOnlyGuard)
 export class TrashController {
   constructor(private readonly trash: TrashService) {}
 

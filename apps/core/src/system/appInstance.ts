@@ -7,6 +7,7 @@ import axios, {
 import type { SystemHttp, SystemHttpRequestConfig, SystemHttpResponse } from '@imbatranim/ui'
 import { api } from '../lib/axios'
 import { network, NETWORK_ENV, randomHex } from './network'
+import { grantsSettled } from './fileGrants'
 
 /** The header a `system` call carries its app's token in. */
 export const APP_TOKEN_HEADER = 'X-Imbatranim-App-Token'
@@ -262,6 +263,9 @@ export function createAppInstance(appId: string, windowId: string | null): AppIn
     try {
       // Not the OS's API: no token, and the shared client as before.
       if (!isBackendUrl(api.getUri(config))) return bare(await api.request<T>(config))
+      // A file the OS is giving this copy (the one it was opened with, or a
+      // pick) is in the backend's grants before the copy's call reaches it.
+      await grantsSettled(instanceId)
       await ensureToken()
       let used = token as string
       try {

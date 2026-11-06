@@ -6,6 +6,8 @@ import { NON_DISABLEABLE } from '../registry/enabledApps'
 import { useAddonStore } from '../store/addonStore'
 import { isLinuxLauncher, launchLinuxApp } from '../../modules/linux-windows/launchers'
 import { focusIntoWindowSoon } from '../components/window/focusIntoWindow'
+import { ACTS_AS_USER } from '../../system/appInstance'
+import { grantFile } from '../../system/fileGrants'
 
 /**
  * Opens an app window with optional payload.
@@ -56,14 +58,24 @@ export function openApp(appId: string, payload?: unknown): string {
   // every launcher funnels through. File Manager used to make this
   // call itself, per target app — but attributing a recent to another app is
   // exactly what a scoped capability must forbid, so the shell owns it.
-  if (
+  const file =
     typeof payload === 'object' &&
     payload !== null &&
     typeof (payload as { openPath?: unknown }).openPath === 'string' &&
     typeof (payload as { root?: unknown }).root === 'string'
-  ) {
-    const p = payload as { openPath: string; root: string }
-    recordRecentFile(p.root, p.openPath, appId)
+      ? {
+          root: (payload as { root: string }).root,
+          path: (payload as { openPath: string }).openPath,
+        }
+      : null
+  if (file) recordRecentFile(file.root, file.path, appId)
+
+  // The OS opening a file with an app gives it that file, for that window
+  // only. Made before the payload is delivered, so the app's first read
+  // waits on it (see appInstance). Settings, Files and the Terminal act as
+  // the user and need nothing given.
+  const give = (windowId: string) => {
+    if (file && !ACTS_AS_USER.has(appId)) void grantFile({ appId, instanceId: windowId }, file)
   }
 
   const windowStore = useWindowStore.getState()
@@ -79,6 +91,7 @@ export function openApp(appId: string, payload?: unknown): string {
       // order.
       windowStore.focusWindow(existingWindow.id)
       if (!existingWindow.isVisible) windowStore.showWindow(existingWindow.id)
+      give(existingWindow.id)
       if (payload !== undefined) {
         intentStore.setIntent(existingWindow.id, payload)
       }
@@ -95,6 +108,7 @@ export function openApp(appId: string, payload?: unknown): string {
     appConfig.minSize
   )
 
+  give(windowId)
   // Stash payload if provided
   if (payload !== undefined) {
     intentStore.setIntent(windowId, payload)

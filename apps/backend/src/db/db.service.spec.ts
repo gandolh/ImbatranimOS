@@ -335,6 +335,9 @@ describe('DbService — a database that will not open', () => {
   });
 });
 
+/** The step that makes `file_modes`. */
+const FILE_MODES_STEP = 13;
+
 describe('DbService — the file modes table', () => {
   let dir: string;
 
@@ -358,7 +361,7 @@ describe('DbService — the file modes table', () => {
       .run();
     // As the VPS has it before this step.
     first.db.exec('DROP TABLE file_modes');
-    first.db.pragma(`user_version = ${LEDGER_VERSION - 1}`);
+    first.db.pragma(`user_version = ${FILE_MODES_STEP - 1}`);
     first.onModuleDestroy();
 
     const svc = openService(path);
@@ -389,7 +392,7 @@ describe('DbService — the file modes table', () => {
          VALUES ('/home/imbatranim/.local/share/imbatranim/notes', 'notes', 'notes', 448, 1)`,
       )
       .run();
-    svc.db.pragma(`user_version = ${LEDGER_VERSION - 1}`);
+    svc.db.pragma(`user_version = ${FILE_MODES_STEP - 1}`);
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
     expect(svc.db.prepare('SELECT owner, mode FROM file_modes').all()).toEqual([
@@ -406,6 +409,73 @@ describe('DbService — the file modes table', () => {
     );
     expect(() => insert.run('/a', 0o10000)).toThrow(/CHECK constraint/);
     expect(() => insert.run('/b', -1)).toThrow(/CHECK constraint/);
+    svc.onModuleDestroy();
+  });
+});
+
+describe('DbService — the file grants table', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'imb-grants-'));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('a live database one step behind gains the table and keeps its modes', () => {
+    const path = join(dir, 'live.sqlite');
+    const first = openService(path);
+    first.db
+      .prepare(
+        `INSERT INTO file_modes (path, owner, group_name, mode, updated_at)
+         VALUES ('/home/imbatranim/.config/imbatranim/notepad', 'notepad', 'notepad', 448, 1)`,
+      )
+      .run();
+    first.db.exec('DROP TABLE file_grants');
+    first.db.pragma(`user_version = ${LEDGER_VERSION - 1}`);
+    first.onModuleDestroy();
+
+    const svc = openService(path);
+    expect(svc.migrationFailure).toBeNull();
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
+      LEDGER_VERSION,
+    );
+    expect(svc.db.prepare('SELECT owner FROM file_modes').all()).toEqual([
+      { owner: 'notepad' },
+    ]);
+    const cols = (
+      svc.db.prepare('PRAGMA table_info(file_grants)').all() as {
+        name: string;
+      }[]
+    ).map((c) => c.name);
+    expect(cols).toEqual([
+      'instance_id',
+      'app_id',
+      'path',
+      'kind',
+      'created_at',
+    ]);
+    svc.onModuleDestroy();
+  });
+
+  it('running the step again keeps the grants already there, and refuses an unknown kind', () => {
+    const svc = openService(join(dir, 'again.sqlite'));
+    const insert = svc.db.prepare(
+      `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
+       VALUES (?, 'notepad', ?, ?, 1)`,
+    );
+    insert.run('w1', '/home/imbatranim/a.txt', 'file');
+    svc.db.pragma(`user_version = ${LEDGER_VERSION - 1}`);
+    svc.migrate();
+    expect(svc.migrationFailure).toBeNull();
+    expect(svc.db.prepare('SELECT path FROM file_grants').all()).toEqual([
+      { path: '/home/imbatranim/a.txt' },
+    ]);
+    expect(() => insert.run('w1', '/b', 'everything')).toThrow(
+      /CHECK constraint/,
+    );
     svc.onModuleDestroy();
   });
 });

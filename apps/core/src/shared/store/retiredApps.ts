@@ -2,6 +2,7 @@ import { readPref, writePref } from '../../lib/prefs'
 import { useAssociationStore } from '../registry/associations'
 import { useAddonStore } from './addonStore'
 import { useDesktopStore } from './desktopStore'
+import { useStartPinsStore } from './startPinsStore'
 import { useStartupStore } from './startupStore'
 
 /**
@@ -73,6 +74,16 @@ function swapIn(list: readonly string[], from: string, to: string): string[] | n
 }
 
 /**
+ * `from` becomes `to` in place. A `to` that is already in the list keeps its own
+ * place and `from` is just dropped.
+ */
+function swapKeepingTarget(list: readonly string[], from: string, to: string): string[] | null {
+  if (!list.includes(from)) return null
+  if (list.includes(to)) return list.filter((id) => id !== from)
+  return list.map((id) => (id === from ? to : id))
+}
+
+/**
  * Rewrite `from` to `to` in every dotfile that keeps an app id, except the
  * disabled set, which {@link moveDisabled} handles per suite app.
  */
@@ -99,6 +110,10 @@ function moveChoices(from: string, to: string): void {
 
   const apps = swapIn(useStartupStore.getState().apps, from, to)
   if (apps) useStartupStore.setState({ apps })
+
+  // Start's grid: the target takes the retired pin's place.
+  const pins = swapKeepingTarget(useStartPinsStore.getState().pins, from, to)
+  if (pins) useStartPinsStore.setState({ pins })
 }
 
 /**

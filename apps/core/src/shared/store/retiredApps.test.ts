@@ -14,6 +14,7 @@ import { DOTFILE_KEYS, readPref, writePref } from '../../lib/prefs'
 import { useAssociationStore } from '../registry/associations'
 import { useAddonStore } from './addonStore'
 import { useDesktopStore } from './desktopStore'
+import { useStartPinsStore } from './startPinsStore'
 import { useStartupStore } from './startupStore'
 import {
   APP_ID_MIGRATIONS_KEY,
@@ -34,6 +35,7 @@ beforeEach(() => {
   useAddonStore.setState({ disabled: [] })
   useDesktopStore.setState({ iconPositions: {} })
   useStartupStore.setState({ apps: [] })
+  useStartPinsStore.setState({ pins: [] })
 })
 
 describe('migrateRetiredAppIds', () => {
@@ -222,6 +224,36 @@ describe('migrateRetiredAppIds', () => {
     migrateRetiredAppIds()
     expect(useAssociationStore.getState().overrides).toBe(overrides)
     expect(useAddonStore.getState().disabled).toBe(disabled)
+  })
+})
+
+describe('migrateRetiredAppIds: Start pins', () => {
+  it('turns a retired pin in the middle into its target, in place', () => {
+    useStartPinsStore.setState({ pins: ['terminal', 'markdown-editor', 'browser'] })
+    migrateRetiredAppIds()
+    expect(useStartPinsStore.getState().pins).toEqual(['terminal', 'notepad', 'browser'])
+  })
+
+  it('drops a retired pin whose target is already pinned', () => {
+    useStartPinsStore.setState({ pins: ['markdown-editor', 'terminal', 'notepad'] })
+    migrateRetiredAppIds()
+    expect(useStartPinsStore.getState().pins).toEqual(['terminal', 'notepad'])
+  })
+
+  it('leaves unrelated pins as they are', () => {
+    const pins = ['terminal', 'browser', 'settings']
+    useStartPinsStore.setState({ pins })
+    migrateRetiredAppIds()
+    expect(useStartPinsStore.getState().pins).toBe(pins)
+  })
+
+  it('changes nothing the second time', () => {
+    useStartPinsStore.setState({ pins: ['archive-manager', 'terminal'] })
+    migrateRetiredAppIds()
+    expect(useStartPinsStore.getState().pins).toEqual(['file-manager', 'terminal'])
+    useStartPinsStore.setState({ pins: ['archive-manager', 'terminal'] })
+    migrateRetiredAppIds()
+    expect(useStartPinsStore.getState().pins).toEqual(['archive-manager', 'terminal'])
   })
 })
 

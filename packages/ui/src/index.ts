@@ -83,6 +83,8 @@ export type {
   SystemServer,
   SystemServerAddress,
   SystemShortcuts,
+  SystemSound,
+  SystemSoundState,
   SystemWindow,
   UploadOptions,
   VersionedBytes,
@@ -108,6 +110,7 @@ export {
   useWindowVisible,
   type TopWindowKeydownOptions,
 } from './hooks/systemHooks'
+export { useSystemSound } from './hooks/systemSound'
 export {
   useFileConflict,
   type FileConflict,

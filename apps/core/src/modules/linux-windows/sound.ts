@@ -30,6 +30,8 @@ const LEAD_SETTLE_MS = 10_000
 export const DROP_AFTER_S = 0.2
 /** A packet due sooner than this counts as late: the run starts over. */
 const LATE_S = 0.005
+/** The time constant a volume change glides with. */
+const GLIDE_S = 0.015
 
 export type SoundPacket = { sequence: number; packet: Uint8Array }
 
@@ -126,10 +128,16 @@ export class LinuxSound {
     else if (this.ctx.state === 'suspended') void this.ctx.resume().catch(() => undefined)
   }
 
-  /** The OS's volume for Linux apps' sound, 0 to 1. */
+  /**
+   * The OS's volume for Linux apps' sound, 0 to 1 (0 while the tray is
+   * muted). It glides there over a few milliseconds, so dragging the slider
+   * while sound plays doesn't click.
+   */
   setVolume(volume: number): void {
-    this.volume = Math.min(1, Math.max(0, volume))
-    if (this.gain) this.gain.gain.value = this.volume
+    const next = Math.min(1, Math.max(0, Number.isFinite(volume) ? volume : 1))
+    if (next === this.volume) return
+    this.volume = next
+    if (this.gain && this.ctx) this.gain.gain.setTargetAtTime(next, this.ctx.currentTime, GLIDE_S)
   }
 
   /** Linux apps' sound played within `ms`: it holds the idle cover off, as a playing `<audio>` does. */
@@ -137,12 +145,19 @@ export class LinuxSound {
     return performance.now() - this.playedAt < ms
   }
 
-  /** For checks: what came, what played, and whether the browser lets it. */
-  stats(): { received: number; played: number; lead: number; state: AudioContextState | 'none' } {
+  /** For checks: what came, what played, the volume, and whether the browser lets it. */
+  stats(): {
+    received: number
+    played: number
+    lead: number
+    volume: number
+    state: AudioContextState | 'none'
+  } {
     return {
       received: this.received,
       played: this.played,
       lead: this.lead,
+      volume: this.volume,
       state: this.ctx?.state ?? 'none',
     }
   }

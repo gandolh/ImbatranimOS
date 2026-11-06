@@ -8,7 +8,9 @@ const { get, notify } = vi.hoisted(() => ({
   get: vi.fn<(url: string) => Promise<{ data: unknown }>>(),
   notify: vi.fn(),
 }))
-vi.mock('../../../lib/axios', () => ({ api: { get } }))
+vi.mock('../../../lib/axios', () => ({
+  api: { get, put: () => Promise.resolve({ data: { written: 0 } }) },
+}))
 vi.mock('../../store/notificationStore', () => ({
   notify,
   useNotificationStore: (pick: (s: { notifications: never[]; dnd: boolean }) => unknown) =>
@@ -18,6 +20,7 @@ vi.mock('../notifications/NotificationPanel', () => ({ NotificationPanel: () => 
 
 import { Tray } from './Tray'
 import { readTrayStats } from './trayStats'
+import { useSoundStore } from '../../store/soundStore'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 /**
@@ -65,6 +68,7 @@ beforeEach(() => {
   root = createRoot(container)
   get.mockReset()
   notify.mockReset()
+  useSoundStore.setState({ volume: 1, muted: false })
 })
 
 afterEach(() => {
@@ -106,6 +110,46 @@ describe('Tray', () => {
     await renderTray()
     expect(notify).toHaveBeenCalledTimes(1)
     expect(notify.mock.calls[0][0]).toMatchObject({ title: 'Disk almost full' })
+  })
+})
+
+describe('the tray volume', () => {
+  const speaker = () => container.querySelector<HTMLElement>('[data-tray-volume]')!
+  const shape = () => speaker().querySelector('[data-speaker]')?.getAttribute('data-speaker')
+
+  it('shows muted, and roughly how loud', async () => {
+    get.mockResolvedValue({ data: STATS })
+    useSoundStore.setState({ volume: 0.8, muted: false })
+    await renderTray()
+    expect(speaker().getAttribute('aria-label')).toBe('Volume: 80%')
+    expect(shape()).toBe('high')
+    act(() => useSoundStore.setState({ volume: 0.2 }))
+    expect(shape()).toBe('low')
+    act(() => useSoundStore.setState({ volume: 0 }))
+    expect(shape()).toBe('silent')
+    act(() => useSoundStore.setState({ volume: 0.5, muted: true }))
+    expect(shape()).toBe('muted')
+    expect(speaker().getAttribute('aria-label')).toBe('Volume: muted')
+  })
+
+  it('opens a slider and a mute that set the OS volume', async () => {
+    get.mockResolvedValue({ data: STATS })
+    await renderTray()
+    await act(async () => speaker().click())
+    const slider = document.querySelector<HTMLInputElement>(
+      'input[type="range"][aria-label="Volume"]'
+    )!
+    expect(slider.value).toBe('100')
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setValue.call(slider, '30')
+      slider.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(useSoundStore.getState()).toMatchObject({ volume: 0.3, muted: false })
+    const mute = document.querySelector<HTMLButtonElement>('button[aria-label="Mute"]')!
+    act(() => mute.click())
+    expect(useSoundStore.getState().muted).toBe(true)
+    expect(document.querySelector('button[aria-label="Unmute"]')).not.toBeNull()
   })
 })
 

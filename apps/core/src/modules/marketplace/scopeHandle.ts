@@ -33,7 +33,8 @@ export type KitAppModule = {
 /**
  * Members of the handle that are not capabilities: every app has them. `server`
  * among them: an app whose descriptor runs no server gets a rejection that
- * says so when it asks, not a capability error.
+ * says so when it asks, not a capability error. `sound` too: reading the OS
+ * volume is harmless, and an app that plays sound needs it to follow the tray.
  */
 const ALWAYS = new Set([
   'protocolVersion',
@@ -41,6 +42,7 @@ const ALWAYS = new Set([
   'windowId',
   'window',
   'appearance',
+  'sound',
   'on',
   'server',
 ])

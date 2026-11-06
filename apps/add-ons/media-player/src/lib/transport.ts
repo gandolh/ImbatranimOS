@@ -8,6 +8,18 @@ export const COARSE_SKIP_SECONDS = 60
 /** Volume step for the arrow keys — VLC's own 5%. */
 export const VOLUME_STEP = 0.05
 
+export type Loudness = { volume: number; muted: boolean }
+
+/**
+ * What the media element plays at: the player's own volume times the OS
+ * volume from the tray, and silent when either is muted. The player's own
+ * setting is kept apart and saved as it is; only the element gets the product.
+ */
+export function elementLoudness(player: Loudness, os: Loudness): Loudness {
+  const volume = Math.min(1, Math.max(0, player.volume * os.volume))
+  return { volume, muted: player.muted || os.muted }
+}
+
 export const PLAYBACK_RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4] as const
 
 /**

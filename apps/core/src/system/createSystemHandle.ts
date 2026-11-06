@@ -8,6 +8,7 @@ import {
   type SystemHandle,
   type SystemHttp,
   type SystemNotifyInput,
+  type SystemSoundState,
   type SystemWindow,
 } from '@imbatranim/ui'
 import { api } from '../lib/axios'
@@ -21,6 +22,7 @@ import { recordRecentFile, removeRecentFile } from '../lib/recentFiles'
 import { claimScheduleOccurrence, type ScheduleDomain } from '../lib/scheduleClaim'
 import { notify } from '../shared/store/notificationStore'
 import { accentColours, useAppearanceStore } from '../shared/store/appearanceStore'
+import { useSoundStore } from '../shared/store/soundStore'
 import { useIntentStore } from '../shared/store/intentStore'
 import { isTopWindow, useWindowStore } from '../shared/store/windowStore'
 import { openApp } from '../shared/intents/openApp'
@@ -125,6 +127,12 @@ function appearanceSnapshot(): SystemAppearanceState {
   return { theme: state.mode, accent: accentColours(state).strong }
 }
 
+/** The tray's volume and mute, as the add-on contract carries them. */
+function soundSnapshot(): SystemSoundState {
+  const { volume, muted } = useSoundStore.getState()
+  return { volume, muted }
+}
+
 export function createSystemHandle(appId: string, windowId: string | null): SystemHandle {
   const win = windowId === null ? windowlessWindow(appId) : windowFor(windowId)
 
@@ -136,6 +144,11 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
       case 'appearance-changed':
         return useAppearanceStore.subscribe(() => {
           ;(cb as (p: SystemAppearanceState) => void)(appearanceSnapshot())
+        })
+      case 'sound-changed':
+        return useSoundStore.subscribe((next, prev) => {
+          if (next.volume === prev.volume && next.muted === prev.muted) return
+          ;(cb as (p: SystemSoundState) => void)(soundSnapshot())
         })
       case 'visibility': {
         let last = win.isVisible()
@@ -246,6 +259,8 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
     },
 
     appearance: { get: appearanceSnapshot },
+
+    sound: { get: soundSnapshot },
 
     schedule: {
       claim: (domain: ScheduleDomain, itemId, occurrenceMs) =>

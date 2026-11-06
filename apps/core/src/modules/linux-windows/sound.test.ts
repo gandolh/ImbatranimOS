@@ -58,6 +58,7 @@ describe('scheduleAt', () => {
 function fakes() {
   const started: number[] = []
   const decoded: number[] = []
+  const gains: { gain: { value: number; setTargetAtTime: ReturnType<typeof vi.fn> } }[] = []
   let output: ((d: AudioData) => void) | null = null
   const ctx = {
     state: 'suspended' as AudioContextState,
@@ -67,7 +68,11 @@ function fakes() {
       ctx.state = 'running'
     }),
     close: vi.fn(async () => undefined),
-    createGain: () => ({ gain: { value: 1 }, connect: vi.fn() }),
+    createGain: () => {
+      const node = { gain: { value: 1, setTargetAtTime: vi.fn() }, connect: vi.fn() }
+      gains.push(node)
+      return node
+    },
     createBuffer: (_c: number, frames: number, rate: number) => ({
       duration: frames / rate,
       copyToChannel: vi.fn(),
@@ -113,7 +118,7 @@ function fakes() {
     }
   )
   const sound = new LinuxSound(() => ctx as unknown as AudioContext)
-  return { sound, ctx, started, decoded }
+  return { sound, ctx, started, decoded, gains }
 }
 
 describe('LinuxSound', () => {
@@ -131,7 +136,13 @@ describe('LinuxSound', () => {
     expect(decoded).toEqual([40_000, 60_000])
     expect(started[0]).toBeCloseTo(5 + LEAD_S)
     expect(started[1]).toBeCloseTo(5 + LEAD_S + 0.02)
-    expect(sound.stats()).toEqual({ received: 3, played: 2, lead: LEAD_S, state: 'running' })
+    expect(sound.stats()).toEqual({
+      received: 3,
+      played: 2,
+      lead: LEAD_S,
+      volume: 1,
+      state: 'running',
+    })
     expect(sound.playing()).toBe(true)
   })
 
@@ -168,5 +179,24 @@ describe('LinuxSound', () => {
     sound.unlock()
     expect(ctx.resume).not.toHaveBeenCalled()
     expect(sound.stats().state).toBe('none')
+  })
+
+  it('plays at the OS volume, set before the sound starts or while it plays', async () => {
+    const { sound, ctx, gains } = fakes()
+    sound.setVolume(0.5)
+    sound.receive(message(1, [1]))
+    sound.unlock()
+    await Promise.resolve()
+    expect(gains[0].gain.value).toBe(0.5)
+    sound.setVolume(0)
+    expect(gains[0].gain.setTargetAtTime).toHaveBeenCalledWith(
+      0,
+      ctx.currentTime,
+      expect.any(Number)
+    )
+    expect(sound.stats().volume).toBe(0)
+    // The same volume again changes nothing.
+    sound.setVolume(0)
+    expect(gains[0].gain.setTargetAtTime).toHaveBeenCalledTimes(1)
   })
 })

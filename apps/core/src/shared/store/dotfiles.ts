@@ -3,6 +3,7 @@ import { useAddonStore } from './addonStore'
 import { useAppearanceStore, applyAppearance } from './appearanceStore'
 import { useDesktopStore } from './desktopStore'
 import { migrateRetiredAppIds } from './retiredApps'
+import { useSoundStore } from './soundStore'
 import { useStartupStore } from './startupStore'
 import { useWallpaperStore } from './wallpaperStore'
 
@@ -30,6 +31,7 @@ export async function rehydrateDotfileStores(): Promise<void> {
     useAddonStore.persist.rehydrate(),
     useAssociationStore.persist.rehydrate(),
     useStartupStore.persist.rehydrate(),
+    useSoundStore.persist.rehydrate(),
   ])
   // On the server's copy, now that the stores hold it.
   migrateRetiredAppIds()

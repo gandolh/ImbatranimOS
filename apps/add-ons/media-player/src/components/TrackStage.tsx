@@ -5,6 +5,7 @@ import {
   fileName,
   useDocumentedShortcuts,
   useSystem,
+  useSystemSound,
   useTopWindowKeydown,
 } from '@imbatranim/ui'
 import type { MediaKind } from '../api/listDir'
@@ -16,6 +17,7 @@ import {
   VOLUME_STEP,
   bufferedRanges,
   clampSeek,
+  elementLoudness,
 } from '../lib/transport'
 import { parseSubtitles, stripSsaOverrides } from '../lib/subtitles'
 import { shouldResume } from '../lib/resume'
@@ -84,6 +86,7 @@ export function TrackStage({
   onStartOver,
 }: TrackStageProps) {
   const system = useSystem()
+  const os = useSystemSound()
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -105,12 +108,12 @@ export function TrackStage({
   })
 
   // Wire this track's element exactly once: attach listeners that call
-  // setState from their own (later-firing) callback, apply the persisted
-  // volume/mute + autoplay intent, and tear everything down on unmount/track
-  // change. `onEnded`/`onVolumeChange` are stable callbacks from the parent
-  // (useCallback with empty deps), and `initialVolume`/`initialMuted`/
-  // `autoPlay` are one-shot-by-contract for this mount, so this effect is
-  // intentionally mount-once rather than re-synced on every prop tick.
+  // setState from their own (later-firing) callback, apply the persisted rate
+  // + autoplay intent, and tear everything down on unmount/track change.
+  // `onEnded` is a stable callback from the parent (useCallback with empty
+  // deps), and `initialRate`/`autoPlay` are one-shot-by-contract for this
+  // mount, so this effect is intentionally mount-once rather than re-synced
+  // on every prop tick. Volume and mute are applied by the effect after it.
   useEffect(() => {
     const el = mediaRef.current
     if (!el) return
@@ -148,11 +151,6 @@ export function TrackStage({
     function handlePause() {
       setIsPlaying(false)
     }
-    function handleVolumeChange() {
-      setVolume(el!.volume)
-      setMuted(el!.muted)
-      onVolumeChange(el!.volume, el!.muted)
-    }
     function handleEnded() {
       setIsPlaying(false)
       // Reaching the end clears any remembered position — reopening a finished file should
@@ -189,12 +187,9 @@ export function TrackStage({
     el.addEventListener('progress', handleProgress)
     el.addEventListener('play', handlePlay)
     el.addEventListener('pause', handlePause)
-    el.addEventListener('volumechange', handleVolumeChange)
     el.addEventListener('ended', handleEnded)
     el.addEventListener('error', handleError)
 
-    el.volume = initialVolume
-    el.muted = initialMuted
     el.playbackRate = initialRate
     if (autoPlay) {
       el.play().catch(() => {
@@ -208,12 +203,22 @@ export function TrackStage({
       el.removeEventListener('progress', handleProgress)
       el.removeEventListener('play', handlePlay)
       el.removeEventListener('pause', handlePause)
-      el.removeEventListener('volumechange', handleVolumeChange)
       el.removeEventListener('ended', handleEnded)
       el.removeEventListener('error', handleError)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once for this track; see the comment above the effect.
   }, [])
+
+  // The element plays at the player's own volume times the OS volume from the
+  // tray. The player's state is the truth and the element only follows it:
+  // reading the element back would save the product as the player's volume.
+  useEffect(() => {
+    const el = mediaRef.current
+    if (!el) return
+    const out = elementLoudness({ volume, muted }, os)
+    el.volume = out.volume
+    el.muted = out.muted
+  }, [volume, muted, os])
 
   function setMediaRef(el: HTMLVideoElement | HTMLAudioElement | null) {
     mediaRef.current = el
@@ -402,24 +407,25 @@ export function TrackStage({
     onRateChange(rate)
   }
 
+  /** The player's own volume and mute: shown, applied and remembered. */
+  function setPlayerVolume(nextVolume: number, nextMuted: boolean) {
+    setVolume(nextVolume)
+    setMuted(nextMuted)
+    onVolumeChange(nextVolume, nextMuted)
+  }
+
   /** Relative volume change for the arrow keys, clamped. */
   function nudgeVolume(delta: number) {
-    const el = mediaRef.current
-    if (!el) return
-    el.volume = Math.min(1, Math.max(0, el.volume + delta))
-    if (el.volume > 0) el.muted = false
+    const next = Math.min(1, Math.max(0, volume + delta))
+    setPlayerVolume(next, next > 0 ? false : muted)
   }
 
   function changeVolume(next: number) {
-    const el = mediaRef.current
-    if (!el) return
-    el.volume = next
-    if (next > 0) el.muted = false
+    setPlayerVolume(next, next > 0 ? false : muted)
   }
 
   function toggleMute() {
-    const el = mediaRef.current
-    if (el) el.muted = !el.muted
+    setPlayerVolume(volume, !muted)
   }
 
   function triggerDownload() {

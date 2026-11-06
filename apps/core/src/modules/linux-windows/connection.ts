@@ -13,6 +13,7 @@ import { LINUX_APP_PREFIX, linuxWindowChrome } from './kind'
 import { paintFrame, parseFrame } from './frames'
 import { linuxClipboard } from './clipboard'
 import { linuxSound } from './sound'
+import { soundGain, useSoundStore } from '../../shared/store/soundStore'
 import { LinuxNotifications, notifyAppStopped } from './linuxNotifications'
 import {
   canvasFor,
@@ -147,6 +148,7 @@ export class LinuxWindowsConnection {
   private shown = new Map<number, boolean>()
   private unsubscribeAuth: (() => void) | null = null
   private unsubscribeLayout: (() => void) | null = null
+  private unsubscribeSound: (() => void) | null = null
   /** The desktop session the socket is for: with a toplevel's id, a window's key. */
   private session = ''
   /**
@@ -229,6 +231,10 @@ export class LinuxWindowsConnection {
     this.unsubscribeLayout = useLinuxAppsPrefs.subscribe((s, prev) => {
       if (s.keyboardLayout !== prev.keyboardLayout) this.sendLayout()
     })
+    // The tray's volume and mute play the session's sound louder or softer
+    // in this tab; the host mixes at full volume.
+    linuxSound.setVolume(soundGain(useSoundStore.getState()))
+    this.unsubscribeSound = useSoundStore.subscribe((s) => linuxSound.setVolume(soundGain(s)))
     setLinuxSender((m) => this.send(m))
     this.notifications = new LinuxNotifications((m) => this.send(m))
     this.connect()
@@ -246,6 +252,8 @@ export class LinuxWindowsConnection {
     this.unsubscribeAuth = null
     this.unsubscribeLayout?.()
     this.unsubscribeLayout = null
+    this.unsubscribeSound?.()
+    this.unsubscribeSound = null
     this.unsubscribeWindows?.()
     this.unsubscribeWindows = null
     setLinuxSender(null)

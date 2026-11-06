@@ -8,6 +8,7 @@ import { api } from '../../../lib/axios'
 import { notify, useNotificationStore } from '../../store/notificationStore'
 import { NotificationPanel } from '../notifications/NotificationPanel'
 import { readTrayStats } from './trayStats'
+import { TrayVolume } from './TrayVolume'
 
 /** Warn once the volume passes this. */
 const DISK_WARN_PERCENT = 90
@@ -160,6 +161,7 @@ export function Tray() {
 
       <div className="bg-outline-variant h-5 w-px" />
 
+      <TrayVolume />
       <NotificationBell />
 
       <div className="bg-outline-variant h-5 w-px" />

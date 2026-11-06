@@ -5,6 +5,7 @@ import { useWindowStore } from '../shared/store/windowStore'
 import { useIntentStore } from '../shared/store/intentStore'
 import { useNotificationStore } from '../shared/store/notificationStore'
 import { useShortcutStore } from '../shared/hooks/shortcutRegistry'
+import { useSoundStore } from '../shared/store/soundStore'
 
 /**
  * The system-handle seam — the in-process transport of the protocol.
@@ -25,6 +26,7 @@ beforeEach(() => {
   useIntentStore.setState({ intents: new Map() })
   useNotificationStore.setState({ notifications: [] })
   useShortcutStore.setState({ shortcuts: {} })
+  useSoundStore.setState({ volume: 1, muted: false })
 })
 
 describe('window scoping', () => {
@@ -226,5 +228,32 @@ describe('events', () => {
     useWindowStore.getState().focusWindow(a)
     expect(focus).toBe(2)
     expect(blur).toBe(1)
+  })
+})
+
+describe('sound', () => {
+  it('reads the tray volume, in any mount', () => {
+    useSoundStore.getState().setVolume(0.4)
+    expect(createSystemHandle('media-player', null).sound?.get()).toEqual({
+      volume: 0.4,
+      muted: false,
+    })
+  })
+
+  it('sound-changed fires with the new volume and mute, and only when they change', () => {
+    const system = createSystemHandle('media-player', openTestWindow('media-player'))
+    const seen: unknown[] = []
+    const off = system.on('sound-changed', (s) => seen.push(s))
+
+    useSoundStore.getState().setVolume(0.3)
+    useSoundStore.getState().setMuted(true)
+    useSoundStore.getState().setMuted(true)
+    expect(seen).toEqual([
+      { volume: 0.3, muted: false },
+      { volume: 0.3, muted: true },
+    ])
+    off()
+    useSoundStore.getState().setMuted(false)
+    expect(seen).toHaveLength(2)
   })
 })

@@ -319,6 +319,25 @@ export interface SystemAppearance {
   get(): SystemAppearanceState
 }
 
+// ── Sound ─────────────────────────────────────────────────────────────────────
+
+/**
+ * The OS volume from the tray: `volume` from 0 to 1, on the same scale as a
+ * media element's `volume`, and whether the owner muted everything.
+ */
+export type SystemSoundState = { volume: number; muted: boolean }
+
+/**
+ * `system.sound` — the OS volume, read-only. An app that makes sound plays at
+ * its own volume times `volume`, and makes none while `muted`; its own volume
+ * control keeps working beside it. An app that makes no sound needs nothing
+ * here. Live changes arrive via `on('sound-changed', …)`. There is no setter:
+ * the tray is the one place the OS volume changes.
+ */
+export interface SystemSound {
+  get(): SystemSoundState
+}
+
 // ── Schedule ──────────────────────────────────────────────────────────────────
 
 export type ScheduleDomain = 'clock' | 'calendar' | 'todo'
@@ -368,13 +387,15 @@ export interface SystemServer {
 /**
  * Compositor → app events. `focus`/`blur` track top-most-visible status;
  * `visibility` fires with the new value on minimise/restore and workspace
- * switches; `appearance-changed` fires with the new theme + accent.
+ * switches; `appearance-changed` fires with the new theme + accent;
+ * `sound-changed` fires with the new OS volume (since kit 1.3.0).
  */
 export type SystemEventMap = {
   focus: void
   blur: void
   visibility: boolean
   'appearance-changed': SystemAppearanceState
+  'sound-changed': SystemSoundState
 }
 
 export type SystemEvent = keyof SystemEventMap
@@ -393,6 +414,12 @@ export interface SystemHandle {
   readonly intents: SystemIntents
   readonly shortcuts: SystemShortcuts
   readonly appearance: SystemAppearance
+  /**
+   * The OS volume. Since kit 1.3.0, and optional for that reason: a desktop
+   * from before it has none, so an app that may run there plays at its own
+   * volume when it is missing. Every app has it, needing no capability.
+   */
+  readonly sound?: SystemSound
   readonly schedule: SystemSchedule
   /**
    * The app's server, asked for when the app needs it. Since kit 1.2.0, and

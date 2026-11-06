@@ -20,6 +20,7 @@ describe('scopeHandle', () => {
     expect(scoped.protocolVersion).toBe(base.protocolVersion)
     expect(scoped.window).toBe(base.window)
     expect(scoped.appearance).toBe(base.appearance)
+    expect(scoped.sound).toBe(base.sound)
     expect(typeof scoped.on).toBe('function')
   })
 

@@ -64,8 +64,11 @@ container. Nothing is rebuilt into the OS image. Backups leave
 - **`type`**: `"static"` for an app that is only its module; `"service"` for one
   that also runs a server (below).
 - **`capabilities`**: the parts of `system` the app may use: `fs`, `http`,
-  `intents`, `notify`, `shortcuts`, `schedule`. `window`, `appearance` and `on`
-  are always there. Touching one not listed throws an error naming it.
+  `intents`, `notify`, `shortcuts`, `schedule`. `window`, `appearance`,
+  `sound` and `on` are always there. Touching one not listed throws an error
+  naming it. An app that makes sound plays at its own volume times
+  `system.sound.get().volume` and is silent while it says `muted` (since kit
+  1.3.0; on an older desktop `sound` is missing).
 - **`icon`**: one of `package`, `gamepad-2`, `joystick`, `puzzle`, `swords`,
   `sprout`, `castle`, `rocket`, `dices`, `ghost`, `trophy`, `map`, or for
   office apps `file-text`, `file-pen`, `table`, `sheet`, `presentation`,

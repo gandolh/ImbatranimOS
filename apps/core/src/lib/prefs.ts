@@ -54,6 +54,8 @@ export const DOTFILE_KEYS = [
   'imbatranimos:app-id-migrations',
   // Linux apps' preferences: the keyboard layout they type in.
   'imbatranimos:linux-apps',
+  // The OS volume and mute from the tray.
+  'imbatranimos:sound',
 ] as const
 
 type Cache = Map<string, string>

@@ -5491,3 +5491,17 @@ todos are written by the briefs that need them: 68 adds the System Monitor
 processes view, and 74 retires the sandboxed frame path. Board tickets
 imbatranimOS-63 to 76 and imbatranim-office-06 were created in To Do.
 
+
+## [2026-11-06] done | Brief 48 done: X11 apps share the clipboard and show their cursors
+
+Built on `main` in `7378699` (1.185.0), moved to `briefs/done/` with an outcome
+note, ready for deploy. X11 CLIPBOARD text copies both ways with the session's
+selection (PRIMARY stays in X), and the `cursor` message carries a PNG with its
+hotspot (protocol 9), so xterm's I-beam and GTK 3's own cursors show in the tab.
+Review fixed a paste writer that could block forever (a 5 s deadline) and
+added a Latin-1 transcode for `STRING`. A walk found stale and empty pastes
+whose root cause was the host not waiting for X to confirm it owned CLIPBOARD
+(smithay only queues the request); a round trip fixed it. A paste over 64 KiB
+into xterm still stalls, because smithay's INCR watches top-level windows only;
+the owner accepted it and the fix is the todo
+`x11-pastes-over-64-kib-reach-child-windows`.

@@ -73,6 +73,11 @@ wave's verify gate found the kit map missing `useSystemSound` (`8b371ae`,
 1.174.0). Decisions in
 [decisions-linux-apps-input-files-look.md](decisions-linux-apps-input-files-look.md).
 
+48 (2026-11-06, `7378699`, 1.185.0, ready for deploy): X11 apps share the
+clipboard (CLIPBOARD text both ways) and show their own cursors (a PNG and
+hotspot, protocol 9). A paste over 64 KiB into xterm stalls, accepted; the
+fix is a todo (below). Same file as 45-47.
+
 08-15, the two themes, were built 2026-11-03 on `main` (1.70.0 to 1.86.0)
 and deploy together; each brief's outcome is in `briefs/done/`, and 15's lists
 the owner's steps and six design questions. 07 (research) is superseded by
@@ -178,9 +183,11 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Open todos
 
-None open: the imbatranim-apps todos were promoted to briefs 63-76 on
-2026-11-06 (their questions stay in each todo). Briefs 48 and 49 came from the last
-two Linux apps todos the same day.
+One open: [x11-pastes-over-64-kib-reach-child-windows](../todos/x11-pastes-over-64-kib-reach-child-windows.md)
+(2026-11-06, a smithay patch for the INCR transfer; xterm stalls over 64 KiB).
+The imbatranim-apps todos were promoted to briefs 63-76 on 2026-11-06 (their
+questions stay in each todo). Briefs 48 and 49 came from the last two Linux
+apps todos the same day.
 
 On 2026-11-04 the owner's grill turned the earlier todos into briefs 37-44
 and dropped the window-zoom check.

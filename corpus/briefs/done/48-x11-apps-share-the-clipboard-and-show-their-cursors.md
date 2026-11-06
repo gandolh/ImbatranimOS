@@ -75,3 +75,63 @@ cursor images. The smaller calls, with the default this brief builds:
   way round; xterm's own cursor shows.
 - **Owner steps:** push this repo, then `node cli.ts imbatranim-os all`
   from vps-deploy.
+
+## Outcome (2026-11-06)
+
+Built in `7378699` (1.185.0). Ready for deploy on the board.
+
+1. **The clipboard bridge.** X11 CLIPBOARD text and the session's selection
+   now copy both ways (`src/session/x11.rs`, `clipboard.rs`). The host's
+   selection has two kinds, the tab's text and an X11 source with its mime
+   type, and a paste reads from either. Only CLIPBOARD is bridged; PRIMARY
+   stays inside X. The host offers the current text when Xwayland starts and
+   clears it when Xwayland stops.
+2. **Cursor images.** `src/cursor.rs` turns a cursor surface into a PNG
+   (flate2 and a CRC, no new crate), with its hotspot and scale, and the
+   existing `cursor` message gains an `image` (protocol 9, `PROTOCOL.md`'s
+   "Not yet" line removed). Images over 128 px fall back to `default`. The
+   host sends a cursor only when it changes, once per round, and a reload's
+   resync resends it. The tab's `cursorCss` checks the base64, size, scale and
+   hotspot before building `url(...)`, with `image-set` at 2x. The backend has
+   the matching v9 `CursorImage` type.
+3. **Review and debugging fixes.**
+   - The paste writer thread could block forever on a stalled reader. smithay
+     hands the host a non-blocking pipe that cut pastes at 64 KiB; the writer
+     now clears `O_NONBLOCK` and writes through `write_within`, a non-blocking
+     write polled for `POLLOUT` up to a 5 s deadline.
+   - X11's `STRING` target is transcoded to Latin-1.
+   - Stale and empty pastes after xterm owned CLIPBOARD had one root cause:
+     smithay's `X11Wm::new_selection` only queues the ownership request. The
+     host now waits for X to confirm the owner, with a round trip
+     (`get_randr_primary_output`) in `x11_offer_clipboard`.
+
+**Checks run.** Host cargo 83 tests plus 1 integration; backend jest 37; core
+vitest 93. A walk in the dev container: the cursor message carries an image
+and the tab styles `url(data:image/png`; double-click a word in xterm reaches
+the tab clipboard; Ctrl+V in Notes and Firefox; copy in Notes and Firefox,
+then Shift+Insert in xterm; a GTK3 app's own cursor at device pixel ratio 2
+gives an `image-set` at 2x; a reload over xterm shows the same cursor after
+resync; a 200 KB paste was checked after the second fix round.
+**Skipped.** The walk script's X11-at-DPR-2 step: X11 stays at scale 1 by
+brief 33's decision, so that was the script's error, not a bug.
+
+**Accepted limits.**
+- A paste over 64 KiB into xterm stalls (smithay's INCR, below). The owner
+  accepted it on 2026-11-06 and asked for a todo:
+  [x11-pastes-over-64-kib-reach-child-windows](../../todos/x11-pastes-over-64-kib-reach-child-windows.md).
+- If the X11 app that copied quits, a Wayland paste gets nothing (the same
+  rule as Wayland, brief 41). STRING-only X11 apps beyond the Latin-1 case
+  aren't otherwise bridged.
+- A clipboard manager re-owning CLIPBOARD overwrites the tab clipboard, one
+  extra hop and no loop.
+- A cursor scale above 2 clamps to 2 (wrong size and hotspot, no panic); an
+  app setting its cursor before the first commit hides it briefly; animated X
+  cursors resend the PNG per commit, with no rate limit.
+- X11 areas with no cursor of their own show X's `left_ptr`.
+
+**Left for the owner.** After the deploy: in Chrome, open xterm with
+`-xrm 'XTerm*selectToClipboard: true'` and check that hovering shows the
+I-beam, that a copy in xterm pastes into Notes, and the reverse. The
+walk's unreproduced report that xterm gives no window after the last X client
+closes was not seen again (Xwayland never exits while the window manager is
+connected).

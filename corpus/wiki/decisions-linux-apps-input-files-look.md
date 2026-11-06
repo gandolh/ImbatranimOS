@@ -1,5 +1,5 @@
 ---
-summary: Linux apps calls made while building briefs 45-47 (2026-11-06) - the host speaks text-input-v3 itself and the phone's hidden input focuses on tap, launchers carry file types and launch takes a home-jailed file, shared-mime-info joins the image, and the backend serves the Settings portal as a second bus service.
+summary: Linux apps calls made while building briefs 45-48 (2026-11-06) - cursor images and the X11 clipboard bridge (48), the host speaks text-input-v3 itself and the phone's hidden input focuses on tap, launchers carry file types and launch takes a home-jailed file, shared-mime-info joins the image, and the backend serves the Settings portal as a second bus service.
 updated: 2026-11-06
 ---
 
@@ -55,3 +55,31 @@ change. Unknown keys answer NotFound, as the real portal does.
 with no per-app theme file; the client from the 2026-11-05 call already
 speaks D-Bus.
 - *Consequence*: GTK3 and Qt are not covered; prefs have no per-user scope, so every session bus is told.
+
+## Cursor images: a PNG and a hotspot on the existing message
+_2026-11-06_ — Brief 48. A cursor surface goes to the tab as a small PNG with
+its hotspot and scale, inside the existing `cursor` message (protocol 9), not a
+new message. Over 128 px falls back to `default`. It is sent only when it
+changes, kept per session so a reload's resync resends it, and the tab shows it
+as `url(...)` with `image-set` at 2x.
+**Why**: every X11 app and GTK 3 apps that draw their own cursors set a surface,
+so names alone showed xterm's I-beam as an arrow; one message keeps the tab's
+cursor handling in one place.
+- *Consequence*: a scale above 2 clamps to 2; animated cursors resend the PNG
+  per commit with no rate limit; X areas with no cursor show X's `left_ptr`.
+
+## The X11 clipboard bridge: CLIPBOARD text only, the host waits for the owner
+_2026-11-06_ — Brief 48. X11 CLIPBOARD text and the session's selection copy
+both ways, as plain text like brief 41. PRIMARY stays in X; images and rich
+text stay out. The host's selection has two kinds (the tab's text, an X11 source),
+and after offering the tab's text it does a round trip to X so the CLIPBOARD
+owner is confirmed before any paste. The owner's walk accepted the paste limit
+below.
+**Why**: smithay's `new_selection` only queues the ownership request; without the
+wait, xterm pasted stale or empty text. PRIMARY would make every selection a
+clipboard change.
+- *Consequence*: if the X11 app that copied quits, a Wayland paste gets nothing
+  (as in Wayland); a clipboard manager re-owning CLIPBOARD adds one hop. A paste
+  over 64 KiB into xterm stalls (smithay's INCR watches top-level windows only),
+  accepted on 2026-11-06 with a todo:
+  [x11-pastes-over-64-kib-reach-child-windows](../todos/x11-pastes-over-64-kib-reach-child-windows.md).

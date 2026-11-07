@@ -25,6 +25,7 @@ import WebSocket from 'ws';
 import { DbModule } from '../src/db/db.module';
 import { DATA_KINDS } from '../src/modules/app-data/app-data.paths';
 import { AppDataService } from '../src/modules/app-data/app-data.service';
+import { APP_TOKEN_HEADER } from '../src/modules/app-identity/app-identity.types';
 import { MarketplaceModule } from '../src/modules/marketplace/marketplace.module';
 import { MarketplaceServers } from '../src/modules/marketplace/marketplace-servers.service';
 import { MarketplaceService } from '../src/modules/marketplace/marketplace.service';
@@ -501,6 +502,14 @@ describe('the marketplace (e2e)', () => {
         await data.write(as(id), kind, 'kept.json', kind);
       }
     }
+    // A window of demo is open, with an identity of its own.
+    const token = 'a'.repeat(64);
+    const register = (t: string) =>
+      http
+        .post('/api/system/app-tokens')
+        .set('Cookie', cookie)
+        .send({ token: t, appId: 'demo', instanceId: 'demo-win' });
+    await register(token).expect(201);
 
     // Without the box: the cache goes, the rest stays for a reinstall.
     await http
@@ -512,6 +521,18 @@ describe('the marketplace (e2e)', () => {
       .delete('/api/marketplace/apps/sim?removeData=1')
       .set('Cookie', cookie)
       .expect(204);
+    expect(existsSync(data.folder('demo', 'cache'))).toBe(false);
+    // Its identity ended with it, it can't take a new one, and what a window
+    // still open writes puts nothing back.
+    await http
+      .get('/api/system/app-tokens/self')
+      .set('Cookie', cookie)
+      .set(APP_TOKEN_HEADER, token)
+      .expect(403);
+    await register('b'.repeat(64)).expect(403);
+    await expect(
+      data.write(as('demo'), 'cache', 'back.json', '{}'),
+    ).rejects.toMatchObject({ status: 403 });
     expect(existsSync(data.folder('demo', 'cache'))).toBe(false);
     for (const kind of ['config', 'data', 'state'] as const) {
       expect((await data.read(as('demo'), kind, 'kept.json'))?.content).toBe(

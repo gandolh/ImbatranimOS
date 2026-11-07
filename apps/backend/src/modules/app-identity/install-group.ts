@@ -1,5 +1,5 @@
 import type { DbService } from '../../db/db.service';
-import { recordedBuild } from '../marketplace/marketplace.service';
+import { recordedBuild } from '../marketplace/recorded-build';
 import { SYSTEM_GROUP } from './app-identity.types';
 
 /**

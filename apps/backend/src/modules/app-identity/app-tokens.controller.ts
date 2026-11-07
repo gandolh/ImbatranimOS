@@ -23,6 +23,7 @@ import { APP_TOKEN_SHAPE, AppTokens } from './app-tokens';
 import { callingApp, type IdentifiedRequest } from './calling-app';
 import { FileGrants } from './file-grants.service';
 import { groupsOf } from './install-group';
+import { InstalledApps } from './installed-apps';
 
 /** An app id, as the marketplace and the built-ins write them. */
 export const APP_ID = /^[a-z][a-z0-9-]{1,39}$/;
@@ -60,6 +61,8 @@ type Req = IdentifiedRequest & { caller?: Caller };
  *
  * - `POST` registers a token core minted for a running copy of an app. Only
  *   the user may (a call with no app token): an app can't start an identity.
+ *   A catalog app that isn't installed gets none: it would otherwise read as
+ *   a built-in ({@link InstalledApps}).
  * - `DELETE self` ends the token the call carries, as closing the copy does,
  *   and with it what the copy was given.
  * - `GET self` says who the call is from: the user, or which app and copy.
@@ -70,6 +73,7 @@ export class AppTokensController {
     private readonly tokens: AppTokens,
     private readonly dbs: DbService,
     private readonly grants: FileGrants,
+    private readonly installed: InstalledApps,
   ) {}
 
   @Post()
@@ -84,6 +88,9 @@ export class AppTokensController {
     const caller = mustHaveCaller(req);
     if (body.appId === SYSTEM_GROUP) {
       throw new BadRequestException(`${SYSTEM_GROUP} is a group, not an app`);
+    }
+    if (this.installed.isGone(body.appId)) {
+      throw new ForbiddenException(`${body.appId} is not installed`);
     }
     const identity: AppIdentity = {
       appId: body.appId,

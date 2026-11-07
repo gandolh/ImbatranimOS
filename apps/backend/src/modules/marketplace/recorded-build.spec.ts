@@ -1,4 +1,4 @@
-import { recordedBuild } from './marketplace.service';
+import { recordedBuild } from './recorded-build';
 
 /** No hook declared: what every row from before hooks reads as. */
 const NO_HOOKS = { background: false, commandSources: false };

@@ -12,6 +12,7 @@ import request from 'supertest';
 
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
+import { DbService } from '../src/db/db.service';
 import { AppDataModule } from '../src/modules/app-data/app-data.module';
 import { DATA_NEEDS_APP } from '../src/modules/app-data/app-data.controller';
 import { AppIdentityModule } from '../src/modules/app-identity/app-identity.module';
@@ -49,6 +50,14 @@ describe('App data folders (e2e)', () => {
     );
     await app.init();
     http = request(app.getHttpServer());
+    // Hollow is in the catalog, so it acts only while installed.
+    app
+      .get(DbService)
+      .db.prepare(
+        `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, installed_at)
+           VALUES ('hollow', 'abc', 'b1', '/x', 'dist/hollow.js', 1)`,
+      )
+      .run();
   });
 
   afterEach(async () => {

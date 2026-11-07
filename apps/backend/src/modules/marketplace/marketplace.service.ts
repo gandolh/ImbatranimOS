@@ -15,15 +15,14 @@ import { dirname, join, posix, relative, resolve, sep } from 'path';
 import type { Env } from '../../config/env.schema';
 import { DbService } from '../../db/db.service';
 import { AppDataService } from '../app-data/app-data.service';
+import { AppTokens } from '../app-identity/app-tokens';
+import { FileGrants } from '../app-identity/file-grants.service';
+import { InstalledApps } from '../app-identity/installed-apps';
 import type { AppManifest } from './app-manifest';
 import { z } from 'zod';
 
 import {
-  appEntrySchema,
   loadCatalog,
-  MAX_APP_STYLES,
-  sharedKitSchema,
-  styleSchema,
   type Catalog,
   type CatalogApp,
   type Descriptor,
@@ -33,6 +32,7 @@ import {
   type ServerSpec,
 } from './marketplace-servers.service';
 import { PendingInspections } from './pending-inspections';
+import { isAppId, recordedBuild, recordedKitApp } from './recorded-build';
 import { runStep } from './run-step';
 import { SandboxTokens } from './sandbox-tokens';
 import { isUrlAppId, type AppSource } from './source-url';
@@ -234,6 +234,9 @@ export class MarketplaceService implements OnModuleInit {
     private readonly tokens: SandboxTokens,
     private readonly pendings: PendingInspections,
     private readonly data: AppDataService,
+    private readonly appTokens: AppTokens,
+    private readonly grants: FileGrants,
+    private readonly installed: InstalledApps,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -595,23 +598,31 @@ export class MarketplaceService implements OnModuleInit {
     const row = this.row(id);
     if (!row && !job) throw new NotFoundException();
     const apps = appsOfRow(row, id);
-    await this.servers.stop(id);
-    if (removeData) {
-      try {
-        await this.data.removeFolders(apps, KEPT_DATA_KINDS);
-      } catch (err) {
-        throw new InternalServerErrorException(
-          `Its data could not be removed, so it is still installed: ${String(err)}`,
-        );
+    // From here its apps are leaving: an open window can't take a new
+    // identity or write data, so nothing it does puts back what is removed.
+    await this.installed.whileLeaving(apps, async () => {
+      for (const app of apps) {
+        this.appTokens.revokeApp(app);
+        this.grants.revokeApp(app);
       }
-    }
-    this.dbs.db.prepare('DELETE FROM marketplace_apps WHERE id = ?').run(id);
-    this.jobs.delete(id);
-    // A URL app's open windows lose their files now, not in six hours.
-    this.tokens.revokeApp(id);
-    await this.removeBuilds(id, null);
-    await fs.rm(this.logPath(id), { force: true });
-    await this.data.removeCaches(apps);
+      await this.servers.stop(id);
+      if (removeData) {
+        try {
+          await this.data.removeFolders(apps, KEPT_DATA_KINDS);
+        } catch (err) {
+          throw new InternalServerErrorException(
+            `Its data could not be removed, so it is still installed: ${String(err)}`,
+          );
+        }
+      }
+      this.dbs.db.prepare('DELETE FROM marketplace_apps WHERE id = ?').run(id);
+      this.jobs.delete(id);
+      // A URL app's open windows lose their files now, not in six hours.
+      this.tokens.revokeApp(id);
+      await this.removeBuilds(id, null);
+      await fs.rm(this.logPath(id), { force: true });
+      await this.data.removeCaches(apps);
+    });
   }
 
   private async build(d: Descriptor, job: Job): Promise<void> {
@@ -926,97 +937,6 @@ function appsOfRow(row: InstalledRow | undefined, id: string): string[] {
   return apps ? [...apps] : [id];
 }
 
-export function isAppId(id: string): boolean {
-  return /^[a-z][a-z0-9-]{1,39}$/.test(id);
-}
-
-/** One app of an installed build, as its row records it. */
-export interface RecordedApp {
-  /** Its module, inside the build's output. */
-  entry: string;
-  /** A kit app's stylesheets, inside the output. Empty for a mount app. */
-  styles: string[];
-  /** The shared kit version a kit app was built against. Null for a mount app. */
-  sharedKit: number | null;
-  /** The build declared a background service. False for a mount app. */
-  background: boolean;
-  /** The build declared command sources. False for a mount app. */
-  commandSources: boolean;
-}
-
-/** A kit app's value in `entries`. A hook it did not declare is left out. */
-const recordedKitApp = z.strictObject({
-  entry: appEntrySchema,
-  styles: z.array(styleSchema).max(MAX_APP_STYLES),
-  sharedKit: sharedKitSchema,
-  background: z.literal(true).optional(),
-  commandSources: z.literal(true).optional(),
-});
-
-/**
- * What an installed row says its live build holds: the served directory
- * (relative to the row's `root`) and each app inside it. A row with no
- * `entries` names one module, for the app whose id is the row's. In
- * `entries` a mount app's value is its module's path, a kit app's an object
- * (see `InstalledRow`). Null when `entries` is damaged: every app of the row
- * then lists as missing, and a reinstall writes it again.
- */
-export function recordedBuild(
-  row: Pick<InstalledRow, 'id' | 'entry' | 'entries'>,
-): { output: string; entries: ReadonlyMap<string, RecordedApp> } | null {
-  if (row.entries == null) {
-    return {
-      output: posix.dirname(row.entry),
-      entries: new Map([
-        [
-          row.id,
-          {
-            entry: posix.basename(row.entry),
-            styles: [],
-            sharedKit: null,
-            background: false,
-            commandSources: false,
-          },
-        ],
-      ]),
-    };
-  }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(row.entries);
-  } catch {
-    return null;
-  }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return null;
-  }
-  const entries = new Map<string, RecordedApp>();
-  for (const [id, value] of Object.entries(parsed)) {
-    if (!isAppId(id)) return null;
-    if (typeof value === 'string') {
-      if (!appEntrySchema.safeParse(value).success) return null;
-      entries.set(id, {
-        entry: posix.normalize(value),
-        styles: [],
-        sharedKit: null,
-        background: false,
-        commandSources: false,
-      });
-      continue;
-    }
-    const kit = recordedKitApp.safeParse(value);
-    if (!kit.success) return null;
-    entries.set(id, {
-      entry: posix.normalize(kit.data.entry),
-      styles: kit.data.styles.map((p) => posix.normalize(p)),
-      sharedKit: kit.data.sharedKit,
-      background: kit.data.background === true,
-      commandSources: kit.data.commandSources === true,
-    });
-  }
-  return { output: row.entry, entries };
-}
-
 /** A path inside a build as it goes in a URL: each segment encoded. */
 function urlPath(p: string): string {
   return p.split('/').map(encodeURIComponent).join('/');
@@ -1123,3 +1043,5 @@ export async function directorySize(
   }
   return total;
 }
+
+export { isAppId, recordedBuild, type RecordedApp } from './recorded-build';

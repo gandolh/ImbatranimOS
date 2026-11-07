@@ -6,6 +6,7 @@ import { join } from 'path';
 import type { DbService } from '../../db/db.service';
 import { makeTestDb } from '../identity/testing';
 import type { AppIdentity } from '../app-identity/app-identity.types';
+import type { InstalledApps } from '../app-identity/installed-apps';
 import { ModeStore } from '../app-identity/mode-store.service';
 import { AppDataService, dataVersion } from './app-data.service';
 import { DATA_KINDS, normaliseDataPath } from './app-data.paths';
@@ -44,6 +45,8 @@ describe('AppDataService', () => {
   let dbs: DbService;
   let modes: ModeStore;
   let data: AppDataService;
+  /** The apps the stand-in for the catalog check calls gone. */
+  let gone: Set<string>;
   const prevRoot = process.env.FILES_ROOT;
 
   beforeEach(async () => {
@@ -52,7 +55,11 @@ describe('AppDataService', () => {
     process.env.FILES_ROOT = home;
     dbs = makeTestDb();
     modes = new ModeStore(dbs);
-    data = new AppDataService(modes);
+    gone = new Set();
+    const installed = {
+      isGone: (id: string) => gone.has(id),
+    } as unknown as InstalledApps;
+    data = new AppDataService(modes, installed);
   });
 
   afterEach(async () => {
@@ -397,6 +404,35 @@ describe('AppDataService', () => {
       // A reinstall starts with folders of its own again.
       await data.write(hollow, 'data', 'f.json', 'again');
       expect(modes.stat(shared())?.owner).toBe('hollow');
+    });
+
+    it('refuses a write or a removal from an app that is gone, and makes no folder', async () => {
+      await data.removeFolders(['hollow']);
+      gone.add('hollow');
+      expect(
+        (await refusal(data.write(hollow, 'data', 'f.json', 'back'))).status,
+      ).toBe(403);
+      expect(
+        (await refusal(data.remove(hollow, 'data', 'f.json'))).status,
+      ).toBe(403);
+      await expect(fs.stat(data.folder('hollow', 'data'))).rejects.toThrow();
+      // Another app is not touched by it.
+      expect((await data.write(other, 'data', 'g.json', 'x')).path).toBe(
+        'g.json',
+      );
+    });
+
+    it('makes a write that waited behind the removal find the app gone', async () => {
+      // The uninstall marks the app leaving, then takes its folders; a write
+      // from a window still open queues on the same folder and comes after.
+      gone.add('hollow');
+      const removal = data.removeFolders(['hollow']);
+      const write = data.write(hollow, 'data', 'f.json', 'back');
+      await removal;
+      expect((await refusal(write)).status).toBe(403);
+      for (const kind of DATA_KINDS) {
+        await expect(fs.stat(data.folder('hollow', kind))).rejects.toThrow();
+      }
     });
 
     it('removes a folder that is a link without following it', async () => {

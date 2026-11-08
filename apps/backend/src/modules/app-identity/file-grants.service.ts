@@ -119,6 +119,11 @@ export class FileGrants {
     }));
   }
 
+  /** End every grant of every copy of one app: it was uninstalled. */
+  revokeApp(appId: string): void {
+    this.dbs.db.prepare('DELETE FROM file_grants WHERE app_id = ?').run(appId);
+  }
+
   /** End every grant of a running copy: its window closed. */
   revokeInstance(instanceId: string): void {
     this.dbs.db

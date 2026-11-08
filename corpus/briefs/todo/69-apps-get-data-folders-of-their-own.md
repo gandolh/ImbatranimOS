@@ -87,3 +87,23 @@ Brief 68 (identity and the mode store).
 
 - Tests green. The REST API Client's collections survive the move.
 - With two tabs saving one collection, the second gets a refusal it can show.
+
+## Progress (2026-11-08)
+
+The review's last three fixes landed in `ee04778` (1.220.0):
+- Uninstall revokes the app-identity token and the file grants of every app
+  of the row (it had revoked only the URL sandbox's tokens).
+- The token route refuses a catalog app no installed descriptor holds: a
+  built-in is told apart only by no descriptor holding it, so an uninstalled
+  catalog app's open window could take a new token and be given `system`.
+- One lock per app folder: writes and removals take their turn on the
+  folder, the key an uninstall's removal uses, and refuse an app that is
+  gone. `InstalledApps` marks a row's apps as leaving for the whole
+  uninstall, so a write that waited behind the removal puts nothing back.
+`recordedBuild` moved to `marketplace/recorded-build.ts` to break the module
+cycle the data service's new dependency made. Tests: backend 1092 unit;
+e2e for app data, identity, grants and the four marketplace suites, 88.
+
+Still open: the walk, which was stopped before it finished on 2026-11-06.
+A URL app has the hole the catalog check closes, once uninstalled: the todo
+`uninstalled-url-apps-read-as-built-ins`.

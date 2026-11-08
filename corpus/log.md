@@ -5642,3 +5642,20 @@ request asks for the file again (the 403 names the path). The brief 69
 review's "migrated marker" for the old `~/.config/rest-client` doc is moot
 after the flip: the app can't read that place at all, so nothing stale
 comes back. What it needs then is a notice that the old doc is there.
+
+## [2026-11-08] maintenance | Brief 69's last review fixes: an uninstall ends its apps' identities
+
+`ee04778` (1.220.0). Uninstall now revokes every app of the row's identity
+token and file grants, not only the URL sandbox's tokens. The token route
+refuses a catalog app that no installed descriptor holds, which would
+otherwise read as a built-in and get `system`. Data writes and removals take
+their turn per app folder, the key an uninstall's removal uses, and refuse
+an app that is gone; `InstalledApps` marks a row's apps as leaving for the
+whole uninstall. `recordedBuild` moved to `marketplace/recorded-build.ts`,
+since the data service asking app identity had closed a module cycle through
+the marketplace service. Three e2e specs had been starting tokens for
+catalog apps they never installed (`hollow`, `solo`); they install them, or
+use a built-in, now. Backend 1092 unit and the 88 identity, data, grants and
+marketplace e2e tests pass; the PTY e2e fails here with or without the change
+(no PTY in this container). Brief 69 still owes its walk. New todo:
+`uninstalled-url-apps-read-as-built-ins`.

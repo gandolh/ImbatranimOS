@@ -2,12 +2,14 @@ import { Module } from '@nestjs/common';
 
 import { AppTokensController } from './app-tokens.controller';
 import { FileGrants } from './file-grants.service';
+import { InstalledApps } from './installed-apps';
 import { ModeStore } from './mode-store.service';
 
 /**
  * App identity: the routes core registers and ends app tokens on, the store
- * of Unix modes for the apps' data area, and the store of what each running
- * copy was given ({@link FileGrants}).
+ * of Unix modes for the apps' data area, the store of what each running
+ * copy was given ({@link FileGrants}), and which catalog apps are installed
+ * ({@link InstalledApps}).
  *
  * The token map (`AppTokens`) and its guard (`AppIdentityGuard`) are
  * registered by `IdentityModule`, right after `SessionGuard` in the same
@@ -18,7 +20,7 @@ import { ModeStore } from './mode-store.service';
  */
 @Module({
   controllers: [AppTokensController],
-  providers: [ModeStore, FileGrants],
-  exports: [ModeStore, FileGrants],
+  providers: [ModeStore, FileGrants, InstalledApps],
+  exports: [ModeStore, FileGrants, InstalledApps],
 })
 export class AppIdentityModule {}

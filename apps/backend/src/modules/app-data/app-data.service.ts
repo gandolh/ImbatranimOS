@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   PayloadTooLargeException,
@@ -12,6 +13,7 @@ import * as fs from 'fs/promises';
 import { basename, dirname, join, relative, resolve, sep } from 'path';
 
 import type { AppIdentity } from '../app-identity/app-identity.types';
+import { InstalledApps } from '../app-identity/installed-apps';
 import { ModeStore } from '../app-identity/mode-store.service';
 import {
   DATA_KINDS,
@@ -69,8 +71,11 @@ export function dataVersion(bytes: Buffer | string): string {
  *   `rw-------` for a file and `rwx------` for a folder.
  * - **A write names the version it read.** One that doesn't match what is
  *   on disk now is refused with a 409 carrying the current one, so two tabs
- *   saving one file can't silently overwrite each other. Writes to one path
- *   take turns, so the check and the rename can't interleave.
+ *   saving one file can't silently overwrite each other.
+ * - **One lock per app folder.** Writes, removals and an uninstall's removal
+ *   of the folder take turns per folder, so the check and the rename can't
+ *   interleave, and a write that waited behind an uninstall finds the app
+ *   gone ({@link InstalledApps.isGone}) and puts nothing back.
  *
  * The methods take an identity rather than a request, so the OS itself can
  * write into an app's folder as that app (a one-time move of data an app kept
@@ -81,7 +86,10 @@ export class AppDataService {
   private readonly logger = new Logger(AppDataService.name);
   private readonly turns = new Map<string, Promise<void>>();
 
-  constructor(private readonly modes: ModeStore) {}
+  constructor(
+    private readonly modes: ModeStore,
+    private readonly installed: InstalledApps,
+  ) {}
 
   /** An app's folder of one kind, in the current home. */
   folder(appId: string, kind: DataKind): string {
@@ -141,7 +149,8 @@ export class AppDataService {
       );
     }
     const { folder, abs, path } = await this.resolve(identity, kind, rawPath);
-    return this.inTurn(abs, async () => {
+    return this.inTurn(folder, async () => {
+      this.assertPresent(identity);
       await this.ensureFolder(identity, folder);
       const existing = await this.lstat(abs);
       if (existing?.isDirectory()) {
@@ -223,7 +232,8 @@ export class AppDataService {
     const { folder, abs } = await this.resolve(identity, kind, rawPath, false, {
       followLeaf: false,
     });
-    return this.inTurn(abs, async () => {
+    return this.inTurn(folder, async () => {
+      this.assertPresent(identity);
       this.adoptFolder(identity, folder, await this.lstat(folder));
       const stat = await this.lstat(abs);
       if (!stat) return false;
@@ -401,7 +411,14 @@ export class AppDataService {
     await fs.rm(staged, { force: true }).catch(() => undefined);
   }
 
-  /** Run `work` once every earlier call for the same path is done. */
+  /** An app being uninstalled, or uninstalled, changes nothing in its folders. */
+  private assertPresent(identity: AppIdentity): void {
+    if (this.installed.isGone(identity.appId)) {
+      throw new ForbiddenException(`${identity.appId} is not installed`);
+    }
+  }
+
+  /** Run `work` once every earlier call for the same key (an app folder) is done. */
   private async inTurn<T>(key: string, work: () => Promise<T>): Promise<T> {
     const before = this.turns.get(key) ?? Promise.resolve();
     let done!: () => void;

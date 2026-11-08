@@ -521,7 +521,9 @@ describe('one catalog entry, several apps (e2e)', () => {
     for (const id of ['suite-alpha', 'suite-beta']) {
       for (const kind of DATA_KINDS) await data.write(as(id), kind, 'f', kind);
     }
-    await data.write(as('solo'), 'data', 'f', 'not in the suite');
+    // A built-in's folder stands beside them (solo is in the catalog but not
+    // installed here, so it may not write).
+    await data.write(as('notepad'), 'data', 'f', 'not in the suite');
 
     // "Also remove its data" covers each app of the group.
     await http
@@ -533,7 +535,7 @@ describe('one catalog entry, several apps (e2e)', () => {
         expect(existsSync(data.folder(id, kind))).toBe(false);
       }
     }
-    expect((await data.read(as('solo'), 'data', 'f'))?.content).toBe(
+    expect((await data.read(as('notepad'), 'data', 'f'))?.content).toBe(
       'not in the suite',
     );
     expect((await listed('suite-alpha')).installed).toBeNull();

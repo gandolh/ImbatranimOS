@@ -16,6 +16,8 @@ import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { randomBytes } from 'crypto';
 import type { Server } from 'http';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import request from 'supertest';
 
 import { ConfigModule } from '../src/config/config.module';
@@ -182,6 +184,23 @@ describe('App identity (e2e)', () => {
       expect(appOf(await whoami(hollow))?.groups).toEqual(['hollow']);
     });
 
+    it('a catalog app that isn’t installed gets no identity, nor one of an installed suite’s other apps', async () => {
+      // Office is installed with Docs and Sheets only; Slides is in the catalog too.
+      for (const appId of ['office-slides', 'minesweeper']) {
+        const res = await http
+          .post('/api/system/app-tokens')
+          .set('Cookie', TEST_COOKIE)
+          .send({ token: mint(), appId, instanceId: `${appId}-1` })
+          .expect(403);
+        expect(JSON.stringify(res.body)).toContain(`${appId} is not installed`);
+      }
+      // An app no catalog names is a built-in, as before.
+      expect(appOf(await whoami(await start('notepad')))?.groups).toEqual([
+        'notepad',
+        'system',
+      ]);
+    });
+
     it('a token dies with its copy', async () => {
       const token = await start('notepad');
       await http
@@ -331,7 +350,12 @@ describe('App identity through the real sign-in (e2e)', () => {
   let http: ReturnType<typeof request>;
 
   beforeEach(async () => {
-    const values: Record<string, string> = { DB_PATH: ':memory:' };
+    // No catalog: every app here is a built-in.
+    const values: Record<string, unknown> = {
+      DB_PATH: ':memory:',
+      MARKETPLACE_DIR: join(tmpdir(), 'imb-no-catalog'),
+      MARKETPLACE_ALLOW_LOCAL_REPOS: false,
+    };
 
     @Global()
     @Module({

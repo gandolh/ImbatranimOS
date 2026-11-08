@@ -1,6 +1,6 @@
 ---
 summary: Locked calls from the 2026-11-06 imbatranim-apps grill on how apps are trusted and kept apart, shaped by Unix, Windows, Android and macOS practice (research-unix-and-windows-conventions.md). Apps run as their own identity with Unix modes on their files (rwx for owner, group, others; a private group per app plus its install group; private by default), kept and enforced by the OS since the container has one Linux user. Installable apps keep data in XDG-style folders per kind and see other files only by grant (opened through the OS or picked). URL apps run natively once trusted, which revisits 2026-10-07: verified ones come from a verified.json in imbatranim-apps pinned per OS release, the rest need the owner's trust each version. WASM threads are on (COOP/COEP).
-updated: 2026-11-06
+updated: 2026-11-08
 ---
 
 # Decisions: app identity and trust (2026-11-06)
@@ -62,7 +62,10 @@ Built in `apps-run-as-their-own-identity` (brief 68, `2522407`, 2026-11-06):
 - **Limits against a hostile app:** its token is in the page's memory, so a
   script in the same page can read it; the checks guard the OS's calls, not
   the page. The catalog's review and the trust prompt guard the rest.
-- `revokeApp` is not called on uninstall yet.
+- **An uninstall ends its apps' identities** (2026-11-08): their tokens and
+  file grants go when it starts, and until it ends they get no token and
+  write no data. A catalog app no installed descriptor holds gets no token
+  at all, since it would otherwise read as a built-in.
 
 ## Installable apps keep data in folders by kind
 

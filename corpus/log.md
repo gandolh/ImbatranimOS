@@ -6078,3 +6078,18 @@ reuses them, and the moves spec passes unchanged. The pick is a file in the
 home's `.imbatranim/`, not a ledger step. The desktop asks at sign-in.
 Ready for deploy.
 
+
+## [2026-11-09] fix | Brief 79's review: add only, never move in
+
+A read-only review of [79](briefs/done/79-notepad-adds-attachments-beside-a-note.md)
+led to `a8b2dcd`. The medium: a move into `assets/` asked only delete on the
+source and create on the destination and carried the source's owner, so
+Notepad could move a folder from its own data area in and own it. Now
+nothing moves into a folder an app may only add to; a copy brings one file,
+placed exclusively and left the user's, never a folder; no plain file named
+`assets`, no folder inside it, no missing folders above it. After the hard
+link the landing folder must still be the one checked, or the file is taken
+back out; a file system without hard links gets an exclusive copy. The grant
+isn't given on another app's folder or `assets/`, and an unknown grant kind
+gives nothing. There is no chmod route over HTTP; the unit tests cover it.
+The brief stays in done/, the ticket at Ready for deploy.

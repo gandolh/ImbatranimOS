@@ -319,16 +319,21 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
   )
 
   useEffect(() => {
-    const targets = claimTabSession()
+    const restored = claimTabSession()
+    const targets = [...restored]
     if (source) targets.push({ root: source.root, path: source.path })
     if (targets.length === 0) return
+    // A restored tab is a path this window wasn't given: ask the OS for it
+    // again, as one of the editor's own recent files. One that isn't (another
+    // app opened it since) fails on its own, like a deleted file.
+    const reopened = Promise.all(restored.map((t) => system.fs.reopenRecent(t.root, t.path)))
     // Hop a microtask before touching state. `openTargets` reaches setState
     // synchronously on one path (everything already open), and a render
     // cascading out of the effect that scheduled it is exactly what the old
     // inline async IIFE existed to avoid. `claimTabSession` still runs here,
     // synchronously, because it answers only once.
-    void Promise.resolve().then(() => openTargets(targets))
-  }, [source, openTargets])
+    void reopened.then(() => openTargets(targets))
+  }, [source, openTargets, system])
 
   // Record the on-disk tabs for this session on every change.
   useEffect(() => {

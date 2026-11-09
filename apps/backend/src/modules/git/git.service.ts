@@ -716,11 +716,21 @@ export class GitService {
    * out on read, so a deleted repo disappears instead of 404-ing when clicked.
    */
   async recentRepos(): Promise<{ repos: { root: string; path: string }[] }> {
-    const rows = this.db.db
-      .prepare(
-        'SELECT root, path FROM git_recent_repos ORDER BY last_opened DESC LIMIT ?',
-      )
-      .all(MAX_RECENT_REPOS) as { root: string; path: string }[];
+    // An app sees the repos it remembered; the user sees them all.
+    const rows = (
+      this.caller === null
+        ? this.db.db
+            .prepare(
+              'SELECT root, path FROM git_recent_repos ORDER BY last_opened DESC LIMIT ?',
+            )
+            .all(MAX_RECENT_REPOS)
+        : this.db.db
+            .prepare(
+              `SELECT root, path FROM git_recent_repos WHERE app_id = ?
+               ORDER BY last_opened DESC LIMIT ?`,
+            )
+            .all(this.caller.appId, MAX_RECENT_REPOS)
+    ) as { root: string; path: string }[];
 
     const alive: { root: string; path: string }[] = [];
     for (const row of rows) {
@@ -739,12 +749,12 @@ export class GitService {
     await this.resolveRepo(root, path);
     this.db.db
       .prepare(
-        `INSERT INTO git_recent_repos (root, path, last_opened)
-         VALUES (@root, @path, CURRENT_TIMESTAMP)
+        `INSERT INTO git_recent_repos (root, path, app_id, last_opened)
+         VALUES (@root, @path, @appId, CURRENT_TIMESTAMP)
          ON CONFLICT(root, path)
-         DO UPDATE SET last_opened = CURRENT_TIMESTAMP`,
+         DO UPDATE SET last_opened = CURRENT_TIMESTAMP, app_id = @appId`,
       )
-      .run({ root, path: path ?? '' });
+      .run({ root, path: path ?? '', appId: this.caller?.appId ?? null });
     // Keep the table from growing without bound; the UI only ever shows the top few.
     this.db.db
       .prepare(
@@ -756,10 +766,19 @@ export class GitService {
       .run(MAX_RECENT_REPOS);
   }
 
+  /** Drop a recent repo; an app drops only its own. */
   forgetRepo(root: string, path?: string): void {
+    if (this.caller === null) {
+      this.db.db
+        .prepare('DELETE FROM git_recent_repos WHERE root = ? AND path = ?')
+        .run(root, path ?? '');
+      return;
+    }
     this.db.db
-      .prepare('DELETE FROM git_recent_repos WHERE root = ? AND path = ?')
-      .run(root, path ?? '');
+      .prepare(
+        'DELETE FROM git_recent_repos WHERE root = ? AND path = ? AND app_id = ?',
+      )
+      .run(root, path ?? '', this.caller.appId);
   }
 
   // ---------------------------------------------------------------------------

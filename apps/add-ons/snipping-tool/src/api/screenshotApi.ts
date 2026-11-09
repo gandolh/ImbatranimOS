@@ -1,9 +1,8 @@
 import type { SystemFs } from '@imbatranim/ui'
 
 /**
- * Where saved screenshots land, relative to the `home` files root
- * (~/Pictures/Screenshots). The upload endpoint mkdir -p's parent dirs, so the
- * folder is created on first save.
+ * Where the Save dialog opens, relative to the `home` files root
+ * (~/Pictures/Screenshots).
  */
 const SCREENSHOTS_DIR = 'Pictures/Screenshots'
 
@@ -20,10 +19,22 @@ export function screenshotFilename(now: Date = new Date()): string {
   return `screenshot-${stamp}.png`
 }
 
-/** Upload a PNG blob to ~/Pictures/Screenshots via the fs capability. */
-export async function saveScreenshot(fs: SystemFs, blob: Blob): Promise<string> {
+/**
+ * Save a PNG through the OS's Save dialog, opened at ~/Pictures/Screenshots
+ * with a fresh name: the pick is what gives the Snipping Tool the path (it
+ * reaches only what it is given), as Windows' Snipping Tool asks on every
+ * save. Resolves the saved path, or null when the user cancelled.
+ */
+export async function saveScreenshot(fs: SystemFs, blob: Blob): Promise<string | null> {
   const name = screenshotFilename()
-  const path = `${SCREENSHOTS_DIR}/${name}`
-  await fs.upload('home', path, await blob.arrayBuffer(), name)
-  return path
+  const choice = await fs.pickSave({
+    title: 'Save screenshot',
+    suggestedName: name,
+    extensions: ['png'],
+    startIn: { root: 'home', path: `${SCREENSHOTS_DIR}/${name}` },
+  })
+  if (!choice) return null
+  const saved = choice.path.split('/').pop() ?? name
+  await fs.upload(choice.root, choice.path, await blob.arrayBuffer(), saved)
+  return choice.root === 'home' ? `~/${choice.path}` : `${choice.root}:${choice.path}`
 }

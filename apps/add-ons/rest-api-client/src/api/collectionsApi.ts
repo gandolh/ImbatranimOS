@@ -12,6 +12,8 @@ import type { Environment, HistoryEntry, RestClientData, SavedRequest } from '..
 const DATA_PATH = 'collections.json'
 const LEGACY_DIR = '.config/rest-client'
 const LEGACY = { root: 'home', path: `${LEGACY_DIR}/collections.json` } as const
+/** Where the doc was kept before the data folder. */
+export const LEGACY_FILE: FileRef = LEGACY
 
 /** History is bounded so the doc can't grow without limit. */
 const MAX_HISTORY = 50
@@ -67,7 +69,11 @@ function normalize(raw: unknown): RestClientData {
  */
 export type LoadResult =
   | { status: 'ok'; data: RestClientData; version: string }
-  | { status: 'missing' }
+  /**
+   * `earlier`: the app may not read where the doc was kept before the data
+   * folder, so one may be there, to bring in by picking it.
+   */
+  | { status: 'missing'; earlier?: FileRef }
   | { status: 'failed'; error: string; malformed: boolean; file?: FileRef }
 
 /** The HTTP status of an axios-style error, if it carries one. */
@@ -150,9 +156,11 @@ async function moveLegacy(system: CollectionsSystem, attempts: number): Promise<
     const res = await system.http.get<{ content: string }>('/files/content', { params: LEGACY })
     legacy = res.data.content
   } catch (err) {
-    // No old doc, or one this app may not read: nothing to move.
+    // No old doc: nothing to move. One this app may not read (it holds only
+    // what it was given) may be there: the window offers to bring it in.
     const status = httpStatus(err)
-    if (status === 404 || status === 403) return { status: 'missing' }
+    if (status === 404) return { status: 'missing' }
+    if (status === 403) return { status: 'missing', earlier: LEGACY }
     return failed(err, 'the files service')
   }
   const parsed = parse(legacy, LEGACY)

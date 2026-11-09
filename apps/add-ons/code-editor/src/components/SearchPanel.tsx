@@ -29,7 +29,12 @@ type SearchPanelProps = {
 export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: SearchPanelProps) {
   const system = useSystem()
   const [query, setQuery] = useState('')
-  const [scope, setScope] = useState<string>('')
+  /**
+   * The folder searched, picked in the OS's folder chooser: the pick is what
+   * gives the editor the folder. Null until one is picked; a search asks for
+   * one first, since the editor holds only the files it was given.
+   */
+  const [scope, setScope] = useState<string | null>(null)
   const [result, setResult] = useState<FindResult>(EMPTY_RESULT)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -72,7 +77,21 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
     [system, root]
   )
 
-  const scopeLabel = scope ? `/${scope}` : 'everywhere'
+  const scopeLabel = scope === null ? 'a folder…' : `/${scope}`
+
+  /** Pick the folder to search, then search it. */
+  const pickAndRun = useCallback(
+    (q: string) => {
+      void onPickScope().then((picked) => {
+        if (picked === null) return
+        setScope(picked)
+        // Re-run against the new scope so the chip and the rows agree —
+        // a scope that does not change the results it labels is a lie.
+        if (q.trim()) void run(q, picked)
+      })
+    },
+    [onPickScope, run]
+  )
 
   return (
     <div className="border-outline-variant bg-surface-container-low flex h-56 shrink-0 flex-col border-t">
@@ -93,7 +112,8 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
-                void run(query, scope)
+                if (scope === null && query.trim()) pickAndRun(query)
+                else void run(query, scope ?? '')
                 return
               }
               if (e.key === 'Escape') {
@@ -108,34 +128,13 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
 
         <button
           type="button"
-          onClick={() => {
-            void onPickScope().then((picked) => {
-              if (picked === null) return
-              setScope(picked)
-              // Re-run against the new scope so the chip and the rows agree —
-              // a scope that does not change the results it labels is a lie.
-              if (query.trim()) void run(query, picked)
-            })
-          }}
+          onClick={() => pickAndRun(query)}
           title="Limit the search to a folder"
           className="rounded-control border-outline-variant text-on-surface-variant hover:text-on-surface font-ui focus-visible:ring-primary flex shrink-0 items-center gap-1 border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <FolderOpen size={11} />
           in {scopeLabel}
         </button>
-        {scope && (
-          <button
-            type="button"
-            aria-label="Search everywhere"
-            onClick={() => {
-              setScope('')
-              if (query.trim()) void run(query, '')
-            }}
-            className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-inset"
-          >
-            <X size={11} />
-          </button>
-        )}
 
         <div className="bg-outline-variant mx-1 h-4 w-px" />
         <button
@@ -170,7 +169,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
         {error && <div className="font-ui text-error px-2 py-2 text-[12px]">{error}</div>}
         {!error && !running && answered !== null && result.groups.length === 0 && (
           <div className="font-ui text-on-surface-variant px-2 py-2 text-[12px]">
-            No matches for “{answered}” {scope ? `in /${scope}` : 'anywhere in Home'}.
+            No matches for “{answered}” in /{scope ?? ''}.
           </div>
         )}
         {result.groups.map((group) => (

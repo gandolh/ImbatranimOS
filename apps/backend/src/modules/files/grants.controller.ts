@@ -84,8 +84,9 @@ export class GrantFileDto {
  *   holds (opening a file it has in another app, or in another window of its
  *   own), and the app must hold it itself: read and write on a file, listing
  *   and writing on a folder, or making a file not there yet. One more: an
- *   app may give a window of its own a file among its own recent files, so
- *   it reopens one in a new window as Start's recents would. Core makes an
+ *   app may give a window of its own a file among its own recent files (or
+ *   a folder among its own recent repositories), so it reopens one in a new
+ *   window as Start's recents would. Core makes an
  *   app's `openApp` this way, with the app's token, so an app can't open
  *   itself with a path to be given it.
  * - `DELETE :instanceId` ends what a copy was given: its window closed. The
@@ -138,8 +139,10 @@ export class GrantsController {
     const ownRecent =
       who !== null &&
       who.appId === dto.appId &&
-      stat?.isFile() === true &&
-      this.recent.isRecentOf(dto.root, dto.path, who.appId);
+      (stat?.isFile() === true
+        ? this.recent.isRecentOf(dto.root, dto.path, who.appId)
+        : stat?.isDirectory() === true &&
+          this.recent.isRecentRepoOf(dto.root, dto.path, who.appId));
     if (who !== null && !ownRecent) {
       // Handing on gives what the app holds, never more.
       const ops: ModeOp[] =

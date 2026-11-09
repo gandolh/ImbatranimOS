@@ -77,6 +77,7 @@ function fakeSystem(opts: FakeOpts = {}): SystemHandle {
       pickDirectory: vi.fn(),
       recordRecent: noop,
       removeRecent: noop,
+      reopenRecent: async () => undefined,
     },
     http: {
       get: vi.fn(async (url: string) => ({

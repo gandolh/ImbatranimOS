@@ -116,6 +116,26 @@ describe('openApp gives the file it opens', () => {
     ])
   })
 
+  it('each side of a comparison, and no text side', async () => {
+    const id = openApp('diff', {
+      leftRoot: 'home',
+      leftPath: 'a.txt',
+      rightRoot: 'notes',
+      rightPath: 'b.txt',
+    })
+    await grantsSettled(id)
+    expect(grants().map(([, body]) => body)).toEqual([
+      { instanceId: id, appId: 'diff', root: 'home', path: 'a.txt' },
+      { instanceId: id, appId: 'diff', root: 'notes', path: 'b.txt' },
+    ])
+    post.mockClear()
+    const head = openApp('diff', { leftText: 'old', rightRoot: 'home', rightPath: 'repo/c.ts' })
+    await grantsSettled(head)
+    expect(grants().map(([, body]) => body)).toEqual([
+      { instanceId: head, appId: 'diff', root: 'home', path: 'repo/c.ts' },
+    ])
+  })
+
   it('not to Files, which acts as the user, nor without a file', async () => {
     const files = openApp('file-manager', { openPath: 'Documents', root: 'home' })
     const notepad = openApp('notepad')

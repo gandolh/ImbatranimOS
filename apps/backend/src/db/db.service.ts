@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 15;
+export const LEDGER_VERSION = 16;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -227,6 +227,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         toVersion: 15,
         name: 'file-grant-listing',
         run: () => this.stepFileGrantListing(),
+      },
+      {
+        toVersion: 16,
+        name: 'git-recent-app',
+        run: () => this.stepGitRecentApp(),
       },
     ];
 
@@ -746,6 +751,23 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       CREATE INDEX IF NOT EXISTS file_grants_created_at
         ON file_grants (created_at);
     `);
+  }
+
+  /**
+   * Step 16 — which app remembered each recent repository, so an app sees
+   * and reopens only its own (a recent repo is a folder the app may give a
+   * window of its own again). Rows from before are Git GUI's, the one app
+   * that records them; null is a repo the user recorded.
+   */
+  private stepGitRecentApp() {
+    try {
+      this.db.exec('ALTER TABLE git_recent_repos ADD COLUMN app_id TEXT');
+    } catch (err) {
+      if (!isAlreadyApplied(err, /duplicate column name/i)) throw err;
+    }
+    this.db.exec(
+      "UPDATE git_recent_repos SET app_id = 'git-gui' WHERE app_id IS NULL",
+    );
   }
 
   private stepDropOldAuth() {

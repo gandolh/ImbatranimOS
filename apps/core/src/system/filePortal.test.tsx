@@ -170,9 +170,8 @@ describe('startIn on the file dialogs', () => {
         expect: 'file',
       })
     )
-    expect(post.mock.calls.find(([url]) => url === '/files/grants')![1]).not.toHaveProperty(
-      'withFolder'
-    )
+    const calls = post.mock.calls as unknown as [string, Record<string, unknown>][]
+    expect(calls.find(([url]) => url === '/files/grants')![1]).not.toHaveProperty('withFolder')
   })
 
   it('a pick comes with its folder for an app that declares it reads it', async () => {

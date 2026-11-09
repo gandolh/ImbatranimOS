@@ -218,11 +218,14 @@ describe('the move from ~/.config/rest-client', () => {
     expect(w.writes).toEqual([])
   })
 
-  it('reads an old doc this app may not read as nothing to move, and leaves it', async () => {
+  it('reads an old doc this app may not read as nothing to move, says where it may be, and leaves it', async () => {
     const w = world()
     w.home.set(LEGACY, doc(['https://a.test']))
     w.fail.legacyStatus = 403
-    expect(await loadData(w.system)).toEqual({ status: 'missing' })
+    expect(await loadData(w.system)).toEqual({
+      status: 'missing',
+      earlier: { root: 'home', path: '.config/rest-client/collections.json' },
+    })
     expect(w.home.has(LEGACY)).toBe(true)
   })
 

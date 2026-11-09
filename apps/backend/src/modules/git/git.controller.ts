@@ -169,8 +169,8 @@ export class GitController {
 
   /** GET /api/git/recents → repos opened before, most recent first */
   @Get('recents')
-  recents() {
-    return this.gitService.recentRepos();
+  recents(@CallingApp() who: AppIdentity | null) {
+    return this.gitService.as(who).recentRepos();
   }
 
   /** POST /api/git/recents { root, path? } → record a repo as opened */

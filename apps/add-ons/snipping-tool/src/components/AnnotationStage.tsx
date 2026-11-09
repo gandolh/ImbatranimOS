@@ -295,12 +295,24 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
     }
   }
 
-  const onSave = () =>
-    doExit(async () => {
+  const onSave = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
       const blob = await toBlob(canvasRef.current!)
-      const path = await saveScreenshot(system.fs, blob)
-      return `Saved to ~/${path}`
-    })
+      const where = await saveScreenshot(system.fs, blob)
+      // Cancelled: the capture stays open to save, copy or edit.
+      if (where === null) {
+        setBusy(false)
+        return
+      }
+      setStatus(`Saved to ${where}`)
+      setTimeout(onClose, 900)
+    } catch (err) {
+      setStatus(`Failed: ${err instanceof Error ? err.message : String(err)}`)
+      setBusy(false)
+    }
+  }
 
   const onCopy = () =>
     doExit(async () => {

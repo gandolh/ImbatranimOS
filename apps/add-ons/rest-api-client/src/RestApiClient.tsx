@@ -8,7 +8,7 @@ import { EnvironmentDialog } from './components/EnvironmentDialog'
 import { CurlDialog } from './components/CurlDialog'
 import { AuthDialog } from './components/AuthDialog'
 import { sendProxyRequest } from './api/httpProxyApi'
-import { EMPTY_DATA, loadData, saveData, type LoadResult } from './api/collectionsApi'
+import { EMPTY_DATA, LEGACY_FILE, loadData, saveData, type LoadResult } from './api/collectionsApi'
 import type {
   BodyMode,
   FormField,
@@ -114,6 +114,29 @@ export function RestApiClient(_props: { windowId: string }) {
     fetchLoad()
   }, [fetchLoad])
 
+  const [earlierDismissed, setEarlierDismissed] = useState(false)
+  /**
+   * Pick the doc kept before the data folder: the pick gives this window the
+   * file, and loading again moves it into the folder as a first run does.
+   */
+  const bringInEarlier = useCallback(async () => {
+    const choice = await system.fs.pickOpen({
+      title: 'Bring in saved requests',
+      extensions: ['json'],
+      startIn: LEGACY_FILE,
+    })
+    if (!choice) return
+    if (choice.root !== LEGACY_FILE.root || choice.path !== LEGACY_FILE.path) {
+      system.notify({
+        level: 'error',
+        title: 'That isn’t the earlier saved requests',
+        body: `Pick ~/${LEGACY_FILE.path}.`,
+      })
+      return
+    }
+    retryLoad()
+  }, [system, retryLoad])
+
   /**
    * Save `next`, or refuse and return false while the doc has not been read.
    *
@@ -212,6 +235,25 @@ export function RestApiClient(_props: { windowId: string }) {
     },
     [system]
   )
+  /**
+   * The bytes of a file to send. A saved request names a file a later window
+   * wasn't given (grants last for the window that picked it): the backend
+   * refuses it with a 403, and the file is chosen again, which gives it.
+   */
+  const readToSend = useCallback(
+    async (path: string): Promise<{ bytes: Uint8Array; path: string }> => {
+      try {
+        return { bytes: new Uint8Array(await system.fs.read('home', path)), path }
+      } catch (err) {
+        if ((err as { response?: { status?: unknown } })?.response?.status !== 403) throw err
+        const again = await chooseFile(path)
+        if (!again)
+          throw new Error(`Choose ${path.split('/').pop()} again to send it`, { cause: err })
+        return { bytes: new Uint8Array(await system.fs.read('home', again)), path: again }
+      }
+    },
+    [system, chooseFile]
+  )
   const composeBody = useCallback(async (): Promise<{
     body?: string
     bodyBase64?: string
@@ -224,8 +266,9 @@ export function RestApiClient(_props: { windowId: string }) {
     if (bodyMode === 'file') {
       if (!filePath.trim()) throw new Error('Choose a file to send as the body')
       // fs.read yields an ArrayBuffer; the multipart helpers work in views.
-      const bytes = new Uint8Array(await system.fs.read('home', filePath.trim()))
-      return { bodyBase64: bytesToBase64(bytes), contentType: contentTypeFor(filePath) }
+      const sent = await readToSend(filePath.trim())
+      if (sent.path !== filePath.trim()) setFilePath(sent.path)
+      return { bodyBase64: bytesToBase64(sent.bytes), contentType: contentTypeFor(sent.path) }
     }
     // multipart
     const fields = activeFields(form)
@@ -236,18 +279,18 @@ export function RestApiClient(_props: { windowId: string }) {
           // Variables work inside a form value too.
           return { name: field.name.trim(), value: interpolateOne(field.value, vars) }
         }
-        const bytes = new Uint8Array(await system.fs.read('home', field.filePath))
+        const sent = await readToSend(field.filePath)
         return {
           name: field.name.trim(),
-          bytes,
-          fileName: field.filePath.split('/').pop() ?? 'file',
-          contentType: contentTypeFor(field.filePath),
+          bytes: sent.bytes,
+          fileName: sent.path.split('/').pop() ?? 'file',
+          contentType: contentTypeFor(sent.path),
         }
       })
     )
     const { bytes, contentType } = buildMultipart(parts)
     return { bodyBase64: bytesToBase64(bytes), contentType }
-  }, [method, bodyMode, preview.body, filePath, form, vars, system])
+  }, [method, bodyMode, preview.body, filePath, form, vars, readToSend])
 
   const handleSend = useCallback(async () => {
     if (!url.trim() || loading) return
@@ -395,6 +438,8 @@ export function RestApiClient(_props: { windowId: string }) {
 
   /** The doc that would not parse, old or moved, for Notepad to repair. */
   const repairFile = load.status === 'failed' && load.malformed ? load.file : undefined
+  /** Where saved requests from before may be, unread: this app holds only what it is given. */
+  const earlier = load.status === 'missing' && !earlierDismissed ? load.earlier : undefined
 
   return (
     <div className="bg-surface text-on-surface font-content flex h-full min-h-0 w-full flex-col">
@@ -420,6 +465,22 @@ export function RestApiClient(_props: { windowId: string }) {
           )}
           <Button size="sm" onClick={retryLoad}>
             Retry
+          </Button>
+        </div>
+      )}
+      {earlier && (
+        <div
+          role="status"
+          className="bg-surface-container-high text-on-surface flex shrink-0 items-center gap-2 px-3 py-1.5 text-[12px]"
+        >
+          <span className="min-w-0 flex-1">
+            Saved requests from before may be in ~/{earlier.path}. Pick that file to bring them in.
+          </span>
+          <Button size="sm" onClick={() => void bringInEarlier()}>
+            Bring them in…
+          </Button>
+          <Button size="sm" onClick={() => setEarlierDismissed(true)}>
+            Dismiss
           </Button>
         </div>
       )}

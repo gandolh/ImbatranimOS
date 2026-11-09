@@ -120,8 +120,9 @@ export function Notepad({ windowId }: { windowId: string }) {
     // so the new instance renders straight into the editor.
     const newWindowId = system.intents.openApp('notepad')
     if (!newWindowId) return
+    // A new file isn't on disk, so nothing is given or recorded yet: its
+    // first save goes through the Save dialog.
     setEditor(newWindowId, next)
-    system.fs.recordRecent(next.root, next.path)
   }
 
   if (doc) {

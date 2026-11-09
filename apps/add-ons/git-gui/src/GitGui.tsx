@@ -11,9 +11,7 @@ import {
 } from 'lucide-react'
 import {
   Button,
-  Input,
   ScrollArea,
-  Select,
   cn,
   useConfirm,
   useFileDialog,
@@ -54,8 +52,6 @@ type RightTab = 'diff' | 'history'
 
 export function GitGui({ windowId: _windowId }: { windowId: string }) {
   const system = useSystem()
-  const [root, setRoot] = useState<string>('home')
-  const [pathInput, setPathInput] = useState<string>('')
   const [repo, setRepo] = useState<{ root: string; path: string } | null>(null)
   const [recents, setRecents] = useState<RecentRepo[]>([])
 
@@ -127,8 +123,6 @@ export function GitGui({ windowId: _windowId }: { windowId: string }) {
   const openRepo = useCallback(
     (r: string, p: string) => {
       setRepo({ root: r, path: p })
-      setRoot(r)
-      setPathInput(p)
       setSelection(null)
       setDiff('')
       void reload(r, p).then((ok) => {
@@ -416,35 +410,11 @@ export function GitGui({ windowId: _windowId }: { windowId: string }) {
   if (!repo) {
     return (
       <div className="bg-surface text-on-surface flex h-full flex-col">
-        <div className="border-outline-variant flex items-end gap-2 border-b px-3 py-2">
-          <div className="w-28">
-            <Select
-              label="Root"
-              value={root}
-              onValueChange={(v) => setRoot(String(v))}
-              options={GIT_ROOTS.map((r) => ({ value: r.id, label: r.label }))}
-            />
-          </div>
-          <div className="flex-1">
-            <Input
-              label="Repository path"
-              placeholder="e.g. projects/my-repo"
-              value={pathInput}
-              onChange={(e) => setPathInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') openRepo(root, pathInput.trim())
-              }}
-            />
-          </div>
-          <Button variant="default" onClick={pickDirectory} title="Browse for a repository">
-            Browse…
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => openRepo(root, pathInput.trim())}
-            disabled={busy}
-          >
-            <FolderGit2 size={13} /> Open
+        {/* A repository is chosen in the OS's folder chooser, which gives
+            Git GUI the folder; a typed path would be one it was never given. */}
+        <div className="border-outline-variant flex items-center gap-2 border-b px-3 py-2">
+          <Button variant="primary" onClick={pickDirectory} title="Browse for a repository">
+            <FolderGit2 size={13} /> Open a repository…
           </Button>
         </div>
         {error && <ErrorBanner message={error} />}
@@ -455,7 +425,11 @@ export function GitGui({ windowId: _windowId }: { windowId: string }) {
           </p>
           <RecentRepos
             repos={recents}
-            onOpen={(r) => openRepo(r.root, r.path)}
+            onOpen={(r) =>
+              // A recent repo is given to this window again by the OS, as one
+              // of Git GUI's own: the window holds nothing it wasn't given.
+              void system.fs.reopenRecent(r.root, r.path).then(() => openRepo(r.root, r.path))
+            }
             onForget={(r) => void forgetRepo(system.http, r.root, r.path).then(loadRecents)}
           />
         </div>

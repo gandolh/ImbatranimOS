@@ -64,16 +64,8 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   // every launcher funnels through. File Manager used to make this
   // call itself, per target app — but attributing a recent to another app is
   // exactly what a scoped capability must forbid, so the shell owns it.
-  const file =
-    typeof payload === 'object' &&
-    payload !== null &&
-    typeof (payload as { openPath?: unknown }).openPath === 'string' &&
-    typeof (payload as { root?: unknown }).root === 'string'
-      ? {
-          root: (payload as { root: string }).root,
-          path: (payload as { openPath: string }).openPath,
-        }
-      : null
+  const files = filesIn(payload)
+  const file = files.opened
   // An open an app made is recorded with its own token, which records only
   // the app's own files, so one app opening another records nothing.
   if (file && (!by || by.appId === appId)) {
@@ -81,15 +73,16 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   }
 
   // The OS opening a file with an app gives it that file, for that window
-  // only. Made before the payload is delivered, so the app's first read
-  // waits on it (see appInstance). Settings, Files and the Terminal act as
-  // the user and need nothing given. An open an app made gives with the
-  // app's token: the backend hands on only what the app holds, or one of its
-  // own recent files to a window of its own, so an app can't open itself
-  // with a path to be given it.
+  // only (and each file of a comparison). Made before the payload is
+  // delivered, so the app's first read waits on it (see appInstance).
+  // Settings, Files and the Terminal act as the user and need nothing given.
+  // An open an app made gives with the app's token: the backend hands on
+  // only what the app holds, or one of its own recent files to a window of
+  // its own, so an app can't open itself with a path to be given it.
   const give = (windowId: string) => {
-    if (file && !ACTS_AS_USER.has(appId)) {
-      void grantFile({ appId, instanceId: windowId }, file, {
+    if (ACTS_AS_USER.has(appId)) return
+    for (const given of files.all) {
+      void grantFile({ appId, instanceId: windowId }, given, {
         client: by?.http,
         // The folder comes only with an open the OS makes, to an app that
         // declares it reads the opened file's folder.
@@ -135,4 +128,25 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   }
 
   return windowId
+}
+
+type GivenFile = { root: string; path: string }
+
+/**
+ * The files an open names: `{ root, openPath }`, the one file it opens, and a
+ * comparison's sides, `{ leftRoot, leftPath }` and `{ rightRoot, rightPath }`
+ * (Files' Compare, Git GUI's Compare with HEAD, whose left side is text).
+ */
+function filesIn(payload: unknown): { opened: GivenFile | null; all: GivenFile[] } {
+  if (typeof payload !== 'object' || payload === null) return { opened: null, all: [] }
+  const p = payload as Record<string, unknown>
+  const pair = (root: string, path: string): GivenFile | null =>
+    typeof p[root] === 'string' && typeof p[path] === 'string'
+      ? { root: p[root], path: p[path] }
+      : null
+  const opened = pair('root', 'openPath')
+  const all = [opened, pair('leftRoot', 'leftPath'), pair('rightRoot', 'rightPath')].filter(
+    (f): f is GivenFile => f !== null
+  )
+  return { opened, all }
 }

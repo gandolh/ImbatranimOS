@@ -262,6 +262,19 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
         ),
       recordRecent: (root, path) => recordRecentFile(root, path, appId, http),
       removeRecent: (root, path) => removeRecentFile(root, path, http),
+      // The app gives its own window one of its recents, with its token: the
+      // backend allows only the app's own. A copy acting as the user needs
+      // nothing given.
+      reopenRecent: (root, path) =>
+        instance
+          ? grantFile(
+              { appId, instanceId: instance.instanceId },
+              { root, path },
+              {
+                client: instance.http,
+              }
+            )
+          : Promise.resolve(),
     },
 
     // The app's own folders, named by the backend from the token its copy's

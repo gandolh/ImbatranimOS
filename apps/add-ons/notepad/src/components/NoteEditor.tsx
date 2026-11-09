@@ -16,7 +16,7 @@ import {
   useUnsavedGuard,
 } from '@imbatranim/ui'
 import { useNoteFileQuery, useUpdateFileMutation } from '../queries/notepadQueries'
-import type { OpenDoc } from '../store/notepadStore'
+import { useNotepadStore, type OpenDoc } from '../store/notepadStore'
 import { FindBar } from './FindBar'
 import { FormatToolbar } from './FormatToolbar'
 import { MarkdownPreview } from './MarkdownPreview'
@@ -68,7 +68,7 @@ type FsEntry = { name: string; path: string; type: 'file' | 'directory' }
  * with nothing to recover from.
  */
 export function NoteEditor({
-  windowId: _windowId,
+  windowId,
   doc,
   onBack,
 }: {
@@ -146,6 +146,29 @@ export function NoteEditor({
     const snapshot = content
     const name = fileName(path, 'note')
     setError(null)
+    // A new file is placed in the Save dialog: the pick is what gives Notepad
+    // the path, and the window then holds the file it saved.
+    if (doc.isNew && savedVersion === null) {
+      const choice = await system.fs.pickSave({
+        title: 'Save as',
+        suggestedName: name,
+        startIn: { root, path },
+      })
+      if (!choice) return
+      const placed = {
+        root: choice.root === 'notes' ? 'notes' : 'home',
+        path: choice.path,
+      } as const
+      try {
+        const written = await updateMutation.mutateAsync({ ...placed, content: snapshot })
+        setSavedContent(snapshot)
+        setSavedVersion(written.version)
+        useNotepadStore.getState().setEditor(windowId, placed)
+      } catch (err) {
+        setError(reportFileFailure(system, 'save', err, { noun: 'note', name }))
+      }
+      return
+    }
     const write = async (expected: string | undefined) => {
       const written = await updateMutation.mutateAsync({ root, path, content: snapshot, expected })
       // Only what was actually written becomes the new baseline. If the user typed
@@ -172,7 +195,19 @@ export function NoteEditor({
     } catch (err) {
       setError(reportFileFailure(system, 'save', err, { noun: 'note', name }))
     }
-  }, [dirty, updateMutation, content, root, path, system, savedVersion, askConflict, refetch])
+  }, [
+    dirty,
+    updateMutation,
+    content,
+    root,
+    path,
+    system,
+    savedVersion,
+    askConflict,
+    refetch,
+    doc.isNew,
+    windowId,
+  ])
 
   // The window and taskbar titles carry the filename and the dirty marker, and
   // closing with unsaved changes asks Save / Don't Save / Cancel — the same

@@ -85,6 +85,20 @@ export class RecentService {
   }
 
   /**
+   * True when `(root, path)` is among the repositories `appId` remembered
+   * (Git GUI's recent repos, `git_recent_repos`): a folder the app may give a
+   * window of its own again.
+   */
+  isRecentRepoOf(root: string, path: string, appId: string): boolean {
+    const row = this.db.db
+      .prepare(
+        `SELECT 1 FROM git_recent_repos WHERE root = ? AND path = ? AND app_id = ?`,
+      )
+      .get(root, path, appId);
+    return row !== undefined;
+  }
+
+  /**
    * Remove one entry (self-heal after a 404 reopen). With `appId`, only if
    * that app recorded it: an app tidies its own entries, not another's.
    */

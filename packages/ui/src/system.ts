@@ -109,6 +109,15 @@ export interface SystemFs {
   recordRecent(root: string, path: string): void
   /** Drop a recents entry this app failed to reopen (self-heal). */
   removeRecent(root: string, path: string): void
+  /**
+   * Ask the OS to give this window one of this app's own recent files again
+   * (or, for Git GUI, one of its recent repositories): what a window that
+   * reopens a remembered path needs, such as a restored tab. Resolves once
+   * the OS has answered; a path that isn't this app's recent stays refused,
+   * and reading it answers 403. A method, not an `http` call, because the
+   * copy the grant names is the OS's to know.
+   */
+  reopenRecent(root: string, path: string): Promise<void>
 }
 
 // ── The app's own data ────────────────────────────────────────────────────────

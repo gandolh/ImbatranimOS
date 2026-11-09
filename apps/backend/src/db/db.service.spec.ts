@@ -479,6 +479,32 @@ describe('DbService — the file grants table', () => {
     svc.onModuleDestroy();
   });
 
+  it('a database at step 15 gives its recent repos to Git GUI', () => {
+    const svc = openService(join(dir, 'repos.sqlite'));
+    svc.db.exec(`
+      DROP TABLE git_recent_repos;
+      CREATE TABLE git_recent_repos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        root TEXT NOT NULL,
+        path TEXT NOT NULL,
+        last_opened DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(root, path)
+      );
+      INSERT INTO git_recent_repos (root, path) VALUES ('home', 'repo');
+    `);
+    svc.db.pragma('user_version = 15');
+    svc.migrate();
+    expect(svc.migrationFailure).toBeNull();
+    expect(
+      svc.db.prepare('SELECT root, path, app_id FROM git_recent_repos').all(),
+    ).toEqual([{ root: 'home', path: 'repo', app_id: 'git-gui' }]);
+    // Again: the column is there, and nothing changes.
+    svc.db.pragma('user_version = 15');
+    svc.migrate();
+    expect(svc.migrationFailure).toBeNull();
+    svc.onModuleDestroy();
+  });
+
   it('a database at step 14 keeps its grants and takes a listing grant', () => {
     const svc = openService(join(dir, 'listing.sqlite'));
     // The table as step 14 made it: two kinds.

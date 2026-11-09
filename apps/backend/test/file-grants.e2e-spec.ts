@@ -396,8 +396,19 @@ describe('Files by grant (e2e)', () => {
     await recordAs(null, 'Documents/sub', 'hollow').expect(204);
     await give(second, 'Documents/sub', 'folder', first).expect(403);
 
+    // A folder among its own recent repositories reopens too.
+    app
+      .get(DbService)
+      .db.prepare(
+        `INSERT INTO git_recent_repos (root, path, app_id) VALUES ('home', 'Documents/sub', 'hollow')`,
+      )
+      .run();
+    await give(second, 'Documents/sub', 'folder', first).expect(204);
+    await as(second).list('Documents/sub').expect(200);
+
     // Another app can't use Hollow's recents, for itself or for Hollow.
     const quill = await open('quill');
+    await give(quill, 'Documents/sub', 'folder', quill).expect(403);
     await give(quill, 'Documents/plan.txt', undefined, quill).expect(403);
     await give(second, 'Documents/plan.txt', undefined, quill).expect(403);
     await recordAs(quill, 'Documents/plan.txt', 'quill').expect(403);

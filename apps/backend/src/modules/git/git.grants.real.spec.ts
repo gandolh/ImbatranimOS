@@ -145,4 +145,22 @@ describe('git as an app, against a real repository', () => {
       { root: 'home', path: 'repo' },
     ]);
   });
+
+  it('an app sees and forgets only the repos it remembered', async () => {
+    grants.grant(gitGui, join(jail, 'repo'), 'folder');
+    await service.as(gitGui).rememberRepo('home', 'repo');
+    const other: AppIdentity = {
+      appId: 'hollow',
+      instanceId: 'h1',
+      windowId: 'h1',
+      groups: ['hollow'],
+    };
+    expect((await service.as(other).recentRepos()).repos).toEqual([]);
+    service.as(other).forgetRepo('home', 'repo');
+    expect((await service.as(gitGui).recentRepos()).repos).toEqual([
+      { root: 'home', path: 'repo' },
+    ]);
+    service.as(gitGui).forgetRepo('home', 'repo');
+    expect((await service.recentRepos()).repos).toEqual([]);
+  });
 });

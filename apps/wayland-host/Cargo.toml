@@ -33,6 +33,13 @@ rustix = { version = "1.0.7", default-features = false, features = ["std", "proc
 pulseaudio = "0.3.2"
 opus = "0.4.0"
 
+# smithay 0.7.0 with one fix in its X11 window manager: a paste over 64 KiB
+# (sent in chunks, X11's INCR) also reaches an app that asks from a child
+# window, as xterm does. Upstream doesn't have it yet; vendor/README.md says
+# what changed and when this can go.
+[patch.crates-io]
+smithay = { path = "vendor/smithay" }
+
 [profile.release]
 opt-level = 3
 lto = "thin"

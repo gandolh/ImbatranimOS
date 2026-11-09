@@ -236,7 +236,19 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
    * late state update after the window closes is a no-op in React 19.
    */
   const openTargets = useCallback(
-    async (targets: { root: string; path: string; revealLine?: number }[]) => {
+    async (
+      targets: { root: string; path: string; revealLine?: number }[],
+      {
+        quiet = false,
+      }: {
+        /**
+         * A tab that fails to open says nothing: a restored tab whose file
+         * the editor may no longer be given (another app opened it since, or
+         * it is gone) isn't something the user just asked for.
+         */
+        quiet?: boolean
+      } = {}
+    ) => {
       if (targets.length === 0) return
 
       const toLoad: { id: string; root: string; path: string }[] = []
@@ -298,7 +310,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
           openedIdsRef.current.delete(t.id)
           pendingRevealRef.current.delete(t.id)
           console.error('[code-editor] failed to open', t.path, err)
-          setError('Could not open this file.')
+          if (!quiet) setError('Could not open this file.')
         }
       }
       setLoading(false)
@@ -320,9 +332,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
 
   useEffect(() => {
     const restored = claimTabSession()
-    const targets = [...restored]
-    if (source) targets.push({ root: source.root, path: source.path })
-    if (targets.length === 0) return
+    if (restored.length === 0 && !source) return
     // A restored tab is a path this window wasn't given: ask the OS for it
     // again, as one of the editor's own recent files. One that isn't (another
     // app opened it since) fails on its own, like a deleted file.
@@ -332,7 +342,9 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
     // cascading out of the effect that scheduled it is exactly what the old
     // inline async IIFE existed to avoid. `claimTabSession` still runs here,
     // synchronously, because it answers only once.
-    void reopened.then(() => openTargets(targets))
+    void reopened
+      .then(() => openTargets(restored, { quiet: true }))
+      .then(() => (source ? openTargets([{ root: source.root, path: source.path }]) : undefined))
   }, [source, openTargets, system])
 
   // Record the on-disk tabs for this session on every change.

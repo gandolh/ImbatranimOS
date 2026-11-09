@@ -98,11 +98,9 @@ export async function deleteDirectory(
  * any error: if the answer cannot be had, opening into `home` (the consistent
  * choice) is the better failure.
  */
-export async function notesRootHasFiles(http: SystemHttp): Promise<boolean> {
-  try {
-    const entries = await fetchNotes(http, 'notes', '')
-    return entries.length > 0
-  } catch {
-    return false
-  }
+export async function notesRootHasFiles(_http: SystemHttp): Promise<boolean> {
+  // Notepad reads only the files it is given (2026-11-09), so it can't list
+  // the `notes` root to look: asking would only be refused. Opening into
+  // `home` is the answer it fell back to anyway; the picker still offers Notes.
+  return false
 }

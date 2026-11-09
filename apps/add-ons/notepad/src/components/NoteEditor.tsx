@@ -78,7 +78,14 @@ export function NoteEditor({
 }) {
   const system = useSystem()
   const { root, path } = doc
-  const { data: file, isLoading, isError, refetch } = useNoteFileQuery(root, path)
+  // A new file isn't on disk yet, and Notepad isn't given it until its first
+  // save picks a place: nothing to read.
+  const {
+    data: file,
+    isLoading,
+    isError,
+    refetch,
+  } = useNoteFileQuery(root, doc.isNew ? undefined : path)
   const updateMutation = useUpdateFileMutation()
 
   const [content, setContent] = useState('')

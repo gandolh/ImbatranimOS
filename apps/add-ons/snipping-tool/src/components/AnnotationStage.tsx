@@ -92,6 +92,12 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
   } | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  /**
+   * The OS's Save dialog is open. The stage sits above every window and
+   * dialog (it covers the desktop it captured), so it steps aside while the
+   * dialog is up, or the dialog would open under it, unseen.
+   */
+  const [picking, setPicking] = useState(false)
   const [noticeOpen, setNoticeOpen] = useState(true)
 
   const draggingRef = useRef(false)
@@ -292,6 +298,8 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
     } catch (err) {
       setStatus(`Failed: ${err instanceof Error ? err.message : String(err)}`)
       setBusy(false)
+    } finally {
+      setPicking(false)
     }
   }
 
@@ -300,7 +308,8 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
     setBusy(true)
     try {
       const blob = await toBlob(canvasRef.current!)
-      const where = await saveScreenshot(system.fs, blob)
+      setPicking(true)
+      const where = await saveScreenshot(system.fs, blob, () => setPicking(false))
       // Cancelled: the capture stays open to save, copy or edit.
       if (where === null) {
         setBusy(false)
@@ -344,7 +353,8 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (textDraft) return
+      // The Save dialog's Escape cancels the dialog, not the capture.
+      if (textDraft || picking) return
       if (e.key === 'Escape') onBack()
       else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault()
@@ -353,7 +363,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [textDraft, onBack])
+  }, [textDraft, onBack, picking])
 
   const tbBtn =
     'rounded-control flex h-8 w-8 items-center justify-center border outline-none transition-colors ' +
@@ -363,10 +373,12 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
   return (
     <div
       data-snip-overlay
+      aria-hidden={picking || undefined}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 100000,
+        visibility: picking ? 'hidden' : undefined,
         display: 'flex',
         flexDirection: 'column',
         background: 'rgba(10,10,12,0.92)',

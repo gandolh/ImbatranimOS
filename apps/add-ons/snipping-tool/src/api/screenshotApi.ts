@@ -25,7 +25,12 @@ export function screenshotFilename(now: Date = new Date()): string {
  * reaches only what it is given), as Windows' Snipping Tool asks on every
  * save. Resolves the saved path, or null when the user cancelled.
  */
-export async function saveScreenshot(fs: SystemFs, blob: Blob): Promise<string | null> {
+export async function saveScreenshot(
+  fs: SystemFs,
+  blob: Blob,
+  /** Called once the dialog has closed, before the upload. */
+  picked: () => void = () => undefined
+): Promise<string | null> {
   const name = screenshotFilename()
   const choice = await fs.pickSave({
     title: 'Save screenshot',
@@ -35,6 +40,7 @@ export async function saveScreenshot(fs: SystemFs, blob: Blob): Promise<string |
     // find lives, and the name comes from `suggestedName`.
     startIn: { root: 'home', path: SCREENSHOTS_DIR },
   })
+  picked()
   if (!choice) return null
   const saved = choice.path.split('/').pop() ?? name
   await fs.upload(choice.root, choice.path, await blob.arrayBuffer(), saved)

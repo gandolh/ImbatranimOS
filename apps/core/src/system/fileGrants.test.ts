@@ -108,11 +108,11 @@ describe('openApp gives the file it opens', () => {
   })
 
   it('to the open window of a single-instance app it re-delivers to', async () => {
-    const id = openApp('todo')
-    expect(openApp('todo', { openPath: 'lists/today.json', root: 'home' })).toBe(id)
+    const id = openApp('clock')
+    expect(openApp('clock', { openPath: 'lists/today.json', root: 'home' })).toBe(id)
     await grantsSettled(id)
     expect(grants()).toEqual([
-      ['/files/grants', { instanceId: id, appId: 'todo', root: 'home', path: 'lists/today.json' }],
+      ['/files/grants', { instanceId: id, appId: 'clock', root: 'home', path: 'lists/today.json' }],
     ])
   })
 
@@ -165,14 +165,14 @@ describe('openApp gives the file it opens', () => {
   }
 
   it('an app opening itself gives with its own token, and never waits on itself', async () => {
-    const id = openApp('todo')
+    const id = openApp('clock')
     const { appPost, http } = appClient(() => id)
     const file = { openPath: 'lists/today.json', root: 'home' }
-    expect(openApp('todo', file, { appId: 'todo', http })).toBe(id)
+    expect(openApp('clock', file, { appId: 'clock', http })).toBe(id)
     await grantsSettled(id)
     expect(appPost).toHaveBeenCalledWith('/files/grants', {
       instanceId: id,
-      appId: 'todo',
+      appId: 'clock',
       root: 'home',
       path: 'lists/today.json',
     })
@@ -180,7 +180,7 @@ describe('openApp gives the file it opens', () => {
     expect(appPost).toHaveBeenCalledWith('/files/recent', {
       root: 'home',
       path: 'lists/today.json',
-      appId: 'todo',
+      appId: 'clock',
     })
     expect(post).not.toHaveBeenCalled()
   })

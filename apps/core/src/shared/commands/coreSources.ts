@@ -12,8 +12,8 @@ import {
 // The core-owned sources, registered once (guarded against HMR double
 // registration). The command palette and Start's search both import this file,
 // so the two read the same sources and never disagree. Built-in add-ons'
-// sources (bookmarks) come from their manifests and are registered by
-// src/manifest.ts; an installed kit app's arrive with its module, through
+// sources come from their manifests and are registered by src/manifest.ts;
+// an installed kit app's (Bookmarks') arrive with its module, through
 // registerAppSources below.
 for (const source of [appsSource, filesSource, recentFilesSource]) {
   if (!COMMAND_SOURCES.find((s) => s.group === source.group)) registerCommandSource(source)

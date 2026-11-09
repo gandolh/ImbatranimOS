@@ -79,7 +79,7 @@ export function dataVersion(bytes: Buffer | string): string {
  *
  * The methods take an identity rather than a request, so the OS itself can
  * write into an app's folder as that app (a one-time move of data an app kept
- * elsewhere) with the same checks and the same records.
+ * elsewhere, {@link place}) with the same checks and the same records.
  */
 @Injectable()
 export class AppDataService {
@@ -142,6 +142,44 @@ export class AppDataService {
     content: string,
     expected?: string | null,
   ): Promise<{ path: string; version: string }> {
+    const { path, version } = await this.writeFile(
+      identity,
+      kind,
+      rawPath,
+      content,
+      { expected, asApp: true },
+    );
+    return { path, version };
+  }
+
+  /**
+   * The OS putting a file into an app's folder as the app: a one-time move
+   * of data the OS kept for it. The same folder, checks and records as
+   * {@link write}, for an app that isn't installed too (the files wait for
+   * it). It writes only where there is no file yet: one already holding
+   * these bytes (a move that stopped part-way) is left as it is, and one
+   * holding anything else is a 409, so a move never writes over what the app
+   * wrote since.
+   */
+  async place(
+    identity: AppIdentity,
+    kind: DataKind,
+    rawPath: string,
+    content: string,
+  ): Promise<{ path: string; version: string; written: boolean }> {
+    return this.writeFile(identity, kind, rawPath, content, {
+      expected: null,
+      asApp: false,
+    });
+  }
+
+  private async writeFile(
+    identity: AppIdentity,
+    kind: DataKind,
+    rawPath: string,
+    content: string,
+    { expected, asApp }: { expected?: string | null; asApp: boolean },
+  ): Promise<{ path: string; version: string; written: boolean }> {
     const bytes = Buffer.from(content, 'utf8');
     if (bytes.length > MAX_DATA_BYTES) {
       throw new PayloadTooLargeException(
@@ -150,7 +188,7 @@ export class AppDataService {
     }
     const { folder, abs, path } = await this.resolve(identity, kind, rawPath);
     return this.inTurn(folder, async () => {
-      this.assertPresent(identity);
+      if (asApp) this.assertPresent(identity);
       await this.ensureFolder(identity, folder);
       const existing = await this.lstat(abs);
       if (existing?.isDirectory()) {
@@ -165,6 +203,9 @@ export class AppDataService {
 
       if (expected !== undefined) {
         const current = existing ? dataVersion(await fs.readFile(abs)) : null;
+        if (!asApp && current === dataVersion(bytes)) {
+          return { path, version: current, written: false };
+        }
         if (current !== expected) {
           throw new ConflictException({
             statusCode: 409,
@@ -177,7 +218,7 @@ export class AppDataService {
 
       await this.writeAtomically(abs, bytes);
       if (!existing) this.modes.create(identity, abs, 'file');
-      return { path, version: dataVersion(bytes) };
+      return { path, version: dataVersion(bytes), written: true };
     });
   }
 

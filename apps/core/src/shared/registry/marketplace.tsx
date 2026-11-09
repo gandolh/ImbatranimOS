@@ -2,6 +2,7 @@ import { lazy, type ComponentType } from 'react'
 import { create } from 'zustand'
 import {
   Bomb,
+  Bookmark,
   Briefcase,
   Castle,
   Dices,
@@ -11,6 +12,7 @@ import {
   Gamepad2,
   Ghost,
   Joystick,
+  ListTodo,
   Map as MapIcon,
   Package,
   PenTool,
@@ -242,6 +244,9 @@ const ICONS: Record<string, IconComponent> = {
   'drafting-compass': DraftingCompass,
   ruler: Ruler,
   briefcase: Briefcase,
+  // Accessories.
+  'list-todo': ListTodo,
+  bookmark: Bookmark,
 }
 
 /** The icon names a descriptor may use, for the descriptor check and the docs. */

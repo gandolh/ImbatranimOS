@@ -3,8 +3,6 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { ConfigModule } from './config/config.module';
 import { DbModule } from './db/db.module';
 import { StickyNotesModule } from './modules/sticky-notes/sticky-notes.module';
-import { TodosModule } from './modules/todos/todos.module';
-import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
 import { SystemModule } from './modules/system/system.module';
 import { PtyModule } from './modules/pty/pty.module';
 import { FilesModule } from './modules/files/files.module';
@@ -51,8 +49,6 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
     AppDataModule,
     UpgradeRoutesModule,
     StickyNotesModule,
-    TodosModule,
-    BookmarksModule,
     SystemModule,
     PtyModule,
     FilesModule,

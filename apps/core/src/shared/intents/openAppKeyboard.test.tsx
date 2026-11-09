@@ -10,7 +10,7 @@ vi.mock('../../lib/recentFiles', () => ({
   clearRecentFiles: vi.fn(),
   fetchRecentFiles: vi.fn(async () => []),
   useRecentFilesQuery: () => ({
-    data: [{ id: 1, root: 'home', path: 'lists/today.json', appId: 'todo', lastOpened: '' }],
+    data: [{ id: 1, root: 'home', path: 'lists/today.json', appId: 'clock', lastOpened: '' }],
   }),
 }))
 
@@ -60,16 +60,16 @@ function mountWindowDom(id: string): HTMLInputElement {
   return el.querySelector('input')!
 }
 
-/** Todo open behind Calculator, the keyboard on a launcher button. */
-function openTodoBehind(): { todoId: string; input: HTMLInputElement; launcher: HTMLElement } {
-  const todoId = openApp('todo')
+/** Clock open behind Calculator, the keyboard on a launcher button. */
+function openClockBehind(): { clockId: string; input: HTMLInputElement; launcher: HTMLElement } {
+  const clockId = openApp('clock')
   openApp('calculator')
-  const input = mountWindowDom(todoId)
+  const input = mountWindowDom(clockId)
   const launcher = document.createElement('button')
   document.body.appendChild(launcher)
   launcher.focus()
   flushFrames()
-  return { todoId, input, launcher }
+  return { clockId, input, launcher }
 }
 
 const topId = () =>
@@ -99,11 +99,11 @@ afterEach(() => {
 
 describe('openApp and the keyboard', () => {
   it('moves the keyboard into an open window it raises, a frame later', () => {
-    const { todoId, input, launcher } = openTodoBehind()
-    expect(openApp('todo')).toBe(todoId)
+    const { clockId, input, launcher } = openClockBehind()
+    expect(openApp('clock')).toBe(clockId)
     expect(document.activeElement).toBe(launcher)
     flushFrames()
-    expect(topId()).toBe(todoId)
+    expect(topId()).toBe(clockId)
     expect(document.activeElement).toBe(input)
   })
 
@@ -111,7 +111,7 @@ describe('openApp and the keyboard', () => {
     const launcher = document.createElement('button')
     document.body.appendChild(launcher)
     launcher.focus()
-    const id = openApp('todo')
+    const id = openApp('clock')
     mountWindowDom(id)
     expect(frames).toHaveLength(0)
     expect(document.activeElement).toBe(launcher)
@@ -125,19 +125,19 @@ describe('openApp and the keyboard', () => {
 
 describe('launchers that raise an open window give it the keyboard', () => {
   it("the palette's recent files", () => {
-    const { todoId, input } = openTodoBehind()
+    const { clockId, input } = openClockBehind()
     recentFilesSource.activate({
-      id: 'recent:home:todo:lists/today.json',
+      id: 'recent:home:clock:lists/today.json',
       label: 'today.json',
       group: 'Recent files',
     })
     flushFrames()
-    expect(topId()).toBe(todoId)
+    expect(topId()).toBe(clockId)
     expect(document.activeElement).toBe(input)
   })
 
   it("Start's recent files", () => {
-    const { todoId, input, launcher } = openTodoBehind()
+    const { clockId, input, launcher } = openClockBehind()
     // Closing the menu hands focus back to the Start button, as in the taskbar.
     const onClose = vi.fn(() => act(() => root.render(null)))
     act(() => {
@@ -157,25 +157,25 @@ describe('launchers that raise an open window give it the keyboard', () => {
     expect(onClose).toHaveBeenCalled()
     expect(document.activeElement).toBe(launcher)
     flushFrames()
-    expect(topId()).toBe(todoId)
+    expect(topId()).toBe(clockId)
     expect(document.activeElement).toBe(input)
   })
 
   it("the Notification panel's rows", () => {
-    const { todoId, input } = openTodoBehind()
+    const { clockId, input } = openClockBehind()
     useNotificationStore.setState({
       notifications: [
-        { id: 'n1', title: 'Due today', appId: 'todo', level: 'info', timestamp: 0, read: false },
+        { id: 'n1', title: 'Alarm', appId: 'clock', level: 'info', timestamp: 0, read: false },
       ],
     })
     act(() => {
       root.render(<NotificationPanel onClose={() => undefined} />)
     })
     const row = container.querySelector<HTMLElement>('[role="button"]')
-    expect(row?.textContent).toContain('Due today')
+    expect(row?.textContent).toContain('Alarm')
     act(() => row!.click())
     flushFrames()
-    expect(topId()).toBe(todoId)
+    expect(topId()).toBe(clockId)
     expect(document.activeElement).toBe(input)
   })
 })

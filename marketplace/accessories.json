@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 2,
+  "id": "accessories",
+  "name": "Accessories",
+  "description": "Todo and Bookmarks, the organisers: tasks with due dates and lists, and links in folders.",
+  "source": {
+    "repo": "https://github.com/gandolh/imbatranim-apps",
+    "ref": "ebc2be68b7866841004d968382bab907af0cae82"
+  },
+  "type": "static",
+  "runtime": "native",
+  "sharedKit": 1,
+  "build": {
+    "install": ["npm", "ci", "--workspace=accessories"],
+    "command": ["npm", "run", "build:os", "--workspace=accessories"],
+    "output": "accessories/dist/os"
+  },
+  "apps": [
+    {
+      "id": "todo",
+      "name": "Todo",
+      "description": "Tasks with due dates, lists and priorities",
+      "meta": [
+        "tasks",
+        "checklist",
+        "reminders",
+        "due date",
+        "todo list",
+        "priority"
+      ],
+      "entry": "todo/app.mjs",
+      "window": {
+        "defaultSize": {
+          "w": 360,
+          "h": 480
+        },
+        "minSize": {
+          "w": 300,
+          "h": 340
+        }
+      },
+      "icon": "list-todo",
+      "multiInstance": false,
+      "capabilities": ["notify", "schedule"],
+      "styles": ["todo/app.css"],
+      "background": true
+    },
+    {
+      "id": "bookmarks",
+      "name": "Bookmarks",
+      "description": "Save and organize links",
+      "meta": ["links", "favorites", "urls", "folders"],
+      "entry": "bookmarks/app.mjs",
+      "window": {
+        "defaultSize": {
+          "w": 520,
+          "h": 560
+        },
+        "minSize": {
+          "w": 340,
+          "h": 380
+        }
+      },
+      "icon": "bookmark",
+      "multiInstance": false,
+      "capabilities": ["fs", "http", "intents", "notify"],
+      "styles": ["bookmarks/app.css"],
+      "commandSources": true
+    }
+  ],
+  "minSystemVersion": 2
+}

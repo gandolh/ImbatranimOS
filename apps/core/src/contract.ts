@@ -94,9 +94,9 @@ export type AppConfig = {
    * shell from login to tab close, whether or not any of the app's windows are
    * open, and unmounted when the add-on is disabled.
    *
-   * The seam exists so Clock alarms, Calendar reminders and Todo due dates can
-   * fire without their windows being open — the three apps used to apologise
-   * for exactly this. Contract for anything mounted here:
+   * The seam exists so Clock alarms and Calendar reminders can fire without
+   * their windows being open (Todo's due dates too, now an installed app's
+   * `Background`) — the apps used to apologise for exactly this. Contract for anything mounted here:
    *
    * - It renders nothing (`return null`); it exists for effects.
    * - It must be cheap: one slow interval, no per-frame work, no WebSockets.

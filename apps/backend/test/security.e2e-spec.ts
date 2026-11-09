@@ -88,7 +88,7 @@ describe('Security hardening (e2e)', () => {
 
   describe('auth surface edges', () => {
     it('rejects a HEAD request to a protected route (guard runs on HEAD)', async () => {
-      await http.head('/api/todos').expect(401);
+      await http.head('/api/sticky-notes').expect(401);
     });
 
     it('returns 404 (not the SPA / not 401) for an unknown /api path', async () => {

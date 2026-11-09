@@ -7,7 +7,7 @@ Apps that open in a window are workspace packages under `apps/add-ons/`, kept ap
    - a `tsconfig.json` that extends `../tsconfig.base.json`;
    - an `eslint.config.js` copied from another add-on. It carries the import rules below.
 2. Put the app in `src/`. Components and hooks come from `@imbatranim/ui`. Everything that touches the machine comes from the `system` handle the desktop injects (`useSystem()` from `@imbatranim/ui`): `fs`, `http`, `window`, `intents`, `shortcuts`, `appearance`, `sound`, `schedule`, `notify` and `on`. From `@imbatranim/core` you may import types only. An app that makes sound follows the tray's volume: it plays at its own volume times `system.sound.get().volume`, stays silent while `muted`, and listens for `sound-changed` (`useSystemSound()` does all three). An app that makes no sound needs nothing.
-3. Export `manifest: AddonManifest` from `src/index.ts`: an id, a name, an icon, a lazy-loaded component and window sizes. Optional fields add command-palette sources, a background component or a desktop layer. `apps/add-ons/todo/src/index.ts` is a short example.
+3. Export `manifest: AddonManifest` from `src/index.ts`: an id, a name, an icon, a lazy-loaded component and window sizes. Optional fields add command-palette sources, a background component or a desktop layer. `apps/add-ons/clock/src/index.ts` is a short example.
 4. Register it in `apps/core/src/manifest.ts`, the one file in core that knows about add-ons: one import and one entry in `MANIFESTS`. Then run `npm install` at the repo root to link the workspace.
 
 Nothing else in core changes. ESLint enforces the boundaries: a value import from `@imbatranim/core` in an add-on is an error, add-ons cannot import each other, and core imports add-ons only in `manifest.ts`.

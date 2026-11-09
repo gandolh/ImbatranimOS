@@ -87,6 +87,14 @@ describe('RecentService', () => {
     expect(list.some((r) => r.path === 'other-repo')).toBe(true);
   });
 
+  it("removeApps forgets those apps' files and folders, no one else's", () => {
+    service.record('home', 'a.txt', 'sim');
+    service.record('home', 'repo', 'sim', true, 'folder');
+    service.record('home', 'b.txt', 'notepad');
+    service.removeApps(['sim']);
+    expect(service.list().map((r) => r.path)).toEqual(['b.txt']);
+  });
+
   it('the old-shape table is dropped and recreated by the migration', () => {
     // Recreate the pre-94 shape, then run migrate() again: the shape wins,
     // the rows are gone. Since the migration ledger the ledger makes each step run once,

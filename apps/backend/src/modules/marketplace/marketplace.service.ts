@@ -15,6 +15,7 @@ import { dirname, join, posix, relative, resolve, sep } from 'path';
 import type { Env } from '../../config/env.schema';
 import { DbService } from '../../db/db.service';
 import { AppDataService } from '../app-data/app-data.service';
+import { RecentService } from '../files/recent.service';
 import { AppTokens } from '../app-identity/app-tokens';
 import { FileGrants } from '../app-identity/file-grants.service';
 import { InstalledApps } from '../app-identity/installed-apps';
@@ -299,6 +300,7 @@ export class MarketplaceService implements OnModuleInit {
     private readonly appTokens: AppTokens,
     private readonly grants: FileGrants,
     private readonly installed: InstalledApps,
+    private readonly recent: RecentService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -814,8 +816,9 @@ export class MarketplaceService implements OnModuleInit {
   /**
    * Remove an installed descriptor: its server, row, builds and log, and the
    * caches of its apps. Their settings, data and state stay for a reinstall,
-   * unless `removeData`, which takes those folders first: if they can't be
-   * removed, the app stays installed and the error says so.
+   * and so do their recents, unless `removeData`, which takes those folders
+   * first (if they can't be removed, the app stays installed and the error
+   * says so), then their recents.
    */
   async uninstall(
     id: string,
@@ -847,6 +850,10 @@ export class MarketplaceService implements OnModuleInit {
             `Its data could not be removed, so it is still installed: ${String(err)}`,
           );
         }
+        // Its recents go with its data (owner, 2026-11-09): a reinstall gets
+        // no file or folder back it was given before. Without the box they
+        // stay, as its data does.
+        this.recent.removeApps(apps);
       }
       this.dbs.db.prepare('DELETE FROM marketplace_apps WHERE id = ?').run(id);
       this.jobs.delete(id);

@@ -171,6 +171,20 @@ export class RecentService {
       .run(root, path, appId);
   }
 
+  /**
+   * Forget every recent of these apps, files and folders: an uninstall that
+   * also removes their data, so a reinstall gets nothing back it was given
+   * before.
+   */
+  removeApps(appIds: readonly string[]): void {
+    const remove = this.db.db.prepare(
+      `DELETE FROM recent_files WHERE app_id = ?`,
+    );
+    this.db.db.transaction(() => {
+      for (const appId of appIds) remove.run(appId);
+    })();
+  }
+
   /** The privacy affordance: wipe the list. */
   clear(): void {
     this.db.db.prepare(`DELETE FROM recent_files`).run();

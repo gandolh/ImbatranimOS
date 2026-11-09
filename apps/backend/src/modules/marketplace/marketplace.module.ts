@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AppDataModule } from '../app-data/app-data.module';
 import { AppIdentityModule } from '../app-identity/app-identity.module';
+import { FilesModule } from '../files/files.module';
 import { MarketplaceController } from './marketplace.controller';
 import { MarketplaceServers } from './marketplace-servers.service';
 import { MarketplaceUrlApps } from './marketplace-url.service';
@@ -19,7 +20,7 @@ import { SandboxTokens } from './sandbox-tokens';
  * from global modules; `FileGrants` and `InstalledApps` from app identity.
  */
 @Module({
-  imports: [AppDataModule, AppIdentityModule],
+  imports: [AppDataModule, AppIdentityModule, FilesModule],
   controllers: [MarketplaceController],
   providers: [
     MarketplaceService,

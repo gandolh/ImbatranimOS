@@ -20,6 +20,7 @@ import request from 'supertest';
 import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
 import { DbService } from '../src/db/db.service';
+import { RecentService } from '../src/modules/files/recent.service';
 import { AppIdentityModule } from '../src/modules/app-identity/app-identity.module';
 import { APP_TOKEN_HEADER } from '../src/modules/app-identity/app-identity.types';
 import { USER_ONLY } from '../src/modules/app-identity/calling-app';
@@ -540,6 +541,29 @@ describe('Files by grant (e2e)', () => {
     await give(second, 'Documents/plan.txt', undefined, quill).expect(403);
     await recordAs(quill, 'Documents/plan.txt', 'quill').expect(403);
     await as(quill).read('Documents/plan.txt').expect(403);
+  });
+
+  it("an uninstall that removes the data takes the app's recents, so nothing is handed back", async () => {
+    const first = await open('hollow');
+    const second = await open('hollow');
+    // Hollow worked in a folder and opened a file: both its recents.
+    await http
+      .post('/api/files/recent')
+      .set('Cookie', TEST_COOKIE)
+      .send({ root: 'home', path: 'Documents/sub', appId: 'hollow' })
+      .expect(204);
+    await http
+      .post('/api/files/recent')
+      .set('Cookie', TEST_COOKIE)
+      .send({ root: 'home', path: 'Documents/plan.txt', appId: 'hollow' })
+      .expect(204);
+    await give(second, 'Documents/sub', 'folder', first).expect(204);
+
+    // What the marketplace's uninstall does with "Also remove its data".
+    app.get(RecentService).removeApps(['hollow']);
+    const third = await open('hollow');
+    await give(third, 'Documents/sub', 'folder', first).expect(403);
+    await give(third, 'Documents/plan.txt', undefined, first).expect(403);
   });
 
   it('a grant matches what the dialog said it gave', async () => {

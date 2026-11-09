@@ -24,6 +24,7 @@ import WebSocket from 'ws';
 
 import { DbModule } from '../src/db/db.module';
 import { DATA_KINDS } from '../src/modules/app-data/app-data.paths';
+import { RecentService } from '../src/modules/files/recent.service';
 import { AppDataService } from '../src/modules/app-data/app-data.service';
 import { APP_TOKEN_HEADER } from '../src/modules/app-identity/app-identity.types';
 import { MarketplaceModule } from '../src/modules/marketplace/marketplace.module';
@@ -502,6 +503,14 @@ describe('the marketplace (e2e)', () => {
         await data.write(as(id), kind, 'kept.json', kind);
       }
     }
+    // Each was opened with a file and worked in a folder: its recents.
+    const recents = app.get(RecentService);
+    for (const id of ['demo', 'sim']) {
+      recents.record('home', `${id}.txt`, id);
+      recents.record('home', `${id}-repo`, id, true, 'folder');
+    }
+    recents.record('home', 'notes.txt', 'notepad');
+
     // A window of demo is open, with an identity of its own.
     const token = 'a'.repeat(64);
     const register = (t: string) =>
@@ -542,6 +551,14 @@ describe('the marketplace (e2e)', () => {
     for (const kind of DATA_KINDS) {
       expect(existsSync(data.folder('sim', kind))).toBe(false);
     }
+    // Its recents went with its data, so a reinstall's windows are given
+    // nothing back (the hand-on finds no recent of its own); demo's stay,
+    // and another app's are untouched.
+    expect(recents.ownRecent('home', 'sim.txt', 'sim')).toBeNull();
+    expect(recents.ownRecent('home', 'sim-repo', 'sim')).toBeNull();
+    expect(recents.ownRecent('home', 'demo.txt', 'demo')).not.toBeNull();
+    expect(recents.ownRecent('home', 'demo-repo', 'demo')?.kind).toBe('folder');
+    expect(recents.ownRecent('home', 'notes.txt', 'notepad')).not.toBeNull();
     const list = await http
       .get('/api/marketplace')
       .set('Cookie', cookie)

@@ -107,3 +107,23 @@ e2e for app data, identity, grants and the four marketplace suites, 88.
 Still open: the walk, which was stopped before it finished on 2026-11-06.
 A URL app has the hole the catalog check closes, once uninstalled: the todo
 `uninstalled-url-apps-read-as-built-ins`.
+
+## Outcome (2026-11-09)
+
+Ready for deploy. Installable apps keep data in folders of their own by
+kind through `system.data`, with versions between tabs; uninstall keeps the
+data unless the box is ticked, and caches always go; backups skip caches;
+the REST API Client's collections moved into its data folder. Commits:
+`f31da1c`, the review fixes `f1abb2c`, `3e357e8`, `9069d08` and
+`ee04778`, and `760e671` (an app from a URL that isn't installed gets no
+identity, which closed the gap this brief's review left).
+
+Walked: no walk of its own finished. Brief 70's dev-container walk
+(2026-11-09, 15 steps, then 5) used the data folders in passing (the REST
+API Client's saved requests and its notice about the earlier doc) and
+walked Office and files thoroughly. Not walked: uninstall with and without
+"Also remove its data", two tabs saving one collection, backups skipping
+caches, and the URL-app bridge; the unit and e2e tests cover them.
+
+Owner steps: push imbatranim-apps first, then imbatranimOS, then `node
+cli.ts imbatranim-os deploy` from vps-deploy.

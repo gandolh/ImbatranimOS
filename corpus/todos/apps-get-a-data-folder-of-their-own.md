@@ -15,7 +15,7 @@ Grill the open questions below when the work starts, then promote this to a
 numbered brief.
 
 
-> PROMOTED 2026-11-06 to [brief 69](../briefs/todo/69-apps-get-data-folders-of-their-own.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
+> PROMOTED 2026-11-06 to [brief 69](../briefs/done/69-apps-get-data-folders-of-their-own.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled: real files in folders per app, split by kind the XDG way (research, 2026-11-06): `~/.config/imbatranim/<app-id>/` settings, `~/.local/share/imbatranim/<app-id>/` data, `~/.local/state/imbatranim/<app-id>/` history and recents, `~/.cache/imbatranim/<app-id>/` anything rebuildable. `system.data` takes the kind (default `data`). Uninstall always removes the cache; backups skip caches ([decisions-app-identity-and-trust.md](../wiki/decisions-app-identity-and-trust.md#installable-apps-keep-data-in-folders-by-kind)).

@@ -211,3 +211,59 @@ Left open:
   asking for the `notes` root's listing and a new file not yet on disk.
 `760e671` closes the todo `uninstalled-url-apps-read-as-built-ins`. A
 re-walk of these steps is owed.
+
+**After the re-walk (2026-11-09).** The re-walk at `f01a886` passed its five
+steps and found two more. `3e43553`: migration 17 had marked every older
+recent writable, so one an app recorded from a read-only hold still
+reopened read-write; the table doesn't say who recorded a row, so older
+rows now start read only, and reopening one from Files or Start makes it
+the user's again. `5315e23`: with two Code Editor windows, a reload
+restored neither (one shared tab record, and a handed-off file that wasn't
+a recent); each window now records its own set, and every file the editor
+opens is one of its recents. `e73e355`: a refusal for a file not given
+names the path; Notepad's window that only handed a large file to the Code
+Editor closes.
+
+## Outcome (2026-11-09)
+
+Ready for deploy. Every app, installed or built in, reaches the user's
+files only as they are given to its window; Settings, Files and the
+Terminal act as the user.
+
+Built:
+- First half: the grant table and the checks on the files, git, recents and
+  grants routes (`98958a2`); the REST API Client's files from `pickOpen`
+  (`708c042`).
+- The self-grant gap: an app-made open gives with the app's token
+  (`26a4f85`).
+- Decision 6: `readsOpenedFolder` and the `listing` grant (`b9bd180`).
+- The built-ins' flows (`60c8b81`): `fs.reopenRecent`, git recents per app,
+  Git GUI Browse only, comparison payloads, find in files' folder, Save
+  dialogs for Notepad's new file and image attach and the Snipping Tool.
+- Notification actions give nothing (`aab1698`).
+- The flip and the `read` grant (`8b10be0`).
+- Walk fixes: `27a52fa`, `ff8f4fa` (a read-only hold no longer reopens
+  read-write), `e6aac95`, `3e43553`, `5315e23`, `e73e355`; `760e671` closed
+  the todo `uninstalled-url-apps-read-as-built-ins`.
+
+Walk (dev container): 15 steps passed, then a re-walk of the fixes, 5
+passed. `3e43553` and `5315e23` came after it and are unit-tested only.
+Tests: backend unit and the file-grants, app-identity, files, app-data and
+marketplace e2e specs; core and the touched add-ons' vitest and typechecks.
+
+Owner steps: push imbatranim-apps first, then imbatranimOS, then `node
+cli.ts imbatranim-os deploy` from vps-deploy. A dev database that already
+ran migration 17 needs `PRAGMA user_version = 16` and a restart, so the
+step runs again and marks the older recents read only.
+
+Still open:
+- Recents recorded under a retired built-in's id aren't the suite app's own
+  on the backend (Start still opens them, as the user).
+- One app opening another records no recent for the target; the target
+  records its own.
+- An installable app can't declare `readsOpenedFolder` (the descriptor
+  schema doesn't carry it).
+- Every recent from before migration 17 reopens read only in a new window
+  until it is opened once from Files or Start.
+- Owner can veto: the Save dialog on every Snipping Tool save and Notepad
+  image attach, and find in files without "everywhere".

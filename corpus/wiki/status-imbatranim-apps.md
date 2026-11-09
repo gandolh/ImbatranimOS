@@ -18,8 +18,11 @@ Each outcome is in `briefs/done/`.
 - **68** (`2522407`, 1.196.0, ready for deploy): apps run as their own
   identity (token header, per-file owner and mode). The owner chose a
   stricter default for built-in apps on 2026-11-06; brief 70 flipped it on
-  2026-11-09 (`8b10be0`, 1.228.0) with the grant flows. Brief 70 waits for
-  its walk.
+  2026-11-09 (`8b10be0`, 1.228.0) with the grant flows.
+- **70** (done 2026-11-09, ready for deploy): every app reaches only the
+  files given to its window; walked in the dev container (15, then 5).
+- **69** (done 2026-11-09, ready for deploy): data folders of their own;
+  walked only in passing, in brief 70's walk.
 - **72** (`d6ae13d`, fix `baf3f5e`, ready for deploy): Start has search, pins
   and an A-Z list; the fix after walk 1 covers ranking, duplicates and panel
   height.

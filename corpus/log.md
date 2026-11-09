@@ -5821,3 +5821,28 @@ imbatranim-apps (`a8c87f7`, `1a04603`, `ebc2be6`); the OS pins `ebc2be6`
   Bookmarks `fs`, `http`, `intents`, `notify`.
 - Board question: should a restore of an older backup run the move at once
   rather than at the next start?
+
+## [2026-11-09] done | Briefs 70 and 69 done: apps reach only the files they are given
+
+The re-walk of brief 70 at `f01a886` passed its five steps; two more
+fixes followed.
+- `3e43553` (1.247.0): migration 17 now starts every older recent as read
+  only (the table doesn't say who recorded a row; reopening one from Files
+  or Start makes it writable again). Running the step again fixes a
+  database that ran the old backfill: a dev database at 17 needs
+  `PRAGMA user_version = 16` and a restart.
+- `5315e23` (1.248.0): the Code Editor records each window's tabs under its
+  own id and hands one set to each window after a reload; every file it
+  opens is one of its recents, so a handed-off file comes back too.
+- `e73e355` (1.249.0): a not-given refusal shows the backend's sentence,
+  which names the path (`describeFileFailure`); Notepad's window closes
+  after handing a too-large file to the Code Editor.
+
+Brief 70 moved to done/ (board: Ready for deploy). Brief 69 moved too, on
+the coverage of brief 70's walk (its own walk never finished; uninstall
+with and without the box, two tabs, backups and the bridge weren't
+walked). Brief 71 stays in todo/: its hooks fixture was never walked, and
+brief 75 uses its hooks but its tests don't walk them. Checks: backend
+typecheck, db and files unit (118), file-grants and files e2e (30); core
+`tsc -b`; Code Editor 28, Notepad 152 and `fileFailureText` 9 vitest with
+typechecks.

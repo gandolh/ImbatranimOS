@@ -17,6 +17,7 @@ import { useWindowHotkeys } from './shared/hooks/useWindowHotkeys'
 import { useIdleLock } from './shared/hooks/useIdleLock'
 import { runStartupApps } from './shared/lib/startup'
 import { FilePortalHost } from './system/filePortal'
+import { OldDataNoticeHost } from './shared/components/OldDataNotice'
 import { loadMarketplace } from './shared/registry/marketplace'
 
 export default function App() {
@@ -243,6 +244,7 @@ export default function App() {
       <ToastHost />
       {/* The OS file portal: system.fs.pick* renders here, once. */}
       <FilePortalHost />
+      <OldDataNoticeHost />
       {/* Desktop-lifetime add-on services — alarms/reminders fire without windows */}
       <BackgroundServices />
       {/* This tab's Linux apps: their windows arrive over one socket. */}

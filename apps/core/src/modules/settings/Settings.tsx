@@ -19,6 +19,7 @@ import { NON_DISABLEABLE } from '../../shared/registry/enabledApps'
 import { useAddonStore } from '../../shared/store/addonStore'
 import { ShortcutList } from '../../shared/components/shortcuts/ShortcutsOverlay'
 import { StorageSettings } from './StorageSettings'
+import { OldDataSettings } from './OldDataSettings'
 import { BackupSettings } from './BackupSettings'
 import { DefaultAppsSettings } from './DefaultAppsSettings'
 import { StartupSettings } from './StartupSettings'
@@ -147,6 +148,7 @@ export function Settings() {
         <section className="mb-10">
           <SectionHeader icon={HardDrive} title="Storage" />
           <StorageSettings />
+          <OldDataSettings />
         </section>
 
         {/* Default apps ───────────────────────────────────────── */}

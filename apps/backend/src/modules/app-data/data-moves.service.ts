@@ -53,9 +53,19 @@ import type { DataKind } from './app-data.paths';
  * move, through a crash before the drop or a restored database) means the
  * app has taken over: the move writes nothing more, since that would bring
  * back what the owner changed or deleted, and sets the tables aside under
- * another name (`todos_premove_20261109`), kept and never read again. Logs
- * says so once.
+ * another name (`todos_premove_20261109`), kept and never moved again. Logs
+ * says so once, and the desktop asks the owner at sign-in to download them
+ * or clean them out (`SetAsideService`).
  */
+
+/**
+ * Where a move reads each of its tables: under its own name for the move, or
+ * a set-aside copy (`todos_premove_20261109`) for the download of the older
+ * data. Null reads the table as empty.
+ */
+export type TableSource = (table: string) => string | null;
+
+const live: TableSource = (table) => table;
 
 /** An app whose rows move, and the tables they leave. */
 type Move = {
@@ -123,7 +133,7 @@ export class DataMovesService implements OnApplicationBootstrap {
   }
 
   /** The runs so far, chained: a start and restores never interleave. */
-  private running: Promise<void> = Promise.resolve();
+  private running: Promise<unknown> = Promise.resolve();
 
   /**
    * Every move still to do, one after the other. Never throws. Calls queue,
@@ -131,22 +141,56 @@ export class DataMovesService implements OnApplicationBootstrap {
    * what the earlier run left.
    */
   run(): Promise<void> {
-    this.running = this.running.then(
-      () => this.runOnce(),
-      () => this.runOnce(),
-    );
-    return this.running;
+    return this.queued(() => this.runOnce());
+  }
+
+  /**
+   * Run `work` after every run and piece of work queued before it, so what
+   * reads or drops the set-aside tables never interleaves with a move.
+   */
+  queued<T>(work: () => Promise<T>): Promise<T> {
+    const next = this.running.then(work, work);
+    this.running = next.catch(() => undefined);
+    return next;
+  }
+
+  /** The apps whose rows move, by name, and the tables each one leaves. */
+  movedTables(): { appId: string; name: string; tables: readonly string[] }[] {
+    return this.moves().map(({ appId, name, tables }) => ({
+      appId,
+      name,
+      tables,
+    }));
+  }
+
+  /**
+   * The files `appId`'s move would write, by path in its folder, read from
+   * the tables `from` names instead of the live ones: the same JSON, so the
+   * older data restores by hand by putting the files in place. Git GUI's
+   * repositories whose folder is gone are left out, as in the move.
+   */
+  async filesFrom(
+    appId: string,
+    from: TableSource,
+  ): Promise<Map<string, string>> {
+    const move = this.moves(from).find((m) => m.appId === appId);
+    if (!move) return new Map();
+    return (await move.files()).files;
+  }
+
+  private moves(from: TableSource = live): Move[] {
+    return [
+      this.todoMove(from),
+      this.bookmarksMove(from),
+      this.gitRecentsMove(from),
+    ];
   }
 
   private async runOnce(): Promise<void> {
     // A database that failed to open or migrate answers 503 everywhere; its
     // rows wait for a start that reads them.
     if (this.dbs.migrationFailure || !this.dbs.db?.open) return;
-    for (const move of [
-      this.todoMove(),
-      this.bookmarksMove(),
-      this.gitRecentsMove(),
-    ]) {
+    for (const move of this.moves()) {
       // A move that fails is state, like a failed migration, never a crash:
       // a throw here would stop the backend from starting.
       try {
@@ -241,7 +285,7 @@ export class DataMovesService implements OnApplicationBootstrap {
     this.record('warn', 'app-data.move.set-aside', message, move.appId);
   }
 
-  private todoMove(): Move {
+  private todoMove(from: TableSource): Move {
     return {
       appId: 'todo',
       group: 'accessories',
@@ -250,14 +294,17 @@ export class DataMovesService implements OnApplicationBootstrap {
       kind: 'data',
       files: () => {
         const todos = this.rows<TodoRow>(
-          'todos',
-          `SELECT id, text, completed, position, due_at, priority, list_id,
+          from('todos'),
+          (
+            table,
+          ) => `SELECT id, text, completed, position, due_at, priority, list_id,
                   created_at, updated_at
-             FROM todos ORDER BY position ASC, id ASC`,
+             FROM ${table} ORDER BY position ASC, id ASC`,
         );
         const lists = this.rows<ListRow>(
-          'todo_lists',
-          'SELECT id, name, position FROM todo_lists ORDER BY position ASC, id ASC',
+          from('todo_lists'),
+          (table) =>
+            `SELECT id, name, position FROM ${table} ORDER BY position ASC, id ASC`,
         );
         const files = new Map<string, string>();
         if (todos.length === 0 && lists.length === 0) {
@@ -300,7 +347,7 @@ export class DataMovesService implements OnApplicationBootstrap {
     };
   }
 
-  private bookmarksMove(): Move {
+  private bookmarksMove(from: TableSource): Move {
     return {
       appId: 'bookmarks',
       group: 'accessories',
@@ -309,12 +356,14 @@ export class DataMovesService implements OnApplicationBootstrap {
       kind: 'data',
       files: () => {
         const groups = this.rows<GroupRow>(
-          'bookmark_groups',
-          'SELECT id, name, icon, parent_id, position FROM bookmark_groups ORDER BY position ASC, id ASC',
+          from('bookmark_groups'),
+          (table) =>
+            `SELECT id, name, icon, parent_id, position FROM ${table} ORDER BY position ASC, id ASC`,
         );
         const links = this.rows<LinkRow>(
-          'bookmark_links',
-          'SELECT id, group_id, title, url, icon, position FROM bookmark_links ORDER BY position ASC, id ASC',
+          from('bookmark_links'),
+          (table) =>
+            `SELECT id, group_id, title, url, icon, position FROM ${table} ORDER BY position ASC, id ASC`,
         );
         const files = new Map<string, string>();
         if (groups.length === 0) return { files, summary: '' };
@@ -350,7 +399,7 @@ export class DataMovesService implements OnApplicationBootstrap {
     };
   }
 
-  private gitRecentsMove(): Move {
+  private gitRecentsMove(from: TableSource): Move {
     /** Git GUI's rows whose folder is still there, newest first, as many as it keeps. */
     let kept: RepoRow[] = [];
     return {
@@ -363,8 +412,8 @@ export class DataMovesService implements OnApplicationBootstrap {
         // Only Git GUI's rows: a repository the user recorded had no app to
         // go to. A folder that is gone, or is no folder now, isn't moved.
         const rows = this.rows<RepoRow>(
-          'git_recent_repos',
-          `SELECT root, path, last_opened FROM git_recent_repos
+          from('git_recent_repos'),
+          (table) => `SELECT root, path, last_opened FROM ${table}
             WHERE app_id = 'git-gui' ORDER BY last_opened DESC, id DESC`,
         );
         kept = [];
@@ -421,9 +470,13 @@ export class DataMovesService implements OnApplicationBootstrap {
     );
   }
 
-  /** A table's rows, or none when it is already gone. */
-  private rows<T>(table: string, sql: string): T[] {
-    return this.hasTable(table) ? (this.dbs.db.prepare(sql).all() as T[]) : [];
+  /**
+   * A table's rows, or none when it is already gone. `table` is a name the
+   * OS chose, a move's own or one found in `sqlite_master`, never a request's.
+   */
+  private rows<T>(table: string | null, sql: (table: string) => string): T[] {
+    if (table === null || !this.hasTable(table)) return [];
+    return this.dbs.db.prepare(sql(table)).all() as T[];
   }
 
   private record(

@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useAuthStore } from './store/authStore'
 import { flushPrefs, flushPrefsKeepalive, hydratePrefs } from '../../lib/prefs'
 import { rehydrateDotfileStores } from '../../shared/store/dotfiles'
+import { checkOldDataAtSignIn } from '../../shared/store/oldDataStore'
 import { AuthShell } from './AuthShell'
 import { ScreenCover, SignedOutScreen } from './SessionScreens'
 
@@ -55,7 +56,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
     void hydratePrefs()
       .then(() => rehydrateDotfileStores())
       .then(() => {
-        if (!cancelled) setPrefsReady(true)
+        if (cancelled) return
+        setPrefsReady(true)
+        // Older data set aside by the data moves asks at every sign-in until
+        // the owner downloads or cleans it out; it never holds the desktop.
+        void checkOldDataAtSignIn()
       })
     return () => {
       cancelled = true

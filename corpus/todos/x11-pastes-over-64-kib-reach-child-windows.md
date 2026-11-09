@@ -1,7 +1,7 @@
 ---
 title: X11 pastes over 64 KiB reach child windows
 created: 2026-11-06
-status: open
+status: promoted
 tags: [linux-apps, x11, clipboard, smithay]
 ---
 

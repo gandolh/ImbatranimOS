@@ -1,7 +1,7 @@
 ---
 title: The folder picker starts in a given folder
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps, kit, files]
 ---
 

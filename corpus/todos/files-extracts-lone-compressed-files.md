@@ -1,7 +1,7 @@
 ---
 title: Files extracts a lone compressed file
 created: 2026-11-06
-status: open
+status: promoted
 tags: [imbatranim-apps, files]
 ---
 
@@ -13,3 +13,5 @@ the zip and tar flavours. Found while building brief 66; accepted then.
 
 Open question: unpack it next to the file as the same name without the suffix,
 or into a folder like the other archives.
+
+**Owner, 2026-11-09:** unpack next to the file, the same name without the suffix (`notes.txt.gz` → `notes.txt`); a taken name gets a number; the compressed file stays.

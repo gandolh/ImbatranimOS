@@ -1,7 +1,7 @@
 ---
 title: Retire the sandboxed path for apps from a URL
 created: 2026-11-09
-status: open
+status: promoted
 tags: [imbatranim-apps, marketplace]
 ---
 

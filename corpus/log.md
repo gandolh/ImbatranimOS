@@ -5998,3 +5998,16 @@ clean them out.
 `Cross-Origin-Opener-Policy`, `-Embedder-Policy` and `-Resource-Policy`, so a
 service app's server can't weaken the desktop's isolation. Found in the
 backlog grill; the todo is removed.
+
+## [2026-11-09] grill | Backlog promoted: briefs 81-83
+
+In the backlog grill the owner promoted every open todo that doesn't wait on
+hardware. [81](briefs/todo/81-files-extracts-better.md) joins two Files
+todos: a lone `.gz`/`.xz`/`.bz2` unpacks next to itself without the suffix,
+and "Extract to…" opens in the archive's folder (`pickDirectory` gets a start
+folder). [82](briefs/todo/82-the-sandboxed-url-app-path-goes.md) retires the
+version 1 sandboxed URL path now; a leftover install shows as no longer
+supported, and Hollow's unused version 1 file in game-engine goes.
+[83](briefs/todo/83-x11-pastes-over-64-kib-reach-child-windows.md) patches
+smithay so pastes over 64 KiB reach xterm's child window; it runs last and
+gets a dev-container walk. The four todos are marked promoted.

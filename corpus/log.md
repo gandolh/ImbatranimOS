@@ -5711,6 +5711,9 @@ and the files directly in it, not subfolders.
   A `read` grant kind: an app hands on a file it may only read as read only
   (a link from a Notepad document to the file beside it). Ledger 15 was
   widened for it after `b9bd180`; no live database had run it.
+- `27a52fa` (1.230.0): the new Save dialogs (Snipping Tool, Notepad's attach
+  and new note) open in the folder; a `startIn` naming a file not there yet
+  opened at home.
 
 Checks: backend typecheck, 1098 unit before the read kind and 171 after it
 (db, app-identity, files), and the file-grants, app-identity, files,

@@ -5846,3 +5846,36 @@ brief 75 uses its hooks but its tests don't walk them. Checks: backend
 typecheck, db and files unit (118), file-grants and files e2e (30); core
 `tsc -b`; Code Editor 28, Notepad 152 and `fileFailureText` 9 vitest with
 typechecks.
+
+## [2026-11-09] fix | Brief 75's review: a move the app took over, and the store's races
+
+The read-only review of brief 75 found nothing high. Fixed in
+`232c0eb` (a failing drop never stops the backend), `1b744e4` (1.251.0) and
+`95c5238` (1.252.0, the catalog pins imbatranim-apps `a5f3d0e`, after
+`59761f1`, the kit snapshot at `1b744e4`).
+
+- **The stuck move.** Tables that outlive a move (a crash before the drop,
+  a restored database) next to a file the app has written since used to
+  fail every start, and recreate files the owner had deleted. The move now
+  compares every planned file first; if one differs, the app has taken over:
+  it writes nothing, renames the tables to `<table>_premove_<yyyymmdd>`
+  (kept, never read) and logs `app-data.move.set-aside` once. Other failures
+  (over 5 MB, a full disk, a refusal) still keep the rows for the next start.
+- **A lost mode row.** `place` adopts a file of its own earlier write that a
+  crash left without its `file_modes` row, when the bytes match, instead of
+  a 403 at every start.
+- **The versioned remove** (kit 1.7.0): `system.data.remove(path, { expected })`
+  and `DELETE …/file?expected=` refuse with a 409 when the file changed, so
+  the Accessories store's removal can't take another tab's save with it.
+- In the apps: a task renumbered on read is written back at once; a file
+  that isn't JSON is named; Bookmarks' palette source reads its file once
+  per five seconds.
+
+Tests added: `place` (an uninstalled app, the same bytes, other bytes, the
+lost row), the set-aside, the 5 MB limit keeping the rows, the versioned
+remove (unit, e2e, core). Checks: backend typecheck, app-data jest (54), the
+app-data e2e (8), catalog jest, core appData and registry vitest; apps
+`tsc -b`, eslint, vitest across apps, packages and the groups (one PDF test
+timed out under load and passed alone), `kit:sync --check`. Still open: an
+uninstall that removes the data while the tables remain (only after a crash
+between the move's writes and its drop) would see the move write them again.

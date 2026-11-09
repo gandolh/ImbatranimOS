@@ -211,6 +211,24 @@ describe('DataMovesService', () => {
     );
   });
 
+  it('keeps the rows and says so when the tables cannot be dropped, never throwing', async () => {
+    seedTodos();
+    // The drop is the move's only transaction.
+    const spy = jest.spyOn(dbs.db, 'transaction').mockImplementationOnce((() =>
+      () => {
+        throw new Error('database is locked');
+      }) as never);
+    await expect(moves.run()).resolves.toBeUndefined();
+    spy.mockRestore();
+    expect(hasTable('todos')).toBe(true);
+    expect(logged).toContainEqual(
+      expect.objectContaining({ level: 'warn', event: 'app-data.move.failed' }),
+    );
+
+    await moves.run();
+    expect(hasTable('todos')).toBe(false);
+  });
+
   it('never writes over a file the app wrote since; the rows wait', async () => {
     seedTodos();
     await fs.mkdir(folder('todo'), { recursive: true });

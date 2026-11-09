@@ -97,35 +97,37 @@ export class DataMovesService implements OnApplicationBootstrap {
     // rows wait for a start that reads them.
     if (this.dbs.migrationFailure || !this.dbs.db?.open) return;
     for (const move of [this.todoMove(), this.bookmarksMove()]) {
-      await this.runOne(move);
+      // A move that fails is state, like a failed migration, never a crash:
+      // a throw here would stop the backend from starting.
+      try {
+        await this.runOne(move);
+      } catch (err) {
+        const message = `${move.name}'s data could not be moved into its folder, so it stays in the database and the move runs again at the next start: ${errorText(err)}`;
+        this.logger.warn(message);
+        this.record('warn', 'app-data.move.failed', message, move.appId);
+      }
     }
   }
 
   private async runOne(move: Move): Promise<void> {
     const present = move.tables.filter((t) => this.hasTable(t));
     if (present.length === 0) return;
-    let summary = '';
-    try {
-      const planned = move.files();
-      summary = planned.summary;
-      const identity: AppIdentity = {
-        appId: move.appId,
-        instanceId: `os-move-${move.appId}`,
-        windowId: null,
-        groups: [move.appId, move.group],
-      };
-      for (const [path, content] of planned.files) {
-        await this.data.place(identity, 'data', path, content);
-      }
-    } catch (err) {
-      const message = `${move.name}'s data could not be moved into its folder, so it stays in the database and the move runs again at the next start: ${errorText(err)}`;
-      this.logger.warn(message);
-      this.record('warn', 'app-data.move.failed', message, move.appId);
-      return;
+    const planned = move.files();
+    const identity: AppIdentity = {
+      appId: move.appId,
+      instanceId: `os-move-${move.appId}`,
+      windowId: null,
+      groups: [move.appId, move.group],
+    };
+    for (const [path, content] of planned.files) {
+      await this.data.place(identity, 'data', path, content);
     }
+    // The files are in place; a drop that fails leaves the rows, and the
+    // next start finds the same files and drops them then.
     this.dbs.db.transaction(() => {
       for (const table of present) this.dbs.db.exec(`DROP TABLE ${table}`);
     })();
+    const summary = planned.summary;
     if (summary) {
       this.record(
         'info',

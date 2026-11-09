@@ -479,6 +479,32 @@ describe('DbService — the file grants table', () => {
     svc.onModuleDestroy();
   });
 
+  it('a database at step 16 reads its recent files as writable', () => {
+    const svc = openService(join(dir, 'recents.sqlite'));
+    svc.db.exec(`
+      DROP TABLE recent_files;
+      CREATE TABLE recent_files (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        root TEXT NOT NULL,
+        path TEXT NOT NULL,
+        app_id TEXT NOT NULL,
+        last_opened DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(root, path)
+      );
+      INSERT INTO recent_files (root, path, app_id) VALUES ('home', 'a.txt', 'notepad');
+    `);
+    svc.db.pragma('user_version = 16');
+    svc.migrate();
+    expect(svc.migrationFailure).toBeNull();
+    expect(
+      svc.db.prepare('SELECT path, writable FROM recent_files').all(),
+    ).toEqual([{ path: 'a.txt', writable: 1 }]);
+    svc.db.pragma('user_version = 16');
+    svc.migrate();
+    expect(svc.migrationFailure).toBeNull();
+    svc.onModuleDestroy();
+  });
+
   it('a database at step 15 gives its recent repos to Git GUI', () => {
     const svc = openService(join(dir, 'repos.sqlite'));
     svc.db.exec(`

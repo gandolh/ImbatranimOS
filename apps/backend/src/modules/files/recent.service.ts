@@ -49,16 +49,35 @@ export class RecentService {
     }));
   }
 
-  record(root: string, path: string, appId: string): void {
+  /**
+   * Record an open. `writable` says whether whoever recorded it could write
+   * the file (the user always could): an app reopening its own recent gets
+   * no more than that. Undefined only moves an app's own entry up, keeping
+   * what it said. The same app recording it again writable makes it so; it
+   * never narrows it.
+   */
+  record(
+    root: string,
+    path: string,
+    appId: string,
+    writable: boolean | undefined = true,
+  ): void {
+    const w = writable === undefined ? null : writable ? 1 : 0;
     const tx = this.db.db.transaction(() => {
       this.db.db
         .prepare(
-          `INSERT INTO recent_files (root, path, app_id, last_opened)
-           VALUES (@root, @path, @appId, CURRENT_TIMESTAMP)
+          `INSERT INTO recent_files (root, path, app_id, writable, last_opened)
+           VALUES (@root, @path, @appId, COALESCE(@w, 0), CURRENT_TIMESTAMP)
            ON CONFLICT(root, path) DO UPDATE
-             SET app_id = @appId, last_opened = CURRENT_TIMESTAMP`,
+             SET writable = CASE
+                   WHEN @w IS NULL THEN recent_files.writable
+                   WHEN recent_files.app_id = @appId
+                     THEN MAX(recent_files.writable, @w)
+                   ELSE @w
+                 END,
+                 app_id = @appId, last_opened = CURRENT_TIMESTAMP`,
         )
-        .run({ root, path, appId });
+        .run({ root, path, appId, w });
       // Prune on the write path so the table cannot grow unbounded. The id
       // tiebreak matters: CURRENT_TIMESTAMP has second precision, so a burst
       // of opens inside one second would otherwise prune arbitrarily.
@@ -76,12 +95,21 @@ export class RecentService {
 
   /** True when `(root, path)` is among `appId`'s own recent files. */
   isRecentOf(root: string, path: string, appId: string): boolean {
+    return this.ownRecent(root, path, appId) !== null;
+  }
+
+  /** `appId`'s own recent at `(root, path)`, and whether it could write it then; null for none. */
+  ownRecent(
+    root: string,
+    path: string,
+    appId: string,
+  ): { writable: boolean } | null {
     const row = this.db.db
       .prepare(
-        `SELECT 1 FROM recent_files WHERE root = ? AND path = ? AND app_id = ?`,
+        `SELECT writable FROM recent_files WHERE root = ? AND path = ? AND app_id = ?`,
       )
-      .get(root, path, appId);
-    return row !== undefined;
+      .get(root, path, appId) as { writable: number } | undefined;
+    return row === undefined ? null : { writable: row.writable === 1 };
   }
 
   /**

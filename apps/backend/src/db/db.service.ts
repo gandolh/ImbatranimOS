@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 16;
+export const LEDGER_VERSION = 17;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -232,6 +232,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         toVersion: 16,
         name: 'git-recent-app',
         run: () => this.stepGitRecentApp(),
+      },
+      {
+        toVersion: 17,
+        name: 'recent-writable',
+        run: () => this.stepRecentWritable(),
       },
     ];
 
@@ -769,6 +774,23 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     this.db.exec(
       "UPDATE git_recent_repos SET app_id = 'git-gui' WHERE app_id IS NULL",
     );
+  }
+
+  /**
+   * Step 17 — whether an app's recent file was one it could write when it
+   * recorded it. An app reopening its own recent in a new window gets no
+   * more than that: one it could only read (a file beside one it was opened
+   * with) reopens read only. Rows from before were recorded by the user or
+   * by apps that could write what they recorded.
+   */
+  private stepRecentWritable() {
+    try {
+      this.db.exec(
+        'ALTER TABLE recent_files ADD COLUMN writable INTEGER NOT NULL DEFAULT 1',
+      );
+    } catch (err) {
+      if (!isAlreadyApplied(err, /duplicate column name/i)) throw err;
+    }
   }
 
   private stepDropOldAuth() {

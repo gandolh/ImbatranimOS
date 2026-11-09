@@ -218,6 +218,60 @@ describe('Files by grant (e2e)', () => {
     await give(again, 'Documents/fresh.txt', undefined, notepad).expect(403);
   });
 
+  it('an app opening itself with a file it may only read gives the new window read only, recent or not', async () => {
+    // Notepad opened plan.txt from Files: the file, and its folder to read.
+    const first = await open('notepad');
+    await http
+      .post('/api/files/grants')
+      .set('Cookie', TEST_COOKIE)
+      .send({
+        instanceId: first.instanceId,
+        appId: 'notepad',
+        root: 'home',
+        path: 'Documents/plan.txt',
+        withFolder: true,
+      })
+      .expect(204);
+    // A link in it to other.txt: core records the open as Notepad's recent
+    // (with its token), then hands the file to the new window.
+    await http
+      .post('/api/files/recent')
+      .set('Cookie', TEST_COOKIE)
+      .set(APP_TOKEN_HEADER, first.token)
+      .send({ root: 'home', path: 'Documents/other.txt', appId: 'notepad' })
+      .expect(204);
+    const second = await open('notepad');
+    await give(second, 'Documents/other.txt', undefined, first).expect(204);
+    const kinds = app
+      .get(DbService)
+      .db.prepare(
+        `SELECT kind FROM file_grants WHERE instance_id = ? AND path LIKE '%/other.txt'`,
+      )
+      .all(second.instanceId);
+    expect(kinds).toEqual([{ kind: 'read' }]);
+    await as(second).read('Documents/other.txt').expect(200);
+    await as(second).write('Documents/other.txt', 'laundered').expect(403);
+
+    // A later window that holds nothing reopens that recent read only too.
+    const third = await open('notepad');
+    await give(third, 'Documents/other.txt', undefined, third).expect(204);
+    await as(third).write('Documents/other.txt', 'laundered').expect(403);
+    await as(third).read('Documents/other.txt').expect(200);
+    expect(readFileSync(join(home, 'Documents/other.txt'), 'utf8')).toBe(
+      'not given',
+    );
+
+    // Opened through the OS, it is the user's to give whole: the recent says so.
+    await http
+      .post('/api/files/recent')
+      .set('Cookie', TEST_COOKIE)
+      .send({ root: 'home', path: 'Documents/other.txt', appId: 'notepad' })
+      .expect(204);
+    const fourth = await open('notepad');
+    await give(fourth, 'Documents/other.txt', undefined, fourth).expect(204);
+    await as(fourth).write('Documents/other.txt', 'saved').expect(200);
+  });
+
   it('a window may read and save the file it was opened with, and nothing beside it', async () => {
     const docs = await open('hollow');
     await give(docs, 'Documents/plan.txt').expect(204);

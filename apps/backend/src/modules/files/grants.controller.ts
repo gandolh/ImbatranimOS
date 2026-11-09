@@ -137,34 +137,8 @@ export class GrantsController {
         kind === 'folder' ? 'That is a folder' : 'That is not a folder',
       );
     }
-    const ownRecent =
-      who !== null &&
-      who.appId === dto.appId &&
-      (stat?.isFile() === true
-        ? this.recent.isRecentOf(dto.root, dto.path, who.appId)
-        : stat?.isDirectory() === true &&
-          this.recent.isRecentRepoOf(dto.root, dto.path, who.appId));
     let given: GrantKind = kind;
-    if (who !== null && !ownRecent) {
-      // Handing on gives what the app holds, never more: a file it may only
-      // read (one beside a file it was opened with) goes on to read only.
-      const readOnly =
-        kind === 'file' &&
-        stat !== null &&
-        this.files.can(who, 'read', key) !== null &&
-        this.files.can(who, 'write', key) === null;
-      const ops: ModeOp[] = readOnly
-        ? ['read']
-        : kind === 'folder'
-          ? ['list', 'write']
-          : stat
-            ? ['read', 'write']
-            : ['create'];
-      for (const op of ops) {
-        this.files.assertCan(who, op, key, dto.root, dto.path);
-      }
-      if (readOnly) given = 'read';
-    }
+    if (who !== null) given = this.handOn(who, dto, key, kind, stat !== null);
     const target = { instanceId: dto.instanceId, appId: dto.appId };
     this.grants.grant(target, key, given);
     if (dto.withFolder) {
@@ -173,6 +147,47 @@ export class GrantsController {
         this.grants.grant(target, dirname(key), 'listing');
       }
     }
+  }
+
+  /**
+   * What an app may hand on of `key`: what it holds, never more. A file it
+   * may read and write goes on whole; one it may only read (one beside a
+   * file it was opened with) goes on read only. Beyond what it holds, a
+   * window of its own may be given one of its own recent files, no more
+   * than it could do to it when it recorded it, or one of its own recent
+   * repositories. Anything else is refused, naming the path.
+   */
+  private handOn(
+    who: AppIdentity,
+    dto: GrantFileDto,
+    key: string,
+    kind: GrantKind,
+    exists: boolean,
+  ): GrantKind {
+    const mine = who.appId === dto.appId;
+    if (kind === 'file' && exists) {
+      const canRead = this.files.can(who, 'read', key) !== null;
+      const canWrite = this.files.can(who, 'write', key) !== null;
+      if (canRead && canWrite) return 'file';
+      const recent = mine
+        ? this.recent.ownRecent(dto.root, dto.path, who.appId)
+        : null;
+      if (recent) return recent.writable ? 'file' : 'read';
+      this.files.assertCan(who, 'read', key, dto.root, dto.path);
+      return 'read';
+    }
+    if (
+      kind === 'folder' &&
+      mine &&
+      this.recent.isRecentRepoOf(dto.root, dto.path, who.appId)
+    ) {
+      return 'folder';
+    }
+    const ops: ModeOp[] = kind === 'folder' ? ['list', 'write'] : ['create'];
+    for (const op of ops) {
+      this.files.assertCan(who, op, key, dto.root, dto.path);
+    }
+    return kind;
   }
 
   @Delete(':instanceId')

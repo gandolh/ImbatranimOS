@@ -52,11 +52,24 @@ export class RecentController {
           `${who.appId} may not record a recent file for ${dto.appId}`,
         );
       }
-      // Recording one of its own again only moves it up: the app reopening
-      // its recent in a new window, which doesn't hold it yet.
-      if (!this.recent.isRecentOf(dto.root, dto.path, who.appId)) {
-        await this.files.check(who, 'read', dto.root, dto.path);
-      }
+      // What the app may do to it now is what a reopen gives later: a file
+      // it may only read is recorded as such.
+      const located = await this.files
+        .check(who, 'read', dto.root, dto.path)
+        .catch((err: unknown) => {
+          // Recording one of its own again only moves it up: the app
+          // reopening its recent in a new window, which doesn't hold it yet.
+          if (this.recent.isRecentOf(dto.root, dto.path, who.appId)) {
+            return null;
+          }
+          throw err;
+        });
+      const writable =
+        located === null
+          ? undefined
+          : this.files.can(who, 'write', located.key) !== null;
+      this.recent.record(dto.root, dto.path, dto.appId, writable);
+      return;
     }
     this.recent.record(dto.root, dto.path, dto.appId);
   }

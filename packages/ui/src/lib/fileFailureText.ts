@@ -23,6 +23,13 @@ function statusOf(err: unknown): number | undefined {
   return (err as { response?: { status?: number } }).response?.status
 }
 
+/** The `code` of an error's body, if it carries one. */
+function codeOf(err: unknown): unknown {
+  if (typeof err !== 'object' || err === null || !('response' in err)) return undefined
+  const data = (err as { response?: { data?: unknown } }).response?.data
+  return typeof data === 'object' && data !== null ? (data as { code?: unknown }).code : undefined
+}
+
 /**
  * A message the backend wrote for a human, if there is one.
  *
@@ -57,6 +64,9 @@ export function describeFileFailure(action: 'open' | 'save', err: unknown, noun:
 
   switch (status) {
     case 403:
+      // A path the app wasn't given: the backend's sentence names it and
+      // says how to give it, which beats a bare "no permission".
+      if (codeOf(err) === 'FILE_NOT_GRANTED' && fromServer) return fromServer
       return `You do not have permission to ${action} this ${noun}.`
     case 404:
       return action === 'open'

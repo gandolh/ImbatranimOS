@@ -53,6 +53,21 @@ describe('describeFileFailure', () => {
     expect(describeFileFailure('save', http(404), 'document')).toContain('folder')
   })
 
+  it('names the path of a file the app was not given, in the backend’s words', () => {
+    const notGiven = {
+      response: {
+        status: 403,
+        data: {
+          code: 'FILE_NOT_GRANTED',
+          message: 'notepad may not write home:notes/a.md: it was not given it.',
+        },
+      },
+    }
+    expect(describeFileFailure('save', notGiven, 'note')).toBe(
+      'notepad may not write home:notes/a.md: it was not given it.'
+    )
+  })
+
   it('says the OS is unreachable when there was no response at all', () => {
     expect(describeFileFailure('open', new Error('network'), 'document')).toBe(
       'Could not reach the OS to open this document.'

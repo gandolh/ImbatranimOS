@@ -58,6 +58,9 @@ export function Notepad({ windowId }: { windowId: string }) {
           })
           // Handed off rather than just refused: "no" with nowhere to go is not help.
           system.intents.openApp('code-editor', { openPath: next.path, root: next.root })
+          // This window opened for that file and has nothing else: it goes
+          // too, rather than sit empty in the taskbar.
+          system.window.requestClose()
           return
         }
       } catch {

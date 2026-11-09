@@ -5915,3 +5915,20 @@ Checks: backend typecheck, 638 jest, 123 e2e; core `tsc -b` and 385 vitest;
 apps `tsc -b`, eslint, prettier, 303 vitest, the groups build test,
 `kit:sync --check`, `build:os` (Git 60 kB, REST Client 80 kB). Skipped:
 full suites, the PTY e2e, the browser walk (steps in the outcome note).
+
+## [2026-11-09] done | Brief 71 done: installed apps bring background services and palette sources
+
+Built on 2026-11-06 (`93bf282`, 1.206.0, kit 1.5.0), it waited on its walk.
+walk-71 ran today in the dev container at `64283c7` with the kit-hooks
+fixture at `cdc057e`: install, a background service with no window open,
+its palette entries, one run per tab, the fail command contained (one
+toast, the desktop fine), a declared but missing export refused by name,
+disable and re-enable, uninstall and reinstall all passed. Not walked: the
+sign-in measurement with and without a hook app; Office was seen unchanged
+only in passing. Observed: the refusal toast for the fixture's missing
+export shows once per desktop load and again on reinstall.
+
+Board: Ready for deploy. Brief moved to done/. The owner's decisions 1-5
+now have a page of their own,
+[decisions-kit-app-hooks.md](wiki/decisions-kit-app-hooks.md), since the
+marketplace decisions page is at its size limit.

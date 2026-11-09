@@ -1,5 +1,5 @@
 ---
-summary: Dated status (2026-11-09) of the imbatranim-apps plan, briefs 63-76 - which are built and where (63 rename, 64 Games, 65 Notepad, 66 Files archives, 67 WebAssembly, 68 app identity, 72 Start, 73 chooser link, 74 native URL apps, 75 Accessories with the one-time data move, 76 Developer with Git GUI's recents as folder recents), what the owner still owes, and what is open. Plan and brief table in research-imbatranim-apps.md.
+summary: Dated status (2026-11-09) of the imbatranim-apps plan, briefs 63-76 - which are built and where (63 rename, 64 Games, 65 Notepad, 66 Files archives, 67 WebAssembly, 68 app identity, 72 Start, 73 chooser link, 74 native URL apps, 71 kit app hooks, 75 Accessories with the one-time data move, 76 Developer with Git GUI's recents as folder recents), what the owner still owes, and what is open. Plan and brief table in research-imbatranim-apps.md.
 updated: 2026-11-09
 ---
 
@@ -61,4 +61,8 @@ Each outcome is in `briefs/done/`.
   the OS recents decide what reopens), then the `git` module's recents
   routes and table are gone. Owner: push imbatranim-apps first, then
   deploy, check Logs for the move. The walk is owed.
-- Open: 69, 70, 71 are not covered here; see their briefs and the log.
+- **71** (`93bf282`, 1.206.0, kit 1.5.0; done 2026-11-09, ready for
+  deploy): installed apps bring a background service and palette sources
+  ([decisions](decisions-kit-app-hooks.md)); walked with the hooks fixture
+  (nine steps PASS). Not measured: sign-in with and without a hook app.
+- Open: 69 and 70 are not covered here; see their briefs and the log.

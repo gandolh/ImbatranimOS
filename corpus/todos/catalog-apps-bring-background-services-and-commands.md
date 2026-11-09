@@ -13,7 +13,7 @@ Drafted as a brief on 2026-11-06 and kept in the backlog: grill the open
 questions below when the work starts, then promote this to a numbered brief.
 
 
-> PROMOTED 2026-11-06 to [brief 71](../briefs/todo/71-catalog-apps-bring-background-services-and-commands.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
+> PROMOTED 2026-11-06 to [brief 71](../briefs/done/71-catalog-apps-bring-background-services-and-commands.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled in the grill on 2026-11-06: only `background` and `commandSources` are needed now; the questions below about widgets and layers apply when one is added. Before that, the owner approved the imbatranim-apps plan on 2026-11-06 ("looks good, write the briefs"); the kit contract grows so these apps can leave.

@@ -184,7 +184,7 @@ Player, Code Editor and Diff, and Clock and Calendar.
 | [66](../briefs/done/66-files-handles-archives-and-archive-manager-goes.md), from `files-handles-archives-and-archive-manager-goes` | Files opens archives like folders; Archive Manager goes |
 | [67](../briefs/done/67-kit-apps-may-run-webassembly-with-threads.md), from `kit-apps-may-run-webassembly` | The desktop allows WASM |
 | [69](../briefs/done/69-apps-get-data-folders-of-their-own.md), from `apps-get-a-data-folder-of-their-own` | A data folder per app (`system.data`) |
-| [71](../briefs/todo/71-catalog-apps-bring-background-services-and-commands.md), from `catalog-apps-bring-background-services-and-commands` | Catalog apps bring background services and palette sources |
+| [71](../briefs/done/71-catalog-apps-bring-background-services-and-commands.md), from `catalog-apps-bring-background-services-and-commands` | Catalog apps bring background services and palette sources |
 | [72](../briefs/done/72-start-gets-search-pins-and-an-a-to-z-list.md), from `start-gets-search-pins-and-an-a-to-z-list` | Start: search, pins, A-Z list |
 | [73](../briefs/done/73-the-chooser-links-to-the-marketplace.md), from `the-chooser-links-to-the-marketplace` | The chooser links to the Marketplace |
 | [75](../briefs/done/75-todo-and-bookmarks-install-as-accessories.md), from `todo-and-bookmarks-install-as-accessories` | Todo and Bookmarks as Accessories (after Games, hooks, data folder) |

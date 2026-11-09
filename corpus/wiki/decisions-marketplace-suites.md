@@ -7,7 +7,7 @@ updated: 2026-11-09
 
 Split out of [decisions-marketplace.md](decisions-marketplace.md), which holds
 the marketplace install's catalog calls and sandboxed apps from a URL's URL apps. Changing one needs an
-explicit revisit and a `log.md` entry.
+explicit revisit and a `log.md` entry. A kit app's hooks: [decisions-kit-app-hooks.md](decisions-kit-app-hooks.md).
 
 ## One catalog entry, several apps (2026-10-21): one catalog entry, several apps (2026-10-21)
 

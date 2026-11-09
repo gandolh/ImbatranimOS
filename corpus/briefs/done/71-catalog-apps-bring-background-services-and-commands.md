@@ -79,3 +79,46 @@ in. Promoted from the todo
 
 - Tests green; the fixture behaves as listed; sign-in is unchanged;
 - Office installs and opens unchanged.
+
+## Outcome (2026-11-09)
+
+Built on 2026-11-06 by a subagent from the main session, walked on
+2026-11-09; ready for deploy. Commit: `93bf282` (1.206.0, kit 1.5.0). A
+command source got the app's own folders as `ctx.data` later, in `98e41ff`
+(kit 1.6.0, brief 75).
+
+What was built:
+- **Catalog:** `background` and `commandSources` (optional booleans) on a
+  suite app, passed through the listing and the recorded build; descriptors
+  refuse unknown keys. Spec cases for valid and refused descriptors.
+- **Desktop** (`kitHooks.tsx`): once the page is idle after sign-in, each
+  installed, enabled kit app that declares a hook has its module imported
+  through the preload path; its `Background` joins its registry entry and
+  `BackgroundServices` mounts it in the windowless provider, with its own
+  identity; its `commandSources` join the palette and Start's search. A
+  declared hook the module doesn't export is a refusal that names it (shown
+  like a missing entry); a module that fails to load, or a hook that
+  throws, costs only that app's hooks, with one notification. Built-in
+  services sit behind a boundary too. Disabling or uninstalling unmounts and
+  unregisters; a rebuild remounts from the fresh module.
+- **Kit 1.5.0:** `CommandSource`, its context type and the windowless
+  handle's type are exported.
+- **Fixture:** `apps/backend/test/fixtures/hooks-repo.ts`, a kit app that
+  declares both hooks, used by the marketplace-kit e2e and the walk.
+
+Walk (walk-71, 2026-11-09, dev container at `64283c7`, the kit-hooks fixture
+at `cdc057e`): PASS on install; the background service running with no
+window; its palette entries; one run per tab; the fail command contained
+(one toast, the desktop fine); a declared but missing export refused by
+name; disable and re-enable in Settings; uninstall (icon, palette entries
+and service gone); reinstall (a fresh module).
+
+Not walked: the sign-in measurement with and without a hook app (acceptance
+"sign-in is unchanged" rests on the hooks loading after idle, unmeasured);
+Office unchanged was seen only in passing (it stayed installed with its
+icons). Observed: the refusal toast for the fixture's declared-but-missing
+export ("Hookless") shows once per desktop load, and again on reinstall.
+Accessories (brief 75) is the first real user of both hooks.
+
+Owner steps: push imbatranim-apps first, then imbatranimOS, then `node
+cli.ts imbatranim-os deploy` from vps-deploy.

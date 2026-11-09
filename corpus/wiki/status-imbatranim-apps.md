@@ -34,8 +34,9 @@ Each outcome is in `briefs/done/`.
 - **65** (`e8016ed`, fix `f743f0c`, 1.198.0, ready for deploy): Notepad opens
   `.md` in a split view; Markdown Editor is gone.
 - **66** (`712538b`, ready for deploy): Files opens archives like folders;
-  Archive Manager is gone. Gaps: a lone `.gz`, `.xz` or `.bz2`; an empty folder
-  after a refused zip-slip.
+  Archive Manager is gone. A lone `.gz`, `.xz` or `.bz2` unpacks beside
+  itself since brief 81 (`95b331d`, kit 1.8.0). Gap: an empty folder after a
+  refused zip-slip.
 - **Office pin** (`a80c295`, 1.202.0): imbatranim-apps `8a42180`, with the PDF
   decoders; walk 2a rendered JPEG2000 and JBIG2.
 - Owner: push imbatranim-apps first, then this repo, then deploy.

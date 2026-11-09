@@ -6002,7 +6002,7 @@ backlog grill; the todo is removed.
 ## [2026-11-09] grill | Backlog promoted: briefs 81-83
 
 In the backlog grill the owner promoted every open todo that doesn't wait on
-hardware. [81](briefs/todo/81-files-extracts-better.md) joins two Files
+hardware. [81](briefs/done/81-files-extracts-better.md) joins two Files
 todos: a lone `.gz`/`.xz`/`.bz2` unpacks next to itself without the suffix,
 and "Extract to…" opens in the archive's folder (`pickDirectory` gets a start
 folder). [82](briefs/todo/82-the-sandboxed-url-app-path-goes.md) retires the
@@ -6093,3 +6093,16 @@ back out; a file system without hard links gets an exclusive copy. The grant
 isn't given on another app's folder or `assets/`, and an unknown grant kind
 gives nothing. There is no chmod route over HTTP; the unit tests cover it.
 The brief stays in done/, the ticket at Ready for deploy.
+
+## [2026-11-09] build | Brief 81: Files extracts better
+
+[81](briefs/done/81-files-extracts-better.md) built in `95b331d`; the kit
+sync in imbatranim-apps is `6538699` (kit 1.8.0). A plain `.gz`, `.xz` or
+`.bz2` is read by its first bytes; with a tar inside it is a tarball, else
+one file unpacks beside it without the suffix, numbered `notes (2).txt` on a
+clash, the original kept. zlib for gzip, busybox `xzcat`/`bzcat` on stdin
+for the others (both applets checked in the dev image), bytes counted against
+the size cap and the child killed and reaped past it; the output is
+hard-linked in, never over anything. `pickDirectory` takes `startIn`, and
+Files' Extract to… starts in the archive's folder. Ready for deploy; push
+imbatranim-apps first.

@@ -153,4 +153,70 @@ describe('InstallFromUrl', () => {
     await check()
     expect(container.textContent).toContain("Couldn't reach that repository.")
   })
+
+  describe('an app built from source', () => {
+    const native = (over: Partial<Inspection> = {}) =>
+      inspection({
+        runtime: 'native',
+        verified: false,
+        manifest: { ...inspection().manifest, capabilities: ['fs', 'notify'] },
+        ...over,
+      })
+
+    it('installs a verified one straight away, with no trust asked', async () => {
+      post.mockResolvedValueOnce({ data: native({ verified: true }) }).mockResolvedValueOnce({
+        data: {},
+      })
+      await check()
+      const text = container.textContent!
+      expect(text).toContain('Verified')
+      expect(text).toContain('This commit is verified.')
+      expect(text).not.toContain("This app isn't verified")
+      await act(async () => button('Install').click())
+      expect(post).toHaveBeenLastCalledWith('/marketplace/url/install', { pending: 'p1' })
+      expect(onInstalled).toHaveBeenCalled()
+    })
+
+    it('warns about an unverified one: publisher, commit, what it asks for, and that it acts as you', async () => {
+      post.mockResolvedValueOnce({ data: native() })
+      await check()
+      const text = container.textContent!
+      expect(text).toContain("This app isn't verified")
+      expect(text).toContain('Publishero/r')
+      expect(text).toContain(`Commit${COMMIT.slice(0, 7)}`)
+      expect(text).toContain('Read and write the files you give it, and keep its own')
+      expect(text).toContain('Show notifications')
+      expect(text).toContain(
+        'A trusted app runs as you. It can do anything you can, the Terminal included.'
+      )
+      // Trust sits behind More info; there is no sandboxed choice.
+      expect(button('Trust and install')).toBeUndefined()
+      expect(button('Install')).toBeUndefined()
+      expect(button('More info')).toBeDefined()
+      expect(button('Cancel')).toBeDefined()
+    })
+
+    it('installs it with the owner’s trust only after More info', async () => {
+      post.mockResolvedValueOnce({ data: native() }).mockResolvedValueOnce({ data: {} })
+      await check()
+      await act(async () => button('More info').click())
+      expect(container.textContent).toContain('github.com/o/r · main · abcdef0 · in sub')
+      expect(container.textContent).toContain('each update asks again')
+      await act(async () => button('Trust and install').click())
+      expect(post).toHaveBeenLastCalledWith('/marketplace/url/install', {
+        pending: 'p1',
+        trust: true,
+      })
+      expect(onInstalled).toHaveBeenCalled()
+    })
+
+    it('cancel from the warning deletes the pending inspection', async () => {
+      post.mockResolvedValueOnce({ data: native() })
+      del.mockResolvedValue({})
+      await check()
+      await act(async () => button('Cancel').click())
+      expect(del).toHaveBeenCalledWith('/marketplace/url/pending/p1')
+      expect(container.textContent).not.toContain("This app isn't verified")
+    })
+  })
 })

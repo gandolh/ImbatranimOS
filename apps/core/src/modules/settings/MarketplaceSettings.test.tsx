@@ -164,6 +164,47 @@ describe('MarketplaceSettings: Check for update on a URL app', () => {
   })
 })
 
+describe('MarketplaceSettings: an app from a URL built from source', () => {
+  const nativeApp = (by: 'verified' | 'owner', over: Partial<MarketplaceApp> = {}) => ({
+    ...urlApp(),
+    runtime: 'native' as const,
+    trust: { by, at: 1 },
+    installed: {
+      ref: OLD,
+      buildId: 'b1',
+      installedAt: 0,
+      entryPath: `marketplace/apps/${ID}/b/b1/hollow.mjs`,
+      missing: false,
+    },
+    ...over,
+  })
+
+  it('shows its source and a Verified badge, and updates as the verified list moves', async () => {
+    get.mockResolvedValue({ data: { apps: [nativeApp('verified', { ref: NEW })], problems: [] } })
+    post.mockResolvedValue({})
+    await render()
+    const text = container.textContent!
+    expect(text).toContain('From a URL')
+    expect(text).toContain('Verified')
+    expect(text).toContain('github.com/o/r · main · aaaaaaa · in sub')
+    expect(text).toContain('An update is available')
+    expect(button('Check for update')).toBeUndefined()
+    await act(async () => button('Update')!.click())
+    expect(post).toHaveBeenCalledWith(`/marketplace/apps/${ID}/install`)
+  })
+
+  it('says "Trusted by you", and checks for a new commit, which asks for trust again', async () => {
+    get.mockResolvedValue({ data: { apps: [nativeApp('owner')], problems: [] } })
+    post.mockResolvedValueOnce({ data: inspection({ runtime: 'native', verified: false }) })
+    await render()
+    expect(container.textContent).toContain('Trusted by you')
+    expect(button('Update')).toBeUndefined()
+    await checkForUpdate()
+    expect(container.textContent).toContain("This app isn't verified")
+    expect(button('More info')).toBeDefined()
+  })
+})
+
 describe('MarketplaceSettings: problems', () => {
   it('offers Uninstall for an installed app whose record is damaged, apart from catalog problems', async () => {
     get.mockResolvedValue({

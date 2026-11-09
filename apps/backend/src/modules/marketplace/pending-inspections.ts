@@ -10,6 +10,7 @@ import { promises as fs } from 'fs';
 import { basename } from 'path';
 
 import type { AppManifest } from './app-manifest';
+import type { Descriptor } from './catalog';
 import type { AppSource } from './source-url';
 
 /** How long a checked app waits for the owner's Install or Cancel. */
@@ -26,9 +27,12 @@ export interface PendingInspection {
   dir: string;
   /** The app's directory inside the clone, POSIX, '' for the top. */
   root: string;
-  /** The manifest's entry, normalized, relative to `root`. */
+  /** A prebuilt app's entry, normalized, relative to `root`; '' for one built from source. */
   entry: string;
-  manifest: AppManifest;
+  /** A prebuilt (version 1) app's manifest. */
+  manifest?: AppManifest;
+  /** An app built from source (version 2): its descriptor and its manifest as read. */
+  native?: { descriptor: Descriptor; manifest: unknown };
   source: AppSource;
   expiresAt: number;
 }

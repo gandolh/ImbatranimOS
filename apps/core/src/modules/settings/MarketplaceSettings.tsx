@@ -12,7 +12,7 @@ import {
   useBuiltInClashes,
   type MarketplaceApp,
 } from '../../shared/registry/marketplace'
-import { ConsentCard, InstallFromUrl } from './InstallFromUrl'
+import { ConsentCard, InstallFromUrl, SourceBadge } from './InstallFromUrl'
 import { apiMessage, sourceLine, type Inspection } from './urlApps'
 
 /** Sandboxed apps from a URL adds these to the registry's type; narrowed here so this compiles either way. */
@@ -121,7 +121,7 @@ export function MarketplaceSettings({
       })
       const discard = () =>
         void Promise.resolve(api.delete(`/marketplace/url/pending/${data.pending}`)).catch(() => {})
-      if (data.id !== app.id) {
+      if (data.id !== descriptorIdOf(app)) {
         // The stored URL now resolves to another folder or app (its id is
         // derived from the source). A consent card in this row would read as
         // an update to this app while installing something else beside it.
@@ -275,6 +275,10 @@ export function MarketplaceSettings({
           // The apps of a descriptor share its install, job and server.
           const app = row.apps[0]
           const sandboxed = app.runtime === 'sandboxed' && !!app.source
+          // An app from a URL that builds from source: a catalog app's row,
+          // plus where it came from and who vouched for its commit.
+          const nativeUrl = !sandboxed && !!app.source
+          const trustedByOwner = nativeUrl && app.trust?.by === 'owner'
           const Icon = marketplaceIcon(row.suite ? 'package' : app.icon)
           const installed = app.installed
           const missing = row.apps.some((a) => a.installed?.missing)
@@ -335,10 +339,15 @@ export function MarketplaceSettings({
                 <span className="min-w-0 flex-1">
                   <span className="font-ui text-on-surface block truncate text-[13px] font-medium">
                     {row.name}
-                    {sandboxed && (
+                    {(sandboxed || nativeUrl) && (
                       <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
                         From a URL
                       </span>
+                    )}
+                    {nativeUrl && app.trust && (
+                      <SourceBadge>
+                        {app.trust.by === 'verified' ? 'Verified' : 'Trusted by you'}
+                      </SourceBadge>
                     )}
                     {row.suite && (
                       <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
@@ -358,7 +367,7 @@ export function MarketplaceSettings({
                   >
                     {rowNote?.id === app.id ? rowNote.text : state}
                   </span>
-                  {sandboxed && (
+                  {(sandboxed || nativeUrl) && (
                     <span className="text-on-surface-variant/80 block truncate text-[10px]">
                       {sourceLine(app.source!)}
                     </span>
@@ -395,6 +404,14 @@ export function MarketplaceSettings({
                     {!working && rebuild && (
                       <Button size="sm" onClick={() => void install(row)}>
                         Rebuild
+                      </Button>
+                    )}
+                    {/* A verified app updates as the verified list moves;
+                        one trusted by you looks for a new commit, which
+                        asks for your trust again. */}
+                    {trustedByOwner && installed && !working && (
+                      <Button size="sm" onClick={() => void checkForUpdate(app)}>
+                        Check for update
                       </Button>
                     )}
                     {(installed || app.job?.state === 'failed') && (

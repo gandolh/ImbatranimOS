@@ -1,6 +1,8 @@
 import {
   BadGatewayException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   GatewayTimeoutException,
   HttpException,
   Injectable,
@@ -15,12 +17,9 @@ import { dirname, join, posix } from 'path';
 
 import type { Env } from '../../config/env.schema';
 import { DbService } from '../../db/db.service';
-import {
-  MANIFEST_FILE,
-  MAX_MANIFEST_BYTES,
-  parseManifest,
-  type AppManifest,
-} from './app-manifest';
+import { parseManifest, type AppManifest } from './app-manifest';
+import type { Descriptor } from './catalog';
+import { manifestVersion, readManifestJson } from './manifest-file';
 import {
   directorySize,
   exists,
@@ -34,6 +33,10 @@ import {
   type MarketplaceApp,
   type StepRunner,
 } from './marketplace.service';
+import {
+  NATIVE_MANIFEST_VERSION,
+  parseNativeManifest,
+} from './native-manifest';
 import { PendingInspections } from './pending-inspections';
 import { eachLine, runStep, type StepResult } from './run-step';
 import { SandboxTokens } from './sandbox-tokens';
@@ -61,10 +64,23 @@ export const MAX_CLONE_BYTES = 512 * 1024 * 1024;
 /** The most paths a URL app's commit may hold. Far more than a built app needs. */
 export const MAX_CLONE_ENTRIES = 20_000;
 
-/** Contract B's `Inspection`: what the pane's consent card shows. */
+/**
+ * Contract B's `Inspection`: what the pane's consent card shows.
+ *
+ * `runtime` says how the app would run: `sandboxed` for a prebuilt (version 1)
+ * manifest, `native` for one built from source (version 2). A native app is
+ * `verified` when the OS's verified list names it at this commit; otherwise
+ * installing it needs the owner's trust. For a native app, `manifest` sums up
+ * its apps (the capabilities any of them asks for), and `apps` lists them.
+ */
 export interface Inspection {
   pending: string;
   id: string;
+  runtime: 'sandboxed' | 'native';
+  verified: boolean;
+  /** A native app's build type: `service` runs a server of its own. */
+  type?: Descriptor['type'];
+  apps?: { id: string; name: string; icon: string; capabilities: string[] }[];
   manifest: Pick<
     AppManifest,
     | 'name'
@@ -82,17 +98,22 @@ export interface Inspection {
 /**
  * Apps installed from a URL.
  *
- * The threat model is the reverse of the catalog's: nobody reviewed the
- * repository, so the app is treated as potentially malicious. Nothing from it
- * runs on the machine. The repository carries the built module, and the OS
- * clones it (with the catalog's fetch steps) and runs no install, build or
- * server. Its code runs only in the browser, in an opaque-origin frame, and
- * its files are served only under a per-window token with the sandbox's
- * headers (`sandbox-headers.ts`).
+ * A check (`inspect`) resolves the URL to a commit, clones it (measured
+ * before its checkout, since nobody has agreed to anything yet), reads and
+ * validates `imbatranim.json`, and holds the clone for the owner's answer.
+ * The check takes its turn on the builds' queue.
  *
- * A check (`inspect`) resolves the URL to a commit, clones it, reads and
- * validates `imbatranim.json`, and holds the clone for the owner's consent;
- * `install` keeps it. The check takes its turn on the builds' queue.
+ * A version 2 manifest is an app built from source that runs natively, like
+ * a catalog app (`native-manifest.ts`). It installs at once when the verified
+ * list (`verified.ts`) names its repository at this commit; otherwise only
+ * when the owner trusts this commit, since a native app acts as the owner.
+ * `install` builds the checked clone in place with the catalog's installer.
+ *
+ * A version 1 manifest is the earlier prebuilt app, treated as potentially
+ * malicious: nothing from it runs on the machine. The OS runs no install,
+ * build or server; its code runs only in the browser, in an opaque-origin
+ * frame, and its files are served only under a per-window token with the
+ * sandbox's headers (`sandbox-headers.ts`). `install` keeps the clone.
  */
 @Injectable()
 export class MarketplaceUrlApps {
@@ -165,13 +186,25 @@ export class MarketplaceUrlApps {
     const dir = this.marketplace.buildDir(id, buildId);
     this.pendings.startCloning(dir);
     try {
-      const { root, entry, manifest } = await this.cloneAndValidate(
+      const { root, raw } = await this.cloneAndRead(dir, source);
+      const row = this.marketplace.row(id);
+      if (manifestVersion(raw) === NATIVE_MANIFEST_VERSION) {
+        return this.checkedNative(id, buildId, dir, root, raw, source, row);
+      }
+      if (row?.runtime === 'native') {
+        throw new ConflictException(
+          `This app is installed to build from source. At ${source.commit.slice(0, 7)} it is prebuilt, which runs sandboxed: uninstall it first to install that.`,
+        );
+      }
+      const { entry, manifest } = await this.validatePrebuilt(
         dir,
+        root,
+        raw,
         source,
       );
       // A damaged row is no installed commit to compare with; installing
       // over it writes a whole new row.
-      const row = this.marketplace.sandboxedRow(id);
+      const installed = this.marketplace.sandboxedRow(id);
       const pending = this.pendings.add({
         id,
         buildId,
@@ -184,6 +217,8 @@ export class MarketplaceUrlApps {
       return {
         pending,
         id,
+        runtime: 'sandboxed',
+        verified: false,
         manifest: {
           name: manifest.name,
           description: manifest.description,
@@ -194,7 +229,7 @@ export class MarketplaceUrlApps {
           minSystemVersion: manifest.minSystemVersion,
         },
         source,
-        current: row ? { commit: row.ref } : null,
+        current: installed ? { commit: installed.ref } : null,
       };
     } catch (err) {
       await fs.rm(dir, { recursive: true, force: true });
@@ -202,6 +237,63 @@ export class MarketplaceUrlApps {
     } finally {
       this.pendings.stopCloning(dir);
     }
+  }
+
+  /**
+   * A checked app built from source: its descriptor, and whether the verified
+   * list names it at this commit. Held like a prebuilt one until the owner's
+   * answer.
+   */
+  private checkedNative(
+    id: string,
+    buildId: string,
+    dir: string,
+    root: string,
+    raw: unknown,
+    source: AppSource,
+    row: InstalledRow | undefined,
+  ): Inspection {
+    const parsed = parseNativeManifest(raw, source, {
+      allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
+    });
+    if (!parsed.ok) throw new BadRequestException(parsed.problem);
+    const d = parsed.descriptor;
+    const pending = this.pendings.add({
+      id,
+      buildId,
+      dir,
+      root,
+      entry: '',
+      source,
+      native: { descriptor: d, manifest: raw },
+    });
+    const first = d.apps[0];
+    const capabilities = [...new Set(d.apps.flatMap((a) => a.capabilities))];
+    return {
+      pending,
+      id,
+      runtime: 'native',
+      verified: this.marketplace.isVerified(source),
+      type: d.type,
+      apps: d.apps.map((a) => ({
+        id: a.id,
+        name: a.name,
+        icon: a.icon,
+        capabilities: a.capabilities,
+      })),
+      manifest: {
+        name: d.name,
+        description: d.description,
+        meta: first.meta,
+        icon: d.apps.length === 1 ? first.icon : 'package',
+        capabilities,
+        window: first.window,
+        minSystemVersion: d.minSystemVersion,
+      },
+      source,
+      // A sandboxed install of the same app is replaced by this one.
+      current: row ? { commit: row.ref } : null,
+    };
   }
 
   /** The commit and subdirectory a parsed URL names, from `git ls-remote`. */
@@ -258,14 +350,14 @@ export class MarketplaceUrlApps {
   }
 
   /**
-   * Fetch the commit into `dir` (no install or build step: a URL app is
-   * prebuilt) and check what came: the clone's size, the subdirectory, the
-   * manifest, the entry and the size of the directory that would be served.
+   * Fetch the commit into `dir` (no install or build step yet) and check what
+   * came: the clone's size and the subdirectory. Answers the app's folder in
+   * the clone and its `imbatranim.json`, parsed as JSON but not validated.
    */
-  private async cloneAndValidate(
+  private async cloneAndRead(
     dir: string,
     source: AppSource,
-  ): Promise<{ root: string; entry: string; manifest: AppManifest }> {
+  ): Promise<{ root: string; raw: unknown }> {
     await fs.mkdir(dir, { recursive: true });
     const step: StepRunner = async (label, argv, cwd, env, timeoutMs) => {
       const result = await runStep(argv, { cwd, env, timeoutMs });
@@ -299,31 +391,25 @@ export class MarketplaceUrlApps {
         `${source.subdir} is not a folder in ${source.repo} at ${source.commit.slice(0, 7)}.`,
       );
     }
-    const realRoot = await fs.realpath(root);
+    const raw = await readManifestJson(root, where);
+    return { root: rootRel === '.' ? '' : rootRel, raw };
+  }
 
-    // ── the manifest: a real file inside the app's directory ──
-    let text: string;
-    try {
-      const real = await fs.realpath(join(root, MANIFEST_FILE));
-      if (!isInside(realRoot, real)) throw new Error('outside');
-      const stat = await fs.stat(real);
-      if (!stat.isFile() || stat.size > MAX_MANIFEST_BYTES) {
-        throw new Error('not a small file');
-      }
-      text = await fs.readFile(real, 'utf8');
-    } catch {
-      throw new BadRequestException(
-        `There is no ${MANIFEST_FILE} in ${where}. An app installed from a URL needs one beside its built module.`,
-      );
-    }
-    let raw: unknown;
-    try {
-      raw = JSON.parse(text);
-    } catch (err) {
-      throw new BadRequestException(
-        `${MANIFEST_FILE} is not JSON: ${(err as Error).message}`,
-      );
-    }
+  /**
+   * A prebuilt (version 1) app's manifest, validated, and its entry: a real
+   * file inside the directory that would be served, which is not too big.
+   */
+  private async validatePrebuilt(
+    dir: string,
+    rootRel: string,
+    raw: unknown,
+    source: AppSource,
+  ): Promise<{ entry: string; manifest: AppManifest }> {
+    const where = source.subdir
+      ? `${source.subdir} in ${source.repo}`
+      : source.repo;
+    const root = join(dir, rootRel);
+    const realRoot = await fs.realpath(root);
     const parsed = parseManifest(raw);
     if (!parsed.ok) throw new BadRequestException(parsed.problem);
     const manifest = parsed.manifest;
@@ -349,7 +435,7 @@ export class MarketplaceUrlApps {
         `${posix.dirname(entry)} holds more than ${MAX_SERVED_BYTES / 1048576} MB, the most an app may serve.`,
       );
     }
-    return { root: rootRel === '.' ? '' : rootRel, entry, manifest };
+    return { entry, manifest };
   }
 
   /**
@@ -418,16 +504,63 @@ export class MarketplaceUrlApps {
   }
 
   /**
-   * Keep a checked app: point its row at the clone, delete its other builds
-   * and revoke its tokens, so a window still open on the old build stops
-   * being served and reloads onto the new one. 404 when the check is unknown
-   * or expired.
+   * Install a checked app. 404 when the check is unknown or expired, 409 while
+   * the app is being installed.
+   *
+   * One built from source is queued to build from the checked clone, and
+   * answers with its listing (its job queued). Unless the verified list names
+   * it at this commit, it needs `trust`: the owner's word for this commit,
+   * kept as its trust record. Without it the answer is a 403.
+   *
+   * A prebuilt one is kept as it is: its row points at the clone, its other
+   * builds go and its tokens are revoked, so a window still open on the old
+   * build stops being served and reloads onto the new one.
    */
-  async install(pending: string): Promise<MarketplaceApp> {
+  async install(pending: string, trust = false): Promise<MarketplaceApp> {
     const gone = () =>
       new NotFoundException('That check has expired. Check the URL again.');
     const checked = this.pendings.get(pending);
     if (!checked) throw gone();
+    if (this.marketplace.isInstalling(checked.id)) {
+      throw new ConflictException(
+        'It is being installed; wait for that to finish',
+      );
+    }
+    if (checked.native) {
+      // Read again now: the list could have changed since the check.
+      const verified = this.marketplace.isVerified(checked.source);
+      if (!verified && !trust) {
+        throw new ForbiddenException(
+          `${checked.native.descriptor.name} is not verified. Installing it at ${checked.source.commit.slice(0, 7)} needs your trust.`,
+        );
+      }
+      if (!(await exists(join(checked.dir, checked.root)))) {
+        await this.pendings.cancel(pending);
+        throw gone();
+      }
+      if (this.pendings.get(pending) !== checked) throw gone();
+      this.pendings.take(pending);
+      this.marketplace.installFromUrl(checked.id, {
+        kind: 'url',
+        d: checked.native.descriptor,
+        manifest: checked.native.manifest,
+        source: checked.source,
+        trust: { by: verified ? 'verified' : 'owner', at: Date.now() },
+        fetched: { dir: checked.dir, buildId: checked.buildId },
+      });
+      this.logger.log(
+        `Queued ${checked.id} from ${checked.source.url} at ${checked.source.commit} (${verified ? 'verified' : 'trusted by the owner'})`,
+      );
+      const [listed] = await this.marketplace.listed(checked.id);
+      if (!listed) throw new InternalServerErrorException();
+      return listed;
+    }
+    if (this.marketplace.row(checked.id)?.runtime === 'native') {
+      await this.pendings.cancel(pending);
+      throw new ConflictException(
+        'This app is installed to build from source: uninstall it first to install its prebuilt version.',
+      );
+    }
     if (!(await exists(join(checked.dir, checked.root, checked.entry)))) {
       await this.pendings.cancel(pending);
       throw gone();
@@ -440,11 +573,12 @@ export class MarketplaceUrlApps {
     this.pendings.take(pending);
     this.dbs.db
       .prepare(
-        `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, installed_at, runtime, source, manifest)
-         VALUES (@id, @ref, @build_id, @root, @entry, @installed_at, 'sandboxed', @source, @manifest)
+        `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at, runtime, source, manifest)
+         VALUES (@id, @ref, @build_id, @root, @entry, NULL, @installed_at, 'sandboxed', @source, @manifest)
          ON CONFLICT (id) DO UPDATE SET ref = excluded.ref, build_id = excluded.build_id,
-           root = excluded.root, entry = excluded.entry, installed_at = excluded.installed_at,
-           runtime = excluded.runtime, source = excluded.source, manifest = excluded.manifest`,
+           root = excluded.root, entry = excluded.entry, entries = NULL,
+           installed_at = excluded.installed_at, runtime = excluded.runtime,
+           source = excluded.source, manifest = excluded.manifest`,
       )
       .run({
         id: checked.id,

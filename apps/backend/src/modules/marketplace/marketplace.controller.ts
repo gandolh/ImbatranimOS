@@ -167,11 +167,16 @@ export class MarketplaceController {
     return this.urlApps.inspect(dto.url);
   }
 
-  /** POST /api/marketplace/url/install { pending } → the installed app's listing entry. */
+  /**
+   * POST /api/marketplace/url/install { pending, trust? } → the app's listing
+   * entry: installed for a prebuilt app, its build queued for one built from
+   * source. 403 for an app built from source that is not verified at the
+   * checked commit, unless `trust`.
+   */
   @Post('url/install')
   @HttpCode(HttpStatus.OK)
   installFromUrl(@Body() dto: InstallUrlDto) {
-    return this.urlApps.install(dto.pending);
+    return this.urlApps.install(dto.pending, dto.trust === true);
   }
 
   /** DELETE /api/marketplace/url/pending/:pending — the owner said Cancel. */

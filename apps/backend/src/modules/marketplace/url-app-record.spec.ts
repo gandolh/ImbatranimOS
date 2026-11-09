@@ -1,6 +1,6 @@
 import type { InstalledRow } from './marketplace.service';
 import { deriveAppId } from './source-url';
-import { readUrlAppRow } from './url-app-record';
+import { readNativeUrlRow, readUrlAppRow } from './url-app-record';
 
 const APPS = '/home/u/.imbatranim/apps';
 const REPO = 'https://github.com/o/r';
@@ -145,5 +145,69 @@ describe('readUrlAppRow', () => {
     ['null', null],
   ])('finds the folder damaged when it is %s', (_label, value) => {
     expect(damaged(row({ root: value }))).toBe('folder');
+  });
+});
+
+describe('readNativeUrlRow', () => {
+  const native = {
+    schemaVersion: 2,
+    name: 'Hollow',
+    type: 'static',
+    build: { command: ['npm', 'run', 'build'], entry: 'dist/hollow.mjs' },
+    capabilities: ['fs'],
+    minSystemVersion: 2,
+  };
+  const trust = { by: 'owner', at: 5 };
+  /** A row as a native URL app's build writes it. */
+  const nativeRow = (
+    extra: Partial<Record<keyof InstalledRow, unknown>> = {},
+  ) =>
+    row({
+      runtime: 'native',
+      source: JSON.stringify({ ...source, trust }),
+      manifest: JSON.stringify(native),
+      ...extra,
+    });
+  const options = { allowLocalRepos: false };
+  const nativeDamage = (r: InstalledRow) => {
+    const read = readNativeUrlRow(r, options);
+    return read.ok ? null : read.damaged;
+  };
+
+  it('reads the descriptor, the source and the trust record back', () => {
+    const read = readNativeUrlRow(nativeRow(), options);
+    expect(read.ok).toBe(true);
+    if (!read.ok) return;
+    expect(read.source).toEqual(source);
+    expect(read.trust).toEqual(trust);
+    expect(read.descriptor.id).toBe(ID);
+    expect(read.descriptor.apps[0]).toMatchObject({
+      id: ID,
+      capabilities: ['fs'],
+    });
+  });
+
+  it.each<[string, Partial<Record<keyof InstalledRow, unknown>>]>([
+    ['id', { runtime: 'sandboxed' }],
+    ['source', { source: JSON.stringify(source) }],
+    [
+      'source',
+      { source: JSON.stringify({ ...source, trust: { by: 'anyone', at: 1 } }) },
+    ],
+    [
+      'source',
+      { source: JSON.stringify({ ...source, subdir: 'games', trust }) },
+    ],
+    ['commit', { ref: 'd'.repeat(40) }],
+    ['build id', { build_id: 'nope' }],
+    ['folder', { root: '' }],
+    ['manifest', { manifest: 'null' }],
+    [
+      'manifest',
+      { manifest: JSON.stringify({ ...native, capabilities: ['root'] }) },
+    ],
+    ['manifest', { manifest: JSON.stringify(manifest) }],
+  ])('names a damaged %s', (what, extra) => {
+    expect(nativeDamage(nativeRow(extra))).toBe(what);
   });
 });

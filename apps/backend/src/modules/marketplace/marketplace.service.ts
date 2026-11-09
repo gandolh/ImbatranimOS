@@ -32,11 +32,27 @@ import {
   type ServerSpec,
 } from './marketplace-servers.service';
 import { PendingInspections } from './pending-inspections';
+import { readManifestJson, manifestVersion } from './manifest-file';
+import {
+  NATIVE_MANIFEST_VERSION,
+  parseNativeManifest,
+} from './native-manifest';
 import { isAppId, recordedBuild, recordedKitApp } from './recorded-build';
 import { runStep } from './run-step';
 import { SandboxTokens } from './sandbox-tokens';
 import { isUrlAppId, type AppSource } from './source-url';
-import { readUrlAppRow, type UrlAppRecord } from './url-app-record';
+import {
+  readNativeUrlRow,
+  readUrlAppRow,
+  type UrlAppRecord,
+  type UrlTrust,
+} from './url-app-record';
+import {
+  isVerified,
+  loadVerified,
+  verifiedEntry,
+  type VerifiedList,
+} from './verified';
 
 /** How long a clone may take. A shallow fetch of one commit. */
 const FETCH_TIMEOUT_MS = 5 * 60_000;
@@ -89,11 +105,17 @@ export interface InstalledRow {
    */
   entries: string | null;
   installed_at: number;
-  /** `sandboxed` for an app installed from a URL. */
+  /**
+   * `sandboxed` for an app installed from a URL with a prebuilt (version 1)
+   * manifest; `native` for every other row.
+   */
   runtime: 'native' | 'sandboxed';
-  /** A URL app's {@link AppSource}, as JSON. Null for a catalog app. */
+  /**
+   * A URL app's {@link AppSource}, as JSON; a native one's also carries its
+   * trust record ({@link UrlTrust}) as `trust`. Null for a catalog app.
+   */
   source: string | null;
-  /** A URL app's `imbatranim.json`, as parsed, as JSON. Null for a catalog app. */
+  /** A URL app's `imbatranim.json`, as JSON. Null for a catalog app. */
   manifest: string | null;
 }
 
@@ -166,6 +188,12 @@ export interface MarketplaceApp {
   runtime: 'native' | 'sandboxed';
   /** Where a URL app came from. Absent for a catalog app. */
   source?: AppSource;
+  /**
+   * How a URL app that runs natively came to be trusted at its installed
+   * commit: verified, or trusted by the owner. Absent for a catalog app and
+   * a sandboxed one.
+   */
+  trust?: UrlTrust;
   installed: {
     ref: string;
     buildId: string;
@@ -200,6 +228,30 @@ export type StepRunner = (
   timeoutMs: number,
 ) => Promise<boolean>;
 
+/**
+ * A descriptor the marketplace installs, serves and runs: the catalog's, or
+ * that of an app from a URL that runs natively, with its source and trust.
+ */
+interface Known {
+  d: Descriptor;
+  url: { source: AppSource; trust: UrlTrust } | null;
+}
+
+/** What a build fetches and builds: a catalog descriptor, or an app from a URL. */
+type BuildTarget =
+  | { kind: 'catalog'; d: Descriptor }
+  | {
+      kind: 'url';
+      /** The descriptor at the commit being built, once known. */
+      d: Descriptor | null;
+      /** Its `imbatranim.json` as read, when `d` is known. */
+      manifest: unknown;
+      source: AppSource;
+      trust: UrlTrust;
+      /** A clone a URL check already fetched at the commit: built in place. */
+      fetched: { dir: string; buildId: string } | null;
+    };
+
 /** The pieces of the environment a build or an app's server gets. Nothing else. */
 const PASSED_THROUGH = ['PATH', 'LANG', 'LC_ALL', 'TZ'] as const;
 
@@ -210,7 +262,10 @@ const PASSED_THROUGH = ['PATH', 'LANG', 'LC_ALL', 'TZ'] as const;
  *
  * What keeps this from being "run anything from the internet" is the catalog:
  * an id that is not described there cannot be installed or served, and the
- * descriptor fixes the repository, the commit and the commands. A build still
+ * descriptor fixes the repository, the commit and the commands. An app from a
+ * URL built from source goes through the same installer once the verified
+ * list names its commit or the owner trusts it (`MarketplaceUrlApps`); its
+ * descriptor is its `imbatranim.json` at that commit, kept with its row. A build still
  * runs that repository's code (its npm scripts) as this user, which is the
  * weight the brief accepted; it does so with a minimal environment, its own
  * HOME and npm cache (so no secret of the backend's and no `~/.npmrc` token
@@ -220,6 +275,11 @@ const PASSED_THROUGH = ['PATH', 'LANG', 'LC_ALL', 'TZ'] as const;
 export class MarketplaceService implements OnModuleInit {
   private readonly logger = new Logger(MarketplaceService.name);
   private readonly jobs = new Map<string, Job>();
+  /**
+   * A URL app's install queued or failed before it has a row: what the
+   * listing shows for its job, and what Clear forgets.
+   */
+  private readonly urlJobs = new Map<string, Known>();
   /**
    * Builds run one at a time: two at once is twice the memory and CPU. A URL
    * check's clone takes its turn here too, so git work never
@@ -244,6 +304,12 @@ export class MarketplaceService implements OnModuleInit {
     for (const p of problems) {
       this.logger.warn(`Skipped marketplace/${p.file}: ${p.problem}`);
     }
+    const verified = this.verified();
+    if (verified.problem) {
+      this.logger.warn(
+        `marketplace/verified.json verifies nothing: ${verified.problem}`,
+      );
+    }
     if (descriptors.size > 0) {
       this.logger.log(
         `Marketplace catalog: ${[...descriptors.keys()].join(', ')}`,
@@ -264,6 +330,47 @@ export class MarketplaceService implements OnModuleInit {
     return loadCatalog(resolve(this.config.get('MARKETPLACE_DIR')), {
       allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
     });
+  }
+
+  /**
+   * The verified apps from a URL (`verified.ts`). Read on every call, like the
+   * catalog.
+   */
+  verified(): VerifiedList {
+    return loadVerified(resolve(this.config.get('MARKETPLACE_DIR')), {
+      allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
+    });
+  }
+
+  /**
+   * The descriptor `id` names: the catalog's, or an installed URL app's that
+   * runs natively and whose row reads back. Null for anything else.
+   */
+  private known(id: string): Known | null {
+    const d = this.catalog().descriptors.get(id);
+    if (d) return { d, url: null };
+    if (!isUrlAppId(id)) return null;
+    const row = this.row(id);
+    if (row?.runtime !== 'native') return null;
+    const record = this.nativeUrlRecord(row);
+    return record.ok
+      ? {
+          d: record.descriptor,
+          url: { source: record.source, trust: record.trust },
+        }
+      : null;
+  }
+
+  private nativeUrlRecord(row: InstalledRow) {
+    return readNativeUrlRow(row, {
+      allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
+    });
+  }
+
+  /** True while an install of `id` is queued or running. */
+  isInstalling(id: string): boolean {
+    const job = this.jobs.get(id);
+    return !!job && job.state !== 'failed';
   }
 
   row(id: string): InstalledRow | undefined {
@@ -294,68 +401,17 @@ export class MarketplaceService implements OnModuleInit {
   }> {
     const { descriptors, problems: catalogProblems } = this.catalog();
     const problems: ListingProblem[] = [...catalogProblems];
+    const verified = this.verified();
+    if (verified.problem) {
+      problems.push({
+        file: 'verified.json',
+        problem: `${verified.problem}; no app from a URL is verified`,
+      });
+    }
     const rows = new Map(this.rows().map((r) => [r.id, r]));
     const out: MarketplaceApp[] = [];
     for (const d of descriptors.values()) {
-      const row = rows.get(d.id);
-      // What the live build produced, not what the descriptor says now: an
-      // app added to the descriptor since has nothing to load until the
-      // next install, and lists as missing.
-      const recorded = row ? recordedBuild(row) : null;
-      for (const a of d.apps) {
-        let installed: MarketplaceApp['installed'] = null;
-        const built = recorded?.entries.get(a.id);
-        if (row) {
-          const served = (p: string) =>
-            `marketplace/apps/${d.id}/b/${row.build_id}/${urlPath(p)}`;
-          installed = {
-            ref: row.ref,
-            buildId: row.build_id,
-            installedAt: row.installed_at,
-            ...(built !== undefined && {
-              entryPath: served(built.entry),
-              stylePaths: built.styles.map(served),
-            }),
-            missing:
-              built === undefined ||
-              !(await exists(
-                join(
-                  this.buildDir(d.id, row.build_id),
-                  row.root,
-                  recorded!.output,
-                  built.entry,
-                ),
-              )),
-          };
-        }
-        out.push({
-          id: a.id,
-          descriptorId: d.id,
-          descriptorName: d.name,
-          name: a.name,
-          description: a.description,
-          meta: a.meta,
-          type: d.type,
-          icon: a.icon,
-          window: a.window,
-          capabilities: a.capabilities,
-          multiInstance: a.multiInstance,
-          opens: a.opens,
-          // What the live build declared: a descriptor that adds a hook at a
-          // new ref changes nothing until that ref is installed, so the desktop
-          // never looks for an export the module it has cannot hold.
-          background: built ? built.background : a.background,
-          commandSources: built ? built.commandSources : a.commandSources,
-          minSystemVersion: d.minSystemVersion,
-          sharedKit: built ? built.sharedKit : d.sharedKit,
-          catalogSharedKit: d.sharedKit,
-          ref: d.source.ref,
-          runtime: 'native',
-          installed,
-          job: this.jobs.get(d.id) ?? null,
-          server: this.servers.status(d.id),
-        });
-      }
+      out.push(...(await this.entriesOf(d, rows.get(d.id), null, verified)));
     }
     for (const row of rows.values()) {
       if (row.runtime === 'sandboxed') {
@@ -365,6 +421,26 @@ export class MarketplaceService implements OnModuleInit {
         const record = this.urlAppRecord(row);
         if (record.ok) out.push(await this.urlAppEntry(row, record));
         else {
+          problems.push({
+            file: row.id,
+            problem: `installed from a URL, but its stored ${record.damaged} is damaged: uninstall it`,
+            appId: row.id,
+          });
+        }
+        continue;
+      }
+      if (isUrlAppId(row.id)) {
+        const record = this.nativeUrlRecord(row);
+        if (record.ok) {
+          out.push(
+            ...(await this.entriesOf(
+              record.descriptor,
+              row,
+              { source: record.source, trust: record.trust },
+              verified,
+            )),
+          );
+        } else {
           problems.push({
             file: row.id,
             problem: `installed from a URL, but its stored ${record.damaged} is damaged: uninstall it`,
@@ -383,7 +459,94 @@ export class MarketplaceService implements OnModuleInit {
         appId: row.id,
       });
     }
+    // A URL app's first install, queued, building or failed: no row yet.
+    for (const [id, k] of this.urlJobs) {
+      if (!rows.has(id))
+        out.push(...(await this.entriesOf(k.d, undefined, k.url, verified)));
+    }
     return { apps: out, problems };
+  }
+
+  /**
+   * One descriptor's apps as the listing shows them. For a URL app, `ref` is
+   * the commit the verified list names for it when it names one (so a
+   * verified app's update shows as the catalog's does), else its installed
+   * commit.
+   */
+  private async entriesOf(
+    d: Descriptor,
+    row: InstalledRow | undefined,
+    url: Known['url'],
+    verified: VerifiedList,
+  ): Promise<MarketplaceApp[]> {
+    const out: MarketplaceApp[] = [];
+    let ref = d.source.ref;
+    if (url) {
+      ref =
+        verifiedEntry(verified, url.source.repo, url.source.subdir)?.commit ??
+        row?.ref ??
+        url.source.commit;
+    }
+    // What the live build produced, not what the descriptor says now: an
+    // app added to the descriptor since has nothing to load until the
+    // next install, and lists as missing.
+    const recorded = row ? recordedBuild(row) : null;
+    for (const a of d.apps) {
+      let installed: MarketplaceApp['installed'] = null;
+      const built = recorded?.entries.get(a.id);
+      if (row) {
+        const served = (p: string) =>
+          `marketplace/apps/${d.id}/b/${row.build_id}/${urlPath(p)}`;
+        installed = {
+          ref: row.ref,
+          buildId: row.build_id,
+          installedAt: row.installed_at,
+          ...(built !== undefined && {
+            entryPath: served(built.entry),
+            stylePaths: built.styles.map(served),
+          }),
+          missing:
+            built === undefined ||
+            !(await exists(
+              join(
+                this.buildDir(d.id, row.build_id),
+                row.root,
+                recorded!.output,
+                built.entry,
+              ),
+            )),
+        };
+      }
+      out.push({
+        id: a.id,
+        descriptorId: d.id,
+        descriptorName: d.name,
+        name: a.name,
+        description: a.description,
+        meta: a.meta,
+        type: d.type,
+        icon: a.icon,
+        window: a.window,
+        capabilities: a.capabilities,
+        multiInstance: a.multiInstance,
+        opens: a.opens,
+        // What the live build declared: a descriptor that adds a hook at a
+        // new ref changes nothing until that ref is installed, so the desktop
+        // never looks for an export the module it has cannot hold.
+        background: built ? built.background : a.background,
+        commandSources: built ? built.commandSources : a.commandSources,
+        minSystemVersion: d.minSystemVersion,
+        sharedKit: built ? built.sharedKit : d.sharedKit,
+        catalogSharedKit: d.sharedKit,
+        ref,
+        runtime: 'native',
+        ...(url && { source: url.source, trust: url.trust }),
+        installed,
+        job: this.jobs.get(d.id) ?? null,
+        server: this.servers.status(d.id),
+      });
+    }
+    return out;
   }
 
   /**
@@ -466,18 +629,17 @@ export class MarketplaceService implements OnModuleInit {
    * The file a request for an installed descriptor's build names, as a real
    * path inside its served directory. `id` is the descriptor's:
    * the apps of a suite share the directory, and the chunks in it. Anything
-   * else is a 404: an id outside the catalog, a build that is not the live
-   * one, a path that climbs out or reaches through a symlink, a dotfile. A
-   * URL app's build is never served here, only under its sandbox token with
-   * the sandbox's headers.
+   * else is a 404: an id outside the catalog and no native URL app's, a build
+   * that is not the live one, a path that climbs out or reaches through a
+   * symlink, a dotfile. A sandboxed URL app's build is never served here,
+   * only under its sandbox token with the sandbox's headers.
    */
   async servedFile(
     id: string,
     buildId: string,
     segments: string[],
   ): Promise<string> {
-    const d = this.catalog().descriptors.get(id);
-    const row = d ? this.row(id) : undefined;
+    const row = this.known(id) ? this.row(id) : undefined;
     if (!row || row.runtime !== 'native' || row.build_id !== buildId) {
       throw new NotFoundException();
     }
@@ -497,13 +659,16 @@ export class MarketplaceService implements OnModuleInit {
   }
 
   /**
-   * A 404 for an app installed from a URL (or an id only such an app could
-   * have) on a route of the native runtime: install, the build's files, the
-   * lease and the server proxy. A URL app has no build and no server, and its
-   * files are served only with the sandbox's headers.
+   * A 404 for a sandboxed app from a URL (or an id only a URL app could have,
+   * with no native row) on a route of the native runtime: install, the
+   * build's files, the lease and the server proxy. A sandboxed app has no
+   * build and no server, and its files are served only with the sandbox's
+   * headers. A URL app that runs natively uses these routes as a catalog app
+   * does.
    */
   refuseSandboxed(id: string): void {
-    if (isUrlAppId(id) || this.row(id)?.runtime === 'sandboxed') {
+    const runtime = this.row(id)?.runtime;
+    if (runtime === 'sandboxed' || (isUrlAppId(id) && runtime !== 'native')) {
       throw new NotFoundException();
     }
   }
@@ -515,7 +680,7 @@ export class MarketplaceService implements OnModuleInit {
    * window of a suite's apps leases this one, by the descriptor's id.
    */
   serverSpec(id: string): ServerSpec {
-    const d = this.catalog().descriptors.get(id);
+    const d = this.known(id)?.d;
     const row = d ? this.row(id) : undefined;
     if (!d || !row) throw new NotFoundException();
     if (!d.server) throw new ConflictException(`${d.name} has no server`);
@@ -538,23 +703,84 @@ export class MarketplaceService implements OnModuleInit {
    * Queue an install (or an update, or a reinstall: the same thing, a fresh
    * build at the catalog's ref) of a descriptor, and so of every app in it.
    * Answers at once; the pane polls `list`.
+   *
+   * An installed URL app that runs natively builds again too: at the commit
+   * the verified list names for it, if it names one (a verified app updates
+   * as the list moves), otherwise at its installed commit, which it was
+   * trusted at (a reinstall). Any other commit goes through a URL check and,
+   * unless verified, the owner's trust (`MarketplaceUrlApps`).
    */
   install(id: string): Job {
     this.refuseSandboxed(id);
-    const d = this.catalog().descriptors.get(id);
-    if (!d) throw new NotFoundException(`No app "${id}" in the catalog`);
-    const current = this.jobs.get(id);
-    if (current && current.state !== 'failed') {
+    const known = this.known(id);
+    if (!known) throw new NotFoundException(`No app "${id}" in the catalog`);
+    const { d, url } = known;
+    if (this.isInstalling(id)) {
       throw new ConflictException(`${d.name} is already being installed`);
     }
+    if (!url) return this.enqueue(id, { kind: 'catalog', d });
+    const verified = this.verified();
+    const listed = verifiedEntry(verified, url.source.repo, url.source.subdir);
+    const commit = listed?.commit ?? url.source.commit;
+    return this.enqueue(id, {
+      kind: 'url',
+      // Read again from the fresh clone: the manifest is the commit's.
+      d: null,
+      manifest: null,
+      source: { ...url.source, commit },
+      trust: listed ? { by: 'verified', at: Date.now() } : url.trust,
+      fetched: null,
+    });
+  }
+
+  /**
+   * Queue a URL app's native install from a check's clone, which is built in
+   * place. The caller has made sure it is verified at that commit or the owner
+   * trusts it, and that `id` is not being installed already.
+   */
+  installFromUrl(
+    id: string,
+    target: Extract<BuildTarget, { kind: 'url' }> & { d: Descriptor },
+  ): Job {
+    if (this.isInstalling(id)) {
+      throw new ConflictException(
+        `${target.d.name} is already being installed`,
+      );
+    }
+    this.urlJobs.set(id, {
+      d: target.d,
+      url: { source: target.source, trust: target.trust },
+    });
+    return this.enqueue(id, target);
+  }
+
+  /**
+   * True when the verified list vouches for an app from a URL at exactly its
+   * commit.
+   */
+  isVerified(source: AppSource): boolean {
+    return isVerified(this.verified(), source);
+  }
+
+  /** The listing's entries for one descriptor, for a URL install's answer. */
+  async listed(id: string): Promise<MarketplaceApp[]> {
+    return (await this.list()).apps.filter((a) => a.descriptorId === id);
+  }
+
+  private enqueue(id: string, target: BuildTarget): Job {
     const job: Job = { state: 'queued' };
     this.jobs.set(id, job);
     this.queue = this.queue
-      .then(() => this.build(d, job))
-      .catch((err: unknown) => {
+      .then(() => this.build(id, target, job))
+      .catch(async (err: unknown) => {
         job.state = 'failed';
         job.reason = err instanceof Error ? err.message : String(err);
         this.logger.error(`Installing ${id} failed: ${job.reason}`);
+        if (target.kind === 'url' && target.fetched) {
+          await fs
+            .rm(target.fetched.dir, { recursive: true, force: true })
+            .catch(() => undefined);
+        }
       });
     return job;
   }
@@ -617,6 +843,7 @@ export class MarketplaceService implements OnModuleInit {
       }
       this.dbs.db.prepare('DELETE FROM marketplace_apps WHERE id = ?').run(id);
       this.jobs.delete(id);
+      this.urlJobs.delete(id);
       // A URL app's open windows lose their files now, not in six hours.
       this.tokens.revokeApp(id);
       await this.removeBuilds(id, null);
@@ -625,12 +852,22 @@ export class MarketplaceService implements OnModuleInit {
     });
   }
 
-  private async build(d: Descriptor, job: Job): Promise<void> {
-    const buildId = `${d.source.ref.slice(0, 12)}-${randomBytes(4).toString('hex')}`;
-    const dir = this.buildDir(d.id, buildId);
+  private async build(
+    id: string,
+    target: BuildTarget,
+    job: Job,
+  ): Promise<void> {
+    const url = target.kind === 'url' ? target : null;
+    const repo = url ? url.source.repo : target.d!.source.repo;
+    const commit = url ? url.source.commit : target.d!.source.ref;
+    const subdir = url ? url.source.subdir : target.d!.source.subdir;
+    const buildId =
+      url?.fetched?.buildId ??
+      `${commit.slice(0, 12)}-${randomBytes(4).toString('hex')}`;
+    const dir = this.buildDir(id, buildId);
     const log: string[] = [];
     const writeLog = () =>
-      fs.writeFile(this.logPath(d.id), log.join('\n'), { mode: 0o600 });
+      fs.writeFile(this.logPath(id), log.join('\n'), { mode: 0o600 });
     const fail = async (reason: string) => {
       job.state = 'failed';
       job.reason = reason;
@@ -657,19 +894,48 @@ export class MarketplaceService implements OnModuleInit {
     };
 
     await this.prepareDirs();
-    await fs.mkdir(dir, { recursive: true });
-    log.push(`Installing ${d.name} from ${d.source.repo} at ${d.source.ref}`);
+    log.push(
+      `Installing ${target.d?.name ?? id} from ${repo} at ${commit}` +
+        (url
+          ? ` (${url.trust.by === 'verified' ? 'verified' : 'trusted by you'})`
+          : ''),
+    );
 
-    // ── fetch exactly the pinned commit ──
+    // ── fetch exactly the pinned commit, unless a URL check already did ──
     job.state = 'fetching';
-    if (!(await this.fetchCommit(dir, d.source.repo, d.source.ref, step, fail)))
-      return;
+    if (url?.fetched) {
+      log.push(`Using the checked clone (${buildId})`);
+    } else {
+      await fs.mkdir(dir, { recursive: true });
+      if (!(await this.fetchCommit(dir, repo, commit, step, fail))) return;
+    }
 
     // ── the app's directory, which must really be inside the clone ──
-    const rootRel = d.source.subdir ? posix.normalize(d.source.subdir) : '';
+    const rootRel = subdir ? posix.normalize(subdir) : '';
     const root = join(dir, rootRel);
     if (!(await isDirectoryWithin(dir, root))) {
-      await fail(`${d.source.subdir} is not a directory in the repository`);
+      await fail(`${subdir} is not a directory in the repository`);
+      return;
+    }
+
+    // ── a URL app's descriptor is its imbatranim.json at this commit ──
+    let d: Descriptor;
+    let manifest: unknown = null;
+    if (!url) d = target.d!;
+    else if (url.d) {
+      d = url.d;
+      manifest = url.manifest;
+    } else {
+      const read = await this.readNativeManifest(root, url.source);
+      if (!read.ok) {
+        await fail(read.problem);
+        return;
+      }
+      d = read.d;
+      manifest = read.manifest;
+    }
+    if (d.id !== id) {
+      await fail(`The app at ${commit} is not ${id}`);
       return;
     }
 
@@ -731,24 +997,27 @@ export class MarketplaceService implements OnModuleInit {
     // ── switch to the new build ──
     // A running server belongs to the old build: stop it before its
     // directory goes.
-    await this.servers.stop(d.id);
+    await this.servers.stop(id);
     // A version 1 row is written exactly as before one catalog entry, several apps: the entry, and
     // no entries. A version 2 row names the output and each app's module; a
     // kit app's also its stylesheets, its shared kit version and the hooks
     // it declared (only those it did, so a row without hooks reads as before).
+    // A URL app's row also keeps its source, with the trust record, and its
+    // manifest; it replaces a sandboxed install of the same app.
     const suite = d.schemaVersion === 2;
     const kit = d.sharedKit;
     this.dbs.db
       .prepare(
-        `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at)
-         VALUES (@id, @ref, @build_id, @root, @entry, @entries, @installed_at)
+        `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at, runtime, source, manifest)
+         VALUES (@id, @ref, @build_id, @root, @entry, @entries, @installed_at, 'native', @source, @manifest)
          ON CONFLICT (id) DO UPDATE SET ref = excluded.ref, build_id = excluded.build_id,
            root = excluded.root, entry = excluded.entry, entries = excluded.entries,
-           installed_at = excluded.installed_at`,
+           installed_at = excluded.installed_at, runtime = excluded.runtime,
+           source = excluded.source, manifest = excluded.manifest`,
       )
       .run({
-        id: d.id,
-        ref: d.source.ref,
+        id,
+        ref: commit,
         build_id: buildId,
         root: rootRel === '.' ? '' : rootRel,
         entry: suite ? output : posix.join(output, d.apps[0].entry),
@@ -773,12 +1042,54 @@ export class MarketplaceService implements OnModuleInit {
             )
           : null,
         installed_at: Date.now(),
+        source: url
+          ? JSON.stringify({ ...url.source, trust: url.trust })
+          : null,
+        manifest: url ? JSON.stringify(manifest) : null,
       });
-    this.jobs.delete(d.id);
+    this.jobs.delete(id);
+    this.urlJobs.delete(id);
+    // A sandboxed install's open windows lose their files now.
+    if (url) this.tokens.revokeApp(id);
     log.push(`\n✓ Installed ${d.name} (${buildId})`);
     await writeLog();
-    await this.removeBuilds(d.id, buildId);
-    this.logger.log(`Installed ${d.id} at ${d.source.ref}`);
+    await this.removeBuilds(id, buildId);
+    this.logger.log(`Installed ${id} at ${commit}`);
+  }
+
+  /**
+   * A URL app's `imbatranim.json` in a fetched clone, read as the descriptor
+   * it installs as. It must be a version 2 manifest: a prebuilt one installs
+   * sandboxed, through a URL check.
+   */
+  private async readNativeManifest(
+    root: string,
+    source: AppSource,
+  ): Promise<
+    | { ok: true; d: Descriptor; manifest: unknown }
+    | { ok: false; problem: string }
+  > {
+    let raw: unknown;
+    try {
+      raw = await readManifestJson(
+        root,
+        source.subdir ? `${source.subdir} in ${source.repo}` : source.repo,
+      );
+    } catch (err) {
+      return { ok: false, problem: (err as Error).message };
+    }
+    if (manifestVersion(raw) !== NATIVE_MANIFEST_VERSION) {
+      return {
+        ok: false,
+        problem: `At ${source.commit.slice(0, 7)} the app is not built from source (imbatranim.json is not version ${NATIVE_MANIFEST_VERSION}). Check its URL again to install it.`,
+      };
+    }
+    const parsed = parseNativeManifest(raw, source, {
+      allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
+    });
+    return parsed.ok
+      ? { ok: true, d: parsed.descriptor, manifest: raw }
+      : { ok: false, problem: parsed.problem };
   }
 
   /**

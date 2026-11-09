@@ -96,13 +96,19 @@ export type MarketplaceApp = {
   ref: string
   /**
    * How the desktop runs it: `native` imports its module into this page (a
-   * reviewed catalog app); `sandboxed` runs it in an opaque-origin iframe (an
-   * app from a URL). A backend from before sandboxed apps from a URL sends none: read that
+   * catalog app, or an app from a URL built from source); `sandboxed` runs it
+   * in an opaque-origin iframe (a prebuilt app from a URL). A backend from before sandboxed apps from a URL sends none: read that
    * as native.
    */
   runtime: 'native' | 'sandboxed'
   /** Where a URL app came from, as resolved at install. Absent for a catalog app. */
   source?: AppSource
+  /**
+   * How an app from a URL that builds from source came to be trusted at its
+   * installed commit: the OS's verified list, or the owner. Absent for a
+   * catalog app and a sandboxed one.
+   */
+  trust?: { by: 'verified' | 'owner'; at: number }
   installed: {
     ref: string
     buildId: string

@@ -2,8 +2,9 @@ import { isAbsolute, join, posix, relative } from 'path';
 import { z } from 'zod';
 
 import { appManifestSchema, type AppManifest } from './app-manifest';
-import { isInnerPath } from './catalog';
+import { isInnerPath, type Descriptor } from './catalog';
 import type { InstalledRow } from './marketplace.service';
+import { parseNativeManifest } from './native-manifest';
 import { deriveAppId, type AppSource } from './source-url';
 
 /**
@@ -40,6 +41,23 @@ const sourceSchema = z
     subdir: subdirSchema.nullable(),
   })
   .strict();
+
+/**
+ * How an app from a URL that runs natively came to be trusted at its commit:
+ * the OS's verified list vouched for it, or the owner said so. `at` is when.
+ */
+export interface UrlTrust {
+  by: 'verified' | 'owner';
+  at: number;
+}
+
+const trustSchema = z.strictObject({
+  by: z.enum(['verified', 'owner']),
+  at: z.number().int().nonnegative(),
+});
+
+/** A native URL app's stored source: the {@link AppSource} and its trust record. */
+const nativeSourceSchema = sourceSchema.extend({ trust: trustSchema }).strict();
 
 export type UrlAppRecord =
   | { ok: true; manifest: AppManifest; source: AppSource }
@@ -124,4 +142,59 @@ export function readUrlAppRow(
     return damaged('folder');
   }
   return { ok: true, manifest: manifest.data, source: source.data };
+}
+
+export type NativeUrlRecord =
+  | {
+      ok: true;
+      descriptor: Descriptor;
+      source: AppSource;
+      trust: UrlTrust;
+      /** The `imbatranim.json` the row was built from, as read. */
+      manifest: unknown;
+    }
+  | { ok: false; damaged: string };
+
+/**
+ * The descriptor, source and trust record of a URL app that runs natively,
+ * or which part of its row is damaged. Like {@link readUrlAppRow}, by
+ * install's rules: the source has its shape and derives the row's id, `ref`
+ * is its commit, the build id has that commit's prefix, `root` is the
+ * source's folder, and the stored manifest still reads as a descriptor. What
+ * the build recorded (`entry`, `entries`) is `recordedBuild`'s to read.
+ */
+export function readNativeUrlRow(
+  row: InstalledRow,
+  options: { allowLocalRepos: boolean },
+): NativeUrlRecord {
+  const damaged = (what: string): NativeUrlRecord => ({
+    ok: false,
+    damaged: what,
+  });
+  if (row.runtime !== 'native' || !URL_APP_ID.test(String(row.id))) {
+    return damaged('id');
+  }
+  const stored = nativeSourceSchema.safeParse(json(row.source));
+  if (
+    !stored.success ||
+    deriveAppId(stored.data.repo, stored.data.subdir) !== row.id
+  ) {
+    return damaged('source');
+  }
+  const { trust, ...source } = stored.data;
+  if (row.ref !== source.commit) return damaged('commit');
+  if (
+    typeof row.build_id !== 'string' ||
+    !BUILD_ID.test(row.build_id) ||
+    !row.build_id.startsWith(source.commit.slice(0, 12))
+  ) {
+    return damaged('build id');
+  }
+  if (row.root !== storedRoot(source.subdir)) return damaged('folder');
+  const manifest = json(row.manifest);
+  const parsed = parseNativeManifest(manifest, source, options);
+  if (!parsed.ok || parsed.descriptor.id !== row.id) {
+    return damaged('manifest');
+  }
+  return { ok: true, descriptor: parsed.descriptor, source, trust, manifest };
 }

@@ -2,10 +2,22 @@
 
 import type { AppSource } from '../../shared/registry/marketplace'
 
-/** The backend's answer to `POST marketplace/url/inspect` (contract B). */
+/**
+ * The backend's answer to `POST marketplace/url/inspect` (contract B).
+ *
+ * `runtime` is how the app would run: `native` for one built from source,
+ * `sandboxed` for a prebuilt one (and for a backend that sends none). A native
+ * app installs at once when `verified`; otherwise the owner must trust it.
+ */
 export type Inspection = {
   pending: string
   id: string
+  runtime?: 'native' | 'sandboxed'
+  verified?: boolean
+  /** A native app's build type: `service` runs a server of its own. */
+  type?: 'static' | 'service'
+  /** A native app's apps, when it has several. */
+  apps?: { id: string; name: string; icon: string; capabilities: string[] }[]
   manifest: {
     name: string
     description: string
@@ -32,8 +44,21 @@ export function sourceLine(source: UrlSource): string {
   return parts.join(' · ')
 }
 
+/**
+ * The publisher of an app from a URL: the GitHub owner and repository (or the
+ * local path, for a `file:` repository in development).
+ */
+export function publisher(source: UrlSource): string {
+  return source.repo.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/^file:\/\//, '')
+}
+
 export const CAPABILITY_TEXT: Record<string, string> = {
+  fs: 'Read and write the files you give it, and keep its own',
+  http: "Call this machine's backend as you",
+  intents: 'Open other apps, and files with them',
   notify: 'Show notifications',
+  shortcuts: 'Add keyboard shortcuts',
+  schedule: 'Set alarms and reminders',
 }
 
 /**

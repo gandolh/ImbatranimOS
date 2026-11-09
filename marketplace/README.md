@@ -513,13 +513,110 @@ An app from a URL has WASM in its sandbox, but no threads (see
 
 Any public GitHub repository that carries an `imbatranim.json` can be
 installed from **Settings → Marketplace → Install from a URL**, with no
-descriptor here. Nobody has reviewed such an app, so it gets far less than a
-catalog app: it runs in a sandboxed frame, nothing of it ever runs on the
-machine, and it can use only a small part of `system`. The owner sees the
-repository, the commit and what the app asks for, and confirms, before
-anything is kept.
+descriptor here. What happens depends on the file:
 
-### What the repository needs
+- **Version 2, built from source.** The app builds on the machine and runs
+  natively, exactly like a catalog app, with the same capabilities, identity
+  and file grants. If [`verified.json`](#verified-and-trusted-apps) names its
+  repository at that commit, it installs straight away. Otherwise the owner
+  first sees a warning (the publisher, the commit, what the app asks for, and
+  that a trusted app acts as them, Terminal included) and installs it only
+  with **More info → Trust and install**.
+- **Version 1, prebuilt.** The earlier kind: nobody has reviewed it, so it
+  runs in a sandboxed frame, nothing of it runs on the machine, and it can use
+  only a small part of `system`. It is being retired; new apps should use
+  version 2.
+
+### Built from source (version 2)
+
+`imbatranim.json` is a catalog descriptor ([above](#a-descriptor)) without
+`id`, `source` and `runtime`, which the OS sets: the id is derived from the
+repository and folder, the source is the URL resolved to a commit, and the
+runtime is native. `schemaVersion` is `2`. Like a descriptor it is validated
+by the catalog's schema, so every field, limit and rule above holds: argv
+commands, `capabilities`, `window`, `opens`, `server` for a service app,
+`sharedKit`, `styles` and the hooks.
+
+```json
+{
+  "schemaVersion": 2,
+  "name": "Notes",
+  "type": "static",
+  "build": {
+    "install": ["npm", "ci"],
+    "command": ["npm", "run", "build"],
+    "entry": "dist/notes.mjs"
+  },
+  "capabilities": ["fs", "notify"],
+  "icon": "notebook",
+  "minSystemVersion": 2
+}
+```
+
+`build.entry` is one app. `build.output` with `apps` is several apps from
+one build, as in [Several apps from one build](#several-apps-from-one-build);
+each app's id there is the derived id, a dash and the id it gives (at most 25
+characters), so no URL app can take a catalog app's id or another URL app's.
+
+The check clones the commit, within the same limits as a prebuilt app (512 MB,
+20,000 files), and the install builds that clone with the catalog's
+installer: the same allowlisted environment, per-build directory and time
+limits. The build log is under **Log**.
+
+### Which commit
+
+The URL picks it:
+
+- `https://github.com/<owner>/<repo>`: the default branch, as it is now;
+- `…/tree/<branch or tag>`: that branch or tag;
+- `…/tree/<40-character commit>`: that commit, but only while it is the tip
+  of one of the repository's branches or tags. GitHub serves a fork's commits
+  through the original repository's URL too, so any other commit could be
+  someone else's code under this repository's name;
+- any of these followed by `/<folder>` for an app that isn't at the top.
+
+The commit it resolves to is what gets checked, installed and shown. **Check
+for update** resolves the same URL again; if the commit moved, the owner
+confirms again, with the new capability list in front of them (for an app
+built from source, unless the new commit is verified).
+
+### Verified and trusted apps
+
+`verified.json` here lists the verified apps. It is a copy of imbatranim-apps'
+`verified.json` at the commit it records, made with
+
+```
+npm run verified:sync -- <imbatranim-apps checkout> <commit>
+npm run verified:sync -- <imbatranim-apps checkout> --check
+```
+
+The second form fails when the copy is not exactly what that commit holds.
+The image carries the copy, so what counts as verified changes only with an
+OS release. Each entry names a repository, the app's folder in it when it
+isn't at the top, one commit and a short note:
+
+```json
+{
+  "repo": "https://github.com/<owner>/<repo>",
+  "subdir": "apps/notes",
+  "commit": "<40 hex>",
+  "note": "…"
+}
+```
+
+- A **verified** app installs with no warning. When the list names a newer
+  commit, Settings shows **Update**, which builds that commit.
+- Any other commit is **unverified**: it installs only with the owner's
+  trust, which covers that commit alone. **Check for update** finds a new
+  commit and asks again. **Reinstall** rebuilds the trusted commit.
+- Settings → Marketplace shows each app's source, its commit and a
+  **Verified** or **Trusted by you** badge.
+
+### Prebuilt apps (version 1)
+
+The rest of this section is about the sandboxed kind.
+
+#### What the repository needs
 
 The **built** app, committed. Installing a URL app clones the repository at
 one commit and runs nothing from it: no `npm ci`, no build, no server. Keep
@@ -562,23 +659,7 @@ Beside the built files, in the folder the URL names, an `imbatranim.json`:
 The app's id on the machine is derived from its repository and folder, so two
 apps can't claim the same one.
 
-### Which commit
-
-The URL picks it:
-
-- `https://github.com/<owner>/<repo>`: the default branch, as it is now;
-- `…/tree/<branch or tag>`: that branch or tag;
-- `…/tree/<40-character commit>`: that commit, but only while it is the tip
-  of one of the repository's branches or tags. GitHub serves a fork's commits
-  through the original repository's URL too, so any other commit could be
-  someone else's code under this repository's name;
-- any of these followed by `/<folder>` for an app that isn't at the top.
-
-The commit it resolves to is what gets installed and shown. **Check for
-update** resolves the same URL again; if the commit moved, the owner confirms
-again, with the new capability list in front of them.
-
-### What the sandbox means for the app
+#### What the sandbox means for the app
 
 The module contract is the same as above, `mount(container, system, host)`,
 with `host.server` always `null`. The differences:

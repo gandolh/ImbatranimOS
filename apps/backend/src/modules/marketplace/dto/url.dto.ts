@@ -1,4 +1,4 @@
-import { IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class InspectUrlDto {
   /** What the owner pasted. `parseSourceUrl` says what is wrong with it, in words the pane shows. */
@@ -12,4 +12,12 @@ export class InstallUrlDto {
   @IsString()
   @MaxLength(100)
   pending!: string;
+
+  /**
+   * The owner trusts the checked commit of an app built from source that is
+   * not verified. Without it such an app is refused (403).
+   */
+  @IsOptional()
+  @IsBoolean()
+  trust?: boolean;
 }

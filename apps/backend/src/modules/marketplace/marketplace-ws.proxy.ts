@@ -14,7 +14,7 @@ import { UpgradeRoutes } from '../../upgrade-routes';
 import { LocalIdentityService } from '../auth/ws-auth';
 import { authorizeUpgrade } from '../pty/pty-upgrade';
 import { MarketplaceServers } from './marketplace-servers.service';
-import { isUrlAppId } from './source-url';
+import { MarketplaceService } from './marketplace.service';
 
 /** `/api/marketplace/apps/<id>/server[/rest]`. */
 const SERVER_PATH =
@@ -64,6 +64,7 @@ export class MarketplaceWsProxy
     private readonly identity: LocalIdentityService,
     private readonly config: ConfigService<Env, true>,
     private readonly servers: MarketplaceServers,
+    private readonly marketplace: MarketplaceService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -103,9 +104,12 @@ export class MarketplaceWsProxy
     const match = SERVER_PATH.exec(pathname);
     if (!match) return refuse('404 Not Found');
     const id = match[1];
-    // An app installed from a URL has no server, and the catalog
-    // refuses its `x-` ids.
-    if (isUrlAppId(id)) return refuse('404 Not Found');
+    // A sandboxed app from a URL has no server; one that runs natively may.
+    try {
+      this.marketplace.refuseSandboxed(id);
+    } catch {
+      return refuse('404 Not Found');
+    }
     const rest = match[2] ?? '/';
 
     void (async () => {

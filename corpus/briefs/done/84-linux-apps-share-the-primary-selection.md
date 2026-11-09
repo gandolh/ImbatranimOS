@@ -112,3 +112,76 @@ deadline from brief 48 covers PRIMARY reads too.
   - Ctrl+V in Firefox and Ctrl+Shift+V in xterm paste as before, and a copy in
     Firefox still reaches the desktop clipboard.
   - A middle click on a link in Firefox opens it with no clipboard prompt.
+
+## Outcome (2026-11-09)
+
+Built in `5a9211c` (1.291.0) and walked in the dev container the same day.
+Ticket in Ready for deploy.
+
+**What changed.** The host offers `zwp_primary_selection_v1` (smithay's
+`PrimarySelectionState`) and its window manager answers `PRIMARY` as it
+answers `CLIPBOARD` (`src/session/x11.rs`). The host's held selection
+(`HostSelection`: the tab's text or an X11 app's) sits in two slots, smithay's
+data-device selection and its primary selection, and the text type of a
+Wayland holder is kept per selection (`PerSelection` in `src/clipboard.rs`).
+`set_clipboard` fills both slots with one shared text (`FILLED_BY_TAB`); only
+`CLIPBOARD` sets `clipboard_to_read` (`goes_to_tab`), so `start_clipboard_read`
+never reads `PRIMARY`. Both selections follow the keyboard
+(`set_primary_focus` beside `set_data_device_focus`). The X11 offer, the read
+from an X11 app and the paste writer each take the selection; the paste of the
+host's own text still goes through `write_within` and its 5 s deadline, and a
+Wayland holder that is gone answers an error that drops the pipe (an empty
+paste). The tab's TypeScript didn't change: Shift+Insert was already a paste
+key. `PROTOCOL.md`'s prose says what the session does with `PRIMARY`; the wire
+format and protocol version are unchanged.
+
+**Calls made (by convention).**
+- The offer to X11 apps keeps one round trip after the owner changes; when the
+  tab's text arrives, both selections change first and one round trip covers
+  them. A Wayland highlight costs one round trip while Xwayland runs.
+- When Xwayland starts it is offered whichever selections hold text.
+- X11 apps may read either selection from the window manager whatever has the
+  keyboard, as `CLIPBOARD` already was (brief 48); GNOME and KDE don't gate it
+  either.
+- Tests build a real session on a display with no socket, so they check the
+  two slots themselves rather than a model of them.
+
+**Tests.** `cargo test` in `rust:1.97-alpine`: 91 unit (8 new: the tab's text
+fills both slots; an X11 or Wayland highlight replaces `PRIMARY` only; neither
+sets a read for the tab; an X11 paste of `PRIMARY` gets the tab's text, in
+Latin-1 for `STRING`, while `CLIPBOARD` held by an X11 app closes empty; a
+gone Wayland holder ends empty; an X11 app letting go empties only its own
+selection; plus three pure ones) and the text-input integration test. Release
+binary sha256 `5ca1f4ea…`.
+
+**Walk** (dev container, that binary, stock xterm with no `-xrm`, Firefox 159
+on Wayland: `WAYLAND_DISPLAY` set and its `wayland-proxy` socket open, so the
+Firefox steps crossed between X11 and Wayland). Headless Chrome got a
+stand-in `navigator.clipboard` that counts reads and writes; keys and clicks
+went through CDP.
+1. A desktop copy, then Shift+Insert in xterm: arrived (16 bytes). A 70,000
+   byte copy arrived whole (sha256 matched).
+2. A double-click highlight in xterm, middle click in a Firefox text field:
+   arrived. A highlight in Firefox, middle click in xterm: arrived (13 bytes).
+   No clipboard read on either middle click. Shift+Insert in xterm with the
+   desktop text unchanged then pasted Firefox's highlight (the tab handed
+   nothing over).
+3. Highlights in xterm (double and triple click) wrote nothing to the desktop
+   clipboard, which kept the earlier copy. Notepad's own paste reads Chrome's
+   native clipboard, which the stand-in can't fill, so the write count is the
+   evidence, not a Notepad paste.
+4. Ctrl+V in Firefox pasted a fresh desktop copy; Ctrl+A, Ctrl+C in Firefox
+   wrote the text to the desktop clipboard. Stock xterm has no Ctrl+Shift+V
+   binding: it types `^V`, as before, and the Shift+Insert after it pasted the
+   text that key handed over. An xterm with `CLIPBOARD` on Ctrl+Shift+V/C:
+   a desktop copy arrived, its copy reached the desktop clipboard, and a
+   Firefox copy pasted in it.
+5. A middle click on a link in Firefox opened it in a new tab, with no
+   clipboard read.
+6. A highlight in Firefox, then Firefox closed, then a middle click in xterm:
+   no error in the host's log; xterm pasted its own `CUT_BUFFER0` (its last
+   highlight), X's fallback when `PRIMARY` has no owner.
+
+**Owner steps:** push imbatranimOS, then
+`node cli.ts imbatranim-os deploy` from vps-deploy (the image rebuilds the
+host).

@@ -74,10 +74,10 @@ wave's verify gate found the kit map missing `useSystemSound` (`8b371ae`,
 1.174.0). Decisions in
 [decisions-linux-apps-input-files-look.md](decisions-linux-apps-input-files-look.md).
 
-48 (2026-11-06, `7378699`, 1.185.0, ready for deploy): X11 apps share the
-clipboard (CLIPBOARD text both ways) and show their own cursors (a PNG and
-hotspot, protocol 9). A paste over 64 KiB into xterm stalled until brief 83
-(2026-11-09) patched smithay's INCR path. Same file as 45-47.
+48 (2026-11-06, `7378699`, 1.185.0, ready for deploy): X11 apps share the clipboard (CLIPBOARD text both ways) and
+show their own cursors (a PNG and hotspot, protocol 9). A paste over 64 KiB into xterm stalled until brief 83
+(2026-11-09) patched smithay's INCR path. Brief 84 (2026-11-09, `5a9211c`, ready for deploy) bridges PRIMARY
+too: X11 and Wayland apps share one, the tab's pasted text fills it, and it never goes to the tab. Same file as 45-47.
 
 08-15, the two themes, were built 2026-11-03 on `main` (1.70.0 to 1.86.0)
 and deploy together; each brief's outcome is in `briefs/done/`, and 15's lists
@@ -184,8 +184,8 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Open todos
 
-None open. The last, xterm's Shift+Insert (it pastes PRIMARY, which the host doesn't bridge), became [brief 84](../briefs/todo/84-linux-apps-share-the-primary-selection.md)
-on 2026-11-09: Linux apps share PRIMARY and a desktop copy fills it; highlights never reach the desktop clipboard. The two URL-app todos are closed.
+None open. The last, xterm's Shift+Insert (it pasted PRIMARY, which the host didn't bridge), became [brief 84](../briefs/done/84-linux-apps-share-the-primary-selection.md)
+(2026-11-09, `5a9211c`, ready for deploy): Linux apps share PRIMARY and a desktop copy fills it; highlights never reach the desktop clipboard. The two URL-app todos are closed.
 The imbatranim-apps todos were promoted to briefs 63-76 on 2026-11-06 (their
 questions stay in each todo). Briefs 48 and 49 came from the last two Linux apps todos the same day.
 Briefs 77, 80 and 81 (2026-11-09, `6968428`, `7e79924` and `95b331d`, ready for deploy): a restore runs the data moves at once; set-aside data asks the owner at sign-in (download as `.tar.gz` or clean out); a lone `.gz`, `.xz` or `.bz2` unpacks beside itself and Extract to… starts in the archive's folder (kit 1.8.0). Brief 82 (2026-11-09, `a857f57`, ready for deploy): the sandboxed URL app path is retired; a version 1 `imbatranim.json` is refused at the check, and a leftover install lists as "No longer supported" with Uninstall only (game-engine `2de99ac6` drops Hollow's prebuilt copy).

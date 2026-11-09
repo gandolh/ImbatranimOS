@@ -6180,7 +6180,7 @@ Owner step: file the upstream report in the brief's Progress section.
 ## [2026-11-09] grill | Brief 84 promoted: Linux apps share the PRIMARY selection
 
 The grill on the last open todo, `xterm-shift-insert-pastes-the-clipboard`,
-wrote [84](briefs/todo/84-linux-apps-share-the-primary-selection.md). The owner
+wrote [84](briefs/done/84-linux-apps-share-the-primary-selection.md). The owner
 settled the one question of feel: a highlight in a Linux app stays among the
 session's Linux apps and never replaces the desktop clipboard (as on GNOME and
 KDE, and like the built-in Terminal). The rest are controller calls by
@@ -6190,3 +6190,18 @@ PRIMARY too (TigerVNC's `SetPrimary`); middle click reads no clipboard. This
 revisits brief 48's "PRIMARY stays in X"; the revisit is on
 [decisions-linux-apps-input-files-look.md](wiki/decisions-linux-apps-input-files-look.md).
 The todo is marked promoted; imbatranimOS has no open todos.
+
+## [2026-11-09] done | Brief 84: Linux apps share the PRIMARY selection
+
+[Brief 84](briefs/done/84-linux-apps-share-the-primary-selection.md) built in
+`5a9211c` (1.291.0) and walked in the dev container. The Wayland host offers
+the primary selection protocol and its window manager bridges X11's `PRIMARY`,
+so the session's X11 and Wayland apps share one: a highlight in xterm pastes
+with a middle click in Firefox (on Wayland) and the other way. Text the tab
+hands over for a paste fills `PRIMARY` as well as `CLIPBOARD`, so stock
+xterm's Shift+Insert pastes a desktop copy, 70 KB included. `PRIMARY` is
+never read for the tab: highlights in xterm wrote nothing to the desktop
+clipboard, and middle clicks read none. The tab's code didn't change.
+[decisions-linux-apps-input-files-look.md](wiki/decisions-linux-apps-input-files-look.md)
+and [status.md](wiki/status.md) carry the built line. Owner steps: push, then
+deploy.

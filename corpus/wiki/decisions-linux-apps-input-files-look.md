@@ -95,8 +95,11 @@ clipboard change.
   link and tab clicks included. Rejected: pushing highlights to the desktop
   clipboard (Xvnc's `SendPrimary`, PuTTY), which clobbers a copy whenever text
   is selected just to read it; shipping xterm with a Shift+Insert resource,
-  which fixes one app. Not built yet:
-  [brief 84](../briefs/todo/84-linux-apps-share-the-primary-selection.md).
+  which fixes one app. Built and walked on 2026-11-09 (`5a9211c`,
+  [brief 84](../briefs/done/84-linux-apps-share-the-primary-selection.md)):
+  the host offers the primary selection protocol, its window manager answers
+  `PRIMARY` like `CLIPBOARD`, and each holds its own host selection, so a
+  highlight replaces `PRIMARY` only.
 
 ## A notification click: a `source` and an activation registry, `default` only
 _2026-11-06_ — Brief 49. A notification can carry `source` (a Linux app's id),

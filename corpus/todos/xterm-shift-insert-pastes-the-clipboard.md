@@ -19,4 +19,4 @@ Linux desktops do; or ship xterm with that resource (a per-app default the
 install writes). Bridging PRIMARY follows the Unix convention and fixes every
 X11 app that pastes PRIMARY, not only xterm.
 
-Promoted to [brief 84](../briefs/todo/84-linux-apps-share-the-primary-selection.md) on 2026-11-09: PRIMARY is bridged, highlights stay among the Linux apps.
+Promoted to [brief 84](../briefs/done/84-linux-apps-share-the-primary-selection.md) on 2026-11-09: PRIMARY is bridged, highlights stay among the Linux apps.

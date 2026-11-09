@@ -10,6 +10,9 @@ export const manifest: AddonManifest = {
   icon: FileText,
   component: lazy(() => import('./Notepad').then((m) => ({ default: m.Notepad }))),
   opens: ['txt', 'log', 'md', 'markdown'],
+  // The size check reads the folder's listing, and a document's relative
+  // images and attachments live beside it.
+  readsOpenedFolder: true,
   multiInstance: true,
   defaultSize: { width: 760, height: 560 },
   minSize: { width: 400, height: 300 },

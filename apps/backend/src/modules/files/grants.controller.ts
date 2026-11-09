@@ -3,12 +3,14 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   HttpCode,
   NotFoundException,
   Param,
   Post,
 } from '@nestjs/common';
 import {
+  IsBoolean,
   IsIn,
   IsOptional,
   IsString,
@@ -16,6 +18,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import * as fs from 'fs/promises';
+import { dirname } from 'path';
 
 import {
   SYSTEM_GROUP,
@@ -59,7 +62,16 @@ export class GrantFileDto {
    */
   @IsOptional()
   @IsIn(['file', 'folder'])
-  expect?: GrantKind;
+  expect?: 'file' | 'folder';
+
+  /**
+   * Also give the file's folder to read (list it, read the files directly in
+   * it): an open the OS makes for an app that declares it reads the opened
+   * file's folder. The user's alone; skipped when the folder isn't there yet.
+   */
+  @IsOptional()
+  @IsBoolean()
+  withFolder?: boolean;
 }
 
 /**
@@ -80,7 +92,9 @@ export class GrantFileDto {
  *   user's alone.
  *
  * What is there decides the grant: a folder is given with everything under
- * it, a file (or a path with nothing there yet, a Save as) by itself.
+ * it, a file (or a path with nothing there yet, a Save as) by itself. With
+ * `withFolder`, a file's folder is given to read as well (a `listing`), which
+ * only the OS gives: an app's own open never gets the folder.
  */
 @Controller('files/grants')
 export class GrantsController {
@@ -108,6 +122,14 @@ export class GrantsController {
     if (!stat && dto.expect === 'folder') {
       throw new NotFoundException('There is no folder there');
     }
+    if (dto.withFolder && who !== null) {
+      throw new ForbiddenException(
+        `${who.appId} may not give a file's folder: only the OS does`,
+      );
+    }
+    if (dto.withFolder && kind !== 'file') {
+      throw new BadRequestException('Only a file comes with its folder');
+    }
     if (dto.expect !== undefined && dto.expect !== kind) {
       throw new BadRequestException(
         kind === 'folder' ? 'That is a folder' : 'That is not a folder',
@@ -130,11 +152,14 @@ export class GrantsController {
         this.files.assertCan(who, op, key, dto.root, dto.path);
       }
     }
-    this.grants.grant(
-      { instanceId: dto.instanceId, appId: dto.appId },
-      key,
-      kind,
-    );
+    const target = { instanceId: dto.instanceId, appId: dto.appId };
+    this.grants.grant(target, key, kind);
+    if (dto.withFolder) {
+      const there = await fs.stat(dirname(abs)).catch(() => null);
+      if (dirname(key) !== key && there?.isDirectory()) {
+        this.grants.grant(target, dirname(key), 'listing');
+      }
+    }
   }
 
   @Delete(':instanceId')

@@ -57,6 +57,16 @@ export type AppConfig = {
    */
   opens?: string[]
   /**
+   * The app reads the folder of a file the OS opens with it: a file opened
+   * from Files, Open With or a launcher, or picked in the OS's Open or Save
+   * dialog, comes with read on its folder (listing it, reading the files
+   * directly in it) for that window. For an app that works on a file's
+   * neighbours: a player's queue, a viewer's next image, a document's
+   * relative images. Without it, the app gets the file alone. An open the
+   * app makes itself never brings the folder.
+   */
+  readsOpenedFolder?: boolean
+  /**
    * Optional component painted on the **desktop**, beneath every window.
    *
    * The seam exists so Sticky Notes can put notes on the desktop

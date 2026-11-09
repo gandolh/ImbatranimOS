@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 14;
+export const LEDGER_VERSION = 15;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -223,6 +223,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       },
       { toVersion: 13, name: 'file-modes', run: () => this.stepFileModes() },
       { toVersion: 14, name: 'file-grants', run: () => this.stepFileGrants() },
+      {
+        toVersion: 15,
+        name: 'file-grant-listing',
+        run: () => this.stepFileGrantListing(),
+      },
     ];
 
     const current = Number(this.db.pragma('user_version', { simple: true }));
@@ -713,6 +718,31 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         created_at INTEGER NOT NULL,
         PRIMARY KEY (instance_id, path)
       );
+      CREATE INDEX IF NOT EXISTS file_grants_created_at
+        ON file_grants (created_at);
+    `);
+  }
+
+  /**
+   * Step 15 — a third kind of grant, `listing`: an opened file's folder, given
+   * to an app that declares it reads one (listing the folder, reading the
+   * files directly in it). SQLite can't widen a CHECK in place, so the table
+   * is made again and the grants copied over.
+   */
+  private stepFileGrantListing() {
+    this.db.exec(`
+      CREATE TABLE file_grants_next (
+        instance_id TEXT NOT NULL,
+        app_id TEXT NOT NULL,
+        path TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('file', 'folder', 'listing')),
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (instance_id, path)
+      );
+      INSERT INTO file_grants_next (instance_id, app_id, path, kind, created_at)
+        SELECT instance_id, app_id, path, kind, created_at FROM file_grants;
+      DROP TABLE file_grants;
+      ALTER TABLE file_grants_next RENAME TO file_grants;
       CREATE INDEX IF NOT EXISTS file_grants_created_at
         ON file_grants (created_at);
     `);

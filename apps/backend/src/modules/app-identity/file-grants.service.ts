@@ -11,9 +11,11 @@ import {
 
 /**
  * What a grant covers: one file (`file`, which may not exist yet: a Save as),
- * or a folder and everything under it (`folder`).
+ * a folder and everything under it (`folder`), or a folder to read
+ * (`listing`): listing it and reading the files directly in it, what an app
+ * that declares it gets of an opened file's folder.
  */
-export type GrantKind = 'file' | 'folder';
+export type GrantKind = 'file' | 'folder' | 'listing';
 
 /** One grant: a running copy of an app may act as the user on `path`. */
 export interface FileGrant {
@@ -75,7 +77,11 @@ export class FileGrants {
     private readonly modes: ModeStore,
   ) {}
 
-  /** Give a running copy a file or a folder. Giving the same path again replaces the grant. */
+  /**
+   * Give a running copy a file or a folder. Giving the same path again
+   * replaces the grant, except that a `listing` never narrows a `folder`
+   * already given (a picked folder, then a file opened in it).
+   */
   grant(
     target: { instanceId: string; appId: string },
     path: string,
@@ -92,7 +98,9 @@ export class FileGrants {
         `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
          VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(instance_id, path) DO UPDATE SET app_id = excluded.app_id,
-           kind = excluded.kind, created_at = excluded.created_at`,
+           kind = excluded.kind, created_at = excluded.created_at
+         WHERE NOT (excluded.kind = 'listing' AND file_grants.kind = 'folder'
+           AND file_grants.app_id = excluded.app_id)`,
       ).run(target.instanceId, target.appId, key, kind, now);
       db.prepare(
         `DELETE FROM file_grants WHERE instance_id = ? AND rowid NOT IN (
@@ -139,6 +147,20 @@ export class FileGrants {
         if (key === grant.path && FILE_OPS.has(op)) return true;
         continue;
       }
+      if (grant.kind === 'listing') {
+        if (key === grant.path) {
+          if (op === 'list' || op === 'traverse') return true;
+          continue;
+        }
+        if (
+          op === 'read' &&
+          parentOf(key) === grant.path &&
+          !this.crossesAnotherApp(identity.appId, grant.path, key)
+        ) {
+          return true;
+        }
+        continue;
+      }
       if (!within(grant.path, key) || op === 'chmod') continue;
       // Making or deleting an entry is an act on its parent; the picked
       // folder's own entry is in a parent that wasn't given.
@@ -168,6 +190,12 @@ export class FileGrants {
 
 /** What a file grant lets its holder do to that one path. */
 const FILE_OPS: ReadonlySet<ModeOp> = new Set(['read', 'write', 'create']);
+
+/** The folder `key` is in; `/` for `/` itself. */
+function parentOf(key: string): string {
+  const cut = key.lastIndexOf('/');
+  return cut <= 0 ? '/' : key.slice(0, cut);
+}
 
 /** True when `key` is `top` or under it. */
 function within(top: string, key: string): boolean {

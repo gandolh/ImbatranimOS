@@ -327,6 +327,43 @@ describe('Files by grant (e2e)', () => {
     expect(codeOf(ended)).toBe(USER_ONLY);
   });
 
+  it('an OS-made open can give the file’s folder to read: the folder and the files directly in it', async () => {
+    const viewer = await open('hollow');
+    const withFolder = (to: Copy, path: string, via?: Copy) => {
+      const req = http
+        .post('/api/files/grants')
+        .set('Cookie', TEST_COOKIE)
+        .send({
+          instanceId: to.instanceId,
+          appId: to.appId,
+          root: 'home',
+          path,
+          withFolder: true,
+        });
+      return via ? req.set(APP_TOKEN_HEADER, via.token) : req;
+    };
+    await withFolder(viewer, 'Documents/plan.txt').expect(204);
+    await as(viewer).list('Documents').expect(200);
+    await as(viewer).read('Documents/other.txt').expect(200);
+    await as(viewer).write('Documents/plan.txt', 'saved').expect(200);
+    // Read only, and not below.
+    await as(viewer).write('Documents/other.txt', 'no').expect(403);
+    await as(viewer).upload('Documents/new.txt', 'no').expect(403);
+    await as(viewer).list('Documents/sub').expect(403);
+    await as(viewer).read('Documents/sub/deep.txt').expect(403);
+    await as(viewer).list('').expect(403);
+
+    // Only the OS gives a folder: an app's own open never does.
+    const other = await open('hollow');
+    await withFolder(other, 'Documents/plan.txt', viewer).expect(403);
+    await as(other).list('Documents').expect(403);
+    // A folder has no folder to come with; a Save as into a new folder gives none.
+    await withFolder(viewer, 'Documents/sub').expect(400);
+    const saver = await open('quill');
+    await withFolder(saver, 'Fresh/new.txt').expect(204);
+    await as(saver).list('Fresh').expect(403);
+  });
+
   it('an app can’t open itself with a file it doesn’t hold', async () => {
     const first = await open('hollow');
     const second = await open('hollow');

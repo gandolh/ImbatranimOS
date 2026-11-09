@@ -87,6 +87,41 @@ describe('FileGrants', () => {
     expect(grants.covers(docs, 'read', `${DATA}/notes/secret.txt`)).toBe(true);
   });
 
+  it('a listing grant lists the folder and reads the files directly in it, nothing more', () => {
+    const music = `${HOME}/Music`;
+    grants.grant(docs, music, 'listing');
+    expect(grants.covers(docs, 'list', music)).toBe(true);
+    expect(grants.covers(docs, 'traverse', music)).toBe(true);
+    expect(grants.covers(docs, 'read', `${music}/b.mp3`)).toBe(true);
+    expect(grants.covers(docs, 'read', `${music}/a/b.mp3`)).toBe(false);
+    expect(grants.covers(docs, 'list', `${music}/a`)).toBe(false);
+    expect(grants.covers(docs, 'write', `${music}/b.mp3`)).toBe(false);
+    expect(grants.covers(docs, 'create', `${music}/new.mp3`)).toBe(false);
+    expect(grants.covers(docs, 'delete', `${music}/b.mp3`)).toBe(false);
+    expect(grants.covers(docs, 'read', music)).toBe(false);
+    expect(grants.covers(docs, 'read', `${HOME}/Musical.txt`)).toBe(false);
+  });
+
+  it('a listing grant stops at another app’s file in the folder', () => {
+    modes.create(copy('notes', 'n1'), `${DATA}/notes`, 'directory');
+    modes.create(copy('notes', 'n1'), `${DATA}/notes/secret.txt`, 'file');
+    grants.grant(docs, `${DATA}/notes`, 'listing');
+    expect(grants.covers(docs, 'read', `${DATA}/notes/secret.txt`)).toBe(false);
+  });
+
+  it('a listing never narrows a folder already given', () => {
+    grants.grant(docs, `${HOME}/Music`, 'folder');
+    grants.grant(docs, `${HOME}/Music`, 'listing');
+    expect(grants.held('w1', 'office-docs')).toEqual([
+      expect.objectContaining({ kind: 'folder' }),
+    ]);
+    grants.grant(docs, `${HOME}/Pictures`, 'listing');
+    grants.grant(docs, `${HOME}/Pictures`, 'folder');
+    expect(
+      grants.held('w1', 'office-docs').find((g) => g.path.endsWith('Pictures')),
+    ).toEqual(expect.objectContaining({ kind: 'folder' }));
+  });
+
   it('ends with its window, and the same path given again replaces it', () => {
     grants.grant(docs, `${HOME}/a`, 'file');
     grants.grant(docs, `${HOME}/a`, 'folder');

@@ -28,6 +28,7 @@ import { useSoundStore } from '../shared/store/soundStore'
 import { useIntentStore } from '../shared/store/intentStore'
 import { isTopWindow, useWindowStore } from '../shared/store/windowStore'
 import { openApp } from '../shared/intents/openApp'
+import { APP_REGISTRY } from '../shared/registry/registry'
 import { focusIntoWindowSoon } from '../shared/components/window/focusIntoWindow'
 import { isShellSuspended } from '../modules/auth/store/authStore'
 import { useShortcutStore } from '../shared/hooks/shortcutRegistry'
@@ -174,11 +175,17 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
 
   // What the user picks in the OS's dialog is given to this copy before the
   // app hears the answer. A copy acting as the user needs nothing given.
+  // A picked file comes with its folder to read for an app that declares it
+  // reads the opened file's folder, as an open from Files does.
+  const readsFolder = APP_REGISTRY.find((a) => a.id === appId)?.readsOpenedFolder === true
   const given =
     (expect: GrantExpect) =>
     async (choice: FileChoice | null): Promise<FileChoice | null> => {
       if (choice && instance) {
-        await grantFile({ appId, instanceId: instance.instanceId }, choice, expect)
+        await grantFile({ appId, instanceId: instance.instanceId }, choice, {
+          expect,
+          withFolder: expect === 'file' && readsFolder,
+        })
       }
       return choice
     }

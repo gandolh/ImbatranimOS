@@ -88,9 +88,10 @@ const settle = () =>
 
 /** Opens Save as through the handle and waits for the dialog to settle. */
 async function openSave(
-  opts: PickSaveOptions = {}
+  opts: PickSaveOptions = {},
+  appId = 'cad'
 ): Promise<{ pending: Promise<FileChoice | null> }> {
-  const system = createSystemHandle('cad', null)
+  const system = createSystemHandle(appId, null)
   let pending!: Promise<FileChoice | null>
   act(() => {
     pending = system.fs.pickSave({ title: 'Save as', ...opts })
@@ -168,6 +169,24 @@ describe('startIn on the file dialogs', () => {
         path: 'Drawings/plan.dxf',
         expect: 'file',
       })
+    )
+    expect(post.mock.calls.find(([url]) => url === '/files/grants')![1]).not.toHaveProperty(
+      'withFolder'
+    )
+  })
+
+  it('a pick comes with its folder for an app that declares it reads it', async () => {
+    const { pending } = await openSave(
+      { startIn: { root: 'home', path: 'Drawings/plan.dwg' }, suggestedName: 'plan.md' },
+      'notepad'
+    )
+    act(() =>
+      [...document.querySelectorAll('button')].find((b) => b.textContent === 'Save')!.click()
+    )
+    await expect(pending).resolves.toEqual({ root: 'home', path: 'Drawings/plan.md' })
+    expect(post).toHaveBeenCalledWith(
+      '/files/grants',
+      expect.objectContaining({ appId: 'notepad', path: 'Drawings/plan.md', withFolder: true })
     )
   })
 

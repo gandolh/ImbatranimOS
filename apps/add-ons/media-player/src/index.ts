@@ -26,6 +26,8 @@ export const manifest: AddonManifest = {
     'm4v',
     'mkv',
   ],
+  // The queue is the opened file's folder, and subtitles sit beside the video.
+  readsOpenedFolder: true,
   multiInstance: true,
   defaultSize: { width: 560, height: 420 },
   minSize: { width: 360, height: 260 },

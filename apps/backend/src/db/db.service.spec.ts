@@ -434,7 +434,7 @@ describe('DbService — the file grants table', () => {
       )
       .run();
     first.db.exec('DROP TABLE file_grants');
-    first.db.pragma(`user_version = ${LEDGER_VERSION - 1}`);
+    first.db.pragma('user_version = 13');
     first.onModuleDestroy();
 
     const svc = openService(path);
@@ -467,7 +467,7 @@ describe('DbService — the file grants table', () => {
        VALUES (?, 'notepad', ?, ?, 1)`,
     );
     insert.run('w1', '/home/imbatranim/a.txt', 'file');
-    svc.db.pragma(`user_version = ${LEDGER_VERSION - 1}`);
+    svc.db.pragma('user_version = 13');
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
     expect(svc.db.prepare('SELECT path FROM file_grants').all()).toEqual([
@@ -476,6 +476,51 @@ describe('DbService — the file grants table', () => {
     expect(() => insert.run('w1', '/b', 'everything')).toThrow(
       /CHECK constraint/,
     );
+    svc.onModuleDestroy();
+  });
+
+  it('a database at step 14 keeps its grants and takes a listing grant', () => {
+    const svc = openService(join(dir, 'listing.sqlite'));
+    // The table as step 14 made it: two kinds.
+    svc.db.exec(`
+      DROP TABLE file_grants;
+      CREATE TABLE file_grants (
+        instance_id TEXT NOT NULL,
+        app_id TEXT NOT NULL,
+        path TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('file', 'folder')),
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (instance_id, path)
+      );
+    `);
+    const insert = svc.db.prepare(
+      `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
+       VALUES (?, 'notepad', ?, ?, 1)`,
+    );
+    insert.run('w1', '/home/imbatranim/a.txt', 'file');
+    insert.run('w1', '/home/imbatranim/Pictures', 'folder');
+    expect(() => insert.run('w1', '/home/imbatranim', 'listing')).toThrow(
+      /CHECK constraint/,
+    );
+    svc.db.pragma('user_version = 14');
+    svc.migrate();
+    expect(svc.migrationFailure).toBeNull();
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
+      LEDGER_VERSION,
+    );
+    expect(
+      svc.db.prepare('SELECT path, kind FROM file_grants ORDER BY path').all(),
+    ).toEqual([
+      { path: '/home/imbatranim/Pictures', kind: 'folder' },
+      { path: '/home/imbatranim/a.txt', kind: 'file' },
+    ]);
+    // insert was prepared against the old table; prepare again.
+    svc.db
+      .prepare(
+        `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
+         VALUES ('w1', 'notepad', '/home/imbatranim', 'listing', 1)`,
+      )
+      .run();
     svc.onModuleDestroy();
   });
 });

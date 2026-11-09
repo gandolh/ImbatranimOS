@@ -35,7 +35,7 @@ describe('grantFile', () => {
     await grantFile(
       { appId: 'hollow', instanceId: 'w1' },
       { root: 'home', path: 'Documents' },
-      'folder'
+      { expect: 'folder' }
     )
     expect(post).toHaveBeenCalledWith('/files/grants', {
       instanceId: 'w1',
@@ -80,12 +80,29 @@ describe('openApp gives the file it opens', () => {
   const grants = () => post.mock.calls.filter(([url]) => url === '/files/grants')
 
   it('to the new window, before the app can read it', async () => {
+    const id = openApp('code-editor', { openPath: 'Documents/a.txt', root: 'home' })
+    await grantsSettled(id)
+    expect(grants()).toEqual([
+      [
+        '/files/grants',
+        { instanceId: id, appId: 'code-editor', root: 'home', path: 'Documents/a.txt' },
+      ],
+    ])
+  })
+
+  it('with its folder to read, to an app that declares it reads the opened file’s folder', async () => {
     const id = openApp('notepad', { openPath: 'Documents/a.txt', root: 'home' })
     await grantsSettled(id)
     expect(grants()).toEqual([
       [
         '/files/grants',
-        { instanceId: id, appId: 'notepad', root: 'home', path: 'Documents/a.txt' },
+        {
+          instanceId: id,
+          appId: 'notepad',
+          root: 'home',
+          path: 'Documents/a.txt',
+          withFolder: true,
+        },
       ],
     ])
   })
@@ -139,7 +156,7 @@ describe('openApp gives the file it opens', () => {
     expect(post).not.toHaveBeenCalled()
   })
 
-  it('an app opening another gives with its own token and records no recent for it', async () => {
+  it('an app opening another gives with its own token, never the folder, and records no recent for it', async () => {
     const { appPost, http } = appClient(() => 'hollow-window')
     const id = openApp('notepad', { openPath: 'a.txt', root: 'home' }, { appId: 'hollow', http })
     await grantsSettled(id)

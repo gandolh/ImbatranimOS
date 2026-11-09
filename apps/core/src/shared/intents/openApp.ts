@@ -89,7 +89,12 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   // with a path to be given it.
   const give = (windowId: string) => {
     if (file && !ACTS_AS_USER.has(appId)) {
-      void grantFile({ appId, instanceId: windowId }, file, undefined, by?.http)
+      void grantFile({ appId, instanceId: windowId }, file, {
+        client: by?.http,
+        // The folder comes only with an open the OS makes, to an app that
+        // declares it reads the opened file's folder.
+        withFolder: !by && appConfig.readsOpenedFolder === true,
+      })
     }
   }
 

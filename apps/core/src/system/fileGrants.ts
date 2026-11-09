@@ -7,6 +7,21 @@ export type GrantTarget = { appId: string; instanceId: string }
 /** What the OS's dialogs say they give: a file (which may not exist yet, a Save as) or a folder. */
 export type GrantExpect = 'file' | 'folder'
 
+export type GrantOptions = {
+  /** What the dialog said it gave; absent, what is there decides. */
+  expect?: GrantExpect
+  /**
+   * The client the call goes out through: the shared one (the user, the OS
+   * giving) by default, or an app's own copy's (the app handing on).
+   */
+  client?: SystemHttp
+  /**
+   * Also give the file's folder to read: an open the OS makes for an app
+   * that declares it reads the opened file's folder. The user's alone.
+   */
+  withFolder?: boolean
+}
+
 /** The grants each running copy is still waiting on, by instance id. */
 const pending = new Map<string, Set<Promise<void>>>()
 
@@ -17,7 +32,7 @@ const pending = new Map<string, Set<Promise<void>>>()
  * recent files, Open With) or by a pick in the OS's dialog.
  *
  * By default the call goes out as the user, through the shared client: the
- * OS gives it. With `client`, an app's own copy's client, it is that app
+ * OS gives it. With a `client`, an app's own copy's client, it is that app
  * handing on what it holds (an open the app made), which the backend allows
  * only for what the app holds, or a recent file of its own to a window of its
  * own.
@@ -28,16 +43,16 @@ const pending = new Map<string, Set<Promise<void>>>()
 export function grantFile(
   target: GrantTarget,
   given: { root: string; path: string },
-  expect?: GrantExpect,
-  client: SystemHttp = api as unknown as SystemHttp
+  { expect, client = api as unknown as SystemHttp, withFolder = false }: GrantOptions = {}
 ): Promise<void> {
-  const body: Record<string, string> = {
+  const body: Record<string, string | boolean> = {
     instanceId: target.instanceId,
     appId: target.appId,
     root: given.root,
     path: given.path,
   }
   if (expect !== undefined) body.expect = expect
+  if (withFolder) body.withFolder = true
   // Sent before it joins the target's pending set: a copy's call waits on the
   // grants pending for it as it starts, so an app opening its own window
   // would otherwise have this call wait on itself.

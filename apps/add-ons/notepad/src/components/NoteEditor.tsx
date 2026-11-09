@@ -296,6 +296,10 @@ export function NoteEditor({
    * Write an image into the document's own directory and link it relatively, so the
    * link still works in git, in another editor, or on GitHub. A base64 data URI would
    * be less code and produce a document nothing else reads comfortably.
+   *
+   * The new file is confirmed in the Save dialog, already at the place and name
+   * worked out here: Notepad may read the document's folder, but a new file is
+   * the user's to give, and the pick is what gives it.
    */
   const attachImageBytes = useCallback(
     async (bytes: ArrayBuffer, suggestedName: string, mime: string) => {
@@ -303,12 +307,34 @@ export function NoteEditor({
       try {
         const here = await readDirectory(root, docDir)
         const targetDir = assetDir(docDir, here.hasAssets)
+        // `assets/` is below the folder Notepad was given; the dialog shows
+        // what is there, and a clash is the dialog's to raise.
         const taken =
-          targetDir === docDir ? here.names : (await readDirectory(root, targetDir)).names
+          targetDir === docDir
+            ? here.names
+            : await readDirectory(root, targetDir).then(
+                (d) => d.names,
+                () => []
+              )
         const base = safeBaseName(suggestedName)
         const file = uniqueName(taken, base, extensionForMime(mime))
-        const target = targetDir === '' ? file : `${targetDir}/${file}`
-        await system.fs.upload(root, target, bytes, file)
+        const suggested = targetDir === '' ? file : `${targetDir}/${file}`
+        const choice = await system.fs.pickSave({
+          title: 'Save the image',
+          suggestedName: file,
+          startIn: { root, path: suggested },
+        })
+        if (!choice) return
+        if (choice.root !== root) {
+          system.notify({
+            title: 'Could not add the image',
+            body: 'Save it in the same place as the document: a link can’t reach another root.',
+            level: 'error',
+          })
+          return
+        }
+        const target = choice.path
+        await system.fs.upload(root, target, bytes, fileName(target))
         insertAtCaret(imageMarkdown(base, relativeFrom(docDir, target)))
         system.notify({
           title: 'Image added',

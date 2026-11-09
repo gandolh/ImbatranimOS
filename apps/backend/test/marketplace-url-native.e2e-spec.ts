@@ -547,4 +547,20 @@ describe('apps from a URL built from source (e2e)', () => {
       .set('Cookie', cookie)
       .expect(404);
   });
+
+  it('replaces a leftover sandboxed row of the same app when it installs', async () => {
+    const db = app.get(DbService).db;
+    db.prepare(
+      `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at, runtime)
+         VALUES (?, 'old', 'b0', 'apps/notes', 'dist/notes.mjs', NULL, 1, 'sandboxed')`,
+    ).run(id);
+    const checked = await inspect(notesUrl);
+    await install(checked.pending, true).expect(200);
+    await settled();
+    const row = db
+      .prepare('SELECT runtime, ref FROM marketplace_apps WHERE id = ?')
+      .all(id) as { runtime: string; ref: string }[];
+    expect(row).toEqual([{ runtime: 'native', ref: checked.source.commit }]);
+    expect(installGroupOf(app.get(DbService), id)).toBe(id);
+  }, 30_000);
 });

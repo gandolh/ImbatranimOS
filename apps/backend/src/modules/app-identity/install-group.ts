@@ -10,7 +10,9 @@ import { SYSTEM_GROUP } from './app-identity.types';
  */
 export function installGroupOf(dbs: DbService, appId: string): string | null {
   const rows = dbs.db
-    .prepare('SELECT id, entry, entries FROM marketplace_apps ORDER BY id')
+    .prepare(
+      "SELECT id, entry, entries FROM marketplace_apps WHERE runtime <> 'sandboxed' ORDER BY id",
+    )
     .all() as { id: string; entry: string; entries: string | null }[];
   for (const row of rows) {
     if (recordedBuild(row)?.entries.has(appId)) return row.id;

@@ -156,6 +156,26 @@ describe('App identity (e2e)', () => {
         .expect(401);
     });
 
+    it('refuses a token for the id of a retired sandboxed install, which only uninstalls', async () => {
+      app
+        .get(DbService)
+        .db.prepare(
+          `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at, runtime)
+           VALUES ('x-old-app', 'abc', 'b1', 'apps/old', 'dist/old.mjs', NULL, 1, 'sandboxed')`,
+        )
+        .run();
+      await http
+        .post('/api/system/app-tokens')
+        .set('Cookie', TEST_COOKIE)
+        .send({
+          token: mint(),
+          appId: 'x-old-app',
+          instanceId: 'x-old-app-1',
+          windowId: null,
+        })
+        .expect(403);
+    });
+
     it('a call with no token is the user’s', async () => {
       const res = await whoami().expect(200);
       expect(res.body).toEqual({ app: null });

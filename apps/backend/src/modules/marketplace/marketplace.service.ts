@@ -458,9 +458,10 @@ export class MarketplaceService implements OnModuleInit {
         appId: row.id,
       });
     }
-    // A URL app's first install, queued, building or failed: no row yet.
+    // A URL app's first install, queued, building or failed: no row yet, or
+    // only a retired sandboxed one, which the install replaces.
     for (const [id, k] of this.urlJobs) {
-      if (!rows.has(id))
+      if (!rows.has(id) || rows.get(id)?.runtime === 'sandboxed')
         out.push(...(await this.entriesOf(k.d, undefined, k.url, verified)));
     }
     return { apps: out, problems };

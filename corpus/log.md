@@ -5879,3 +5879,39 @@ app-data e2e (8), catalog jest, core appData and registry vitest; apps
 timed out under load and passed alone), `kit:sync --check`. Still open: an
 uninstall that removes the data while the tables remain (only after a crash
 between the move's writes and its drop) would see the move write them again.
+
+## [2026-11-09] build | Brief 76: Git GUI and the REST API Client install as Developer
+
+Git GUI and the REST API Client left the image as the Developer group of
+imbatranim-apps (`8a1e811`, the data store moved to `packages/shared`;
+`4ef5f5a`, the group); the OS pins `4ef5f5a` (`8231ee8`, 1.254.0). Ready
+for deploy; the walk is owed. Brief moved to done/.
+
+- **Decision 2 revisited (owner, 2026-11-09).** Moving Git GUI's recent
+  repositories into an app-writable file would have broken reopening them:
+  since brief 70 the grants hand-on gives a new window a folder back only
+  if it is in the `git` module's table. The owner chose the OS recents as
+  that record: `recent_files` gained a `kind` (ledger 18), an app records a
+  folder only while it may list and write in it, and the hand-on gives
+  back a folder among the app's own recents. Git GUI's list is
+  `recents.json` in its state folder. Accepted cost: the repositories show
+  in Start's Recent and the palette as Git's and share the 50 recents.
+  Written as decision 4 in the brief and on
+  [decisions-marketplace-suites.md](wiki/decisions-marketplace-suites.md).
+- **The move:** at the first start, Git GUI's rows are written as the app
+  into `recents.json` (kind `state`) and become its OS recents (folders,
+  with their times) in the transaction that drops `git_recent_repos`. The
+  `git` module's `recents` routes and its database use are gone; git itself
+  and `http-proxy` stay as OS services.
+- Start and the palette open a folder recent in its app, which opens the
+  repository from its open intent; the picker's Recent tab leaves folders
+  out; the palette leaves out any recent whose app is gone or off, as Start
+  does. Forget, and a click on a recent the OS refuses or that is gone,
+  take it off Git GUI's list and the OS recents.
+- Capabilities from the calls: both `fs`, `http`, `intents`, `notify` (Git
+  GUI gained `fs`).
+
+Checks: backend typecheck, 638 jest, 123 e2e; core `tsc -b` and 385 vitest;
+apps `tsc -b`, eslint, prettier, 303 vitest, the groups build test,
+`kit:sync --check`, `build:os` (Git 60 kB, REST Client 80 kB). Skipped:
+full suites, the PTY e2e, the browser walk (steps in the outcome note).

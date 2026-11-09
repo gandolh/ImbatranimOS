@@ -1,5 +1,5 @@
 ---
-summary: Dated status (2026-11-09) of the imbatranim-apps plan, briefs 63-76 - which are built and where (63 rename, 64 Games, 65 Notepad, 66 Files archives, 67 WebAssembly, 68 app identity, 72 Start, 73 chooser link, 74 native URL apps, 75 Accessories with the one-time data move), what the owner still owes, and what is open. Plan and brief table in research-imbatranim-apps.md.
+summary: Dated status (2026-11-09) of the imbatranim-apps plan, briefs 63-76 - which are built and where (63 rename, 64 Games, 65 Notepad, 66 Files archives, 67 WebAssembly, 68 app identity, 72 Start, 73 chooser link, 74 native URL apps, 75 Accessories with the one-time data move, 76 Developer with Git GUI's recents as folder recents), what the owner still owes, and what is open. Plan and brief table in research-imbatranim-apps.md.
 updated: 2026-11-09
 ---
 
@@ -54,4 +54,11 @@ Each outcome is in `briefs/done/`.
   at the first start, then the tables and both modules are gone. Owner:
   push imbatranim-apps first, then deploy, check Logs for the move; a board
   question on running the move after a restore. The walk is owed.
-- Open: 69, 70, 71, 76 are not covered here; see their briefs and the log.
+- **76** (imbatranim-apps `8a1e811`, `4ef5f5a`; OS `8231ee8`, 1.254.0,
+  ready for deploy, 2026-11-09): Git GUI and the REST API Client install as
+  Developer. Git GUI's recent repositories move once into `recents.json` in
+  its state folder and into the OS recents as folders (owner, 2026-11-09:
+  the OS recents decide what reopens), then the `git` module's recents
+  routes and table are gone. Owner: push imbatranim-apps first, then
+  deploy, check Logs for the move. The walk is owed.
+- Open: 69, 70, 71 are not covered here; see their briefs and the log.

@@ -1,6 +1,6 @@
 ---
 summary: How imbatranim-apps holds the apps that leave the image (2026-11-06), split out of research-imbatranim-apps.md. The three kinds of app are runtime needs, not install units: client only, a WASM engine from an npm package under a kit UI (needs the desktop CSP to allow wasm-unsafe-eval), and kit apps with a server. Install groups after the grill are Office, Games, Developer (Git GUI, REST API Client) and Accessories (Todo, Bookmarks); Start has no folders. The layout is proven as one root workspace (brief 64 measured both ways; the group recipe is in imbatranim-apps-group-recipe.md). The rename keeps the descriptor id imbatranim-office. §4 is the checklist every move follows, with where backend modules go.
-updated: 2026-11-06
+updated: 2026-11-09
 ---
 
 # Research: how imbatranim-apps holds the apps (2026-11-06)
@@ -146,6 +146,8 @@ An installable app's data moves into real files in its own folder,
 `~/.local/share/imbatranim/<app-id>/`, through `system.data`; its module is
 deleted once the data has moved (Todo, Bookmarks, Git GUI's recent repos).
 Todo and Bookmarks moved on 2026-11-09 (brief 75): the OS writes the files
-at the first start with `AppDataService.place`, then drops the tables.
+at the first start with `AppDataService.place`, then drops the tables. Git
+GUI's recent repositories moved the same day (brief 76) into its state
+folder, and into the OS recents as folders, which is what reopens them.
 Modules that do system work stay as OS services (`archive`, `git`,
 `http-proxy`). Built-in apps keep their modules.

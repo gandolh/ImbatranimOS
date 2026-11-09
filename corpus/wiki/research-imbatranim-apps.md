@@ -1,6 +1,6 @@
 ---
 summary: Research (2026-11-06) on the owner's plan to rename imbatranim-office to imbatranim-apps and make it the home of every app that can be installed, so a fresh OS starts cleaner; then grilled the same day. Measured, the image barely shrinks (all 25 built-in apps are 16.8 MB of a 324 MB image, 13.9 MB of it Monaco), and the owner accepted that. Has a table of every app with its size, backend module and what moving it takes. After the grill, 16 apps stay built in for a normal user (browsing, media, small coding); Minesweeper and Solitaire, Git GUI, the REST API Client, Todo and Bookmarks become installable beside Office; Markdown Editor folds into Notepad and Archive Manager into Files. The work is eleven backlog todos here and one in imbatranim-office (§7); the kinds of app, groups and the moving checklist are in research-imbatranim-apps-layout.md.
-updated: 2026-11-06
+updated: 2026-11-09
 ---
 
 # Research: the apps that leave the image (2026-11-06)
@@ -75,8 +75,8 @@ doesn't: `background`, `widgets`, `commandSources`, `service`.
 | Todo | 1,641 / 296 | 18 kB | todos (584) | `background`, its data | Wave 2; **moved 2026-11-09**, Accessories |
 | Sticky Notes | 1,103 / 137 | 8 kB | sticky-notes (326) | its data | Wave 2 |
 | Bookmarks | 1,726 / 566 | 17 kB | bookmarks (888) | `commandSources`, its data, reads the Browser's config | Wave 2; **moved 2026-11-09**, Accessories |
-| Git GUI | 1,947 / 326 | 28 kB | git (2,768) | the OS runs git for it | Wave 3, Developer |
-| REST API Client | 2,946 / 1,115 | 39 kB | http-proxy (783) | the SSRF-guarded proxy | Wave 3, Developer |
+| Git GUI | 1,947 / 326 | 28 kB | git (2,768) | the OS runs git for it | Wave 3; **moved 2026-11-09**, Developer |
+| REST API Client | 2,946 / 1,115 | 39 kB | http-proxy (783) | the SSRF-guarded proxy | Wave 3; **moved 2026-11-09**, Developer |
 | Archive Manager | 923 / 52 | 13 kB | archive (2,164) | opener for zip and tar; unpacks in home | Wave 3, or base |
 
 **Wave 1** needs only `fs`, `intents`, `notify` and `window`, which a kit app
@@ -188,7 +188,7 @@ Player, Code Editor and Diff, and Clock and Calendar.
 | [72](../briefs/done/72-start-gets-search-pins-and-an-a-to-z-list.md), from `start-gets-search-pins-and-an-a-to-z-list` | Start: search, pins, A-Z list |
 | [73](../briefs/done/73-the-chooser-links-to-the-marketplace.md), from `the-chooser-links-to-the-marketplace` | The chooser links to the Marketplace |
 | [75](../briefs/done/75-todo-and-bookmarks-install-as-accessories.md), from `todo-and-bookmarks-install-as-accessories` | Todo and Bookmarks as Accessories (after Games, hooks, data folder) |
-| [76](../briefs/todo/76-git-gui-and-rest-api-client-install-as-developer.md), from `git-gui-and-rest-api-client-join-developer` | Git GUI and REST API Client as Developer (after Games, data folder) |
+| [76](../briefs/done/76-git-gui-and-rest-api-client-install-as-developer.md), from `git-gui-and-rest-api-client-join-developer` | Git GUI and REST API Client as Developer (after Games, data folder) |
 | [68](../briefs/done/68-apps-run-as-their-own-identity.md), from `apps-run-as-their-own-identity` | Unix-style identity and file modes for apps |
 | [70](../briefs/done/70-installable-apps-get-files-by-grant.md), from `installable-apps-get-files-by-grant` | Installable apps see other files only by grant |
 | [74](../briefs/done/74-url-apps-install-natively-once-verified-or-trusted.md), from `url-apps-install-natively-once-trusted` | URL apps run natively: verified, or trusted after a warning |

@@ -1,6 +1,6 @@
 ---
 summary: The marketplace's calls for suites (2026-10-21) and kit apps (2026-10-21), 2026-10-21 — a v2 row keeps its output in `entry`, the listing trusts what the build recorded (entries, and a kit app's stylesheets and shared kit version) and, since the same-ref rebuild (2026-10-27) (2026-10-27), reports the catalog's kit beside it so the pane can offer a rebuild, the shared global holds frozen copies of the namespaces, the registry sync prunes a gone build's stylesheet links, the theme tokens are static, and the dev container can try a local `file://` checkout; a kit app asks for its server when it needs one, instead of the host leasing it before the app renders (2026-11-03).
-updated: 2026-11-03
+updated: 2026-11-09
 ---
 
 # Decisions: suites and kit apps in the marketplace
@@ -130,7 +130,7 @@ Decided in the imbatranim-apps grill. An installable app keeps its data as
 real files in a folder of its own, `~/.local/share/imbatranim/<app-id>/`.
 Todo and Bookmarks, the installable apps with data in a backend module
 today (rows in `~/.imbatranim/db.sqlite`), move their data there, and so do
-Git GUI's recent repos. Built-in apps (Clock, Calendar, Sticky Notes) keep
+Git GUI's recent repos (revised 2026-11-09, below). Built-in apps (Clock, Calendar, Sticky Notes) keep
 their modules. This is how Windows
 gives a program AppData and Linux gives one `~/.local/share`. The OS gives
 every app its folder through `system`, scoped so an app sees only its own,
@@ -170,6 +170,11 @@ the server:
   behind the SSRF guard. Git GUI and the REST API Client are the features
   and UI on top, and their data (recent repos, collections) goes to their
   data folder.
+- **Revised 2026-11-09 (owner, brief 76):** an app-writable file can't be
+  what the grants hand-on checks, so Git GUI's repositories are also its OS
+  recents (folders), which reopen; its state file is only the list. Cost:
+  they show in Start and the palette. Rejected: an OS record of every
+  folder given to an app, and a click that asks for the folder again.
 - The same reading covers the rest. Files' previews show images and play
   media without Image Viewer or Media Player, Notepad edits text without the
   Code Editor, and the taskbar has its clock without Clock.

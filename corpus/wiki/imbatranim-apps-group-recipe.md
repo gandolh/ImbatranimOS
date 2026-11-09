@@ -1,5 +1,5 @@
 ---
-summary: How to add an install group to imbatranim-apps (settled by brief 64 on 2026-11-06, extended by brief 75's Accessories on 2026-11-09) - a folder in the root workspace, shared code, the descriptor's build commands and output paths, capabilities from the system calls, icons and retired ids; then hooks, data in system.data instead of a backend module, the shared store that replaces react-query, the kit sync order and the OS's one-time move. Read before brief 76.
+summary: How to add an install group to imbatranim-apps (settled by brief 64 on 2026-11-06, extended by briefs 75 and 76 on 2026-11-09) - a folder in the root workspace, shared code, the descriptor's build commands and output paths, capabilities from the system calls, icons and retired ids; then hooks, data in system.data instead of a backend module, the shared store in packages/shared that replaces react-query, the kit sync order, the OS's one-time move (any data kind) and what an OS service must keep when an app's list moves out (Developer).
 updated: 2026-11-09
 ---
 
@@ -83,3 +83,27 @@ Learned moving Todo and Bookmarks (brief 75); brief 76 meets the same.
   `AppDataService.place` (no installed check; never over a file the app
   wrote), then drops the tables. A failure keeps the rows, logged. Add a
   move there and delete the module in the same commit.
+
+## A list the OS also trusts (Developer, 2026-11-09)
+
+Learned moving Git GUI and the REST API Client (brief 76).
+
+- **The store is shared.** `createDataStore` lives in
+  `packages/shared/src/dataStore.ts`; a group imports it by relative path
+  (a scoped `npm ci --workspace=<group>` may not link the shared package).
+  `inFolder(data, 'state')` keeps a store to one of the app's other folders.
+- **A move names its kind.** `Move.kind` in `DataMovesService` picks the
+  folder (`state` for Git GUI's `recents.json`); `keep()` writes rows the OS
+  keeps itself in the transaction that drops the tables.
+- **Before moving a list out, check what else reads it.** Git GUI's recent
+  repositories were also what the grants hand-on checked to give a new
+  window a folder back, and an app-writable file can't be that check. The
+  answer (owner, 2026-11-09) was to keep the trusted half in the OS: the
+  repositories are OS recents of kind `folder`, recorded only by an app
+  that holds the folder whole, and the app's file is just its list.
+- **Tests that open a moved app by id break**: a catalog app that isn't
+  installed gets no token, so an e2e that used `open('git-gui')` as "some
+  built-in" needs another built-in.
+- **Nothing else opened these apps**; a folder recent now opens its app from
+  Start and the palette, so an app whose recents are folders reads its
+  open intent (`useOpenIntent`).

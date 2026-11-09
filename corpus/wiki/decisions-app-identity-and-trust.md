@@ -108,8 +108,9 @@ The REST API Client's typed file paths become a picker. Built in
 What was built (brief 70, 2026-11-06 to 2026-11-09):
 - **Who gives.** Core gives as the user for its launchers, Files, Start and
   the pickers. An open an app makes (`system.intents.openApp`) gives with
-  the app's token: only what the app holds, or one of its own recent files
-  (or recent repositories) to a window of its own. A notification action's
+  the app's token: only what the app holds, or one of its own recents to a
+  window of its own (a file, or since brief 76 a folder: Git GUI's
+  repositories, recorded only while it held the folder whole). A notification action's
   payload is the app's words and gives nothing.
 - **Grant kinds.** `file` (read, write, make), `read` (a file an app hands on
   that it may only read), `folder` (everything under it, except another

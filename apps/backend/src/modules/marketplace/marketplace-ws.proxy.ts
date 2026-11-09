@@ -104,12 +104,6 @@ export class MarketplaceWsProxy
     const match = SERVER_PATH.exec(pathname);
     if (!match) return refuse('404 Not Found');
     const id = match[1];
-    // A sandboxed app from a URL has no server; one that runs natively may.
-    try {
-      this.marketplace.refuseSandboxed(id);
-    } catch {
-      return refuse('404 Not Found');
-    }
     const rest = match[2] ?? '/';
 
     void (async () => {
@@ -123,8 +117,16 @@ export class MarketplaceWsProxy
         this.logger.warn(`Rejected an unauthorized upgrade to ${id}'s server`);
         return refuse('401 Unauthorized');
       }
+      // A sandboxed app from a URL has no server; one that runs natively
+      // may. Asked only once the session is checked, so a stranger can't
+      // learn what is installed.
+      try {
+        this.marketplace.refuseSandboxed(id);
+      } catch {
+        return refuse('404 Not Found');
+      }
       // Only a server the desktop started (through the session-checked
-      // lease route) has a port; that is also what makes `id` a catalog
+      // lease route) has a port; that is also what makes `id` an installed
       // descriptor's (a suite's apps share its server).
       const port = this.servers.portFor(id);
       if (port === null) return refuse('503 Service Unavailable');

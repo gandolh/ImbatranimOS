@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  Optional,
   PayloadTooLargeException,
 } from '@nestjs/common';
 import { execFile, spawn } from 'child_process';
@@ -19,6 +20,7 @@ import { DbService, LEDGER_VERSION } from '../../db/db.service';
 import { browserProfileKeyPath } from '../browser/browser-profile.service';
 import { marketplaceAppsDir } from '../marketplace/marketplace.service';
 import { KIND_DIRS, VENDOR_DIR } from '../app-data/app-data.paths';
+import { DataMovesService } from '../app-data/data-moves.service';
 import { FilesService } from '../files/files.service';
 import { TRASH_DIR } from '../files/trash.service';
 import { ArchiveService, parseTarListLine } from '../archive/archive.service';
@@ -162,6 +164,7 @@ export class BackupService {
     private readonly db: DbService,
     private readonly logs: LogService,
     private readonly localIdentity: LocalIdentityService,
+    @Optional() private readonly moves?: DataMovesService,
   ) {}
 
   // ── shared ───────────────────────────────────────────────────────────────
@@ -555,6 +558,12 @@ export class BackupService {
         'The home directory was restored from a backup',
         { from: upload.manifest.createdAt, entries: restored.length },
       );
+
+      // A backup from before the move brings the old tables back and no data
+      // files. Move them now, on the restored database and home, rather than
+      // at the next start: an edit in between would make the move set the
+      // restored tables aside. Never throws, so it cannot fail the restore.
+      await this.moves?.run();
 
       return {
         restored,

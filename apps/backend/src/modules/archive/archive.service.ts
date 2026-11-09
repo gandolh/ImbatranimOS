@@ -87,6 +87,46 @@ const NO_HARD_LINKS: ReadonlySet<string> = new Set([
   'EXDEV',
 ]);
 
+/** Remove the folders `mkdir -p` made, from `leaf` up to `top`, while they are empty. */
+async function removeMade(leaf: string, top: string): Promise<void> {
+  for (let dir = leaf; ; dir = dirname(dir)) {
+    try {
+      await fs.rmdir(dir);
+    } catch {
+      return;
+    }
+    if (dir === top || dirname(dir) === dir) return;
+  }
+}
+
+/** A counting semaphore: `acquire` waits for a free slot, `release` hands it on. */
+class Slots {
+  private free: number;
+  private readonly waiting: (() => void)[] = [];
+  constructor(size: number) {
+    this.free = size;
+  }
+  async acquire(): Promise<void> {
+    if (this.free > 0) {
+      this.free--;
+      return;
+    }
+    await new Promise<void>((resolve) => this.waiting.push(resolve));
+  }
+  release(): void {
+    const next = this.waiting.shift();
+    if (next) next();
+    else this.free++;
+  }
+}
+
+/** How many lone files unpack at once. */
+const LONE_CONCURRENCY = 2;
+
+/** A staged file this old is a crash's leftover, not an unpack in progress. */
+const STALE_STAGED_MS = 24 * 60 * 60 * 1000;
+const STAGED_NAME = /^\.extract-[0-9a-f-]{36}\.part$/;
+
 /** Thrown by a peek's sink once it has the bytes it wanted. */
 class PeekDone extends Error {}
 
@@ -111,6 +151,19 @@ export function numberedName(name: string, n: number): string {
   return dot > 0
     ? `${name.slice(0, dot)} (${n})${name.slice(dot)}`
     : `${name} (${n})`;
+}
+
+/**
+ * The folder name an archive's file name stands for: its name without the
+ * archive suffix. A plain .gz/.xz/.bz2 reaches here only with a tar inside.
+ * Empty when nothing is left, or only dots (`.gz`, `..gz`).
+ */
+function deriveName(fileName: string): string {
+  const base = fileName.replace(
+    /\.(zip|tgz|tbz2?|txz|tar\.gz|tar\.bz2|tar\.xz|tar|gz|xz|bz2)$/i,
+    '',
+  );
+  return base === '.' || base === '..' ? '' : base;
 }
 
 const isLone = (format: string): format is LoneFlavour =>
@@ -239,6 +292,8 @@ export interface CompressResult {
 
 @Injectable()
 export class ArchiveService {
+  private readonly loneSlot = new Slots(LONE_CONCURRENCY);
+
   constructor(private readonly files: FilesService) {}
 
   /**
@@ -542,6 +597,12 @@ export class ArchiveService {
     // archive (foo.tar.gz -> foo), or `foo (2)`… when that exists: extracting
     // the same archive twice must never land on the first copy.
     // Always re-jailed.
+    if (dest === undefined && !deriveName(basename(path))) {
+      // A `.gz` with a tar inside has no name left to make a folder of.
+      throw new BadRequestException(
+        `Can't name a folder for ${basename(path)}: rename it first`,
+      );
+    }
     const destVirtual =
       dest ?? (await this.freeDest(root, this.deriveDest(path)));
     const { abs: destAbs } = await this.files.resolveSafe(root, destVirtual);
@@ -1046,7 +1107,10 @@ export class ArchiveService {
       root,
       folderVirtual,
     );
-    await fs.mkdir(folderAbs, { recursive: true }).catch(() => undefined);
+    // The first folder this made, if any: taken back if the unpack fails.
+    const made = await fs
+      .mkdir(folderAbs, { recursive: true })
+      .catch(() => undefined);
     const folder = await fs.stat(folderAbs).catch(() => null);
     if (!folder?.isDirectory()) {
       throw new BadRequestException(`Not a folder: ${folderVirtual || '/'}`);
@@ -1054,15 +1118,21 @@ export class ArchiveService {
     // Everything below happens in the folder's real path, checked again once
     // the file is in.
     const realFolder = await fs.realpath(folderAbs);
+    await this.sweepStaged(realFolder);
 
     // Short, so a long output name can't push the staging name past the limit.
     const staged = join(realFolder, `.extract-${randomUUID()}.part`);
     let created = false;
+    let ok = false;
+    let handle: fs.FileHandle | undefined;
     try {
-      const out = (
-        await diskFull(() => fs.open(staged, 'wx'))
-      ).createWriteStream();
+      const writer = await diskFull(() => fs.open(staged, 'wx'));
+      const out = writer.createWriteStream();
       created = true;
+      // A second descriptor on the same file, kept open: the re-check below
+      // stats the file by it, whatever the folder's path reaches by then.
+      handle = await fs.open(staged, 'r');
+
       const totalBytes = await this.decompressInto(archiveAbs, kind, out).catch(
         (err: unknown) => {
           // Closes the staging file when the stream never got going.
@@ -1076,7 +1146,7 @@ export class ArchiveService {
       if ((await fs.realpath(realFolder).catch(() => null)) !== realFolder) {
         // Take back only the file this made (the staging file's inode), not
         // whatever the name now reaches.
-        const ours = await fs.stat(staged);
+        const ours = await handle.stat();
         const there = await fs
           .lstat(join(realFolder, placed))
           .catch(() => null);
@@ -1085,6 +1155,7 @@ export class ArchiveService {
         }
         throw new BadRequestException('The folder changed while extracting');
       }
+      ok = true;
       return {
         dest: folderVirtual ? posix.join(folderVirtual, placed) : placed,
         entries: 1,
@@ -1093,6 +1164,24 @@ export class ArchiveService {
     } finally {
       // Only a staging file this made: `wx` failing means something else is there.
       if (created) await fs.rm(staged, { force: true });
+      await handle?.close().catch(() => undefined);
+      if (!ok && made !== undefined) await removeMade(folderAbs, made);
+    }
+  }
+
+  /** Remove staged files an old crash left in `folder`. A recent one may be in use. */
+  private async sweepStaged(folder: string): Promise<void> {
+    try {
+      for (const name of await fs.readdir(folder)) {
+        if (!STAGED_NAME.test(name)) continue;
+        const abs = join(folder, name);
+        const stat = await fs.lstat(abs).catch(() => null);
+        if (stat?.isFile() && Date.now() - stat.mtimeMs > STALE_STAGED_MS) {
+          await fs.rm(abs, { force: true });
+        }
+      }
+    } catch {
+      // A folder that can't be listed is the unpack's own error to report.
     }
   }
 
@@ -1117,7 +1206,13 @@ export class ArchiveService {
         });
         return candidate;
       } catch (err) {
-        if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code === 'ENAMETOOLONG') {
+          throw new BadRequestException(
+            `The name ${candidate.slice(0, 60)}… is too long to number: rename the archive first`,
+          );
+        }
+        if (code !== 'EEXIST') throw err;
       }
     }
     throw new ConflictException(`Too many files named like ${name} here`);
@@ -1153,7 +1248,7 @@ export class ArchiveService {
     const counter = new Transform({
       transform(chunk: Buffer, _enc, done) {
         total += chunk.length;
-        if (total >= cap) {
+        if (total > cap) {
           done(
             new PayloadTooLargeException(
               `Archive uncompresses past the size cap (max ${cap} bytes)`,
@@ -1209,6 +1304,21 @@ export class ArchiveService {
    * a 400 (the file is damaged), and the module's tar timeout bounds the lot.
    */
   private async decompress(
+    archiveAbs: string,
+    kind: LoneFlavour,
+    through: Transform,
+    sink: Writable,
+  ): Promise<void> {
+    // At most a couple at once: each can hold a thread, a child and a file.
+    await this.loneSlot.acquire();
+    try {
+      await this.decompressNow(archiveAbs, kind, through, sink);
+    } finally {
+      this.loneSlot.release();
+    }
+  }
+
+  private async decompressNow(
     archiveAbs: string,
     kind: LoneFlavour,
     through: Transform,
@@ -1565,11 +1675,7 @@ export class ArchiveService {
 
   private deriveDest(path: string): string {
     const dir = dirname(path);
-    const base = basename(path).replace(
-      // A plain .gz/.xz/.bz2 reaches here only with a tar inside.
-      /\.(zip|tgz|tbz2?|txz|tar\.gz|tar\.bz2|tar\.xz|tar|gz|xz|bz2)$/i,
-      '',
-    );
+    const base = deriveName(basename(path));
     return dir === '.' ? base : posix.join(dir, base);
   }
 
@@ -1582,6 +1688,10 @@ export class ArchiveService {
     }
     if (stat.isDirectory()) {
       throw new BadRequestException('Path is a directory, not an archive');
+    }
+    // A FIFO or a device would block a thread when read.
+    if (!stat.isFile()) {
+      throw new BadRequestException('Path is not a regular file');
     }
     return stat;
   }

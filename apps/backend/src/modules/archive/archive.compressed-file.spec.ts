@@ -9,6 +9,7 @@ import { gzipSync } from 'zlib';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import { join } from 'path';
+import { randomUUID } from 'crypto';
 import { FilesService } from '../files/files.service';
 import {
   ArchiveService,
@@ -276,6 +277,102 @@ describe('ArchiveService — a lone compressed file', () => {
       /Unsupported archive format/,
     );
     expect(await docs()).toEqual(['thing.rar']);
+  });
+
+  it('takes output exactly the size of the cap', async () => {
+    process.env.ARCHIVE_MAX_TOTAL_BYTES = String(text.length);
+    await fs.writeFile(join(jail, 'docs/notes.txt.gz'), COMPRESS.gz(text));
+    const res = await service.extract('home', 'docs/notes.txt.gz');
+    expect(res.totalBytes).toBe(text.length);
+  });
+
+  it('refuses a FIFO named like an archive without opening it', async () => {
+    spawnSync('mkfifo', [join(jail, 'docs/x.gz')]);
+    await expect(service.extract('home', 'docs/x.gz')).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(service.list('home', 'docs/x.gz')).rejects.toThrow(
+      /not a regular file/,
+    );
+  });
+
+  it('refuses a tar inside a file with no name left to make a folder of', async () => {
+    await fs.mkdir(join(jail, 'src'));
+    await fs.writeFile(join(jail, 'src/a.txt'), 'alpha');
+    await execFileAsync('tar', [
+      '-czf',
+      join(jail, 'docs/.gz'),
+      '-C',
+      jail,
+      'src',
+    ]);
+    await expect(service.extract('home', 'docs/.gz')).rejects.toThrow(
+      /rename it first/,
+    );
+    expect(await docs()).toEqual(['.gz']);
+  });
+
+  it('answers 400 when numbering a clash would pass the name limit', async () => {
+    const stem = 'a'.repeat(248);
+    await fs.writeFile(join(jail, `docs/${stem}.txt.gz`), COMPRESS.gz(text));
+    await fs.writeFile(join(jail, `docs/${stem}.txt`), 'mine');
+    await expect(
+      service.extract('home', `docs/${stem}.txt.gz`),
+    ).rejects.toThrow(BadRequestException);
+    expect(await docs()).toEqual([`${stem}.txt`, `${stem}.txt.gz`]);
+  });
+
+  it('clears staged files an old crash left, and keeps a recent one', async () => {
+    const stale = join(jail, `docs/.extract-${randomUUID()}.part`);
+    const fresh = join(jail, `docs/.extract-${randomUUID()}.part`);
+    await fs.writeFile(stale, 'half');
+    await fs.writeFile(fresh, 'half');
+    const old = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    await fs.utimes(stale, old, old);
+    await fs.writeFile(join(jail, 'docs/notes.txt.gz'), COMPRESS.gz(text));
+
+    await service.extract('home', 'docs/notes.txt.gz');
+
+    await expect(fs.stat(stale)).rejects.toThrow();
+    await expect(fs.stat(fresh)).resolves.toBeDefined();
+  });
+
+  it('removes a folder it made when the unpack fails', async () => {
+    const packed = COMPRESS.gz(text);
+    await fs.writeFile(
+      join(jail, 'docs/bad.gz'),
+      packed.subarray(0, packed.length - 12),
+    );
+    await expect(
+      service.extract('home', 'docs/bad.gz', 'made/inside'),
+    ).rejects.toThrow(BadRequestException);
+    await expect(fs.stat(join(jail, 'made'))).rejects.toThrow();
+    // A folder that was there already stays.
+    await expect(
+      service.extract('home', 'docs/bad.gz', 'docs'),
+    ).rejects.toThrow(BadRequestException);
+    expect(await docs()).toEqual(['bad.gz']);
+  });
+
+  it('unpacks at most two at a time', async () => {
+    let active = 0;
+    let most = 0;
+    const seam = service as unknown as {
+      decompressNow: () => Promise<void>;
+    };
+    jest.spyOn(seam, 'decompressNow').mockImplementation(async () => {
+      active++;
+      most = Math.max(most, active);
+      await new Promise((r) => setTimeout(r, 15));
+      active--;
+    });
+    for (let i = 0; i < 5; i++) {
+      await fs.writeFile(join(jail, `docs/f${i}.txt.gz`), COMPRESS.gz(text));
+    }
+    await Promise.all(
+      [0, 1, 2, 3, 4].map((i) => service.extract('home', `docs/f${i}.txt.gz`)),
+    );
+    expect(most).toBe(2);
   });
 
   it('runs as a job, like any extraction', async () => {

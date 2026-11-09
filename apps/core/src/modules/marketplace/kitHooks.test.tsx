@@ -441,6 +441,28 @@ describe("a kit app's hooks", () => {
     )
   })
 
+  it("gives a source the app's own folders whatever its capabilities", async () => {
+    const ticker = hookApp('ticker', { background: false })
+    let seen: unknown
+    modules.set(hrefOf(ticker), {
+      App: () => null,
+      commandSources: [
+        {
+          group: 'Ticker',
+          search: (_query: string, ctx: CommandSourceContext) => {
+            seen = ctx.data && typeof ctx.data.read
+            return Promise.resolve([])
+          },
+          activate: () => undefined,
+        },
+      ],
+    })
+    await sync([ticker])
+    await until(() => expect(groups()).toContain('Ticker'))
+    await searchAllSources('x')
+    expect(seen).toBe('function')
+  })
+
   it('leaves out a source whose group another source has, and says so', async () => {
     const ticker = hookApp('ticker', { background: false })
     modules.set(hrefOf(ticker), {

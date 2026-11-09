@@ -357,7 +357,9 @@ changes nothing until that ref is installed.
   `activate(item)`. They are searched by the palette and Start's search while
   the app is enabled. `ctx.http` is the app's own, carrying its identity,
   and only there when `capabilities` lists `http`; reading it otherwise
-  throws. A result's `id` only needs to be unique within its source.
+  throws. `ctx.data` is the app's own folders, as `system.data` is, with no
+  capability (since kit 1.6.0). A result's `id` only needs to be unique
+  within its source.
   `activate` gets the result back as `search` made it. A source catches its
   own failures (a network error) and answers `[]`.
 

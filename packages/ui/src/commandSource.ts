@@ -1,4 +1,4 @@
-import type { SystemHttp } from './system'
+import type { SystemData, SystemHttp } from './system'
 
 /**
  * A command source: one group of results in the command palette and Start's
@@ -26,8 +26,12 @@ export type CommandItem = {
  * surface like everything apps touch. A kit app's `http` is its own, carrying
  * its identity, and only there when its descriptor asks for `http`; reading
  * it otherwise throws a sentence naming the capability.
+ *
+ * `data` is a kit app's own folders (`system.data`), there with no capability
+ * like the handle's. Since kit 1.6.0, and optional for that reason; a
+ * built-in's sources have none, since they search as the user.
  */
-export type CommandSourceContext = { http: SystemHttp }
+export type CommandSourceContext = { http: SystemHttp; data?: SystemData }
 
 export type CommandSource = {
   /** The section header, unique among the sources the desktop has. */

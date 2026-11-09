@@ -22,6 +22,7 @@ import {
 } from '../../shared/registry/marketplace'
 import { registerAppSources, unregisterAppSources } from '../../shared/commands/coreSources'
 import { createAppInstance, type AppInstance } from '../../system/appInstance'
+import { createSystemData } from '../../lib/appData'
 import { apiUrl } from './apiUrl'
 import { importKitModule } from './kitModule'
 import { hookRefusal, isComponent, kitRefusal, protocolRefusal } from './refusals'
@@ -36,7 +37,7 @@ import { scopeHandle, withServer } from './scopeHandle'
  *   (`WindowlessSystemProvider`), its handle fenced to the descriptor's
  *   capabilities.
  * - `commandSources`, searched by the palette and Start's search
- *   (`coreSources.ts`), with an `http` of the app's own.
+ *   (`coreSources.ts`), with an `http` and a `data` of the app's own.
  *
  * The registry imports this chunk once an installed app declares a hook, when
  * the page is idle, so sign-in never waits on an app's module. Only an app
@@ -209,6 +210,7 @@ function kitService(
  * What the app's sources search with: its own windowless copy's `http`, so
  * their calls carry its identity, and only when the descriptor asks for
  * `http`. Read lazily: a source that never touches it is never refused.
+ * `data` is the copy's own folders, which every app has, like the handle's.
  */
 function sourceContext(app: MarketplaceApp, instance: AppInstance): CommandSourceContext {
   const fenced = scopeHandle(
@@ -216,10 +218,12 @@ function sourceContext(app: MarketplaceApp, instance: AppInstance): CommandSourc
     app.capabilities,
     app.name
   )
+  const data = createSystemData(instance.http)
   return {
     get http() {
       return fenced.http
     },
+    data,
   }
 }
 

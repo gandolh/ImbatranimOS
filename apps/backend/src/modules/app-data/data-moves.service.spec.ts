@@ -17,6 +17,8 @@ describe('DataMovesService', () => {
   let data: AppDataService;
   let logged: { level: string; event: string; msg: string }[];
   let moves: DataMovesService;
+  /** Whether the stand-in catalog check calls the apps uninstalled. */
+  let gone: boolean;
   const prevRoot = process.env.FILES_ROOT;
 
   beforeEach(async () => {
@@ -26,7 +28,8 @@ describe('DataMovesService', () => {
     modes = new ModeStore(dbs);
     // Accessories is in the catalog and not installed: the app is "gone",
     // which a move must not mind.
-    const installed = { isGone: () => true } as unknown as InstalledApps;
+    gone = true;
+    const installed = { isGone: () => gone } as unknown as InstalledApps;
     data = new AppDataService(modes, installed);
     logged = [];
     const logs = {
@@ -229,17 +232,86 @@ describe('DataMovesService', () => {
     expect(hasTable('todos')).toBe(false);
   });
 
-  it('never writes over a file the app wrote since; the rows wait', async () => {
+  it('sets the tables aside once the app has written a planned file since, recreating nothing', async () => {
     seedTodos();
-    await fs.mkdir(folder('todo'), { recursive: true });
-    await fs.writeFile(folder('todo', 'unfiled.json'), '{"todos":[]}\n');
     await moves.run();
+    // The tables outlive the move (a crash before the drop, or a restored
+    // database), and the installed app then deletes its list and edits.
+    dbs.db.exec(`
+      CREATE TABLE todo_lists (id INTEGER PRIMARY KEY, name TEXT, position INTEGER);
+      CREATE TABLE todos (id INTEGER PRIMARY KEY, text TEXT, completed INTEGER,
+        position INTEGER, due_at INTEGER, priority INTEGER, list_id INTEGER,
+        created_at TEXT, updated_at TEXT);
+    `);
+    seedTodos();
+    gone = false;
+    const todoApp = {
+      appId: 'todo',
+      instanceId: 'todo-1',
+      windowId: null,
+      groups: ['todo', 'accessories'],
+    };
+    await data.remove(todoApp, 'data', 'lists/3.json');
+    await data.write(todoApp, 'data', 'unfiled.json', '{"todos":[]}\n');
+    logged = [];
+
+    await moves.run();
+    await expect(fs.stat(folder('todo', 'lists/3.json'))).rejects.toThrow();
     expect(await fs.readFile(folder('todo', 'unfiled.json'), 'utf8')).toBe(
       '{"todos":[]}\n',
     );
+    expect(hasTable('todos')).toBe(false);
+    const day = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    expect(hasTable(`todos_premove_${day}`)).toBe(true);
+    expect(hasTable(`todo_lists_premove_${day}`)).toBe(true);
+    expect(logged).toEqual([
+      expect.objectContaining({
+        level: 'warn',
+        event: 'app-data.move.set-aside',
+      }),
+    ]);
+
+    logged = [];
+    await moves.run();
+    expect(logged).toEqual([]);
+  });
+
+  it('adopts a file it wrote whose mode row a crash lost, and finishes', async () => {
+    seedTodos();
+    await moves.run();
+    const unfiled = folder('todo', 'unfiled.json');
+    dbs.db.exec(`
+      CREATE TABLE todo_lists (id INTEGER PRIMARY KEY, name TEXT, position INTEGER);
+      CREATE TABLE todos (id INTEGER PRIMARY KEY, text TEXT, completed INTEGER,
+        position INTEGER, due_at INTEGER, priority INTEGER, list_id INTEGER,
+        created_at TEXT, updated_at TEXT);
+    `);
+    seedTodos();
+    modes.remove(unfiled);
+    expect(modes.stat(unfiled)).toBeNull();
+    await moves.run();
+    expect(hasTable('todos')).toBe(false);
+    expect(modes.stat(unfiled)).toEqual({
+      owner: 'todo',
+      group: 'todo',
+      mode: 0o600,
+    });
+  });
+
+  it('keeps the rows when a file would pass the size limit, and says so', async () => {
+    const big = 'x'.repeat(260);
+    const insert = dbs.db.prepare(
+      "INSERT INTO todos (text, completed, position, created_at, updated_at) VALUES (?, 0, ?, '', '')",
+    );
+    // Over 5 MB of JSON in unfiled.json.
+    dbs.db.transaction(() => {
+      for (let i = 0; i < 20_000; i++) insert.run(big, i + 1);
+    })();
+    await moves.run();
     expect(hasTable('todos')).toBe(true);
     expect(logged).toContainEqual(
       expect.objectContaining({ level: 'warn', event: 'app-data.move.failed' }),
     );
+    await expect(fs.stat(folder('todo', 'unfiled.json'))).rejects.toThrow();
   });
 });

@@ -63,6 +63,7 @@ export type {
   DataKind,
   DataOptions,
   DataWriteOptions,
+  DataRemoveOptions,
   FileChoice,
   OpenerCandidate,
   OpenerResolution,

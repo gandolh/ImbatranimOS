@@ -32,6 +32,14 @@ export class DataPathQuery {
   path?: string;
 }
 
+export class RemoveDataQuery extends DataPathQuery {
+  /** The version the app read; a file that changed since is not removed (409). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  expected?: string;
+}
+
 export class WriteDataDto {
   @IsString()
   @MaxLength(MAX_DATA_PATH)
@@ -60,7 +68,8 @@ export class WriteDataDto {
  * - `PUT file` `{ path, content, expected? }` → `{ path, version }`, 409
  *   `{ current }` when `expected` is stale;
  * - `GET list?path=` → the entries, `[]` for a folder not made yet;
- * - `DELETE file?path=` → 204, whether or not there was one.
+ * - `DELETE file?path=&expected=` → 204, whether or not there was one; 409
+ *   `{ current }` when `expected` names a version the file no longer has.
  */
 @Controller('system/data')
 export class AppDataController {
@@ -110,9 +119,14 @@ export class AppDataController {
   async remove(
     @CallingApp() app: AppIdentity | null,
     @Param('kind') kind: string,
-    @Query() q: DataPathQuery,
+    @Query() q: RemoveDataQuery,
   ): Promise<void> {
-    await this.data.remove(needsApp(app), kindOf(kind), q.path ?? '');
+    await this.data.remove(
+      needsApp(app),
+      kindOf(kind),
+      q.path ?? '',
+      q.expected,
+    );
   }
 }
 

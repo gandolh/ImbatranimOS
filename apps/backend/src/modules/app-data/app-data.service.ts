@@ -194,6 +194,17 @@ export class AppDataService {
       if (existing?.isDirectory()) {
         throw new BadRequestException(`${path} is a folder`);
       }
+      if (existing && !asApp && this.modes.stat(abs) === null) {
+        // A file the OS's own earlier write left without its mode row (a
+        // crash between the rename and the record): with these very bytes
+        // it is that write, so it becomes the app's as it would have.
+        const current = dataVersion(await fs.readFile(abs));
+        if (current === dataVersion(bytes)) {
+          this.modes.create(identity, abs, 'file');
+          return { path, version: current, written: false };
+        }
+        throw conflict(path, current);
+      }
       if (existing) {
         this.modes.assert(identity, 'write', abs);
       } else {
@@ -206,14 +217,7 @@ export class AppDataService {
         if (!asApp && current === dataVersion(bytes)) {
           return { path, version: current, written: false };
         }
-        if (current !== expected) {
-          throw new ConflictException({
-            statusCode: 409,
-            error: 'Conflict',
-            message: `${path} changed since it was read`,
-            current,
-          });
-        }
+        if (current !== expected) throw conflict(path, current);
       }
 
       await this.writeAtomically(abs, bytes);
@@ -263,22 +267,37 @@ export class AppDataService {
 
   /**
    * Remove a file or a folder (and what is in it). A link is removed itself,
-   * never what it points at. True when there was something to remove.
+   * never what it points at. True when there was something to remove. With
+   * `expected`, only a file still at that version: else a 409 and nothing
+   * removed.
    */
   async remove(
     identity: AppIdentity,
     kind: DataKind,
     rawPath: string,
+    expected?: string,
   ): Promise<boolean> {
-    const { folder, abs } = await this.resolve(identity, kind, rawPath, false, {
-      followLeaf: false,
-    });
+    const { folder, abs, path } = await this.resolve(
+      identity,
+      kind,
+      rawPath,
+      false,
+      { followLeaf: false },
+    );
     return this.inTurn(folder, async () => {
       this.assertPresent(identity);
       this.adoptFolder(identity, folder, await this.lstat(folder));
       const stat = await this.lstat(abs);
       if (!stat) return false;
       this.modes.assert(identity, 'delete', abs);
+      // A remove that names the version it read takes only that file, so a
+      // save from another tab since is not lost with it.
+      if (expected !== undefined) {
+        if (!stat.isFile())
+          throw new BadRequestException(`${path} is not a file`);
+        const current = dataVersion(await fs.readFile(abs));
+        if (current !== expected) throw conflict(path, current);
+      }
       await fs.rm(abs, { recursive: true, force: true });
       this.modes.remove(abs);
       return true;
@@ -492,6 +511,16 @@ export class AppDataService {
       throw err;
     }
   }
+}
+
+/** A 409 naming the file and carrying the version on disk now. */
+function conflict(path: string, current: string | null): ConflictException {
+  return new ConflictException({
+    statusCode: 409,
+    error: 'Conflict',
+    message: `${path} changed since it was read`,
+    current,
+  });
 }
 
 function within(root: string, p: string): boolean {

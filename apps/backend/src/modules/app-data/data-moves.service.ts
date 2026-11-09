@@ -1,9 +1,13 @@
 import {
+  ConflictException,
   Injectable,
   Logger,
   OnApplicationBootstrap,
   Optional,
 } from '@nestjs/common';
+
+import * as fs from 'fs/promises';
+import { join } from 'path';
 
 import { DbService } from '../../db/db.service';
 import { LogService } from '../logs/log.service';
@@ -31,8 +35,14 @@ import { AppDataService } from './app-data.service';
  * it is installed yet: they wait in its folder. Once every file is in place
  * the tables are dropped in one transaction. A write that fails keeps every
  * row, says so in Logs, and the move runs again at the next start; a file the
- * move already wrote is left as it is, and one the app wrote since is never
- * written over (that move then waits, and says so each start).
+ * move already wrote is left as it is.
+ *
+ * A planned file the app has written since (the tables outlived an earlier
+ * move, through a crash before the drop or a restored database) means the
+ * app has taken over: the move writes nothing more, since that would bring
+ * back what the owner changed or deleted, and sets the tables aside under
+ * another name (`todos_premove_20261109`), kept and never read again. Logs
+ * says so once.
  */
 
 /** An app whose rows move, and the tables they leave. */
@@ -119,8 +129,22 @@ export class DataMovesService implements OnApplicationBootstrap {
       windowId: null,
       groups: [move.appId, move.group],
     };
+    // Looked at before anything is written, so a move the app has taken
+    // over brings back no file the owner deleted.
     for (const [path, content] of planned.files) {
-      await this.data.place(identity, 'data', path, content);
+      if (await this.differs(move.appId, path, content)) {
+        this.setAside(move, present, path);
+        return;
+      }
+    }
+    for (const [path, content] of planned.files) {
+      try {
+        await this.data.place(identity, 'data', path, content);
+      } catch (err) {
+        if (!(err instanceof ConflictException)) throw err;
+        this.setAside(move, present, path);
+        return;
+      }
     }
     // The files are in place; a drop that fails leaves the rows, and the
     // next start finds the same files and drops them then.
@@ -136,6 +160,43 @@ export class DataMovesService implements OnApplicationBootstrap {
         move.appId,
       );
     }
+  }
+
+  /**
+   * Whether the app's data folder holds `path` with other bytes than the
+   * move's: anything there that isn't a plain file with these bytes. A
+   * missing file doesn't differ; {@link AppDataService.place} checks the
+   * rest when it writes.
+   */
+  private async differs(
+    appId: string,
+    path: string,
+    content: string,
+  ): Promise<boolean> {
+    const abs = join(this.data.folder(appId, 'data'), path);
+    const stat = await fs.lstat(abs).catch(() => null);
+    if (!stat) return false;
+    if (!stat.isFile()) return true;
+    return !(await fs.readFile(abs)).equals(Buffer.from(content, 'utf8'));
+  }
+
+  /** Rename the tables out of the move's way, data kept, and say why once. */
+  private setAside(move: Move, tables: readonly string[], path: string): void {
+    const day = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    const names: string[] = [];
+    this.dbs.db.transaction(() => {
+      for (const table of tables) {
+        let name = `${table}_premove_${day}`;
+        for (let n = 2; this.hasTable(name); n++) {
+          name = `${table}_premove_${day}_${n}`;
+        }
+        this.dbs.db.exec(`ALTER TABLE ${table} RENAME TO ${name}`);
+        names.push(name);
+      }
+    })();
+    const message = `${move.name} has written its own ${path} since its data was first moved, so the move stops there and writes nothing more. The old rows are kept, set aside as ${names.join(', ')}.`;
+    this.logger.warn(message);
+    this.record('warn', 'app-data.move.set-aside', message, move.appId);
   }
 
   private todoMove(): Move {

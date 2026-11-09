@@ -375,6 +375,79 @@ describe('AppDataService', () => {
     });
   });
 
+  describe('remove with a version', () => {
+    it('removes the file it read, and refuses one saved since with the version now', async () => {
+      const { version } = await data.write(hollow, 'data', 'a.json', '1');
+      const second = await data.write(hollow, 'data', 'b.json', '1');
+      await data.write(hollow, 'data', 'b.json', '2');
+      expect(await data.remove(hollow, 'data', 'a.json', version)).toBe(true);
+      const refused = await refusal(
+        data.remove(hollow, 'data', 'b.json', second.version),
+      );
+      expect(refused.status).toBe(409);
+      expect(refused.body.current).toBe(dataVersion('2'));
+      expect((await data.read(hollow, 'data', 'b.json'))?.content).toBe('2');
+    });
+  });
+
+  describe('place, the OS writing as the app', () => {
+    it('writes for an app that is not installed, owned by it and private', async () => {
+      gone.add('hollow');
+      const placed = await data.place(hollow, 'data', 'm.json', 'moved');
+      expect(placed).toMatchObject({
+        written: true,
+        version: dataVersion('moved'),
+      });
+      expect(await fs.readFile(shared('m.json'), 'utf8')).toBe('moved');
+      expect(modes.stat(shared('m.json'))).toEqual({
+        owner: 'hollow',
+        group: 'hollow',
+        mode: 0o600,
+      });
+      // The app itself still may not, until it is installed.
+      expect(
+        (await refusal(data.write(hollow, 'data', 'm.json', 'x'))).status,
+      ).toBe(403);
+    });
+
+    it('leaves a file holding the same bytes as it is', async () => {
+      await data.place(hollow, 'data', 'm.json', 'moved');
+      const again = await data.place(hollow, 'data', 'm.json', 'moved');
+      expect(again).toMatchObject({
+        written: false,
+        version: dataVersion('moved'),
+      });
+    });
+
+    it('never writes over a file holding anything else', async () => {
+      await data.write(hollow, 'data', 'm.json', 'the app wrote this');
+      const refused = await refusal(
+        data.place(hollow, 'data', 'm.json', 'moved'),
+      );
+      expect(refused.status).toBe(409);
+      expect(await fs.readFile(shared('m.json'), 'utf8')).toBe(
+        'the app wrote this',
+      );
+    });
+
+    it('adopts its own earlier write that lost its mode row, and only that', async () => {
+      await data.place(hollow, 'data', 'm.json', 'moved');
+      await data.place(hollow, 'data', 'n.json', 'moved');
+      modes.remove(shared('m.json'));
+      modes.remove(shared('n.json'));
+      expect(await data.place(hollow, 'data', 'm.json', 'moved')).toMatchObject(
+        {
+          written: false,
+        },
+      );
+      expect(modes.stat(shared('m.json'))?.owner).toBe('hollow');
+      expect(
+        (await refusal(data.place(hollow, 'data', 'n.json', 'other'))).status,
+      ).toBe(409);
+      expect(modes.stat(shared('n.json'))).toBeNull();
+    });
+  });
+
   describe('removeFolders', () => {
     beforeEach(async () => {
       for (const kind of DATA_KINDS) {

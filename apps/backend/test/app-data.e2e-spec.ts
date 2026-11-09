@@ -105,11 +105,11 @@ describe('App data folders (e2e)', () => {
             .query({ path })
             .set('Cookie', TEST_COOKIE),
         ),
-      remove: (kind: string, path: string) =>
+      remove: (kind: string, path: string, expected?: string) =>
         withToken(
           http
             .delete(`/api/system/data/${kind}/file`)
-            .query({ path })
+            .query(expected === undefined ? { path } : { path, expected })
             .set('Cookie', TEST_COOKIE),
         ),
     };
@@ -234,6 +234,23 @@ describe('App data folders (e2e)', () => {
       .write('data', { path: 'c.json', content: 'again', expected: null })
       .expect(409);
     expect(body(fresh).current).toBe(body(saved).version);
+  });
+
+  it('removes only the version a tab read, refusing one saved since', async () => {
+    const tabOne = as(await start('hollow', 'tab-1'));
+    const tabTwo = as(await start('hollow', 'tab-2'));
+    const v1 = body(
+      await tabOne.write('data', { path: 'd.json', content: '1' }).expect(200),
+    ).version as string;
+    const saved = await tabTwo
+      .write('data', { path: 'd.json', content: '2', expected: v1 })
+      .expect(200);
+    const refused = await tabOne.remove('data', 'd.json', v1).expect(409);
+    expect(body(refused).current).toBe(body(saved).version);
+    await tabOne
+      .remove('data', 'd.json', body(saved).version as string)
+      .expect(204);
+    await tabOne.read('data', 'd.json').expect(404);
   });
 
   it('validates the body', async () => {

@@ -71,4 +71,15 @@ describe('system.data over an app’s client', () => {
     await data.remove('old', { kind: 'cache' })
     expect(http.delete).toHaveBeenCalledWith('/system/data/cache/file', { params: { path: 'old' } })
   })
+
+  it('removes only the version it read, a 409 as FileConflictError', async () => {
+    const http = fakeHttp({ delete: vi.fn().mockRejectedValue(httpError(409, { current: 'v3' })) })
+    const data = createSystemData(http)
+    const err = await data.remove('a.json', { expected: 'v1' }).catch((e: unknown) => e)
+    expect(http.delete).toHaveBeenCalledWith('/system/data/data/file', {
+      params: { path: 'a.json', expected: 'v1' },
+    })
+    expect(err).toBeInstanceOf(FileConflictError)
+    expect((err as FileConflictError).current).toBe('v3')
+  })
 })

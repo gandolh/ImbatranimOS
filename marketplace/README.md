@@ -73,7 +73,7 @@ container. Nothing is rebuilt into the OS image. Backups leave
   data, state and cache as text files in folders of its own through
   `system.data` (since kit 1.4.0): `read` returns a version, and a `write`
   that names it is refused with `FileConflictError` when another window
-  saved first. Uninstalling removes the cache, and the rest only when the
+  saved first; so is a `remove` that names it (since kit 1.7.0). Uninstalling removes the cache, and the rest only when the
   owner asks.
 - **`icon`**: one of `package`, `gamepad-2`, `joystick`, `puzzle`, `swords`,
   `sprout`, `castle`, `rocket`, `dices`, `ghost`, `trophy`, `map`, `bomb`,

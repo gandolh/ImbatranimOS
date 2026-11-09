@@ -151,6 +151,15 @@ export type DataWriteOptions = DataOptions & {
   expected?: string | null
 }
 
+export type DataRemoveOptions = DataOptions & {
+  /**
+   * The version from the read this removal builds on (since kit 1.7.0). A
+   * file that changed since stays, and the removal throws
+   * `FileConflictError`, so a save from another window isn't lost with it.
+   */
+  expected?: string
+}
+
 /** A file read from the app's folder: its text, and its version for the next write. */
 export type DataFile = { content: string; version: string }
 
@@ -187,7 +196,7 @@ export interface SystemData {
   /** A folder's entries, `''` for the app's folder itself; none for one not made yet. */
   list(path?: string, opts?: DataOptions): Promise<DataEntry[]>
   /** Remove a file or a folder and what is in it. Nothing there is not an error. */
-  remove(path: string, opts?: DataOptions): Promise<void>
+  remove(path: string, opts?: DataRemoveOptions): Promise<void>
 }
 
 // ── HTTP (the escape hatch) ───────────────────────────────────────────────────

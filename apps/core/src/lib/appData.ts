@@ -68,7 +68,19 @@ export function createSystemData(http: SystemHttp): SystemData {
     },
 
     async remove(path, opts) {
-      await http.delete(route(opts?.kind, 'file'), { params: { path } })
+      try {
+        await http.delete(route(opts?.kind, 'file'), {
+          params: { path, ...(opts?.expected !== undefined ? { expected: opts.expected } : {}) },
+        })
+      } catch (err) {
+        if (statusOf(err) === 409) {
+          throw new FileConflictError(
+            conflictCurrent(err),
+            'It changed since it was read, in another window or tab.'
+          )
+        }
+        throw err
+      }
     },
   }
 }

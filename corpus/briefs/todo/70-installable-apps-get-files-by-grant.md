@@ -198,3 +198,16 @@ Left open:
   descriptor schema doesn't carry it.
 - The `notes` root: Notepad's probe for old notes is refused and falls back
   to home quietly; the picker still shows Notes.
+
+**Walk fixes (2026-11-09).** The walk at `89cb66a` found two failures.
+- An app-made open turned a read-only hold into read-write: core records
+  the open as the app's recent (which needs read only), and the hand-on's
+  own-recent path then gave the file whole. `ff8f4fa`: a recent says
+  whether it was writable when recorded (ledger 17), and a hand-on gives
+  no more than the app holds or its recent says.
+- The Snipping Tool's Save dialog opened under its capture stage.
+  `e6aac95`: the stage steps aside while the dialog is up. The same commit
+  makes a restored Code Editor tab that fails quiet, and stops Notepad
+  asking for the `notes` root's listing and a new file not yet on disk.
+`760e671` closes the todo `uninstalled-url-apps-read-as-built-ins`. A
+re-walk of these steps is owed.

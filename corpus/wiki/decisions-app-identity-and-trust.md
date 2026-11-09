@@ -64,7 +64,8 @@ Built in `apps-run-as-their-own-identity` (brief 68, `2522407`, 2026-11-06):
 - **An uninstall ends its apps' identities** (2026-11-08): their tokens and
   file grants go when it starts, and until it ends they get no token and
   write no data. A catalog app no installed descriptor holds gets no token
-  at all, since it would otherwise read as a built-in.
+  at all, since it would otherwise read as a built-in; so does an app from a
+  URL (an `x-` id) once it isn't installed (2026-11-09).
 
 ## Installable apps keep data in folders by kind
 
@@ -121,7 +122,8 @@ What was built (brief 70, 2026-11-06 to 2026-11-09):
   every app; one file only for everyone (the queue, prev/next and relative
   images would break).
 - **Reopening.** `system.fs.reopenRecent` gives a window one of its app's
-  own recents again: the Code Editor's restored tabs, Git GUI's recent
+  own recents again, with no more than the app could do to it when it was
+  recorded (a recent says whether it was writable): the Code Editor's restored tabs, Git GUI's recent
   repos. Built-ins that made new files or picked folders on their own now
   ask in the OS's dialogs: Notepad's new file and image attach, the
   Snipping Tool's save, Git GUI's repository, find in files' folder.

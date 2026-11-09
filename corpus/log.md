@@ -5749,3 +5749,28 @@ file-grants); core `tsc -b` and 364 vitest; the sync script's 6 and the Apps
 repo's 4. Skipped: full suites, the PTY e2e and the walk, whose steps are in
 the outcome. Ready for deploy; which apps `verified.json` lists is the
 owner's question on the board.
+
+## [2026-11-09] fix | Brief 70's walk: a read-only hold no longer reopens read-write
+
+The walk of brief 70 at `89cb66a` found two failures, fixed here.
+- `ff8f4fa` (1.236.0), security: a Notepad link to the file beside its
+  document opened it read-write. Core records an app-made open as the app's
+  recent, which needs only read; the hand-on's own-recent path then skipped
+  the checks and gave a `file` grant. A recent now carries `writable`
+  (ledger 17; the user's and older rows are writable), and a hand-on gives
+  read and write only if the app holds both, else its own recent as it was
+  recorded, else read only.
+- `e6aac95` (1.238.0): the Snipping Tool's capture stage (z-index 100000)
+  hid the Save dialog; it steps aside while the dialog is up. A restored
+  Code Editor tab that can't be opened no longer leaves the error banner.
+  Notepad stops probing the `notes` root and reading a new file not yet on
+  disk.
+- `760e671` (1.237.0): an app from a URL that isn't installed gets no
+  identity (`InstalledApps.isGone`), since its `x-` id would read as a
+  built-in's. The todo `uninstalled-url-apps-read-as-built-ins` is closed
+  and removed.
+
+Checks: backend typecheck and 284 unit (db, files, app-identity, git), the
+file-grants, app-identity, files, app-data and marketplace e2e specs (119);
+Snipping Tool 22, Code Editor 26 and Notepad 152 vitest with typechecks.
+Skipped: the PTY e2e, full suites, the browser walk (a re-walk is next).

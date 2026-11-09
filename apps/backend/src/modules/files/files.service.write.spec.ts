@@ -15,7 +15,11 @@ import { ConflictException, ServiceUnavailableException } from '@nestjs/common';
 jest.mock('fs/promises', () => {
   const actual =
     jest.requireActual<typeof import('fs/promises')>('fs/promises');
-  return { ...actual, writeFile: jest.fn(actual.writeFile) };
+  return {
+    ...actual,
+    writeFile: jest.fn(actual.writeFile),
+    link: jest.fn(actual.link),
+  };
 });
 
 import * as fs from 'fs/promises';
@@ -24,6 +28,7 @@ import { FilesService } from './files.service';
 
 const actual = jest.requireActual<typeof import('fs/promises')>('fs/promises');
 const writeFile = fs.writeFile as unknown as jest.Mock;
+const link = fs.link as unknown as jest.Mock;
 
 describe('FilesService.writeFile when the disk fills mid-save', () => {
   let service: FilesService;
@@ -77,6 +82,8 @@ describe('FilesService placing a file an app may only add', () => {
   const adds = {
     how: (_who: unknown, op: string) =>
       op === 'create' || op === 'read' ? 'grant' : null,
+    addOnly: (_who: unknown, key: string) =>
+      key.endsWith('/assets') ? 'folder' : 'file',
     made: () => undefined,
   } as unknown as FileAccess;
 
@@ -88,6 +95,8 @@ describe('FilesService placing a file an app may only add', () => {
   afterEach(async () => {
     writeFile.mockReset();
     writeFile.mockImplementation(actual.writeFile);
+    link.mockReset();
+    link.mockImplementation(actual.link);
     process.env.FILES_ROOT = prevEnv;
     await actual.rm(jail, { recursive: true, force: true });
   });
@@ -116,5 +125,55 @@ describe('FilesService placing a file an app may only add', () => {
       'mine',
     );
     expect(await actual.readdir(join(jail, 'assets'))).toEqual(['shot.png']);
+  });
+
+  it('places it by an exclusive copy where the file system has no hard links', async () => {
+    const service = new FilesService(adds);
+    link.mockRejectedValueOnce(
+      Object.assign(new Error('EPERM: operation not permitted'), {
+        code: 'EPERM',
+      }),
+    );
+    await service.writeFile('home', 'assets/shot.png', 'mine', undefined, app);
+    expect(await actual.readFile(join(jail, 'assets/shot.png'), 'utf-8')).toBe(
+      'mine',
+    );
+    expect(await actual.readdir(join(jail, 'assets'))).toEqual(['shot.png']);
+
+    // And still never over a file there.
+    link.mockRejectedValueOnce(
+      Object.assign(new Error('EPERM: operation not permitted'), {
+        code: 'EPERM',
+      }),
+    );
+    writeFile.mockImplementationOnce(async (path: string, data: string) => {
+      await actual.writeFile(join(jail, 'assets/late.png'), 'theirs', 'utf-8');
+      await actual.writeFile(path, data, 'utf-8');
+    });
+    await expect(
+      service.writeFile('home', 'assets/late.png', 'mine', undefined, app),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(await actual.readFile(join(jail, 'assets/late.png'), 'utf-8')).toBe(
+      'theirs',
+    );
+  });
+
+  it('takes the file back out when its folder was swapped for a link meanwhile', async () => {
+    const service = new FilesService(adds);
+    await actual.mkdir(join(jail, 'assets'));
+    await actual.mkdir(join(jail, 'elsewhere'));
+    link.mockImplementationOnce(async (from: string, to: string) => {
+      // Between the checks and the placing, assets/ becomes a link.
+      await actual.rename(join(jail, 'assets'), join(jail, 'moved'));
+      await actual.symlink(join(jail, 'elsewhere'), join(jail, 'assets'));
+      await actual.link(
+        from.replace(join(jail, 'assets'), join(jail, 'moved')),
+        to,
+      );
+    });
+    await expect(
+      service.writeFile('home', 'assets/shot.png', 'mine', undefined, app),
+    ).rejects.toThrow('The folder changed while writing');
+    expect(await actual.readdir(join(jail, 'elsewhere'))).toEqual([]);
   });
 });

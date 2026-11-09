@@ -78,7 +78,8 @@ export class GrantFileDto {
    * list it, read and make new files in it, never write over or remove
    * one. An open the OS makes for an app that declares it attaches files
    * under `assets/`. The user's alone; skipped when the file's folder isn't
-   * there yet, or when `assets` there is anything but a folder.
+   * there yet, when `assets` there is anything but a folder, or when either
+   * is another app's.
    */
   @IsOptional()
   @IsBoolean()
@@ -167,8 +168,13 @@ export class GrantsController {
       const assets = await fs
         .lstat(join(dirname(abs), 'assets'))
         .catch(() => null);
-      if (assets === null || assets.isDirectory()) {
-        this.grants.grant(target, join(dirname(key), 'assets'), 'assets');
+      const assetsKey = join(dirname(key), 'assets');
+      // Nor into another app's folder: its data isn't the note's to add to.
+      if (
+        (assets === null || assets.isDirectory()) &&
+        !this.grants.ownedByAnother(dto.appId, [dirname(key), assetsKey])
+      ) {
+        this.grants.grant(target, assetsKey, 'assets');
       }
     }
   }

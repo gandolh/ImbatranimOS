@@ -17,7 +17,7 @@ import type { Readable } from 'stream';
 
 import type { AppIdentity } from '../app-identity/app-identity.types';
 import type { ModeOp } from '../app-identity/mode-store.service';
-import { FileAccess, type Access } from './file-access';
+import { addOnlyRefusal, FileAccess, type Access } from './file-access';
 
 /**
  * Cap for the text-content endpoint. Reading into a UTF-8 string materialises
@@ -37,6 +37,14 @@ const MAX_TEXT_FILE_BYTES =
 export function versionOf(stat: Pick<Stats, 'mtimeMs' | 'size'>): string {
   return `${Math.trunc(stat.mtimeMs)}-${stat.size}`;
 }
+
+/** What `link()` fails with on a file system that has no hard links. */
+const NO_HARD_LINKS: ReadonlySet<string> = new Set([
+  'EPERM',
+  'ENOTSUP',
+  'EOPNOTSUPP',
+  'EXDEV',
+]);
 
 /**
  * A 409 for a name already taken, for a caller that may add a file there but
@@ -364,6 +372,18 @@ export class FilesService {
     return this.access?.how(who, op, key) ?? null;
   }
 
+  /**
+   * When `who` may make something at `key` only because it was given an
+   * `assets/` folder to add to: what it may make there (see
+   * `FileAccess.addOnly`). Null for everyone else.
+   */
+  private addOnly(
+    who: AppIdentity | null,
+    key: string,
+  ): 'folder' | 'file' | null {
+    return this.access?.addOnly(who, key) ?? null;
+  }
+
   /** {@link can}, refusing with a 403 that names the path as `who` gave it. */
   assertCan(
     who: AppIdentity | null,
@@ -452,10 +472,7 @@ export class FilesService {
         this.assertCan(who, 'write', key, root, virtualPath);
         throw new BadRequestException('Path is a directory');
       }
-      if (
-        this.can(who, 'write', key) === null &&
-        this.can(who, 'create', key) === 'grant'
-      ) {
+      if (this.addOnly(who, key) === 'file') {
         throw nameTaken(versionOf(existing));
       }
       this.assertCan(who, 'write', key, root, virtualPath);
@@ -463,6 +480,13 @@ export class FilesService {
     }
     const folders = await this.missingFolders(dirname(abs));
     const keyOf = (p: string) => join(dirname(key), relative(dirname(abs), p));
+    const adds = this.addOnly(who, key);
+    // Adding to `assets/` makes a file directly in it, and at most the
+    // folder itself: never a file where the folder goes, nor the folders
+    // above it.
+    if (adds === 'folder' || (adds === 'file' && folders.length > 1)) {
+      throw addOnlyRefusal(who!, { root, path: virtualPath });
+    }
     // Given the file (or a folder above it), the folders typed with it come
     // with it. Otherwise the app may make the outermost folder in its own
     // folders, and what is made inside that is its own.
@@ -485,7 +509,7 @@ export class FilesService {
       },
       // Its own folders' new files are the app's to write over; only what
       // it was given to add to is placed exclusively.
-      exclusive: made === 'grant' && this.can(who, 'write', key) === null,
+      exclusive: adds === 'file',
     };
   }
 
@@ -861,7 +885,7 @@ export class FilesService {
     await this.writeAtomically(
       abs,
       (staged) => fs.writeFile(staged, content, 'utf-8'),
-      exclusive,
+      exclusive ? located : undefined,
     );
     record();
     return this.toEntry(rootDir, abs);
@@ -911,7 +935,7 @@ export class FilesService {
       await this.writeAtomically(
         abs,
         (staged) => fs.copyFile(tmpPath, staged),
-        exclusive,
+        exclusive ? located : undefined,
       );
       record();
       return this.toEntry(rootDir, abs);
@@ -958,37 +982,20 @@ export class FilesService {
    * back to a copy. The cost: a save needs write permission on the directory,
    * not just the file.
    *
-   * `exclusive` places the staged file only if nothing is at `abs` by then:
-   * a hard link fails with EEXIST over anything there, a dangling symlink
-   * included, where a rename would replace it. Answered 409, as a taken name.
+   * `exclusive` (the located path it was checked as) places the staged file
+   * only if nothing is at `abs` by then: see {@link placeNew}.
    */
   private async writeAtomically(
     abs: string,
     write: (stagedPath: string) => Promise<void>,
-    exclusive = false,
+    exclusive?: Located,
   ): Promise<void> {
     const staged = join(
       dirname(abs),
       `.${basename(abs)}.imbatranim-${randomUUID()}.part`,
     );
     if (exclusive) {
-      // The folder it lands in must be a folder, not a link to one.
-      const parent = await fs.lstat(dirname(abs));
-      if (!parent.isDirectory()) {
-        throw new BadRequestException('Not a folder');
-      }
-      try {
-        await withDiskSpaceCheck(() => write(staged));
-        await withDiskSpaceCheck(() => fs.link(staged, abs));
-      } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
-          const there = await fs.stat(abs).catch(() => null);
-          throw nameTaken(there ? versionOf(there) : null);
-        }
-        throw err;
-      } finally {
-        await fs.rm(staged, { force: true });
-      }
+      await this.placeNew(exclusive, (to) => write(to), staged);
       return;
     }
     try {
@@ -1006,6 +1013,67 @@ export class FilesService {
       await fs.rm(staged, { force: true });
       throw err;
     }
+  }
+
+  /**
+   * Make a new file at `located` and never replace anything: what an app that
+   * may only add files to a folder writes. The bytes are staged beside it
+   * and placed with a hard link, which fails with EEXIST over anything there
+   * (a dangling symlink included) where a rename would replace it; a file
+   * system without hard links gets an exclusive copy instead. A taken name
+   * answers 409.
+   *
+   * The folder it lands in must be a real folder, and still the one the
+   * path was checked as once the file is in: a link swapped in for it
+   * meanwhile is found, the new file taken back out, and the write refused.
+   */
+  private async placeNew(
+    located: Located,
+    write: (stagedPath: string) => Promise<void>,
+    staged = join(
+      dirname(located.abs),
+      `.${basename(located.abs)}.imbatranim-${randomUUID()}.part`,
+    ),
+  ): Promise<void> {
+    const { abs } = located;
+    const parent = await fs.lstat(dirname(abs));
+    if (!parent.isDirectory()) throw new BadRequestException('Not a folder');
+    const where = await this.parentAsChecked(located);
+    try {
+      await withDiskSpaceCheck(() => write(staged));
+      await withDiskSpaceCheck(() =>
+        fs.link(staged, abs).catch((err: NodeJS.ErrnoException) => {
+          if (!NO_HARD_LINKS.has(err.code ?? '')) throw err;
+          return fs.copyFile(staged, abs, fsConstants.COPYFILE_EXCL);
+        }),
+      );
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
+        const there = await fs.stat(abs).catch(() => null);
+        throw nameTaken(there ? versionOf(there) : null);
+      }
+      throw err;
+    } finally {
+      await fs.rm(staged, { force: true });
+    }
+    if ((await fs.realpath(dirname(abs)).catch(() => null)) !== where) {
+      await fs.rm(abs, { force: true });
+      throw new BadRequestException('The folder changed while writing');
+    }
+  }
+
+  /**
+   * The real path of the folder `located` is in, refused unless it is the
+   * folder the path was checked as (its key's parent).
+   */
+  private async parentAsChecked(located: Located): Promise<string> {
+    const { rootDir, abs, key } = located;
+    const real = await fs.realpath(dirname(abs));
+    const realRoot = await fs.realpath(rootDir);
+    if (join(rootDir, relative(realRoot, real)) !== dirname(key)) {
+      throw new BadRequestException('The folder changed while writing');
+    }
+    return real;
   }
 
   async createDirectory(
@@ -1026,6 +1094,11 @@ export class FilesService {
           ? 'mode'
           : this.assertCan(who, 'create', keyOf(folder), root, virtualPath),
       );
+      // Given `assets/` to add files to, an app may make the folder itself,
+      // never one inside it.
+      if (this.addOnly(who, keyOf(folder)) === 'file') {
+        throw addOnlyRefusal(who!, { root, path: virtualPath });
+      }
     }
     if (folders.length === 0) {
       this.assertCan(who, 'create', key, root, virtualPath);
@@ -1055,6 +1128,11 @@ export class FilesService {
       root,
       to,
     );
+    // A move carries what it is, its owner included, so nothing moves into
+    // a folder an app may only add new files to: the app would own it.
+    if (this.addOnly(who, keyTo) !== null) {
+      throw addOnlyRefusal(who!, { root, path: to });
+    }
     if (!(await this.exists(absFrom)))
       throw new NotFoundException('Source not found');
     // Moving a directory into itself (a → a/b) is a raw EINVAL 500; reject it.
@@ -1080,7 +1158,8 @@ export class FilesService {
   ): Promise<FileEntry> {
     const located = await this.resolveSafe(root, from);
     const { rootDir, abs: absFrom, key: keyFrom } = located;
-    const { abs: absTo, key: keyTo } = await this.resolveSafe(root, to);
+    const target = await this.resolveSafe(root, to);
+    const { abs: absTo, key: keyTo } = target;
     const source = await fs.stat(absFrom).catch(() => null);
     // A folder is copied whole, so it needs listing; a file, reading.
     this.assertCan(
@@ -1091,6 +1170,17 @@ export class FilesService {
       from,
     );
     const access = this.assertCan(who, 'create', keyTo, root, to);
+    // Into a folder an app may only add files to: one file, directly in it,
+    // placed without replacing anything.
+    const adds = this.addOnly(who, keyTo);
+    if (
+      adds === 'folder' ||
+      (adds === 'file' &&
+        (source?.isDirectory() ||
+          (await this.missingFolders(dirname(absTo))).length > 1))
+    ) {
+      throw addOnlyRefusal(who!, { root, path: to });
+    }
     if (!(await this.exists(absFrom)))
       throw new NotFoundException('Source not found');
     // Copying a directory into itself (a → a/b) recurses / EINVALs into a 500.
@@ -1106,6 +1196,8 @@ export class FilesService {
       await fs.mkdir(dirname(absTo), { recursive: true });
       if (stat.isDirectory()) {
         await fs.cp(absFrom, absTo, { recursive: true });
+      } else if (adds === 'file') {
+        await this.placeNew(target, (staged) => fs.copyFile(absFrom, staged));
       } else {
         // Never over a file that appeared since the check above.
         await fs

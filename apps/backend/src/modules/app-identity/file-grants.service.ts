@@ -181,12 +181,44 @@ export class FileGrants {
         if (this.addsTo(identity.appId, grant.path, op, key)) return true;
         continue;
       }
+      // A kind this build doesn't know (a newer database) gives nothing.
+      if (grant.kind !== 'folder') continue;
       if (!within(grant.path, key) || op === 'chmod') continue;
       // Making or deleting an entry is an act on its parent; the picked
       // folder's own entry is in a parent that wasn't given.
       if ((op === 'create' || op === 'delete') && key === grant.path) continue;
       if (this.crossesAnotherApp(identity.appId, grant.path, key)) continue;
       return true;
+    }
+    return false;
+  }
+
+  /**
+   * What an `assets` grant lets this copy make at `key`: the `assets/` folder
+   * itself (`'folder'`), a file directly in it (`'file'`), or nothing it
+   * holds such a grant for (null). The files service asks it when making
+   * something is allowed only by such a grant, so that a file is never made
+   * where the folder belongs, nor a folder inside it.
+   */
+  addsAt(identity: AppIdentity, key: string): 'folder' | 'file' | null {
+    const at = modeKey(key);
+    for (const grant of this.held(identity.instanceId, identity.appId)) {
+      if (grant.kind !== 'assets') continue;
+      if (at === grant.path) return 'folder';
+      if (
+        parentOf(at) === grant.path &&
+        !this.crossesAnotherApp(identity.appId, grant.path, at)
+      ) {
+        return 'file';
+      }
+    }
+    return null;
+  }
+
+  /** True when any of `keys` is owned by an app other than `appId`. */
+  ownedByAnother(appId: string, keys: readonly string[]): boolean {
+    for (const entry of this.modes.rows(keys).values()) {
+      if (entry.owner !== null && entry.owner !== appId) return true;
     }
     return false;
   }

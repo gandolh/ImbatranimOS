@@ -39,6 +39,19 @@ export class FileAccess {
     return null;
   }
 
+  /**
+   * When `app` may make something at `key` only because it was given an
+   * `assets/` folder to add to (not its modes, and nothing it may write
+   * over): what it may make there, the folder itself or a file directly in
+   * it. Null otherwise, the user included.
+   */
+  addOnly(app: AppIdentity | null, key: string): 'folder' | 'file' | null {
+    if (app === null) return null;
+    if (this.modes.may(app, 'create', key)) return null;
+    if (this.grants.covers(app, 'write', key)) return null;
+    return this.grants.addsAt(app, key);
+  }
+
   /** {@link how}, refusing with a 403 that carries {@link FILE_NOT_GRANTED}. */
   assert(
     app: AppIdentity | null,
@@ -75,6 +88,23 @@ export class FileAccess {
   removed(key: string): void {
     this.modes.remove(key);
   }
+}
+
+/**
+ * A 403 for an app that may only add files to an `assets/` folder asking for
+ * something else there: a file where the folder goes, a folder inside it, a
+ * move into it, a folder copied into it.
+ */
+export function addOnlyRefusal(app: AppIdentity, shown: Shown): Error {
+  const where = `${shown.root}:${shown.path.replace(/^[/\\]+/, '')}`;
+  return new ForbiddenException({
+    statusCode: 403,
+    error: 'Forbidden',
+    code: FILE_NOT_GRANTED,
+    message: `${app.appId} may only add new files directly in the assets folder it was given, not make ${where} this way.`,
+    root: shown.root,
+    path: shown.path,
+  });
 }
 
 function refusal(app: AppIdentity, op: ModeOp, shown: Shown): Error {

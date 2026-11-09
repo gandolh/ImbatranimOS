@@ -5,6 +5,7 @@ import {
   FileGrants,
   GRANT_MAX_AGE_MS,
   MAX_GRANTS_PER_INSTANCE,
+  type GrantKind,
 } from './file-grants.service';
 import { ModeStore } from './mode-store.service';
 
@@ -184,6 +185,30 @@ describe('FileGrants', () => {
     expect(grants.held('w1', 'office-docs')).toEqual([
       expect.objectContaining({ kind: 'folder' }),
     ]);
+  });
+
+  it('says what an assets grant lets the copy make where', () => {
+    const assets = `${HOME}/Documents/assets`;
+    grants.grant(docs, assets, 'assets');
+    expect(grants.addsAt(docs, assets)).toBe('folder');
+    expect(grants.addsAt(docs, `${assets}/shot.png`)).toBe('file');
+    expect(grants.addsAt(docs, `${assets}/a/b.png`)).toBeNull();
+    expect(grants.addsAt(docs, `${HOME}/Documents/b.png`)).toBeNull();
+    expect(grants.addsAt(copy('office-docs', 'w2'), assets)).toBeNull();
+  });
+
+  it('a kind this build doesn’t know gives nothing', () => {
+    jest.spyOn(grants, 'held').mockReturnValue([
+      {
+        instanceId: 'w1',
+        appId: 'office-docs',
+        path: `${HOME}/Music`,
+        kind: 'shared' as GrantKind,
+        createdAt: 1,
+      },
+    ]);
+    expect(grants.covers(docs, 'read', `${HOME}/Music/a.mp3`)).toBe(false);
+    expect(grants.covers(docs, 'list', `${HOME}/Music`)).toBe(false);
   });
 
   it('ends with its window, and the same path given again replaces it', () => {

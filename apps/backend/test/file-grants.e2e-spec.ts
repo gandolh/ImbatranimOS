@@ -567,8 +567,133 @@ describe('Files by grant (e2e)', () => {
       await withAssets(other, 'Documents/sub/deep.txt').expect(204);
       await as(other)
         .upload('Documents/sub/assets/dangling.png', 'x')
-        .expect((res) => expect([403, 409]).toContain(res.status));
+        .expect(409);
       expect(existsSync(join(home, 'Elsewhere/target.png'))).toBe(false);
+    });
+
+    /** Notepad's own data folder, made by Notepad, holding a folder and a file. */
+    function notepadData(notepad: Copy): void {
+      const own = join(home, '.local/share/imbatranim/notepad');
+      mkdirSync(join(own, 'x'), { recursive: true });
+      writeFileSync(join(own, 'x/inner.txt'), 'mine');
+      writeFileSync(join(own, 'one.png'), 'png');
+      const store = app.get(ModeStore);
+      const me = {
+        appId: 'notepad',
+        instanceId: notepad.instanceId,
+        windowId: null,
+        groups: ['notepad'],
+      };
+      store.create(me, own, 'directory');
+      store.create(me, join(own, 'x'), 'directory');
+      store.create(me, join(own, 'x/inner.txt'), 'file');
+      store.create(me, join(own, 'one.png'), 'file');
+    }
+    const moveAs = (who: Copy, from: string, to: string) =>
+      signed(
+        who,
+        http.post('/api/files/move').send({ root: 'home', from, to }),
+      );
+    const copyAs = (who: Copy, from: string, to: string) =>
+      signed(
+        who,
+        http.post('/api/files/copy').send({ root: 'home', from, to }),
+      );
+
+    it('nothing moves into it: the app would own what it moved', async () => {
+      const notepad = await open('notepad');
+      notepadData(notepad);
+      await withAssets(notepad, 'Documents/plan.txt').expect(204);
+      const data = '.local/share/imbatranim/notepad';
+      // A folder of its own, as the assets folder or inside it.
+      await moveAs(notepad, `${data}/x`, 'Documents/assets').expect(403);
+      mkdirSync(join(home, 'Documents/assets'));
+      await moveAs(notepad, `${data}/x`, 'Documents/assets/x').expect(403);
+      // A single file of its own, too.
+      await moveAs(
+        notepad,
+        `${data}/one.png`,
+        'Documents/assets/one.png',
+      ).expect(403);
+      expect(existsSync(join(home, 'Documents/assets/x'))).toBe(false);
+      expect(existsSync(join(home, 'Documents/assets/one.png'))).toBe(false);
+      expect(existsSync(join(home, data, 'x/inner.txt'))).toBe(true);
+    });
+
+    it('a file is copied in as the user’s, a folder never', async () => {
+      const notepad = await open('notepad');
+      notepadData(notepad);
+      await withAssets(notepad, 'Documents/plan.txt').expect(204);
+      const data = '.local/share/imbatranim/notepad';
+      await copyAs(notepad, `${data}/x`, 'Documents/assets').expect(403);
+      await copyAs(notepad, `${data}/x`, 'Documents/assets/x').expect(403);
+      await copyAs(notepad, `${data}/one.png`, 'Documents/assets').expect(403);
+      await copyAs(
+        notepad,
+        `${data}/one.png`,
+        'Documents/assets/one.png',
+      ).expect(201);
+      expect(readFileSync(join(home, 'Documents/assets/one.png'), 'utf8')).toBe(
+        'png',
+      );
+      expect(
+        app.get(ModeStore).stat(join(home, 'Documents/assets/one.png'))
+          ?.owner ?? null,
+      ).toBeNull();
+      // Copied in, it is still only added to: never written over or removed.
+      await as(notepad).write('Documents/assets/one.png', 'x').expect(409);
+      await as(notepad).remove('Documents/assets/one.png').expect(403);
+      await copyAs(
+        notepad,
+        `${data}/one.png`,
+        'Documents/assets/one.png',
+      ).expect(400);
+    });
+
+    it('never a file where the folder goes, nor a folder inside it', async () => {
+      const notepad = await open('notepad');
+      await withAssets(notepad, 'Documents/plan.txt').expect(204);
+      await as(notepad).write('Documents/assets', 'x').expect(403);
+      await as(notepad).upload('Documents/assets', 'x').expect(403);
+      expect(existsSync(join(home, 'Documents/assets'))).toBe(false);
+      await as(notepad).mkdir('Documents/assets/sub').expect(403);
+      expect(existsSync(join(home, 'Documents/assets'))).toBe(false);
+      await as(notepad).mkdir('Documents/assets').expect(201);
+      await as(notepad).mkdir('Documents/assets/sub').expect(403);
+      expect(existsSync(join(home, 'Documents/assets/sub'))).toBe(false);
+    });
+
+    it('a path that climbs out with .. is held to where it lands', async () => {
+      const notepad = await open('notepad');
+      await withAssets(notepad, 'Documents/plan.txt').expect(204);
+      await as(notepad).upload('Documents/assets/../shot.png', 'x').expect(403);
+      await as(notepad)
+        .upload('Documents/assets/../assets/shot.png', 'x')
+        .expect(201);
+      await as(notepad).upload('Documents/assets/../../x.png', 'x').expect(403);
+      expect(existsSync(join(home, 'Documents/shot.png'))).toBe(false);
+      expect(existsSync(join(home, 'x.png'))).toBe(false);
+    });
+
+    it('is not given on another app’s folder', async () => {
+      const hollow = {
+        appId: 'hollow',
+        instanceId: 'h1',
+        windowId: null,
+        groups: ['hollow'],
+      };
+      const theirs = join(home, '.local/share/imbatranim/hollow');
+      mkdirSync(theirs, { recursive: true });
+      writeFileSync(join(theirs, 'doc.md'), '# theirs');
+      app.get(ModeStore).create(hollow, theirs, 'directory');
+      const notepad = await open('notepad');
+      await withAssets(notepad, '.local/share/imbatranim/hollow/doc.md').expect(
+        204,
+      );
+      await as(notepad)
+        .upload('.local/share/imbatranim/hollow/assets/x.png', 'x')
+        .expect(403);
+      expect(existsSync(join(theirs, 'assets'))).toBe(false);
     });
 
     it('only the OS gives it', async () => {

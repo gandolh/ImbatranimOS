@@ -5686,3 +5686,36 @@ backend, so the suite app can't reopen those in a new window. Tests: core
 files e2e tests. The brief's second half (built-ins' grant paths, the
 `modes.ts` flip, the Diff and Git GUI payloads, the REST client notice)
 still waits on the owner.
+
+## [2026-11-09] build | Brief 70, second half: built-ins reach only what they are given
+
+Owner call (decision 6, `5290f24`): an OS-made open or a pick also gives
+read on the opened file's folder to apps that declare `readsOpenedFolder`
+(Media Player, Image Viewer, Notepad). Taken literally: the folder's listing
+and the files directly in it, not subfolders.
+
+- `b9bd180` (1.225.0): the `listing` grant (ledger 15), `withFolder` on
+  `POST /files/grants` (the user's alone), core asks for it on launcher opens
+  and picks for declaring apps. Notepad's image attach confirms its place in
+  the Save dialog, since a new file isn't covered by read.
+- `60c8b81` (1.226.0): `system.fs.reopenRecent`; git recent repos carry the
+  app that remembered them (ledger 16), and `GET /git/recents` no longer
+  shows every app the whole list; Git GUI is Browse only; `openApp` gives
+  each file of a comparison; find in files asks for a folder; Notepad's new
+  file and the Snipping Tool's save use the Save dialog; the REST client
+  re-asks for a saved request's file on a 403 and offers to bring in
+  `~/.config/rest-client/collections.json`.
+- `aab1698` (1.227.0): a notification action's file is opened as the app's,
+  so it gives nothing; the protocol's `openApp` and action docs say so.
+- `8b10be0` (1.228.0): the flip, `rwx--x--x` and `rw-------` with no mode row.
+  A `read` grant kind: an app hands on a file it may only read as read only
+  (a link from a Notepad document to the file beside it). Ledger 15 was
+  widened for it after `b9bd180`; no live database had run it.
+
+Checks: backend typecheck, 1098 unit before the read kind and 171 after it
+(db, app-identity, files), and the file-grants, app-identity, files,
+app-data and marketplace e2e specs (105); core `tsc -b` and 452 vitest
+(system, shared); Notepad 152, REST client 140, Code Editor 26, Git GUI 31,
+Snipping Tool 20 vitest, with each add-on's typecheck. Skipped: the PTY e2e,
+full cross-workspace suites, the browser and Office walk (a walk agent does
+it in the dev container). Open items are in the brief's Progress.

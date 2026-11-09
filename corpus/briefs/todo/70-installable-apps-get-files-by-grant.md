@@ -166,3 +166,35 @@ flip). Each needs a grant path or an owner call before `modes.ts` flips:
   falls back to home quietly, and Git GUI offers it as a typed root.
 - No flow drags files from Files into an app. Paint, Bookmarks, Calendar and
   the Snipping Tool's open go through pickers or intents and are fine.
+
+**Second half built (2026-11-09).** `b9bd180` (decision 6: `readsOpenedFolder`
+in the manifest, a `listing` grant, ledger 15; Notepad's image attach goes
+through the Save dialog), `60c8b81` (each built-in's flows: `fs.reopenRecent`
+for the Code Editor's restored tabs and Git GUI's recent repos, git recents
+per app in ledger 16, Git GUI's typed path gone, comparison payloads granted
+per file, find in files asks for its folder, Notepad's new file and the
+Snipping Tool's save go through the Save dialog, the REST client asks for a
+saved request's file again and offers to bring in its earlier doc),
+`aab1698` (a notification action's file gives nothing) and `8b10be0` (the
+flip in `modes.ts`, and a `read` grant kind so a link followed from a Notepad
+document opens the file beside it read-only). The walk is still owed.
+
+Changes the owner can veto: the Snipping Tool's save and Notepad's image
+attach now show the Save dialog every time, and find in files has no
+"everywhere".
+
+Left open:
+- Recents recorded under a retired built-in's id (`docs`, `sheets`,
+  `slides`, `norpdf`, `pdf-viewer`) aren't the suite app's own on the
+  backend, so the suite app can't reopen them in a new window or see them in
+  its own list; Start still opens them, as the user. Fixing it means
+  rewriting the rows under the new ids, which needs `RETIRED_APP_IDS` on the
+  backend too.
+- One app opening another with a file records no recent for the target; the
+  target records its own (Notepad, the Diff tool and Office do).
+- Code Editor tabs opened from find in files aren't recents, so after a
+  reload they don't restore.
+- An installable app can't declare `readsOpenedFolder` yet: the
+  descriptor schema doesn't carry it.
+- The `notes` root: Notepad's probe for old notes is refused and falls back
+  to home quietly; the picker still shows Notes.

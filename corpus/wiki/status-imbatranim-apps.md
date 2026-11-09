@@ -17,8 +17,9 @@ Each outcome is in `briefs/done/`.
   WASM without threads. Owner: phone checks on Android and iPhone.
 - **68** (`2522407`, 1.196.0, ready for deploy): apps run as their own
   identity (token header, per-file owner and mode). The owner chose a
-  stricter default for built-in apps on 2026-11-06; brief 70 flips it with the
-  grant flows.
+  stricter default for built-in apps on 2026-11-06; brief 70 flipped it on
+  2026-11-09 (`8b10be0`, 1.228.0) with the grant flows. Brief 70 waits for
+  its walk.
 - **72** (`d6ae13d`, fix `baf3f5e`, ready for deploy): Start has search, pins
   and an A-Z list; the fix after walk 1 covers ranking, duplicates and panel
   height.

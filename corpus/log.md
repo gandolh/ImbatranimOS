@@ -5774,3 +5774,26 @@ Checks: backend typecheck and 284 unit (db, files, app-identity, git), the
 file-grants, app-identity, files, app-data and marketplace e2e specs (119);
 Snipping Tool 22, Code Editor 26 and Notepad 152 vitest with typechecks.
 Skipped: the PTY e2e, full suites, the browser walk (a re-walk is next).
+
+## [2026-11-09] fix | Brief 74's review: a lost install race, and the Verified badge
+
+The read-only review of brief 74 found no high or medium issues; its two low
+ones are fixed in `8ee203f` (1.240.0), with the README in `321f17d`.
+
+- A native install from a URL is queued before its check is taken. When
+  another install of the same app started first, the 409 used to leave the
+  check taken and its clone (up to 512 MB) on disk with nothing to remove
+  it; now the check still holds it, and Cancel or expiry deletes it. A
+  prebuilt install also refuses while a native one of the app builds.
+- The badge follows the verified list the OS carries, not the stored record:
+  the listing's `trust.verified` says whether the list names the installed
+  commit now. Settings says Verified, Trusted by you, or No longer verified
+  (installed as verified, dropped by a later release; it gets Check for
+  update). A reinstall of such an app still rebuilds its installed commit.
+- An e2e checks that a server's upgrade without a session gets 401 before
+  the app is looked at.
+
+Not done: `measureBeforeCheckout` on a verified app's update through the
+install route (a reviewed commit; the catalog's builds don't measure
+either). Checks: backend typecheck, 356 marketplace units, 69 marketplace
+e2e; core `tsc -b`, eslint, 163 vitest (settings, registry).

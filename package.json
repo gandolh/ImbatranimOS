@@ -1,6 +1,6 @@
 {
   "name": "imbatranimos",
-  "version": "1.231.0",
+  "version": "1.232.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "packageManager": "npm@11.19.1",
@@ -27,7 +27,8 @@
     "install:tooling": "npm install --ignore-scripts",
     "codegraph:init": "codegraph init",
     "codegraph:sync": "codegraph sync",
-    "version:bump": "node scripts/bump-version.mjs"
+    "version:bump": "node scripts/bump-version.mjs",
+    "verified:sync": "node scripts/verified-sync.mjs"
   },
   "devDependencies": {
     "prettier": "3.8.3",

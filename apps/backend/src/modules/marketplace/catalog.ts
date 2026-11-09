@@ -460,6 +460,12 @@ export function descriptorSchema(options: { allowLocalRepos: boolean }) {
     });
 }
 
+/**
+ * The list of verified apps from a URL (`verified.ts`), which sits beside the
+ * descriptors and is not one.
+ */
+export const VERIFIED_FILE = 'verified.json';
+
 export interface Catalog {
   /** By descriptor id. */
   descriptors: ReadonlyMap<string, Descriptor>;
@@ -468,7 +474,7 @@ export interface Catalog {
 }
 
 /**
- * Read every `*.json` in the catalog directory. A broken descriptor is
+ * Read every `*.json` in the catalog directory but {@link VERIFIED_FILE}. A broken descriptor is
  * skipped and reported, never half-loaded; so is one whose file name is not
  * its id, or one that reuses an id an earlier file took.
  *
@@ -490,7 +496,7 @@ export function loadCatalog(
   let files: string[];
   try {
     files = readdirSync(dir)
-      .filter((f) => f.endsWith('.json'))
+      .filter((f) => f.endsWith('.json') && f !== VERIFIED_FILE)
       .sort();
   } catch {
     return { descriptors, problems };

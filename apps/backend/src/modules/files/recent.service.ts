@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DbService } from '../../db/db.service';
 
-/** The list is a glance, not an archive — pruned to this on every write. */
+/** The list is a glance, not an archive — files are pruned to this on every write. */
 const MAX_RECENTS = 50;
+/**
+ * Folders an app works in are few and kept apart: each app keeps this many,
+ * which neither count toward the files' cap nor are pushed out by it, so a
+ * week of opened files never costs Git GUI its repositories.
+ */
+export const MAX_FOLDER_RECENTS_PER_APP = 10;
 
 /** A file, or a folder an app works in (Git GUI's repositories). */
 export type RecentKind = 'file' | 'folder';
@@ -44,9 +50,9 @@ export class RecentService {
     const rows = this.db.db
       .prepare(
         `SELECT id, root, path, app_id, kind, last_opened FROM recent_files
-         ORDER BY last_opened DESC, id DESC LIMIT ?`,
+         ORDER BY last_opened DESC, id DESC`,
       )
-      .all(MAX_RECENTS) as RecentRow[];
+      .all() as RecentRow[];
     return rows.map((r) => ({
       id: r.id,
       root: r.root,
@@ -91,16 +97,34 @@ export class RecentService {
       // Prune on the write path so the table cannot grow unbounded. The id
       // tiebreak matters: CURRENT_TIMESTAMP has second precision, so a burst
       // of opens inside one second would otherwise prune arbitrarily.
-      this.db.db
-        .prepare(
-          `DELETE FROM recent_files WHERE id NOT IN (
-             SELECT id FROM recent_files
-             ORDER BY last_opened DESC, id DESC LIMIT ?
-           )`,
-        )
-        .run(MAX_RECENTS);
+      this.prune(appId);
     });
     tx();
+  }
+
+  /**
+   * Keep the files to {@link MAX_RECENTS} and `appId`'s folders to
+   * {@link MAX_FOLDER_RECENTS_PER_APP}, newest first. The list and the
+   * one-time move call it; it takes no transaction of its own.
+   */
+  prune(appId: string): void {
+    this.db.db
+      .prepare(
+        `DELETE FROM recent_files WHERE kind = 'file' AND id NOT IN (
+           SELECT id FROM recent_files WHERE kind = 'file'
+           ORDER BY last_opened DESC, id DESC LIMIT ?
+         )`,
+      )
+      .run(MAX_RECENTS);
+    this.db.db
+      .prepare(
+        `DELETE FROM recent_files WHERE kind = 'folder' AND app_id = @appId
+           AND id NOT IN (
+             SELECT id FROM recent_files WHERE kind = 'folder' AND app_id = @appId
+             ORDER BY last_opened DESC, id DESC LIMIT @max
+           )`,
+      )
+      .run({ appId, max: MAX_FOLDER_RECENTS_PER_APP });
   }
 
   /** True when `(root, path)` is among `appId`'s own recent files. */

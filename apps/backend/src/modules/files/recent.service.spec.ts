@@ -69,6 +69,24 @@ describe('RecentService', () => {
     expect(service.ownRecent('home', 'code/repo', 'notepad')).toBeNull();
   });
 
+  it("keeps each app's folders apart from the files' cap, ten each", () => {
+    for (let i = 0; i < 12; i++) {
+      service.record('home', `repo${i}`, 'git-gui', true, 'folder');
+    }
+    service.record('home', 'other-repo', 'code-editor', true, 'folder');
+    for (let i = 0; i < 60; i++) {
+      service.record('home', `f${String(i).padStart(2, '0')}.txt`, 'notepad');
+    }
+    const list = service.list();
+    expect(list.filter((r) => r.kind === 'file')).toHaveLength(50);
+    const repos = list.filter((r) => r.appId === 'git-gui').map((r) => r.path);
+    expect(repos).toHaveLength(10);
+    expect(repos).not.toContain('repo0');
+    expect(repos).not.toContain('repo1');
+    expect(repos).toContain('repo11');
+    expect(list.some((r) => r.path === 'other-repo')).toBe(true);
+  });
+
   it('the old-shape table is dropped and recreated by the migration', () => {
     // Recreate the pre-94 shape, then run migrate() again: the shape wins,
     // the rows are gone. Since the migration ledger the ledger makes each step run once,

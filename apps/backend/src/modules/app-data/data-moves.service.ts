@@ -10,6 +10,11 @@ import * as fs from 'fs/promises';
 import { join } from 'path';
 
 import { DbService } from '../../db/db.service';
+import { FilesService } from '../files/files.service';
+import {
+  MAX_FOLDER_RECENTS_PER_APP,
+  RecentService,
+} from '../files/recent.service';
 import { LogService } from '../logs/log.service';
 import type { AppIdentity } from '../app-identity/app-identity.types';
 import { AppDataService } from './app-data.service';
@@ -62,7 +67,9 @@ type Move = {
   /** Which of the app's folders the files go in. */
   kind: DataKind;
   /** The files to write, by path in the app's folder, and what they hold. */
-  files(): { files: Map<string, string>; summary: string };
+  files():
+    | { files: Map<string, string>; summary: string }
+    | Promise<{ files: Map<string, string>; summary: string }>;
   /** Rows the OS keeps itself, written in the transaction that drops the tables. */
   keep?(): void;
 };
@@ -105,6 +112,8 @@ export class DataMovesService implements OnApplicationBootstrap {
   constructor(
     private readonly dbs: DbService,
     private readonly data: AppDataService,
+    private readonly fileRoots: FilesService,
+    private readonly recent: RecentService,
     // Optional, as for DbService: a partial graph without LogsModule still boots.
     @Optional() private readonly logs?: LogService,
   ) {}
@@ -138,7 +147,7 @@ export class DataMovesService implements OnApplicationBootstrap {
   private async runOne(move: Move): Promise<void> {
     const present = move.tables.filter((t) => this.hasTable(t));
     if (present.length === 0) return;
-    const planned = move.files();
+    const planned = await move.files();
     const identity: AppIdentity = {
       appId: move.appId,
       instanceId: `os-move-${move.appId}`,
@@ -327,31 +336,37 @@ export class DataMovesService implements OnApplicationBootstrap {
   }
 
   private gitRecentsMove(): Move {
-    // Only Git GUI's rows: a repository the user recorded had no app to go to.
-    const repos = () =>
-      this.rows<RepoRow>(
-        'git_recent_repos',
-        `SELECT root, path, last_opened FROM git_recent_repos
-          WHERE app_id = 'git-gui' ORDER BY last_opened DESC, id DESC`,
-      );
+    /** Git GUI's rows whose folder is still there, newest first, as many as it keeps. */
+    let kept: RepoRow[] = [];
     return {
       appId: 'git-gui',
       group: 'developer',
       name: 'Git GUI',
       tables: ['git_recent_repos'],
       kind: 'state',
-      files: () => {
-        const rows = repos();
+      files: async () => {
+        // Only Git GUI's rows: a repository the user recorded had no app to
+        // go to. A folder that is gone, or is no folder now, isn't moved.
+        const rows = this.rows<RepoRow>(
+          'git_recent_repos',
+          `SELECT root, path, last_opened FROM git_recent_repos
+            WHERE app_id = 'git-gui' ORDER BY last_opened DESC, id DESC`,
+        );
+        kept = [];
+        for (const row of rows) {
+          if (kept.length === MAX_FOLDER_RECENTS_PER_APP) break;
+          if (await this.isFolder(row.root, row.path)) kept.push(row);
+        }
         const files = new Map<string, string>();
-        if (rows.length === 0) return { files, summary: '' };
+        if (kept.length === 0) return { files, summary: '' };
         files.set(
           'recents.json',
-          json({ repos: rows.map((r) => ({ root: r.root, path: r.path })) }),
+          json({ repos: kept.map((r) => ({ root: r.root, path: r.path })) }),
         );
         return {
           files,
           summary: count(
-            rows.length,
+            kept.length,
             'recent repository',
             'recent repositories',
           ),
@@ -366,9 +381,19 @@ export class DataMovesService implements OnApplicationBootstrap {
            VALUES (?, ?, 'git-gui', 1, 'folder', COALESCE(?, CURRENT_TIMESTAMP))
            ON CONFLICT(root, path) DO NOTHING`,
         );
-        for (const r of repos()) insert.run(r.root, r.path, r.last_opened);
+        for (const r of kept) insert.run(r.root, r.path, r.last_opened);
+        this.recent.prune('git-gui');
       },
     };
+  }
+
+  /** Whether `(root, path)` names a folder in the home or the notes now. */
+  private async isFolder(root: string, path: string): Promise<boolean> {
+    return this.fileRoots
+      .resolveSafe(root, path)
+      .then(({ abs }) => fs.stat(abs))
+      .then((s) => s.isDirectory())
+      .catch(() => false);
   }
 
   private hasTable(name: string): boolean {

@@ -9,6 +9,8 @@ import { ModeStore } from '../app-identity/mode-store.service';
 import type { LogService } from '../logs/log.service';
 import { AppDataService } from './app-data.service';
 import { DataMovesService } from './data-moves.service';
+import { FilesService } from '../files/files.service';
+import { RecentService } from '../files/recent.service';
 
 describe('DataMovesService', () => {
   let home: string;
@@ -36,7 +38,13 @@ describe('DataMovesService', () => {
       record: (level: string, event: string, msg: string) =>
         logged.push({ level, event, msg }),
     } as unknown as LogService;
-    moves = new DataMovesService(dbs, data, logs);
+    moves = new DataMovesService(
+      dbs,
+      data,
+      new FilesService(),
+      new RecentService(dbs),
+      logs,
+    );
   });
 
   afterEach(async () => {
@@ -149,6 +157,8 @@ describe('DataMovesService', () => {
   });
 
   it("moves Git GUI's recent repositories into its state folder and its OS recents", async () => {
+    await fs.mkdir(join(home, 'code', 'old'), { recursive: true });
+    await fs.mkdir(join(home, 'code', 'new'), { recursive: true });
     dbs.db.exec(`
       INSERT INTO git_recent_repos (root, path, app_id, last_opened) VALUES
         ('home', 'code/old', 'git-gui', '2026-11-01 08:00:00'),
@@ -205,6 +215,7 @@ describe('DataMovesService', () => {
   });
 
   it("leaves a recent already at a repository's path as it is", async () => {
+    await fs.mkdir(join(home, 'code', 'repo'), { recursive: true });
     dbs.db.exec(`
       INSERT INTO recent_files (root, path, app_id, writable, kind)
         VALUES ('home', 'code/repo', 'code-editor', 1, 'folder');
@@ -215,6 +226,38 @@ describe('DataMovesService', () => {
     expect(dbs.db.prepare('SELECT app_id FROM recent_files').all()).toEqual([
       { app_id: 'code-editor' },
     ]);
+    expect(hasTable('git_recent_repos')).toBe(false);
+  });
+
+  it('moves only repositories still there as folders, the newest ten', async () => {
+    await fs.mkdir(join(home, 'code'), { recursive: true });
+    await fs.writeFile(join(home, 'code', 'now-a-file'), 'x');
+    const insert = dbs.db.prepare(
+      `INSERT INTO git_recent_repos (root, path, app_id, last_opened)
+       VALUES ('home', ?, 'git-gui', ?)`,
+    );
+    insert.run('code/gone', '2026-11-08 00:00:00');
+    insert.run('code/now-a-file', '2026-11-07 00:00:00');
+    for (let i = 0; i < 12; i++) {
+      const path = `code/r${String(i).padStart(2, '0')}`;
+      await fs.mkdir(join(home, path));
+      insert.run(path, `2026-11-01 00:00:${String(i).padStart(2, '0')}`);
+    }
+    await moves.run();
+    const state = join(home, '.local', 'state', 'imbatranim', 'git-gui');
+    const { repos } = JSON.parse(
+      await fs.readFile(join(state, 'recents.json'), 'utf8'),
+    ) as { repos: { path: string }[] };
+    expect(repos.map((r) => r.path)).toEqual(
+      [11, 10, 9, 8, 7, 6, 5, 4, 3, 2].map(
+        (i) => `code/r${String(i).padStart(2, '0')}`,
+      ),
+    );
+    const rows = dbs.db
+      .prepare(`SELECT path FROM recent_files WHERE app_id = 'git-gui'`)
+      .all() as { path: string }[];
+    expect(rows).toHaveLength(10);
+    expect(rows.some((r) => r.path === 'code/gone')).toBe(false);
     expect(hasTable('git_recent_repos')).toBe(false);
   });
 

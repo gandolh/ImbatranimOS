@@ -518,6 +518,21 @@ describe('Files by grant (e2e)', () => {
         );
       });
 
+    // What is there now must be what was recorded: a file recent where a
+    // folder is now gives no folder, a folder recent where a file is now
+    // gives no file.
+    const db = app.get(DbService).db;
+    db.prepare(
+      `UPDATE recent_files SET kind = 'file' WHERE path = 'Documents/sub'`,
+    ).run();
+    db.prepare(
+      `INSERT INTO recent_files (root, path, app_id, writable, kind)
+       VALUES ('home', 'Documents/other.txt', 'hollow', 1, 'folder')`,
+    ).run();
+    const fresh = await open('hollow');
+    await give(fresh, 'Documents/sub', 'folder', first).expect(403);
+    await give(fresh, 'Documents/other.txt', undefined, first).expect(403);
+
     // Another app can't use Hollow's recents, for itself or for Hollow.
     const quill = await open('quill');
     await give(quill, 'Documents/sub', 'folder', quill).expect(403);

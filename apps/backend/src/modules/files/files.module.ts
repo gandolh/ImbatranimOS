@@ -22,6 +22,6 @@ import { RecentService } from './recent.service';
     RecentController,
   ],
   providers: [FilesService, FileAccess, TrashService, RecentService],
-  exports: [FilesService, TrashService],
+  exports: [FilesService, TrashService, RecentService],
 })
 export class FilesModule {}

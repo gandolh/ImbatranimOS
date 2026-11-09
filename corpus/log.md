@@ -5932,3 +5932,30 @@ Board: Ready for deploy. Brief moved to done/. The owner's decisions 1-5
 now have a page of their own,
 [decisions-kit-app-hooks.md](wiki/decisions-kit-app-hooks.md), since the
 marketplace decisions page is at its size limit.
+
+## [2026-11-09] fix | Brief 76's review: folder recents keep their own cap, the move takes only folders
+
+A read-only review of brief 76 found no way for an app to give itself more
+than it held. Fixed in `d55e129` (1.257.0):
+- **Folder recents aren't pushed out by files.** Each app keeps ten folder
+  recents (Git GUI's `recents.json` keeps ten too), apart from the fifty
+  recent files: they neither count toward that cap nor are pruned by it.
+  This replaces the outcome note's known limit about the shared 50-entry
+  prune. Clear recent files still clears them, as the owner accepted.
+- **The move** skips a repository that is gone or is no folder now, and
+  moves the newest ten.
+- Tests: the separate cap, the move's skip and cap, a folder an app may
+  list but not write refused on record, and the hand-on refusing a file
+  recent where a folder is now and a folder recent where a file is now.
+
+Already as asked: Git GUI drops a list entry only when its repository's
+calls answer 403 or 404, never on a network failure or a 5xx
+(`reopenRecent` itself never rejects). Not done, waiting on the owner:
+deleting an app's OS recents on uninstall. Brief 76's walk and the moving
+checklist's step 2 say recents come back after a reinstall, so a plain
+uninstall can't drop them; dropping them only with "Also remove its data"
+would fit decision 3.
+
+Checks: backend typecheck, eslint on changed files, jest (app-data, files,
+app-identity, marketplace, db, git: 696), e2e (file-grants, app-data,
+files, marketplace*, app-identity, app: 124).

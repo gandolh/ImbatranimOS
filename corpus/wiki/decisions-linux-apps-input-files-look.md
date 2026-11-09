@@ -1,6 +1,6 @@
 ---
 summary: Linux apps calls made while building briefs 45-49 (2026-11-06) - cursor images and the X11 clipboard bridge (48), a notification click via a source and an activation registry (49), the host speaks text-input-v3 itself and the phone's hidden input focuses on tap, launchers carry file types and launch takes a home-jailed file, shared-mime-info joins the image, and the backend serves the Settings portal as a second bus service.
-updated: 2026-11-06
+updated: 2026-11-09
 ---
 
 # Decisions: Linux apps' input, files and look (2026-11-06)
@@ -83,6 +83,20 @@ clipboard change.
   over 64 KiB into xterm stalled (smithay's INCR watched top-level windows only),
   accepted on 2026-11-06 and fixed on 2026-11-09 by a vendored smithay patch
   ([brief 83](../briefs/done/83-x11-pastes-over-64-kib-reach-child-windows.md)).
+- *Revisited 2026-11-09 (owner, grill on the xterm Shift+Insert todo)*:
+  PRIMARY gets bridged inside the session and in from the desktop, never out.
+  The session's X11 and Wayland apps share one PRIMARY (as on GNOME and KDE),
+  and text the tab hands over for a paste fills PRIMARY as well as CLIPBOARD
+  (TigerVNC's `SetPrimary`), so xterm's Shift+Insert pastes a desktop copy. A
+  highlight in a Linux app never reaches the desktop clipboard; only an
+  explicit copy does. That keeps the reason above: a selection still isn't a
+  clipboard change. Middle click reads no clipboard, because a read would put
+  a permission check (a Paste prompt in Firefox) before every middle click,
+  link and tab clicks included. Rejected: pushing highlights to the desktop
+  clipboard (Xvnc's `SendPrimary`, PuTTY), which clobbers a copy whenever text
+  is selected just to read it; shipping xterm with a Shift+Insert resource,
+  which fixes one app. Not built yet:
+  [brief 84](../briefs/todo/84-linux-apps-share-the-primary-selection.md).
 
 ## A notification click: a `source` and an activation registry, `default` only
 _2026-11-06_ — Brief 49. A notification can carry `source` (a Linux app's id),

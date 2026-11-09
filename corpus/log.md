@@ -6176,3 +6176,17 @@ now say it's fixed. The walk found that stock xterm's Shift+Insert pastes
 PRIMARY, which the host doesn't bridge: new todo
 [xterm-shift-insert-pastes-the-clipboard](todos/xterm-shift-insert-pastes-the-clipboard.md).
 Owner step: file the upstream report in the brief's Progress section.
+
+## [2026-11-09] grill | Brief 84 promoted: Linux apps share the PRIMARY selection
+
+The grill on the last open todo, `xterm-shift-insert-pastes-the-clipboard`,
+wrote [84](briefs/todo/84-linux-apps-share-the-primary-selection.md). The owner
+settled the one question of feel: a highlight in a Linux app stays among the
+session's Linux apps and never replaces the desktop clipboard (as on GNOME and
+KDE, and like the built-in Terminal). The rest are controller calls by
+convention: bridge PRIMARY rather than give xterm a resource; one PRIMARY per
+session for X11 and Wayland apps; text the tab hands over for a paste fills
+PRIMARY too (TigerVNC's `SetPrimary`); middle click reads no clipboard. This
+revisits brief 48's "PRIMARY stays in X"; the revisit is on
+[decisions-linux-apps-input-files-look.md](wiki/decisions-linux-apps-input-files-look.md).
+The todo is marked promoted; imbatranimOS has no open todos.

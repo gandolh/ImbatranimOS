@@ -129,6 +129,15 @@ What was built (brief 70, 2026-11-06 to 2026-11-09):
   the top of home would otherwise give all of home. Rejected: the folder for
   every app; one file only for everyone (the queue, prev/next and relative
   images would break).
+- **Notepad's attachments (owner, 2026-11-09).** An OS-made open also lets
+  an app whose manifest declares it (Notepad only) create new files in an
+  `assets/` folder beside the opened file, making the folder if needed. It
+  can't replace or remove anything there; a name already taken gets a
+  number. So attaching an image is silent again, and the most an open
+  Notepad window can do is add files under `assets/`. Rejected: the Save
+  dialog on every attach (as first built); write on the note's whole folder
+  (every sibling note could be overwritten); embedding images as data URLs
+  (huge notes other tools show as base64). Not built yet.
 - **Reopening.** `system.fs.reopenRecent` gives a window one of its app's
   own recents again, with no more than the app could do to it when it was
   recorded (a recent says whether it was writable): the Code Editor's restored tabs, Git GUI's recent

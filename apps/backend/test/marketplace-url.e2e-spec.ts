@@ -15,7 +15,6 @@ import {
   readFileSync,
   rmSync,
   statSync,
-  symlinkSync,
   writeFileSync,
 } from 'fs';
 import { get, type IncomingHttpHeaders, type Server } from 'http';
@@ -34,6 +33,7 @@ import {
   MAX_CLONE_BYTES,
   MAX_CLONE_ENTRIES,
   MarketplaceUrlApps,
+  OLD_FORMAT_REFUSAL,
 } from '../src/modules/marketplace/marketplace-url.service';
 import {
   MarketplaceService,
@@ -49,16 +49,20 @@ import { securityHeaders } from '../src/security-headers';
 import { UpgradeRoutesModule } from '../src/upgrade-routes';
 
 /**
- * Apps installed from a URL end to end, against a real git
- * repository on disk (`file://`, allowed by the test-only flag): a check
- * clones the commit and validates the manifest, install keeps the clone, and
- * the app's files are served only under a window's token with the sandbox's
- * headers, never on the native routes. The desktop's own headers and CORS
- * are mounted as `main.ts` mounts them, so the overrides are what is tested.
+ * Checking an app from a URL end to end, against a real git repository on
+ * disk (`file://`, allowed by the test-only flag): the URL resolves to a
+ * commit, the clone is measured before its checkout, the manifest is read,
+ * and the clone is held for the owner's answer. Installing, trusting and
+ * building are `marketplace-url-native.e2e-spec.ts`'s.
+ *
+ * Also what is left of the retired prebuilt path: a version 1 manifest is
+ * refused at the check, the sandbox's routes are gone, and a sandboxed row
+ * still in the database lists as no longer supported, runs nothing and
+ * uninstalls. The desktop's own headers and CORS are mounted as `main.ts`
+ * mounts them.
  */
 const DESKTOP = 'http://localhost:5173';
 const PASSWORD = 'correct horse battery';
-const RUNTIME = '/* the test runtime */\nexport {};\n';
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync('git', args, {
@@ -74,14 +78,14 @@ function git(cwd: string, ...args: string[]): string {
   }).trim();
 }
 
+/** A version 2 manifest: an app built from source. The check never builds it. */
 function manifest(extra: Record<string, unknown> = {}) {
   return JSON.stringify({
-    schemaVersion: 1,
+    schemaVersion: 2,
     name: 'Hello',
-    description: 'A prebuilt app from a URL.',
-    meta: ['demo'],
-    entry: 'dist/hello.mjs',
-    window: { defaultSize: { w: 800, h: 600 }, minSize: { w: 400, h: 300 } },
+    description: 'An app from a URL.',
+    type: 'static',
+    build: { command: ['node', 'build.js'], entry: 'dist/hello.mjs' },
     capabilities: ['notify'],
     icon: 'sparkles',
     minSystemVersion: 2,
@@ -89,51 +93,30 @@ function manifest(extra: Record<string, unknown> = {}) {
   });
 }
 
+/** A prebuilt app's manifest, as the retired path read it. */
+const OLD_MANIFEST = {
+  schemaVersion: 1,
+  name: 'Old',
+  entry: 'dist/old.mjs',
+  window: { defaultSize: { w: 800, h: 600 }, minSize: { w: 400, h: 300 } },
+  capabilities: ['notify'],
+  icon: 'sparkles',
+  minSystemVersion: 2,
+};
+
 /**
- * A repository holding a good app at apps/hello (prebuilt: dist/ is
- * committed, with a dotfile and a symlink out beside the module) and one
- * asking for `fs` at apps/greedy.
+ * A repository holding an app at apps/hello and a prebuilt (version 1) one
+ * at apps/old, with its built module committed as that path wanted.
  */
 function makeRepo(dir: string): string {
   const hello = join(dir, 'apps', 'hello');
-  mkdirSync(join(hello, 'dist'), { recursive: true });
+  mkdirSync(hello, { recursive: true });
   writeFileSync(join(hello, 'imbatranim.json'), manifest());
-  writeFileSync(
-    join(hello, 'dist', 'hello.mjs'),
-    'export function mount(el) { el.textContent = "v1"; }\n',
-  );
-  writeFileSync(
-    join(hello, 'dist', 'tiny.wasm'),
-    Buffer.from([0, 97, 115, 109]),
-  );
-  writeFileSync(join(hello, 'dist', '.secret'), 'a dotfile');
-  writeFileSync(join(hello, 'source.txt'), 'source, not output');
-  symlinkSync('/etc/hostname', join(hello, 'dist', 'link.txt'));
-  const greedy = join(dir, 'apps', 'greedy');
-  mkdirSync(join(greedy, 'dist'), { recursive: true });
-  writeFileSync(
-    join(greedy, 'imbatranim.json'),
-    manifest({ capabilities: ['notify', 'fs'] }),
-  );
-  writeFileSync(
-    join(greedy, 'dist', 'hello.mjs'),
-    'export function mount() {}\n',
-  );
-  const wide = join(dir, 'apps', 'wide');
-  mkdirSync(join(wide, 'dist'), { recursive: true });
-  writeFileSync(
-    join(wide, 'imbatranim.json'),
-    manifest({
-      window: {
-        defaultSize: { w: 2560, h: 1440 },
-        minSize: { w: 640, h: 400 },
-      },
-    }),
-  );
-  writeFileSync(
-    join(wide, 'dist', 'hello.mjs'),
-    'export function mount() {}\n',
-  );
+  writeFileSync(join(hello, 'build.js'), '// builds dist/hello.mjs\n');
+  const old = join(dir, 'apps', 'old');
+  mkdirSync(join(old, 'dist'), { recursive: true });
+  writeFileSync(join(old, 'imbatranim.json'), JSON.stringify(OLD_MANIFEST));
+  writeFileSync(join(old, 'dist', 'old.mjs'), 'export function mount() {}\n');
   git(dir, 'init', '-q', '-b', 'main');
   git(dir, 'add', '.');
   git(dir, 'commit', '-qm', 'v1');
@@ -141,8 +124,8 @@ function makeRepo(dir: string): string {
 }
 
 /**
- * A repository holding one app at apps/<name>, with a valid manifest and
- * entry plus `files` (path inside the app → content), committed on main.
+ * A repository holding one app at apps/<name>, with a valid manifest plus
+ * `files` (path inside the app → content), committed on main.
  */
 function makeAppRepo(
   dir: string,
@@ -150,12 +133,8 @@ function makeAppRepo(
   files: Record<string, string | Buffer>,
 ): string {
   const appDir = join(dir, 'apps', name);
-  mkdirSync(join(appDir, 'dist'), { recursive: true });
+  mkdirSync(appDir, { recursive: true });
   writeFileSync(join(appDir, 'imbatranim.json'), manifest());
-  writeFileSync(
-    join(appDir, 'dist', 'hello.mjs'),
-    'export function mount() {}\n',
-  );
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(dirname(join(appDir, path)), { recursive: true });
     writeFileSync(join(appDir, path), content);
@@ -194,49 +173,37 @@ function wsStatus(
   });
 }
 
-/** Every header contract B puts on a sandbox response. */
-function expectSandboxHeaders(
+/** The desktop's own policy, which every route answers with. */
+function expectDesktopHeaders(
   headers: IncomingHttpHeaders | Record<string, string>,
 ) {
   const csp = String(headers['content-security-policy']);
-  expect(csp).toMatch(/^sandbox allow-scripts allow-pointer-lock; /);
-  expect(csp).toContain("default-src 'none'");
-  expect(csp).toContain("script-src 'self' blob: 'wasm-unsafe-eval'");
-  expect(csp).toContain("connect-src 'self' data: blob:");
-  expect(csp).toContain("frame-src 'none'");
-  expect(csp).toContain("frame-ancestors 'self'");
-  expect(csp).not.toContain("frame-ancestors 'none'");
-  expect(headers['x-frame-options']).toBe('SAMEORIGIN');
-  expect(headers['access-control-allow-origin']).toBe('*');
-  expect(headers['access-control-allow-credentials']).toBeUndefined();
-  expect(headers['cross-origin-resource-policy']).toBe('cross-origin');
-  // A frame inside the isolated desktop sends a policy of its own; the
-  // desktop's opener policy, set before the override, is taken off.
+  expect(csp).toMatch(/^default-src 'self'; /);
+  expect(csp).toContain("frame-ancestors 'none'");
+  expect(csp).not.toContain('sandbox');
+  expect(headers['x-frame-options']).toBe('DENY');
+  expect(headers['cross-origin-opener-policy']).toBe('same-origin');
   expect(headers['cross-origin-embedder-policy']).toBe('require-corp');
-  expect(headers['cross-origin-opener-policy']).toBeUndefined();
-  expect(headers['x-content-type-options']).toBe('nosniff');
-  expect(headers['referrer-policy']).toBe('no-referrer');
-  expect(headers['x-dns-prefetch-control']).toBe('off');
+  expect(headers['access-control-allow-origin']).not.toBe('*');
 }
 
 interface Listed {
   id: string;
   runtime: string;
-  source?: Record<string, unknown>;
-  ref: string;
-  installed: {
-    ref: string;
-    buildId: string;
-    installedAt: number;
-    entryPath?: string;
-    missing: boolean;
-  } | null;
-  server: { state: string };
+}
+
+interface Problem {
+  file: string;
+  problem: string;
+  appId?: string;
+  retired?: { name: string; source: Record<string, unknown> | null };
 }
 
 interface Inspected {
   pending: string;
   id: string;
+  runtime: string;
+  verified: boolean;
   manifest: Record<string, unknown>;
   source: {
     url: string;
@@ -248,7 +215,7 @@ interface Inspected {
   current: { commit: string } | null;
 }
 
-describe('apps installed from a URL (e2e)', () => {
+describe('apps from a URL: the check, and the retired prebuilt path (e2e)', () => {
   let work: string;
   let prevFilesRoot: string | undefined;
   let repo: string;
@@ -331,21 +298,6 @@ describe('apps installed from a URL (e2e)', () => {
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, transform: true }),
     );
-    // The real runtime belongs to its own chunk; this test serves its own.
-    const urlApps = app.get(MarketplaceUrlApps);
-    expect(urlApps.runtimePath).toBe(
-      join(
-        __dirname,
-        '..',
-        'src',
-        'modules',
-        'marketplace',
-        'sandbox',
-        'runtime.js',
-      ),
-    );
-    urlApps.runtimePath = join(work, 'runtime.js');
-    writeFileSync(urlApps.runtimePath, RUNTIME);
     await app.listen(0);
     port = (app.getHttpServer().address() as AddressInfo).port;
     http = request(app.getHttpServer());
@@ -377,25 +329,14 @@ describe('apps installed from a URL (e2e)', () => {
       .set('Cookie', cookie)
       .send({ url });
 
-  const listed = async (): Promise<Listed[]> =>
-    (
-      (await http.get('/api/marketplace').set('Cookie', cookie).expect(200))
-        .body as { apps: Listed[] }
-    ).apps;
+  const listing = async () =>
+    (await http.get('/api/marketplace').set('Cookie', cookie).expect(200))
+      .body as { apps: Listed[]; problems: Problem[] };
 
   const builds = (appId: string) =>
-    readdirSync(appsDir).filter((n) => n.startsWith(`${appId}@`));
-
-  const mint = async (appId: string): Promise<string> => {
-    const res = await http
-      .post(`/api/marketplace/apps/${appId}/sandbox`)
-      .set('Cookie', cookie)
-      .expect(200);
-    const { path } = res.body as { path: string };
-    expect(Object.keys(res.body as object)).toEqual(['path']);
-    expect(path).toMatch(/^marketplace\/sandbox\/[A-Za-z0-9_-]+\/$/);
-    return `/api/${path}`;
-  };
+    existsSync(appsDir)
+      ? readdirSync(appsDir).filter((n) => n.startsWith(`${appId}@`))
+      : [];
 
   /**
    * Run `work` with the clone limits set to `limits`, and say which of the
@@ -435,6 +376,12 @@ describe('apps installed from a URL (e2e)', () => {
   const message = (res: { body: unknown }) =>
     (res.body as { message: string }).message;
 
+  const cancel = (pending: string) =>
+    http
+      .delete(`/api/marketplace/url/pending/${pending}`)
+      .set('Cookie', cookie)
+      .expect(204);
+
   it('refuses the URL routes without a session', async () => {
     await http
       .post('/api/marketplace/url/inspect')
@@ -445,23 +392,17 @@ describe('apps installed from a URL (e2e)', () => {
       .send({ pending: 'x' })
       .expect(401);
     await http.delete('/api/marketplace/url/pending/x').expect(401);
-    await http.post(`/api/marketplace/apps/${id}/sandbox`).expect(401);
-    await http.delete('/api/marketplace/sandbox/x').expect(401);
   });
 
   it('refuses a host other than github.com, an unknown branch and a missing repository', async () => {
     const other = await inspect('https://gitlab.com/o/r').expect(400);
-    expect((other.body as { message: string }).message).toBe(
+    expect(message(other)).toBe(
       'Only github.com URLs can be installed for now.',
     );
     const branch = await inspect(`file://${repo}#nope/apps/hello`).expect(400);
-    expect((branch.body as { message: string }).message).toMatch(
-      /"nope\/apps\/hello"/,
-    );
+    expect(message(branch)).toMatch(/"nope\/apps\/hello"/);
     const missing = await inspect(`file://${work}/no-such-repo`).expect(502);
-    expect((missing.body as { message: string }).message).toMatch(
-      /not found, or it is private/,
-    );
+    expect(message(missing)).toMatch(/not found, or it is private/);
     expect(
       existsSync(appsDir)
         ? readdirSync(appsDir).filter((n) => n.includes('@'))
@@ -469,31 +410,52 @@ describe('apps installed from a URL (e2e)', () => {
     ).toEqual([]);
   }, 30_000);
 
-  it('refuses a manifest that asks for fs, naming it, and keeps no clone', async () => {
-    const res = await inspect(`file://${repo}#main/apps/greedy`).expect(400);
-    expect((res.body as { message: string }).message).toBe(
-      'This app asks for system.fs, which an app installed from a URL cannot have. Only notify is allowed.',
-    );
-    expect(builds(deriveAppId(`file://${repo}`, 'apps/greedy'))).toEqual([]);
-  }, 30_000);
-
   it('refuses a folder with no manifest and a folder that is not there', async () => {
     const none = await inspect(`file://${repo}#main/apps`).expect(400);
-    expect((none.body as { message: string }).message).toMatch(
-      /There is no imbatranim\.json in apps/,
-    );
+    expect(message(none)).toMatch(/There is no imbatranim\.json in apps/);
     const absent = await inspect(`file://${repo}#main/nowhere`).expect(400);
-    expect((absent.body as { message: string }).message).toMatch(
-      /nowhere is not a folder/,
-    );
+    expect(message(absent)).toMatch(/nowhere is not a folder/);
   }, 30_000);
 
-  it('refuses a window larger than an app from a URL may open, saying the most', async () => {
-    const res = await inspect(`file://${repo}#main/apps/wide`).expect(400);
-    expect(message(res)).toBe(
-      'This app asks for a 2560×1440 window. An app installed from a URL may open at most 1600×1000.',
+  it('refuses a prebuilt (version 1) app at the check, in plain words, and keeps no clone', async () => {
+    const res = await inspect(`file://${repo}#main/apps/old`).expect(400);
+    expect(message(res)).toBe(OLD_FORMAT_REFUSAL);
+    expect(OLD_FORMAT_REFUSAL).toBe(
+      'This app uses the old format, which this OS no longer installs.',
     );
-    expect(builds(deriveAppId(`file://${repo}`, 'apps/wide'))).toEqual([]);
+    expect(builds(deriveAppId(`file://${repo}`, 'apps/old'))).toEqual([]);
+    expect(app.get(PendingInspections).size).toBe(0);
+  }, 30_000);
+
+  it('checks an app built from source and holds its clone for the answer', async () => {
+    const checked = (await inspect(helloUrl).expect(200)).body as Inspected;
+    expect(checked.id).toBe(id);
+    expect(checked.id).toMatch(/^x-[0-9a-f]{12}$/);
+    expect(checked.pending).toMatch(/^[0-9a-f]{32}$/);
+    expect(checked).toMatchObject({ runtime: 'native', verified: false });
+    expect(checked.source).toEqual({
+      url: `file://${repo}#main/apps/hello`,
+      repo: `file://${repo}`,
+      ref: 'main',
+      commit,
+      subdir: 'apps/hello',
+    });
+    expect(checked.manifest).toMatchObject({
+      name: 'Hello',
+      description: 'An app from a URL.',
+      icon: 'sparkles',
+      capabilities: ['notify'],
+    });
+    expect(checked.current).toBeNull();
+    expect(builds(id)).toHaveLength(1);
+    // An unverified app is not installed without the owner's trust.
+    await http
+      .post('/api/marketplace/url/install')
+      .set('Cookie', cookie)
+      .send({ pending: checked.pending })
+      .expect(403);
+    await cancel(checked.pending);
+    expect(builds(id)).toEqual([]);
   }, 30_000);
 
   describe('a clone too big to check out (measured before the checkout)', () => {
@@ -634,283 +596,6 @@ describe('apps installed from a URL (e2e)', () => {
     expect(builds(id)).toEqual([]);
   }, 60_000);
 
-  it('inspects, installs, and lists the app as sandboxed', async () => {
-    const checked = (await inspect(helloUrl).expect(200)).body as Inspected;
-    expect(checked.id).toBe(id);
-    expect(checked.id).toMatch(/^x-[0-9a-f]{12}$/);
-    expect(checked.pending).toMatch(/^[0-9a-f]{32}$/);
-    expect(checked.source).toEqual({
-      url: `file://${repo}#main/apps/hello`,
-      repo: `file://${repo}`,
-      ref: 'main',
-      commit,
-      subdir: 'apps/hello',
-    });
-    expect(checked.manifest).toEqual({
-      name: 'Hello',
-      description: 'A prebuilt app from a URL.',
-      meta: ['demo'],
-      icon: 'sparkles',
-      capabilities: ['notify'],
-      window: { defaultSize: { w: 800, h: 600 }, minSize: { w: 400, h: 300 } },
-      minSystemVersion: 2,
-    });
-    expect(checked.current).toBeNull();
-
-    const installed = await http
-      .post('/api/marketplace/url/install')
-      .set('Cookie', cookie)
-      .send({ pending: checked.pending })
-      .expect(200);
-    expect((installed.body as Listed).runtime).toBe('sandboxed');
-    expect(builds(id)).toHaveLength(1);
-    // Installing used up the check.
-    await http
-      .post('/api/marketplace/url/install')
-      .set('Cookie', cookie)
-      .send({ pending: checked.pending })
-      .expect(404);
-
-    const apps = await listed();
-    const hello = apps.find((a) => a.id === id)!;
-    expect(hello).toMatchObject({
-      id,
-      name: 'Hello',
-      runtime: 'sandboxed',
-      type: 'static',
-      capabilities: ['notify'],
-      icon: 'sparkles',
-      ref: commit,
-      source: checked.source,
-      job: null,
-      server: { state: 'stopped' },
-    });
-    expect(hello.installed).toEqual({
-      ref: commit,
-      buildId: builds(id)[0].split('@')[1],
-      installedAt: expect.any(Number) as number,
-      missing: false,
-    });
-    expect(hello.installed).not.toHaveProperty('entryPath');
-    expect(apps.find((a) => a.id === 'demo')?.runtime).toBe('native');
-    expect(installed.body).toEqual(hello);
-  }, 30_000);
-
-  it('serves the shell, the runtime and the files under a token, with the sandbox headers and no cookie', async () => {
-    const base = await mint(id);
-
-    const shell = await http.get(base).set('Origin', 'null').expect(200);
-    expect(shell.headers['content-type']).toBe('text/html; charset=utf-8');
-    expect(shell.headers['cache-control']).toBe('no-store');
-    expectSandboxHeaders(shell.headers);
-    expect(shell.text).toBe(
-      [
-        '<!doctype html><html><head><meta charset="utf-8">',
-        '<meta name="imb-entry" content="app/hello.mjs">',
-        '<style>html,body{margin:0;height:100%;overflow:hidden;background:transparent}</style>',
-        '<script type="module" src="runtime.js"></script></head><body></body></html>',
-      ].join('\n'),
-    );
-
-    const runtime = await http
-      .get(`${base}runtime.js`)
-      .set('Origin', 'null')
-      .expect(200);
-    expect(runtime.headers['content-type']).toBe(
-      'text/javascript; charset=utf-8',
-    );
-    expect(runtime.headers['cache-control']).toBe('no-store');
-    expectSandboxHeaders(runtime.headers);
-    expect(runtime.text).toBe(RUNTIME);
-
-    const entry = await http
-      .get(`${base}app/hello.mjs`)
-      .set('Origin', 'null')
-      .expect(200);
-    expect(entry.headers['content-type']).toBe(
-      'text/javascript; charset=utf-8',
-    );
-    expect(entry.headers['cache-control']).toBe('private, max-age=3600');
-    expectSandboxHeaders(entry.headers);
-    expect(entry.text).toContain('"v1"');
-
-    const wasm = await http.get(`${base}app/tiny.wasm`).expect(200);
-    expect(wasm.headers['content-type']).toBe('application/wasm');
-    expectSandboxHeaders(wasm.headers);
-
-    // The document only at its URL with the slash its relative URLs need.
-    const slashless = await http.get(base.slice(0, -1)).expect(404);
-    expectSandboxHeaders(slashless.headers);
-  });
-
-  it('answers 404 for a bad token, a climb, a dotfile and a symlink out, still with the sandbox headers', async () => {
-    const base = await mint(id);
-    const bad = `/api/marketplace/sandbox/${'A'.repeat(43)}/`;
-    for (const path of [bad, `${bad}runtime.js`, `${bad}app/hello.mjs`]) {
-      const res = await http.get(path).expect(404);
-      expectSandboxHeaders(res.headers);
-    }
-    // With a session cookie it is still the token that decides.
-    await http.get(`${bad}app/hello.mjs`).set('Cookie', cookie).expect(404);
-
-    for (const path of [
-      `${base}app/../source.txt`,
-      `${base}app/..%2Fsource.txt`,
-      `${base}app/%2E%2E/source.txt`,
-      `${base}app/.secret`,
-      `${base}app/link.txt`,
-      `${base}app/nope.mjs`,
-    ]) {
-      const res = await rawGet(port, path);
-      expect([path, res.status]).toEqual([path, 404]);
-      expectSandboxHeaders(res.headers);
-    }
-    // No route at all: the router's 404, with the desktop's stricter headers.
-    expect((await rawGet(port, `${base}app/`)).status).toBe(404);
-  });
-
-  it('revokes a token when its window closes', async () => {
-    const base = await mint(id);
-    await http.get(`${base}app/hello.mjs`).expect(200);
-    const token = base.split('/')[4];
-    await http
-      .delete(`/api/marketplace/sandbox/${token}`)
-      .set('Cookie', cookie)
-      .expect(204);
-    await http.get(`${base}app/hello.mjs`).expect(404);
-  });
-
-  it('mints a token only for an installed URL app', async () => {
-    await http
-      .post('/api/marketplace/apps/demo/sandbox')
-      .set('Cookie', cookie)
-      .expect(404);
-    await http
-      .post('/api/marketplace/apps/x-000000000000/sandbox')
-      .set('Cookie', cookie)
-      .expect(404);
-    // The frame itself cannot mint one: no cookie, and its Origin is null.
-    await http
-      .post(`/api/marketplace/apps/${id}/sandbox`)
-      .set('Origin', 'null')
-      .set('Cookie', cookie)
-      .expect(403);
-  });
-
-  it("never serves the URL app on the native runtime's routes", async () => {
-    const hello = (await listed()).find((a) => a.id === id)!;
-    const buildId = hello.installed!.buildId;
-    await http
-      .get(`/api/marketplace/apps/${id}/b/${buildId}/hello.mjs`)
-      .set('Cookie', cookie)
-      .expect(404);
-    await http
-      .post(`/api/marketplace/apps/${id}/install`)
-      .set('Cookie', cookie)
-      .expect(404);
-    await http
-      .post(`/api/marketplace/apps/${id}/lease`)
-      .set('Cookie', cookie)
-      .expect(404);
-    await http
-      .delete(
-        `/api/marketplace/apps/${id}/lease/00000000-0000-4000-8000-000000000000`,
-      )
-      .set('Cookie', cookie)
-      .expect(404);
-    await http
-      .get(`/api/marketplace/apps/${id}/server/health`)
-      .set('Cookie', cookie)
-      .expect(404);
-    expect(
-      await wsStatus(
-        `ws://127.0.0.1:${port}/api/marketplace/apps/${id}/server/play`,
-        {
-          cookie,
-          origin: DESKTOP,
-        },
-      ),
-    ).toBe(404);
-  });
-
-  it("refuses a server's upgrade without a session before it looks at the app", async () => {
-    // 401, not the 404 a sandboxed app gets with a session: what is
-    // installed is nobody's business before sign-in.
-    expect(
-      await wsStatus(
-        `ws://127.0.0.1:${port}/api/marketplace/apps/${id}/server/play`,
-        { origin: DESKTOP },
-      ),
-    ).toBe(401);
-  });
-
-  it('keeps the desktop headers on every other route', async () => {
-    const res = await http
-      .get('/api/marketplace')
-      .set('Cookie', cookie)
-      .expect(200);
-    expect(res.headers['x-frame-options']).toBe('DENY');
-    expect(res.headers['content-security-policy']).toContain(
-      "frame-ancestors 'none'",
-    );
-    expect(res.headers['access-control-allow-origin']).toBe(DESKTOP);
-    const sandbox = await http
-      .post(`/api/marketplace/apps/${id}/sandbox`)
-      .set('Cookie', cookie)
-      .expect(200);
-    expect(sandbox.headers['x-frame-options']).toBe('DENY');
-  });
-
-  it('updates: a new commit checks as an update, and installing it revokes the old tokens', async () => {
-    const before = (await listed()).find((a) => a.id === id)!;
-    const oldBase = await mint(id);
-    await http.get(`${oldBase}app/hello.mjs`).expect(200);
-
-    // Checking with nothing new reports the installed commit as current.
-    const same = (await inspect(helloUrl).expect(200)).body as Inspected;
-    expect(same.current).toEqual({ commit });
-    expect(same.source.commit).toBe(commit);
-    await http
-      .delete(`/api/marketplace/url/pending/${same.pending}`)
-      .set('Cookie', cookie)
-      .expect(204);
-
-    writeFileSync(
-      join(repo, 'apps', 'hello', 'dist', 'hello.mjs'),
-      'export function mount(el) { el.textContent = "v2"; }\n',
-    );
-    git(repo, 'commit', '-qam', 'v2');
-    const next = git(repo, 'rev-parse', 'HEAD');
-
-    const update = (await inspect(helloUrl).expect(200)).body as Inspected;
-    expect(update.id).toBe(id);
-    expect(update.current).toEqual({ commit });
-    expect(update.source.commit).toBe(next);
-    // Until the owner says Install, the old build is the one served.
-    await http.get(`${oldBase}app/hello.mjs`).expect(200);
-    expect(builds(id)).toHaveLength(2);
-
-    await http
-      .post('/api/marketplace/url/install')
-      .set('Cookie', cookie)
-      .send({ pending: update.pending })
-      .expect(200);
-    await http.get(`${oldBase}app/hello.mjs`).expect(404);
-    await http.get(oldBase).expect(404);
-    // The old build is gone; the one left is the new commit's.
-    expect(builds(id)).toHaveLength(1);
-    expect(builds(id)[0].startsWith(`${id}@${next.slice(0, 12)}-`)).toBe(true);
-    expect(builds(id)[0]).not.toBe(`${id}@${before.installed!.buildId}`);
-
-    const after = (await listed()).find((a) => a.id === id)!;
-    expect(after.installed?.ref).toBe(next);
-    expect(after.source?.commit).toBe(next);
-    const newBase = await mint(id);
-    expect(
-      (await http.get(`${newBase}app/hello.mjs`).expect(200)).text,
-    ).toContain('"v2"');
-  }, 30_000);
-
   describe('a full commit id', () => {
     const notATip = () =>
       `That commit is not the tip of any branch or tag of file://${repo}. Install from a branch or tag URL instead.`;
@@ -921,19 +606,21 @@ describe('apps installed from a URL (e2e)', () => {
       expect(pinned.id).toBe(id);
       expect(pinned.source.commit).toBe(sha);
       expect(pinned.source.ref).toBe(sha);
-      await http
-        .delete(`/api/marketplace/url/pending/${pinned.pending}`)
-        .set('Cookie', cookie)
-        .expect(204);
+      await cancel(pinned.pending);
       return pinned;
     };
 
-    it("installs from a branch's tip", async () => {
+    beforeAll(() => {
+      // main moves on, so the first commit is no longer its tip.
+      writeFileSync(join(repo, 'apps', 'hello', 'build.js'), '// v2\n');
+      git(repo, 'commit', '-qam', 'v2');
+    });
+
+    it("checks a branch's tip", async () => {
       await checkCommit(git(repo, 'rev-parse', 'main'));
     }, 30_000);
 
     it('refuses a commit no branch or tag ends at: an older one, or one from a fork', async () => {
-      // v1 is in main's history but no longer its tip.
       expect(git(repo, 'rev-parse', 'main')).not.toBe(commit);
       const old = await inspect(`file://${repo}#${commit}/apps/hello`).expect(
         400,
@@ -956,10 +643,10 @@ describe('apps installed from a URL (e2e)', () => {
         400,
       );
       expect(message(forked)).toBe(notATip());
-      expect(builds(id)).toHaveLength(1);
+      expect(builds(id)).toEqual([]);
     }, 30_000);
 
-    it("installs from an annotated tag's commit", async () => {
+    it("checks an annotated tag's commit", async () => {
       git(repo, 'tag', '-a', 'v1', '-m', 'v1', commit);
       await checkCommit(commit);
       // The tag object's own id is not a commit to install.
@@ -972,108 +659,193 @@ describe('apps installed from a URL (e2e)', () => {
     }, 30_000);
   });
 
-  it('uninstalls: the row, the builds and the tokens go', async () => {
-    const base = await mint(id);
-    await http.get(`${base}app/hello.mjs`).expect(200);
-    await http
-      .delete(`/api/marketplace/apps/${id}`)
-      .set('Cookie', cookie)
-      .expect(204);
-    await http.get(`${base}app/hello.mjs`).expect(404);
-    await http.get(base).expect(404);
-    expect(builds(id)).toEqual([]);
-    expect((await listed()).some((a) => a.id === id)).toBe(false);
-    await http
-      .post(`/api/marketplace/apps/${id}/sandbox`)
-      .set('Cookie', cookie)
-      .expect(404);
-    await http
-      .delete(`/api/marketplace/apps/${id}`)
-      .set('Cookie', cookie)
-      .expect(404);
+  describe('the sandbox is gone', () => {
+    const token = 'A'.repeat(43);
+
+    it('answers 404 on its routes, with a session or without, under the desktop headers', async () => {
+      for (const [method, path] of [
+        ['post', `/api/marketplace/apps/${id}/sandbox`],
+        ['post', '/api/marketplace/apps/demo/sandbox'],
+        ['delete', `/api/marketplace/sandbox/${token}`],
+        ['get', `/api/marketplace/sandbox/${token}/`],
+        ['get', `/api/marketplace/sandbox/${token}/runtime.js`],
+        ['get', `/api/marketplace/sandbox/${token}/app/hello.mjs`],
+      ] as const) {
+        for (const session of [true, false]) {
+          const req = http[method](path);
+          const res = await (session ? req.set('Cookie', cookie) : req);
+          expect([method, path, session, res.status]).toEqual([
+            method,
+            path,
+            session,
+            404,
+          ]);
+          expectDesktopHeaders(res.headers);
+        }
+      }
+    });
+
+    it('keeps the desktop headers on the routes that remain', async () => {
+      const list = await http
+        .get('/api/marketplace')
+        .set('Cookie', cookie)
+        .expect(200);
+      expectDesktopHeaders(list.headers);
+      expect(list.headers['access-control-allow-origin']).toBe(DESKTOP);
+      const checked = await inspect(helloUrl).expect(200);
+      expectDesktopHeaders(checked.headers);
+      await cancel((checked.body as Inspected).pending);
+      // A 404 the router answers has them too.
+      expectDesktopHeaders(
+        (await rawGet(port, '/api/marketplace/nope')).headers,
+      );
+    }, 30_000);
   });
 
-  it('lists a damaged row as a problem, serves nothing from it, and uninstalls it', async () => {
-    const checked = (await inspect(helloUrl).expect(200)).body as Inspected;
-    await http
-      .post('/api/marketplace/url/install')
-      .set('Cookie', cookie)
-      .send({ pending: checked.pending })
-      .expect(200);
-    const base = await mint(id);
-    await http.get(`${base}app/hello.mjs`).expect(200);
+  describe('a sandboxed install left from before', () => {
+    const oldId = () => deriveAppId(`file://${repo}`, 'apps/old');
+    const buildId = () => `${commit.slice(0, 12)}-0123abcd`;
+    const oldSource = () => ({
+      url: `file://${repo}#main/apps/old`,
+      repo: `file://${repo}`,
+      ref: 'main',
+      commit,
+      subdir: 'apps/old',
+    });
 
-    const db = app.get(DbService).db;
-    const original = db
-      .prepare('SELECT * FROM marketplace_apps WHERE id = ?')
-      .get(id) as Record<string, unknown>;
-    const listing = async () =>
-      (await http.get('/api/marketplace').set('Cookie', cookie).expect(200))
-        .body as {
-        apps: Listed[];
-        problems: { file: string; problem: string; appId?: string }[];
-      };
-
-    for (const [column, value, damaged] of [
-      ['manifest', 'null', 'manifest'],
-      ['manifest', '{', 'manifest'],
-      ['source', '[]', 'source'],
-      ['build_id', '../../../../etc', 'build id'],
-      ['entry', '../../../../../etc/hostname', 'entry'],
-      ['root', '../..', 'folder'],
-    ] as const) {
-      db.prepare(`UPDATE marketplace_apps SET ${column} = ? WHERE id = ?`).run(
-        value,
-        id,
+    beforeAll(() => {
+      // As the retired install wrote it: the row, and the clone it served.
+      const dist = join(
+        appsDir,
+        `${oldId()}@${buildId()}`,
+        'apps',
+        'old',
+        'dist',
       );
+      mkdirSync(dist, { recursive: true });
+      writeFileSync(join(dist, 'old.mjs'), 'export function mount() {}\n');
+      app
+        .get(DbService)
+        .db.prepare(
+          `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at, runtime, source, manifest)
+           VALUES (?, ?, ?, 'apps/old', 'dist/old.mjs', NULL, 1, 'sandboxed', ?, ?)`,
+        )
+        .run(
+          oldId(),
+          commit,
+          buildId(),
+          JSON.stringify(oldSource()),
+          JSON.stringify(OLD_MANIFEST),
+        );
+    });
+
+    it('lists as no longer supported, with its name and source, never as an app', async () => {
       const { apps, problems } = await listing();
-      expect([column, apps.some((a) => a.id === id)]).toEqual([column, false]);
+      expect(apps.some((a) => a.id === oldId())).toBe(false);
+      expect(apps.find((a) => a.id === 'demo')?.runtime).toBe('native');
       expect(problems).toContainEqual({
-        file: id,
-        problem: `installed from a URL, but its stored ${damaged} is damaged: uninstall it`,
-        appId: id,
+        file: oldId(),
+        problem:
+          'Old is a prebuilt app from a URL, which this OS no longer supports: uninstall it',
+        appId: oldId(),
+        retired: { name: 'Old', source: oldSource() },
       });
-      // The catalog app still lists.
-      expect(apps.some((a) => a.id === 'demo')).toBe(true);
-      // No token for it, and the one minted before serves nothing.
+    });
+
+    it('lists even when its row no longer reads, by its id', async () => {
+      const db = app.get(DbService).db;
+      db.prepare(
+        "UPDATE marketplace_apps SET manifest = '{', source = 'null' WHERE id = ?",
+      ).run(oldId());
+      try {
+        const { problems } = await listing();
+        expect(problems.find((p) => p.file === oldId())).toEqual({
+          file: oldId(),
+          problem: `${oldId()} is a prebuilt app from a URL, which this OS no longer supports: uninstall it`,
+          appId: oldId(),
+          retired: { name: oldId(), source: null },
+        });
+      } finally {
+        db.prepare(
+          'UPDATE marketplace_apps SET manifest = ?, source = ? WHERE id = ?',
+        ).run(
+          JSON.stringify(OLD_MANIFEST),
+          JSON.stringify(oldSource()),
+          oldId(),
+        );
+      }
+    });
+
+    it("can't open: no file, build, lease or server of it is reachable", async () => {
+      const x = oldId();
       await http
-        .post(`/api/marketplace/apps/${id}/sandbox`)
+        .get(`/api/marketplace/apps/${x}/b/${buildId()}/old.mjs`)
         .set('Cookie', cookie)
         .expect(404);
-      await http.get(`${base}app/hello.mjs`).expect(404);
-      await http.get(base).expect(404);
-      db.prepare(`UPDATE marketplace_apps SET ${column} = ? WHERE id = ?`).run(
-        original[column],
-        id,
-      );
-    }
-    // Restored, it serves again (under a new token: the old one was revoked).
-    expect((await listing()).apps.some((a) => a.id === id)).toBe(true);
-    await http.get(`${base}app/hello.mjs`).expect(404);
-    await http.get(`${await mint(id)}app/hello.mjs`).expect(200);
+      await http
+        .post(`/api/marketplace/apps/${x}/install`)
+        .set('Cookie', cookie)
+        .expect(404);
+      await http
+        .post(`/api/marketplace/apps/${x}/lease`)
+        .set('Cookie', cookie)
+        .send({})
+        .expect(404);
+      await http
+        .delete(
+          `/api/marketplace/apps/${x}/lease/00000000-0000-4000-8000-000000000000`,
+        )
+        .set('Cookie', cookie)
+        .expect(404);
+      await http
+        .get(`/api/marketplace/apps/${x}/server/health`)
+        .set('Cookie', cookie)
+        .expect(404);
+      await http
+        .post(`/api/marketplace/apps/${x}/sandbox`)
+        .set('Cookie', cookie)
+        .expect(404);
+      expect(
+        await wsStatus(
+          `ws://127.0.0.1:${port}/api/marketplace/apps/${x}/server/play`,
+          { cookie, origin: DESKTOP },
+        ),
+      ).toBe(404);
+      // Without a session the upgrade is refused before the app is looked
+      // at: what is installed is nobody's business before sign-in.
+      expect(
+        await wsStatus(
+          `ws://127.0.0.1:${port}/api/marketplace/apps/${x}/server/play`,
+          { origin: DESKTOP },
+        ),
+      ).toBe(401);
+    });
 
-    // Damaged, it can still be uninstalled: the row and its builds go.
-    db.prepare(
-      "UPDATE marketplace_apps SET manifest = 'null' WHERE id = ?",
-    ).run(id);
-    // A check sees no installed commit to update from.
-    const again = (await inspect(helloUrl).expect(200)).body as Inspected;
-    expect(again.current).toBeNull();
-    await http
-      .delete(`/api/marketplace/url/pending/${again.pending}`)
-      .set('Cookie', cookie)
-      .expect(204);
-    expect(builds(id)).toHaveLength(1);
-    await http
-      .delete(`/api/marketplace/apps/${id}`)
-      .set('Cookie', cookie)
-      .expect(204);
-    expect(builds(id)).toEqual([]);
-    expect(
-      db.prepare('SELECT id FROM marketplace_apps WHERE id = ?').get(id),
-    ).toBeUndefined();
-    const after = await listing();
-    expect(after.problems.some((p) => p.file === id)).toBe(false);
-    expect(after.apps.some((a) => a.id === id)).toBe(false);
-  }, 30_000);
+    it('is refused at the check if its URL is pasted again, and stays as it was', async () => {
+      const res = await inspect(`file://${repo}#main/apps/old`).expect(400);
+      expect(message(res)).toBe(OLD_FORMAT_REFUSAL);
+      expect(builds(oldId())).toEqual([`${oldId()}@${buildId()}`]);
+    }, 30_000);
+
+    it('uninstalls: the row and its files go', async () => {
+      const x = oldId();
+      expect(builds(x)).toHaveLength(1);
+      await http
+        .delete(`/api/marketplace/apps/${x}`)
+        .set('Cookie', cookie)
+        .expect(204);
+      expect(builds(x)).toEqual([]);
+      expect(
+        app
+          .get(DbService)
+          .db.prepare('SELECT id FROM marketplace_apps WHERE id = ?')
+          .get(x),
+      ).toBeUndefined();
+      expect((await listing()).problems.some((p) => p.file === x)).toBe(false);
+      await http
+        .delete(`/api/marketplace/apps/${x}`)
+        .set('Cookie', cookie)
+        .expect(404);
+    });
+  });
 });

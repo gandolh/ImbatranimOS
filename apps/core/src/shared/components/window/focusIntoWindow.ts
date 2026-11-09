@@ -72,7 +72,7 @@ export function forgetWindowFocus(windowId: string): void {
 /**
  * Where the keyboard goes in a content area, in the brief's order: the element
  * that last had focus in it, if it is still on the page; else the first
- * focusable element (the iframe, for a URL app); else the area itself.
+ * focusable element (an iframe, for the Browser); else the area itself.
  *
  * The remembered element is checked for being on the page, not for being
  * inside the area: an app's dialog renders through a portal, its focus reaches

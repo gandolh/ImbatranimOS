@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
-import type { AppManifest } from './app-manifest';
+import type { Descriptor } from './catalog';
 import {
   MAX_PENDING,
   PENDING_TTL_MS,
@@ -28,8 +28,7 @@ describe('PendingInspections', () => {
         buildId: name.split('@')[1],
         dir,
         root: '',
-        entry: 'dist/a.mjs',
-        manifest: {} as AppManifest,
+        native: { descriptor: {} as Descriptor, manifest: {} },
         source: {
           url: 'https://github.com/o/r',
           repo: 'https://github.com/o/r',

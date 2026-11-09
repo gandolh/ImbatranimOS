@@ -2,12 +2,12 @@
 
 Each `<id>.json` here describes one app that can be installed from
 **Settings → Marketplace**, or several apps built together (see
-[Several apps from one build](#several-apps-from-one-build)). Only an app described here runs natively. That is
-the trust model: such an app runs in the desktop's own page with no sandbox,
-so the only code that gets there is code someone reviewed and pinned in this
+[Several apps from one build](#several-apps-from-one-build)). That is the
+trust model: such an app runs in the desktop's own page with no sandbox, so
+the code that gets there is code someone reviewed and pinned in this
 repository, at a commit. Any other app can still be installed from its own
-repository's URL, but it runs in a sandbox; see
-[Apps from a URL](#apps-from-a-url) at the end.
+repository's URL, and runs the same way, but only once it is verified or you
+trust it; see [Apps from a URL](#apps-from-a-url) at the end.
 
 Installing clones the app's repository at that commit into
 `~/.imbatranim/apps/` on the home volume and runs its build there, in the live
@@ -510,26 +510,22 @@ the desktop's origin under the CSP. One thing does change: a window an app
 opens on another site is cut off from the desktop's page both ways (it has
 no `window.opener`, and the handle `window.open` returned reads as closed).
 
-An app from a URL has WASM in its sandbox, but no threads (see
-[What the sandbox means for the app](#what-the-sandbox-means-for-the-app)).
-
 ## Apps from a URL
 
 Any public GitHub repository that carries an `imbatranim.json` can be
 installed from **Settings → Marketplace → Install from a URL**, with no
-descriptor here. What happens depends on the file:
+descriptor here. The app builds on the machine and runs natively, exactly
+like a catalog app, with the same capabilities, identity and file grants. If
+[`verified.json`](#verified-and-trusted-apps) names its repository at that
+commit, it installs straight away. Otherwise the owner first sees a warning
+(the publisher, the commit, what the app asks for, and that a trusted app
+acts as them, Terminal included) and installs it only with **More info →
+Trust and install**.
 
-- **Version 2, built from source.** The app builds on the machine and runs
-  natively, exactly like a catalog app, with the same capabilities, identity
-  and file grants. If [`verified.json`](#verified-and-trusted-apps) names its
-  repository at that commit, it installs straight away. Otherwise the owner
-  first sees a warning (the publisher, the commit, what the app asks for, and
-  that a trusted app acts as them, Terminal included) and installs it only
-  with **More info → Trust and install**.
-- **Version 1, prebuilt.** The earlier kind: nobody has reviewed it, so it
-  runs in a sandboxed frame, nothing of it runs on the machine, and it can use
-  only a small part of `system`. It is being retired; new apps should use
-  version 2.
+Version 1 of the file, a prebuilt app that ran in a sandboxed frame, is no
+longer installed: the check answers "This app uses the old format, which this
+OS no longer installs." One installed before shows in Settings → Marketplace
+as **No longer supported**, with Uninstall only.
 
 ### Built from source (version 2)
 
@@ -562,8 +558,8 @@ one build, as in [Several apps from one build](#several-apps-from-one-build);
 each app's id there is the derived id, a dash and the id it gives (at most 25
 characters), so no URL app can take a catalog app's id or another URL app's.
 
-The check clones the commit, within the same limits as a prebuilt app (512 MB,
-20,000 files), and the install builds that clone with the catalog's
+The check clones the commit, within set limits (512 MB and 20,000 files at
+that commit), and the install builds that clone with the catalog's
 installer: the same allowlisted environment, per-build directory and time
 limits. The build log is under **Log**.
 
@@ -581,8 +577,8 @@ The URL picks it:
 
 The commit it resolves to is what gets checked, installed and shown. **Check
 for update** resolves the same URL again; if the commit moved, the owner
-confirms again, with the new capability list in front of them (for an app
-built from source, unless the new commit is verified).
+confirms again, with the new capability list in front of them (unless the
+new commit is verified).
 
 ### Verified and trusted apps
 
@@ -618,88 +614,3 @@ isn't at the top, one commit and a short note:
   **Trusted by you** for a commit the owner trusted, and **No longer
   verified** for one installed as verified that a later release dropped
   (which then offers **Check for update**).
-
-### Prebuilt apps (version 1)
-
-The rest of this section is about the sandboxed kind.
-
-#### What the repository needs
-
-The **built** app, committed. Installing a URL app clones the repository at
-one commit and runs nothing from it: no `npm ci`, no build, no server. Keep
-the build on a branch of its own if you don't want it next to the source
-(like a `gh-pages` branch). Files are checked out byte for byte as
-committed: `.gitattributes` line-ending, `ident` and encoding rules don't
-apply. At that commit the repository may hold at most 20,000 files.
-
-Beside the built files, in the folder the URL names, an `imbatranim.json`:
-
-```json
-{
-  "schemaVersion": 1,
-  "name": "Hollow",
-  "description": "A generational social-emergence sim in a small 3D town.",
-  "meta": ["game"],
-  "entry": "dist/hollow.mjs",
-  "window": {
-    "defaultSize": { "w": 960, "h": 640 },
-    "minSize": { "w": 640, "h": 400 }
-  },
-  "capabilities": [],
-  "icon": "gamepad-2",
-  "minSystemVersion": 2
-}
-```
-
-- **`entry`**: the built ES module, relative to this file, inside a folder
-  (`dist/app.mjs`, not `app.mjs`). That folder is served and nothing outside
-  it is; it may hold at most 256 MB. The whole repository may be at most
-  512 MB at that commit.
-- **`capabilities`**: only `notify` is available. A file that asks for `fs`,
-  `http`, `intents`, `shortcuts` or `schedule` is refused, because each would
-  hand an unreviewed app the owner's files, session or other apps.
-- **`window`**: as in a descriptor above, but `defaultSize` is at most
-  1600×1000 and `minSize` at most 800×600, so the owner can always shrink it.
-- **`icon`**, **`minSystemVersion`**: as in a descriptor above.
-- Unknown keys are refused, so a typo is caught at install time.
-
-The app's id on the machine is derived from its repository and folder, so two
-apps can't claim the same one.
-
-#### What the sandbox means for the app
-
-The module contract is the same as above, `mount(container, system, host)`,
-with `host.server` always `null`. The differences:
-
-- The app runs in an `<iframe sandbox="allow-scripts allow-pointer-lock">`
-  with an opaque origin. It cannot reach the desktop's page, its storage or
-  its session.
-- It can load only its own files: resolve them from `import.meta.url` or
-  `host.assetBase`. Any other origin is blocked, WebRTC is switched off and
-  DNS prefetching is off, so the app has no network.
-- `new Worker(url, { type: "module" })` works. The worker runs as a classic
-  worker that imports the module (Chrome refuses module workers in this kind
-  of frame), so `self.location` is a `blob:` URL there; resolve relative URLs
-  from `import.meta.url`.
-- `localStorage` and `sessionStorage` work but live in memory and are gone
-  when the window closes. `document.cookie` is empty. IndexedDB is not
-  available. What should last goes in `system.data`, the app's own folders,
-  which works here as in any app; its calls answer with promises.
-- Pointer lock works. Pop-ups, downloads, fullscreen, the clipboard, forms
-  and navigating the desktop do not.
-- WebAssembly compiles, but there are no threads: the frame isn't
-  cross-origin isolated, so `SharedArrayBuffer` doesn't exist there.
-- While its window is in the background, a transparent shield covers the
-  app: the owner's first click only brings it to the front.
-- The app must not take the keyboard while its window is in the background
-  (no `focus()` on a timer, no focusing on mount while hidden). The desktop
-  takes it straight back, and an app that does it twice within 10 seconds is
-  stopped, with the reason in its window.
-- `system.window.focus()` and `show()` work only while the window is in front
-  and the app has the keyboard; an app cannot raise, un-minimise or pull the
-  owner to its workspace on its own. `setTitle` is limited to four
-  changes a second, `notify` to five every ten seconds.
-- `system.window.onCloseRequest` works, guard and all. If the app doesn't
-  answer within 60 seconds, the window closes anyway, and if the owner presses
-  close again within 10 seconds of a refusal, it closes without asking.
-- An error while loading or in `mount` shows in that window's error panel.

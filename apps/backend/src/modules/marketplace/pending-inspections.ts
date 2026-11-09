@@ -9,7 +9,6 @@ import { randomBytes } from 'crypto';
 import { promises as fs } from 'fs';
 import { basename } from 'path';
 
-import type { AppManifest } from './app-manifest';
 import type { Descriptor } from './catalog';
 import type { AppSource } from './source-url';
 
@@ -27,12 +26,8 @@ export interface PendingInspection {
   dir: string;
   /** The app's directory inside the clone, POSIX, '' for the top. */
   root: string;
-  /** A prebuilt app's entry, normalized, relative to `root`; '' for one built from source. */
-  entry: string;
-  /** A prebuilt (version 1) app's manifest. */
-  manifest?: AppManifest;
-  /** An app built from source (version 2): its descriptor and its manifest as read. */
-  native?: { descriptor: Descriptor; manifest: unknown };
+  /** Its descriptor, and its `imbatranim.json` as read. */
+  native: { descriptor: Descriptor; manifest: unknown };
   source: AppSource;
   expiresAt: number;
 }

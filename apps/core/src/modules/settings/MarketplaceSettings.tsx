@@ -15,7 +15,7 @@ import {
 import { ConsentCard, InstallFromUrl, SourceBadge } from './InstallFromUrl'
 import { apiMessage, sourceLine, trustBadge, type Inspection } from './urlApps'
 
-/** Sandboxed apps from a URL adds these to the registry's type; narrowed here so this compiles either way. */
+type Problem = Awaited<ReturnType<typeof loadMarketplace>>['problems'][number]
 
 const JOB_LABEL: Record<NonNullable<MarketplaceApp['job']>['state'], string> = {
   queued: 'Waiting for another install…',
@@ -48,8 +48,7 @@ function rowsOf(apps: MarketplaceApp[]): Row[] {
   const byDescriptor = new Map<string, Row>()
   for (const app of apps) {
     const descriptorId = descriptorIdOf(app)
-    // A URL app is its own row, always: it is never part of a descriptor.
-    const existing = app.runtime === 'sandboxed' ? undefined : byDescriptor.get(descriptorId)
+    const existing = byDescriptor.get(descriptorId)
     if (existing) {
       existing.apps.push(app)
       existing.suite = true
@@ -62,7 +61,7 @@ function rowsOf(apps: MarketplaceApp[]): Row[] {
       suite: app.id !== descriptorId,
     }
     rows.push(row)
-    if (app.runtime !== 'sandboxed') byDescriptor.set(descriptorId, row)
+    byDescriptor.set(descriptorId, row)
   }
   return rows
 }
@@ -178,11 +177,9 @@ export function MarketplaceSettings({
       title: `Uninstall ${row.name}?`,
       message: (
         <>
-          {row.apps[0].runtime === 'sandboxed'
-            ? 'Its files are deleted and its window closes.'
-            : row.suite
-              ? `Its apps (${names}) go with it: the downloaded source and build are deleted, and their windows close.`
-              : 'Its downloaded source and build are deleted, and its window closes.'}{' '}
+          {row.suite
+            ? `Its apps (${names}) go with it: the downloaded source and build are deleted, and their windows close.`
+            : 'Its downloaded source and build are deleted, and its window closes.'}{' '}
           {row.suite
             ? 'Their caches go too. Their settings and data stay for a reinstall unless you tick the box; files they saved elsewhere stay either way.'
             : 'Its cache goes too. Its settings and data stay for a reinstall unless you tick the box; files it saved elsewhere stay either way.'}
@@ -237,6 +234,39 @@ export function MarketplaceSettings({
     await refresh()
   }
 
+  // A prebuilt app from a URL, installed before this OS stopped running that
+  // kind: it can't open, so Uninstall is all there is.
+  const uninstallRetired = async (p: Problem) => {
+    removeData.current = false
+    const ok = await confirm({
+      title: `Uninstall ${p.retired!.name}?`,
+      message: (
+        <>
+          This OS no longer runs prebuilt apps from a URL. Its downloaded files are deleted. Its
+          settings and data stay unless you tick the box.
+          <span className="mt-3 block">
+            <Checkbox
+              label="Also remove its data"
+              onCheckedChange={(checked) => {
+                removeData.current = checked === true
+              }}
+            />
+          </span>
+        </>
+      ),
+      confirmLabel: 'Uninstall',
+      destructive: true,
+    })
+    if (!ok) return
+    try {
+      await api.delete(`/marketplace/apps/${p.appId}${removeData.current ? '?removeData=1' : ''}`)
+      setError(null)
+    } catch (err) {
+      setError(errorMessage(err))
+    }
+    await refresh()
+  }
+
   const showLog = async (descriptorId: string) => {
     if (log?.id === descriptorId) return setLog(null)
     try {
@@ -253,7 +283,8 @@ export function MarketplaceSettings({
     return <p className="text-on-surface-variant text-[12px]">{error ?? 'Loading the catalog…'}</p>
   }
 
-  const brokenApps = listing.problems.filter((p) => p.appId)
+  const retiredApps = listing.problems.filter((p) => p.appId && p.retired)
+  const brokenApps = listing.problems.filter((p) => p.appId && !p.retired)
   const catalogProblems = listing.problems.filter((p) => !p.appId)
 
   return (
@@ -274,10 +305,9 @@ export function MarketplaceSettings({
         {rowsOf(listing.apps).map((row) => {
           // The apps of a descriptor share its install, job and server.
           const app = row.apps[0]
-          const sandboxed = app.runtime === 'sandboxed' && !!app.source
-          // An app from a URL that builds from source: a catalog app's row,
-          // plus where it came from and who vouched for its commit.
-          const nativeUrl = !sandboxed && !!app.source
+          // An app from a URL: a catalog app's row, plus where it came from
+          // and who vouched for its commit.
+          const nativeUrl = !!app.source
           const badge = nativeUrl && app.trust ? trustBadge(app.trust) : null
           // Only a verified app updates as the verified list moves.
           const checksForUpdates = nativeUrl && badge?.label !== 'Verified'
@@ -315,8 +345,7 @@ export function MarketplaceSettings({
           else if (missing) state = 'Its build is missing (restored from a backup?)'
           else if (outdated) state = 'An update is available'
           else state = `Installed · ${installed.ref.slice(0, 7)}`
-          if (sandboxed) state = `Installed · ${app.source!.commit.slice(0, 7)} · sandboxed`
-          else if (app.server.state === 'crashed') state = `Server stopped: ${app.server.reason}`
+          if (app.server.state === 'crashed') state = `Server stopped: ${app.server.reason}`
           return (
             <div
               key={row.descriptorId}
@@ -341,7 +370,7 @@ export function MarketplaceSettings({
                 <span className="min-w-0 flex-1">
                   <span className="font-ui text-on-surface block truncate text-[13px] font-medium">
                     {row.name}
-                    {(sandboxed || nativeUrl) && (
+                    {nativeUrl && (
                       <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
                         From a URL
                       </span>
@@ -352,7 +381,7 @@ export function MarketplaceSettings({
                         {row.apps.length === 1 ? '1 app' : `${row.apps.length} apps`}
                       </span>
                     )}
-                    {!sandboxed && app.type === 'service' && (
+                    {app.type === 'service' && (
                       <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
                         With server
                       </span>
@@ -365,69 +394,55 @@ export function MarketplaceSettings({
                   >
                     {rowNote?.id === app.id ? rowNote.text : state}
                   </span>
-                  {(sandboxed || nativeUrl) && (
+                  {nativeUrl && (
                     <span className="text-on-surface-variant/80 block truncate text-[10px]">
                       {sourceLine(app.source!)}
                     </span>
                   )}
                 </span>
-                {sandboxed ? (
-                  <div className="flex shrink-0 gap-1.5">
+                <div className="flex shrink-0 gap-1.5">
+                  {!row.suite && canOpen(app) && (
                     <Button size="sm" variant="primary" onClick={() => openApp(app.id)}>
                       Open
                     </Button>
+                  )}
+                  {!working && (!installed || missing || outdated) && (
+                    <Button
+                      size="sm"
+                      variant={installed ? 'default' : 'primary'}
+                      onClick={() => void install(row)}
+                    >
+                      {!installed ? 'Install' : missing ? 'Reinstall' : 'Update'}
+                    </Button>
+                  )}
+                  {!working && rebuild && (
+                    <Button size="sm" onClick={() => void install(row)}>
+                      Rebuild
+                    </Button>
+                  )}
+                  {/* A verified app updates as the verified list moves;
+                        any other looks for a new commit, which asks for
+                        your trust unless that commit is verified. */}
+                  {checksForUpdates && installed && !working && (
                     <Button size="sm" onClick={() => void checkForUpdate(app)}>
                       Check for update
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => void uninstall(row)}>
-                      Uninstall
+                  )}
+                  {(installed || app.job?.state === 'failed') && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => void showLog(row.descriptorId)}
+                    >
+                      Log
                     </Button>
-                  </div>
-                ) : (
-                  <div className="flex shrink-0 gap-1.5">
-                    {!row.suite && canOpen(app) && (
-                      <Button size="sm" variant="primary" onClick={() => openApp(app.id)}>
-                        Open
-                      </Button>
-                    )}
-                    {!working && (!installed || missing || outdated) && (
-                      <Button
-                        size="sm"
-                        variant={installed ? 'default' : 'primary'}
-                        onClick={() => void install(row)}
-                      >
-                        {!installed ? 'Install' : missing ? 'Reinstall' : 'Update'}
-                      </Button>
-                    )}
-                    {!working && rebuild && (
-                      <Button size="sm" onClick={() => void install(row)}>
-                        Rebuild
-                      </Button>
-                    )}
-                    {/* A verified app updates as the verified list moves;
-                        any other looks for a new commit, which asks for
-                        your trust unless that commit is verified. */}
-                    {checksForUpdates && installed && !working && (
-                      <Button size="sm" onClick={() => void checkForUpdate(app)}>
-                        Check for update
-                      </Button>
-                    )}
-                    {(installed || app.job?.state === 'failed') && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => void showLog(row.descriptorId)}
-                      >
-                        Log
-                      </Button>
-                    )}
-                    {(installed || app.job?.state === 'failed') && !working && (
-                      <Button size="sm" variant="ghost" onClick={() => void uninstall(row)}>
-                        {installed ? 'Uninstall' : 'Clear'}
-                      </Button>
-                    )}
-                  </div>
-                )}
+                  )}
+                  {(installed || app.job?.state === 'failed') && !working && (
+                    <Button size="sm" variant="ghost" onClick={() => void uninstall(row)}>
+                      {installed ? 'Uninstall' : 'Clear'}
+                    </Button>
+                  )}
+                </div>
               </div>
               {moved === app.id && (
                 <p className="text-on-surface mt-2 text-[11px]" role="status">
@@ -487,7 +502,7 @@ export function MarketplaceSettings({
                 </ul>
               ) : (
                 <>
-                  {!sandboxed && clashing(app) && (
+                  {clashing(app) && (
                     <p className="text-on-surface mt-2 text-[11px]" role="status">
                       A built-in app already has the id <code>{app.id}</code>, so the built-in opens
                       instead.
@@ -503,6 +518,44 @@ export function MarketplaceSettings({
                   {log.text}
                 </pre>
               )}
+            </div>
+          )
+        })}
+        {retiredApps.map((p) => {
+          const Icon = marketplaceIcon('package')
+          return (
+            <div
+              key={p.file}
+              data-descriptor-id={p.appId}
+              className="rounded-control border-outline-variant bg-surface-container-low min-w-0 border px-3 py-2.5"
+            >
+              <div className="flex items-center gap-3">
+                <span className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface-variant flex h-7 w-7 shrink-0 items-center justify-center border">
+                  <Icon size={15} strokeWidth={1.75} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="font-ui text-on-surface block truncate text-[13px] font-medium">
+                    {p.retired!.name}
+                    <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
+                      From a URL
+                    </span>
+                    <SourceBadge warn>No longer supported</SourceBadge>
+                  </span>
+                  <span className="text-on-surface-variant block truncate text-[11px]">
+                    A prebuilt app, which this OS no longer runs. Uninstall it.
+                  </span>
+                  {p.retired!.source && (
+                    <span className="text-on-surface-variant/80 block truncate text-[10px]">
+                      {sourceLine(p.retired!.source)}
+                    </span>
+                  )}
+                </span>
+                <div className="flex shrink-0 gap-1.5">
+                  <Button size="sm" variant="ghost" onClick={() => void uninstallRetired(p)}>
+                    Uninstall
+                  </Button>
+                </div>
+              </div>
             </div>
           )
         })}

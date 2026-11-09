@@ -100,25 +100,23 @@ export type MarketplaceApp = {
   ref: string
   /**
    * How the desktop runs it: `native` imports its module into this page (a
-   * catalog app, or an app from a URL built from source); `sandboxed` runs it
-   * in an opaque-origin iframe (a prebuilt app from a URL). A backend from before sandboxed apps from a URL sends none: read that
-   * as native.
+   * catalog app, or an app from a URL built from source), the only way left.
    */
-  runtime: 'native' | 'sandboxed'
+  runtime: 'native'
   /** Where a URL app came from, as resolved at install. Absent for a catalog app. */
   source?: AppSource
   /**
    * An app from a URL that builds from source: how it came to be trusted at
    * its installed commit when installed (the OS's verified list, or the
    * owner), and whether the verified list names that commit now. Absent for a
-   * catalog app and a sandboxed one.
+   * catalog app.
    */
   trust?: { by: 'verified' | 'owner'; at: number; verified?: boolean }
   installed: {
     ref: string
     buildId: string
     installedAt: number
-    /** What the desktop imports, relative to the API's base. A URL app has none. */
+    /** What the desktop imports, relative to the API's base. Absent when the build recorded none for it. */
     entryPath?: string
     /** A kit app's stylesheets, relative to the API's base like `entryPath`. */
     stylePaths?: string[]
@@ -154,17 +152,12 @@ export function descriptorIdOf(app: Pick<MarketplaceApp, 'id' | 'descriptorId'>)
   return app.descriptorId ?? app.id
 }
 
-/** True for an app the desktop runs in the iframe sandbox. A missing `runtime` is native. */
-export function isSandboxed(app: Pick<MarketplaceApp, 'runtime'>): boolean {
-  return app.runtime === 'sandboxed'
-}
-
 /**
  * True for a kit app: a catalog app whose module exports a
- * component, rendered in the desktop's tree. Never a sandboxed one.
+ * component, rendered in the desktop's tree.
  */
-export function isKitApp(app: Pick<MarketplaceApp, 'runtime' | 'sharedKit'>): boolean {
-  return !isSandboxed(app) && typeof app.sharedKit === 'number'
+export function isKitApp(app: Pick<MarketplaceApp, 'sharedKit'>): boolean {
+  return typeof app.sharedKit === 'number'
 }
 
 /**
@@ -206,10 +199,17 @@ export function kitBuildKey(
 export type MarketplaceListing = {
   apps: MarketplaceApp[]
   /**
-   * Catalog files that could not be read, and installed apps whose stored
-   * record is damaged; the latter carry `appId` so the pane can uninstall them.
+   * Catalog files that could not be read, and installed apps that cannot run;
+   * the latter carry `appId` so the pane can uninstall them. `retired` marks a
+   * prebuilt app from a URL, a kind this OS no longer runs, with its name and
+   * source as far as its record still reads.
    */
-  problems: { file: string; problem: string; appId?: string }[]
+  problems: {
+    file: string
+    problem: string
+    appId?: string
+    retired?: { name: string; source: AppSource | null }
+  }[]
 }
 
 type IconComponent = AppConfig['icon']
@@ -349,13 +349,6 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
   const component = lazy(async () => {
     // The host is its own chunk, and the game's code is fetched only when a
     // window opens: nothing of either is in the eager bundle.
-    if (isSandboxed(app)) {
-      const { SandboxedAppHost } = await import('../../modules/marketplace/SandboxedAppHost')
-      const Host: ComponentType<{ windowId: string }> = ({ windowId }) => (
-        <SandboxedAppHost windowId={windowId} app={app} />
-      )
-      return { default: Host }
-    }
     // A kit app is rendered in this tree, with this React and kit.
     if (isKitApp(app)) {
       // Its entry and styles start now, beside the host's chunk, and the
@@ -403,13 +396,10 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
   }
 }
 
-/**
- * Installed with its files present, and something to run: a native app needs
- * the module path; a sandboxed one is served by token and has none.
- */
+/** Installed with its files present, and a module to import. */
 function isRunnable(app: MarketplaceApp): boolean {
   if (!app.installed || app.installed.missing) return false
-  return isSandboxed(app) || typeof app.installed.entryPath === 'string'
+  return typeof app.installed.entryPath === 'string'
 }
 
 /**

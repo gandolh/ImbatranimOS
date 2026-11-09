@@ -9,8 +9,9 @@ import { z } from 'zod';
  * it pins, can be installed, and because the descriptor set is curated in the
  * OS repo, an installed app is first-party ("buggy, not malicious"), which is
  * what lets it run natively in the desktop's own realm. An app from an
- * arbitrary URL is another thing entirely (`app-manifest.ts`): it
- * runs sandboxed, and its id starts with `x-`, which a catalog id may not.
+ * arbitrary URL (`native-manifest.ts`) runs natively only once it is verified
+ * or the owner trusts its commit, and its id starts with `x-`, which a
+ * catalog id may not.
  *
  * Since one catalog entry, several apps one descriptor may describe several apps built together
  * (`schemaVersion: 2`, an `apps` array): one clone, one build, one served

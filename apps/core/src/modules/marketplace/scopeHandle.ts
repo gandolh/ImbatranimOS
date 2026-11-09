@@ -56,7 +56,8 @@ const ALWAYS = new Set([
  * A fence for mistakes, not a sandbox: the app's code runs in this page and
  * could reach `fetch` itself. What keeps that acceptable is the catalog: every
  * app here was curated into the OS repo at a pinned commit (the marketplace install's trust
- * anchor). An app from anywhere else would need the sandboxed runtime.
+ * anchor), or is an app from a URL the verified list vouches for or the owner
+ * trusted at its commit.
  */
 export function scopeHandle(
   system: SystemHandle,

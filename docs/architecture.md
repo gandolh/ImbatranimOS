@@ -85,7 +85,7 @@ Everything inside the container, the shell you get in Terminal and the process t
 
 ## Apps from outside the repo
 
-Settings → Marketplace installs more apps. An app described in [`marketplace/`](../marketplace/README.md) is cloned at a pinned commit, built inside the container and runs in the desktop's own page, so only reviewed code gets there. An app installed from any other GitHub URL must be prebuilt, and runs in a sandboxed frame whose only capability is `notify`.
+Settings → Marketplace installs more apps. An app described in [`marketplace/`](../marketplace/README.md) is cloned at a pinned commit, built inside the container and runs in the desktop's own page, so only reviewed code gets there. An app from any other GitHub URL is built and run the same way, but only once the verified list in `marketplace/verified.json` names its commit or the owner trusts it.
 
 ## Going deeper
 

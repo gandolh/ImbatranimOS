@@ -15,6 +15,8 @@ function inspection(over: Partial<Inspection> = {}): Inspection {
   return {
     pending: 'p1',
     id: 'x-123',
+    runtime: 'native',
+    verified: true,
     manifest: {
       name: 'Hollow',
       description: 'A small town sim.',
@@ -79,7 +81,7 @@ describe('InstallFromUrl', () => {
     const text = container.textContent!
     expect(text).toContain('github.com/o/r · main · abcdef0 · in sub')
     expect(text).toContain('Show notifications')
-    expect(text).toContain('Nobody has reviewed this app.')
+    expect(text).toContain('This commit is verified.')
   })
 
   it('says so when it asks for nothing', async () => {
@@ -105,7 +107,7 @@ describe('InstallFromUrl', () => {
     expect(items).toEqual(['toString', 'constructor', '<b>x</b>'])
     // As text, never as markup.
     expect(container.querySelector('li b')).toBeNull()
-    expect(container.textContent).toContain('Nobody has reviewed this app.')
+    expect(container.textContent).toContain('This commit is verified.')
   })
 
   it('disables Install at the installed commit', async () => {
@@ -139,7 +141,7 @@ describe('InstallFromUrl', () => {
     await check()
     await act(async () => button('Cancel').click())
     expect(del).toHaveBeenCalledWith('/marketplace/url/pending/p1')
-    expect(container.textContent).not.toContain('Nobody has reviewed')
+    expect(container.textContent).not.toContain('This commit is verified.')
   })
 
   it("shows the backend's message inline", async () => {
@@ -154,10 +156,9 @@ describe('InstallFromUrl', () => {
     expect(container.textContent).toContain("Couldn't reach that repository.")
   })
 
-  describe('an app built from source', () => {
+  describe('verified or not', () => {
     const native = (over: Partial<Inspection> = {}) =>
       inspection({
-        runtime: 'native',
         verified: false,
         manifest: { ...inspection().manifest, capabilities: ['fs', 'notify'] },
         ...over,
@@ -189,7 +190,7 @@ describe('InstallFromUrl', () => {
       expect(text).toContain(
         'A trusted app runs as you. It can do anything you can, the Terminal included.'
       )
-      // Trust sits behind More info; there is no sandboxed choice.
+      // Trust sits behind More info; the choices are trust or cancel.
       expect(button('Trust and install')).toBeUndefined()
       expect(button('Install')).toBeUndefined()
       expect(button('More info')).toBeDefined()

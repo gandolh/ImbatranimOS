@@ -1,7 +1,6 @@
-import { isAbsolute, join, posix, relative } from 'path';
+import { posix } from 'path';
 import { z } from 'zod';
 
-import { appManifestSchema, type AppManifest } from './app-manifest';
 import { isInnerPath, type Descriptor } from './catalog';
 import type { InstalledRow } from './marketplace.service';
 import { parseNativeManifest } from './native-manifest';
@@ -12,11 +11,11 @@ import { deriveAppId, type AppSource } from './source-url';
  *
  * The row holds the app's manifest and source as JSON, and the paths its
  * files are served from. Everything in it was checked at install, but a row
- * is read on every listing, token and file, and a row that no longer holds
+ * is read on every listing, file and lease, and a row that no longer holds
  * what install wrote (a hand edit, a bad restore, a bug) must not break the
- * whole listing nor point the sandbox's file routes anywhere else. So it is
- * checked again, by the install's rules, every time it is read; a row that
- * fails is listed as a problem, to be uninstalled, and serves nothing.
+ * whole listing nor point the file routes anywhere else. So it is checked
+ * again, by the install's rules, every time it is read; a row that fails is
+ * listed as a problem, to be uninstalled, and serves nothing.
  */
 
 /** A build's id: the commit's first 12 hex, a dash, 8 random hex (see `check` and `build`). */
@@ -59,14 +58,6 @@ const trustSchema = z.strictObject({
 /** A native URL app's stored source: the {@link AppSource} and its trust record. */
 const nativeSourceSchema = sourceSchema.extend({ trust: trustSchema }).strict();
 
-export type UrlAppRecord =
-  | { ok: true; manifest: AppManifest; source: AppSource }
-  | {
-      ok: false;
-      /** Which part of the row is wrong, in a word or two, for the listing's problem. */
-      damaged: string;
-    };
-
 /** The `root` install stores for a subdirectory: normalized, '' for the top. */
 function storedRoot(subdir: string | null): string {
   if (!subdir) return '';
@@ -84,64 +75,33 @@ function json(text: unknown): unknown {
 }
 
 /**
- * The manifest and source of a URL app's row, or which part of it is damaged.
- * By install's rules: the manifest passes the manifest's schema; the source
- * has its shape, and the row's id is the one it derives; `ref` is its commit;
- * the build id has its pattern and its commit's prefix; `entry` passes the
- * manifest's entry rule and is the manifest's, normalized; `root` is the
- * source's subdirectory as install stores it, and the build's directory
- * `apps/<id>@<build_id>`, and `root` within it, sit where they should under
- * `appsDir`.
+ * A leftover prebuilt (version 1) app from a URL, as far as its row still
+ * reads: the name its manifest gave, or its id, and its source when that
+ * still has its shape and derives the row's id. Only for the listing, which
+ * names it so the owner can uninstall it; nothing of it runs or is served.
  */
-export function readUrlAppRow(
-  row: InstalledRow,
-  appsDir: string,
-): UrlAppRecord {
-  const damaged = (what: string): UrlAppRecord => ({
-    ok: false,
-    damaged: what,
-  });
-  if (row.runtime !== 'sandboxed' || !URL_APP_ID.test(String(row.id))) {
-    return damaged('id');
-  }
-  const manifest = appManifestSchema.safeParse(json(row.manifest));
-  if (!manifest.success) return damaged('manifest');
+export function retiredUrlApp(row: InstalledRow): {
+  name: string;
+  source: AppSource | null;
+} {
+  const manifest = json(row.manifest);
+  const named =
+    manifest && typeof manifest === 'object'
+      ? (manifest as Record<string, unknown>).name
+      : undefined;
+  const name =
+    typeof named === 'string' && named.trim() !== ''
+      ? named.trim().slice(0, 60)
+      : String(row.id);
   const source = sourceSchema.safeParse(json(row.source));
-  if (
-    !source.success ||
-    deriveAppId(source.data.repo, source.data.subdir) !== row.id
-  ) {
-    return damaged('source');
-  }
-  if (row.ref !== source.data.commit) return damaged('commit');
-  if (
-    typeof row.build_id !== 'string' ||
-    !BUILD_ID.test(row.build_id) ||
-    !row.build_id.startsWith(source.data.commit.slice(0, 12))
-  ) {
-    return damaged('build id');
-  }
-  if (
-    typeof row.entry !== 'string' ||
-    !appManifestSchema.shape.entry.safeParse(row.entry).success ||
-    row.entry !== posix.normalize(manifest.data.entry)
-  ) {
-    return damaged('entry');
-  }
-  if (row.root !== storedRoot(source.data.subdir)) return damaged('folder');
-  // Implied by the checks above, and checked anyway: these are the paths the
-  // sandbox serves from.
-  const name = `${row.id}@${row.build_id}`;
-  const buildDir = join(appsDir, name);
-  const inBuild = relative(buildDir, join(buildDir, row.root));
-  if (
-    relative(appsDir, buildDir) !== name ||
-    inBuild.startsWith('..') ||
-    isAbsolute(inBuild)
-  ) {
-    return damaged('folder');
-  }
-  return { ok: true, manifest: manifest.data, source: source.data };
+  return {
+    name,
+    source:
+      source.success &&
+      deriveAppId(source.data.repo, source.data.subdir) === row.id
+        ? source.data
+        : null,
+  };
 }
 
 export type NativeUrlRecord =
@@ -157,8 +117,7 @@ export type NativeUrlRecord =
 
 /**
  * The descriptor, source and trust record of a URL app that runs natively,
- * or which part of its row is damaged. Like {@link readUrlAppRow}, by
- * install's rules: the source has its shape and derives the row's id, `ref`
+ * or which part of its row is damaged, by install's rules: the source has its shape and derives the row's id, `ref`
  * is its commit, the build id has that commit's prefix, `root` is the
  * source's folder, and the stored manifest still reads as a descriptor. What
  * the build recorded (`entry`, `entries`) is `recordedBuild`'s to read.

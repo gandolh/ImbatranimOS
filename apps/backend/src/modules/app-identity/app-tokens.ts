@@ -28,9 +28,8 @@ export type RegisterResult = 'registered' | 'taken';
  * dies when its copy closes (core revokes it), with its session (it only
  * resolves under the session it was minted in, and a signed-out session can
  * make no call), after {@link APP_TOKEN_IDLE_MS} unused, or when the map is
- * full and it is the least recently used. It lives in memory, as the
- * sandbox's frame tokens do: a restart ends them all, and core mints each
- * open window a new one on the refusal.
+ * full and it is the least recently used. It lives in memory: a restart
+ * ends them all, and core mints each open window a new one on the refusal.
  *
  * The map's insertion order is its recency order: a lookup moves its token to
  * the end, so the first key is always the least recently used.

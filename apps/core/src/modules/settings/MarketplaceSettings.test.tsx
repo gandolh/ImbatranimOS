@@ -13,7 +13,7 @@ import type { Inspection } from './urlApps'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 /**
- * Sandboxed apps from a URL — "Check for update" on an app installed from a URL. The stored
+ * "Check for update" on an app installed from a URL and trusted by the owner. The stored
  * URL is inspected again; what comes back may be a new commit of the same app,
  * the same commit, or (when the URL now resolves to another folder or repo) a
  * different app altogether, which must not be offered as this row's update.
@@ -41,7 +41,7 @@ function urlApp(): MarketplaceApp {
     opens: [],
     minSystemVersion: 2,
     ref: OLD,
-    runtime: 'sandboxed',
+    runtime: 'native',
     source: {
       url: 'https://github.com/o/r/tree/main/sub',
       repo: 'https://github.com/o/r',
@@ -49,7 +49,14 @@ function urlApp(): MarketplaceApp {
       commit: OLD,
       subdir: 'sub',
     },
-    installed: { ref: OLD, buildId: 'url', installedAt: 0, missing: false },
+    trust: { by: 'owner', at: 1, verified: false },
+    installed: {
+      ref: OLD,
+      buildId: 'b1',
+      installedAt: 0,
+      entryPath: `marketplace/apps/${ID}/b/b1/hollow.mjs`,
+      missing: false,
+    },
     job: null,
     server: { state: 'stopped' },
   }
@@ -59,6 +66,8 @@ function inspection(over: Partial<Inspection> = {}): Inspection {
   return {
     pending: 'p2',
     id: ID,
+    runtime: 'native',
+    verified: false,
     manifest: {
       name: 'Hollow',
       description: 'A small town sim.',
@@ -125,9 +134,10 @@ describe('MarketplaceSettings: Check for update on a URL app', () => {
     expect(post).toHaveBeenCalledWith('/marketplace/url/inspect', {
       url: 'https://github.com/o/r/tree/main/sub',
     })
-    expect(container.textContent).toContain('Nobody has reviewed this app.')
+    expect(container.textContent).toContain("This app isn't verified")
+    await act(async () => button('More info')!.click())
     expect(container.textContent).toContain(`Installed at ${OLD.slice(0, 7)}. This replaces it.`)
-    expect(button('Install')).toBeDefined()
+    expect(button('Trust and install')).toBeDefined()
     expect(del).not.toHaveBeenCalled()
   })
 
@@ -136,7 +146,7 @@ describe('MarketplaceSettings: Check for update on a URL app', () => {
     await render()
     await checkForUpdate()
     expect(container.textContent).toContain('Up to date.')
-    expect(container.textContent).not.toContain('Nobody has reviewed this app.')
+    expect(container.textContent).not.toContain("This app isn't verified")
     expect(del).toHaveBeenCalledWith('/marketplace/url/pending/p2')
   })
 
@@ -152,9 +162,9 @@ describe('MarketplaceSettings: Check for update on a URL app', () => {
     await checkForUpdate()
     expect(del).toHaveBeenCalledWith('/marketplace/url/pending/p2')
     expect(container.textContent).toContain(MOVED)
-    expect(container.textContent).not.toContain('Nobody has reviewed this app.')
+    expect(container.textContent).not.toContain("This app isn't verified")
     expect(container.textContent).not.toContain('Something Else')
-    expect(button('Install')).toBeUndefined()
+    expect(button('More info')).toBeUndefined()
 
     // A later check that finds the app again clears the message.
     post.mockResolvedValueOnce({ data: inspection({ pending: 'p3', source: urlApp().source! }) })
@@ -171,15 +181,7 @@ describe('MarketplaceSettings: an app from a URL built from source', () => {
     verified = by === 'verified'
   ) => ({
     ...urlApp(),
-    runtime: 'native' as const,
     trust: { by, at: 1, verified },
-    installed: {
-      ref: OLD,
-      buildId: 'b1',
-      installedAt: 0,
-      entryPath: `marketplace/apps/${ID}/b/b1/hollow.mjs`,
-      missing: false,
-    },
     ...over,
   })
 
@@ -210,7 +212,7 @@ describe('MarketplaceSettings: an app from a URL built from source', () => {
 
   it('says "Trusted by you", and checks for a new commit, which asks for trust again', async () => {
     get.mockResolvedValue({ data: { apps: [nativeApp('owner')], problems: [] } })
-    post.mockResolvedValueOnce({ data: inspection({ runtime: 'native', verified: false }) })
+    post.mockResolvedValueOnce({ data: inspection() })
     await render()
     expect(container.textContent).toContain('Trusted by you')
     expect(button('Update')).toBeUndefined()
@@ -254,6 +256,60 @@ describe('MarketplaceSettings: problems', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
     expect(del).toHaveBeenCalledWith('/marketplace/apps/x-dead00000000')
+  })
+})
+
+describe('MarketplaceSettings: a prebuilt app from a URL left from before', () => {
+  const retired = {
+    file: 'x-01d000000000',
+    problem: 'Old is a prebuilt app from a URL, which this OS no longer supports: uninstall it',
+    appId: 'x-01d000000000',
+    retired: { name: 'Old Hollow', source: urlApp().source! },
+  }
+
+  it('lists as no longer supported, with its source and Uninstall, and no Open', async () => {
+    get.mockResolvedValue({ data: { apps: [urlApp()], problems: [retired] } })
+    await render()
+    const row = container.querySelector('[data-descriptor-id="x-01d000000000"]')!
+    expect(row.textContent).toContain('Old Hollow')
+    expect(row.textContent).toContain('No longer supported')
+    expect(row.textContent).toContain('github.com/o/r · main · aaaaaaa · in sub')
+    expect([...row.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Uninstall'])
+    // Not among the records that could not be read.
+    expect(container.textContent).not.toContain('Installed apps that could not be read')
+  })
+
+  it('names it by what the listing has when its source no longer reads', async () => {
+    get.mockResolvedValue({
+      data: {
+        apps: [urlApp()],
+        problems: [{ ...retired, retired: { name: 'x-01d000000000', source: null } }],
+      },
+    })
+    await render()
+    const row = container.querySelector('[data-descriptor-id="x-01d000000000"]')!
+    expect(row.textContent).toContain('x-01d000000000')
+    expect(row.textContent).not.toContain('github.com')
+  })
+
+  it('uninstalls it, with its data when the box is ticked', async () => {
+    get.mockResolvedValue({ data: { apps: [urlApp()], problems: [retired] } })
+    await render()
+    const row = container.querySelector('[data-descriptor-id="x-01d000000000"]')!
+    await act(async () => row.querySelector('button')!.click())
+    expect(document.body.textContent).toContain('This OS no longer runs prebuilt apps from a URL.')
+    const box = document.querySelector(
+      '[role="dialog"] [role="checkbox"], [role="alertdialog"] [role="checkbox"]'
+    ) as HTMLElement
+    await act(async () => box.click())
+    const confirmButton = [...document.querySelectorAll('button')]
+      .filter((b) => b.textContent === 'Uninstall')
+      .find((b) => b.closest('[role="dialog"], [role="alertdialog"]'))
+    await act(async () => confirmButton!.click())
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(del).toHaveBeenCalledWith('/marketplace/apps/x-01d000000000?removeData=1')
   })
 })
 

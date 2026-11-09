@@ -40,9 +40,8 @@ function Capabilities({ capabilities }: { capabilities: string[] }) {
 
 /**
  * The consent card: what would be installed, and what it may do, before
- * anything is. Three kinds: a prebuilt app that runs sandboxed; a verified
- * app built from source, which installs at once; and an unverified one built
- * from source, which first shows a warning and installs only on "Trust and
+ * anything is. Two kinds: a verified app, which installs at once; and an
+ * unverified one, which first shows a warning and installs only on "Trust and
  * install", behind "More info", the way Windows SmartScreen does.
  */
 export function ConsentCard({
@@ -55,8 +54,7 @@ export function ConsentCard({
   onCancel: () => void
 }) {
   const { manifest, source, current } = inspection
-  const native = inspection.runtime === 'native'
-  const unverified = native && !inspection.verified
+  const unverified = !inspection.verified
   const same = current?.commit === source.commit
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -179,7 +177,7 @@ export function ConsentCard({
         <span className="min-w-0 flex-1">
           <span className="font-ui text-on-surface block truncate text-[13px] font-medium">
             {manifest.name}
-            {native && <SourceBadge>Verified</SourceBadge>}
+            <SourceBadge>Verified</SourceBadge>
           </span>
           <span className="text-on-surface-variant block truncate text-[11px]">
             {sourceLine(source)}
@@ -194,22 +192,10 @@ export function ConsentCard({
       <Capabilities capabilities={manifest.capabilities} />
       <p
         role="note"
-        className={cn(
-          'text-on-surface bg-surface-container-lowest mt-3 border-l-2 px-2.5 py-2 text-[11px]',
-          native ? 'border-primary' : 'border-error'
-        )}
+        className="border-primary text-on-surface bg-surface-container-lowest mt-3 border-l-2 px-2.5 py-2 text-[11px]"
       >
-        {native ? (
-          <>
-            This commit is verified. It is built from source on this machine and runs like the other
-            apps, as you.
-          </>
-        ) : (
-          <>
-            Nobody has reviewed this app. It runs in a sandbox: it can&apos;t read your files, use
-            your session, or reach the internet, and it can only use what&apos;s listed above.
-          </>
-        )}
+        This commit is verified. It is built from source on this machine and runs like the other
+        apps, as you.
       </p>
       {footer(
         <Button size="sm" variant="primary" disabled={busy || same} onClick={() => void install()}>

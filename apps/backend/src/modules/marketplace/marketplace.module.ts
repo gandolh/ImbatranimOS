@@ -9,13 +9,12 @@ import { MarketplaceUrlApps } from './marketplace-url.service';
 import { MarketplaceService } from './marketplace.service';
 import { MarketplaceWsProxy } from './marketplace-ws.proxy';
 import { PendingInspections } from './pending-inspections';
-import { SandboxTokens } from './sandbox-tokens';
 
 /**
  * The app marketplace: installs the apps `marketplace/*.json`
  * describes, serves their builds, and runs and proxies the servers of the
- * ones that have one. Since sandboxed apps from a URL it also installs prebuilt apps from a
- * GitHub URL, which run sandboxed and are served under per-window tokens.
+ * ones that have one. It also installs apps from a GitHub URL, built from
+ * source and run natively once verified or trusted (`MarketplaceUrlApps`).
  * `LocalIdentityService`, `AppTokens`, `DbService` and `UpgradeRoutes` come
  * from global modules; `FileGrants` and `InstalledApps` from app identity.
  */
@@ -27,7 +26,6 @@ import { SandboxTokens } from './sandbox-tokens';
     MarketplaceServers,
     MarketplaceWsProxy,
     MarketplaceUrlApps,
-    SandboxTokens,
     PendingInspections,
   ],
 })

@@ -43,8 +43,7 @@ import type { Request, Response, NextFunction } from 'express';
 function policy(browserProxyOrigin: string | null): string {
   return [
     // With no frame-src below, this is also where the desktop's frames may
-    // go, and that fences a sandboxed app from a URL: see
-    // frame-src.
+    // go.
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
@@ -57,13 +56,6 @@ function policy(browserProxyOrigin: string | null): string {
     "connect-src 'self'",
     // The Browser app frames its proxy origin, that one origin and
     // no other. Without it, frames stay at default-src 'self'.
-    //
-    // This directive is also the fence on where a sandboxed app from a URL
-    // can navigate its own frame. That navigation is checked
-    // against this page's policy, the frame's parent, and the CSP the frame
-    // carries cannot stop it. Every origin added here is one an unreviewed
-    // app can send data to by navigating there (`location = …?<data>`), so
-    // widening frame-src gives URL apps a way out.
     ...(browserProxyOrigin ? [`frame-src 'self' ${browserProxyOrigin}`] : []),
   ].join('; ');
 }
@@ -86,8 +78,8 @@ export const EMBEDDER_POLICY: 'require-corp' | 'credentialless' =
   'require-corp';
 
 /**
- * What a document the desktop frames sends: its Browser's proxy origin and a
- * URL app's sandboxed frame. A frame inside an isolated page must send a
+ * What a document the desktop frames sends: its Browser's proxy origin. A
+ * frame inside an isolated page must send a
  * policy of its own, and `require-corp` is accepted under either value of
  * {@link EMBEDDER_POLICY} by every browser, where a `credentialless` frame
  * would be refused by Safari.

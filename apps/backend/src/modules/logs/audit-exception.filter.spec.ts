@@ -4,15 +4,13 @@ import { BaseExceptionFilter } from '@nestjs/core';
 import { AuditExceptionFilter, loggablePath } from './audit-exception.filter';
 import type { LogService } from './log.service';
 
-const TOKEN = 'Abc_-0123456789abcdefghijklmnopqrstuvwxyzAB';
-
 function hostFor(method: string, url: string): ArgumentsHost {
   return {
     switchToHttp: () => ({ getRequest: () => ({ method, url }) }),
   } as unknown as ArgumentsHost;
 }
 
-describe('AuditExceptionFilter — sandbox tokens stay out of the log', () => {
+describe('AuditExceptionFilter — what reaches the log', () => {
   let record: jest.Mock;
   let filter: AuditExceptionFilter;
 
@@ -28,30 +26,11 @@ describe('AuditExceptionFilter — sandbox tokens stay out of the log', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it.each([
-    [
-      `/api/marketplace/sandbox/${TOKEN}/app/dist/x.mjs?v=1`,
-      '/api/marketplace/sandbox/<redacted>/app/dist/x.mjs',
-    ],
-    [
-      `/api/marketplace/sandbox/${TOKEN}/runtime.js`,
-      '/api/marketplace/sandbox/<redacted>/runtime.js',
-    ],
-    [
-      `/api/marketplace/sandbox/${TOKEN}/`,
-      '/api/marketplace/sandbox/<redacted>/',
-    ],
-    [
-      `/api/marketplace/sandbox/${TOKEN}`,
-      '/api/marketplace/sandbox/<redacted>',
-    ],
-    [
-      `/api/Marketplace//SANDBOX/${TOKEN}/app/x`,
-      '/api/Marketplace//SANDBOX/<redacted>/app/x',
-    ],
     ['/api/marketplace?q=secret', '/api/marketplace'],
+    ['/api/files/read?path=/home/secret&x=1', '/api/files/read'],
     [
-      '/api/marketplace/apps/x-0123456789ab/sandbox',
-      '/api/marketplace/apps/x-0123456789ab/sandbox',
+      '/api/marketplace/apps/x-0123456789ab/install',
+      '/api/marketplace/apps/x-0123456789ab/install',
     ],
   ])('logs %s as %s', (url, path) => {
     expect(loggablePath(url)).toBe(path);
@@ -66,14 +45,13 @@ describe('AuditExceptionFilter — sandbox tokens stay out of the log', () => {
     expect([level, event]).toEqual(['error', 'server.error']);
     expect(msg).toBe(`GET ${path} failed`);
     expect(meta.path).toBe(path);
-    expect(JSON.stringify([msg, meta])).not.toContain(TOKEN);
     expect(JSON.stringify([msg, meta])).not.toContain('secret');
   });
 
   it('still logs nothing below 500', () => {
     filter.catch(
       new NotFoundException(),
-      hostFor('GET', `/api/marketplace/sandbox/${TOKEN}/`),
+      hostFor('GET', '/api/marketplace/apps/x-0123456789ab/b/b1/x.mjs'),
     );
     expect(record).not.toHaveBeenCalled();
   });

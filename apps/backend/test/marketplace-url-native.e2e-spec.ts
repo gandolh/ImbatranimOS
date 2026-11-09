@@ -508,18 +508,21 @@ describe('apps from a URL built from source (e2e)', () => {
     expect((await listed()).some((a) => a.id === brokenId)).toBe(false);
   }, 30_000);
 
-  it('still installs a prebuilt app sandboxed, with no trust asked', async () => {
-    const checked = await inspect(`file://${repo}#main/apps/prebuilt`);
-    expect(checked).toMatchObject({ runtime: 'sandboxed', verified: false });
-    const installed = (await install(checked.pending).expect(200))
-      .body as Listed;
-    expect(installed.runtime).toBe('sandboxed');
-    expect(installed.trust).toBeUndefined();
+  it('refuses a prebuilt (version 1) app at the check: the OS no longer installs that kind', async () => {
+    const res = await http
+      .post('/api/marketplace/url/inspect')
+      .set('Cookie', cookie)
+      .send({ url: `file://${repo}#main/apps/prebuilt` })
+      .expect(400);
+    expect((res.body as { message: string }).message).toBe(
+      'This app uses the old format, which this OS no longer installs.',
+    );
+    expect(builds(deriveAppId(`file://${repo}`, 'apps/prebuilt'))).toEqual([]);
   });
 
   it("reaches the native runtime's routes as a catalog app does", async () => {
-    // A static app has no server: refused as a catalog app's would be, not
-    // as a sandboxed app's (404).
+    // A static app has no server: refused as a catalog app's would be (409),
+    // not as an id no native app holds (404).
     await http
       .post(`/api/marketplace/apps/${id}/lease`)
       .set('Cookie', cookie)

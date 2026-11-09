@@ -2,7 +2,11 @@ import { BadRequestException } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import { isAbsolute, join, relative } from 'path';
 
-import { MANIFEST_FILE, MAX_MANIFEST_BYTES } from './app-manifest';
+/** An app from a URL's manifest, at the top of its folder in the repository. */
+export const MANIFEST_FILE = 'imbatranim.json';
+
+/** Bigger than any honest manifest: read no further than this. */
+export const MAX_MANIFEST_BYTES = 64 * 1024;
 
 /**
  * The JSON of `imbatranim.json` at the top of an app's folder in a clone: a

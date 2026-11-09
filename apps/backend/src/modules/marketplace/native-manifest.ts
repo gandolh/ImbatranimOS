@@ -1,5 +1,5 @@
 import { descriptorSchema, type Descriptor } from './catalog';
-import { MANIFEST_FILE } from './app-manifest';
+import { MANIFEST_FILE } from './manifest-file';
 import { deriveAppId } from './source-url';
 
 /**
@@ -16,8 +16,9 @@ import { deriveAppId } from './source-url';
  *
  * Its shape follows its `build`, as the catalog's two versions do: `build.entry`
  * is one app (the catalog's version 1 fields); `build.output` with `apps` is
- * several apps from one build (version 2). A version 1 `imbatranim.json` is
- * the prebuilt, sandboxed app of `app-manifest.ts`.
+ * several apps from one build (version 2). Version 1 was a prebuilt app run
+ * in a sandboxed frame; that path is gone, and a version 1 file is refused at
+ * the check.
  */
 
 export const NATIVE_MANIFEST_VERSION = 2;

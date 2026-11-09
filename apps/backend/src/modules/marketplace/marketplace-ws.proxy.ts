@@ -117,11 +117,11 @@ export class MarketplaceWsProxy
         this.logger.warn(`Rejected an unauthorized upgrade to ${id}'s server`);
         return refuse('401 Unauthorized');
       }
-      // A sandboxed app from a URL has no server; one that runs natively
-      // may. Asked only once the session is checked, so a stranger can't
-      // learn what is installed.
+      // A leftover sandboxed app from a URL has no server; one that runs
+      // natively may. Asked only once the session is checked, so a stranger
+      // can't learn what is installed.
       try {
-        this.marketplace.refuseSandboxed(id);
+        this.marketplace.refuseUnlessNative(id);
       } catch {
         return refuse('404 Not Found');
       }

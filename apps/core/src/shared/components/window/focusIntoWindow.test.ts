@@ -93,10 +93,10 @@ describe('focusIntoWindow: the three-step order', () => {
     expect(document.activeElement).toBe(content)
   })
 
-  it("focuses a URL app's iframe", () => {
+  it("focuses an iframe, such as the Browser's page", () => {
     const { content } = mountWindow(
       'a',
-      '<div class="relative"><iframe title="Hollow"></iframe><div data-sandbox-shield=""></div></div>'
+      '<div class="relative"><iframe title="Browser"></iframe></div>'
     )
     taskbarButton()
 

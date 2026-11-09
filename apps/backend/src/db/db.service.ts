@@ -664,7 +664,8 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   /**
    * Step 11 — apps installed from a URL. `runtime` says how the
    * desktop runs an app: every row before this one is a catalog app, so the
-   * default keeps it native. A URL app has no descriptor to read again, so
+   * default keeps it native. `sandboxed` was a prebuilt app from a URL; that
+   * path is retired, and such a row is only listed for its uninstall. A URL app has no descriptor to read again, so
    * its resolved source and its manifest are stored with it, as JSON.
    */
   private stepMarketplaceUrlApps() {

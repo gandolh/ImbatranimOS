@@ -39,9 +39,6 @@ vi.mock('../../lib/axios', () => ({
 vi.mock('../../modules/marketplace/NativeAppHost', () => ({
   NativeAppHost: ({ app }: { app: MarketplaceApp }) => <p data-host="native">{app.id}</p>,
 }))
-vi.mock('../../modules/marketplace/SandboxedAppHost', () => ({
-  SandboxedAppHost: ({ app }: { app: MarketplaceApp }) => <p data-host="sandboxed">{app.id}</p>,
-}))
 const { startKitApp } = vi.hoisted(() => ({ startKitApp: vi.fn() }))
 vi.mock('../../modules/marketplace/KitAppHost', () => ({
   KitAppHost: ({ app }: { app: MarketplaceApp }) => <p data-host="kit">{app.id}</p>,
@@ -83,21 +80,28 @@ function app(
   } satisfies MarketplaceApp
 }
 
-/** A URL app as contract B lists it: sandboxed, with a source and no entryPath. */
+/** A URL app as the listing has it: built from source, with its source and trust. */
 function urlApp(id: string, commit = 'c'.repeat(40), missing = false): MarketplaceApp {
-  return {
-    ...app(id, null),
-    runtime: 'sandboxed',
-    source: {
-      url: 'https://github.com/o/r',
-      repo: 'https://github.com/o/r',
-      ref: null,
-      commit,
-      subdir: null,
+  const buildId = `${commit.slice(0, 12)}-0123abcd`
+  return app(
+    id,
+    {
+      ref: commit,
+      buildId,
+      entryPath: `marketplace/apps/${id}/b/${buildId}/app.mjs`,
+      missing,
     },
-    // The same buildId across commits, so a re-sync is down to the commit.
-    installed: { ref: commit, buildId: 'url', installedAt: 0, missing },
-  }
+    {
+      source: {
+        url: 'https://github.com/o/r',
+        repo: 'https://github.com/o/r',
+        ref: null,
+        commit,
+        subdir: null,
+      },
+      trust: { by: 'owner', at: 0, verified: false },
+    }
+  )
 }
 
 /** Render the window component the registry made for `id`, and say which host it used. */
@@ -152,10 +156,10 @@ describe('the marketplace registry', () => {
 describe('apps from a URL in the registry', () => {
   const builtIns = APP_REGISTRY.length
 
-  it('adds an installed URL app though it has no entryPath, and opens it in the sandboxed host', async () => {
+  it('adds an installed URL app and opens it natively, as a catalog app', async () => {
     syncMarketplaceApps([urlApp('x-0123456789ab'), app('hollow', {})])
     expect(isMarketplaceApp('x-0123456789ab')).toBe(true)
-    expect(await hostOf('x-0123456789ab')).toBe('sandboxed')
+    expect(await hostOf('x-0123456789ab')).toBe('native')
     expect(await hostOf('hollow')).toBe('native')
     syncMarketplaceApps([])
   })
@@ -413,18 +417,16 @@ describe('kit apps in the registry', () => {
     expect(rebuildFixesKit(built(1), 2)).toBe(false)
     // Nothing to fix.
     expect(rebuildFixesKit(built(2, 2), 2)).toBe(false)
-    // Not installed, a mount app, a URL app.
+    // Not installed, a mount app.
     expect(rebuildFixesKit({ ...built(1, 2), installed: null }, 2)).toBe(false)
     expect(rebuildFixesKit(app('hollow', {}, { sharedKit: null, catalogSharedKit: null }), 2)).toBe(
       false
     )
-    expect(
-      rebuildFixesKit({ ...urlApp('x-0123456789ab'), sharedKit: 1, catalogSharedKit: 2 }, 2)
-    ).toBe(false)
   })
 
-  it('never takes a URL app for a kit app', () => {
-    expect(isKitApp({ ...urlApp('x-0123456789ab'), sharedKit: 1 })).toBe(false)
+  it('takes an app built against a shared kit for a kit app, and no other', () => {
+    expect(isKitApp({ ...urlApp('x-0123456789ab'), sharedKit: 1 })).toBe(true)
+    expect(isKitApp(urlApp('x-0123456789ab'))).toBe(false)
     expect(isKitApp(suiteApp('office-docs', { sharedKit: 1 }))).toBe(true)
     expect(isKitApp(suiteApp('office-docs', { sharedKit: null }))).toBe(false)
   })

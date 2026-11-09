@@ -59,14 +59,9 @@ export class AuditExceptionFilter extends BaseExceptionFilter {
 }
 
 /**
- * A sandboxed app's window token is a capability: its URL
- * `marketplace/sandbox/<token>/…` serves the app's files with no session at
- * all, so it is never written to the log. Matched without regard to case,
- * as the router matches, and across doubled slashes, to be safe.
+ * A request URL as the log may keep it: no query string, which can carry
+ * what was typed or a secret.
  */
-const SANDBOX_TOKEN = /(\/marketplace\/+sandbox\/+)[^/?#]*/gi;
-
-/** A request URL as the log may keep it: no query string, no sandbox token. */
 export function loggablePath(url: string): string {
-  return url.split('?')[0].replace(SANDBOX_TOKEN, '$1<redacted>');
+  return url.split('?')[0];
 }

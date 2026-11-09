@@ -3,20 +3,18 @@
 import type { AppSource, MarketplaceApp } from '../../shared/registry/marketplace'
 
 /**
- * The backend's answer to `POST marketplace/url/inspect` (contract B).
- *
- * `runtime` is how the app would run: `native` for one built from source,
- * `sandboxed` for a prebuilt one (and for a backend that sends none). A native
- * app installs at once when `verified`; otherwise the owner must trust it.
+ * The backend's answer to `POST marketplace/url/inspect`: an app built from
+ * source, which installs at once when `verified`; otherwise the owner must
+ * trust it.
  */
 export type Inspection = {
   pending: string
   id: string
-  runtime?: 'native' | 'sandboxed'
+  runtime?: 'native'
   verified?: boolean
-  /** A native app's build type: `service` runs a server of its own. */
+  /** Its build type: `service` runs a server of its own. */
   type?: 'static' | 'service'
-  /** A native app's apps, when it has several. */
+  /** Its apps, when it has several. */
   apps?: { id: string; name: string; icon: string; capabilities: string[] }[]
   manifest: {
     name: string

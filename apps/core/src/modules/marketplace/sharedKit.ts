@@ -153,9 +153,6 @@ export function sharedKit(): SharedKitGlobal | undefined {
  * module is imported; the module reads the global as it evaluates. Once per
  * page: the property is frozen, read-only and cannot be redefined, so an app
  * cannot swap a module out from under the others.
- *
- * Never visible to a sandboxed URL app: its frame is another realm with its
- * own global.
  */
 export function installSharedKit(): SharedKitGlobal {
   const existing = sharedKit()

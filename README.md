@@ -16,7 +16,7 @@ The name is a joke: *îmbătrânim* is Romanian for "we're getting old".
 - Opens the container's actual home folder in Files. It lives in a Docker volume, so it survives rebuilds, and Settings → Backup downloads it as one archive.
 - Shows the container's real CPU, memory, disk and processes in System Monitor.
 - Comes with about 20 apps: Notepad, a Monaco code editor, a diff tool, Paint and more. The Browser app fetches pages from the machine, not from the browser you are sitting at. Docs, Sheets, Slides, a PDF reader and a 2D CAD app come with Office, Minesweeper and Solitaire with Games, Todo and Bookmarks with Accessories, and Git and a REST client with Developer, from the Marketplace.
-- Installs more apps from the reviewed catalog in [`marketplace/`](marketplace/README.md), or from any GitHub repository into a sandboxed frame.
+- Installs more apps from the reviewed catalog in [`marketplace/`](marketplace/README.md), or from any GitHub repository once the app is verified or you trust it.
 
 Web desktops such as daedalOS run entirely in the tab and keep their files in browser storage. Here the tab only draws the screen; the files, the shell and the processes belong to a Linux machine you own. It has one owner and no other accounts, no sudo, and no two-factor sign-in.
 

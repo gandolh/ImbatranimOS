@@ -19,7 +19,6 @@ import { RecentService } from '../files/recent.service';
 import { AppTokens } from '../app-identity/app-tokens';
 import { FileGrants } from '../app-identity/file-grants.service';
 import { InstalledApps } from '../app-identity/installed-apps';
-import type { AppManifest } from './app-manifest';
 import { z } from 'zod';
 
 import {
@@ -40,12 +39,10 @@ import {
 } from './native-manifest';
 import { isAppId, recordedBuild, recordedKitApp } from './recorded-build';
 import { runStep } from './run-step';
-import { SandboxTokens } from './sandbox-tokens';
 import { isUrlAppId, type AppSource } from './source-url';
 import {
   readNativeUrlRow,
-  readUrlAppRow,
-  type UrlAppRecord,
+  retiredUrlApp,
   type UrlTrust,
 } from './url-app-record';
 import {
@@ -107,8 +104,10 @@ export interface InstalledRow {
   entries: string | null;
   installed_at: number;
   /**
-   * `sandboxed` for an app installed from a URL with a prebuilt (version 1)
-   * manifest; `native` for every other row.
+   * `native` for every row the OS writes now. `sandboxed` is a leftover
+   * prebuilt (version 1) app from a URL, installed before that path was
+   * retired: it lists as no longer supported, runs nothing and can only be
+   * uninstalled.
    */
   runtime: 'native' | 'sandboxed';
   /**
@@ -124,11 +123,14 @@ export interface InstalledRow {
  * Something the listing could not show as an app: a catalog file that did not
  * parse, or an installed app that cannot run. `appId` is set for the latter:
  * it is still installed, and `DELETE marketplace/apps/:appId` removes it.
+ * `retired` marks a leftover prebuilt app from a URL, which this OS no longer
+ * runs, with its name and source as far as its row still reads.
  */
 export interface ListingProblem {
   file: string;
   problem: string;
   appId?: string;
+  retired?: { name: string; source: AppSource | null };
 }
 
 /**
@@ -182,11 +184,8 @@ export interface MarketplaceApp {
   catalogSharedKit: number | null;
   /** The commit the catalog pins now; for a URL app, the installed one. */
   ref: string;
-  /**
-   * `native` runs in the desktop's page (a reviewed catalog app);
-   * `sandboxed` in an opaque-origin frame (an app from a URL).
-   */
-  runtime: 'native' | 'sandboxed';
+  /** It runs in the desktop's page: a catalog app, or an app from a URL built from source. */
+  runtime: 'native';
   /** Where a URL app came from. Absent for a catalog app. */
   source?: AppSource;
   /**
@@ -194,7 +193,7 @@ export interface MarketplaceApp {
    * commit when it was installed (`by`, `at`, the stored record), and whether
    * the verified list this OS carries names that commit now (`verified`).
    * The badge reads `verified` first, so an entry a later release drops stops
-   * showing as Verified. Absent for a catalog app and a sandboxed one.
+   * showing as Verified. Absent for a catalog app.
    */
   trust?: UrlTrust & { verified: boolean };
   installed: {
@@ -202,8 +201,8 @@ export interface MarketplaceApp {
     buildId: string;
     installedAt: number;
     /**
-     * What the desktop imports, relative to the API's base (`/api`). A URL
-     * app has none: its files are served only under a sandbox token.
+     * What the desktop imports, relative to the API's base (`/api`). Absent
+     * when the live build recorded no module for the app.
      */
     entryPath?: string;
     /**
@@ -294,7 +293,6 @@ export class MarketplaceService implements OnModuleInit {
     private readonly dbs: DbService,
     private readonly config: ConfigService<Env, true>,
     private readonly servers: MarketplaceServers,
-    private readonly tokens: SandboxTokens,
     private readonly pendings: PendingInspections,
     private readonly data: AppDataService,
     private readonly appTokens: AppTokens,
@@ -419,18 +417,15 @@ export class MarketplaceService implements OnModuleInit {
     }
     for (const row of rows.values()) {
       if (row.runtime === 'sandboxed') {
-        // A damaged row is left out of the apps and named here instead, so
-        // one bad row cannot fail the whole listing; it can still be
-        // uninstalled by its id.
-        const record = this.urlAppRecord(row);
-        if (record.ok) out.push(await this.urlAppEntry(row, record));
-        else {
-          problems.push({
-            file: row.id,
-            problem: `installed from a URL, but its stored ${record.damaged} is damaged: uninstall it`,
-            appId: row.id,
-          });
-        }
+        // A prebuilt app from a URL, installed before that path was retired.
+        // Nothing of it runs any more; it is listed so it can be uninstalled.
+        const retired = retiredUrlApp(row);
+        problems.push({
+          file: row.id,
+          problem: `${retired.name} is a prebuilt app from a URL, which this OS no longer supports: uninstall it`,
+          appId: row.id,
+          retired,
+        });
         continue;
       }
       if (isUrlAppId(row.id)) {
@@ -558,75 +553,6 @@ export class MarketplaceService implements OnModuleInit {
     return out;
   }
 
-  /**
-   * An installed URL app as the pane and the registry read it:
-   * its name, window and capabilities from its stored manifest, no
-   * `entryPath` (its files are served only under a sandbox token) and no
-   * server. Null when it is not one, or its stored row is damaged.
-   */
-  async urlApp(id: string): Promise<MarketplaceApp | null> {
-    const row = this.row(id);
-    if (row?.runtime !== 'sandboxed') return null;
-    const record = this.urlAppRecord(row);
-    return record.ok ? this.urlAppEntry(row, record) : null;
-  }
-
-  /**
-   * An installed URL app's row, only when it is one and it reads back by
-   * install's rules (`readUrlAppRow`). Minting a token and serving its files
-   * go through here: a damaged row serves nothing.
-   */
-  sandboxedRow(id: string): InstalledRow | null {
-    const row = this.row(id);
-    if (row?.runtime !== 'sandboxed') return null;
-    return this.urlAppRecord(row).ok ? row : null;
-  }
-
-  private urlAppRecord(row: InstalledRow): UrlAppRecord {
-    return readUrlAppRow(row, this.appsDir());
-  }
-
-  private async urlAppEntry(
-    row: InstalledRow,
-    { manifest, source }: { manifest: AppManifest; source: AppSource },
-  ): Promise<MarketplaceApp> {
-    return {
-      id: row.id,
-      descriptorId: row.id,
-      descriptorName: manifest.name,
-      name: manifest.name,
-      description: manifest.description,
-      meta: manifest.meta,
-      type: 'static',
-      icon: manifest.icon,
-      window: manifest.window,
-      capabilities: manifest.capabilities as CatalogApp['capabilities'],
-      multiInstance: false,
-      opens: [],
-      // Hooks are a kit app's, and an app from a URL is never one.
-      background: false,
-      commandSources: false,
-      minSystemVersion: manifest.minSystemVersion,
-      // Never a kit app: an app from a URL runs sandboxed, and the shared
-      // modules never reach a frame.
-      sharedKit: null,
-      catalogSharedKit: null,
-      ref: row.ref,
-      runtime: 'sandboxed',
-      source,
-      installed: {
-        ref: row.ref,
-        buildId: row.build_id,
-        installedAt: row.installed_at,
-        missing: !(await exists(
-          join(this.buildDir(row.id, row.build_id), row.root, row.entry),
-        )),
-      },
-      job: null,
-      server: { state: 'stopped' },
-    };
-  }
-
   async log(id: string): Promise<string> {
     if (!isAppId(id)) throw new NotFoundException();
     const build = await fs.readFile(this.logPath(id), 'utf8').catch(() => '');
@@ -640,8 +566,8 @@ export class MarketplaceService implements OnModuleInit {
    * the apps of a suite share the directory, and the chunks in it. Anything
    * else is a 404: an id outside the catalog and no native URL app's, a build
    * that is not the live one, a path that climbs out or reaches through a
-   * symlink, a dotfile. A sandboxed URL app's build is never served here,
-   * only under its sandbox token with the sandbox's headers.
+   * symlink, a dotfile. A leftover sandboxed URL app's files are never
+   * served.
    */
   async servedFile(
     id: string,
@@ -668,14 +594,13 @@ export class MarketplaceService implements OnModuleInit {
   }
 
   /**
-   * A 404 for a sandboxed app from a URL (or an id only a URL app could have,
-   * with no native row) on a route of the native runtime: install, the
-   * build's files, the lease and the server proxy. A sandboxed app has no
-   * build and no server, and its files are served only with the sandbox's
-   * headers. A URL app that runs natively uses these routes as a catalog app
-   * does.
+   * A 404 for an id only a URL app could have, unless its row runs natively,
+   * on a route of the native runtime: install, the build's files, the lease
+   * and the server proxy. A leftover sandboxed app from a URL has no build
+   * and no server, and runs nothing. A URL app that runs natively uses these
+   * routes as a catalog app does.
    */
-  refuseSandboxed(id: string): void {
+  refuseUnlessNative(id: string): void {
     const runtime = this.row(id)?.runtime;
     if (runtime === 'sandboxed' || (isUrlAppId(id) && runtime !== 'native')) {
       throw new NotFoundException();
@@ -720,7 +645,7 @@ export class MarketplaceService implements OnModuleInit {
    * unless verified, the owner's trust (`MarketplaceUrlApps`).
    */
   install(id: string): Job {
-    this.refuseSandboxed(id);
+    this.refuseUnlessNative(id);
     const known = this.known(id);
     if (!known) throw new NotFoundException(`No app "${id}" in the catalog`);
     const { d, url } = known;
@@ -858,8 +783,6 @@ export class MarketplaceService implements OnModuleInit {
       this.dbs.db.prepare('DELETE FROM marketplace_apps WHERE id = ?').run(id);
       this.jobs.delete(id);
       this.urlJobs.delete(id);
-      // A URL app's open windows lose their files now, not in six hours.
-      this.tokens.revokeApp(id);
       await this.removeBuilds(id, null);
       await fs.rm(this.logPath(id), { force: true });
       await this.data.removeCaches(apps);
@@ -1017,7 +940,7 @@ export class MarketplaceService implements OnModuleInit {
     // kit app's also its stylesheets, its shared kit version and the hooks
     // it declared (only those it did, so a row without hooks reads as before).
     // A URL app's row also keeps its source, with the trust record, and its
-    // manifest; it replaces a sandboxed install of the same app.
+    // manifest; it replaces a leftover sandboxed install of the same app.
     const suite = d.schemaVersion === 2;
     const kit = d.sharedKit;
     this.dbs.db
@@ -1063,8 +986,6 @@ export class MarketplaceService implements OnModuleInit {
       });
     this.jobs.delete(id);
     this.urlJobs.delete(id);
-    // A sandboxed install's open windows lose their files now.
-    if (url) this.tokens.revokeApp(id);
     log.push(`\n✓ Installed ${d.name} (${buildId})`);
     await writeLog();
     await this.removeBuilds(id, buildId);
@@ -1073,8 +994,7 @@ export class MarketplaceService implements OnModuleInit {
 
   /**
    * A URL app's `imbatranim.json` in a fetched clone, read as the descriptor
-   * it installs as. It must be a version 2 manifest: a prebuilt one installs
-   * sandboxed, through a URL check.
+   * it installs as. It must be a version 2 manifest.
    */
   private async readNativeManifest(
     root: string,
@@ -1095,7 +1015,7 @@ export class MarketplaceService implements OnModuleInit {
     if (manifestVersion(raw) !== NATIVE_MANIFEST_VERSION) {
       return {
         ok: false,
-        problem: `At ${source.commit.slice(0, 7)} the app is not built from source (imbatranim.json is not version ${NATIVE_MANIFEST_VERSION}). Check its URL again to install it.`,
+        problem: `At ${source.commit.slice(0, 7)} the app's imbatranim.json is not version ${NATIVE_MANIFEST_VERSION}, the only one this OS installs.`,
       };
     }
     const parsed = parseNativeManifest(raw, source, {
@@ -1306,8 +1226,7 @@ export async function isDirectoryWithin(
  * The real path of the file `segments` name inside `servedRoot`, or a 404:
  * for an empty or dot segment (dotfiles are never served, and `..` is one),
  * one holding a separator, a path that climbs out or reaches through a
- * symlink, or anything that is not a file. Both the native build route and
- * the sandbox's use it.
+ * symlink, or anything that is not a file.
  */
 export async function resolveServed(
   servedRoot: string,

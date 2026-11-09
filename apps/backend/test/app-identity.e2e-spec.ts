@@ -207,7 +207,7 @@ describe('App identity (e2e)', () => {
         .get(DbService)
         .db.prepare(
           `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at, runtime)
-             VALUES (?, 'abc', 'b1', '/x', 'index.html', NULL, 1, 'sandboxed')`,
+             VALUES (?, 'abc', 'b1', '/x', 'index.html', NULL, 1, 'native')`,
         )
         .run(installed);
       expect(appOf(await whoami(await start(installed)))?.groups).toEqual([

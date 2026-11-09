@@ -729,10 +729,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Step 15 — a third kind of grant, `listing`: an opened file's folder, given
-   * to an app that declares it reads one (listing the folder, reading the
-   * files directly in it). SQLite can't widen a CHECK in place, so the table
-   * is made again and the grants copied over.
+   * Step 15 — two more kinds of grant: `listing`, an opened file's folder,
+   * given to an app that declares it reads one (listing the folder, reading
+   * the files directly in it), and `read`, a file an app hands on that it
+   * may only read. SQLite can't widen a CHECK in place, so the table is made
+   * again and the grants copied over.
    */
   private stepFileGrantListing() {
     this.db.exec(`
@@ -740,7 +741,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         instance_id TEXT NOT NULL,
         app_id TEXT NOT NULL,
         path TEXT NOT NULL,
-        kind TEXT NOT NULL CHECK (kind IN ('file', 'folder', 'listing')),
+        kind TEXT NOT NULL CHECK (kind IN ('file', 'read', 'folder', 'listing')),
         created_at INTEGER NOT NULL,
         PRIMARY KEY (instance_id, path)
       );

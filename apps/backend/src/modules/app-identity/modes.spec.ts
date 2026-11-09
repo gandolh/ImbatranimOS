@@ -63,9 +63,13 @@ describe('modes: one class of bits applies', () => {
     expect(permits(null, { ...entry, mode: 0 }, R | W | X)).toBe(true);
   });
 
-  it('a path with no row is the user’s: built-ins reach it, others only pass through', () => {
-    expect(permits(notepad, IMPLIED_FILE, R | W)).toBe(true);
-    expect(permits(notepad, IMPLIED_DIRECTORY, R | W | X)).toBe(true);
+  it('a path with no row is the user’s: every app, built-in or not, only passes through', () => {
+    expect(permits(notepad, IMPLIED_FILE, R)).toBe(false);
+    expect(permits(notepad, IMPLIED_FILE, W)).toBe(false);
+    expect(permits(notepad, IMPLIED_DIRECTORY, R)).toBe(false);
+    expect(permits(notepad, IMPLIED_DIRECTORY, W)).toBe(false);
+    expect(permits(notepad, IMPLIED_DIRECTORY, X)).toBe(true);
+    expect(permits(null, IMPLIED_FILE, R | W)).toBe(true);
     expect(permits(stranger, IMPLIED_FILE, R)).toBe(false);
     expect(permits(stranger, IMPLIED_DIRECTORY, R)).toBe(false);
     expect(permits(stranger, IMPLIED_DIRECTORY, X)).toBe(true);

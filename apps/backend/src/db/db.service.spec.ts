@@ -544,7 +544,8 @@ describe('DbService — the file grants table', () => {
     svc.db
       .prepare(
         `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
-         VALUES ('w1', 'notepad', '/home/imbatranim', 'listing', 1)`,
+         VALUES ('w1', 'notepad', '/home/imbatranim', 'listing', 1),
+                ('w1', 'notepad', '/home/imbatranim/b.md', 'read', 1)`,
       )
       .run();
     svc.onModuleDestroy();

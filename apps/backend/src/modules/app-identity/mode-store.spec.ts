@@ -134,10 +134,11 @@ describe('ModeStore', () => {
     );
   });
 
-  it('built-in apps keep their reach into the user’s files, not into an app’s private data', () => {
-    expect(store.may(notepad, 'read', `${HOME}/todo.txt`)).toBe(true);
-    expect(store.may(notepad, 'write', `${HOME}/todo.txt`)).toBe(true);
-    expect(store.may(notepad, 'list', HOME)).toBe(true);
+  it('built-in apps reach none of the user’s files by their modes, nor an app’s private data', () => {
+    expect(store.may(notepad, 'read', `${HOME}/todo.txt`)).toBe(false);
+    expect(store.may(notepad, 'write', `${HOME}/todo.txt`)).toBe(false);
+    expect(store.may(notepad, 'list', HOME)).toBe(false);
+    expect(store.may(notepad, 'traverse', HOME)).toBe(true);
     expect(store.may(null, 'read', `${HOME}/todo.txt`)).toBe(true);
     store.create(hollow, `${DATA}/hollow`, 'directory');
     expect(store.may(notepad, 'list', `${DATA}/hollow`)).toBe(false);

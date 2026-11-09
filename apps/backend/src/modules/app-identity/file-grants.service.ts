@@ -11,11 +11,12 @@ import {
 
 /**
  * What a grant covers: one file (`file`, which may not exist yet: a Save as),
- * a folder and everything under it (`folder`), or a folder to read
+ * one file to read only (`read`: what an app hands on of a file it may only
+ * read), a folder and everything under it (`folder`), or a folder to read
  * (`listing`): listing it and reading the files directly in it, what an app
  * that declares it gets of an opened file's folder.
  */
-export type GrantKind = 'file' | 'folder' | 'listing';
+export type GrantKind = 'file' | 'read' | 'folder' | 'listing';
 
 /** One grant: a running copy of an app may act as the user on `path`. */
 export interface FileGrant {
@@ -79,8 +80,9 @@ export class FileGrants {
 
   /**
    * Give a running copy a file or a folder. Giving the same path again
-   * replaces the grant, except that a `listing` never narrows a `folder`
-   * already given (a picked folder, then a file opened in it).
+   * replaces the grant, except that a narrower one never replaces a wider
+   * one already given: a `listing` a `folder` (a picked folder, then a file
+   * opened in it), a `read` a `file`.
    */
   grant(
     target: { instanceId: string; appId: string },
@@ -99,8 +101,9 @@ export class FileGrants {
          VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(instance_id, path) DO UPDATE SET app_id = excluded.app_id,
            kind = excluded.kind, created_at = excluded.created_at
-         WHERE NOT (excluded.kind = 'listing' AND file_grants.kind = 'folder'
-           AND file_grants.app_id = excluded.app_id)`,
+         WHERE NOT (file_grants.app_id = excluded.app_id AND (
+           (excluded.kind = 'listing' AND file_grants.kind = 'folder') OR
+           (excluded.kind = 'read' AND file_grants.kind = 'file')))`,
       ).run(target.instanceId, target.appId, key, kind, now);
       db.prepare(
         `DELETE FROM file_grants WHERE instance_id = ? AND rowid NOT IN (
@@ -145,6 +148,10 @@ export class FileGrants {
     for (const grant of this.held(identity.instanceId, identity.appId)) {
       if (grant.kind === 'file') {
         if (key === grant.path && FILE_OPS.has(op)) return true;
+        continue;
+      }
+      if (grant.kind === 'read') {
+        if (key === grant.path && op === 'read') return true;
         continue;
       }
       if (grant.kind === 'listing') {

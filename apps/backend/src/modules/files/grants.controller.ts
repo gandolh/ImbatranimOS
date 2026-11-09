@@ -83,7 +83,8 @@ export class GrantFileDto {
  *   settles. Made with an app's token, it is that app handing on what it
  *   holds (opening a file it has in another app, or in another window of its
  *   own), and the app must hold it itself: read and write on a file, listing
- *   and writing on a folder, or making a file not there yet. One more: an
+ *   and writing on a folder, or making a file not there yet; a file it may
+ *   only read goes on to read only. One more: an
  *   app may give a window of its own a file among its own recent files (or
  *   a folder among its own recent repositories), so it reopens one in a new
  *   window as Start's recents would. Core makes an
@@ -143,10 +144,18 @@ export class GrantsController {
         ? this.recent.isRecentOf(dto.root, dto.path, who.appId)
         : stat?.isDirectory() === true &&
           this.recent.isRecentRepoOf(dto.root, dto.path, who.appId));
+    let given: GrantKind = kind;
     if (who !== null && !ownRecent) {
-      // Handing on gives what the app holds, never more.
-      const ops: ModeOp[] =
-        kind === 'folder'
+      // Handing on gives what the app holds, never more: a file it may only
+      // read (one beside a file it was opened with) goes on to read only.
+      const readOnly =
+        kind === 'file' &&
+        stat !== null &&
+        this.files.can(who, 'read', key) !== null &&
+        this.files.can(who, 'write', key) === null;
+      const ops: ModeOp[] = readOnly
+        ? ['read']
+        : kind === 'folder'
           ? ['list', 'write']
           : stat
             ? ['read', 'write']
@@ -154,9 +163,10 @@ export class GrantsController {
       for (const op of ops) {
         this.files.assertCan(who, op, key, dto.root, dto.path);
       }
+      if (readOnly) given = 'read';
     }
     const target = { instanceId: dto.instanceId, appId: dto.appId };
-    this.grants.grant(target, key, kind);
+    this.grants.grant(target, key, given);
     if (dto.withFolder) {
       const there = await fs.stat(dirname(abs)).catch(() => null);
       if (dirname(key) !== key && there?.isDirectory()) {

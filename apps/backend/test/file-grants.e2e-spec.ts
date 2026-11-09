@@ -157,10 +157,11 @@ describe('Files by grant (e2e)', () => {
     };
   };
 
-  it('an installed app is refused what it was not given, by name; a built-in still reads anywhere', async () => {
+  it('an app, installed or built in, is refused what it was not given, by name', async () => {
     const hollow = await open('hollow');
     const quill = await open('quill');
-    for (const who of [hollow, quill]) {
+    const notepad = await open('notepad');
+    for (const who of [hollow, quill, notepad]) {
       const res = await as(who).read('Documents/plan.txt').expect(403);
       expect(codeOf(res)).toBe(FILE_NOT_GRANTED);
       expect(messageOf(res)).toContain('home:Documents/plan.txt');
@@ -172,10 +173,49 @@ describe('Files by grant (e2e)', () => {
     // The user, and Files acting as the user, reach everything.
     await as(null).read('Documents/plan.txt').expect(200);
     await as(null).list('Documents').expect(200);
-    // Built-ins keep their reach until each has a way to be given files.
+  });
+
+  it('a built-in reaches only what it is given: an opened file, a pick, its folder if it declares it', async () => {
     const notepad = await open('notepad');
-    await as(notepad).read('Documents/plan.txt').expect(200);
+    await http
+      .post('/api/files/grants')
+      .set('Cookie', TEST_COOKIE)
+      .send({
+        instanceId: notepad.instanceId,
+        appId: 'notepad',
+        root: 'home',
+        path: 'Documents/plan.txt',
+        withFolder: true,
+      })
+      .expect(204);
+    await as(notepad).write('Documents/plan.txt', 'saved').expect(200);
+    await as(notepad).read('Documents/other.txt').expect(200);
     await as(notepad).list('Documents').expect(200);
+    await as(notepad).read('Documents/sub/deep.txt').expect(403);
+    await as(notepad).upload('Documents/new.txt', 'x').expect(403);
+
+    // Git GUI with a picked folder: the folder and what is under it.
+    const git = await open('git-gui');
+    await as(git).list('Documents').expect(403);
+    await give(git, 'Documents/sub', 'folder').expect(204);
+    await as(git).list('Documents/sub').expect(200);
+    await as(git).upload('Documents/sub/new.txt', 'x').expect(201);
+    await as(git).read('Documents/plan.txt').expect(403);
+
+    // A second window of the same built-in holds nothing.
+    const again = await open('notepad');
+    await as(again).read('Documents/plan.txt').expect(403);
+
+    // A link followed to a file beside the document: handed on to read only.
+    await give(again, 'Documents/other.txt', undefined, notepad).expect(204);
+    await as(again).read('Documents/other.txt').expect(200);
+    await as(again).write('Documents/other.txt', 'no').expect(403);
+    // The document itself, which it may save, goes on whole.
+    await give(again, 'Documents/plan.txt', undefined, notepad).expect(204);
+    await as(again).write('Documents/plan.txt', 'saved again').expect(200);
+    // Nothing below the folder, and nothing new.
+    await give(again, 'Documents/sub/deep.txt', undefined, notepad).expect(403);
+    await give(again, 'Documents/fresh.txt', undefined, notepad).expect(403);
   });
 
   it('a window may read and save the file it was opened with, and nothing beside it', async () => {

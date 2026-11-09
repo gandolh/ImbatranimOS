@@ -332,8 +332,8 @@ describe('App identity (e2e)', () => {
       await read(`${SUITE}/plan.json`).expect(200);
     });
 
-    it('a built-in reaches the user’s files; an installed app does not', async () => {
-      await read(`${HOME}/todo.txt`, await start('notepad')).expect(200);
+    it('neither a built-in nor an installed app reaches the user’s files by its modes', async () => {
+      await read(`${HOME}/todo.txt`, await start('notepad')).expect(403);
       await read(`${HOME}/todo.txt`, await start('hollow')).expect(403);
       await read(`${HOME}/todo.txt`).expect(200);
     });

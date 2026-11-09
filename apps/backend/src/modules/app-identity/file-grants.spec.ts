@@ -109,6 +109,17 @@ describe('FileGrants', () => {
     expect(grants.covers(docs, 'read', `${DATA}/notes/secret.txt`)).toBe(false);
   });
 
+  it('a read grant reads that one file, and never narrows a file grant', () => {
+    const at = `${HOME}/Documents/b.md`;
+    grants.grant(docs, at, 'read');
+    expect(grants.covers(docs, 'read', at)).toBe(true);
+    expect(grants.covers(docs, 'write', at)).toBe(false);
+    expect(grants.covers(docs, 'create', at)).toBe(false);
+    grants.grant(docs, `${HOME}/a.md`, 'file');
+    grants.grant(docs, `${HOME}/a.md`, 'read');
+    expect(grants.covers(docs, 'write', `${HOME}/a.md`)).toBe(true);
+  });
+
   it('a listing never narrows a folder already given', () => {
     grants.grant(docs, `${HOME}/Music`, 'folder');
     grants.grant(docs, `${HOME}/Music`, 'listing');

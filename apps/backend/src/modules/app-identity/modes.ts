@@ -32,25 +32,24 @@ export interface ModeEntry {
 }
 
 /**
- * A folder with no row: the user's, `rwxrwx--x` in group `system`. Built-in
- * apps (all in `system`) keep the full reach into home they had, and an
- * installed app can pass through the user's folders to its own, but can't
- * list them: what it sees of the user's files is what it was given (a file
- * opened with it, or one picked in the OS's dialog), plus its own folders.
- * Built-ins lose that reach (`rwx--x--x`, `rw-------`) once each has a way
- * to be given its files.
+ * A folder with no row: the user's, `rwx--x--x` in group `system`. Every
+ * app, built-in or installed, can pass through the user's folders to its own
+ * but can't list them: what it sees of the user's files is what it was given
+ * (a file opened with it, one picked in the OS's dialog, an opened file's
+ * folder for an app that declares it reads one), plus its own folders.
+ * Settings, Files and the Terminal act as the user and aren't checked.
  */
 export const IMPLIED_DIRECTORY: ModeEntry = Object.freeze({
   owner: null,
   group: SYSTEM_GROUP,
-  mode: 0o771,
+  mode: 0o711,
 });
 
-/** A file with no row: the user's, `rw-rw----` in group `system`. */
+/** A file with no row: the user's, `rw-------` in group `system`. */
 export const IMPLIED_FILE: ModeEntry = Object.freeze({
   owner: null,
   group: SYSTEM_GROUP,
-  mode: 0o660,
+  mode: 0o600,
 });
 
 /** An app's new file, as under umask 077: `rw-------`. */

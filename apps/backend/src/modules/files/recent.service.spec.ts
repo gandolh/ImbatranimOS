@@ -55,6 +55,20 @@ describe('RecentService', () => {
     expect(service.list()).toEqual([]);
   });
 
+  it('a recent is a file unless recorded as a folder, and says which', () => {
+    service.record('home', 'a.txt', 'notepad');
+    service.record('home', 'code/repo', 'git-gui', true, 'folder');
+    expect(service.list().map((r) => [r.path, r.kind])).toEqual([
+      ['code/repo', 'folder'],
+      ['a.txt', 'file'],
+    ]);
+    expect(service.ownRecent('home', 'code/repo', 'git-gui')).toEqual({
+      writable: true,
+      kind: 'folder',
+    });
+    expect(service.ownRecent('home', 'code/repo', 'notepad')).toBeNull();
+  });
+
   it('the old-shape table is dropped and recreated by the migration', () => {
     // Recreate the pre-94 shape, then run migrate() again: the shape wins,
     // the rows are gone. Since the migration ledger the ledger makes each step run once,

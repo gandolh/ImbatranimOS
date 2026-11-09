@@ -13,6 +13,7 @@ import { DbService } from '../../db/db.service';
 import { LogService } from '../logs/log.service';
 import type { AppIdentity } from '../app-identity/app-identity.types';
 import { AppDataService } from './app-data.service';
+import type { DataKind } from './app-data.paths';
 
 /**
  * One-time moves of data the OS kept for an app in its own database into the
@@ -27,6 +28,12 @@ import { AppDataService } from './app-data.service';
  *   `unfiled.json` for the tasks filed under none.
  * - **Bookmarks**: `bookmarks.json`, every folder flat with its `parentId`,
  *   each with its links.
+ *
+ * Git GUI, built in until it became the Developer group's, kept its recent
+ * repositories in the `git` module's table; they move into its state folder
+ * as `recents.json`, newest first, and each becomes one of its OS recents (a
+ * folder), which is what lets it give a window of its own the repository
+ * again. The `git` module keeps running git, with no list of its own.
  *
  * Ids, positions and timestamps are kept as they were, so the apps show the
  * same order, and a due-date toast already claimed is not claimed again.
@@ -52,8 +59,12 @@ type Move = {
   group: string;
   name: string;
   tables: readonly string[];
-  /** The files to write, by path in the app's data folder, and what they hold. */
+  /** Which of the app's folders the files go in. */
+  kind: DataKind;
+  /** The files to write, by path in the app's folder, and what they hold. */
   files(): { files: Map<string, string>; summary: string };
+  /** Rows the OS keeps itself, written in the transaction that drops the tables. */
+  keep?(): void;
 };
 
 const json = (doc: unknown) => `${JSON.stringify(doc, null, 2)}\n`;
@@ -77,6 +88,7 @@ type GroupRow = {
   parent_id: number | null;
   position: number;
 };
+type RepoRow = { root: string; path: string; last_opened: string | null };
 type LinkRow = {
   id: number;
   group_id: number;
@@ -106,7 +118,11 @@ export class DataMovesService implements OnApplicationBootstrap {
     // A database that failed to open or migrate answers 503 everywhere; its
     // rows wait for a start that reads them.
     if (this.dbs.migrationFailure || !this.dbs.db?.open) return;
-    for (const move of [this.todoMove(), this.bookmarksMove()]) {
+    for (const move of [
+      this.todoMove(),
+      this.bookmarksMove(),
+      this.gitRecentsMove(),
+    ]) {
       // A move that fails is state, like a failed migration, never a crash:
       // a throw here would stop the backend from starting.
       try {
@@ -132,14 +148,14 @@ export class DataMovesService implements OnApplicationBootstrap {
     // Looked at before anything is written, so a move the app has taken
     // over brings back no file the owner deleted.
     for (const [path, content] of planned.files) {
-      if (await this.differs(move.appId, path, content)) {
+      if (await this.differs(move.appId, move.kind, path, content)) {
         this.setAside(move, present, path);
         return;
       }
     }
     for (const [path, content] of planned.files) {
       try {
-        await this.data.place(identity, 'data', path, content);
+        await this.data.place(identity, move.kind, path, content);
       } catch (err) {
         if (!(err instanceof ConflictException)) throw err;
         this.setAside(move, present, path);
@@ -149,6 +165,7 @@ export class DataMovesService implements OnApplicationBootstrap {
     // The files are in place; a drop that fails leaves the rows, and the
     // next start finds the same files and drops them then.
     this.dbs.db.transaction(() => {
+      move.keep?.();
       for (const table of present) this.dbs.db.exec(`DROP TABLE ${table}`);
     })();
     const summary = planned.summary;
@@ -170,10 +187,11 @@ export class DataMovesService implements OnApplicationBootstrap {
    */
   private async differs(
     appId: string,
+    kind: DataKind,
     path: string,
     content: string,
   ): Promise<boolean> {
-    const abs = join(this.data.folder(appId, 'data'), path);
+    const abs = join(this.data.folder(appId, kind), path);
     const stat = await fs.lstat(abs).catch(() => null);
     if (!stat) return false;
     if (!stat.isFile()) return true;
@@ -205,6 +223,7 @@ export class DataMovesService implements OnApplicationBootstrap {
       group: 'accessories',
       name: 'Todo',
       tables: ['todos', 'todo_lists'],
+      kind: 'data',
       files: () => {
         const todos = this.rows<TodoRow>(
           'todos',
@@ -263,6 +282,7 @@ export class DataMovesService implements OnApplicationBootstrap {
       group: 'accessories',
       name: 'Bookmarks',
       tables: ['bookmark_links', 'bookmark_groups'],
+      kind: 'data',
       files: () => {
         const groups = this.rows<GroupRow>(
           'bookmark_groups',
@@ -306,6 +326,51 @@ export class DataMovesService implements OnApplicationBootstrap {
     };
   }
 
+  private gitRecentsMove(): Move {
+    // Only Git GUI's rows: a repository the user recorded had no app to go to.
+    const repos = () =>
+      this.rows<RepoRow>(
+        'git_recent_repos',
+        `SELECT root, path, last_opened FROM git_recent_repos
+          WHERE app_id = 'git-gui' ORDER BY last_opened DESC, id DESC`,
+      );
+    return {
+      appId: 'git-gui',
+      group: 'developer',
+      name: 'Git GUI',
+      tables: ['git_recent_repos'],
+      kind: 'state',
+      files: () => {
+        const rows = repos();
+        const files = new Map<string, string>();
+        if (rows.length === 0) return { files, summary: '' };
+        files.set(
+          'recents.json',
+          json({ repos: rows.map((r) => ({ root: r.root, path: r.path })) }),
+        );
+        return {
+          files,
+          summary: count(
+            rows.length,
+            'recent repository',
+            'recent repositories',
+          ),
+        };
+      },
+      keep: () => {
+        // Each its own recent, a folder it held, with the time it was last
+        // opened: what lets Git GUI reopen it in a new window. A path already
+        // among the recents keeps its row.
+        const insert = this.dbs.db.prepare(
+          `INSERT INTO recent_files (root, path, app_id, writable, kind, last_opened)
+           VALUES (?, ?, 'git-gui', 1, 'folder', COALESCE(?, CURRENT_TIMESTAMP))
+           ON CONFLICT(root, path) DO NOTHING`,
+        );
+        for (const r of repos()) insert.run(r.root, r.path, r.last_opened);
+      },
+    };
+  }
+
   private hasTable(name: string): boolean {
     return (
       this.dbs.db
@@ -335,8 +400,8 @@ export class DataMovesService implements OnApplicationBootstrap {
   }
 }
 
-function count(n: number, noun: string): string {
-  return `${n} ${noun}${n === 1 ? '' : 's'}`;
+function count(n: number, noun: string, plural = `${noun}s`): string {
+  return `${n} ${n === 1 ? noun : plural}`;
 }
 
 function errorText(err: unknown): string {

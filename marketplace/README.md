@@ -80,7 +80,8 @@ container. Nothing is rebuilt into the OS image. Backups leave
   `spade`, or for
   office apps `file-text`, `file-pen`, `table`, `sheet`, `presentation`,
   `pen-tool`, `drafting-compass`, `ruler`, `briefcase`, or for accessories
-  `list-todo`, `bookmark`. The desktop shows
+  `list-todo`, `bookmark`, or for developer tools `git-branch`, `send`. The
+  desktop shows
   `package` for any other name, and a test fails if a descriptor here uses
   one, so add the icon to `ICONS` in
   `apps/core/src/shared/registry/marketplace.tsx` first.

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 2,
+  "id": "developer",
+  "name": "Developer",
+  "description": "Git GUI and the REST API Client: stage, commit and browse a repository's history, and compose and send HTTP requests.",
+  "source": {
+    "repo": "https://github.com/gandolh/imbatranim-apps",
+    "ref": "4ef5f5af466eb8657b8271023681772ff9d8c4fb"
+  },
+  "type": "static",
+  "runtime": "native",
+  "sharedKit": 1,
+  "build": {
+    "install": ["npm", "ci", "--workspace=developer"],
+    "command": ["npm", "run", "build:os", "--workspace=developer"],
+    "output": "developer/dist/os"
+  },
+  "apps": [
+    {
+      "id": "git-gui",
+      "name": "Git",
+      "description": "Stage, commit, diff, and browse the history of a git repository",
+      "meta": [
+        "git",
+        "version control",
+        "commit",
+        "diff",
+        "stage",
+        "status",
+        "log",
+        "vcs"
+      ],
+      "entry": "git-gui/app.mjs",
+      "window": {
+        "defaultSize": {
+          "w": 760,
+          "h": 560
+        },
+        "minSize": {
+          "w": 560,
+          "h": 400
+        }
+      },
+      "icon": "git-branch",
+      "multiInstance": false,
+      "capabilities": ["fs", "http", "intents", "notify"],
+      "styles": ["git-gui/app.css"]
+    },
+    {
+      "id": "rest-api-client",
+      "name": "REST Client",
+      "description": "Compose HTTP requests, send them through the authed backend proxy, and inspect responses",
+      "meta": [
+        "rest",
+        "http",
+        "api",
+        "client",
+        "postman",
+        "insomnia",
+        "curl",
+        "request",
+        "fetch"
+      ],
+      "entry": "rest-api-client/app.mjs",
+      "window": {
+        "defaultSize": {
+          "w": 900,
+          "h": 620
+        },
+        "minSize": {
+          "w": 560,
+          "h": 380
+        }
+      },
+      "icon": "send",
+      "multiInstance": false,
+      "capabilities": ["fs", "http", "intents", "notify"],
+      "styles": ["rest-api-client/app.css"]
+    }
+  ],
+  "minSystemVersion": 2
+}

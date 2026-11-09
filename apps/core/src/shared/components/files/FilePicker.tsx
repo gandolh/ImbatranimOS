@@ -99,7 +99,8 @@ export function FilePicker({
   const [showRecent, setShowRecent] = useState(false)
   const { data: recentFiles } = useRecentFilesQuery()
   const recent = useMemo(() => {
-    const all = recentFiles ?? []
+    // A folder (a repository Git GUI worked in) is no file to pick.
+    const all = (recentFiles ?? []).filter((f) => f.kind !== 'folder')
     if (!extensions || extensions.length === 0 || showAll) return all
     return all.filter((f) => extensions.includes(f.path.split('.').pop()?.toLowerCase() ?? ''))
   }, [recentFiles, extensions, showAll])

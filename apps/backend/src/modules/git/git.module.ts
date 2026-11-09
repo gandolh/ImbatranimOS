@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { FilesModule } from '../files/files.module';
-import { DbModule } from '../../db/db.module';
 import { GitController } from './git.controller';
 import { GitService } from './git.service';
 
@@ -9,11 +8,11 @@ import { GitService } from './git.service';
  * `resolveSafe`, the FS jail — so the repo directory (used only as an execa
  * `cwd`) can never escape the home root. The jail is NOT reimplemented here.
  *
- * DbModule is for the recent-repos list only; no git operation reads
- * or writes the database.
+ * No git operation reads or writes the database. Git GUI keeps its recent
+ * repositories itself, as OS recents and in its own state folder.
  */
 @Module({
-  imports: [FilesModule, DbModule],
+  imports: [FilesModule],
   controllers: [GitController],
   providers: [GitService],
 })

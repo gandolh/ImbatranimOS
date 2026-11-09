@@ -17,6 +17,12 @@ export type RecentFile = {
   root: string
   path: string
   appId: string
+  /**
+   * A folder is an app's place to work (Git GUI's repositories): Start and
+   * the palette open it in its app; the file picker leaves it out. Absent
+   * from a backend older than the kind.
+   */
+  kind?: 'file' | 'folder'
   lastOpened: string
 }
 

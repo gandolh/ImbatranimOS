@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 17;
+export const LEDGER_VERSION = 18;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -238,6 +238,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         name: 'recent-writable',
         run: () => this.stepRecentWritable(),
       },
+      { toVersion: 18, name: 'recent-kind', run: () => this.stepRecentKind() },
     ];
 
     const current = Number(this.db.pragma('user_version', { simple: true }));
@@ -799,6 +800,23 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     // Also when the column was there already: a database that ran this step
     // when it backfilled every row as writable is set right by running it again.
     this.db.exec('UPDATE recent_files SET writable = 0');
+  }
+
+  /**
+   * Step 18 — whether a recent is a file or a folder. Git GUI's recent
+   * repositories are the app's own recents now, folders it may give a window
+   * of its own again; the file picker leaves them out. Rows from before are
+   * files.
+   */
+  private stepRecentKind() {
+    try {
+      this.db.exec(
+        `ALTER TABLE recent_files ADD COLUMN kind TEXT NOT NULL DEFAULT 'file'
+           CHECK (kind IN ('file', 'folder'))`,
+      );
+    } catch (err) {
+      if (!isAlreadyApplied(err, /duplicate column name/i)) throw err;
+    }
   }
 
   private stepDropOldAuth() {

@@ -10,7 +10,6 @@ import * as fs from 'fs/promises';
 import { join, relative, sep } from 'path';
 import type { AppIdentity } from '../app-identity/app-identity.types';
 import { FilesService } from '../files/files.service';
-import { DbService } from '../../db/db.service';
 import { childEnv } from '../../child-env';
 
 // execa ships pure ESM; import it lazily (dynamic import) so this module still
@@ -38,8 +37,6 @@ const MAX_LOG_LIMIT = 500;
  * client-supplied and should be the tighter of the two.
  */
 const MAX_PATCH_BYTES = 1024 * 1024;
-/** How many repos the recents list keeps. The UI shows a short menu, not a history. */
-const MAX_RECENT_REPOS = 10;
 
 /**
  * Environment forced onto every git invocation:
@@ -152,10 +149,7 @@ export class GitService {
   /** The app a call is made for; null is the user. Set by {@link as}. */
   private readonly caller: AppIdentity | null = null;
 
-  constructor(
-    private readonly filesService: FilesService,
-    private readonly db: DbService,
-  ) {}
+  constructor(private readonly filesService: FilesService) {}
 
   /**
    * This service, for one caller: every repo it opens is checked against
@@ -705,80 +699,6 @@ export class GitService {
       );
     }
     return this.status(root, path);
-  }
-
-  /**
-   * Repos the user has opened, most recent first.
-   *
-   * Recorded explicitly by {@link rememberRepo} rather than as a side effect of
-   * `resolveRepo`: status is polled, and a list that reorders itself while you read
-   * it is not a recents list. Entries whose directory has since gone are filtered
-   * out on read, so a deleted repo disappears instead of 404-ing when clicked.
-   */
-  async recentRepos(): Promise<{ repos: { root: string; path: string }[] }> {
-    // An app sees the repos it remembered; the user sees them all.
-    const rows = (
-      this.caller === null
-        ? this.db.db
-            .prepare(
-              'SELECT root, path FROM git_recent_repos ORDER BY last_opened DESC LIMIT ?',
-            )
-            .all(MAX_RECENT_REPOS)
-        : this.db.db
-            .prepare(
-              `SELECT root, path FROM git_recent_repos WHERE app_id = ?
-               ORDER BY last_opened DESC LIMIT ?`,
-            )
-            .all(this.caller.appId, MAX_RECENT_REPOS)
-    ) as { root: string; path: string }[];
-
-    const alive: { root: string; path: string }[] = [];
-    for (const row of rows) {
-      const ok = await this.filesService
-        .resolveSafe(row.root, row.path)
-        .then(({ abs }) => fs.stat(abs))
-        .then((s) => s.isDirectory())
-        .catch(() => false);
-      if (ok) alive.push(row);
-    }
-    return { repos: alive };
-  }
-
-  /** Record a repo as opened. Only ever called after `resolveRepo` succeeded. */
-  async rememberRepo(root: string, path?: string): Promise<void> {
-    await this.resolveRepo(root, path);
-    this.db.db
-      .prepare(
-        `INSERT INTO git_recent_repos (root, path, app_id, last_opened)
-         VALUES (@root, @path, @appId, CURRENT_TIMESTAMP)
-         ON CONFLICT(root, path)
-         DO UPDATE SET last_opened = CURRENT_TIMESTAMP, app_id = @appId`,
-      )
-      .run({ root, path: path ?? '', appId: this.caller?.appId ?? null });
-    // Keep the table from growing without bound; the UI only ever shows the top few.
-    this.db.db
-      .prepare(
-        `DELETE FROM git_recent_repos
-          WHERE id NOT IN (
-            SELECT id FROM git_recent_repos ORDER BY last_opened DESC LIMIT ?
-          )`,
-      )
-      .run(MAX_RECENT_REPOS);
-  }
-
-  /** Drop a recent repo; an app drops only its own. */
-  forgetRepo(root: string, path?: string): void {
-    if (this.caller === null) {
-      this.db.db
-        .prepare('DELETE FROM git_recent_repos WHERE root = ? AND path = ?')
-        .run(root, path ?? '');
-      return;
-    }
-    this.db.db
-      .prepare(
-        'DELETE FROM git_recent_repos WHERE root = ? AND path = ? AND app_id = ?',
-      )
-      .run(root, path ?? '', this.caller.appId);
   }
 
   // ---------------------------------------------------------------------------

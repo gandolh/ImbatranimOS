@@ -54,20 +54,6 @@ jest.mock('execa', () => {
 
 import { GitService, isBinaryMissing } from './git.service';
 import { FilesService } from '../files/files.service';
-import { DbService } from '../../db/db.service';
-
-/**
- * A real in-memory DbService for the recent-repos table. GitService
- * takes one now; a stub would let the recents SQL rot untested, and an in-memory
- * database costs nothing.
- */
-function testDb(): DbService {
-  const db = new DbService({
-    get: () => ':memory:',
-  } as unknown as ConstructorParameters<typeof DbService>[0]);
-  db.onModuleInit();
-  return db;
-}
 
 /**
  * These run REAL git in a REAL temp repo that IS the `home` jail for the test
@@ -88,7 +74,7 @@ describe('GitService (real git in a jailed temp repo)', () => {
   beforeEach(async () => {
     jail = await fs.mkdtemp(join(os.tmpdir(), 'imb-git-'));
     process.env.FILES_ROOT = jail;
-    service = new GitService(new FilesService(), testDb());
+    service = new GitService(new FilesService());
 
     const repo = repoAbs();
     await fs.mkdir(repo);
@@ -284,7 +270,7 @@ describe('GitService (real git in a jailed temp repo)', () => {
 });
 
 describe('GitService parsers (pure)', () => {
-  const service = new GitService(new FilesService(), testDb());
+  const service = new GitService(new FilesService());
 
   it('parseStatus handles staged/unstaged/untracked and NUL-separated names', () => {
     // porcelain=v1 -z: `XY path\0` records; names may contain spaces.
@@ -404,7 +390,7 @@ describe('isBinaryMissing — the git-not-in-image guard', () => {
 
 describe('GitService.exec — git present', () => {
   it('runs and reports a zero exit', async () => {
-    const service = new GitService(new FilesService(), testDb());
+    const service = new GitService(new FilesService());
     const result = await service.exec(process.cwd(), ['--version']);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toMatch(/^git version/);

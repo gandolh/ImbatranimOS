@@ -53,20 +53,6 @@ jest.mock('execa', () => {
 
 import { GitService } from './git.service';
 import { FilesService } from '../files/files.service';
-import { DbService } from '../../db/db.service';
-
-/**
- * A real in-memory DbService for the recent-repos table. GitService
- * takes one now; a stub would let the recents SQL rot untested, and an in-memory
- * database costs nothing.
- */
-function testDb(): DbService {
-  const db = new DbService({
-    get: () => ':memory:',
-  } as unknown as ConstructorParameters<typeof DbService>[0]);
-  db.onModuleInit();
-  return db;
-}
 
 /**
  * The git GUI work's new commands against REAL git in a REAL jailed repo.
@@ -88,7 +74,7 @@ describe('git against a real repository', () => {
   beforeEach(async () => {
     jail = await fs.mkdtemp(join(os.tmpdir(), 'imb-git76-'));
     process.env.FILES_ROOT = jail;
-    service = new GitService(new FilesService(), testDb());
+    service = new GitService(new FilesService());
     const repo = repoAbs();
     await fs.mkdir(repo);
     await service.exec(repo, ['init', '-q', '-b', 'main']);
@@ -356,45 +342,6 @@ describe('git against a real repository', () => {
       // The decisive check: the file outside the repo is exactly as it was.
       expect(await fs.readFile(victim, 'utf8')).toBe('SECRET\n');
       await expect(fs.stat('/tmp/imb-pwned-76')).rejects.toThrow();
-    });
-  });
-
-  describe('recent repos', () => {
-    it('records a repo once, newest first, and forgets it again', async () => {
-      await commitFile('a.txt', 'one\n', 'init');
-      const other = join(jail, 'repo2');
-      await fs.mkdir(other);
-      await service.exec(other, ['init', '-q', '-b', 'main']);
-
-      await service.rememberRepo('home', repoRel);
-      await service.rememberRepo('home', 'repo2');
-      // Opening the first again must move it, not duplicate it.
-      await service.rememberRepo('home', repoRel);
-
-      const { repos } = await service.recentRepos();
-      expect(repos.map((r) => r.path)).toEqual([repoRel, 'repo2']);
-
-      service.forgetRepo('home', 'repo2');
-      expect((await service.recentRepos()).repos.map((r) => r.path)).toEqual([
-        repoRel,
-      ]);
-    });
-
-    it('refuses to remember something outside the jail or not a repo', async () => {
-      await expect(service.rememberRepo('home', '../..')).rejects.toThrow();
-      await fs.mkdir(join(jail, 'plain'));
-      await expect(service.rememberRepo('home', 'plain')).rejects.toThrow(
-        /Not a git work tree/,
-      );
-      expect((await service.recentRepos()).repos).toEqual([]);
-    });
-
-    it('drops an entry whose directory has since been deleted', async () => {
-      await commitFile('a.txt', 'one\n', 'init');
-      await service.rememberRepo('home', repoRel);
-      await fs.rm(repoAbs(), { recursive: true, force: true });
-      // A stale row must vanish from the list rather than 404 when clicked.
-      expect((await service.recentRepos()).repos).toEqual([]);
     });
   });
 

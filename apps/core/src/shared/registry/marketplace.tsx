@@ -11,6 +11,7 @@ import {
   FileText,
   Gamepad2,
   Ghost,
+  GitBranch,
   Joystick,
   ListTodo,
   Map as MapIcon,
@@ -20,6 +21,7 @@ import {
   Puzzle,
   Rocket,
   Ruler,
+  Send,
   Sheet,
   Spade,
   Sprout,
@@ -247,6 +249,9 @@ const ICONS: Record<string, IconComponent> = {
   // Accessories.
   'list-todo': ListTodo,
   bookmark: Bookmark,
+  // Developer.
+  'git-branch': GitBranch,
+  send: Send,
 }
 
 /** The icon names a descriptor may use, for the descriptor check and the docs. */

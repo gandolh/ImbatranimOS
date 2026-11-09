@@ -193,14 +193,21 @@ describe('Files by grant (e2e)', () => {
     await as(notepad).list('Documents').expect(200);
     await as(notepad).read('Documents/sub/deep.txt').expect(403);
     await as(notepad).upload('Documents/new.txt', 'x').expect(403);
+    // A folder it may only list is no recent of its own.
+    await http
+      .post('/api/files/recent')
+      .set('Cookie', TEST_COOKIE)
+      .set(APP_TOKEN_HEADER, notepad.token)
+      .send({ root: 'home', path: 'Documents', appId: 'notepad' })
+      .expect(403);
 
-    // Git GUI with a picked folder: the folder and what is under it.
-    const git = await open('git-gui');
-    await as(git).list('Documents').expect(403);
-    await give(git, 'Documents/sub', 'folder').expect(204);
-    await as(git).list('Documents/sub').expect(200);
-    await as(git).upload('Documents/sub/new.txt', 'x').expect(201);
-    await as(git).read('Documents/plan.txt').expect(403);
+    // The Code Editor with a picked folder: the folder and what is under it.
+    const editor = await open('code-editor');
+    await as(editor).list('Documents').expect(403);
+    await give(editor, 'Documents/sub', 'folder').expect(204);
+    await as(editor).list('Documents/sub').expect(200);
+    await as(editor).upload('Documents/sub/new.txt', 'x').expect(201);
+    await as(editor).read('Documents/plan.txt').expect(403);
 
     // A second window of the same built-in holds nothing.
     const again = await open('notepad');
@@ -486,19 +493,30 @@ describe('Files by grant (e2e)', () => {
     await as(first).read('Documents/plan.txt').expect(403);
     // It records the reopen (moving it up) without holding the file itself.
     await recordAs(first, 'Documents/plan.txt', 'hollow').expect(204);
-    // Only a file: a folder is never a recent to reopen.
-    await recordAs(null, 'Documents/sub', 'hollow').expect(204);
+    // A folder it records only while it holds it whole, as a pick gives it.
+    await recordAs(first, 'Documents/sub', 'hollow').expect(403);
     await give(second, 'Documents/sub', 'folder', first).expect(403);
-
-    // A folder among its own recent repositories reopens too.
-    app
-      .get(DbService)
-      .db.prepare(
-        `INSERT INTO git_recent_repos (root, path, app_id) VALUES ('home', 'Documents/sub', 'hollow')`,
-      )
-      .run();
+    const picked = await open('hollow');
+    await give(picked, 'Documents/sub', 'folder').expect(204);
+    await recordAs(picked, 'Documents/sub', 'hollow').expect(204);
+    // Then it is one of its recents, and reopens in a window of its own.
     await give(second, 'Documents/sub', 'folder', first).expect(204);
     await as(second).list('Documents/sub').expect(200);
+    // The folder the OS opened with it is one of its recents too.
+    await recordAs(null, 'Documents', 'hollow').expect(204);
+    await give(second, 'Documents', 'folder', first).expect(204);
+    await http
+      .get('/api/files/recent')
+      .set('Cookie', TEST_COOKIE)
+      .expect(200)
+      .expect(({ body }: { body: { path: string; kind: string }[] }) => {
+        expect(body.find((r) => r.path === 'Documents/sub')?.kind).toBe(
+          'folder',
+        );
+        expect(body.find((r) => r.path === 'Documents/plan.txt')?.kind).toBe(
+          'file',
+        );
+      });
 
     // Another app can't use Hollow's recents, for itself or for Hollow.
     const quill = await open('quill');

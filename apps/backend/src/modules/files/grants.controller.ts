@@ -85,8 +85,8 @@ export class GrantFileDto {
  *   own), and the app must hold it itself: read and write on a file, listing
  *   and writing on a folder, or making a file not there yet; a file it may
  *   only read goes on to read only. One more: an
- *   app may give a window of its own a file among its own recent files (or
- *   a folder among its own recent repositories), so it reopens one in a new
+ *   app may give a window of its own a file or a folder among its own
+ *   recents (Git GUI's repositories are folders), so it reopens one in a new
  *   window as Start's recents would. Core makes an
  *   app's `openApp` this way, with the app's token, so an app can't open
  *   itself with a path to be given it.
@@ -154,8 +154,9 @@ export class GrantsController {
    * may read and write goes on whole; one it may only read (one beside a
    * file it was opened with) goes on read only. Beyond what it holds, a
    * window of its own may be given one of its own recent files, no more
-   * than it could do to it when it recorded it, or one of its own recent
-   * repositories. Anything else is refused, naming the path.
+   * than it could do to it when it recorded it, or a folder among its own
+   * recents (one the OS opened with it, or one it recorded while it held
+   * the folder whole). Anything else is refused, naming the path.
    */
   private handOn(
     who: AppIdentity,
@@ -172,14 +173,14 @@ export class GrantsController {
       const recent = mine
         ? this.recent.ownRecent(dto.root, dto.path, who.appId)
         : null;
-      if (recent) return recent.writable ? 'file' : 'read';
+      if (recent?.kind === 'file') return recent.writable ? 'file' : 'read';
       this.files.assertCan(who, 'read', key, dto.root, dto.path);
       return 'read';
     }
     if (
       kind === 'folder' &&
       mine &&
-      this.recent.isRecentRepoOf(dto.root, dto.path, who.appId)
+      this.recent.ownRecent(dto.root, dto.path, who.appId)?.kind === 'folder'
     ) {
       return 'folder';
     }

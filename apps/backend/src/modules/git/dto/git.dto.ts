@@ -142,6 +142,3 @@ export class ApplyPatchBodyDto extends RepoRefDto {
   @IsBoolean()
   reverse?: boolean;
 }
-
-/** POST /api/git/recents | DELETE — a repo the user opened. */
-export class RecentRepoBodyDto extends RepoRefDto {}

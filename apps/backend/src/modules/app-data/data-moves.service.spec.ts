@@ -148,6 +148,76 @@ describe('DataMovesService', () => {
     expect(hasTable('bookmark_links')).toBe(false);
   });
 
+  it("moves Git GUI's recent repositories into its state folder and its OS recents", async () => {
+    dbs.db.exec(`
+      INSERT INTO git_recent_repos (root, path, app_id, last_opened) VALUES
+        ('home', 'code/old', 'git-gui', '2026-11-01 08:00:00'),
+        ('home', 'code/new', 'git-gui', '2026-11-05 08:00:00'),
+        ('home', 'code/users', NULL, '2026-11-06 08:00:00'),
+        ('notes', 'other', 'hollow', '2026-11-07 08:00:00');
+    `);
+    await moves.run();
+    const state = join(home, '.local', 'state', 'imbatranim', 'git-gui');
+    expect(
+      JSON.parse(await fs.readFile(join(state, 'recents.json'), 'utf8')),
+    ).toEqual({
+      repos: [
+        { root: 'home', path: 'code/new' },
+        { root: 'home', path: 'code/old' },
+      ],
+    });
+    expect(modes.stat(join(state, 'recents.json'))).toEqual({
+      owner: 'git-gui',
+      group: 'git-gui',
+      mode: 0o600,
+    });
+    expect(
+      dbs.db
+        .prepare(
+          'SELECT root, path, app_id, writable, kind, last_opened FROM recent_files ORDER BY path',
+        )
+        .all(),
+    ).toEqual([
+      {
+        root: 'home',
+        path: 'code/new',
+        app_id: 'git-gui',
+        writable: 1,
+        kind: 'folder',
+        last_opened: '2026-11-05 08:00:00',
+      },
+      {
+        root: 'home',
+        path: 'code/old',
+        app_id: 'git-gui',
+        writable: 1,
+        kind: 'folder',
+        last_opened: '2026-11-01 08:00:00',
+      },
+    ]);
+    expect(hasTable('git_recent_repos')).toBe(false);
+    expect(logged).toContainEqual(
+      expect.objectContaining({
+        event: 'app-data.move.done',
+        msg: "Git GUI's data moved into its folder: 2 recent repositories.",
+      }),
+    );
+  });
+
+  it("leaves a recent already at a repository's path as it is", async () => {
+    dbs.db.exec(`
+      INSERT INTO recent_files (root, path, app_id, writable, kind)
+        VALUES ('home', 'code/repo', 'code-editor', 1, 'folder');
+      INSERT INTO git_recent_repos (root, path, app_id)
+        VALUES ('home', 'code/repo', 'git-gui');
+    `);
+    await moves.run();
+    expect(dbs.db.prepare('SELECT app_id FROM recent_files').all()).toEqual([
+      { app_id: 'code-editor' },
+    ]);
+    expect(hasTable('git_recent_repos')).toBe(false);
+  });
+
   it("makes the files the app's own and private, though it isn't installed", async () => {
     seedTodos();
     await moves.run();
@@ -160,6 +230,7 @@ describe('DataMovesService', () => {
     await moves.run();
     expect(hasTable('todos')).toBe(false);
     expect(hasTable('bookmark_groups')).toBe(false);
+    expect(hasTable('git_recent_repos')).toBe(false);
     await expect(fs.stat(folder('todo'))).rejects.toThrow();
     expect(logged).toEqual([]);
   });

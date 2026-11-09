@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import type { AppIdentity } from '../app-identity/app-identity.types';
 import { CallingApp } from '../app-identity/calling-app';
 import { GitService } from './git.service';
@@ -21,7 +13,6 @@ import {
   DiscardBodyDto,
   LogQueryDto,
   PathsBodyDto,
-  RecentRepoBodyDto,
   StashPopBodyDto,
   StashPushBodyDto,
   StatusQueryDto,
@@ -165,32 +156,6 @@ export class GitController {
   @Post('amend')
   amend(@CallingApp() who: AppIdentity | null, @Body() dto: AmendBodyDto) {
     return this.gitService.as(who).amend(dto.root, dto.message, dto.path);
-  }
-
-  /** GET /api/git/recents → repos opened before, most recent first */
-  @Get('recents')
-  recents(@CallingApp() who: AppIdentity | null) {
-    return this.gitService.as(who).recentRepos();
-  }
-
-  /** POST /api/git/recents { root, path? } → record a repo as opened */
-  @Post('recents')
-  @HttpCode(204)
-  remember(
-    @CallingApp() who: AppIdentity | null,
-    @Body() dto: RecentRepoBodyDto,
-  ) {
-    return this.gitService.as(who).rememberRepo(dto.root, dto.path);
-  }
-
-  /** DELETE /api/git/recents { root, path? } → drop one from the list */
-  @Delete('recents')
-  @HttpCode(204)
-  forget(
-    @CallingApp() who: AppIdentity | null,
-    @Body() dto: RecentRepoBodyDto,
-  ) {
-    return this.gitService.as(who).forgetRepo(dto.root, dto.path);
   }
 
   /** POST /api/git/apply { root, path?, patch, reverse? } → stage/unstage a hunk */

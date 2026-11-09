@@ -1,3 +1,4 @@
+import * as fs from 'fs/promises';
 import {
   Body,
   Controller,
@@ -11,7 +12,12 @@ import {
 import type { AppIdentity } from '../app-identity/app-identity.types';
 import { CallingApp, requireUser } from '../app-identity/calling-app';
 import { FilesService } from './files.service';
-import { RecentService, type RecentFile } from './recent.service';
+import type { ModeOp } from '../app-identity/mode-store.service';
+import {
+  RecentService,
+  type RecentFile,
+  type RecentKind,
+} from './recent.service';
 import { RecordRecentDto, RemoveRecentQueryDto } from './dto/recent.dto';
 
 /**
@@ -23,7 +29,8 @@ import { RecordRecentDto, RemoveRecentQueryDto } from './dto/recent.dto';
  * again, so what an app may record is held to what it may read: an app can't
  * plant a file it was never given in the list for the owner to hand it later.
  * (Nor for itself: an app's own recent files are what it may reopen in a new
- * window, see `GrantsController`.)
+ * window, see `GrantsController`.) A folder is a recent too, recorded only
+ * by an app that holds it whole: Git GUI's repositories.
  * An app sees and removes only its own entries; the whole list, and clearing
  * it, are the user's.
  */
@@ -46,32 +53,46 @@ export class RecentController {
     @CallingApp() who: AppIdentity | null,
     @Body() dto: RecordRecentDto,
   ): Promise<void> {
-    if (who !== null) {
-      if (dto.appId !== who.appId) {
-        throw new ForbiddenException(
-          `${who.appId} may not record a recent file for ${dto.appId}`,
-        );
-      }
-      // What the app may do to it now is what a reopen gives later: a file
-      // it may only read is recorded as such.
-      const located = await this.files
-        .check(who, 'read', dto.root, dto.path)
-        .catch((err: unknown) => {
-          // Recording one of its own again only moves it up: the app
-          // reopening its recent in a new window, which doesn't hold it yet.
-          if (this.recent.isRecentOf(dto.root, dto.path, who.appId)) {
-            return null;
-          }
-          throw err;
-        });
-      const writable =
-        located === null
-          ? undefined
-          : this.files.can(who, 'write', located.key) !== null;
-      this.recent.record(dto.root, dto.path, dto.appId, writable);
+    const kind = await this.kindAt(dto.root, dto.path);
+    if (who === null) {
+      this.recent.record(dto.root, dto.path, dto.appId, true, kind);
       return;
     }
-    this.recent.record(dto.root, dto.path, dto.appId);
+    if (dto.appId !== who.appId) {
+      throw new ForbiddenException(
+        `${who.appId} may not record a recent file for ${dto.appId}`,
+      );
+    }
+    // What the app may do to it now is what a reopen gives later: a file it
+    // may only read is recorded as such. A folder only by an app that holds
+    // it whole, listing and writing in it, as a picked folder is given.
+    const ops: ModeOp[] = kind === 'folder' ? ['list', 'write'] : ['read'];
+    let key = '';
+    try {
+      for (const op of ops) {
+        ({ key } = await this.files.check(who, op, dto.root, dto.path));
+      }
+    } catch (err) {
+      // Recording one of its own again only moves it up: the app reopening
+      // its recent in a new window, which doesn't hold it yet.
+      if (this.recent.ownRecent(dto.root, dto.path, who.appId)?.kind === kind) {
+        this.recent.record(dto.root, dto.path, dto.appId, undefined, kind);
+        return;
+      }
+      throw err;
+    }
+    const writable =
+      kind === 'folder' || this.files.can(who, 'write', key) !== null;
+    this.recent.record(dto.root, dto.path, dto.appId, writable, kind);
+  }
+
+  /** A folder when one is there now; anything else, a missing path included, is a file. */
+  private async kindAt(root: string, path: string): Promise<RecentKind> {
+    const stat = await this.files
+      .resolveSafe(root, path)
+      .then(({ abs }) => fs.stat(abs))
+      .catch(() => null);
+    return stat?.isDirectory() ? 'folder' : 'file';
   }
 
   @Delete('all')

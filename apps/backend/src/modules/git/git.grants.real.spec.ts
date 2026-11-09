@@ -88,10 +88,7 @@ describe('git as an app, against a real repository', () => {
     const db = testDb();
     const modes = new ModeStore(db);
     grants = new FileGrants(db, modes);
-    service = new GitService(
-      new FilesService(new FileAccess(modes, grants)),
-      db,
-    );
+    service = new GitService(new FilesService(new FileAccess(modes, grants)));
     const repo = join(jail, 'repo');
     await fs.mkdir(join(repo, 'src'), { recursive: true });
     await service.exec(repo, ['init', '-q', '-b', 'main']);
@@ -133,34 +130,5 @@ describe('git as an app, against a real repository', () => {
     await expect(
       service.as(gitGui).status('home', 'repo/src'),
     ).rejects.toMatchObject({ response: { code: FILE_NOT_GRANTED } });
-  });
-
-  it('remembers only a repo it may open', async () => {
-    await expect(
-      service.as(gitGui).rememberRepo('home', 'repo'),
-    ).rejects.toMatchObject({ response: { code: FILE_NOT_GRANTED } });
-    grants.grant(gitGui, join(jail, 'repo'), 'folder');
-    await service.as(gitGui).rememberRepo('home', 'repo');
-    expect((await service.recentRepos()).repos).toEqual([
-      { root: 'home', path: 'repo' },
-    ]);
-  });
-
-  it('an app sees and forgets only the repos it remembered', async () => {
-    grants.grant(gitGui, join(jail, 'repo'), 'folder');
-    await service.as(gitGui).rememberRepo('home', 'repo');
-    const other: AppIdentity = {
-      appId: 'hollow',
-      instanceId: 'h1',
-      windowId: 'h1',
-      groups: ['hollow'],
-    };
-    expect((await service.as(other).recentRepos()).repos).toEqual([]);
-    service.as(other).forgetRepo('home', 'repo');
-    expect((await service.as(gitGui).recentRepos()).repos).toEqual([
-      { root: 'home', path: 'repo' },
-    ]);
-    service.as(gitGui).forgetRepo('home', 'repo');
-    expect((await service.recentRepos()).repos).toEqual([]);
   });
 });

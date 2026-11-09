@@ -51,6 +51,15 @@ Brief 68 (the backend knows which app and instance is calling).
    picked folder grants everything under it for that window.
 5. **Typed paths go.** The REST API Client attaches files through
    `pickOpen`.
+6. **An opened file's folder (2026-11-09).** An OS-made open (Files, Open
+   With, the launchers, a pick core hands the app) also gives read on the
+   opened file's folder, listing included, but only to apps that declare it
+   in their manifest: Media Player, Image Viewer and Notepad do. Apps that
+   don't declare it get the file alone. An app-made open never gets the
+   folder; it gives only what the app holds. Read on the folder is taken
+   literally: listing the folder and reading the files directly in it, not
+   what is in its subfolders (a file at the top of home would otherwise give
+   all of home).
 
 ## What to do
 

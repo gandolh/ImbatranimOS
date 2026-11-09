@@ -582,4 +582,62 @@ describe('DbService — the file grants table', () => {
       .run();
     svc.onModuleDestroy();
   });
+
+  it('a database at step 18 keeps its grants and takes an assets grant', () => {
+    const svc = openService(join(dir, 'assets.sqlite'));
+    // The table as step 15 made it: four kinds.
+    svc.db.exec(`
+      DROP TABLE file_grants;
+      CREATE TABLE file_grants (
+        instance_id TEXT NOT NULL,
+        app_id TEXT NOT NULL,
+        path TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('file', 'read', 'folder', 'listing')),
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (instance_id, path)
+      );
+    `);
+    const insert = svc.db.prepare(
+      `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
+       VALUES (?, 'notepad', ?, ?, 1)`,
+    );
+    insert.run('w1', '/home/imbatranim/a.md', 'file');
+    insert.run('w1', '/home/imbatranim', 'listing');
+    expect(() => insert.run('w1', '/home/imbatranim/assets', 'assets')).toThrow(
+      /CHECK constraint/,
+    );
+    svc.db.pragma('user_version = 18');
+    svc.migrate();
+    expect(svc.migrationFailure).toBeNull();
+    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
+      LEDGER_VERSION,
+    );
+    expect(
+      svc.db.prepare('SELECT path, kind FROM file_grants ORDER BY path').all(),
+    ).toEqual([
+      { path: '/home/imbatranim', kind: 'listing' },
+      { path: '/home/imbatranim/a.md', kind: 'file' },
+    ]);
+    const indexes = (
+      svc.db.prepare('PRAGMA index_list(file_grants)').all() as {
+        name: string;
+      }[]
+    ).map((i) => i.name);
+    expect(indexes).toContain('file_grants_created_at');
+    svc.db
+      .prepare(
+        `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
+         VALUES ('w1', 'notepad', '/home/imbatranim/assets', 'assets', 1)`,
+      )
+      .run();
+    expect(() =>
+      svc.db
+        .prepare(
+          `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
+           VALUES ('w1', 'notepad', '/b', 'everything', 1)`,
+        )
+        .run(),
+    ).toThrow(/CHECK constraint/);
+    svc.onModuleDestroy();
+  });
 });

@@ -177,7 +177,11 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
   // app hears the answer. A copy acting as the user needs nothing given.
   // A picked file comes with its folder to read for an app that declares it
   // reads the opened file's folder, as an open from Files does.
-  const readsFolder = APP_REGISTRY.find((a) => a.id === appId)?.readsOpenedFolder === true
+  // So does the `assets/` folder beside it, to add to, for one that declares
+  // it attaches files there.
+  const config = APP_REGISTRY.find((a) => a.id === appId)
+  const readsFolder = config?.readsOpenedFolder === true
+  const attaches = config?.attachesUnderAssets === true
   const given =
     (expect: GrantExpect) =>
     async (choice: FileChoice | null): Promise<FileChoice | null> => {
@@ -185,6 +189,7 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
         await grantFile({ appId, instanceId: instance.instanceId }, choice, {
           expect,
           withFolder: expect === 'file' && readsFolder,
+          withAssets: expect === 'file' && attaches,
         })
       }
       return choice

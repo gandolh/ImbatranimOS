@@ -133,6 +133,59 @@ describe('FileGrants', () => {
     ).toEqual(expect.objectContaining({ kind: 'folder' }));
   });
 
+  it('an assets grant makes, lists, reads and adds to its folder, never writes over or removes', () => {
+    const assets = `${HOME}/Documents/assets`;
+    grants.grant(docs, assets, 'assets');
+    expect(grants.covers(docs, 'create', assets)).toBe(true);
+    expect(grants.covers(docs, 'list', assets)).toBe(true);
+    expect(grants.covers(docs, 'traverse', assets)).toBe(true);
+    expect(grants.covers(docs, 'create', `${assets}/shot.png`)).toBe(true);
+    expect(grants.covers(docs, 'read', `${assets}/shot.png`)).toBe(true);
+    expect(grants.covers(docs, 'write', `${assets}/shot.png`)).toBe(false);
+    expect(grants.covers(docs, 'delete', `${assets}/shot.png`)).toBe(false);
+    expect(grants.covers(docs, 'chmod', `${assets}/shot.png`)).toBe(false);
+    expect(grants.covers(docs, 'delete', assets)).toBe(false);
+    expect(grants.covers(docs, 'write', assets)).toBe(false);
+    expect(grants.covers(docs, 'read', assets)).toBe(false);
+    // Nothing deeper, and nothing beside it.
+    expect(grants.covers(docs, 'create', `${assets}/a/b.png`)).toBe(false);
+    expect(grants.covers(docs, 'read', `${assets}/a/b.png`)).toBe(false);
+    expect(grants.covers(docs, 'list', `${assets}/a`)).toBe(false);
+    expect(grants.covers(docs, 'create', `${HOME}/Documents/b.png`)).toBe(
+      false,
+    );
+    expect(grants.covers(docs, 'read', `${HOME}/Documents/b.md`)).toBe(false);
+    expect(grants.covers(docs, 'create', `${HOME}/Documents/assets2`)).toBe(
+      false,
+    );
+  });
+
+  it('an assets grant stops at another app’s file in the folder', () => {
+    const assets = `${HOME}/Documents/assets`;
+    modes.create(copy('notes', 'n1'), `${assets}/secret.txt`, 'file');
+    grants.grant(docs, assets, 'assets');
+    expect(grants.covers(docs, 'read', `${assets}/secret.txt`)).toBe(false);
+  });
+
+  it('an assets grant never narrows a folder, and a listing never narrows it', () => {
+    const assets = `${HOME}/Documents/assets`;
+    grants.grant(docs, assets, 'folder');
+    grants.grant(docs, assets, 'assets');
+    expect(grants.held('w1', 'office-docs')).toEqual([
+      expect.objectContaining({ kind: 'folder' }),
+    ]);
+    grants.revokeInstance('w1');
+    grants.grant(docs, assets, 'assets');
+    grants.grant(docs, assets, 'listing');
+    expect(grants.held('w1', 'office-docs')).toEqual([
+      expect.objectContaining({ kind: 'assets' }),
+    ]);
+    grants.grant(docs, assets, 'folder');
+    expect(grants.held('w1', 'office-docs')).toEqual([
+      expect.objectContaining({ kind: 'folder' }),
+    ]);
+  });
+
   it('ends with its window, and the same path given again replaces it', () => {
     grants.grant(docs, `${HOME}/a`, 'file');
     grants.grant(docs, `${HOME}/a`, 'folder');

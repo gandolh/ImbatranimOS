@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { join, resolve, relative, basename, dirname, sep } from 'path';
 import * as fs from 'fs/promises';
-import { createReadStream } from 'fs';
+import { constants as fsConstants, createReadStream } from 'fs';
 import type { Dirent, Stats } from 'fs';
 import * as os from 'os';
 import { randomUUID } from 'crypto';
@@ -36,6 +36,20 @@ const MAX_TEXT_FILE_BYTES =
  */
 export function versionOf(stat: Pick<Stats, 'mtimeMs' | 'size'>): string {
   return `${Math.trunc(stat.mtimeMs)}-${stat.size}`;
+}
+
+/**
+ * A 409 for a name already taken, for a caller that may add a file there but
+ * not write over one; `current` is the taken file's version.
+ */
+function nameTaken(current: string | null): ConflictException {
+  return new ConflictException({
+    statusCode: 409,
+    error: 'Conflict',
+    code: 'NAME_TAKEN',
+    message: 'That name is taken: pick another',
+    current,
+  });
 }
 
 export interface FileEntry {
@@ -416,14 +430,21 @@ export class FilesService {
   /**
    * Check, then record, the write of a file at `abs`: `write` over one that
    * is there, `create` (and each missing folder above it) for a new one.
-   * Returns the record to make once the bytes are in place.
+   * Returns the record to make once the bytes are in place, and whether the
+   * file must be placed only if nothing is there by then: a caller that may
+   * make it but not write over it (an app adding to an `assets/` folder) is
+   * never let replace a file that appeared since this check.
+   *
+   * An app that was given a place to add files to but may not write over
+   * one there, asking for a name that is taken, is answered 409 with the
+   * file's version: the name is the app's to change.
    */
   private async checkWrite(
     who: AppIdentity | null,
     located: Located,
     root: string,
     virtualPath: string,
-  ): Promise<() => void> {
+  ): Promise<{ record: () => void; exclusive: boolean }> {
     const { abs, key } = located;
     const existing = await fs.stat(abs).catch(() => null);
     if (existing) {
@@ -431,8 +452,14 @@ export class FilesService {
         this.assertCan(who, 'write', key, root, virtualPath);
         throw new BadRequestException('Path is a directory');
       }
+      if (
+        this.can(who, 'write', key) === null &&
+        this.can(who, 'create', key) === 'grant'
+      ) {
+        throw nameTaken(versionOf(existing));
+      }
       this.assertCan(who, 'write', key, root, virtualPath);
-      return () => undefined;
+      return { record: () => undefined, exclusive: false };
     }
     const folders = await this.missingFolders(dirname(abs));
     const keyOf = (p: string) => join(dirname(key), relative(dirname(abs), p));
@@ -449,11 +476,16 @@ export class FilesService {
     }
     access ??= this.assertCan(who, 'create', key, root, virtualPath);
     const made = access;
-    return () => {
-      for (const folder of folders) {
-        this.recordMade(who, made, keyOf(folder), 'directory');
-      }
-      this.recordMade(who, made, key, 'file');
+    return {
+      record: () => {
+        for (const folder of folders) {
+          this.recordMade(who, made, keyOf(folder), 'directory');
+        }
+        this.recordMade(who, made, key, 'file');
+      },
+      // Its own folders' new files are the app's to write over; only what
+      // it was given to add to is placed exclusively.
+      exclusive: made === 'grant' && this.can(who, 'write', key) === null,
     };
   }
 
@@ -816,13 +848,20 @@ export class FilesService {
   ): Promise<FileEntry> {
     const located = await this.resolveSafe(root, virtualPath);
     const { rootDir, abs } = located;
-    const record = await this.checkWrite(who, located, root, virtualPath);
+    const { record, exclusive } = await this.checkWrite(
+      who,
+      located,
+      root,
+      virtualPath,
+    );
     await this.assertVersion(abs, expected);
     await withDiskSpaceCheck(() => fs.mkdir(dirname(abs), { recursive: true }));
     // Atomic like an upload: `fs.writeFile` onto `abs` truncated it
     // first, so a full disk mid-save left Notepad's file empty.
-    await this.writeAtomically(abs, (staged) =>
-      fs.writeFile(staged, content, 'utf-8'),
+    await this.writeAtomically(
+      abs,
+      (staged) => fs.writeFile(staged, content, 'utf-8'),
+      exclusive,
     );
     record();
     return this.toEntry(rootDir, abs);
@@ -856,7 +895,12 @@ export class FilesService {
     try {
       const located = await this.resolveSafe(root, virtualPath);
       const { rootDir, abs } = located;
-      const record = await this.checkWrite(who, located, root, virtualPath);
+      const { record, exclusive } = await this.checkWrite(
+        who,
+        located,
+        root,
+        virtualPath,
+      );
       await this.assertVersion(abs, expected);
       await withDiskSpaceCheck(async () => {
         await fs.mkdir(dirname(abs), { recursive: true });
@@ -864,7 +908,11 @@ export class FilesService {
 
       // The multer temp file is copied rather than renamed into place, because
       // it genuinely can be on another mount.
-      await this.writeAtomically(abs, (staged) => fs.copyFile(tmpPath, staged));
+      await this.writeAtomically(
+        abs,
+        (staged) => fs.copyFile(tmpPath, staged),
+        exclusive,
+      );
       record();
       return this.toEntry(rootDir, abs);
     } finally {
@@ -909,15 +957,40 @@ export class FilesService {
    * guarantee hold — a rename across filesystems is not atomic and would fall
    * back to a copy. The cost: a save needs write permission on the directory,
    * not just the file.
+   *
+   * `exclusive` places the staged file only if nothing is at `abs` by then:
+   * a hard link fails with EEXIST over anything there, a dangling symlink
+   * included, where a rename would replace it. Answered 409, as a taken name.
    */
   private async writeAtomically(
     abs: string,
     write: (stagedPath: string) => Promise<void>,
+    exclusive = false,
   ): Promise<void> {
     const staged = join(
       dirname(abs),
       `.${basename(abs)}.imbatranim-${randomUUID()}.part`,
     );
+    if (exclusive) {
+      // The folder it lands in must be a folder, not a link to one.
+      const parent = await fs.lstat(dirname(abs));
+      if (!parent.isDirectory()) {
+        throw new BadRequestException('Not a folder');
+      }
+      try {
+        await withDiskSpaceCheck(() => write(staged));
+        await withDiskSpaceCheck(() => fs.link(staged, abs));
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
+          const there = await fs.stat(abs).catch(() => null);
+          throw nameTaken(there ? versionOf(there) : null);
+        }
+        throw err;
+      } finally {
+        await fs.rm(staged, { force: true });
+      }
+      return;
+    }
     try {
       await withDiskSpaceCheck(() => write(staged));
       // A rename carries the staged file's mode, not the destination's, so an
@@ -1034,7 +1107,15 @@ export class FilesService {
       if (stat.isDirectory()) {
         await fs.cp(absFrom, absTo, { recursive: true });
       } else {
-        await fs.copyFile(absFrom, absTo);
+        // Never over a file that appeared since the check above.
+        await fs
+          .copyFile(absFrom, absTo, fsConstants.COPYFILE_EXCL)
+          .catch((err: NodeJS.ErrnoException) => {
+            if (err.code === 'EEXIST') {
+              throw new BadRequestException('Destination already exists');
+            }
+            throw err;
+          });
       }
     });
     this.recordMade(

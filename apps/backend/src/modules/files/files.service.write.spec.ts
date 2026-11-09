@@ -1,6 +1,6 @@
 import * as os from 'os';
 import { join } from 'path';
-import { ServiceUnavailableException } from '@nestjs/common';
+import { ConflictException, ServiceUnavailableException } from '@nestjs/common';
 
 /*
  * A save that fails part-way must leave the original file alone.
@@ -19,6 +19,7 @@ jest.mock('fs/promises', () => {
 });
 
 import * as fs from 'fs/promises';
+import type { FileAccess } from './file-access';
 import { FilesService } from './files.service';
 
 const actual = jest.requireActual<typeof import('fs/promises')>('fs/promises');
@@ -60,5 +61,60 @@ describe('FilesService.writeFile when the disk fills mid-save', () => {
       'the only copy',
     );
     expect(await actual.readdir(jail)).toEqual(['notes.txt']);
+  });
+});
+
+describe('FilesService placing a file an app may only add', () => {
+  let jail: string;
+  const prevEnv = process.env.FILES_ROOT;
+  const app = {
+    appId: 'notepad',
+    instanceId: 'w1',
+    windowId: 'w1',
+    groups: ['notepad'],
+  };
+  // Given `assets/` to add to: making and reading there, never writing over.
+  const adds = {
+    how: (_who: unknown, op: string) =>
+      op === 'create' || op === 'read' ? 'grant' : null,
+    made: () => undefined,
+  } as unknown as FileAccess;
+
+  beforeEach(async () => {
+    jail = await actual.mkdtemp(join(os.tmpdir(), 'imb-add-'));
+    process.env.FILES_ROOT = jail;
+  });
+
+  afterEach(async () => {
+    writeFile.mockReset();
+    writeFile.mockImplementation(actual.writeFile);
+    process.env.FILES_ROOT = prevEnv;
+    await actual.rm(jail, { recursive: true, force: true });
+  });
+
+  it('never replaces a file that appeared after the check: a 409, the other bytes kept', async () => {
+    const service = new FilesService(adds);
+    const target = join(jail, 'assets/shot.png');
+    writeFile.mockImplementationOnce(async (path: string, data: string) => {
+      // Another window writes the same name while this one stages its bytes.
+      await actual.writeFile(target, 'theirs', 'utf-8');
+      await actual.writeFile(path, data, 'utf-8');
+    });
+
+    await expect(
+      service.writeFile('home', 'assets/shot.png', 'mine', undefined, app),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(await actual.readFile(target, 'utf-8')).toBe('theirs');
+    expect(await actual.readdir(join(jail, 'assets'))).toEqual(['shot.png']);
+  });
+
+  it('places it when the name is free', async () => {
+    const service = new FilesService(adds);
+    await service.writeFile('home', 'assets/shot.png', 'mine', undefined, app);
+    expect(await actual.readFile(join(jail, 'assets/shot.png'), 'utf-8')).toBe(
+      'mine',
+    );
+    expect(await actual.readdir(join(jail, 'assets'))).toEqual(['shot.png']);
   });
 });

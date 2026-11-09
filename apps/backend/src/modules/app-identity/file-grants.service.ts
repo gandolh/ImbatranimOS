@@ -12,11 +12,14 @@ import {
 /**
  * What a grant covers: one file (`file`, which may not exist yet: a Save as),
  * one file to read only (`read`: what an app hands on of a file it may only
- * read), a folder and everything under it (`folder`), or a folder to read
+ * read), a folder and everything under it (`folder`), a folder to read
  * (`listing`): listing it and reading the files directly in it, what an app
- * that declares it gets of an opened file's folder.
+ * that declares it gets of an opened file's folder, or an `assets/` folder to
+ * add to (`assets`): making it, listing it, reading the files directly in it
+ * and making new ones there, never writing over, renaming or removing one.
+ * What an app that declares it gets beside an opened file.
  */
-export type GrantKind = 'file' | 'read' | 'folder' | 'listing';
+export type GrantKind = 'file' | 'read' | 'folder' | 'listing' | 'assets';
 
 /** One grant: a running copy of an app may act as the user on `path`. */
 export interface FileGrant {
@@ -65,6 +68,9 @@ interface Row {
  *   except anything another app owns: a picked folder doesn't reach into
  *   another app's data folder below it. A file given by itself does, since
  *   the owner chose that file.
+ * - **An assets grant** covers adding to one folder: making it, listing it,
+ *   reading what is directly in it and making new files there. A write to
+ *   anything already there is refused, so the most the app can do is add.
  * - **Grants are kept in the database** so an open window keeps its file
  *   across a backend restart: core mints the window a new token for the same
  *   instance id, and the grants still match it. They end when the window
@@ -82,7 +88,8 @@ export class FileGrants {
    * Give a running copy a file or a folder. Giving the same path again
    * replaces the grant, except that a narrower one never replaces a wider
    * one already given: a `listing` a `folder` (a picked folder, then a file
-   * opened in it), a `read` a `file`.
+   * opened in it), a `read` a `file`, an `assets` a `folder`, a `listing` an
+   * `assets` (a note opened beside `assets/`, then a file opened in it).
    */
   grant(
     target: { instanceId: string; appId: string },
@@ -103,7 +110,9 @@ export class FileGrants {
            kind = excluded.kind, created_at = excluded.created_at
          WHERE NOT (file_grants.app_id = excluded.app_id AND (
            (excluded.kind = 'listing' AND file_grants.kind = 'folder') OR
-           (excluded.kind = 'read' AND file_grants.kind = 'file')))`,
+           (excluded.kind = 'read' AND file_grants.kind = 'file') OR
+           (excluded.kind = 'assets' AND file_grants.kind = 'folder') OR
+           (excluded.kind = 'listing' AND file_grants.kind = 'assets')))`,
       ).run(target.instanceId, target.appId, key, kind, now);
       db.prepare(
         `DELETE FROM file_grants WHERE instance_id = ? AND rowid NOT IN (
@@ -168,6 +177,10 @@ export class FileGrants {
         }
         continue;
       }
+      if (grant.kind === 'assets') {
+        if (this.addsTo(identity.appId, grant.path, op, key)) return true;
+        continue;
+      }
       if (!within(grant.path, key) || op === 'chmod') continue;
       // Making or deleting an entry is an act on its parent; the picked
       // folder's own entry is in a parent that wasn't given.
@@ -176,6 +189,23 @@ export class FileGrants {
       return true;
     }
     return false;
+  }
+
+  /**
+   * What an `assets` grant on `top` allows: making `top` itself, listing it,
+   * and reading or making the entries directly in it. Never `write` or
+   * `delete`, so nothing there is written over, renamed or removed; a name
+   * already taken is the app's to change. Nothing deeper either.
+   */
+  private addsTo(appId: string, top: string, op: ModeOp, key: string): boolean {
+    if (key === top) {
+      return op === 'create' || op === 'list' || op === 'traverse';
+    }
+    return (
+      (op === 'read' || op === 'create') &&
+      parentOf(key) === top &&
+      !this.crossesAnotherApp(appId, top, key)
+    );
   }
 
   /**

@@ -172,9 +172,10 @@ describe('startIn on the file dialogs', () => {
     )
     const calls = post.mock.calls as unknown as [string, Record<string, unknown>][]
     expect(calls.find(([url]) => url === '/files/grants')![1]).not.toHaveProperty('withFolder')
+    expect(calls.find(([url]) => url === '/files/grants')![1]).not.toHaveProperty('withAssets')
   })
 
-  it('a pick comes with its folder for an app that declares it reads it', async () => {
+  it('a pick comes with its folder and assets folder for an app that declares them', async () => {
     const { pending } = await openSave(
       { startIn: { root: 'home', path: 'Drawings/plan.dwg' }, suggestedName: 'plan.md' },
       'notepad'
@@ -185,7 +186,12 @@ describe('startIn on the file dialogs', () => {
     await expect(pending).resolves.toEqual({ root: 'home', path: 'Drawings/plan.md' })
     expect(post).toHaveBeenCalledWith(
       '/files/grants',
-      expect.objectContaining({ appId: 'notepad', path: 'Drawings/plan.md', withFolder: true })
+      expect.objectContaining({
+        appId: 'notepad',
+        path: 'Drawings/plan.md',
+        withFolder: true,
+        withAssets: true,
+      })
     )
   })
 

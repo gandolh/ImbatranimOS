@@ -70,10 +70,9 @@ describe('relativeFrom', () => {
 })
 
 describe('assetDir', () => {
-  it('uses an existing assets directory, and the document directory otherwise', () => {
-    expect(assetDir('docs', true)).toBe('docs/assets')
-    expect(assetDir('docs', false)).toBe('docs')
-    expect(assetDir('', true)).toBe('assets')
+  it('is always the assets folder beside the document', () => {
+    expect(assetDir('docs')).toBe('docs/assets')
+    expect(assetDir('')).toBe('assets')
   })
 })
 
@@ -98,12 +97,12 @@ describe('uniqueName', () => {
   it('suffixes rather than overwriting an existing file', () => {
     // Every pasted screenshot blob is called `image.png`. Overwriting would destroy a
     // file the user never mentioned.
-    expect(uniqueName(['image.png'], 'image', 'png')).toBe('image-1.png')
-    expect(uniqueName(['image.png', 'image-1.png'], 'image', 'png')).toBe('image-2.png')
+    expect(uniqueName(['image.png'], 'image', 'png')).toBe('image-2.png')
+    expect(uniqueName(['image.png', 'image-2.png'], 'image', 'png')).toBe('image-3.png')
   })
 
   it('compares case-insensitively, because the FS may too', () => {
-    expect(uniqueName(['IMAGE.PNG'], 'image', 'png')).toBe('image-1.png')
+    expect(uniqueName(['IMAGE.PNG'], 'image', 'png')).toBe('image-2.png')
   })
 })
 

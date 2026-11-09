@@ -60,14 +60,11 @@ export function relativeFrom(fromDir: string, target: string): string {
 }
 
 /**
- * Where a pasted image should land: a sibling `assets/` directory if the document
- * already keeps its images there, otherwise beside the document.
- *
- * Reusing an existing `assets/` rather than always creating one is the difference
- * between fitting into someone's repo layout and imposing a new one on it.
+ * Where a pasted image lands: the `assets/` folder beside the document, made by the
+ * first image. Opening a note lets Notepad add files there and nowhere else, so the
+ * images of every note in a folder share it.
  */
-export function assetDir(docDir: string, hasAssetsDir: boolean): string {
-  if (!hasAssetsDir) return docDir
+export function assetDir(docDir: string): string {
   return docDir === '' ? 'assets' : `${docDir}/assets`
 }
 
@@ -96,17 +93,19 @@ export function extensionForMime(mime: string): string {
 }
 
 /**
- * A name not already taken in the target directory.
+ * A name not already taken in the target directory: `shot.png`, then `shot-2.png`,
+ * `shot-3.png`, counting the first as one.
  *
  * Silently overwriting `image.png` because that is what the clipboard blob was called
  * would destroy a file the user never mentioned — and pasted screenshots are *always*
- * called `image.png`.
+ * called `image.png`. The backend refuses a taken name in `assets/` anyway; this picks
+ * one it will take.
  */
 export function uniqueName(existing: readonly string[], base: string, ext: string): string {
   const taken = new Set(existing.map((name) => name.toLowerCase()))
   const first = `${base}.${ext}`
   if (!taken.has(first.toLowerCase())) return first
-  for (let n = 1; n < 1000; n++) {
+  for (let n = 2; n < 1000; n++) {
     const candidate = `${base}-${n}.${ext}`
     if (!taken.has(candidate.toLowerCase())) return candidate
   }

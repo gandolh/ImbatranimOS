@@ -52,6 +52,11 @@ import {
 
 type FsEntry = { name: string; path: string; type: 'file' | 'directory' }
 
+/** The HTTP status a failed call came back with, if any. */
+function statusOf(err: unknown): number | undefined {
+  return (err as { response?: { status?: number } }).response?.status
+}
+
 /**
  * The editor.
  *
@@ -335,49 +340,97 @@ export function NoteEditor({
   )
 
   /**
-   * Write an image into the document's own directory and link it relatively, so the
-   * link still works in git, in another editor, or on GitHub. A base64 data URI would
-   * be less code and produce a document nothing else reads comfortably.
-   *
-   * The new file is confirmed in the Save dialog, already at the place and name
-   * worked out here: Notepad may read the document's folder, but a new file is
-   * the user's to give, and the pick is what gives it.
+   * Write the image into `assets/` beside the document under a free name, with no
+   * dialog: opening the note from Files, Open With or a launcher (or picking it in the
+   * Open or Save dialog) lets this window add files there, never write over one.
+   * Null when the window wasn't given that folder (the note came by another app), or
+   * lost it; the caller asks in the Save dialog instead.
+   */
+  const addToAssets = useCallback(
+    async (bytes: ArrayBuffer, base: string, ext: string): Promise<string | null> => {
+      const dir = assetDir(docDir)
+      let taken: string[]
+      try {
+        taken = (await readDirectory(root, dir)).names
+      } catch (err) {
+        // Not there yet: the first image makes it.
+        if (statusOf(err) === 404) taken = []
+        else if (statusOf(err) === 403) return null
+        else throw err
+      }
+      // A name taken since the listing (another window, the Terminal) is refused,
+      // never written over: take the next one.
+      for (let tries = 0; tries < 5; tries++) {
+        const target = `${dir}/${uniqueName(taken, base, ext)}`
+        try {
+          await system.fs.upload(root, target, bytes, fileName(target))
+          return target
+        } catch (err) {
+          if (err instanceof FileConflictError) {
+            taken = [...taken, fileName(target)]
+            continue
+          }
+          if (statusOf(err) === 403) return null
+          throw err
+        }
+      }
+      return null
+    },
+    [docDir, readDirectory, root, system]
+  )
+
+  /**
+   * Today's way without the `assets/` folder to add to: the Save dialog, already at
+   * the place and name worked out here, since a new file is the user's to give and the
+   * pick is what gives it. Null when the user cancels or picks another root.
+   */
+  const saveInDialog = useCallback(
+    async (bytes: ArrayBuffer, base: string, ext: string): Promise<string | null> => {
+      const here = await readDirectory(root, docDir).catch(() => null)
+      const targetDir = here?.hasAssets ? assetDir(docDir) : docDir
+      const taken =
+        targetDir === docDir
+          ? (here?.names ?? [])
+          : await readDirectory(root, targetDir).then(
+              (d) => d.names,
+              () => []
+            )
+      // The dialog opens in the folder (it can't open at a file not there
+      // yet), with the worked-out name filled in; a clash is the dialog's to raise.
+      const choice = await system.fs.pickSave({
+        title: 'Save the image',
+        suggestedName: uniqueName(taken, base, ext),
+        startIn: { root, path: targetDir },
+      })
+      if (!choice) return null
+      if (choice.root !== root) {
+        system.notify({
+          title: 'Could not add the image',
+          body: 'Save it in the same place as the document: a link can’t reach another root.',
+          level: 'error',
+        })
+        return null
+      }
+      await system.fs.upload(root, choice.path, bytes, fileName(choice.path))
+      return choice.path
+    },
+    [docDir, readDirectory, root, system]
+  )
+
+  /**
+   * Write an image beside the document and link it relatively, so the link still
+   * works in git, in another editor, or on GitHub. A base64 data URI would be less
+   * code and produce a document nothing else reads comfortably.
    */
   const attachImageBytes = useCallback(
     async (bytes: ArrayBuffer, suggestedName: string, mime: string) => {
       setImageBusy(true)
       try {
-        const here = await readDirectory(root, docDir)
-        const targetDir = assetDir(docDir, here.hasAssets)
-        // `assets/` is below the folder Notepad was given; the dialog shows
-        // what is there, and a clash is the dialog's to raise.
-        const taken =
-          targetDir === docDir
-            ? here.names
-            : await readDirectory(root, targetDir).then(
-                (d) => d.names,
-                () => []
-              )
         const base = safeBaseName(suggestedName)
-        const file = uniqueName(taken, base, extensionForMime(mime))
-        // The dialog opens in the folder (it can't open at a file not there
-        // yet), with the worked-out name filled in.
-        const choice = await system.fs.pickSave({
-          title: 'Save the image',
-          suggestedName: file,
-          startIn: { root, path: targetDir },
-        })
-        if (!choice) return
-        if (choice.root !== root) {
-          system.notify({
-            title: 'Could not add the image',
-            body: 'Save it in the same place as the document: a link can’t reach another root.',
-            level: 'error',
-          })
-          return
-        }
-        const target = choice.path
-        await system.fs.upload(root, target, bytes, fileName(target))
+        const ext = extensionForMime(mime)
+        const target =
+          (await addToAssets(bytes, base, ext)) ?? (await saveInDialog(bytes, base, ext))
+        if (target === null) return
         insertAtCaret(imageMarkdown(base, relativeFrom(docDir, target)))
         system.notify({
           title: 'Image added',
@@ -398,7 +451,7 @@ export function NoteEditor({
         setImageBusy(false)
       }
     },
-    [docDir, insertAtCaret, readDirectory, root, system]
+    [addToAssets, docDir, insertAtCaret, saveInDialog, system]
   )
 
   const attachImageFile = useCallback(

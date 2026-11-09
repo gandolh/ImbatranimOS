@@ -10,6 +10,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'fs';
 import type { Server } from 'http';
@@ -464,6 +465,143 @@ describe('Files by grant (e2e)', () => {
     const saver = await open('quill');
     await withFolder(saver, 'Fresh/new.txt').expect(204);
     await as(saver).list('Fresh').expect(403);
+  });
+
+  describe('an OS-made open can let the app add to an assets folder beside the file', () => {
+    const withAssets = (to: Copy, path: string, via?: Copy) => {
+      const req = http
+        .post('/api/files/grants')
+        .set('Cookie', TEST_COOKIE)
+        .send({
+          instanceId: to.instanceId,
+          appId: to.appId,
+          root: 'home',
+          path,
+          withFolder: true,
+          withAssets: true,
+        });
+      return via ? req.set(APP_TOKEN_HEADER, via.token) : req;
+    };
+    const signed = (who: Copy, req: request.Test) =>
+      req.set('Cookie', TEST_COOKIE).set(APP_TOKEN_HEADER, who.token);
+
+    it('makes the folder with the first file, and lists and reads it', async () => {
+      const notepad = await open('notepad');
+      await withAssets(notepad, 'Documents/plan.txt').expect(204);
+      await as(notepad).list('Documents/assets').expect(404);
+      await as(notepad).upload('Documents/assets/shot.png', 'png').expect(201);
+      expect(
+        readFileSync(join(home, 'Documents/assets/shot.png'), 'utf8'),
+      ).toBe('png');
+      const listed = await as(notepad).list('Documents/assets').expect(200);
+      expect((listed.body as { name: string }[]).map((e) => e.name)).toEqual([
+        'shot.png',
+      ]);
+      await as(notepad).download('Documents/assets/shot.png').expect(200);
+      await as(notepad).write('Documents/assets/notes.md', 'text').expect(200);
+      // An assets folder made by itself is fine too, once.
+      const other = await open('notepad');
+      await withAssets(other, 'Documents/sub/deep.txt').expect(204);
+      await as(other).mkdir('Documents/sub/assets').expect(201);
+      await as(other).mkdir('Documents/sub/assets').expect(400);
+    });
+
+    it('never writes over, renames or removes what is there: a taken name is a 409', async () => {
+      mkdirSync(join(home, 'Documents/assets'));
+      writeFileSync(join(home, 'Documents/assets/shot.png'), 'theirs');
+      const notepad = await open('notepad');
+      await withAssets(notepad, 'Documents/plan.txt').expect(204);
+      const taken = await as(notepad)
+        .upload('Documents/assets/shot.png', 'mine')
+        .expect(409);
+      expect(codeOf(taken)).toBe('NAME_TAKEN');
+      await as(notepad).write('Documents/assets/shot.png', 'mine').expect(409);
+      await as(notepad).remove('Documents/assets/shot.png').expect(403);
+      await signed(
+        notepad,
+        http.post('/api/files/move').send({
+          root: 'home',
+          from: 'Documents/assets/shot.png',
+          to: 'Documents/assets/moved.png',
+        }),
+      ).expect(403);
+      await as(notepad).remove('Documents/assets').expect(403);
+      expect(
+        readFileSync(join(home, 'Documents/assets/shot.png'), 'utf8'),
+      ).toBe('theirs');
+      // The next name is free.
+      await as(notepad)
+        .upload('Documents/assets/shot-2.png', 'mine')
+        .expect(201);
+    });
+
+    it('adds nothing beside the file, or below the assets folder', async () => {
+      const notepad = await open('notepad');
+      await withAssets(notepad, 'Documents/plan.txt').expect(204);
+      await as(notepad).upload('Documents/shot.png', 'x').expect(403);
+      await as(notepad).write('Documents/other.txt', 'x').expect(403);
+      await as(notepad).mkdir('Documents/assets2').expect(403);
+      await as(notepad).upload('Documents/assets/a/b.png', 'x').expect(403);
+      expect(existsSync(join(home, 'Documents/shot.png'))).toBe(false);
+      expect(existsSync(join(home, 'Documents/assets/a'))).toBe(false);
+    });
+
+    it('a symlinked assets folder gives nothing, and a link inside it is never written through', async () => {
+      mkdirSync(join(home, 'Elsewhere'));
+      symlinkSync(join(home, 'Elsewhere'), join(home, 'Documents/assets'));
+      const notepad = await open('notepad');
+      await withAssets(notepad, 'Documents/plan.txt').expect(204);
+      await as(notepad).upload('Documents/assets/x.png', 'x').expect(403);
+      await as(notepad).list('Documents/assets').expect(403);
+      expect(existsSync(join(home, 'Elsewhere/x.png'))).toBe(false);
+
+      // A real folder holding a dangling link: adding under the link's name
+      // is refused rather than written through it.
+      rmSync(join(home, 'Documents/assets'));
+      mkdirSync(join(home, 'Documents/sub/assets'));
+      symlinkSync(
+        join(home, 'Elsewhere/target.png'),
+        join(home, 'Documents/sub/assets/dangling.png'),
+      );
+      const other = await open('notepad');
+      await withAssets(other, 'Documents/sub/deep.txt').expect(204);
+      await as(other)
+        .upload('Documents/sub/assets/dangling.png', 'x')
+        .expect((res) => expect([403, 409]).toContain(res.status));
+      expect(existsSync(join(home, 'Elsewhere/target.png'))).toBe(false);
+    });
+
+    it('only the OS gives it', async () => {
+      const notepad = await open('notepad');
+      await withAssets(notepad, 'Documents/plan.txt').expect(204);
+      // Notepad handing a file on to another window gives no assets folder.
+      const second = await open('notepad');
+      const handed = await withAssets(
+        second,
+        'Documents/plan.txt',
+        notepad,
+      ).expect(403);
+      expect(messageOf(handed)).toContain('only the OS');
+      await give(second, 'Documents/plan.txt', undefined, notepad).expect(204);
+      await as(second).upload('Documents/assets/x.png', 'x').expect(403);
+      // Without the flag the open gives the folder to read, nothing to add.
+      const viewer = await open('hollow');
+      await http
+        .post('/api/files/grants')
+        .set('Cookie', TEST_COOKIE)
+        .send({
+          instanceId: viewer.instanceId,
+          appId: viewer.appId,
+          root: 'home',
+          path: 'Documents/plan.txt',
+          withFolder: true,
+        })
+        .expect(204);
+      await as(viewer).upload('Documents/assets/x.png', 'x').expect(403);
+      await as(viewer).list('Documents/assets').expect(403);
+      // A folder has no assets folder beside it.
+      await withAssets(notepad, 'Documents/sub').expect(400);
+    });
   });
 
   it('an app can’t open itself with a file it doesn’t hold', async () => {

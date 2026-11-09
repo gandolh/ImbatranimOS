@@ -18,7 +18,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import * as fs from 'fs/promises';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 
 import {
   SYSTEM_GROUP,
@@ -72,6 +72,17 @@ export class GrantFileDto {
   @IsOptional()
   @IsBoolean()
   withFolder?: boolean;
+
+  /**
+   * Also let the copy add to an `assets/` folder beside the file: make it,
+   * list it, read and make new files in it, never write over or remove
+   * one. An open the OS makes for an app that declares it attaches files
+   * under `assets/`. The user's alone; skipped when the file's folder isn't
+   * there yet, or when `assets` there is anything but a folder.
+   */
+  @IsOptional()
+  @IsBoolean()
+  withAssets?: boolean;
 }
 
 /**
@@ -96,7 +107,8 @@ export class GrantFileDto {
  * What is there decides the grant: a folder is given with everything under
  * it, a file (or a path with nothing there yet, a Save as) by itself. With
  * `withFolder`, a file's folder is given to read as well (a `listing`), which
- * only the OS gives: an app's own open never gets the folder.
+ * only the OS gives: an app's own open never gets the folder. `withAssets`
+ * likewise gives the `assets/` folder beside the file to add to.
  */
 @Controller('files/grants')
 export class GrantsController {
@@ -129,7 +141,12 @@ export class GrantsController {
         `${who.appId} may not give a file's folder: only the OS does`,
       );
     }
-    if (dto.withFolder && kind !== 'file') {
+    if (dto.withAssets && who !== null) {
+      throw new ForbiddenException(
+        `${who.appId} may not give the assets folder beside a file: only the OS does`,
+      );
+    }
+    if ((dto.withFolder || dto.withAssets) && kind !== 'file') {
       throw new BadRequestException('Only a file comes with its folder');
     }
     if (dto.expect !== undefined && dto.expect !== kind) {
@@ -141,10 +158,17 @@ export class GrantsController {
     if (who !== null) given = this.handOn(who, dto, key, kind, stat !== null);
     const target = { instanceId: dto.instanceId, appId: dto.appId };
     this.grants.grant(target, key, given);
-    if (dto.withFolder) {
-      const there = await fs.stat(dirname(abs)).catch(() => null);
-      if (dirname(key) !== key && there?.isDirectory()) {
-        this.grants.grant(target, dirname(key), 'listing');
+    if (!dto.withFolder && !dto.withAssets) return;
+    const there = await fs.stat(dirname(abs)).catch(() => null);
+    if (dirname(key) === key || !there?.isDirectory()) return;
+    if (dto.withFolder) this.grants.grant(target, dirname(key), 'listing');
+    if (dto.withAssets) {
+      // Not followed: a link named `assets` would lead the adding elsewhere.
+      const assets = await fs
+        .lstat(join(dirname(abs), 'assets'))
+        .catch(() => null);
+      if (assets === null || assets.isDirectory()) {
+        this.grants.grant(target, join(dirname(key), 'assets'), 'assets');
       }
     }
   }

@@ -20,6 +20,12 @@ export type GrantOptions = {
    * that declares it reads the opened file's folder. The user's alone.
    */
   withFolder?: boolean
+  /**
+   * Also let the copy add new files under an `assets/` folder beside the
+   * file: an open the OS makes for an app that declares it attaches files
+   * there. The user's alone.
+   */
+  withAssets?: boolean
 }
 
 /** The grants each running copy is still waiting on, by instance id. */
@@ -43,7 +49,12 @@ const pending = new Map<string, Set<Promise<void>>>()
 export function grantFile(
   target: GrantTarget,
   given: { root: string; path: string },
-  { expect, client = api as unknown as SystemHttp, withFolder = false }: GrantOptions = {}
+  {
+    expect,
+    client = api as unknown as SystemHttp,
+    withFolder = false,
+    withAssets = false,
+  }: GrantOptions = {}
 ): Promise<void> {
   const body: Record<string, string | boolean> = {
     instanceId: target.instanceId,
@@ -53,6 +64,7 @@ export function grantFile(
   }
   if (expect !== undefined) body.expect = expect
   if (withFolder) body.withFolder = true
+  if (withAssets) body.withAssets = true
   // Sent before it joins the target's pending set: a copy's call waits on the
   // grants pending for it as it starts, so an app opening its own window
   // would otherwise have this call wait on itself.

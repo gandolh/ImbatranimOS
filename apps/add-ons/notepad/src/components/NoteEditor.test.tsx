@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient, SystemProvider, type SystemHandle } from '@imbatranim/ui'
+import { FileConflictError, queryClient, SystemProvider, type SystemHandle } from '@imbatranim/ui'
 import { NoteEditor } from './NoteEditor'
 
 /**
@@ -33,15 +33,29 @@ const conflict = (current: string) =>
     response: { status: 409, data: { statusCode: 409, current } },
   })
 
+/** A folder's listing, as `GET /files` answers it; throw to answer with a status. */
+let listing: (path: string) => Promise<{ name: string; type: 'file' | 'directory' }[]>
+let upload: ReturnType<typeof vi.fn>
+let pickSave: ReturnType<typeof vi.fn>
+
+const failed = (status: number) =>
+  Object.assign(new Error(`Request failed with status code ${status}`), {
+    response: { status, data: { statusCode: status } },
+  })
+
 function makeSystem(): SystemHandle {
   return {
     http: {
-      get: async () => ({
-        data: { path: 'notes.txt', ...disk },
-        status: 200,
-        headers: {},
-      }),
+      get: async (url: string, opts?: { params?: { path?: string } }) =>
+        url === '/files'
+          ? { data: await listing(opts?.params?.path ?? ''), status: 200, headers: {} }
+          : { data: { path: 'notes.txt', ...disk }, status: 200, headers: {} },
       put,
+    },
+    fs: {
+      upload,
+      pickSave,
+      downloadUrl: (root: string, path: string) => `/download/${root}/${path}`,
     },
     notify: vi.fn(),
     window: {
@@ -112,6 +126,9 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   disk = { content: 'theirs', version: 'v1' }
+  listing = async () => []
+  upload = vi.fn(async () => ({ version: 'v-new' }))
+  pickSave = vi.fn(async () => null)
   put = vi.fn(async (_url: string, body: { content: string }) => ({
     data: { path: 'notes.txt', version: `saved-${body.content}` },
     status: 200,
@@ -215,5 +232,78 @@ describe('the view a file opens in', () => {
       ['One', 'Two'].includes(b.textContent?.trim() ?? '')
     )
     expect(rail).toHaveLength(2)
+  })
+})
+
+describe('attaching an image to a note', () => {
+  /** Paste an image into the editor, as the clipboard hands one over. */
+  async function pasteImage(name = 'image.png') {
+    // jsdom's File has no arrayBuffer(); the editor needs only these three.
+    const bytes = new Uint8Array([137, 80, 78, 71]).buffer
+    const file = { name, type: 'image/png', arrayBuffer: async () => bytes }
+    const event = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'clipboardData', {
+      value: { items: [{ type: 'image/png', getAsFile: () => file }] },
+    })
+    await act(async () => {
+      textarea().dispatchEvent(event)
+    })
+    await settle()
+  }
+
+  it('writes it into assets/ under a free name and links it, with no dialog', async () => {
+    listing = async (path) => {
+      if (path === 'docs/assets') return [{ name: 'image.png', type: 'file' }]
+      throw failed(404)
+    }
+    await mount('docs/note.md')
+    await pasteImage()
+    expect(upload).toHaveBeenCalledTimes(1)
+    expect(upload.mock.calls[0].slice(0, 2)).toEqual(['home', 'docs/assets/image-2.png'])
+    expect(pickSave).not.toHaveBeenCalled()
+    expect(textarea().value).toContain('![image](assets/image-2.png)')
+  })
+
+  it('makes assets/ with the first image, and takes the next name when one is taken meanwhile', async () => {
+    listing = async () => {
+      throw failed(404)
+    }
+    upload.mockRejectedValueOnce(new FileConflictError('v1'))
+    await mount('docs/note.md')
+    await pasteImage()
+    expect(upload.mock.calls.map((call) => call[1])).toEqual([
+      'docs/assets/image.png',
+      'docs/assets/image-2.png',
+    ])
+    expect(textarea().value).toContain('![image](assets/image-2.png)')
+  })
+
+  it('asks in the Save dialog when the window may not add to assets/', async () => {
+    listing = async (path) => {
+      if (path === 'docs/assets') throw failed(403)
+      return [{ name: 'note.md', type: 'file' }]
+    }
+    pickSave.mockResolvedValueOnce({ root: 'home', path: 'docs/image.png' })
+    await mount('docs/note.md')
+    await pasteImage()
+    expect(pickSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        suggestedName: 'image.png',
+        startIn: { root: 'home', path: 'docs' },
+      })
+    )
+    expect(upload.mock.calls.map((call) => call[1])).toEqual(['docs/image.png'])
+    expect(textarea().value).toContain('![image](image.png)')
+  })
+
+  it('falls back to the dialog when the write itself is refused', async () => {
+    listing = async () => []
+    upload.mockRejectedValueOnce(failed(403))
+    await mount('docs/note.md')
+    await pasteImage()
+    expect(pickSave).toHaveBeenCalledTimes(1)
+    // Cancelled: nothing more is written, nothing linked.
+    expect(upload).toHaveBeenCalledTimes(1)
+    expect(textarea().value).not.toContain('![image]')
   })
 })

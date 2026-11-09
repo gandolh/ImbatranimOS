@@ -29,7 +29,7 @@ function isAlreadyApplied(err: unknown, pattern: RegExp): boolean {
 }
 
 /** The newest schema this build knows; a restore refuses anything newer. */
-export const LEDGER_VERSION = 18;
+export const LEDGER_VERSION = 19;
 
 @Injectable()
 export class DbService implements OnModuleInit, OnModuleDestroy {
@@ -239,6 +239,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         run: () => this.stepRecentWritable(),
       },
       { toVersion: 18, name: 'recent-kind', run: () => this.stepRecentKind() },
+      {
+        toVersion: 19,
+        name: 'file-grant-assets',
+        run: () => this.stepFileGrantAssets(),
+      },
     ];
 
     const current = Number(this.db.pragma('user_version', { simple: true }));
@@ -748,6 +753,32 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
         app_id TEXT NOT NULL,
         path TEXT NOT NULL,
         kind TEXT NOT NULL CHECK (kind IN ('file', 'read', 'folder', 'listing')),
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (instance_id, path)
+      );
+      INSERT INTO file_grants_next (instance_id, app_id, path, kind, created_at)
+        SELECT instance_id, app_id, path, kind, created_at FROM file_grants;
+      DROP TABLE file_grants;
+      ALTER TABLE file_grants_next RENAME TO file_grants;
+      CREATE INDEX IF NOT EXISTS file_grants_created_at
+        ON file_grants (created_at);
+    `);
+  }
+
+  /**
+   * Step 19 — one more kind of grant: `assets`, an `assets/` folder beside an
+   * opened file that an app declaring it may add to (make the folder, list
+   * it, read and make new files in it, never write over or remove one). The
+   * table is made again, as in step 15, and the grants copied over.
+   */
+  private stepFileGrantAssets() {
+    this.db.exec(`
+      CREATE TABLE file_grants_next (
+        instance_id TEXT NOT NULL,
+        app_id TEXT NOT NULL,
+        path TEXT NOT NULL,
+        kind TEXT NOT NULL
+          CHECK (kind IN ('file', 'read', 'folder', 'listing', 'assets')),
         created_at INTEGER NOT NULL,
         PRIMARY KEY (instance_id, path)
       );

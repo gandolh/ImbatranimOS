@@ -67,6 +67,16 @@ export type AppConfig = {
    */
   readsOpenedFolder?: boolean
   /**
+   * The app adds files under an `assets/` folder beside a file the OS opens
+   * with it (an open from Files, Open With or a launcher, or a pick in the
+   * OS's Open or Save dialog): that window may make the folder, list it, read
+   * the files directly in it and make new files there. Never write over,
+   * rename or remove one: a name already taken is refused, and the app picks
+   * another. For a document's attachments, such as Notepad's pasted images.
+   * An open the app makes itself never brings it.
+   */
+  attachesUnderAssets?: boolean
+  /**
    * Optional component painted on the **desktop**, beneath every window.
    *
    * The seam exists so Sticky Notes can put notes on the desktop

@@ -90,7 +90,7 @@ describe('openApp gives the file it opens', () => {
     ])
   })
 
-  it('with its folder to read, to an app that declares it reads the opened file’s folder', async () => {
+  it('with its folder to read and its assets folder to add to, to an app that declares both', async () => {
     const id = openApp('notepad', { openPath: 'Documents/a.txt', root: 'home' })
     await grantsSettled(id)
     expect(grants()).toEqual([
@@ -101,6 +101,24 @@ describe('openApp gives the file it opens', () => {
           appId: 'notepad',
           root: 'home',
           path: 'Documents/a.txt',
+          withFolder: true,
+          withAssets: true,
+        },
+      ],
+    ])
+  })
+
+  it('with its folder alone, to an app that reads the folder but attaches nothing', async () => {
+    const id = openApp('image-viewer', { openPath: 'Pictures/a.png', root: 'home' })
+    await grantsSettled(id)
+    expect(grants()).toEqual([
+      [
+        '/files/grants',
+        {
+          instanceId: id,
+          appId: 'image-viewer',
+          root: 'home',
+          path: 'Pictures/a.png',
           withFolder: true,
         },
       ],
@@ -185,7 +203,7 @@ describe('openApp gives the file it opens', () => {
     expect(post).not.toHaveBeenCalled()
   })
 
-  it('an app opening another gives with its own token, never the folder, and records no recent for it', async () => {
+  it('an app opening another gives with its own token, never the folder or assets folder, and records no recent for it', async () => {
     const { appPost, http } = appClient(() => 'hollow-window')
     const id = openApp('notepad', { openPath: 'a.txt', root: 'home' }, { appId: 'hollow', http })
     await grantsSettled(id)

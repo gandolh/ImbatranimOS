@@ -91,8 +91,10 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
       void grantFile({ appId, instanceId: windowId }, given, {
         client: by?.http,
         // The folder comes only with an open the OS makes, to an app that
-        // declares it reads the opened file's folder.
+        // declares it reads the opened file's folder; so does the `assets/`
+        // folder beside the file, to one that declares it attaches there.
         withFolder: !by && appConfig.readsOpenedFolder === true,
+        withAssets: !by && appConfig.attachesUnderAssets === true,
       })
     }
   }

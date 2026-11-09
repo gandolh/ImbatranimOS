@@ -82,7 +82,9 @@ Learned moving Todo and Bookmarks (brief 75); brief 76 meets the same.
   tables remain, it writes the files as the app with
   `AppDataService.place` (no installed check; never over a file the app
   wrote), then drops the tables. A failure keeps the rows, logged. Add a
-  move there and delete the module in the same commit.
+  move there and delete the module in the same commit. Tables a move sets
+  aside reach the owner through `SetAsideService` (download or clean out):
+  a move with new tables adds them to its `SET_ASIDE_TABLE` pattern.
 
 ## A list the OS also trusts (Developer, 2026-11-09)
 

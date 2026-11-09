@@ -188,7 +188,7 @@ Open: [x11-pastes-over-64-kib-reach-child-windows](../todos/x11-pastes-over-64-k
 (2026-11-06, xterm stalls over 64 KiB), and two on URL apps (2026-11-08/09).
 The imbatranim-apps todos were promoted to briefs 63-76 on 2026-11-06 (their
 questions stay in each todo). Briefs 48 and 49 came from the last two Linux apps todos the same day.
-Brief 77 (2026-11-09, `6968428`, ready for deploy): a restore runs the data moves at once.
+Briefs 77 and 80 (2026-11-09, `6968428` and `7e79924`, ready for deploy): a restore runs the data moves at once; set-aside data asks the owner at sign-in (download as `.tar.gz` or clean out).
 
 On 2026-11-04 the owner's grill turned the earlier todos into briefs 37-44
 and dropped the window-zoom check.

@@ -5987,7 +5987,7 @@ clipboard like the Windows 10 tool, Save picks the place;
 [79](briefs/done/79-notepad-adds-attachments-beside-a-note.md), Notepad adds
 attachments under `assets/` without a dialog, create only (decision in
 [decisions-app-identity-and-trust.md](wiki/decisions-app-identity-and-trust.md),
-`d9a22db`); [80](briefs/todo/80-set-aside-data-asks-the-owner.md), set-aside
+`d9a22db`); [80](briefs/done/80-set-aside-data-asks-the-owner.md), set-aside
 tables get a sign-in notice to download them as a zip of the apps' JSON or
 clean them out.
 
@@ -6063,3 +6063,18 @@ placed with a hard link, so one that appeared meanwhile is never replaced.
 A pasted image goes into `assets/` as `shot.png`, `shot-2.png` with no
 dialog; without the grant, the Save dialog as before. The preview's images
 were never grant-checked (a bare URL is the user's). Ready for deploy.
+
+## [2026-11-09] build | Brief 80: set-aside data asks the owner
+
+[80](briefs/done/80-set-aside-data-asks-the-owner.md) built in `7e79924`.
+Three calls settled before the build replace the `.zip`: a `.tar.gz` named
+`imbatranim-old-data-<yyyy-mm-dd>.tar.gz`, one ISO-dated folder per set
+(`2026-11-09/`, `2026-11-09.1/`), and a download counts as the pick, with
+Settings → Storage keeping "Clean out older data" while any is left.
+User-only `/api/system/old-data` lists, downloads (packed with `tar`,
+written as the user through `FilesService.uploadFile`) and drops the
+`_premove_` tables; the moves' readers take table names, so the archive
+reuses them, and the moves spec passes unchanged. The pick is a file in the
+home's `.imbatranim/`, not a ledger step. The desktop asks at sign-in.
+Ready for deploy.
+

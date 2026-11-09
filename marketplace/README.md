@@ -609,8 +609,11 @@ isn't at the top, one commit and a short note:
 - Any other commit is **unverified**: it installs only with the owner's
   trust, which covers that commit alone. **Check for update** finds a new
   commit and asks again. **Reinstall** rebuilds the trusted commit.
-- Settings → Marketplace shows each app's source, its commit and a
-  **Verified** or **Trusted by you** badge.
+- Settings → Marketplace shows each app's source, its commit and a badge:
+  **Verified** while this release's list names the installed commit,
+  **Trusted by you** for a commit the owner trusted, and **No longer
+  verified** for one installed as verified that a later release dropped
+  (which then offers **Check for update**).
 
 ### Prebuilt apps (version 1)
 

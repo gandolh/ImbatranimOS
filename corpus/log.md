@@ -6005,7 +6005,7 @@ In the backlog grill the owner promoted every open todo that doesn't wait on
 hardware. [81](briefs/done/81-files-extracts-better.md) joins two Files
 todos: a lone `.gz`/`.xz`/`.bz2` unpacks next to itself without the suffix,
 and "Extract to…" opens in the archive's folder (`pickDirectory` gets a start
-folder). [82](briefs/todo/82-the-sandboxed-url-app-path-goes.md) retires the
+folder). [82](briefs/done/82-the-sandboxed-url-app-path-goes.md) retires the
 version 1 sandboxed URL path now; a leftover install shows as no longer
 supported, and Hollow's unused version 1 file in game-engine goes.
 [83](briefs/todo/83-x11-pastes-over-64-kib-reach-child-windows.md) patches
@@ -6106,3 +6106,17 @@ the size cap and the child killed and reaped past it; the output is
 hard-linked in, never over anything. `pickDirectory` takes `startIn`, and
 Files' Extract to… starts in the archive's folder. Ready for deploy; push
 imbatranim-apps first.
+
+## [2026-11-09] done | Brief 82: the sandboxed URL app path is gone
+
+[Brief 82](briefs/done/82-the-sandboxed-url-app-path-goes.md) is built, ready for deploy
+(`a857f57`, 1.281.0; game-engine `2de99ac6`). A version 1 `imbatranim.json` is refused at the
+check ("This app uses the old format, which this OS no longer installs."). The prebuilt check and
+install, the sandbox tokens and their five routes, the sandbox's headers, the frame runtime, the
+sandboxed host, its bridge and the keyboard guard are deleted. A leftover sandboxed row lists as
+"No longer supported" in Settings → Marketplace with Uninstall only; it never opens. game-engine
+drops Hollow's prebuilt `os-app/` copy, the only version 1 manifest in the owner's repos. Pages:
+[decisions-app-identity-and-trust.md](wiki/decisions-app-identity-and-trust.md),
+[decisions-marketplace.md](wiki/decisions-marketplace.md),
+[glossary-marketplace.md](wiki/glossary-marketplace.md), [os-layering.md](wiki/os-layering.md),
+[status.md](wiki/status.md); the todo `retire-the-sandboxed-url-app-path` points at the brief.

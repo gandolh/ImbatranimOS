@@ -68,8 +68,9 @@ descriptor is the mechanism); folder for anything but Start's side of it.
 **URL app** / **app manifest** (2026-10-07, revised 2026-11-06):
 An app installed from its own repo's URL instead of the catalog; the
 `imbatranim.json` it carries. Since 2026-11-06 it runs natively once verified
-or trusted (built 2026-11-09, manifest version 2), and until the sandbox is
-retired a prebuilt one (version 1) runs in a sandboxed frame.
+or trusted (built 2026-11-09, manifest version 2). The prebuilt kind (version
+1), which ran in a sandboxed frame, was retired on 2026-11-09: refused at the
+check, and an install left from before can only be uninstalled.
 _Avoid_: sandboxed app (the sandbox is how it ran, not what it is), add-on or
 plugin.
 

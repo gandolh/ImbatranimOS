@@ -22,3 +22,5 @@ Owner decision 6 of brief 74
 there is no sandboxed option for new installs, and the frame goes in its own
 step once nothing uses it. A sandboxed install left on a machine would need a
 note in Settings, or an uninstall, when the path goes.
+
+Promoted to [brief 82](../briefs/done/82-the-sandboxed-url-app-path-goes.md), built 2026-11-09.

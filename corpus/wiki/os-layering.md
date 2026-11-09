@@ -1,6 +1,6 @@
 ---
 summary: The OS-as-layers design (2026-07-19 grilling) — three layers (kernel/userland ↔ compositor/display ↔ apps), an injected `system` capability handle as the app↔OS protocol seam, the `@imbatranim/ui`-library vs capabilities bisection, and the kill-list of real-Linux daemons we deliberately do NOT build. BUILT 2026-08-06 — the seam is live in all 26 apps and eslint-enforced; its sandboxed iframe transport exists since sandboxed apps from a URL (2026-10-07) (2026-10-07) for apps installed from a URL.
-updated: 2026-11-05
+updated: 2026-11-09
 ---
 
 # OS layering — the compositor seam
@@ -173,7 +173,7 @@ swap needs no app rewrites.
 **They arrived on 2026-10-07** (2026-10-07):
 an app from a GitHub URL runs in an opaque-origin sandboxed iframe, its
 `system` handle proxied over a MessagePort, and the same `mount` module runs
-under either transport. Calls: [decisions-marketplace.md](decisions-marketplace.md#brief-158-apps-from-a-url-2026-10-07).
+under either transport. Calls: [decisions-marketplace.md](decisions-marketplace.md#brief-158-apps-from-a-url-2026-10-07). Retired 2026-11-09: URL apps run natively once trusted, so no transport is sandboxed.
 
 ## Deferred (parked, not rejected)
 

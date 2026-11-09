@@ -1,6 +1,6 @@
 ---
-summary: The app marketplace's locked calls. The marketplace install (2026-10-06) (2026-10-06) — the kill-list revisits for the in-repo catalog (a runtime installer, a supervisor fenced to marketplace servers, native code only at pinned commits) and its build calls (commit ids, argv, per-build dirs, the allowlisted build env, capabilities as a fence). Sandboxed apps from a URL (2026-10-07) (2026-10-07) — apps from any GitHub URL, unreviewed, so prebuilt only, an opaque-origin sandboxed frame on the same port, per-window token URLs, notify as the only capability, and consent on every install and update. Suites and kit apps (one catalog entry, several apps and the shared kit) are in decisions-marketplace-suites.md.
-updated: 2026-11-02
+summary: The app marketplace's locked calls. The marketplace install (2026-10-06) (2026-10-06) — the kill-list revisits for the in-repo catalog (a runtime installer, a supervisor fenced to marketplace servers, native code only at pinned commits) and its build calls (commit ids, argv, per-build dirs, the allowlisted build env, capabilities as a fence). Sandboxed apps from a URL (2026-10-07) (2026-10-07) — apps from any GitHub URL, unreviewed, so prebuilt only, an opaque-origin sandboxed frame on the same port, per-window token URLs, notify as the only capability, and consent on every install and update; retired 2026-11-09, when URL apps run natively once trusted. Suites and kit apps (one catalog entry, several apps and the shared kit) are in decisions-marketplace-suites.md.
+updated: 2026-11-09
 ---
 
 # Decisions: the app marketplace (the marketplace install (2026-10-06), 2026-10-06)
@@ -100,7 +100,7 @@ brief required, and the build added some calls of its own.
 
 ## Sandboxed apps from a URL (2026-10-07): apps from a URL (2026-10-07)
 
-Revisited 2026-11-06: URL apps run natively once verified or trusted ([decisions-app-identity-and-trust.md](decisions-app-identity-and-trust.md)).
+Revisited 2026-11-06: URL apps run natively once verified or trusted ([decisions-app-identity-and-trust.md](decisions-app-identity-and-trust.md)). Retired 2026-11-09 (brief 82): version 1 is refused, and what follows is history.
 
 The owner parked arbitrary-URL installs on 2026-10-06 and asked for them on
 2026-10-07. An app from a URL nobody reviewed is treated as **malicious**, not

@@ -40,7 +40,7 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 - **The Marketplace** (2026-10-06 to 2026-10-27). The in-repo catalog installs
   apps from other repos at pinned commits; any public GitHub repo with an
   `imbatranim.json` installs natively once verified or trusted (2026-11-09),
-  a prebuilt one sandboxed; one catalog entry
+  and the prebuilt, sandboxed kind is retired (2026-11-09); one catalog entry
   can install several apps; kit apps render in the desktop's own tree with the
   shared UI kit, refuse plainly, rebuild at the same ref, start loading when
   their window opens, and open at sign-in when they are startup apps
@@ -185,10 +185,10 @@ The server ISO is deferred by the owner (2026-10-04).
 ## Open todos
 
 Open: [x11-pastes-over-64-kib-reach-child-windows](../todos/x11-pastes-over-64-kib-reach-child-windows.md)
-(2026-11-06, xterm stalls over 64 KiB), and two on URL apps (2026-11-08/09).
+(2026-11-06, xterm stalls over 64 KiB); the two URL-app todos are closed.
 The imbatranim-apps todos were promoted to briefs 63-76 on 2026-11-06 (their
 questions stay in each todo). Briefs 48 and 49 came from the last two Linux apps todos the same day.
-Briefs 77, 80 and 81 (2026-11-09, `6968428`, `7e79924` and `95b331d`, ready for deploy): a restore runs the data moves at once; set-aside data asks the owner at sign-in (download as `.tar.gz` or clean out); a lone `.gz`, `.xz` or `.bz2` unpacks beside itself and Extract to… starts in the archive's folder (kit 1.8.0).
+Briefs 77, 80 and 81 (2026-11-09, `6968428`, `7e79924` and `95b331d`, ready for deploy): a restore runs the data moves at once; set-aside data asks the owner at sign-in (download as `.tar.gz` or clean out); a lone `.gz`, `.xz` or `.bz2` unpacks beside itself and Extract to… starts in the archive's folder (kit 1.8.0). Brief 82 (2026-11-09, `a857f57`, ready for deploy): the sandboxed URL app path is retired; a version 1 `imbatranim.json` is refused at the check, and a leftover install lists as "No longer supported" with Uninstall only (game-engine `2de99ac6` drops Hollow's prebuilt copy).
 
 On 2026-11-04 the owner's grill turned the earlier todos into briefs 37-44
 and dropped the window-zoom check.

@@ -181,15 +181,16 @@ Rejected:
 - a verified list read live from GitHub, where a compromised account could
   mark anything verified.
 
-Built in brief 74 (2026-11-09). The sandboxed path is retired later, in the
-todo `retire-the-sandboxed-url-app-path`.
+Built in brief 74 (2026-11-09). The sandboxed path went in brief 82 the same
+day: version 1 is refused at the check, and an install left from before lists
+as "No longer supported" in Settings → Marketplace, with Uninstall only.
 
 ## WASM threads are on
 
 The desktop sends `Cross-Origin-Opener-Policy: same-origin` and
 `Cross-Origin-Embedder-Policy: require-corp`, and every frame it serves
-sends matching headers. That is the Browser app's proxy origin; URL-app
-frames go when the sandbox is retired. `credentialless` is the fallback if
+sends matching headers. That is the Browser app's proxy origin, the only
+frame left since the URL-app frame went (2026-11-09). `credentialless` is the fallback if
 `require-corp` blocks the proxy.
 
 Rejected: threads off until an app needs them. Built in
@@ -197,8 +198,7 @@ Rejected: threads off until an app needs them. Built in
 - **WASM compiles** under `'wasm-unsafe-eval'` on `script-src`.
 - **One switch:** `EMBEDDER_POLICY` in `security-headers.ts` is `require-corp`;
   `credentialless` is the fallback if it blocks something real.
-- **Frames always send `require-corp`**, whatever the switch says; the
-  URL-app frame carries no COOP.
-- **URL apps get WASM without threads.**
+- **Frames always send `require-corp`**, whatever the switch says. URL apps
+  run natively since 2026-11-09, so they get threads too.
 - **Cost:** a popup opened from a proxied page loses `window.opener`, so a
   site's popup sign-in can break in the Browser.

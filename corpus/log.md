@@ -5973,3 +5973,20 @@ the other's, a hand-on after the removal is refused (file-grants e2e), and
 a unit for `removeApps`. Checks: backend typecheck, eslint on changed
 files, 572 jest (files, marketplace, app-data, app-identity), 124 e2e
 (file-grants, marketplace*, app-data, app-identity, files).
+
+## [2026-11-09] grill | The run's open questions, four new briefs
+
+The owner settled the questions left by briefs 74 and 75 and the calls made
+without them. `verified.json` ships empty until a version 2 URL app exists;
+a commit dropped from it leaves installed apps as built ("No longer
+verified", no trust prompt). Code Editor's find in files keeps asking for a
+folder. Four briefs: [77](briefs/todo/77-a-restore-runs-the-data-moves.md), a
+restore runs the data moves at once;
+[78](briefs/todo/78-a-snip-goes-to-the-clipboard.md), a snip goes to the
+clipboard like the Windows 10 tool, Save picks the place;
+[79](briefs/todo/79-notepad-adds-attachments-beside-a-note.md), Notepad adds
+attachments under `assets/` without a dialog, create only (decision in
+[decisions-app-identity-and-trust.md](wiki/decisions-app-identity-and-trust.md),
+`d9a22db`); [80](briefs/todo/80-set-aside-data-asks-the-owner.md), set-aside
+tables get a sign-in notice to download them as a zip of the apps' JSON or
+clean them out.

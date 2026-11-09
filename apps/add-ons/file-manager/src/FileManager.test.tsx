@@ -58,7 +58,11 @@ const LISTING = {
   truncated: false,
 }
 
-type FakeOpts = { intent?: unknown; post?: ReturnType<typeof vi.fn> }
+type FakeOpts = {
+  intent?: unknown
+  post?: ReturnType<typeof vi.fn>
+  pickDirectory?: SystemHandle['fs']['pickDirectory']
+}
 
 function fakeSystem(opts: FakeOpts = {}): SystemHandle {
   const noop = () => {}
@@ -74,7 +78,7 @@ function fakeSystem(opts: FakeOpts = {}): SystemHandle {
       downloadUrl: () => '',
       pickOpen: vi.fn(),
       pickSave: vi.fn(),
-      pickDirectory: vi.fn(),
+      pickDirectory: opts.pickDirectory ?? vi.fn(),
       recordRecent: noop,
       removeRecent: noop,
       reopenRecent: async () => undefined,
@@ -243,5 +247,44 @@ describe('File Manager inside an archive', () => {
       dest: undefined,
       entries: undefined,
     })
+  })
+})
+
+describe('File Manager extracting a lone compressed file', () => {
+  const open = { intent: { openPath: 'docs/notes.txt.gz', root: 'home' } }
+  const button = (label: string) =>
+    [...document.querySelectorAll('button')].filter((b) => b.textContent === label).at(-1)
+
+  it('says it unpacks beside the file, without the suffix', async () => {
+    const post = vi.fn(async () => ({ data: { id: 'j1' } }))
+    await renderFileManager({ ...open, post })
+    expect(document.body.textContent).toContain('notes.txt from notes.txt.gz')
+    expect(document.querySelector('[data-testid="extract-dest"]')!.textContent).toContain(
+      'Beside it, as notes.txt.'
+    )
+    await act(async () => {
+      button('Extract')!.click()
+    })
+    expect(post).toHaveBeenCalledWith('/archive/extract-job', {
+      root: 'home',
+      path: 'docs/notes.txt.gz',
+      dest: undefined,
+      entries: undefined,
+    })
+  })
+
+  it("Choose folder… opens in the archive's folder", async () => {
+    const pickDirectory = vi.fn(async () => ({ root: 'home', path: 'elsewhere' }))
+    await renderFileManager({ ...open, pickDirectory })
+    await act(async () => {
+      button('Choose folder…')!.click()
+    })
+    expect(pickDirectory).toHaveBeenCalledWith({
+      title: 'Extract to',
+      startIn: { root: 'home', path: 'docs' },
+    })
+    expect(document.querySelector('[data-testid="extract-dest"]')!.textContent).toContain(
+      'elsewhere'
+    )
   })
 })

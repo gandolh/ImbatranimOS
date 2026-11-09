@@ -262,9 +262,11 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
           startIn: opts.startIn,
         }).then(given('file')),
       pickDirectory: (opts = {}) =>
-        requestPick({ mode: 'directory', title: opts.title ?? 'Choose a folder' }).then(
-          given('folder')
-        ),
+        requestPick({
+          mode: 'directory',
+          title: opts.title ?? 'Choose a folder',
+          startIn: opts.startIn,
+        }).then(given('folder')),
       recordRecent: (root, path) => recordRecentFile(root, path, appId, http),
       removeRecent: (root, path) => removeRecentFile(root, path, http),
       // The app gives its own window one of its recents, with its token: the

@@ -67,6 +67,7 @@ export type {
   FileChoice,
   OpenerCandidate,
   OpenerResolution,
+  PickDirectoryOptions,
   PickOpenOptions,
   PickSaveOptions,
   ScheduleDomain,

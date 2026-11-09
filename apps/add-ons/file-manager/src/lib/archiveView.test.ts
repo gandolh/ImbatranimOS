@@ -5,6 +5,7 @@ import {
   crumbTarget,
   entryNamesFor,
   folderEntries,
+  loneOutputName,
   normaliseEntryName,
   uniqueArchiveName,
 } from './archiveView'
@@ -117,5 +118,19 @@ describe('uniqueArchiveName', () => {
     expect(uniqueArchiveName('pics', [])).toBe('pics.zip')
     expect(uniqueArchiveName('pics', ['pics.zip'])).toBe('pics (2).zip')
     expect(uniqueArchiveName('pics', ['pics.zip', 'pics (2).zip'])).toBe('pics (3).zip')
+  })
+})
+
+describe('loneOutputName', () => {
+  it('drops the suffix, as the backend names the file', () => {
+    expect(loneOutputName('notes.txt.gz')).toBe('notes.txt')
+    expect(loneOutputName('dump.SQL.XZ')).toBe('dump.SQL')
+    expect(loneOutputName('.bashrc.bz2')).toBe('.bashrc')
+  })
+
+  it('is null for a tarball, another file, or nothing left', () => {
+    expect(loneOutputName('src.tar.gz')).toBeNull()
+    expect(loneOutputName('notes.txt')).toBeNull()
+    expect(loneOutputName('.gz')).toBeNull()
   })
 })

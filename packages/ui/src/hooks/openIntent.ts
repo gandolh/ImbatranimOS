@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { useSystem } from '../systemContext'
-import type { FileChoice, PickOpenOptions, PickSaveOptions } from '../system'
+import type { FileChoice, PickDirectoryOptions, PickOpenOptions, PickSaveOptions } from '../system'
 
 export type OpenedFile = FileChoice
 
@@ -93,7 +93,7 @@ export function useFileDialog() {
   )
 
   const pickDirectory = useCallback(
-    (opts: { title?: string } = {}) => system.fs.pickDirectory(opts),
+    (opts: PickDirectoryOptions = {}) => system.fs.pickDirectory(opts),
     [system]
   )
 

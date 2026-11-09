@@ -53,6 +53,18 @@ export type PickOpenOptions = {
 
 export type PickSaveOptions = PickOpenOptions & { suggestedName?: string }
 
+export type PickDirectoryOptions = {
+  title?: string
+  /**
+   * The folder the chooser opens in: Extract to… starting in the archive's
+   * folder, say. A `path` that names a file means the folder it is in. A
+   * start the chooser can't list (an unknown root, a path outside the root's
+   * jail, a folder that is gone) opens where it opens without one, with no
+   * error. Since kit 1.8.0; an older desktop ignores it.
+   */
+  startIn?: FileChoice
+}
+
 /** A file's bytes and its version token. */
 export type VersionedBytes = { bytes: ArrayBuffer; version: string | null }
 
@@ -104,7 +116,7 @@ export interface SystemFs {
   /** OS Save-as dialog. Resolves the choice, or null on cancel. */
   pickSave(opts?: PickSaveOptions): Promise<FileChoice | null>
   /** OS folder chooser. `path` is `''` at a root. */
-  pickDirectory(opts?: { title?: string }): Promise<FileChoice | null>
+  pickDirectory(opts?: PickDirectoryOptions): Promise<FileChoice | null>
   /** Record a file in the OS-wide recents, attributed to this app. */
   recordRecent(root: string, path: string): void
   /** Drop a recents entry this app failed to reopen (self-heal). */

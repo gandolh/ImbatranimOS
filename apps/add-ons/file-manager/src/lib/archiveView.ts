@@ -16,6 +16,17 @@ export function archiveKind(name: string): 'browse' | 'extract' | null {
   return null
 }
 
+/**
+ * What a lone compressed file unpacks to, beside itself: its own name without
+ * the suffix (`notes.txt.gz` → `notes.txt`), as the backend names it. Null
+ * when nothing is left, or the file is not a lone compressed one.
+ */
+export function loneOutputName(name: string): string | null {
+  if (archiveKind(name) !== 'extract') return null
+  const out = name.replace(LONE_RE, '')
+  return out === '' || out === '.' || out === '..' ? null : out
+}
+
 /** An entry name the way the folder view spells it: no leading `./` or `/`, no trailing `/`. */
 export function normaliseEntryName(name: string): string {
   return name.replace(/^(\.\/|\/)+/, '').replace(/\/+$/, '')

@@ -54,6 +54,7 @@ import {
   crumbTarget,
   entryNamesFor,
   folderEntries,
+  loneOutputName,
   uniqueArchiveName,
 } from './lib/archiveView'
 import { buildMenuItems } from './lib/buildMenuItems'
@@ -106,6 +107,12 @@ function dirOf(p: string): string {
 
 function baseOf(p: string): string {
   return p.slice(p.lastIndexOf('/') + 1)
+}
+
+/** Extract everything: a lone compressed file names the one file it holds. */
+function extractAllPrompt(archiveName: string): ExtractPrompt {
+  const beside = loneOutputName(archiveName)
+  return beside ? { archiveName, what: beside, beside } : { archiveName, what: 'everything' }
 }
 
 const READ_ONLY_NOTE = 'This is a read-only view of an archive. Extract it to change anything.'
@@ -172,11 +179,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       setRoot(intent.root)
       setPath(dirOf(at))
       if (kind === 'browse') setArchive({ path: at, name: baseOf(at) })
-      else
-        setExtractFor({
-          prompt: { archiveName: baseOf(at), what: 'everything' },
-          archivePath: at,
-        })
+      else setExtractFor({ prompt: extractAllPrompt(baseOf(at)), archivePath: at })
     } else if (intent?.navigatePath !== undefined && intent.root) {
       setRoot(intent.root)
       setPath(intent.navigatePath)
@@ -347,7 +350,11 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       failAction('An extraction is already running.')
       return
     }
-    setExtractFor({ prompt: { archiveName, what }, archivePath, names })
+    setExtractFor({
+      prompt: names ? { archiveName, what } : extractAllPrompt(archiveName),
+      archivePath,
+      names,
+    })
   }
 
   /** Extract from the archive on screen: the entry or selection clicked, else everything. */
@@ -1465,6 +1472,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         <ExtractDialog
           request={extractFor.prompt}
           root={root}
+          archivePath={extractFor.archivePath}
           onExtract={(dest) =>
             void runExtract(extractFor.archivePath, extractFor.prompt, extractFor.names, dest)
           }

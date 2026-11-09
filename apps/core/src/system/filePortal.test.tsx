@@ -106,7 +106,7 @@ function shown(): { at: string; names: string[] } {
   const crumb = [...document.querySelectorAll('span')].find((s) => s.textContent?.startsWith('/'))
   const names = [...document.querySelectorAll<HTMLButtonElement>('button[type="button"]')]
     .map((b) => b.textContent?.trim() ?? '')
-    .filter((t) => t && !['Home', 'Notes', 'Save', '×'].includes(t))
+    .filter((t) => t && !['Home', 'Notes', 'Save', 'Select this folder', '×'].includes(t))
   return { at: crumb?.textContent ?? '?', names }
 }
 
@@ -202,5 +202,52 @@ describe('startIn on the file dialogs', () => {
     })
     await settle()
     expect(shown().at).toBe('/Drawings/Old')
+  })
+})
+
+describe('startIn on the folder chooser', () => {
+  async function openFolder(
+    opts: Parameters<ReturnType<typeof createSystemHandle>['fs']['pickDirectory']>[0] = {}
+  ): Promise<{ pending: Promise<FileChoice | null> }> {
+    const system = createSystemHandle('file-manager', null)
+    let pending!: Promise<FileChoice | null>
+    act(() => {
+      pending = system.fs.pickDirectory({ title: 'Extract to', ...opts })
+    })
+    await settle()
+    return { pending }
+  }
+
+  it('opens in the folder it names, and picks it', async () => {
+    const { pending } = await openFolder({ startIn: { root: 'home', path: 'Drawings' } })
+    expect(shown()).toEqual({ at: '/Drawings', names: ['Old', 'plan.dwg'] })
+    expect(askedFor()).toEqual(['home::Drawings'])
+    act(() =>
+      [...document.querySelectorAll('button')]
+        .find((b) => b.textContent === 'Select this folder')!
+        .click()
+    )
+    await expect(pending).resolves.toEqual({ root: 'home', path: 'Drawings' })
+  })
+
+  it('opens in the folder holding the file it names', async () => {
+    await openFolder({ startIn: { root: 'home', path: 'Drawings/Old/first.dwg' } })
+    expect(shown().at).toBe('/Drawings/Old')
+  })
+
+  it.each([
+    ['a root the chooser does not offer', { root: 'etc', path: '' }],
+    ['a folder it cannot list', { root: 'home', path: 'secret' }],
+    ['a path that climbs out of its root', { root: 'home', path: '../..' }],
+  ])('opens where it always did for %s', async (_, startIn) => {
+    await openFolder({ startIn })
+    expect(shown()).toEqual({ at: '/', names: ['Drawings', 'notes.txt'] })
+    expect(askedFor().some((p) => p.includes('..'))).toBe(false)
+  })
+
+  it('opens where it always did without one', async () => {
+    await openFolder()
+    expect(shown().at).toBe('/')
+    expect(askedFor()).toEqual(['home::'])
   })
 })

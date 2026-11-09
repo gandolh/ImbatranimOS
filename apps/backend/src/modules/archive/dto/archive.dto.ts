@@ -9,9 +9,10 @@ import {
 } from 'class-validator';
 
 /**
- * POST /api/archive/extract — unpack `path` (a .zip/.tar/.tar.gz/.tgz inside
- * `root`) into `dest`. When `dest` is omitted the service derives a sibling
- * folder from the archive name. Every path is jailed via
+ * POST /api/archive/extract — unpack `path` (a .zip, a tarball, or a lone
+ * .gz/.xz/.bz2 file inside `root`) into `dest`. When `dest` is omitted the
+ * service derives a sibling folder from the archive name; a lone compressed
+ * file unpacks beside itself instead. Every path is jailed via
  * `FilesService.resolveSafe`; entry names are never trusted.
  */
 export class ExtractDto {
@@ -23,7 +24,10 @@ export class ExtractDto {
   @IsNotEmpty()
   path: string;
 
-  /** Destination directory (root-relative). Optional — derived if absent. */
+  /**
+   * Destination directory (root-relative). Optional — derived if absent. For
+   * a lone compressed file it is the folder the one output file goes into.
+   */
   @IsOptional()
   @IsString()
   dest?: string;
@@ -88,6 +92,7 @@ export interface ArchiveEntry {
 }
 
 export interface ArchiveListing {
+  /** A {@link TarFlavour}, `zip`, or a {@link LoneFlavour}. */
   format: string;
   entries: ArchiveEntry[];
   /** Entries the archive declares that this module will refuse to extract. */
@@ -105,6 +110,12 @@ export type ArchiveFormat = 'zip' | 'targz';
  * `.tar.xz` is read-only in the shipped image.
  */
 export type TarFlavour = 'tar' | 'targz' | 'tarbz2' | 'tarxz';
+
+/**
+ * One compressed file with no tar inside (`notes.txt.gz`): it unpacks to one
+ * file beside itself, named without the suffix.
+ */
+export type LoneFlavour = 'gz' | 'xz' | 'bz2';
 
 /**
  * POST /api/archive/compress — pack `paths[]` (files/dirs inside `root`) into

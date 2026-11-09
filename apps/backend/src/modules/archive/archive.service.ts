@@ -1,15 +1,22 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   PayloadTooLargeException,
+  RequestTimeoutException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { unzip, zip, type Unzipped, type AsyncZippable } from 'fflate';
-import { execFile } from 'child_process';
+import { execFile, spawn, type ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
-import type { Stats } from 'fs';
+import { constants as fsConstants, createReadStream, type Stats } from 'fs';
+import { Transform, Writable } from 'stream';
+import { pipeline } from 'stream/promises';
+import { createGunzip } from 'zlib';
 import { basename, dirname, join, posix, relative, sep } from 'path';
 import { randomUUID } from 'crypto';
 import { FilesService } from '../files/files.service';
@@ -19,6 +26,7 @@ import type {
   ArchiveJob,
   ArchiveFormat,
   ArchiveListing,
+  LoneFlavour,
   TarFlavour,
 } from './dto/archive.dto';
 
@@ -63,6 +71,66 @@ const MAX_ARCHIVE_BYTES = () =>
  */
 const MAX_COMPRESSION_RATIO = () =>
   Number(process.env.ARCHIVE_MAX_RATIO) || 2000;
+/** A suffix that may name one compressed file rather than a tarball. */
+const LONE_SUFFIX = /\.(gz|xz|bz2)$/i;
+/** The tar flavour a lone compressed file turns out to be when a tar is inside. */
+const TAR_OF: Record<LoneFlavour, TarFlavour> = {
+  gz: 'targz',
+  xz: 'tarxz',
+  bz2: 'tarbz2',
+};
+/** What `link()` fails with on a file system that has no hard links. */
+const NO_HARD_LINKS: ReadonlySet<string> = new Set([
+  'EPERM',
+  'ENOTSUP',
+  'EOPNOTSUPP',
+  'EXDEV',
+]);
+
+/** Thrown by a peek's sink once it has the bytes it wanted. */
+class PeekDone extends Error {}
+
+/**
+ * The name a lone compressed file unpacks to: its own, without the suffix
+ * (`notes.txt.gz` → `notes.txt`), as gunzip, unxz and bunzip2 name it. Null
+ * when nothing would be left (a file called just `.gz`).
+ */
+export function loneOutputName(archiveName: string): string | null {
+  const name = archiveName.replace(LONE_SUFFIX, '');
+  return name === '' || name === '.' || name === '..' ? null : name;
+}
+
+/**
+ * `name`, then `notes (2).txt`, `notes (3).txt`…: the number goes before the
+ * last extension, as Files numbers a new archive's name. A leading dot is a
+ * hidden file's name, not an extension (`.bashrc (2)`).
+ */
+export function numberedName(name: string, n: number): string {
+  if (n === 1) return name;
+  const dot = name.lastIndexOf('.');
+  return dot > 0
+    ? `${name.slice(0, dot)} (${n})${name.slice(dot)}`
+    : `${name} (${n})`;
+}
+
+const isLone = (format: string): format is LoneFlavour =>
+  format === 'gz' || format === 'xz' || format === 'bz2';
+
+/** A write's full disk, as the 503 the files module answers with. */
+async function diskFull<T>(op: () => Promise<T>): Promise<T> {
+  try {
+    return await op();
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOSPC' || code === 'EDQUOT') {
+      throw new ServiceUnavailableException(
+        'The disk is full — free some space and try again.',
+      );
+    }
+    throw err;
+  }
+}
+
 /** How long a finished job stays pollable, and how many jobs are kept at all. */
 const JOB_TTL_MS = 5 * 60 * 1000;
 const MAX_JOBS = 50;
@@ -286,7 +354,26 @@ export class ArchiveService {
         `Archive is too large to read (max ${MAX_ARCHIVE_BYTES()} bytes)`,
       );
     }
-    const format = this.detectFormat(path);
+    const format = await this.detectFormat(path, archiveAbs);
+    if (isLone(format)) {
+      // One file, and the only way to its size is to decompress it all.
+      return {
+        format,
+        entries: [
+          {
+            name: this.loneName(path),
+            size: null,
+            compressedSize: stat.size,
+            directory: false,
+            modified: null,
+            nameRepaired: false,
+          },
+        ],
+        refused: [],
+        encrypted: false,
+        truncated: false,
+      };
+    }
     const destVirtual = this.deriveDest(path);
 
     const raw =
@@ -444,6 +531,13 @@ export class ArchiveService {
       );
     }
 
+    // The format first, so an archive this module can't read leaves nothing
+    // behind (it used to leave an empty destination folder).
+    const format = await this.detectFormat(path, archiveAbs);
+    if (isLone(format)) {
+      return this.extractLone(root, path, archiveAbs, format, dest, only);
+    }
+
     // Destination: caller-supplied, else a sibling folder named after the
     // archive (foo.tar.gz -> foo), or `foo (2)`… when that exists: extracting
     // the same archive twice must never land on the first copy.
@@ -452,7 +546,6 @@ export class ArchiveService {
       dest ?? (await this.freeDest(root, this.deriveDest(path)));
     const { abs: destAbs } = await this.files.resolveSafe(root, destVirtual);
 
-    const format = this.detectFormat(path);
     await fs.mkdir(destAbs, { recursive: true });
 
     if (format === 'zip') {
@@ -914,6 +1007,306 @@ export class ArchiveService {
     }
   }
 
+  // ── a lone compressed file ─────────────────────────────────────────────────
+
+  /**
+   * Unpack one `.gz`, `.xz` or `.bz2` file (no tar inside) to one file beside
+   * it, or in `dest`, named without the suffix — `notes.txt.gz` → `notes.txt`,
+   * or `notes (2).txt` when that is taken. The compressed file stays, as
+   * Windows' "Extract" and `gunzip -k` leave it.
+   *
+   * The bytes are decompressed into a fresh hidden staging file in the target
+   * folder (opened `wx`, so not over anything, a symlink included), counted on
+   * the way through: past the size cap the decompressor is stopped and the
+   * staging file removed, so a bomb leaves nothing. Only a complete file is
+   * placed, with a hard link that fails over anything already at the name —
+   * the name is claimed by the link itself, so nothing can take it between a
+   * check and the write. The folder must still be the one checked once the
+   * file is in, or the file is taken back out.
+   */
+  private async extractLone(
+    root: string,
+    path: string,
+    archiveAbs: string,
+    kind: LoneFlavour,
+    dest: string | undefined,
+    only: Set<string> | undefined,
+  ): Promise<ExtractResult> {
+    const name = this.loneName(path);
+    if (only && (only.size !== 1 || !only.has(name))) {
+      const [wanted] = [...only].filter((n) => n !== name);
+      throw new BadRequestException(
+        `That archive does not contain an entry named ${wanted ?? name}`,
+      );
+    }
+
+    const parent = posix.dirname(path.replace(/\\/g, '/'));
+    const folderVirtual = dest ?? (parent === '.' ? '' : parent);
+    const { abs: folderAbs } = await this.files.resolveSafe(
+      root,
+      folderVirtual,
+    );
+    await fs.mkdir(folderAbs, { recursive: true }).catch(() => undefined);
+    const folder = await fs.stat(folderAbs).catch(() => null);
+    if (!folder?.isDirectory()) {
+      throw new BadRequestException(`Not a folder: ${folderVirtual || '/'}`);
+    }
+    // Everything below happens in the folder's real path, checked again once
+    // the file is in.
+    const realFolder = await fs.realpath(folderAbs);
+
+    // Short, so a long output name can't push the staging name past the limit.
+    const staged = join(realFolder, `.extract-${randomUUID()}.part`);
+    let created = false;
+    try {
+      const out = (
+        await diskFull(() => fs.open(staged, 'wx'))
+      ).createWriteStream();
+      created = true;
+      const totalBytes = await this.decompressInto(archiveAbs, kind, out).catch(
+        (err: unknown) => {
+          // Closes the staging file when the stream never got going.
+          out.destroy();
+          throw err;
+        },
+      );
+      const placed = await diskFull(() =>
+        this.placeNumbered(staged, realFolder, name),
+      );
+      if ((await fs.realpath(realFolder).catch(() => null)) !== realFolder) {
+        // Take back only the file this made (the staging file's inode), not
+        // whatever the name now reaches.
+        const ours = await fs.stat(staged);
+        const there = await fs
+          .lstat(join(realFolder, placed))
+          .catch(() => null);
+        if (there?.ino === ours.ino && there.dev === ours.dev) {
+          await fs.rm(join(realFolder, placed), { force: true });
+        }
+        throw new BadRequestException('The folder changed while extracting');
+      }
+      return {
+        dest: folderVirtual ? posix.join(folderVirtual, placed) : placed,
+        entries: 1,
+        totalBytes,
+      };
+    } finally {
+      // Only a staging file this made: `wx` failing means something else is there.
+      if (created) await fs.rm(staged, { force: true });
+    }
+  }
+
+  /**
+   * Link `staged` in as `name`, or the first free `numberedName` after it.
+   * `link` fails with EEXIST over anything at the name, a dangling symlink
+   * included, where a rename would replace it; a file system without hard
+   * links gets an exclusive copy instead. Returns the name it took.
+   */
+  private async placeNumbered(
+    staged: string,
+    folder: string,
+    name: string,
+  ): Promise<string> {
+    for (let n = 1; n <= MAX_ENTRIES(); n++) {
+      const candidate = numberedName(name, n);
+      const target = join(folder, candidate);
+      try {
+        await fs.link(staged, target).catch((err: NodeJS.ErrnoException) => {
+          if (!NO_HARD_LINKS.has(err.code ?? '')) throw err;
+          return fs.copyFile(staged, target, fsConstants.COPYFILE_EXCL);
+        });
+        return candidate;
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+      }
+    }
+    throw new ConflictException(`Too many files named like ${name} here`);
+  }
+
+  /** The output name for a lone compressed file at `path`, or a 400. */
+  private loneName(path: string): string {
+    const name = loneOutputName(basename(path));
+    if (!name) {
+      throw new BadRequestException(
+        `Can't name the file inside ${basename(path)}: rename it first`,
+      );
+    }
+    return name;
+  }
+
+  /**
+   * Decompress the whole file into `sink`, refusing past the size cap.
+   * Resolves the byte count. The cap is the one on a single archive entry and
+   * on a whole extraction (the smaller of the two), on bytes actually
+   * produced: a gzip's trailer size is modulo 4 GiB and anyone can write it,
+   * and xz and bzip2 need not declare a size at all. The zip path's ratio cap
+   * isn't applied: it bounds a pre-allocation driven by a zip header, which a
+   * stream doesn't make, and honest xz and bzip2 files pass 2000:1.
+   */
+  private async decompressInto(
+    archiveAbs: string,
+    kind: LoneFlavour,
+    sink: Writable,
+  ): Promise<number> {
+    const cap = Math.min(MAX_ENTRY_BYTES(), MAX_TOTAL_BYTES());
+    let total = 0;
+    const counter = new Transform({
+      transform(chunk: Buffer, _enc, done) {
+        total += chunk.length;
+        if (total >= cap) {
+          done(
+            new PayloadTooLargeException(
+              `Archive uncompresses past the size cap (max ${cap} bytes)`,
+            ),
+          );
+        } else done(null, chunk);
+      },
+    });
+    await diskFull(() => this.decompress(archiveAbs, kind, counter, sink));
+    return total;
+  }
+
+  /**
+   * The first `bytes` of the decompressed stream, or all of it when shorter.
+   * Stops the decompressor once it has them.
+   */
+  private async peekDecompressed(
+    archiveAbs: string,
+    kind: LoneFlavour,
+    bytes: number,
+  ): Promise<Buffer> {
+    const chunks: Buffer[] = [];
+    let have = 0;
+    const sink = new Writable({
+      write(chunk: Buffer, _enc, done) {
+        chunks.push(chunk);
+        have += chunk.length;
+        done(have >= bytes ? new PeekDone() : null);
+      },
+    });
+    const pass = new Transform({
+      transform(chunk: Buffer, _enc, done) {
+        done(null, chunk);
+      },
+    });
+    try {
+      await this.decompress(archiveAbs, kind, pass, sink);
+    } catch (err) {
+      if (!(err instanceof PeekDone)) throw err;
+    }
+    return Buffer.concat(chunks).subarray(0, bytes);
+  }
+
+  /**
+   * Run `kind`'s decompressor over the file into `through` then `sink`.
+   *
+   * gzip is Node's own zlib (multi-member files included). xz and bzip2 are
+   * the image's busybox `xzcat` and `bzcat` (both applets ship in Alpine's
+   * busybox, checked in the running image), spawned with no shell and no
+   * argv: the file is the child's stdin, so its name is never parsed. A
+   * failure anywhere kills the child and waits for it to exit, so none is
+   * left behind; a child that can't start is a 500 saying so, a non-zero exit
+   * a 400 (the file is damaged), and the module's tar timeout bounds the lot.
+   */
+  private async decompress(
+    archiveAbs: string,
+    kind: LoneFlavour,
+    through: Transform,
+    sink: Writable,
+  ): Promise<void> {
+    const signal = AbortSignal.timeout(TAR_TIMEOUT_MS);
+    const late = (): never => {
+      throw new RequestTimeoutException(
+        `Decompressing took too long (over ${TAR_TIMEOUT_MS / 1000} s)`,
+      );
+    };
+    const damaged = () =>
+      new BadRequestException(`The ${kind} file is damaged or not ${kind}`);
+
+    if (kind === 'gz') {
+      try {
+        await pipeline(
+          createReadStream(archiveAbs),
+          createGunzip(),
+          through,
+          sink,
+          { signal },
+        );
+      } catch (err) {
+        if (signal.aborted) late();
+        if (err instanceof HttpException || err instanceof PeekDone) throw err;
+        if (String((err as NodeJS.ErrnoException).code).startsWith('Z_')) {
+          throw damaged();
+        }
+        throw err;
+      }
+      return;
+    }
+
+    const command = this.decompressorCommand(kind);
+    const input = await fs.open(archiveAbs, 'r');
+    let child: ChildProcess;
+    // Listened for before anything awaits: a child that can't start says so
+    // on the next tick, and an 'error' nobody hears would crash the process.
+    let startError: Error | null = null;
+    let exited: Promise<number | null>;
+    try {
+      child = spawn(command, [], {
+        stdio: [input.fd, 'pipe', 'pipe'],
+        env: childEnv(),
+      });
+      child.on('error', (err) => {
+        startError = err;
+      });
+      exited = new Promise<number | null>((resolve) =>
+        child.on('close', (code) => resolve(code)),
+      );
+    } finally {
+      // The child has its own copy of the descriptor by now.
+      await input.close();
+    }
+    child.stderr!.resume();
+    const unavailable = () =>
+      new InternalServerErrorException(
+        `Can't unpack ${kind} files here: ${command} is not available`,
+      );
+
+    try {
+      await pipeline(child.stdout!, through, sink, { signal });
+    } catch (err) {
+      child.kill('SIGKILL');
+      await exited;
+      if (startError) throw unavailable();
+      if (signal.aborted) late();
+      throw err;
+    }
+    const code = await exited;
+    if (startError) throw unavailable();
+    if (code !== 0) throw damaged();
+  }
+
+  /** The program that decompresses `kind` to stdout. A seam for the tests. */
+  protected decompressorCommand(kind: Exclude<LoneFlavour, 'gz'>): string {
+    return kind === 'xz' ? 'xzcat' : 'bzcat';
+  }
+
+  /** Which compressor wrote this file, from its first bytes; null for none. */
+  private async sniffCompression(abs: string): Promise<LoneFlavour | null> {
+    const fh = await fs.open(abs, 'r');
+    const head = Buffer.alloc(6);
+    try {
+      await fh.read(head, 0, 6, 0);
+    } finally {
+      await fh.close();
+    }
+    if (head[0] === 0x1f && head[1] === 0x8b) return 'gz';
+    if (head.equals(Buffer.from([0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00]))) {
+      return 'xz';
+    }
+    if (head.subarray(0, 3).toString('latin1') === 'BZh') return 'bz2';
+    return null;
+  }
+
   // ── compress ─────────────────────────────────────────────────────────────
 
   /**
@@ -1102,8 +1495,38 @@ export class ArchiveService {
    * **`# CONFIG_XZ is not set`** (only `unxz`/`xzcat` exist). So `tar -cJf` would
    * fail to exec `xz`. `.tar.xz` is therefore offered for extraction only, and
    * {@link compress} refuses to create one with a message that says why.
+   *
+   * A name ending in plain `.gz`, `.xz` or `.bz2` is read by content: its
+   * first bytes say which compressor wrote it (`1f 8b`, `fd 37 7a 58 5a 00`,
+   * `BZh`), and the first 512 decompressed bytes whether a tar is inside
+   * (`ustar` at offset 257). A tar inside is a tarball like any `.tar.gz`;
+   * anything else is one compressed file ({@link extractLone}). The zip and
+   * tar suffixes above are taken as they always were.
    */
-  private detectFormat(path: string): TarFlavour | 'zip' {
+  private async detectFormat(
+    path: string,
+    archiveAbs: string,
+  ): Promise<TarFlavour | 'zip' | LoneFlavour> {
+    const bySuffix = this.formatBySuffix(path);
+    if (bySuffix) return bySuffix;
+    if (!LONE_SUFFIX.test(path)) {
+      throw new BadRequestException(
+        'Unsupported archive format (expected .zip, .tar, .tar.gz, .tgz, .tar.bz2, .tar.xz, .gz, .xz or .bz2)',
+      );
+    }
+    const kind = await this.sniffCompression(archiveAbs);
+    if (!kind) {
+      throw new BadRequestException(
+        `${basename(path)} is not a gzip, xz or bzip2 file`,
+      );
+    }
+    const head = await this.peekDecompressed(archiveAbs, kind, 512);
+    const tar = head.subarray(257, 262).toString('latin1') === 'ustar';
+    return tar ? TAR_OF[kind] : kind;
+  }
+
+  /** The zip and tar formats, by name alone; null for any other name. */
+  private formatBySuffix(path: string): TarFlavour | 'zip' | null {
     const lower = path.toLowerCase();
     if (lower.endsWith('.zip')) return 'zip';
     if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) return 'targz';
@@ -1116,9 +1539,7 @@ export class ArchiveService {
     }
     if (lower.endsWith('.tar.xz') || lower.endsWith('.txz')) return 'tarxz';
     if (lower.endsWith('.tar')) return 'tar';
-    throw new BadRequestException(
-      'Unsupported archive format (expected .zip, .tar, .tar.gz, .tgz, .tar.bz2 or .tar.xz)',
-    );
+    return null;
   }
 
   /**
@@ -1145,7 +1566,8 @@ export class ArchiveService {
   private deriveDest(path: string): string {
     const dir = dirname(path);
     const base = basename(path).replace(
-      /\.(zip|tgz|tbz2?|txz|tar\.gz|tar\.bz2|tar\.xz|tar)$/i,
+      // A plain .gz/.xz/.bz2 reaches here only with a tar inside.
+      /\.(zip|tgz|tbz2?|txz|tar\.gz|tar\.bz2|tar\.xz|tar|gz|xz|bz2)$/i,
       '',
     );
     return dir === '.' ? base : posix.join(dir, base);

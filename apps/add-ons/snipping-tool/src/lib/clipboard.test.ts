@@ -1,6 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { canCopyImages, copyPng } from './clipboard'
 
+// The tests run in node, but the package's types are the browser's.
+const nodeProcess = (
+  globalThis as unknown as {
+    process: {
+      on: (e: string, f: () => void) => void
+      off: (e: string, f: () => void) => void
+    }
+  }
+).process
+
 class FakeClipboardItem {
   items: Record<string, Blob | Promise<Blob>>
   constructor(items: Record<string, Blob | Promise<Blob>>) {
@@ -53,5 +63,32 @@ describe('copyPng', () => {
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.reason).toMatch(/secure page/)
     expect(write).not.toHaveBeenCalled()
+  })
+
+  it('issues the write before the raster has finished', async () => {
+    const write = vi.fn().mockResolvedValue(undefined)
+    stubBrowser(write)
+    let resolveBlob!: (b: Blob) => void
+    const pending = new Promise<Blob>((r) => {
+      resolveBlob = r
+    })
+    const copied = copyPng(pending)
+    expect(write).toHaveBeenCalledTimes(1)
+    resolveBlob(new Blob(['x']))
+    expect(await copied).toEqual({ ok: true })
+  })
+
+  it('reports a failed raster without an unhandled rejection', async () => {
+    const unhandled = vi.fn()
+    nodeProcess.on('unhandledRejection', unhandled)
+    stubBrowser(async (items) => {
+      await items[0].items['image/png']
+    })
+    const r = await copyPng(Promise.reject(new Error('toBlob returned null')))
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    nodeProcess.off('unhandledRejection', unhandled)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.reason).toMatch(/encoded/)
+    expect(unhandled).not.toHaveBeenCalled()
   })
 })

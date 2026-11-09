@@ -27,6 +27,8 @@ export function CaptureOverlay({ onSelect, onCancel }: Props) {
   const [drag, setDrag] = useState<DragState>(null)
   const [cursor, setCursor] = useState<{ x: number; y: number }>({ x: -1, y: -1 })
   const draggingRef = useRef(false)
+  // Mirrors `drag` so pointerup can read it in the handler body, not inside a state updater.
+  const dragRef = useRef<DragState>(null)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -46,25 +48,31 @@ export function CaptureOverlay({ onSelect, onCancel }: Props) {
     if (e.button !== 0) return
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
     draggingRef.current = true
-    setDrag({ startX: e.clientX, startY: e.clientY, curX: e.clientX, curY: e.clientY })
+    dragRef.current = { startX: e.clientX, startY: e.clientY, curX: e.clientX, curY: e.clientY }
+    setDrag(dragRef.current)
   }
 
   function handlePointerMove(e: React.PointerEvent) {
     setCursor({ x: e.clientX, y: e.clientY })
     if (!draggingRef.current) return
-    setDrag((d) => (d ? { ...d, curX: e.clientX, curY: e.clientY } : d))
+    if (!dragRef.current) return
+    dragRef.current = { ...dragRef.current, curX: e.clientX, curY: e.clientY }
+    setDrag(dragRef.current)
   }
 
   function handlePointerUp() {
     draggingRef.current = false
-    setDrag((d) => {
-      if (!d) return null
-      const sel = normalize(d)
-      // Ignore stray clicks / tiny drags — keep the overlay up for a real drag.
-      if (sel.width < 6 || sel.height < 6) return null
-      onSelect(sel)
-      return d
-    })
+    const d = dragRef.current
+    if (!d) return
+    const picked = normalize(d)
+    // Ignore stray clicks / tiny drags — keep the overlay up for a real drag.
+    if (picked.width < 6 || picked.height < 6) {
+      dragRef.current = null
+      setDrag(null)
+      return
+    }
+    // Called here, in the pointerup task, so the clipboard write rides the user's click.
+    onSelect(picked)
   }
 
   const sel = drag ? normalize(drag) : null

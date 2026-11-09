@@ -1,17 +1,23 @@
 //! The clipboard bridge's pure parts: which of an app's offered types is
-//! text, how much text crosses, how the bytes become a string, and where a
-//! paste's text comes from.
+//! text, how much text crosses, how the bytes become a string, which
+//! selection goes where, and where a paste's text comes from.
 //!
 //! Plain text only, both ways. Copying in a Linux app sends the text to the
 //! tab, which writes the real clipboard; a paste key in a Linux window makes
 //! the tab read the real clipboard and hand the text to the host, which
 //! offers it as the session's selection before the key reaches the app.
 //!
-//! X11 apps share it: an X11 app's `CLIPBOARD` becomes the session's
-//! selection (read through the window manager), and the session's becomes
-//! theirs. `PRIMARY` stays between X11 apps.
+//! A session has two selections, as a Linux desktop does: `CLIPBOARD` (an
+//! explicit copy) and `PRIMARY` (the last highlight, pasted with a middle
+//! click or xterm's Shift+Insert). The session's X11 and Wayland apps share
+//! both: an X11 app's selection becomes the session's (read through the
+//! window manager), and the session's becomes theirs. Only `CLIPBOARD` goes
+//! to the tab; a highlight stays among the session's apps, as on GNOME and
+//! KDE. The tab's text fills both, as TigerVNC's viewer does.
 
 use std::sync::Arc;
+
+use smithay::wayland::selection::SelectionTarget;
 
 /// The text types an app may offer, in the order the host prefers to read
 /// them. `text/plain;charset=utf-8` is the modern one; the others are what
@@ -27,14 +33,61 @@ pub const OFFERED_MIME_TYPES: [&str; 5] = ["text/plain;charset=utf-8", "text/pla
 /// to these names.
 pub const X11_OFFERED_MIME_TYPES: [&str; 3] = ["text/plain;charset=utf-8", "text/plain", "STRING"];
 
-/// The session's clipboard when the host set it, not a Wayland app (smithay
-/// hands a Wayland app's selection to the others itself).
+/// The selections the tab's text fills when it hands it over for a paste:
+/// `CLIPBOARD` for the paste keys, and `PRIMARY` for the apps that paste that
+/// instead (xterm's Shift+Insert, rxvt, a middle click). TigerVNC's viewer
+/// does the same (`SetPrimary`).
+pub const FILLED_BY_TAB: [SelectionTarget; 2] = [SelectionTarget::Clipboard, SelectionTarget::Primary];
+
+/// Whether an app's new text in `target` is read and sent to the tab, which
+/// writes it to the real clipboard. An explicit copy (`CLIPBOARD`) is; a
+/// highlight (`PRIMARY`) never is, so selecting text just to read it doesn't
+/// replace what was copied.
+pub fn goes_to_tab(target: SelectionTarget) -> bool {
+    target == SelectionTarget::Clipboard
+}
+
+/// A selection's X11 name, for the log.
+pub fn selection_name(target: SelectionTarget) -> &'static str {
+    match target {
+        SelectionTarget::Clipboard => "CLIPBOARD",
+        SelectionTarget::Primary => "PRIMARY",
+    }
+}
+
+/// One value for each of the session's selections.
+#[derive(Debug, Default)]
+pub struct PerSelection<T> {
+    clipboard: T,
+    primary: T,
+}
+
+impl<T> PerSelection<T> {
+    pub fn get(&self, target: SelectionTarget) -> &T {
+        match target {
+            SelectionTarget::Clipboard => &self.clipboard,
+            SelectionTarget::Primary => &self.primary,
+        }
+    }
+
+    pub fn get_mut(&mut self, target: SelectionTarget) -> &mut T {
+        match target {
+            SelectionTarget::Clipboard => &mut self.clipboard,
+            SelectionTarget::Primary => &mut self.primary,
+        }
+    }
+}
+
+/// A selection the host set, not a Wayland app (smithay hands a Wayland
+/// app's selection to the others itself). `CLIPBOARD` and `PRIMARY` each
+/// hold their own: a highlight replaces `PRIMARY`'s and leaves
+/// `CLIPBOARD`'s alone.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HostSelection {
     /// The text the tab handed over for a paste.
     Tab(Arc<str>),
-    /// An X11 app's `CLIPBOARD`, read from it in `mime` (the text type it
-    /// offered) whenever an app pastes.
+    /// An X11 app's selection of the same name, read from it in `mime` (the
+    /// text type it offered) whenever an app pastes.
     X11 { mime: String },
 }
 
@@ -45,20 +98,20 @@ pub enum PasteFrom {
     Text(Arc<str>),
     /// The Wayland app that set the selection, asked in this type.
     WaylandApp(String),
-    /// The X11 app that has `CLIPBOARD`, asked in this type.
+    /// The X11 app that has the selection, asked in this type.
     X11App(String),
     /// Nothing: the pipe closes empty.
     Nothing,
 }
 
-/// Where the text comes from when an app pastes the session's clipboard.
-/// `held` is the host's selection, None when a Wayland app's is current;
-/// `wayland_mime` the text type that Wayland app offered, if any; `x11` says
-/// the app pasting is an X11 app.
+/// Where the text comes from when an app pastes one of the session's
+/// selections. `held` is the host's for that selection, None when a Wayland
+/// app's is current; `wayland_mime` the text type that Wayland app offered,
+/// if any; `x11` says the app pasting is an X11 app.
 pub fn paste_from(held: Option<&HostSelection>, wayland_mime: Option<&str>, x11: bool) -> PasteFrom {
     match held {
         Some(HostSelection::Tab(text)) => PasteFrom::Text(Arc::clone(text)),
-        // An X11 app reads another's CLIPBOARD from X, never through the
+        // An X11 app reads another's selection from X, never through the
         // host; the host's own copy of it is gone.
         Some(HostSelection::X11 { .. }) if x11 => PasteFrom::Nothing,
         Some(HostSelection::X11 { mime }) => PasteFrom::X11App(mime.clone()),
@@ -188,6 +241,28 @@ mod tests {
         );
         // An image copied in an X11 app doesn't cross.
         assert_eq!(text_mime(&offered(&["image/png"])), None);
+    }
+
+    #[test]
+    fn the_tabs_text_fills_both_selections() {
+        assert!(FILLED_BY_TAB.contains(&SelectionTarget::Clipboard));
+        assert!(FILLED_BY_TAB.contains(&SelectionTarget::Primary));
+    }
+
+    #[test]
+    fn only_a_copy_goes_to_the_tab_never_a_highlight() {
+        assert!(goes_to_tab(SelectionTarget::Clipboard));
+        assert!(!goes_to_tab(SelectionTarget::Primary));
+    }
+
+    #[test]
+    fn each_selection_keeps_its_own_value() {
+        let mut slots: PerSelection<Option<&str>> = PerSelection::default();
+        *slots.get_mut(SelectionTarget::Clipboard) = Some("copied");
+        *slots.get_mut(SelectionTarget::Primary) = Some("highlighted");
+        *slots.get_mut(SelectionTarget::Primary) = Some("highlighted again");
+        assert_eq!(*slots.get(SelectionTarget::Clipboard), Some("copied"));
+        assert_eq!(*slots.get(SelectionTarget::Primary), Some("highlighted again"));
     }
 
     #[test]

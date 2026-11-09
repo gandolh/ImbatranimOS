@@ -11,10 +11,10 @@
 //! that handles it, and the host's main loop is the host's. main.rs
 //! dispatches that loop whenever it has events.
 //!
-//! The window manager also bridges the clipboard: an X11 app's `CLIPBOARD`
-//! becomes the session's selection, and the session's (the tab's text or a
-//! Wayland app's) becomes `CLIPBOARD` for X11 apps. Plain text only;
-//! `PRIMARY` stays between X11 apps.
+//! The window manager also bridges both selections, `CLIPBOARD` and
+//! `PRIMARY`: an X11 app's becomes the session's, and the session's (the
+//! tab's text or a Wayland app's) becomes X11 apps'. Plain text only. Only
+//! `CLIPBOARD` goes on to the tab (crate::clipboard).
 
 use std::mem;
 use std::net::Shutdown;
@@ -35,7 +35,7 @@ use smithay::xwayland::xwm::{Reorder, ResizeEdge, WmWindowProperty, XwmId};
 use smithay::xwayland::{X11Surface, X11Wm, XWayland, XWaylandEvent, XwmHandler};
 
 use super::{PopupShell, Role, SessionState, ToplevelShell, Window};
-use crate::clipboard::{text_mime, X11_OFFERED_MIME_TYPES};
+use crate::clipboard::{selection_name, text_mime, X11_OFFERED_MIME_TYPES};
 use crate::protocol::Decorations;
 use crate::xwayland::{set_inherited, Reservation, XwaylandConfig};
 
@@ -204,10 +204,14 @@ impl SessionState {
                     *wm = Some(started);
                     *conn = shutdown;
                 }
-                // X11 apps can paste what the session's clipboard already
-                // holds.
-                if self.clipboard_has_text_for_x11() {
-                    self.x11_offer_clipboard(Some(&X11_OFFERED_MIME_TYPES));
+                // X11 apps can paste what the session's selections already
+                // hold.
+                let holding: Vec<SelectionTarget> = [SelectionTarget::Clipboard, SelectionTarget::Primary]
+                    .into_iter()
+                    .filter(|&target| self.has_text_for_x11(target))
+                    .collect();
+                if !holding.is_empty() {
+                    self.x11_offer(&holding, Some(&X11_OFFERED_MIME_TYPES));
                 }
                 log(&format!("session {}…: Xwayland is ready on :{display_number}", &self.id[..8]));
             }
@@ -231,7 +235,8 @@ impl SessionState {
             }
         }
         self.x11.managed.clear();
-        self.x11_clipboard_gone();
+        self.x11_selection_gone(SelectionTarget::Clipboard);
+        self.x11_selection_gone(SelectionTarget::Primary);
         for i in (0..self.windows.len()).rev() {
             if self.windows[i].x11().is_some() {
                 self.remove_window(i);
@@ -299,43 +304,46 @@ impl SessionState {
 
     // ── Clipboard ───────────────────────────────────────────────────────
 
-    /// Tell X11 apps what the session's clipboard holds: these text types,
-    /// none (`Some(&[])`: not text, an empty `CLIPBOARD` to them), or
-    /// nothing at all (None: the window manager lets `CLIPBOARD` go, if it
-    /// held it). Never called for an X11 app's own copy, which would take
-    /// `CLIPBOARD` from it.
-    pub(super) fn x11_offer_clipboard(&mut self, mime_types: Option<&[&str]>) {
+    /// Tell X11 apps what the session's selections `targets` hold: these
+    /// text types, none (`Some(&[])`: not text, an empty selection to them),
+    /// or nothing at all (None: the window manager lets the selection go, if
+    /// it held it). Never called for an X11 app's own selection, which would
+    /// take it from the app.
+    pub(super) fn x11_offer(&mut self, targets: &[SelectionTarget], mime_types: Option<&[&str]>) {
         let Stage::Running { wm: Some(wm), .. } = &mut self.x11.stage else {
             return;
         };
-        let offer = mime_types.map(|types| types.iter().map(|m| m.to_string()).collect());
-        if let Err(e) = wm.new_selection(SelectionTarget::Clipboard, offer) {
-            log(&format!("cannot offer the clipboard to X11 apps: {e}"));
-            return;
+        let offer: Option<Vec<String>> = mime_types.map(|types| types.iter().map(|m| m.to_string()).collect());
+        for &target in targets {
+            if let Err(e) = wm.new_selection(target, offer.clone()) {
+                log(&format!("cannot offer {} to X11 apps: {e}", selection_name(target)));
+                return;
+            }
         }
         // smithay only queues the change of owner on the window manager's
         // connection, unsent. Wait until X has made it: a request with a
         // reply, answered only after everything sent before it. A paste key
-        // forwarded next then reaches an X11 app after it heard it lost
-        // CLIPBOARD; one that still thinks it owns CLIPBOARD (xterm after a
-        // selection) pastes its own copy without asking anyone. The request
-        // itself (the primary output's name) only reads.
+        // or middle click forwarded next then reaches an X11 app after it
+        // heard it lost the selection; one that still thinks it owns it
+        // (xterm after a highlight or a copy) pastes its own text without
+        // asking anyone. The request itself (RandR's primary output's name)
+        // only reads.
         if let Err(e) = wm.get_randr_primary_output() {
-            log(&format!("cannot offer the clipboard to X11 apps: {e}"));
+            log(&format!("cannot offer a selection to X11 apps: {e}"));
         }
     }
 
-    /// Ask the X11 app holding `CLIPBOARD` to write it into `fd`, in `mime`
-    /// (as smithay names its X11 targets). The window manager copies it over
-    /// on the session's loop and closes `fd` when done. False when it can't.
-    pub(super) fn x11_read_clipboard(&mut self, mime: String, fd: OwnedFd) -> bool {
+    /// Ask the X11 app holding `target` to write it into `fd`, in `mime` (as
+    /// smithay names its X11 targets). The window manager copies it over on
+    /// the session's loop and closes `fd` when done. False when it can't.
+    pub(super) fn x11_read_selection(&mut self, target: SelectionTarget, mime: String, fd: OwnedFd) -> bool {
         let (Some(handle), Stage::Running { wm: Some(wm), .. }) = (self.x11.handle.clone(), &mut self.x11.stage) else {
             return false;
         };
-        match wm.send_selection(SelectionTarget::Clipboard, mime, fd, handle) {
+        match wm.send_selection(target, mime, fd, handle) {
             Ok(()) => true,
             Err(e) => {
-                log(&format!("cannot read an X11 app's clipboard: {e}"));
+                log(&format!("cannot read an X11 app's {}: {e}", selection_name(target)));
                 false
             }
         }
@@ -647,31 +655,26 @@ impl XwmHandler for SessionState {
         }
     }
 
-    /// X11 apps may read `CLIPBOARD` from the window manager when it holds
-    /// it for the session; `PRIMARY` stays between X11 apps.
-    fn allow_selection_access(&mut self, _xwm: XwmId, selection: SelectionTarget) -> bool {
-        selection == SelectionTarget::Clipboard
+    /// X11 apps may read either selection from the window manager when it
+    /// holds it for the session.
+    fn allow_selection_access(&mut self, _xwm: XwmId, _selection: SelectionTarget) -> bool {
+        true
     }
 
-    /// An X11 app pastes the session's clipboard.
+    /// An X11 app pastes one of the session's selections.
     fn send_selection(&mut self, _xwm: XwmId, selection: SelectionTarget, mime_type: String, fd: OwnedFd) {
-        if selection == SelectionTarget::Clipboard {
-            self.x11_paste(fd, &mime_type);
-        }
+        self.x11_paste(selection, fd, &mime_type);
     }
 
-    /// An X11 app took `CLIPBOARD` (smithay names its text targets as mime
-    /// types: `UTF8_STRING` is `text/plain;charset=utf-8`).
+    /// An X11 app took `CLIPBOARD` (a copy) or `PRIMARY` (a highlight).
+    /// smithay names its text targets as mime types: `UTF8_STRING` is
+    /// `text/plain;charset=utf-8`.
     fn new_selection(&mut self, _xwm: XwmId, selection: SelectionTarget, mime_types: Vec<String>) {
-        if selection == SelectionTarget::Clipboard {
-            self.x11_took_clipboard(text_mime(&mime_types));
-        }
+        self.x11_took_selection(selection, text_mime(&mime_types));
     }
 
     fn cleared_selection(&mut self, _xwm: XwmId, selection: SelectionTarget) {
-        if selection == SelectionTarget::Clipboard {
-            self.x11_clipboard_gone();
-        }
+        self.x11_selection_gone(selection);
     }
 
     fn disconnected(&mut self, _xwm: XwmId) {

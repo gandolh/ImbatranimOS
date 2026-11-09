@@ -64,7 +64,7 @@ refused on both sides.
 | `freeze` | `session`, `frozen` | The backend froze the session's apps (SIGSTOP) under the cover screen, or woke them: meanwhile no frames go and no frame callbacks are answered; after, every window is sent whole. |
 | `visibility` | `session`, `visible` | The tab was hidden or shown: a hidden session gets no frames and its apps no frame callbacks, so well-behaved apps stop drawing; shown again, every window is sent whole. |
 | `toplevel_visible` | `session`, `toplevel`, `visible` | The same for one toplevel and its popups: its OS window was minimized, or moved to another workspace, or shown again. |
-| `clipboard` | `session`, `text` | A paste key in a Linux window: the tab read its clipboard. The host offers the text (at most 1 MiB of UTF-8, as `text/plain;charset=utf-8`, `text/plain`, `UTF8_STRING`, `TEXT` and `STRING`) as the session's selection, to the app with the keyboard first. The key follows in the next message. |
+| `clipboard` | `session`, `text` | A paste key in a Linux window: the tab read its clipboard. The host offers the text (at most 1 MiB of UTF-8, as `text/plain;charset=utf-8`, `text/plain`, `UTF8_STRING`, `TEXT` and `STRING`) as the session's clipboard and primary selection, to the app with the keyboard first. The key follows in the next message. |
 | `text_edit` | `session`, `toplevel`, and any of `delete` (`before`, `after`), `commit`, `preedit` (`text`, `cursor_begin`, `cursor_end`) | The tab's hidden input changed the text of the field with text-input focus in `toplevel` (see "Text input"). |
 
 In the pointer messages, `toplevel` names a toplevel or a popup: their ids
@@ -125,7 +125,10 @@ a pipe (preferring `text/plain;charset=utf-8`, then `UTF8_STRING`,
 More than 1 MiB, or nothing within 5 s, sends nothing. Other types (images,
 files) are never read. The selection follows the keyboard: the focused app
 is offered the current one, and only it may set a new one. An X11 app's
-`CLIPBOARD` is the session's selection too (see "X11 apps").
+`CLIPBOARD` is the session's selection too (see "X11 apps"). The primary
+selection (`zwp_primary_selection_v1`, a highlight) is shared by the
+session's apps the same way, X11 apps' `PRIMARY` included, but never read
+or sent: a highlight doesn't reach the tab.
 
 `cursor` is the cursor the app asked for: the CSS name it gave with
 cursor-shape-v1, or `none` when it hid the cursor. An app that draws its own
@@ -278,7 +281,9 @@ empties too. When the tab's text (a paste) or a Wayland app's text becomes
 the selection, the window manager takes `CLIPBOARD` and offers it to X11
 apps as `UTF8_STRING`, `TEXT` and `STRING`, writing the text as UTF-8; a
 Wayland copy without text leaves them an empty `CLIPBOARD`. Xwayland starting
-offers what the selection already holds. `PRIMARY` stays between X11 apps.
+offers what the selection already holds. `PRIMARY` is bridged the same way
+with the session's primary selection, which the tab's `clipboard` text fills
+too, but an X11 app's `PRIMARY` is never read for the tab.
 
 X11 apps draw their own cursors: Xwayland sets them as cursor surfaces, which
 reach the tab as `cursor` images.

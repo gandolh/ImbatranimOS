@@ -20,6 +20,7 @@ use smithay::delegate_compositor;
 use smithay::delegate_cursor_shape;
 use smithay::delegate_data_device;
 use smithay::delegate_output;
+use smithay::delegate_primary_selection;
 use smithay::delegate_seat;
 use smithay::delegate_shm;
 use smithay::delegate_xdg_decoration;
@@ -54,6 +55,10 @@ use smithay::wayland::selection::data_device::{
     set_data_device_focus, set_data_device_selection, ClientDndGrabHandler, DataDeviceHandler, DataDeviceState,
     ServerDndGrabHandler,
 };
+use smithay::wayland::selection::primary_selection::{
+    clear_primary_selection, current_primary_selection_userdata, request_primary_client_selection, set_primary_focus,
+    set_primary_selection, PrimarySelectionHandler, PrimarySelectionState,
+};
 use smithay::wayland::selection::{SelectionHandler, SelectionSource, SelectionTarget};
 use smithay::wayland::shell::xdg::decoration::{XdgDecorationHandler, XdgDecorationState};
 use smithay::wayland::shell::xdg::{
@@ -68,7 +73,8 @@ use smithay::wayland::xwayland_shell::XWaylandShellState;
 use smithay::xwayland::{X11Surface, XWaylandClientData};
 
 use crate::clipboard::{
-    paste_from, text_mime, HostSelection, PasteFrom, MAX_CLIPBOARD_BYTES, OFFERED_MIME_TYPES, X11_OFFERED_MIME_TYPES,
+    goes_to_tab, paste_from, text_mime, HostSelection, PasteFrom, PerSelection, FILLED_BY_TAB, MAX_CLIPBOARD_BYTES,
+    OFFERED_MIME_TYPES, X11_OFFERED_MIME_TYPES,
 };
 use crate::cursor::{Cursor, Shown};
 use crate::pixels::{
@@ -441,6 +447,7 @@ pub struct SessionState {
     xdg: XdgShellState,
     shm: ShmState,
     data_device: DataDeviceState,
+    primary_selection: PrimarySelectionState,
     _decoration: XdgDecorationState,
     _cursor_shape: CursorShapeManagerState,
     stubs: crate::stubs::Stubs,
@@ -451,11 +458,13 @@ pub struct SessionState {
     seat: Seat<SessionState>,
     dh: DisplayHandle,
     /// An app just set the clipboard and offered text in this type: read it
-    /// once the selection is stored (smithay tells us before it stores it).
+    /// for the tab once the selection is stored (smithay tells us before it
+    /// stores it). Only the clipboard; `PRIMARY` never goes to the tab.
     clipboard_to_read: Option<String>,
-    /// The text type the Wayland app holding the clipboard offered, for X11
-    /// apps that paste it; None when it offered none or isn't holding it.
-    clipboard_wayland_mime: Option<String>,
+    /// For each selection, the text type the Wayland app holding it offered,
+    /// for X11 apps that paste it; None when it offered none or isn't
+    /// holding it.
+    wayland_mime: PerSelection<Option<String>>,
     keyboard: KeyboardHandle<SessionState>,
     /// The layout the keyboard's keymap was built from (`KEYBOARD_LAYOUTS`).
     layout_id: String,
@@ -526,6 +535,9 @@ impl SessionState {
         // the tab's real clipboard (crate::clipboard). Some apps (foot)
         // refuse to start without this global.
         let data_device = DataDeviceState::new::<SessionState>(dh);
+        // The primary selection (a highlight, pasted with a middle click),
+        // shared by the session's apps and never sent to the tab.
+        let primary_selection = PrimarySelectionState::new::<SessionState>(dh);
         let decoration = XdgDecorationState::new::<SessionState>(dh);
         let cursor_shape = CursorShapeManagerState::new::<SessionState>(dh);
         let stubs = crate::stubs::Stubs::new(dh);
@@ -556,6 +568,7 @@ impl SessionState {
             xdg,
             shm,
             data_device,
+            primary_selection,
             _decoration: decoration,
             _cursor_shape: cursor_shape,
             stubs,
@@ -565,7 +578,7 @@ impl SessionState {
             seat,
             dh: dh.clone(),
             clipboard_to_read: None,
-            clipboard_wayland_mime: None,
+            wayland_mime: PerSelection::default(),
             keyboard,
             layout_id: DEFAULT_LAYOUT.to_string(),
             pointer,
@@ -1774,19 +1787,21 @@ impl SessionState {
     }
 }
 
-/// The clipboard bridge with the tab and with X11 apps. Plain text only
-/// (crate::clipboard).
+/// The clipboard bridge with the tab and with X11 apps, for both of the
+/// session's selections: `CLIPBOARD` (an explicit copy) and `PRIMARY` (the
+/// last highlight). Plain text only (crate::clipboard).
 impl SessionState {
     /// The app that just set the clipboard offered text: ask it to write the
     /// text into a pipe, and return the end the host reads. Called after a
-    /// round of dispatch, when smithay has stored the new selection.
+    /// round of dispatch, when smithay has stored the new selection. Only
+    /// `CLIPBOARD` is read for the tab, never `PRIMARY`.
     pub fn start_clipboard_read(&mut self) -> Option<PipeReader> {
         let mime = self.clipboard_to_read.take()?;
         let (reader, writer) = std::io::pipe().ok()?;
-        match self.host_selection() {
+        match self.host_selection(SelectionTarget::Clipboard) {
             None => request_data_device_client_selection(&self.seat, mime, OwnedFd::from(writer)).ok()?,
             Some(HostSelection::X11 { .. }) => {
-                if !self.x11_read_clipboard(mime, OwnedFd::from(writer)) {
+                if !self.x11_read_selection(SelectionTarget::Clipboard, mime, OwnedFd::from(writer)) {
                     return None;
                 }
             }
@@ -1797,92 +1812,134 @@ impl SessionState {
     }
 
     /// The tab read its clipboard for a paste: offer the text as the
-    /// session's selection, to the app with the keyboard, to whichever app
-    /// takes it next, and to X11 apps. Larger than the limit, nothing
-    /// changes.
+    /// session's clipboard and primary selection (`FILLED_BY_TAB`), to the
+    /// app with the keyboard, to whichever app takes it next, and to X11
+    /// apps. Larger than the limit, nothing changes.
     pub fn set_clipboard(&mut self, text: String) {
         if text.is_empty() || text.len() > MAX_CLIPBOARD_BYTES {
             return;
         }
-        self.set_host_selection(HostSelection::Tab(Arc::from(text)));
-        self.x11_offer_clipboard(Some(&X11_OFFERED_MIME_TYPES));
+        let text: Arc<str> = Arc::from(text);
+        for target in FILLED_BY_TAB {
+            self.set_host_selection(target, HostSelection::Tab(Arc::clone(&text)));
+        }
+        self.x11_offer(&FILLED_BY_TAB, Some(&X11_OFFERED_MIME_TYPES));
     }
 
-    /// The session's selection, when the host set it rather than a Wayland
-    /// app.
-    fn host_selection(&self) -> Option<HostSelection> {
-        current_data_device_selection_userdata(&self.seat).map(|held| held.clone())
+    /// The session's selection `target`, when the host set it rather than a
+    /// Wayland app.
+    fn host_selection(&self, target: SelectionTarget) -> Option<HostSelection> {
+        match target {
+            SelectionTarget::Clipboard => current_data_device_selection_userdata(&self.seat).map(|held| held.clone()),
+            SelectionTarget::Primary => current_primary_selection_userdata(&self.seat).map(|held| held.clone()),
+        }
     }
 
-    fn set_host_selection(&mut self, held: HostSelection) {
-        self.clipboard_wayland_mime = None;
+    fn set_host_selection(&mut self, target: SelectionTarget, held: HostSelection) {
+        *self.wayland_mime.get_mut(target) = None;
         let mime_types = OFFERED_MIME_TYPES.iter().map(|m| m.to_string()).collect();
-        set_data_device_selection(&self.dh, &self.seat, mime_types, held);
+        match target {
+            SelectionTarget::Clipboard => set_data_device_selection(&self.dh, &self.seat, mime_types, held),
+            SelectionTarget::Primary => set_primary_selection(&self.dh, &self.seat, mime_types, held),
+        }
     }
 
-    /// Whether X11 apps should see text on the clipboard when Xwayland
-    /// starts: the tab's, or a Wayland app's that offered some.
-    fn clipboard_has_text_for_x11(&self) -> bool {
-        match self.host_selection() {
+    fn clear_selection(&mut self, target: SelectionTarget) {
+        *self.wayland_mime.get_mut(target) = None;
+        match target {
+            SelectionTarget::Clipboard => clear_data_device_selection(&self.dh, &self.seat),
+            SelectionTarget::Primary => clear_primary_selection(&self.dh, &self.seat),
+        }
+    }
+
+    /// Whether X11 apps should see text in `target` when Xwayland starts:
+    /// the tab's, or a Wayland app's that offered some.
+    fn has_text_for_x11(&self, target: SelectionTarget) -> bool {
+        match self.host_selection(target) {
             Some(HostSelection::Tab(_)) => true,
             Some(HostSelection::X11 { .. }) => false,
-            None => self.clipboard_wayland_mime.is_some(),
+            None => self.wayland_mime.get(target).is_some(),
         }
     }
 
-    /// An X11 app took `CLIPBOARD`. Offering text (`mime`), it becomes the
-    /// session's selection, which Wayland apps paste through the window
-    /// manager, and its text goes to the tab after this round. Offering
-    /// none (an image), the session's selection empties: only text crosses.
-    fn x11_took_clipboard(&mut self, mime: Option<String>) {
-        self.clipboard_to_read = mime.clone();
+    /// A Wayland app set `target` (`set`), offering text in `mime`, or
+    /// cleared it. A copy's text goes to the tab after this round (see
+    /// `start_clipboard_read`); a highlight's doesn't. X11 apps are offered
+    /// the text, or see an empty selection when there is none. smithay
+    /// hands the selection to the other Wayland apps itself.
+    fn wayland_app_took(&mut self, target: SelectionTarget, set: bool, mime: Option<String>) {
+        if goes_to_tab(target) {
+            self.clipboard_to_read = mime.clone();
+        }
+        let has_text = mime.is_some();
+        *self.wayland_mime.get_mut(target) = mime;
+        let offer: Option<&[&str]> = match (set, has_text) {
+            (false, _) => None,
+            (true, true) => Some(&X11_OFFERED_MIME_TYPES),
+            (true, false) => Some(&[]),
+        };
+        self.x11_offer(&[target], offer);
+    }
+
+    /// An X11 app took `target`. Offering text (`mime`), it becomes the
+    /// session's selection of that name, which Wayland apps paste through
+    /// the window manager; a copy's text also goes to the tab after this
+    /// round, a highlight's never does. Offering none (an image), the
+    /// session's selection empties: only text crosses.
+    fn x11_took_selection(&mut self, target: SelectionTarget, mime: Option<String>) {
+        if goes_to_tab(target) {
+            self.clipboard_to_read = mime.clone();
+        }
         match mime {
-            Some(mime) => self.set_host_selection(HostSelection::X11 { mime }),
-            None => {
-                self.clipboard_wayland_mime = None;
-                clear_data_device_selection(&self.dh, &self.seat);
-            }
+            Some(mime) => self.set_host_selection(target, HostSelection::X11 { mime }),
+            None => self.clear_selection(target),
         }
     }
 
-    /// The X11 app that had `CLIPBOARD` let it go, or Xwayland went: a
-    /// session selection that was its copy empties.
-    fn x11_clipboard_gone(&mut self) {
-        if matches!(self.host_selection(), Some(HostSelection::X11 { .. })) {
-            clear_data_device_selection(&self.dh, &self.seat);
+    /// The X11 app that had `target` let it go, or Xwayland went: a session
+    /// selection that was its copy empties.
+    fn x11_selection_gone(&mut self, target: SelectionTarget) {
+        if matches!(self.host_selection(target), Some(HostSelection::X11 { .. })) {
+            self.clear_selection(target);
         }
     }
 
-    /// Write the clipboard's text into an app's pipe, from wherever it is.
-    /// A write of the host's own text runs on a thread of its own, so an app
-    /// that reads slowly (or never) can't stall the session.
-    fn paste(&mut self, from: PasteFrom, fd: OwnedFd) {
+    /// Write selection `target`'s text into an app's pipe, from wherever it
+    /// is. A write of the host's own text runs on a thread of its own, so an
+    /// app that reads slowly (or never) can't stall the session. An owner
+    /// that is gone, or a read that can't start, closes the pipe empty.
+    fn paste(&mut self, target: SelectionTarget, from: PasteFrom, fd: OwnedFd) {
         match from {
             PasteFrom::Text(text) => {
                 std::thread::spawn(move || write_within(fd, text.as_bytes(), PASTE_WRITE_TIMEOUT));
             }
-            PasteFrom::WaylandApp(mime) => {
-                let _ = request_data_device_client_selection(&self.seat, mime, fd);
-            }
+            PasteFrom::WaylandApp(mime) => match target {
+                SelectionTarget::Clipboard => {
+                    let _ = request_data_device_client_selection(&self.seat, mime, fd);
+                }
+                SelectionTarget::Primary => {
+                    let _ = request_primary_client_selection(&self.seat, mime, fd);
+                }
+            },
             PasteFrom::X11App(mime) => {
-                self.x11_read_clipboard(mime, fd);
+                self.x11_read_selection(target, mime, fd);
             }
             // Dropping the fd closes the app's pipe: an empty paste.
             PasteFrom::Nothing => {}
         }
     }
 
-    /// An X11 app pastes `CLIPBOARD` while the session's clipboard isn't an
-    /// X11 app's.
-    fn x11_paste(&mut self, fd: OwnedFd, target: &str) {
-        let held = self.host_selection();
-        let from = paste_from(held.as_ref(), self.clipboard_wayland_mime.as_deref(), true);
+    /// An X11 app pastes `target` while the session's selection of that
+    /// name isn't an X11 app's. `x11_target` is the X11 target it asked for.
+    fn x11_paste(&mut self, target: SelectionTarget, fd: OwnedFd, x11_target: &str) {
+        let held = self.host_selection(target);
+        let from = paste_from(held.as_ref(), self.wayland_mime.get(target).as_deref(), true);
         match from {
-            PasteFrom::Text(text) if is_latin1_target(target) => {
+            PasteFrom::Text(text) if is_latin1_target(x11_target) => {
                 let bytes = latin1_bytes(&text);
                 std::thread::spawn(move || write_within(fd, &bytes, PASTE_WRITE_TIMEOUT));
             }
-            from => self.paste(from, fd),
+            from => self.paste(target, from, fd),
         }
     }
 }
@@ -1948,13 +2005,14 @@ impl SeatHandler for SessionState {
         &mut self.seat_state
     }
 
-    /// The clipboard follows the keyboard: the app with focus is offered the
-    /// current selection, and only it may set a new one.
+    /// Both selections follow the keyboard: the app with focus is offered
+    /// the current ones, and only it may set new ones.
     fn focus_changed(&mut self, seat: &Seat<Self>, focused: Option<&KeyboardFocus>) {
         let client = focused
             .and_then(WaylandFocus::wl_surface)
             .and_then(|surface| self.dh.get_client(surface.id()).ok());
-        set_data_device_focus(&self.dh, seat, client);
+        set_data_device_focus(&self.dh, seat, client.clone());
+        set_primary_focus(&self.dh, seat, client);
     }
 
     /// An app named a cursor (cursor-shape-v1), hid it, or set a cursor
@@ -1972,30 +2030,19 @@ impl TabletSeatHandler for SessionState {}
 impl OutputHandler for SessionState {}
 
 impl SelectionHandler for SessionState {
-    /// The selection the host set: the tab's text, or an X11 app's copy.
+    /// A selection the host set: the tab's text, or an X11 app's.
     type SelectionUserData = HostSelection;
 
-    /// A Wayland app set the clipboard. When it offers text, the host reads
-    /// it after this round (see `start_clipboard_read`) and sends it to the
-    /// tab, and X11 apps are offered it; otherwise X11 apps see an empty
-    /// clipboard.
+    /// A Wayland app set the clipboard (a copy) or the primary selection (a
+    /// highlight), or cleared one.
     fn new_selection(&mut self, ty: SelectionTarget, source: Option<SelectionSource>, _seat: Seat<Self>) {
-        if ty != SelectionTarget::Clipboard {
-            return;
-        }
         let set = source.is_some();
         let mime = source.and_then(|s| text_mime(&s.mime_types()));
-        self.clipboard_to_read = mime.clone();
-        self.clipboard_wayland_mime = mime.clone();
-        match (set, mime.is_some()) {
-            (false, _) => self.x11_offer_clipboard(None),
-            (true, true) => self.x11_offer_clipboard(Some(&X11_OFFERED_MIME_TYPES)),
-            (true, false) => self.x11_offer_clipboard(Some(&[])),
-        }
+        self.wayland_app_took(ty, set, mime);
     }
 
-    /// A Wayland app pastes the host's selection: the tab's text, or an X11
-    /// app's, read from it as it goes.
+    /// A Wayland app pastes a selection the host set: the tab's text, or an
+    /// X11 app's, read from it as it goes.
     fn send_selection(
         &mut self,
         ty: SelectionTarget,
@@ -2004,17 +2051,23 @@ impl SelectionHandler for SessionState {
         _seat: Seat<Self>,
         user_data: &HostSelection,
     ) {
-        if ty != SelectionTarget::Clipboard || !OFFERED_MIME_TYPES.contains(&mime_type.as_str()) {
+        if !OFFERED_MIME_TYPES.contains(&mime_type.as_str()) {
             return;
         }
         let from = paste_from(Some(user_data), None, false);
-        self.paste(from, fd);
+        self.paste(ty, from, fd);
     }
 }
 
 impl DataDeviceHandler for SessionState {
     fn data_device_state(&self) -> &DataDeviceState {
         &self.data_device
+    }
+}
+
+impl PrimarySelectionHandler for SessionState {
+    fn primary_selection_state(&self) -> &PrimarySelectionState {
+        &self.primary_selection
     }
 }
 
@@ -2029,6 +2082,7 @@ delegate_cursor_shape!(SessionState);
 delegate_seat!(SessionState);
 delegate_output!(SessionState);
 delegate_data_device!(SessionState);
+delegate_primary_selection!(SessionState);
 
 /// How long a paste may wait on an app that stopped reading its pipe.
 const PASTE_WRITE_TIMEOUT: Duration = Duration::from_secs(5);
@@ -2077,8 +2131,14 @@ fn latin1_bytes(text: &str) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_latin1_target, latin1_bytes, write_within, xkb_config, KEYBOARD_LAYOUTS};
+    use super::{
+        is_latin1_target, latin1_bytes, write_within, xkb_config, HostSelection, SelectionTarget, SessionState,
+        KEYBOARD_LAYOUTS, MAX_CLIPBOARD_BYTES,
+    };
     use smithay::input::keyboard::xkb;
+    use smithay::reexports::wayland_server::Display;
+    use std::io::Read;
+    use std::sync::Arc;
     use std::time::{Duration, Instant};
 
     fn nonblocking_pipe() -> (std::io::PipeReader, std::io::PipeWriter) {
@@ -2116,6 +2176,117 @@ mod tests {
         let mut reader = reader;
         reader.read_to_string(&mut got).unwrap();
         assert_eq!(got, "hello");
+    }
+
+    const UTF8: &str = "text/plain;charset=utf-8";
+
+    /// A session with no socket and no X11, enough for the clipboard
+    /// bridge's bookkeeping. The display outlives the state.
+    fn session() -> (Display<SessionState>, SessionState) {
+        let display = Display::<SessionState>::new().expect("a Wayland display");
+        let state = SessionState::new("abcdefghijklmnop".into(), &display.handle(), 800, 600, 1.0, Instant::now(), None);
+        (display, state)
+    }
+
+    fn tab(text: &str) -> Option<HostSelection> {
+        Some(HostSelection::Tab(Arc::from(text)))
+    }
+
+    fn x11_app() -> Option<HostSelection> {
+        Some(HostSelection::X11 { mime: UTF8.into() })
+    }
+
+    /// What the host holds in the clipboard and in the primary selection.
+    fn held(state: &SessionState) -> (Option<HostSelection>, Option<HostSelection>) {
+        (state.host_selection(SelectionTarget::Clipboard), state.host_selection(SelectionTarget::Primary))
+    }
+
+    /// The bytes an X11 app pasting `target` in `x11_target` reads.
+    fn x11_pastes(state: &mut SessionState, target: SelectionTarget, x11_target: &str) -> Vec<u8> {
+        let (mut reader, writer) = std::io::pipe().unwrap();
+        state.x11_paste(target, writer.into(), x11_target);
+        let mut got = Vec::new();
+        reader.read_to_end(&mut got).unwrap();
+        got
+    }
+
+    #[test]
+    fn the_tabs_text_fills_the_clipboard_and_the_primary_selection() {
+        let (_display, mut state) = session();
+        state.set_clipboard("from the desktop".into());
+        assert_eq!(held(&state), (tab("from the desktop"), tab("from the desktop")));
+        // Empty or over the limit, both stay as they were.
+        state.set_clipboard(String::new());
+        state.set_clipboard("x".repeat(MAX_CLIPBOARD_BYTES + 1));
+        assert_eq!(held(&state), (tab("from the desktop"), tab("from the desktop")));
+    }
+
+    #[test]
+    fn a_highlight_replaces_only_the_primary_selection() {
+        // An X11 app's highlight.
+        let (_display, mut state) = session();
+        state.set_clipboard("copied".into());
+        state.x11_took_selection(SelectionTarget::Primary, Some(UTF8.into()));
+        assert_eq!(held(&state), (tab("copied"), x11_app()));
+        // One that isn't text empties PRIMARY, and only PRIMARY.
+        state.x11_took_selection(SelectionTarget::Primary, None);
+        assert_eq!(held(&state), (tab("copied"), None));
+
+        // A Wayland app's highlight: smithay stores its source; the host
+        // keeps its text type for X11 apps, and the clipboard is untouched.
+        let (_display, mut state) = session();
+        state.set_clipboard("copied".into());
+        state.wayland_app_took(SelectionTarget::Primary, true, Some(UTF8.into()));
+        assert_eq!(state.host_selection(SelectionTarget::Clipboard), tab("copied"));
+        assert_eq!(state.wayland_mime.get(SelectionTarget::Primary).as_deref(), Some(UTF8));
+        assert_eq!(*state.wayland_mime.get(SelectionTarget::Clipboard), None);
+    }
+
+    #[test]
+    fn the_primary_selection_is_never_read_for_the_tab() {
+        let (_display, mut state) = session();
+        state.x11_took_selection(SelectionTarget::Primary, Some(UTF8.into()));
+        state.wayland_app_took(SelectionTarget::Primary, true, Some(UTF8.into()));
+        assert_eq!(state.clipboard_to_read, None);
+        assert!(state.start_clipboard_read().is_none());
+        // A copy is, from either kind of app.
+        state.wayland_app_took(SelectionTarget::Clipboard, true, Some(UTF8.into()));
+        assert_eq!(state.clipboard_to_read.as_deref(), Some(UTF8));
+        state.clipboard_to_read = None;
+        state.x11_took_selection(SelectionTarget::Clipboard, Some(UTF8.into()));
+        assert_eq!(state.clipboard_to_read.as_deref(), Some(UTF8));
+    }
+
+    #[test]
+    fn a_paste_from_the_primary_selection_reads_whoever_holds_it() {
+        let (_display, mut state) = session();
+        // The tab's text in both, then an X11 app copies.
+        state.set_clipboard("from the desktop é".into());
+        state.x11_took_selection(SelectionTarget::Clipboard, Some(UTF8.into()));
+        assert_eq!(held(&state), (x11_app(), tab("from the desktop é")));
+        // An X11 app pasting PRIMARY gets the tab's text (STRING in
+        // Latin-1); pasting CLIPBOARD it reads the X11 app from X, so the
+        // host's pipe closes empty.
+        assert_eq!(x11_pastes(&mut state, SelectionTarget::Primary, "UTF8_STRING"), "from the desktop é".as_bytes());
+        assert_eq!(x11_pastes(&mut state, SelectionTarget::Primary, "STRING"), b"from the desktop \xe9");
+        assert_eq!(x11_pastes(&mut state, SelectionTarget::Clipboard, "UTF8_STRING"), b"");
+        // A Wayland app's PRIMARY whose source has gone: the paste ends
+        // empty.
+        state.clear_selection(SelectionTarget::Primary);
+        state.wayland_app_took(SelectionTarget::Primary, true, Some(UTF8.into()));
+        assert_eq!(x11_pastes(&mut state, SelectionTarget::Primary, "UTF8_STRING"), b"");
+    }
+
+    #[test]
+    fn an_x11_app_letting_go_empties_only_its_own_selection() {
+        let (_display, mut state) = session();
+        state.set_clipboard("copied".into());
+        state.x11_took_selection(SelectionTarget::Primary, Some(UTF8.into()));
+        // CLIPBOARD isn't the X11 app's: it stays.
+        state.x11_selection_gone(SelectionTarget::Clipboard);
+        assert_eq!(held(&state), (tab("copied"), x11_app()));
+        state.x11_selection_gone(SelectionTarget::Primary);
+        assert_eq!(held(&state), (tab("copied"), None));
     }
 
     /// What a key types in a layout's keymap: the evdev code, plus Shift.

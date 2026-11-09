@@ -479,7 +479,7 @@ describe('DbService — the file grants table', () => {
     svc.onModuleDestroy();
   });
 
-  it('a database at step 16 reads its recent files as writable', () => {
+  it('a database at step 16 reads its recent files as read only', () => {
     const svc = openService(join(dir, 'recents.sqlite'));
     svc.db.exec(`
       DROP TABLE recent_files;
@@ -498,10 +498,16 @@ describe('DbService — the file grants table', () => {
     expect(svc.migrationFailure).toBeNull();
     expect(
       svc.db.prepare('SELECT path, writable FROM recent_files').all(),
-    ).toEqual([{ path: 'a.txt', writable: 1 }]);
+    ).toEqual([{ path: 'a.txt', writable: 0 }]);
+    // A database that ran the step when it backfilled them writable: set
+    // back to 16, running it again makes them read only.
+    svc.db.exec('UPDATE recent_files SET writable = 1');
     svc.db.pragma('user_version = 16');
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
+    expect(
+      svc.db.prepare('SELECT path, writable FROM recent_files').all(),
+    ).toEqual([{ path: 'a.txt', writable: 0 }]);
     svc.onModuleDestroy();
   });
 

@@ -780,17 +780,25 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    * Step 17 — whether an app's recent file was one it could write when it
    * recorded it. An app reopening its own recent in a new window gets no
    * more than that: one it could only read (a file beside one it was opened
-   * with) reopens read only. Rows from before were recorded by the user or
-   * by apps that could write what they recorded.
+   * with) reopens read only.
+   *
+   * Rows from before start as read only. The table doesn't say who recorded
+   * a row (the user, through Files or Start, or the app itself with its
+   * token, which needed only read), so none can be trusted to have been
+   * writable. Reopening one from Files or Start records it again as the
+   * user's, writable.
    */
   private stepRecentWritable() {
     try {
       this.db.exec(
-        'ALTER TABLE recent_files ADD COLUMN writable INTEGER NOT NULL DEFAULT 1',
+        'ALTER TABLE recent_files ADD COLUMN writable INTEGER NOT NULL DEFAULT 0',
       );
     } catch (err) {
       if (!isAlreadyApplied(err, /duplicate column name/i)) throw err;
     }
+    // Also when the column was there already: a database that ran this step
+    // when it backfilled every row as writable is set right by running it again.
+    this.db.exec('UPDATE recent_files SET writable = 0');
   }
 
   private stepDropOldAuth() {

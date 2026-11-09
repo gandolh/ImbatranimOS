@@ -114,6 +114,21 @@ branch). Core's launchers and Files keep granting as the user. Tests: an app
 can't open itself with a file it doesn't hold; it reopens its own recent in
 a new window; another app can't use those recents.
 
+**The gap is closed (2026-11-09, `26a4f85`).** An app's
+`system.intents.openApp` passes its copy's client to `openApp`, which grants
+and records the recent with the app's token. `GrantsController`'s hand-on
+branch also lets an app give a window of its own a file among its own recent
+files (`RecentService.isRecentOf`); folders never qualify. `RecentController`
+lets an app record one of its own recents again without holding it (the
+reopen in a new window moves it up). One app opening another records no
+recent for it. Launchers, Start, Files and the pickers still grant as the
+user. Grant calls are now sent before they join the target's pending set, so
+an app opening its own window doesn't wait on its own grant. Two more for
+the second half: a notification action's `{ root, openPath }` payload is the
+app's, yet `ToastHost` opens it as the user, so the owner's click gives the
+app that file; and recents recorded under a retired built-in's id aren't the
+suite app's own on the backend (see `log.md`, 2026-11-09).
+
 **Built-ins' file flows** (inventory 2026-11-06; fine today, break at the
 flip). Each needs a grant path or an owner call before `modes.ts` flips:
 - *Listing the opened file's folder* (a file grant never lists): Media

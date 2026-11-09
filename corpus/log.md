@@ -5659,3 +5659,30 @@ use a built-in, now. Backend 1092 unit and the 88 identity, data, grants and
 marketplace e2e tests pass; the PTY e2e fails here with or without the change
 (no PTY in this container). Brief 69 still owes its walk. New todo:
 `uninstalled-url-apps-read-as-built-ins`.
+
+## [2026-11-09] build | Brief 70: the self-grant gap is closed
+
+`26a4f85` (1.222.0). An app's `system.intents.openApp` used to have core
+grant the payload's file as the user, so an app could give itself any path
+by opening itself with it. Now the open carries the requesting copy's
+client: core grants, and records the recent, with the app's token. The
+backend hands on what the app holds, plus one of the app's own recent files
+to a window of its own (a file, never a folder), so an app reopens its
+recents in a new window and another app can't use them. Recording one of
+its own recents again needs no hold on the file; one app opening another
+records no recent for it. Core's launchers, Start, Files and the pickers
+grant as the user, as before. Found on the way: an app opening its own
+single-instance window would have had its grant call wait on itself (a
+copy's calls wait on the grants pending for it), so a grant's call is now
+sent before it joins the pending set.
+
+Left for the second half: a notification action's payload is the app's
+own, yet `ToastHost` opens it as the user, so a `{ root, openPath }` action
+the owner clicks gives the app that file. Recents recorded under a retired
+built-in's id (`docs`, `sheets`, ...) aren't the suite app's own on the
+backend, so the suite app can't reopen those in a new window. Tests: core
+`tsc -b` and 261 vitest (system, intents, marketplace); backend typecheck,
+150 unit (files, app-identity) and the 42 file-grants, app-identity and
+files e2e tests. The brief's second half (built-ins' grant paths, the
+`modes.ts` flip, the Diff and Git GUI payloads, the REST client notice)
+still waits on the owner.

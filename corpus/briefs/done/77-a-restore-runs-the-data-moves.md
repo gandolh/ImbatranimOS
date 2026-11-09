@@ -57,3 +57,23 @@ the restored tables aside, so the restored todos are kept but never shown.
 - A restore of a backup with no old tables leaves everything as it was.
 - Backend typecheck, the backup and app-data unit tests and their e2e specs
   pass.
+
+## Outcome (2026-11-09)
+
+Built in `6968428` (1.265.0). `BackupService.apply()` awaits
+`DataMovesService.run()` once the database install succeeds and the
+`backup.restored` line is logged, so the moves see the restored database and
+home. A rollback throws before that point and runs no move. The service takes
+the moves as its last, optional constructor parameter; `AppDataModule` now
+exports `DataMovesService` and `BackupModule` imports `AppDataModule`.
+`data-moves.service.ts` needed no change: `run()` already works twice in one
+process. A backup that holds no `.local` keeps nothing of today's data files,
+which is what the new spec (`backup.data-moves.spec.ts`) relies on; a backup
+that does hold them sets the tables aside by design.
+
+Checks run: backend typecheck; eslint on the backup folder and the module;
+jest backup and app-data (104); app-data e2e (8). Skipped: full suites and
+the browser walk.
+
+Owner steps: push imbatranim-apps first (it has unpushed commits), then this
+repo, then `node cli.ts imbatranim-os deploy` from vps-deploy.

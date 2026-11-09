@@ -5980,7 +5980,7 @@ The owner settled the questions left by briefs 74 and 75 and the calls made
 without them. `verified.json` ships empty until a version 2 URL app exists;
 a commit dropped from it leaves installed apps as built ("No longer
 verified", no trust prompt). Code Editor's find in files keeps asking for a
-folder. Four briefs: [77](briefs/todo/77-a-restore-runs-the-data-moves.md), a
+folder. Four briefs: [77](briefs/done/77-a-restore-runs-the-data-moves.md), a
 restore runs the data moves at once;
 [78](briefs/todo/78-a-snip-goes-to-the-clipboard.md), a snip goes to the
 clipboard like the Windows 10 tool, Save picks the place;
@@ -6011,3 +6011,11 @@ supported, and Hollow's unused version 1 file in game-engine goes.
 [83](briefs/todo/83-x11-pastes-over-64-kib-reach-child-windows.md) patches
 smithay so pastes over 64 KiB reach xterm's child window; it runs last and
 gets a dev-container walk. The four todos are marked promoted.
+
+## [2026-11-09] build | Brief 77: a restore runs the data moves
+
+[77](briefs/done/77-a-restore-runs-the-data-moves.md) built in `6968428`. A
+backup restore runs the Todo, Bookmarks and Git recents moves right after the
+swap and the database install, so a pre-move backup shows its lists at once
+and a later edit can't make the next start set the restored tables aside. A
+rollback runs none. Ready for deploy.

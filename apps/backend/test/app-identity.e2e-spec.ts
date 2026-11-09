@@ -201,6 +201,38 @@ describe('App identity (e2e)', () => {
       ]);
     });
 
+    it('an app from a URL acts as itself only while installed', async () => {
+      const installed = 'x-0123456789ab';
+      app
+        .get(DbService)
+        .db.prepare(
+          `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at, runtime)
+             VALUES (?, 'abc', 'b1', '/x', 'index.html', NULL, 1, 'sandboxed')`,
+        )
+        .run(installed);
+      expect(appOf(await whoami(await start(installed)))?.groups).toEqual([
+        installed,
+      ]);
+      // Uninstalled (or never installed), its id would read as a built-in's.
+      for (const appId of ['x-ba9876543210', 'x-anything']) {
+        const res = await http
+          .post('/api/system/app-tokens')
+          .set('Cookie', TEST_COOKIE)
+          .send({ token: mint(), appId, instanceId: `${appId}-1` })
+          .expect(403);
+        expect(JSON.stringify(res.body)).toContain(`${appId} is not installed`);
+      }
+      app
+        .get(DbService)
+        .db.prepare('DELETE FROM marketplace_apps WHERE id = ?')
+        .run(installed);
+      await http
+        .post('/api/system/app-tokens')
+        .set('Cookie', TEST_COOKIE)
+        .send({ token: mint(), appId: installed, instanceId: `${installed}-2` })
+        .expect(403);
+    });
+
     it('a token dies with its copy', async () => {
       const token = await start('notepad');
       await http

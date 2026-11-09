@@ -5,6 +5,7 @@ import { resolve } from 'path';
 import type { Env } from '../../config/env.schema';
 import { DbService } from '../../db/db.service';
 import { loadCatalog } from '../marketplace/catalog';
+import { isUrlAppId } from '../marketplace/source-url';
 import { installGroupOf } from './install-group';
 
 /**
@@ -13,7 +14,8 @@ import { installGroupOf } from './install-group';
  * A built-in is told apart from an installed app only by no installed
  * descriptor holding it ({@link installGroupOf}), so a catalog app that was
  * uninstalled, or never installed, would read as a built-in and be given the
- * `system` group. An open window of an app being uninstalled can still ask for
+ * `system` group; so would an app from a URL once it is uninstalled, since
+ * no catalog names it. An open window of an app being uninstalled can still ask for
  * a token, and a write it started can still be waiting its turn. So the token
  * route refuses such an app, and the data folders refuse its writes, from the
  * moment its uninstall starts ({@link whileLeaving}).
@@ -51,11 +53,24 @@ export class InstalledApps {
   }
 
   /**
+   * An app from a URL (an `x-` id, which no built-in or catalog app has)
+   * that no installed descriptor holds: never installed, or uninstalled.
+   * Its id is in no catalog, so without this it would read as a built-in.
+   */
+  isUninstalledUrlApp(appId: string): boolean {
+    return isUrlAppId(appId) && installGroupOf(this.dbs, appId) === null;
+  }
+
+  /**
    * An app that may not act as itself: one being uninstalled, or a catalog
-   * app that isn't installed.
+   * app or an app from a URL that isn't installed.
    */
   isGone(appId: string): boolean {
-    return this.leaving.has(appId) || this.isUninstalledCatalogApp(appId);
+    return (
+      this.leaving.has(appId) ||
+      this.isUninstalledUrlApp(appId) ||
+      this.isUninstalledCatalogApp(appId)
+    );
   }
 
   /**

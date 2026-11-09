@@ -6120,3 +6120,16 @@ drops Hollow's prebuilt `os-app/` copy, the only version 1 manifest in the owner
 [decisions-marketplace.md](wiki/decisions-marketplace.md),
 [glossary-marketplace.md](wiki/glossary-marketplace.md), [os-layering.md](wiki/os-layering.md),
 [status.md](wiki/status.md); the todo `retire-the-sandboxed-url-app-path` points at the brief.
+
+## [2026-11-09] build | Brief 83: X11 pastes over 64 KiB reach child windows
+
+[83](briefs/todo/83-x11-pastes-over-64-kib-reach-child-windows.md) built in
+`eb95780` (1.283.0); it stays in todo/ until the dev-container walk. smithay
+master still never watches the requestor window for the property deletes that
+pace an INCR transfer, so the fix is vendored: smithay 0.7.0 under
+`apps/wayland-host/vendor/smithay`, carried by `[patch.crates-io]`, with one
+function that adds `PropertyChange` to the window manager's own mask on the
+requestor before the `INCR` property goes out. The Dockerfile copies
+`vendor/`. `cargo test` passes; the upstream report is in the brief's
+Progress note for the owner to file. A test against a real X server waits
+for the walk.

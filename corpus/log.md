@@ -6133,3 +6133,34 @@ requestor before the `INCR` property goes out. The Dockerfile copies
 `vendor/`. `cargo test` passes; the upstream report is in the brief's
 Progress note for the owner to file. A test against a real X server waits
 for the walk.
+
+## [2026-11-09] fix | Review leftovers for briefs 80, 81 and 82
+
+The low findings queued by the reviews, fixed in three code commits.
+
+**80** (`8040587`): a move's tables set aside under different numbers on one
+day now pair into one set when each table appears once that day; when a table
+appears twice the sets stay apart (nothing to guess between) and the archive
+carries a `README.txt` saying a folder may hold only some of that move's
+tables. The set-aside archive keeps Git GUI repositories whose folder is gone
+(the move's folder filter is skipped on that path). Tests: split set paired,
+partial note, missing-folder repo kept, staging removed when the upload fails,
+download and clean-out queued. Skipped: a tar-failure staging test (the tool
+can't be made to fail from the test without a seam; the same `finally` covers
+it).
+
+**81** (`f12ece2`): lone-file decompression runs at most two at a time; a
+day-old `.extract-*.part` in the target folder is swept at the start of an
+unpack there; a long-name clash answers 400; the post-link re-check stats by a
+descriptor held open; a failed unpack removes the folder it made; `statFile`
+requires a regular file; a tar inside `.gz`/`..gz` with no name left is
+refused ("rename it first"); the size cap check is `>`. Each has a test.
+
+**82** (`fce8989`): the review's mechanism was inverted. `installGroupOf` did
+not skip retired sandboxed rows, so a token for a retired id was issued (201),
+not refused; it now skips them and the token route answers 403 (test added).
+The v2-over-leftover test found a real bug: the install answer listed nothing
+while a leftover sandboxed row existed (500, though the build went on); the
+queued job is now listed over such a row. That a v2 install replaces the row
+is noted in the app identity decisions page. Skipped: the audit-filter spec,
+which already covers the query string being stripped.

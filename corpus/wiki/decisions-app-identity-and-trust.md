@@ -183,7 +183,7 @@ Rejected:
 
 Built in brief 74 (2026-11-09). The sandboxed path went in brief 82 the same
 day: version 1 is refused at the check, and an install left from before lists
-as "No longer supported" in Settings → Marketplace, with Uninstall only.
+as "No longer supported" in Settings → Marketplace, with Uninstall only. It gets no app token, and a version 2 install of the same app replaces the row.
 
 ## WASM threads are on
 

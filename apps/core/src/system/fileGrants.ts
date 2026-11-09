@@ -1,3 +1,4 @@
+import type { SystemHttp } from '@imbatranim/ui'
 import { api } from '../lib/axios'
 
 /** The running copy a file is given to: its app, and its window's id (or a windowless copy's). */
@@ -15,9 +16,11 @@ const pending = new Map<string, Set<Promise<void>>>()
  * only as they are given to it, by an open the OS makes (Files, Start's
  * recent files, Open With) or by a pick in the OS's dialog.
  *
- * The call goes out as the user, through the shared client: the OS gives it.
- * Made with the app's own token it would be the app handing on what it
- * holds, which the backend refuses for anything the app doesn't hold yet.
+ * By default the call goes out as the user, through the shared client: the
+ * OS gives it. With `client`, an app's own copy's client, it is that app
+ * handing on what it holds (an open the app made), which the backend allows
+ * only for what the app holds, or a recent file of its own to a window of its
+ * own.
  *
  * Never rejects. A grant that fails leaves the app refused with a 403 that
  * names the path, which it shows; the open itself goes ahead.
@@ -25,7 +28,8 @@ const pending = new Map<string, Set<Promise<void>>>()
 export function grantFile(
   target: GrantTarget,
   given: { root: string; path: string },
-  expect?: GrantExpect
+  expect?: GrantExpect,
+  client: SystemHttp = api as unknown as SystemHttp
 ): Promise<void> {
   const body: Record<string, string> = {
     instanceId: target.instanceId,
@@ -34,14 +38,17 @@ export function grantFile(
     path: given.path,
   }
   if (expect !== undefined) body.expect = expect
-  const call: Promise<void> = Promise.resolve()
-    .then(() => api.post('/files/grants', body))
-    .then(
-      () => undefined,
-      (err: unknown) => {
-        console.warn(`[system] ${target.appId} was not given ${given.root}:${given.path}`, err)
-      }
-    )
+  // Sent before it joins the target's pending set: a copy's call waits on the
+  // grants pending for it as it starts, so an app opening its own window
+  // would otherwise have this call wait on itself.
+  const call: Promise<void> = new Promise((resolve) => {
+    resolve(client.post('/files/grants', body))
+  }).then(
+    () => undefined,
+    (err: unknown) => {
+      console.warn(`[system] ${target.appId} was not given ${given.root}:${given.path}`, err)
+    }
+  )
   let waiting = pending.get(target.instanceId)
   if (!waiting) {
     waiting = new Set()

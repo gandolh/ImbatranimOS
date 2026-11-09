@@ -8,6 +8,10 @@ import { isLinuxLauncher, launchLinuxApp } from '../../modules/linux-windows/lau
 import { focusIntoWindowSoon } from '../components/window/focusIntoWindow'
 import { ACTS_AS_USER } from '../../system/appInstance'
 import { grantFile } from '../../system/fileGrants'
+import type { SystemHttp } from '@imbatranim/ui'
+
+/** The running copy of an app that asked for an open, through its `system.intents`. */
+export type OpenRequester = { appId: string; http: SystemHttp }
 
 /**
  * Opens an app window with optional payload.
@@ -22,10 +26,12 @@ import { grantFile } from '../../system/fileGrants'
  * palette, the Notification panel and Start's recent files each did.
  * @param appId - The app ID from APP_REGISTRY
  * @param payload - Optional payload to deliver to the app (app-specific shape)
+ * @param by - The app's copy when an app asked for the open; absent, the OS
+ *   (a launcher, Files, Start) makes it, as the user
  * @returns The window ID of the opened/focused window, or '' when the app is
  *   disabled or no longer in the registry (the protocol's "refused")
  */
-export function openApp(appId: string, payload?: unknown): string {
+export function openApp(appId: string, payload?: unknown, by?: OpenRequester): string {
   // A disabled add-on can't be launched (file routing / commands can't open a
   // hidden app). Non-disableable core apps always open. Existing open windows
   // are unaffected — they render/close via the full registry elsewhere.
@@ -68,14 +74,23 @@ export function openApp(appId: string, payload?: unknown): string {
           path: (payload as { openPath: string }).openPath,
         }
       : null
-  if (file) recordRecentFile(file.root, file.path, appId)
+  // An open an app made is recorded with its own token, which records only
+  // the app's own files, so one app opening another records nothing.
+  if (file && (!by || by.appId === appId)) {
+    recordRecentFile(file.root, file.path, appId, by?.http)
+  }
 
   // The OS opening a file with an app gives it that file, for that window
   // only. Made before the payload is delivered, so the app's first read
   // waits on it (see appInstance). Settings, Files and the Terminal act as
-  // the user and need nothing given.
+  // the user and need nothing given. An open an app made gives with the
+  // app's token: the backend hands on only what the app holds, or one of its
+  // own recent files to a window of its own, so an app can't open itself
+  // with a path to be given it.
   const give = (windowId: string) => {
-    if (file && !ACTS_AS_USER.has(appId)) void grantFile({ appId, instanceId: windowId }, file)
+    if (file && !ACTS_AS_USER.has(appId)) {
+      void grantFile({ appId, instanceId: windowId }, file, undefined, by?.http)
+    }
   }
 
   const windowStore = useWindowStore.getState()

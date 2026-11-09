@@ -22,6 +22,8 @@ import { RecordRecentDto, RemoveRecentQueryDto } from './dto/recent.dto';
  * Start reopens a recent file through the OS, which gives it to the app
  * again, so what an app may record is held to what it may read: an app can't
  * plant a file it was never given in the list for the owner to hand it later.
+ * (Nor for itself: an app's own recent files are what it may reopen in a new
+ * window, see `GrantsController`.)
  * An app sees and removes only its own entries; the whole list, and clearing
  * it, are the user's.
  */
@@ -50,7 +52,11 @@ export class RecentController {
           `${who.appId} may not record a recent file for ${dto.appId}`,
         );
       }
-      await this.files.check(who, 'read', dto.root, dto.path);
+      // Recording one of its own again only moves it up: the app reopening
+      // its recent in a new window, which doesn't hold it yet.
+      if (!this.recent.isRecentOf(dto.root, dto.path, who.appId)) {
+        await this.files.check(who, 'read', dto.root, dto.path);
+      }
     }
     this.recent.record(dto.root, dto.path, dto.appId);
   }

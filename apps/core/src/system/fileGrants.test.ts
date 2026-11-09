@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SystemHttp } from '@imbatranim/ui'
 
 const { post } = vi.hoisted(() => ({ post: vi.fn() }))
 vi.mock('../lib/axios', () => ({ api: { post, get: vi.fn(async () => ({ data: [] })) } }))
@@ -103,5 +104,48 @@ describe('openApp gives the file it opens', () => {
     const notepad = openApp('notepad')
     await Promise.all([grantsSettled(files), grantsSettled(notepad), Promise.resolve()])
     expect(grants()).toEqual([])
+  })
+
+  /**
+   * An app's copy's client: as appInstance does, a call first waits on the
+   * grants pending for the copy as it starts.
+   */
+  function appClient(instanceId: () => string) {
+    const appPost = vi.fn(async (_url: string, _body?: unknown) => {
+      await grantsSettled(instanceId())
+      return { data: undefined, status: 204, headers: {} }
+    })
+    return { appPost, http: { post: appPost } as unknown as SystemHttp }
+  }
+
+  it('an app opening itself gives with its own token, and never waits on itself', async () => {
+    const id = openApp('todo')
+    const { appPost, http } = appClient(() => id)
+    const file = { openPath: 'lists/today.json', root: 'home' }
+    expect(openApp('todo', file, { appId: 'todo', http })).toBe(id)
+    await grantsSettled(id)
+    expect(appPost).toHaveBeenCalledWith('/files/grants', {
+      instanceId: id,
+      appId: 'todo',
+      root: 'home',
+      path: 'lists/today.json',
+    })
+    // Its own recent, recorded with its token; nothing goes out as the user.
+    expect(appPost).toHaveBeenCalledWith('/files/recent', {
+      root: 'home',
+      path: 'lists/today.json',
+      appId: 'todo',
+    })
+    expect(post).not.toHaveBeenCalled()
+  })
+
+  it('an app opening another gives with its own token and records no recent for it', async () => {
+    const { appPost, http } = appClient(() => 'hollow-window')
+    const id = openApp('notepad', { openPath: 'a.txt', root: 'home' }, { appId: 'hollow', http })
+    await grantsSettled(id)
+    expect(appPost.mock.calls).toEqual([
+      ['/files/grants', { instanceId: id, appId: 'notepad', root: 'home', path: 'a.txt' }],
+    ])
+    expect(post).not.toHaveBeenCalled()
   })
 })

@@ -74,6 +74,16 @@ export class RecentService {
     tx();
   }
 
+  /** True when `(root, path)` is among `appId`'s own recent files. */
+  isRecentOf(root: string, path: string, appId: string): boolean {
+    const row = this.db.db
+      .prepare(
+        `SELECT 1 FROM recent_files WHERE root = ? AND path = ? AND app_id = ?`,
+      )
+      .get(root, path, appId);
+    return row !== undefined;
+  }
+
   /**
    * Remove one entry (self-heal after a 404 reopen). With `appId`, only if
    * that app recorded it: an app tidies its own entries, not another's.

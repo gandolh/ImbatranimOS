@@ -271,8 +271,11 @@ export function createSystemHandle(appId: string, windowId: string | null): Syst
 
     intents: {
       // A window this raises gets the keyboard from openApp; a new one takes
-      // it as it mounts.
-      openApp: (target, payload) => openApp(target, payload),
+      // it as it mounts. The open is the app's: a file in it is given with
+      // the app's token, so only what the app holds (Settings, Files and the
+      // Terminal act as the user).
+      openApp: (target, payload) =>
+        openApp(target, payload, instance ? { appId, http: instance.http } : undefined),
       consume: <T>() =>
         windowId === null
           ? undefined

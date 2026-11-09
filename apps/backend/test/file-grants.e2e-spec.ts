@@ -327,6 +327,46 @@ describe('Files by grant (e2e)', () => {
     expect(codeOf(ended)).toBe(USER_ONLY);
   });
 
+  it('an app can’t open itself with a file it doesn’t hold', async () => {
+    const first = await open('hollow');
+    const second = await open('hollow');
+    // Opening its own window, or a new one, with a path: no grant either way.
+    await give(first, 'Documents/plan.txt', undefined, first).expect(403);
+    await give(second, 'Documents/plan.txt', undefined, first).expect(403);
+    await as(first).read('Documents/plan.txt').expect(403);
+    await as(second).read('Documents/plan.txt').expect(403);
+  });
+
+  it('an app reopens its own recent file in a new window, and another app can’t', async () => {
+    const recordAs = (who: Copy | null, path: string, appId: string) => {
+      const req = http
+        .post('/api/files/recent')
+        .set('Cookie', TEST_COOKIE)
+        .send({ root: 'home', path, appId });
+      return who ? req.set(APP_TOKEN_HEADER, who.token) : req;
+    };
+    // Files opened plan.txt with Hollow, which recorded it as the user.
+    await recordAs(null, 'Documents/plan.txt', 'hollow').expect(204);
+
+    const first = await open('hollow');
+    const second = await open('hollow');
+    await give(second, 'Documents/plan.txt', undefined, first).expect(204);
+    await as(second).read('Documents/plan.txt').expect(200);
+    await as(first).read('Documents/plan.txt').expect(403);
+    // It records the reopen (moving it up) without holding the file itself.
+    await recordAs(first, 'Documents/plan.txt', 'hollow').expect(204);
+    // Only a file: a folder is never a recent to reopen.
+    await recordAs(null, 'Documents/sub', 'hollow').expect(204);
+    await give(second, 'Documents/sub', 'folder', first).expect(403);
+
+    // Another app can't use Hollow's recents, for itself or for Hollow.
+    const quill = await open('quill');
+    await give(quill, 'Documents/plan.txt', undefined, quill).expect(403);
+    await give(second, 'Documents/plan.txt', undefined, quill).expect(403);
+    await recordAs(quill, 'Documents/plan.txt', 'quill').expect(403);
+    await as(quill).read('Documents/plan.txt').expect(403);
+  });
+
   it('a grant matches what the dialog said it gave', async () => {
     const docs = await open('hollow');
     await give(docs, 'Documents', 'file').expect(400);

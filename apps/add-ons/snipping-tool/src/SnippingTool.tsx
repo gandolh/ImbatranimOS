@@ -7,6 +7,7 @@ import { CaptureLauncher } from './components/CaptureLauncher'
 import type { LaunchMode } from './lib/captureModes'
 import { CountdownOverlay } from './components/CountdownOverlay'
 import { captureRegion } from './capture/rasterize'
+import { canvasToPng, copyPng } from './lib/clipboard'
 import { loadCaptureCanvas } from './capture/load'
 import { describeLossy, scanLossyElements, summarize } from './capture/lossy'
 import type { Selection } from './types'
@@ -74,10 +75,21 @@ export function SnippingTool({ windowId: _windowId }: { windowId: string }) {
       const notice = describeLossy(summarize(scanLossyElements(), sel))
       setPhase('capturing')
       try {
-        const canvas = await captureRegion(sel, filterNode)
+        const raster = captureRegion(sel, filterNode)
+        // Issued before the raster finishes, with the PNG still a promise: that keeps the
+        // click that ended a region selection alive for the clipboard. Delayed and
+        // full-screen captures have no such click, and Firefox and Safari refuse them.
+        const copied = copyPng(raster.then(canvasToPng))
+        const canvas = await raster
         setImage(canvas)
         setLossyNotice(notice)
         setPhase('annotating')
+        const result = await copied
+        system.notify(
+          result.ok
+            ? { title: 'Copied to clipboard', level: 'success' }
+            : { title: "Couldn't copy to clipboard", body: result.reason, level: 'warning' }
+        )
       } catch (err) {
         console.error('[snipping-tool] capture failed', err)
         system.notify({

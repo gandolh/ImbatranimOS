@@ -19,6 +19,7 @@ import { cn, useSystem } from '@imbatranim/ui'
 import type { Annotation, Point, Tool } from '../types'
 import { saveScreenshot, screenshotFilename } from '../api/screenshotApi'
 import { isWorthKeeping, normalizeRect, pixelateBlockSize } from '../lib/annotationGeometry'
+import { canCopyImages, canvasToPng, copyPng } from '../lib/clipboard'
 
 type Props = {
   /** The cropped base image, at device-pixel resolution. */
@@ -60,17 +61,8 @@ function uiFont(): string {
   return stack || 'sans-serif'
 }
 
-const canCopy =
-  typeof window !== 'undefined' &&
-  window.isSecureContext &&
-  !!navigator.clipboard &&
-  typeof window.ClipboardItem !== 'undefined'
-
-function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob returned null'))), 'image/png')
-  })
-}
+const canCopy = canCopyImages()
+const toBlob = canvasToPng
 
 export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
   const system = useSystem()
@@ -325,8 +317,8 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
 
   const onCopy = () =>
     doExit(async () => {
-      const blob = await toBlob(canvasRef.current!)
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      const result = await copyPng(toBlob(canvasRef.current!))
+      if (!result.ok) throw new Error(result.reason)
       return 'Copied to clipboard'
     })
 

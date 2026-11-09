@@ -166,23 +166,24 @@ export class DataMovesService implements OnApplicationBootstrap {
   /**
    * The files `appId`'s move would write, by path in its folder, read from
    * the tables `from` names instead of the live ones: the same JSON, so the
-   * older data restores by hand by putting the files in place. Git GUI's
-   * repositories whose folder is gone are left out, as in the move.
+   * older data restores by hand by putting the files in place. Unlike the
+   * move, Git GUI's repositories whose folder is gone are kept: this is a full
+   * copy for the owner, not what the app would reopen.
    */
   async filesFrom(
     appId: string,
     from: TableSource,
   ): Promise<Map<string, string>> {
-    const move = this.moves(from).find((m) => m.appId === appId);
+    const move = this.moves(from, true).find((m) => m.appId === appId);
     if (!move) return new Map();
     return (await move.files()).files;
   }
 
-  private moves(from: TableSource = live): Move[] {
+  private moves(from: TableSource = live, keepGone = false): Move[] {
     return [
       this.todoMove(from),
       this.bookmarksMove(from),
-      this.gitRecentsMove(from),
+      this.gitRecentsMove(from, keepGone),
     ];
   }
 
@@ -399,7 +400,7 @@ export class DataMovesService implements OnApplicationBootstrap {
     };
   }
 
-  private gitRecentsMove(from: TableSource): Move {
+  private gitRecentsMove(from: TableSource, keepGone: boolean): Move {
     /** Git GUI's rows whose folder is still there, newest first, as many as it keeps. */
     let kept: RepoRow[] = [];
     return {
@@ -419,7 +420,8 @@ export class DataMovesService implements OnApplicationBootstrap {
         kept = [];
         for (const row of rows) {
           if (kept.length === MAX_FOLDER_RECENTS_PER_APP) break;
-          if (await this.isFolder(row.root, row.path)) kept.push(row);
+          if (keepGone || (await this.isFolder(row.root, row.path)))
+            kept.push(row);
         }
         const files = new Map<string, string>();
         if (kept.length === 0) return { files, summary: '' };

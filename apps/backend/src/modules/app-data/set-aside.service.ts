@@ -24,13 +24,21 @@ const TAR_TIMEOUT_MS = 60_000;
 export const SET_ASIDE_TABLE =
   /^(todos|todo_lists|bookmark_links|bookmark_groups|git_recent_repos)_premove_(\d{8})(?:_(\d+))?$/;
 
+const README_FILE = 'README.txt';
+const PARTIAL_NOTE = `Some apps have more than one folder for the same day. Their tables were set
+aside apart, so each folder holds only the tables that were set aside with it:
+a todo can sit in unfiled.json while the list it belonged to is in another
+folder. Look in the sibling folders (2026-11-09.1 beside 2026-11-09).
+`;
+
 /** Which set-aside tables the owner has downloaded, beside the system log. */
 const DOWNLOADED_FILE = join('.imbatranim', 'set-aside-downloads.json');
 
 /**
  * One set: the tables one move set aside together, found by their day and
- * number. A table whose partner has another number (one was missing when it
- * was set aside) is a set of its own rather than a guess.
+ * number. Numbers that differ still pair when each table appears once that
+ * day; when a table appears twice, the numbers keep the sets apart rather
+ * than guess, so such a set can be partial (its todos without their lists).
  */
 export type SetAsideSet = {
   /** Its folder in the archive: the ISO day, then `.1`, `.2` for later sets that day. */
@@ -105,12 +113,25 @@ export class SetAsideService {
             count++;
           }
         }
+        // Several sets of one app on one day were set aside apart, so a
+        // folder may hold only some of that move's tables (todos without
+        // their lists): the archive says so.
+        const notes: string[] = [];
+        if (
+          new Set(sets.map((s) => `${s.appId}/${s.folder.split('.')[0]}`))
+            .size < sets.length
+        ) {
+          await fs.writeFile(join(staging, README_FILE), PARTIAL_NOTE, {
+            mode: 0o600,
+          });
+          notes.push(README_FILE);
+        }
         const archive = join(staging, 'old-data.tar.gz');
         // Named folders, not `.`: members carry no `./` prefix, and the
         // archive never lists itself.
         await execFileAsync(
           'tar',
-          ['-czf', archive, '-C', staging, ...[...folders].sort()],
+          ['-czf', archive, '-C', staging, ...[...folders].sort(), ...notes],
           { timeout: TAR_TIMEOUT_MS },
         );
         const entry = await this.files.uploadFile(root, path, archive);
@@ -151,15 +172,29 @@ export class SetAsideService {
     const sets: SetAsideSet[] = [];
     const apps: SetAsideStatus['apps'] = [];
     for (const move of this.moves.movedTables()) {
-      // Grouped by day and number: one move's tables set aside together.
+      // Grouped by day and number: one move's tables set aside together. When
+      // the numbers differ on a day but each table appears once that day (one
+      // was missing, or its name taken, when the other was set aside), they
+      // are still one set: nothing is left to guess between.
+      const perDay = new Map<string, Map<string, number>>();
+      for (const t of found) {
+        if (!move.tables.includes(t.base)) continue;
+        const bases = perDay.get(t.day) ?? new Map<string, number>();
+        bases.set(t.base, (bases.get(t.base) ?? 0) + 1);
+        perDay.set(t.day, bases);
+      }
       const byKey = new Map<
         string,
         { day: string; n: number; tables: Record<string, string> }
       >();
       for (const t of found) {
         if (!move.tables.includes(t.base)) continue;
-        const key = `${t.day}_${t.n}`;
+        const once = [...(perDay.get(t.day)?.values() ?? [])].every(
+          (c) => c === 1,
+        );
+        const key = once ? t.day : `${t.day}_${t.n}`;
         const group = byKey.get(key) ?? { day: t.day, n: t.n, tables: {} };
+        group.n = Math.min(group.n, t.n);
         group.tables[t.base] = t.name;
         byKey.set(key, group);
       }

@@ -5,7 +5,15 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { execFileSync } from 'child_process';
 import { randomBytes } from 'crypto';
-import { mkdtempSync, readFileSync, rmSync, statSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from 'fs';
 import type { Server } from 'http';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -15,6 +23,8 @@ import { ConfigModule } from '../src/config/config.module';
 import { DbModule } from '../src/db/db.module';
 import { DbService } from '../src/db/db.service';
 import { AppDataModule } from '../src/modules/app-data/app-data.module';
+import { SetAsideService } from '../src/modules/app-data/set-aside.service';
+import { FilesService } from '../src/modules/files/files.service';
 import { AppIdentityModule } from '../src/modules/app-identity/app-identity.module';
 import { APP_TOKEN_HEADER } from '../src/modules/app-identity/app-identity.types';
 import { USER_ONLY } from '../src/modules/app-identity/calling-app';
@@ -300,5 +310,109 @@ describe('Set-aside older data (e2e)', () => {
       expect((res.body as { code?: string }).code).toBe(USER_ONLY);
     }
     expect(tables()).toHaveLength(6);
+  });
+
+  const TODO_COLUMNS =
+    'id INTEGER PRIMARY KEY, text TEXT, completed INTEGER, position INTEGER, due_at INTEGER, priority INTEGER, list_id INTEGER, created_at TEXT, updated_at TEXT';
+  const staging = () =>
+    readdirSync(tmpdir()).filter((n) =>
+      /^imb-old-data-[A-Za-z0-9]{6}$/.test(n),
+    );
+
+  it('pairs a move\u2019s tables set aside under different numbers on one day', async () => {
+    db.exec(`
+      CREATE TABLE todos_premove_20261109 (${TODO_COLUMNS});
+      CREATE TABLE todo_lists_premove_20261109_2 (
+        id INTEGER PRIMARY KEY, name TEXT, position INTEGER);
+      INSERT INTO todo_lists_premove_20261109_2 VALUES (3, 'Errands', 2);
+      INSERT INTO todos_premove_20261109 VALUES
+        (7, 'Milk', 0, 1, NULL, 0, 3, '2026-11-01 10:00:00', '2026-11-01 10:00:00');
+    `);
+    const s = await status();
+    expect(s.sets.map((x) => `${x.folder}/${x.appId}`)).toEqual([
+      '2026-11-09/todo',
+    ]);
+    await http
+      .post('/api/system/old-data/download')
+      .set('Cookie', TEST_COOKIE)
+      .send({ root: 'home', path: 'old.tar.gz' })
+      .expect(201);
+    const out = mkdtempSync(join(tmpdir(), 'imb-old-data-x-'));
+    try {
+      execFileSync('tar', ['-xzf', join(home, 'old.tar.gz'), '-C', out]);
+      expect(existsSync(join(out, '2026-11-09/todo/lists/3.json'))).toBe(true);
+      expect(existsSync(join(out, 'README.txt'))).toBe(false);
+    } finally {
+      rmSync(out, { recursive: true, force: true });
+    }
+  });
+
+  it('says in the archive that sets apart on one day may be partial', async () => {
+    setAside();
+    await http
+      .post('/api/system/old-data/download')
+      .set('Cookie', TEST_COOKIE)
+      .send({ root: 'home', path: 'old.tar.gz' })
+      .expect(201);
+    const members = execFileSync('tar', ['-tzf', join(home, 'old.tar.gz')], {
+      encoding: 'utf8',
+    });
+    expect(members).toContain('README.txt');
+  });
+
+  it('keeps a Git GUI repository whose folder is gone in the archive', async () => {
+    mkdirSync(join(home, 'here'));
+    db.exec(`
+      CREATE TABLE git_recent_repos_premove_20261109 (
+        id INTEGER PRIMARY KEY, root TEXT, path TEXT, app_id TEXT, last_opened TEXT);
+      INSERT INTO git_recent_repos_premove_20261109 VALUES
+        (1, 'home', 'here', 'git-gui', '2026-11-02 10:00:00'),
+        (2, 'home', 'gone', 'git-gui', '2026-11-01 10:00:00');
+    `);
+    await http
+      .post('/api/system/old-data/download')
+      .set('Cookie', TEST_COOKIE)
+      .send({ root: 'home', path: 'old.tar.gz' })
+      .expect(201);
+    const out = mkdtempSync(join(tmpdir(), 'imb-old-data-x-'));
+    try {
+      execFileSync('tar', ['-xzf', join(home, 'old.tar.gz'), '-C', out]);
+      const doc = JSON.parse(
+        readFileSync(join(out, '2026-11-09/git-gui/recents.json'), 'utf8'),
+      ) as { repos: { path: string }[] };
+      expect(doc.repos.map((r) => r.path)).toEqual(['here', 'gone']);
+    } finally {
+      rmSync(out, { recursive: true, force: true });
+    }
+  });
+
+  it('removes its staging folder when the upload fails', async () => {
+    setAside();
+    const before = staging();
+    const files = app.get(FilesService);
+    const spy = jest
+      .spyOn(files, 'uploadFile')
+      .mockRejectedValueOnce(new Error('disk full'));
+    await http
+      .post('/api/system/old-data/download')
+      .set('Cookie', TEST_COOKIE)
+      .send({ root: 'home', path: 'old.tar.gz' })
+      .expect((r) => expect(r.status).toBeGreaterThanOrEqual(400));
+    spy.mockRestore();
+    expect(staging()).toEqual(before);
+    expect((await status()).notice).toBe(true);
+  });
+
+  it('queues a download and a clean-out: the download sees the data, then it goes', async () => {
+    setAside();
+    const service = app.get(SetAsideService);
+    const [saved, cleaned] = await Promise.all([
+      service.download('home', 'old.tar.gz'),
+      service.cleanOut(),
+    ]);
+    expect(saved.files).toBe(3);
+    expect(cleaned.dropped).toHaveLength(5);
+    expect(existsSync(join(home, 'old.tar.gz'))).toBe(true);
+    expect(tables()).toEqual(['notes_premove_20261109']);
   });
 });

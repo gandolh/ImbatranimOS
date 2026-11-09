@@ -6039,3 +6039,14 @@ queues calls on a promise chain, so two restores, or one during the start's
 run, can't interleave. New tests: overlapping runs, a restore that sets the
 tables aside because the app already holds a file, and a throwing move. The
 brief stays in done/, the ticket at Ready for deploy.
+
+## [2026-11-09] fix | Brief 78's review: clipboard copy hardened
+
+Review fixes to [78](briefs/done/78-a-snip-goes-to-the-clipboard.md) in `25c6704`:
+`copyPng` always attaches a catch to the PNG promise, so a failed raster is
+never an unhandled rejection; the refusal text covers focus as well as a
+missing click, and an encode failure says so; the region overlay calls
+`onSelect` from the pointerup handler, not inside a state updater, so the
+write rides the click. New tests: the write is issued before the raster
+resolves, and a rejected raster gives a result. The ticket stays Ready for
+deploy.

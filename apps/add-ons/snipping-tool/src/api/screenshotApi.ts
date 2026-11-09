@@ -31,7 +31,9 @@ export async function saveScreenshot(fs: SystemFs, blob: Blob): Promise<string |
     title: 'Save screenshot',
     suggestedName: name,
     extensions: ['png'],
-    startIn: { root: 'home', path: `${SCREENSHOTS_DIR}/${name}` },
+    // The folder, not the new file: the dialog opens where a name it can
+    // find lives, and the name comes from `suggestedName`.
+    startIn: { root: 'home', path: SCREENSHOTS_DIR },
   })
   if (!choice) return null
   const saved = choice.path.split('/').pop() ?? name

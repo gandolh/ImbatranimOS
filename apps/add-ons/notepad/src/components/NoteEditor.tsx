@@ -152,7 +152,7 @@ export function NoteEditor({
       const choice = await system.fs.pickSave({
         title: 'Save as',
         suggestedName: name,
-        startIn: { root, path },
+        startIn: { root, path: path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '' },
       })
       if (!choice) return
       const placed = {
@@ -353,11 +353,12 @@ export function NoteEditor({
               )
         const base = safeBaseName(suggestedName)
         const file = uniqueName(taken, base, extensionForMime(mime))
-        const suggested = targetDir === '' ? file : `${targetDir}/${file}`
+        // The dialog opens in the folder (it can't open at a file not there
+        // yet), with the worked-out name filled in.
         const choice = await system.fs.pickSave({
           title: 'Save the image',
           suggestedName: file,
-          startIn: { root, path: suggested },
+          startIn: { root, path: targetDir },
         })
         if (!choice) return
         if (choice.root !== root) {

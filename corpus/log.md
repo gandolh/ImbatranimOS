@@ -5990,3 +5990,11 @@ attachments under `assets/` without a dialog, create only (decision in
 `d9a22db`); [80](briefs/todo/80-set-aside-data-asks-the-owner.md), set-aside
 tables get a sign-in notice to download them as a zip of the apps' JSON or
 clean them out.
+
+## [2026-11-09] maintenance | Closed todo: the Marketplace proxy drops cross-origin headers
+
+`marketplace-drops-cross-origin-headers` was already done by `94306ee`
+(2026-11-06): the app-server proxy's `DROPPED_RESPONSE_HEADERS` lists
+`Cross-Origin-Opener-Policy`, `-Embedder-Policy` and `-Resource-Policy`, so a
+service app's server can't weaken the desktop's isolation. Found in the
+backlog grill; the todo is removed.

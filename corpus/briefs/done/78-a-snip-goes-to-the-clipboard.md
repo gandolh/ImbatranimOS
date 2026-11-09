@@ -51,3 +51,25 @@ the owner picks the place.
 - Walk step for the owner, on the VPS (HTTPS): snip an area, paste into
   Paint or a chat, the snip is there; annotate, Copy, paste again, the
   annotation is there.
+
+## Outcome (2026-11-09)
+
+Built in `73fc08d` (1.267.0). `lib/clipboard.ts` holds `copyPng`, which never
+throws and returns the reason in plain words when the write is refused. The
+capture function starts the clipboard write at once with the PNG still a
+promise (the raster resolves behind it), which can keep a region snip's click
+alive; the editor opens either way and a toast follows: "Copied to clipboard"
+or "Couldn't copy to clipboard" with the reason. The Copy button uses the same
+helper, so it copies the edited image. Save is untouched.
+
+- Delayed and full-screen captures finish with no user action. Firefox and
+  Safari (the owner's phone too) refuse the write there, so the "couldn't
+  copy" toast is expected, not a bug; Copy in the editor works.
+- The toast is `system.notify`, which always also records an entry in the
+  notification centre; the kit has no transient toast, so that is what was
+  chosen.
+- Tests cover the helper in node (a stubbed `ClipboardItem`, as jsdom has
+  none): one `image/png` item, the promise passed through, the refusal
+  reasons. The component flow (editor stays, toast shown) is not unit-tested;
+  the tests run in node with no DOM. Needs the owner's walk on HTTPS: snip an
+  area, paste into Paint or a chat; annotate, Copy, paste again.

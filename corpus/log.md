@@ -5982,7 +5982,7 @@ a commit dropped from it leaves installed apps as built ("No longer
 verified", no trust prompt). Code Editor's find in files keeps asking for a
 folder. Four briefs: [77](briefs/done/77-a-restore-runs-the-data-moves.md), a
 restore runs the data moves at once;
-[78](briefs/todo/78-a-snip-goes-to-the-clipboard.md), a snip goes to the
+[78](briefs/done/78-a-snip-goes-to-the-clipboard.md), a snip goes to the
 clipboard like the Windows 10 tool, Save picks the place;
 [79](briefs/todo/79-notepad-adds-attachments-beside-a-note.md), Notepad adds
 attachments under `assets/` without a dialog, create only (decision in
@@ -6019,3 +6019,11 @@ backup restore runs the Todo, Bookmarks and Git recents moves right after the
 swap and the database install, so a pre-move backup shows its lists at once
 and a later edit can't make the next start set the restored tables aside. A
 rollback runs none. Ready for deploy.
+
+## [2026-11-09] build | Brief 78: a snip goes to the clipboard
+
+[78](briefs/done/78-a-snip-goes-to-the-clipboard.md) built in `73fc08d`. A
+finished capture is written to the clipboard as a PNG at once and a toast says
+so; a refused write toasts the reason and the editor stays. Delayed and
+full-screen captures have no user action, so Firefox and Safari refuse them,
+which is expected. Ready for deploy; the owner walks it on HTTPS.

@@ -5959,3 +5959,17 @@ would fit decision 3.
 Checks: backend typecheck, eslint on changed files, jest (app-data, files,
 app-identity, marketplace, db, git: 696), e2e (file-grants, app-data,
 files, marketplace*, app-identity, app: 124).
+
+## [2026-11-09] decision | Brief 76: an app's recents go only with its data
+
+Owner, 2026-11-09, answering the review's last item: uninstalling with
+"Also remove its data" also deletes the app's OS recents, files and
+folders; a plain uninstall keeps them, as it keeps the data. Built in
+`ef8f0e9` (1.259.0): `RecentService.removeApps`, called by the marketplace's
+uninstall after the app's folders go. Recorded beside decision 3 on
+[decisions-app-identity-and-trust.md](wiki/decisions-app-identity-and-trust.md).
+Tests: the marketplace e2e's uninstall keeps one app's recents and drops
+the other's, a hand-on after the removal is refused (file-grants e2e), and
+a unit for `removeApps`. Checks: backend typecheck, eslint on changed
+files, 572 jest (files, marketplace, app-data, app-identity), 124 e2e
+(file-grants, marketplace*, app-data, app-identity, files).

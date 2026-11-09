@@ -80,6 +80,13 @@ way:
 rest only when the owner ticks "Also remove its data". Windows also leaves
 AppData behind when a program is uninstalled. Backups skip the caches.
 
+**The app's recents follow its data** (owner, 2026-11-09, brief 76's
+review): the box also deletes its OS recents, files and folders, so a
+reinstall is given nothing back from before; a plain uninstall keeps them,
+so a reinstalled Git GUI still reopens its repositories. Rejected: always
+deleting them (a reinstall's list would open nothing) and never (a removed
+app's folders would stay handed back to it).
+
 The `imbatranim/` level keeps app ids from clashing with Linux programs'
 folders, as Windows' vendor folder does. This refines the folder in
 [decisions-marketplace-suites.md](decisions-marketplace-suites.md#an-app-keeps-its-data-in-a-folder-of-its-own-2026-11-06).

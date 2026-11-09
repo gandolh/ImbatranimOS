@@ -10,8 +10,12 @@ import { ACTS_AS_USER } from '../../system/appInstance'
 import { grantFile } from '../../system/fileGrants'
 import type { SystemHttp } from '@imbatranim/ui'
 
-/** The running copy of an app that asked for an open, through its `system.intents`. */
-export type OpenRequester = { appId: string; http: SystemHttp }
+/**
+ * The app that asked for an open: through its copy's `system.intents` (with
+ * that copy's client), or through a notification action it wrote, which
+ * outlives the copy and carries no client.
+ */
+export type OpenRequester = { appId: string; http?: SystemHttp }
 
 /**
  * Opens an app window with optional payload.
@@ -68,7 +72,7 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   const file = files.opened
   // An open an app made is recorded with its own token, which records only
   // the app's own files, so one app opening another records nothing.
-  if (file && (!by || by.appId === appId)) {
+  if (file && (!by || (by.http && by.appId === appId))) {
     recordRecentFile(file.root, file.path, appId, by?.http)
   }
 
@@ -80,7 +84,9 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   // only what the app holds, or one of its own recent files to a window of
   // its own, so an app can't open itself with a path to be given it.
   const give = (windowId: string) => {
-    if (ACTS_AS_USER.has(appId)) return
+    // An app's word with no copy to hand on from (a notification action)
+    // gives nothing: the app reopens its own recent itself if it is one.
+    if (ACTS_AS_USER.has(appId) || (by && !by.http)) return
     for (const given of files.all) {
       void grantFile({ appId, instanceId: windowId }, given, {
         client: by?.http,

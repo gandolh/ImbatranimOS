@@ -136,6 +136,15 @@ describe('openApp gives the file it opens', () => {
     ])
   })
 
+  it('nothing for an app’s notification action, which has no copy to hand on from', async () => {
+    const file = { openPath: 'Documents/secret.txt', root: 'home' }
+    const id = openApp('notepad', file, { appId: 'notepad' })
+    await grantsSettled(id)
+    expect(post).not.toHaveBeenCalled()
+    // The payload still arrives.
+    expect(useIntentStore.getState().consumeIntent(id)).toEqual(file)
+  })
+
   it('not to Files, which acts as the user, nor without a file', async () => {
     const files = openApp('file-manager', { openPath: 'Documents', root: 'home' })
     const notepad = openApp('notepad')

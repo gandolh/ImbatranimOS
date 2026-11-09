@@ -304,7 +304,12 @@ export type OpenerCandidate = {
  * one-shot pull for apps that only ever read a launch payload.
  */
 export interface SystemIntents {
-  /** Launch (or focus) an app, optionally handing it a payload. Returns its window id, '' if refused. */
+  /**
+   * Launch (or focus) an app, optionally handing it a payload. Returns its
+   * window id, '' if refused. A file the payload names is given to the window
+   * as this app hands it on: only a file this app holds, or one of its own
+   * recent files to a window of its own; never the file's folder.
+   */
   openApp(appId: string, payload?: unknown): string
   /** Drain this window's pending intent, if any. */
   consume<T = unknown>(): T | undefined
@@ -346,7 +351,11 @@ export type SystemNotifyLevel = 'info' | 'success' | 'warning' | 'error'
  */
 export type SystemNotifyAction = {
   label: string
-  /** Delivered verbatim as the `openApp` payload; must be JSON-safe. */
+  /**
+   * Delivered verbatim as the `openApp` payload; must be JSON-safe. A file it
+   * names is not given: the window reopens it with `fs.reopenRecent` when it
+   * is one of the app's recent files.
+   */
   payload: unknown
 }
 

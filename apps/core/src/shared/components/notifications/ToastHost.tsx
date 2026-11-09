@@ -42,7 +42,9 @@ function Toast({ item }: { item: NotificationItem }) {
     }
     const appId = item.appId
     if (!appId) return
-    openApp(appId, payload)
+    // An action's payload is the app's own words, not the owner's pick: it
+    // opens as the app's, so a file it names is given only if the app gives it.
+    openApp(appId, payload, payload === undefined ? undefined : { appId })
     close()
   }
 

@@ -1,6 +1,6 @@
 ---
-summary: Dated status (2026-11-06) of the imbatranim-apps plan, briefs 63-76 - which are built and where (63 rename, 64 Games, 65 Notepad, 66 Files archives, 67 WebAssembly, 68 app identity, 72 Start, 73 chooser link), what the owner still owes, and what is open. Plan and brief table in research-imbatranim-apps.md.
-updated: 2026-11-06
+summary: Dated status (2026-11-09) of the imbatranim-apps plan, briefs 63-76 - which are built and where (63 rename, 64 Games, 65 Notepad, 66 Files archives, 67 WebAssembly, 68 app identity, 72 Start, 73 chooser link, 74 native URL apps), what the owner still owes, and what is open. Plan and brief table in research-imbatranim-apps.md.
+updated: 2026-11-09
 ---
 
 # Status: the imbatranim-apps plan
@@ -39,5 +39,11 @@ Each outcome is in `briefs/done/`.
 - Walk 1 passed 11 of 11 on 2026-11-06 (identity, isolation headers, Start,
   chooser link). Walk 2 (Games install, Office PDFs, the WASM fixture; then
   65 and 66) passed.
-- Open: 69, 70, 71, 74, 75, 76 are not covered here; see their
-  briefs and the log.
+- **74** (imbatranim-apps `e3b01e0`, OS `6ccf623`, `5b9c005`, `029fa13`,
+  1.234.0, ready for deploy, 2026-11-09): apps from a URL with a version 2
+  `imbatranim.json` build from source and run natively; verified ones (the
+  pinned copy of `verified.json`, empty for now) install at once, the rest
+  only with the owner's trust at that commit. Owner: push imbatranim-apps
+  first, fill `verified.json` (board question). The walk is owed.
+- Open: 69, 70, 71, 75, 76 are not covered here; see their briefs and the
+  log.

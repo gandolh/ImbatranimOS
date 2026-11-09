@@ -128,3 +128,86 @@ A native URL app gets the same rules as every installable app.
   commit.
 - **Owner check** after the pushes and a deploy: install a known app from its
   URL on the VPS and read the warning.
+
+## Outcome (2026-11-09)
+
+Built by a subagent on `main`, ready for deploy. Commits: imbatranim-apps
+`e3b01e0` (`verified.json`, empty, and `tools/verified.test.ts`);
+imbatranimOS `6ccf623` (1.232.0, `marketplace/verified.json`, `verified.ts`
+and `npm run verified:sync`), `5b9c005` (1.233.0, the native install and
+Settings) and `029fa13` (1.234.0, the server upgrade asks about the app only
+after the session).
+
+What it does now:
+- `imbatranim.json` at `schemaVersion: 2` is a catalog descriptor without
+  `id`, `source` and `runtime`, parsed by the catalog's own schema
+  (`native-manifest.ts`). `build.entry` is one app, which takes the derived
+  `x-…` id; `build.output` with `apps` is several, each `<derived>-<its id>`
+  (its id at most 25 characters). Version 1 stays the sandboxed path.
+- The check clones and measures as before. A version 2 commit answers
+  `runtime: native` and `verified`; `POST url/install` needs `trust: true`
+  unless the copy of the verified list names the repo, folder and commit
+  (403 otherwise). The install builds the checked clone in place with the
+  catalog's installer (allowlisted env, per-build dir, the same limits).
+- The trust record lives in the row's `source` JSON (`trust: { by:
+  'verified' | 'owner', at }`), with the source and commit; no ledger step.
+  It goes with the uninstall. A new commit is a new check, so it asks again.
+- A verified app's listed `ref` is the list's commit, so Settings shows
+  Update when the list moves and `POST apps/:id/install` builds that commit.
+  For a trusted app the same route rebuilds its own commit only.
+- The native routes (built files, lease, server proxy, its WebSocket) take a
+  native URL app as a catalog app; they refuse a sandboxed row, and an `x-`
+  id with no native row, instead of every `x-` id.
+- A prebuilt check over a native install is refused (409): uninstall first.
+  A native install over a sandboxed one replaces it and revokes its tokens.
+- Settings: the warning card for an unverified commit (App, Publisher,
+  Commit, what it asks for, "A trusted app runs as you…", More info, then
+  Trust and install; Cancel; no sandboxed choice), the Verified card for a
+  verified one, and each URL app's row with its source line and a Verified or
+  Trusted by you badge; Check for update only on a trusted app.
+
+Choices made here, not owner calls:
+- A branch URL whose tip is ahead of the verified commit gets the warning, as
+  the brief reads (resolve, then match the commit). A verified app has no
+  Check for update; pasting its URL again offers the newer commit with the
+  warning.
+- `loadCatalog` skips `verified.json`, so no catalog app can be called
+  `verified`.
+- The sync script is tested with `node --test scripts/verified-sync.test.mjs`,
+  which `npm test` doesn't run.
+
+Not done here: the todo `uninstalled-url-apps-read-as-built-ins` lies in
+`installed-apps.ts`, outside this brief's files. Native URL apps widen it:
+an `x-` id no row holds reads as a built-in and gets `system`. The one-line
+fix there: treat `isUrlAppId(appId) && installGroupOf(...) === null` as gone.
+New todo per decision 6: `retire-the-sandboxed-url-app-path`.
+
+Checks run: backend typecheck, eslint and prettier on changed files; jest
+marketplace, app-identity and db units (427); the marketplace*, app-identity
+and file-grants e2e specs (97, with the new `marketplace-url-native`, 12);
+core `tsc -b`, eslint and vitest for the registry, marketplace and settings
+(364); the sync script's 6; imbatranim-apps' `tools/verified.test.ts` (4) and
+its node typecheck. Skipped: full suites, the PTY e2e and the browser walk.
+
+Owner steps: push imbatranim-apps, then this repo, then `node cli.ts
+imbatranim-os deploy` from vps-deploy; then install a known app from its URL
+on the VPS and read the warning. Which repos go into `verified.json` is
+question 1 on the board.
+
+Walk, for the walk agent (dev container, `MARKETPLACE_ALLOW_LOCAL_REPOS` on;
+two `file://` repos: one with a version 2 `imbatranim.json` whose build writes
+`dist/<name>.mjs` exporting a `mount(el)` that writes text, one prebuilt
+version 1):
+1. Paste the version 2 URL: the warning shows App, Publisher, Commit, the
+   capabilities and the acts-as-you line, with More info and Cancel and no
+   Install. More info, then Trust and install: the row says From a URL and
+   Trusted by you with its source line; Open renders the app in the page.
+2. Commit again in the fixture; Check for update shows the warning again;
+   trust installs the new commit.
+3. Edit `marketplace/verified.json` locally with a `file://` entry (repo,
+   `subdir`, commit; keep `from` and `commit`): pasting the URL shows the
+   Verified card and Install with no warning. Move the entry to a newer
+   commit: the row says An update is available; Update builds it.
+4. The version 1 fixture still installs sandboxed. Revert the local
+   `verified.json` (`npm run verified:sync -- <apps checkout> --check` passes
+   again).

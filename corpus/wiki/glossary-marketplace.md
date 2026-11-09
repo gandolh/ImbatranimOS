@@ -1,6 +1,6 @@
 ---
 summary: The vocabulary for apps that come from outside this repo: marketplace catalog, descriptor, suite descriptor, marketplace app, kit app, shared kit, group (2026-11-06), URL app and app manifest, and imbatranim-apps, with the synonyms each displaces and two proposed terms that were never adopted. Split out of glossary.md on 2026-10-21.
-updated: 2026-11-02
+updated: 2026-11-09
 ---
 
 # Glossary: apps from outside the repo
@@ -68,8 +68,8 @@ descriptor is the mechanism); folder for anything but Start's side of it.
 **URL app** / **app manifest** (2026-10-07, revised 2026-11-06):
 An app installed from its own repo's URL instead of the catalog; the
 `imbatranim.json` it carries. Since 2026-11-06 it runs natively once verified
-or trusted, and until the sandbox is retired an untrusted one runs in a
-sandboxed frame.
+or trusted (built 2026-11-09, manifest version 2), and until the sandbox is
+retired a prebuilt one (version 1) runs in a sandboxed frame.
 _Avoid_: sandboxed app (the sandbox is how it ran, not what it is), add-on or
 plugin.
 

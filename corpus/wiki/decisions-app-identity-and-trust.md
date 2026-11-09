@@ -160,7 +160,8 @@ Rejected:
 - a verified list read live from GitHub, where a compromised account could
   mark anything verified.
 
-Built in `url-apps-install-natively-once-trusted`.
+Built in brief 74 (2026-11-09). The sandboxed path is retired later, in the
+todo `retire-the-sandboxed-url-app-path`.
 
 ## WASM threads are on
 

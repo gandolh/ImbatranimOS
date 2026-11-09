@@ -191,7 +191,7 @@ Player, Code Editor and Diff, and Clock and Calendar.
 | [76](../briefs/todo/76-git-gui-and-rest-api-client-install-as-developer.md), from `git-gui-and-rest-api-client-join-developer` | Git GUI and REST API Client as Developer (after Games, data folder) |
 | [68](../briefs/done/68-apps-run-as-their-own-identity.md), from `apps-run-as-their-own-identity` | Unix-style identity and file modes for apps |
 | [70](../briefs/todo/70-installable-apps-get-files-by-grant.md), from `installable-apps-get-files-by-grant` | Installable apps see other files only by grant |
-| [74](../briefs/todo/74-url-apps-install-natively-once-verified-or-trusted.md), from `url-apps-install-natively-once-trusted` | URL apps run natively: verified, or trusted after a warning |
+| [74](../briefs/done/74-url-apps-install-natively-once-verified-or-trusted.md), from `url-apps-install-natively-once-trusted` | URL apps run natively: verified, or trusted after a warning |
 
 In imbatranim-office, after brief 67: its brief 06,
 `pdf-decodes-jpeg2000-and-jbig2-images`. `cad-reads-dwg-in-the-tab` was

@@ -5722,3 +5722,30 @@ app-data and marketplace e2e specs (105); core `tsc -b` and 452 vitest
 Snipping Tool 20 vitest, with each add-on's typecheck. Skipped: the PTY e2e,
 full cross-workspace suites, the browser and Office walk (a walk agent does
 it in the dev container). Open items are in the brief's Progress.
+
+## [2026-11-09] build | Brief 74: apps from a URL build from source once verified or trusted
+
+imbatranim-apps `e3b01e0` (`verified.json`, empty, with a shape test).
+imbatranimOS `6ccf623` (1.232.0): `marketplace/verified.json`, the copy at
+that commit, `npm run verified:sync` (`--check` fails on drift) and the
+backend's reader, which `loadCatalog` skips. `5b9c005` (1.233.0):
+`imbatranim.json` version 2 is a catalog descriptor without `id`, `source`
+and `runtime`, parsed by the catalog's schema; the check clones and measures
+as before, and the install builds the checked clone with the catalog's
+installer under the derived `x-` id (several apps: `<derived>-<id>`). A
+commit the verified list names installs with no warning and updates as the
+list moves; any other needs `trust` on the install (403 without), kept in the
+row's `source` JSON with who trusted it and when. Settings shows the
+SmartScreen-style warning and a Verified or Trusted by you badge. Version 1
+still installs sandboxed. `029fa13` (1.234.0): the server WebSocket asks
+about the app only after the session check.
+
+Native URL apps widen the todo `uninstalled-url-apps-read-as-built-ins`
+(an `x-` id no row holds gets `system`); its fix is in `installed-apps.ts`,
+outside the brief, and is named in the outcome. New todo:
+`retire-the-sandboxed-url-app-path`. Checks: backend typecheck, 427 units
+(marketplace, app-identity, db) and 97 e2e (marketplace*, app-identity,
+file-grants); core `tsc -b` and 364 vitest; the sync script's 6 and the Apps
+repo's 4. Skipped: full suites, the PTY e2e and the walk, whose steps are in
+the outcome. Ready for deploy; which apps `verified.json` lists is the
+owner's question on the board.

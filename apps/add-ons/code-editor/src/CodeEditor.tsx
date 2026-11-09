@@ -25,7 +25,7 @@ import { languageForPath } from './language'
 import { MenuButton } from './components/MenuButton'
 import { SearchPanel } from './components/SearchPanel'
 import { FONT_SIZES, useEditorPrefs } from './lib/editorPrefs'
-import { claimTabSession, saveTabSession } from './lib/tabSession'
+import { claimTabSession, forgetTabSession, saveTabSession } from './lib/tabSession'
 
 // Types are derived from the OnMount callback so we never deep-import Monaco's
 // own type modules here — Monaco stays a runtime-only, lazily-loaded dependency.
@@ -73,7 +73,7 @@ function invalidNameReason(name: string): string | null {
   return null
 }
 
-export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
+export function CodeEditor({ windowId }: { windowId: string }) {
   const system = useSystem()
 
   // One-shot open intent, drained by the shared hook (StrictMode-safe).
@@ -304,6 +304,10 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
           }
           setTabs((prev) => (prev.some((x) => x.id === tab.id) ? prev : [...prev, tab]))
           setActiveId(t.id)
+          // A file opened here is one of the editor's recents, with what the
+          // window may do to it: after a reload the tab comes back through
+          // them, also when another app handed it on or find in files found it.
+          if (!quiet) system.fs.recordRecent(t.root, t.path)
         } catch (err) {
           // One unreadable file (deleted since the session was recorded, say)
           // must not stop the rest of the set from opening.
@@ -331,7 +335,7 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
   )
 
   useEffect(() => {
-    const restored = claimTabSession()
+    const restored = claimTabSession(windowId)
     if (restored.length === 0 && !source) return
     // A restored tab is a path this window wasn't given: ask the OS for it
     // again, as one of the editor's own recent files. One that isn't (another
@@ -345,18 +349,33 @@ export function CodeEditor({ windowId: _windowId }: { windowId: string }) {
     void reopened
       .then(() => openTargets(restored, { quiet: true }))
       .then(() => (source ? openTargets([{ root: source.root, path: source.path }]) : undefined))
-  }, [source, openTargets, system])
+  }, [source, openTargets, system, windowId])
 
-  // Record the on-disk tabs for this session on every change.
+  // Record this window's on-disk tabs for this session on every change.
   useEffect(() => {
     saveTabSession(
+      windowId,
       tabs
         .filter(
           (t): t is Tab & { root: string; path: string } => t.root !== null && t.path !== null
         )
         .map((t) => ({ root: t.root, path: t.path }))
     )
-  }, [tabs])
+  }, [tabs, windowId])
+
+  // A window closed on purpose forgets its tabs; one still open as the page
+  // goes (a reload) keeps them for the window that comes back.
+  useEffect(() => {
+    let leaving = false
+    const onPageHide = () => {
+      leaving = true
+    }
+    window.addEventListener('pagehide', onPageHide)
+    return () => {
+      window.removeEventListener('pagehide', onPageHide)
+      if (!leaving) forgetTabSession(windowId)
+    }
+  }, [windowId])
 
   // Dispose every model + listener when the window closes.
   useEffect(() => {

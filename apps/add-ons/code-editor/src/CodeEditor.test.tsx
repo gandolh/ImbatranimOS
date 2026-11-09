@@ -111,6 +111,8 @@ function makeSystem(): SystemHandle {
         version: disk.version,
       }),
       upload,
+      recordRecent: vi.fn(),
+      reopenRecent: vi.fn(async () => undefined),
     },
     intents: {
       onIntent: (cb: (payload: unknown) => void) => {

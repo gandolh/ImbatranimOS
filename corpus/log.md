@@ -5984,7 +5984,7 @@ folder. Four briefs: [77](briefs/done/77-a-restore-runs-the-data-moves.md), a
 restore runs the data moves at once;
 [78](briefs/done/78-a-snip-goes-to-the-clipboard.md), a snip goes to the
 clipboard like the Windows 10 tool, Save picks the place;
-[79](briefs/todo/79-notepad-adds-attachments-beside-a-note.md), Notepad adds
+[79](briefs/done/79-notepad-adds-attachments-beside-a-note.md), Notepad adds
 attachments under `assets/` without a dialog, create only (decision in
 [decisions-app-identity-and-trust.md](wiki/decisions-app-identity-and-trust.md),
 `d9a22db`); [80](briefs/todo/80-set-aside-data-asks-the-owner.md), set-aside
@@ -6050,3 +6050,16 @@ missing click, and an encode failure says so; the region overlay calls
 write rides the click. New tests: the write is issued before the raster
 resolves, and a rejected raster gives a result. The ticket stays Ready for
 deploy.
+
+## [2026-11-09] build | Brief 79: Notepad adds attachments beside a note
+
+[79](briefs/done/79-notepad-adds-attachments-beside-a-note.md) built in
+`a8cad71`. An OS-made open (or pick) gives an app declaring
+`attachesUnderAssets` (Notepad only) an `assets` grant on `assets/` beside the
+file: make it, list it, read and add files there, never write over, rename or
+remove one (owner decision 4 added list and read the same day). Ledger step
+19 widens `file_grants.kind`. A taken name answers 409 and a new file is
+placed with a hard link, so one that appeared meanwhile is never replaced.
+A pasted image goes into `assets/` as `shot.png`, `shot-2.png` with no
+dialog; without the grant, the Save dialog as before. The preview's images
+were never grant-checked (a bare URL is the user's). Ready for deploy.

@@ -6027,3 +6027,15 @@ finished capture is written to the clipboard as a PNG at once and a toast says
 so; a refused write toasts the reason and the editor stays. Delayed and
 full-screen captures have no user action, so Firefox and Safari refuse them,
 which is expected. Ready for deploy; the owner walks it on HTTPS.
+
+## [2026-11-09] fix | Brief 77's review: queued runs, required service, guarded call
+
+A read-only review of [77](briefs/done/77-a-restore-runs-the-data-moves.md)
+led to `e6469f7`. `BackupService` takes `DataMovesService` as a required
+parameter (the `@Optional()` went, the specs pass a stub), so a broken module
+import fails at startup. The call in `apply()` is wrapped: a failure logs a
+warning and never turns a swapped restore into an error. `DataMovesService.run()`
+queues calls on a promise chain, so two restores, or one during the start's
+run, can't interleave. New tests: overlapping runs, a restore that sets the
+tables aside because the app already holds a file, and a throwing move. The
+brief stays in done/, the ticket at Ready for deploy.

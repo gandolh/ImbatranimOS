@@ -72,9 +72,9 @@ doesn't: `background`, `widgets`, `commandSources`, `service`.
 | Markdown Editor | 2,629 / 1,091 | 199 kB | — | Notepad's description is "Markdown text editor" and it renders a preview with the same `react-markdown` | **Drop**, its extras go to Notepad |
 | Clock | 2,132 / 609 | 20 kB | clock (544) | `background`, `widgets`, its data | Wave 2 |
 | Calendar | 3,266 / 1,184 | 36 kB | calendar (532) | `background`, `widgets`, its data | Wave 2 |
-| Todo | 1,641 / 296 | 18 kB | todos (584) | `background`, its data | Wave 2 |
+| Todo | 1,641 / 296 | 18 kB | todos (584) | `background`, its data | Wave 2; **moved 2026-11-09**, Accessories |
 | Sticky Notes | 1,103 / 137 | 8 kB | sticky-notes (326) | its data | Wave 2 |
-| Bookmarks | 1,726 / 566 | 17 kB | bookmarks (888) | `commandSources`, its data, reads the Browser's config | Wave 2, or into the Browser |
+| Bookmarks | 1,726 / 566 | 17 kB | bookmarks (888) | `commandSources`, its data, reads the Browser's config | Wave 2; **moved 2026-11-09**, Accessories |
 | Git GUI | 1,947 / 326 | 28 kB | git (2,768) | the OS runs git for it | Wave 3, Developer |
 | REST API Client | 2,946 / 1,115 | 39 kB | http-proxy (783) | the SSRF-guarded proxy | Wave 3, Developer |
 | Archive Manager | 923 / 52 | 13 kB | archive (2,164) | opener for zip and tar; unpacks in home | Wave 3, or base |
@@ -187,7 +187,7 @@ Player, Code Editor and Diff, and Clock and Calendar.
 | [71](../briefs/todo/71-catalog-apps-bring-background-services-and-commands.md), from `catalog-apps-bring-background-services-and-commands` | Catalog apps bring background services and palette sources |
 | [72](../briefs/done/72-start-gets-search-pins-and-an-a-to-z-list.md), from `start-gets-search-pins-and-an-a-to-z-list` | Start: search, pins, A-Z list |
 | [73](../briefs/done/73-the-chooser-links-to-the-marketplace.md), from `the-chooser-links-to-the-marketplace` | The chooser links to the Marketplace |
-| [75](../briefs/todo/75-todo-and-bookmarks-install-as-accessories.md), from `todo-and-bookmarks-install-as-accessories` | Todo and Bookmarks as Accessories (after Games, hooks, data folder) |
+| [75](../briefs/done/75-todo-and-bookmarks-install-as-accessories.md), from `todo-and-bookmarks-install-as-accessories` | Todo and Bookmarks as Accessories (after Games, hooks, data folder) |
 | [76](../briefs/todo/76-git-gui-and-rest-api-client-install-as-developer.md), from `git-gui-and-rest-api-client-join-developer` | Git GUI and REST API Client as Developer (after Games, data folder) |
 | [68](../briefs/done/68-apps-run-as-their-own-identity.md), from `apps-run-as-their-own-identity` | Unix-style identity and file modes for apps |
 | [70](../briefs/todo/70-installable-apps-get-files-by-grant.md), from `installable-apps-get-files-by-grant` | Installable apps see other files only by grant |

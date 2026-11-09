@@ -5797,3 +5797,27 @@ Not done: `measureBeforeCheckout` on a verified app's update through the
 install route (a reviewed commit; the catalog's builds don't measure
 either). Checks: backend typecheck, 356 marketplace units, 69 marketplace
 e2e; core `tsc -b`, eslint, 163 vitest (settings, registry).
+
+## [2026-11-09] build | Brief 75: Todo and Bookmarks install as Accessories
+
+Todo and Bookmarks left the image as the Accessories group of
+imbatranim-apps (`a8c87f7`, `1a04603`, `ebc2be6`); the OS pins `ebc2be6`
+(`98e41ff` 1.243.0, `30a97f6` 1.244.0). Ready for deploy; the walk is owed.
+
+- Their data moves once, at the first start after the release, from the
+  `todos` and `bookmarks` tables into JSON files in each app's data folder,
+  written as the app (`AppDataService.place`) whether or not it is
+  installed: Todo one file per list plus `unfiled.json`, Bookmarks one
+  `bookmarks.json`. Then the tables are dropped; a failed write keeps them
+  and says so in Logs. Both backend modules are deleted.
+- In the apps, the modules' rules became pure functions under a small store
+  the window and the hooks share, writing each file with the version it
+  read and reapplying a change to another tab's save. react-query isn't lent
+  to kit apps, so the store replaces it.
+- Todo exports `Background` (due toasts, still claimed through the
+  schedule), Bookmarks `commandSources`; a command source now gets the app's
+  own folders as `ctx.data` (kit 1.6.0), since it has no window.
+- Capabilities from the calls: Todo `notify`, `schedule` (no `http` left);
+  Bookmarks `fs`, `http`, `intents`, `notify`.
+- Board question: should a restore of an older backup run the move at once
+  rather than at the next start?

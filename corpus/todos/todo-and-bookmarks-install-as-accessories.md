@@ -14,7 +14,7 @@ also moved Sticky Notes, which stays built in. Grill the open questions below
 when the work starts, then promote this to a numbered brief.
 
 
-> PROMOTED 2026-11-06 to [brief 75](../briefs/todo/75-todo-and-bookmarks-install-as-accessories.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
+> PROMOTED 2026-11-06 to [brief 75](../briefs/done/75-todo-and-bookmarks-install-as-accessories.md), after the grill. The brief is the spec; this todo keeps the questions as asked.
 ## Open questions (grill before starting)
 
 Settled on 2026-11-06:

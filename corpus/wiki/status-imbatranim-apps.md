@@ -1,5 +1,5 @@
 ---
-summary: Dated status (2026-11-09) of the imbatranim-apps plan, briefs 63-76 - which are built and where (63 rename, 64 Games, 65 Notepad, 66 Files archives, 67 WebAssembly, 68 app identity, 72 Start, 73 chooser link, 74 native URL apps), what the owner still owes, and what is open. Plan and brief table in research-imbatranim-apps.md.
+summary: Dated status (2026-11-09) of the imbatranim-apps plan, briefs 63-76 - which are built and where (63 rename, 64 Games, 65 Notepad, 66 Files archives, 67 WebAssembly, 68 app identity, 72 Start, 73 chooser link, 74 native URL apps, 75 Accessories with the one-time data move), what the owner still owes, and what is open. Plan and brief table in research-imbatranim-apps.md.
 updated: 2026-11-09
 ---
 
@@ -45,5 +45,10 @@ Each outcome is in `briefs/done/`.
   pinned copy of `verified.json`, empty for now) install at once, the rest
   only with the owner's trust at that commit. Owner: push imbatranim-apps
   first, fill `verified.json` (board question). The walk is owed.
-- Open: 69, 70, 71, 75, 76 are not covered here; see their briefs and the
-  log.
+- **75** (imbatranim-apps `1a04603`, `ebc2be6`; OS `98e41ff`, `30a97f6`,
+  1.244.0, ready for deploy, 2026-11-09): Todo and Bookmarks install as
+  Accessories; their rows move once into JSON files in their data folders
+  at the first start, then the tables and both modules are gone. Owner:
+  push imbatranim-apps first, then deploy, check Logs for the move; a board
+  question on running the move after a restore. The walk is owed.
+- Open: 69, 70, 71, 76 are not covered here; see their briefs and the log.

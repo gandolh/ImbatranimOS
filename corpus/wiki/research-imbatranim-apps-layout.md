@@ -145,5 +145,7 @@ each adds only what is particular to its apps.
 An installable app's data moves into real files in its own folder,
 `~/.local/share/imbatranim/<app-id>/`, through `system.data`; its module is
 deleted once the data has moved (Todo, Bookmarks, Git GUI's recent repos).
+Todo and Bookmarks moved on 2026-11-09 (brief 75): the OS writes the files
+at the first start with `AppDataService.place`, then drops the tables.
 Modules that do system work stay as OS services (`archive`, `git`,
 `http-proxy`). Built-in apps keep their modules.

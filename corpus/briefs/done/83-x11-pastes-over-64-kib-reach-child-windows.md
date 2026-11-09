@@ -138,3 +138,23 @@ the diff from `vendor/smithay/src/xwayland/xwm/mod.rs`):
 > (70 KB and 200 KB pastes).
 
 The last sentence holds once the walk passes; drop it if it doesn't.
+
+## Outcome (2026-11-09)
+
+Built in `eb95780` (code) and `33308d7` (Progress), by an agent from the main
+session; closed after the walk. smithay 0.7.0 is vendored with
+`watch_requestor_properties` (see Progress); no upstream fix exists to pin.
+
+**Walk** (dev container, host sha256 `55befe8d…`): a 160-byte, a 70,000-byte
+and a 200,000-byte paste from the desktop arrived whole in xterm (`wc -c`),
+and Firefox still pastes. The upstream report's last sentence holds. Not
+checked: the debug log line "Transfer became incremental".
+
+**Found on the walk:** stock xterm's Shift+Insert pastes PRIMARY, and the host
+bridges only CLIPBOARD, so the walk used an xterm started with
+`insert-selection(CLIPBOARD)` on Shift+Insert. New todo:
+[xterm-shift-insert-pastes-the-clipboard](../../todos/xterm-shift-insert-pastes-the-clipboard.md).
+
+**Owner steps:** push, deploy (the image rebuilds the host with the vendored
+crate), and file the upstream report from Progress. Ticket in Ready for
+deploy.

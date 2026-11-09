@@ -80,9 +80,9 @@ wait, xterm pasted stale or empty text. PRIMARY would make every selection a
 clipboard change.
 - *Consequence*: if the X11 app that copied quits, a Wayland paste gets nothing
   (as in Wayland); a clipboard manager re-owning CLIPBOARD adds one hop. A paste
-  over 64 KiB into xterm stalls (smithay's INCR watches top-level windows only),
-  accepted on 2026-11-06 with a todo:
-  [x11-pastes-over-64-kib-reach-child-windows](../todos/x11-pastes-over-64-kib-reach-child-windows.md).
+  over 64 KiB into xterm stalled (smithay's INCR watched top-level windows only),
+  accepted on 2026-11-06 and fixed on 2026-11-09 by a vendored smithay patch
+  ([brief 83](../briefs/done/83-x11-pastes-over-64-kib-reach-child-windows.md)).
 
 ## A notification click: a `source` and an activation registry, `default` only
 _2026-11-06_ — Brief 49. A notification can carry `source` (a Linux app's id),

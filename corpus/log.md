@@ -6008,7 +6008,7 @@ and "Extract to…" opens in the archive's folder (`pickDirectory` gets a start
 folder). [82](briefs/done/82-the-sandboxed-url-app-path-goes.md) retires the
 version 1 sandboxed URL path now; a leftover install shows as no longer
 supported, and Hollow's unused version 1 file in game-engine goes.
-[83](briefs/todo/83-x11-pastes-over-64-kib-reach-child-windows.md) patches
+[83](briefs/done/83-x11-pastes-over-64-kib-reach-child-windows.md) patches
 smithay so pastes over 64 KiB reach xterm's child window; it runs last and
 gets a dev-container walk. The four todos are marked promoted.
 
@@ -6123,7 +6123,7 @@ drops Hollow's prebuilt `os-app/` copy, the only version 1 manifest in the owner
 
 ## [2026-11-09] build | Brief 83: X11 pastes over 64 KiB reach child windows
 
-[83](briefs/todo/83-x11-pastes-over-64-kib-reach-child-windows.md) built in
+[83](briefs/done/83-x11-pastes-over-64-kib-reach-child-windows.md) built in
 `eb95780` (1.283.0); it stays in todo/ until the dev-container walk. smithay
 master still never watches the requestor window for the property deletes that
 pace an INCR transfer, so the fix is vendored: smithay 0.7.0 under
@@ -6164,3 +6164,15 @@ while a leftover sandboxed row existed (500, though the build went on); the
 queued job is now listed over such a row. That a v2 install replaces the row
 is noted in the app identity decisions page. Skipped: the audit-filter spec,
 which already covers the query string being stripped.
+
+## [2026-11-09] done | Brief 83: X11 pastes over 64 KiB reach child windows
+
+[Brief 83](briefs/done/83-x11-pastes-over-64-kib-reach-child-windows.md) closed
+after its dev-container walk: 160-byte, 70,000-byte and 200,000-byte pastes
+reached xterm whole with the vendored smithay patch (`eb95780`), and Firefox
+still pastes. The 64 KiB limit lines in [status.md](wiki/status.md) and
+[decisions-linux-apps-input-files-look.md](wiki/decisions-linux-apps-input-files-look.md)
+now say it's fixed. The walk found that stock xterm's Shift+Insert pastes
+PRIMARY, which the host doesn't bridge: new todo
+[xterm-shift-insert-pastes-the-clipboard](todos/xterm-shift-insert-pastes-the-clipboard.md).
+Owner step: file the upstream report in the brief's Progress section.

@@ -76,8 +76,8 @@ wave's verify gate found the kit map missing `useSystemSound` (`8b371ae`,
 
 48 (2026-11-06, `7378699`, 1.185.0, ready for deploy): X11 apps share the
 clipboard (CLIPBOARD text both ways) and show their own cursors (a PNG and
-hotspot, protocol 9). A paste over 64 KiB into xterm stalls, accepted; the
-fix is a todo (below). Same file as 45-47.
+hotspot, protocol 9). A paste over 64 KiB into xterm stalled until brief 83
+(2026-11-09) patched smithay's INCR path. Same file as 45-47.
 
 08-15, the two themes, were built 2026-11-03 on `main` (1.70.0 to 1.86.0)
 and deploy together; each brief's outcome is in `briefs/done/`, and 15's lists
@@ -184,8 +184,8 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Open todos
 
-Open: [x11-pastes-over-64-kib-reach-child-windows](../todos/x11-pastes-over-64-kib-reach-child-windows.md)
-(2026-11-06, xterm stalls over 64 KiB); the two URL-app todos are closed.
+Open: [xterm-shift-insert-pastes-the-clipboard](../todos/xterm-shift-insert-pastes-the-clipboard.md)
+(2026-11-09, stock xterm's Shift+Insert pastes PRIMARY, which the host doesn't bridge); the two URL-app todos are closed.
 The imbatranim-apps todos were promoted to briefs 63-76 on 2026-11-06 (their
 questions stay in each todo). Briefs 48 and 49 came from the last two Linux apps todos the same day.
 Briefs 77, 80 and 81 (2026-11-09, `6968428`, `7e79924` and `95b331d`, ready for deploy): a restore runs the data moves at once; set-aside data asks the owner at sign-in (download as `.tar.gz` or clean out); a lone `.gz`, `.xz` or `.bz2` unpacks beside itself and Extract to… starts in the archive's folder (kit 1.8.0). Brief 82 (2026-11-09, `a857f57`, ready for deploy): the sandboxed URL app path is retired; a version 1 `imbatranim.json` is refused at the check, and a leftover install lists as "No longer supported" with Uninstall only (game-engine `2de99ac6` drops Hollow's prebuilt copy).

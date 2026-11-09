@@ -104,11 +104,12 @@ export type MarketplaceApp = {
   /** Where a URL app came from, as resolved at install. Absent for a catalog app. */
   source?: AppSource
   /**
-   * How an app from a URL that builds from source came to be trusted at its
-   * installed commit: the OS's verified list, or the owner. Absent for a
+   * An app from a URL that builds from source: how it came to be trusted at
+   * its installed commit when installed (the OS's verified list, or the
+   * owner), and whether the verified list names that commit now. Absent for a
    * catalog app and a sandboxed one.
    */
-  trust?: { by: 'verified' | 'owner'; at: number }
+  trust?: { by: 'verified' | 'owner'; at: number; verified?: boolean }
   installed: {
     ref: string
     buildId: string

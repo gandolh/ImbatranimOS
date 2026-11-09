@@ -189,11 +189,13 @@ export interface MarketplaceApp {
   /** Where a URL app came from. Absent for a catalog app. */
   source?: AppSource;
   /**
-   * How a URL app that runs natively came to be trusted at its installed
-   * commit: verified, or trusted by the owner. Absent for a catalog app and
-   * a sandboxed one.
+   * A URL app that runs natively: how it came to be trusted at its installed
+   * commit when it was installed (`by`, `at`, the stored record), and whether
+   * the verified list this OS carries names that commit now (`verified`).
+   * The badge reads `verified` first, so an entry a later release drops stops
+   * showing as Verified. Absent for a catalog app and a sandboxed one.
    */
-  trust?: UrlTrust;
+  trust?: UrlTrust & { verified: boolean };
   installed: {
     ref: string;
     buildId: string;
@@ -481,11 +483,16 @@ export class MarketplaceService implements OnModuleInit {
   ): Promise<MarketplaceApp[]> {
     const out: MarketplaceApp[] = [];
     let ref = d.source.ref;
+    let trust: MarketplaceApp['trust'];
     if (url) {
+      const commit = row?.ref ?? url.source.commit;
       ref =
         verifiedEntry(verified, url.source.repo, url.source.subdir)?.commit ??
-        row?.ref ??
-        url.source.commit;
+        commit;
+      trust = {
+        ...url.trust,
+        verified: isVerified(verified, { ...url.source, commit }),
+      };
     }
     // What the live build produced, not what the descriptor says now: an
     // app added to the descriptor since has nothing to load until the
@@ -540,7 +547,7 @@ export class MarketplaceService implements OnModuleInit {
         catalogSharedKit: d.sharedKit,
         ref,
         runtime: 'native',
-        ...(url && { source: url.source, trust: url.trust }),
+        ...(url && { source: url.source, trust }),
         installed,
         job: this.jobs.get(d.id) ?? null,
         server: this.servers.status(d.id),

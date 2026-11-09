@@ -1,6 +1,6 @@
 // Shapes and helpers for apps installed from a URL.
 
-import type { AppSource } from '../../shared/registry/marketplace'
+import type { AppSource, MarketplaceApp } from '../../shared/registry/marketplace'
 
 /**
  * The backend's answer to `POST marketplace/url/inspect` (contract B).
@@ -68,4 +68,19 @@ export const CAPABILITY_TEXT: Record<string, string> = {
  */
 export function capabilityText(capability: string): string {
   return Object.hasOwn(CAPABILITY_TEXT, capability) ? CAPABILITY_TEXT[capability] : capability
+}
+
+/**
+ * A URL app's badge. Verified only while the verified list this OS carries
+ * names its installed commit; a commit the owner trusted says so; one that
+ * was verified when installed and that a later release no longer lists says
+ * that instead. A backend that sends no `verified` reads as the record says.
+ */
+export function trustBadge(trust: NonNullable<MarketplaceApp['trust']>): {
+  label: string
+  warn: boolean
+} {
+  if (trust.verified ?? trust.by === 'verified') return { label: 'Verified', warn: false }
+  if (trust.by === 'owner') return { label: 'Trusted by you', warn: false }
+  return { label: 'No longer verified', warn: true }
 }

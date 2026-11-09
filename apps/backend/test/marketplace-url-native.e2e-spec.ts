@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Global,
   Module,
   ValidationPipe,
@@ -85,7 +86,7 @@ interface Listed {
   ref: string;
   capabilities: string[];
   source?: { commit: string; repo: string; subdir: string | null };
-  trust?: { by: string; at: number };
+  trust?: { by: string; at: number; verified: boolean };
   installed: {
     ref: string;
     buildId: string;
@@ -404,6 +405,47 @@ describe('apps from a URL built from source (e2e)', () => {
     expect(await served(notes.installed!.entryPath!)).toContain('"v3"');
     verify([]);
   }, 30_000);
+
+  it('stops calling an app verified once the list no longer names its commit', async () => {
+    const notes = (await listed()).find((a) => a.id === id)!;
+    // The list is empty again: the record still says how it was installed.
+    expect(notes.trust).toEqual({
+      by: 'verified',
+      at: expect.any(Number) as number,
+      verified: false,
+    });
+    expect(notes.ref).toBe(notes.installed?.ref);
+    verify([{ subdir: 'apps/notes', commit: notes.installed!.ref }]);
+    expect((await listed()).find((a) => a.id === id)?.trust?.verified).toBe(
+      true,
+    );
+    verify([]);
+  });
+
+  it('keeps the check, and its clone, when another install of the app wins the race', async () => {
+    const deskId = deriveAppId(`file://${repo}`, 'apps/desk');
+    const checked = await inspect(`file://${repo}#main/apps/desk`);
+    const marketplace = app.get(MarketplaceService);
+    const spy = jest
+      .spyOn(marketplace, 'installFromUrl')
+      .mockImplementationOnce(() => {
+        throw new ConflictException(
+          'It is being installed; wait for that to finish',
+        );
+      });
+    try {
+      await install(checked.pending, true).expect(409);
+    } finally {
+      spy.mockRestore();
+    }
+    // Still held: Cancel deletes the clone, as expiry would.
+    expect(builds(deskId)).toHaveLength(1);
+    await http
+      .delete(`/api/marketplace/url/pending/${checked.pending}`)
+      .set('Cookie', cookie)
+      .expect(204);
+    expect(builds(deskId)).toEqual([]);
+  });
 
   it('rebuilds a trusted app at its own commit, and no other, through the install route', async () => {
     const tip = git(repo, 'rev-parse', 'HEAD');

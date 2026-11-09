@@ -13,7 +13,7 @@ import {
   type MarketplaceApp,
 } from '../../shared/registry/marketplace'
 import { ConsentCard, InstallFromUrl, SourceBadge } from './InstallFromUrl'
-import { apiMessage, sourceLine, type Inspection } from './urlApps'
+import { apiMessage, sourceLine, trustBadge, type Inspection } from './urlApps'
 
 /** Sandboxed apps from a URL adds these to the registry's type; narrowed here so this compiles either way. */
 
@@ -278,7 +278,9 @@ export function MarketplaceSettings({
           // An app from a URL that builds from source: a catalog app's row,
           // plus where it came from and who vouched for its commit.
           const nativeUrl = !sandboxed && !!app.source
-          const trustedByOwner = nativeUrl && app.trust?.by === 'owner'
+          const badge = nativeUrl && app.trust ? trustBadge(app.trust) : null
+          // Only a verified app updates as the verified list moves.
+          const checksForUpdates = nativeUrl && badge?.label !== 'Verified'
           const Icon = marketplaceIcon(row.suite ? 'package' : app.icon)
           const installed = app.installed
           const missing = row.apps.some((a) => a.installed?.missing)
@@ -344,11 +346,7 @@ export function MarketplaceSettings({
                         From a URL
                       </span>
                     )}
-                    {nativeUrl && app.trust && (
-                      <SourceBadge>
-                        {app.trust.by === 'verified' ? 'Verified' : 'Trusted by you'}
-                      </SourceBadge>
-                    )}
+                    {badge && <SourceBadge warn={badge.warn}>{badge.label}</SourceBadge>}
                     {row.suite && (
                       <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
                         {row.apps.length === 1 ? '1 app' : `${row.apps.length} apps`}
@@ -407,9 +405,9 @@ export function MarketplaceSettings({
                       </Button>
                     )}
                     {/* A verified app updates as the verified list moves;
-                        one trusted by you looks for a new commit, which
-                        asks for your trust again. */}
-                    {trustedByOwner && installed && !working && (
+                        any other looks for a new commit, which asks for
+                        your trust unless that commit is verified. */}
+                    {checksForUpdates && installed && !working && (
                       <Button size="sm" onClick={() => void checkForUpdate(app)}>
                         Check for update
                       </Button>

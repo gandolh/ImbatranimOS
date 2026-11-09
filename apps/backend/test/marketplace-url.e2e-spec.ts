@@ -833,6 +833,17 @@ describe('apps installed from a URL (e2e)', () => {
     ).toBe(404);
   });
 
+  it("refuses a server's upgrade without a session before it looks at the app", async () => {
+    // 401, not the 404 a sandboxed app gets with a session: what is
+    // installed is nobody's business before sign-in.
+    expect(
+      await wsStatus(
+        `ws://127.0.0.1:${port}/api/marketplace/apps/${id}/server/play`,
+        { origin: DESKTOP },
+      ),
+    ).toBe(401);
+  });
+
   it('keeps the desktop headers on every other route', async () => {
     const res = await http
       .get('/api/marketplace')

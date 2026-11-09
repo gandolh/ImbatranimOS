@@ -165,10 +165,14 @@ describe('MarketplaceSettings: Check for update on a URL app', () => {
 })
 
 describe('MarketplaceSettings: an app from a URL built from source', () => {
-  const nativeApp = (by: 'verified' | 'owner', over: Partial<MarketplaceApp> = {}) => ({
+  const nativeApp = (
+    by: 'verified' | 'owner',
+    over: Partial<MarketplaceApp> = {},
+    verified = by === 'verified'
+  ) => ({
     ...urlApp(),
     runtime: 'native' as const,
-    trust: { by, at: 1 },
+    trust: { by, at: 1, verified },
     installed: {
       ref: OLD,
       buildId: 'b1',
@@ -191,6 +195,17 @@ describe('MarketplaceSettings: an app from a URL built from source', () => {
     expect(button('Check for update')).toBeUndefined()
     await act(async () => button('Update')!.click())
     expect(post).toHaveBeenCalledWith(`/marketplace/apps/${ID}/install`)
+  })
+
+  it('stops calling it Verified once the verified list no longer names its commit', async () => {
+    get.mockResolvedValue({
+      data: { apps: [nativeApp('verified', {}, false)], problems: [] },
+    })
+    await render()
+    expect(container.textContent).toContain('No longer verified')
+    const badges = [...container.querySelectorAll('span')].map((el) => el.textContent)
+    expect(badges).not.toContain('Verified')
+    expect(button('Check for update')).toBeDefined()
   })
 
   it('says "Trusted by you", and checks for a new commit, which asks for trust again', async () => {

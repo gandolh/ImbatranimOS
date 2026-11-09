@@ -539,7 +539,10 @@ export class MarketplaceUrlApps {
         throw gone();
       }
       if (this.pendings.get(pending) !== checked) throw gone();
-      this.pendings.take(pending);
+      // Queued first, then taken, with nothing awaited between: if another
+      // install of the app started meanwhile, this one is refused (409)
+      // while the check still holds its clone, which Cancel or expiry
+      // deletes.
       this.marketplace.installFromUrl(checked.id, {
         kind: 'url',
         d: checked.native.descriptor,
@@ -548,6 +551,7 @@ export class MarketplaceUrlApps {
         trust: { by: verified ? 'verified' : 'owner', at: Date.now() },
         fetched: { dir: checked.dir, buildId: checked.buildId },
       });
+      this.pendings.take(pending);
       this.logger.log(
         `Queued ${checked.id} from ${checked.source.url} at ${checked.source.commit} (${verified ? 'verified' : 'trusted by the owner'})`,
       );
@@ -567,6 +571,13 @@ export class MarketplaceUrlApps {
     }
     // Cancelled or expired while the file was looked at.
     if (this.pendings.get(pending) !== checked) throw gone();
+    // A native install of the app that started meanwhile is building in a
+    // directory of its own; this row would land under it.
+    if (this.marketplace.isInstalling(checked.id)) {
+      throw new ConflictException(
+        'It is being installed; wait for that to finish',
+      );
+    }
 
     // From here to the row, nothing awaits: no clean-up can run in between
     // and take the clone, which stops being held by the check now.

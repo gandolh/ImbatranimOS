@@ -5,7 +5,6 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
-  Optional,
   PayloadTooLargeException,
 } from '@nestjs/common';
 import { execFile, spawn } from 'child_process';
@@ -164,7 +163,7 @@ export class BackupService {
     private readonly db: DbService,
     private readonly logs: LogService,
     private readonly localIdentity: LocalIdentityService,
-    @Optional() private readonly moves?: DataMovesService,
+    private readonly moves: DataMovesService,
   ) {}
 
   // ── shared ───────────────────────────────────────────────────────────────
@@ -562,8 +561,15 @@ export class BackupService {
       // A backup from before the move brings the old tables back and no data
       // files. Move them now, on the restored database and home, rather than
       // at the next start: an edit in between would make the move set the
-      // restored tables aside. Never throws, so it cannot fail the restore.
-      await this.moves?.run();
+      // restored tables aside. The swap is done by now, so a failure here is
+      // logged and never reported as a failed restore.
+      try {
+        await this.moves.run();
+      } catch (err) {
+        this.logger.warn(
+          `The data moves failed after the restore and run again at the next start: ${String(err)}`,
+        );
+      }
 
       return {
         restored,

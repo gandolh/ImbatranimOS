@@ -122,8 +122,23 @@ export class DataMovesService implements OnApplicationBootstrap {
     await this.run();
   }
 
-  /** Every move still to do, one after the other. Never throws. */
-  async run(): Promise<void> {
+  /** The runs so far, chained: a start and restores never interleave. */
+  private running: Promise<void> = Promise.resolve();
+
+  /**
+   * Every move still to do, one after the other. Never throws. Calls queue,
+   * so a restore during another run, or two restores, wait their turn and see
+   * what the earlier run left.
+   */
+  run(): Promise<void> {
+    this.running = this.running.then(
+      () => this.runOnce(),
+      () => this.runOnce(),
+    );
+    return this.running;
+  }
+
+  private async runOnce(): Promise<void> {
     // A database that failed to open or migrate answers 503 everywhere; its
     // rows wait for a start that reads them.
     if (this.dbs.migrationFailure || !this.dbs.db?.open) return;

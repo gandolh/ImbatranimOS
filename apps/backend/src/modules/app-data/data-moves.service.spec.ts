@@ -286,6 +286,19 @@ describe('DataMovesService', () => {
     expect(logged).toEqual([]);
   });
 
+  it('queues overlapping runs, so one drops the tables and none logs a failure', async () => {
+    seedTodos();
+    seedBookmarks();
+    await Promise.all([moves.run(), moves.run(), moves.run()]);
+
+    expect(hasTable('todos')).toBe(false);
+    expect(hasTable('bookmark_links')).toBe(false);
+    expect(logged.filter((l) => l.level !== 'info')).toEqual([]);
+    expect(logged.filter((l) => l.event === 'app-data.move.done')).toHaveLength(
+      2,
+    );
+  });
+
   it('keeps the rows and says so when a file cannot be written, and moves at the next start', async () => {
     seedTodos();
     // A file where the app's folder should be: nothing can be written into it.

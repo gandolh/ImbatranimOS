@@ -12,6 +12,7 @@ import { ArchiveService } from '../archive/archive.service';
 import { DbService } from '../../db/db.service';
 import { LogService } from '../logs/log.service';
 import { makeLocalIdentity } from '../identity/testing';
+import type { DataMovesService } from '../app-data/data-moves.service';
 import { BackupService } from './backup.service';
 import { BackupController } from './backup.controller';
 
@@ -83,6 +84,7 @@ describe('BackupController.download — an interrupted download', () => {
       db,
       logs,
       makeLocalIdentity(db),
+      { run: () => Promise.resolve() } as unknown as DataMovesService,
     );
     const controller = new BackupController(service);
 

@@ -25,6 +25,7 @@ describe('BackupService — a restore runs the data moves', () => {
   let service: BackupService;
   let moves: DataMovesService;
   let runSpy: jest.SpyInstance;
+  let logs: LogService;
   const prevRoot = process.env.FILES_ROOT;
   const dbPath = () => join(home, '.imbatranim', 'db.sqlite');
   const todoFile = () =>
@@ -46,7 +47,7 @@ describe('BackupService — a restore runs the data moves', () => {
     db = new DbService(config);
     db.onModuleInit();
     const files = new FilesService();
-    const logs = new LogService();
+    logs = new LogService();
     await logs.onModuleInit();
     const installed = { isGone: () => true } as unknown as InstalledApps;
     const data = new AppDataService(new ModeStore(db), installed);
@@ -152,5 +153,45 @@ describe('BackupService — a restore runs the data moves', () => {
     expect(
       await fs.readFile(join(home, 'Documents', 'letter.txt'), 'utf8'),
     ).toBe('dear world');
+  });
+
+  it('sets the restored tables aside when the app already holds a file of its own, and loses nothing', async () => {
+    seed();
+    const tarball = await takeBackup();
+    // The live app files differ from anything the tables hold; the backup has no `.local`.
+    await fs.mkdir(join(todoFile(), '..'), { recursive: true });
+    await fs.writeFile(todoFile(), '{"todos":[]}\n');
+    const record = jest.spyOn(logs, 'record');
+
+    const preview = await service.inspect(tarball);
+    await service.apply(preview.id);
+
+    expect(await fs.readFile(todoFile(), 'utf8')).toBe('{"todos":[]}\n');
+    expect(hasTable('todos')).toBe(false);
+    const aside = (
+      db.db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'todos_premove_%'",
+        )
+        .all() as { name: string }[]
+    ).map((r) => r.name);
+    expect(aside).toHaveLength(1);
+    expect(db.db.prepare(`SELECT text FROM ${aside[0]}`).all()).toEqual([
+      { text: 'restored todo' },
+    ]);
+    expect(record).toHaveBeenCalledWith(
+      'warn',
+      'app-data.move.set-aside',
+      expect.any(String),
+      expect.anything(),
+    );
+  });
+
+  it('reports a successful restore even when the moves throw', async () => {
+    seed();
+    const tarball = await takeBackup();
+    runSpy.mockRejectedValueOnce(new Error('boom'));
+    const preview = await service.inspect(tarball);
+    await expect(service.apply(preview.id)).resolves.toBeDefined();
   });
 });

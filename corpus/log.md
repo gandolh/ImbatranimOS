@@ -6205,3 +6205,22 @@ clipboard, and middle clicks read none. The tab's code didn't change.
 [decisions-linux-apps-input-files-look.md](wiki/decisions-linux-apps-input-files-look.md)
 and [status.md](wiki/status.md) carry the built line. Owner steps: push, then
 deploy.
+
+## [2026-11-10] grill | Briefs 85-88 promoted: the estate's Base UI, harness and redesign calls
+
+Four briefs for the owner's calls of 2026-11-09 and 2026-11-10, written from a
+read of the code and measurements on a scratch copy of the TypeScript
+workspaces. [85](briefs/todo/85-base-ui-to-1-9-0.md) bumps Base UI to 1.9.0,
+exact (the lockfile resolves 1.6.0 today);
+[86](briefs/todo/86-the-house-style-harness.md) adds the house-style harness
+(Prettier at 120 touches every web file, a NestJS carve-out, the typed rules,
+`check` and `check:fast`, `.claude/rules/`, a root `CLAUDE.md`);
+[87](briefs/todo/87-base-ui-by-the-conventions.md) audits the UI against the
+skill's rules and reconciles them with [wiki/ui-conventions.md](wiki/ui-conventions.md)
+(rule 42 is stale, rule 7 beats a `dark:` variant, rule 40 yields for form
+dialogs), moves the 13 px root onto `body` with `--spacing` set so nothing
+moves, and adds the System mode to the light and dark choice;
+[88](briefs/todo/88-a-redesign-with-hallmark-on-the-estate-board.md) is the
+redesign, on the estate board, inside the locked skeleton and "best UX, not
+Win7". No Tailwind brief (core is on Tailwind v4 already) and no server brief
+(the backend is NestJS, not Fastify).

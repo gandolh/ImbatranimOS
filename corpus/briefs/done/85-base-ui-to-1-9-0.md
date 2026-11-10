@@ -84,3 +84,14 @@ One commit for the whole brief, with `npm run version:bump -- --stage` run befor
 - Brief 86's `check-base-ui` reads this pin (rule 1) and starts green.
 - Brief 87 audits against 1.9.0's types and components (`Tabs`, `Toast`, `Slider`, `RadioGroup`, `ToggleGroup`, `AlertDialog`, `Popover`).
 - imbatranim-apps' own bump follows this one through `kit:sync`, at the commit this brief produces. The owner runs it; it is not in this brief.
+
+## Outcome (2026-11-10)
+
+Built in `dcdb648` (1.293.0). Both manifests pin `@base-ui/react` at `1.9.0`;
+the lockfile resolves one copy, with `@base-ui/utils` 0.5.0 (was 0.3.1) and
+`reselect`, `use-sync-external-store` moved as its own dependencies. No source
+change. Checks: typecheck, lint and tests for `@imbatranim/ui` (42) and
+`@imbatranim/core` (757) pass. Skipped: `npm run build`, `docker build`
+(Docker unusable on this machine), the e2e tests, and the before/after
+screenshots and hand walk (no dev server was started), so behaviour moves
+from 1.6.0 to 1.9.0 in the seven screens are unwalked.

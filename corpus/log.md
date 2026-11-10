@@ -6210,7 +6210,7 @@ deploy.
 
 Four briefs for the owner's calls of 2026-11-09 and 2026-11-10, written from a
 read of the code and measurements on a scratch copy of the TypeScript
-workspaces. [85](briefs/todo/85-base-ui-to-1-9-0.md) bumps Base UI to 1.9.0,
+workspaces. [85](briefs/done/85-base-ui-to-1-9-0.md) bumps Base UI to 1.9.0,
 exact (the lockfile resolves 1.6.0 today);
 [86](briefs/todo/86-the-house-style-harness.md) adds the house-style harness
 (Prettier at 120 touches every web file, a NestJS carve-out, the typed rules,
@@ -6224,3 +6224,11 @@ moves, and adds the System mode to the light and dark choice;
 redesign, on the estate board, inside the locked skeleton and "best UX, not
 Win7". No Tailwind brief (core is on Tailwind v4 already) and no server brief
 (the backend is NestJS, not Fastify).
+
+## [2026-11-10] done | Brief 85: Base UI to 1.9.0, pinned exactly
+
+[Brief 85](briefs/done/85-base-ui-to-1-9-0.md) built in `dcdb648` (1.293.0).
+`@base-ui/react` is pinned at 1.9.0 in `packages/ui` and `apps/core`, one copy
+in the lockfile (utils 0.5.0), no source change; typecheck, lint and the ui
+and core tests pass. Not run: the build, `docker build`, the screenshots and
+the hand walk of the seven screens. Owner steps: push, then deploy.

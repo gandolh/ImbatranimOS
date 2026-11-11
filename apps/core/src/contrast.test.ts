@@ -15,7 +15,7 @@ const indexCss = readFileSync(join(__dirname, "index.css"), "utf8").replace(/\/\
 
 /** The `--k-*` declarations of the block whose selector list names `theme` and `mode`. */
 function tokens(theme: ThemeId, mode: Mode): Record<string, string> {
-  const selector = `[data-os-theme='${theme}'][data-theme='${mode}']`;
+  const selector = `[data-os-theme="${theme}"][data-theme="${mode}"]`;
   const block = [...indexCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find(([, sel]) =>
     sel.split(",").some((s) => s.trim() === selector),
   );

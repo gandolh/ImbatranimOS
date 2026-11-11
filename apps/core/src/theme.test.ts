@@ -60,7 +60,7 @@ const BEFORE: [string, string][] = [
   // Since 2026-11-03 the UI font follows the theme: index.css sets --k-font-ui
   // per token block, Figtree in Apricot and Space Grotesk in Classic.
   ["--font-ui", "var(--k-font-ui)"],
-  ["--font-content", "'Inter', ui-sans-serif, system-ui, sans-serif"],
+  ["--font-content", '"Inter", ui-sans-serif, system-ui, sans-serif'],
   // The corner radii (2026-11-03): per theme, 0px in Classic.
   ["--radius-window", "var(--k-radius-window)"],
   ["--radius-menu", "var(--k-radius-menu)"],
@@ -87,7 +87,7 @@ function declarations(css: string): [string, string][] {
 
 describe("the theme tokens moved into the kit", () => {
   it("index.css imports the kit theme and declares no @theme of its own", () => {
-    expect(indexCss).toContain("@import '../../../packages/ui/src/theme.css';");
+    expect(indexCss).toContain('@import "../../../packages/ui/src/theme.css";');
     expect(indexCss.replace(/\/\*[\s\S]*?\*\//g, "")).not.toMatch(/@theme\b/);
   });
 

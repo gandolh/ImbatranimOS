@@ -70,10 +70,10 @@ describe("the appearance values", () => {
       apricot: {},
       classic: {},
     };
-    for (const m of src.matchAll(/apricot\('(\w+)', '[^']+', '(#\w+)', '(#\w+)'\)/g)) {
+    for (const m of src.matchAll(/apricot\(["'](\w+)["'], ["'][^"']+["'], ["'](#\w+)["'], ["'](#\w+)["']\)/g)) {
       table.apricot[m[1]] = [m[3], m[2]];
     }
-    for (const m of src.matchAll(/classic\('(\w+)', '[^']+', '(#\w+)'\)/g)) {
+    for (const m of src.matchAll(/classic\(["'](\w+)["'], ["'][^"']+["'], ["'](#\w+)["']\)/g)) {
       if (m[1] === "id") continue;
       table.classic[m[1]] = [m[2], m[2]];
     }

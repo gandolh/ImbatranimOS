@@ -44,13 +44,13 @@ interface State {
  *   it. The limit is documented rather than half-solved.
  */
 export class AppErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo): void {
+  override componentDidCatch(error: Error, info: ErrorInfo): void {
     const { appId, appName } = this.props;
     if (shouldReportCrash(appId)) {
       notify({
@@ -76,7 +76,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     console.error(`[${appId}] crashed`, error, info.componentStack);
   }
 
-  render(): ReactNode {
+  override render(): ReactNode {
     const { error } = this.state;
     if (error) return this.props.fallback(error);
     return this.props.children;

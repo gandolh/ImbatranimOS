@@ -4,7 +4,7 @@ Apps that open in a window are workspace packages under `apps/add-ons/`, kept ap
 
 1. Create `apps/add-ons/<name>/` with:
    - a `package.json` named `@imbatranim/<name>`, depending on `@imbatranim/core` and `@imbatranim/ui` (copy an existing add-on's scripts and devDependencies);
-   - a `tsconfig.json` that extends `../tsconfig.base.json`;
+   - a `tsconfig.json` that extends `../tsconfig.base.json`, which extends `packages/tsconfig.base.json`, the one base of the web workspaces (core, the kit and the add-ons share its compiler flags);
    - an `eslint.config.js` copied from another add-on. It carries the import rules below.
 2. Put the app in `src/`. Components and hooks come from `@imbatranim/ui`. Everything that touches the machine comes from the `system` handle the desktop injects (`useSystem()` from `@imbatranim/ui`): `fs`, `http`, `window`, `intents`, `shortcuts`, `appearance`, `sound`, `schedule`, `notify` and `on`. From `@imbatranim/core` you may import types only. An app that makes sound follows the tray's volume: it plays at its own volume times `system.sound.get().volume`, stays silent while `muted`, and listens for `sound-changed` (`useSystemSound()` does all three). An app that makes no sound needs nothing.
 3. Export `manifest: AddonManifest` from `src/index.ts`: an id, a name, an icon, a lazy-loaded component and window sizes. Optional fields add command-palette sources, a background component or a desktop layer. `apps/add-ons/clock/src/index.ts` is a short example.

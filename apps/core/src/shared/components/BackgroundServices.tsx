@@ -76,14 +76,14 @@ class BackgroundServiceBoundary extends Component<
   { appId: string; appName: string; children: ReactNode },
   { crashed: boolean }
 > {
-  state = { crashed: false };
+  override state = { crashed: false };
   private reported = false;
 
   static getDerivedStateFromError(): { crashed: boolean } {
     return { crashed: true };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo): void {
+  override componentDidCatch(error: Error, info: ErrorInfo): void {
     const { appId, appName } = this.props;
     if (!this.reported) {
       this.reported = true;
@@ -105,7 +105,7 @@ class BackgroundServiceBoundary extends Component<
     console.error(`[${appId}] background service crashed`, error, info.componentStack);
   }
 
-  render(): ReactNode {
+  override render(): ReactNode {
     return this.state.crashed ? null : this.props.children;
   }
 }

@@ -31,14 +31,14 @@ interface State {
  * `componentDidCatch` for the same crash all the same.
  */
 export class DesktopLayerBoundary extends Component<Props, State> {
-  state: State = { crashed: false };
+  override state: State = { crashed: false };
   private reported = false;
 
   static getDerivedStateFromError(): State {
     return { crashed: true };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo): void {
+  override componentDidCatch(error: Error, info: ErrorInfo): void {
     const { appId, appName } = this.props;
     if (!this.reported) {
       this.reported = true;
@@ -60,7 +60,7 @@ export class DesktopLayerBoundary extends Component<Props, State> {
     console.error(`[${appId}] desktop layer crashed`, error, info.componentStack);
   }
 
-  render(): ReactNode {
+  override render(): ReactNode {
     return this.state.crashed ? null : this.props.children;
   }
 }

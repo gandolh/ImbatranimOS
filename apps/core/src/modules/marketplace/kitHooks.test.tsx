@@ -169,7 +169,6 @@ beforeEach(async () => {
 afterEach(async () => {
   await sync([]);
   // The hook waits for the registry to empty before the next test starts, so its `expect` is a retried wait.
-  // eslint-disable-next-line vitest/no-standalone-expect
   await until(() => expect(groups()).not.toContain("Ticker"));
   act(() => root.unmount());
   container.remove();

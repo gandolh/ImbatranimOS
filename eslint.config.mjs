@@ -32,10 +32,6 @@ export default [
     ],
   }),
 
-  // Importing typescript-eslint here registers this folder beside the vendored copy's as a candidate root, and the
-  // parser then refuses to infer one for the JavaScript files, which are linted without types. Naming it ends that.
-  { name: "imbatranimos/tsconfig-root", languageOptions: { parserOptions: { tsconfigRootDir: import.meta.dirname } } },
-
   // The web workspaces kept the Vite refresh rule before the house config existed.
   { name: "imbatranimos/react-refresh", files: WEB.map((dir) => `${dir}/**/*.{ts,tsx}`), ...reactRefresh.configs.vite },
 

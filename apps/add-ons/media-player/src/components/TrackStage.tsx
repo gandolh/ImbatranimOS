@@ -115,11 +115,13 @@ export function TrackStage({
   // mount, so this effect is intentionally mount-once rather than re-synced
   // on every prop tick. Volume and mute are applied by the effect after it.
   useEffect(() => {
-    const el = mediaRef.current;
-    if (!el) return;
+    const found = mediaRef.current;
+    if (!found) return;
+    // A const of the narrowed type: the handlers below are function declarations, which do not keep a guard's narrowing.
+    const el = found;
 
     function handleLoadedMetadata() {
-      setDuration(el!.duration || 0);
+      setDuration(el.duration || 0);
       // Resume only once the duration is known, and only when the stored position is
       // actually resumable for THIS duration. `clampSeek` alone would pin a stale
       // position past the end (the file was replaced on disk) to `duration`, so the
@@ -127,23 +129,23 @@ export function TrackStage({
       // is the decision that guards against that — a candidate is passed in and
       // checked here, where the duration is finally known.
       const target = liveRef.current.resumeAt;
-      if (target !== null && shouldResume(target, el!.duration)) {
-        const seekTo = clampSeek(target, el!.duration);
+      if (target !== null && shouldResume(target, el.duration)) {
+        const seekTo = clampSeek(target, el.duration);
         if (seekTo !== null) {
-          el!.currentTime = seekTo;
+          el.currentTime = seekTo;
           setResumedFrom(seekTo);
         }
       }
     }
     let lastReported = 0;
     function handleTimeUpdate() {
-      setCurrentTime(el!.currentTime);
+      setCurrentTime(el.currentTime);
       // `timeupdate` fires ~4×/second; a write per event would mean a JSON.stringify and a
       // localStorage round-trip 240 times a minute for a value nobody reads until the file
       // is reopened.
-      if (Math.abs(el!.currentTime - lastReported) < 5) return;
-      lastReported = el!.currentTime;
-      liveRef.current.onProgress(el!.currentTime, el!.duration);
+      if (Math.abs(el.currentTime - lastReported) < 5) return;
+      lastReported = el.currentTime;
+      liveRef.current.onProgress(el.currentTime, el.duration);
     }
     function handlePlay() {
       setIsPlaying(true);
@@ -155,21 +157,21 @@ export function TrackStage({
       setIsPlaying(false);
       // Reaching the end clears any remembered position — reopening a finished file should
       // start it again, not offer to resume the credits.
-      liveRef.current.onProgress(0, el!.duration);
+      liveRef.current.onProgress(0, el.duration);
       // Repeat-one is replayed HERE, on the element, rather than by the parent re-selecting
       // the same path: that would change no state, so nothing would remount and the track
       // would simply stop. Replaying in place also avoids re-fetching what is already
       // buffered.
       if (liveRef.current.repeat === "one") {
-        el!.currentTime = 0;
-        void el!.play().catch(() => undefined);
+        el.currentTime = 0;
+        void el.play().catch(() => undefined);
         return;
       }
       onEnded();
     }
     function handleError() {
       setIsPlaying(false);
-      const report = mediaErrorReport(el!.error, path, fileName(path, "this file"));
+      const report = mediaErrorReport(el.error, path, fileName(path, "this file"));
       setErrorMsg(report.message);
       setErrorHint(report.hint);
       // The window may be behind others by the time a queued track fails, so the overlay
@@ -181,7 +183,7 @@ export function TrackStage({
       });
     }
 
-    const handleProgress = () => setBuffered(bufferedRanges(el!));
+    const handleProgress = () => setBuffered(bufferedRanges(el));
     el.addEventListener("loadedmetadata", handleLoadedMetadata);
     el.addEventListener("timeupdate", handleTimeUpdate);
     el.addEventListener("progress", handleProgress);

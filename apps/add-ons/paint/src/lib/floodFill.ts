@@ -54,7 +54,8 @@ export function floodFill(p: Pixels, x: number, y: number, fill: Rgba): boolean 
   let changed = false;
 
   while (stack.length > 0) {
-    const idx = stack.pop()!;
+    const idx = stack.pop();
+    if (idx === undefined) break;
     if (visited[idx]) continue;
     visited[idx] = 1;
     const px = idx % p.width;

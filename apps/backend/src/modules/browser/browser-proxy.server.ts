@@ -1,3 +1,4 @@
+import { required } from "../../lib/required";
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createReadStream, promises as fs } from "fs";
@@ -220,7 +221,7 @@ export class BrowserProxyServer implements OnApplicationBootstrap, OnModuleDestr
         return;
       }
       socket.off("error", onSocketError);
-      this.wss!.handleUpgrade(req, socket, head, (ws) => {
+      required(this.wss, "the relay server").handleUpgrade(req, socket, head, (ws) => {
         const entry: LiveRelay = { ws, cookie: req.headers.cookie };
         this.live.add(entry);
         ws.on("close", () => this.live.delete(entry));

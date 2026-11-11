@@ -1,5 +1,5 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { cn } from "../cn";
 
 type DialogProps = {

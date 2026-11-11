@@ -50,7 +50,7 @@ export function useKillProcessMutation() {
   return useMutation({
     mutationFn: ({ pid, signal }: { pid: number; signal?: string }) => killProcess(system.http, pid, signal),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: systemProcessesKey });
+      void qc.invalidateQueries({ queryKey: systemProcessesKey });
     },
   });
 }

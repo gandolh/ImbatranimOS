@@ -1,7 +1,7 @@
 import * as fs from "fs/promises";
 import * as os from "os";
 import { join } from "path";
-import { ConfigService } from "@nestjs/config";
+import type { ConfigService } from "@nestjs/config";
 import { FilesService } from "../files/files.service";
 import { RecentService } from "../files/recent.service";
 import { ArchiveService } from "../archive/archive.service";

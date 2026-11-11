@@ -11,6 +11,9 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2023",
+    // Named, because TypeScript 6 (the root's, which typed lint runs) no longer includes every @types package by
+    // itself. These are the three that declare globals; the rest are imported.
+    "types": ["node", "jest", "multer"],
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",

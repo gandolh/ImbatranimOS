@@ -1,3 +1,4 @@
+import { required } from "../lib/required";
 import { lazy, type ComponentType } from "react";
 import { create } from "zustand";
 import {
@@ -409,7 +410,7 @@ export function syncMarketplaceApps(apps: MarketplaceApp[]): void {
     if (!isRunnable(app) || builtIn.has(app.id) || added.includes(app.id)) continue;
     APP_REGISTRY.push(toAppConfig(app));
     added.push(app.id);
-    if (isKitApp(app)) kitBuilds.add(kitBuildKey(app)!);
+    if (isKitApp(app)) kitBuilds.add(required(kitBuildKey(app), "the kit build key"));
     if (declaresHooks(app)) hooked.push(app);
   }
   // A build that left (updated, uninstalled) takes its stylesheets with it,

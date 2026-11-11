@@ -1,8 +1,8 @@
 // In-memory DB and a scratch home so this e2e never touches real data.
 process.env.DB_PATH = ":memory:";
 
-import { INestApplication, ValidationPipe } from "@nestjs/common";
-import { Test, TestingModule } from "@nestjs/testing";
+import { type INestApplication, ValidationPipe } from "@nestjs/common";
+import { Test, type TestingModule } from "@nestjs/testing";
 import { randomBytes, randomUUID } from "crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "fs";
 import type { Server } from "http";

@@ -123,11 +123,17 @@ describe("the tray volume", () => {
     await renderTray();
     expect(speaker().getAttribute("aria-label")).toBe("Volume: 80%");
     expect(shape()).toBe("high");
-    act(() => useSoundStore.setState({ volume: 0.2 }));
+    act(() => {
+      useSoundStore.setState({ volume: 0.2 });
+    });
     expect(shape()).toBe("low");
-    act(() => useSoundStore.setState({ volume: 0 }));
+    act(() => {
+      useSoundStore.setState({ volume: 0 });
+    });
     expect(shape()).toBe("silent");
-    act(() => useSoundStore.setState({ volume: 0.5, muted: true }));
+    act(() => {
+      useSoundStore.setState({ volume: 0.5, muted: true });
+    });
     expect(shape()).toBe("muted");
     expect(speaker().getAttribute("aria-label")).toBe("Volume: muted");
   });

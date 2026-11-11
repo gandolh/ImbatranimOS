@@ -76,7 +76,7 @@ export function TrashDialog({ open, onOpenChange, root, currentPath, onRestored,
             <Button
               variant="destructive"
               size="sm"
-              onClick={handleEmpty}
+              onClick={() => void handleEmpty()}
               disabled={entries.length === 0 || empty.isPending}
             >
               Empty Trash

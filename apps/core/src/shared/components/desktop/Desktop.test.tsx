@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import type { AppConfig } from "../../registry/registry";
 import { useNotificationStore } from "../../store/notificationStore";
 
@@ -58,7 +58,7 @@ const NotesLayer = () => <div data-testid="notes-layer">a note</div>;
 
 let container: HTMLDivElement;
 let root: Root;
-let consoleError: typeof console.error;
+let consoleError: MockInstance<typeof console.error>;
 
 beforeEach(() => {
   container = document.createElement("div");
@@ -67,8 +67,7 @@ beforeEach(() => {
   // as a failure; the boundary handled it, so say so.
   root = createRoot(container, { onCaughtError: () => {} });
   useNotificationStore.setState({ notifications: [], toasts: [] });
-  consoleError = console.error;
-  console.error = () => {};
+  consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -76,7 +75,7 @@ afterEach(() => {
     root.unmount();
   });
   container.remove();
-  console.error = consoleError;
+  consoleError.mockRestore();
 });
 
 const mount = (): void => {

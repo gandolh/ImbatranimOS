@@ -146,7 +146,7 @@ export function eachLine(onLine: (line: string) => void): {
   return {
     onStdout: (chunk) => {
       const lines = (partial + decoder.write(chunk)).split("\n");
-      partial = lines.pop()!;
+      partial = lines.pop() ?? "";
       for (const line of lines) onLine(line);
       return partial.length <= MAX_LINE_LENGTH;
     },

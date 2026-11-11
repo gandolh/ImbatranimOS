@@ -27,7 +27,10 @@ export function useNoteFileQuery(root: NotepadRoot, path: string | undefined) {
   const system = useSystem();
   return useQuery({
     queryKey: ["notes", "file", root, path],
-    queryFn: () => readFile(system.http, root, path!),
+    queryFn: () => {
+      if (path === undefined) throw new Error("there is no note to read");
+      return readFile(system.http, root, path);
+    },
     enabled: !!path,
     // Re-read whenever the editor mounts. That does not catch a change made
     // while it is open: the shared client never refetches on focus, and "focus"
@@ -59,7 +62,7 @@ export function useCreateFileMutation() {
     mutationFn: ({ root, path, content }: { root: NotepadRoot; path: string; content?: string }) =>
       createFile(system.http, root, path, content),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["notes", "list"] });
     },
   });
 }
@@ -90,7 +93,7 @@ export function useDeleteFileMutation() {
   return useMutation({
     mutationFn: ({ root, path }: { root: NotepadRoot; path: string }) => deleteFile(system.http, root, path),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["notes", "list"] });
     },
   });
 }
@@ -100,7 +103,7 @@ export function useCreateDirectoryMutation() {
   return useMutation({
     mutationFn: ({ root, path }: { root: NotepadRoot; path: string }) => createDirectory(system.http, root, path),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["notes", "list"] });
     },
   });
 }
@@ -110,7 +113,7 @@ export function useDeleteDirectoryMutation() {
   return useMutation({
     mutationFn: ({ root, path }: { root: NotepadRoot; path: string }) => deleteDirectory(system.http, root, path),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["notes", "list"] });
     },
   });
 }

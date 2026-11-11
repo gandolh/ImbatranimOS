@@ -2,18 +2,19 @@ import { IsBase64, IsEnum, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength
 
 /**
  * Methods the proxy will relay. Kept to the common verbs a REST client needs;
- * an enum (not a free string) so the ValidationPipe rejects anything exotic
+ * a closed set (not a free string) so the ValidationPipe rejects anything exotic
  * (`CONNECT`, `TRACE`, made-up verbs) before it reaches the service.
  */
-export enum HttpProxyMethod {
-  GET = "GET",
-  HEAD = "HEAD",
-  POST = "POST",
-  PUT = "PUT",
-  PATCH = "PATCH",
-  DELETE = "DELETE",
-  OPTIONS = "OPTIONS",
-}
+export const HttpProxyMethod = {
+  GET: "GET",
+  HEAD: "HEAD",
+  POST: "POST",
+  PUT: "PUT",
+  PATCH: "PATCH",
+  DELETE: "DELETE",
+  OPTIONS: "OPTIONS",
+} as const;
+export type HttpProxyMethod = (typeof HttpProxyMethod)[keyof typeof HttpProxyMethod];
 
 /**
  * POST /api/http/request body. The URL is only shape-checked here (non-empty

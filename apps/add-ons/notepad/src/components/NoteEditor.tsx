@@ -451,7 +451,7 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
     try {
       const bytes = await system.fs.read(choice.root, choice.path);
       const chosenName = fileName(choice.path);
-      const extension = chosenName.includes(".") ? chosenName.split(".").pop()! : "png";
+      const extension = chosenName.includes(".") ? (chosenName.split(".").pop() ?? "png") : "png";
       await attachImageBytes(bytes, chosenName, `image/${extension === "jpg" ? "jpeg" : extension}`);
     } finally {
       setImageBusy(false);
@@ -618,7 +618,7 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
             size="sm"
             className="flex h-6 items-center gap-1 px-2"
             disabled={!dirty || updateMutation.isPending}
-            onClick={save}
+            onClick={() => void save()}
           >
             {updateMutation.isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
             Save

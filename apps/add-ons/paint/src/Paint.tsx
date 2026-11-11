@@ -1,3 +1,4 @@
+import { required } from "./lib/required";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Brush,
@@ -109,18 +110,22 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
   const { openFile, saveFile } = useFileDialog();
   const { confirm, confirmDialog } = useConfirm();
 
-  const ctx = () => canvasRef.current!.getContext("2d", { willReadFrequently: true })!;
+  const ctx = () =>
+    required(
+      required(canvasRef.current, "the canvas").getContext("2d", { willReadFrequently: true }),
+      "the 2d context",
+    );
 
   const syncUndoFlags = () => setUndoFlags({ undo: canUndo(undoRef.current), redo: canRedo(undoRef.current) });
 
   const snapshot = useCallback(() => {
-    const c = canvasRef.current!;
+    const c = required(canvasRef.current, "the canvas");
     undoRef.current = pushUndo(undoRef.current, ctx().getImageData(0, 0, c.width, c.height));
     setUndoFlags({ undo: canUndo(undoRef.current), redo: canRedo(undoRef.current) });
   }, []);
 
   const blank = useCallback((width: number, height: number) => {
-    const c = canvasRef.current!;
+    const c = required(canvasRef.current, "the canvas");
     c.width = width;
     c.height = height;
     const g = ctx();
@@ -192,7 +197,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
   }, [system]);
 
   const point = (e: { clientX: number; clientY: number }) => {
-    const rect = canvasRef.current!.getBoundingClientRect();
+    const rect = required(canvasRef.current, "the canvas").getBoundingClientRect();
     return canvasPoint(e.clientX, e.clientY, rect, dims.width, dims.height);
   };
 
@@ -205,12 +210,12 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
   };
 
   const clearOverlay = () => {
-    const o = overlayRef.current!;
-    o.getContext("2d")!.clearRect(0, 0, o.width, o.height);
+    const o = required(overlayRef.current, "the overlay");
+    required(o.getContext("2d"), "the 2d context").clearRect(0, 0, o.width, o.height);
   };
 
   const drawShapePreview = (g: CanvasRenderingContext2D, x: number, y: number) => {
-    const d = dragRef.current!;
+    const d = required(dragRef.current, "the drag");
     strokeStyle(g);
     g.beginPath();
     if (tool === "line") {
@@ -252,7 +257,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
     }
     if (tool === "fill") {
       snapshot();
-      const c = canvasRef.current!;
+      const c = required(canvasRef.current, "the canvas");
       const image = ctx().getImageData(0, 0, c.width, c.height);
       if (floodFill(image, x, y, hexToRgba(color))) {
         ctx().putImageData(image, 0, 0);
@@ -306,7 +311,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
     }
     // Shape/selection preview on the overlay.
     clearOverlay();
-    drawShapePreview(overlayRef.current!.getContext("2d")!, x, y);
+    drawShapePreview(required(required(overlayRef.current, "the overlay").getContext("2d"), "the 2d context"), x, y);
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
@@ -325,7 +330,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
       clearOverlay();
       const r = dragRect(d.startX, d.startY, x, y, dims.width, dims.height);
       // Keep the marquee visible on the overlay while the selection stands.
-      const g = overlayRef.current!.getContext("2d")!;
+      const g = required(required(overlayRef.current, "the overlay").getContext("2d"), "the 2d context");
       g.setLineDash([4, 3]);
       g.strokeStyle = "#000000";
       g.strokeRect(r.x + 0.5, r.y + 0.5, r.width, r.height);
@@ -352,7 +357,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
     if (!isCroppable(selection)) return;
     snapshot();
     const image = ctx().getImageData(selection.x, selection.y, selection.width, selection.height);
-    const c = canvasRef.current!;
+    const c = required(canvasRef.current, "the canvas");
     c.width = selection.width;
     c.height = selection.height;
     ctx().putImageData(image, 0, 0);
@@ -363,7 +368,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
   };
 
   const applyUndo = useCallback((direction: "undo" | "redo") => {
-    const c = canvasRef.current!;
+    const c = required(canvasRef.current, "the canvas");
     const present = ctx().getImageData(0, 0, c.width, c.height);
     const result = direction === "undo" ? undoStack(undoRef.current, present) : redoStack(undoRef.current, present);
     if (!result) return;
@@ -382,7 +387,11 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
   const toBlob = (): Promise<Blob> =>
     new Promise((resolve, reject) => {
       const fmt = formatFor(doc?.path ?? ".png");
-      canvasRef.current!.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), fmt.mime, fmt.quality);
+      required(canvasRef.current, "the canvas").toBlob(
+        (b) => (b ? resolve(b) : reject(new Error("encode failed"))),
+        fmt.mime,
+        fmt.quality,
+      );
     });
 
   const saveTo = useCallback(

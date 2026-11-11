@@ -9,7 +9,7 @@ function makeFakePty() {
     exit: ((e: { exitCode: number; signal?: number }) => void)[];
   } = { data: [], exit: [] };
   const disposed = { data: false, exit: false };
-  const pty: PtyLike & {
+  const pty: Omit<PtyLike, "write" | "resize" | "kill" | "pause" | "resume"> & {
     emitData(d: string): void;
     emitExit(code: number): void;
     write: jest.Mock;
@@ -38,8 +38,8 @@ function makeFakePty() {
 }
 
 function makeFakeSocket() {
-  const handlers: Record<string, ((...a: any[]) => void)[]> = {};
-  const socket: SocketLike & {
+  const handlers: Record<string, ((...a: unknown[]) => void)[]> = {};
+  const socket: Omit<SocketLike, "send" | "close"> & {
     bufferedAmount: number;
     readyState: number;
     send: jest.Mock;

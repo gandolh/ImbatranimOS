@@ -106,7 +106,7 @@ export function useCreateDirectoryMutation(root: string, path: string) {
       return createDirectory(http, root, fullPath);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: fsListKey(root, path) });
+      void qc.invalidateQueries({ queryKey: fsListKey(root, path) });
     },
   });
 }
@@ -117,8 +117,8 @@ export function useDeleteEntryMutation(root: string, currentPath: string) {
   return useMutation({
     mutationFn: ({ path, toTrash }: { path: string; toTrash: boolean }) => deleteEntry(http, root, path, toTrash),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
-      qc.invalidateQueries({ queryKey: ["trash"] });
+      void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
+      void qc.invalidateQueries({ queryKey: ["trash"] });
     },
   });
 }
@@ -136,8 +136,8 @@ export function useRestoreTrashMutation(root: string, currentPath: string) {
   return useMutation({
     mutationFn: (id: string) => restoreFromTrash(http, id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: trashKey });
-      qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
+      void qc.invalidateQueries({ queryKey: trashKey });
+      void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
     },
   });
 }
@@ -170,9 +170,9 @@ export function useMoveEntryMutation(root: string, currentPath: string) {
       // destination gains it. Invalidating only the current dir left the SOURCE
       // listing stale for its whole cache lifetime after a cut/paste across dirs
       // (M3), so invalidate both endpoints' dirs as well.
-      qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
-      qc.invalidateQueries({ queryKey: fsListKey(root, dirOf(from)) });
-      qc.invalidateQueries({ queryKey: fsListKey(root, dirOf(to)) });
+      void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
+      void qc.invalidateQueries({ queryKey: fsListKey(root, dirOf(from)) });
+      void qc.invalidateQueries({ queryKey: fsListKey(root, dirOf(to)) });
     },
   });
 }
@@ -183,7 +183,7 @@ export function useCopyEntryMutation(root: string, currentPath: string) {
   return useMutation({
     mutationFn: ({ from, to }: { from: string; to: string }) => copyEntry(http, root, from, to),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
+      void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
     },
   });
 }
@@ -194,7 +194,7 @@ export function useWriteContentMutation(root: string, currentPath: string) {
   return useMutation({
     mutationFn: ({ path, content }: { path: string; content: string }) => writeContent(http, root, path, content),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
+      void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
     },
   });
 }
@@ -205,7 +205,7 @@ export function useUploadFileMutation(root: string, currentPath: string) {
   return useMutation({
     mutationFn: ({ path, file }: { path: string; file: File }) => uploadFile(http, root, path, file),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
+      void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
     },
   });
 }

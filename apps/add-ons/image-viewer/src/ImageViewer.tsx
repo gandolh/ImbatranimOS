@@ -108,7 +108,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
   useEffect(() => {
     if (!source) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const dir = parentDir(source.path);
         const entries = await listDir(system.http, source.root, dir);

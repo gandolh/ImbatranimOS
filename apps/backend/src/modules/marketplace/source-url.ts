@@ -1,3 +1,4 @@
+import { required } from "../../lib/required";
 import { createHash } from "crypto";
 
 /**
@@ -96,7 +97,7 @@ export function parseSourceUrl(input: string, options: { allowLocalRepos: boolea
   }
 
   // The path as typed: everything after the authority, up to `?` or `#`.
-  const rawPath = /^[a-z][a-z0-9+.-]*:\/\/[^/?#]*([^?#]*)/i.exec(withScheme)![1];
+  const rawPath = required(/^[a-z][a-z0-9+.-]*:\/\/[^/?#]*([^?#]*)/i.exec(withScheme), "the URL")[1];
   const segments = rawPath.split("/").slice(1);
   if (segments.length > 0 && segments[segments.length - 1] === "") {
     segments.pop();

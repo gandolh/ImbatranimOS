@@ -1,3 +1,4 @@
+import { required } from "../../shared/lib/required";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CircleCheck, Download, RefreshCw } from "lucide-react";
@@ -263,7 +264,7 @@ export function UpdatesSettings() {
           offer={data.update}
           action="Update"
           disabled={running}
-          onTake={() => void take("update", data.update!)}
+          onTake={() => void take("update", required(data.update, "the update"))}
         />
       )}
       {data.upgrade && (
@@ -272,7 +273,7 @@ export function UpdatesSettings() {
           offer={data.upgrade}
           action="Upgrade"
           disabled={running}
-          onTake={() => void take("upgrade", data.upgrade!)}
+          onTake={() => void take("upgrade", required(data.upgrade, "the upgrade"))}
         />
       )}
 
@@ -307,7 +308,7 @@ export function UpdatesSettings() {
             The release before, {releaseName(data.previous.release)}, {buildName(data.previous)}, is still on disk with
             its apps.
           </p>
-          <Button size="sm" disabled={running} onClick={() => void goBack(data.previous!)}>
+          <Button size="sm" disabled={running} onClick={() => void goBack(required(data.previous, "the previous pin"))}>
             Go back
           </Button>
         </div>

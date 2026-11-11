@@ -585,7 +585,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (files && files.length > 0) {
-      handleUploadFiles(Array.from(files));
+      void handleUploadFiles(Array.from(files));
       e.target.value = "";
     }
   }
@@ -649,8 +649,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         onProperties: (entry) => setPropsEntry(entry),
         onNewOfficeFile: handleNewOfficeFile,
         onUpload: openFilePicker,
-        onPaste: clipboard.paste,
-        onRefresh: () => (inArchive ? archiveQuery.refetch() : dirQuery.refetch()),
+        onPaste: () => void clipboard.paste(),
+        onRefresh: () => void (inArchive ? archiveQuery.refetch() : dirQuery.refetch()),
         inArchive,
         onExtractAll: () => extractFromView(null),
         onExtract: (entry) => (inArchive ? extractFromView(entry) : askExtract(entry.path, entry.name, "everything")),
@@ -1022,7 +1022,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           variant="ghost"
           size="sm"
           className="h-5 w-5 p-0"
-          onClick={() => (inArchive ? archiveQuery.refetch() : dirQuery.refetch())}
+          onClick={() => void (inArchive ? archiveQuery.refetch() : dirQuery.refetch())}
         >
           <RefreshCw
             size={12}
@@ -1210,7 +1210,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             containerRef={resultsRef}
           />
         ) : (
-          <UploadDropzone onFiles={handleUploadFiles} className="min-w-0 flex-1 overflow-hidden">
+          <UploadDropzone onFiles={(files) => void handleUploadFiles(files)} className="min-w-0 flex-1 overflow-hidden">
             {/* The scroll area is a size container so the listing below can be
                 exactly as tall as the pane (100cqh). `min-h-full` can't do it:
                 the scroll content around the listing has no definite height,
@@ -1449,7 +1449,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         }
         confirmLabel={deleteFlow.willTrash ? "Move to Trash" : "Delete permanently"}
         destructive
-        onConfirm={deleteFlow.confirm}
+        onConfirm={() => void deleteFlow.confirm()}
         onCancel={deleteFlow.cancel}
       />
     </div>

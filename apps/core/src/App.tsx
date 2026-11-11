@@ -20,7 +20,7 @@ import { FilePortalHost } from "./system/filePortal";
 import { OldDataNoticeHost } from "./shared/components/OldDataNotice";
 import { loadMarketplace } from "./shared/registry/marketplace";
 
-export default function App() {
+export function App() {
   const wallpaper = useCurrentWallpaper();
   const theme = useAppearanceStore((s) => s.theme);
   const mode = useAppearanceStore((s) => s.mode);

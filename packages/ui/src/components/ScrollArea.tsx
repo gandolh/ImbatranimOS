@@ -1,5 +1,5 @@
 import { ScrollArea as BaseScrollArea } from "@base-ui/react/scroll-area";
-import { type ReactNode, type Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import { cn } from "../cn";
 
 type ScrollAreaProps = {

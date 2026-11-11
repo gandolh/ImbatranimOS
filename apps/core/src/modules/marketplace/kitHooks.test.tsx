@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import {
   SHARED_KIT_VERSION,
   useSystem,
@@ -121,7 +121,7 @@ function source(group: string): CommandSource & { activated: CommandItem[] } {
 
 let container: HTMLDivElement;
 let root: Root;
-let consoleError: typeof console.error;
+let consoleError: MockInstance<typeof console.error>;
 
 /** Sync the registry the way a listing does, then let the idle load run. */
 async function sync(apps: MarketplaceApp[]): Promise<void> {
@@ -146,11 +146,10 @@ const notices = () => useNotificationStore.getState().notifications;
 const results = async (group: string) => (await searchAllSources("tick")).filter((i) => i.group === group);
 
 beforeAll(() => {
-  consoleError = console.error;
-  console.error = () => {};
+  consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 });
 afterAll(() => {
-  console.error = consoleError;
+  consoleError.mockRestore();
 });
 
 beforeEach(async () => {
@@ -169,6 +168,8 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await sync([]);
+  // The hook waits for the registry to empty before the next test starts, so its `expect` is a retried wait.
+  // eslint-disable-next-line vitest/no-standalone-expect
   await until(() => expect(groups()).not.toContain("Ticker"));
   act(() => root.unmount());
   container.remove();

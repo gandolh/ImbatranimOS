@@ -1,3 +1,4 @@
+import { required } from "../../shared/lib/required";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Select, desktopSessionId, useConfirm } from "@imbatranim/ui";
@@ -242,9 +243,9 @@ export function LinuxAppsSettings() {
       {error && <p className="text-error text-[12px]">{error}</p>}
 
       {/* The current or last job; an update's is shown under Updates. */}
-      {running && UPDATE_ACTIONS.has(job.data!.action) && (
+      {running && UPDATE_ACTIONS.has(required(job.data, "the job").action) && (
         <p className="text-on-surface-variant text-[12px]" data-linux-job="update">
-          {job.data!.action === "check"
+          {required(job.data, "the job").action === "check"
             ? "Checking for updates. Installs and removals wait a moment."
             : "Linux apps are being updated (see Updates below). Installs and removals wait until it finishes."}
         </p>

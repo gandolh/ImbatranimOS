@@ -198,9 +198,10 @@ export class DbusConnection {
 
   private dispatch(m: Message): void {
     if (m.type === MessageType.MethodReturn || m.type === MessageType.Error) {
-      const waiting = m.replySerial !== undefined ? this.pending.get(m.replySerial) : undefined;
-      if (!waiting) return;
-      this.pending.delete(m.replySerial!);
+      const serial = m.replySerial;
+      const waiting = serial !== undefined ? this.pending.get(serial) : undefined;
+      if (serial === undefined || !waiting) return;
+      this.pending.delete(serial);
       clearTimeout(waiting.timer);
       if (m.type === MessageType.Error) {
         waiting.reject(

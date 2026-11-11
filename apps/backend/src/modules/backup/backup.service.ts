@@ -223,7 +223,7 @@ export class BackupService {
       this.freeBytes(),
       this.excludePatterns(),
     ]);
-    let databaseBytes = 0;
+    let databaseBytes: number;
     try {
       databaseBytes = (await fs.stat(this.db.path())).size;
     } catch {

@@ -1050,7 +1050,10 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
         if (state.windows.some((w) => w.id === id)) zFor.set(id, z++);
       }
       return {
-        windows: state.windows.map((w) => (zFor.has(w.id) ? { ...w, isVisible: true, zIndex: zFor.get(w.id)! } : w)),
+        windows: state.windows.map((w) => {
+          const zIndex = zFor.get(w.id);
+          return zIndex === undefined ? w : { ...w, isVisible: true, zIndex };
+        }),
         nextZIndex: z,
         showDesktopStash: { ...state.showDesktopStash, [ws]: [] },
       };

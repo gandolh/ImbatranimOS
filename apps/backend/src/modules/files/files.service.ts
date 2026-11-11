@@ -1,3 +1,4 @@
+import { required } from "../../lib/required";
 import {
   ConflictException,
   Injectable,
@@ -461,7 +462,7 @@ export class FilesService {
     // folder itself: never a file where the folder goes, nor the folders
     // above it.
     if (adds === "folder" || (adds === "file" && folders.length > 1)) {
-      throw addOnlyRefusal(who!, { root, path: virtualPath });
+      throw addOnlyRefusal(required(who, "the app"), { root, path: virtualPath });
     }
     // Given the file (or a folder above it), the folders typed with it come
     // with it. Otherwise the app may make the outermost folder in its own
@@ -1014,7 +1015,7 @@ export class FilesService {
       // Given `assets/` to add files to, an app may make the folder itself,
       // never one inside it.
       if (this.addOnly(who, keyOf(folder)) === "file") {
-        throw addOnlyRefusal(who!, { root, path: virtualPath });
+        throw addOnlyRefusal(required(who, "the app"), { root, path: virtualPath });
       }
     }
     if (folders.length === 0) {
@@ -1032,7 +1033,7 @@ export class FilesService {
     // A move carries what it is, its owner included, so nothing moves into
     // a folder an app may only add new files to: the app would own it.
     if (this.addOnly(who, keyTo) !== null) {
-      throw addOnlyRefusal(who!, { root, path: to });
+      throw addOnlyRefusal(required(who, "the app"), { root, path: to });
     }
     if (!(await this.exists(absFrom))) throw new NotFoundException("Source not found");
     // Moving a directory into itself (a → a/b) is a raw EINVAL 500; reject it.
@@ -1065,7 +1066,7 @@ export class FilesService {
       adds === "folder" ||
       (adds === "file" && (source?.isDirectory() || (await this.missingFolders(dirname(absTo))).length > 1))
     ) {
-      throw addOnlyRefusal(who!, { root, path: to });
+      throw addOnlyRefusal(required(who, "the app"), { root, path: to });
     }
     if (!(await this.exists(absFrom))) throw new NotFoundException("Source not found");
     // Copying a directory into itself (a → a/b) recurses / EINVALs into a 500.

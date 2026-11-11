@@ -461,7 +461,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       );
     `);
 
-    // Todo lists: one level deep, deliberately — arbitrary nesting
+    // The lists of todos are one level deep, deliberately — arbitrary nesting
     // turns a task list into an outliner. A todo with list_id NULL is unfiled and
     // shows under "All".
     this.db.exec(`

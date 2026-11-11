@@ -1,3 +1,4 @@
+import { required } from "../../lib/required";
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { spawn } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
@@ -112,9 +113,10 @@ export class SessionBusService implements OnModuleInit {
       });
       child.once("spawn", () => {
         // Its group sleeps under the cover screen and ends with the session.
-        this.apps.record(session, child.pid!);
+        const pid = required(child.pid, "the session bus's pid");
+        this.apps.record(session, pid);
         child.once("exit", () => {
-          this.apps.exited(session, child.pid!);
+          this.apps.exited(session, pid);
           done(false);
         });
       });

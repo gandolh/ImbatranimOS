@@ -5,7 +5,7 @@ import * as http from "http";
 import type { AddressInfo } from "net";
 import * as os from "os";
 import { join } from "path";
-import { ConfigService } from "@nestjs/config";
+import type { ConfigService } from "@nestjs/config";
 import type { Response } from "express";
 import { FilesService } from "../files/files.service";
 import { ArchiveService } from "../archive/archive.service";

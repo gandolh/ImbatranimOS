@@ -48,7 +48,10 @@ export function MediaPlayer({ windowId: _windowId }: { windowId: string }) {
 
   const folderQuery = useQuery({
     queryKey: ["media-player", "folder", source?.root, source?.path],
-    queryFn: () => listFolder(system.http, source!.root, source!.path),
+    queryFn: () => {
+      if (!source) throw new Error("there is no folder to list");
+      return listFolder(system.http, source.root, source.path);
+    },
     enabled: !!source,
   });
   // Memoised so the `??` fallbacks do not mint a new array on every render and restart the

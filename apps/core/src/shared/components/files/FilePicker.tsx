@@ -347,7 +347,7 @@ export function FilePicker({
               aria-label="File name"
               onChange={(ev) => setName(ev.target.value)}
             />
-            <Button size="sm" variant="primary" disabled={!name.trim()} onClick={handleSave}>
+            <Button size="sm" variant="primary" disabled={!name.trim()} onClick={() => void handleSave()}>
               Save
             </Button>
           </>

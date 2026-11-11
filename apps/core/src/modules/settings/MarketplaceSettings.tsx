@@ -1,3 +1,4 @@
+import { required } from "../../shared/lib/required";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Checkbox, SHARED_KIT_VERSION, cn, useConfirm } from "@imbatranim/ui";
@@ -235,7 +236,7 @@ export function MarketplaceSettings({
   const uninstallRetired = async (p: Problem) => {
     removeData.current = false;
     const ok = await confirm({
-      title: `Uninstall ${p.retired!.name}?`,
+      title: `Uninstall ${required(p.retired, "the retired app").name}?`,
       message: (
         <>
           This OS no longer runs prebuilt apps from a URL. Its downloaded files are deleted. Its settings and data stay
@@ -324,7 +325,7 @@ export function MarketplaceSettings({
           const clashing = (a: MarketplaceApp) => clashes.includes(a.id);
           const canOpen = (a: MarketplaceApp) => !!a.installed && !a.installed.missing && !working && !clashing(a);
           let state: string;
-          if (working) state = JOB_LABEL[app.job!.state];
+          if (working) state = JOB_LABEL[required(app.job, "the job").state];
           else if (app.job?.state === "failed") state = `${JOB_LABEL.failed}: ${app.job.reason ?? ""}`;
           else if (rebuild)
             state = `Built for shared kit ${kitMismatch}; a rebuild for kit ${SHARED_KIT_VERSION} is available`;
@@ -379,7 +380,7 @@ export function MarketplaceSettings({
                   </span>
                   {nativeUrl && (
                     <span className="text-on-surface-variant/80 block truncate text-[10px]">
-                      {sourceLine(app.source!)}
+                      {sourceLine(required(app.source, "the source"))}
                     </span>
                   )}
                 </span>
@@ -492,7 +493,7 @@ export function MarketplaceSettings({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="font-ui text-on-surface block truncate text-[13px] font-medium">
-                    {p.retired!.name}
+                    {required(p.retired, "the retired app").name}
                     <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
                       From a URL
                     </span>
@@ -501,9 +502,9 @@ export function MarketplaceSettings({
                   <span className="text-on-surface-variant block truncate text-[11px]">
                     A prebuilt app, which this OS no longer runs. Uninstall it.
                   </span>
-                  {p.retired!.source && (
+                  {p.retired?.source && (
                     <span className="text-on-surface-variant/80 block truncate text-[10px]">
-                      {sourceLine(p.retired!.source)}
+                      {sourceLine(p.retired.source)}
                     </span>
                   )}
                 </span>
@@ -528,7 +529,7 @@ export function MarketplaceSettings({
                 <span className="min-w-0 flex-1">
                   <code>{p.file}</code>: {p.problem}
                 </span>
-                <Button size="sm" variant="ghost" onClick={() => void uninstallBroken(p.appId!)}>
+                <Button size="sm" variant="ghost" onClick={() => void uninstallBroken(required(p.appId, "the app id"))}>
                   Uninstall
                 </Button>
               </li>

@@ -1,5 +1,5 @@
 import { Select as BaseSelect } from "@base-ui/react/select";
-import { type ComponentProps } from "react";
+import type { ComponentProps } from "react";
 import { cn } from "../cn";
 
 type SelectRootProps = ComponentProps<typeof BaseSelect.Root>;

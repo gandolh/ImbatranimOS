@@ -1,4 +1,4 @@
-import { type ComponentType, type LazyExoticComponent } from "react";
+import type { ComponentType, LazyExoticComponent } from "react";
 import type { CommandSource } from "./shared/commands/CommandSourcesRegistry";
 
 /**

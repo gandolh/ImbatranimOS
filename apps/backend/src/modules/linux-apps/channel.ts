@@ -98,7 +98,7 @@ export async function downloadSnapshotIndex(pin: Pin, dir: string, download: Dow
     await fs.rename(tmp, join(dir, "packages.json.br"));
   } catch (err) {
     await fs.rm(tmp, { force: true });
-    throw new Error(`${pin.snapshot}'s package list: ${(err as Error).message}`);
+    throw new Error(`${pin.snapshot}'s package list: ${(err as Error).message}`, { cause: err });
   }
   await fs.writeFile(join(dir, "git-revision"), pin.commit + "\n");
 }

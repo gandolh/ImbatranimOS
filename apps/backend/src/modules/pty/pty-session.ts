@@ -32,7 +32,7 @@ export interface SocketLike {
   readonly readyState: number;
   send(data: string): void;
   close(code?: number, reason?: string): void;
-  on(event: string, cb: (...args: any[]) => void): void;
+  on(event: string, cb: (...args: unknown[]) => void): void;
 }
 
 /** WebSocket.OPEN — inlined so tests need no `ws` import. */

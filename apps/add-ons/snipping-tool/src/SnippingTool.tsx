@@ -186,7 +186,7 @@ export function SnippingTool({ windowId: _windowId }: { windowId: string }) {
 
   let content: React.ReactNode = null;
   if (phase === "selecting") {
-    content = <CaptureOverlay onSelect={capture} onCancel={backToLauncher} />;
+    content = <CaptureOverlay onSelect={(sel) => void capture(sel)} onCancel={backToLauncher} />;
   } else if (phase === "counting") {
     content = <CountdownOverlay remaining={remaining} />;
   } else if (phase === "capturing") {

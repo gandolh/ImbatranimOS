@@ -363,7 +363,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
           <div className="mt-1 flex items-center justify-between">
             <div>
               {editing && (
-                <Button variant="destructive" size="sm" onClick={handleDelete}>
+                <Button variant="destructive" size="sm" onClick={() => void handleDelete()}>
                   Delete
                 </Button>
               )}

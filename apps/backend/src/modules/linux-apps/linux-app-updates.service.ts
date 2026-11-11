@@ -1,3 +1,4 @@
+import { required } from "../../lib/required";
 import { ConflictException, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { execFile } from "child_process";
 import { existsSync } from "fs";
@@ -117,7 +118,7 @@ export class LinuxAppUpdatesService implements OnModuleInit {
 
   /** Whether Go back can return to `prev`: its apps are on disk, and the image's pin isn't newer. */
   private async restorable(pins: PinsNow, prev: KeptPin): Promise<boolean> {
-    const p = this.paths!;
+    const p = required(this.paths, "the Linux apps paths");
     const image = pins.image;
     if (image && prev.commit !== image.commit && compareSnapshots(prev.snapshot, image.snapshot) < 0) return false;
     return prev.generation === null || hasGeneration(p.profile, prev.generation);
@@ -206,7 +207,7 @@ export class LinuxAppUpdatesService implements OnModuleInit {
         release = nextRelease(release);
       }
       for (const pin of [update, upgrade]) if (pin) await this.fetchList(steps, pin);
-      const state = (await this.apps.pins())!.state;
+      const state = required(await this.apps.pins(), "the pins").state;
       await writePinState(pinStateFile(p), {
         ...state,
         checkedAt: Date.now(),
@@ -219,7 +220,7 @@ export class LinuxAppUpdatesService implements OnModuleInit {
 
   /** A pin's package list, unless the machine has it already. */
   private async fetchList(steps: JobSteps, pin: Pin): Promise<void> {
-    const dir = pinIndexDir(this.paths!, pin.commit);
+    const dir = pinIndexDir(required(this.paths, "the Linux apps paths"), pin.commit);
     if (!existsSync(join(dir, "packages.json.br"))) {
       steps.phase(`Getting ${pin.snapshot}'s package list`);
       await downloadSnapshotIndex(pin, dir, this.download);
@@ -229,7 +230,7 @@ export class LinuxAppUpdatesService implements OnModuleInit {
 
   /** The pin being left, with the generations that hold its apps. */
   private async keep(pin: Pin): Promise<KeptPin> {
-    const p = this.paths!;
+    const p = required(this.paths, "the Linux apps paths");
     return {
       ...view(pin),
       generation: (await currentGeneration(p.profile))?.current ?? null,
@@ -246,7 +247,7 @@ export class LinuxAppUpdatesService implements OnModuleInit {
 
   /** After a failed move: the registry and the profiles as they were. */
   private async undo(steps: JobSteps, leaving: KeptPin, image: Pin | null): Promise<void> {
-    const p = this.paths!;
+    const p = required(this.paths, "the Linux apps paths");
     steps.phase("Putting things back as they were");
     try {
       await this.pointAt(steps, leaving, image);
@@ -301,7 +302,7 @@ export class LinuxAppUpdatesService implements OnModuleInit {
           );
           const args = ["profile", "upgrade"];
           // Unfree packages need the environment's permission, read only when impure.
-          if (moving.some((a) => rows.get(a.attr)![4] === 1)) args.push("--impure");
+          if (moving.some((a) => required(rows.get(a.attr), a.attr)[4] === 1)) args.push("--impure");
           await steps.run("nix", [...args, ...moving.map((a) => a.name)]);
         }
         if (existsSync(xwaylandBinary(p))) {
@@ -313,7 +314,7 @@ export class LinuxAppUpdatesService implements OnModuleInit {
         throw err;
       }
       // Recorded before the clean-up, so a failed clean-up leaves the move standing.
-      const state = (await this.apps.pins())!.state;
+      const state = required(await this.apps.pins(), "the pins").state;
       await writePinState(pinStateFile(p), {
         ...state,
         current: view(target),
@@ -367,7 +368,7 @@ export class LinuxAppUpdatesService implements OnModuleInit {
         await this.undo(steps, leaving, pins.image);
         throw err;
       }
-      const state = (await this.apps.pins())!.state;
+      const state = required(await this.apps.pins(), "the pins").state;
       await writePinState(pinStateFile(p), {
         ...state,
         current: prev.commit === pins.image?.commit ? null : view(prev),

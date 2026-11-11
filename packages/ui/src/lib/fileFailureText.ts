@@ -77,6 +77,8 @@ export function describeFileFailure(action: "open" | "save", err: unknown, noun:
     case 503:
       // Disk-full arrives here with a message worth reading verbatim.
       return fromServer ?? `The OS could not ${action} this ${noun} right now.`;
+    default:
+      break;
   }
 
   if (fromServer) return fromServer;

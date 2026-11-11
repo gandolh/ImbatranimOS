@@ -5,7 +5,7 @@ import * as fs from "fs/promises";
 import * as os from "os";
 import { join } from "path";
 import { BadRequestException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+import type { ConfigService } from "@nestjs/config";
 import Database from "better-sqlite3";
 import { FilesService } from "../files/files.service";
 import { ArchiveService } from "../archive/archive.service";

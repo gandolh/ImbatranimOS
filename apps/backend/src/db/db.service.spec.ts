@@ -1,4 +1,4 @@
-import { ConfigService } from "@nestjs/config";
+import type { ConfigService } from "@nestjs/config";
 import Database from "better-sqlite3";
 import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
@@ -275,12 +275,11 @@ describe("DbService — a database that will not open", () => {
     const path = join(dir, "corrupt.sqlite");
     writeFileSync(path, Buffer.alloc(8192, 7));
     const svc = new DbService(configFor(path));
-    const error = console.error;
-    console.error = () => undefined;
+    const error = jest.spyOn(console, "error").mockImplementation(() => undefined);
     try {
       expect(() => svc.onModuleInit()).not.toThrow();
     } finally {
-      console.error = error;
+      error.mockRestore();
     }
     expect(svc.migrationFailure).toMatch(/could not be opened/);
     const guard = new StorageHealthGuard(svc);

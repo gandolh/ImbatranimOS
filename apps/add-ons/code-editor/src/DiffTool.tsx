@@ -131,9 +131,7 @@ export function DiffTool({ windowId: _windowId }: { windowId: string }) {
     consumedRef.current = true;
     const intent = system.intents.consume<DiffIntent>();
     // Draining a one-shot intent IS the "sync from an external system" an
-    // effect is for, and it runs at most once (ref-guarded). Same scoped
-    // disable Notepad and the file manager use for the identical drain.
-    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    // effect is for, and it runs at most once (ref-guarded).
     if (intent?.leftText !== undefined) {
       // A literal side: nothing to fetch, nothing to record as a recent. Same
       // one-shot drain as below, so the same scoped disable applies.

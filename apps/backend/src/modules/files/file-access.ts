@@ -1,3 +1,4 @@
+import { required } from "../../lib/required";
 import { ForbiddenException, Injectable } from "@nestjs/common";
 
 import type { AppIdentity } from "../app-identity/app-identity.types";
@@ -56,7 +57,7 @@ export class FileAccess {
   assert(app: AppIdentity | null, op: ModeOp, key: string, shown: Shown): Access {
     const access = this.how(app, op, key);
     if (access !== null) return access;
-    throw refusal(app!, op, shown);
+    throw refusal(required(app, "the app"), op, shown);
   }
 
   /**

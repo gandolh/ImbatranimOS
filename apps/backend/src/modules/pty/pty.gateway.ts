@@ -1,3 +1,4 @@
+import { required } from "../../lib/required";
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
@@ -136,7 +137,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         }
 
         socket.off("error", onSocketError);
-        this.wss!.handleUpgrade(req, socket, head, (ws) => {
+        required(this.wss, "the relay server").handleUpgrade(req, socket, head, (ws) => {
           this.onConnection(ws, req);
         });
       })();

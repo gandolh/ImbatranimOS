@@ -49,9 +49,9 @@ export function Desktop({ wallpaper }: DesktopProps) {
   // roster change cannot remount an unrelated layer.
   const desktopLayers = useMemo(
     () =>
-      enabledApps
-        .filter((app) => app.desktopLayer !== undefined)
-        .map((app) => ({ id: app.id, name: app.name, Layer: app.desktopLayer! })),
+      enabledApps.flatMap((app) =>
+        app.desktopLayer === undefined ? [] : [{ id: app.id, name: app.name, Layer: app.desktopLayer }],
+      ),
     [enabledApps],
   );
   // A primitive, not an array: `useEnabledApps()` returns a fresh array on every

@@ -1,6 +1,6 @@
 {
   "name": "imbatranimos",
-  "version": "1.300.0",
+  "version": "1.301.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "packageManager": "npm@11.19.1",
@@ -19,7 +19,7 @@
     "build": "turbo build",
     "dev": "node scripts/dev.mjs",
     "dev:local": "turbo dev",
-    "lint": "turbo lint",
+    "lint": "eslint .",
     "test": "turbo test test:e2e --concurrency=50%",
     "typecheck": "turbo typecheck",
     "format": "prettier --write .",

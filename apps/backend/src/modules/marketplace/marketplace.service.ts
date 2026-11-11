@@ -1,3 +1,4 @@
+import { required } from "../../lib/required";
 import {
   ConflictException,
   InternalServerErrorException,
@@ -476,7 +477,14 @@ export class MarketplaceService implements OnModuleInit {
           }),
           missing:
             built === undefined ||
-            !(await exists(join(this.buildDir(d.id, row.build_id), row.root, recorded!.output, built.entry))),
+            !(await exists(
+              join(
+                this.buildDir(d.id, row.build_id),
+                row.root,
+                required(recorded, "the recorded build").output,
+                built.entry,
+              ),
+            )),
         };
       }
       out.push({
@@ -733,9 +741,9 @@ export class MarketplaceService implements OnModuleInit {
 
   private async build(id: string, target: BuildTarget, job: Job): Promise<void> {
     const url = target.kind === "url" ? target : null;
-    const repo = url ? url.source.repo : target.d!.source.repo;
-    const commit = url ? url.source.commit : target.d!.source.ref;
-    const subdir = url ? url.source.subdir : target.d!.source.subdir;
+    const repo = url ? url.source.repo : required(target.d, "the descriptor").source.repo;
+    const commit = url ? url.source.commit : required(target.d, "the descriptor").source.ref;
+    const subdir = url ? url.source.subdir : required(target.d, "the descriptor").source.subdir;
     const buildId = url?.fetched?.buildId ?? `${commit.slice(0, 12)}-${randomBytes(4).toString("hex")}`;
     const dir = this.buildDir(id, buildId);
     const log: string[] = [];
@@ -791,7 +799,7 @@ export class MarketplaceService implements OnModuleInit {
     // ── a URL app's descriptor is its imbatranim.json at this commit ──
     let d: Descriptor;
     let manifest: unknown = null;
-    if (!url) d = target.d!;
+    if (!url) d = required(target.d, "the descriptor");
     else if (url.d) {
       d = url.d;
       manifest = url.manifest;
@@ -849,7 +857,7 @@ export class MarketplaceService implements OnModuleInit {
         }
       }
     }
-    const servedBytes = await directorySize(realOutput!, realRoot);
+    const servedBytes = await directorySize(required(realOutput, "the built output"), realRoot);
     if (servedBytes > MAX_SERVED_BYTES) {
       await fail(
         `The build output is ${Math.round(servedBytes / 1048576)} MB; the most an app may serve is ${MAX_SERVED_BYTES / 1048576} MB`,
@@ -1165,7 +1173,8 @@ export async function directorySize(dir: string, within: string, cap = MAX_SERVE
   let total = 0;
   const stack = [dir];
   while (stack.length > 0 && total <= cap) {
-    const current = stack.pop()!;
+    const current = stack.pop();
+    if (current === undefined) break;
     for (const entry of await fs.readdir(current, { withFileTypes: true })) {
       const path = join(current, entry.name);
       if (entry.isDirectory()) stack.push(path);

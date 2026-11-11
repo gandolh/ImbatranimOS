@@ -60,14 +60,16 @@ export function DesktopNotes() {
             note={note}
             bounds={bounds}
             onPatch={(id, patch) => update.mutate({ id, patch })}
-            onDelete={async (target) => {
-              const ok = await confirm({
-                title: "Delete note",
-                message: `Delete “${notePreview(target.content)}”? This cannot be undone.`,
-                destructive: true,
-              });
-              if (ok) remove.mutate(target.id);
-            }}
+            onDelete={(target) =>
+              void (async () => {
+                const ok = await confirm({
+                  title: "Delete note",
+                  message: `Delete “${notePreview(target.content)}”? This cannot be undone.`,
+                  destructive: true,
+                });
+                if (ok) remove.mutate(target.id);
+              })()
+            }
           />
         ))}
       {/* The confirm dialog is a modal, so it needs pointer events back. */}

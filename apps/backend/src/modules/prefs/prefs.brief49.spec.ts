@@ -1,4 +1,4 @@
-import { ConfigService } from "@nestjs/config";
+import type { ConfigService } from "@nestjs/config";
 import * as fs from "fs";
 import * as os from "os";
 import { join } from "path";

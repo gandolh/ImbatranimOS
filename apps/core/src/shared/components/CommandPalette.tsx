@@ -52,7 +52,8 @@ export function CommandPalette({ open, onClose }: Props) {
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    debounceRef.current = setTimeout(async () => {
+    debounceRef.current = setTimeout(() => void run(), 80);
+    async function run() {
       const reqId = ++reqIdRef.current;
       setLoading(true);
       try {
@@ -64,7 +65,7 @@ export function CommandPalette({ open, onClose }: Props) {
       } finally {
         if (reqId === reqIdRef.current) setLoading(false);
       }
-    }, 80);
+    }
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);

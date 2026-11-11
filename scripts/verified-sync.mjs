@@ -47,7 +47,7 @@ export function render(appsDir, commit) {
   try {
     file = JSON.parse(text);
   } catch (err) {
-    throw new Error(`verified.json at ${sha} is not JSON: ${err.message}`);
+    throw new Error(`verified.json at ${sha} is not JSON: ${err.message}`, { cause: err });
   }
   if (!file || typeof file !== "object" || !Array.isArray(file.apps)) {
     throw new Error(`verified.json at ${sha} has no apps list`);

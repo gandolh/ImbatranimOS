@@ -181,7 +181,7 @@ export function searchIndex(rows: readonly PackageRow[], query: string, limit: n
     const pname = row[1].toLowerCase();
     const desc = row[3].toLowerCase();
     if (!words.every((w) => attr.includes(w) || pname.includes(w) || desc.includes(w))) continue;
-    let score = 0;
+    let score: number;
     if (attr === q || pname === q) score = 100;
     else if (attr.startsWith(q) || pname.startsWith(q)) score = 60;
     else if (attr.includes(q) || pname.includes(q)) score = 30;

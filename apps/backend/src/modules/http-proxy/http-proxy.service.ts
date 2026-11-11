@@ -256,7 +256,6 @@ export class HttpProxyService {
       const remaining = MAX_BODY_BYTES - total;
       if (value.byteLength > remaining) {
         chunks.push(value.subarray(0, remaining));
-        total = MAX_BODY_BYTES;
         truncated = true;
         // Stop pulling from the target — bounds download + memory.
         await reader.cancel().catch(() => undefined);

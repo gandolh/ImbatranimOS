@@ -1,3 +1,4 @@
+import { required } from "../../lib/required";
 import {
   BadRequestException,
   ConflictException,
@@ -647,7 +648,7 @@ export class ArchiveService {
     let fileCount = 0;
     for (const name of names) {
       if (only && !only.has(name)) continue;
-      const abs = absByName.get(name)!;
+      const abs = required(absByName.get(name), name);
       if (name.endsWith("/")) {
         await fs.mkdir(abs, { recursive: true });
         continue;
@@ -1230,12 +1231,12 @@ export class ArchiveService {
       // The child has its own copy of the descriptor by now.
       await input.close();
     }
-    child.stderr!.resume();
+    required(child.stderr, "the unpack process's stderr").resume();
     const unavailable = () =>
       new InternalServerErrorException(`Can't unpack ${kind} files here: ${command} is not available`);
 
     try {
-      await pipeline(child.stdout!, through, sink, { signal });
+      await pipeline(required(child.stdout, "the unpack process's stdout"), through, sink, { signal });
     } catch (err) {
       child.kill("SIGKILL");
       await exited;

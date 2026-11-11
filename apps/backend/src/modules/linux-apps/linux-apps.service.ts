@@ -1,3 +1,4 @@
+import { required } from "../../lib/required";
 import {
   BadRequestException,
   ConflictException,
@@ -307,7 +308,7 @@ export class LinuxAppsService implements OnModuleDestroy {
         throw new ConflictException(
           `The package list is from ${c.index.slice(0, 12)}, but the pin is ${c.pin.slice(0, 12)}`,
         );
-      return this.loadRows(c.index, c.indexDir!);
+      return this.loadRows(c.index, required(c.indexDir, "the index folder"));
     })();
     const epoch = this.indexEpoch;
     try {
@@ -330,7 +331,7 @@ export class LinuxAppsService implements OnModuleDestroy {
    * pin's `packages.json.br` (a few seconds) and kept as one.
    */
   private async loadRows(commit: string, dir: string): Promise<PackageRow[]> {
-    const p = this.paths!;
+    const p = required(this.paths, "the Linux apps paths");
     const cached = join(p.cacheDir, `index-${commit}.json`);
     try {
       const rows = JSON.parse(await fs.readFile(cached, "utf8")) as PackageRow[];
@@ -356,7 +357,10 @@ export class LinuxAppsService implements OnModuleDestroy {
     const pins = await this.pins();
     if (!pins) throw new NotFoundException("Linux apps are not available here");
     if (commit === pins.effective?.commit) return this.ensureIndex();
-    const dir = commit === pins.image?.commit ? this.paths!.indexDir : pinIndexDir(this.paths!, commit);
+    const dir =
+      commit === pins.image?.commit
+        ? required(this.paths, "the Linux apps paths").indexDir
+        : pinIndexDir(required(this.paths, "the Linux apps paths"), commit);
     return this.loadRows(commit, dir);
   }
 
@@ -724,7 +728,8 @@ export class LinuxAppsService implements OnModuleDestroy {
    */
   private async iconFile(icon: string): Promise<string | null> {
     if (!this.paths || !icon) return null;
-    const store = await fs.realpath(this.paths.store).catch(() => this.paths!.store);
+    const paths = this.paths;
+    const store = await fs.realpath(paths.store).catch(() => paths.store);
     const inStore = async (path: string) => {
       const real = await fs.realpath(path).catch(() => null);
       return real && (real.startsWith(store + "/") || real.startsWith("/nix/store/")) ? real : null;
@@ -799,8 +804,9 @@ export class LinuxAppsService implements OnModuleDestroy {
     const pid = await new Promise<number>((ok, fail) => {
       child.once("spawn", () => {
         // Before it forks its own processes, which inherit the score.
-        raiseOomScore(child.pid!);
-        ok(child.pid!);
+        const childPid = required(child.pid, "the child's pid");
+        raiseOomScore(childPid);
+        ok(childPid);
       });
       child.once("error", (err) => fail(new BadRequestException(`Cannot start ${entry.name}: ${err.message}`)));
     });

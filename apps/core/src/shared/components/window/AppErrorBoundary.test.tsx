@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, useState, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { beforeEach, afterEach, describe, expect, it } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import { AppErrorBoundary } from "./AppErrorBoundary";
 import { resetCrashToastHistory, shouldReportCrash } from "./crashToastGuard";
 import { AppErrorFallback } from "./AppErrorFallback";
@@ -20,7 +20,7 @@ import { useNotificationStore } from "../../store/notificationStore";
 let container: HTMLDivElement;
 let root: Root;
 /** React logs a caught error to console.error; silence it for these cases. */
-let consoleError: typeof console.error;
+let consoleError: MockInstance<typeof console.error>;
 
 const render = (node: ReactNode): void => {
   act(() => {
@@ -46,8 +46,7 @@ beforeEach(() => {
   root = createRoot(container, { onCaughtError: () => {} });
   resetCrashToastHistory();
   useNotificationStore.setState({ notifications: [], toasts: [] });
-  consoleError = console.error;
-  console.error = () => {};
+  consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -55,7 +54,7 @@ afterEach(() => {
     root.unmount();
   });
   container.remove();
-  console.error = consoleError;
+  consoleError.mockRestore();
 });
 
 /**

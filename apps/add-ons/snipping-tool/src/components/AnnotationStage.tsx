@@ -1,3 +1,4 @@
+import { required } from "../lib/required";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -202,7 +203,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
 
   // ── pointer → canvas coordinate mapping ──────────────────────────────────────
   function toCanvasCoords(e: React.PointerEvent): Point {
-    const canvas = canvasRef.current!;
+    const canvas = required(canvasRef.current, "the canvas");
     const rect = canvas.getBoundingClientRect();
     return {
       x: ((e.clientX - rect.left) / rect.width) * canvas.width,
@@ -285,7 +286,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
     if (busy) return;
     setBusy(true);
     try {
-      const blob = await toBlob(canvasRef.current!);
+      const blob = await toBlob(required(canvasRef.current, "the canvas"));
       setPicking(true);
       const where = await saveScreenshot(system.fs, blob, () => setPicking(false));
       // Cancelled: the capture stays open to save, copy or edit.
@@ -303,7 +304,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
 
   const onCopy = () =>
     doExit(async () => {
-      const result = await copyPng(toBlob(canvasRef.current!));
+      const result = await copyPng(toBlob(required(canvasRef.current, "the canvas")));
       if (!result.ok) throw new Error(result.reason);
       return "Copied to clipboard";
     });
@@ -311,13 +312,13 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
   // The two apps are a pipeline — annotate here, edit properly there.
   const onEditInPaint = () =>
     doExit(() => {
-      system.intents.openApp("paint", { dataUrl: canvasRef.current!.toDataURL("image/png") });
+      system.intents.openApp("paint", { dataUrl: required(canvasRef.current, "the canvas").toDataURL("image/png") });
       return Promise.resolve("Opened in Paint");
     });
 
   const onDownload = () =>
     doExit(async () => {
-      const blob = await toBlob(canvasRef.current!);
+      const blob = await toBlob(required(canvasRef.current, "the canvas"));
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -418,7 +419,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
         <div className="flex items-center gap-1">
           <button
             title="Save to ~/Pictures/Screenshots"
-            onClick={onSave}
+            onClick={() => void onSave()}
             disabled={busy}
             className={cn(tbBtn, "w-auto gap-1.5 px-2.5 text-[12px] font-semibold")}
           >
@@ -426,7 +427,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
           </button>
           <button
             title={canCopy ? "Copy to clipboard" : "Clipboard needs a secure context (HTTPS/localhost)"}
-            onClick={onCopy}
+            onClick={() => void onCopy()}
             disabled={busy || !canCopy}
             className={cn(
               tbBtn,
@@ -438,7 +439,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
           </button>
           <button
             title="Edit in Paint"
-            onClick={onEditInPaint}
+            onClick={() => void onEditInPaint()}
             disabled={busy}
             className={cn(tbBtn, "w-auto gap-1.5 px-2.5 text-[12px] font-semibold")}
           >
@@ -446,7 +447,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
           </button>
           <button
             title="Download to this device"
-            onClick={onDownload}
+            onClick={() => void onDownload()}
             disabled={busy}
             className={cn(tbBtn, "w-auto gap-1.5 px-2.5 text-[12px] font-semibold")}
           >

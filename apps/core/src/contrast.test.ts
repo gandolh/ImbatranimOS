@@ -61,7 +61,7 @@ const AA = 4.5;
 
 describe("Apricot", () => {
   for (const mode of MODES) {
-    describe(mode, () => {
+    describe(`${mode}`, () => {
       const k = tokens("apricot", mode);
 
       it("has every surface token", () => {

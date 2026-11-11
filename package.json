@@ -1,6 +1,6 @@
 {
   "name": "imbatranimos",
-  "version": "1.294.0",
+  "version": "1.295.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "packageManager": "npm@11.19.1",
@@ -22,7 +22,8 @@
     "lint": "turbo lint",
     "test": "turbo test test:e2e --concurrency=50%",
     "typecheck": "turbo typecheck",
-    "format:check": "turbo format:check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "docs": "turbo run docs",
     "install:tooling": "npm install --ignore-scripts",
     "codegraph:init": "codegraph init",

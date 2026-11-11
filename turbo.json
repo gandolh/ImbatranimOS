@@ -10,7 +10,6 @@
     "test": {},
     "test:e2e": {},
     "typecheck": {},
-    "format:check": {},
     "dev": {
       "cache": false,
       "persistent": true

@@ -139,14 +139,6 @@ export default [
     rules: { "@typescript-eslint/no-unnecessary-type-assertion": "off" },
   },
   {
-    // A warning for now (2026-11-11): the desktop has no client-side logger, and its error paths (error boundaries,
-    // failed fetches, a rejected permission) report with console.error and console.warn. When a logger exists, these
-    // become calls to it and this block goes.
-    name: "imbatranimos/console-warns",
-    files: WEB.map((dir) => `${dir}/**/*.{ts,tsx}`),
-    rules: { "no-console": "warn" },
-  },
-  {
     // A warning for now (2026-11-11): the backend modules read their settings from the environment themselves. When
     // they take them from one config module, this block goes and the rule is an error again.
     name: "imbatranimos/process-env-warns",

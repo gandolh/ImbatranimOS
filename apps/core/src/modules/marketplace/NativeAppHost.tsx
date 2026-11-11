@@ -74,6 +74,7 @@ function NativeApp({ windowId, app }: { windowId: string; app: MarketplaceApp })
       try {
         mod?.unmount?.(node);
       } catch (err) {
+        // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
         console.error(`[marketplace] ${app.id}: unmount threw`, err);
       }
       node.replaceChildren();

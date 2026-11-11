@@ -312,6 +312,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
           // must not stop the rest of the set from opening.
           openedIdsRef.current.delete(t.id);
           pendingRevealRef.current.delete(t.id);
+          // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
           console.error("[code-editor] failed to open", t.path, err);
           if (!quiet) setError("Could not open this file.");
         }
@@ -446,6 +447,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
         if (err instanceof UploadTooLargeError) {
           setError(err.message);
         } else {
+          // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
           console.error("[code-editor] failed to save", err);
           setError("Could not save this file.");
         }
@@ -635,6 +637,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
       });
       setError(null);
     } catch (err) {
+      // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
       console.error("[code-editor] failed to create folder", err);
       setError("Could not create that folder.");
     }

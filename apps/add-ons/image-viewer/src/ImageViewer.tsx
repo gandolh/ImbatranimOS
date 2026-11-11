@@ -129,6 +129,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
           setIndex(0);
         }
       } catch (err) {
+        // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
         console.error("[image-viewer] failed to list folder", err);
         if (!cancelled) setSiblings([]);
       }

@@ -131,6 +131,7 @@ export function MarkdownPreview({
       } catch (err) {
         // Unhighlighted monospace is what this app shipped for its whole life; a failed
         // chunk load should not take the preview with it.
+        // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
         console.error("[notepad] failed to load the highlighter", err);
       }
     })();

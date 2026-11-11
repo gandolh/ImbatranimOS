@@ -91,6 +91,7 @@ export function SnippingTool({ windowId: _windowId }: { windowId: string }) {
             : { title: "Couldn't copy to clipboard", body: result.reason, level: "warning" },
         );
       } catch (err) {
+        // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
         console.error("[snipping-tool] capture failed", err);
         system.notify({
           title: "Capture failed",
@@ -170,6 +171,7 @@ export function SnippingTool({ windowId: _windowId }: { windowId: string }) {
       setLossyNotice(null);
       setPhase("annotating");
     } catch (err) {
+      // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
       console.error("[snipping-tool] could not open the capture", err);
       system.notify({
         title: "Could not open that image",

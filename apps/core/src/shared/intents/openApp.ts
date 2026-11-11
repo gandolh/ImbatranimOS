@@ -48,6 +48,7 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
     // A stale id is a normal input, not a bug: notification history and recent
     // files outlive the add-on that raised them. Throwing broke the caller
     // mid-click; the protocol says refused is ''.
+    // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
     console.warn(`openApp: app "${appId}" is not in the registry`);
     return "";
   }

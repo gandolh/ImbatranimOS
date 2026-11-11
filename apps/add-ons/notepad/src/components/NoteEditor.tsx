@@ -413,6 +413,7 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
         });
       } catch (err) {
         const tooLarge = err instanceof UploadTooLargeError;
+        // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
         if (!tooLarge) console.error("[notepad] failed to attach image", err);
         system.notify({
           title: "Could not add the image",

@@ -73,6 +73,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     }
     // Still goes to the console: the toast is for the user, this is for whoever
     // is debugging, and the component stack is the useful half.
+    // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
     console.error(`[${appId}] crashed`, error, info.componentStack);
   }
 

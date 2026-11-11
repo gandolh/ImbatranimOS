@@ -57,6 +57,7 @@ export class DesktopLayerBoundary extends Component<Props, State> {
         })
         .catch(() => undefined);
     }
+    // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
     console.error(`[${appId}] desktop layer crashed`, error, info.componentStack);
   }
 

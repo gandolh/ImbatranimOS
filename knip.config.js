@@ -1,9 +1,9 @@
 // knip has no `extends`, so this spreads the house preset. The root's own entry is the scripts folder, which runs by
 // hand. apps/docs is a Docusaurus site with its own build and entries, so it stays out of the check, and the Rust
 // host, the image setup and the ISO build are not part of the workspaces.
-const preset = require("./vendor/house-style/knip.json");
+import preset from "./vendor/house-style/knip.json" with { type: "json" };
 
-module.exports = {
+export default {
   ...preset,
   ignore: [
     ...preset.ignore,

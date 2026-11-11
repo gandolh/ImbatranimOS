@@ -79,6 +79,7 @@ function bindHotkeys(bindings: ShortcutBinding[]): () => void {
 function windowlessWindow(appId: string): SystemWindow {
   const warn = (op: string) => {
     if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
       console.warn(`[system] ${appId}: window.${op}() ignored — this mount has no window`);
     }
   };

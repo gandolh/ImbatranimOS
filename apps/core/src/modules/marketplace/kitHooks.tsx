@@ -321,5 +321,6 @@ function report(app: MarketplaceApp, title: string, body: string, kind = "Hook")
   void api
     .post("/logs/client-error", { appId: app.id, message: `${kind}: ${body}`.slice(0, 300) })
     .catch(() => undefined);
+  // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
   console.error(`[${app.id}] ${title}`, body);
 }

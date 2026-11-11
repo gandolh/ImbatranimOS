@@ -40,6 +40,7 @@ function watch(link: HTMLLinkElement): Promise<void> {
       () => {
         // The build was checked to hold the file, so this is the network or a
         // reinstall racing the window. The app still runs, unstyled.
+        // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
         console.warn(`[marketplace] a kit app's stylesheet did not load: ${link.href}`);
         done();
       },

@@ -68,6 +68,7 @@ export function grantFile(
   }).then(
     () => undefined,
     (err: unknown) => {
+      // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
       console.warn(`[system] ${target.appId} was not given ${given.root}:${given.path}`, err);
     },
   );

@@ -260,6 +260,7 @@ export function TrackStage({
         textTrackRef.current = track;
         setSubtitlesOn(true);
       } catch (err) {
+        // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
         console.error("[media-player] failed to load subtitles", err);
       }
     })();

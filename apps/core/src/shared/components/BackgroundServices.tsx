@@ -102,6 +102,7 @@ class BackgroundServiceBoundary extends Component<
         })
         .catch(() => undefined);
     }
+    // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
     console.error(`[${appId}] background service crashed`, error, info.componentStack);
   }
 

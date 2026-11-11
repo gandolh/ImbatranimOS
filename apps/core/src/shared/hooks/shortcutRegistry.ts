@@ -41,6 +41,7 @@ export const useShortcutStore = create<ShortcutStore>()((set) => ({
           next[s.id] === undefined &&
           Object.values(next).some((e) => e.keys === s.keys && e.scope === s.scope)
         ) {
+          // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
           console.warn(
             `[shortcuts] "${s.keys}" is registered twice in scope "${s.scope}" ` +
               `(${s.id}). One of them will never fire.`,

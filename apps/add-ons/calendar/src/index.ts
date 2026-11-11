@@ -1,26 +1,15 @@
-import { lazy } from 'react'
-import { Calendar as CalendarIcon } from 'lucide-react'
-import type { AddonManifest } from '@imbatranim/core'
-import { CalendarBackground } from './CalendarBackground'
+import { lazy } from "react";
+import { Calendar as CalendarIcon } from "lucide-react";
+import type { AddonManifest } from "@imbatranim/core";
+import { CalendarBackground } from "./CalendarBackground";
 
 export const manifest: AddonManifest = {
-  id: 'calendar',
-  name: 'Calendar',
-  description: 'Month, week and agenda views, recurring events, reminders, ICS import/export',
-  meta: [
-    'events',
-    'schedule',
-    'agenda',
-    'reminders',
-    'month',
-    'week',
-    'recurring',
-    'repeat',
-    'ics',
-    'ical',
-  ],
+  id: "calendar",
+  name: "Calendar",
+  description: "Month, week and agenda views, recurring events, reminders, ICS import/export",
+  meta: ["events", "schedule", "agenda", "reminders", "month", "week", "recurring", "repeat", "ics", "ical"],
   icon: CalendarIcon,
-  component: lazy(() => import('./Calendar').then((m) => ({ default: m.Calendar }))),
+  component: lazy(() => import("./Calendar").then((m) => ({ default: m.Calendar }))),
   // Single-instance: one calendar, one reminder interval.
   multiInstance: false,
   defaultSize: { width: 720, height: 560 },
@@ -48,10 +37,10 @@ export const manifest: AddonManifest = {
   // the background reminder service keeps warm.
   widgets: [
     {
-      id: 'agenda',
+      id: "agenda",
       name: "Today's agenda",
-      component: lazy(() => import('./AgendaWidget').then((m) => ({ default: m.AgendaWidget }))),
+      component: lazy(() => import("./AgendaWidget").then((m) => ({ default: m.AgendaWidget }))),
       defaultSize: { width: 230, height: 118 },
     },
   ],
-}
+};

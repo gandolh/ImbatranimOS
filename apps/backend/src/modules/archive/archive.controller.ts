@@ -1,15 +1,7 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import { UserOnlyGuard } from '../app-identity/calling-app';
-import { ArchiveService } from './archive.service';
-import { CompressDto, ExtractDto, ListDto } from './dto/archive.dto';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { UserOnlyGuard } from "../app-identity/calling-app";
+import { ArchiveService } from "./archive.service";
+import { CompressDto, ExtractDto, ListDto } from "./dto/archive.dto";
 
 /**
  * Archive extract/compress, run server-side inside the FS jail. Authenticated
@@ -18,19 +10,19 @@ import { CompressDto, ExtractDto, ListDto } from './dto/archive.dto';
  * app's call is refused, since an archive reads and writes anywhere in the
  * jail.
  */
-@Controller('archive')
+@Controller("archive")
 @UseGuards(UserOnlyGuard)
 export class ArchiveController {
   constructor(private readonly archive: ArchiveService) {}
 
   /** GET /api/archive/list?root=&path= → what is inside, extracting nothing */
-  @Get('list')
+  @Get("list")
   list(@Query() q: ListDto) {
     return this.archive.list(q.root, q.path);
   }
 
   /** POST /api/archive/extract { root, path, dest?, entries? } → result */
-  @Post('extract')
+  @Post("extract")
   extract(@Body() dto: ExtractDto) {
     return this.archive.extract(dto.root, dto.path, dto.dest, dto.entries);
   }
@@ -41,24 +33,19 @@ export class ArchiveController {
    * Same work as `extract`, but returns immediately with an id to poll. For a
    * large archive the synchronous call is indistinguishable from a hang.
    */
-  @Post('extract-job')
+  @Post("extract-job")
   extractJob(@Body() dto: ExtractDto) {
-    return this.archive.startExtractJob(
-      dto.root,
-      dto.path,
-      dto.dest,
-      dto.entries,
-    );
+    return this.archive.startExtractJob(dto.root, dto.path, dto.dest, dto.entries);
   }
 
   /** GET /api/archive/job/:id → progress, result, or the failure message */
-  @Get('job/:id')
-  job(@Param('id') id: string) {
+  @Get("job/:id")
+  job(@Param("id") id: string) {
     return this.archive.getJob(id);
   }
 
   /** POST /api/archive/compress { root, paths[], dest, format } → { dest, entries, bytes } */
-  @Post('compress')
+  @Post("compress")
   compress(@Body() dto: CompressDto) {
     return this.archive.compress(dto.root, dto.paths, dto.dest, dto.format);
   }

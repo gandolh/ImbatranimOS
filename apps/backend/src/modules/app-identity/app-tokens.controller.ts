@@ -9,21 +9,17 @@ import {
   HttpCode,
   Post,
   Req,
-} from '@nestjs/common';
-import { IsOptional, IsString, Matches } from 'class-validator';
+} from "@nestjs/common";
+import { IsOptional, IsString, Matches } from "class-validator";
 
-import { DbService } from '../../db/db.service';
-import type { Caller } from '../identity/identity.types';
-import {
-  APP_TOKEN_HEADER,
-  SYSTEM_GROUP,
-  type AppIdentity,
-} from './app-identity.types';
-import { APP_TOKEN_SHAPE, AppTokens } from './app-tokens';
-import { callingApp, type IdentifiedRequest } from './calling-app';
-import { FileGrants } from './file-grants.service';
-import { groupsOf } from './install-group';
-import { InstalledApps } from './installed-apps';
+import { DbService } from "../../db/db.service";
+import type { Caller } from "../identity/identity.types";
+import { APP_TOKEN_HEADER, SYSTEM_GROUP, type AppIdentity } from "./app-identity.types";
+import { APP_TOKEN_SHAPE, AppTokens } from "./app-tokens";
+import { callingApp, type IdentifiedRequest } from "./calling-app";
+import { FileGrants } from "./file-grants.service";
+import { groupsOf } from "./install-group";
+import { InstalledApps } from "./installed-apps";
 
 /** An app id, as the marketplace and the built-ins write them. */
 export const APP_ID = /^[a-z][a-z0-9-]{1,39}$/;
@@ -67,7 +63,7 @@ type Req = IdentifiedRequest & { caller?: Caller };
  *   and with it what the copy was given.
  * - `GET self` says who the call is from: the user, or which app and copy.
  */
-@Controller('system/app-tokens')
+@Controller("system/app-tokens")
 export class AppTokensController {
   constructor(
     private readonly tokens: AppTokens,
@@ -78,12 +74,9 @@ export class AppTokensController {
 
   @Post()
   @HttpCode(201)
-  register(
-    @Body() body: RegisterAppTokenDto,
-    @Req() req: Req,
-  ): AppIdentityResponse {
+  register(@Body() body: RegisterAppTokenDto, @Req() req: Req): AppIdentityResponse {
     if (callingApp(req) !== null) {
-      throw new ForbiddenException('An app cannot start an app identity');
+      throw new ForbiddenException("An app cannot start an app identity");
     }
     const caller = mustHaveCaller(req);
     if (body.appId === SYSTEM_GROUP) {
@@ -98,25 +91,25 @@ export class AppTokensController {
       windowId: body.windowId ?? null,
       groups: groupsOf(this.dbs, body.appId),
     };
-    if (this.tokens.register(body.token, caller.sid, identity) === 'taken') {
-      throw new ConflictException('That token is already registered');
+    if (this.tokens.register(body.token, caller.sid, identity) === "taken") {
+      throw new ConflictException("That token is already registered");
     }
     return { app: identity };
   }
 
-  @Delete('self')
+  @Delete("self")
   @HttpCode(204)
   revoke(@Req() req: Req): void {
     const app = callingApp(req);
     if (app === null) {
-      throw new BadRequestException('This call carries no app token');
+      throw new BadRequestException("This call carries no app token");
     }
     // The guard resolved it, so it is a single, well-formed header.
     this.tokens.revoke(req.headers[APP_TOKEN_HEADER] as string);
     this.grants.revokeInstance(app.instanceId);
   }
 
-  @Get('self')
+  @Get("self")
   self(@Req() req: Req): AppIdentityResponse {
     return { app: callingApp(req) };
   }
@@ -124,6 +117,6 @@ export class AppTokensController {
 
 function mustHaveCaller(req: Req): Caller {
   // SessionGuard refused this route already without a session.
-  if (!req.caller) throw new ForbiddenException('No session');
+  if (!req.caller) throw new ForbiddenException("No session");
   return req.caller;
 }

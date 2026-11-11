@@ -11,14 +11,14 @@
 
 /** The directory part of a path, or `''` at the root. */
 export function dirOf(path: string): string {
-  const at = path.lastIndexOf('/')
-  return at === -1 ? '' : path.slice(0, at)
+  const at = path.lastIndexOf("/");
+  return at === -1 ? "" : path.slice(0, at);
 }
 
 /** True for anything that is not a path inside this filesystem. */
 export function isRemote(src: string): boolean {
   // Any scheme (`https:`, `data:`, `mailto:`) or a protocol-relative `//host/…`.
-  return /^[a-z][a-z0-9+.-]*:/i.test(src) || src.startsWith('//')
+  return /^[a-z][a-z0-9+.-]*:/i.test(src) || src.startsWith("//");
 }
 
 /**
@@ -30,33 +30,33 @@ export function isRemote(src: string): boolean {
  * links from firing a burst of 400s just by being previewed.
  */
 export function resolveRelative(docDir: string, src: string): string | null {
-  if (src === '' || src.startsWith('#') || isRemote(src)) return null
-  const raw = decodeURI(src.split('#')[0].split('?')[0])
+  if (src === "" || src.startsWith("#") || isRemote(src)) return null;
+  const raw = decodeURI(src.split("#")[0].split("?")[0]);
   // A leading slash means "root of this filesystem", not "root of the web origin".
-  const base = raw.startsWith('/') ? '' : docDir
-  const parts = base === '' ? [] : base.split('/')
-  for (const segment of raw.replace(/^\//, '').split('/')) {
-    if (segment === '' || segment === '.') continue
-    if (segment === '..') {
-      if (parts.length === 0) return null
-      parts.pop()
-      continue
+  const base = raw.startsWith("/") ? "" : docDir;
+  const parts = base === "" ? [] : base.split("/");
+  for (const segment of raw.replace(/^\//, "").split("/")) {
+    if (segment === "" || segment === ".") continue;
+    if (segment === "..") {
+      if (parts.length === 0) return null;
+      parts.pop();
+      continue;
     }
-    parts.push(segment)
+    parts.push(segment);
   }
-  return parts.length === 0 ? null : parts.join('/')
+  return parts.length === 0 ? null : parts.join("/");
 }
 
 /** Path of `target` expressed relative to `fromDir`, for writing back into the source. */
 export function relativeFrom(fromDir: string, target: string): string {
-  if (fromDir === '') return target
-  if (target === fromDir) return '.'
-  if (target.startsWith(fromDir + '/')) return target.slice(fromDir.length + 1)
-  const from = fromDir.split('/')
-  const to = target.split('/')
-  let shared = 0
-  while (shared < from.length && shared < to.length && from[shared] === to[shared]) shared++
-  return [...Array(from.length - shared).fill('..'), ...to.slice(shared)].join('/')
+  if (fromDir === "") return target;
+  if (target === fromDir) return ".";
+  if (target.startsWith(fromDir + "/")) return target.slice(fromDir.length + 1);
+  const from = fromDir.split("/");
+  const to = target.split("/");
+  let shared = 0;
+  while (shared < from.length && shared < to.length && from[shared] === to[shared]) shared++;
+  return [...Array(from.length - shared).fill(".."), ...to.slice(shared)].join("/");
 }
 
 /**
@@ -65,31 +65,31 @@ export function relativeFrom(fromDir: string, target: string): string {
  * images of every note in a folder share it.
  */
 export function assetDir(docDir: string): string {
-  return docDir === '' ? 'assets' : `${docDir}/assets`
+  return docDir === "" ? "assets" : `${docDir}/assets`;
 }
 
 /** Strip a filename down to something safe to write and pleasant to read. */
 export function safeBaseName(raw: string): string {
-  const withoutExt = raw.replace(/\.[^.]+$/, '')
+  const withoutExt = raw.replace(/\.[^.]+$/, "");
   const cleaned = withoutExt
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return cleaned === '' ? 'image' : cleaned.slice(0, 40)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return cleaned === "" ? "image" : cleaned.slice(0, 40);
 }
 
 /** Extension for a pasted blob, from its MIME type. */
 export function extensionForMime(mime: string): string {
   const known: Record<string, string> = {
-    'image/png': 'png',
-    'image/jpeg': 'jpg',
-    'image/gif': 'gif',
-    'image/webp': 'webp',
-    'image/avif': 'avif',
-    'image/bmp': 'bmp',
-    'image/svg+xml': 'svg',
-  }
-  return known[mime] ?? 'png'
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/gif": "gif",
+    "image/webp": "webp",
+    "image/avif": "avif",
+    "image/bmp": "bmp",
+    "image/svg+xml": "svg",
+  };
+  return known[mime] ?? "png";
 }
 
 /**
@@ -102,17 +102,17 @@ export function extensionForMime(mime: string): string {
  * one it will take.
  */
 export function uniqueName(existing: readonly string[], base: string, ext: string): string {
-  const taken = new Set(existing.map((name) => name.toLowerCase()))
-  const first = `${base}.${ext}`
-  if (!taken.has(first.toLowerCase())) return first
+  const taken = new Set(existing.map((name) => name.toLowerCase()));
+  const first = `${base}.${ext}`;
+  if (!taken.has(first.toLowerCase())) return first;
   for (let n = 2; n < 1000; n++) {
-    const candidate = `${base}-${n}.${ext}`
-    if (!taken.has(candidate.toLowerCase())) return candidate
+    const candidate = `${base}-${n}.${ext}`;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
   }
-  return `${base}-${Date.now()}.${ext}`
+  return `${base}-${Date.now()}.${ext}`;
 }
 
 /** The image markdown to insert, with the spaces a link cannot carry escaped. */
 export function imageMarkdown(alt: string, relativePath: string): string {
-  return `![${alt}](${relativePath.replace(/ /g, '%20')})`
+  return `![${alt}](${relativePath.replace(/ /g, "%20")})`;
 }

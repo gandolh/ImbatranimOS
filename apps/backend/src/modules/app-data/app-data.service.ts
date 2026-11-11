@@ -6,15 +6,15 @@ import {
   Logger,
   PayloadTooLargeException,
   ServiceUnavailableException,
-} from '@nestjs/common';
-import { createHash, randomUUID } from 'crypto';
-import type { Stats } from 'fs';
-import * as fs from 'fs/promises';
-import { basename, dirname, join, relative, resolve, sep } from 'path';
+} from "@nestjs/common";
+import { createHash, randomUUID } from "crypto";
+import type { Stats } from "fs";
+import * as fs from "fs/promises";
+import { basename, dirname, join, relative, resolve, sep } from "path";
 
-import type { AppIdentity } from '../app-identity/app-identity.types';
-import { InstalledApps } from '../app-identity/installed-apps';
-import { ModeStore } from '../app-identity/mode-store.service';
+import type { AppIdentity } from "../app-identity/app-identity.types";
+import { InstalledApps } from "../app-identity/installed-apps";
+import { ModeStore } from "../app-identity/mode-store.service";
 import {
   DATA_KINDS,
   folderOf,
@@ -23,7 +23,7 @@ import {
   normaliseDataPath,
   STAGED_NAME,
   type DataKind,
-} from './app-data.paths';
+} from "./app-data.paths";
 
 /** A file read from an app's folder. */
 export interface DataFile {
@@ -40,7 +40,7 @@ export interface DataEntry {
   name: string;
   /** Its path inside the folder. */
   path: string;
-  type: 'file' | 'directory';
+  type: "file" | "directory";
   size: number;
   modifiedAt: string;
 }
@@ -51,7 +51,7 @@ export interface DataEntry {
  * saving one small JSON file can do; the files are small enough to hash.
  */
 export function dataVersion(bytes: Buffer | string): string {
-  return createHash('sha256').update(bytes).digest('hex').slice(0, 32);
+  return createHash("sha256").update(bytes).digest("hex").slice(0, 32);
 }
 
 /**
@@ -97,32 +97,26 @@ export class AppDataService {
   }
 
   /** A file's text and version, or null when there is none. */
-  async read(
-    identity: AppIdentity,
-    kind: DataKind,
-    rawPath: string,
-  ): Promise<DataFile | null> {
+  async read(identity: AppIdentity, kind: DataKind, rawPath: string): Promise<DataFile | null> {
     const { folder, abs, path } = await this.resolve(identity, kind, rawPath);
     this.adoptFolder(identity, folder, await this.lstat(folder));
     const stat = await this.stat(abs);
     if (!stat) {
       // Saying "not there" needs only a way through the folder above it.
-      this.modes.assert(identity, 'traverse', dirname(abs));
+      this.modes.assert(identity, "traverse", dirname(abs));
       return null;
     }
     if (stat.isDirectory()) {
       throw new BadRequestException(`${path} is a folder`);
     }
-    this.modes.assert(identity, 'read', abs);
+    this.modes.assert(identity, "read", abs);
     if (stat.size > MAX_DATA_BYTES) {
-      throw new PayloadTooLargeException(
-        `${path} is larger than ${MAX_DATA_BYTES} bytes`,
-      );
+      throw new PayloadTooLargeException(`${path} is larger than ${MAX_DATA_BYTES} bytes`);
     }
     const bytes = await fs.readFile(abs);
     return {
       path,
-      content: bytes.toString('utf8'),
+      content: bytes.toString("utf8"),
       version: dataVersion(bytes),
     };
   }
@@ -142,13 +136,7 @@ export class AppDataService {
     content: string,
     expected?: string | null,
   ): Promise<{ path: string; version: string }> {
-    const { path, version } = await this.writeFile(
-      identity,
-      kind,
-      rawPath,
-      content,
-      { expected, asApp: true },
-    );
+    const { path, version } = await this.writeFile(identity, kind, rawPath, content, { expected, asApp: true });
     return { path, version };
   }
 
@@ -180,11 +168,9 @@ export class AppDataService {
     content: string,
     { expected, asApp }: { expected?: string | null; asApp: boolean },
   ): Promise<{ path: string; version: string; written: boolean }> {
-    const bytes = Buffer.from(content, 'utf8');
+    const bytes = Buffer.from(content, "utf8");
     if (bytes.length > MAX_DATA_BYTES) {
-      throw new PayloadTooLargeException(
-        `A data file holds at most ${MAX_DATA_BYTES} bytes`,
-      );
+      throw new PayloadTooLargeException(`A data file holds at most ${MAX_DATA_BYTES} bytes`);
     }
     const { folder, abs, path } = await this.resolve(identity, kind, rawPath);
     return this.inTurn(folder, async () => {
@@ -200,16 +186,16 @@ export class AppDataService {
         // it is that write, so it becomes the app's as it would have.
         const current = dataVersion(await fs.readFile(abs));
         if (current === dataVersion(bytes)) {
-          this.modes.create(identity, abs, 'file');
+          this.modes.create(identity, abs, "file");
           return { path, version: current, written: false };
         }
         throw conflict(path, current);
       }
       if (existing) {
-        this.modes.assert(identity, 'write', abs);
+        this.modes.assert(identity, "write", abs);
       } else {
         await this.ensureFolders(identity, folder, dirname(abs));
-        this.modes.assert(identity, 'create', abs);
+        this.modes.assert(identity, "create", abs);
       }
 
       if (expected !== undefined) {
@@ -221,30 +207,21 @@ export class AppDataService {
       }
 
       await this.writeAtomically(abs, bytes);
-      if (!existing) this.modes.create(identity, abs, 'file');
+      if (!existing) this.modes.create(identity, abs, "file");
       return { path, version: dataVersion(bytes), written: true };
     });
   }
 
   /** The entries of a folder inside the app's; none when it doesn't exist yet. */
-  async list(
-    identity: AppIdentity,
-    kind: DataKind,
-    rawPath = '',
-  ): Promise<DataEntry[]> {
-    const { folder, abs, path } = await this.resolve(
-      identity,
-      kind,
-      rawPath,
-      true,
-    );
+  async list(identity: AppIdentity, kind: DataKind, rawPath = ""): Promise<DataEntry[]> {
+    const { folder, abs, path } = await this.resolve(identity, kind, rawPath, true);
     this.adoptFolder(identity, folder, await this.lstat(folder));
     const stat = await this.stat(abs);
     if (!stat) return [];
     if (!stat.isDirectory()) {
       throw new BadRequestException(`${path} is not a folder`);
     }
-    this.modes.assert(identity, 'list', abs);
+    this.modes.assert(identity, "list", abs);
     const out: DataEntry[] = [];
     for (const dirent of await fs.readdir(abs, { withFileTypes: true })) {
       if (STAGED_NAME.test(dirent.name)) {
@@ -256,8 +233,8 @@ export class AppDataService {
       if (!entry) continue; // gone since the listing
       out.push({
         name: dirent.name,
-        path: path === '' ? dirent.name : `${path}/${dirent.name}`,
-        type: entry.isDirectory() ? 'directory' : 'file',
+        path: path === "" ? dirent.name : `${path}/${dirent.name}`,
+        type: entry.isDirectory() ? "directory" : "file",
         size: entry.isDirectory() ? 0 : entry.size,
         modifiedAt: entry.mtime.toISOString(),
       });
@@ -271,30 +248,18 @@ export class AppDataService {
    * `expected`, only a file still at that version: else a 409 and nothing
    * removed.
    */
-  async remove(
-    identity: AppIdentity,
-    kind: DataKind,
-    rawPath: string,
-    expected?: string,
-  ): Promise<boolean> {
-    const { folder, abs, path } = await this.resolve(
-      identity,
-      kind,
-      rawPath,
-      false,
-      { followLeaf: false },
-    );
+  async remove(identity: AppIdentity, kind: DataKind, rawPath: string, expected?: string): Promise<boolean> {
+    const { folder, abs, path } = await this.resolve(identity, kind, rawPath, false, { followLeaf: false });
     return this.inTurn(folder, async () => {
       this.assertPresent(identity);
       this.adoptFolder(identity, folder, await this.lstat(folder));
       const stat = await this.lstat(abs);
       if (!stat) return false;
-      this.modes.assert(identity, 'delete', abs);
+      this.modes.assert(identity, "delete", abs);
       // A remove that names the version it read takes only that file, so a
       // save from another tab since is not lost with it.
       if (expected !== undefined) {
-        if (!stat.isFile())
-          throw new BadRequestException(`${path} is not a file`);
+        if (!stat.isFile()) throw new BadRequestException(`${path} is not a file`);
         const current = dataVersion(await fs.readFile(abs));
         if (current !== expected) throw conflict(path, current);
       }
@@ -309,10 +274,7 @@ export class AppDataService {
    * an app always takes its cache, and the rest when the owner asks.
    * A folder that is a link loses the link only.
    */
-  async removeFolders(
-    appIds: readonly string[],
-    kinds: readonly DataKind[] = DATA_KINDS,
-  ): Promise<void> {
+  async removeFolders(appIds: readonly string[], kinds: readonly DataKind[] = DATA_KINDS): Promise<void> {
     for (const appId of appIds) {
       for (const kind of kinds) {
         const folder = this.folder(appId, kind);
@@ -331,11 +293,9 @@ export class AppDataService {
    */
   async removeCaches(appIds: readonly string[]): Promise<void> {
     try {
-      await this.removeFolders(appIds, ['cache']);
+      await this.removeFolders(appIds, ["cache"]);
     } catch (err) {
-      this.logger.warn(
-        `Could not remove the caches of ${appIds.join(', ')}: ${String(err)}`,
-      );
+      this.logger.warn(`Could not remove the caches of ${appIds.join(", ")}: ${String(err)}`);
     }
   }
 
@@ -356,16 +316,14 @@ export class AppDataService {
     const home = homeRoot();
     const folder = folderOf(identity.appId, kind, home);
     const path = normaliseDataPath(rawPath, allowRoot);
-    const abs = path === '' ? folder : resolve(folder, path);
+    const abs = path === "" ? folder : resolve(folder, path);
     if (!within(folder, abs)) throw leaves();
 
     // The folder itself is a folder or nothing yet: a link there would hand
     // the app whatever it points at, another app's folder included.
     const own = await this.lstat(folder);
     if (own && !own.isDirectory()) {
-      throw new BadRequestException(
-        `${identity.appId}'s ${kind} folder is not a folder`,
-      );
+      throw new BadRequestException(`${identity.appId}'s ${kind} folder is not a folder`);
     }
     const realHome = await realpathAllowingMissing(home);
     const realFolder = await realpathAllowingMissing(folder);
@@ -384,10 +342,7 @@ export class AppDataService {
    * Make the app's folder if it is missing and record it as the app's. The
    * OS does this, not the app, so it is not a mode check.
    */
-  private async ensureFolder(
-    identity: AppIdentity,
-    folder: string,
-  ): Promise<void> {
+  private async ensureFolder(identity: AppIdentity, folder: string): Promise<void> {
     await diskFull(() => fs.mkdir(folder, { recursive: true }));
     this.adoptFolder(identity, folder, await this.lstat(folder));
   }
@@ -397,21 +352,13 @@ export class AppDataService {
    * or brought back by a restore) becomes the app's, as the OS would have
    * made it. A row already there is kept: the owner may have changed it.
    */
-  private adoptFolder(
-    identity: AppIdentity,
-    folder: string,
-    stat: Stats | null,
-  ): void {
+  private adoptFolder(identity: AppIdentity, folder: string, stat: Stats | null): void {
     if (!stat || this.modes.stat(folder) !== null) return;
-    this.modes.create(identity, folder, 'directory');
+    this.modes.create(identity, folder, "directory");
   }
 
   /** Make the folders between the app's folder and `dir`, each the app's. */
-  private async ensureFolders(
-    identity: AppIdentity,
-    folder: string,
-    dir: string,
-  ): Promise<void> {
+  private async ensureFolders(identity: AppIdentity, folder: string, dir: string): Promise<void> {
     if (dir === folder) return;
     const parts = relative(folder, dir).split(sep);
     let at = folder;
@@ -419,11 +366,10 @@ export class AppDataService {
       at = join(at, part);
       const stat = await this.lstat(at);
       if (stat?.isDirectory()) continue;
-      if (stat)
-        throw new BadRequestException(`${part} is a file, not a folder`);
-      this.modes.assert(identity, 'create', at);
+      if (stat) throw new BadRequestException(`${part} is a file, not a folder`);
+      this.modes.assert(identity, "create", at);
       await diskFull(() => fs.mkdir(at));
-      this.modes.create(identity, at, 'directory');
+      this.modes.create(identity, at, "directory");
     }
   }
 
@@ -437,13 +383,10 @@ export class AppDataService {
    * the file empty, and an app's data file may be the user's only copy.
    */
   private async writeAtomically(abs: string, bytes: Buffer): Promise<void> {
-    const staged = join(
-      dirname(abs),
-      `.${basename(abs)}.imbatranim-${randomUUID()}.part`,
-    );
+    const staged = join(dirname(abs), `.${basename(abs)}.imbatranim-${randomUUID()}.part`);
     try {
       await diskFull(async () => {
-        const file = await fs.open(staged, 'w', 0o600);
+        const file = await fs.open(staged, "w", 0o600);
         try {
           await file.writeFile(bytes);
           await file.sync();
@@ -517,7 +460,7 @@ export class AppDataService {
 function conflict(path: string, current: string | null): ConflictException {
   return new ConflictException({
     statusCode: 409,
-    error: 'Conflict',
+    error: "Conflict",
     message: `${path} changed since it was read`,
     current,
   });
@@ -538,7 +481,7 @@ const STALE_STAGED_MS = 60 * 60 * 1000;
 async function syncFolder(path: string): Promise<void> {
   let dir: fs.FileHandle | undefined;
   try {
-    dir = await fs.open(path, 'r');
+    dir = await fs.open(path, "r");
     await dir.sync();
   } catch {
     // The data is written; only its durability across a crash is weaker.
@@ -553,7 +496,7 @@ function leaves(): BadRequestException {
 
 function isMissing(err: unknown): boolean {
   const code = (err as NodeJS.ErrnoException).code;
-  return code === 'ENOENT' || code === 'ENOTDIR';
+  return code === "ENOENT" || code === "ENOTDIR";
 }
 
 /** A full disk as a 503 a person can act on, like the files module's. */
@@ -562,10 +505,8 @@ async function diskFull<T>(op: () => Promise<T>): Promise<T> {
     return await op();
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
-    if (code === 'ENOSPC' || code === 'EDQUOT') {
-      throw new ServiceUnavailableException(
-        'The disk is full — free some space and try again.',
-      );
+    if (code === "ENOSPC" || code === "EDQUOT") {
+      throw new ServiceUnavailableException("The disk is full — free some space and try again.");
     }
     throw err;
   }

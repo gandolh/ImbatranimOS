@@ -1,5 +1,5 @@
-import { lazy, type ComponentType } from 'react'
-import { create } from 'zustand'
+import { lazy, type ComponentType } from "react";
+import { create } from "zustand";
 import {
   Bomb,
   Bookmark,
@@ -28,11 +28,11 @@ import {
   Swords,
   Table,
   Trophy,
-} from 'lucide-react'
-import { api } from '../../lib/axios'
-import { pruneKitStyles } from '../../modules/marketplace/kitStyles'
-import { preloadKitApp } from '../../modules/marketplace/kitPreload'
-import { APP_REGISTRY, type AppConfig } from './registry'
+} from "lucide-react";
+import { api } from "../../lib/axios";
+import { pruneKitStyles } from "../../modules/marketplace/kitStyles";
+import { preloadKitApp } from "../../modules/marketplace/kitPreload";
+import { APP_REGISTRY, type AppConfig } from "./registry";
 
 /**
  * The second registry beside `manifest.ts`: apps installed from
@@ -52,35 +52,35 @@ import { APP_REGISTRY, type AppConfig } from './registry'
  * an app installed from a URL.
  */
 export type MarketplaceApp = {
-  id: string
+  id: string;
   /**
    * The descriptor that installs it, which the routes keyed by
    * `:id` take: install, uninstall, log, lease, server. Equal to `id` for a
    * one-app descriptor and a URL app. Read it with {@link descriptorIdOf}.
    */
-  descriptorId: string
+  descriptorId: string;
   /** The descriptor's name: a suite's heading in the pane. `name` for a one-app descriptor. */
-  descriptorName: string
-  name: string
-  description: string
-  meta: string[]
-  type: 'static' | 'service'
-  icon: string
-  window: { defaultSize: { w: number; h: number }; minSize: { w: number; h: number } }
-  capabilities: Capability[]
+  descriptorName: string;
+  name: string;
+  description: string;
+  meta: string[];
+  type: "static" | "service";
+  icon: string;
+  window: { defaultSize: { w: number; h: number }; minSize: { w: number; h: number } };
+  capabilities: Capability[];
   /** A second launch opens a second window. False for games, which say nothing. */
-  multiInstance: boolean
+  multiInstance: boolean;
   /** File types it offers to open, after the built-in apps that claim them. */
-  opens: string[]
+  opens: string[];
   /**
    * A kit app whose module exports `Background`, which the desktop mounts with
    * no window. For an installed app, what its live build declared. A backend
    * from before hooks sends none, which reads as false. See {@link declaresHooks}.
    */
-  background?: boolean
+  background?: boolean;
   /** A kit app whose module exports `commandSources`, read like `background`. */
-  commandSources?: boolean
-  minSystemVersion: number
+  commandSources?: boolean;
+  minSystemVersion: number;
   /**
    * A kit app's shared kit version: a component the desktop
    * renders with its own React and UI kit, built against this version of
@@ -88,7 +88,7 @@ export type MarketplaceApp = {
    * from before the shared kit sends none, which reads the same. For an installed
    * app, what its live build was made against. Read it with {@link isKitApp}.
    */
-  sharedKit?: number | null
+  sharedKit?: number | null;
   /**
    * The shared kit the catalog's descriptor names now, whatever
    * the live build was made against. Null for an app that exports `mount`
@@ -96,68 +96,65 @@ export type MarketplaceApp = {
    * so the desktop cannot tell whether a rebuild would help. Read it with
    * {@link rebuildFixesKit}.
    */
-  catalogSharedKit?: number | null
-  ref: string
+  catalogSharedKit?: number | null;
+  ref: string;
   /**
    * How the desktop runs it: `native` imports its module into this page (a
    * catalog app, or an app from a URL built from source), the only way left.
    */
-  runtime: 'native'
+  runtime: "native";
   /** Where a URL app came from, as resolved at install. Absent for a catalog app. */
-  source?: AppSource
+  source?: AppSource;
   /**
    * An app from a URL that builds from source: how it came to be trusted at
    * its installed commit when installed (the OS's verified list, or the
    * owner), and whether the verified list names that commit now. Absent for a
    * catalog app.
    */
-  trust?: { by: 'verified' | 'owner'; at: number; verified?: boolean }
+  trust?: { by: "verified" | "owner"; at: number; verified?: boolean };
   installed: {
-    ref: string
-    buildId: string
-    installedAt: number
+    ref: string;
+    buildId: string;
+    installedAt: number;
     /** What the desktop imports, relative to the API's base. Absent when the build recorded none for it. */
-    entryPath?: string
+    entryPath?: string;
     /** A kit app's stylesheets, relative to the API's base like `entryPath`. */
-    stylePaths?: string[]
-    missing: boolean
-  } | null
-  job: { state: 'queued' | 'fetching' | 'building' | 'failed'; reason?: string } | null
-  server:
-    | { state: 'stopped' }
-    | { state: 'starting' | 'up'; port: number }
-    | { state: 'crashed'; reason: string }
-}
+    stylePaths?: string[];
+    missing: boolean;
+  } | null;
+  job: { state: "queued" | "fetching" | "building" | "failed"; reason?: string } | null;
+  server: { state: "stopped" } | { state: "starting" | "up"; port: number } | { state: "crashed"; reason: string };
+};
 
-export type Capability = 'fs' | 'http' | 'intents' | 'notify' | 'shortcuts' | 'schedule'
+export type Capability = "fs" | "http" | "intents" | "notify" | "shortcuts" | "schedule";
 
 /** A URL app's source (contract B's `Inspection['source']`). */
 export type AppSource = {
   /** Normalized, e.g. `https://github.com/o/r/tree/main/sub`. */
-  url: string
+  url: string;
   /** `https://github.com/o/r`. */
-  repo: string
+  repo: string;
   /** The branch or tag asked for; null = the default branch. */
-  ref: string | null
+  ref: string | null;
   /** The commit installed, 40 hex. */
-  commit: string
-  subdir: string | null
-}
+  commit: string;
+  subdir: string | null;
+};
 
 /**
  * The descriptor id an app's routes take. A backend from before one catalog entry, several apps
  * sends none, and there every app was its own descriptor.
  */
-export function descriptorIdOf(app: Pick<MarketplaceApp, 'id' | 'descriptorId'>): string {
-  return app.descriptorId ?? app.id
+export function descriptorIdOf(app: Pick<MarketplaceApp, "id" | "descriptorId">): string {
+  return app.descriptorId ?? app.id;
 }
 
 /**
  * True for a kit app: a catalog app whose module exports a
  * component, rendered in the desktop's tree.
  */
-export function isKitApp(app: Pick<MarketplaceApp, 'sharedKit'>): boolean {
-  return typeof app.sharedKit === 'number'
+export function isKitApp(app: Pick<MarketplaceApp, "sharedKit">): boolean {
+  return typeof app.sharedKit === "number";
 }
 
 /**
@@ -166,9 +163,9 @@ export function isKitApp(app: Pick<MarketplaceApp, 'sharedKit'>): boolean {
  * (`kitHooks.tsx`). Only a declared hook loads a module before a window opens.
  */
 export function declaresHooks(
-  app: Pick<MarketplaceApp, 'runtime' | 'sharedKit' | 'background' | 'commandSources'>
+  app: Pick<MarketplaceApp, "runtime" | "sharedKit" | "background" | "commandSources">,
 ): boolean {
-  return isKitApp(app) && (app.background === true || app.commandSources === true)
+  return isKitApp(app) && (app.background === true || app.commandSources === true);
 }
 
 /**
@@ -179,25 +176,23 @@ export function declaresHooks(
  * same mismatch) or says nothing (a backend from before the same-ref rebuild).
  */
 export function rebuildFixesKit(
-  app: Pick<MarketplaceApp, 'runtime' | 'sharedKit' | 'catalogSharedKit' | 'installed'>,
-  desktopKit: number
+  app: Pick<MarketplaceApp, "runtime" | "sharedKit" | "catalogSharedKit" | "installed">,
+  desktopKit: number,
 ): boolean {
-  if (!app.installed || !isKitApp(app) || app.sharedKit === desktopKit) return false
-  return app.catalogSharedKit === desktopKit
+  if (!app.installed || !isKitApp(app) || app.sharedKit === desktopKit) return false;
+  return app.catalogSharedKit === desktopKit;
 }
 
 /**
  * The build a kit app's stylesheets belong to, `<descriptor id>@<build id>`:
  * every app of one build shares its links in the page. Null when not installed.
  */
-export function kitBuildKey(
-  app: Pick<MarketplaceApp, 'id' | 'descriptorId' | 'installed'>
-): string | null {
-  return app.installed ? `${descriptorIdOf(app)}@${app.installed.buildId}` : null
+export function kitBuildKey(app: Pick<MarketplaceApp, "id" | "descriptorId" | "installed">): string | null {
+  return app.installed ? `${descriptorIdOf(app)}@${app.installed.buildId}` : null;
 }
 
 export type MarketplaceListing = {
-  apps: MarketplaceApp[]
+  apps: MarketplaceApp[];
   /**
    * Catalog files that could not be read, and installed apps that cannot run;
    * the latter carry `appId` so the pane can uninstall them. `retired` marks a
@@ -205,14 +200,14 @@ export type MarketplaceListing = {
    * source as far as its record still reads.
    */
   problems: {
-    file: string
-    problem: string
-    appId?: string
-    retired?: { name: string; source: AppSource | null }
-  }[]
-}
+    file: string;
+    problem: string;
+    appId?: string;
+    retired?: { name: string; source: AppSource | null };
+  }[];
+};
 
-type IconComponent = AppConfig['icon']
+type IconComponent = AppConfig["icon"];
 
 /**
  * The icons a descriptor may name. A fixed list rather than all of lucide:
@@ -223,7 +218,7 @@ type IconComponent = AppConfig['icon']
 const ICONS: Record<string, IconComponent> = {
   package: Package,
   // Games.
-  'gamepad-2': Gamepad2,
+  "gamepad-2": Gamepad2,
   joystick: Joystick,
   puzzle: Puzzle,
   swords: Swords,
@@ -237,25 +232,25 @@ const ICONS: Record<string, IconComponent> = {
   bomb: Bomb,
   spade: Spade,
   // Office.
-  'file-text': FileText,
-  'file-pen': FilePen,
+  "file-text": FileText,
+  "file-pen": FilePen,
   table: Table,
   sheet: Sheet,
   presentation: Presentation,
-  'pen-tool': PenTool,
-  'drafting-compass': DraftingCompass,
+  "pen-tool": PenTool,
+  "drafting-compass": DraftingCompass,
   ruler: Ruler,
   briefcase: Briefcase,
   // Accessories.
-  'list-todo': ListTodo,
+  "list-todo": ListTodo,
   bookmark: Bookmark,
   // Developer.
-  'git-branch': GitBranch,
+  "git-branch": GitBranch,
   send: Send,
-}
+};
 
 /** The icon names a descriptor may use, for the descriptor check and the docs. */
-export const MARKETPLACE_ICON_NAMES: readonly string[] = Object.keys(ICONS)
+export const MARKETPLACE_ICON_NAMES: readonly string[] = Object.keys(ICONS);
 
 /**
  * The icon a descriptor or manifest names, or the package icon. `name` comes
@@ -264,36 +259,36 @@ export const MARKETPLACE_ICON_NAMES: readonly string[] = Object.keys(ICONS)
  * and rendering that as a component crashes the pane.
  */
 export function marketplaceIcon(name: string): IconComponent {
-  return Object.hasOwn(ICONS, name) ? ICONS[name] : Package
+  return Object.hasOwn(ICONS, name) ? ICONS[name] : Package;
 }
 
 const useRegistryStore = create<{
-  version: number
-  ids: string[]
+  version: number;
+  ids: string[];
   /** Listed apps left out because a built-in app has their id. */
-  clashes: string[]
+  clashes: string[];
 }>(() => ({
   version: 0,
   ids: [],
   clashes: [],
-}))
+}));
 
 /**
  * Tell the components that render from `APP_REGISTRY` that it changed, for
  * entries spliced in outside this file (Start's Linux entries).
  */
 export function noteRegistryChanged(): void {
-  useRegistryStore.setState((s) => ({ version: s.version + 1 }))
+  useRegistryStore.setState((s) => ({ version: s.version + 1 }));
 }
 
 /** Subscribe a component to marketplace apps arriving in or leaving `APP_REGISTRY`. */
 export function useRegistryVersion(): number {
-  return useRegistryStore((s) => s.version)
+  return useRegistryStore((s) => s.version);
 }
 
 /** True when `appId` is a marketplace app rather than a built-in add-on. */
 export function isMarketplaceApp(appId: string): boolean {
-  return useRegistryStore.getState().ids.includes(appId)
+  return useRegistryStore.getState().ids.includes(appId);
 }
 
 /**
@@ -301,18 +296,18 @@ export function isMarketplaceApp(appId: string): boolean {
  * the same id (the built-in wins, and the pane says so).
  */
 export function useBuiltInClashes(): string[] {
-  return useRegistryStore((s) => s.clashes)
+  return useRegistryStore((s) => s.clashes);
 }
 
 /**
  * The apps of the last sync that declare a hook, in the registry and
  * runnable: what `kitHooks.tsx` loads.
  */
-let hookApps: MarketplaceApp[] = []
+let hookApps: MarketplaceApp[] = [];
 
 /** The apps whose hooks `kitHooks.tsx` loads, as the last sync left them. */
 export function kitHookApps(): readonly MarketplaceApp[] {
-  return hookApps
+  return hookApps;
 }
 
 /**
@@ -320,11 +315,11 @@ export function kitHookApps(): readonly MarketplaceApp[] {
  * from. A sync makes every entry anew; one of the same build gets the same
  * service back, so installing another app does not remount it.
  */
-const services = new Map<string, { entryPath: string; Service: ComponentType }>()
+const services = new Map<string, { entryPath: string; Service: ComponentType }>();
 
 /** True while the build of `appId` whose entry is `entryPath` is the one the registry holds. */
 export function isCurrentBuild(appId: string, entryPath: string): boolean {
-  return hookApps.some((a) => a.id === appId && a.installed?.entryPath === entryPath)
+  return hookApps.some((a) => a.id === appId && a.installed?.entryPath === entryPath);
 }
 
 /**
@@ -335,17 +330,17 @@ export function isCurrentBuild(appId: string, entryPath: string): boolean {
  * that leaves the build out takes the service with it.
  */
 export function setKitService(app: MarketplaceApp, Service: ComponentType): void {
-  const entryPath = app.installed?.entryPath
-  if (!entryPath || !isCurrentBuild(app.id, entryPath)) return
-  services.set(app.id, { entryPath, Service })
-  const config = APP_REGISTRY.find((a) => a.id === app.id)
-  if (!config) return
-  config.background = Service
-  noteRegistryChanged()
+  const entryPath = app.installed?.entryPath;
+  if (!entryPath || !isCurrentBuild(app.id, entryPath)) return;
+  services.set(app.id, { entryPath, Service });
+  const config = APP_REGISTRY.find((a) => a.id === app.id);
+  if (!config) return;
+  config.background = Service;
+  noteRegistryChanged();
 }
 
 function toAppConfig(app: MarketplaceApp): AppConfig {
-  const service = services.get(app.id)
+  const service = services.get(app.id);
   const component = lazy(async () => {
     // The host is its own chunk, and the game's code is fetched only when a
     // window opens: nothing of either is in the eager bundle.
@@ -355,28 +350,24 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
       // import (the entry's own imports with it) the moment that chunk is in,
       // not once the host has mounted. This factory runs as the
       // window renders, so nothing is fetched before a window opens.
-      preloadKitApp(app, kitBuildKey(app))
+      preloadKitApp(app, kitBuildKey(app));
       const [{ KitAppHost }, { startKitApp }] = await Promise.all([
-        import('../../modules/marketplace/KitAppHost'),
-        import('../../modules/marketplace/kitModule'),
-      ])
-      startKitApp(app)
-      const Host: ComponentType<{ windowId: string }> = ({ windowId }) => (
-        <KitAppHost windowId={windowId} app={app} />
-      )
-      return { default: Host }
+        import("../../modules/marketplace/KitAppHost"),
+        import("../../modules/marketplace/kitModule"),
+      ]);
+      startKitApp(app);
+      const Host: ComponentType<{ windowId: string }> = ({ windowId }) => <KitAppHost windowId={windowId} app={app} />;
+      return { default: Host };
     }
-    const { NativeAppHost } = await import('../../modules/marketplace/NativeAppHost')
-    const Host: ComponentType<{ windowId: string }> = ({ windowId }) => (
-      <NativeAppHost windowId={windowId} app={app} />
-    )
-    return { default: Host }
-  })
+    const { NativeAppHost } = await import("../../modules/marketplace/NativeAppHost");
+    const Host: ComponentType<{ windowId: string }> = ({ windowId }) => <NativeAppHost windowId={windowId} app={app} />;
+    return { default: Host };
+  });
   return {
     id: app.id,
     name: app.name,
     description: app.description,
-    meta: [...app.meta, 'marketplace'],
+    meta: [...app.meta, "marketplace"],
     icon: marketplaceIcon(app.icon),
     component,
     // One window unless the descriptor says otherwise: for a
@@ -388,18 +379,16 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
     // Undefined rather than empty, or "Show all" would list every app.
     ...(app.opens?.length ? { opens: [...app.opens] } : {}),
     // Its background service, when one of this build has loaded already.
-    ...(service && service.entryPath === app.installed?.entryPath
-      ? { background: service.Service }
-      : {}),
+    ...(service && service.entryPath === app.installed?.entryPath ? { background: service.Service } : {}),
     defaultSize: { width: app.window.defaultSize.w, height: app.window.defaultSize.h },
     minSize: { width: app.window.minSize.w, height: app.window.minSize.h },
-  }
+  };
 }
 
 /** Installed with its files present, and a module to import. */
 function isRunnable(app: MarketplaceApp): boolean {
-  if (!app.installed || app.installed.missing) return false
-  return typeof app.installed.entryPath === 'string'
+  if (!app.installed || app.installed.missing) return false;
+  return typeof app.installed.entryPath === "string";
 }
 
 /**
@@ -408,38 +397,38 @@ function isRunnable(app: MarketplaceApp): boolean {
  * marketplace app cannot shadow Settings or the Terminal.
  */
 export function syncMarketplaceApps(apps: MarketplaceApp[]): void {
-  const previous = new Set(useRegistryStore.getState().ids)
+  const previous = new Set(useRegistryStore.getState().ids);
   for (let i = APP_REGISTRY.length - 1; i >= 0; i--) {
-    if (previous.has(APP_REGISTRY[i].id)) APP_REGISTRY.splice(i, 1)
+    if (previous.has(APP_REGISTRY[i].id)) APP_REGISTRY.splice(i, 1);
   }
-  const builtIn = new Set(APP_REGISTRY.map((a) => a.id))
-  const added: string[] = []
-  const kitBuilds = new Set<string>()
-  const hooked: MarketplaceApp[] = []
+  const builtIn = new Set(APP_REGISTRY.map((a) => a.id));
+  const added: string[] = [];
+  const kitBuilds = new Set<string>();
+  const hooked: MarketplaceApp[] = [];
   for (const app of apps) {
-    if (!isRunnable(app) || builtIn.has(app.id) || added.includes(app.id)) continue
-    APP_REGISTRY.push(toAppConfig(app))
-    added.push(app.id)
-    if (isKitApp(app)) kitBuilds.add(kitBuildKey(app)!)
-    if (declaresHooks(app)) hooked.push(app)
+    if (!isRunnable(app) || builtIn.has(app.id) || added.includes(app.id)) continue;
+    APP_REGISTRY.push(toAppConfig(app));
+    added.push(app.id);
+    if (isKitApp(app)) kitBuilds.add(kitBuildKey(app)!);
+    if (declaresHooks(app)) hooked.push(app);
   }
   // A build that left (updated, uninstalled) takes its stylesheets with it,
   // and its background service.
-  pruneKitStyles(kitBuilds)
-  hookApps = hooked
+  pruneKitStyles(kitBuilds);
+  hookApps = hooked;
   for (const [id, { entryPath }] of services) {
-    if (!isCurrentBuild(id, entryPath)) services.delete(id)
+    if (!isCurrentBuild(id, entryPath)) services.delete(id);
   }
   useRegistryStore.setState((s) => ({
     version: s.version + 1,
     ids: added,
     clashes: clashesWith(apps, builtIn),
-  }))
-  syncKitHooks()
+  }));
+  syncKitHooks();
 }
 
 /** The chunk that loads kit apps' hooks: imported only once one declares a hook. */
-let kitHooksChunk: Promise<typeof import('../../modules/marketplace/kitHooks')> | null = null
+let kitHooksChunk: Promise<typeof import("../../modules/marketplace/kitHooks")> | null = null;
 
 /**
  * Load the hooks of the apps that declare them, and unload those of the apps
@@ -449,39 +438,39 @@ let kitHooksChunk: Promise<typeof import('../../modules/marketplace/kitHooks')> 
  * hook.
  */
 function syncKitHooks(): void {
-  if (hookApps.length === 0 && !kitHooksChunk) return
+  if (hookApps.length === 0 && !kitHooksChunk) return;
   whenIdle(() => {
-    kitHooksChunk ??= import('../../modules/marketplace/kitHooks')
+    kitHooksChunk ??= import("../../modules/marketplace/kitHooks");
     kitHooksChunk.then(
       (m) => m.syncKitHooks(),
       () => {
         // The desktop's own chunk did not arrive: the next sync tries again.
-        kitHooksChunk = null
-      }
-    )
-  })
+        kitHooksChunk = null;
+      },
+    );
+  });
 }
 
 /** Run `task` when the page is idle, and within two seconds whatever happens. */
 function whenIdle(task: () => void): void {
-  if (typeof requestIdleCallback === 'function') requestIdleCallback(task, { timeout: 2000 })
-  else setTimeout(task, 0)
+  if (typeof requestIdleCallback === "function") requestIdleCallback(task, { timeout: 2000 });
+  else setTimeout(task, 0);
 }
 
 /** The listed ids a built-in app already has, installed or not. */
 function clashesWith(apps: MarketplaceApp[], builtIn: ReadonlySet<string>): string[] {
-  return [...new Set(apps.map((a) => a.id).filter((id) => builtIn.has(id)))]
+  return [...new Set(apps.map((a) => a.id).filter((id) => builtIn.has(id)))];
 }
 
 /** The ids in `APP_REGISTRY` that are built-in add-ons rather than marketplace apps. */
 function builtInIds(): Set<string> {
-  const ours = new Set(useRegistryStore.getState().ids)
-  return new Set(APP_REGISTRY.map((a) => a.id).filter((id) => !ours.has(id)))
+  const ours = new Set(useRegistryStore.getState().ids);
+  return new Set(APP_REGISTRY.map((a) => a.id).filter((id) => !ours.has(id)));
 }
 
 /** Fetch the catalog and sync the registry. Resolves the listing for the pane. */
 export async function loadMarketplace(): Promise<MarketplaceListing> {
-  const { data } = await api.get<MarketplaceListing>('/marketplace')
+  const { data } = await api.get<MarketplaceListing>("/marketplace");
   // An install that only changed its job state leaves the registry alone: a
   // fresh AppConfig would remount every open window of the app. A URL app's
   // update is a new commit (and revokes its open windows' tokens), so that
@@ -489,22 +478,20 @@ export async function loadMarketplace(): Promise<MarketplaceListing> {
   const key = (list: MarketplaceApp[]) =>
     list
       .filter(isRunnable)
-      .map(
-        (a) => `${a.id}@${a.runtime ?? 'native'}@${a.installed?.buildId}@${a.source?.commit ?? ''}`
-      )
-      .join(',')
+      .map((a) => `${a.id}@${a.runtime ?? "native"}@${a.installed?.buildId}@${a.source?.commit ?? ""}`)
+      .join(",");
   if (key(data.apps) !== lastKey) {
-    lastKey = key(data.apps)
-    syncMarketplaceApps(data.apps)
+    lastKey = key(data.apps);
+    syncMarketplaceApps(data.apps);
   } else {
     // A clash is worth reporting before anything is installed, and noting
     // it must not remount the open windows.
-    const clashes = clashesWith(data.apps, builtInIds())
+    const clashes = clashesWith(data.apps, builtInIds());
     if (clashes.join() !== useRegistryStore.getState().clashes.join()) {
-      useRegistryStore.setState({ clashes })
+      useRegistryStore.setState({ clashes });
     }
   }
-  return data
+  return data;
 }
 
-let lastKey: string | null = null
+let lastKey: string | null = null;

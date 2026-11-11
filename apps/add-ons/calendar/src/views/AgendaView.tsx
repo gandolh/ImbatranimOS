@@ -1,16 +1,16 @@
-import dayjs, { type Dayjs } from 'dayjs'
-import { CalendarClock, Repeat } from 'lucide-react'
-import { cn } from '@imbatranim/ui'
-import { eventColorClass } from '../eventStyle'
-import type { Occurrence } from '../recurrence'
+import dayjs, { type Dayjs } from "dayjs";
+import { CalendarClock, Repeat } from "lucide-react";
+import { cn } from "@imbatranim/ui";
+import { eventColorClass } from "../eventStyle";
+import type { Occurrence } from "../recurrence";
 
 type AgendaViewProps = {
-  anchor: Dayjs
-  occurrences: Occurrence[]
-  onOpen: (occurrence: Occurrence) => void
+  anchor: Dayjs;
+  occurrences: Occurrence[];
+  onOpen: (occurrence: Occurrence) => void;
   /** Non-empty when a search is filtering the list, for the empty-state wording. */
-  query: string
-}
+  query: string;
+};
 
 /**
  * A flat, chronological list of what is coming up — grouped by day.
@@ -24,18 +24,18 @@ type AgendaViewProps = {
  * The range comes from the parent, so the same expansion feeds every view.
  */
 export function AgendaView({ anchor, occurrences, onOpen, query }: AgendaViewProps) {
-  const today = dayjs()
+  const today = dayjs();
 
   /** Grouped by calendar day, in order. */
-  const groups = new Map<string, Occurrence[]>()
+  const groups = new Map<string, Occurrence[]>();
   for (const occurrence of occurrences) {
     // Grouped by the day the occurrence *starts*, so a multi-day event appears
     // once in a list rather than on every day it covers — the row says how long
     // it runs instead.
-    const key = dayjs(occurrence.start).format('YYYY-MM-DD')
-    const existing = groups.get(key)
-    if (existing) existing.push(occurrence)
-    else groups.set(key, [occurrence])
+    const key = dayjs(occurrence.start).format("YYYY-MM-DD");
+    const existing = groups.get(key);
+    if (existing) existing.push(occurrence);
+    else groups.set(key, [occurrence]);
   }
 
   if (groups.size === 0) {
@@ -45,38 +45,38 @@ export function AgendaView({ anchor, occurrences, onOpen, query }: AgendaViewPro
         <p className="text-[12px]">
           {query
             ? `Nothing matches “${query}” in this range.`
-            : `Nothing scheduled from ${anchor.format('MMM D, YYYY')} onwards.`}
+            : `Nothing scheduled from ${anchor.format("MMM D, YYYY")} onwards.`}
         </p>
         {!query && <p className="text-[10px]">Switch to Month or Week to add something.</p>}
       </div>
-    )
+    );
   }
 
   return (
     <div className="h-full overflow-y-auto">
       {[...groups.entries()].map(([key, dayOccurrences]) => {
-        const day = dayjs(key)
-        const isToday = day.isSame(today, 'day')
+        const day = dayjs(key);
+        const isToday = day.isSame(today, "day");
         return (
           <div key={key}>
             <div className="border-outline-variant bg-surface-container-low sticky top-0 z-10 flex items-center gap-2 border-y px-3 py-1">
               <span
                 className={cn(
-                  'flex h-5 min-w-5 items-center justify-center px-1 text-[11px] font-semibold',
-                  isToday ? 'bg-primary text-on-primary' : 'text-on-surface'
+                  "flex h-5 min-w-5 items-center justify-center px-1 text-[11px] font-semibold",
+                  isToday ? "bg-primary text-on-primary" : "text-on-surface",
                 )}
               >
                 {day.date()}
               </span>
               <span className="text-on-surface-variant text-[11px] font-semibold tracking-wide uppercase">
-                {day.format('ddd, MMMM YYYY')}
+                {day.format("ddd, MMMM YYYY")}
               </span>
               {isToday && <span className="text-primary text-[10px] font-semibold">Today</span>}
             </div>
 
             {dayOccurrences.map((occurrence) => {
-              const { event } = occurrence
-              const multiDay = !dayjs(occurrence.start).isSame(dayjs(occurrence.end), 'day')
+              const { event } = occurrence;
+              const multiDay = !dayjs(occurrence.start).isSame(dayjs(occurrence.end), "day");
               return (
                 <button
                   key={`${event.id}-${occurrence.occurrenceDate}`}
@@ -86,28 +86,24 @@ export function AgendaView({ anchor, occurrences, onOpen, query }: AgendaViewPro
                 >
                   <span
                     className={cn(
-                      'mt-0.5 w-16 shrink-0 border-l-2 px-1 text-[10px] tabular-nums',
-                      eventColorClass(event.color)
+                      "mt-0.5 w-16 shrink-0 border-l-2 px-1 text-[10px] tabular-nums",
+                      eventColorClass(event.color),
                     )}
                   >
-                    {event.allDay ? 'All day' : dayjs(occurrence.start).format('HH:mm')}
+                    {event.allDay ? "All day" : dayjs(occurrence.start).format("HH:mm")}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="text-on-surface block truncate text-[12px] font-semibold">
-                      {event.title}
-                    </span>
+                    <span className="text-on-surface block truncate text-[12px] font-semibold">{event.title}</span>
                     <span className="text-on-surface-variant flex flex-wrap items-center gap-x-2 text-[10px]">
                       {!event.allDay && (
                         <span>
-                          until{' '}
+                          until{" "}
                           {multiDay
-                            ? dayjs(occurrence.end).format('MMM D, HH:mm')
-                            : dayjs(occurrence.end).format('HH:mm')}
+                            ? dayjs(occurrence.end).format("MMM D, HH:mm")
+                            : dayjs(occurrence.end).format("HH:mm")}
                         </span>
                       )}
-                      {event.allDay && multiDay && (
-                        <span>through {dayjs(occurrence.end).format('MMM D')}</span>
-                      )}
+                      {event.allDay && multiDay && <span>through {dayjs(occurrence.end).format("MMM D")}</span>}
                       {event.recurrence && (
                         <span className="flex items-center gap-0.5">
                           <Repeat size={9} />
@@ -118,11 +114,11 @@ export function AgendaView({ anchor, occurrences, onOpen, query }: AgendaViewPro
                     </span>
                   </span>
                 </button>
-              )
+              );
             })}
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

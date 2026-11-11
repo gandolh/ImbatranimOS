@@ -1,44 +1,25 @@
-import type { ChildProcess } from 'child_process';
-import { EventEmitter } from 'events';
-import {
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { brotliCompressSync } from 'zlib';
-import type { WaylandGateway } from '../wayland/wayland.gateway';
-import { SessionApps } from '../wayland/session-apps';
-import {
-  LinuxAppsService,
-  parseLanguages,
-  parseProfileList,
-  resolveFileInHome,
-} from './linux-apps.service';
+import type { ChildProcess } from "child_process";
+import { EventEmitter } from "events";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { brotliCompressSync } from "zlib";
+import type { WaylandGateway } from "../wayland/wayland.gateway";
+import { SessionApps } from "../wayland/session-apps";
+import { LinuxAppsService, parseLanguages, parseProfileList, resolveFileInHome } from "./linux-apps.service";
 
 // Every spawn the service makes goes through this; nothing really runs.
 const mockSpawn = jest.fn<ChildProcess, unknown[]>();
 // The service's promisified execFile: the real one unless a test says.
 const mockRun = jest.fn((...args: unknown[]) => {
-  const { execFile } =
-    jest.requireActual<typeof import('child_process')>('child_process');
-  const { promisify } = jest.requireActual<typeof import('util')>('util');
-  return (
-    promisify(execFile) as (
-      ...a: unknown[]
-    ) => Promise<{ stdout: string; stderr: string }>
-  )(...args);
+  const { execFile } = jest.requireActual<typeof import("child_process")>("child_process");
+  const { promisify } = jest.requireActual<typeof import("util")>("util");
+  return (promisify(execFile) as (...a: unknown[]) => Promise<{ stdout: string; stderr: string }>)(...args);
 });
-jest.mock('child_process', (): typeof import('child_process') => {
-  const actual =
-    jest.requireActual<typeof import('child_process')>('child_process');
-  const { promisify } = jest.requireActual<typeof import('util')>('util');
-  const execFile = ((...args: unknown[]) =>
-    (actual.execFile as (...a: unknown[]) => unknown)(...args)) as never;
+jest.mock("child_process", (): typeof import("child_process") => {
+  const actual = jest.requireActual<typeof import("child_process")>("child_process");
+  const { promisify } = jest.requireActual<typeof import("util")>("util");
+  const execFile = ((...args: unknown[]) => (actual.execFile as (...a: unknown[]) => unknown)(...args)) as never;
   // Read when the service promisifies it, after this file has run.
   Object.assign(execFile, {
     [promisify.custom]: (...args: unknown[]) => mockRun(...args),
@@ -57,105 +38,79 @@ function finishing(code: number): ChildProcess {
     stdout: new EventEmitter(),
     stderr: new EventEmitter(),
   });
-  setImmediate(() => child.emit('close', code, null));
+  setImmediate(() => child.emit("close", code, null));
   return child as unknown as ChildProcess;
 }
 
-const SESSION = 'abcdefghijklmnop';
-const COMMIT = 'c'.repeat(40);
+const SESSION = "abcdefghijklmnop";
+const COMMIT = "c".repeat(40);
 
 function machine() {
-  const root = mkdtempSync(join(tmpdir(), 'linux-apps-'));
-  const indexDir = join(root, 'index');
-  const store = join(root, 'store');
-  const profile = join(root, 'state', 'profile');
+  const root = mkdtempSync(join(tmpdir(), "linux-apps-"));
+  const indexDir = join(root, "index");
+  const store = join(root, "store");
+  const profile = join(root, "state", "profile");
   mkdirSync(indexDir, { recursive: true });
-  mkdirSync(join(store, 'aaa-firefox-159.0', 'share', 'applications'), {
+  mkdirSync(join(store, "aaa-firefox-159.0", "share", "applications"), {
     recursive: true,
   });
-  mkdirSync(
-    join(
-      store,
-      'aaa-firefox-159.0',
-      'share',
-      'icons',
-      'hicolor',
-      '128x128',
-      'apps',
-    ),
-    { recursive: true },
-  );
-  mkdirSync(join(root, 'state'), { recursive: true });
-  symlinkSync(join(store, 'aaa-firefox-159.0'), profile);
-  writeFileSync(join(indexDir, 'git-revision'), COMMIT + '\n');
-  writeFileSync(
-    join(root, 'pin.env'),
-    `NIXPKGS_RELEASE=nixos-26.05\nNIXPKGS_COMMIT=${COMMIT}\n`,
-  );
+  mkdirSync(join(store, "aaa-firefox-159.0", "share", "icons", "hicolor", "128x128", "apps"), { recursive: true });
+  mkdirSync(join(root, "state"), { recursive: true });
+  symlinkSync(join(store, "aaa-firefox-159.0"), profile);
+  writeFileSync(join(indexDir, "git-revision"), COMMIT + "\n");
+  writeFileSync(join(root, "pin.env"), `NIXPKGS_RELEASE=nixos-26.05\nNIXPKGS_COMMIT=${COMMIT}\n`);
   const packages = {
     firefox: {
-      meta: { description: 'Web browser', license: { free: true } },
-      pname: 'firefox',
-      system: 'x86_64-linux',
-      version: '159.0',
+      meta: { description: "Web browser", license: { free: true } },
+      pname: "firefox",
+      system: "x86_64-linux",
+      version: "159.0",
     },
   };
   writeFileSync(
-    join(indexDir, 'packages.json.br'),
+    join(indexDir, "packages.json.br"),
     brotliCompressSync(Buffer.from(JSON.stringify({ packages, version: 2 }))),
   );
-  const apps = join(store, 'aaa-firefox-159.0', 'share', 'applications');
+  const apps = join(store, "aaa-firefox-159.0", "share", "applications");
   writeFileSync(
-    join(apps, 'firefox.desktop'),
+    join(apps, "firefox.desktop"),
     [
-      '[Desktop Entry]',
-      'Type=Application',
-      'Name=Firefox',
-      'Name[ro]=Firefox (ro)',
-      'Icon=firefox',
-      'Exec=firefox --name firefox %U',
-      'Actions=new-window;broken;',
-      '[Desktop Action new-window]',
-      'Name=New Window',
-      'Name[ro]=Fereastră nouă',
-      'Exec=firefox --new-window %U',
-      '[Desktop Action broken]',
-      'Name=Broken',
+      "[Desktop Entry]",
+      "Type=Application",
+      "Name=Firefox",
+      "Name[ro]=Firefox (ro)",
+      "Icon=firefox",
+      "Exec=firefox --name firefox %U",
+      "Actions=new-window;broken;",
+      "[Desktop Action new-window]",
+      "Name=New Window",
+      "Name[ro]=Fereastră nouă",
+      "Exec=firefox --new-window %U",
+      "[Desktop Action broken]",
+      "Name=Broken",
       'Exec="unclosed',
-      '',
-    ].join('\n'),
+      "",
+    ].join("\n"),
   );
   writeFileSync(
-    join(apps, 'hidden.desktop'),
-    '[Desktop Entry]\nType=Application\nName=Hidden\nExec=x\nNoDisplay=true\n',
+    join(apps, "hidden.desktop"),
+    "[Desktop Entry]\nType=Application\nName=Hidden\nExec=x\nNoDisplay=true\n",
   );
-  writeFileSync(
-    join(
-      store,
-      'aaa-firefox-159.0',
-      'share',
-      'icons',
-      'hicolor',
-      '128x128',
-      'apps',
-      'firefox.png',
-    ),
-    'png',
-  );
+  writeFileSync(join(store, "aaa-firefox-159.0", "share", "icons", "hicolor", "128x128", "apps", "firefox.png"), "png");
   return {
     root,
     paths: {
       indexDir,
-      pinFile: join(root, 'pin.env'),
+      pinFile: join(root, "pin.env"),
       profile,
-      cacheDir: join(root, 'cache'),
+      cacheDir: join(root, "cache"),
       store,
-      xwaylandProfile: join(root, 'state', 'profiles', 'imbatranim-xwayland'),
+      xwaylandProfile: join(root, "state", "profiles", "imbatranim-xwayland"),
     },
   };
 }
 
-describe('LinuxAppsService', () => {
+describe("LinuxAppsService", () => {
   let m: ReturnType<typeof machine>;
   let live: Set<string>;
   let apps: LinuxAppsService;
@@ -180,133 +135,117 @@ describe('LinuxAppsService', () => {
     mockSpawn.mockReset();
   });
 
-  it('builds the index once and searches it', async () => {
+  it("builds the index once and searches it", async () => {
     expect((await apps.status()).index).toMatch(/building|ready/);
-    expect(await apps.search('firefox')).toEqual([
+    expect(await apps.search("firefox")).toEqual([
       {
-        attr: 'firefox',
-        pname: 'firefox',
-        version: '159.0',
-        description: 'Web browser',
+        attr: "firefox",
+        pname: "firefox",
+        version: "159.0",
+        description: "Web browser",
         unfree: false,
       },
     ]);
-    expect((await apps.status()).index).toBe('ready');
+    expect((await apps.status()).index).toBe("ready");
   });
 
-  it('says so, and installs nothing, when the index is not from the pinned commit', async () => {
-    writeFileSync(m.paths.pinFile, `NIXPKGS_COMMIT=${'d'.repeat(40)}\n`);
-    expect((await apps.status()).index).toBe('mismatch');
-    await expect(apps.install('firefox', SESSION)).rejects.toThrow(/pin/);
+  it("says so, and installs nothing, when the index is not from the pinned commit", async () => {
+    writeFileSync(m.paths.pinFile, `NIXPKGS_COMMIT=${"d".repeat(40)}\n`);
+    expect((await apps.status()).index).toBe("mismatch");
+    await expect(apps.install("firefox", SESSION)).rejects.toThrow(/pin/);
   });
 
-  it('refuses a made-up package without running anything', async () => {
+  it("refuses a made-up package without running anything", async () => {
     const spawn = mockSpawn;
-    await expect(apps.install('no-such-package-xyz', SESSION)).rejects.toThrow(
-      /no package no-such-package-xyz/,
-    );
-    await expect(apps.install('firefox; rm -rf ~', SESSION)).rejects.toThrow(
-      /not a package name/,
-    );
+    await expect(apps.install("no-such-package-xyz", SESSION)).rejects.toThrow(/no package no-such-package-xyz/);
+    await expect(apps.install("firefox; rm -rf ~", SESSION)).rejects.toThrow(/not a package name/);
     expect(spawn).not.toHaveBeenCalled();
     expect(apps.getJob()).toBeNull();
   });
 
-  it('changes nothing for a tab whose session is not live', async () => {
+  it("changes nothing for a tab whose session is not live", async () => {
     const spawn = mockSpawn;
-    await expect(apps.install('firefox', 'zzzzzzzzzzzzzzzz')).rejects.toThrow(
-      /session/,
-    );
-    expect(() => apps.freeSpace('not a session')).toThrow(/session/);
-    await expect(apps.launch('firefox', 'zzzzzzzzzzzzzzzz')).rejects.toThrow(
-      /session/,
-    );
+    await expect(apps.install("firefox", "zzzzzzzzzzzzzzzz")).rejects.toThrow(/session/);
+    expect(() => apps.freeSpace("not a session")).toThrow(/session/);
+    await expect(apps.launch("firefox", "zzzzzzzzzzzzzzzz")).rejects.toThrow(/session/);
     expect(spawn).not.toHaveBeenCalled();
   });
 
-  it('lists Start entries from the profile, with their icons and actions', async () => {
+  it("lists Start entries from the profile, with their icons and actions", async () => {
     expect(await apps.launchers()).toEqual([
       {
-        id: 'firefox',
-        name: 'Firefox',
-        comment: '',
+        id: "firefox",
+        name: "Firefox",
+        comment: "",
         hasIcon: true,
         // The action whose Exec names no program is left out, as an entry is.
-        actions: [{ id: 'new-window', name: 'New Window' }],
+        actions: [{ id: "new-window", name: "New Window" }],
         // No shared-mime-info database in this profile: nothing claims a type.
         opens: [],
       },
     ]);
-    expect((await apps.icon('firefox')).type).toBe('image/png');
-    await expect(apps.icon('../../etc/passwd')).rejects.toThrow(/No icon/);
+    expect((await apps.icon("firefox")).type).toBe("image/png");
+    await expect(apps.icon("../../etc/passwd")).rejects.toThrow(/No icon/);
   });
 
   it("starts a launcher's Exec, field codes removed, in its own group, for the session", async () => {
     const fake = {
       pid: 4242,
-      once: jest.fn((ev: string, cb: () => void) => ev === 'spawn' && cb()),
+      once: jest.fn((ev: string, cb: () => void) => ev === "spawn" && cb()),
       unref: jest.fn(),
     };
     mockSpawn.mockReturnValue(fake as never);
     const spawn = mockSpawn;
-    await expect(apps.launch('firefox', SESSION)).resolves.toEqual({
+    await expect(apps.launch("firefox", SESSION)).resolves.toEqual({
       pid: 4242,
     });
     const [cmd, args, opts] = spawn.mock.calls[0] as [string, string[], object];
-    expect(cmd).toBe('firefox');
-    expect(args).toEqual(['--name', 'firefox']);
+    expect(cmd).toBe("firefox");
+    expect(args).toEqual(["--name", "firefox"]);
     expect(opts).toMatchObject({ detached: true });
-    expect((opts as { env: NodeJS.ProcessEnv }).env.WAYLAND_DISPLAY).toBe(
-      `wayland-${SESSION}`,
-    );
+    expect((opts as { env: NodeJS.ProcessEnv }).env.WAYLAND_DISPLAY).toBe(`wayland-${SESSION}`);
     // The session's X display, for an X11 app.
-    expect((opts as { env: NodeJS.ProcessEnv }).env.DISPLAY).toBe(':3');
+    expect((opts as { env: NodeJS.ProcessEnv }).env.DISPLAY).toBe(":3");
     expect(sessionApps.groups(SESSION)).toEqual([4242]);
   });
 
-  describe('as an Open with handler', () => {
+  describe("as an Open with handler", () => {
     let home: string;
     let outside: string;
     const oldHome = process.env.FILES_ROOT;
     const fake = () => ({
       pid: 4242,
-      once: jest.fn((ev: string, cb: () => void) => ev === 'spawn' && cb()),
+      once: jest.fn((ev: string, cb: () => void) => ev === "spawn" && cb()),
       unref: jest.fn(),
     });
 
     beforeEach(() => {
-      const share = join(m.paths.profile, 'share');
-      mkdirSync(join(share, 'mime'), { recursive: true });
+      const share = join(m.paths.profile, "share");
+      mkdirSync(join(share, "mime"), { recursive: true });
       writeFileSync(
-        join(share, 'mime', 'globs2'),
-        '50:application/vnd.oasis.opendocument.text:*.odt\n50:application/rtf:*.rtf\n',
+        join(share, "mime", "globs2"),
+        "50:application/vnd.oasis.opendocument.text:*.odt\n50:application/rtf:*.rtf\n",
       );
       writeFileSync(
-        join(share, 'applications', 'writer.desktop'),
+        join(share, "applications", "writer.desktop"),
         [
-          '[Desktop Entry]',
-          'Type=Application',
-          'Name=Writer',
-          'Exec=soffice --writer %U',
-          'MimeType=application/vnd.oasis.opendocument.text;application/rtf;',
-        ].join('\n'),
+          "[Desktop Entry]",
+          "Type=Application",
+          "Name=Writer",
+          "Exec=soffice --writer %U",
+          "MimeType=application/vnd.oasis.opendocument.text;application/rtf;",
+        ].join("\n"),
       );
       writeFileSync(
-        join(share, 'applications', 'clock.desktop'),
-        [
-          '[Desktop Entry]',
-          'Type=Application',
-          'Name=Clock',
-          'Exec=clock',
-          'MimeType=application/rtf;',
-        ].join('\n'),
+        join(share, "applications", "clock.desktop"),
+        ["[Desktop Entry]", "Type=Application", "Name=Clock", "Exec=clock", "MimeType=application/rtf;"].join("\n"),
       );
-      home = realpathSync(mkdtempSync(join(tmpdir(), 'home-')));
-      outside = realpathSync(mkdtempSync(join(tmpdir(), 'outside-')));
+      home = realpathSync(mkdtempSync(join(tmpdir(), "home-")));
+      outside = realpathSync(mkdtempSync(join(tmpdir(), "outside-")));
       process.env.FILES_ROOT = home;
-      writeFileSync(join(home, 'letter.odt'), 'x');
-      writeFileSync(join(outside, 'secret.odt'), 'x');
-      symlinkSync(join(outside, 'secret.odt'), join(home, 'link.odt'));
+      writeFileSync(join(home, "letter.odt"), "x");
+      writeFileSync(join(outside, "secret.odt"), "x");
+      symlinkSync(join(outside, "secret.odt"), join(home, "link.odt"));
     });
     afterEach(() => {
       if (oldHome === undefined) delete process.env.FILES_ROOT;
@@ -315,166 +254,134 @@ describe('LinuxAppsService', () => {
       rmSync(outside, { recursive: true, force: true });
     });
 
-    it('lists the types an entry opens, and none for an entry that takes no file', async () => {
+    it("lists the types an entry opens, and none for an entry that takes no file", async () => {
       const list = await apps.launchers();
-      expect(list.find((l) => l.id === 'writer')?.opens).toEqual([
-        'odt',
-        'rtf',
-      ]);
-      expect(list.find((l) => l.id === 'clock')?.opens).toEqual([]);
-      expect(list.find((l) => l.id === 'firefox')?.opens).toEqual([]);
+      expect(list.find((l) => l.id === "writer")?.opens).toEqual(["odt", "rtf"]);
+      expect(list.find((l) => l.id === "clock")?.opens).toEqual([]);
+      expect(list.find((l) => l.id === "firefox")?.opens).toEqual([]);
     });
 
     it("hands the entry's Exec the file, as a path or a URL by its field code", async () => {
       mockSpawn.mockReturnValue(fake() as never);
-      await apps.launch('writer', SESSION, undefined, {
-        root: 'home',
-        path: 'letter.odt',
+      await apps.launch("writer", SESSION, undefined, {
+        root: "home",
+        path: "letter.odt",
       });
       const [cmd, args] = mockSpawn.mock.calls[0] as [string, string[]];
-      expect(cmd).toBe('soffice');
-      expect(args).toEqual(['--writer', `file://${join(home, 'letter.odt')}`]);
+      expect(cmd).toBe("soffice");
+      expect(args).toEqual(["--writer", `file://${join(home, "letter.odt")}`]);
     });
 
-    it('starts with no file as before, and refuses a file for an entry that takes none', async () => {
+    it("starts with no file as before, and refuses a file for an entry that takes none", async () => {
       mockSpawn.mockReturnValue(fake() as never);
-      await apps.launch('writer', SESSION);
-      expect((mockSpawn.mock.calls[0] as [string, string[]])[1]).toEqual([
-        '--writer',
-      ]);
+      await apps.launch("writer", SESSION);
+      expect((mockSpawn.mock.calls[0] as [string, string[]])[1]).toEqual(["--writer"]);
       await expect(
-        apps.launch('clock', SESSION, undefined, {
-          root: 'home',
-          path: 'letter.odt',
+        apps.launch("clock", SESSION, undefined, {
+          root: "home",
+          path: "letter.odt",
         }),
       ).rejects.toThrow(/doesn't open files/);
       expect(mockSpawn).toHaveBeenCalledTimes(1);
     });
 
-    it('refuses a file outside the home, whatever the way there, with one answer', async () => {
+    it("refuses a file outside the home, whatever the way there, with one answer", async () => {
       const tries = [
-        '../' + outside.split('/').pop()! + '/secret.odt',
-        join(outside, 'secret.odt'),
-        'link.odt',
-        'missing.odt',
-        '.',
-        '/etc/passwd',
-        'a\0b',
+        "../" + outside.split("/").pop()! + "/secret.odt",
+        join(outside, "secret.odt"),
+        "link.odt",
+        "missing.odt",
+        ".",
+        "/etc/passwd",
+        "a\0b",
       ];
       const messages = new Set<string>();
       for (const path of tries) {
-        const err = await resolveFileInHome('home', path).catch(
-          (e: Error) => e,
-        );
+        const err = await resolveFileInHome("home", path).catch((e: Error) => e);
         expect(err).toBeInstanceOf(Error);
         messages.add((err as Error).message);
-        await expect(
-          apps.launch('writer', SESSION, undefined, { root: 'home', path }),
-        ).rejects.toThrow();
+        await expect(apps.launch("writer", SESSION, undefined, { root: "home", path })).rejects.toThrow();
       }
-      expect([...messages]).toEqual(['That file cannot be opened']);
+      expect([...messages]).toEqual(["That file cannot be opened"]);
       expect(mockSpawn).not.toHaveBeenCalled();
     });
 
-    it('takes an absolute path that is inside the home', async () => {
-      await expect(
-        resolveFileInHome('home', join(home, 'letter.odt')),
-      ).resolves.toBe(join(home, 'letter.odt'));
+    it("takes an absolute path that is inside the home", async () => {
+      await expect(resolveFileInHome("home", join(home, "letter.odt"))).resolves.toBe(join(home, "letter.odt"));
     });
   });
 
   const settled = async () => {
-    while (apps.getJob()?.state === 'running')
-      await new Promise((r) => setImmediate(r));
+    while (apps.getJob()?.state === "running") await new Promise((r) => setImmediate(r));
     return apps.getJob()!;
   };
   const pathInfo = (lines: string[]) =>
     mockRun.mockImplementationOnce((cmd: unknown, args: unknown) => {
-      expect([cmd, ...(args as string[]).slice(0, 2)]).toEqual([
-        'nix',
-        'path-info',
-        '--recursive',
-      ]);
-      return Promise.resolve({ stdout: lines.join('\n'), stderr: '' });
+      expect([cmd, ...(args as string[]).slice(0, 2)]).toEqual(["nix", "path-info", "--recursive"]);
+      return Promise.resolve({ stdout: lines.join("\n"), stderr: "" });
     });
 
-  it('installs Xwayland after an app that speaks X11, in its own profile', async () => {
+  it("installs Xwayland after an app that speaks X11, in its own profile", async () => {
     mockSpawn.mockImplementation(() => finishing(0));
-    pathInfo(['/nix/store/' + 'a'.repeat(32) + '-libx11-1.8.14']);
-    await apps.install('firefox', SESSION);
+    pathInfo(["/nix/store/" + "a".repeat(32) + "-libx11-1.8.14"]);
+    await apps.install("firefox", SESSION);
     const job = await settled();
-    expect(job.state).toBe('done');
+    expect(job.state).toBe("done");
     const commands = mockSpawn.mock.calls.map((c) => c[1] as string[]);
     expect(commands).toEqual([
-      ['profile', 'add', 'nixpkgs#firefox'],
-      [
-        'profile',
-        'add',
-        '--profile',
-        m.paths.xwaylandProfile,
-        'nixpkgs#xwayland',
-      ],
+      ["profile", "add", "nixpkgs#firefox"],
+      ["profile", "add", "--profile", m.paths.xwaylandProfile, "nixpkgs#xwayland"],
     ]);
     expect(job.log).toMatch(/Xwayland comes with it/);
   });
 
-  it('leaves Xwayland out after an app that speaks only Wayland', async () => {
+  it("leaves Xwayland out after an app that speaks only Wayland", async () => {
     mockSpawn.mockImplementation(() => finishing(0));
-    pathInfo(['/nix/store/' + 'a'.repeat(32) + '-wayland-1.25.0']);
-    await apps.install('firefox', SESSION);
-    expect((await settled()).state).toBe('done');
+    pathInfo(["/nix/store/" + "a".repeat(32) + "-wayland-1.25.0"]);
+    await apps.install("firefox", SESSION);
+    expect((await settled()).state).toBe("done");
     expect(mockSpawn).toHaveBeenCalledTimes(1);
   });
 
-  it('removes Xwayland with the last app that speaks X11', async () => {
-    const bin = join(m.paths.xwaylandProfile, 'bin');
+  it("removes Xwayland with the last app that speaks X11", async () => {
+    const bin = join(m.paths.xwaylandProfile, "bin");
     mkdirSync(bin, { recursive: true });
-    writeFileSync(join(bin, 'Xwayland'), '');
+    writeFileSync(join(bin, "Xwayland"), "");
     mockRun.mockImplementationOnce(() =>
       Promise.resolve({
         stdout: JSON.stringify({ elements: { firefox: {} } }),
-        stderr: '',
+        stderr: "",
       }),
     );
     mockSpawn.mockImplementation(() => finishing(0));
     pathInfo([]);
-    await apps.remove('firefox', SESSION);
-    expect((await settled()).state).toBe('done');
+    await apps.remove("firefox", SESSION);
+    expect((await settled()).state).toBe("done");
     expect(mockSpawn.mock.calls.map((c) => c[1])).toEqual([
-      ['profile', 'remove', 'firefox'],
-      ['profile', 'remove', '--profile', m.paths.xwaylandProfile, '--all'],
+      ["profile", "remove", "firefox"],
+      ["profile", "remove", "--profile", m.paths.xwaylandProfile, "--all"],
     ]);
   });
 
   it("starts one of a launcher's actions the same way, and only one it has", async () => {
     const fake = {
       pid: 4343,
-      once: jest.fn((ev: string, cb: () => void) => ev === 'spawn' && cb()),
+      once: jest.fn((ev: string, cb: () => void) => ev === "spawn" && cb()),
       unref: jest.fn(),
     };
     mockSpawn.mockReturnValue(fake as never);
-    await expect(
-      apps.launch('firefox', SESSION, 'new-window'),
-    ).resolves.toEqual({
+    await expect(apps.launch("firefox", SESSION, "new-window")).resolves.toEqual({
       pid: 4343,
     });
     const [cmd, args] = mockSpawn.mock.calls[0] as [string, string[]];
-    expect([cmd, ...args]).toEqual(['firefox', '--new-window']);
+    expect([cmd, ...args]).toEqual(["firefox", "--new-window"]);
     expect(sessionApps.groups(SESSION)).toEqual([4343]);
 
-    await expect(apps.launch('firefox', SESSION, 'nope')).rejects.toThrow(
-      /no such action/,
-    );
-    await expect(apps.launch('firefox', SESSION, '../x')).rejects.toThrow(
-      /no such action/,
-    );
-    await expect(apps.launch('firefox', SESSION, 'broken')).rejects.toThrow(
-      /No such Linux app/,
-    );
+    await expect(apps.launch("firefox", SESSION, "nope")).rejects.toThrow(/no such action/);
+    await expect(apps.launch("firefox", SESSION, "../x")).rejects.toThrow(/no such action/);
+    await expect(apps.launch("firefox", SESSION, "broken")).rejects.toThrow(/No such Linux app/);
     // From a tab that doesn't hold a live session, nothing starts.
-    await expect(
-      apps.launch('firefox', 'zzzzzzzzzzzzzzzz', 'new-window'),
-    ).rejects.toThrow(/session/);
+    await expect(apps.launch("firefox", "zzzzzzzzzzzzzzzz", "new-window")).rejects.toThrow(/session/);
     expect(mockSpawn).toHaveBeenCalledTimes(1);
   });
 });
@@ -500,37 +407,35 @@ describe("Start entries in the browser's languages", () => {
     rmSync(m.root, { recursive: true, force: true });
   });
 
-  it('names entries and actions in the first language they have', async () => {
-    const [firefox] = await apps.launchers(['ro-RO', 'en']);
-    expect(firefox.name).toBe('Firefox (ro)');
-    expect(firefox.actions).toEqual([
-      { id: 'new-window', name: 'Fereastră nouă' },
-    ]);
-    const [plain] = await apps.launchers(['de-DE']);
-    expect(plain.name).toBe('Firefox');
+  it("names entries and actions in the first language they have", async () => {
+    const [firefox] = await apps.launchers(["ro-RO", "en"]);
+    expect(firefox.name).toBe("Firefox (ro)");
+    expect(firefox.actions).toEqual([{ id: "new-window", name: "Fereastră nouă" }]);
+    const [plain] = await apps.launchers(["de-DE"]);
+    expect(plain.name).toBe("Firefox");
   });
 
-  it('reads the languages the desktop sends, and ignores what is not one', () => {
-    expect(parseLanguages('ro-RO, ro,en')).toEqual(['ro-RO', 'ro', 'en']);
-    expect(parseLanguages('ro;q=0.9,*,<x>,sr-Latn-RS')).toEqual(['sr-Latn-RS']);
+  it("reads the languages the desktop sends, and ignores what is not one", () => {
+    expect(parseLanguages("ro-RO, ro,en")).toEqual(["ro-RO", "ro", "en"]);
+    expect(parseLanguages("ro;q=0.9,*,<x>,sr-Latn-RS")).toEqual(["sr-Latn-RS"]);
     expect(parseLanguages(undefined)).toEqual([]);
-    expect(parseLanguages(['ro'])).toEqual([]);
-    expect(parseLanguages(Array(20).fill('en').join(','))).toHaveLength(10);
+    expect(parseLanguages(["ro"])).toEqual([]);
+    expect(parseLanguages(Array(20).fill("en").join(","))).toHaveLength(10);
   });
 });
 
 describe("reading the profile's list", () => {
-  it('takes each element with its attribute, version and source', () => {
+  it("takes each element with its attribute, version and source", () => {
     const json = JSON.stringify({
       elements: {
         firefox: {
-          attrPath: 'legacyPackages.x86_64-linux.firefox',
-          originalUrl: 'flake:nixpkgs',
-          storePaths: ['/nix/store/abc-firefox-159.0'],
+          attrPath: "legacyPackages.x86_64-linux.firefox",
+          originalUrl: "flake:nixpkgs",
+          storePaths: ["/nix/store/abc-firefox-159.0"],
         },
-        'CuboCore.corefm': {
-          attrPath: 'legacyPackages.x86_64-linux.CuboCore.corefm',
-          storePaths: ['/nix/store/def-corefm-5.0.0'],
+        "CuboCore.corefm": {
+          attrPath: "legacyPackages.x86_64-linux.CuboCore.corefm",
+          storePaths: ["/nix/store/def-corefm-5.0.0"],
         },
       },
       version: 3,
@@ -538,13 +443,13 @@ describe("reading the profile's list", () => {
     expect(parseProfileList(json)).toEqual([
       // Not from `nixpkgs#…`, so a pin move leaves it alone.
       {
-        name: 'CuboCore.corefm',
-        attr: 'CuboCore.corefm',
-        version: '5.0.0',
+        name: "CuboCore.corefm",
+        attr: "CuboCore.corefm",
+        version: "5.0.0",
         nixpkgs: false,
       },
-      { name: 'firefox', attr: 'firefox', version: '159.0', nixpkgs: true },
+      { name: "firefox", attr: "firefox", version: "159.0", nixpkgs: true },
     ]);
-    expect(parseProfileList('not json')).toEqual([]);
+    expect(parseProfileList("not json")).toEqual([]);
   });
 });

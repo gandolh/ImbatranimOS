@@ -1,19 +1,19 @@
-import { useState } from 'react'
-import { cn } from '@imbatranim/ui'
-import { BasicPad } from './BasicPad'
-import { ProgrammerPad } from './ProgrammerPad'
-import { ScientificPad } from './ScientificPad'
-import { ConverterPad } from './ConverterPad'
-import { useCalcSession } from './hooks/useCalcSession'
+import { useState } from "react";
+import { cn } from "@imbatranim/ui";
+import { BasicPad } from "./BasicPad";
+import { ProgrammerPad } from "./ProgrammerPad";
+import { ScientificPad } from "./ScientificPad";
+import { ConverterPad } from "./ConverterPad";
+import { useCalcSession } from "./hooks/useCalcSession";
 
-type Mode = 'basic' | 'scientific' | 'programmer' | 'converter'
+type Mode = "basic" | "scientific" | "programmer" | "converter";
 
 const MODES: { id: Mode; label: string }[] = [
-  { id: 'basic', label: 'Basic' },
-  { id: 'scientific', label: 'Sci' },
-  { id: 'programmer', label: 'Prog' },
-  { id: 'converter', label: 'Conv' },
-]
+  { id: "basic", label: "Basic" },
+  { id: "scientific", label: "Sci" },
+  { id: "programmer", label: "Prog" },
+  { id: "converter", label: "Conv" },
+];
 
 /**
  * Window contract: ComponentType<{ windowId: string }>. Single-instance app.
@@ -28,8 +28,8 @@ const MODES: { id: Mode; label: string }[] = [
  * exactly the vertical space the calculator work exists to protect.
  */
 export function Calculator({ windowId }: { windowId: string }) {
-  const [mode, setMode] = useState<Mode>('basic')
-  const session = useCalcSession()
+  const [mode, setMode] = useState<Mode>("basic");
+  const session = useCalcSession();
 
   return (
     <div className="bg-surface-container-lowest flex h-full flex-col select-none">
@@ -40,10 +40,10 @@ export function Calculator({ windowId }: { windowId: string }) {
             onClick={() => setMode(tab.id)}
             aria-pressed={mode === tab.id}
             className={cn(
-              'focus-visible:ring-primary font-ui flex-1 border-b-2 px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset',
+              "focus-visible:ring-primary font-ui flex-1 border-b-2 px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
               mode === tab.id
-                ? 'border-primary text-on-surface'
-                : 'text-on-surface-variant hover:text-on-surface border-transparent'
+                ? "border-primary text-on-surface"
+                : "text-on-surface-variant hover:text-on-surface border-transparent",
             )}
           >
             {tab.label}
@@ -52,14 +52,14 @@ export function Calculator({ windowId }: { windowId: string }) {
       </div>
 
       <div className="min-h-0 flex-1">
-        {mode === 'basic' && <BasicPad windowId={windowId} session={session} />}
-        {mode === 'scientific' && <ScientificPad windowId={windowId} session={session} />}
-        {mode === 'programmer' && <ProgrammerPad windowId={windowId} />}
+        {mode === "basic" && <BasicPad windowId={windowId} session={session} />}
+        {mode === "scientific" && <ScientificPad windowId={windowId} session={session} />}
+        {mode === "programmer" && <ProgrammerPad windowId={windowId} />}
         {/* Like Programmer, the converter takes neither the memory register nor
             the tape: a conversion is a pair of numbers with units attached, and
             half of it on the tape would record something never computed. */}
-        {mode === 'converter' && <ConverterPad windowId={windowId} />}
+        {mode === "converter" && <ConverterPad windowId={windowId} />}
       </div>
     </div>
-  )
+  );
 }

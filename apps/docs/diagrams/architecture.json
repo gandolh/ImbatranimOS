@@ -3,42 +3,25 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "ImbatranimOS — one container, one port, the browser is the display",
-    "viewBox": [
-      1160,
-      760
-    ],
+    "viewBox": [1160, 760],
     "quality_profile": "showcase",
     "views": [
       {
         "id": "one-port",
         "label": "One exposed port",
-        "focus": [
-          "browser",
-          "caddy",
-          "nest",
-          "desktop"
-        ],
+        "focus": ["browser", "caddy", "nest", "desktop"],
         "note": "In prod NestJS serves the built desktop AND the API on a single port."
       },
       {
         "id": "real-machinery",
         "label": "The real machinery",
-        "focus": [
-          "nest",
-          "pty",
-          "fs",
-          "home"
-        ],
+        "focus": ["nest", "pty", "fs", "home"],
         "note": "A real PTY, a real filesystem, a real home volume — not simulations of them."
       },
       {
         "id": "privilege",
         "label": "How it is contained",
-        "focus": [
-          "caddy",
-          "nest",
-          "home"
-        ],
+        "focus": ["caddy", "nest", "home"],
         "note": "Rootless dockerd under an unprivileged account; container root maps to a host subuid."
       }
     ]
@@ -49,28 +32,16 @@
       "type": "external",
       "label": "Browser",
       "sublabel": "the display",
-      "pos": [
-        30,
-        350
-      ],
-      "size": [
-        150,
-        60
-      ]
+      "pos": [30, 350],
+      "size": [150, 60]
     },
     {
       "id": "caddy",
       "type": "cloud",
       "label": "Caddy",
       "sublabel": "TLS :443",
-      "pos": [
-        250,
-        350
-      ],
-      "size": [
-        150,
-        60
-      ]
+      "pos": [250, 350],
+      "size": [150, 60]
     },
     {
       "id": "nest",
@@ -78,83 +49,47 @@
       "label": "NestJS",
       "sublabel": "one port: statics + REST + WS",
       "tag": "prod target",
-      "pos": [
-        490,
-        350
-      ],
-      "size": [
-        200,
-        60
-      ]
+      "pos": [490, 350],
+      "size": [200, 60]
     },
     {
       "id": "desktop",
       "type": "frontend",
       "label": "React desktop",
       "sublabel": "@imbatranim/core + add-ons",
-      "pos": [
-        490,
-        130
-      ],
-      "size": [
-        200,
-        60
-      ]
+      "pos": [490, 130],
+      "size": [200, 60]
     },
     {
       "id": "pty",
       "type": "backend",
       "label": "PTY",
       "sublabel": "a real shell",
-      "pos": [
-        860,
-        200
-      ],
-      "size": [
-        160,
-        60
-      ]
+      "pos": [860, 200],
+      "size": [160, 60]
     },
     {
       "id": "fs",
       "type": "backend",
       "label": "Filesystem + /proc",
       "sublabel": "real, not simulated",
-      "pos": [
-        860,
-        350
-      ],
-      "size": [
-        160,
-        60
-      ]
+      "pos": [860, 350],
+      "size": [160, 60]
     },
     {
       "id": "home",
       "type": "database",
       "label": "Home volume",
       "sublabel": "named, survives rebuilds",
-      "pos": [
-        860,
-        500
-      ],
-      "size": [
-        160,
-        60
-      ]
+      "pos": [860, 500],
+      "size": [160, 60]
     }
   ],
   "boundaries": [
     {
       "kind": "region",
       "label": "one Alpine container — rootless dockerd",
-      "wraps": [
-        "nest",
-        "desktop",
-        "pty",
-        "fs",
-        "home"
-      ]
+      "wraps": ["nest", "desktop", "pty", "fs", "home"]
     }
   ],
   "connections": [
@@ -187,10 +122,7 @@
       "label": "/api/pty over WS",
       "fromSide": "right",
       "toSide": "bottom",
-      "labelAt": [
-        775,
-        290
-      ]
+      "labelAt": [775, 290]
     },
     {
       "id": "n-fs",
@@ -206,10 +138,7 @@
       "label": "mounted at $HOME",
       "fromSide": "right",
       "toSide": "top",
-      "labelAt": [
-        775,
-        470
-      ]
+      "labelAt": [775, 470]
     }
   ],
   "cards": [

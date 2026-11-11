@@ -1,4 +1,4 @@
-import type { Annotation } from '../types'
+import type { Annotation } from "../types";
 
 /**
  * Store rect-like annotations with positive width/height so later maths is simple.
@@ -9,16 +9,16 @@ import type { Annotation } from '../types'
  * available bug in this app.
  */
 export function normalizeRect(a: Annotation): Annotation {
-  if (a.type === 'rect' || a.type === 'pixelate' || a.type === 'blackout') {
+  if (a.type === "rect" || a.type === "pixelate" || a.type === "blackout") {
     return {
       ...a,
       x: Math.min(a.x, a.x + a.w),
       y: Math.min(a.y, a.y + a.h),
       w: Math.abs(a.w),
       h: Math.abs(a.h),
-    }
+    };
   }
-  return a
+  return a;
 }
 
 /**
@@ -31,21 +31,21 @@ export function normalizeRect(a: Annotation): Annotation {
  * sits next to this one in the toolbar.
  */
 export function pixelateBlockSize(ratio: number): number {
-  return Math.max(14, Math.round(16 * ratio))
+  return Math.max(14, Math.round(16 * ratio));
 }
 
 /** Is a dragged shape big enough to keep, or was it a stray click? */
 export function isWorthKeeping(a: Annotation): boolean {
   switch (a.type) {
-    case 'rect':
-    case 'pixelate':
-    case 'blackout':
-      return Math.abs(a.w) > 3 && Math.abs(a.h) > 3
-    case 'arrow':
-      return Math.hypot(a.x2 - a.x1, a.y2 - a.y1) > 4
-    case 'freehand':
-      return a.points.length > 1
-    case 'text':
-      return a.text.trim().length > 0
+    case "rect":
+    case "pixelate":
+    case "blackout":
+      return Math.abs(a.w) > 3 && Math.abs(a.h) > 3;
+    case "arrow":
+      return Math.hypot(a.x2 - a.x1, a.y2 - a.y1) > 4;
+    case "freehand":
+      return a.points.length > 1;
+    case "text":
+      return a.text.trim().length > 0;
   }
 }

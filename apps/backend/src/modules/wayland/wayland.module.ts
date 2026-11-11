@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
-import { WaylandGateway } from './wayland.gateway';
-import { WaylandHostService } from './wayland-host.service';
-import { SessionApps } from './session-apps';
+import { Module } from "@nestjs/common";
+import { WaylandGateway } from "./wayland.gateway";
+import { WaylandHostService } from "./wayland-host.service";
+import { SessionApps } from "./session-apps";
 
 /**
  * Linux apps' windows. The Wayland host (apps/wayland-host) is the display

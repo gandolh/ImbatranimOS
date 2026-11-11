@@ -1,26 +1,17 @@
-import { useEffect, useState } from 'react'
-import { Dialog } from '../ui/Dialog'
-import {
-  formatKeys,
-  groupShortcuts,
-  isTextEntry,
-  useShortcutStore,
-} from '../../hooks/shortcutRegistry'
+import { useEffect, useState } from "react";
+import { Dialog } from "../ui/Dialog";
+import { formatKeys, groupShortcuts, isTextEntry, useShortcutStore } from "../../hooks/shortcutRegistry";
 
-const isMac = () => typeof navigator !== 'undefined' && /mac/i.test(navigator.platform)
+const isMac = () => typeof navigator !== "undefined" && /mac/i.test(navigator.platform);
 
 /** The rendered shortcut list — shared by the overlay and the Settings section. */
 export function ShortcutList() {
-  const shortcuts = useShortcutStore((s) => s.shortcuts)
-  const groups = groupShortcuts(Object.values(shortcuts))
-  const mac = isMac()
+  const shortcuts = useShortcutStore((s) => s.shortcuts);
+  const groups = groupShortcuts(Object.values(shortcuts));
+  const mac = isMac();
 
   if (groups.length === 0) {
-    return (
-      <div className="text-on-surface-variant font-ui py-8 text-center text-[12px]">
-        No shortcuts registered
-      </div>
-    )
+    return <div className="text-on-surface-variant font-ui py-8 text-center text-[12px]">No shortcuts registered</div>;
   }
 
   return (
@@ -35,16 +26,12 @@ export function ShortcutList() {
               <div
                 key={s.id}
                 className={`flex items-baseline justify-between gap-3 px-3 py-1.5 ${
-                  i > 0 ? 'border-outline-variant border-t' : ''
+                  i > 0 ? "border-outline-variant border-t" : ""
                 }`}
               >
                 <div className="min-w-0">
                   <div className="font-ui text-on-surface text-[12px]">{s.description}</div>
-                  {s.note && (
-                    <div className="font-ui text-on-surface-variant mt-0.5 text-[11px]">
-                      {s.note}
-                    </div>
-                  )}
+                  {s.note && <div className="font-ui text-on-surface-variant mt-0.5 text-[11px]">{s.note}</div>}
                 </div>
                 <kbd className="rounded-small font-ui text-on-surface-variant bg-surface-container-low border-outline-variant shrink-0 border px-1.5 py-0.5 text-[11px] tabular-nums">
                   {formatKeys(s.keys, mac)}
@@ -55,7 +42,7 @@ export function ShortcutList() {
         </section>
       ))}
     </div>
-  )
+  );
 }
 
 /**
@@ -68,28 +55,28 @@ export function ShortcutList() {
  * textarea.
  */
 export function ShortcutsOverlay() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'F1') {
-        e.preventDefault()
-        setOpen((v) => !v)
-        return
+      if (e.key === "F1") {
+        e.preventDefault();
+        setOpen((v) => !v);
+        return;
       }
-      if (e.key !== '?') return
-      if (e.ctrlKey || e.metaKey || e.altKey) return
-      if (isTextEntry(e.target)) return
-      e.preventDefault()
-      setOpen((v) => !v)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+      if (e.key !== "?") return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTextEntry(e.target)) return;
+      e.preventDefault();
+      setOpen((v) => !v);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={setOpen} title="Keyboard shortcuts">
       <ShortcutList />
     </Dialog>
-  )
+  );
 }

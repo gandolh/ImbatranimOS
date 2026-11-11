@@ -1,24 +1,24 @@
-import { APP_REGISTRY } from '../registry/registry'
-import { getEnabledApps } from '../registry/enabledApps'
-import { useWindowStore } from '../store/windowStore'
-import { focusIntoWindowSoon } from '../components/window/focusIntoWindow'
-import type { CommandSource, CommandItem } from './CommandSourcesRegistry'
-import { isLinuxLauncher, launchLinuxApp } from '../../modules/linux-windows/launchers'
+import { APP_REGISTRY } from "../registry/registry";
+import { getEnabledApps } from "../registry/enabledApps";
+import { useWindowStore } from "../store/windowStore";
+import { focusIntoWindowSoon } from "../components/window/focusIntoWindow";
+import type { CommandSource, CommandItem } from "./CommandSourcesRegistry";
+import { isLinuxLauncher, launchLinuxApp } from "../../modules/linux-windows/launchers";
 
-const GROUP = 'Apps'
+const GROUP = "Apps";
 
 function fuzzyMatch(query: string, target: string): boolean {
-  if (!query) return true
-  const q = query.toLowerCase()
-  const t = target.toLowerCase()
+  if (!query) return true;
+  const q = query.toLowerCase();
+  const t = target.toLowerCase();
   // substring match first
-  if (t.includes(q)) return true
+  if (t.includes(q)) return true;
   // fuzzy: all query chars appear in order in target
-  let qi = 0
+  let qi = 0;
   for (let i = 0; i < t.length && qi < q.length; i++) {
-    if (t[i] === q[qi]) qi++
+    if (t[i] === q[qi]) qi++;
   }
-  return qi === q.length
+  return qi === q.length;
 }
 
 export const appsSource: CommandSource = {
@@ -27,42 +27,42 @@ export const appsSource: CommandSource = {
   async search(query: string): Promise<CommandItem[]> {
     return getEnabledApps()
       .filter((app) => {
-        const haystack = [app.name, app.description, ...app.meta].join(' ')
-        return fuzzyMatch(query, haystack)
+        const haystack = [app.name, app.description, ...app.meta].join(" ");
+        return fuzzyMatch(query, haystack);
       })
       .map((app) => ({
         id: `app:${app.id}`,
         label: app.name,
         subtitle: app.description,
         group: GROUP,
-      }))
+      }));
   },
 
   activate(item: CommandItem): void {
-    const appId = item.id.replace(/^app:/, '')
-    const app = APP_REGISTRY.find((a) => a.id === appId)
-    if (!app) return
+    const appId = item.id.replace(/^app:/, "");
+    const app = APP_REGISTRY.find((a) => a.id === appId);
+    if (!app) return;
     // A Linux app's Start entry starts the program; its windows open on their own.
     if (isLinuxLauncher(appId)) {
-      void launchLinuxApp(appId)
-      return
+      void launchLinuxApp(appId);
+      return;
     }
 
-    const { openWindow, windows } = useWindowStore.getState()
+    const { openWindow, windows } = useWindowStore.getState();
 
     // single-instance: focus existing window if already open
     if (!app.multiInstance) {
-      const existing = windows.find((w) => w.appId === appId)
+      const existing = windows.find((w) => w.appId === appId);
       if (existing) {
-        useWindowStore.getState().focusWindow(existing.id)
-        useWindowStore.getState().showWindow(existing.id)
+        useWindowStore.getState().focusWindow(existing.id);
+        useWindowStore.getState().showWindow(existing.id);
         // The palette hands focus back as it closes; a frame later the
         // keyboard goes into the window.
-        focusIntoWindowSoon(existing.id)
-        return
+        focusIntoWindowSoon(existing.id);
+        return;
       }
     }
 
-    openWindow(app.id, app.name, app.defaultSize, app.minSize)
+    openWindow(app.id, app.name, app.defaultSize, app.minSize);
   },
-}
+};

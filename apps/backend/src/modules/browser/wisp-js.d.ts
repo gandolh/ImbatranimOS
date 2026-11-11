@@ -2,8 +2,8 @@
  * The slice of `@mercuryworkshop/wisp-js/server` the Browser relay uses. The
  * package ships no types.
  */
-declare module '@mercuryworkshop/wisp-js/server' {
-  import type { WebSocket } from 'ws';
+declare module "@mercuryworkshop/wisp-js/server" {
+  import type { WebSocket } from "ws";
 
   interface WispSocketClass {
     new (
@@ -50,6 +50,6 @@ declare module '@mercuryworkshop/wisp-js/server' {
 }
 
 /** epoxy-transport's Node entry: where its browser build lives. */
-declare module '@mercuryworkshop/epoxy-transport' {
+declare module "@mercuryworkshop/epoxy-transport" {
   export const epoxyPath: string;
 }

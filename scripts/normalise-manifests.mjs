@@ -16,27 +16,27 @@
 // CLI: `node normalise-manifests.mjs <dir>` rewrites <dir>/package.json and
 // <dir>/package-lock.json in place.
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 /** What the version reads as in a normalised file. npm accepts it like any other. */
-export const NORMAL_VERSION = '0.0.0';
+export const NORMAL_VERSION = "0.0.0";
 
 const json = (data) => `${JSON.stringify(data, null, 2)}\n`;
 
 /** package.json without its version. */
 export function normalisePackageJson(text) {
   const data = JSON.parse(text);
-  if ('version' in data) data.version = NORMAL_VERSION;
+  if ("version" in data) data.version = NORMAL_VERSION;
   return json(data);
 }
 
 /** package-lock.json without the root package's version (both places it sits). */
 export function normaliseLockfile(text) {
   const data = JSON.parse(text);
-  if ('version' in data) data.version = NORMAL_VERSION;
-  if (data.packages?.['']?.version !== undefined) data.packages[''].version = NORMAL_VERSION;
+  if ("version" in data) data.version = NORMAL_VERSION;
+  if (data.packages?.[""]?.version !== undefined) data.packages[""].version = NORMAL_VERSION;
   return json(data);
 }
 
@@ -49,18 +49,18 @@ export function normaliseDockerfile(text) {
 
 function main(dir) {
   for (const [file, normalise] of [
-    ['package.json', normalisePackageJson],
-    ['package-lock.json', normaliseLockfile],
+    ["package.json", normalisePackageJson],
+    ["package-lock.json", normaliseLockfile],
   ]) {
     const full = path.join(dir, file);
-    writeFileSync(full, normalise(readFileSync(full, 'utf8')));
+    writeFileSync(full, normalise(readFileSync(full, "utf8")));
   }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const dir = process.argv[2];
   if (!dir) {
-    console.error('usage: normalise-manifests.mjs <dir>');
+    console.error("usage: normalise-manifests.mjs <dir>");
     process.exit(2);
   }
   main(dir);

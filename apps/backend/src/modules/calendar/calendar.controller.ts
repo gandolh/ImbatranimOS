@@ -1,49 +1,34 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-} from '@nestjs/common';
-import { CalendarService } from './calendar.service';
-import {
-  CreateEventDto,
-  ImportEventsDto,
-  UpdateEventDto,
-} from './dto/calendar.dto';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post } from "@nestjs/common";
+import { CalendarService } from "./calendar.service";
+import { CreateEventDto, ImportEventsDto, UpdateEventDto } from "./dto/calendar.dto";
 
 /**
  * Calendar events. Session-guarded like every other route — the global
  * `SessionGuard` covers this controller, and nothing here is `@Public()`.
  */
-@Controller('calendar')
+@Controller("calendar")
 export class CalendarController {
   constructor(private readonly calendar: CalendarService) {}
 
-  @Get('events')
+  @Get("events")
   findAll() {
     return this.calendar.findAll();
   }
 
-  @Post('events')
+  @Post("events")
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateEventDto) {
     return this.calendar.create(dto);
   }
 
-  @Patch('events/:id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEventDto) {
+  @Patch("events/:id")
+  update(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateEventDto) {
     return this.calendar.update(id, dto);
   }
 
-  @Delete('events/:id')
+  @Delete("events/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param("id", ParseIntPipe) id: number) {
     this.calendar.remove(id);
   }
 
@@ -52,7 +37,7 @@ export class CalendarController {
    * ICS import (without it). One endpoint because the behaviour is the same apart
    * from that guard.
    */
-  @Post('import')
+  @Post("import")
   importEvents(@Body() dto: ImportEventsDto) {
     return this.calendar.importEvents(dto);
   }

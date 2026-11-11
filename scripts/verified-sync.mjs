@@ -12,20 +12,20 @@
 // holds. The backend validates the entries when it reads the copy; the apps
 // repository's own test checks them before they get here.
 
-import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const TARGET = path.join(root, 'marketplace', 'verified.json');
-const FROM = 'imbatranim-apps';
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export const TARGET = path.join(root, "marketplace", "verified.json");
+const FROM = "imbatranim-apps";
 
 function git(cwd, ...args) {
-  return execFileSync('git', args, {
+  return execFileSync("git", args, {
     cwd,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
   });
 }
 
@@ -33,13 +33,13 @@ function git(cwd, ...args) {
 export function render(appsDir, commit) {
   let sha;
   try {
-    sha = git(appsDir, 'rev-parse', '--verify', `${commit}^{commit}`).trim();
+    sha = git(appsDir, "rev-parse", "--verify", `${commit}^{commit}`).trim();
   } catch {
     throw new Error(`${commit} is not a commit of ${appsDir}`);
   }
   let text;
   try {
-    text = git(appsDir, 'show', `${sha}:verified.json`);
+    text = git(appsDir, "show", `${sha}:verified.json`);
   } catch {
     throw new Error(`there is no verified.json at ${sha}`);
   }
@@ -49,7 +49,7 @@ export function render(appsDir, commit) {
   } catch (err) {
     throw new Error(`verified.json at ${sha} is not JSON: ${err.message}`);
   }
-  if (!file || typeof file !== 'object' || !Array.isArray(file.apps)) {
+  if (!file || typeof file !== "object" || !Array.isArray(file.apps)) {
     throw new Error(`verified.json at ${sha} has no apps list`);
   }
   return {
@@ -61,8 +61,8 @@ export function render(appsDir, commit) {
 /** The commit the copy at `target` records, or null when there is none. */
 export function recordedCommit(target = TARGET) {
   try {
-    const commit = JSON.parse(readFileSync(target, 'utf8')).commit;
-    return typeof commit === 'string' ? commit : null;
+    const commit = JSON.parse(readFileSync(target, "utf8")).commit;
+    return typeof commit === "string" ? commit : null;
   } catch {
     return null;
   }
@@ -78,7 +78,7 @@ export function syncVerified({ appsDir, commit, check = false, target = TARGET }
   const { sha, text } = render(appsDir, wanted);
   let current = null;
   try {
-    current = readFileSync(target, 'utf8');
+    current = readFileSync(target, "utf8");
   } catch {
     // Missing: out of date, or written now.
   }
@@ -88,11 +88,11 @@ export function syncVerified({ appsDir, commit, check = false, target = TARGET }
 }
 
 function main(argv) {
-  const check = argv.includes('--check');
-  const positional = argv.filter((a) => a !== '--check');
+  const check = argv.includes("--check");
+  const positional = argv.filter((a) => a !== "--check");
   if (positional.length < 1 || positional.length > 2 || (!check && positional.length !== 2)) {
-    console.error('usage: npm run verified:sync -- <apps-checkout> <commit> [--check]');
-    console.error('       npm run verified:sync -- <apps-checkout> --check');
+    console.error("usage: npm run verified:sync -- <apps-checkout> <commit> [--check]");
+    console.error("       npm run verified:sync -- <apps-checkout> --check");
     return 2;
   }
   const [appsDir, commit] = positional;

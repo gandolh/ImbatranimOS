@@ -1,6 +1,6 @@
-import type { HandlerResult } from './connection';
-import { Variant, type Message } from './wire';
-import type { SignalSender } from './notifications';
+import type { HandlerResult } from "./connection";
+import { Variant, type Message } from "./wire";
+import type { SignalSender } from "./notifications";
 
 /**
  * `org.freedesktop.portal.Settings` on a session's bus: the desktop's light
@@ -12,18 +12,18 @@ import type { SignalSender } from './notifications';
  */
 
 export const SETTINGS = {
-  name: 'org.freedesktop.portal.Desktop',
-  path: '/org/freedesktop/portal/desktop',
-  interface: 'org.freedesktop.portal.Settings',
+  name: "org.freedesktop.portal.Desktop",
+  path: "/org/freedesktop/portal/desktop",
+  interface: "org.freedesktop.portal.Settings",
 } as const;
 
-export const APPEARANCE = 'org.freedesktop.appearance';
+export const APPEARANCE = "org.freedesktop.appearance";
 
 /** The prefs key of the desktop's appearance dotfile. */
-export const APPEARANCE_PREF = 'imbatranimos:appearance';
+export const APPEARANCE_PREF = "imbatranimos:appearance";
 
-type Mode = 'light' | 'dark';
-type ThemeId = 'apricot' | 'classic';
+type Mode = "light" | "dark";
+type ThemeId = "apricot" | "classic";
 
 /**
  * The accent presets' `strong` colours, mirrored from the desktop's
@@ -31,36 +31,35 @@ type ThemeId = 'apricot' | 'classic';
  */
 export const STRONG: Record<ThemeId, Record<string, [string, string]>> = {
   apricot: {
-    apricot: ['#a04b23', '#f2a97e'],
-    rose: ['#b23656', '#eea6b5'],
-    butter: ['#7f5f1b', '#f3d27a'],
-    sage: ['#4e6c48', '#a9c9a4'],
-    sky: ['#376891', '#a7c7e7'],
+    apricot: ["#a04b23", "#f2a97e"],
+    rose: ["#b23656", "#eea6b5"],
+    butter: ["#7f5f1b", "#f3d27a"],
+    sage: ["#4e6c48", "#a9c9a4"],
+    sky: ["#376891", "#a7c7e7"],
   },
   classic: {
-    crimson: ['#c0263a', '#c0263a'],
-    cobalt: ['#1f5fd6', '#1f5fd6'],
-    emerald: ['#0f7a40', '#0f7a40'],
-    signal: ['#d24317', '#d24317'],
+    crimson: ["#c0263a", "#c0263a"],
+    cobalt: ["#1f5fd6", "#1f5fd6"],
+    emerald: ["#0f7a40", "#0f7a40"],
+    signal: ["#d24317", "#d24317"],
   },
 };
 
 const DEFAULT_ACCENTS: Record<ThemeId, string> = {
-  apricot: 'apricot',
-  classic: 'crimson',
+  apricot: "apricot",
+  classic: "crimson",
 };
 
 /** The portal's values, by key. */
 export type Appearance = {
-  'color-scheme': number;
-  'accent-color': [number, number, number];
+  "color-scheme": number;
+  "accent-color": [number, number, number];
   contrast: number;
 };
 
-const KEYS = ['color-scheme', 'accent-color', 'contrast'] as const;
+const KEYS = ["color-scheme", "accent-color", "contrast"] as const;
 
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null;
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 
 const hexToRgb = (hex: string): [number, number, number] => [
   parseInt(hex.slice(1, 3), 16) / 255,
@@ -81,38 +80,26 @@ export function appearanceFrom(raw: string | null | undefined): Appearance {
   } catch {
     // unreadable: the defaults
   }
-  const legacy = state.theme === 'light' || state.theme === 'dark';
-  const theme: ThemeId =
-    !legacy && (state.theme === 'apricot' || state.theme === 'classic')
-      ? state.theme
-      : 'apricot';
-  const mode: Mode = legacy
-    ? (state.theme as Mode)
-    : state.mode === 'dark'
-      ? 'dark'
-      : 'light';
+  const legacy = state.theme === "light" || state.theme === "dark";
+  const theme: ThemeId = !legacy && (state.theme === "apricot" || state.theme === "classic") ? state.theme : "apricot";
+  const mode: Mode = legacy ? (state.theme as Mode) : state.mode === "dark" ? "dark" : "light";
   const chosen = isRecord(state.accents) ? state.accents[theme] : undefined;
   const presets = STRONG[theme];
-  const id =
-    typeof chosen === 'string' && Object.hasOwn(presets, chosen)
-      ? chosen
-      : DEFAULT_ACCENTS[theme];
+  const id = typeof chosen === "string" && Object.hasOwn(presets, chosen) ? chosen : DEFAULT_ACCENTS[theme];
   return {
-    'color-scheme': mode === 'dark' ? 1 : 2,
-    'accent-color': hexToRgb(presets[id][mode === 'dark' ? 1 : 0]),
+    "color-scheme": mode === "dark" ? 1 : 2,
+    "accent-color": hexToRgb(presets[id][mode === "dark" ? 1 : 0]),
     contrast: 0,
   };
 }
 
 const variantOf = (key: (typeof KEYS)[number], a: Appearance): Variant =>
-  key === 'accent-color'
-    ? new Variant('(ddd)', a['accent-color'])
-    : new Variant('u', a[key]);
+  key === "accent-color" ? new Variant("(ddd)", a["accent-color"]) : new Variant("u", a[key]);
 
 /** Does a namespace pattern from `ReadAll` match? `""` and `*` globs. */
 function matches(pattern: string, namespace: string): boolean {
-  if (pattern === '') return true;
-  if (pattern.endsWith('*')) return namespace.startsWith(pattern.slice(0, -1));
+  if (pattern === "") return true;
+  if (pattern.endsWith("*")) return namespace.startsWith(pattern.slice(0, -1));
   return pattern === namespace;
 }
 
@@ -165,8 +152,8 @@ export class SettingsServer {
       this.signal({
         path: SETTINGS.path,
         interface: SETTINGS.interface,
-        member: 'SettingChanged',
-        signature: 'ssv',
+        member: "SettingChanged",
+        signature: "ssv",
         body: [APPEARANCE, key, variantOf(key, next)],
       });
     }
@@ -175,41 +162,36 @@ export class SettingsServer {
   handle(call: Message): HandlerResult | undefined {
     if (call.path !== SETTINGS.path) return undefined;
     switch (`${call.interface ?? SETTINGS.interface}.${call.member}`) {
-      case 'org.freedesktop.portal.Settings.ReadAll': {
-        if (call.signature !== 'as') return badArgs('ReadAll', 'as');
+      case "org.freedesktop.portal.Settings.ReadAll": {
+        if (call.signature !== "as") return badArgs("ReadAll", "as");
         const patterns = call.body[0] as string[];
-        const all =
-          patterns.length === 0 || patterns.some((p) => matches(p, APPEARANCE));
+        const all = patterns.length === 0 || patterns.some((p) => matches(p, APPEARANCE));
         const entries = KEYS.map((k) => [k, variantOf(k, this.current)]);
         return {
-          signature: 'a{sa{sv}}',
+          signature: "a{sa{sv}}",
           body: [all ? [[APPEARANCE, entries]] : []],
         };
       }
-      case 'org.freedesktop.portal.Settings.ReadOne':
-        return this.read(call, 'ReadOne', false);
-      case 'org.freedesktop.portal.Settings.Read':
+      case "org.freedesktop.portal.Settings.ReadOne":
+        return this.read(call, "ReadOne", false);
+      case "org.freedesktop.portal.Settings.Read":
         // Deprecated: the value comes wrapped in one more variant.
-        return this.read(call, 'Read', true);
-      case 'org.freedesktop.DBus.Properties.Get':
-        if (call.signature !== 'ss') return badArgs('Get', 'ss');
-        if (call.body[0] === SETTINGS.interface && call.body[1] === 'version') {
-          return { signature: 'v', body: [new Variant('u', 2)] };
+        return this.read(call, "Read", true);
+      case "org.freedesktop.DBus.Properties.Get":
+        if (call.signature !== "ss") return badArgs("Get", "ss");
+        if (call.body[0] === SETTINGS.interface && call.body[1] === "version") {
+          return { signature: "v", body: [new Variant("u", 2)] };
         }
         return notFound(`No property ${String(call.body[1])}`);
-      case 'org.freedesktop.DBus.Properties.GetAll':
-        if (call.signature !== 's') return badArgs('GetAll', 's');
+      case "org.freedesktop.DBus.Properties.GetAll":
+        if (call.signature !== "s") return badArgs("GetAll", "s");
         return {
-          signature: 'a{sv}',
-          body: [
-            call.body[0] === SETTINGS.interface
-              ? [['version', new Variant('u', 2)]]
-              : [],
-          ],
+          signature: "a{sv}",
+          body: [call.body[0] === SETTINGS.interface ? [["version", new Variant("u", 2)]] : []],
         };
-      case 'org.freedesktop.DBus.Introspectable.Introspect':
-        return { signature: 's', body: [INTROSPECTION] };
-      case 'org.freedesktop.DBus.Peer.Ping':
+      case "org.freedesktop.DBus.Introspectable.Introspect":
+        return { signature: "s", body: [INTROSPECTION] };
+      case "org.freedesktop.DBus.Peer.Ping":
         return {};
       default:
         return undefined;
@@ -217,26 +199,23 @@ export class SettingsServer {
   }
 
   private read(call: Message, member: string, wrap: boolean): HandlerResult {
-    if (call.signature !== 'ss') return badArgs(member, 'ss');
+    if (call.signature !== "ss") return badArgs(member, "ss");
     const [namespace, key] = call.body as [string, string];
-    if (
-      namespace !== APPEARANCE ||
-      !(KEYS as readonly string[]).includes(key)
-    ) {
+    if (namespace !== APPEARANCE || !(KEYS as readonly string[]).includes(key)) {
       return notFound(`Requested setting not found: ${namespace} ${key}`);
     }
     const v = variantOf(key as (typeof KEYS)[number], this.current);
-    return { signature: 'v', body: [wrap ? new Variant('v', v) : v] };
+    return { signature: "v", body: [wrap ? new Variant("v", v) : v] };
   }
 }
 
 function badArgs(member: string, signature: string): HandlerResult {
   return {
-    error: 'org.freedesktop.DBus.Error.InvalidArgs',
+    error: "org.freedesktop.DBus.Error.InvalidArgs",
     message: `${member} takes (${signature})`,
   };
 }
 
 function notFound(message: string): HandlerResult {
-  return { error: 'org.freedesktop.portal.Error.NotFound', message };
+  return { error: "org.freedesktop.portal.Error.NotFound", message };
 }

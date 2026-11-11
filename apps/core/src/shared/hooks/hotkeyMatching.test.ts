@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest'
-import { eventMatchesBinding, parseBinding } from './useGlobalHotkeys'
+import { describe, expect, it } from "vitest";
+import { eventMatchesBinding, parseBinding } from "./useGlobalHotkeys";
 
 /**
  * The modifier matcher, tested directly.
@@ -10,105 +10,91 @@ import { eventMatchesBinding, parseBinding } from './useGlobalHotkeys'
  * explicit `ctrl+…` binding using the very key it had asked for. Nothing caught
  * it because until now every binding in the OS used `mod`.
  */
-const key = (
-  k: string,
-  mods: { ctrl?: boolean; alt?: boolean; shift?: boolean; meta?: boolean } = {}
-): KeyboardEvent =>
-  new KeyboardEvent('keydown', {
+const key = (k: string, mods: { ctrl?: boolean; alt?: boolean; shift?: boolean; meta?: boolean } = {}): KeyboardEvent =>
+  new KeyboardEvent("keydown", {
     key: k,
     ctrlKey: mods.ctrl ?? false,
     altKey: mods.alt ?? false,
     shiftKey: mods.shift ?? false,
     metaKey: mods.meta ?? false,
-  })
+  });
 
-const matches = (binding: string, ev: KeyboardEvent) =>
-  eventMatchesBinding(ev, parseBinding(binding))
+const matches = (binding: string, ev: KeyboardEvent) => eventMatchesBinding(ev, parseBinding(binding));
 
-describe('an explicit ctrl+ binding', () => {
-  it('FIRES on a real Ctrl press (the bug the workspaces work found)', () => {
-    expect(matches('ctrl+alt+left', key('ArrowLeft', { ctrl: true, alt: true }))).toBe(true)
-    expect(matches('ctrl+alt+right', key('ArrowRight', { ctrl: true, alt: true }))).toBe(true)
-  })
+describe("an explicit ctrl+ binding", () => {
+  it("FIRES on a real Ctrl press (the bug the workspaces work found)", () => {
+    expect(matches("ctrl+alt+left", key("ArrowLeft", { ctrl: true, alt: true }))).toBe(true);
+    expect(matches("ctrl+alt+right", key("ArrowRight", { ctrl: true, alt: true }))).toBe(true);
+  });
 
-  it('does not fire without both modifiers', () => {
-    expect(matches('ctrl+alt+left', key('ArrowLeft', { ctrl: true }))).toBe(false)
-    expect(matches('ctrl+alt+left', key('ArrowLeft', { alt: true }))).toBe(false)
-    expect(matches('ctrl+alt+left', key('ArrowLeft'))).toBe(false)
-  })
+  it("does not fire without both modifiers", () => {
+    expect(matches("ctrl+alt+left", key("ArrowLeft", { ctrl: true }))).toBe(false);
+    expect(matches("ctrl+alt+left", key("ArrowLeft", { alt: true }))).toBe(false);
+    expect(matches("ctrl+alt+left", key("ArrowLeft"))).toBe(false);
+  });
 
-  it('does not fire on a different arrow', () => {
-    expect(matches('ctrl+alt+left', key('ArrowRight', { ctrl: true, alt: true }))).toBe(false)
-  })
+  it("does not fire on a different arrow", () => {
+    expect(matches("ctrl+alt+left", key("ArrowRight", { ctrl: true, alt: true }))).toBe(false);
+  });
 
-  it('is not confused by shift', () => {
-    expect(matches('ctrl+alt+left', key('ArrowLeft', { ctrl: true, alt: true, shift: true }))).toBe(
-      false
-    )
-  })
-})
+  it("is not confused by shift", () => {
+    expect(matches("ctrl+alt+left", key("ArrowLeft", { ctrl: true, alt: true, shift: true }))).toBe(false);
+  });
+});
 
-describe('mod bindings still behave', () => {
-  it('mod+k fires on ctrl+k off a mac', () => {
-    expect(matches('mod+k', key('k', { ctrl: true }))).toBe(true)
-  })
+describe("mod bindings still behave", () => {
+  it("mod+k fires on ctrl+k off a mac", () => {
+    expect(matches("mod+k", key("k", { ctrl: true }))).toBe(true);
+  });
 
-  it('mod+k does not fire on a bare k', () => {
-    expect(matches('mod+k', key('k'))).toBe(false)
-  })
+  it("mod+k does not fire on a bare k", () => {
+    expect(matches("mod+k", key("k"))).toBe(false);
+  });
 
-  it('a bare binding is not triggered by a modified press', () => {
+  it("a bare binding is not triggered by a modified press", () => {
     // `esc`, not `escape` — the matcher normalises the event key to the short
     // name, so the binding string has to use it too.
-    expect(matches('esc', key('Escape', { ctrl: true }))).toBe(false)
-    expect(matches('esc', key('Escape'))).toBe(true)
-  })
+    expect(matches("esc", key("Escape", { ctrl: true }))).toBe(false);
+    expect(matches("esc", key("Escape"))).toBe(true);
+  });
 
-  it('normalises arrow names', () => {
-    expect(matches('ctrl+alt+up', key('ArrowUp', { ctrl: true, alt: true }))).toBe(true)
-  })
-})
+  it("normalises arrow names", () => {
+    expect(matches("ctrl+alt+up", key("ArrowUp", { ctrl: true, alt: true }))).toBe(true);
+  });
+});
 
-describe('digit bindings match on e.code', () => {
+describe("digit bindings match on e.code", () => {
   const digitKey = (
     key: string,
     code: string,
-    mods: { ctrl?: boolean; alt?: boolean; shift?: boolean } = {}
+    mods: { ctrl?: boolean; alt?: boolean; shift?: boolean } = {},
   ): KeyboardEvent =>
-    new KeyboardEvent('keydown', {
+    new KeyboardEvent("keydown", {
       key,
       code,
       ctrlKey: mods.ctrl ?? false,
       altKey: mods.alt ?? false,
       shiftKey: mods.shift ?? false,
-    })
+    });
 
-  it('ctrl+alt+2 fires on a plain digit press', () => {
-    expect(matches('ctrl+alt+2', digitKey('2', 'Digit2', { ctrl: true, alt: true }))).toBe(true)
-  })
+  it("ctrl+alt+2 fires on a plain digit press", () => {
+    expect(matches("ctrl+alt+2", digitKey("2", "Digit2", { ctrl: true, alt: true }))).toBe(true);
+  });
 
   it('ctrl+alt+shift+1 fires even though Shift+1 produces "!" in e.key', () => {
-    expect(
-      matches('ctrl+alt+shift+1', digitKey('!', 'Digit1', { ctrl: true, alt: true, shift: true }))
-    ).toBe(true)
-  })
+    expect(matches("ctrl+alt+shift+1", digitKey("!", "Digit1", { ctrl: true, alt: true, shift: true }))).toBe(true);
+  });
 
-  it('the wrong digit does not fire', () => {
-    expect(
-      matches('ctrl+alt+shift+3', digitKey('!', 'Digit1', { ctrl: true, alt: true, shift: true }))
-    ).toBe(false)
-  })
+  it("the wrong digit does not fire", () => {
+    expect(matches("ctrl+alt+shift+3", digitKey("!", "Digit1", { ctrl: true, alt: true, shift: true }))).toBe(false);
+  });
 
-  it('missing shift still distinguishes the two families', () => {
-    expect(matches('ctrl+alt+shift+2', digitKey('2', 'Digit2', { ctrl: true, alt: true }))).toBe(
-      false
-    )
-    expect(
-      matches('ctrl+alt+2', digitKey('@', 'Digit2', { ctrl: true, alt: true, shift: true }))
-    ).toBe(false)
-  })
+  it("missing shift still distinguishes the two families", () => {
+    expect(matches("ctrl+alt+shift+2", digitKey("2", "Digit2", { ctrl: true, alt: true }))).toBe(false);
+    expect(matches("ctrl+alt+2", digitKey("@", "Digit2", { ctrl: true, alt: true, shift: true }))).toBe(false);
+  });
 
-  it('non-digit keys are untouched by the code path', () => {
-    expect(matches('mod+k', digitKey('k', 'KeyK', { ctrl: true }))).toBe(true)
-  })
-})
+  it("non-digit keys are untouched by the code path", () => {
+    expect(matches("mod+k", digitKey("k", "KeyK", { ctrl: true }))).toBe(true);
+  });
+});

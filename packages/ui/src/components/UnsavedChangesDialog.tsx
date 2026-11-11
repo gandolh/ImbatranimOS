@@ -1,20 +1,20 @@
-import { Button } from './Button'
-import { Dialog } from './Dialog'
+import { Button } from "./Button";
+import { Dialog } from "./Dialog";
 
 export type UnsavedChangesDialogProps = {
-  open: boolean
+  open: boolean;
   /** Document name shown in the question — app content, not OS chrome. */
-  name: string
+  name: string;
   /**
    * Wire the real-OS third button (Save / Don't Save / Cancel). Absent = the
    * two-button discard-or-stay form, for apps with no sensible save.
    */
-  onSave?: () => void
+  onSave?: () => void;
   /** Disables every button while a save is in flight — no racing the close. */
-  saving?: boolean
-  onDiscard: () => void
-  onCancel: () => void
-}
+  saving?: boolean;
+  onDiscard: () => void;
+  onCancel: () => void;
+};
 
 /**
  * The themed unsaved-changes prompt — the one dialog every dirty
@@ -47,16 +47,16 @@ export function UnsavedChangesDialog({
       <div className="flex justify-end gap-2">
         {onSave && (
           <Button variant="primary" size="sm" autoFocus disabled={saving} onClick={onSave}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? "Saving…" : "Save"}
           </Button>
         )}
         <Button variant="destructive" size="sm" disabled={saving} onClick={onDiscard}>
-          {onSave ? "Don't Save" : 'Close without saving'}
+          {onSave ? "Don't Save" : "Close without saving"}
         </Button>
         <Button variant="default" size="sm" disabled={saving} onClick={onCancel}>
           Cancel
         </Button>
       </div>
     </Dialog>
-  )
+  );
 }

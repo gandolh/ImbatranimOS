@@ -7,17 +7,17 @@
  *
  * Light-only: literal colours, so the grid cannot invert.
  */
-import styles from './AppGrid.module.css'
+import styles from "./AppGrid.module.css";
 
 interface App {
-  name: string
-  note: string
+  name: string;
+  note: string;
 }
 
 interface Group {
-  name: string
-  tag?: string
-  apps: App[]
+  name: string;
+  tag?: string;
+  apps: App[];
 }
 
 export default function AppGrid({ groups }: { groups: Group[] }) {
@@ -40,5 +40,5 @@ export default function AppGrid({ groups }: { groups: Group[] }) {
         </section>
       ))}
     </div>
-  )
+  );
 }

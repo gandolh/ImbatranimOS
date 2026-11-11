@@ -1,11 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DbService } from '../../db/db.service';
-import {
-  CreateAlarmDto,
-  CreateWorldClockDto,
-  ImportClockStateDto,
-  UpdateAlarmDto,
-} from './dto/clock.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { DbService } from "../../db/db.service";
+import { CreateAlarmDto, CreateWorldClockDto, ImportClockStateDto, UpdateAlarmDto } from "./dto/clock.dto";
 
 /**
  * Clock's persisted state: world clocks and alarms.
@@ -67,7 +62,7 @@ interface AlarmRow {
   snoozed_until: number | null;
 }
 
-const NO_REPEAT = '0000000';
+const NO_REPEAT = "0000000";
 
 function toWorldClock(row: WorldClockRow): WorldClock {
   return { id: row.id, label: row.label, timeZone: row.time_zone };
@@ -93,26 +88,20 @@ export class ClockService {
 
   findWorldClocks(): WorldClock[] {
     const rows = this.db.db
-      .prepare(
-        'SELECT id, label, time_zone FROM clock_world_clocks ORDER BY id ASC',
-      )
+      .prepare("SELECT id, label, time_zone FROM clock_world_clocks ORDER BY id ASC")
       .all() as WorldClockRow[];
     return rows.map(toWorldClock);
   }
 
   createWorldClock(dto: CreateWorldClockDto): WorldClock {
     const info = this.db.db
-      .prepare(
-        'INSERT INTO clock_world_clocks (label, time_zone) VALUES (@label, @timeZone)',
-      )
+      .prepare("INSERT INTO clock_world_clocks (label, time_zone) VALUES (@label, @timeZone)")
       .run({ label: dto.label, timeZone: dto.timeZone });
     return this.getWorldClock(Number(info.lastInsertRowid));
   }
 
   removeWorldClock(id: number): void {
-    const info = this.db.db
-      .prepare('DELETE FROM clock_world_clocks WHERE id = ?')
-      .run(id);
+    const info = this.db.db.prepare("DELETE FROM clock_world_clocks WHERE id = ?").run(id);
     if (info.changes === 0) {
       throw new NotFoundException(`World clock ${id} not found`);
     }
@@ -120,9 +109,7 @@ export class ClockService {
 
   private getWorldClock(id: number): WorldClock {
     const row = this.db.db
-      .prepare(
-        'SELECT id, label, time_zone FROM clock_world_clocks WHERE id = ?',
-      )
+      .prepare("SELECT id, label, time_zone FROM clock_world_clocks WHERE id = ?")
       .get(id) as WorldClockRow;
     return toWorldClock(row);
   }
@@ -147,7 +134,7 @@ export class ClockService {
          VALUES (@label, @time, @days)`,
       )
       .run({
-        label: dto.label ?? '',
+        label: dto.label ?? "",
         time: dto.time,
         days: dto.days ?? NO_REPEAT,
       });
@@ -155,53 +142,47 @@ export class ClockService {
   }
 
   updateAlarm(id: number, dto: UpdateAlarmDto): Alarm {
-    const existing = this.db.db
-      .prepare('SELECT id FROM clock_alarms WHERE id = ?')
-      .get(id);
+    const existing = this.db.db.prepare("SELECT id FROM clock_alarms WHERE id = ?").get(id);
     if (!existing) throw new NotFoundException(`Alarm ${id} not found`);
 
     const fields: string[] = [];
     const values: Record<string, unknown> = { id };
 
     if (dto.label !== undefined) {
-      fields.push('label = @label');
+      fields.push("label = @label");
       values.label = dto.label;
     }
     if (dto.time !== undefined) {
-      fields.push('time_of_day = @time');
+      fields.push("time_of_day = @time");
       values.time = dto.time;
     }
     if (dto.enabled !== undefined) {
-      fields.push('enabled = @enabled');
+      fields.push("enabled = @enabled");
       values.enabled = dto.enabled ? 1 : 0;
     }
     if (dto.days !== undefined) {
-      fields.push('days = @days');
+      fields.push("days = @days");
       values.days = dto.days;
     }
     // `null` is a meaningful value for both of these — "never fired" and "not
     // snoozed" — so they check for `undefined`, not falsiness.
     if (dto.lastFiredAt !== undefined) {
-      fields.push('last_fired_at = @lastFiredAt');
+      fields.push("last_fired_at = @lastFiredAt");
       values.lastFiredAt = dto.lastFiredAt;
     }
     if (dto.snoozedUntil !== undefined) {
-      fields.push('snoozed_until = @snoozedUntil');
+      fields.push("snoozed_until = @snoozedUntil");
       values.snoozedUntil = dto.snoozedUntil;
     }
 
     if (fields.length > 0) {
-      this.db.db
-        .prepare(`UPDATE clock_alarms SET ${fields.join(', ')} WHERE id = @id`)
-        .run(values);
+      this.db.db.prepare(`UPDATE clock_alarms SET ${fields.join(", ")} WHERE id = @id`).run(values);
     }
     return this.getAlarm(id);
   }
 
   removeAlarm(id: number): void {
-    const info = this.db.db
-      .prepare('DELETE FROM clock_alarms WHERE id = ?')
-      .run(id);
+    const info = this.db.db.prepare("DELETE FROM clock_alarms WHERE id = ?").run(id);
     if (info.changes === 0) {
       throw new NotFoundException(`Alarm ${id} not found`);
     }
@@ -237,30 +218,23 @@ export class ClockService {
       let worldClocks = 0;
       let alarms = 0;
 
-      const clockCount = this.count('clock_world_clocks');
+      const clockCount = this.count("clock_world_clocks");
       if (clockCount === 0 && dto.worldClocks?.length) {
-        const insert = this.db.db.prepare(
-          'INSERT INTO clock_world_clocks (label, time_zone) VALUES (?, ?)',
-        );
+        const insert = this.db.db.prepare("INSERT INTO clock_world_clocks (label, time_zone) VALUES (?, ?)");
         for (const w of dto.worldClocks) {
           insert.run(w.label, w.timeZone);
           worldClocks++;
         }
       }
 
-      const alarmCount = this.count('clock_alarms');
+      const alarmCount = this.count("clock_alarms");
       if (alarmCount === 0 && dto.alarms?.length) {
         const insert = this.db.db.prepare(
           `INSERT INTO clock_alarms (label, time_of_day, enabled, days)
            VALUES (?, ?, ?, ?)`,
         );
         for (const a of dto.alarms) {
-          insert.run(
-            a.label ?? '',
-            a.time,
-            a.enabled === false ? 0 : 1,
-            a.days ?? '1111111',
-          );
+          insert.run(a.label ?? "", a.time, a.enabled === false ? 0 : 1, a.days ?? "1111111");
           alarms++;
         }
       }
@@ -274,10 +248,8 @@ export class ClockService {
     return run();
   }
 
-  private count(table: 'clock_world_clocks' | 'clock_alarms'): number {
-    const row = this.db.db
-      .prepare(`SELECT COUNT(*) AS n FROM ${table}`)
-      .get() as { n: number };
+  private count(table: "clock_world_clocks" | "clock_alarms"): number {
+    const row = this.db.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number };
     return row.n;
   }
 }

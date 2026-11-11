@@ -5,26 +5,21 @@ import {
   Logger,
   NotFoundException,
   OnModuleDestroy,
-} from '@nestjs/common';
-import { execFile, spawn, type ChildProcess } from 'child_process';
-import { existsSync, promises as fs } from 'fs';
-import { homedir } from 'os';
-import { basename, extname, join, resolve, sep } from 'path';
-import { promisify } from 'util';
-import { childEnv } from '../../child-env';
-import { terminalEnv } from '../pty/pty.constants';
-import { isValidSessionId } from '../wayland/wayland.protocol';
-import { OomKills, raiseOomScore, REAPPLY_OOM_SCORE_AFTER_MS } from './oom';
-import { closureSpeaksX11 } from './xwayland';
-import { WaylandGateway } from '../wayland/wayland.gateway';
-import { SessionApps } from '../wayland/session-apps';
-import {
-  execArgv,
-  execTakesFile,
-  parseDesktopEntry,
-  pickLocalized,
-} from './desktop-entry';
-import { claimsOf, loadGlobs, type MimeGlobs } from './mime-globs';
+} from "@nestjs/common";
+import { execFile, spawn, type ChildProcess } from "child_process";
+import { existsSync, promises as fs } from "fs";
+import { homedir } from "os";
+import { basename, extname, join, resolve, sep } from "path";
+import { promisify } from "util";
+import { childEnv } from "../../child-env";
+import { terminalEnv } from "../pty/pty.constants";
+import { isValidSessionId } from "../wayland/wayland.protocol";
+import { OomKills, raiseOomScore, REAPPLY_OOM_SCORE_AFTER_MS } from "./oom";
+import { closureSpeaksX11 } from "./xwayland";
+import { WaylandGateway } from "../wayland/wayland.gateway";
+import { SessionApps } from "../wayland/session-apps";
+import { execArgv, execTakesFile, parseDesktopEntry, pickLocalized } from "./desktop-entry";
+import { claimsOf, loadGlobs, type MimeGlobs } from "./mime-globs";
 import {
   linuxAppsPaths,
   parsePin,
@@ -32,21 +27,9 @@ import {
   pinStateFile,
   xwaylandBinary,
   type LinuxAppsPaths,
-} from './linux-apps.paths';
-import {
-  buildIndex,
-  isValidAttr,
-  searchIndex,
-  type PackageRow,
-  type SearchResult,
-} from './package-index';
-import {
-  effectivePin,
-  imagePin,
-  readPinState,
-  type Pin,
-  type PinState,
-} from './pins';
+} from "./linux-apps.paths";
+import { buildIndex, isValidAttr, searchIndex, type PackageRow, type SearchResult } from "./package-index";
+import { effectivePin, imagePin, readPinState, type Pin, type PinState } from "./pins";
 
 const run = promisify(execFile);
 
@@ -61,12 +44,7 @@ const INDEX_IDLE_MS = 15 * 60_000;
 /** The store's size is measured at most this often. */
 const STORE_SIZE_TTL_MS = 15_000;
 
-export type IndexState =
-  | 'ready'
-  | 'building'
-  | 'missing'
-  | 'mismatch'
-  | 'failed';
+export type IndexState = "ready" | "building" | "missing" | "mismatch" | "failed";
 
 export interface LinuxAppsStatus {
   /** Nix and the index are in this image. */
@@ -88,21 +66,14 @@ export interface InstalledApp {
   nixpkgs: boolean;
 }
 
-export type JobAction =
-  | 'install'
-  | 'remove'
-  | 'free-space'
-  | 'check'
-  | 'update'
-  | 'upgrade'
-  | 'go-back';
+export type JobAction = "install" | "remove" | "free-space" | "check" | "update" | "upgrade" | "go-back";
 
 export interface Job {
   id: number;
   action: JobAction;
   /** The attribute installed, the element removed, the snapshot moved to, or empty. */
   target: string;
-  state: 'running' | 'done' | 'failed';
+  state: "running" | "done" | "failed";
   /** What a job of several steps is doing now. */
   phase: string | null;
   log: string;
@@ -153,7 +124,7 @@ export interface Launcher {
 }
 
 /** Where a launch's file may be: the Files roots, resolved as Files resolves them. */
-export type FileRoot = 'home' | 'notes';
+export type FileRoot = "home" | "notes";
 
 /** The user's home, as Files' home root is: `FILES_ROOT`, else the process user's. */
 function homeDir(): string {
@@ -161,7 +132,7 @@ function homeDir(): string {
 }
 
 /** The same answer for a file that is missing, forbidden or not a file. */
-const NO_SUCH_FILE = 'That file cannot be opened';
+const NO_SUCH_FILE = "That file cannot be opened";
 
 /**
  * The real path of `path` (relative to Files' `root`, or absolute), if it is
@@ -169,16 +140,10 @@ const NO_SUCH_FILE = 'That file cannot be opened';
  * outcome, missing or outside the home or a directory, throws the same
  * not-found, so the answer says nothing about what exists elsewhere.
  */
-export async function resolveFileInHome(
-  root: FileRoot,
-  path: string,
-): Promise<string> {
+export async function resolveFileInHome(root: FileRoot, path: string): Promise<string> {
   const refuse = () => new NotFoundException(NO_SUCH_FILE);
-  if (path.includes('\0')) throw refuse();
-  const rootDir =
-    root === 'notes'
-      ? resolve(process.env.NOTES_DIR || resolve(process.cwd(), 'data/notes'))
-      : homeDir();
+  if (path.includes("\0")) throw refuse();
+  const rootDir = root === "notes" ? resolve(process.env.NOTES_DIR || resolve(process.cwd(), "data/notes")) : homeDir();
   const real = await fs.realpath(resolve(rootDir, path)).catch(() => null);
   const home = await fs.realpath(homeDir()).catch(() => null);
   if (!real || !home || !real.startsWith(home + sep)) throw refuse();
@@ -201,9 +166,9 @@ const LANGUAGE_TAG = /^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8}){0,4}$/;
  * well-formed ones, at most ten. Anything else reads as no preference.
  */
 export function parseLanguages(raw: unknown): string[] {
-  if (typeof raw !== 'string') return [];
+  if (typeof raw !== "string") return [];
   return raw
-    .split(',')
+    .split(",")
     .map((t) => t.trim())
     .filter((t) => LANGUAGE_TAG.test(t))
     .slice(0, 10);
@@ -211,17 +176,17 @@ export function parseLanguages(raw: unknown): string[] {
 
 /** Icon sizes in hicolor, largest first; `scalable` holds SVGs. */
 const ICON_DIRS = [
-  'scalable',
-  '512x512',
-  '256x256',
-  '192x192',
-  '128x128',
-  '96x96',
-  '64x64',
-  '48x48',
-  '32x32',
-  '24x24',
-  '16x16',
+  "scalable",
+  "512x512",
+  "256x256",
+  "192x192",
+  "128x128",
+  "96x96",
+  "64x64",
+  "48x48",
+  "32x32",
+  "24x24",
+  "16x16",
 ];
 
 /**
@@ -271,9 +236,7 @@ export class LinuxAppsService implements OnModuleDestroy {
   async pins(): Promise<PinsNow | null> {
     const p = this.paths;
     if (!p) return null;
-    const values = parsePin(
-      await fs.readFile(p.pinFile, 'utf8').catch(() => ''),
-    );
+    const values = parsePin(await fs.readFile(p.pinFile, "utf8").catch(() => ""));
     const image = imagePin(values);
     const state = await readPinState(pinStateFile(p));
     const { pin, fromImage } = effectivePin(image, state);
@@ -295,15 +258,10 @@ export class LinuxAppsService implements OnModuleDestroy {
   }> {
     const pins = await this.pins();
     if (!pins) return { release: null, pin: null, index: null, indexDir: null };
-    const index = (
-      await fs
-        .readFile(join(pins.indexDir, 'git-revision'), 'utf8')
-        .catch(() => '')
-    ).trim();
+    const index = (await fs.readFile(join(pins.indexDir, "git-revision"), "utf8").catch(() => "")).trim();
     // An image pin file without a snapshot name still names a commit.
     return {
-      release:
-        pins.effective?.release ?? (pins.pinFile.NIXPKGS_RELEASE || null),
+      release: pins.effective?.release ?? (pins.pinFile.NIXPKGS_RELEASE || null),
       pin: pins.effective?.commit ?? (pins.pinFile.NIXPKGS_COMMIT || null),
       index: index || null,
       indexDir: pins.indexDir,
@@ -312,22 +270,15 @@ export class LinuxAppsService implements OnModuleDestroy {
 
   async status(): Promise<LinuxAppsStatus> {
     const c = await this.readCommits();
-    const available =
-      !!this.paths && existsSync(join(this.paths.indexDir, 'packages.json.br'));
+    const available = !!this.paths && existsSync(join(this.paths.indexDir, "packages.json.br"));
     let index: IndexState;
-    if (
-      !available ||
-      !c.index ||
-      !c.pin ||
-      !c.indexDir ||
-      !existsSync(join(c.indexDir, 'packages.json.br'))
-    )
-      index = 'missing';
-    else if (c.index !== c.pin) index = 'mismatch';
-    else if (this.rows) index = 'ready';
-    else if (this.indexError) index = 'failed';
+    if (!available || !c.index || !c.pin || !c.indexDir || !existsSync(join(c.indexDir, "packages.json.br")))
+      index = "missing";
+    else if (c.index !== c.pin) index = "mismatch";
+    else if (this.rows) index = "ready";
+    else if (this.indexError) index = "failed";
     else {
-      index = 'building';
+      index = "building";
       void this.ensureIndex().catch(() => undefined);
     }
     return {
@@ -348,11 +299,10 @@ export class LinuxAppsService implements OnModuleDestroy {
     if (this.rows) return this.rows;
     if (this.building) return this.building;
     const p = this.paths;
-    if (!p) throw new NotFoundException('Linux apps are not available here');
+    if (!p) throw new NotFoundException("Linux apps are not available here");
     this.building = (async () => {
       const c = await this.readCommits();
-      if (!c.index || !c.pin)
-        throw new NotFoundException('The package list is not in this image');
+      if (!c.index || !c.pin) throw new NotFoundException("The package list is not in this image");
       if (c.index !== c.pin)
         throw new ConflictException(
           `The package list is from ${c.index.slice(0, 12)}, but the pin is ${c.pin.slice(0, 12)}`,
@@ -383,18 +333,14 @@ export class LinuxAppsService implements OnModuleDestroy {
     const p = this.paths!;
     const cached = join(p.cacheDir, `index-${commit}.json`);
     try {
-      const rows = JSON.parse(
-        await fs.readFile(cached, 'utf8'),
-      ) as PackageRow[];
+      const rows = JSON.parse(await fs.readFile(cached, "utf8")) as PackageRow[];
       if (Array.isArray(rows)) return rows;
     } catch {
       // Not made yet, or damaged: make it.
     }
     const started = Date.now();
-    const rows = await buildIndex(join(dir, 'packages.json.br'));
-    this.logger.log(
-      `Package index built: ${rows.length} packages in ${Date.now() - started} ms`,
-    );
+    const rows = await buildIndex(join(dir, "packages.json.br"));
+    this.logger.log(`Package index built: ${rows.length} packages in ${Date.now() - started} ms`);
     await fs.mkdir(p.cacheDir, { recursive: true });
     const tmp = `${cached}.${process.pid}.tmp`;
     await fs.writeFile(tmp, JSON.stringify(rows));
@@ -408,12 +354,9 @@ export class LinuxAppsService implements OnModuleDestroy {
    */
   async rowsFor(commit: string): Promise<PackageRow[]> {
     const pins = await this.pins();
-    if (!pins) throw new NotFoundException('Linux apps are not available here');
+    if (!pins) throw new NotFoundException("Linux apps are not available here");
     if (commit === pins.effective?.commit) return this.ensureIndex();
-    const dir =
-      commit === pins.image?.commit
-        ? this.paths!.indexDir
-        : pinIndexDir(this.paths!, commit);
+    const dir = commit === pins.image?.commit ? this.paths!.indexDir : pinIndexDir(this.paths!, commit);
     return this.loadRows(commit, dir);
   }
 
@@ -442,13 +385,11 @@ export class LinuxAppsService implements OnModuleDestroy {
     );
     for (const f of await fs.readdir(p.cacheDir).catch(() => [] as string[])) {
       const m = /^index-([0-9a-f]{40})\.json$/.exec(f);
-      if (m && !keep.has(m[1]))
-        await fs.rm(join(p.cacheDir, f), { force: true });
+      if (m && !keep.has(m[1])) await fs.rm(join(p.cacheDir, f), { force: true });
     }
-    const pinsDir = join(p.cacheDir, 'pins');
+    const pinsDir = join(p.cacheDir, "pins");
     for (const f of await fs.readdir(pinsDir).catch(() => [] as string[])) {
-      if (!keep.has(f))
-        await fs.rm(join(pinsDir, f), { recursive: true, force: true });
+      if (!keep.has(f)) await fs.rm(join(pinsDir, f), { recursive: true, force: true });
     }
   }
 
@@ -476,7 +417,7 @@ export class LinuxAppsService implements OnModuleDestroy {
     if (!this.paths) return [];
     let stdout: string;
     try {
-      ({ stdout } = await run('nix', ['profile', 'list', '--json'], {
+      ({ stdout } = await run("nix", ["profile", "list", "--json"], {
         env: this.nixEnv(),
         maxBuffer: 16 * 1024 * 1024,
         timeout: 60_000,
@@ -494,41 +435,35 @@ export class LinuxAppsService implements OnModuleDestroy {
   requireSession(session: unknown): string {
     if (!isValidSessionId(session) || !this.wayland.hasSession(session)) {
       throw new ConflictException(
-        'Linux apps are installed and started from a desktop tab whose session is open. Reload this tab and try again.',
+        "Linux apps are installed and started from a desktop tab whose session is open. Reload this tab and try again.",
       );
     }
     return session;
   }
 
   requireNoJob(): void {
-    if (this.job?.state === 'running')
+    if (this.job?.state === "running")
       throw new ConflictException(
-        this.job.action === 'install' ||
-          this.job.action === 'remove' ||
-          this.job.action === 'free-space'
-          ? 'Another install or removal is running. Wait for it to finish.'
-          : 'An update is running. Wait for it to finish.',
+        this.job.action === "install" || this.job.action === "remove" || this.job.action === "free-space"
+          ? "Another install or removal is running. Wait for it to finish."
+          : "An update is running. Wait for it to finish.",
       );
   }
 
   async install(attr: unknown, session: unknown): Promise<Job> {
     this.requireSession(session);
     this.requireNoJob();
-    if (!isValidAttr(attr))
-      throw new BadRequestException('That is not a package name');
+    if (!isValidAttr(attr)) throw new BadRequestException("That is not a package name");
     const rows = await this.ensureIndex();
     const row = rows.find((r) => r[0] === attr);
-    if (!row)
-      throw new BadRequestException(
-        `There is no package ${attr} in this release's list`,
-      );
-    const args = ['profile', 'add'];
+    if (!row) throw new BadRequestException(`There is no package ${attr} in this release's list`);
+    const args = ["profile", "add"];
     // Unfree packages need the environment's permission, which Nix reads only
     // when impure.
-    if (row[4] === 1) args.push('--impure');
+    if (row[4] === 1) args.push("--impure");
     args.push(`nixpkgs#${attr}`);
-    return this.runJob('install', attr, async (steps) => {
-      await steps.run('nix', args);
+    return this.runJob("install", attr, async (steps) => {
+      await steps.run("nix", args);
       await this.xwaylandSteps(steps);
     });
   }
@@ -536,13 +471,11 @@ export class LinuxAppsService implements OnModuleDestroy {
   async remove(name: unknown, session: unknown): Promise<Job> {
     this.requireSession(session);
     this.requireNoJob();
-    if (typeof name !== 'string' || name === '')
-      throw new BadRequestException('Which app?');
+    if (typeof name !== "string" || name === "") throw new BadRequestException("Which app?");
     const installed = await this.installed();
-    if (!installed.some((a) => a.name === name))
-      throw new NotFoundException(`${name} is not installed`);
-    return this.runJob('remove', name, async (steps) => {
-      await steps.run('nix', ['profile', 'remove', name]);
+    if (!installed.some((a) => a.name === name)) throw new NotFoundException(`${name} is not installed`);
+    return this.runJob("remove", name, async (steps) => {
+      await steps.run("nix", ["profile", "remove", name]);
       await this.xwaylandSteps(steps);
     });
   }
@@ -550,7 +483,7 @@ export class LinuxAppsService implements OnModuleDestroy {
   /** The step an install, a removal or a Go back ends with. */
   async xwaylandSteps(steps: JobSteps): Promise<void> {
     const next = await this.xwaylandStep(steps.job);
-    if (next) await steps.run('nix', next);
+    if (next) await steps.run("nix", next);
   }
 
   /**
@@ -567,18 +500,12 @@ export class LinuxAppsService implements OnModuleDestroy {
     if (wanted === null) return null;
     const installed = existsSync(xwaylandBinary(p));
     if (wanted && !installed) {
-      job.log += '\nAn installed app speaks X11, so Xwayland comes with it.\n';
-      return [
-        'profile',
-        'add',
-        '--profile',
-        p.xwaylandProfile,
-        'nixpkgs#xwayland',
-      ];
+      job.log += "\nAn installed app speaks X11, so Xwayland comes with it.\n";
+      return ["profile", "add", "--profile", p.xwaylandProfile, "nixpkgs#xwayland"];
     }
     if (!wanted && installed) {
-      job.log += '\nNo installed app speaks X11 any more, so Xwayland goes.\n';
-      return ['profile', 'remove', '--profile', p.xwaylandProfile, '--all'];
+      job.log += "\nNo installed app speaks X11 any more, so Xwayland goes.\n";
+      return ["profile", "remove", "--profile", p.xwaylandProfile, "--all"];
     }
     return null;
   }
@@ -590,15 +517,11 @@ export class LinuxAppsService implements OnModuleDestroy {
     const target = await fs.realpath(p.profile).catch(() => null);
     if (!target) return false;
     try {
-      const { stdout } = await run(
-        'nix',
-        ['path-info', '--recursive', target],
-        {
-          env: this.nixEnv(),
-          maxBuffer: 16 * 1024 * 1024,
-          timeout: 60_000,
-        },
-      );
+      const { stdout } = await run("nix", ["path-info", "--recursive", target], {
+        env: this.nixEnv(),
+        maxBuffer: 16 * 1024 * 1024,
+        timeout: 60_000,
+      });
       return closureSpeaksX11(stdout);
     } catch {
       return null;
@@ -608,9 +531,7 @@ export class LinuxAppsService implements OnModuleDestroy {
   freeSpace(session: unknown): Job {
     this.requireSession(session);
     this.requireNoJob();
-    return this.runJob('free-space', '', (steps) =>
-      steps.run('nix-collect-garbage', ['-d']),
-    );
+    return this.runJob("free-space", "", (steps) => steps.run("nix-collect-garbage", ["-d"]));
   }
 
   /**
@@ -618,18 +539,14 @@ export class LinuxAppsService implements OnModuleDestroy {
    * one's output in the job's log. The job fails with the first error.
    * Only one job runs at a time; callers check `requireNoJob` first.
    */
-  runJob(
-    action: JobAction,
-    target: string,
-    body: (steps: JobSteps) => Promise<void>,
-  ): Job {
+  runJob(action: JobAction, target: string, body: (steps: JobSteps) => Promise<void>): Job {
     const job: Job = {
       id: this.nextJobId++,
       action,
       target,
-      state: 'running',
+      state: "running",
       phase: null,
-      log: '',
+      log: "",
       startedAt: Date.now(),
       finishedAt: null,
       error: null,
@@ -639,14 +556,12 @@ export class LinuxAppsService implements OnModuleDestroy {
       job,
       run: (cmd, args) =>
         new Promise<void>((ok, fail) =>
-          this.runStep(job, cmd, args, (error) =>
-            error ? fail(new Error(error)) : ok(),
-          ),
+          this.runStep(job, cmd, args, (error) => (error ? fail(new Error(error)) : ok())),
         ),
       log: (text) => appendLog(job, text),
       phase: (text) => {
         job.phase = text;
-        appendLog(job, `${job.log ? '\n' : ''}${text}\n`);
+        appendLog(job, `${job.log ? "\n" : ""}${text}\n`);
       },
     };
     body(steps).then(
@@ -657,18 +572,13 @@ export class LinuxAppsService implements OnModuleDestroy {
   }
 
   /** One command of a job, its output in the job's log. */
-  private runStep(
-    job: Job,
-    cmd: string,
-    args: string[],
-    done: (error: string | null) => void,
-  ): void {
-    job.log += `$ ${cmd} ${args.join(' ')}\n`;
+  private runStep(job: Job, cmd: string, args: string[], done: (error: string | null) => void): void {
+    job.log += `$ ${cmd} ${args.join(" ")}\n`;
     let child: ChildProcess;
     try {
       child = spawn(cmd, args, {
         env: this.nixEnv(),
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: ["ignore", "pipe", "pipe"],
         // Its own group, so a timeout stops everything it started.
         detached: true,
       });
@@ -677,11 +587,11 @@ export class LinuxAppsService implements OnModuleDestroy {
       return;
     }
     this.jobChild = child;
-    const append = (chunk: Buffer) => appendLog(job, chunk.toString('utf8'));
-    child.stdout?.on('data', append);
-    child.stderr?.on('data', append);
+    const append = (chunk: Buffer) => appendLog(job, chunk.toString("utf8"));
+    child.stdout?.on("data", append);
+    child.stderr?.on("data", append);
     const timer = setTimeout(() => {
-      append(Buffer.from('\nStopped: it ran past 30 minutes.\n'));
+      append(Buffer.from("\nStopped: it ran past 30 minutes.\n"));
       this.killJob();
     }, JOB_TIMEOUT_MS);
     timer.unref();
@@ -694,21 +604,15 @@ export class LinuxAppsService implements OnModuleDestroy {
       if (this.jobChild === child) this.jobChild = null;
       done(error);
     };
-    child.on('error', (err) => answer(`cannot run ${cmd}: ${err.message}`));
-    child.on('close', (code, signal) =>
-      answer(
-        code === 0
-          ? null
-          : signal
-            ? `${cmd} was stopped (${signal})`
-            : `${cmd} exited with ${code}`,
-      ),
+    child.on("error", (err) => answer(`cannot run ${cmd}: ${err.message}`));
+    child.on("close", (code, signal) =>
+      answer(code === 0 ? null : signal ? `${cmd} was stopped (${signal})` : `${cmd} exited with ${code}`),
     );
   }
 
   private finishJob(job: Job, error: string | null): void {
-    if (job.state !== 'running') return;
-    job.state = error ? 'failed' : 'done';
+    if (job.state !== "running") return;
+    job.state = error ? "failed" : "done";
     job.phase = null;
     job.error = error;
     job.finishedAt = Date.now();
@@ -720,7 +624,7 @@ export class LinuxAppsService implements OnModuleDestroy {
     const child = this.jobChild;
     if (child?.pid) {
       try {
-        process.kill(-child.pid, 'SIGTERM');
+        process.kill(-child.pid, "SIGTERM");
       } catch {
         // Already gone.
       }
@@ -730,10 +634,9 @@ export class LinuxAppsService implements OnModuleDestroy {
   /** The store's size in bytes, measured with `du`. */
   async storeBytes(): Promise<number | null> {
     if (!this.paths) return null;
-    if (this.storeSize && Date.now() - this.storeSize.at < STORE_SIZE_TTL_MS)
-      return this.storeSize.bytes;
+    if (this.storeSize && Date.now() - this.storeSize.at < STORE_SIZE_TTL_MS) return this.storeSize.bytes;
     try {
-      const { stdout } = await run('du', ['-sk', this.paths.store], {
+      const { stdout } = await run("du", ["-sk", this.paths.store], {
         env: childEnv(),
         timeout: 120_000,
       });
@@ -749,9 +652,7 @@ export class LinuxAppsService implements OnModuleDestroy {
   // ── Start entries ────────────────────────────────────────────────
 
   private applicationsDir(): string | null {
-    return this.paths
-      ? join(this.paths.profile, 'share', 'applications')
-      : null;
+    return this.paths ? join(this.paths.profile, "share", "applications") : null;
   }
 
   /**
@@ -766,12 +667,10 @@ export class LinuxAppsService implements OnModuleDestroy {
     const globs = await this.globs();
     const out: Launcher[] = [];
     for (const f of files.sort()) {
-      if (!f.endsWith('.desktop')) continue;
-      const id = f.slice(0, -'.desktop'.length);
+      if (!f.endsWith(".desktop")) continue;
+      const id = f.slice(0, -".desktop".length);
       if (!LAUNCHER_ID.test(id)) continue;
-      const entry = parseDesktopEntry(
-        await fs.readFile(join(dir, f), 'utf8').catch(() => ''),
-      );
+      const entry = parseDesktopEntry(await fs.readFile(join(dir, f), "utf8").catch(() => ""));
       if (!entry || !execArgv(entry.exec)) continue;
       out.push({
         id,
@@ -784,10 +683,7 @@ export class LinuxAppsService implements OnModuleDestroy {
             id: a.id,
             name: pickLocalized(a.name, a.names, languages),
           })),
-        opens:
-          globs && execTakesFile(entry.exec)
-            ? claimsOf(globs, entry.mimeTypes)
-            : [],
+        opens: globs && execTakesFile(entry.exec) ? claimsOf(globs, entry.mimeTypes) : [],
       });
     }
     return out;
@@ -803,7 +699,7 @@ export class LinuxAppsService implements OnModuleDestroy {
   private async globs(): Promise<MimeGlobs | null> {
     if (!this.paths) return null;
     const found = await loadGlobs(this.paths.profile);
-    if ('globs' in found) {
+    if ("globs" in found) {
       this.globsMissing = null;
       return found.globs;
     }
@@ -819,9 +715,7 @@ export class LinuxAppsService implements OnModuleDestroy {
   private async entry(id: string) {
     const dir = this.applicationsDir();
     if (!dir || !LAUNCHER_ID.test(id)) return null;
-    return parseDesktopEntry(
-      await fs.readFile(join(dir, `${id}.desktop`), 'utf8').catch(() => ''),
-    );
+    return parseDesktopEntry(await fs.readFile(join(dir, `${id}.desktop`), "utf8").catch(() => ""));
   }
 
   /**
@@ -830,32 +724,25 @@ export class LinuxAppsService implements OnModuleDestroy {
    */
   private async iconFile(icon: string): Promise<string | null> {
     if (!this.paths || !icon) return null;
-    const store = await fs
-      .realpath(this.paths.store)
-      .catch(() => this.paths!.store);
+    const store = await fs.realpath(this.paths.store).catch(() => this.paths!.store);
     const inStore = async (path: string) => {
       const real = await fs.realpath(path).catch(() => null);
-      return real &&
-        (real.startsWith(store + '/') || real.startsWith('/nix/store/'))
-        ? real
-        : null;
+      return real && (real.startsWith(store + "/") || real.startsWith("/nix/store/")) ? real : null;
     };
-    if (icon.startsWith('/')) {
+    if (icon.startsWith("/")) {
       const ext = extname(icon).toLowerCase();
-      return ext === '.png' || ext === '.svg' ? inStore(icon) : null;
+      return ext === ".png" || ext === ".svg" ? inStore(icon) : null;
     }
     if (!/^[A-Za-z0-9._+-]+$/.test(icon)) return null;
-    const themes = join(this.paths.profile, 'share', 'icons', 'hicolor');
+    const themes = join(this.paths.profile, "share", "icons", "hicolor");
     for (const size of ICON_DIRS) {
-      for (const ext of size === 'scalable' ? ['.svg'] : ['.png']) {
-        const found = await inStore(join(themes, size, 'apps', icon + ext));
+      for (const ext of size === "scalable" ? [".svg"] : [".png"]) {
+        const found = await inStore(join(themes, size, "apps", icon + ext));
         if (found) return found;
       }
     }
-    for (const ext of ['.svg', '.png']) {
-      const found = await inStore(
-        join(this.paths.profile, 'share', 'pixmaps', icon + ext),
-      );
+    for (const ext of [".svg", ".png"]) {
+      const found = await inStore(join(this.paths.profile, "share", "pixmaps", icon + ext));
       if (found) return found;
     }
     return null;
@@ -864,10 +751,10 @@ export class LinuxAppsService implements OnModuleDestroy {
   async icon(id: string): Promise<{ path: string; type: string }> {
     const entry = await this.entry(id);
     const path = entry ? await this.iconFile(entry.icon) : null;
-    if (!path) throw new NotFoundException('No icon');
+    if (!path) throw new NotFoundException("No icon");
     return {
       path,
-      type: path.endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+      type: path.endsWith(".svg") ? "image/svg+xml" : "image/png",
     };
   }
 
@@ -887,14 +774,11 @@ export class LinuxAppsService implements OnModuleDestroy {
   ): Promise<{ pid: number }> {
     const sid = this.requireSession(session);
     const entry = await this.entry(id);
-    if (!entry) throw new NotFoundException('No such Linux app');
+    if (!entry) throw new NotFoundException("No such Linux app");
     let exec = entry.exec;
     if (action !== undefined) {
-      const found = ACTION_ID.test(action)
-        ? entry.actions.find((a) => a.id === action)
-        : undefined;
-      if (!found)
-        throw new NotFoundException(`${entry.name} has no such action`);
+      const found = ACTION_ID.test(action) ? entry.actions.find((a) => a.id === action) : undefined;
+      if (!found) throw new NotFoundException(`${entry.name} has no such action`);
       exec = found.exec;
     }
     let real: string | undefined;
@@ -904,25 +788,21 @@ export class LinuxAppsService implements OnModuleDestroy {
       real = await resolveFileInHome(file.root, file.path);
     }
     const argv = execArgv(exec, real);
-    if (!argv) throw new NotFoundException('No such Linux app');
+    if (!argv) throw new NotFoundException("No such Linux app");
     const env = terminalEnv(childEnv(), sid, this.wayland.x11Display(sid));
     const child = spawn(argv[0], argv.slice(1), {
       env,
-      cwd: resolve(env.HOME ?? '/'),
-      stdio: 'ignore',
+      cwd: resolve(env.HOME ?? "/"),
+      stdio: "ignore",
       detached: true,
     });
     const pid = await new Promise<number>((ok, fail) => {
-      child.once('spawn', () => {
+      child.once("spawn", () => {
         // Before it forks its own processes, which inherit the score.
         raiseOomScore(child.pid!);
         ok(child.pid!);
       });
-      child.once('error', (err) =>
-        fail(
-          new BadRequestException(`Cannot start ${entry.name}: ${err.message}`),
-        ),
-      );
+      child.once("error", (err) => fail(new BadRequestException(`Cannot start ${entry.name}: ${err.message}`)));
     });
     child.unref();
     // Its group ends with the session, and freezes under the cover screen.
@@ -933,25 +813,22 @@ export class LinuxAppsService implements OnModuleDestroy {
     // Firefox gives them.
     const reRaise = REAPPLY_OOM_SCORE_AFTER_MS.map((ms) =>
       setTimeout(() => {
-        if (child.exitCode === null && child.signalCode === null)
-          raiseOomScore(pid);
+        if (child.exitCode === null && child.signalCode === null) raiseOomScore(pid);
       }, ms).unref(),
     );
-    child.once('exit', (_code, signal) => {
+    child.once("exit", (_code, signal) => {
       for (const t of reRaise) clearTimeout(t);
       this.sessionApps.exited(sid, pid);
       // Killed by the kernel for memory: its windows have gone, say why.
-      if (signal === 'SIGKILL' && this.oomKills.happened()) {
+      if (signal === "SIGKILL" && this.oomKills.happened()) {
         this.wayland.sendToTab(sid, {
-          type: 'app_stopped',
+          type: "app_stopped",
           app: entry.name,
-          reason: 'memory',
+          reason: "memory",
         });
       }
     });
-    this.logger.log(
-      `Started ${entry.name} (${id}) in a session's display, group ${pid}`,
-    );
+    this.logger.log(`Started ${entry.name} (${id}) in a session's display, group ${pid}`);
     return { pid };
   }
 }
@@ -959,8 +836,7 @@ export class LinuxAppsService implements OnModuleDestroy {
 /** Adds to a job's log, keeping its end. */
 function appendLog(job: Job, text: string): void {
   job.log += text;
-  if (job.log.length > LOG_MAX)
-    job.log = job.log.slice(job.log.length - LOG_MAX);
+  if (job.log.length > LOG_MAX) job.log = job.log.slice(job.log.length - LOG_MAX);
 }
 
 /**
@@ -976,30 +852,24 @@ export function parseProfileList(json: string): InstalledApp[] {
     return [];
   }
   const elements = (parsed as { elements?: unknown })?.elements;
-  if (!elements || typeof elements !== 'object') return [];
+  if (!elements || typeof elements !== "object") return [];
   const out: InstalledApp[] = [];
-  for (const [name, raw] of Object.entries(
-    elements as Record<string, unknown>,
-  )) {
+  for (const [name, raw] of Object.entries(elements as Record<string, unknown>)) {
     const e = raw as {
       attrPath?: unknown;
       storePaths?: unknown;
       originalUrl?: unknown;
     };
-    const attrPath = typeof e.attrPath === 'string' ? e.attrPath : '';
-    const attr =
-      attrPath.replace(/^(legacyPackages|packages)\.[^.]+\./, '') || name;
-    const store =
-      Array.isArray(e.storePaths) && typeof e.storePaths[0] === 'string'
-        ? e.storePaths[0]
-        : '';
+    const attrPath = typeof e.attrPath === "string" ? e.attrPath : "";
+    const attr = attrPath.replace(/^(legacyPackages|packages)\.[^.]+\./, "") || name;
+    const store = Array.isArray(e.storePaths) && typeof e.storePaths[0] === "string" ? e.storePaths[0] : "";
     // /nix/store/<hash>-<name>-<version>
-    const version = /-(\d[^-]*)$/.exec(basename(store))?.[1] ?? '';
+    const version = /-(\d[^-]*)$/.exec(basename(store))?.[1] ?? "";
     out.push({
       name,
       attr,
       version,
-      nixpkgs: e.originalUrl === 'flake:nixpkgs',
+      nixpkgs: e.originalUrl === "flake:nixpkgs",
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));

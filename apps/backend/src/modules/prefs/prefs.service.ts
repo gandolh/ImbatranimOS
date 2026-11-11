@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { DbService } from '../../db/db.service';
-import type { PrefEntryDto, PrefsMap } from './dto/prefs.dto';
+import { Injectable } from "@nestjs/common";
+import { DbService } from "../../db/db.service";
+import type { PrefEntryDto, PrefsMap } from "./dto/prefs.dto";
 
 /** Told after a dotfile is written (value) or reset (null). */
 export type PrefListener = (key: string, value: string | null) => void;
@@ -49,7 +49,7 @@ export class PrefsService {
 
   /** Every dotfile, key → serialised JSON. */
   all(): PrefsMap {
-    const rows = this.db.db.prepare('SELECT key, value FROM prefs').all() as {
+    const rows = this.db.db.prepare("SELECT key, value FROM prefs").all() as {
       key: string;
       value: string;
     }[];
@@ -59,9 +59,7 @@ export class PrefsService {
   }
 
   get(key: string): string | null {
-    const row = this.db.db
-      .prepare('SELECT value FROM prefs WHERE key = ?')
-      .get(key) as { value: string } | undefined;
+    const row = this.db.db.prepare("SELECT value FROM prefs WHERE key = ?").get(key) as { value: string } | undefined;
     return row?.value ?? null;
   }
 
@@ -103,9 +101,7 @@ export class PrefsService {
 
     const updatedAt: Record<string, string> = {};
     if (entries.length > 0) {
-      const read = this.db.db.prepare(
-        'SELECT updated_at AS updatedAt FROM prefs WHERE key = ?',
-      );
+      const read = this.db.db.prepare("SELECT updated_at AS updatedAt FROM prefs WHERE key = ?");
       for (const entry of entries) {
         const row = read.get(entry.key) as { updatedAt?: string } | undefined;
         if (row?.updatedAt) updatedAt[entry.key] = row.updatedAt;
@@ -116,7 +112,7 @@ export class PrefsService {
   }
 
   remove(key: string): void {
-    this.db.db.prepare('DELETE FROM prefs WHERE key = ?').run(key);
+    this.db.db.prepare("DELETE FROM prefs WHERE key = ?").run(key);
     this.changed(key, null);
   }
 }

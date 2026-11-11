@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
   IsArray,
@@ -13,7 +13,7 @@ import {
   registerDecorator,
   type ValidationArguments,
   type ValidationOptions,
-} from 'class-validator';
+} from "class-validator";
 
 /** 24-hour wall-clock time, zero-padded. The only alarm time format. */
 export const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -31,11 +31,11 @@ const MAX_LABEL = 120;
  * browser, which is a far worse failure than a 400 at write time.
  */
 export function isKnownTimeZone(value: unknown): boolean {
-  if (typeof value !== 'string' || value.length === 0 || value.length > 100) {
+  if (typeof value !== "string" || value.length === 0 || value.length > 100) {
     return false;
   }
   try {
-    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
     return true;
   } catch {
     return false;
@@ -45,14 +45,13 @@ export function isKnownTimeZone(value: unknown): boolean {
 export function IsTimeZone(options?: ValidationOptions) {
   return function (object: object, propertyName: string) {
     registerDecorator({
-      name: 'isTimeZone',
+      name: "isTimeZone",
       target: object.constructor,
       propertyName,
       options,
       validator: {
         validate: (value: unknown) => isKnownTimeZone(value),
-        defaultMessage: (args: ValidationArguments) =>
-          `${args.property} must be an IANA time zone this system knows`,
+        defaultMessage: (args: ValidationArguments) => `${args.property} must be an IANA time zone this system knows`,
       },
     });
   };
@@ -73,11 +72,11 @@ export class CreateAlarmDto {
   @IsOptional()
   label?: string;
 
-  @Matches(HH_MM, { message: 'time must be 24-hour HH:mm' })
+  @Matches(HH_MM, { message: "time must be 24-hour HH:mm" })
   time: string;
 
   @Matches(DAY_MASK, {
-    message: 'days must be 7 characters of 0/1, Monday-first',
+    message: "days must be 7 characters of 0/1, Monday-first",
   })
   @IsOptional()
   days?: string;
@@ -89,7 +88,7 @@ export class UpdateAlarmDto {
   @IsOptional()
   label?: string;
 
-  @Matches(HH_MM, { message: 'time must be 24-hour HH:mm' })
+  @Matches(HH_MM, { message: "time must be 24-hour HH:mm" })
   @IsOptional()
   time?: string;
 
@@ -98,7 +97,7 @@ export class UpdateAlarmDto {
   enabled?: boolean;
 
   @Matches(DAY_MASK, {
-    message: 'days must be 7 characters of 0/1, Monday-first',
+    message: "days must be 7 characters of 0/1, Monday-first",
   })
   @IsOptional()
   days?: string;
@@ -128,7 +127,7 @@ export class ImportAlarmDto {
   @IsOptional()
   label?: string;
 
-  @Matches(HH_MM, { message: 'time must be 24-hour HH:mm' })
+  @Matches(HH_MM, { message: "time must be 24-hour HH:mm" })
   time: string;
 
   @IsBoolean()

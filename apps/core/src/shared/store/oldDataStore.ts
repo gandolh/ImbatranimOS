@@ -1,6 +1,6 @@
-import { create } from 'zustand'
-import { api } from '../../lib/axios'
-import { requestPick } from '../../system/filePortal'
+import { create } from "zustand";
+import { api } from "../../lib/axios";
+import { requestPick } from "../../system/filePortal";
 
 /**
  * The older data the data moves set aside (an app had written its own files
@@ -8,36 +8,36 @@ import { requestPick } from '../../system/filePortal'
  * `/system/old-data` reports it.
  */
 export type OldDataStatus = {
-  apps: { appId: string; name: string }[]
-  sets: { folder: string; appId: string; tables: Record<string, string> }[]
+  apps: { appId: string; name: string }[];
+  sets: { folder: string; appId: string; tables: Record<string, string> }[];
   /** Whether to ask at sign-in: some of it is neither downloaded nor cleaned out. */
-  notice: boolean
-}
+  notice: boolean;
+};
 
 /** The sign-in notice: asking, or saved and offering the clean-out. */
-export type OldDataStep = 'closed' | 'ask' | 'saved'
+export type OldDataStep = "closed" | "ask" | "saved";
 
 type OldDataStore = {
-  status: OldDataStatus | null
-  step: OldDataStep
+  status: OldDataStatus | null;
+  step: OldDataStep;
   /** Where the archive was saved, for the notice's second step. */
-  savedTo: string | null
-}
+  savedTo: string | null;
+};
 
 export const useOldDataStore = create<OldDataStore>(() => ({
   status: null,
-  step: 'closed',
+  step: "closed",
   savedTo: null,
-}))
+}));
 
 /** Read what is set aside now; null when the backend can't say. */
 export async function loadOldData(): Promise<OldDataStatus | null> {
   try {
-    const { data } = await api.get<OldDataStatus>('/system/old-data')
-    useOldDataStore.setState({ status: data })
-    return data
+    const { data } = await api.get<OldDataStatus>("/system/old-data");
+    useOldDataStore.setState({ status: data });
+    return data;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -46,26 +46,26 @@ export async function loadOldData(): Promise<OldDataStatus | null> {
  * way out for. Closing the notice picks nothing, so it asks again next time.
  */
 export async function checkOldDataAtSignIn(): Promise<void> {
-  const status = await loadOldData()
-  if (status?.notice) useOldDataStore.setState({ step: 'ask', savedTo: null })
+  const status = await loadOldData();
+  if (status?.notice) useOldDataStore.setState({ step: "ask", savedTo: null });
 }
 
 export function closeOldDataNotice(): void {
-  useOldDataStore.setState({ step: 'closed' })
+  useOldDataStore.setState({ step: "closed" });
 }
 
 /** "Todo", "Todo and Bookmarks", "Todo, Bookmarks and Git GUI". */
 export function oldDataApps(status: OldDataStatus | null): string {
-  const names = status?.apps.map((a) => a.name) ?? []
-  if (names.length <= 1) return names.join('')
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+  const names = status?.apps.map((a) => a.name) ?? [];
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
 /** `imbatranim-old-data-2026-11-09.tar.gz`, by the local date. */
 export function oldDataFileName(now = new Date()): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
-  return `imbatranim-old-data-${day}.tar.gz`
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return `imbatranim-old-data-${day}.tar.gz`;
 }
 
 /**
@@ -75,37 +75,37 @@ export function oldDataFileName(now = new Date()): string {
  */
 export async function downloadOldData(): Promise<string | null> {
   const choice = await requestPick({
-    mode: 'save',
-    title: 'Save the older data',
-    extensions: ['gz'],
+    mode: "save",
+    title: "Save the older data",
+    extensions: ["gz"],
     suggestedName: oldDataFileName(),
-  })
-  if (!choice) return null
-  const { data } = await api.post<{ path: string; files: number }>('/system/old-data/download', {
+  });
+  if (!choice) return null;
+  const { data } = await api.post<{ path: string; files: number }>("/system/old-data/download", {
     root: choice.root,
     path: choice.path,
-  })
-  useOldDataStore.setState({ savedTo: data.path })
-  await loadOldData()
-  return data.path
+  });
+  useOldDataStore.setState({ savedTo: data.path });
+  await loadOldData();
+  return data.path;
 }
 
 /** The confirmation every clean-out asks first, in the notice and in Settings. */
 export const CLEAN_OUT_CONFIRM = {
-  title: 'Clean out older data',
-  message: 'This deletes the older data for good.',
-  confirmLabel: 'Clean out',
+  title: "Clean out older data",
+  message: "This deletes the older data for good.",
+  confirmLabel: "Clean out",
   destructive: true,
-} as const
+} as const;
 
 /** Drop every set-aside table. The caller has confirmed first. */
 export async function cleanOutOldData(): Promise<void> {
-  await api.delete('/system/old-data')
-  await loadOldData()
+  await api.delete("/system/old-data");
+  await loadOldData();
 }
 
 /** The backend's message for a failed call, else a plain one. */
 export function oldDataError(err: unknown): string {
-  const data = (err as { response?: { data?: { message?: unknown } } }).response?.data
-  return typeof data?.message === 'string' ? data.message : 'The request failed'
+  const data = (err as { response?: { data?: { message?: unknown } } }).response?.data;
+  return typeof data?.message === "string" ? data.message : "The request failed";
 }

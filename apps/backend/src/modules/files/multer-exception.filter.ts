@@ -1,6 +1,6 @@
-import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
-import { MulterError } from 'multer';
-import type { Response } from 'express';
+import { ArgumentsHost, Catch, ExceptionFilter } from "@nestjs/common";
+import { MulterError } from "multer";
+import type { Response } from "express";
 
 /**
  * Maps multer's upload errors to clean HTTP responses. The one we care about
@@ -12,14 +12,12 @@ import type { Response } from 'express';
 export class MulterExceptionFilter implements ExceptionFilter {
   catch(exception: MulterError, host: ArgumentsHost): void {
     const res = host.switchToHttp().getResponse<Response>();
-    const tooLarge = exception.code === 'LIMIT_FILE_SIZE';
+    const tooLarge = exception.code === "LIMIT_FILE_SIZE";
     const statusCode = tooLarge ? 413 : 400;
     res.status(statusCode).json({
       statusCode,
-      error: tooLarge ? 'Payload Too Large' : 'Bad Request',
-      message: tooLarge
-        ? 'File exceeds the maximum upload size'
-        : exception.message,
+      error: tooLarge ? "Payload Too Large" : "Bad Request",
+      message: tooLarge ? "File exceeds the maximum upload size" : exception.message,
     });
   }
 }

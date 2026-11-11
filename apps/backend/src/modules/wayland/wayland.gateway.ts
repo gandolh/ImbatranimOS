@@ -1,25 +1,15 @@
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import type { IncomingMessage } from 'http';
-import type { Duplex } from 'stream';
-import { WebSocketServer, type WebSocket, type RawData } from 'ws';
-import type { Env } from '../../config/env.schema';
-import { LocalIdentityService } from '../auth/ws-auth';
-import { authorizeUpgrade } from '../pty/pty-upgrade';
-import { UpgradeRoutes } from '../../upgrade-routes';
-import { WaylandHostService } from './wayland-host.service';
-import { clampRatio, clampSize, toHostMessage } from './wayland-input';
-import {
-  clientGroups,
-  liveGroups,
-  SessionApps,
-  signalGroups,
-} from './session-apps';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import type { IncomingMessage } from "http";
+import type { Duplex } from "stream";
+import { WebSocketServer, type WebSocket, type RawData } from "ws";
+import type { Env } from "../../config/env.schema";
+import { LocalIdentityService } from "../auth/ws-auth";
+import { authorizeUpgrade } from "../pty/pty-upgrade";
+import { UpgradeRoutes } from "../../upgrade-routes";
+import { WaylandHostService } from "./wayland-host.service";
+import { clampRatio, clampSize, toHostMessage } from "./wayland-input";
+import { clientGroups, liveGroups, SessionApps, signalGroups } from "./session-apps";
 import {
   AUDIO_DROP_ABOVE,
   CLOSE_REVOKED,
@@ -35,14 +25,8 @@ import {
   WAYLAND_PATH,
   WAYLAND_TAKEOVER_WAIT_MS,
   WAYLAND_REVOKE_SWEEP_MS,
-} from './wayland.constants';
-import {
-  frameToplevel,
-  isValidSessionId,
-  WS_KIND_AUDIO,
-  WS_KIND_FRAME,
-  type HostOutbound,
-} from './wayland.protocol';
+} from "./wayland.constants";
+import { frameToplevel, isValidSessionId, WS_KIND_AUDIO, WS_KIND_FRAME, type HostOutbound } from "./wayland.protocol";
 
 /** The tab's viewport in CSS pixels and its devicePixelRatio, from the upgrade's query. */
 interface TabOutput {
@@ -127,10 +111,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       matches: (path) => path === WAYLAND_PATH,
       handle: (req, socket, head) => this.onUpgrade(req, socket, head),
     });
-    this.sweepTimer = setInterval(
-      () => void this.sweepRevoked(),
-      WAYLAND_REVOKE_SWEEP_MS,
-    );
+    this.sweepTimer = setInterval(() => void this.sweepRevoked(), WAYLAND_REVOKE_SWEEP_MS);
     this.sweepTimer.unref();
   }
 
@@ -147,7 +128,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
   onModuleDestroy(): void {
     this.unregister?.();
     if (this.sweepTimer) clearInterval(this.sweepTimer);
-    for (const s of [...this.live.values()]) this.end(s, 1001, 'shutdown');
+    for (const s of [...this.live.values()]) this.end(s, 1001, "shutdown");
     // The backend is going: no waiting for SIGKILL's turn.
     for (const id of [...this.ending]) this.ending.delete(id);
     this.wss.close();
@@ -173,44 +154,33 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
     // See PtyGateway: an unhandled socket error while the session is checked
     // would take the process down.
     const onSocketError = () => socket.destroy();
-    socket.on('error', onSocketError);
+    socket.on("error", onSocketError);
     const refuse = (status: string) => {
       socket.write(`HTTP/1.1 ${status}\r\n\r\n`);
       socket.destroy();
     };
     const params = parseQuery(req.url);
-    const session = params.get('session');
-    if (!isValidSessionId(session)) return refuse('400 Bad Request');
+    const session = params.get("session");
+    if (!isValidSessionId(session)) return refuse("400 Bad Request");
     const output: TabOutput = {
-      width: clampSize(params.get('width')),
-      height: clampSize(params.get('height')),
-      ratio: clampRatio(params.get('ratio')),
+      width: clampSize(params.get("width")),
+      height: clampSize(params.get("height")),
+      ratio: clampRatio(params.get("ratio")),
     };
 
     void (async () => {
-      const caller = await authorizeUpgrade(
-        req,
-        this.identity,
-        this.config.get('FRONTEND_URL'),
-      );
+      const caller = await authorizeUpgrade(req, this.identity, this.config.get("FRONTEND_URL"));
       if (socket.destroyed) return;
       if (!caller) {
-        this.logger.warn('Rejected an unauthorized Linux windows upgrade');
-        return refuse('401 Unauthorized');
+        this.logger.warn("Rejected an unauthorized Linux windows upgrade");
+        return refuse("401 Unauthorized");
       }
-      socket.off('error', onSocketError);
-      this.wss.handleUpgrade(req, socket, head, (ws) =>
-        this.onConnection(ws, session, output, req.headers.cookie),
-      );
+      socket.off("error", onSocketError);
+      this.wss.handleUpgrade(req, socket, head, (ws) => this.onConnection(ws, session, output, req.headers.cookie));
     })();
   }
 
-  private onConnection(
-    ws: WebSocket,
-    id: string,
-    output: TabOutput,
-    cookie: string | undefined,
-  ): void {
+  private onConnection(ws: WebSocket, id: string, output: TabOutput, cookie: string | undefined): void {
     const existing = this.live.get(id);
     // One socket per desktop session. A second one for the same id is
     // either a reload whose old socket hasn't closed yet, or a duplicated
@@ -227,7 +197,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
           this.onConnection(ws, id, output, cookie);
         } else if (Date.now() - started > WAYLAND_TAKEOVER_WAIT_MS) {
           clearInterval(wait);
-          ws.close(CLOSE_SESSION_IN_USE, 'session-in-use');
+          ws.close(CLOSE_SESSION_IN_USE, "session-in-use");
         }
       }, 50);
       return;
@@ -241,20 +211,17 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       this.attach(existing, ws);
       // Told first, so the tab knows the windows that follow are the ones it
       // had (it puts them back where they were) and not new ones.
-      this.safeSend(
-        existing,
-        JSON.stringify({ type: 'session', resumed: true }),
-      );
-      this.host.send({ type: 'output', session: id, ...output });
-      this.host.send({ type: 'resync', session: id });
+      this.safeSend(existing, JSON.stringify({ type: "session", resumed: true }));
+      this.host.send({ type: "output", session: id, ...output });
+      this.host.send({ type: "resync", session: id });
       return;
     }
     if (this.ending.has(id)) {
-      ws.close(CLOSE_SESSION_ENDING, 'session-ending');
+      ws.close(CLOSE_SESSION_ENDING, "session-ending");
       return;
     }
     if (this.live.size >= MAX_WAYLAND_SESSIONS) {
-      ws.close(CLOSE_UNAVAILABLE, 'too-many-sessions');
+      ws.close(CLOSE_UNAVAILABLE, "too-many-sessions");
       return;
     }
     const s: LiveSession = {
@@ -276,31 +243,26 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       frame: (body) => this.onFrame(s, body),
       audio: (body) => this.onAudio(s, body),
       gone: (reason) => {
-        this.safeSend(s, JSON.stringify({ type: 'unavailable', reason }));
-        this.end(s, CLOSE_UNAVAILABLE, 'host-gone');
+        this.safeSend(s, JSON.stringify({ type: "unavailable", reason }));
+        this.end(s, CLOSE_UNAVAILABLE, "host-gone");
       },
     });
     if (failure) {
       this.logger.warn(`Linux apps unavailable: ${failure}`);
-      this.safeSend(
-        s,
-        JSON.stringify({ type: 'unavailable', reason: failure }),
-      );
-      this.end(s, CLOSE_UNAVAILABLE, 'unavailable');
+      this.safeSend(s, JSON.stringify({ type: "unavailable", reason: failure }));
+      this.end(s, CLOSE_UNAVAILABLE, "unavailable");
       return;
     }
     // A new session: none of its windows is one the tab had before.
-    this.safeSend(s, JSON.stringify({ type: 'session', resumed: false }));
+    this.safeSend(s, JSON.stringify({ type: "session", resumed: false }));
     for (const h of this.hooks) h.started?.(id);
   }
 
   private attach(s: LiveSession, ws: WebSocket): void {
     s.ws = ws;
-    ws.on('close', () => this.detach(s, ws));
-    ws.on('error', () => this.detach(s, ws));
-    ws.on('message', (data: RawData, isBinary: boolean) =>
-      this.onClientMessage(s, data, isBinary),
-    );
+    ws.on("close", () => this.detach(s, ws));
+    ws.on("error", () => this.detach(s, ws));
+    ws.on("message", (data: RawData, isBinary: boolean) => this.onClientMessage(s, data, isBinary));
   }
 
   /** The tab's socket closed: the session waits for a reload, then ends. */
@@ -315,16 +277,13 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
   }
 
   private onHostMessage(s: LiveSession, m: HostOutbound): void {
-    if (m.type === 'session_failed') {
-      this.safeSend(
-        s,
-        JSON.stringify({ type: 'unavailable', reason: m.reason }),
-      );
-      this.end(s, CLOSE_UNAVAILABLE, 'session-failed');
+    if (m.type === "session_failed") {
+      this.safeSend(s, JSON.stringify({ type: "unavailable", reason: m.reason }));
+      this.end(s, CLOSE_UNAVAILABLE, "session-failed");
       return;
     }
-    if (m.type === 'session_ready' || m.type === 'hello') return;
-    if (m.type === 'clients') {
+    if (m.type === "session_ready" || m.type === "hello") return;
+    if (m.type === "clients") {
       s.clientPids = m.pids.filter((p) => Number.isInteger(p) && p > 1);
       return;
     }
@@ -372,18 +331,14 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       }
       s.ackTimer = null;
       for (const toplevel of s.awaitingAck) {
-        this.host.send({ type: 'frame_ack', session: s.id, toplevel });
+        this.host.send({ type: "frame_ack", session: s.id, toplevel });
       }
       s.awaitingAck.clear();
     };
     tryAck();
   }
 
-  private onClientMessage(
-    s: LiveSession,
-    data: RawData,
-    isBinary: boolean,
-  ): void {
+  private onClientMessage(s: LiveSession, data: RawData, isBinary: boolean): void {
     if (isBinary) return;
     let msg: unknown;
     try {
@@ -391,10 +346,10 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
     } catch {
       return;
     }
-    if (!msg || typeof msg !== 'object') return;
+    if (!msg || typeof msg !== "object") return;
     const m = msg as Record<string, unknown>;
-    if (m.type === 'cover') {
-      if (typeof m.covered === 'boolean') this.cover(s, m.covered);
+    if (m.type === "cover") {
+      if (typeof m.covered === "boolean") this.cover(s, m.covered);
       return;
     }
     for (const h of this.hooks) if (h.tabMessage?.(s.id, m)) return;
@@ -408,9 +363,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
   /** The session's apps: started from Start, and connected from a Terminal. */
   private groupsOf(s: LiveSession): number[] {
-    return [
-      ...new Set([...this.apps.groups(s.id), ...clientGroups(s.clientPids)]),
-    ];
+    return [...new Set([...this.apps.groups(s.id), ...clientGroups(s.clientPids)])];
   }
 
   /**
@@ -421,8 +374,8 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
   private cover(s: LiveSession, covered: boolean): void {
     if (s.covered === covered) return;
     s.covered = covered;
-    signalGroups(this.groupsOf(s), covered ? 'SIGSTOP' : 'SIGCONT');
-    this.host.send({ type: 'freeze', session: s.id, frozen: covered });
+    signalGroups(this.groupsOf(s), covered ? "SIGSTOP" : "SIGCONT");
+    this.host.send({ type: "freeze", session: s.id, frozen: covered });
   }
 
   /**
@@ -438,18 +391,17 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
     if (s.grace) clearTimeout(s.grace);
     const ws = s.ws;
     s.ws = null;
-    if (code !== undefined && ws?.readyState === ws?.OPEN)
-      ws?.close(code, reason);
+    if (code !== undefined && ws?.readyState === ws?.OPEN) ws?.close(code, reason);
     const groups = this.groupsOf(s);
     if (groups.length === 0) {
       this.finish(s.id);
       return;
     }
-    signalGroups(groups, 'SIGCONT');
-    signalGroups(groups, 'SIGTERM');
+    signalGroups(groups, "SIGCONT");
+    signalGroups(groups, "SIGTERM");
     this.ending.add(s.id);
     setTimeout(() => {
-      signalGroups(liveGroups(groups), 'SIGKILL');
+      signalGroups(liveGroups(groups), "SIGKILL");
       this.finish(s.id);
     }, this.killAfterMs).unref();
   }
@@ -466,20 +418,20 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       const still = await authorizeUpgrade(
         { headers: { cookie: s.cookie } },
         this.identity,
-        this.config.get('FRONTEND_URL'),
+        this.config.get("FRONTEND_URL"),
       );
-      if (!still) this.end(s, CLOSE_REVOKED, 'session-revoked');
+      if (!still) this.end(s, CLOSE_REVOKED, "session-revoked");
     }
   }
 }
 
 function parseQuery(url: string | undefined): URLSearchParams {
-  const q = url?.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
+  const q = url?.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
   return new URLSearchParams(q);
 }
 
 function rawText(data: RawData): string {
-  if (Buffer.isBuffer(data)) return data.toString('utf8');
-  if (Array.isArray(data)) return Buffer.concat(data).toString('utf8');
-  return Buffer.from(data).toString('utf8');
+  if (Buffer.isBuffer(data)) return data.toString("utf8");
+  if (Array.isArray(data)) return Buffer.concat(data).toString("utf8");
+  return Buffer.from(data).toString("utf8");
 }

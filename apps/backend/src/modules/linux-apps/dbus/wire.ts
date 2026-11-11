@@ -55,15 +55,15 @@ const FIELD = {
   signature: 8,
 } as const;
 const FIELD_TYPE: Record<number, string> = {
-  1: 'o',
-  2: 's',
-  3: 's',
-  4: 's',
-  5: 'u',
-  6: 's',
-  7: 's',
-  8: 'g',
-  9: 'u',
+  1: "o",
+  2: "s",
+  3: "s",
+  4: "s",
+  5: "u",
+  6: "s",
+  7: "s",
+  8: "g",
+  9: "u",
 };
 
 export class WireError extends Error {}
@@ -84,11 +84,11 @@ export function splitSignature(signature: string): string[] {
 
 function completeTypeEnd(sig: string, i: number): number {
   const c = sig[i];
-  if (c === undefined) throw new WireError('signature ends early');
-  if ('ybnqiuxtdhsogv'.includes(c)) return i + 1;
-  if (c === 'a') return completeTypeEnd(sig, i + 1);
-  if (c === '(' || c === '{') {
-    const close = c === '(' ? ')' : '}';
+  if (c === undefined) throw new WireError("signature ends early");
+  if ("ybnqiuxtdhsogv".includes(c)) return i + 1;
+  if (c === "a") return completeTypeEnd(sig, i + 1);
+  if (c === "(" || c === "{") {
+    const close = c === "(" ? ")" : "}";
     let j = i + 1;
     while (sig[j] !== close) {
       if (j >= sig.length) throw new WireError(`unclosed ${c} in ${sig}`);
@@ -101,18 +101,18 @@ function completeTypeEnd(sig: string, i: number): number {
 
 function alignmentOf(type: string): number {
   switch (type[0]) {
-    case 'y':
-    case 'g':
-    case 'v':
+    case "y":
+    case "g":
+    case "v":
       return 1;
-    case 'n':
-    case 'q':
+    case "n":
+    case "q":
       return 2;
-    case 'x':
-    case 't':
-    case 'd':
-    case '(':
-    case '{':
+    case "x":
+    case "t":
+    case "d":
+    case "(":
+    case "{":
       return 8;
     default:
       return 4;
@@ -164,79 +164,76 @@ class Writer {
     this.align(alignmentOf(type));
     const at = this.length;
     switch (type[0]) {
-      case 'y':
+      case "y":
         return this.u8(num(v, type));
-      case 'b':
+      case "b":
         this.room(4);
         this.buf.writeUInt32LE(v ? 1 : 0, at);
         this.length += 4;
         return;
-      case 'n':
+      case "n":
         this.room(2);
         this.buf.writeInt16LE(num(v, type), at);
         this.length += 2;
         return;
-      case 'q':
+      case "q":
         this.room(2);
         this.buf.writeUInt16LE(num(v, type), at);
         this.length += 2;
         return;
-      case 'i':
+      case "i":
         this.room(4);
         this.buf.writeInt32LE(num(v, type), at);
         this.length += 4;
         return;
-      case 'u':
-      case 'h':
+      case "u":
+      case "h":
         this.room(4);
         this.buf.writeUInt32LE(num(v, type), at);
         this.length += 4;
         return;
-      case 'x':
+      case "x":
         this.room(8);
         this.buf.writeBigInt64LE(BigInt(v as number | bigint), at);
         this.length += 8;
         return;
-      case 't':
+      case "t":
         this.room(8);
         this.buf.writeBigUInt64LE(BigInt(v as number | bigint), at);
         this.length += 8;
         return;
-      case 'd':
+      case "d":
         this.room(8);
         this.buf.writeDoubleLE(num(v, type), at);
         this.length += 8;
         return;
-      case 's':
-      case 'o': {
-        const b = Buffer.from(str(v, type), 'utf8');
+      case "s":
+      case "o": {
+        const b = Buffer.from(str(v, type), "utf8");
         this.room(4);
         this.buf.writeUInt32LE(b.length, this.length);
         this.length += 4;
         this.bytes(b);
         return this.u8(0);
       }
-      case 'g': {
-        const b = Buffer.from(str(v, type), 'ascii');
-        if (b.length > 255) throw new WireError('signature too long');
+      case "g": {
+        const b = Buffer.from(str(v, type), "ascii");
+        if (b.length > 255) throw new WireError("signature too long");
         this.u8(b.length);
         this.bytes(b);
         return this.u8(0);
       }
-      case 'v': {
-        if (!(v instanceof Variant)) throw new WireError('a v needs a Variant');
-        this.value('g', v.signature);
+      case "v": {
+        if (!(v instanceof Variant)) throw new WireError("a v needs a Variant");
+        this.value("g", v.signature);
         const [inner, ...rest] = splitSignature(v.signature);
-        if (!inner || rest.length)
-          throw new WireError('a variant holds one type');
+        if (!inner || rest.length) throw new WireError("a variant holds one type");
         return this.value(inner, v.value);
       }
-      case 'a': {
+      case "a": {
         const element = type.slice(1);
-        const items =
-          v instanceof Map ? [...v.entries()] : (v as unknown[] | undefined);
-        if (!Array.isArray(items))
-          throw new WireError(`${type} needs an array`);
+        const items = v instanceof Map ? [...v.entries()] : (v as unknown[] | undefined);
+        if (!Array.isArray(items)) throw new WireError(`${type} needs an array`);
         this.room(4);
         const lengthAt = this.length;
         this.length += 4;
@@ -246,8 +243,8 @@ class Writer {
         this.setU32(lengthAt, this.length - start);
         return;
       }
-      case '(':
-      case '{': {
+      case "(":
+      case "{": {
         const members = innerTypes(type);
         const values = v as unknown[];
         if (!Array.isArray(values) || values.length !== members.length) {
@@ -266,13 +263,12 @@ class Writer {
 }
 
 function num(v: unknown, type: string): number {
-  if (typeof v !== 'number' || !Number.isFinite(v))
-    throw new WireError(`${type} needs a number`);
+  if (typeof v !== "number" || !Number.isFinite(v)) throw new WireError(`${type} needs a number`);
   return v;
 }
 
 function str(v: unknown, type: string): string {
-  if (typeof v !== 'string') throw new WireError(`${type} needs a string`);
+  if (typeof v !== "string") throw new WireError(`${type} needs a string`);
   return v;
 }
 
@@ -280,9 +276,7 @@ function str(v: unknown, type: string): string {
 export function marshal(signature: string, values: unknown[]): Buffer {
   const types = splitSignature(signature);
   if (types.length !== values.length) {
-    throw new WireError(
-      `signature ${signature} has ${types.length} types, got ${values.length} values`,
-    );
+    throw new WireError(`signature ${signature} has ${types.length} types, got ${values.length} values`);
   }
   const w = new Writer();
   types.forEach((t, i) => w.value(t, values[i]));
@@ -305,8 +299,7 @@ class Reader {
   }
 
   private need(n: number): void {
-    if (this.offset + n > this.buf.length)
-      throw new WireError('message ends early');
+    if (this.offset + n > this.buf.length) throw new WireError("message ends early");
   }
 
   align(n: number): void {
@@ -316,90 +309,87 @@ class Reader {
 
   u32(): number {
     this.need(4);
-    const v = this.little
-      ? this.buf.readUInt32LE(this.offset)
-      : this.buf.readUInt32BE(this.offset);
+    const v = this.little ? this.buf.readUInt32LE(this.offset) : this.buf.readUInt32BE(this.offset);
     this.offset += 4;
     return v;
   }
 
   value(type: string, depth = 0): unknown {
-    if (depth > 64) throw new WireError('nested too deeply');
+    if (depth > 64) throw new WireError("nested too deeply");
     this.align(alignmentOf(type));
     const b = this.buf;
     const le = this.little;
     const at = this.offset;
     switch (type[0]) {
-      case 'y':
+      case "y":
         this.need(1);
         this.offset += 1;
         return b.readUInt8(at);
-      case 'b':
+      case "b":
         return this.u32() !== 0;
-      case 'n':
+      case "n":
         this.need(2);
         this.offset += 2;
         return le ? b.readInt16LE(at) : b.readInt16BE(at);
-      case 'q':
+      case "q":
         this.need(2);
         this.offset += 2;
         return le ? b.readUInt16LE(at) : b.readUInt16BE(at);
-      case 'i':
+      case "i":
         this.need(4);
         this.offset += 4;
         return le ? b.readInt32LE(at) : b.readInt32BE(at);
-      case 'u':
-      case 'h':
+      case "u":
+      case "h":
         return this.u32();
-      case 'x':
+      case "x":
         this.need(8);
         this.offset += 8;
         return le ? b.readBigInt64LE(at) : b.readBigInt64BE(at);
-      case 't':
+      case "t":
         this.need(8);
         this.offset += 8;
         return le ? b.readBigUInt64LE(at) : b.readBigUInt64BE(at);
-      case 'd':
+      case "d":
         this.need(8);
         this.offset += 8;
         return le ? b.readDoubleLE(at) : b.readDoubleBE(at);
-      case 's':
-      case 'o': {
+      case "s":
+      case "o": {
         const len = this.u32();
         this.need(len + 1);
-        const s = b.toString('utf8', this.offset, this.offset + len);
+        const s = b.toString("utf8", this.offset, this.offset + len);
         this.offset += len + 1;
         return s;
       }
-      case 'g': {
+      case "g": {
         this.need(1);
         const len = b.readUInt8(this.offset);
         this.need(len + 2);
-        const s = b.toString('ascii', this.offset + 1, this.offset + 1 + len);
+        const s = b.toString("ascii", this.offset + 1, this.offset + 1 + len);
         this.offset += len + 2;
         return s;
       }
-      case 'v': {
-        const sig = this.value('g', depth + 1) as string;
+      case "v": {
+        const sig = this.value("g", depth + 1) as string;
         const [inner, ...rest] = splitSignature(sig);
-        if (!inner || rest.length)
-          throw new WireError('a variant holds one type');
+        if (!inner || rest.length) throw new WireError("a variant holds one type");
         return new Variant(sig, this.value(inner, depth + 1));
       }
-      case 'a': {
+      case "a": {
         const len = this.u32();
-        if (len > 64 * 1024 * 1024) throw new WireError('array too long');
+        if (len > 64 * 1024 * 1024) throw new WireError("array too long");
         const element = type.slice(1);
         this.align(alignmentOf(element));
         const end = this.offset + len;
         this.need(len);
         const out: unknown[] = [];
         while (this.offset < end) out.push(this.value(element, depth + 1));
-        if (this.offset !== end) throw new WireError('array length mismatch');
+        if (this.offset !== end) throw new WireError("array length mismatch");
         return out;
       }
-      case '(':
-      case '{':
+      case "(":
+      case "{":
         return innerTypes(type).map((m) => this.value(m, depth + 1));
     }
     throw new WireError(`cannot read ${type}`);
@@ -407,14 +397,10 @@ class Reader {
 }
 
 /** Unmarshal a body: its bytes start 8-aligned. */
-export function unmarshal(
-  signature: string,
-  body: Buffer,
-  little = true,
-): unknown[] {
+export function unmarshal(signature: string, body: Buffer, little = true): unknown[] {
   const r = new Reader(body, little);
   const out = splitSignature(signature).map((t) => r.value(t));
-  if (r.offset !== body.length) throw new WireError('body has trailing bytes');
+  if (r.offset !== body.length) throw new WireError("body has trailing bytes");
   return out;
 }
 
@@ -422,7 +408,7 @@ export function unmarshal(
 
 /** Encode a message, little-endian. */
 export function encodeMessage(m: Message): Buffer {
-  const signature = m.signature ?? '';
+  const signature = m.signature ?? "";
   const body = signature ? marshal(signature, m.body) : Buffer.alloc(0);
   const fields: [number, Variant][] = [];
   const add = (code: number, v: string | number | undefined) => {
@@ -442,9 +428,9 @@ export function encodeMessage(m: Message): Buffer {
   w.u8(m.type);
   w.u8(m.flags);
   w.u8(1);
-  w.value('u', body.length);
-  w.value('u', m.serial);
-  w.value('a(yv)', fields);
+  w.value("u", body.length);
+  w.value("u", m.serial);
+  w.value("a(yv)", fields);
   w.align(8);
   w.bytes(body);
   return w.take();
@@ -457,12 +443,12 @@ export function encodeMessage(m: Message): Buffer {
 export function messageLength(buf: Buffer): number | null {
   if (buf.length < 16) return null;
   const little = buf[0] === 0x6c;
-  if (!little && buf[0] !== 0x42) throw new WireError('bad endianness byte');
+  if (!little && buf[0] !== 0x42) throw new WireError("bad endianness byte");
   const bodyLength = little ? buf.readUInt32LE(4) : buf.readUInt32BE(4);
   const fieldsLength = little ? buf.readUInt32LE(12) : buf.readUInt32BE(12);
   const headerEnd = 16 + fieldsLength + ((8 - ((16 + fieldsLength) % 8)) % 8);
   const total = headerEnd + bodyLength;
-  if (total > MAX_MESSAGE) throw new WireError('message too large');
+  if (total > MAX_MESSAGE) throw new WireError("message too large");
   return total;
 }
 
@@ -472,7 +458,7 @@ export function decodeMessage(buf: Buffer): Message {
   const r = new Reader(buf, little, 4);
   const bodyLength = r.u32();
   const serial = r.u32();
-  const fields = r.value('a(yv)') as [number, Variant][];
+  const fields = r.value("a(yv)") as [number, Variant][];
   r.align(8);
   const m: Message = {
     type: buf[1] as MessageType,
@@ -510,7 +496,7 @@ export function decodeMessage(buf: Buffer): Message {
     }
   }
   const body = buf.subarray(r.offset, r.offset + bodyLength);
-  if (body.length !== bodyLength) throw new WireError('message ends early');
+  if (body.length !== bodyLength) throw new WireError("message ends early");
   m.body = m.signature ? unmarshal(m.signature, body, little) : [];
   return m;
 }

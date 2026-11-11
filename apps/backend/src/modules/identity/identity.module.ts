@@ -1,12 +1,12 @@
-import { Global, Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { Global, Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
 
-import { AppIdentityGuard } from '../app-identity/app-identity.guard';
-import { AppTokens } from '../app-identity/app-tokens';
-import { LocalIdentityController } from '../local-identity/local-identity.controller';
-import { LocalIdentityService } from '../local-identity/local-identity.service';
-import { SessionGuard } from './identity.guard';
-import { MeController } from './me.controller';
+import { AppIdentityGuard } from "../app-identity/app-identity.guard";
+import { AppTokens } from "../app-identity/app-tokens";
+import { LocalIdentityController } from "../local-identity/local-identity.controller";
+import { LocalIdentityService } from "../local-identity/local-identity.service";
+import { SessionGuard } from "./identity.guard";
+import { MeController } from "./me.controller";
 
 /**
  * Identity: the machine's own single-owner sign-in, the only one since

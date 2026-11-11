@@ -7,36 +7,36 @@
  * edited by hand.
  */
 
-export const MIN_FONT_SIZE = 8
-export const MAX_FONT_SIZE = 28
-export const DEFAULT_FONT_SIZE = 13
-export const FONT_SIZE_STEP = 1
+export const MIN_FONT_SIZE = 8;
+export const MAX_FONT_SIZE = 28;
+export const DEFAULT_FONT_SIZE = 13;
+export const FONT_SIZE_STEP = 1;
 
-const STORAGE_KEY = 'imbatranim:terminal:font-size'
+const STORAGE_KEY = "imbatranim:terminal:font-size";
 
 export function clampFontSize(size: number): number {
-  if (!Number.isFinite(size)) return DEFAULT_FONT_SIZE
-  return Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Math.round(size)))
+  if (!Number.isFinite(size)) return DEFAULT_FONT_SIZE;
+  return Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Math.round(size)));
 }
 
 export function loadFontSize(): number {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw === null) return DEFAULT_FONT_SIZE
-    const parsed = Number(raw)
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return DEFAULT_FONT_SIZE;
+    const parsed = Number(raw);
     // `Number('')` is 0 and `Number('abc')` is NaN — both must land on the
     // default rather than on the clamp's lower bound, or a corrupt value would
     // silently give the user an 8px terminal forever.
-    if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_FONT_SIZE
-    return clampFontSize(parsed)
+    if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_FONT_SIZE;
+    return clampFontSize(parsed);
   } catch {
-    return DEFAULT_FONT_SIZE
+    return DEFAULT_FONT_SIZE;
   }
 }
 
 export function saveFontSize(size: number): void {
   try {
-    localStorage.setItem(STORAGE_KEY, String(clampFontSize(size)))
+    localStorage.setItem(STORAGE_KEY, String(clampFontSize(size)));
   } catch {
     // quota exceeded or private mode — the size still applies for this session
   }
@@ -49,6 +49,6 @@ export function saveFontSize(size: number): void {
  * and can skip the re-fit rather than thrashing xterm at the limit.
  */
 export function stepFontSize(current: number, direction: 1 | -1 | 0): number {
-  if (direction === 0) return DEFAULT_FONT_SIZE
-  return clampFontSize(current + direction * FONT_SIZE_STEP)
+  if (direction === 0) return DEFAULT_FONT_SIZE;
+  return clampFontSize(current + direction * FONT_SIZE_STEP);
 }

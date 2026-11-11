@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
-import { isTextEntry } from './shortcutRegistry'
-import { isShellSuspended } from '../../modules/auth/store/authStore'
+import { useEffect, useRef } from "react";
+import { isTextEntry } from "./shortcutRegistry";
+import { isShellSuspended } from "../../modules/auth/store/authStore";
 
 /**
  * Maps a key string like "mod+k", "esc", "alt+tab", "mod+`", "mod+w", "mod+m"
@@ -9,77 +9,77 @@ import { isShellSuspended } from '../../modules/auth/store/authStore'
  * "mod" → Ctrl on non-Mac, Cmd (Meta) on Mac.
  */
 
-type HotkeyBinding = Record<string, () => void>
+type HotkeyBinding = Record<string, () => void>;
 
 function isMac(): boolean {
-  return typeof navigator !== 'undefined' && /mac/i.test(navigator.platform)
+  return typeof navigator !== "undefined" && /mac/i.test(navigator.platform);
 }
 
 interface ParsedKey {
-  mod: boolean
-  alt: boolean
-  shift: boolean
-  ctrl: boolean
-  key: string
+  mod: boolean;
+  alt: boolean;
+  shift: boolean;
+  ctrl: boolean;
+  key: string;
 }
 
 export function parseBinding(binding: string): ParsedKey {
-  const parts = binding.toLowerCase().split('+')
-  const key = parts[parts.length - 1]
-  const mod = parts.includes('mod')
-  const alt = parts.includes('alt')
-  const shift = parts.includes('shift')
-  const ctrl = parts.includes('ctrl')
-  return { mod, alt, shift, ctrl, key }
+  const parts = binding.toLowerCase().split("+");
+  const key = parts[parts.length - 1];
+  const mod = parts.includes("mod");
+  const alt = parts.includes("alt");
+  const shift = parts.includes("shift");
+  const ctrl = parts.includes("ctrl");
+  return { mod, alt, shift, ctrl, key };
 }
 
 /** Exported for the spec — the matcher is where the modifier subtleties live. */
 export function eventMatchesBinding(e: KeyboardEvent, parsed: ParsedKey): boolean {
-  const mac = isMac()
+  const mac = isMac();
 
   // mod = Cmd on mac, Ctrl elsewhere
-  const modPressed = mac ? e.metaKey : e.ctrlKey
-  if (parsed.mod && !modPressed) return false
+  const modPressed = mac ? e.metaKey : e.ctrlKey;
+  if (parsed.mod && !modPressed) return false;
   // `!parsed.ctrl` is load-bearing, and its absence was a real bug: off a mac,
   // `mod` IS ctrl, so an explicit `ctrl+…` binding was rejected here by the
   // very key it asked for. Every `ctrl+` binding was therefore dead on Linux
   // and Windows — invisible until workspaces wanted `ctrl+alt+left`, because
   // until then every binding in the OS used `mod`.
-  if (!parsed.mod && !parsed.ctrl && modPressed) return false
+  if (!parsed.mod && !parsed.ctrl && modPressed) return false;
 
   // explicit ctrl (not mod alias)
-  if (parsed.ctrl && !e.ctrlKey) return false
-  if (!parsed.ctrl && !parsed.mod && e.ctrlKey) return false
+  if (parsed.ctrl && !e.ctrlKey) return false;
+  if (!parsed.ctrl && !parsed.mod && e.ctrlKey) return false;
 
-  if (parsed.alt !== e.altKey) return false
-  if (parsed.shift !== e.shiftKey) return false
+  if (parsed.alt !== e.altKey) return false;
+  if (parsed.shift !== e.shiftKey) return false;
 
-  const evKey = e.key.toLowerCase()
+  const evKey = e.key.toLowerCase();
 
   // normalize special keys
   const keyMap: Record<string, string> = {
-    escape: 'esc',
-    ' ': 'space',
-    arrowup: 'up',
-    arrowdown: 'down',
-    arrowleft: 'left',
-    arrowright: 'right',
-    tab: 'tab',
-    enter: 'enter',
-    backspace: 'backspace',
-    delete: 'delete',
-  }
+    escape: "esc",
+    " ": "space",
+    arrowup: "up",
+    arrowdown: "down",
+    arrowleft: "left",
+    arrowright: "right",
+    tab: "tab",
+    enter: "enter",
+    backspace: "backspace",
+    delete: "delete",
+  };
 
-  const normalized = keyMap[evKey] ?? evKey
-  if (normalized === parsed.key) return true
+  const normalized = keyMap[evKey] ?? evKey;
+  if (normalized === parsed.key) return true;
 
   // Digit bindings also match on the physical key: Shift+1
   // produces `!` in e.key (and layout-dependent characters elsewhere), so a
   // `ctrl+alt+shift+1` binding would never fire on e.key alone. e.code is
   // layout-independent for the top digit row.
-  if (/^[0-9]$/.test(parsed.key) && e.code === `Digit${parsed.key}`) return true
+  if (/^[0-9]$/.test(parsed.key) && e.code === `Digit${parsed.key}`) return true;
 
-  return false
+  return false;
 }
 
 /**
@@ -98,32 +98,32 @@ export function useGlobalHotkeys(bindings: HotkeyBinding): void {
   // the key SET only, so a handler closing over changing state was frozen at its
   // first-render value and fired stale — the same bug `useSaveHotkey` avoids with
   // a ref.
-  const bindingsRef = useRef(bindings)
+  const bindingsRef = useRef(bindings);
   useEffect(() => {
-    bindingsRef.current = bindings
-  })
+    bindingsRef.current = bindings;
+  });
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       // A covered screen eats no keys: the desktop stays mounted
       // beneath the lock overlay, and typing a password must not fire mod+K.
-      if (isShellSuspended()) return
+      if (isShellSuspended()) return;
       for (const [bindingStr, handler] of Object.entries(bindingsRef.current)) {
-        const parsed = parseBinding(bindingStr)
-        if (!eventMatchesBinding(e, parsed)) continue
+        const parsed = parseBinding(bindingStr);
+        if (!eventMatchesBinding(e, parsed)) continue;
         // A bare (or shift-only) key must not be stolen from a text field: while
         // the user is typing, `space`/`m`/`f`/arrows belong to the input. Modifier
         // combos (Ctrl/⌘/Alt) are real shortcuts and still fire everywhere.
-        const bare = !parsed.mod && !parsed.ctrl && !parsed.alt
-        if (bare && isTextEntry(e.target)) continue
-        e.preventDefault()
-        handler()
-        return
+        const bare = !parsed.mod && !parsed.ctrl && !parsed.alt;
+        if (bare && isTextEntry(e.target)) continue;
+        e.preventDefault();
+        handler();
+        return;
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [])
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 }

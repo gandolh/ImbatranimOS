@@ -1,23 +1,22 @@
-import { Flag, Play, Pause, RotateCcw } from 'lucide-react'
-import { Button } from '@imbatranim/ui'
-import { useClockStore } from '../clockStore'
-import { useNow } from '../useNow'
-import { formatStopwatch } from '../format'
+import { Flag, Play, Pause, RotateCcw } from "lucide-react";
+import { Button } from "@imbatranim/ui";
+import { useClockStore } from "../clockStore";
+import { useNow } from "../useNow";
+import { formatStopwatch } from "../format";
 
 export function Stopwatch() {
-  const stopwatch = useClockStore((s) => s.stopwatch)
-  const start = useClockStore((s) => s.startStopwatch)
-  const stop = useClockStore((s) => s.stopStopwatch)
-  const lap = useClockStore((s) => s.lapStopwatch)
-  const reset = useClockStore((s) => s.resetStopwatch)
+  const stopwatch = useClockStore((s) => s.stopwatch);
+  const start = useClockStore((s) => s.startStopwatch);
+  const stop = useClockStore((s) => s.stopStopwatch);
+  const lap = useClockStore((s) => s.lapStopwatch);
+  const reset = useClockStore((s) => s.resetStopwatch);
 
   // Tick fast enough for a smooth centisecond readout, but only while
   // running — the value itself always comes from Date.now() math, not from
   // counting ticks, so tab-switch or throttling never skews it.
-  const now = useNow(31, stopwatch.running)
+  const now = useNow(31, stopwatch.running);
   const elapsed =
-    stopwatch.accumulatedMs +
-    (stopwatch.running && stopwatch.startedAt !== null ? now - stopwatch.startedAt : 0)
+    stopwatch.accumulatedMs + (stopwatch.running && stopwatch.startedAt !== null ? now - stopwatch.startedAt : 0);
 
   return (
     <div className="flex h-full flex-col">
@@ -45,9 +44,7 @@ export function Stopwatch() {
             variant="default"
             size="sm"
             onClick={reset}
-            disabled={
-              stopwatch.running && stopwatch.accumulatedMs === 0 && stopwatch.startedAt === null
-            }
+            disabled={stopwatch.running && stopwatch.accumulatedMs === 0 && stopwatch.startedAt === null}
           >
             <RotateCcw size={12} strokeWidth={2} />
             Reset
@@ -62,21 +59,19 @@ export function Stopwatch() {
           </p>
         ) : (
           stopwatch.laps.map((lapMs, i) => {
-            const lapNumber = stopwatch.laps.length - i
+            const lapNumber = stopwatch.laps.length - i;
             return (
               <div
                 key={`${lapNumber}-${lapMs}`}
                 className="border-outline-variant flex items-center justify-between border-b px-3 py-1.5"
               >
                 <span className="font-ui text-on-surface-variant text-[11px]">Lap {lapNumber}</span>
-                <span className="text-on-surface font-mono text-[12px] tabular-nums">
-                  {formatStopwatch(lapMs)}
-                </span>
+                <span className="text-on-surface font-mono text-[12px] tabular-nums">{formatStopwatch(lapMs)}</span>
               </div>
-            )
+            );
           })
         )}
       </div>
     </div>
-  )
+  );
 }

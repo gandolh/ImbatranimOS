@@ -4,11 +4,8 @@ import {
   GatewayTimeoutException,
   HttpException,
   Injectable,
-} from '@nestjs/common';
-import type {
-  HttpProxyRequestDto,
-  HttpProxyResponse,
-} from './dto/http-proxy.dto';
+} from "@nestjs/common";
+import type { HttpProxyRequestDto, HttpProxyResponse } from "./dto/http-proxy.dto";
 
 // ---------------------------------------------------------------------------
 // SSRF stance (recorded decision — see wiki/decisions.md).
@@ -47,15 +44,15 @@ const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
  * is dropped too (covers proxy-authorization/authenticate/connection).
  */
 const HOP_BY_HOP_HEADERS = new Set([
-  'connection',
-  'keep-alive',
-  'transfer-encoding',
-  'upgrade',
-  'te',
-  'trailer',
-  'proxy-connection',
-  'proxy-authorization',
-  'proxy-authenticate',
+  "connection",
+  "keep-alive",
+  "transfer-encoding",
+  "upgrade",
+  "te",
+  "trailer",
+  "proxy-connection",
+  "proxy-authorization",
+  "proxy-authenticate",
 ]);
 
 /**
@@ -66,7 +63,7 @@ const HOP_BY_HOP_HEADERS = new Set([
  * body. Copying to an exact-size buffer is the only correct reading.
  */
 function bytesOf(base64: string): ArrayBuffer {
-  const buf = Buffer.from(base64, 'base64');
+  const buf = Buffer.from(base64, "base64");
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 }
 
@@ -91,8 +88,7 @@ export class HttpProxyService {
     // Every guardrail (scheme, size, timeout, redirects, headers) is upstream of it.
     // `ArrayBuffer` rather than `Uint8Array`: undici's `BodyInit` accepts the former
     // directly, and going through a view would need a cast that hides the intent.
-    let body: string | ArrayBuffer | undefined =
-      dto.bodyBase64 !== undefined ? bytesOf(dto.bodyBase64) : dto.body;
+    let body: string | ArrayBuffer | undefined = dto.bodyBase64 !== undefined ? bytesOf(dto.bodyBase64) : dto.body;
 
     // Guardrail 5: outbound headers are derived ONLY from user input — the
     // incoming request (and thus the OS session cookie / Authorization) is
@@ -114,14 +110,14 @@ export class HttpProxyService {
           method,
           headers,
           body: this.methodAllowsBody(method) ? body : undefined,
-          redirect: 'manual',
+          redirect: "manual",
           signal: controller.signal,
         });
 
-        const location = res.headers.get('location');
+        const location = res.headers.get("location");
         if (REDIRECT_STATUSES.has(res.status) && location) {
           if (hop === MAX_REDIRECTS) {
-            throw new BadGatewayException('Too many redirects');
+            throw new BadGatewayException("Too many redirects");
           }
           // Guardrail 1 (re-applied): resolve relative Location against the
           // current URL and re-run the scheme allowlist. A redirect to
@@ -134,18 +130,16 @@ export class HttpProxyService {
           if (next.host !== currentUrl.host) {
             for (const k of Object.keys(headers)) {
               const lk = k.toLowerCase();
-              if (lk === 'authorization' || lk === 'cookie') delete headers[k];
+              if (lk === "authorization" || lk === "cookie") delete headers[k];
             }
           }
 
           // Normalise method/body across the redirect per RFC 7231.
           if (
             res.status === 303 ||
-            ((res.status === 301 || res.status === 302) &&
-              method !== 'GET' &&
-              method !== 'HEAD')
+            ((res.status === 301 || res.status === 302) && method !== "GET" && method !== "HEAD")
           ) {
-            method = 'GET';
+            method = "GET";
             body = undefined;
           }
 
@@ -169,17 +163,17 @@ export class HttpProxyService {
 
       // Unreachable (the loop returns or throws), but keeps the type checker
       // and defends against an off-by-one in the bound above.
-      throw new BadGatewayException('Too many redirects');
+      throw new BadGatewayException("Too many redirects");
     } catch (err) {
       // Guardrail 3: our own abort surfaces as a 504, distinct from the
       // target simply erroring.
       if (timedOut) {
-        throw new GatewayTimeoutException('Upstream request timed out');
+        throw new GatewayTimeoutException("Upstream request timed out");
       }
       // Our own validation errors (bad scheme, CRLF, too many redirects) are
       // already HttpExceptions — re-throw them verbatim.
       if (err instanceof HttpException) throw err;
-      const message = err instanceof Error ? err.message : 'unknown error';
+      const message = err instanceof Error ? err.message : "unknown error";
       throw new BadGatewayException(`Upstream request failed: ${message}`);
     } finally {
       clearTimeout(timer);
@@ -198,18 +192,16 @@ export class HttpProxyService {
     // Reject CRLF (and bare CR/LF) up front — never let it reach the parser
     // or a socket, where it could split a request line / smuggle a header.
     if (/[\r\n]/.test(raw)) {
-      throw new BadRequestException('Illegal control character in URL');
+      throw new BadRequestException("Illegal control character in URL");
     }
     let url: URL;
     try {
       url = base ? new URL(raw, base) : new URL(raw);
     } catch {
-      throw new BadRequestException('Invalid URL');
+      throw new BadRequestException("Invalid URL");
     }
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      throw new BadRequestException(
-        `Scheme not allowed: ${url.protocol} (only http/https)`,
-      );
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new BadRequestException(`Scheme not allowed: ${url.protocol} (only http/https)`);
     }
     return url;
   }
@@ -221,29 +213,23 @@ export class HttpProxyService {
    * cookie or Authorization — the only credentials sent are ones the owner
    * typed themselves (their own curl).
    */
-  private sanitizeHeaders(
-    input?: Record<string, string>,
-  ): Record<string, string> {
+  private sanitizeHeaders(input?: Record<string, string>): Record<string, string> {
     const out: Record<string, string> = {};
     if (!input) return out;
     for (const [rawName, value] of Object.entries(input)) {
-      if (typeof value !== 'string') {
-        throw new BadRequestException(
-          `Header "${rawName}" must have a string value`,
-        );
+      if (typeof value !== "string") {
+        throw new BadRequestException(`Header "${rawName}" must have a string value`);
       }
       const name = rawName.trim();
       if (!name) continue;
       const lower = name.toLowerCase();
       // Strip hop-by-hop + any proxy-* header, even if the user set it.
-      if (HOP_BY_HOP_HEADERS.has(lower) || lower.startsWith('proxy-')) continue;
+      if (HOP_BY_HOP_HEADERS.has(lower) || lower.startsWith("proxy-")) continue;
       if (!HEADER_NAME_RE.test(name)) {
         throw new BadRequestException(`Invalid header name: "${rawName}"`);
       }
       if (/[\r\n]/.test(value)) {
-        throw new BadRequestException(
-          `Illegal control character in header "${name}"`,
-        );
+        throw new BadRequestException(`Illegal control character in header "${name}"`);
       }
       out[name] = value;
     }
@@ -255,10 +241,8 @@ export class HttpProxyService {
    * overflow we truncate to exactly the cap, cancel the stream (so we neither
    * buffer nor download the rest), and flag `truncated`. Returns base64.
    */
-  private async readCappedBody(
-    res: Response,
-  ): Promise<{ bodyBase64: string; truncated: boolean }> {
-    if (!res.body) return { bodyBase64: '', truncated: false };
+  private async readCappedBody(res: Response): Promise<{ bodyBase64: string; truncated: boolean }> {
+    if (!res.body) return { bodyBase64: "", truncated: false };
 
     const reader = res.body.getReader();
     const chunks: Uint8Array[] = [];
@@ -282,12 +266,12 @@ export class HttpProxyService {
       total += value.byteLength;
     }
 
-    return { bodyBase64: Buffer.concat(chunks).toString('base64'), truncated };
+    return { bodyBase64: Buffer.concat(chunks).toString("base64"), truncated };
   }
 
   /** GET/HEAD carry no body; everything else may. */
   private methodAllowsBody(method: string): boolean {
-    return method !== 'GET' && method !== 'HEAD';
+    return method !== "GET" && method !== "HEAD";
   }
 
   /** Flatten a fetch Headers object into a plain record for the JSON reply. */

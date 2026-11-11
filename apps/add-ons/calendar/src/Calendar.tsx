@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
-import dayjs, { type Dayjs } from 'dayjs'
-import { ChevronLeft, ChevronRight, Download, Info, Search, Upload, X } from 'lucide-react'
-import { Button, Input, cn, queryClient, useFileDialog, useSystem } from '@imbatranim/ui'
-import { buildMonthGrid, buildWeekDays } from './dateUtils'
-import { EventDialog } from './EventDialog'
-import { MonthView } from './views/MonthView'
-import { WeekView } from './views/WeekView'
-import { AgendaView } from './views/AgendaView'
-import { expandAll, type Occurrence } from './recurrence'
-import { describeImport, eventsToIcs, icsToEvents } from './ics'
-import { occurrenceOf, planDelete, planEdit } from './seriesEdit'
-import { migrateLegacyCalendar } from './migrateLegacyCalendar'
+import { useEffect, useMemo, useState } from "react";
+import dayjs, { type Dayjs } from "dayjs";
+import { ChevronLeft, ChevronRight, Download, Info, Search, Upload, X } from "lucide-react";
+import { Button, Input, cn, queryClient, useFileDialog, useSystem } from "@imbatranim/ui";
+import { buildMonthGrid, buildWeekDays } from "./dateUtils";
+import { EventDialog } from "./EventDialog";
+import { MonthView } from "./views/MonthView";
+import { WeekView } from "./views/WeekView";
+import { AgendaView } from "./views/AgendaView";
+import { expandAll, type Occurrence } from "./recurrence";
+import { describeImport, eventsToIcs, icsToEvents } from "./ics";
+import { occurrenceOf, planDelete, planEdit } from "./seriesEdit";
+import { migrateLegacyCalendar } from "./migrateLegacyCalendar";
 import {
   EVENTS_KEY,
   useCreateEventMutation,
@@ -18,29 +18,29 @@ import {
   useEventsQuery,
   useImportEventsMutation,
   usePatchEventMutation,
-} from './queries/calendarQueries'
-import type { EditedFields } from './seriesEdit'
-import type { CalendarEvent, EditScope, EventDialogState } from './types'
+} from "./queries/calendarQueries";
+import type { EditedFields } from "./seriesEdit";
+import type { CalendarEvent, EditScope, EventDialogState } from "./types";
 
-type ViewMode = 'month' | 'week' | 'agenda'
+type ViewMode = "month" | "week" | "agenda";
 
 /** How far ahead the agenda looks. Long enough to be useful, bounded so a daily
  *  series does not expand thousands of occurrences for a list nobody scrolls. */
-const AGENDA_DAYS = 120
+const AGENDA_DAYS = 120;
 
 function rangeTitle(anchor: Dayjs, view: ViewMode): string {
-  if (view === 'month') return anchor.format('MMMM YYYY')
-  if (view === 'agenda') return `From ${anchor.format('MMM D, YYYY')}`
-  const days = buildWeekDays(anchor)
-  const start = days[0]
-  const end = days[6]
-  if (start.isSame(end, 'month')) {
-    return `${start.format('MMM D')} – ${end.format('D, YYYY')}`
+  if (view === "month") return anchor.format("MMMM YYYY");
+  if (view === "agenda") return `From ${anchor.format("MMM D, YYYY")}`;
+  const days = buildWeekDays(anchor);
+  const start = days[0];
+  const end = days[6];
+  if (start.isSame(end, "month")) {
+    return `${start.format("MMM D")} – ${end.format("D, YYYY")}`;
   }
-  if (start.isSame(end, 'year')) {
-    return `${start.format('MMM D')} – ${end.format('MMM D, YYYY')}`
+  if (start.isSame(end, "year")) {
+    return `${start.format("MMM D")} – ${end.format("MMM D, YYYY")}`;
   }
-  return `${start.format('MMM D, YYYY')} – ${end.format('MMM D, YYYY')}`
+  return `${start.format("MMM D, YYYY")} – ${end.format("MMM D, YYYY")}`;
 }
 
 /**
@@ -51,75 +51,73 @@ function rangeTitle(anchor: Dayjs, view: ViewMode): string {
  * objects per render instead of 520 rows in the database.
  */
 function visibleRange(anchor: Dayjs, view: ViewMode): [number, number] {
-  if (view === 'month') {
-    const weeks = buildMonthGrid(anchor)
-    return [weeks[0][0].startOf('day').valueOf(), weeks[5][6].endOf('day').valueOf()]
+  if (view === "month") {
+    const weeks = buildMonthGrid(anchor);
+    return [weeks[0][0].startOf("day").valueOf(), weeks[5][6].endOf("day").valueOf()];
   }
-  if (view === 'agenda') {
-    return [anchor.startOf('day').valueOf(), anchor.add(AGENDA_DAYS, 'day').endOf('day').valueOf()]
+  if (view === "agenda") {
+    return [anchor.startOf("day").valueOf(), anchor.add(AGENDA_DAYS, "day").endOf("day").valueOf()];
   }
-  const days = buildWeekDays(anchor)
-  return [days[0].startOf('day').valueOf(), days[6].endOf('day').valueOf()]
+  const days = buildWeekDays(anchor);
+  return [days[0].startOf("day").valueOf(), days[6].endOf("day").valueOf()];
 }
 
 // Window contract: ComponentType<{ windowId: string }>. Single-instance app,
 // so there is no per-window state to key on.
 export function Calendar({ windowId: _windowId }: { windowId: string }) {
-  const system = useSystem()
-  const { data: events, isPending, isError } = useEventsQuery()
-  const createEvent = useCreateEventMutation()
-  const patchEvent = usePatchEventMutation()
-  const removeEvent = useDeleteEventMutation()
-  const importMutation = useImportEventsMutation()
-  const { openFile, saveFile } = useFileDialog()
+  const system = useSystem();
+  const { data: events, isPending, isError } = useEventsQuery();
+  const createEvent = useCreateEventMutation();
+  const patchEvent = usePatchEventMutation();
+  const removeEvent = useDeleteEventMutation();
+  const importMutation = useImportEventsMutation();
+  const { openFile, saveFile } = useFileDialog();
 
-  const [anchor, setAnchor] = useState<Dayjs>(() => dayjs())
-  const [view, setView] = useState<ViewMode>('month')
-  const [dialogState, setDialogState] = useState<EventDialogState | null>(null)
-  const [query, setQuery] = useState('')
-  const [searchOpen, setSearchOpen] = useState(false)
+  const [anchor, setAnchor] = useState<Dayjs>(() => dayjs());
+  const [view, setView] = useState<ViewMode>("month");
+  const [dialogState, setDialogState] = useState<EventDialogState | null>(null);
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // One-time hand-over of any pre-brief-72 localStorage calendar. Guarded twice: a
   // module-level flag, and the server refusing to import into a non-empty table.
   useEffect(() => {
     void migrateLegacyCalendar(system).then((imported) => {
-      if (imported) void queryClient.invalidateQueries({ queryKey: EVENTS_KEY })
-    })
-  }, [system])
+      if (imported) void queryClient.invalidateQueries({ queryKey: EVENTS_KEY });
+    });
+  }, [system]);
 
-  const [rangeStart, rangeEnd] = visibleRange(anchor, view)
+  const [rangeStart, rangeEnd] = visibleRange(anchor, view);
 
   const occurrences = useMemo(() => {
-    const all = expandAll(events ?? [], rangeStart, rangeEnd)
-    const needle = query.trim().toLowerCase()
-    if (!needle) return all
+    const all = expandAll(events ?? [], rangeStart, rangeEnd);
+    const needle = query.trim().toLowerCase();
+    if (!needle) return all;
     return all.filter(
-      (o) =>
-        o.event.title.toLowerCase().includes(needle) ||
-        (o.event.notes ?? '').toLowerCase().includes(needle)
-    )
-  }, [events, rangeStart, rangeEnd, query])
+      (o) => o.event.title.toLowerCase().includes(needle) || (o.event.notes ?? "").toLowerCase().includes(needle),
+    );
+  }, [events, rangeStart, rangeEnd, query]);
 
   function goPrev() {
-    setAnchor((a) => a.subtract(1, view === 'week' ? 'week' : 'month'))
+    setAnchor((a) => a.subtract(1, view === "week" ? "week" : "month"));
   }
   function goNext() {
-    setAnchor((a) => a.add(1, view === 'week' ? 'week' : 'month'))
+    setAnchor((a) => a.add(1, view === "week" ? "week" : "month"));
   }
 
   function handleCreate(start: number, end: number, allDay: boolean) {
-    setDialogState({ mode: 'create', start, end, allDay })
+    setDialogState({ mode: "create", start, end, allDay });
   }
 
   function handleOpen(occurrence: Occurrence) {
     setDialogState({
-      mode: 'edit',
+      mode: "edit",
       event: occurrence.event,
       occurrenceStart: occurrence.start,
       occurrenceEnd: occurrence.end,
       occurrenceDate: occurrence.occurrenceDate,
       occurrenceIndex: occurrence.index,
-    })
+    });
   }
 
   /**
@@ -130,114 +128,114 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
    */
   function applyPlan(event: CalendarEvent, plan: ReturnType<typeof planEdit>) {
     if (plan.deleteOriginal) {
-      removeEvent.mutate(event.id)
-      return
+      removeEvent.mutate(event.id);
+      return;
     }
     if (plan.create) {
       createEvent.mutate(plan.create, {
         onSuccess: () => {
-          if (plan.patch) patchEvent.mutate({ id: event.id, patch: plan.patch })
+          if (plan.patch) patchEvent.mutate({ id: event.id, patch: plan.patch });
         },
-      })
-      return
+      });
+      return;
     }
-    if (plan.patch) patchEvent.mutate({ id: event.id, patch: plan.patch })
+    if (plan.patch) patchEvent.mutate({ id: event.id, patch: plan.patch });
   }
 
   /** The occurrence the dialog is editing, as `seriesEdit` wants it. */
   function editedOccurrence(event: CalendarEvent) {
-    const open = dialogState?.mode === 'edit' ? dialogState : null
-    return occurrenceOf(event, open?.occurrenceStart ?? event.start, open?.occurrenceIndex ?? 0)
+    const open = dialogState?.mode === "edit" ? dialogState : null;
+    return occurrenceOf(event, open?.occurrenceStart ?? event.start, open?.occurrenceIndex ?? 0);
   }
 
   function handleUpdate(event: CalendarEvent, fields: EditedFields, scope: EditScope) {
-    applyPlan(event, planEdit(event, editedOccurrence(event), fields, scope))
+    applyPlan(event, planEdit(event, editedOccurrence(event), fields, scope));
   }
 
   function handleDelete(event: CalendarEvent, scope: EditScope) {
-    applyPlan(event, planDelete(event, editedOccurrence(event), scope))
+    applyPlan(event, planDelete(event, editedOccurrence(event), scope));
   }
 
   /** Export every event — not just the visible range, which would be a surprise. */
   async function handleExport() {
-    const all = events ?? []
+    const all = events ?? [];
     if (all.length === 0) {
       system.notify({
-        title: 'Nothing to export',
-        body: 'This calendar has no events yet.',
-        level: 'info',
-      })
-      return
+        title: "Nothing to export",
+        body: "This calendar has no events yet.",
+        level: "info",
+      });
+      return;
     }
     const choice = await saveFile({
-      title: 'Export calendar',
-      extensions: ['ics'],
-      suggestedName: `calendar-${dayjs().format('YYYY-MM-DD')}.ics`,
-    })
-    if (!choice) return
+      title: "Export calendar",
+      extensions: ["ics"],
+      suggestedName: `calendar-${dayjs().format("YYYY-MM-DD")}.ics`,
+    });
+    if (!choice) return;
     try {
-      const text = eventsToIcs(all, Date.now())
+      const text = eventsToIcs(all, Date.now());
       await system.fs.upload(
         choice.root,
         choice.path,
         new TextEncoder().encode(text),
-        choice.path.split('/').pop() ?? 'calendar.ics'
-      )
+        choice.path.split("/").pop() ?? "calendar.ics",
+      );
       system.notify({
-        title: 'Calendar exported',
-        body: `${all.length} event${all.length === 1 ? '' : 's'} written to ${choice.path}`,
-        level: 'success',
-      })
+        title: "Calendar exported",
+        body: `${all.length} event${all.length === 1 ? "" : "s"} written to ${choice.path}`,
+        level: "success",
+      });
     } catch {
       system.notify({
-        title: 'Export failed',
-        body: 'The calendar file could not be written.',
-        level: 'error',
-      })
+        title: "Export failed",
+        body: "The calendar file could not be written.",
+        level: "error",
+      });
     }
   }
 
   async function handleImport() {
-    const choice = await openFile({ title: 'Import calendar', extensions: ['ics'] })
-    if (!choice) return
+    const choice = await openFile({ title: "Import calendar", extensions: ["ics"] });
+    if (!choice) return;
     try {
-      const bytes = await system.fs.read(choice.root, choice.path)
-      const result = icsToEvents(new TextDecoder().decode(bytes))
+      const bytes = await system.fs.read(choice.root, choice.path);
+      const result = icsToEvents(new TextDecoder().decode(bytes));
       if (result.events.length === 0) {
         system.notify({
-          title: 'Nothing imported',
-          body: 'No readable events were found in that file.',
-          level: 'warning',
-        })
-        return
+          title: "Nothing imported",
+          body: "No readable events were found in that file.",
+          level: "warning",
+        });
+        return;
       }
       importMutation.mutate(result.events, {
         onSuccess: () => {
           // Says what was lost as well as what arrived — an import that silently
           // flattens a repeat rule is worse than one that admits it.
           system.notify({
-            title: 'Calendar imported',
+            title: "Calendar imported",
             body: describeImport(result),
-            level: result.recurrenceDropped > 0 || result.skipped > 0 ? 'warning' : 'success',
-          })
+            level: result.recurrenceDropped > 0 || result.skipped > 0 ? "warning" : "success",
+          });
         },
         onError: () =>
           system.notify({
-            title: 'Import failed',
-            body: 'The events in that file were refused.',
-            level: 'error',
+            title: "Import failed",
+            body: "The events in that file were refused.",
+            level: "error",
           }),
-      })
+      });
     } catch {
       system.notify({
-        title: 'Import failed',
-        body: 'That file could not be read.',
-        level: 'error',
-      })
+        title: "Import failed",
+        body: "That file could not be read.",
+        level: "error",
+      });
     }
   }
 
-  const views: ViewMode[] = ['month', 'week', 'agenda']
+  const views: ViewMode[] = ["month", "week", "agenda"];
 
   return (
     <div className="bg-surface-container-lowest font-ui flex h-full flex-col">
@@ -252,9 +250,7 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
           <Button variant="ghost" size="sm" onClick={goNext} aria-label="Next">
             <ChevronRight size={14} />
           </Button>
-          <span className="text-on-surface ml-1 text-[13px] font-semibold">
-            {rangeTitle(anchor, view)}
-          </span>
+          <span className="text-on-surface ml-1 text-[13px] font-semibold">{rangeTitle(anchor, view)}</span>
         </div>
 
         <div className="flex items-center gap-1">
@@ -267,9 +263,9 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setQuery('')
-                    setSearchOpen(false)
+                  if (e.key === "Escape") {
+                    setQuery("");
+                    setSearchOpen(false);
                   }
                 }}
               />
@@ -278,8 +274,8 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
                 size="sm"
                 aria-label="Close search"
                 onClick={() => {
-                  setQuery('')
-                  setSearchOpen(false)
+                  setQuery("");
+                  setSearchOpen(false);
                 }}
               >
                 <X size={12} />
@@ -322,10 +318,10 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
                 type="button"
                 onClick={() => setView(mode)}
                 className={cn(
-                  'focus-visible:ring-primary border-outline-variant px-2.5 py-1 text-[11px] font-medium capitalize outline-none not-first:border-l focus-visible:ring-2 focus-visible:ring-inset',
+                  "focus-visible:ring-primary border-outline-variant px-2.5 py-1 text-[11px] font-medium capitalize outline-none not-first:border-l focus-visible:ring-2 focus-visible:ring-inset",
                   view === mode
-                    ? 'bg-primary-container text-on-primary-container'
-                    : 'text-on-surface hover:bg-surface-container-high'
+                    ? "bg-primary-container text-on-primary-container"
+                    : "text-on-surface hover:bg-surface-container-high",
                 )}
               >
                 {mode}
@@ -335,11 +331,11 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
         </div>
       </div>
 
-      {query.trim() !== '' && (
+      {query.trim() !== "" && (
         <div className="border-outline-variant bg-surface-container-low text-on-surface-variant flex shrink-0 items-center gap-1.5 border-b px-2 py-1 text-[10px]">
           <Search size={10} />
-          {occurrences.length} match{occurrences.length === 1 ? '' : 'es'} for “{query.trim()}”
-          {view !== 'agenda' && ' in this range — the Agenda view searches further ahead'}
+          {occurrences.length} match{occurrences.length === 1 ? "" : "es"} for “{query.trim()}”
+          {view !== "agenda" && " in this range — the Agenda view searches further ahead"}
         </div>
       )}
 
@@ -349,48 +345,28 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
             Could not load your calendar.
           </p>
         ) : isPending ? (
-          <p className="text-on-surface-variant flex h-full items-center justify-center text-[12px]">
-            Loading…
-          </p>
-        ) : view === 'month' ? (
-          <MonthView
-            anchor={anchor}
-            occurrences={occurrences}
-            onCreate={handleCreate}
-            onOpen={handleOpen}
-          />
-        ) : view === 'week' ? (
-          <WeekView
-            anchor={anchor}
-            occurrences={occurrences}
-            onCreate={handleCreate}
-            onOpen={handleOpen}
-          />
+          <p className="text-on-surface-variant flex h-full items-center justify-center text-[12px]">Loading…</p>
+        ) : view === "month" ? (
+          <MonthView anchor={anchor} occurrences={occurrences} onCreate={handleCreate} onOpen={handleOpen} />
+        ) : view === "week" ? (
+          <WeekView anchor={anchor} occurrences={occurrences} onCreate={handleCreate} onOpen={handleOpen} />
         ) : (
-          <AgendaView
-            anchor={anchor}
-            occurrences={occurrences}
-            onOpen={handleOpen}
-            query={query.trim()}
-          />
+          <AgendaView anchor={anchor} occurrences={occurrences} onOpen={handleOpen} query={query.trim()} />
         )}
       </div>
 
       <div className="border-outline-variant bg-surface-container-low text-on-surface-variant flex h-6 shrink-0 items-center gap-1.5 border-t px-2 text-[10px]">
         <Info size={11} />
-        Reminders fire while the desktop is open — this window can be closed. Events are saved in
-        your computer.
+        Reminders fire while the desktop is open — this window can be closed. Events are saved in your computer.
       </div>
 
       <EventDialog
         state={dialogState}
         onClose={() => setDialogState(null)}
-        onCreate={(fields) =>
-          createEvent.mutate({ ...fields, recurrence: fields.recurrence ?? null, exceptions: [] })
-        }
+        onCreate={(fields) => createEvent.mutate({ ...fields, recurrence: fields.recurrence ?? null, exceptions: [] })}
         onUpdate={handleUpdate}
         onDelete={handleDelete}
       />
     </div>
-  )
+  );
 }

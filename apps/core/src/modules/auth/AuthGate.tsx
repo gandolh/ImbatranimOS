@@ -1,10 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { useAuthStore } from './store/authStore'
-import { flushPrefs, flushPrefsKeepalive, hydratePrefs } from '../../lib/prefs'
-import { rehydrateDotfileStores } from '../../shared/store/dotfiles'
-import { checkOldDataAtSignIn } from '../../shared/store/oldDataStore'
-import { AuthShell } from './AuthShell'
-import { ScreenCover, SignedOutScreen } from './SessionScreens'
+import { useEffect, useState, type ReactNode } from "react";
+import { useAuthStore } from "./store/authStore";
+import { flushPrefs, flushPrefsKeepalive, hydratePrefs } from "../../lib/prefs";
+import { rehydrateDotfileStores } from "../../shared/store/dotfiles";
+import { checkOldDataAtSignIn } from "../../shared/store/oldDataStore";
+import { AuthShell } from "./AuthShell";
+import { ScreenCover, SignedOutScreen } from "./SessionScreens";
 
 /**
  * Gates the entire desktop, in two regimes:
@@ -27,62 +27,62 @@ import { ScreenCover, SignedOutScreen } from './SessionScreens'
  * hydration is both necessary and possible.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
-  const ready = useAuthStore((s) => s.ready)
-  const authenticated = useAuthStore((s) => s.authenticated)
-  const locked = useAuthStore((s) => s.locked)
-  const everAuthenticated = useAuthStore((s) => s.everAuthenticated)
-  const refresh = useAuthStore((s) => s.refresh)
-  const setAuthenticated = useAuthStore((s) => s.setAuthenticated)
-  const unlock = useAuthStore((s) => s.unlock)
+  const ready = useAuthStore((s) => s.ready);
+  const authenticated = useAuthStore((s) => s.authenticated);
+  const locked = useAuthStore((s) => s.locked);
+  const everAuthenticated = useAuthStore((s) => s.everAuthenticated);
+  const refresh = useAuthStore((s) => s.refresh);
+  const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
+  const unlock = useAuthStore((s) => s.unlock);
 
-  const [prefsReady, setPrefsReady] = useState(false)
+  const [prefsReady, setPrefsReady] = useState(false);
 
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    void refresh();
+  }, [refresh]);
 
   // Hydrate the dotfiles the moment there is a session to read them with, and
   // hold the desktop for that one round trip. The alternative is a visible flip
   // from the default wallpaper and accent to the real ones on every load.
   useEffect(() => {
-    if (!authenticated) return
-    let cancelled = false
+    if (!authenticated) return;
+    let cancelled = false;
     // Re-flush FIRST: a write held back by a 401 is still queued in
     // module state, and re-authenticating is exactly when it can land. Safe
     // before hydration because `hydratePrefs` latches on `hydrated`, so a
     // re-auth inside a tab cannot clobber the pending value with the server's
     // stale copy.
-    flushPrefs()
+    flushPrefs();
     void hydratePrefs()
       .then(() => rehydrateDotfileStores())
       .then(() => {
-        if (cancelled) return
-        setPrefsReady(true)
+        if (cancelled) return;
+        setPrefsReady(true);
         // Older data set aside by the data moves asks at every sign-in until
         // the owner downloads or cleans it out; it never holds the desktop.
-        void checkOldDataAtSignIn()
-      })
+        void checkOldDataAtSignIn();
+      });
     return () => {
-      cancelled = true
-    }
-  }, [authenticated])
+      cancelled = true;
+    };
+  }, [authenticated]);
 
   // A change made just before the tab closes should still reach the server —
   // over keepalive, because an ordinary XHR is routinely aborted on unload
   //. `pagehide` rather than `beforeunload`: it also covers bfcache
   // navigations, which `beforeunload` misses entirely.
   useEffect(() => {
-    const flush = () => flushPrefsKeepalive()
+    const flush = () => flushPrefsKeepalive();
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') flush()
-    }
-    window.addEventListener('pagehide', flush)
-    document.addEventListener('visibilitychange', onVisibility)
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener('pagehide', flush)
-      document.removeEventListener('visibilitychange', onVisibility)
-    }
-  }, [])
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
 
   // A 401 from a guarded route (signed out elsewhere, expired, or a password
   // change ended this session) suspends the UI.
@@ -90,32 +90,32 @@ export function AuthGate({ children }: { children: ReactNode }) {
   // buffers survive; the shell process honestly does not (the pty revoke sweep
   // reaps invalid sessions server-side, which is a security behaviour).
   useEffect(() => {
-    const onUnauthorized = () => setAuthenticated(false)
-    window.addEventListener('auth:unauthorized', onUnauthorized)
-    return () => window.removeEventListener('auth:unauthorized', onUnauthorized)
-  }, [setAuthenticated])
+    const onUnauthorized = () => setAuthenticated(false);
+    window.addEventListener("auth:unauthorized", onUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", onUnauthorized);
+  }, [setAuthenticated]);
 
   if (!ready) {
     return (
       <AuthShell title="Starting up…" subtitle="Waking the machine.">
         {null}
       </AuthShell>
-    )
+    );
   }
   // Pre-desktop: this tab has never been signed in, so there is nothing to
   // keep alive. The setup or sign-in form is the only thing that exists.
   if (!authenticated && !everAuthenticated) {
-    return <SignedOutScreen />
+    return <SignedOutScreen />;
   }
   if (!prefsReady) {
     return (
       <AuthShell title="Starting up…" subtitle="Reading your settings.">
         {null}
       </AuthShell>
-    )
+    );
   }
 
-  const suspended = locked || !authenticated
+  const suspended = locked || !authenticated;
 
   return (
     <>
@@ -124,7 +124,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           make the hidden tree unfocusable and invisible to assistive tech. */}
       <div
         className="h-full w-full"
-        style={suspended ? { visibility: 'hidden' } : undefined}
+        style={suspended ? { visibility: "hidden" } : undefined}
         inert={suspended || undefined}
         aria-hidden={suspended || undefined}
       >
@@ -137,8 +137,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
               onDismiss={() => {
                 // The session is still live; this only uncovers the screen.
                 // `refresh` re-syncs in case it died while the cover was up.
-                unlock()
-                void refresh()
+                unlock();
+                void refresh();
               }}
             />
           ) : (
@@ -154,5 +154,5 @@ export function AuthGate({ children }: { children: ReactNode }) {
         </div>
       )}
     </>
-  )
+  );
 }

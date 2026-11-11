@@ -1,10 +1,10 @@
-import { create } from 'zustand'
-import { createJSONStorage, persist } from 'zustand/middleware'
-import { prefsStorage } from '../../lib/prefs'
-import { APP_REGISTRY } from './registry'
-import { useAddonStore } from '../store/addonStore'
-import { NON_DISABLEABLE } from './enabledApps'
-import { linuxAppsOpening, linuxOpenedKeys } from '../../modules/linux-windows/launchers'
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { prefsStorage } from "../../lib/prefs";
+import { APP_REGISTRY } from "./registry";
+import { useAddonStore } from "../store/addonStore";
+import { NON_DISABLEABLE } from "./enabledApps";
+import { linuxAppsOpening, linuxOpenedKeys } from "../../modules/linux-windows/launchers";
 
 /**
  * Which app opens which file, and how the user changes it.
@@ -34,7 +34,7 @@ import { linuxAppsOpening, linuxOpenedKeys } from '../../modules/linux-windows/l
  * wired to `prefsStorage` is not sufficient, and the failure is invisible in one
  * browser.
  */
-export const ASSOCIATIONS_KEY = 'imbatranimos:file-associations'
+export const ASSOCIATIONS_KEY = "imbatranimos:file-associations";
 
 /**
  * Names with no extension that are still text, and common dotfiles.
@@ -44,41 +44,41 @@ export const ASSOCIATIONS_KEY = 'imbatranimos:file-associations'
  * ones that dead-end.
  */
 const TEXTISH_NAMES = new Set([
-  'dockerfile',
-  'containerfile',
-  'makefile',
-  'justfile',
-  'procfile',
-  'rakefile',
-  'gemfile',
-  'brewfile',
-  'vagrantfile',
-  'license',
-  'licence',
-  'readme',
-  'changelog',
-  'authors',
-  'notice',
-  'copying',
-  'todo',
-  '.gitignore',
-  '.gitattributes',
-  '.gitmodules',
-  '.dockerignore',
-  '.npmrc',
-  '.nvmrc',
-  '.editorconfig',
-  '.env',
-  '.bashrc',
-  '.bash_profile',
-  '.profile',
-  '.zshrc',
-  '.inputrc',
-  '.vimrc',
-  '.prettierrc',
-  '.eslintrc',
-  '.babelrc',
-])
+  "dockerfile",
+  "containerfile",
+  "makefile",
+  "justfile",
+  "procfile",
+  "rakefile",
+  "gemfile",
+  "brewfile",
+  "vagrantfile",
+  "license",
+  "licence",
+  "readme",
+  "changelog",
+  "authors",
+  "notice",
+  "copying",
+  "todo",
+  ".gitignore",
+  ".gitattributes",
+  ".gitmodules",
+  ".dockerignore",
+  ".npmrc",
+  ".nvmrc",
+  ".editorconfig",
+  ".env",
+  ".bashrc",
+  ".bash_profile",
+  ".profile",
+  ".zshrc",
+  ".inputrc",
+  ".vimrc",
+  ".prettierrc",
+  ".eslintrc",
+  ".babelrc",
+]);
 
 /**
  * Extensions that are text but that no app claims by name.
@@ -88,70 +88,70 @@ const TEXTISH_NAMES = new Set([
  * app's `opens`.
  */
 const TEXTISH_EXTENSIONS = new Set([
-  'env',
-  'ini',
-  'conf',
-  'cfg',
-  'config',
-  'properties',
-  'lock',
-  'gitignore',
-  'gitconfig',
-  'editorconfig',
-  'diff',
-  'patch',
-  'text',
-  'nfo',
-  'srt',
-  'vtt',
-  'csv',
-  'csv2',
-  'tsv',
-  'jsonl',
-  'ndjson',
-  'jsonc',
-  'json5',
-  'lua',
-  'pl',
-  'r',
-  'kt',
-  'swift',
-  'scala',
-  'clj',
-  'ex',
-  'exs',
-  'erl',
-  'hs',
-  'dart',
-  'zig',
-  'nim',
-  'vue',
-  'svelte',
-  'astro',
-  'scss',
-  'sass',
-  'less',
-  'styl',
-  'graphql',
-  'gql',
-  'proto',
-  'bat',
-  'ps1',
-  'zsh',
-  'fish',
-  'bash',
-  'mk',
-  'cmake',
-  'gradle',
-  'tf',
-  'tfvars',
-  'nix',
-  'service',
-  'desktop',
-])
+  "env",
+  "ini",
+  "conf",
+  "cfg",
+  "config",
+  "properties",
+  "lock",
+  "gitignore",
+  "gitconfig",
+  "editorconfig",
+  "diff",
+  "patch",
+  "text",
+  "nfo",
+  "srt",
+  "vtt",
+  "csv",
+  "csv2",
+  "tsv",
+  "jsonl",
+  "ndjson",
+  "jsonc",
+  "json5",
+  "lua",
+  "pl",
+  "r",
+  "kt",
+  "swift",
+  "scala",
+  "clj",
+  "ex",
+  "exs",
+  "erl",
+  "hs",
+  "dart",
+  "zig",
+  "nim",
+  "vue",
+  "svelte",
+  "astro",
+  "scss",
+  "sass",
+  "less",
+  "styl",
+  "graphql",
+  "gql",
+  "proto",
+  "bat",
+  "ps1",
+  "zsh",
+  "fish",
+  "bash",
+  "mk",
+  "cmake",
+  "gradle",
+  "tf",
+  "tfvars",
+  "nix",
+  "service",
+  "desktop",
+]);
 
 /** The app text falls back to when nothing claims the file. */
-export const TEXT_FALLBACK_APP = 'code-editor'
+export const TEXT_FALLBACK_APP = "code-editor";
 
 /**
  * The apps that open text. Anything **they** claim is text by definition.
@@ -164,7 +164,7 @@ export const TEXT_FALLBACK_APP = 'code-editor'
  * registry instead. Membership ignores whether the app is currently *enabled*:
  * `.md` is text whether or not you can still open it in Notepad.
  */
-const TEXT_APP_IDS = ['code-editor', 'notepad'] as const
+const TEXT_APP_IDS = ["code-editor", "notepad"] as const;
 
 /**
  * The default when more than one app claims an extension.
@@ -181,7 +181,7 @@ const TEXT_APP_IDS = ['code-editor', 'notepad'] as const
  * Empty since the PDF viewer's retirement: its one row sent `.pdf` to norPDF over PDF Viewer, and
  * both left for Office's PDF.
  */
-const PREFERRED_DEFAULT: Record<string, string> = {}
+const PREFERRED_DEFAULT: Record<string, string> = {};
 
 /**
  * The extension for association purposes, or the whole lowercase name when there
@@ -193,52 +193,51 @@ const PREFERRED_DEFAULT: Record<string, string> = {}
  * checked against {@link TEXTISH_NAMES} first.
  */
 export function extensionOf(fileName: string): string {
-  const name = fileName.toLowerCase()
-  const lastDot = name.lastIndexOf('.')
-  if (lastDot <= 0) return '' // no dot, or a leading-dot name like `.env`
-  return name.slice(lastDot + 1)
+  const name = fileName.toLowerCase();
+  const lastDot = name.lastIndexOf(".");
+  if (lastDot <= 0) return ""; // no dot, or a leading-dot name like `.env`
+  return name.slice(lastDot + 1);
 }
 
 /** True when this file should open in a text editor if nothing else claims it. */
 export function isTextish(fileName: string): boolean {
-  const name = fileName.toLowerCase()
-  if (TEXTISH_NAMES.has(name)) return true
-  const ext = extensionOf(name)
-  if (ext === '') return true // extensionless and unknown: text is the safe guess
-  if (TEXTISH_EXTENSIONS.has(ext)) return true
+  const name = fileName.toLowerCase();
+  if (TEXTISH_NAMES.has(name)) return true;
+  const ext = extensionOf(name);
+  if (ext === "") return true; // extensionless and unknown: text is the safe guess
+  if (TEXTISH_EXTENSIONS.has(ext)) return true;
   return APP_REGISTRY.some(
     (app) =>
       (TEXT_APP_IDS as readonly string[]).includes(app.id) &&
-      (app.opens ?? []).some((claim) => claim.toLowerCase() === ext)
-  )
+      (app.opens ?? []).some((claim) => claim.toLowerCase() === ext),
+  );
 }
 
 /** One app that can open a given file. */
 export interface OpenCandidate {
-  appId: string
-  name: string
+  appId: string;
+  name: string;
   /** An installed Linux app (Settings → Linux apps), not one of the OS's own. */
-  linux?: boolean
+  linux?: boolean;
 }
 
 interface AssociationState {
   /** extension (or bare filename) → appId the user chose. */
-  overrides: Record<string, string>
-  setDefault: (extension: string, appId: string) => void
-  clearDefault: (extension: string) => void
-  clearAll: () => void
+  overrides: Record<string, string>;
+  setDefault: (extension: string, appId: string) => void;
+  clearDefault: (extension: string) => void;
+  clearAll: () => void;
 }
 
 export const useAssociationStore = create<AssociationState>()(
   persist(
     (set) => ({
       overrides: {},
-      setDefault: (extension, appId) =>
-        set((s) => ({ overrides: { ...s.overrides, [extension]: appId } })),
+      setDefault: (extension, appId) => set((s) => ({ overrides: { ...s.overrides, [extension]: appId } })),
       clearDefault: (extension) =>
         set((s) => {
-          const { [extension]: _removed, ...rest } = s.overrides
-          return { overrides: rest }
+          const { [extension]: _removed, ...rest } = s.overrides;
+          return { overrides: rest };
         }),
       clearAll: () => set({ overrides: {} }),
     }),
@@ -249,14 +248,14 @@ export const useAssociationStore = create<AssociationState>()(
        * should follow the account, not a per-tab session choice.
        */
       storage: createJSONStorage(() => prefsStorage),
-    }
-  )
-)
+    },
+  ),
+);
 
 /** True when this app is available to open things right now. */
 function isAvailable(appId: string): boolean {
-  if (NON_DISABLEABLE.has(appId)) return true
-  return !useAddonStore.getState().isDisabled(appId)
+  if (NON_DISABLEABLE.has(appId)) return true;
+  return !useAddonStore.getState().isDisabled(appId);
 }
 
 /**
@@ -267,22 +266,22 @@ function isAvailable(appId: string): boolean {
  * that owned an extension has to fall back rather than dead-end.
  */
 function declaredCandidates(fileName: string): OpenCandidate[] {
-  const ext = extensionOf(fileName)
-  const name = fileName.toLowerCase()
+  const ext = extensionOf(fileName);
+  const name = fileName.toLowerCase();
   return APP_REGISTRY.filter((app) => {
-    if (!app.opens || !isAvailable(app.id)) return false
+    if (!app.opens || !isAvailable(app.id)) return false;
     return app.opens.some((claim) => {
-      const c = claim.toLowerCase()
-      return c === ext || c === name
-    })
-  }).map((app) => ({ appId: app.id, name: app.name }))
+      const c = claim.toLowerCase();
+      return c === ext || c === name;
+    });
+  }).map((app) => ({ appId: app.id, name: app.name }));
 }
 
 /** The installed Linux apps whose desktop entries claim this file's type. */
 function linuxCandidates(fileName: string): OpenCandidate[] {
   return linuxAppsOpening([extensionOf(fileName), fileName.toLowerCase()])
     .filter(isAvailable)
-    .map((appId) => ({ appId, name: openerName(appId) ?? appId, linux: true }))
+    .map((appId) => ({ appId, name: openerName(appId) ?? appId, linux: true }));
 }
 
 /**
@@ -291,7 +290,7 @@ function linuxCandidates(fileName: string): OpenCandidate[] {
  * only ever a choice: {@link resolveOpener} never picks one by itself.
  */
 export function candidatesFor(fileName: string): OpenCandidate[] {
-  return [...declaredCandidates(fileName), ...linuxCandidates(fileName)]
+  return [...declaredCandidates(fileName), ...linuxCandidates(fileName)];
 }
 
 /**
@@ -299,19 +298,20 @@ export function candidatesFor(fileName: string): OpenCandidate[] {
  * the Linux apps that open files last.
  */
 export function allOpenerCandidates(): OpenCandidate[] {
-  const own = APP_REGISTRY.filter(
-    (app) => app.opens && app.opens.length > 0 && isAvailable(app.id)
-  ).map((app) => ({ appId: app.id, name: app.name }))
+  const own = APP_REGISTRY.filter((app) => app.opens && app.opens.length > 0 && isAvailable(app.id)).map((app) => ({
+    appId: app.id,
+    name: app.name,
+  }));
   const linux = linuxAppsOpening(null)
     .filter(isAvailable)
-    .map((appId) => ({ appId, name: openerName(appId) ?? appId, linux: true }))
-  return [...own, ...linux]
+    .map((appId) => ({ appId, name: openerName(appId) ?? appId, linux: true }));
+  return [...own, ...linux];
 }
 
 export interface Resolution {
-  appId: string
+  appId: string;
   /** Why this app: the user picked it, an app claims the type, or it is the fallback. */
-  reason: 'override' | 'declared' | 'text-fallback' | 'none'
+  reason: "override" | "declared" | "text-fallback" | "none";
 }
 
 /**
@@ -323,38 +323,37 @@ export interface Resolution {
  * dialog, not a dead click.
  */
 export function resolveOpener(fileName: string): Resolution {
-  const ext = extensionOf(fileName)
-  const key = ext === '' ? fileName.toLowerCase() : ext
-  const override = useAssociationStore.getState().overrides[key]
+  const ext = extensionOf(fileName);
+  const key = ext === "" ? fileName.toLowerCase() : ext;
+  const override = useAssociationStore.getState().overrides[key];
   if (override && isAvailable(override) && APP_REGISTRY.some((a) => a.id === override)) {
-    return { appId: override, reason: 'override' }
+    return { appId: override, reason: "override" };
   }
 
   // Only apps the OS ships can be the default by themselves; a Linux app
   // needs the user's choice (the override above).
-  const declared = declaredCandidates(fileName)
+  const declared = declaredCandidates(fileName);
   if (declared.length > 0) {
-    const preferred = PREFERRED_DEFAULT[key]
-    const winner =
-      preferred && declared.some((c) => c.appId === preferred) ? preferred : declared[0].appId
-    return { appId: winner, reason: 'declared' }
+    const preferred = PREFERRED_DEFAULT[key];
+    const winner = preferred && declared.some((c) => c.appId === preferred) ? preferred : declared[0].appId;
+    return { appId: winner, reason: "declared" };
   }
 
   if (isTextish(fileName) && isAvailable(TEXT_FALLBACK_APP)) {
-    return { appId: TEXT_FALLBACK_APP, reason: 'text-fallback' }
+    return { appId: TEXT_FALLBACK_APP, reason: "text-fallback" };
   }
-  return { appId: '', reason: 'none' }
+  return { appId: "", reason: "none" };
 }
 
 /** The association key a "always use this" choice should be stored under. */
 export function associationKey(fileName: string): string {
-  const ext = extensionOf(fileName)
-  return ext === '' ? fileName.toLowerCase() : ext
+  const ext = extensionOf(fileName);
+  return ext === "" ? fileName.toLowerCase() : ext;
 }
 
 /** An app's display name, for a label. Add-ons do not get the registry itself. */
 export function openerName(appId: string): string | null {
-  return APP_REGISTRY.find((a) => a.id === appId)?.name ?? null
+  return APP_REGISTRY.find((a) => a.id === appId)?.name ?? null;
 }
 
 /**
@@ -364,10 +363,10 @@ export function openerName(appId: string): string | null {
  * Default apps the moment it is added, with no second place to update.
  */
 export function knownExtensions(): string[] {
-  const seen = new Set<string>()
+  const seen = new Set<string>();
   for (const app of APP_REGISTRY) {
-    for (const claim of app.opens ?? []) seen.add(claim.toLowerCase())
+    for (const claim of app.opens ?? []) seen.add(claim.toLowerCase());
   }
-  for (const claim of linuxOpenedKeys()) seen.add(claim)
-  return [...seen].sort()
+  for (const claim of linuxOpenedKeys()) seen.add(claim);
+  return [...seen].sort();
 }

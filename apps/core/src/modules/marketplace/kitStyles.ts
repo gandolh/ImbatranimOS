@@ -13,39 +13,39 @@
  * and imports nothing.
  */
 
-const BUILD_ATTR = 'data-kit-build'
+const BUILD_ATTR = "data-kit-build";
 
 /** The most a window waits for a stylesheet before it renders without it. */
-const LOAD_TIMEOUT_MS = 10_000
+const LOAD_TIMEOUT_MS = 10_000;
 
 /** Settles when a link this module added has loaded, failed or timed out. */
-const settled = new WeakMap<HTMLLinkElement, Promise<void>>()
+const settled = new WeakMap<HTMLLinkElement, Promise<void>>();
 
 function linksOf(build: string | null): HTMLLinkElement[] {
   return [...document.head.querySelectorAll<HTMLLinkElement>(`link[${BUILD_ATTR}]`)].filter(
-    (l) => build === null || l.getAttribute(BUILD_ATTR) === build
-  )
+    (l) => build === null || l.getAttribute(BUILD_ATTR) === build,
+  );
 }
 
 function watch(link: HTMLLinkElement): Promise<void> {
   return new Promise<void>((resolve) => {
-    const timer = setTimeout(resolve, LOAD_TIMEOUT_MS)
+    const timer = setTimeout(resolve, LOAD_TIMEOUT_MS);
     const done = () => {
-      clearTimeout(timer)
-      resolve()
-    }
-    link.addEventListener('load', done, { once: true })
+      clearTimeout(timer);
+      resolve();
+    };
+    link.addEventListener("load", done, { once: true });
     link.addEventListener(
-      'error',
+      "error",
       () => {
         // The build was checked to hold the file, so this is the network or a
         // reinstall racing the window. The app still runs, unstyled.
-        console.warn(`[marketplace] a kit app's stylesheet did not load: ${link.href}`)
-        done()
+        console.warn(`[marketplace] a kit app's stylesheet did not load: ${link.href}`);
+        done();
       },
-      { once: true }
-    )
-  })
+      { once: true },
+    );
+  });
 }
 
 /**
@@ -54,26 +54,26 @@ function watch(link: HTMLLinkElement): Promise<void> {
  * loaded or failed, so a window can wait for its styles before it renders.
  */
 export function addKitStyles(build: string, hrefs: readonly string[]): Promise<void> {
-  const present = new Map(linksOf(build).map((l) => [l.getAttribute('href'), l]))
+  const present = new Map(linksOf(build).map((l) => [l.getAttribute("href"), l]));
   const waits = hrefs.map((href) => {
-    let link = present.get(href)
+    let link = present.get(href);
     if (!link) {
-      link = document.createElement('link')
-      link.rel = 'stylesheet'
-      link.setAttribute(BUILD_ATTR, build)
-      link.setAttribute('href', href)
-      settled.set(link, watch(link))
-      document.head.append(link)
-      present.set(href, link)
+      link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.setAttribute(BUILD_ATTR, build);
+      link.setAttribute("href", href);
+      settled.set(link, watch(link));
+      document.head.append(link);
+      present.set(href, link);
     }
-    return settled.get(link) ?? Promise.resolve()
-  })
-  return Promise.all(waits).then(() => undefined)
+    return settled.get(link) ?? Promise.resolve();
+  });
+  return Promise.all(waits).then(() => undefined);
 }
 
 /** Remove the links of every build not in `live`. The registry calls it on each sync. */
 export function pruneKitStyles(live: ReadonlySet<string>): void {
   for (const link of linksOf(null)) {
-    if (!live.has(link.getAttribute(BUILD_ATTR) ?? '')) link.remove()
+    if (!live.has(link.getAttribute(BUILD_ATTR) ?? "")) link.remove();
   }
 }

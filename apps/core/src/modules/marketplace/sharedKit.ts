@@ -1,8 +1,8 @@
-import * as React from 'react'
-import * as JsxRuntime from 'react/jsx-runtime'
-import * as ReactDom from 'react-dom'
-import * as ReactDomClient from 'react-dom/client'
-import type * as KitNamespace from '@imbatranim/ui'
+import * as React from "react";
+import * as JsxRuntime from "react/jsx-runtime";
+import * as ReactDom from "react-dom";
+import * as ReactDomClient from "react-dom/client";
+import type * as KitNamespace from "@imbatranim/ui";
 import {
   Button,
   Checkbox,
@@ -52,7 +52,7 @@ import {
   useVirtualList,
   useWindowVisible,
   type SharedKitModule,
-} from '@imbatranim/ui'
+} from "@imbatranim/ui";
 
 /**
  * Every value `@imbatranim/ui` exports, by name. Named imports rather than
@@ -113,18 +113,18 @@ const KIT: { [K in keyof typeof KitNamespace]: (typeof KitNamespace)[K] } = {
   useUnsavedGuard,
   useVirtualList,
   useWindowVisible,
-}
+};
 
 /** One shared module: every export of it, as a readable property. */
-export type SharedModule = Readonly<Record<string, unknown>>
+export type SharedModule = Readonly<Record<string, unknown>>;
 
 /** `globalThis.__imbatranimShared` (contract A). */
 export type SharedKitGlobal = Readonly<{
-  version: number
-  modules: Readonly<Record<SharedKitModule, SharedModule>>
-}>
+  version: number;
+  modules: Readonly<Record<SharedKitModule, SharedModule>>;
+}>;
 
-const GLOBAL = '__imbatranimShared'
+const GLOBAL = "__imbatranimShared";
 
 /**
  * A frozen copy of a module namespace. A copy because a real ES namespace
@@ -137,14 +137,14 @@ const GLOBAL = '__imbatranimShared'
  * the eager bundle whole, so its namespaces cost nothing here.
  */
 function frozenModule(ns: object): SharedModule {
-  const cjs = (ns as { default?: unknown }).default
-  const exports = cjs !== null && (typeof cjs === 'object' || typeof cjs === 'function') ? cjs : {}
-  return Object.freeze({ ...exports, ...ns })
+  const cjs = (ns as { default?: unknown }).default;
+  const exports = cjs !== null && (typeof cjs === "object" || typeof cjs === "function") ? cjs : {};
+  return Object.freeze({ ...exports, ...ns });
 }
 
 /** The shared kit as it stands, for reading. Undefined until {@link installSharedKit}. */
 export function sharedKit(): SharedKitGlobal | undefined {
-  return (globalThis as { [GLOBAL]?: SharedKitGlobal })[GLOBAL]
+  return (globalThis as { [GLOBAL]?: SharedKitGlobal })[GLOBAL];
 }
 
 /**
@@ -155,23 +155,23 @@ export function sharedKit(): SharedKitGlobal | undefined {
  * cannot swap a module out from under the others.
  */
 export function installSharedKit(): SharedKitGlobal {
-  const existing = sharedKit()
-  if (existing) return existing
+  const existing = sharedKit();
+  if (existing) return existing;
   const shared: SharedKitGlobal = Object.freeze({
     version: SHARED_KIT_VERSION,
     modules: Object.freeze({
       react: frozenModule(React),
-      'react/jsx-runtime': frozenModule(JsxRuntime),
-      'react-dom': frozenModule(ReactDom),
-      'react-dom/client': frozenModule(ReactDomClient),
-      '@imbatranim/ui': frozenModule(KIT),
+      "react/jsx-runtime": frozenModule(JsxRuntime),
+      "react-dom": frozenModule(ReactDom),
+      "react-dom/client": frozenModule(ReactDomClient),
+      "@imbatranim/ui": frozenModule(KIT),
     }),
-  })
+  });
   Object.defineProperty(globalThis, GLOBAL, {
     value: shared,
     writable: false,
     enumerable: false,
     configurable: false,
-  })
-  return shared
+  });
+  return shared;
 }

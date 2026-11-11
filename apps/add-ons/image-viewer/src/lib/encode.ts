@@ -34,10 +34,10 @@
  * decides whether the app will write over the file.
  */
 function extensionOf(path: string): string {
-  const base = path.split('/').pop() ?? path
-  const dot = base.lastIndexOf('.')
-  if (dot <= 0) return ''
-  return base.slice(dot + 1).toLowerCase()
+  const base = path.split("/").pop() ?? path;
+  const dot = base.lastIndexOf(".");
+  if (dot <= 0) return "";
+  return base.slice(dot + 1).toLowerCase();
 }
 
 /**
@@ -50,18 +50,18 @@ function extensionOf(path: string): string {
  */
 export function encodeMime(path: string): string {
   switch (extensionOf(path)) {
-    case 'jpg':
-    case 'jpeg':
-      return 'image/jpeg'
-    case 'webp':
-      return 'image/webp'
-    case 'png':
-      return 'image/png'
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "webp":
+      return "image/webp";
+    case "png":
+      return "image/png";
     default:
       // GIF (animation would be lost anyway), BMP, ICO, AVIF, SVG: PNG is the
       // honest lossless target, and `canSaveInPlace` refuses the ones where
       // that would rename the format out from under the user.
-      return 'image/png'
+      return "image/png";
   }
 }
 
@@ -76,35 +76,35 @@ export function encodeMime(path: string): string {
  * class of defect as losing a chart on a spreadsheet save.
  */
 export function canSaveInPlace(path: string): boolean {
-  return ['png', 'jpg', 'jpeg', 'webp'].includes(extensionOf(path))
+  return ["png", "jpg", "jpeg", "webp"].includes(extensionOf(path));
 }
 
 /** Human reason a file cannot be rotated in place, for the UI to show. */
 export function noSaveReason(path: string): string | null {
-  const ext = extensionOf(path)
-  if (canSaveInPlace(path)) return null
-  if (ext === 'svg') return 'SVG is vector — rotation stays a view setting.'
-  if (ext === 'gif') return 'Saving a GIF would keep one frame. Save a copy as PNG instead.'
-  if (ext === 'ico') return 'An .ico holds several sizes. Save a copy as PNG instead.'
-  return `Rotation cannot be written back to .${ext || 'this format'}. Save a copy as PNG instead.`
+  const ext = extensionOf(path);
+  if (canSaveInPlace(path)) return null;
+  if (ext === "svg") return "SVG is vector — rotation stays a view setting.";
+  if (ext === "gif") return "Saving a GIF would keep one frame. Save a copy as PNG instead.";
+  if (ext === "ico") return "An .ico holds several sizes. Save a copy as PNG instead.";
+  return `Rotation cannot be written back to .${ext || "this format"}. Save a copy as PNG instead.`;
 }
 
 /** The suggested filename for "save a copy" of a rotated image. */
 export function copyName(path: string, rotation: number): string {
-  const base = path.split('/').pop() ?? path
-  const dot = base.lastIndexOf('.')
-  const stem = dot > 0 ? base.slice(0, dot) : base
-  const turns = ((rotation % 360) + 360) % 360 || 0
-  return `${stem}-rotated${turns ? `-${turns}` : ''}.png`
+  const base = path.split("/").pop() ?? path;
+  const dot = base.lastIndexOf(".");
+  const stem = dot > 0 ? base.slice(0, dot) : base;
+  const turns = ((rotation % 360) + 360) % 360 || 0;
+  return `${stem}-rotated${turns ? `-${turns}` : ""}.png`;
 }
 
 /** Size of the canvas needed to hold `natural` turned by `rotation`. */
 export function rotatedCanvasSize(
   natural: { width: number; height: number },
-  rotation: number
+  rotation: number,
 ): { width: number; height: number } {
-  const quarterTurn = Math.abs(rotation % 180) === 90
+  const quarterTurn = Math.abs(rotation % 180) === 90;
   return quarterTurn
     ? { width: natural.height, height: natural.width }
-    : { width: natural.width, height: natural.height }
+    : { width: natural.width, height: natural.height };
 }

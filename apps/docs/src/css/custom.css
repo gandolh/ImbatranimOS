@@ -26,8 +26,8 @@
 /* Self-hosted faces: `@import '@fontsource-variable/<face>';` here works. */
 
 :root,
-:root[data-theme='light'],
-:root[data-theme='dark'] {
+:root[data-theme="light"],
+:root[data-theme="dark"] {
   color-scheme: light only;
 
   --ifm-color-primary: #c81236;
@@ -54,7 +54,7 @@
 
 /* "You are here". Not .menu__link--active: Infima puts that on the parent
    category of the current page as well. */
-.menu__link[aria-current='page'] {
+.menu__link[aria-current="page"] {
   font-weight: 600;
 }
 

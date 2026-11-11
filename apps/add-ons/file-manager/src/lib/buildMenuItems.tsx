@@ -18,66 +18,66 @@ import {
   Package,
   FilePlus,
   Info,
-} from 'lucide-react'
-import type { ContextMenuItem } from '@imbatranim/ui'
-import type { FsEntry } from '../types'
-import { resolveOpenApp, openAppLabel, type Associations } from './openWith'
-import { newFileOpener, type NewFileKind } from './newFileTemplates'
-import { archiveKind } from './archiveView'
+} from "lucide-react";
+import type { ContextMenuItem } from "@imbatranim/ui";
+import type { FsEntry } from "../types";
+import { resolveOpenApp, openAppLabel, type Associations } from "./openWith";
+import { newFileOpener, type NewFileKind } from "./newFileTemplates";
+import { archiveKind } from "./archiveView";
 
 export type BuildMenuItemsCtx = {
   /** The right-clicked entry, or null for the empty-background menu. */
-  entry: FsEntry | null
-  root: string
+  entry: FsEntry | null;
+  root: string;
   /** The handle's association registry — menus resolve labels against it. */
-  assoc: Associations
+  assoc: Associations;
   /** Whether the clipboard holds something (gates the Paste item). */
-  hasClipboard: boolean
+  hasClipboard: boolean;
   /**
    * How many entries the row verbs will act on: 1 for a lone row,
    * the selection size when the clicked row is part of a multi-selection. The
    * labels say so — "Copy 3 items" — because a Copy that silently takes four
    * more files than the one you right-clicked is a trap.
    */
-  verbCount?: number
-  onOpen: (entry: FsEntry) => void
-  onDownload: (entry: FsEntry) => void
-  onRename: (entry: FsEntry) => void
-  onCopy: (entry: FsEntry) => void
-  onCut: (entry: FsEntry) => void
-  onDelete: (entry: FsEntry) => void
-  onNewFile: () => void
-  onNewFolder: () => void
-  onProperties: (entry: FsEntry) => void
-  onNewOfficeFile: (kind: NewFileKind) => void
-  onUpload: () => void
-  onPaste: () => void
-  onRefresh: () => void
+  verbCount?: number;
+  onOpen: (entry: FsEntry) => void;
+  onDownload: (entry: FsEntry) => void;
+  onRename: (entry: FsEntry) => void;
+  onCopy: (entry: FsEntry) => void;
+  onCut: (entry: FsEntry) => void;
+  onDelete: (entry: FsEntry) => void;
+  onNewFile: () => void;
+  onNewFolder: () => void;
+  onProperties: (entry: FsEntry) => void;
+  onNewOfficeFile: (kind: NewFileKind) => void;
+  onUpload: () => void;
+  onPaste: () => void;
+  onRefresh: () => void;
   /** Show the "Open with" chooser for this entry. */
-  onOpenWith: (entry: FsEntry) => void
+  onOpenWith: (entry: FsEntry) => void;
   /** Extract an archive file, or, inside an archive, the clicked entry or selection. */
-  onExtract: (entry: FsEntry) => void
+  onExtract: (entry: FsEntry) => void;
   /** Compress the current selection (or this entry) to a .zip. */
-  onCompress: (entry: FsEntry) => void
+  onCompress: (entry: FsEntry) => void;
   /**
    * Inside an archive's read-only folder view: the menu offers only opening
    * folders and extracting, since nothing there can be changed.
    */
-  inArchive?: boolean
+  inArchive?: boolean;
   /** Extract everything in the archive being viewed. */
-  onExtractAll?: () => void
+  onExtractAll?: () => void;
   /**
    * Compare the two selected files in the Diff tool. Non-null only
    * when exactly two files are selected and the clicked entry is one of them —
    * the builder shows the item exactly when the action can mean something.
    */
-  onCompare: (() => void) | null
+  onCompare: (() => void) | null;
   /** Open a bitmap in Paint — an Edit verb beside the viewer's Open. */
-  onEditInPaint: (entry: FsEntry) => void
-}
+  onEditInPaint: (entry: FsEntry) => void;
+};
 
 /** Bitmaps Paint can edit — the viewer keeps the double-click. */
-const PAINTABLE_RE = /\.(png|jpe?g|gif|webp|bmp)$/i
+const PAINTABLE_RE = /\.(png|jpe?g|gif|webp|bmp)$/i;
 
 /**
  * Pure builder for the right-click context menu descriptor tree. Same two-mode
@@ -111,182 +111,179 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
     onCompress,
     inArchive = false,
     onExtractAll,
-  } = ctx
+  } = ctx;
 
   if (inArchive) {
     const extractAll: ContextMenuItem = {
-      label: 'Extract all…',
+      label: "Extract all…",
       icon: <FileArchive size={13} />,
       onSelect: () => onExtractAll?.(),
-    }
+    };
     if (!entry) {
       return [
         extractAll,
-        { type: 'separator' },
-        { label: 'Refresh', icon: <RefreshCw size={13} />, onSelect: onRefresh },
-      ]
+        { type: "separator" },
+        { label: "Refresh", icon: <RefreshCw size={13} />, onSelect: onRefresh },
+      ];
     }
     return [
-      ...(entry.type === 'directory'
+      ...(entry.type === "directory"
         ? [
             {
-              label: 'Open',
+              label: "Open",
               icon: <FolderOpen size={13} />,
               onSelect: () => onOpen(entry),
             } as ContextMenuItem,
           ]
         : []),
       {
-        label: verbCount > 1 ? `Extract ${verbCount} items…` : 'Extract…',
+        label: verbCount > 1 ? `Extract ${verbCount} items…` : "Extract…",
         icon: <FileArchive size={13} />,
         onSelect: () => onExtract(entry),
       },
       extractAll,
-    ]
+    ];
   }
 
   if (!entry) {
     return [
       {
-        label: 'New File…',
+        label: "New File…",
         icon: <FilePlus size={13} />,
         onSelect: onNewFile,
       },
       {
-        label: 'New Folder',
+        label: "New Folder",
         icon: <FolderPlus size={13} />,
         onSelect: onNewFolder,
       },
       // Only while an installed app opens the kind: the office
       // apps live in the Marketplace's Office, which may not be installed.
-      ...(newFileOpener(ctx.assoc, 'spreadsheet')
+      ...(newFileOpener(ctx.assoc, "spreadsheet")
         ? [
             {
-              label: 'New Spreadsheet',
+              label: "New Spreadsheet",
               icon: <FileSpreadsheet size={13} />,
-              onSelect: () => onNewOfficeFile('spreadsheet'),
+              onSelect: () => onNewOfficeFile("spreadsheet"),
             },
           ]
         : []),
-      ...(newFileOpener(ctx.assoc, 'document')
+      ...(newFileOpener(ctx.assoc, "document")
         ? [
             {
-              label: 'New Document',
+              label: "New Document",
               icon: <FileText size={13} />,
-              onSelect: () => onNewOfficeFile('document'),
+              onSelect: () => onNewOfficeFile("document"),
             },
           ]
         : []),
       {
-        label: 'Upload…',
+        label: "Upload…",
         icon: <Upload size={13} />,
         onSelect: onUpload,
       },
       {
-        label: 'Paste',
+        label: "Paste",
         icon: <Clipboard size={13} />,
         disabled: !hasClipboard,
         onSelect: onPaste,
       },
-      { type: 'separator' },
+      { type: "separator" },
       {
-        label: 'Refresh',
+        label: "Refresh",
         icon: <RefreshCw size={13} />,
         onSelect: onRefresh,
       },
-    ]
+    ];
   }
 
   return [
     {
-      label:
-        entry.type === 'directory'
-          ? 'Open'
-          : openAppLabel(ctx.assoc, resolveOpenApp(ctx.assoc, root, entry.name)),
+      label: entry.type === "directory" ? "Open" : openAppLabel(ctx.assoc, resolveOpenApp(ctx.assoc, root, entry.name)),
       icon: <FolderOpen size={13} />,
       onSelect: () => onOpen(entry),
       // Never disabled for a file any more: resolution always ends
       // somewhere, and when it genuinely cannot, `onOpen` shows the chooser
       // rather than nothing happening.
     },
-    ...(entry.type === 'file'
+    ...(entry.type === "file"
       ? [
           {
-            label: 'Open with…',
+            label: "Open with…",
             icon: <AppWindow size={13} />,
             onSelect: () => onOpenWith(entry),
           } as ContextMenuItem,
         ]
       : []),
-    ...(entry.type === 'file'
+    ...(entry.type === "file"
       ? [
           {
-            label: 'Download',
+            label: "Download",
             icon: <Download size={13} />,
             onSelect: () => onDownload(entry),
           } as ContextMenuItem,
         ]
       : []),
-    ...(entry.type === 'file' && PAINTABLE_RE.test(entry.name)
+    ...(entry.type === "file" && PAINTABLE_RE.test(entry.name)
       ? [
           {
-            label: 'Edit in Paint',
+            label: "Edit in Paint",
             icon: <Palette size={13} />,
             onSelect: () => onEditInPaint(entry),
           } as ContextMenuItem,
         ]
       : []),
-    ...(entry.type === 'file' && onCompare
+    ...(entry.type === "file" && onCompare
       ? [
           {
-            label: 'Compare',
+            label: "Compare",
             icon: <FileDiff size={13} />,
             onSelect: onCompare,
           } as ContextMenuItem,
         ]
       : []),
-    ...(entry.type === 'file' && archiveKind(entry.name) !== null
+    ...(entry.type === "file" && archiveKind(entry.name) !== null
       ? [
           {
-            label: 'Extract…',
+            label: "Extract…",
             icon: <FileArchive size={13} />,
             onSelect: () => onExtract(entry),
           } as ContextMenuItem,
         ]
       : []),
     {
-      label: 'Compress to .zip',
+      label: "Compress to .zip",
       icon: <Package size={13} />,
       onSelect: () => onCompress(entry),
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: 'Rename',
+      label: "Rename",
       icon: <Pencil size={13} />,
       onSelect: () => onRename(entry),
     },
     {
-      label: verbCount > 1 ? `Copy ${verbCount} items` : 'Copy',
+      label: verbCount > 1 ? `Copy ${verbCount} items` : "Copy",
       icon: <Copy size={13} />,
       onSelect: () => onCopy(entry),
     },
     {
-      label: verbCount > 1 ? `Cut ${verbCount} items` : 'Cut',
+      label: verbCount > 1 ? `Cut ${verbCount} items` : "Cut",
       icon: <Scissors size={13} />,
       onSelect: () => onCut(entry),
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: 'Properties',
+      label: "Properties",
       icon: <Info size={13} />,
       onSelect: () => onProperties(entry),
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: 'Delete',
+      label: "Delete",
       icon: <Trash2 size={13} />,
       danger: true,
       onSelect: () => onDelete(entry),
     },
-  ]
+  ];
 }

@@ -1,4 +1,4 @@
-import { UploadTooLargeError } from './files'
+import { UploadTooLargeError } from "./files";
 
 /**
  * The pure half of the file-failure convention: turn an unknown
@@ -10,24 +10,24 @@ import { UploadTooLargeError } from './files'
 
 export type FileFailureOptions = {
   /** Raising app's id, so the notification carries its icon and opens it. */
-  appId: string
+  appId: string;
   /** What the user calls the thing: `document`, `spreadsheet`, `presentation`. */
-  noun: string
+  noun: string;
   /** Filename, when known. A background failure has to say which file. */
-  name?: string
-}
+  name?: string;
+};
 
 /** True when an error carries an axios-style HTTP status matching `status`. */
 function statusOf(err: unknown): number | undefined {
-  if (typeof err !== 'object' || err === null || !('response' in err)) return undefined
-  return (err as { response?: { status?: number } }).response?.status
+  if (typeof err !== "object" || err === null || !("response" in err)) return undefined;
+  return (err as { response?: { status?: number } }).response?.status;
 }
 
 /** The `code` of an error's body, if it carries one. */
 function codeOf(err: unknown): unknown {
-  if (typeof err !== 'object' || err === null || !('response' in err)) return undefined
-  const data = (err as { response?: { data?: unknown } }).response?.data
-  return typeof data === 'object' && data !== null ? (data as { code?: unknown }).code : undefined
+  if (typeof err !== "object" || err === null || !("response" in err)) return undefined;
+  const data = (err as { response?: { data?: unknown } }).response?.data;
+  return typeof data === "object" && data !== null ? (data as { code?: unknown }).code : undefined;
 }
 
 /**
@@ -38,16 +38,16 @@ function codeOf(err: unknown): unknown {
  * generic failure, which is what discards the one useful sentence.
  */
 function serverMessage(err: unknown): string | undefined {
-  if (typeof err !== 'object' || err === null || !('response' in err)) return undefined
-  const data = (err as { response?: { data?: unknown } }).response?.data
-  if (typeof data !== 'object' || data === null) return undefined
-  const message = (data as { message?: unknown }).message
-  if (typeof message === 'string' && message.trim() && message.length < 300) return message
+  if (typeof err !== "object" || err === null || !("response" in err)) return undefined;
+  const data = (err as { response?: { data?: unknown } }).response?.data;
+  if (typeof data !== "object" || data === null) return undefined;
+  const message = (data as { message?: unknown }).message;
+  if (typeof message === "string" && message.trim() && message.length < 300) return message;
   if (Array.isArray(message)) {
-    const first = message.find((m) => typeof m === 'string')
-    if (typeof first === 'string' && first.trim()) return first
+    const first = message.find((m) => typeof m === "string");
+    if (typeof first === "string" && first.trim()) return first;
   }
-  return undefined
+  return undefined;
 }
 
 /**
@@ -56,33 +56,33 @@ function serverMessage(err: unknown): string | undefined {
  * Exported for tests and for callers that already have their own message; most
  * callers want `reportFileFailure`, which also raises the notification.
  */
-export function describeFileFailure(action: 'open' | 'save', err: unknown, noun: string): string {
-  if (err instanceof UploadTooLargeError) return err.message
+export function describeFileFailure(action: "open" | "save", err: unknown, noun: string): string {
+  if (err instanceof UploadTooLargeError) return err.message;
 
-  const status = statusOf(err)
-  const fromServer = serverMessage(err)
+  const status = statusOf(err);
+  const fromServer = serverMessage(err);
 
   switch (status) {
     case 403:
       // A path the app wasn't given: the backend's sentence names it and
       // says how to give it, which beats a bare "no permission".
-      if (codeOf(err) === 'FILE_NOT_GRANTED' && fromServer) return fromServer
-      return `You do not have permission to ${action} this ${noun}.`
+      if (codeOf(err) === "FILE_NOT_GRANTED" && fromServer) return fromServer;
+      return `You do not have permission to ${action} this ${noun}.`;
     case 404:
-      return action === 'open'
+      return action === "open"
         ? `This ${noun} no longer exists.`
-        : `The folder this ${noun} lives in no longer exists.`
+        : `The folder this ${noun} lives in no longer exists.`;
     case 413:
-      return `This ${noun} is too large to save.`
+      return `This ${noun} is too large to save.`;
     case 503:
       // Disk-full arrives here with a message worth reading verbatim.
-      return fromServer ?? `The OS could not ${action} this ${noun} right now.`
+      return fromServer ?? `The OS could not ${action} this ${noun} right now.`;
   }
 
-  if (fromServer) return fromServer
+  if (fromServer) return fromServer;
   if (status === undefined) {
     // No response at all: the backend is down, restarting, or unreachable.
-    return `Could not reach the OS to ${action} this ${noun}.`
+    return `Could not reach the OS to ${action} this ${noun}.`;
   }
-  return `Could not ${action} this ${noun}.`
+  return `Could not ${action} this ${noun}.`;
 }

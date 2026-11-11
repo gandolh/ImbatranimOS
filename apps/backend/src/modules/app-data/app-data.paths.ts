@@ -1,8 +1,8 @@
-import { BadRequestException } from '@nestjs/common';
-import { join, resolve } from 'path';
-import * as os from 'os';
+import { BadRequestException } from "@nestjs/common";
+import { join, resolve } from "path";
+import * as os from "os";
 
-import { SYSTEM_GROUP } from '../app-identity/app-identity.types';
+import { SYSTEM_GROUP } from "../app-identity/app-identity.types";
 
 /**
  * Where an app's data folders live, the XDG way: one folder per app under
@@ -10,25 +10,25 @@ import { SYSTEM_GROUP } from '../app-identity/app-identity.types';
  */
 
 /** The four kinds an app keeps files of. */
-export const DATA_KINDS = ['config', 'data', 'state', 'cache'] as const;
+export const DATA_KINDS = ["config", "data", "state", "cache"] as const;
 export type DataKind = (typeof DATA_KINDS)[number];
 
 /** The kind a call names when it names none. */
-export const DEFAULT_DATA_KIND: DataKind = 'data';
+export const DEFAULT_DATA_KIND: DataKind = "data";
 
 /** Each kind's place in the home, as XDG's base directories lay it out. */
 export const KIND_DIRS: Readonly<Record<DataKind, string>> = Object.freeze({
-  config: '.config',
-  data: '.local/share',
-  state: '.local/state',
-  cache: '.cache',
+  config: ".config",
+  data: ".local/share",
+  state: ".local/state",
+  cache: ".cache",
 });
 
 /**
  * The level between a kind's place and the app's folder. It keeps an app id
  * from clashing with a Linux program's folder, as Windows' vendor folder does.
  */
-export const VENDOR_DIR = 'imbatranim';
+export const VENDOR_DIR = "imbatranim";
 
 /** The longest path an app may name inside its folder. */
 export const MAX_DATA_PATH = 512;
@@ -40,19 +40,14 @@ export const MAX_DATA_BYTES = 5 * 1024 * 1024;
 const APP_ID = /^[a-z][a-z0-9-]{1,39}$/;
 
 export function isDataKind(value: unknown): value is DataKind {
-  return (
-    typeof value === 'string' &&
-    (DATA_KINDS as readonly string[]).includes(value)
-  );
+  return typeof value === "string" && (DATA_KINDS as readonly string[]).includes(value);
 }
 
 /** A kind from a route, or a 400. */
 export function kindOf(raw: string | undefined): DataKind {
-  if (raw === undefined || raw === '') return DEFAULT_DATA_KIND;
+  if (raw === undefined || raw === "") return DEFAULT_DATA_KIND;
   if (!isDataKind(raw)) {
-    throw new BadRequestException(
-      `Unknown data kind: ${raw.slice(0, 40)}. It is one of ${DATA_KINDS.join(', ')}`,
-    );
+    throw new BadRequestException(`Unknown data kind: ${raw.slice(0, 40)}. It is one of ${DATA_KINDS.join(", ")}`);
   }
   return raw;
 }
@@ -70,11 +65,7 @@ export function homeRoot(): string {
  * never from a path the app sends, so an id that could leave the vendor
  * folder (or the group every built-in shares) is refused outright.
  */
-export function folderOf(
-  appId: string,
-  kind: DataKind,
-  home = homeRoot(),
-): string {
+export function folderOf(appId: string, kind: DataKind, home = homeRoot()): string {
   if (!APP_ID.test(appId) || appId === SYSTEM_GROUP) {
     throw new Error(`Not an app id: ${appId}`);
   }
@@ -91,29 +82,25 @@ export function folderOf(
 export const MAX_DATA_NAME_BYTES = 200;
 
 export function normaliseDataPath(raw: unknown, allowRoot = false): string {
-  if (typeof raw !== 'string' || raw.length > MAX_DATA_PATH) {
-    throw new BadRequestException(
-      `A data path is a string of at most ${MAX_DATA_PATH} characters`,
-    );
+  if (typeof raw !== "string" || raw.length > MAX_DATA_PATH) {
+    throw new BadRequestException(`A data path is a string of at most ${MAX_DATA_PATH} characters`);
   }
-  if (raw.includes('\0') || raw.includes('\\')) {
-    throw new BadRequestException('A data path has no NUL or backslash');
+  if (raw.includes("\0") || raw.includes("\\")) {
+    throw new BadRequestException("A data path has no NUL or backslash");
   }
-  const segments = raw.split('/').filter((s) => s !== '' && s !== '.');
-  if (segments.includes('..')) {
+  const segments = raw.split("/").filter((s) => s !== "" && s !== ".");
+  if (segments.includes("..")) {
     throw new BadRequestException("A data path can't leave the app's folder");
   }
   // A write stages `.<name>.imbatranim-<uuid>.part` beside the file, 54 bytes
   // longer than the name, and Linux allows 255 bytes per name: a longer name
   // would pass here and then fail as an error from the file system.
   if (segments.some((s) => Buffer.byteLength(s) > MAX_DATA_NAME_BYTES)) {
-    throw new BadRequestException(
-      `A name in a data path is at most ${MAX_DATA_NAME_BYTES} bytes`,
-    );
+    throw new BadRequestException(`A name in a data path is at most ${MAX_DATA_NAME_BYTES} bytes`);
   }
-  const path = segments.join('/');
-  if (path === '' && !allowRoot) {
-    throw new BadRequestException('Name a file inside the folder');
+  const path = segments.join("/");
+  if (path === "" && !allowRoot) {
+    throw new BadRequestException("Name a file inside the folder");
   }
   return path;
 }

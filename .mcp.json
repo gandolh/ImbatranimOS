@@ -2,13 +2,7 @@
   "mcpServers": {
     "codegraph": {
       "command": "codegraph",
-      "args": [
-        "serve",
-        "--mcp",
-        "--no-watch",
-        "--path",
-        "${CODEGRAPH_INDEX_PATH:-.}"
-      ]
+      "args": ["serve", "--mcp", "--no-watch", "--path", "${CODEGRAPH_INDEX_PATH:-.}"]
     }
   }
 }

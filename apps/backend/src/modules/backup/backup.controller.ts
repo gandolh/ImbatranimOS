@@ -11,16 +11,16 @@ import {
   UseFilters,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { tmpdir } from 'os';
-import { pipeline } from 'stream/promises';
-import type { Response } from 'express';
-import { UserOnlyGuard } from '../app-identity/calling-app';
-import { MulterExceptionFilter } from '../files/multer-exception.filter';
-import { BackupService } from './backup.service';
-import { RestoreApplyDto } from './dto/backup.dto';
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { diskStorage } from "multer";
+import { tmpdir } from "os";
+import { pipeline } from "stream/promises";
+import type { Response } from "express";
+import { UserOnlyGuard } from "../app-identity/calling-app";
+import { MulterExceptionFilter } from "../files/multer-exception.filter";
+import { BackupService } from "./backup.service";
+import { RestoreApplyDto } from "./dto/backup.dto";
 
 /**
  * Upload cap for a restore, in bytes. Deliberately its own knob rather than the
@@ -28,8 +28,7 @@ import { RestoreApplyDto } from './dto/backup.dto';
  * any single file a user uploads, and sharing the cap would make restore fail on
  * exactly the machines that most need it.
  */
-const MAX_BACKUP_UPLOAD_BYTES =
-  Number(process.env.BACKUP_MAX_UPLOAD_BYTES) || 4 * 1024 * 1024 * 1024;
+const MAX_BACKUP_UPLOAD_BYTES = Number(process.env.BACKUP_MAX_UPLOAD_BYTES) || 4 * 1024 * 1024 * 1024;
 
 /**
  * Back up and restore the home volume.
@@ -47,13 +46,13 @@ const MAX_BACKUP_UPLOAD_BYTES =
  * Settings' own (it acts as the user): an app's call is refused, since the
  * download holds every file and restore replaces them.
  */
-@Controller('backup')
+@Controller("backup")
 @UseGuards(UserOnlyGuard)
 export class BackupController {
   constructor(private readonly backup: BackupService) {}
 
   /** GET /api/backup/info → sizes and exclusions, before committing to a download */
-  @Get('info')
+  @Get("info")
   info() {
     return this.backup.info();
   }
@@ -67,15 +66,12 @@ export class BackupController {
   @Get()
   async download(@Res() res: Response): Promise<void> {
     const backup = await this.backup.openBackupStream();
-    res.setHeader('Content-Type', 'application/gzip');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${backup.filename}"`,
-    );
-    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader("Content-Type", "application/gzip");
+    res.setHeader("Content-Disposition", `attachment; filename="${backup.filename}"`);
+    res.setHeader("Cache-Control", "no-store");
     // A proxy that buffered this would reintroduce the disk/memory cost the
     // streaming design exists to avoid.
-    res.setHeader('X-Accel-Buffering', 'no');
+    res.setHeader("X-Accel-Buffering", "no");
 
     // `pipeline`, not `.pipe()`. A client that disconnected left
     // `.pipe()` unpiped and tar's stdout paused: tar blocked on a full pipe
@@ -102,21 +98,21 @@ export class BackupController {
    * that would be replaced can be shown *before* the user commits — and so the
    * archive is uploaded once, not twice.
    */
-  @Post('restore/inspect')
+  @Post("restore/inspect")
   @UseFilters(MulterExceptionFilter)
   @UseInterceptors(
-    FileInterceptor('file', {
+    FileInterceptor("file", {
       storage: diskStorage({ destination: tmpdir() }),
       limits: { fileSize: MAX_BACKUP_UPLOAD_BYTES },
     }),
   )
   inspect(@UploadedFile() file?: { path: string }) {
-    if (!file) throw new BadRequestException('Choose a backup file to restore');
+    if (!file) throw new BadRequestException("Choose a backup file to restore");
     return this.backup.inspect(file.path);
   }
 
   /** POST /api/backup/restore/apply { id, confirm: 'RESTORE' } → what was restored */
-  @Post('restore/apply')
+  @Post("restore/apply")
   @HttpCode(HttpStatus.OK)
   async apply(@Body() dto: RestoreApplyDto) {
     // No `signedOut` in the answer. The restore does end every

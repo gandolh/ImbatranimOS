@@ -1,28 +1,28 @@
-import { Module, type DynamicModule } from '@nestjs/common';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { ConfigModule } from './config/config.module';
-import { DbModule } from './db/db.module';
-import { StickyNotesModule } from './modules/sticky-notes/sticky-notes.module';
-import { SystemModule } from './modules/system/system.module';
-import { PtyModule } from './modules/pty/pty.module';
-import { FilesModule } from './modules/files/files.module';
-import { IdentityModule } from './modules/identity/identity.module';
-import { AppIdentityModule } from './modules/app-identity/app-identity.module';
-import { AppDataModule } from './modules/app-data/app-data.module';
-import { GitModule } from './modules/git/git.module';
-import { HttpProxyModule } from './modules/http-proxy/http-proxy.module';
-import { ArchiveModule } from './modules/archive/archive.module';
-import { ClockModule } from './modules/clock/clock.module';
-import { CalendarModule } from './modules/calendar/calendar.module';
-import { ScheduleModule } from './modules/schedule/schedule.module';
-import { BackupModule } from './modules/backup/backup.module';
-import { LogsModule } from './modules/logs/logs.module';
-import { PrefsModule } from './modules/prefs/prefs.module';
-import { BrowserModule } from './modules/browser/browser.module';
-import { MarketplaceModule } from './modules/marketplace/marketplace.module';
-import { WaylandModule } from './modules/wayland/wayland.module';
-import { LinuxAppsModule } from './modules/linux-apps/linux-apps.module';
-import { UpgradeRoutesModule } from './upgrade-routes';
+import { Module, type DynamicModule } from "@nestjs/common";
+import { ServeStaticModule } from "@nestjs/serve-static";
+import { ConfigModule } from "./config/config.module";
+import { DbModule } from "./db/db.module";
+import { StickyNotesModule } from "./modules/sticky-notes/sticky-notes.module";
+import { SystemModule } from "./modules/system/system.module";
+import { PtyModule } from "./modules/pty/pty.module";
+import { FilesModule } from "./modules/files/files.module";
+import { IdentityModule } from "./modules/identity/identity.module";
+import { AppIdentityModule } from "./modules/app-identity/app-identity.module";
+import { AppDataModule } from "./modules/app-data/app-data.module";
+import { GitModule } from "./modules/git/git.module";
+import { HttpProxyModule } from "./modules/http-proxy/http-proxy.module";
+import { ArchiveModule } from "./modules/archive/archive.module";
+import { ClockModule } from "./modules/clock/clock.module";
+import { CalendarModule } from "./modules/calendar/calendar.module";
+import { ScheduleModule } from "./modules/schedule/schedule.module";
+import { BackupModule } from "./modules/backup/backup.module";
+import { LogsModule } from "./modules/logs/logs.module";
+import { PrefsModule } from "./modules/prefs/prefs.module";
+import { BrowserModule } from "./modules/browser/browser.module";
+import { MarketplaceModule } from "./modules/marketplace/marketplace.module";
+import { WaylandModule } from "./modules/wayland/wayland.module";
+import { LinuxAppsModule } from "./modules/linux-apps/linux-apps.module";
+import { UpgradeRoutesModule } from "./upgrade-routes";
 
 // Prod image only: serve the built frontend from STATIC_ROOT on the API
 // port, with the SPA index.html fallback. API + health are excluded so
@@ -32,7 +32,7 @@ const staticModules: DynamicModule[] = process.env.STATIC_ROOT
   ? [
       ServeStaticModule.forRoot({
         rootPath: process.env.STATIC_ROOT,
-        exclude: ['/api/{*path}', '/health'],
+        exclude: ["/api/{*path}", "/health"],
       }),
     ]
   : [];

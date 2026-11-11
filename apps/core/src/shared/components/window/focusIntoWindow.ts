@@ -1,4 +1,4 @@
-import { topVisibleWindowId } from '../../store/windowStore'
+import { topVisibleWindowId } from "../../store/windowStore";
 
 /**
  * Moving the keyboard into a window the desktop raised.
@@ -19,54 +19,54 @@ import { topVisibleWindowId } from '../../store/windowStore'
  */
 
 /** Marks a window's content area (Window.tsx): the app's part, not the title bar. */
-export const CONTENT_ATTR = 'data-window-content'
+export const CONTENT_ATTR = "data-window-content";
 
 /**
  * The element that last had focus in each window's content area. Window.tsx
  * records it on every focus inside the content, never on the title bar: a
  * restore that put focus back on Minimize would make Enter minimise again.
  */
-const lastFocused = new Map<string, HTMLElement>()
+const lastFocused = new Map<string, HTMLElement>();
 
 /** What can take the keyboard by Tab, a frame included. */
 const FOCUSABLE = [
-  'a[href]',
-  'area[href]',
-  'button:not([disabled])',
+  "a[href]",
+  "area[href]",
+  "button:not([disabled])",
   'input:not([disabled]):not([type="hidden"])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  'iframe',
-  'audio[controls]',
-  'video[controls]',
-  'summary',
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "iframe",
+  "audio[controls]",
+  "video[controls]",
+  "summary",
   '[contenteditable]:not([contenteditable="false"])',
-  '[tabindex]',
-].join(', ')
+  "[tabindex]",
+].join(", ");
 
 function visible(el: HTMLElement): boolean {
   // jsdom has no layout; a browser without checkVisibility is too old to
   // matter here. Either way, assume visible rather than skip everything.
-  return typeof el.checkVisibility !== 'function' || el.checkVisibility()
+  return typeof el.checkVisibility !== "function" || el.checkVisibility();
 }
 
 function windowRoot(windowId: string): HTMLElement | null {
   // Compared, not interpolated into a selector, so no id can break the query.
-  for (const el of document.querySelectorAll<HTMLElement>('[data-window-id]')) {
-    if (el.getAttribute('data-window-id') === windowId) return el
+  for (const el of document.querySelectorAll<HTMLElement>("[data-window-id]")) {
+    if (el.getAttribute("data-window-id") === windowId) return el;
   }
-  return null
+  return null;
 }
 
 /** Window.tsx calls this from its content area's focus handler. */
 export function rememberWindowFocus(windowId: string, el: EventTarget | null): void {
-  if (!(el instanceof HTMLElement) || el.hasAttribute(CONTENT_ATTR)) return
-  lastFocused.set(windowId, el)
+  if (!(el instanceof HTMLElement) || el.hasAttribute(CONTENT_ATTR)) return;
+  lastFocused.set(windowId, el);
 }
 
 /** Window.tsx calls this when the window unmounts. */
 export function forgetWindowFocus(windowId: string): void {
-  lastFocused.delete(windowId)
+  lastFocused.delete(windowId);
 }
 
 /**
@@ -79,12 +79,12 @@ export function forgetWindowFocus(windowId: string): void {
  * the window through React's tree, and it is the right place to come back to.
  */
 export function focusTargetIn(windowId: string, content: HTMLElement): HTMLElement {
-  const last = lastFocused.get(windowId)
-  if (last?.isConnected && visible(last)) return last
+  const last = lastFocused.get(windowId);
+  if (last?.isConnected && visible(last)) return last;
   for (const el of content.querySelectorAll<HTMLElement>(FOCUSABLE)) {
-    if (el.tabIndex >= 0 && visible(el)) return el
+    if (el.tabIndex >= 0 && visible(el)) return el;
   }
-  return content
+  return content;
 }
 
 /**
@@ -93,17 +93,17 @@ export function focusTargetIn(windowId: string, content: HTMLElement): HTMLEleme
  * focused, or null.
  */
 export function focusIntoWindow(windowId: string): HTMLElement | null {
-  const root = windowRoot(windowId)
-  const content = root?.querySelector<HTMLElement>(`[${CONTENT_ATTR}]`)
-  if (!root || !content) return null
-  const active = document.activeElement
+  const root = windowRoot(windowId);
+  const content = root?.querySelector<HTMLElement>(`[${CONTENT_ATTR}]`);
+  if (!root || !content) return null;
+  const active = document.activeElement;
   if (active && active !== document.body) {
-    if (root.contains(active)) return null
-    if (active === lastFocused.get(windowId)) return null
+    if (root.contains(active)) return null;
+    if (active === lastFocused.get(windowId)) return null;
   }
-  const target = focusTargetIn(windowId, content)
-  target.focus({ preventScroll: true })
-  return target
+  const target = focusTargetIn(windowId, content);
+  target.focus({ preventScroll: true });
+  return target;
 }
 
 /**
@@ -119,9 +119,9 @@ export function focusIntoWindow(windowId: string): HTMLElement | null {
  */
 export function focusIntoWindowSoon(windowId: string): void {
   requestAnimationFrame(() => {
-    if (topVisibleWindowId() !== windowId) return
-    focusIntoWindow(windowId)
-  })
+    if (topVisibleWindowId() !== windowId) return;
+    focusIntoWindow(windowId);
+  });
 }
 
 /**
@@ -140,9 +140,9 @@ export function focusIntoWindowSoon(windowId: string): void {
 export function focusIntoNewWindowSoon(windowId: string): () => void {
   let frame = requestAnimationFrame(() => {
     frame = requestAnimationFrame(() => {
-      if (topVisibleWindowId() !== windowId) return
-      focusIntoWindow(windowId)
-    })
-  })
-  return () => cancelAnimationFrame(frame)
+      if (topVisibleWindowId() !== windowId) return;
+      focusIntoWindow(windowId);
+    });
+  });
+  return () => cancelAnimationFrame(frame);
 }

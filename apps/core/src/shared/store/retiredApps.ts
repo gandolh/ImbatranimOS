@@ -1,9 +1,9 @@
-import { readPref, writePref } from '../../lib/prefs'
-import { useAssociationStore } from '../registry/associations'
-import { useAddonStore } from './addonStore'
-import { useDesktopStore } from './desktopStore'
-import { useStartPinsStore } from './startPinsStore'
-import { useStartupStore } from './startupStore'
+import { readPref, writePref } from "../../lib/prefs";
+import { useAssociationStore } from "../registry/associations";
+import { useAddonStore } from "./addonStore";
+import { useDesktopStore } from "./desktopStore";
+import { useStartPinsStore } from "./startPinsStore";
+import { useStartupStore } from "./startupStore";
 
 /**
  * Built-in apps that left, and the one-time move of the owner's choices to the
@@ -16,28 +16,28 @@ import { useStartupStore } from './startupStore'
  * became Office's PDF).
  */
 export const RETIRED_APP_IDS: readonly (readonly [from: string, to: string])[] = [
-  ['docs', 'office-docs'],
-  ['slides', 'office-slides'],
-  ['sheets', 'office-sheets'],
+  ["docs", "office-docs"],
+  ["slides", "office-slides"],
+  ["sheets", "office-sheets"],
   // norPDF first: it was the default for .pdf, so its icon's place wins when
   // both were pinned.
-  ['norpdf', 'office-pdf'],
-  ['pdf-viewer', 'office-pdf'],
-  ['markdown-editor', 'notepad'],
-  ['archive-manager', 'file-manager'],
-]
+  ["norpdf", "office-pdf"],
+  ["pdf-viewer", "office-pdf"],
+  ["markdown-editor", "notepad"],
+  ["archive-manager", "file-manager"],
+];
 
 /**
  * Replacements that were already installed built-ins. Hiding the retired app
  * says nothing about wanting no replacement (Notepad opens every text file, Files every
  * archive), so the disabled set only drops the retired id and never disables these.
  */
-const BUILT_IN_TARGETS: ReadonlySet<string> = new Set(['notepad', 'file-manager'])
+const BUILT_IN_TARGETS: ReadonlySet<string> = new Set(["notepad", "file-manager"]);
 
 /** The dotfile that records which pairs have been moved. */
-export const APP_ID_MIGRATIONS_KEY = 'imbatranimos:app-id-migrations'
+export const APP_ID_MIGRATIONS_KEY = "imbatranimos:app-id-migrations";
 
-const RENAMED = new Map(RETIRED_APP_IDS)
+const RENAMED = new Map(RETIRED_APP_IDS);
 
 /**
  * The id an app goes by now: the suite's for a retired built-in, else `id`.
@@ -45,32 +45,30 @@ const RENAMED = new Map(RETIRED_APP_IDS)
  * are read through this rather than rewritten.
  */
 export function currentAppId(id: string): string {
-  return RENAMED.get(id) ?? id
+  return RENAMED.get(id) ?? id;
 }
 
 function pairTag(from: string, to: string): string {
-  return `${from}>${to}`
+  return `${from}>${to}`;
 }
 
 function readDone(): string[] {
   try {
-    const parsed = JSON.parse(readPref(APP_ID_MIGRATIONS_KEY) ?? '{}') as { done?: unknown }
-    return Array.isArray(parsed.done)
-      ? parsed.done.filter((t): t is string => typeof t === 'string')
-      : []
+    const parsed = JSON.parse(readPref(APP_ID_MIGRATIONS_KEY) ?? "{}") as { done?: unknown };
+    return Array.isArray(parsed.done) ? parsed.done.filter((t): t is string => typeof t === "string") : [];
   } catch {
-    return []
+    return [];
   }
 }
 
 function swapIn(list: readonly string[], from: string, to: string): string[] | null {
-  if (!list.includes(from)) return null
-  const next: string[] = []
+  if (!list.includes(from)) return null;
+  const next: string[] = [];
   for (const id of list) {
-    const now = id === from ? to : id
-    if (!next.includes(now)) next.push(now)
+    const now = id === from ? to : id;
+    if (!next.includes(now)) next.push(now);
   }
-  return next
+  return next;
 }
 
 /**
@@ -78,9 +76,9 @@ function swapIn(list: readonly string[], from: string, to: string): string[] | n
  * place and `from` is just dropped.
  */
 function swapKeepingTarget(list: readonly string[], from: string, to: string): string[] | null {
-  if (!list.includes(from)) return null
-  if (list.includes(to)) return list.filter((id) => id !== from)
-  return list.map((id) => (id === from ? to : id))
+  if (!list.includes(from)) return null;
+  if (list.includes(to)) return list.filter((id) => id !== from);
+  return list.map((id) => (id === from ? to : id));
 }
 
 /**
@@ -89,31 +87,29 @@ function swapKeepingTarget(list: readonly string[], from: string, to: string): s
  */
 function moveChoices(from: string, to: string): void {
   // "Always open .docx with Docs" becomes "with Office's Docs".
-  const { overrides } = useAssociationStore.getState()
+  const { overrides } = useAssociationStore.getState();
   if (Object.values(overrides).includes(from)) {
     useAssociationStore.setState({
-      overrides: Object.fromEntries(
-        Object.entries(overrides).map(([ext, id]) => [ext, id === from ? to : id])
-      ),
-    })
+      overrides: Object.fromEntries(Object.entries(overrides).map(([ext, id]) => [ext, id === from ? to : id])),
+    });
   }
 
   // The icon keeps the place the owner gave it, unless the suite's icon
   // already has one they chose.
-  const { iconPositions } = useDesktopStore.getState()
-  const old = iconPositions[from]
+  const { iconPositions } = useDesktopStore.getState();
+  const old = iconPositions[from];
   if (old) {
-    const { [from]: _gone, ...rest } = iconPositions
-    const keep = iconPositions[to]?.pinned ? iconPositions[to] : old
-    useDesktopStore.setState({ iconPositions: { ...rest, [to]: keep } })
+    const { [from]: _gone, ...rest } = iconPositions;
+    const keep = iconPositions[to]?.pinned ? iconPositions[to] : old;
+    useDesktopStore.setState({ iconPositions: { ...rest, [to]: keep } });
   }
 
-  const apps = swapIn(useStartupStore.getState().apps, from, to)
-  if (apps) useStartupStore.setState({ apps })
+  const apps = swapIn(useStartupStore.getState().apps, from, to);
+  if (apps) useStartupStore.setState({ apps });
 
   // Start's grid: the target takes the retired pin's place.
-  const pins = swapKeepingTarget(useStartPinsStore.getState().pins, from, to)
-  if (pins) useStartPinsStore.setState({ pins })
+  const pins = swapKeepingTarget(useStartPinsStore.getState().pins, from, to);
+  if (pins) useStartPinsStore.setState({ pins });
 }
 
 /**
@@ -122,16 +118,16 @@ function moveChoices(from: string, to: string): void {
  * hiding PDF Viewer, the light option, said nothing about wanting no PDF app.
  */
 function moveDisabled(froms: readonly string[], to: string): void {
-  let disabled: readonly string[] = useAddonStore.getState().disabled
+  let disabled: readonly string[] = useAddonStore.getState().disabled;
   if (BUILT_IN_TARGETS.has(to)) {
     if (froms.some((id) => disabled.includes(id))) {
-      useAddonStore.setState({ disabled: disabled.filter((id) => !froms.includes(id)) })
+      useAddonStore.setState({ disabled: disabled.filter((id) => !froms.includes(id)) });
     }
-    return
+    return;
   }
-  if (!froms.every((id) => disabled.includes(id))) return
-  for (const from of froms) disabled = swapIn(disabled, from, to) ?? disabled
-  useAddonStore.setState({ disabled: [...disabled] })
+  if (!froms.every((id) => disabled.includes(id))) return;
+  for (const from of froms) disabled = swapIn(disabled, from, to) ?? disabled;
+  useAddonStore.setState({ disabled: [...disabled] });
 }
 
 /**
@@ -146,17 +142,17 @@ function moveDisabled(froms: readonly string[], to: string): void {
  * and all of them come back the moment Office is installed.
  */
 export function migrateRetiredAppIds(): void {
-  const done = readDone()
-  const pending = RETIRED_APP_IDS.filter(([from, to]) => !done.includes(pairTag(from, to)))
-  if (pending.length === 0) return
+  const done = readDone();
+  const pending = RETIRED_APP_IDS.filter(([from, to]) => !done.includes(pairTag(from, to)));
+  if (pending.length === 0) return;
 
-  const sources = new Map<string, string[]>()
+  const sources = new Map<string, string[]>();
   for (const [from, to] of pending) {
-    moveChoices(from, to)
-    sources.set(to, [...(sources.get(to) ?? []), from])
+    moveChoices(from, to);
+    sources.set(to, [...(sources.get(to) ?? []), from]);
   }
-  for (const [to, froms] of sources) moveDisabled(froms, to)
+  for (const [to, froms] of sources) moveDisabled(froms, to);
 
-  done.push(...pending.map(([from, to]) => pairTag(from, to)))
-  writePref(APP_ID_MIGRATIONS_KEY, JSON.stringify({ done }))
+  done.push(...pending.map(([from, to]) => pairTag(from, to)));
+  writePref(APP_ID_MIGRATIONS_KEY, JSON.stringify({ done }));
 }

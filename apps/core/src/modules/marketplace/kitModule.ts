@@ -1,11 +1,11 @@
-import type { MarketplaceApp } from '../../shared/registry/marketplace'
-import { apiUrl } from './apiUrl'
-import { loadModule } from './loadModule'
-import { kitRefusal, protocolRefusal } from './refusals'
-import { installSharedKit } from './sharedKit'
+import type { MarketplaceApp } from "../../shared/registry/marketplace";
+import { apiUrl } from "./apiUrl";
+import { loadModule } from "./loadModule";
+import { kitRefusal, protocolRefusal } from "./refusals";
+import { installSharedKit } from "./sharedKit";
 
 /** A kit app's entry module per URL, imported at most once at a time. */
-const imports = new Map<string, Promise<unknown>>()
+const imports = new Map<string, Promise<unknown>>();
 
 /**
  * Import a kit app's entry module. The shared kit goes on the global first:
@@ -14,15 +14,15 @@ const imports = new Map<string, Promise<unknown>>()
  * a later window tries again rather than inheriting the failure.
  */
 export function importKitModule(href: string): Promise<unknown> {
-  const started = imports.get(href)
-  if (started) return started
-  installSharedKit()
-  const loading = loadModule(href)
-  imports.set(href, loading)
+  const started = imports.get(href);
+  if (started) return started;
+  installSharedKit();
+  const loading = loadModule(href);
+  imports.set(href, loading);
   loading.catch(() => {
-    if (imports.get(href) === loading) imports.delete(href)
-  })
-  return loading
+    if (imports.get(href) === loading) imports.delete(href);
+  });
+  return loading;
 }
 
 /**
@@ -35,8 +35,8 @@ export function importKitModule(href: string): Promise<unknown> {
  * without an entry; the host reports a failure in its window.
  */
 export function startKitApp(app: MarketplaceApp): void {
-  if (protocolRefusal(app) ?? kitRefusal(app)) return
-  const entryPath = app.installed?.entryPath
-  if (!entryPath) return
-  importKitModule(apiUrl(entryPath).href).catch(() => undefined)
+  if (protocolRefusal(app) ?? kitRefusal(app)) return;
+  const entryPath = app.installed?.entryPath;
+  if (!entryPath) return;
+  importKitModule(apiUrl(entryPath).href).catch(() => undefined);
 }

@@ -1,6 +1,6 @@
 // Shapes and helpers for apps installed from a URL.
 
-import type { AppSource, MarketplaceApp } from '../../shared/registry/marketplace'
+import type { AppSource, MarketplaceApp } from "../../shared/registry/marketplace";
 
 /**
  * The backend's answer to `POST marketplace/url/inspect`: an app built from
@@ -8,38 +8,38 @@ import type { AppSource, MarketplaceApp } from '../../shared/registry/marketplac
  * trust it.
  */
 export type Inspection = {
-  pending: string
-  id: string
-  runtime?: 'native'
-  verified?: boolean
+  pending: string;
+  id: string;
+  runtime?: "native";
+  verified?: boolean;
   /** Its build type: `service` runs a server of its own. */
-  type?: 'static' | 'service'
+  type?: "static" | "service";
   /** Its apps, when it has several. */
-  apps?: { id: string; name: string; icon: string; capabilities: string[] }[]
+  apps?: { id: string; name: string; icon: string; capabilities: string[] }[];
   manifest: {
-    name: string
-    description: string
-    meta: string[]
-    icon: string
-    capabilities: string[]
-  }
-  source: UrlSource
-  current: { commit: string } | null
-}
+    name: string;
+    description: string;
+    meta: string[];
+    icon: string;
+    capabilities: string[];
+  };
+  source: UrlSource;
+  current: { commit: string } | null;
+};
 
-export type UrlSource = AppSource
+export type UrlSource = AppSource;
 
 export function apiMessage(err: unknown, fallback: string): string {
-  const data = (err as { response?: { data?: { message?: unknown } } }).response?.data
-  return typeof data?.message === 'string' ? data.message : fallback
+  const data = (err as { response?: { data?: { message?: unknown } } }).response?.data;
+  return typeof data?.message === "string" ? data.message : fallback;
 }
 
 export function sourceLine(source: UrlSource): string {
-  const repo = source.repo.replace(/^https?:\/\//, '')
-  const parts = [repo, source.ref ?? 'default branch']
-  parts.push(source.commit.slice(0, 7))
-  if (source.subdir) parts.push(`in ${source.subdir}`)
-  return parts.join(' · ')
+  const repo = source.repo.replace(/^https?:\/\//, "");
+  const parts = [repo, source.ref ?? "default branch"];
+  parts.push(source.commit.slice(0, 7));
+  if (source.subdir) parts.push(`in ${source.subdir}`);
+  return parts.join(" · ");
 }
 
 /**
@@ -47,17 +47,17 @@ export function sourceLine(source: UrlSource): string {
  * local path, for a `file:` repository in development).
  */
 export function publisher(source: UrlSource): string {
-  return source.repo.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/^file:\/\//, '')
+  return source.repo.replace(/^https?:\/\/(www\.)?github\.com\//, "").replace(/^file:\/\//, "");
 }
 
 export const CAPABILITY_TEXT: Record<string, string> = {
-  fs: 'Read and write the files you give it, and keep its own',
+  fs: "Read and write the files you give it, and keep its own",
   http: "Call this machine's backend as you",
-  intents: 'Open other apps, and files with them',
-  notify: 'Show notifications',
-  shortcuts: 'Add keyboard shortcuts',
-  schedule: 'Set alarms and reminders',
-}
+  intents: "Open other apps, and files with them",
+  notify: "Show notifications",
+  shortcuts: "Add keyboard shortcuts",
+  schedule: "Set alarms and reminders",
+};
 
 /**
  * A capability in plain words, or its own name. The name comes from the app's
@@ -65,7 +65,7 @@ export const CAPABILITY_TEXT: Record<string, string> = {
  * would be a function.
  */
 export function capabilityText(capability: string): string {
-  return Object.hasOwn(CAPABILITY_TEXT, capability) ? CAPABILITY_TEXT[capability] : capability
+  return Object.hasOwn(CAPABILITY_TEXT, capability) ? CAPABILITY_TEXT[capability] : capability;
 }
 
 /**
@@ -74,11 +74,11 @@ export function capabilityText(capability: string): string {
  * was verified when installed and that a later release no longer lists says
  * that instead. A backend that sends no `verified` reads as the record says.
  */
-export function trustBadge(trust: NonNullable<MarketplaceApp['trust']>): {
-  label: string
-  warn: boolean
+export function trustBadge(trust: NonNullable<MarketplaceApp["trust"]>): {
+  label: string;
+  warn: boolean;
 } {
-  if (trust.verified ?? trust.by === 'verified') return { label: 'Verified', warn: false }
-  if (trust.by === 'owner') return { label: 'Trusted by you', warn: false }
-  return { label: 'No longer verified', warn: true }
+  if (trust.verified ?? trust.by === "verified") return { label: "Verified", warn: false };
+  if (trust.by === "owner") return { label: "Trusted by you", warn: false };
+  return { label: "No longer verified", warn: true };
 }

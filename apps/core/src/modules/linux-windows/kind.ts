@@ -5,10 +5,10 @@
  *
  * Kept free of imports so the window store can read it without a cycle.
  */
-export const LINUX_APP_PREFIX = 'linux:'
+export const LINUX_APP_PREFIX = "linux:";
 
 export function isLinuxWindow(appId: string): boolean {
-  return appId.startsWith(LINUX_APP_PREFIX)
+  return appId.startsWith(LINUX_APP_PREFIX);
 }
 
 /**
@@ -18,5 +18,5 @@ export function isLinuxWindow(appId: string): boolean {
  * sized to the app's window plus this shows it exactly.
  */
 export function linuxWindowChrome(serverSide: boolean): { width: number; height: number } {
-  return serverSide ? { width: 2, height: 32 } : { width: 2, height: 2 }
+  return serverSide ? { width: 2, height: 32 } : { width: 2, height: 2 };
 }

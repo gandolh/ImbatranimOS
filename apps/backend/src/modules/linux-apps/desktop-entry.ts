@@ -6,7 +6,7 @@
  * Spec: https://specifications.freedesktop.org/desktop-entry-spec/latest/
  */
 
-import { pathToFileURL } from 'url';
+import { pathToFileURL } from "url";
 
 /** A key's localized values, by locale as the file writes it (`ro`, `pt_BR`, `sr@latin`). */
 export type Localized = Record<string, string>;
@@ -50,21 +50,13 @@ interface Group {
  * without the encoding, which matching ignores.
  */
 function keyLocale(raw: string): string {
-  return raw.replace(/\.[^@]*/, '');
+  return raw.replace(/\.[^@]*/, "");
 }
 
 /** Unescape a string value: `\s`, `\n`, `\t`, `\r` and `\\`. */
 function unescapeValue(v: string): string {
   return v.replace(/\\([sntr\\])/g, (_, c: string) =>
-    c === 's'
-      ? ' '
-      : c === 'n'
-        ? '\n'
-        : c === 't'
-          ? '\t'
-          : c === 'r'
-            ? '\r'
-            : '\\',
+    c === "s" ? " " : c === "n" ? "\n" : c === "t" ? "\t" : c === "r" ? "\r" : "\\",
   );
 }
 
@@ -74,9 +66,9 @@ function groups(text: string): Map<string, Group> {
   let current: Group | null = null;
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
-    if (line === '' || line.startsWith('#')) continue;
-    if (line.startsWith('[')) {
-      const name = line.endsWith(']') ? line.slice(1, -1) : '';
+    if (line === "" || line.startsWith("#")) continue;
+    if (line.startsWith("[")) {
+      const name = line.endsWith("]") ? line.slice(1, -1) : "";
       current = out.get(name) ?? null;
       if (!current && name) {
         current = { plain: new Map(), localized: new Map() };
@@ -85,7 +77,7 @@ function groups(text: string): Map<string, Group> {
       continue;
     }
     if (!current) continue;
-    const eq = line.indexOf('=');
+    const eq = line.indexOf("=");
     if (eq <= 0) continue;
     const key = line.slice(0, eq).trim();
     const value = unescapeValue(line.slice(eq + 1).trim());
@@ -108,64 +100,61 @@ function groups(text: string): Map<string, Group> {
  */
 export function parseDesktopEntry(text: string): DesktopEntry | null {
   const all = groups(text);
-  const entry = all.get('Desktop Entry');
+  const entry = all.get("Desktop Entry");
   if (!entry) return null;
   const keys = entry.plain;
-  if (keys.get('Type') !== 'Application') return null;
-  if (keys.get('NoDisplay') === 'true' || keys.get('Hidden') === 'true')
-    return null;
-  const name = keys.get('Name');
-  const exec = keys.get('Exec');
+  if (keys.get("Type") !== "Application") return null;
+  if (keys.get("NoDisplay") === "true" || keys.get("Hidden") === "true") return null;
+  const name = keys.get("Name");
+  const exec = keys.get("Exec");
   if (!name || !exec) return null;
 
   const actions: DesktopAction[] = [];
   const seen = new Set<string>();
-  for (const id of (keys.get('Actions') ?? '').split(';')) {
+  for (const id of (keys.get("Actions") ?? "").split(";")) {
     const trimmed = id.trim();
     if (!ACTION_ID.test(trimmed) || seen.has(trimmed)) continue;
     seen.add(trimmed);
     const group = all.get(`Desktop Action ${trimmed}`);
-    const actionName = group?.plain.get('Name');
-    const actionExec = group?.plain.get('Exec');
+    const actionName = group?.plain.get("Name");
+    const actionExec = group?.plain.get("Exec");
     if (!group || !actionName || !actionExec) continue;
     actions.push({
       id: trimmed,
       name: actionName,
-      names: group.localized.get('Name') ?? {},
+      names: group.localized.get("Name") ?? {},
       exec: actionExec,
     });
   }
 
   return {
     name,
-    names: entry.localized.get('Name') ?? {},
-    genericName: keys.get('GenericName') ?? '',
-    genericNames: entry.localized.get('GenericName') ?? {},
-    comment: keys.get('Comment') ?? '',
-    comments: entry.localized.get('Comment') ?? {},
-    icon: keys.get('Icon') ?? '',
+    names: entry.localized.get("Name") ?? {},
+    genericName: keys.get("GenericName") ?? "",
+    genericNames: entry.localized.get("GenericName") ?? {},
+    comment: keys.get("Comment") ?? "",
+    comments: entry.localized.get("Comment") ?? {},
+    icon: keys.get("Icon") ?? "",
     exec,
-    mimeTypes: (keys.get('MimeType') ?? '')
-      .split(';')
+    mimeTypes: (keys.get("MimeType") ?? "")
+      .split(";")
       .map((t) => t.trim().toLowerCase())
-      .filter((t) => t !== ''),
+      .filter((t) => t !== ""),
     actions,
   };
 }
 
 /** BCP 47 scripts the spec's locales write as a modifier (`sr@latin`). */
 const SCRIPT_MODIFIERS: Record<string, string> = {
-  latn: 'latin',
-  cyrl: 'cyrillic',
+  latn: "latin",
+  cyrl: "cyrillic",
 };
 
 /**
  * A browser language tag (`ro-RO`, `sr-Latn-RS`) as the spec's locale parts.
  * Null when it isn't one.
  */
-function posixParts(
-  tag: string,
-): { lang: string; country?: string; modifier?: string } | null {
+function posixParts(tag: string): { lang: string; country?: string; modifier?: string } | null {
   const parts = tag.split(/[-_]/);
   const lang = parts[0]?.toLowerCase();
   if (!lang || !/^[a-z]{2,8}$/.test(lang)) return null;
@@ -185,11 +174,7 @@ function posixParts(
  * `lang`. The plain value when none matches. The OS has no language setting
  * of its own; the browser's is the user's.
  */
-export function pickLocalized(
-  plain: string,
-  values: Localized,
-  languages: readonly string[],
-): string {
+export function pickLocalized(plain: string, values: Localized, languages: readonly string[]): string {
   for (const tag of languages) {
     const p = posixParts(tag);
     if (!p) continue;
@@ -209,7 +194,7 @@ export function pickLocalized(
 /** Whether an `Exec` value has a field code that takes a file: `%f`, `%F`, `%u` or `%U`. */
 export function execTakesFile(exec: string): boolean {
   // `%%` is a literal percent sign, so it is read as a pair.
-  return /%[fFuU]/.test(exec.replace(/%%/g, ''));
+  return /%[fFuU]/.test(exec.replace(/%%/g, ""));
 }
 
 /**
@@ -223,7 +208,7 @@ export function execTakesFile(exec: string): boolean {
  */
 export function execArgv(exec: string, file?: string): string[] | null {
   const args: string[] = [];
-  let cur = '';
+  let cur = "";
   let started = false;
   let quoted = false;
   // The program must be written out, not come from a field code.
@@ -231,7 +216,7 @@ export function execArgv(exec: string, file?: string): string[] | null {
   for (let i = 0; i < exec.length; i++) {
     const c = exec[i];
     if (quoted) {
-      if (c === '\\' && i + 1 < exec.length && '"`$\\'.includes(exec[i + 1])) {
+      if (c === "\\" && i + 1 < exec.length && '"`$\\'.includes(exec[i + 1])) {
         cur += exec[++i];
       } else if (c === '"') {
         quoted = false;
@@ -243,20 +228,20 @@ export function execArgv(exec: string, file?: string): string[] | null {
     if (c === '"') {
       quoted = true;
       started = true;
-    } else if (c === ' ' || c === '\t') {
+    } else if (c === " " || c === "\t") {
       if (started) args.push(cur);
-      cur = '';
+      cur = "";
       started = false;
-    } else if (c === '%' && i + 1 < exec.length) {
+    } else if (c === "%" && i + 1 < exec.length) {
       const code = exec[++i];
-      if (code === '%') {
-        cur += '%';
+      if (code === "%") {
+        cur += "%";
         started = true;
-      } else if (file !== undefined && (code === 'f' || code === 'F')) {
+      } else if (file !== undefined && (code === "f" || code === "F")) {
         cur += file;
         started = true;
         if (args.length === 0) programFromCode = true;
-      } else if (file !== undefined && (code === 'u' || code === 'U')) {
+      } else if (file !== undefined && (code === "u" || code === "U")) {
         cur += pathToFileURL(file).href;
         started = true;
         if (args.length === 0) programFromCode = true;
@@ -270,5 +255,5 @@ export function execArgv(exec: string, file?: string): string[] | null {
   if (quoted) return null;
   if (started) args.push(cur);
   if (programFromCode) return null;
-  return args.length > 0 && args[0] !== '' ? args : null;
+  return args.length > 0 && args[0] !== "" ? args : null;
 }

@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { useFileDialog, useSystem } from '@imbatranim/ui'
-import { CaptureOverlay } from './components/CaptureOverlay'
-import { AnnotationStage } from './components/AnnotationStage'
-import { CaptureLauncher } from './components/CaptureLauncher'
-import type { LaunchMode } from './lib/captureModes'
-import { CountdownOverlay } from './components/CountdownOverlay'
-import { captureRegion } from './capture/rasterize'
-import { canvasToPng, copyPng } from './lib/clipboard'
-import { loadCaptureCanvas } from './capture/load'
-import { describeLossy, scanLossyElements, summarize } from './capture/lossy'
-import type { Selection } from './types'
-import { APP_NAME } from './appName'
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useFileDialog, useSystem } from "@imbatranim/ui";
+import { CaptureOverlay } from "./components/CaptureOverlay";
+import { AnnotationStage } from "./components/AnnotationStage";
+import { CaptureLauncher } from "./components/CaptureLauncher";
+import type { LaunchMode } from "./lib/captureModes";
+import { CountdownOverlay } from "./components/CountdownOverlay";
+import { captureRegion } from "./capture/rasterize";
+import { canvasToPng, copyPng } from "./lib/clipboard";
+import { loadCaptureCanvas } from "./capture/load";
+import { describeLossy, scanLossyElements, summarize } from "./capture/lossy";
+import type { Selection } from "./types";
+import { APP_NAME } from "./appName";
 
-type Phase = 'launcher' | 'selecting' | 'counting' | 'capturing' | 'annotating'
+type Phase = "launcher" | "selecting" | "counting" | "capturing" | "annotating";
 
 /**
  * Flow: launcher → (arm a mode) → dim + crosshair, or a non-blocking countdown → rasterize
@@ -35,184 +35,182 @@ type Phase = 'launcher' | 'selecting' | 'counting' | 'capturing' | 'annotating'
  * for the same reason.)
  */
 export function SnippingTool({ windowId: _windowId }: { windowId: string }) {
-  const system = useSystem()
+  const system = useSystem();
 
-  const [phase, setPhase] = useState<Phase>('launcher')
-  const [image, setImage] = useState<HTMLCanvasElement | null>(null)
-  const [lossyNotice, setLossyNotice] = useState<string | null>(null)
-  const [remaining, setRemaining] = useState(0)
-  const captureStartedRef = useRef(false)
+  const [phase, setPhase] = useState<Phase>("launcher");
+  const [image, setImage] = useState<HTMLCanvasElement | null>(null);
+  const [lossyNotice, setLossyNotice] = useState<string | null>(null);
+  const [remaining, setRemaining] = useState(0);
+  const captureStartedRef = useRef(false);
 
   // The dialog latches its choice for `useOpenIntent`, which this app never reads —
   // reopening a capture is a one-shot load handled right here.
-  const { openFile } = useFileDialog()
+  const { openFile } = useFileDialog();
 
-  const close = useCallback(() => system.window.requestClose(), [system])
+  const close = useCallback(() => system.window.requestClose(), [system]);
 
   /** Back to the launcher, with the app's own window visible again. */
   const backToLauncher = useCallback(() => {
-    captureStartedRef.current = false
-    setImage(null)
-    setLossyNotice(null)
-    setPhase('launcher')
-    system.window.show()
-  }, [system])
+    captureStartedRef.current = false;
+    setImage(null);
+    setLossyNotice(null);
+    setPhase("launcher");
+    system.window.show();
+  }, [system]);
 
   // Exclude the tool's own chrome from the shot: any overlay we portal in, plus our
   // minimized taskbar button (matched by its title === app name).
   const filterNode = useCallback((node: HTMLElement): boolean => {
-    if (!(node instanceof HTMLElement)) return true
-    if (node.dataset && 'snipOverlay' in node.dataset) return false
-    if (node.tagName === 'BUTTON' && node.getAttribute('title') === APP_NAME) return false
-    return true
-  }, [])
+    if (!(node instanceof HTMLElement)) return true;
+    if (node.dataset && "snipOverlay" in node.dataset) return false;
+    if (node.tagName === "BUTTON" && node.getAttribute("title") === APP_NAME) return false;
+    return true;
+  }, []);
 
   const capture = useCallback(
     async (sel: Selection) => {
-      if (captureStartedRef.current) return
-      captureStartedRef.current = true
+      if (captureStartedRef.current) return;
+      captureStartedRef.current = true;
       // Scanned BEFORE the raster, while the desktop is still exactly what the user chose.
-      const notice = describeLossy(summarize(scanLossyElements(), sel))
-      setPhase('capturing')
+      const notice = describeLossy(summarize(scanLossyElements(), sel));
+      setPhase("capturing");
       try {
-        const raster = captureRegion(sel, filterNode)
+        const raster = captureRegion(sel, filterNode);
         // Issued before the raster finishes, with the PNG still a promise: that keeps the
         // click that ended a region selection alive for the clipboard. Delayed and
         // full-screen captures have no such click, and Firefox and Safari refuse them.
-        const copied = copyPng(raster.then(canvasToPng))
-        const canvas = await raster
-        setImage(canvas)
-        setLossyNotice(notice)
-        setPhase('annotating')
-        const result = await copied
+        const copied = copyPng(raster.then(canvasToPng));
+        const canvas = await raster;
+        setImage(canvas);
+        setLossyNotice(notice);
+        setPhase("annotating");
+        const result = await copied;
         system.notify(
           result.ok
-            ? { title: 'Copied to clipboard', level: 'success' }
-            : { title: "Couldn't copy to clipboard", body: result.reason, level: 'warning' }
-        )
+            ? { title: "Copied to clipboard", level: "success" }
+            : { title: "Couldn't copy to clipboard", body: result.reason, level: "warning" },
+        );
       } catch (err) {
-        console.error('[snipping-tool] capture failed', err)
+        console.error("[snipping-tool] capture failed", err);
         system.notify({
-          title: 'Capture failed',
-          body: 'The desktop could not be rasterized. Nothing was saved.',
-          level: 'error',
-        })
-        backToLauncher()
+          title: "Capture failed",
+          body: "The desktop could not be rasterized. Nothing was saved.",
+          level: "error",
+        });
+        backToLauncher();
       }
     },
-    [backToLauncher, filterNode, system]
-  )
+    [backToLauncher, filterNode, system],
+  );
 
   const fullScreenSelection = (): Selection => ({
     x: 0,
     y: 0,
     width: window.innerWidth,
     height: window.innerHeight,
-  })
+  });
 
   const arm = useCallback(
     (mode: LaunchMode) => {
-      captureStartedRef.current = false
-      system.window.hide()
-      if (mode.kind === 'region') {
-        setPhase('selecting')
-        return
+      captureStartedRef.current = false;
+      system.window.hide();
+      if (mode.kind === "region") {
+        setPhase("selecting");
+        return;
       }
-      if (mode.kind === 'fullscreen') {
-        void capture(fullScreenSelection())
-        return
+      if (mode.kind === "fullscreen") {
+        void capture(fullScreenSelection());
+        return;
       }
-      setRemaining(mode.seconds)
-      setPhase('counting')
+      setRemaining(mode.seconds);
+      setPhase("counting");
     },
-    [capture, system]
-  )
+    [capture, system],
+  );
 
   // The countdown. One interval, and the capture fires from the tick that reaches zero —
   // not from a second effect watching `remaining`, which would fire again on a re-render.
   useEffect(() => {
-    if (phase !== 'counting') return
+    if (phase !== "counting") return;
     const timer = setInterval(() => {
       setRemaining((prev) => {
-        if (prev > 1) return prev - 1
-        clearInterval(timer)
-        void capture(fullScreenSelection())
-        return 0
-      })
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [phase, capture])
+        if (prev > 1) return prev - 1;
+        clearInterval(timer);
+        void capture(fullScreenSelection());
+        return 0;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [phase, capture]);
 
   // Escape gets out of an armed capture from any state, including the countdown — where the
   // overlay is deliberately click-through and so cannot offer a cancel button.
   useEffect(() => {
-    if (phase !== 'counting') return
+    if (phase !== "counting") return;
     function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return
-      e.preventDefault()
-      backToLauncher()
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      backToLauncher();
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [phase, backToLauncher])
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase, backToLauncher]);
 
   const openSaved = useCallback(async () => {
     const choice = await openFile({
-      title: 'Open a capture to annotate',
-      extensions: ['png', 'jpg', 'jpeg', 'webp'],
-    })
-    if (!choice) return
+      title: "Open a capture to annotate",
+      extensions: ["png", "jpg", "jpeg", "webp"],
+    });
+    if (!choice) return;
     try {
-      const canvas = await loadCaptureCanvas(system.fs, choice.root, choice.path)
-      setImage(canvas)
+      const canvas = await loadCaptureCanvas(system.fs, choice.root, choice.path);
+      setImage(canvas);
       // A saved file was rasterized when it was taken; whatever was lost is already lost, and
       // repeating the warning here would be about the wrong moment.
-      setLossyNotice(null)
-      setPhase('annotating')
+      setLossyNotice(null);
+      setPhase("annotating");
     } catch (err) {
-      console.error('[snipping-tool] could not open the capture', err)
+      console.error("[snipping-tool] could not open the capture", err);
       system.notify({
-        title: 'Could not open that image',
+        title: "Could not open that image",
         body: `${choice.path} could not be decoded as an image.`,
-        level: 'error',
-      })
+        level: "error",
+      });
     }
-  }, [openFile, system])
+  }, [openFile, system]);
 
-  if (phase === 'launcher') {
+  if (phase === "launcher") {
     // Rendered in the window, not the portal: the desktop stays usable, which is the point.
-    return <CaptureLauncher onArm={arm} onOpenSaved={() => void openSaved()} busy={false} />
+    return <CaptureLauncher onArm={arm} onOpenSaved={() => void openSaved()} busy={false} />;
   }
 
-  let content: React.ReactNode = null
-  if (phase === 'selecting') {
-    content = <CaptureOverlay onSelect={capture} onCancel={backToLauncher} />
-  } else if (phase === 'counting') {
-    content = <CountdownOverlay remaining={remaining} />
-  } else if (phase === 'capturing') {
+  let content: React.ReactNode = null;
+  if (phase === "selecting") {
+    content = <CaptureOverlay onSelect={capture} onCancel={backToLauncher} />;
+  } else if (phase === "counting") {
+    content = <CountdownOverlay remaining={remaining} />;
+  } else if (phase === "capturing") {
     content = (
       <div
         data-snip-overlay
         style={{
-          position: 'fixed',
+          position: "fixed",
           inset: 0,
           zIndex: 100000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#fff',
-          font: '600 13px var(--font-ui)',
-          background: 'rgba(0,0,0,0.35)',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#fff",
+          font: "600 13px var(--font-ui)",
+          background: "rgba(0,0,0,0.35)",
         }}
       >
         Capturing…
       </div>
-    )
-  } else if (phase === 'annotating' && image) {
-    content = (
-      <AnnotationStage image={image} notice={lossyNotice} onBack={backToLauncher} onClose={close} />
-    )
+    );
+  } else if (phase === "annotating" && image) {
+    content = <AnnotationStage image={image} notice={lossyNotice} onBack={backToLauncher} onClose={close} />;
   }
 
-  return createPortal(content, document.body)
+  return createPortal(content, document.body);
 }

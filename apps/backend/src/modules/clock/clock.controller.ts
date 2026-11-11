@@ -1,70 +1,51 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-} from '@nestjs/common';
-import { ClockService } from './clock.service';
-import {
-  CreateAlarmDto,
-  CreateWorldClockDto,
-  ImportClockStateDto,
-  UpdateAlarmDto,
-} from './dto/clock.dto';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post } from "@nestjs/common";
+import { ClockService } from "./clock.service";
+import { CreateAlarmDto, CreateWorldClockDto, ImportClockStateDto, UpdateAlarmDto } from "./dto/clock.dto";
 
 /**
  * Clock's persisted state. Session-guarded like every other route — the global
  * `SessionGuard` covers this controller, and nothing here is `@Public()`.
  */
-@Controller('clock')
+@Controller("clock")
 export class ClockController {
   constructor(private readonly clock: ClockService) {}
 
-  @Get('world-clocks')
+  @Get("world-clocks")
   findWorldClocks() {
     return this.clock.findWorldClocks();
   }
 
-  @Post('world-clocks')
+  @Post("world-clocks")
   @HttpCode(HttpStatus.CREATED)
   createWorldClock(@Body() dto: CreateWorldClockDto) {
     return this.clock.createWorldClock(dto);
   }
 
-  @Delete('world-clocks/:id')
+  @Delete("world-clocks/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  removeWorldClock(@Param('id', ParseIntPipe) id: number) {
+  removeWorldClock(@Param("id", ParseIntPipe) id: number) {
     this.clock.removeWorldClock(id);
   }
 
-  @Get('alarms')
+  @Get("alarms")
   findAlarms() {
     return this.clock.findAlarms();
   }
 
-  @Post('alarms')
+  @Post("alarms")
   @HttpCode(HttpStatus.CREATED)
   createAlarm(@Body() dto: CreateAlarmDto) {
     return this.clock.createAlarm(dto);
   }
 
-  @Patch('alarms/:id')
-  updateAlarm(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateAlarmDto,
-  ) {
+  @Patch("alarms/:id")
+  updateAlarm(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateAlarmDto) {
     return this.clock.updateAlarm(id, dto);
   }
 
-  @Delete('alarms/:id')
+  @Delete("alarms/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  removeAlarm(@Param('id', ParseIntPipe) id: number) {
+  removeAlarm(@Param("id", ParseIntPipe) id: number) {
     this.clock.removeAlarm(id);
   }
 
@@ -73,7 +54,7 @@ export class ClockController {
    * construction (the service refuses to import into a non-empty table), so the
    * client may call it whenever it still finds a legacy key.
    */
-  @Post('import')
+  @Post("import")
   importState(@Body() dto: ImportClockStateDto) {
     return this.clock.importState(dto);
   }

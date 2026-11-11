@@ -1,6 +1,6 @@
-import { FileConflictError, type SystemHttp } from '@imbatranim/ui'
-import type { NoteEntry, NoteFile } from '../types'
-import type { NotepadRoot } from '../lib/notepadRoot'
+import { FileConflictError, type SystemHttp } from "@imbatranim/ui";
+import type { NoteEntry, NoteFile } from "../types";
+import type { NotepadRoot } from "../lib/notepadRoot";
 
 /**
  * Every call now takes the root explicitly.
@@ -14,35 +14,26 @@ import type { NotepadRoot } from '../lib/notepadRoot'
  * hooks may call `useSystem()`, and these are not hooks.
  */
 
-export async function fetchNotes(
-  http: SystemHttp,
-  root: NotepadRoot,
-  path: string = ''
-): Promise<NoteEntry[]> {
-  const res = await http.get<NoteEntry[]>('/files', { params: { root, path } })
-  return res.data
+export async function fetchNotes(http: SystemHttp, root: NotepadRoot, path: string = ""): Promise<NoteEntry[]> {
+  const res = await http.get<NoteEntry[]>("/files", { params: { root, path } });
+  return res.data;
 }
 
-export async function readFile(
-  http: SystemHttp,
-  root: NotepadRoot,
-  path: string
-): Promise<NoteFile> {
-  const res = await http.get<{ path: string; content: string; version?: string }>(
-    '/files/content',
-    { params: { root, path } }
-  )
-  return { path: res.data.path, content: res.data.content, version: res.data.version ?? null }
+export async function readFile(http: SystemHttp, root: NotepadRoot, path: string): Promise<NoteFile> {
+  const res = await http.get<{ path: string; content: string; version?: string }>("/files/content", {
+    params: { root, path },
+  });
+  return { path: res.data.path, content: res.data.content, version: res.data.version ?? null };
 }
 
 export async function createFile(
   http: SystemHttp,
   root: NotepadRoot,
   path: string,
-  content: string = ''
+  content: string = "",
 ): Promise<NoteFile> {
-  const res = await http.put<NoteEntry>('/files/content', { root, path, content })
-  return { path: res.data.path, content, version: res.data.version ?? null }
+  const res = await http.put<NoteEntry>("/files/content", { root, path, content });
+  return { path: res.data.path, content, version: res.data.version ?? null };
 }
 
 /**
@@ -55,40 +46,31 @@ export async function updateFile(
   root: NotepadRoot,
   path: string,
   content: string,
-  expected?: string
+  expected?: string,
 ): Promise<NoteFile> {
   try {
-    const res = await http.put<NoteEntry>('/files/content', { root, path, content, expected })
-    return { path: res.data.path, content, version: res.data.version ?? null }
+    const res = await http.put<NoteEntry>("/files/content", { root, path, content, expected });
+    return { path: res.data.path, content, version: res.data.version ?? null };
   } catch (err) {
-    const response = (err as { response?: { status?: number; data?: { current?: unknown } } })
-      .response
+    const response = (err as { response?: { status?: number; data?: { current?: unknown } } }).response;
     if (response?.status === 409) {
-      const current = response.data?.current
-      throw new FileConflictError(typeof current === 'string' ? current : null)
+      const current = response.data?.current;
+      throw new FileConflictError(typeof current === "string" ? current : null);
     }
-    throw err
+    throw err;
   }
 }
 
 export async function deleteFile(http: SystemHttp, root: NotepadRoot, path: string): Promise<void> {
-  await http.delete('/files', { params: { root, path } })
+  await http.delete("/files", { params: { root, path } });
 }
 
-export async function createDirectory(
-  http: SystemHttp,
-  root: NotepadRoot,
-  path: string
-): Promise<void> {
-  await http.post('/files/directory', { root, path })
+export async function createDirectory(http: SystemHttp, root: NotepadRoot, path: string): Promise<void> {
+  await http.post("/files/directory", { root, path });
 }
 
-export async function deleteDirectory(
-  http: SystemHttp,
-  root: NotepadRoot,
-  path: string
-): Promise<void> {
-  await http.delete('/files', { params: { root, path } })
+export async function deleteDirectory(http: SystemHttp, root: NotepadRoot, path: string): Promise<void> {
+  await http.delete("/files", { params: { root, path } });
 }
 
 /**
@@ -102,5 +84,5 @@ export async function notesRootHasFiles(_http: SystemHttp): Promise<boolean> {
   // Notepad reads only the files it is given (2026-11-09), so it can't list
   // the `notes` root to look: asking would only be refused. Opening into
   // `home` is the answer it fell back to anyway; the picker still offers Notes.
-  return false
+  return false;
 }

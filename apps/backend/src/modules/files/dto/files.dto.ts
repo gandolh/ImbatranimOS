@@ -1,11 +1,5 @@
-import { Transform } from 'class-transformer';
-import {
-  IsBoolean,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { Transform } from "class-transformer";
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
 
 /** Query params for endpoints that need a root and an optional sub-path. */
 export class ListQueryDto {
@@ -45,7 +39,7 @@ export class SearchQueryDto {
   query: string;
 
   @IsOptional()
-  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @Transform(({ value }) => value === true || value === "true" || value === "1")
   @IsBoolean()
   content?: boolean;
 
@@ -70,7 +64,7 @@ export class SearchQueryDto {
    * and should not pay for it.
    */
   @IsOptional()
-  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @Transform(({ value }) => value === true || value === "true" || value === "1")
   @IsBoolean()
   matches?: boolean;
 }

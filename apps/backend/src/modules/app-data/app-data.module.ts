@@ -1,12 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Module } from "@nestjs/common";
 
-import { AppIdentityModule } from '../app-identity/app-identity.module';
-import { FilesModule } from '../files/files.module';
-import { AppDataController } from './app-data.controller';
-import { AppDataService } from './app-data.service';
-import { DataMovesService } from './data-moves.service';
-import { SetAsideController } from './set-aside.controller';
-import { SetAsideService } from './set-aside.service';
+import { AppIdentityModule } from "../app-identity/app-identity.module";
+import { FilesModule } from "../files/files.module";
+import { AppDataController } from "./app-data.controller";
+import { AppDataService } from "./app-data.service";
+import { DataMovesService } from "./data-moves.service";
+import { SetAsideController } from "./set-aside.controller";
+import { SetAsideService } from "./set-aside.service";
 
 /**
  * `system.data`: each app's folders of its own, one per kind, under

@@ -13,10 +13,10 @@
  */
 
 /** The request header a `system` call carries its app's token in. */
-export const APP_TOKEN_HEADER = 'x-imbatranim-app-token';
+export const APP_TOKEN_HEADER = "x-imbatranim-app-token";
 
 /** The group every built-in app shares; an installed app's second group is its descriptor's id. */
-export const SYSTEM_GROUP = 'system';
+export const SYSTEM_GROUP = "system";
 
 /**
  * The `code` in a 403's body when the token itself is refused: never issued,
@@ -24,7 +24,7 @@ export const SYSTEM_GROUP = 'system';
  * mint the window a new token and try once more, which is how open windows
  * outlive a backend restart. A 403 with any other code is a real refusal.
  */
-export const APP_TOKEN_REFUSED = 'APP_TOKEN_REFUSED';
+export const APP_TOKEN_REFUSED = "APP_TOKEN_REFUSED";
 
 /** A running copy of an app, as the backend knows it. */
 export interface AppIdentity {

@@ -1,39 +1,39 @@
-import { lazy } from 'react'
-import { Code2, FileDiff } from 'lucide-react'
-import type { AddonManifest } from '@imbatranim/core'
+import { lazy } from "react";
+import { Code2, FileDiff } from "lucide-react";
+import type { AddonManifest } from "@imbatranim/core";
 
 export const manifest: AddonManifest = {
-  id: 'code-editor',
-  name: 'Code Editor',
-  description: 'Edit source files with syntax highlighting, tabs, and find/replace',
-  meta: ['code', 'editor', 'monaco', 'source', 'syntax', 'ide', 'develop', 'programming'],
+  id: "code-editor",
+  name: "Code Editor",
+  description: "Edit source files with syntax highlighting, tabs, and find/replace",
+  meta: ["code", "editor", "monaco", "source", "syntax", "ide", "develop", "programming"],
   icon: Code2,
   // Lazy so Monaco (heavy) lands in this chunk, never the eager desktop bundle.
-  component: lazy(() => import('./CodeEditor').then((m) => ({ default: m.CodeEditor }))),
+  component: lazy(() => import("./CodeEditor").then((m) => ({ default: m.CodeEditor }))),
   opens: [
-    'json',
-    'ts',
-    'tsx',
-    'js',
-    'jsx',
-    'css',
-    'html',
-    'sh',
-    'py',
-    'c',
-    'cpp',
-    'h',
-    'hpp',
-    'go',
-    'rs',
-    'java',
-    'rb',
-    'php',
-    'yaml',
-    'yml',
-    'toml',
-    'xml',
-    'sql',
+    "json",
+    "ts",
+    "tsx",
+    "js",
+    "jsx",
+    "css",
+    "html",
+    "sh",
+    "py",
+    "c",
+    "cpp",
+    "h",
+    "hpp",
+    "go",
+    "rs",
+    "java",
+    "rb",
+    "php",
+    "yaml",
+    "yml",
+    "toml",
+    "xml",
+    "sql",
   ],
   multiInstance: true,
   // 620 so the window fits a 720px-tall viewport with the taskbar still on
@@ -42,7 +42,7 @@ export const manifest: AddonManifest = {
   // Honest floor: below ~560 the menu bar wraps and Monaco's own find widget
   // has nowhere to sit.
   minSize: { width: 560, height: 320 },
-}
+};
 
 /**
  * The Diff tool — a second app from this package, so it shares the
@@ -51,16 +51,16 @@ export const manifest: AddonManifest = {
  * component that has been sitting in this one since the Monaco editor.
  */
 export const diffManifest: AddonManifest = {
-  id: 'diff',
-  name: 'Diff',
-  description: 'Compare two files side by side, edit and save the right one',
-  meta: ['diff', 'compare', 'merge', 'changes', 'delta', 'side by side'],
+  id: "diff",
+  name: "Diff",
+  description: "Compare two files side by side, edit and save the right one",
+  meta: ["diff", "compare", "merge", "changes", "delta", "side by side"],
   icon: FileDiff,
-  component: lazy(() => import('./DiffTool').then((m) => ({ default: m.DiffTool }))),
+  component: lazy(() => import("./DiffTool").then((m) => ({ default: m.DiffTool }))),
   multiInstance: true,
   defaultSize: { width: 960, height: 620 },
   // The floor where side-by-side still shows a useful column each (~300px)
   // beside Monaco's gutters; below that inline view is the honest mode, but
   // the window should not pretend to fit two columns it cannot.
   minSize: { width: 640, height: 320 },
-}
+};

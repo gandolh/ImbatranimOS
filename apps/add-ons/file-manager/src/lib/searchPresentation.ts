@@ -9,8 +9,8 @@
 
 /** The directory portion of a root-relative path — '' for a top-level entry. */
 export function parentOf(path: string): string {
-  const i = path.lastIndexOf('/')
-  return i === -1 ? '' : path.slice(0, i)
+  const i = path.lastIndexOf("/");
+  return i === -1 ? "" : path.slice(0, i);
 }
 
 /**
@@ -20,12 +20,12 @@ export function parentOf(path: string): string {
  * shows both.
  */
 export function scopeLabel(rootLabel: string, path: string): string {
-  return path ? `/${path}` : rootLabel
+  return path ? `/${path}` : rootLabel;
 }
 
 /** "1 result" / "7 results" — the count, with the noun agreeing. */
 export function resultCountLabel(count: number): string {
-  return `${count} result${count === 1 ? '' : 's'}`
+  return `${count} result${count === 1 ? "" : "s"}`;
 }
 
 /**
@@ -37,5 +37,5 @@ export function resultCountLabel(count: number): string {
  * are different answers, and only one of them means the file is not there.
  */
 export function truncationNote(shown: number): string {
-  return `Stopped early — first ${shown} shown. Narrow the search or look in a smaller folder.`
+  return `Stopped early — first ${shown} shown. Narrow the search or look in a smaller folder.`;
 }

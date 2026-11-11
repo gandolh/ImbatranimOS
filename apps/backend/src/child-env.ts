@@ -1,7 +1,7 @@
-import { IGNORED_ENV_PREFIX } from './config/env.schema';
+import { IGNORED_ENV_PREFIX } from "./config/env.schema";
 
 /** Secrets the config schema says never leave the server. */
-const SECRET_NAMES = new Set(['SETUP_TOKEN']);
+const SECRET_NAMES = new Set(["SETUP_TOKEN"]);
 
 /**
  * The environment a child process starts with: the backend's own, minus its
@@ -22,9 +22,7 @@ const SECRET_NAMES = new Set(['SETUP_TOKEN']);
  * A copy: `process.env` itself is never touched. Every spawn site uses this:
  * the terminal, git, and tar in backup and archive.
  */
-export function childEnv(
-  env: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
+export function childEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const out: NodeJS.ProcessEnv = {};
   for (const [name, value] of Object.entries(env)) {
     if (SECRET_NAMES.has(name) || name.startsWith(IGNORED_ENV_PREFIX)) continue;

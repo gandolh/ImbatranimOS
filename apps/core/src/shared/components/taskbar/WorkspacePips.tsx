@@ -1,10 +1,5 @@
-import {
-  WORKSPACE_IDS,
-  useWindowStore,
-  workspaceOccupancy,
-  type WorkspaceId,
-} from '../../store/windowStore'
-import { cn } from '../../../lib/cn'
+import { WORKSPACE_IDS, useWindowStore, workspaceOccupancy, type WorkspaceId } from "../../store/windowStore";
+import { cn } from "../../../lib/cn";
 
 /**
  * Four workspace pips, beside the Tray.
@@ -18,11 +13,11 @@ import { cn } from '../../../lib/cn'
  * clicking through all four.
  */
 export function WorkspacePips() {
-  const windows = useWindowStore((s) => s.windows)
-  const activeWorkspace = useWindowStore((s) => s.activeWorkspace)
-  const setActiveWorkspace = useWindowStore((s) => s.setActiveWorkspace)
+  const windows = useWindowStore((s) => s.windows);
+  const activeWorkspace = useWindowStore((s) => s.activeWorkspace);
+  const setActiveWorkspace = useWindowStore((s) => s.setActiveWorkspace);
 
-  const occupancy = workspaceOccupancy(windows)
+  const occupancy = workspaceOccupancy(windows);
 
   return (
     <div
@@ -31,33 +26,29 @@ export function WorkspacePips() {
       aria-label="Workspaces"
     >
       {WORKSPACE_IDS.map((id: WorkspaceId) => {
-        const active = id === activeWorkspace
-        const count = occupancy[id]
+        const active = id === activeWorkspace;
+        const count = occupancy[id];
         return (
           <button
             key={id}
             onClick={() => setActiveWorkspace(id)}
             aria-pressed={active}
             aria-label={
-              count === 0
-                ? `Workspace ${id}, empty`
-                : `Workspace ${id}, ${count} window${count === 1 ? '' : 's'}`
+              count === 0 ? `Workspace ${id}, empty` : `Workspace ${id}, ${count} window${count === 1 ? "" : "s"}`
             }
             title={`Workspace ${id} (Ctrl+Alt+${id})`}
             className={cn(
-              'focus-visible:ring-primary rounded-control relative flex h-[22px] w-[22px] items-center justify-center border text-[10px] tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset',
+              "focus-visible:ring-primary rounded-control relative flex h-[22px] w-[22px] items-center justify-center border text-[10px] tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
               active
-                ? 'border-primary bg-primary-container text-on-primary-container'
-                : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-high'
+                ? "border-primary bg-primary-container text-on-primary-container"
+                : "border-outline-variant text-on-surface-variant hover:bg-surface-container-high",
             )}
           >
             {id}
-            {count > 0 && !active && (
-              <span className="bg-primary absolute right-[2px] bottom-[2px] h-[3px] w-[3px]" />
-            )}
+            {count > 0 && !active && <span className="bg-primary absolute right-[2px] bottom-[2px] h-[3px] w-[3px]" />}
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

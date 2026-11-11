@@ -1,24 +1,24 @@
-import { Search, X, FileSearch, Loader2 } from 'lucide-react'
-import { cn } from '@imbatranim/ui'
-import { Tooltip } from '@imbatranim/ui'
-import { scopeLabel } from '../lib/searchPresentation'
+import { Search, X, FileSearch, Loader2 } from "lucide-react";
+import { cn } from "@imbatranim/ui";
+import { Tooltip } from "@imbatranim/ui";
+import { scopeLabel } from "../lib/searchPresentation";
 
 type SearchBoxProps = {
-  value: string
-  onChange: (value: string) => void
+  value: string;
+  onChange: (value: string) => void;
   /** Root label + folder — formatted here into "where this searches". */
-  rootLabel: string
-  path: string
-  contentMode: boolean
-  onToggleContentMode: () => void
+  rootLabel: string;
+  path: string;
+  contentMode: boolean;
+  onToggleContentMode: () => void;
   /** Enter in content mode: run the (expensive) grep for what is typed now. */
-  onRun: () => void
-  onClear: () => void
+  onRun: () => void;
+  onClear: () => void;
   /** Move focus into the results list without losing the query (ArrowDown). */
-  onStepIntoResults: () => void
-  searching: boolean
-  inputRef: React.RefObject<HTMLInputElement | null>
-}
+  onStepIntoResults: () => void;
+  searching: boolean;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+};
 
 /**
  * The search box, right-aligned in the breadcrumb bar.
@@ -41,13 +41,13 @@ export function SearchBox({
   searching,
   inputRef,
 }: SearchBoxProps) {
-  const scope = scopeLabel(rootLabel, path)
+  const scope = scopeLabel(rootLabel, path);
   return (
     <div className="flex items-center gap-1">
       <div
         className={cn(
-          'rounded-control border-outline-variant bg-surface-container-lowest flex items-center gap-1 border px-1.5',
-          'focus-within:border-primary'
+          "rounded-control border-outline-variant bg-surface-container-lowest flex items-center gap-1 border px-1.5",
+          "focus-within:border-primary",
         )}
       >
         {searching ? (
@@ -63,31 +63,31 @@ export function SearchBox({
           placeholder={`Search ${scope}`}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') {
+            if (e.key === "Escape") {
               // Stop here: the desktop and the window manager both listen for
               // Escape, and clearing the box is the only thing it should do
               // while the user is typing in it.
-              e.preventDefault()
-              e.stopPropagation()
-              onClear()
-              return
+              e.preventDefault();
+              e.stopPropagation();
+              onClear();
+              return;
             }
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              onRun()
-              return
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onRun();
+              return;
             }
-            if (e.key === 'ArrowDown') {
-              e.preventDefault()
-              onStepIntoResults()
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              onStepIntoResults();
             }
           }}
           className={cn(
-            'focus-visible:ring-primary font-content text-on-surface w-44 bg-transparent py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
-            'placeholder:text-on-surface-variant',
+            "focus-visible:ring-primary font-content text-on-surface w-44 bg-transparent py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+            "placeholder:text-on-surface-variant",
             // Chrome draws its own clear affordance for type=search; we ship one
             // that matches the rest of the OS instead of showing both.
-            '[&::-webkit-search-cancel-button]:hidden'
+            "[&::-webkit-search-cancel-button]:hidden",
           )}
         />
         {value && (
@@ -105,8 +105,8 @@ export function SearchBox({
       <Tooltip
         content={
           contentMode
-            ? 'Searching inside files — press Enter to run'
-            : 'Also search inside file contents (runs on Enter)'
+            ? "Searching inside files — press Enter to run"
+            : "Also search inside file contents (runs on Enter)"
         }
       >
         <button
@@ -115,15 +115,15 @@ export function SearchBox({
           aria-pressed={contentMode}
           onClick={onToggleContentMode}
           className={cn(
-            'focus-visible:ring-primary rounded-control flex h-[22px] w-[22px] shrink-0 items-center justify-center border outline-none focus-visible:ring-2 focus-visible:ring-inset',
+            "focus-visible:ring-primary rounded-control flex h-[22px] w-[22px] shrink-0 items-center justify-center border outline-none focus-visible:ring-2 focus-visible:ring-inset",
             contentMode
-              ? 'border-primary bg-primary-container text-on-primary-container'
-              : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
+              ? "border-primary bg-primary-container text-on-primary-container"
+              : "border-outline-variant text-on-surface-variant hover:text-on-surface",
           )}
         >
           <FileSearch size={12} />
         </button>
       </Tooltip>
     </div>
-  )
+  );
 }

@@ -1,19 +1,19 @@
-import dayjs, { type Dayjs } from 'dayjs'
-import { cn } from '@imbatranim/ui'
-import { WEEKDAY_LABELS, buildMonthGrid } from '../dateUtils'
-import { occurrencesOnDay } from '../recurrence'
-import { compareForDay, eventColorClass, occurrenceLabel } from '../eventStyle'
-import type { Occurrence } from '../recurrence'
+import dayjs, { type Dayjs } from "dayjs";
+import { cn } from "@imbatranim/ui";
+import { WEEKDAY_LABELS, buildMonthGrid } from "../dateUtils";
+import { occurrencesOnDay } from "../recurrence";
+import { compareForDay, eventColorClass, occurrenceLabel } from "../eventStyle";
+import type { Occurrence } from "../recurrence";
 
-const MAX_VISIBLE_EVENTS = 3
+const MAX_VISIBLE_EVENTS = 3;
 
 type MonthViewProps = {
-  anchor: Dayjs
+  anchor: Dayjs;
   /** Already expanded for the visible range by the parent. */
-  occurrences: Occurrence[]
-  onCreate: (start: number, end: number, allDay: boolean) => void
-  onOpen: (occurrence: Occurrence) => void
-}
+  occurrences: Occurrence[];
+  onCreate: (start: number, end: number, allDay: boolean) => void;
+  onOpen: (occurrence: Occurrence) => void;
+};
 
 /**
  * The month grid.
@@ -25,8 +25,8 @@ type MonthViewProps = {
  * two, which made multi-day events look like data loss.
  */
 export function MonthView({ anchor, occurrences, onCreate, onOpen }: MonthViewProps) {
-  const weeks = buildMonthGrid(anchor)
-  const today = dayjs()
+  const weeks = buildMonthGrid(anchor);
+  const today = dayjs();
 
   return (
     <div className="flex h-full flex-col">
@@ -43,39 +43,34 @@ export function MonthView({ anchor, occurrences, onCreate, onOpen }: MonthViewPr
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {weeks.map((week, wi) => (
-          <div
-            key={wi}
-            className="border-outline-variant grid flex-1 grid-cols-7 border-b last:border-b-0"
-          >
+          <div key={wi} className="border-outline-variant grid flex-1 grid-cols-7 border-b last:border-b-0">
             {week.map((day) => {
-              const inMonth = day.month() === anchor.month()
-              const isToday = day.isSame(today, 'day')
-              const dayOccurrences = occurrencesOnDay(occurrences, day).sort(compareForDay)
-              const overflow = dayOccurrences.length - MAX_VISIBLE_EVENTS
+              const inMonth = day.month() === anchor.month();
+              const isToday = day.isSame(today, "day");
+              const dayOccurrences = occurrencesOnDay(occurrences, day).sort(compareForDay);
+              const overflow = dayOccurrences.length - MAX_VISIBLE_EVENTS;
 
               return (
                 <div
                   key={day.valueOf()}
                   role="button"
                   tabIndex={0}
-                  aria-label={`Add an event on ${day.format('MMMM D, YYYY')}`}
-                  onClick={() =>
-                    onCreate(day.startOf('day').valueOf(), day.endOf('day').valueOf(), true)
-                  }
+                  aria-label={`Add an event on ${day.format("MMMM D, YYYY")}`}
+                  onClick={() => onCreate(day.startOf("day").valueOf(), day.endOf("day").valueOf(), true)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      onCreate(day.startOf('day').valueOf(), day.endOf('day').valueOf(), true)
+                    if (e.key === "Enter" || e.key === " ") {
+                      onCreate(day.startOf("day").valueOf(), day.endOf("day").valueOf(), true);
                     }
                   }}
                   className={cn(
-                    'focus-visible:ring-primary border-outline-variant hover:bg-surface-container flex cursor-pointer flex-col items-start gap-0.5 overflow-hidden border-r p-1 text-left outline-none last:border-r-0 focus-visible:ring-2 focus-visible:ring-inset',
-                    !inMonth && 'text-on-surface-variant/60'
+                    "focus-visible:ring-primary border-outline-variant hover:bg-surface-container flex cursor-pointer flex-col items-start gap-0.5 overflow-hidden border-r p-1 text-left outline-none last:border-r-0 focus-visible:ring-2 focus-visible:ring-inset",
+                    !inMonth && "text-on-surface-variant/60",
                   )}
                 >
                   <span
                     className={cn(
-                      'flex h-5 w-5 shrink-0 items-center justify-center text-[11px]',
-                      isToday && 'bg-primary text-on-primary font-semibold'
+                      "flex h-5 w-5 shrink-0 items-center justify-center text-[11px]",
+                      isToday && "bg-primary text-on-primary font-semibold",
                     )}
                   >
                     {day.date()}
@@ -91,35 +86,31 @@ export function MonthView({ anchor, occurrences, onCreate, onOpen }: MonthViewPr
                         tabIndex={0}
                         title={occurrence.event.title}
                         onClick={(e) => {
-                          e.stopPropagation()
-                          onOpen(occurrence)
+                          e.stopPropagation();
+                          onOpen(occurrence);
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.stopPropagation()
-                            onOpen(occurrence)
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.stopPropagation();
+                            onOpen(occurrence);
                           }
                         }}
                         className={cn(
-                          'focus-visible:ring-primary text-on-surface w-full truncate border-l-2 px-1 py-px text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
-                          eventColorClass(occurrence.event.color)
+                          "focus-visible:ring-primary text-on-surface w-full truncate border-l-2 px-1 py-px text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                          eventColorClass(occurrence.event.color),
                         )}
                       >
                         {occurrenceLabel(occurrence, day)}
                       </span>
                     ))}
-                    {overflow > 0 && (
-                      <span className="text-on-surface-variant px-1 text-[9px]">
-                        +{overflow} more
-                      </span>
-                    )}
+                    {overflow > 0 && <span className="text-on-surface-variant px-1 text-[9px]">+{overflow} more</span>}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }

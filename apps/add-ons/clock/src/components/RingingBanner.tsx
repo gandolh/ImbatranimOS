@@ -1,8 +1,8 @@
-import { AlarmClock } from 'lucide-react'
-import { Button } from '@imbatranim/ui'
-import { SNOOZE_LABEL, snoozePatch } from '../alarmSchedule'
-import { useClockStore } from '../clockStore'
-import { usePatchAlarmMutation } from '../queries/clockQueries'
+import { AlarmClock } from "lucide-react";
+import { Button } from "@imbatranim/ui";
+import { SNOOZE_LABEL, snoozePatch } from "../alarmSchedule";
+import { useClockStore } from "../clockStore";
+import { usePatchAlarmMutation } from "../queries/clockQueries";
 
 /**
  * The only place Snooze can live.
@@ -13,11 +13,11 @@ import { usePatchAlarmMutation } from '../queries/clockQueries'
  * for exactly as long as an alarm is unacknowledged.
  */
 export function RingingBanner() {
-  const ringing = useClockStore((s) => s.ringing)
-  const clearRinging = useClockStore((s) => s.clearRinging)
-  const patch = usePatchAlarmMutation()
+  const ringing = useClockStore((s) => s.ringing);
+  const clearRinging = useClockStore((s) => s.clearRinging);
+  const patch = usePatchAlarmMutation();
 
-  if (ringing.length === 0) return null
+  if (ringing.length === 0) return null;
 
   return (
     <div className="border-primary bg-primary text-on-primary flex flex-col gap-1 border-b">
@@ -34,8 +34,8 @@ export function RingingBanner() {
               variant="default"
               size="sm"
               onClick={() => {
-                patch.mutate({ id: entry.alarmId, patch: snoozePatch(Date.now()) })
-                clearRinging(entry.alarmId)
+                patch.mutate({ id: entry.alarmId, patch: snoozePatch(Date.now()) });
+                clearRinging(entry.alarmId);
               }}
             >
               {SNOOZE_LABEL}
@@ -47,5 +47,5 @@ export function RingingBanner() {
         </div>
       ))}
     </div>
-  )
+  );
 }

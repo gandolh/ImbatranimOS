@@ -1,7 +1,7 @@
-import { IsIn, IsInt, IsString, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsString, MaxLength, Min } from "class-validator";
 
 /** The three domains that fire scheduled notifications. */
-export const SCHEDULE_DOMAINS = ['clock', 'calendar', 'todo'] as const;
+export const SCHEDULE_DOMAINS = ["clock", "calendar", "todo"] as const;
 export type ScheduleDomain = (typeof SCHEDULE_DOMAINS)[number];
 
 /**

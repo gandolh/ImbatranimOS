@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { dirname, join } from 'path';
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
+import { dirname, join } from "path";
 
-import { DbService } from '../../db/db.service';
+import { DbService } from "../../db/db.service";
 
 /** The cookie jar is refused past this size. Real jars are tens of KB. */
 export const MAX_JAR_BYTES = 1_000_000;
@@ -12,7 +12,7 @@ const KEY_BYTES = 32;
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
 const FORMAT = 1;
-const AAD = Buffer.from('imbatranimos/browser-profile/v1');
+const AAD = Buffer.from("imbatranimos/browser-profile/v1");
 
 /**
  * Where the profile key lives: beside the database, as its own file. The
@@ -20,7 +20,7 @@ const AAD = Buffer.from('imbatranimos/browser-profile/v1');
  * ciphertext, and a leaked backup leaks no site's sign-in.
  */
 export function browserProfileKeyPath(dbPath: string): string {
-  return join(dirname(dbPath), 'browser-profile.key');
+  return join(dirname(dbPath), "browser-profile.key");
 }
 
 /**
@@ -52,7 +52,7 @@ export class BrowserProfileService {
   /** The key, created on first use. Null for an in-memory database (tests): then one per process. */
   private loadKey(create: boolean): Buffer | null {
     if (this.key) return this.key;
-    if (this.dbs.path() === ':memory:') {
+    if (this.dbs.path() === ":memory:") {
       this.key = randomBytes(KEY_BYTES);
       return this.key;
     }
@@ -72,7 +72,7 @@ export class BrowserProfileService {
     mkdirSync(dirname(path), { recursive: true });
     // `wx`: never overwrite a key another request just wrote.
     try {
-      writeFileSync(path, key, { mode: 0o600, flag: 'wx' });
+      writeFileSync(path, key, { mode: 0o600, flag: "wx" });
       this.key = key;
       return key;
     } catch {
@@ -82,37 +82,32 @@ export class BrowserProfileService {
 
   /** The stored jar, decrypted, or null when there is none or it cannot be read. */
   read(): { jar: string | null; updatedAt: number | null } {
-    const row = this.dbs.db
-      .prepare('SELECT blob, updated_at FROM browser_profile WHERE id = 1')
-      .get() as { blob: Buffer; updated_at: number } | undefined;
+    const row = this.dbs.db.prepare("SELECT blob, updated_at FROM browser_profile WHERE id = 1").get() as
+      { blob: Buffer; updated_at: number } | undefined;
     if (!row) return { jar: null, updatedAt: null };
     const key = this.loadKey(false);
     const jar = key ? decrypt(row.blob, key) : null;
     if (jar === null) {
-      this.logger.warn('The stored browser profile cannot be decrypted');
+      this.logger.warn("The stored browser profile cannot be decrypted");
     }
     return { jar, updatedAt: jar === null ? null : row.updated_at };
   }
 
   write(jar: string, now = Date.now()): void {
     if (Buffer.byteLength(jar) > MAX_JAR_BYTES) {
-      throw new BadRequestException('The cookie jar is too large');
+      throw new BadRequestException("The cookie jar is too large");
     }
     let parsed: unknown;
     try {
       parsed = JSON.parse(jar);
     } catch {
-      throw new BadRequestException('The cookie jar is not JSON');
+      throw new BadRequestException("The cookie jar is not JSON");
     }
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      Array.isArray(parsed)
-    ) {
-      throw new BadRequestException('The cookie jar is not an object');
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new BadRequestException("The cookie jar is not an object");
     }
     const key = this.loadKey(true);
-    if (!key) throw new Error('No browser profile key');
+    if (!key) throw new Error("No browser profile key");
     this.dbs.db
       .prepare(
         `INSERT INTO browser_profile (id, blob, updated_at) VALUES (1, ?, ?)
@@ -122,15 +117,15 @@ export class BrowserProfileService {
   }
 
   clear(): void {
-    this.dbs.db.prepare('DELETE FROM browser_profile').run();
+    this.dbs.db.prepare("DELETE FROM browser_profile").run();
   }
 }
 
 function encrypt(text: string, key: Buffer): Buffer {
   const iv = randomBytes(IV_BYTES);
-  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
   cipher.setAAD(AAD);
-  const body = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+  const body = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
   return Buffer.concat([Buffer.from([FORMAT]), iv, cipher.getAuthTag(), body]);
 }
 
@@ -141,13 +136,10 @@ function decrypt(blob: Buffer, key: Buffer): string | null {
   const iv = blob.subarray(1, 1 + IV_BYTES);
   const tag = blob.subarray(1 + IV_BYTES, 1 + IV_BYTES + TAG_BYTES);
   try {
-    const decipher = createDecipheriv('aes-256-gcm', key, iv);
+    const decipher = createDecipheriv("aes-256-gcm", key, iv);
     decipher.setAAD(AAD);
     decipher.setAuthTag(tag);
-    return Buffer.concat([
-      decipher.update(blob.subarray(1 + IV_BYTES + TAG_BYTES)),
-      decipher.final(),
-    ]).toString('utf8');
+    return Buffer.concat([decipher.update(blob.subarray(1 + IV_BYTES + TAG_BYTES)), decipher.final()]).toString("utf8");
   } catch {
     return null;
   }

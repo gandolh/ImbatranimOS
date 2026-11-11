@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { DbService } from '../../db/db.service';
-import type { ScheduleDomain } from './dto/claim.dto';
+import { Injectable } from "@nestjs/common";
+import { DbService } from "../../db/db.service";
+import type { ScheduleDomain } from "./dto/claim.dto";
 
 /** Claims older than this are dedupe state nobody will ask about again. */
 const PRUNE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
@@ -24,9 +24,7 @@ export class ScheduleService {
     const now = Date.now();
     // Prune on the write path so the table cannot grow unbounded without a
     // timer — the next claim after a quiet week sweeps the stale rows.
-    this.db.db
-      .prepare(`DELETE FROM schedule_fired WHERE fired_at < ?`)
-      .run(now - PRUNE_AFTER_MS);
+    this.db.db.prepare(`DELETE FROM schedule_fired WHERE fired_at < ?`).run(now - PRUNE_AFTER_MS);
 
     const result = this.db.db
       .prepare(

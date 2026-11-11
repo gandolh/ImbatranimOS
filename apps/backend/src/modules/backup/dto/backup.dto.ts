@@ -1,9 +1,9 @@
-import { Equals, IsString, IsUUID } from 'class-validator';
+import { Equals, IsString, IsUUID } from "class-validator";
 
 /** What the backup archive carries at `.imbatranim/backup-staging/manifest.json`. */
 export interface BackupManifest {
   /** Fixed marker. Restore refuses an archive without it. */
-  product: 'ImbatranimOS';
+  product: "ImbatranimOS";
   /** Bumped only when the layout below changes incompatibly. */
   manifestVersion: 1;
   /** ISO timestamp the backup was taken. */
@@ -53,7 +53,7 @@ export interface RestorePreview {
 }
 
 export class RestoreApplyDto {
-  @IsUUID('4', { message: 'Unknown or expired upload' })
+  @IsUUID("4", { message: "Unknown or expired upload" })
   id!: string;
 
   /**
@@ -64,8 +64,8 @@ export class RestoreApplyDto {
    * the user's entire home directory, and it should take more than a URL.
    */
   @IsString()
-  @Equals('RESTORE', {
-    message: 'Type RESTORE to confirm — this replaces your home directory',
+  @Equals("RESTORE", {
+    message: "Type RESTORE to confirm — this replaces your home directory",
   })
   confirm!: string;
 }

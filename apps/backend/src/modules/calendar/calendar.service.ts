@@ -1,11 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DbService } from '../../db/db.service';
-import {
-  CreateEventDto,
-  ImportEventsDto,
-  RecurrenceDto,
-  UpdateEventDto,
-} from './dto/calendar.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { DbService } from "../../db/db.service";
+import { CreateEventDto, ImportEventsDto, RecurrenceDto, UpdateEventDto } from "./dto/calendar.dto";
 
 /**
  * Calendar's events.
@@ -35,7 +30,7 @@ import {
  */
 
 export interface Recurrence {
-  freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  freq: "daily" | "weekly" | "monthly" | "yearly";
   interval: number;
   byWeekday?: number[];
   until?: string;
@@ -75,17 +70,15 @@ interface EventRow {
 /** Comma-joined because neither an ISO date nor a weekday index can contain a comma. */
 function splitList(value: string | null): string[] {
   if (!value) return [];
-  return value.split(',').filter((part) => part !== '');
+  return value.split(",").filter((part) => part !== "");
 }
 
 function toEvent(row: EventRow): CalendarEvent {
   const recurrence: Recurrence | null = row.rrule_freq
     ? {
-        freq: row.rrule_freq as Recurrence['freq'],
+        freq: row.rrule_freq as Recurrence["freq"],
         interval: row.rrule_interval ?? 1,
-        ...(row.rrule_by_weekday
-          ? { byWeekday: splitList(row.rrule_by_weekday).map(Number) }
-          : {}),
+        ...(row.rrule_by_weekday ? { byWeekday: splitList(row.rrule_by_weekday).map(Number) } : {}),
         ...(row.rrule_until ? { until: row.rrule_until } : {}),
         ...(row.rrule_count !== null ? { count: row.rrule_count } : {}),
       }
@@ -99,9 +92,7 @@ function toEvent(row: EventRow): CalendarEvent {
     allDay: row.all_day === 1,
     ...(row.notes ? { notes: row.notes } : {}),
     ...(row.color ? { color: row.color } : {}),
-    ...(row.reminder_minutes !== null
-      ? { reminderMinutes: row.reminder_minutes }
-      : {}),
+    ...(row.reminder_minutes !== null ? { reminderMinutes: row.reminder_minutes } : {}),
     recurrence,
     exceptions: splitList(row.exceptions),
   };
@@ -121,9 +112,7 @@ function recurrenceValues(recurrence: RecurrenceDto | null | undefined) {
   return {
     rrule_freq: recurrence.freq,
     rrule_interval: recurrence.interval,
-    rrule_by_weekday: recurrence.byWeekday?.length
-      ? recurrence.byWeekday.join(',')
-      : null,
+    rrule_by_weekday: recurrence.byWeekday?.length ? recurrence.byWeekday.join(",") : null,
     rrule_until: recurrence.until ?? null,
     rrule_count: recurrence.count ?? null,
   };
@@ -147,9 +136,7 @@ export class CalendarService {
    */
   findAll(): CalendarEvent[] {
     const rows = this.db.db
-      .prepare(
-        `SELECT ${SELECT_COLUMNS} FROM calendar_events ORDER BY start_ms ASC, id ASC`,
-      )
+      .prepare(`SELECT ${SELECT_COLUMNS} FROM calendar_events ORDER BY start_ms ASC, id ASC`)
       .all() as EventRow[];
     return rows.map(toEvent);
   }
@@ -181,15 +168,13 @@ export class CalendarService {
         color: dto.color ?? null,
         reminder_minutes: dto.reminderMinutes ?? null,
         ...recurrenceValues(dto.recurrence),
-        exceptions: (dto.exceptions ?? []).join(','),
+        exceptions: (dto.exceptions ?? []).join(","),
       });
     return info.lastInsertRowid;
   }
 
   update(id: number, dto: UpdateEventDto): CalendarEvent {
-    const existing = this.db.db
-      .prepare('SELECT id FROM calendar_events WHERE id = ?')
-      .get(id);
+    const existing = this.db.db.prepare("SELECT id FROM calendar_events WHERE id = ?").get(id);
     if (!existing) throw new NotFoundException(`Event ${id} not found`);
 
     const fields: string[] = [];
@@ -200,18 +185,16 @@ export class CalendarService {
       values[key] = value;
     };
 
-    if (dto.title !== undefined) set('title', 'title', dto.title);
-    if (dto.start !== undefined) set('start_ms', 'start_ms', dto.start);
-    if (dto.end !== undefined) set('end_ms', 'end_ms', dto.end);
-    if (dto.allDay !== undefined) set('all_day', 'all_day', dto.allDay ? 1 : 0);
+    if (dto.title !== undefined) set("title", "title", dto.title);
+    if (dto.start !== undefined) set("start_ms", "start_ms", dto.start);
+    if (dto.end !== undefined) set("end_ms", "end_ms", dto.end);
+    if (dto.allDay !== undefined) set("all_day", "all_day", dto.allDay ? 1 : 0);
     // `null` clears these, so they check `undefined` rather than falsiness — an
     // empty note and "no note" must both be expressible.
-    if (dto.notes !== undefined) set('notes', 'notes', dto.notes ?? null);
-    if (dto.color !== undefined) set('color', 'color', dto.color ?? null);
-    if (dto.reminderMinutes !== undefined)
-      set('reminder_minutes', 'reminder_minutes', dto.reminderMinutes ?? null);
-    if (dto.exceptions !== undefined)
-      set('exceptions', 'exceptions', dto.exceptions.join(','));
+    if (dto.notes !== undefined) set("notes", "notes", dto.notes ?? null);
+    if (dto.color !== undefined) set("color", "color", dto.color ?? null);
+    if (dto.reminderMinutes !== undefined) set("reminder_minutes", "reminder_minutes", dto.reminderMinutes ?? null);
+    if (dto.exceptions !== undefined) set("exceptions", "exceptions", dto.exceptions.join(","));
 
     if (dto.recurrence !== undefined) {
       // All five columns move together: a rule is one value spread over columns,
@@ -223,29 +206,21 @@ export class CalendarService {
     }
 
     if (fields.length > 0) {
-      fields.push('updated_at = CURRENT_TIMESTAMP');
-      this.db.db
-        .prepare(
-          `UPDATE calendar_events SET ${fields.join(', ')} WHERE id = @id`,
-        )
-        .run(values);
+      fields.push("updated_at = CURRENT_TIMESTAMP");
+      this.db.db.prepare(`UPDATE calendar_events SET ${fields.join(", ")} WHERE id = @id`).run(values);
     }
     return this.get(id);
   }
 
   remove(id: number): void {
-    const info = this.db.db
-      .prepare('DELETE FROM calendar_events WHERE id = ?')
-      .run(id);
+    const info = this.db.db.prepare("DELETE FROM calendar_events WHERE id = ?").run(id);
     if (info.changes === 0) {
       throw new NotFoundException(`Event ${id} not found`);
     }
   }
 
   private get(id: number): CalendarEvent {
-    const row = this.db.db
-      .prepare(`SELECT ${SELECT_COLUMNS} FROM calendar_events WHERE id = ?`)
-      .get(id) as EventRow;
+    const row = this.db.db.prepare(`SELECT ${SELECT_COLUMNS} FROM calendar_events WHERE id = ?`).get(id) as EventRow;
     return toEvent(row);
   }
 
@@ -260,14 +235,12 @@ export class CalendarService {
    */
   importEvents(dto: ImportEventsDto): {
     imported: number;
-    skipped: 'not-empty' | null;
+    skipped: "not-empty" | null;
   } {
     const run = this.db.db.transaction(() => {
       if (dto.onlyIfEmpty) {
-        const row = this.db.db
-          .prepare('SELECT COUNT(*) AS n FROM calendar_events')
-          .get() as { n: number };
-        if (row.n > 0) return { imported: 0, skipped: 'not-empty' as const };
+        const row = this.db.db.prepare("SELECT COUNT(*) AS n FROM calendar_events").get() as { n: number };
+        if (row.n > 0) return { imported: 0, skipped: "not-empty" as const };
       }
       let imported = 0;
       for (const event of dto.events) {

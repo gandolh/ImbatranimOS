@@ -1,13 +1,13 @@
-import { Folder, Download, Pencil, Copy, Scissors, Trash2, ArrowDown, ArrowUp } from 'lucide-react'
-import { cn, useSystem } from '@imbatranim/ui'
-import { Tooltip } from '@imbatranim/ui'
-import { Button } from '@imbatranim/ui'
-import type { VirtualList } from '@imbatranim/ui'
-import type { FsEntry } from '../types'
-import { modeFromEvent, type SelectMode } from '../lib/selectionModel'
-import { ariaSort, SORT_LABELS, type SortDir, type SortKey } from '../lib/fileSort'
-import { formatSize, getFileIcon } from '../lib/entryPresentation'
-import dayjs from 'dayjs'
+import { Folder, Download, Pencil, Copy, Scissors, Trash2, ArrowDown, ArrowUp } from "lucide-react";
+import { cn, useSystem } from "@imbatranim/ui";
+import { Tooltip } from "@imbatranim/ui";
+import { Button } from "@imbatranim/ui";
+import type { VirtualList } from "@imbatranim/ui";
+import type { FsEntry } from "../types";
+import { modeFromEvent, type SelectMode } from "../lib/selectionModel";
+import { ariaSort, SORT_LABELS, type SortDir, type SortKey } from "../lib/fileSort";
+import { formatSize, getFileIcon } from "../lib/entryPresentation";
+import dayjs from "dayjs";
 
 type FileListProps = {
   /**
@@ -16,27 +16,27 @@ type FileListProps = {
    * same array, so a second sort here is how the highlighted row and the row the
    * arrow keys move to drift apart.
    */
-  entries: FsEntry[]
-  sort: { key: SortKey; dir: SortDir }
-  onSortChange: (key: SortKey) => void
+  entries: FsEntry[];
+  sort: { key: SortKey; dir: SortDir };
+  onSortChange: (key: SortKey) => void;
   /** Row virtualizer created in FileManager (shared with keyboard nav). */
-  virtualizer: VirtualList<HTMLElement>
-  root: string
-  selected: Set<string>
+  virtualizer: VirtualList<HTMLElement>;
+  root: string;
+  selected: Set<string>;
   /** `mode` comes from the modifiers — see lib/selectionModel. */
-  onSelect: (path: string, mode: SelectMode) => void
-  onOpen: (entry: FsEntry) => void
-  onRename: (entry: FsEntry) => void
-  onCopy: (entry: FsEntry) => void
-  onCut: (entry: FsEntry) => void
-  onDelete: (entry: FsEntry) => void
-  onContextMenu?: (entry: FsEntry, e: React.MouseEvent) => void
-  renamingPath: string | null
-  renameValue: string
-  onRenameChange: (val: string) => void
-  onRenameCommit: () => void
-  onRenameCancel: () => void
-}
+  onSelect: (path: string, mode: SelectMode) => void;
+  onOpen: (entry: FsEntry) => void;
+  onRename: (entry: FsEntry) => void;
+  onCopy: (entry: FsEntry) => void;
+  onCut: (entry: FsEntry) => void;
+  onDelete: (entry: FsEntry) => void;
+  onContextMenu?: (entry: FsEntry, e: React.MouseEvent) => void;
+  renamingPath: string | null;
+  renameValue: string;
+  onRenameChange: (val: string) => void;
+  onRenameCommit: () => void;
+  onRenameCancel: () => void;
+};
 
 export function FileList({
   entries,
@@ -58,21 +58,19 @@ export function FileList({
   onRenameCommit,
   onRenameCancel,
 }: FileListProps) {
-  const { fs } = useSystem()
-  const sorted = entries
+  const { fs } = useSystem();
+  const sorted = entries;
 
   // Virtual window over `sorted`. Only these rows are mounted; the gap above
   // and below is held open by two spacer <tr>s so the scroll height and the
   // thumb stay correct (the padding-spacer technique, table-friendly). Offsets
   // are shifted by scrollMargin (the header that precedes the rows in the same
   // scroll container) so they measure from the top of <tbody>.
-  const virtualRows = virtualizer.getVirtualItems()
-  const scrollMargin = virtualizer.options.scrollMargin
-  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start - scrollMargin : 0
+  const virtualRows = virtualizer.getVirtualItems();
+  const scrollMargin = virtualizer.options.scrollMargin;
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start - scrollMargin : 0;
   const paddingBottom =
-    virtualRows.length > 0
-      ? virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1].end - scrollMargin)
-      : 0
+    virtualRows.length > 0 ? virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1].end - scrollMargin) : 0;
 
   if (sorted.length === 0) {
     return (
@@ -80,7 +78,7 @@ export function FileList({
         <Folder size={32} strokeWidth={1} />
         <span className="font-ui text-[12px]">Empty folder</span>
       </div>
-    )
+    );
   }
 
   return (
@@ -104,9 +102,9 @@ export function FileList({
           </tr>
         )}
         {virtualRows.map((vr) => {
-          const entry = sorted[vr.index]
-          const isSelected = selected.has(entry.path)
-          const isRenaming = renamingPath === entry.path
+          const entry = sorted[vr.index];
+          const isSelected = selected.has(entry.path);
+          const isRenaming = renamingPath === entry.path;
 
           return (
             <tr
@@ -118,41 +116,39 @@ export function FileList({
                 // Stop the click from bubbling to the background container's
                 // "clear selection" handler — otherwise every row click
                 // selects then immediately deselects in the same tick.
-                e.stopPropagation()
-                onSelect(entry.path, modeFromEvent(e))
+                e.stopPropagation();
+                onSelect(entry.path, modeFromEvent(e));
               }}
               onDoubleClick={() => onOpen(entry)}
               onContextMenu={(e) => {
-                if (!onContextMenu) return
-                e.preventDefault()
+                if (!onContextMenu) return;
+                e.preventDefault();
                 // Stop the bubble, exactly as onClick above does. Without it the
                 // event reached the list wrapper's background handler, which
                 // reopened the menu with `entry: null` — so right-clicking a
                 // file showed the empty-space menu (New Folder / Upload /
                 // Paste) and its Rename / Copy / Cut / Delete items were
                 // unreachable despite being implemented.
-                e.stopPropagation()
-                if (!selected.has(entry.path)) onSelect(entry.path, 'replace')
-                onContextMenu(entry, e)
+                e.stopPropagation();
+                if (!selected.has(entry.path)) onSelect(entry.path, "replace");
+                onContextMenu(entry, e);
               }}
               className={cn(
-                'group/row border-outline-variant/30 cursor-pointer border-b transition-colors',
-                isSelected
-                  ? 'bg-primary-container text-on-primary-container'
-                  : 'hover:bg-surface-container',
-                'apricot:bg-transparent apricot:hover:bg-transparent'
+                "group/row border-outline-variant/30 cursor-pointer border-b transition-colors",
+                isSelected ? "bg-primary-container text-on-primary-container" : "hover:bg-surface-container",
+                "apricot:bg-transparent apricot:hover:bg-transparent",
               )}
             >
-              <td className={cn('px-2 py-1', cellFill(isSelected))}>{getFileIcon(entry)}</td>
-              <td className={cn('px-2 py-1', cellFill(isSelected))}>
+              <td className={cn("px-2 py-1", cellFill(isSelected))}>{getFileIcon(entry)}</td>
+              <td className={cn("px-2 py-1", cellFill(isSelected))}>
                 {isRenaming ? (
                   <input
                     autoFocus
                     value={renameValue}
                     onChange={(e) => onRenameChange(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') onRenameCommit()
-                      if (e.key === 'Escape') onRenameCancel()
+                      if (e.key === "Enter") onRenameCommit();
+                      if (e.key === "Escape") onRenameCancel();
                     }}
                     onBlur={onRenameCommit}
                     onClick={(e) => e.stopPropagation()}
@@ -162,52 +158,30 @@ export function FileList({
                   <span className="select-none">{entry.name}</span>
                 )}
               </td>
-              <td
-                className={cn('text-on-surface-variant px-2 py-1 text-right', cellFill(isSelected))}
-              >
-                {entry.type === 'file' ? formatSize(entry.size) : '—'}
+              <td className={cn("text-on-surface-variant px-2 py-1 text-right", cellFill(isSelected))}>
+                {entry.type === "file" ? formatSize(entry.size) : "—"}
               </td>
-              <td
-                className={cn('text-on-surface-variant px-2 py-1 text-right', cellFill(isSelected))}
-              >
-                {dayjs(entry.modifiedAt).format('MMM D, YYYY')}
+              <td className={cn("text-on-surface-variant px-2 py-1 text-right", cellFill(isSelected))}>
+                {dayjs(entry.modifiedAt).format("MMM D, YYYY")}
               </td>
-              <td
-                className={cn('px-2 py-1', cellFill(isSelected))}
-                onClick={(e) => e.stopPropagation()}
-              >
+              <td className={cn("px-2 py-1", cellFill(isSelected))} onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 [tr:hover_&]:opacity-100">
                   <Tooltip content="Rename">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 w-5 p-0"
-                      onClick={() => onRename(entry)}
-                    >
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => onRename(entry)}>
                       <Pencil size={11} />
                     </Button>
                   </Tooltip>
                   <Tooltip content="Copy">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 w-5 p-0"
-                      onClick={() => onCopy(entry)}
-                    >
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => onCopy(entry)}>
                       <Copy size={11} />
                     </Button>
                   </Tooltip>
                   <Tooltip content="Cut">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 w-5 p-0"
-                      onClick={() => onCut(entry)}
-                    >
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => onCut(entry)}>
                       <Scissors size={11} />
                     </Button>
                   </Tooltip>
-                  {entry.type === 'file' && (
+                  {entry.type === "file" && (
                     <Tooltip content="Download">
                       <a
                         href={fs.downloadUrl(root, entry.path)}
@@ -231,7 +205,7 @@ export function FileList({
                 </div>
               </td>
             </tr>
-          )
+          );
         })}
         {paddingBottom > 0 && (
           <tr aria-hidden>
@@ -240,7 +214,7 @@ export function FileList({
         )}
       </tbody>
     </table>
-  )
+  );
 }
 
 /**
@@ -249,9 +223,9 @@ export function FileList({
  */
 function cellFill(isSelected: boolean): string {
   return cn(
-    'apricot:first:rounded-l-item apricot:last:rounded-r-item',
-    isSelected ? 'apricot:bg-primary-container' : 'apricot:group-hover/row:bg-surface-container'
-  )
+    "apricot:first:rounded-l-item apricot:last:rounded-r-item",
+    isSelected ? "apricot:bg-primary-container" : "apricot:group-hover/row:bg-surface-container",
+  );
 }
 
 /**
@@ -266,40 +240,38 @@ function SortHeader({
   column,
   sort,
   onSortChange,
-  align = 'right',
+  align = "right",
   width,
 }: {
-  column: SortKey
-  sort: { key: SortKey; dir: SortDir }
-  onSortChange: (key: SortKey) => void
-  align?: 'left' | 'right'
-  width?: string
+  column: SortKey;
+  sort: { key: SortKey; dir: SortDir };
+  onSortChange: (key: SortKey) => void;
+  align?: "left" | "right";
+  width?: string;
 }) {
-  const active = sort.key === column
-  const Arrow = sort.dir === 'asc' ? ArrowUp : ArrowDown
+  const active = sort.key === column;
+  const Arrow = sort.dir === "asc" ? ArrowUp : ArrowDown;
   return (
     <th
       aria-sort={ariaSort(column, sort)}
-      className={cn('px-0 py-0 font-medium', width, align === 'left' ? 'text-left' : 'text-right')}
+      className={cn("px-0 py-0 font-medium", width, align === "left" ? "text-left" : "text-right")}
     >
       <button
         type="button"
         onClick={() => onSortChange(column)}
         className={cn(
-          'hover:bg-surface-container flex w-full items-center gap-1 px-2 py-1',
-          'focus-visible:ring-primary outline-none focus-visible:ring-2 focus-visible:ring-inset',
-          align === 'left' ? 'justify-start' : 'justify-end',
-          active && 'text-on-surface font-semibold'
+          "hover:bg-surface-container flex w-full items-center gap-1 px-2 py-1",
+          "focus-visible:ring-primary outline-none focus-visible:ring-2 focus-visible:ring-inset",
+          align === "left" ? "justify-start" : "justify-end",
+          active && "text-on-surface font-semibold",
         )}
       >
         {SORT_LABELS[column]}
         {/* The arrow is the only indicator of direction, so it is reserved space
             rather than conditional — otherwise every header shifts a few pixels
             when the sort moves, which reads as the layout breaking. */}
-        <span className="inline-flex w-3 justify-center">
-          {active && <Arrow size={11} aria-hidden />}
-        </span>
+        <span className="inline-flex w-3 justify-center">{active && <Arrow size={11} aria-hidden />}</span>
       </button>
     </th>
-  )
+  );
 }

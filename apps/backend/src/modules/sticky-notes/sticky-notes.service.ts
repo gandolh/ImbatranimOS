@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DbService } from '../../db/db.service';
-import { CreateStickyNoteDto } from './dto/create-sticky-note.dto';
-import { UpdateStickyNoteDto } from './dto/update-sticky-note.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { DbService } from "../../db/db.service";
+import { CreateStickyNoteDto } from "./dto/create-sticky-note.dto";
+import { UpdateStickyNoteDto } from "./dto/update-sticky-note.dto";
 
 /**
  * Sticky notes, and where on the desktop they sit.
@@ -74,9 +74,7 @@ export class StickyNotesService {
 
   findAll(): StickyNote[] {
     const rows = this.db.db
-      .prepare(
-        `SELECT ${COLUMNS} FROM sticky_notes ORDER BY created_at DESC, id DESC`,
-      )
+      .prepare(`SELECT ${COLUMNS} FROM sticky_notes ORDER BY created_at DESC, id DESC`)
       .all() as StickyNoteRow[];
     return rows.map(toNote);
   }
@@ -88,7 +86,7 @@ export class StickyNotesService {
          VALUES (@content, @x, @y, @width, @height, @color, @onDesktop)`,
       )
       .run({
-        content: dto.content ?? '',
+        content: dto.content ?? "",
         x: dto.x ?? 100,
         y: dto.y ?? 100,
         width: dto.width ?? 200,
@@ -100,9 +98,7 @@ export class StickyNotesService {
   }
 
   update(id: number, dto: UpdateStickyNoteDto): StickyNote {
-    const existing = this.db.db
-      .prepare('SELECT id FROM sticky_notes WHERE id = ?')
-      .get(id);
+    const existing = this.db.db.prepare("SELECT id FROM sticky_notes WHERE id = ?").get(id);
     if (!existing) {
       throw new NotFoundException(`Sticky note ${id} not found`);
     }
@@ -114,38 +110,31 @@ export class StickyNotesService {
       values[key] = value;
     };
 
-    if (dto.content !== undefined) set('content', 'content', dto.content);
-    if (dto.x !== undefined) set('pos_x', 'x', dto.x);
-    if (dto.y !== undefined) set('pos_y', 'y', dto.y);
-    if (dto.width !== undefined) set('width', 'width', dto.width);
-    if (dto.height !== undefined) set('height', 'height', dto.height);
-    if (dto.onDesktop !== undefined)
-      set('on_desktop', 'onDesktop', dto.onDesktop ? 1 : 0);
+    if (dto.content !== undefined) set("content", "content", dto.content);
+    if (dto.x !== undefined) set("pos_x", "x", dto.x);
+    if (dto.y !== undefined) set("pos_y", "y", dto.y);
+    if (dto.width !== undefined) set("width", "width", dto.width);
+    if (dto.height !== undefined) set("height", "height", dto.height);
+    if (dto.onDesktop !== undefined) set("on_desktop", "onDesktop", dto.onDesktop ? 1 : 0);
     // `null` clears the colour back to the default surface, so this checks
     // `undefined` rather than falsiness.
-    if (dto.color !== undefined) set('color', 'color', dto.color ?? null);
+    if (dto.color !== undefined) set("color", "color", dto.color ?? null);
 
-    fields.push('updated_at = CURRENT_TIMESTAMP');
-    this.db.db
-      .prepare(`UPDATE sticky_notes SET ${fields.join(', ')} WHERE id = @id`)
-      .run(values);
+    fields.push("updated_at = CURRENT_TIMESTAMP");
+    this.db.db.prepare(`UPDATE sticky_notes SET ${fields.join(", ")} WHERE id = @id`).run(values);
 
     return this.get(id);
   }
 
   remove(id: number): void {
-    const info = this.db.db
-      .prepare('DELETE FROM sticky_notes WHERE id = ?')
-      .run(id);
+    const info = this.db.db.prepare("DELETE FROM sticky_notes WHERE id = ?").run(id);
     if (info.changes === 0) {
       throw new NotFoundException(`Sticky note ${id} not found`);
     }
   }
 
   private get(id: number): StickyNote {
-    const row = this.db.db
-      .prepare(`SELECT ${COLUMNS} FROM sticky_notes WHERE id = ?`)
-      .get(id) as StickyNoteRow;
+    const row = this.db.db.prepare(`SELECT ${COLUMNS} FROM sticky_notes WHERE id = ?`).get(id) as StickyNoteRow;
     return toNote(row);
   }
 }

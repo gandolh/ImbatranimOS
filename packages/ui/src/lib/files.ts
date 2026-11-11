@@ -6,8 +6,8 @@
  */
 
 /** Last path segment (the file's own name), or `fallback` when the path is empty. */
-export function fileName(path: string, fallback = 'file'): string {
-  return path.split('/').pop() || fallback
+export function fileName(path: string, fallback = "file"): string {
+  return path.split("/").pop() || fallback;
 }
 
 /**
@@ -18,9 +18,9 @@ export function fileName(path: string, fallback = 'file'): string {
  * implementation throws, whatever transport backs the handle.
  */
 export class UploadTooLargeError extends Error {
-  constructor(message = 'File exceeds the maximum upload size.') {
-    super(message)
-    this.name = 'UploadTooLargeError'
+  constructor(message = "File exceeds the maximum upload size.") {
+    super(message);
+    this.name = "UploadTooLargeError";
   }
 }
 
@@ -32,10 +32,10 @@ export class UploadTooLargeError extends Error {
  * Part of the protocol for the same reason as {@link UploadTooLargeError}.
  */
 export class FileConflictError extends Error {
-  readonly current: string | null
-  constructor(current: string | null, message = 'The file changed on disk since it was opened.') {
-    super(message)
-    this.name = 'FileConflictError'
-    this.current = current
+  readonly current: string | null;
+  constructor(current: string | null, message = "The file changed on disk since it was opened.") {
+    super(message);
+    this.name = "FileConflictError";
+    this.current = current;
   }
 }

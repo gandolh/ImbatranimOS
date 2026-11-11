@@ -1,30 +1,20 @@
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { createReadStream, promises as fs } from 'fs';
-import {
-  createServer,
-  type IncomingMessage,
-  type Server,
-  type ServerResponse,
-} from 'http';
-import type { Duplex } from 'stream';
-import { WebSocketServer, type WebSocket } from 'ws';
-import { logging, server as wisp } from '@mercuryworkshop/wisp-js/server';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { createReadStream, promises as fs } from "fs";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "http";
+import type { Duplex } from "stream";
+import { WebSocketServer, type WebSocket } from "ws";
+import { logging, server as wisp } from "@mercuryworkshop/wisp-js/server";
 
-import { browserProxyOriginOf, type Env } from '../../config/env.schema';
-import { FRAME_EMBEDDER_POLICY } from '../../security-headers';
-import { LocalIdentityService } from '../auth/ws-auth';
-import { authorizeUpgrade } from '../pty/pty-upgrade';
-import { GuardedTcpSocket, RefusedUdpSocket } from './guarded-socket';
-import { proxyAssets, type ProxyAsset } from './proxy-assets';
+import { browserProxyOriginOf, type Env } from "../../config/env.schema";
+import { FRAME_EMBEDDER_POLICY } from "../../security-headers";
+import { LocalIdentityService } from "../auth/ws-auth";
+import { authorizeUpgrade } from "../pty/pty-upgrade";
+import { GuardedTcpSocket, RefusedUdpSocket } from "./guarded-socket";
+import { proxyAssets, type ProxyAsset } from "./proxy-assets";
 
 /** The Wisp relay's path on the proxy origin. */
-export const WISP_PATH = '/wisp/';
+export const WISP_PATH = "/wisp/";
 
 /** Open relays at once. One Browser window holds one; a few tabs of the desktop hold a few. */
 export const MAX_RELAYS = 8;
@@ -59,9 +49,7 @@ interface LiveRelay {
  * allows: public addresses on web ports.
  */
 @Injectable()
-export class BrowserProxyServer
-  implements OnApplicationBootstrap, OnModuleDestroy
-{
+export class BrowserProxyServer implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(BrowserProxyServer.name);
   private server: Server | null = null;
   private wss: WebSocketServer | null = null;
@@ -76,21 +64,21 @@ export class BrowserProxyServer
     private readonly identity: LocalIdentityService,
     private readonly config: ConfigService<Env, true>,
   ) {
-    const frontend = this.config.get('FRONTEND_URL', { infer: true });
+    const frontend = this.config.get("FRONTEND_URL", { infer: true });
     this.frontendOrigin = new URL(frontend).origin;
     this.origin = browserProxyOriginOf({
       FRONTEND_URL: frontend,
-      BROWSER_PROXY_PORT: this.config.get('BROWSER_PROXY_PORT', {
+      BROWSER_PROXY_PORT: this.config.get("BROWSER_PROXY_PORT", {
         infer: true,
       }),
-      BROWSER_PROXY_ORIGIN: this.config.get('BROWSER_PROXY_ORIGIN', {
+      BROWSER_PROXY_ORIGIN: this.config.get("BROWSER_PROXY_ORIGIN", {
         infer: true,
       }),
     });
   }
 
   async onApplicationBootstrap(): Promise<void> {
-    const port = this.config.get('BROWSER_PROXY_PORT', { infer: true });
+    const port = this.config.get("BROWSER_PROXY_PORT", { infer: true });
     if (port === undefined || !this.origin) return;
 
     // wisp-js keeps its settings in one module-level object. Its own filter
@@ -105,46 +93,38 @@ export class BrowserProxyServer
     this.assets = proxyAssets();
     this.wss = new WebSocketServer({ noServer: true });
     const server = createServer((req, res) => void this.serveAsset(req, res));
-    server.on('upgrade', (req: IncomingMessage, socket: Duplex, head) =>
-      this.onUpgrade(req, socket, head),
-    );
+    server.on("upgrade", (req: IncomingMessage, socket: Duplex, head) => this.onUpgrade(req, socket, head));
     this.server = server;
     await new Promise<void>((resolve, reject) => {
-      server.once('error', reject);
+      server.once("error", reject);
       server.listen(port, () => {
-        server.off('error', reject);
+        server.off("error", reject);
         resolve();
       });
     });
-    this.sweepTimer = setInterval(
-      () => void this.sweepRevoked(),
-      REVOKE_SWEEP_MS,
-    );
+    this.sweepTimer = setInterval(() => void this.sweepRevoked(), REVOKE_SWEEP_MS);
     this.logger.log(`Browser proxy origin ${this.origin} (port ${port})`);
   }
 
   // ── static files ─────────────────────────────────────────────────────────
 
-  private async serveAsset(
-    req: IncomingMessage,
-    res: ServerResponse,
-  ): Promise<void> {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Referrer-Policy', 'no-referrer');
+  private async serveAsset(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "no-referrer");
     // The desktop is cross-origin isolated, so the frame it holds here must
     // be too: an embedder policy of its own, and a resource policy that lets
     // another origin frame it (`frame-ancestors` below still names the only
     // one that may). The headers go on every file, so the service worker
     // and bare-mux's shared worker are isolated like the page that starts
     // them. Proxied pages get theirs from the service worker (sw.js).
-    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-    res.setHeader('Cross-Origin-Embedder-Policy', FRAME_EMBEDDER_POLICY);
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      res.writeHead(405, { Allow: 'GET, HEAD' }).end();
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    res.setHeader("Cross-Origin-Embedder-Policy", FRAME_EMBEDDER_POLICY);
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      res.writeHead(405, { Allow: "GET, HEAD" }).end();
       return;
     }
-    const path = (req.url ?? '/').split('?', 1)[0];
+    const path = (req.url ?? "/").split("?", 1)[0];
     const asset = this.assets.get(path);
     if (!asset) {
       res.writeHead(404).end();
@@ -158,25 +138,25 @@ export class BrowserProxyServer
       return;
     }
     const etag = `"${stat.size.toString(36)}-${Math.floor(stat.mtimeMs).toString(36)}"`;
-    res.setHeader('ETag', etag);
-    res.setHeader('Cache-Control', 'no-cache');
-    if (path === '/host.html') {
-      res.setHeader('Content-Security-Policy', this.hostPolicy());
+    res.setHeader("ETag", etag);
+    res.setHeader("Cache-Control", "no-cache");
+    if (path === "/host.html") {
+      res.setHeader("Content-Security-Policy", this.hostPolicy());
     }
-    if (req.headers['if-none-match'] === etag) {
+    if (req.headers["if-none-match"] === etag) {
       res.writeHead(304).end();
       return;
     }
     res.writeHead(200, {
-      'Content-Type': asset.type,
-      'Content-Length': stat.size,
+      "Content-Type": asset.type,
+      "Content-Length": stat.size,
     });
-    if (req.method === 'HEAD') {
+    if (req.method === "HEAD") {
       res.end();
       return;
     }
     createReadStream(asset.file)
-      .on('error', () => res.destroy())
+      .on("error", () => res.destroy())
       .pipe(res);
   }
 
@@ -200,7 +180,7 @@ export class BrowserProxyServer
       "base-uri 'none'",
       "form-action 'none'",
       `frame-ancestors ${this.frontendOrigin}`,
-    ].join('; ');
+    ].join("; ");
   }
 
   // ── the relay ────────────────────────────────────────────────────────────
@@ -209,11 +189,11 @@ export class BrowserProxyServer
     // See the terminal's gateway: an unhandled socket error while the session
     // is checked would take the process down.
     const onSocketError = () => socket.destroy();
-    socket.on('error', onSocketError);
+    socket.on("error", onSocketError);
 
-    const path = (req.url ?? '').split('?', 1)[0];
+    const path = (req.url ?? "").split("?", 1)[0];
     if (path !== WISP_PATH || !this.origin) {
-      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
+      socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
       socket.destroy();
       return;
     }
@@ -229,33 +209,33 @@ export class BrowserProxyServer
           : null;
       if (socket.destroyed) return;
       if (!record) {
-        this.logger.warn('Rejected an unauthorized Browser relay upgrade');
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+        this.logger.warn("Rejected an unauthorized Browser relay upgrade");
+        socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
         socket.destroy();
         return;
       }
       if (this.live.size >= MAX_RELAYS) {
-        socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+        socket.write("HTTP/1.1 503 Service Unavailable\r\n\r\n");
         socket.destroy();
         return;
       }
-      socket.off('error', onSocketError);
+      socket.off("error", onSocketError);
       this.wss!.handleUpgrade(req, socket, head, (ws) => {
         const entry: LiveRelay = { ws, cookie: req.headers.cookie };
         this.live.add(entry);
-        ws.on('close', () => this.live.delete(entry));
+        ws.on("close", () => this.live.delete(entry));
         void this.runRelay(ws, req);
       });
     })();
   }
 
   private async runRelay(ws: WebSocket, req: IncomingMessage): Promise<void> {
-    ws.binaryType = 'arraybuffer';
+    ws.binaryType = "arraybuffer";
     const conn = new wisp.ServerConnection(ws, WISP_PATH, {
       TCPSocket: GuardedTcpSocket,
       UDPSocket: RefusedUdpSocket,
       // wisp-js's own rule: v2 when the client offers a subprotocol.
-      wisp_version: req.headers['sec-websocket-protocol'] ? 2 : 1,
+      wisp_version: req.headers["sec-websocket-protocol"] ? 2 : 1,
     });
     try {
       await conn.setup();
@@ -269,13 +249,9 @@ export class BrowserProxyServer
   private async sweepRevoked(): Promise<void> {
     if (!this.origin) return;
     for (const entry of [...this.live]) {
-      const still = await authorizeUpgrade(
-        { headers: { cookie: entry.cookie } },
-        this.identity,
-        this.origin,
-      );
+      const still = await authorizeUpgrade({ headers: { cookie: entry.cookie } }, this.identity, this.origin);
       if (!still) {
-        entry.ws.close(4401, 'session-revoked');
+        entry.ws.close(4401, "session-revoked");
         this.live.delete(entry);
       }
     }
@@ -283,7 +259,7 @@ export class BrowserProxyServer
 
   async onModuleDestroy(): Promise<void> {
     if (this.sweepTimer) clearInterval(this.sweepTimer);
-    for (const entry of this.live) entry.ws.close(1001, 'shutdown');
+    for (const entry of this.live) entry.ws.close(1001, "shutdown");
     this.live.clear();
     this.wss?.close();
     const server = this.server;
@@ -296,6 +272,6 @@ export class BrowserProxyServer
   /** The port actually bound. For tests that listen on port 0. */
   boundPort(): number | null {
     const address = this.server?.address();
-    return address && typeof address === 'object' ? address.port : null;
+    return address && typeof address === "object" ? address.port : null;
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 
 /**
  * Returns `value`, but only after it has settled for `delayMs` without
@@ -6,12 +6,12 @@ import { useEffect, useState } from 'react'
  * from firing a preview fetch per intermediate selection.
  */
 export function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value)
+  const [debounced, setDebounced] = useState(value);
 
   useEffect(() => {
-    const id = window.setTimeout(() => setDebounced(value), delayMs)
-    return () => window.clearTimeout(id)
-  }, [value, delayMs])
+    const id = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(id);
+  }, [value, delayMs]);
 
-  return debounced
+  return debounced;
 }

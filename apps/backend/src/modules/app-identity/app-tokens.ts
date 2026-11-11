@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
 
-import type { AppIdentity } from './app-identity.types';
+import type { AppIdentity } from "./app-identity.types";
 
 /** A token unused this long has ended; core mints its window a new one when it next calls. */
 export const APP_TOKEN_IDLE_MS = 6 * 60 * 60_000;
@@ -18,7 +18,7 @@ interface Entry {
 }
 
 /** What {@link AppTokens.register} did. */
-export type RegisterResult = 'registered' | 'taken';
+export type RegisterResult = "registered" | "taken";
 
 /**
  * The live app tokens: token → the app, the running copy and the session.
@@ -44,16 +44,11 @@ export class AppTokens {
    * window that lost its token takes a new one. A token already registered is
    * `taken` and changes nothing.
    */
-  register(
-    token: string,
-    sid: string,
-    identity: AppIdentity,
-    now = Date.now(),
-  ): RegisterResult {
+  register(token: string, sid: string, identity: AppIdentity, now = Date.now()): RegisterResult {
     if (!APP_TOKEN_SHAPE.test(token)) {
-      throw new Error('An app token is 64 lowercase hex characters');
+      throw new Error("An app token is 64 lowercase hex characters");
     }
-    if (this.entries.has(token)) return 'taken';
+    if (this.entries.has(token)) return "taken";
     this.sweep(now);
     this.revokeInstance(sid, identity.instanceId);
     while (this.entries.size >= MAX_APP_TOKENS) {
@@ -68,7 +63,7 @@ export class AppTokens {
       sid,
       lastUsed: now,
     });
-    return 'registered';
+    return "registered";
   }
 
   /**

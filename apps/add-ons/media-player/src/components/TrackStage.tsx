@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Download, Music, RotateCcw } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AlertTriangle, Download, Music, RotateCcw } from "lucide-react";
 import {
   Button,
   fileName,
@@ -7,10 +7,10 @@ import {
   useSystem,
   useSystemSound,
   useTopWindowKeydown,
-} from '@imbatranim/ui'
-import type { MediaKind } from '../api/listDir'
-import { mediaErrorReport } from '../lib/mediaError'
-import { TransportBar } from './TransportBar'
+} from "@imbatranim/ui";
+import type { MediaKind } from "../api/listDir";
+import { mediaErrorReport } from "../lib/mediaError";
+import { TransportBar } from "./TransportBar";
 import {
   ARROW_SKIP_SECONDS,
   COARSE_SKIP_SECONDS,
@@ -18,40 +18,40 @@ import {
   bufferedRanges,
   clampSeek,
   elementLoudness,
-} from '../lib/transport'
-import { parseSubtitles, stripSsaOverrides } from '../lib/subtitles'
-import { shouldResume } from '../lib/resume'
-import type { RepeatMode } from '../lib/queueOrder'
-import { formatTime } from '../lib/formatTime'
+} from "../lib/transport";
+import { parseSubtitles, stripSsaOverrides } from "../lib/subtitles";
+import { shouldResume } from "../lib/resume";
+import type { RepeatMode } from "../lib/queueOrder";
+import { formatTime } from "../lib/formatTime";
 
 type TrackStageProps = {
-  root: string
-  path: string
-  kind: MediaKind
-  initialVolume: number
-  initialMuted: boolean
-  initialRate: number
-  autoPlay: boolean
-  canPrev: boolean
-  canNext: boolean
-  onPrev: () => void
-  onNext: () => void
-  onEnded: () => void
-  onVolumeChange: (volume: number, muted: boolean) => void
-  onRateChange: (rate: number) => void
-  repeat: RepeatMode
-  onCycleRepeat: () => void
-  shuffle: boolean
-  onToggleShuffle: () => void
+  root: string;
+  path: string;
+  kind: MediaKind;
+  initialVolume: number;
+  initialMuted: boolean;
+  initialRate: number;
+  autoPlay: boolean;
+  canPrev: boolean;
+  canNext: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+  onEnded: () => void;
+  onVolumeChange: (volume: number, muted: boolean) => void;
+  onRateChange: (rate: number) => void;
+  repeat: RepeatMode;
+  onCycleRepeat: () => void;
+  shuffle: boolean;
+  onToggleShuffle: () => void;
   /** Sidecar subtitle path for this track, or null when there is none. */
-  subtitlePath: string | null
+  subtitlePath: string | null;
   /** Where to resume from, in seconds, or null to start at the beginning. */
-  resumeAt: number | null
+  resumeAt: number | null;
   /** Called (throttled) with the current position, so it can be remembered. */
-  onProgress: (position: number, duration: number) => void
+  onProgress: (position: number, duration: number) => void;
   /** The user asked to start this file over. */
-  onStartOver: () => void
-}
+  onStartOver: () => void;
+};
 
 /**
  * Owns the native `<video>`/`<audio>` element + transport bar for exactly
@@ -85,27 +85,27 @@ export function TrackStage({
   onProgress,
   onStartOver,
 }: TrackStageProps) {
-  const system = useSystem()
-  const os = useSystemSound()
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [volume, setVolume] = useState(initialVolume)
-  const [muted, setMuted] = useState(initialMuted)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [errorHint, setErrorHint] = useState('')
-  const [buffered, setBuffered] = useState<[number, number][]>([])
-  const [playbackRate, setPlaybackRate] = useState(initialRate)
-  const [subtitlesOn, setSubtitlesOn] = useState<boolean | null>(null)
-  const [resumedFrom, setResumedFrom] = useState<number | null>(null)
-  const mediaRef = useRef<HTMLMediaElement | null>(null)
-  const stageRef = useRef<HTMLDivElement | null>(null)
-  const textTrackRef = useRef<TextTrack | null>(null)
+  const system = useSystem();
+  const os = useSystemSound();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(initialVolume);
+  const [muted, setMuted] = useState(initialMuted);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorHint, setErrorHint] = useState("");
+  const [buffered, setBuffered] = useState<[number, number][]>([]);
+  const [playbackRate, setPlaybackRate] = useState(initialRate);
+  const [subtitlesOn, setSubtitlesOn] = useState<boolean | null>(null);
+  const [resumedFrom, setResumedFrom] = useState<number | null>(null);
+  const mediaRef = useRef<HTMLMediaElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const textTrackRef = useRef<TextTrack | null>(null);
   // Latest values for the mount-once effect below, which must not re-run per track tick.
-  const liveRef = useRef({ resumeAt, onProgress, repeat })
+  const liveRef = useRef({ resumeAt, onProgress, repeat });
   useEffect(() => {
-    liveRef.current = { resumeAt, onProgress, repeat }
-  })
+    liveRef.current = { resumeAt, onProgress, repeat };
+  });
 
   // Wire this track's element exactly once: attach listeners that call
   // setState from their own (later-firing) callback, apply the persisted rate
@@ -115,113 +115,113 @@ export function TrackStage({
   // mount, so this effect is intentionally mount-once rather than re-synced
   // on every prop tick. Volume and mute are applied by the effect after it.
   useEffect(() => {
-    const el = mediaRef.current
-    if (!el) return
+    const el = mediaRef.current;
+    if (!el) return;
 
     function handleLoadedMetadata() {
-      setDuration(el!.duration || 0)
+      setDuration(el!.duration || 0);
       // Resume only once the duration is known, and only when the stored position is
       // actually resumable for THIS duration. `clampSeek` alone would pin a stale
       // position past the end (the file was replaced on disk) to `duration`, so the
       // track would instantly fire `ended` and auto-advance (T1-13). `shouldResume`
       // is the decision that guards against that — a candidate is passed in and
       // checked here, where the duration is finally known.
-      const target = liveRef.current.resumeAt
+      const target = liveRef.current.resumeAt;
       if (target !== null && shouldResume(target, el!.duration)) {
-        const seekTo = clampSeek(target, el!.duration)
+        const seekTo = clampSeek(target, el!.duration);
         if (seekTo !== null) {
-          el!.currentTime = seekTo
-          setResumedFrom(seekTo)
+          el!.currentTime = seekTo;
+          setResumedFrom(seekTo);
         }
       }
     }
-    let lastReported = 0
+    let lastReported = 0;
     function handleTimeUpdate() {
-      setCurrentTime(el!.currentTime)
+      setCurrentTime(el!.currentTime);
       // `timeupdate` fires ~4×/second; a write per event would mean a JSON.stringify and a
       // localStorage round-trip 240 times a minute for a value nobody reads until the file
       // is reopened.
-      if (Math.abs(el!.currentTime - lastReported) < 5) return
-      lastReported = el!.currentTime
-      liveRef.current.onProgress(el!.currentTime, el!.duration)
+      if (Math.abs(el!.currentTime - lastReported) < 5) return;
+      lastReported = el!.currentTime;
+      liveRef.current.onProgress(el!.currentTime, el!.duration);
     }
     function handlePlay() {
-      setIsPlaying(true)
+      setIsPlaying(true);
     }
     function handlePause() {
-      setIsPlaying(false)
+      setIsPlaying(false);
     }
     function handleEnded() {
-      setIsPlaying(false)
+      setIsPlaying(false);
       // Reaching the end clears any remembered position — reopening a finished file should
       // start it again, not offer to resume the credits.
-      liveRef.current.onProgress(0, el!.duration)
+      liveRef.current.onProgress(0, el!.duration);
       // Repeat-one is replayed HERE, on the element, rather than by the parent re-selecting
       // the same path: that would change no state, so nothing would remount and the track
       // would simply stop. Replaying in place also avoids re-fetching what is already
       // buffered.
-      if (liveRef.current.repeat === 'one') {
-        el!.currentTime = 0
-        void el!.play().catch(() => undefined)
-        return
+      if (liveRef.current.repeat === "one") {
+        el!.currentTime = 0;
+        void el!.play().catch(() => undefined);
+        return;
       }
-      onEnded()
+      onEnded();
     }
     function handleError() {
-      setIsPlaying(false)
-      const report = mediaErrorReport(el!.error, path, fileName(path, 'this file'))
-      setErrorMsg(report.message)
-      setErrorHint(report.hint)
+      setIsPlaying(false);
+      const report = mediaErrorReport(el!.error, path, fileName(path, "this file"));
+      setErrorMsg(report.message);
+      setErrorHint(report.hint);
       // The window may be behind others by the time a queued track fails, so the overlay
       // alone can go unseen — which is the "dead player, no message" state this replaces.
       system.notify({
-        title: 'Cannot play this file',
+        title: "Cannot play this file",
         body: report.hint ? `${report.message} ${report.hint}` : report.message,
-        level: 'error',
-      })
+        level: "error",
+      });
     }
 
-    const handleProgress = () => setBuffered(bufferedRanges(el!))
-    el.addEventListener('loadedmetadata', handleLoadedMetadata)
-    el.addEventListener('timeupdate', handleTimeUpdate)
-    el.addEventListener('progress', handleProgress)
-    el.addEventListener('play', handlePlay)
-    el.addEventListener('pause', handlePause)
-    el.addEventListener('ended', handleEnded)
-    el.addEventListener('error', handleError)
+    const handleProgress = () => setBuffered(bufferedRanges(el!));
+    el.addEventListener("loadedmetadata", handleLoadedMetadata);
+    el.addEventListener("timeupdate", handleTimeUpdate);
+    el.addEventListener("progress", handleProgress);
+    el.addEventListener("play", handlePlay);
+    el.addEventListener("pause", handlePause);
+    el.addEventListener("ended", handleEnded);
+    el.addEventListener("error", handleError);
 
-    el.playbackRate = initialRate
+    el.playbackRate = initialRate;
     if (autoPlay) {
       el.play().catch(() => {
-        setErrorMsg('Playback was blocked by the browser. Press play to start.')
-      })
+        setErrorMsg("Playback was blocked by the browser. Press play to start.");
+      });
     }
 
     return () => {
-      el.removeEventListener('loadedmetadata', handleLoadedMetadata)
-      el.removeEventListener('timeupdate', handleTimeUpdate)
-      el.removeEventListener('progress', handleProgress)
-      el.removeEventListener('play', handlePlay)
-      el.removeEventListener('pause', handlePause)
-      el.removeEventListener('ended', handleEnded)
-      el.removeEventListener('error', handleError)
-    }
+      el.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      el.removeEventListener("timeupdate", handleTimeUpdate);
+      el.removeEventListener("progress", handleProgress);
+      el.removeEventListener("play", handlePlay);
+      el.removeEventListener("pause", handlePause);
+      el.removeEventListener("ended", handleEnded);
+      el.removeEventListener("error", handleError);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once for this track; see the comment above the effect.
-  }, [])
+  }, []);
 
   // The element plays at the player's own volume times the OS volume from the
   // tray. The player's state is the truth and the element only follows it:
   // reading the element back would save the product as the player's volume.
   useEffect(() => {
-    const el = mediaRef.current
-    if (!el) return
-    const out = elementLoudness({ volume, muted }, os)
-    el.volume = out.volume
-    el.muted = out.muted
-  }, [volume, muted, os])
+    const el = mediaRef.current;
+    if (!el) return;
+    const out = elementLoudness({ volume, muted }, os);
+    el.volume = out.volume;
+    el.muted = out.muted;
+  }, [volume, muted, os]);
 
   function setMediaRef(el: HTMLVideoElement | HTMLAudioElement | null) {
-    mediaRef.current = el
+    mediaRef.current = el;
   }
 
   /**
@@ -235,46 +235,46 @@ export function TrackStage({
    * is also what makes `.srt` work, since the cues are parsed here either way.
    */
   useEffect(() => {
-    const el = mediaRef.current
-    if (!el || !subtitlePath) return
-    let cancelled = false
+    const el = mediaRef.current;
+    if (!el || !subtitlePath) return;
+    let cancelled = false;
     void (async () => {
       try {
-        const res = await system.http.get<{ content: string }>('/files/content', {
+        const res = await system.http.get<{ content: string }>("/files/content", {
           params: { root, path: subtitlePath },
-        })
-        if (cancelled) return
-        const cues = parseSubtitles(res.data.content)
-        if (cues.length === 0) return
-        const track = el.addTextTrack('subtitles', fileName(subtitlePath, 'Subtitles'), 'und')
+        });
+        if (cancelled) return;
+        const cues = parseSubtitles(res.data.content);
+        if (cues.length === 0) return;
+        const track = el.addTextTrack("subtitles", fileName(subtitlePath, "Subtitles"), "und");
         for (const cue of cues) {
           try {
-            track.addCue(new VTTCue(cue.start, cue.end, stripSsaOverrides(cue.text)))
+            track.addCue(new VTTCue(cue.start, cue.end, stripSsaOverrides(cue.text)));
           } catch {
             // One cue the platform rejects must not lose the other nine hundred.
           }
         }
-        track.mode = 'showing'
-        textTrackRef.current = track
-        setSubtitlesOn(true)
+        track.mode = "showing";
+        textTrackRef.current = track;
+        setSubtitlesOn(true);
       } catch (err) {
-        console.error('[media-player] failed to load subtitles', err)
+        console.error("[media-player] failed to load subtitles", err);
       }
-    })()
+    })();
     return () => {
-      cancelled = true
-    }
+      cancelled = true;
+    };
     // Mount-once per track: the stage is remounted with `key={path}` on every track change,
     // so the element (and any track added to it) is always fresh.
-  }, [subtitlePath, root, system])
+  }, [subtitlePath, root, system]);
 
   const toggleSubtitles = useCallback(() => {
-    const track = textTrackRef.current
-    if (!track) return
-    const next = track.mode !== 'showing'
-    track.mode = next ? 'showing' : 'hidden'
-    setSubtitlesOn(next)
-  }, [])
+    const track = textTrackRef.current;
+    if (!track) return;
+    const next = track.mode !== "showing";
+    track.mode = next ? "showing" : "hidden";
+    setSubtitlesOn(next);
+  }, []);
 
   /**
    * Fullscreen the whole stage, not the `<video>`.
@@ -284,44 +284,44 @@ export function TrackStage({
    * filling the screen rather than the browser's.
    */
   const toggleFullscreen = useCallback(() => {
-    const stage = stageRef.current
-    if (!stage) return
-    if (document.fullscreenElement) void document.exitFullscreen()
-    else void stage.requestFullscreen().catch(() => undefined)
-  }, [])
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void stage.requestFullscreen().catch(() => undefined);
+  }, []);
 
   const startOver = useCallback(() => {
-    const el = mediaRef.current
-    if (el) el.currentTime = 0
-    setResumedFrom(null)
-    onStartOver()
-  }, [onStartOver])
+    const el = mediaRef.current;
+    if (el) el.currentTime = 0;
+    setResumedFrom(null);
+    onStartOver();
+  }, [onStartOver]);
 
   function togglePlay() {
-    const el = mediaRef.current
-    if (!el) return
+    const el = mediaRef.current;
+    if (!el) return;
     if (el.paused || el.ended) {
       el.play().catch(() => {
-        setErrorMsg('Playback was blocked by the browser. Press play to start.')
-      })
+        setErrorMsg("Playback was blocked by the browser. Press play to start.");
+      });
     } else {
-      el.pause()
+      el.pause();
     }
   }
 
   function seek(time: number) {
-    const el = mediaRef.current
-    if (!el) return
-    const next = clampSeek(time, el.duration)
-    if (next !== null) el.currentTime = next
+    const el = mediaRef.current;
+    if (!el) return;
+    const next = clampSeek(time, el.duration);
+    if (next !== null) el.currentTime = next;
   }
 
   /** Relative skip, clamped — used by the buttons and the arrow keys. */
   function skip(seconds: number) {
-    const el = mediaRef.current
-    if (!el) return
-    const next = clampSeek(el.currentTime + seconds, el.duration)
-    if (next !== null) el.currentTime = next
+    const el = mediaRef.current;
+    if (!el) return;
+    const next = clampSeek(el.currentTime + seconds, el.duration);
+    if (next !== null) el.currentTime = next;
   }
 
   // VLC's keyboard set. Published to the `?` overlay for discoverability, but
@@ -332,134 +332,126 @@ export function TrackStage({
   // fired for every media-player window at once, regardless of which was on top
   // (T2-1).
   useDocumentedShortcuts([
-    { id: 'media.playpause', keys: 'space', description: 'Play / pause', scope: 'Editing' },
+    { id: "media.playpause", keys: "space", description: "Play / pause", scope: "Editing" },
     {
-      id: 'media.back',
-      keys: 'left',
+      id: "media.back",
+      keys: "left",
       description: `Back ${ARROW_SKIP_SECONDS}s`,
-      scope: 'Editing',
+      scope: "Editing",
     },
     {
-      id: 'media.forward',
-      keys: 'right',
+      id: "media.forward",
+      keys: "right",
       description: `Forward ${ARROW_SKIP_SECONDS}s`,
-      scope: 'Editing',
+      scope: "Editing",
     },
     {
-      id: 'media.back.coarse',
-      keys: 'shift+left',
+      id: "media.back.coarse",
+      keys: "shift+left",
       description: `Back ${COARSE_SKIP_SECONDS}s`,
-      scope: 'Editing',
+      scope: "Editing",
     },
     {
-      id: 'media.forward.coarse',
-      keys: 'shift+right',
+      id: "media.forward.coarse",
+      keys: "shift+right",
       description: `Forward ${COARSE_SKIP_SECONDS}s`,
-      scope: 'Editing',
+      scope: "Editing",
     },
-    { id: 'media.mute', keys: 'm', description: 'Mute / unmute', scope: 'Editing' },
-    { id: 'media.volume.up', keys: 'up', description: 'Volume up', scope: 'Editing' },
-    { id: 'media.volume.down', keys: 'down', description: 'Volume down', scope: 'Editing' },
-    { id: 'media.fullscreen', keys: 'f', description: 'Fullscreen (video)', scope: 'Editing' },
-  ])
+    { id: "media.mute", keys: "m", description: "Mute / unmute", scope: "Editing" },
+    { id: "media.volume.up", keys: "up", description: "Volume up", scope: "Editing" },
+    { id: "media.volume.down", keys: "down", description: "Volume down", scope: "Editing" },
+    { id: "media.fullscreen", keys: "f", description: "Fullscreen (video)", scope: "Editing" },
+  ]);
 
   useTopWindowKeydown((e) => {
     // Real shortcuts (Ctrl/⌘/Alt combos) belong to the shell and other apps.
-    if (e.ctrlKey || e.metaKey || e.altKey) return
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     // Left/Right take a coarse variant on Shift; everything else is Shift-free.
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault()
-      skip(e.shiftKey ? -COARSE_SKIP_SECONDS : -ARROW_SKIP_SECONDS)
-      return
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      skip(e.shiftKey ? -COARSE_SKIP_SECONDS : -ARROW_SKIP_SECONDS);
+      return;
     }
-    if (e.key === 'ArrowRight') {
-      e.preventDefault()
-      skip(e.shiftKey ? COARSE_SKIP_SECONDS : ARROW_SKIP_SECONDS)
-      return
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      skip(e.shiftKey ? COARSE_SKIP_SECONDS : ARROW_SKIP_SECONDS);
+      return;
     }
-    if (e.shiftKey) return
-    const k = e.key.toLowerCase()
-    if (e.key === ' ') {
-      e.preventDefault()
-      togglePlay()
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      nudgeVolume(VOLUME_STEP)
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      nudgeVolume(-VOLUME_STEP)
-    } else if (k === 'm') {
-      e.preventDefault()
-      toggleMute()
-    } else if (k === 'f') {
-      e.preventDefault()
-      toggleFullscreen()
+    if (e.shiftKey) return;
+    const k = e.key.toLowerCase();
+    if (e.key === " ") {
+      e.preventDefault();
+      togglePlay();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      nudgeVolume(VOLUME_STEP);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      nudgeVolume(-VOLUME_STEP);
+    } else if (k === "m") {
+      e.preventDefault();
+      toggleMute();
+    } else if (k === "f") {
+      e.preventDefault();
+      toggleFullscreen();
     }
-  })
+  });
 
   function changeRate(rate: number) {
-    const el = mediaRef.current
-    if (!el) return
-    el.playbackRate = rate
-    setPlaybackRate(rate)
+    const el = mediaRef.current;
+    if (!el) return;
+    el.playbackRate = rate;
+    setPlaybackRate(rate);
     // Reported up so it is remembered: the rate used to reset on every track change,
     // because this component remounts per track.
-    onRateChange(rate)
+    onRateChange(rate);
   }
 
   /** The player's own volume and mute: shown, applied and remembered. */
   function setPlayerVolume(nextVolume: number, nextMuted: boolean) {
-    setVolume(nextVolume)
-    setMuted(nextMuted)
-    onVolumeChange(nextVolume, nextMuted)
+    setVolume(nextVolume);
+    setMuted(nextMuted);
+    onVolumeChange(nextVolume, nextMuted);
   }
 
   /** Relative volume change for the arrow keys, clamped. */
   function nudgeVolume(delta: number) {
-    const next = Math.min(1, Math.max(0, volume + delta))
-    setPlayerVolume(next, next > 0 ? false : muted)
+    const next = Math.min(1, Math.max(0, volume + delta));
+    setPlayerVolume(next, next > 0 ? false : muted);
   }
 
   function changeVolume(next: number) {
-    setPlayerVolume(next, next > 0 ? false : muted)
+    setPlayerVolume(next, next > 0 ? false : muted);
   }
 
   function toggleMute() {
-    setPlayerVolume(volume, !muted)
+    setPlayerVolume(volume, !muted);
   }
 
   function triggerDownload() {
-    const url = system.fs.downloadUrl(root, path)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = fileName(path, 'media')
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
+    const url = system.fs.downloadUrl(root, path);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName(path, "media");
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
-  const src = system.fs.downloadUrl(root, path)
+  const src = system.fs.downloadUrl(root, path);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
-      <div
-        ref={stageRef}
-        className="bg-surface-dim relative flex min-h-0 flex-1 flex-col items-center justify-center"
-      >
-        {kind === 'video' ? (
-          <video
-            ref={setMediaRef}
-            src={src}
-            preload="metadata"
-            className="max-h-full max-w-full object-contain"
-          />
+      <div ref={stageRef} className="bg-surface-dim relative flex min-h-0 flex-1 flex-col items-center justify-center">
+        {kind === "video" ? (
+          <video ref={setMediaRef} src={src} preload="metadata" className="max-h-full max-w-full object-contain" />
         ) : (
           <>
             <audio ref={setMediaRef} src={src} preload="metadata" hidden />
             <div className="text-on-surface-variant flex flex-col items-center gap-2 px-6 text-center">
               <Music size={48} strokeWidth={1} />
               <span className="font-ui text-on-surface max-w-[280px] truncate text-[12px]">
-                {fileName(path, 'audio')}
+                {fileName(path, "audio")}
               </span>
             </div>
           </>
@@ -467,9 +459,7 @@ export function TrackStage({
 
         {resumedFrom !== null && (
           <div className="rounded-control border-outline-variant bg-surface-container-low absolute top-2 left-1/2 flex -translate-x-1/2 items-center gap-2 border px-2 py-1">
-            <span className="font-ui text-on-surface-variant text-[11px]">
-              Resumed at {formatTime(resumedFrom)}
-            </span>
+            <span className="font-ui text-on-surface-variant text-[11px]">Resumed at {formatTime(resumedFrom)}</span>
             <button
               type="button"
               onClick={startOver}
@@ -486,16 +476,9 @@ export function TrackStage({
             <AlertTriangle size={32} className="text-error" strokeWidth={1.5} />
             <span className="font-ui text-error text-[12px]">{errorMsg}</span>
             {errorHint && (
-              <span className="font-ui text-on-surface-variant max-w-[380px] text-[11px]">
-                {errorHint}
-              </span>
+              <span className="font-ui text-on-surface-variant max-w-[380px] text-[11px]">{errorHint}</span>
             )}
-            <Button
-              variant="default"
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={triggerDownload}
-            >
+            <Button variant="default" size="sm" className="flex items-center gap-1" onClick={triggerDownload}>
               <Download size={12} />
               Download instead
             </Button>
@@ -526,10 +509,10 @@ export function TrackStage({
         onCycleRepeat={onCycleRepeat}
         shuffle={shuffle}
         onToggleShuffle={onToggleShuffle}
-        onFullscreen={kind === 'video' ? toggleFullscreen : null}
+        onFullscreen={kind === "video" ? toggleFullscreen : null}
         subtitlesOn={subtitlesOn}
         onToggleSubtitles={toggleSubtitles}
       />
     </div>
-  )
+  );
 }

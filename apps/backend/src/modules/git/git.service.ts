@@ -5,21 +5,21 @@ import {
   PayloadTooLargeException,
   RequestTimeoutException,
   ServiceUnavailableException,
-} from '@nestjs/common';
-import * as fs from 'fs/promises';
-import { join, relative, sep } from 'path';
-import type { AppIdentity } from '../app-identity/app-identity.types';
-import { FilesService } from '../files/files.service';
-import { childEnv } from '../../child-env';
+} from "@nestjs/common";
+import * as fs from "fs/promises";
+import { join, relative, sep } from "path";
+import type { AppIdentity } from "../app-identity/app-identity.types";
+import { FilesService } from "../files/files.service";
+import { childEnv } from "../../child-env";
 
 // execa ships pure ESM; import it lazily (dynamic import) so this module still
 // loads under ts-jest's CommonJS transform in unit tests. Same idiom as
 // SystemService.
-type ExecaFn = typeof import('execa').execa;
+type ExecaFn = typeof import("execa").execa;
 let execaFn: ExecaFn | null = null;
 async function getExeca(): Promise<ExecaFn> {
   if (!execaFn) {
-    ({ execa: execaFn } = await import('execa'));
+    ({ execa: execaFn } = await import("execa"));
   }
   return execaFn;
 }
@@ -46,9 +46,9 @@ const MAX_PATCH_BYTES = 1024 * 1024;
  *  - GIT_OPTIONAL_LOCKS=0   — don't take optional locks for read commands.
  */
 const GIT_ENV = {
-  GIT_TERMINAL_PROMPT: '0',
-  GIT_LITERAL_PATHSPECS: '1',
-  GIT_OPTIONAL_LOCKS: '0',
+  GIT_TERMINAL_PROMPT: "0",
+  GIT_LITERAL_PATHSPECS: "1",
+  GIT_OPTIONAL_LOCKS: "0",
 } as const;
 
 export interface GitStatusEntry {
@@ -78,8 +78,8 @@ interface ExecResult {
   exitCode: number;
 }
 
-const FIELD_SEP = '\x1f'; // unit separator — between log fields
-const RECORD_SEP = '\0'; // NUL — between records (status entries / commits)
+const FIELD_SEP = "\x1f"; // unit separator — between log fields
+const RECORD_SEP = "\0"; // NUL — between records (status entries / commits)
 
 /**
  * True when a spawn failed because the binary itself is not on PATH.
@@ -96,18 +96,17 @@ const RECORD_SEP = '\0'; // NUL — between records (status entries / commits)
  * check the shapes rather than pin one.
  */
 export function isBinaryMissing(result: unknown): boolean {
-  if (typeof result !== 'object' || result === null) return false;
+  if (typeof result !== "object" || result === null) return false;
   const r = result as {
     code?: unknown;
     cause?: { code?: unknown };
     originalMessage?: unknown;
     shortMessage?: unknown;
   };
-  if (r.code === 'ENOENT') return true;
-  if (r.cause?.code === 'ENOENT') return true;
-  const original =
-    typeof r.originalMessage === 'string' ? r.originalMessage : '';
-  const short = typeof r.shortMessage === 'string' ? r.shortMessage : '';
+  if (r.code === "ENOENT") return true;
+  if (r.cause?.code === "ENOENT") return true;
+  const original = typeof r.originalMessage === "string" ? r.originalMessage : "";
+  const short = typeof r.shortMessage === "string" ? r.shortMessage : "";
   return /\bENOENT\b/.test(`${original} ${short}`);
 }
 
@@ -121,27 +120,25 @@ export function isBinaryMissing(result: unknown): boolean {
  * for the same reason as {@link isBinaryMissing}.
  */
 export function isTooBig(result: unknown): boolean {
-  if (typeof result !== 'object' || result === null) return false;
+  if (typeof result !== "object" || result === null) return false;
   const r = result as {
     isMaxBuffer?: unknown;
     shortMessage?: unknown;
     originalMessage?: unknown;
   };
   if (r.isMaxBuffer === true) return true;
-  const text = `${typeof r.shortMessage === 'string' ? r.shortMessage : ''} ${
-    typeof r.originalMessage === 'string' ? r.originalMessage : ''
+  const text = `${typeof r.shortMessage === "string" ? r.shortMessage : ""} ${
+    typeof r.originalMessage === "string" ? r.originalMessage : ""
   }`;
   return /maxBuffer|ENOBUFS/i.test(text);
 }
 
 /** True when the call was killed by the wall-clock cap rather than exiting. */
 export function isTimeout(result: unknown): boolean {
-  if (typeof result !== 'object' || result === null) return false;
+  if (typeof result !== "object" || result === null) return false;
   const r = result as { timedOut?: unknown; shortMessage?: unknown };
   if (r.timedOut === true) return true;
-  return /timed out/i.test(
-    typeof r.shortMessage === 'string' ? r.shortMessage : '',
-  );
+  return /timed out/i.test(typeof r.shortMessage === "string" ? r.shortMessage : "");
 }
 
 @Injectable()
@@ -184,7 +181,7 @@ export class GitService {
     input?: string,
   ): Promise<ExecResult> {
     const execa = await getExeca();
-    const result = await execa('git', args, {
+    const result = await execa("git", args, {
       cwd,
       timeout: GIT_TIMEOUT_MS,
       maxBuffer: GIT_MAX_BUFFER,
@@ -200,24 +197,20 @@ export class GitService {
       ...(input === undefined ? {} : { input }),
     });
     if (isBinaryMissing(result)) {
-      throw new ServiceUnavailableException(
-        'git is not available in this image — the Git app cannot run',
-      );
+      throw new ServiceUnavailableException("git is not available in this image — the Git app cannot run");
     }
     if (isTooBig(result)) {
       throw new PayloadTooLargeException(
-        'That output is too large for the Git app to show — use the Terminal for this one',
+        "That output is too large for the Git app to show — use the Terminal for this one",
       );
     }
     if (isTimeout(result)) {
-      throw new RequestTimeoutException(
-        `git took longer than ${Math.round(GIT_TIMEOUT_MS / 1000)}s and was stopped`,
-      );
+      throw new RequestTimeoutException(`git took longer than ${Math.round(GIT_TIMEOUT_MS / 1000)}s and was stopped`);
     }
     return {
-      stdout: typeof result.stdout === 'string' ? result.stdout : '',
-      stderr: typeof result.stderr === 'string' ? result.stderr : '',
-      exitCode: typeof result.exitCode === 'number' ? result.exitCode : 1,
+      stdout: typeof result.stdout === "string" ? result.stdout : "",
+      stderr: typeof result.stderr === "string" ? result.stderr : "",
+      exitCode: typeof result.exitCode === "number" ? result.exitCode : 1,
     };
   }
 
@@ -227,15 +220,7 @@ export class GitService {
    * (from the fixed allowlist at each call site) and its args follow.
    */
   private git(subcommand: string, ...rest: string[]): string[] {
-    return [
-      '-c',
-      'core.pager=cat',
-      '-c',
-      'color.ui=never',
-      '--no-pager',
-      subcommand,
-      ...rest,
-    ];
+    return ["-c", "core.pager=cat", "-c", "color.ui=never", "--no-pager", subcommand, ...rest];
   }
 
   /**
@@ -245,22 +230,16 @@ export class GitService {
    * containment) — never a client absolute path. Non-repo / missing dir → 404.
    */
   async resolveRepo(root: string, path?: string): Promise<string> {
-    const { rootDir, abs } = await this.filesService.resolveSafe(
-      root,
-      path ?? '',
-    );
+    const { rootDir, abs } = await this.filesService.resolveSafe(root, path ?? "");
 
     const stat = await fs.stat(abs).catch(() => null);
     if (!stat || !stat.isDirectory()) {
-      throw new NotFoundException('Repository directory not found');
+      throw new NotFoundException("Repository directory not found");
     }
 
-    const res = await this.exec(
-      abs,
-      this.git('rev-parse', '--is-inside-work-tree'),
-    );
-    if (res.exitCode !== 0 || res.stdout.trim() !== 'true') {
-      throw new NotFoundException('Not a git work tree');
+    const res = await this.exec(abs, this.git("rev-parse", "--is-inside-work-tree"));
+    if (res.exitCode !== 0 || res.stdout.trim() !== "true") {
+      throw new NotFoundException("Not a git work tree");
     }
 
     // Git discovers a repo by walking UP the tree, so a `.git` above the jail
@@ -268,61 +247,40 @@ export class GitService {
     // the jail — status/log/diff could then read files above the root. Require
     // the repo top-level to be within the jail root (realpath-compared, so a
     // symlinked root can't spoof containment).
-    const top = await this.exec(abs, this.git('rev-parse', '--show-toplevel'));
+    const top = await this.exec(abs, this.git("rev-parse", "--show-toplevel"));
     if (top.exitCode === 0 && top.stdout.trim()) {
       const realTop = await fs.realpath(top.stdout.trim()).catch(() => null);
       const realRoot = await fs.realpath(rootDir).catch(() => rootDir);
-      if (
-        !realTop ||
-        (realTop !== realRoot && !realTop.startsWith(realRoot + sep))
-      ) {
-        throw new NotFoundException(
-          'Repository top-level is outside the allowed root',
-        );
+      if (!realTop || (realTop !== realRoot && !realTop.startsWith(realRoot + sep))) {
+        throw new NotFoundException("Repository top-level is outside the allowed root");
       }
       if (this.caller !== null) {
         const key = join(rootDir, relative(realRoot, realTop));
-        for (const op of ['list', 'write'] as const) {
-          this.filesService.assertCan(this.caller, op, key, root, path ?? '');
+        for (const op of ["list", "write"] as const) {
+          this.filesService.assertCan(this.caller, op, key, root, path ?? "");
         }
       }
     } else if (this.caller !== null) {
       // An app's call needs the top-level to be checked against.
-      throw new NotFoundException('Not a git work tree');
+      throw new NotFoundException("Not a git work tree");
     }
     return abs;
   }
 
-  async status(
-    root: string,
-    path?: string,
-  ): Promise<{ entries: GitStatusEntry[] }> {
+  async status(root: string, path?: string): Promise<{ entries: GitStatusEntry[] }> {
     const cwd = await this.resolveRepo(root, path);
-    const res = await this.exec(
-      cwd,
-      this.git('status', '--porcelain=v1', '-z', '--untracked-files=all'),
-    );
+    const res = await this.exec(cwd, this.git("status", "--porcelain=v1", "-z", "--untracked-files=all"));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(res.stderr.trim() || 'git status failed');
+      throw new BadRequestException(res.stderr.trim() || "git status failed");
     }
     return { entries: this.parseStatus(res.stdout) };
   }
 
-  async log(
-    root: string,
-    path?: string,
-    limit?: number,
-  ): Promise<{ commits: GitCommit[] }> {
+  async log(root: string, path?: string, limit?: number): Promise<{ commits: GitCommit[] }> {
     const cwd = await this.resolveRepo(root, path);
-    const n = Math.min(
-      Math.max(Math.trunc(limit ?? DEFAULT_LOG_LIMIT), 1),
-      MAX_LOG_LIMIT,
-    );
-    const format = ['%H', '%an', '%ae', '%at', '%s'].join(FIELD_SEP);
-    const res = await this.exec(
-      cwd,
-      this.git('log', '-z', `--max-count=${n}`, `--pretty=format:${format}`),
-    );
+    const n = Math.min(Math.max(Math.trunc(limit ?? DEFAULT_LOG_LIMIT), 1), MAX_LOG_LIMIT);
+    const format = ["%H", "%an", "%ae", "%at", "%s"].join(FIELD_SEP);
+    const res = await this.exec(cwd, this.git("log", "-z", `--max-count=${n}`, `--pretty=format:${format}`));
     // A repo with no commits yet exits non-zero ("does not have any commits") —
     // that is an empty history, not an error.
     if (res.exitCode !== 0) {
@@ -331,76 +289,57 @@ export class GitService {
     return { commits: this.parseLog(res.stdout) };
   }
 
-  async diff(
-    root: string,
-    path?: string,
-    staged?: boolean,
-    file?: string,
-  ): Promise<{ diff: string }> {
+  async diff(root: string, path?: string, staged?: boolean, file?: string): Promise<{ diff: string }> {
     const cwd = await this.resolveRepo(root, path);
     const rest: string[] = [];
-    if (staged) rest.push('--staged');
+    if (staged) rest.push("--staged");
     // `--` separates options from pathspecs so a `file` beginning with '-'
     // can never be read as a flag.
-    rest.push('--');
+    rest.push("--");
     if (file) {
       this.assertPathspec(file);
       rest.push(file);
     }
-    const res = await this.exec(cwd, this.git('diff', ...rest));
+    const res = await this.exec(cwd, this.git("diff", ...rest));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(res.stderr.trim() || 'git diff failed');
+      throw new BadRequestException(res.stderr.trim() || "git diff failed");
     }
     return { diff: res.stdout };
   }
 
-  async stage(
-    root: string,
-    paths: string[],
-    path?: string,
-  ): Promise<{ entries: GitStatusEntry[] }> {
+  async stage(root: string, paths: string[], path?: string): Promise<{ entries: GitStatusEntry[] }> {
     const cwd = await this.resolveRepo(root, path);
     this.assertPaths(paths);
-    const res = await this.exec(cwd, this.git('add', '--', ...paths));
+    const res = await this.exec(cwd, this.git("add", "--", ...paths));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(res.stderr.trim() || 'git add failed');
+      throw new BadRequestException(res.stderr.trim() || "git add failed");
     }
     return this.status(root, path);
   }
 
-  async unstage(
-    root: string,
-    paths: string[],
-    path?: string,
-  ): Promise<{ entries: GitStatusEntry[] }> {
+  async unstage(root: string, paths: string[], path?: string): Promise<{ entries: GitStatusEntry[] }> {
     const cwd = await this.resolveRepo(root, path);
     this.assertPaths(paths);
     // `reset -- <paths>` unstages by resetting the index entries to HEAD; works
     // on an unborn HEAD (initial commit) too.
-    const res = await this.exec(cwd, this.git('reset', '--', ...paths));
+    const res = await this.exec(cwd, this.git("reset", "--", ...paths));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(res.stderr.trim() || 'git reset failed');
+      throw new BadRequestException(res.stderr.trim() || "git reset failed");
     }
     return this.status(root, path);
   }
 
-  async commit(
-    root: string,
-    message: string,
-    path?: string,
-  ): Promise<{ output: string }> {
+  async commit(root: string, message: string, path?: string): Promise<{ output: string }> {
     const cwd = await this.resolveRepo(root, path);
     const msg = message.trim();
     if (!msg) {
-      throw new BadRequestException('Commit message required');
+      throw new BadRequestException("Commit message required");
     }
     // `-m <msg>` — the message is a single array element; even a value like
     // `"; rm -rf ~"` is just literal commit text, never shell input.
-    const res = await this.exec(cwd, this.git('commit', '-m', msg));
+    const res = await this.exec(cwd, this.git("commit", "-m", msg));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(
-        res.stderr.trim() || res.stdout.trim() || 'git commit failed',
-      );
+      throw new BadRequestException(res.stderr.trim() || res.stdout.trim() || "git commit failed");
     }
     return { output: res.stdout.trim() };
   }
@@ -435,32 +374,21 @@ export class GitService {
     const cwd = await this.resolveRepo(root, path);
     const res = await this.exec(
       cwd,
-      this.git(
-        'for-each-ref',
-        '--format=%(refname:short)',
-        '--sort=refname',
-        'refs/heads',
-      ),
+      this.git("for-each-ref", "--format=%(refname:short)", "--sort=refname", "refs/heads"),
     );
     if (res.exitCode !== 0) {
-      throw new BadRequestException(res.stderr.trim() || 'git branch failed');
+      throw new BadRequestException(res.stderr.trim() || "git branch failed");
     }
     const names = res.stdout
-      .split('\n')
+      .split("\n")
       .map((l) => l.trim())
-      .filter((l) => l !== '');
+      .filter((l) => l !== "");
 
     // `--quiet` so a detached HEAD is an exit code rather than an error on stderr.
-    const head = await this.exec(
-      cwd,
-      this.git('symbolic-ref', '--quiet', '--short', 'HEAD'),
-    );
+    const head = await this.exec(cwd, this.git("symbolic-ref", "--quiet", "--short", "HEAD"));
     const current = head.exitCode === 0 ? head.stdout.trim() : null;
 
-    const status = await this.exec(
-      cwd,
-      this.git('status', '--porcelain=v1', '-z', '--untracked-files=no'),
-    );
+    const status = await this.exec(cwd, this.git("status", "--porcelain=v1", "-z", "--untracked-files=no"));
     return {
       branches: names.map((name) => ({ name, current: name === current })),
       current,
@@ -470,18 +398,12 @@ export class GitService {
   }
 
   /** Create a branch at HEAD and switch to it. */
-  async createBranch(
-    root: string,
-    name: string,
-    path?: string,
-  ): Promise<{ current: string }> {
+  async createBranch(root: string, name: string, path?: string): Promise<{ current: string }> {
     const cwd = await this.resolveRepo(root, path);
     this.assertRefName(name);
-    const res = await this.exec(cwd, this.git('switch', '--create', name));
+    const res = await this.exec(cwd, this.git("switch", "--create", name));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(
-        res.stderr.trim() || res.stdout.trim() || 'git switch --create failed',
-      );
+      throw new BadRequestException(res.stderr.trim() || res.stdout.trim() || "git switch --create failed");
     }
     return { current: name };
   }
@@ -498,18 +420,12 @@ export class GitService {
    * `dirty` from {@link branches} and confirms, naming the files at risk), and
    * git's own refusal is surfaced verbatim rather than pre-empted by a guess.
    */
-  async switchBranch(
-    root: string,
-    name: string,
-    path?: string,
-  ): Promise<{ current: string }> {
+  async switchBranch(root: string, name: string, path?: string): Promise<{ current: string }> {
     const cwd = await this.resolveRepo(root, path);
     this.assertRefName(name);
-    const res = await this.exec(cwd, this.git('switch', name));
+    const res = await this.exec(cwd, this.git("switch", name));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(
-        res.stderr.trim() || res.stdout.trim() || 'git switch failed',
-      );
+      throw new BadRequestException(res.stderr.trim() || res.stdout.trim() || "git switch failed");
     }
     return { current: name };
   }
@@ -522,46 +438,31 @@ export class GitService {
    * different and more dangerous verb that this brief does not add. The caller is
    * told that plainly rather than being silently given a no-op.
    */
-  async discard(
-    root: string,
-    paths: string[],
-    path?: string,
-  ): Promise<{ entries: GitStatusEntry[] }> {
+  async discard(root: string, paths: string[], path?: string): Promise<{ entries: GitStatusEntry[] }> {
     const cwd = await this.resolveRepo(root, path);
     this.assertPaths(paths);
 
     const { entries } = await this.status(root, path);
-    const untracked = new Set(
-      entries.filter((e) => e.index === '?').map((e) => e.path),
-    );
+    const untracked = new Set(entries.filter((e) => e.index === "?").map((e) => e.path));
     const blocked = paths.filter((p) => untracked.has(p));
     if (blocked.length > 0) {
       throw new BadRequestException(
-        `Not tracked by git, so there is nothing to restore: ${blocked.join(', ')}. Delete it in Files instead.`,
+        `Not tracked by git, so there is nothing to restore: ${blocked.join(", ")}. Delete it in Files instead.`,
       );
     }
 
     // `restore --worktree` leaves the index alone: discarding an unstaged edit must
     // not also throw away something the user deliberately staged.
-    const res = await this.exec(
-      cwd,
-      this.git('restore', '--worktree', '--', ...paths),
-    );
+    const res = await this.exec(cwd, this.git("restore", "--worktree", "--", ...paths));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(res.stderr.trim() || 'git restore failed');
+      throw new BadRequestException(res.stderr.trim() || "git restore failed");
     }
     return this.status(root, path);
   }
 
-  async stashList(
-    root: string,
-    path?: string,
-  ): Promise<{ stashes: { index: number; label: string }[] }> {
+  async stashList(root: string, path?: string): Promise<{ stashes: { index: number; label: string }[] }> {
     const cwd = await this.resolveRepo(root, path);
-    const res = await this.exec(
-      cwd,
-      this.git('stash', 'list', '-z', '--pretty=format:%gd%x1f%s'),
-    );
+    const res = await this.exec(cwd, this.git("stash", "list", "-z", "--pretty=format:%gd%x1f%s"));
     if (res.exitCode !== 0) return { stashes: [] };
     const stashes = res.stdout
       .split(RECORD_SEP)
@@ -574,25 +475,19 @@ export class GitService {
   }
 
   /** Stash everything, with an optional message. */
-  async stashPush(
-    root: string,
-    message?: string,
-    path?: string,
-  ): Promise<{ output: string }> {
+  async stashPush(root: string, message?: string, path?: string): Promise<{ output: string }> {
     const cwd = await this.resolveRepo(root, path);
-    const msg = (message ?? '').trim();
+    const msg = (message ?? "").trim();
     // `--` before nothing is harmless and keeps a message that starts with '-'
     // from ever being read as a flag; `-m` already takes the next element whole.
-    const args = msg ? ['push', '-m', msg] : ['push'];
-    const res = await this.exec(cwd, this.git('stash', ...args));
+    const args = msg ? ["push", "-m", msg] : ["push"];
+    const res = await this.exec(cwd, this.git("stash", ...args));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(
-        res.stderr.trim() || res.stdout.trim() || 'git stash failed',
-      );
+      throw new BadRequestException(res.stderr.trim() || res.stdout.trim() || "git stash failed");
     }
     const out = res.stdout.trim();
     if (/no local changes/i.test(out)) {
-      throw new BadRequestException('There is nothing to stash');
+      throw new BadRequestException("There is nothing to stash");
     }
     return { output: out };
   }
@@ -604,58 +499,40 @@ export class GitService {
    * client text — `n` comes through the DTO as an int and is bounds-checked, so
    * there is no path by which a caller composes their own ref.
    */
-  async stashPop(
-    root: string,
-    index?: number,
-    path?: string,
-  ): Promise<{ output: string }> {
+  async stashPop(root: string, index?: number, path?: string): Promise<{ output: string }> {
     const cwd = await this.resolveRepo(root, path);
-    const rest = ['pop'];
+    const rest = ["pop"];
     if (index !== undefined) {
       const n = Math.trunc(index);
       if (!Number.isFinite(n) || n < 0 || n > 999) {
-        throw new BadRequestException('Invalid stash index');
+        throw new BadRequestException("Invalid stash index");
       }
       rest.push(`stash@{${n}}`);
     }
-    const res = await this.exec(cwd, this.git('stash', ...rest));
+    const res = await this.exec(cwd, this.git("stash", ...rest));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(
-        res.stderr.trim() || res.stdout.trim() || 'git stash pop failed',
-      );
+      throw new BadRequestException(res.stderr.trim() || res.stdout.trim() || "git stash pop failed");
     }
     return { output: res.stdout.trim() };
   }
 
   /** The previous commit's message, so the amend UI can start from it. */
-  async lastCommitMessage(
-    root: string,
-    path?: string,
-  ): Promise<{ message: string }> {
+  async lastCommitMessage(root: string, path?: string): Promise<{ message: string }> {
     const cwd = await this.resolveRepo(root, path);
-    const res = await this.exec(
-      cwd,
-      this.git('log', '-1', '--pretty=format:%B'),
-    );
+    const res = await this.exec(cwd, this.git("log", "-1", "--pretty=format:%B"));
     return {
-      message: res.exitCode === 0 ? res.stdout.replace(/\n+$/, '') : '',
+      message: res.exitCode === 0 ? res.stdout.replace(/\n+$/, "") : "",
     };
   }
 
   /** Replace the previous commit rather than stacking a "fix typo" on top of it. */
-  async amend(
-    root: string,
-    message: string,
-    path?: string,
-  ): Promise<{ output: string }> {
+  async amend(root: string, message: string, path?: string): Promise<{ output: string }> {
     const cwd = await this.resolveRepo(root, path);
     const msg = message.trim();
-    if (!msg) throw new BadRequestException('Commit message required');
-    const res = await this.exec(cwd, this.git('commit', '--amend', '-m', msg));
+    if (!msg) throw new BadRequestException("Commit message required");
+    const res = await this.exec(cwd, this.git("commit", "--amend", "-m", msg));
     if (res.exitCode !== 0) {
-      throw new BadRequestException(
-        res.stderr.trim() || res.stdout.trim() || 'git commit --amend failed',
-      );
+      throw new BadRequestException(res.stderr.trim() || res.stdout.trim() || "git commit --amend failed");
     }
     return { output: res.stdout.trim() };
   }
@@ -686,16 +563,15 @@ export class GitService {
   ): Promise<{ entries: GitStatusEntry[] }> {
     const cwd = await this.resolveRepo(root, path);
     this.assertPatch(patch);
-    const rest = ['--cached'];
-    if (reverse) rest.push('--reverse');
+    const rest = ["--cached"];
+    if (reverse) rest.push("--reverse");
     // `--unidiff-zero` because a hunk selected in the UI can legitimately have no
     // context lines; without it git refuses those outright.
-    rest.push('--unidiff-zero', '-');
-    const res = await this.exec(cwd, this.git('apply', ...rest), patch);
+    rest.push("--unidiff-zero", "-");
+    const res = await this.exec(cwd, this.git("apply", ...rest), patch);
     if (res.exitCode !== 0) {
       throw new BadRequestException(
-        res.stderr.trim() ||
-          'That hunk no longer applies — the file changed underneath it. Refresh and try again.',
+        res.stderr.trim() || "That hunk no longer applies — the file changed underneath it. Refresh and try again.",
       );
     }
     return this.status(root, path);
@@ -721,7 +597,7 @@ export class GitService {
       const worktree = token[1];
       const path = token.slice(3);
       let origPath: string | undefined;
-      if (index === 'R' || index === 'C') {
+      if (index === "R" || index === "C") {
         // A staged rename/copy: the ORIGINAL path is the following record.
         origPath = tokens[i + 1];
         i++;
@@ -731,7 +607,7 @@ export class GitService {
         worktree,
         path,
         origPath,
-        staged: index !== ' ' && index !== '?' && index !== '!',
+        staged: index !== " " && index !== "?" && index !== "!",
       });
     }
     return entries;
@@ -747,17 +623,14 @@ export class GitService {
       .split(RECORD_SEP)
       .filter((rec) => rec.length > 0)
       .map((rec) => {
-        const [hash, authorName, authorEmail, at, subject] =
-          rec.split(FIELD_SEP);
+        const [hash, authorName, authorEmail, at, subject] = rec.split(FIELD_SEP);
         const epoch = Number(at);
         return {
-          hash: hash ?? '',
-          authorName: authorName ?? '',
-          authorEmail: authorEmail ?? '',
-          date: Number.isFinite(epoch)
-            ? new Date(epoch * 1000).toISOString()
-            : '',
-          subject: subject ?? '',
+          hash: hash ?? "",
+          authorName: authorName ?? "",
+          authorEmail: authorEmail ?? "",
+          date: Number.isFinite(epoch) ? new Date(epoch * 1000).toISOString() : "",
+          subject: subject ?? "",
         };
       });
   }
@@ -768,14 +641,14 @@ export class GitService {
 
   private assertPaths(paths: string[]): void {
     if (!Array.isArray(paths) || paths.length === 0) {
-      throw new BadRequestException('paths must be a non-empty array');
+      throw new BadRequestException("paths must be a non-empty array");
     }
     for (const p of paths) this.assertPathspec(p);
   }
 
   private assertPathspec(p: string): void {
-    if (typeof p !== 'string' || p.length === 0 || p.includes('\0')) {
-      throw new BadRequestException('Invalid pathspec');
+    if (typeof p !== "string" || p.length === 0 || p.includes("\0")) {
+      throw new BadRequestException("Invalid pathspec");
     }
   }
 
@@ -790,14 +663,14 @@ export class GitService {
    */
   private assertRepoRelPath(p: string): void {
     this.assertPathspec(p);
-    if (p.startsWith('-')) {
-      throw new BadRequestException('Invalid path');
+    if (p.startsWith("-")) {
+      throw new BadRequestException("Invalid path");
     }
-    if (p.startsWith('/') || /^[A-Za-z]:/.test(p)) {
-      throw new BadRequestException('Path must be relative to the repository');
+    if (p.startsWith("/") || /^[A-Za-z]:/.test(p)) {
+      throw new BadRequestException("Path must be relative to the repository");
     }
-    if (p.split('/').includes('..')) {
-      throw new BadRequestException('Path must not leave the repository');
+    if (p.split("/").includes("..")) {
+      throw new BadRequestException("Path must not leave the repository");
     }
   }
 
@@ -821,21 +694,21 @@ export class GitService {
   ): Promise<{ content: string; exists: boolean }> {
     const cwd = await this.resolveRepo(root, path);
     this.assertRepoRelPath(file);
-    const res = await this.exec(cwd, this.git('show', `HEAD:${file}`));
+    const res = await this.exec(cwd, this.git("show", `HEAD:${file}`));
     if (res.exitCode !== 0) {
       const err = res.stderr.toLowerCase();
       // git's wording for "that path is not in that revision". Anything else —
       // a corrupt object, an unborn branch we did not anticipate — still fails
       // loudly rather than pretending the file is new.
       if (
-        err.includes('does not exist') ||
-        err.includes('exists on disk, but not in') ||
-        err.includes('invalid object name') ||
-        err.includes('unknown revision')
+        err.includes("does not exist") ||
+        err.includes("exists on disk, but not in") ||
+        err.includes("invalid object name") ||
+        err.includes("unknown revision")
       ) {
-        return { content: '', exists: false };
+        return { content: "", exists: false };
       }
-      throw new BadRequestException(res.stderr.trim() || 'git show failed');
+      throw new BadRequestException(res.stderr.trim() || "git show failed");
     }
     return { content: res.stdout, exists: true };
   }
@@ -849,19 +722,17 @@ export class GitService {
    * gets piped into a subprocess.
    */
   private assertPatch(patch: string): void {
-    if (typeof patch !== 'string' || patch.trim() === '') {
-      throw new BadRequestException('Empty patch');
+    if (typeof patch !== "string" || patch.trim() === "") {
+      throw new BadRequestException("Empty patch");
     }
-    if (patch.includes('\0')) {
-      throw new BadRequestException('Invalid patch');
+    if (patch.includes("\0")) {
+      throw new BadRequestException("Invalid patch");
     }
     if (patch.length > MAX_PATCH_BYTES) {
-      throw new BadRequestException(
-        'That hunk is too large to stage on its own',
-      );
+      throw new BadRequestException("That hunk is too large to stage on its own");
     }
     if (!/^(diff --git |--- )/m.test(patch)) {
-      throw new BadRequestException('That does not look like a diff');
+      throw new BadRequestException("That does not look like a diff");
     }
   }
 
@@ -891,17 +762,17 @@ export class GitService {
   private assertRefName(name: string): void {
     const invalid = () =>
       new BadRequestException(
-        'Invalid branch name — letters, digits, and - _ / . are allowed, and it cannot start with a dash',
+        "Invalid branch name — letters, digits, and - _ / . are allowed, and it cannot start with a dash",
       );
-    if (typeof name !== 'string') throw invalid();
+    if (typeof name !== "string") throw invalid();
     const n = name.trim();
     if (n.length === 0 || n.length > 255) throw invalid();
-    if (n.startsWith('-') || n.startsWith('.')) throw invalid();
+    if (n.startsWith("-") || n.startsWith(".")) throw invalid();
 
     if (/[\0-\x20\x7f~^:?*[\\]/.test(n)) throw invalid();
-    if (n.includes('..') || n.includes('@{') || n === '@') throw invalid();
-    if (n.includes('//') || n.endsWith('/') || n.endsWith('.')) throw invalid();
-    if (n.split('/').some((part) => part === '' || part.endsWith('.lock'))) {
+    if (n.includes("..") || n.includes("@{") || n === "@") throw invalid();
+    if (n.includes("//") || n.endsWith("/") || n.endsWith(".")) throw invalid();
+    if (n.split("/").some((part) => part === "" || part.endsWith(".lock"))) {
       throw invalid();
     }
   }

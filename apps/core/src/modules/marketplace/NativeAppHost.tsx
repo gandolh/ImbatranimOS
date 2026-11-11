@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
-import { useSystem } from '@imbatranim/ui'
-import type { MarketplaceApp } from '../../shared/registry/marketplace'
-import { apiUrl } from './apiUrl'
-import { loadModule } from './loadModule'
-import { protocolRefusal } from './refusals'
-import { RefusalPanel } from './RefusalPanel'
-import { scopeHandle, type NativeAppModule } from './scopeHandle'
-import { useServerLease } from './useServerLease'
+import { useEffect, useRef, useState } from "react";
+import { useSystem } from "@imbatranim/ui";
+import type { MarketplaceApp } from "../../shared/registry/marketplace";
+import { apiUrl } from "./apiUrl";
+import { loadModule } from "./loadModule";
+import { protocolRefusal } from "./refusals";
+import { RefusalPanel } from "./RefusalPanel";
+import { scopeHandle, type NativeAppModule } from "./scopeHandle";
+import { useServerLease } from "./useServerLease";
 
 /**
  * A window holding a marketplace app that mounts itself: fetch its module,
@@ -25,72 +25,72 @@ import { useServerLease } from './useServerLease'
 export function NativeAppHost({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
   // Checked here, outside the host's hooks, so an early return cannot change
   // their order.
-  const refusal = protocolRefusal(app)
-  if (refusal) return <RefusalPanel appName={app.name} reason={refusal} />
-  return <NativeApp windowId={windowId} app={app} />
+  const refusal = protocolRefusal(app);
+  if (refusal) return <RefusalPanel appName={app.name} reason={refusal} />;
+  return <NativeApp windowId={windowId} app={app} />;
 }
 
 /** The mounted app, once {@link NativeAppHost} has found it can run here. */
 function NativeApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
-  const system = useSystem()
-  const container = useRef<HTMLDivElement>(null)
-  const lease = useServerLease(app)
-  const [failure, setFailure] = useState<Error | null>(null)
-  const [loaded, setLoaded] = useState(false)
+  const system = useSystem();
+  const container = useRef<HTMLDivElement>(null);
+  const lease = useServerLease(app);
+  const [failure, setFailure] = useState<Error | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
-  if (failure) throw failure
-  if (lease.state === 'failed') throw lease.error
+  if (failure) throw failure;
+  if (lease.state === "failed") throw lease.error;
 
   useEffect(() => {
-    const node = container.current
-    const installed = app.installed
-    if (!node || !installed || lease.state !== 'ready') return
-    let cancelled = false
-    let mod: NativeAppModule | null = null
+    const node = container.current;
+    const installed = app.installed;
+    if (!node || !installed || lease.state !== "ready") return;
+    let cancelled = false;
+    let mod: NativeAppModule | null = null;
 
     void (async () => {
       try {
-        if (!installed.entryPath) throw new Error(`${app.name} has no module to load`)
-        const entry = apiUrl(installed.entryPath)
-        const loadedModule = (await loadModule(entry.href)) as Partial<NativeAppModule>
-        if (cancelled) return
-        if (typeof loadedModule.mount !== 'function') {
-          throw new Error(`${app.name}'s module does not export mount(container, system)`)
+        if (!installed.entryPath) throw new Error(`${app.name} has no module to load`);
+        const entry = apiUrl(installed.entryPath);
+        const loadedModule = (await loadModule(entry.href)) as Partial<NativeAppModule>;
+        if (cancelled) return;
+        if (typeof loadedModule.mount !== "function") {
+          throw new Error(`${app.name}'s module does not export mount(container, system)`);
         }
-        mod = loadedModule as NativeAppModule
-        setLoaded(true)
+        mod = loadedModule as NativeAppModule;
+        setLoaded(true);
         await mod.mount(node, scopeHandle(system, app.capabilities, app.name), {
           appId: app.id,
-          assetBase: new URL('.', entry).href,
+          assetBase: new URL(".", entry).href,
           server: lease.server,
-        })
+        });
       } catch (err) {
-        if (!cancelled) setFailure(err instanceof Error ? err : new Error(String(err)))
+        if (!cancelled) setFailure(err instanceof Error ? err : new Error(String(err)));
       }
-    })()
+    })();
 
     return () => {
-      cancelled = true
+      cancelled = true;
       try {
-        mod?.unmount?.(node)
+        mod?.unmount?.(node);
       } catch (err) {
-        console.error(`[marketplace] ${app.id}: unmount threw`, err)
+        console.error(`[marketplace] ${app.id}: unmount threw`, err);
       }
-      node.replaceChildren()
-    }
-  }, [app, system, windowId, lease])
+      node.replaceChildren();
+    };
+  }, [app, system, windowId, lease]);
 
-  const status = lease.state === 'starting' ? 'Starting its server…' : loaded ? null : 'Loading…'
+  const status = lease.state === "starting" ? "Starting its server…" : loaded ? null : "Loading…";
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
       {/* The app owns this node and everything in it. */}
-      <div ref={container} className="h-full w-full" style={{ contain: 'strict' }} />
+      <div ref={container} className="h-full w-full" style={{ contain: "strict" }} />
       {status && (
         <div className="text-on-surface-variant bg-surface pointer-events-none absolute inset-0 flex items-center justify-center text-sm">
           {status}
         </div>
       )}
     </div>
-  )
+  );
 }

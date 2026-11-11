@@ -21,16 +21,7 @@ export type NetTotals = { rxBytes: number; txBytes: number };
  * veth pairs carry the same packets the physical interface already counted, and
  * `ifb` is the kernel's ingress-redirect device.
  */
-const EXCLUDED_PREFIXES = [
-  'lo',
-  'ifb',
-  'docker',
-  'br-',
-  'veth',
-  'virbr',
-  'tun',
-  'tap',
-];
+const EXCLUDED_PREFIXES = ["lo", "ifb", "docker", "br-", "veth", "virbr", "tun", "tap"];
 
 function isCounted(name: string): boolean {
   return !EXCLUDED_PREFIXES.some((p) => name === p || name.startsWith(p));
@@ -53,8 +44,8 @@ export function parseNetDev(raw: string): NetTotals {
   let rxBytes = 0;
   let txBytes = 0;
 
-  for (const line of raw.split('\n')) {
-    const colon = line.indexOf(':');
+  for (const line of raw.split("\n")) {
+    const colon = line.indexOf(":");
     if (colon < 0) continue; // the two header lines
     const name = line.slice(0, colon).trim();
     if (!name || !isCounted(name)) continue;
@@ -87,11 +78,7 @@ export function parseNetDev(raw: string): NetTotals {
  *   large rate. The caller holds the baseline until it is old enough, the same way
  *   the CPU delta does.
  */
-export function bytesPerSecond(
-  previousBytes: number,
-  currentBytes: number,
-  elapsedMs: number,
-): number {
+export function bytesPerSecond(previousBytes: number, currentBytes: number, elapsedMs: number): number {
   if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 0;
   const delta = currentBytes - previousBytes;
   if (!Number.isFinite(delta) || delta < 0) return 0;
@@ -115,10 +102,7 @@ export type SwapStats = {
  */
 export function toSwapStats(totalBytes: number, freeBytes: number): SwapStats {
   const total = Number.isFinite(totalBytes) && totalBytes > 0 ? totalBytes : 0;
-  const free =
-    Number.isFinite(freeBytes) && freeBytes > 0
-      ? Math.min(freeBytes, total)
-      : 0;
+  const free = Number.isFinite(freeBytes) && freeBytes > 0 ? Math.min(freeBytes, total) : 0;
   const used = Math.max(total - free, 0);
   const percent = total === 0 ? 0 : Math.round((used / total) * 1000) / 10;
   return { totalBytes: total, usedBytes: used, freeBytes: free, percent };

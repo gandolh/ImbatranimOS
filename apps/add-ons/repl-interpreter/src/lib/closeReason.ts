@@ -40,21 +40,21 @@
 
 export type CloseVerdict = {
   /** Whether an automatic reconnect should be attempted. */
-  retry: boolean
+  retry: boolean;
   /**
    * True when this is a settled end state that no retry can change — the shell
    * exited, or the session is gone. The UI offers a manual "new shell" instead of
    * a countdown.
    */
-  terminal: boolean
+  terminal: boolean;
   /** One line for the terminal, already user-facing. No codes, no jargon. */
-  message: string
+  message: string;
   /**
    * True when the caller should confirm the session is still valid before
    * reporting a cause. Set for handshake refusals, where 401 and "backend down"
    * are indistinguishable.
    */
-  checkAuth: boolean
+  checkAuth: boolean;
   /**
    * Whether to offer a manual Reconnect button.
    *
@@ -63,11 +63,11 @@ export type CloseVerdict = {
    * shell exited, a clean close, even a failed spawn — is worth one more try,
    * because the user may have just fixed the cause.
    */
-  allowManualRetry: boolean
-}
+  allowManualRetry: boolean;
+};
 
 /** WebSocket close code the gateway uses for a revoked session. */
-export const CLOSE_SESSION_REVOKED = 4401
+export const CLOSE_SESSION_REVOKED = 4401;
 
 export function classifyClose(code: number, reason: string, everOpened: boolean): CloseVerdict {
   // The session is gone. Retrying cannot succeed and would hammer the upgrade
@@ -76,47 +76,47 @@ export function classifyClose(code: number, reason: string, everOpened: boolean)
     return {
       retry: false,
       terminal: true,
-      message: 'Session ended — sign in again to open a new shell.',
+      message: "Session ended — sign in again to open a new shell.",
       checkAuth: false,
       allowManualRetry: false,
-    }
+    };
   }
 
   // The user typed `exit`. Reconnecting here would be the app overriding an
   // explicit instruction, and it is the one close we must never treat as a fault.
-  if (reason === 'pty-exit') {
+  if (reason === "pty-exit") {
     return {
       retry: false,
       terminal: true,
-      message: 'Shell exited.',
+      message: "Shell exited.",
       checkAuth: false,
       allowManualRetry: true,
-    }
+    };
   }
 
   // The shell could not start at all. A retry loop would spawn-fail just as fast;
   // this needs a human to look at $SHELL or the image.
-  if (reason === 'spawn-failed' || code === 1011) {
+  if (reason === "spawn-failed" || code === 1011) {
     return {
       retry: false,
       terminal: true,
-      message: 'The shell could not be started.',
+      message: "The shell could not be started.",
       checkAuth: false,
       allowManualRetry: true,
-    }
+    };
   }
 
   // The backend said it is going away — which in dev is `npm run dev` restarting
   // Nest, the single most common cause of this whole brief. It IS coming back, so
   // this is the case retrying was built for.
-  if (code === 1001 || reason === 'shutdown') {
+  if (code === 1001 || reason === "shutdown") {
     return {
       retry: true,
       terminal: false,
-      message: 'Backend restarting…',
+      message: "Backend restarting…",
       checkAuth: false,
       allowManualRetry: true,
-    }
+    };
   }
 
   // A bare 1000 is a NORMAL closure per RFC 6455 — the peer shut the connection
@@ -128,10 +128,10 @@ export function classifyClose(code: number, reason: string, everOpened: boolean)
     return {
       retry: false,
       terminal: true,
-      message: 'Connection closed.',
+      message: "Connection closed.",
       checkAuth: false,
       allowManualRetry: true,
-    }
+    };
   }
 
   // Never opened: the handshake itself was refused. Could be a 401, the session
@@ -141,24 +141,24 @@ export function classifyClose(code: number, reason: string, everOpened: boolean)
     return {
       retry: true,
       terminal: false,
-      message: 'Could not reach the shell…',
+      message: "Could not reach the shell…",
       checkAuth: true,
       allowManualRetry: true,
-    }
+    };
   }
 
   // Was open, then dropped: a real disconnect.
   return {
     retry: true,
     terminal: false,
-    message: 'Disconnected…',
+    message: "Disconnected…",
     checkAuth: false,
     allowManualRetry: true,
-  }
+  };
 }
 
 /** How many automatic attempts before falling back to a manual Reconnect. */
-export const MAX_RETRIES = 5
+export const MAX_RETRIES = 5;
 
 /**
  * Backoff delay in ms for a given attempt (1-based): 1s, 2s, 4s, 8s, capped.
@@ -168,6 +168,6 @@ export const MAX_RETRIES = 5
  * even though it is "working".
  */
 export function retryDelay(attempt: number): number {
-  const capped = Math.min(Math.max(attempt, 1), 4)
-  return 1000 * 2 ** (capped - 1)
+  const capped = Math.min(Math.max(attempt, 1), 4);
+  return 1000 * 2 ** (capped - 1);
 }

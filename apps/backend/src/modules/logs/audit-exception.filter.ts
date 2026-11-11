@@ -1,12 +1,7 @@
-import {
-  ArgumentsHost,
-  Catch,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
-import { BaseExceptionFilter } from '@nestjs/core';
-import type { Request } from 'express';
-import { LogService } from './log.service';
+import { ArgumentsHost, Catch, HttpException, HttpStatus } from "@nestjs/common";
+import { BaseExceptionFilter } from "@nestjs/core";
+import type { Request } from "express";
+import { LogService } from "./log.service";
 
 /**
  * Record backend errors, then let Nest respond exactly as it always did
@@ -32,27 +27,19 @@ export class AuditExceptionFilter extends BaseExceptionFilter {
   }
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
     if (status >= 500) {
       const req = host.switchToHttp().getRequest<Request>();
       // The path only: a query string can carry a search term, and the log is
       // not the place to accumulate what the user has been looking for.
       const path = loggablePath(req.url);
-      this.logs.record(
-        'error',
-        'server.error',
-        `${req.method} ${path} failed`,
-        {
-          status,
-          method: req.method,
-          path,
-          error: exception instanceof Error ? exception : String(exception),
-        },
-      );
+      this.logs.record("error", "server.error", `${req.method} ${path} failed`, {
+        status,
+        method: req.method,
+        path,
+        error: exception instanceof Error ? exception : String(exception),
+      });
     }
     super.catch(exception, host);
   }
@@ -63,5 +50,5 @@ export class AuditExceptionFilter extends BaseExceptionFilter {
  * what was typed or a secret.
  */
 export function loggablePath(url: string): string {
-  return url.split('?')[0];
+  return url.split("?")[0];
 }

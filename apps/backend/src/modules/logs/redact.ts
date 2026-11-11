@@ -29,7 +29,7 @@ const MAX_DEPTH = 4;
 /** How many keys to keep from one object. */
 const MAX_KEYS = 32;
 
-export const REDACTED = '[redacted]';
+export const REDACTED = "[redacted]";
 
 /**
  * Return a copy of `meta` safe to write to disk.
@@ -40,27 +40,25 @@ export const REDACTED = '[redacted]';
  */
 export function redact(meta: unknown, depth = 0): unknown {
   if (meta === null || meta === undefined) return meta;
-  if (typeof meta === 'string') {
-    return meta.length > MAX_VALUE_LENGTH
-      ? `${meta.slice(0, MAX_VALUE_LENGTH)}…[${meta.length} chars]`
-      : meta;
+  if (typeof meta === "string") {
+    return meta.length > MAX_VALUE_LENGTH ? `${meta.slice(0, MAX_VALUE_LENGTH)}…[${meta.length} chars]` : meta;
   }
-  if (typeof meta === 'number' || typeof meta === 'boolean') return meta;
-  if (typeof meta === 'bigint') return meta.toString();
+  if (typeof meta === "number" || typeof meta === "boolean") return meta;
+  if (typeof meta === "bigint") return meta.toString();
   if (meta instanceof Date) return meta.toISOString();
   if (meta instanceof Error) {
     return { name: meta.name, message: redact(meta.message, depth + 1) };
   }
-  if (depth >= MAX_DEPTH) return '[nested]';
+  if (depth >= MAX_DEPTH) return "[nested]";
   if (Array.isArray(meta)) {
     return meta.slice(0, MAX_KEYS).map((v) => redact(v, depth + 1));
   }
-  if (typeof meta === 'object') {
+  if (typeof meta === "object") {
     const out: Record<string, unknown> = {};
     let kept = 0;
     for (const [key, value] of Object.entries(meta)) {
       if (kept >= MAX_KEYS) {
-        out['…'] = 'more keys omitted';
+        out["…"] = "more keys omitted";
         break;
       }
       kept++;
@@ -96,7 +94,7 @@ export function serialiseEntry(entry: Record<string, unknown>): string {
       event: entry.event,
       source: entry.source,
       msg: entry.msg,
-      meta: { error: 'metadata could not be serialised' },
+      meta: { error: "metadata could not be serialised" },
     });
   }
   if (line.length > MAX_ENTRY_BYTES) {

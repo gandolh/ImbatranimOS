@@ -1,8 +1,8 @@
-import { useCalendarReminders } from './reminders'
-import { useEventsQuery } from './queries/calendarQueries'
+import { useCalendarReminders } from "./reminders";
+import { useEventsQuery } from "./queries/calendarQueries";
 
 /** Refresh cadence for the events cache with no window open. */
-const EVENTS_REFETCH_MS = 60_000
+const EVENTS_REFETCH_MS = 60_000;
 
 /**
  * The Calendar's desktop-lifetime service: keeps the events cache
@@ -11,7 +11,7 @@ const EVENTS_REFETCH_MS = 60_000
  * `manifest.background`.
  */
 export function CalendarBackground() {
-  useEventsQuery({ refetchIntervalMs: EVENTS_REFETCH_MS })
-  useCalendarReminders()
-  return null
+  useEventsQuery({ refetchIntervalMs: EVENTS_REFETCH_MS });
+  useCalendarReminders();
+  return null;
 }

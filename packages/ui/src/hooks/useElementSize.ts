@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState } from "react";
 
-export type ElementSize = { width: number; height: number }
+export type ElementSize = { width: number; height: number };
 
 /**
  * Measure an element's content box, live.
@@ -55,10 +55,10 @@ export type ElementSize = { width: number; height: number }
  * drop the `disconnect()` for anyone composing it with a second ref, which Slides
  * does.
  */
-export type ElementSizeRef = (el: HTMLElement | null) => void | (() => void)
+export type ElementSizeRef = (el: HTMLElement | null) => void | (() => void);
 
 export function useElementSize(): [ElementSize, ElementSizeRef] {
-  const [size, setSize] = useState<ElementSize>({ width: 0, height: 0 })
+  const [size, setSize] = useState<ElementSize>({ width: 0, height: 0 });
 
   /**
    * Write only on a real change.
@@ -75,8 +75,8 @@ export function useElementSize(): [ElementSize, ElementSizeRef] {
    * ref in `useCallback`), but the hook must not be a footgun when they don't.
    */
   const apply = useCallback((next: ElementSize) => {
-    setSize((prev) => (prev.width === next.width && prev.height === next.height ? prev : next))
-  }, [])
+    setSize((prev) => (prev.width === next.width && prev.height === next.height ? prev : next));
+  }, []);
 
   const ref = useCallback<ElementSizeRef>(
     (el) => {
@@ -86,19 +86,19 @@ export function useElementSize(): [ElementSize, ElementSizeRef] {
         // render loop described above, and on a detach-then-reattach (a view-mode
         // switch that remounts the pane) it makes every consumer flash through its
         // "not measured yet" fallback scale for a frame.
-        return
+        return;
       }
-      const rect = el.getBoundingClientRect()
-      apply({ width: rect.width, height: rect.height })
+      const rect = el.getBoundingClientRect();
+      apply({ width: rect.width, height: rect.height });
       const observer = new ResizeObserver((entries) => {
-        const box = entries[0]?.contentRect
-        if (box) apply({ width: box.width, height: box.height })
-      })
-      observer.observe(el)
-      return () => observer.disconnect()
+        const box = entries[0]?.contentRect;
+        if (box) apply({ width: box.width, height: box.height });
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
     },
-    [apply]
-  )
+    [apply],
+  );
 
-  return [size, ref]
+  return [size, ref];
 }

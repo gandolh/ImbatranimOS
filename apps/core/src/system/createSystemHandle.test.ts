@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSystemHandle } from './createSystemHandle'
-import { useWindowStore } from '../shared/store/windowStore'
-import { useIntentStore } from '../shared/store/intentStore'
-import { useNotificationStore } from '../shared/store/notificationStore'
-import { useShortcutStore } from '../shared/hooks/shortcutRegistry'
-import { useSoundStore } from '../shared/store/soundStore'
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createSystemHandle } from "./createSystemHandle";
+import { useWindowStore } from "../shared/store/windowStore";
+import { useIntentStore } from "../shared/store/intentStore";
+import { useNotificationStore } from "../shared/store/notificationStore";
+import { useShortcutStore } from "../shared/hooks/shortcutRegistry";
+import { useSoundStore } from "../shared/store/soundStore";
 
 /**
  * The system-handle seam — the in-process transport of the protocol.
@@ -16,244 +16,242 @@ import { useSoundStore } from '../shared/store/soundStore'
  */
 
 function openTestWindow(appId: string): string {
-  return useWindowStore
-    .getState()
-    .openWindow(appId, appId, { width: 400, height: 300 }, { width: 200, height: 150 })
+  return useWindowStore.getState().openWindow(appId, appId, { width: 400, height: 300 }, { width: 200, height: 150 });
 }
 
 beforeEach(() => {
-  useWindowStore.setState({ windows: [], nextZIndex: 1, closeGuards: {} })
-  useIntentStore.setState({ intents: new Map() })
-  useNotificationStore.setState({ notifications: [] })
-  useShortcutStore.setState({ shortcuts: {} })
-  useSoundStore.setState({ volume: 1, muted: false })
-})
+  useWindowStore.setState({ windows: [], nextZIndex: 1, closeGuards: {} });
+  useIntentStore.setState({ intents: new Map() });
+  useNotificationStore.setState({ notifications: [] });
+  useShortcutStore.setState({ shortcuts: {} });
+  useSoundStore.setState({ volume: 1, muted: false });
+});
 
-describe('window scoping', () => {
-  it('window.* acts on the OWN window, never another', () => {
-    const mine = openTestWindow('notepad')
-    const theirs = openTestWindow('calculator')
-    const system = createSystemHandle('notepad', mine)
+describe("window scoping", () => {
+  it("window.* acts on the OWN window, never another", () => {
+    const mine = openTestWindow("notepad");
+    const theirs = openTestWindow("calculator");
+    const system = createSystemHandle("notepad", mine);
 
-    system.window.setTitle('mine.txt')
-    const wins = useWindowStore.getState().windows
-    expect(wins.find((w) => w.id === mine)?.title).toBe('mine.txt')
-    expect(wins.find((w) => w.id === theirs)?.title).toBe('calculator')
+    system.window.setTitle("mine.txt");
+    const wins = useWindowStore.getState().windows;
+    expect(wins.find((w) => w.id === mine)?.title).toBe("mine.txt");
+    expect(wins.find((w) => w.id === theirs)?.title).toBe("calculator");
 
-    system.window.hide()
-    expect(useWindowStore.getState().windows.find((w) => w.id === mine)?.isVisible).toBe(false)
-    expect(useWindowStore.getState().windows.find((w) => w.id === theirs)?.isVisible).toBe(true)
-  })
+    system.window.hide();
+    expect(useWindowStore.getState().windows.find((w) => w.id === mine)?.isVisible).toBe(false);
+    expect(useWindowStore.getState().windows.find((w) => w.id === theirs)?.isVisible).toBe(true);
+  });
 
-  it('isFocused tracks the compositor, not a cached snapshot', () => {
-    const a = openTestWindow('notepad')
-    const b = openTestWindow('calculator')
-    const sysA = createSystemHandle('notepad', a)
-    expect(sysA.window.isFocused()).toBe(false)
-    useWindowStore.getState().focusWindow(a)
-    expect(sysA.window.isFocused()).toBe(true)
-    useWindowStore.getState().focusWindow(b)
-    expect(sysA.window.isFocused()).toBe(false)
-  })
+  it("isFocused tracks the compositor, not a cached snapshot", () => {
+    const a = openTestWindow("notepad");
+    const b = openTestWindow("calculator");
+    const sysA = createSystemHandle("notepad", a);
+    expect(sysA.window.isFocused()).toBe(false);
+    useWindowStore.getState().focusWindow(a);
+    expect(sysA.window.isFocused()).toBe(true);
+    useWindowStore.getState().focusWindow(b);
+    expect(sysA.window.isFocused()).toBe(false);
+  });
 
-  it('requestClose consults the close guard, same as the title-bar X', () => {
-    const id = openTestWindow('notepad')
-    const system = createSystemHandle('notepad', id)
-    let allow = false
-    system.window.onCloseRequest(() => allow)
+  it("requestClose consults the close guard, same as the title-bar X", () => {
+    const id = openTestWindow("notepad");
+    const system = createSystemHandle("notepad", id);
+    let allow = false;
+    system.window.onCloseRequest(() => allow);
 
-    system.window.requestClose()
-    expect(useWindowStore.getState().windows).toHaveLength(1)
+    system.window.requestClose();
+    expect(useWindowStore.getState().windows).toHaveLength(1);
 
-    allow = true
-    system.window.requestClose()
-    expect(useWindowStore.getState().windows).toHaveLength(0)
-  })
+    allow = true;
+    system.window.requestClose();
+    expect(useWindowStore.getState().windows).toHaveLength(0);
+  });
 
   // An app raising its own window brings the keyboard with it, as
   // the taskbar does. Window.tsx is stood in for by its two data attributes.
-  describe('window.focus', () => {
-    let frames: FrameRequestCallback[]
+  describe("window.focus", () => {
+    let frames: FrameRequestCallback[];
 
     beforeEach(() => {
-      frames = []
-      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => frames.push(cb))
-    })
+      frames = [];
+      vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => frames.push(cb));
+    });
 
     afterEach(() => {
-      vi.unstubAllGlobals()
-      document.body.innerHTML = ''
-    })
+      vi.unstubAllGlobals();
+      document.body.innerHTML = "";
+    });
 
     function windowDom(id: string): HTMLInputElement {
-      const root = document.createElement('div')
-      root.setAttribute('data-window-id', id)
-      root.innerHTML = '<div data-window-content="" tabindex="-1"><input /></div>'
-      document.body.appendChild(root)
-      return root.querySelector('input')!
+      const root = document.createElement("div");
+      root.setAttribute("data-window-id", id);
+      root.innerHTML = '<div data-window-content="" tabindex="-1"><input /></div>';
+      document.body.appendChild(root);
+      return root.querySelector("input")!;
     }
 
-    it('raises the own window and puts the keyboard in it', () => {
-      const mine = openTestWindow('notepad')
-      const theirs = openTestWindow('calculator')
-      const input = windowDom(mine)
-      const elsewhere = windowDom(theirs)
-      elsewhere.focus()
+    it("raises the own window and puts the keyboard in it", () => {
+      const mine = openTestWindow("notepad");
+      const theirs = openTestWindow("calculator");
+      const input = windowDom(mine);
+      const elsewhere = windowDom(theirs);
+      elsewhere.focus();
 
-      createSystemHandle('notepad', mine).window.focus()
-      expect(useWindowStore.getState().windows.find((w) => w.id === mine)?.zIndex).toBe(3)
-      for (const cb of frames) cb(0)
-      expect(document.activeElement).toBe(input)
-    })
+      createSystemHandle("notepad", mine).window.focus();
+      expect(useWindowStore.getState().windows.find((w) => w.id === mine)?.zIndex).toBe(3);
+      for (const cb of frames) cb(0);
+      expect(document.activeElement).toBe(input);
+    });
 
-    it('moves no focus for a minimised window it cannot show', () => {
-      const mine = openTestWindow('notepad')
-      const theirs = openTestWindow('calculator')
-      windowDom(mine)
-      const elsewhere = windowDom(theirs)
-      elsewhere.focus()
-      useWindowStore.getState().hideWindow(mine)
+    it("moves no focus for a minimised window it cannot show", () => {
+      const mine = openTestWindow("notepad");
+      const theirs = openTestWindow("calculator");
+      windowDom(mine);
+      const elsewhere = windowDom(theirs);
+      elsewhere.focus();
+      useWindowStore.getState().hideWindow(mine);
 
-      createSystemHandle('notepad', mine).window.focus()
-      for (const cb of frames) cb(0)
-      expect(document.activeElement).toBe(elsewhere)
-    })
-  })
+      createSystemHandle("notepad", mine).window.focus();
+      for (const cb of frames) cb(0);
+      expect(document.activeElement).toBe(elsewhere);
+    });
+  });
 
-  it('a windowless handle degrades instead of crashing', () => {
-    const system = createSystemHandle('clock', null)
-    expect(system.windowId).toBeNull()
-    expect(() => system.window.setTitle('x')).not.toThrow()
-    expect(system.window.isFocused()).toBe(false)
-    expect(system.window.isVisible()).toBe(false)
-    expect(() => system.window.onCloseRequest(() => true)()).not.toThrow()
-  })
-})
+  it("a windowless handle degrades instead of crashing", () => {
+    const system = createSystemHandle("clock", null);
+    expect(system.windowId).toBeNull();
+    expect(() => system.window.setTitle("x")).not.toThrow();
+    expect(system.window.isFocused()).toBe(false);
+    expect(system.window.isVisible()).toBe(false);
+    expect(() => system.window.onCloseRequest(() => true)()).not.toThrow();
+  });
+});
 
-describe('notify is stamped', () => {
-  it('carries the handle app id — an app cannot toast in another name', () => {
-    const system = createSystemHandle('sticky-notes', null)
-    system.notify({ title: 'saved', level: 'success' })
-    const items = useNotificationStore.getState().notifications
-    expect(items).toHaveLength(1)
-    expect(items[0].appId).toBe('sticky-notes')
-  })
-})
+describe("notify is stamped", () => {
+  it("carries the handle app id — an app cannot toast in another name", () => {
+    const system = createSystemHandle("sticky-notes", null);
+    system.notify({ title: "saved", level: "success" });
+    const items = useNotificationStore.getState().notifications;
+    expect(items).toHaveLength(1);
+    expect(items[0].appId).toBe("sticky-notes");
+  });
+});
 
-describe('intents', () => {
-  it('onIntent delivers a pending payload immediately, then re-deliveries', () => {
-    const id = openTestWindow('file-manager')
-    const system = createSystemHandle('file-manager', id)
-    useIntentStore.getState().setIntent(id, { openPath: 'a.zip', root: 'home' })
+describe("intents", () => {
+  it("onIntent delivers a pending payload immediately, then re-deliveries", () => {
+    const id = openTestWindow("file-manager");
+    const system = createSystemHandle("file-manager", id);
+    useIntentStore.getState().setIntent(id, { openPath: "a.zip", root: "home" });
 
-    const seen: unknown[] = []
-    const off = system.intents.onIntent((p) => seen.push(p))
-    expect(seen).toEqual([{ openPath: 'a.zip', root: 'home' }])
+    const seen: unknown[] = [];
+    const off = system.intents.onIntent((p) => seen.push(p));
+    expect(seen).toEqual([{ openPath: "a.zip", root: "home" }]);
 
     // Re-delivery to the already-open window (single-instance focus path).
-    useIntentStore.getState().setIntent(id, { openPath: 'b.zip', root: 'home' })
-    expect(seen).toHaveLength(2)
+    useIntentStore.getState().setIntent(id, { openPath: "b.zip", root: "home" });
+    expect(seen).toHaveLength(2);
 
-    off()
-    useIntentStore.getState().setIntent(id, { openPath: 'c.zip', root: 'home' })
-    expect(seen).toHaveLength(2)
-  })
+    off();
+    useIntentStore.getState().setIntent(id, { openPath: "c.zip", root: "home" });
+    expect(seen).toHaveLength(2);
+  });
 
-  it('consume drains once and only for the own window', () => {
-    const mine = openTestWindow('notepad')
-    const theirs = openTestWindow('paint')
-    useIntentStore.getState().setIntent(mine, { openPath: 'x.txt', root: 'home' })
-    useIntentStore.getState().setIntent(theirs, { openPath: 'y.png', root: 'home' })
+  it("consume drains once and only for the own window", () => {
+    const mine = openTestWindow("notepad");
+    const theirs = openTestWindow("paint");
+    useIntentStore.getState().setIntent(mine, { openPath: "x.txt", root: "home" });
+    useIntentStore.getState().setIntent(theirs, { openPath: "y.png", root: "home" });
 
-    const system = createSystemHandle('notepad', mine)
-    expect(system.intents.consume()).toEqual({ openPath: 'x.txt', root: 'home' })
-    expect(system.intents.consume()).toBeUndefined()
+    const system = createSystemHandle("notepad", mine);
+    expect(system.intents.consume()).toEqual({ openPath: "x.txt", root: "home" });
+    expect(system.intents.consume()).toBeUndefined();
     // The other window's intent is untouched.
     expect(useIntentStore.getState().intents.get(theirs)).toEqual({
-      openPath: 'y.png',
-      root: 'home',
-    })
-  })
-})
+      openPath: "y.png",
+      root: "home",
+    });
+  });
+});
 
-describe('shortcuts', () => {
-  it('register binds AND documents; unregister removes both', () => {
-    const system = createSystemHandle('games', null)
-    let fired = 0
+describe("shortcuts", () => {
+  it("register binds AND documents; unregister removes both", () => {
+    const system = createSystemHandle("games", null);
+    let fired = 0;
     const off = system.shortcuts.register([
       {
-        id: 'games.test',
-        keys: 'mod+9',
-        description: 'test',
-        scope: 'Global',
+        id: "games.test",
+        keys: "mod+9",
+        description: "test",
+        scope: "Global",
         handler: () => fired++,
       },
-    ])
-    expect(useShortcutStore.getState().shortcuts['games.test']).toBeDefined()
+    ]);
+    expect(useShortcutStore.getState().shortcuts["games.test"]).toBeDefined();
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: '9', ctrlKey: true }))
-    expect(fired).toBe(1)
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "9", ctrlKey: true }));
+    expect(fired).toBe(1);
 
-    off()
-    expect(useShortcutStore.getState().shortcuts['games.test']).toBeUndefined()
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: '9', ctrlKey: true }))
-    expect(fired).toBe(1)
-  })
-})
+    off();
+    expect(useShortcutStore.getState().shortcuts["games.test"]).toBeUndefined();
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "9", ctrlKey: true }));
+    expect(fired).toBe(1);
+  });
+});
 
-describe('events', () => {
-  it('visibility fires on minimise and restore, with the new value', () => {
-    const id = openTestWindow('media-player')
-    const system = createSystemHandle('media-player', id)
-    const seen: boolean[] = []
-    const off = system.on('visibility', (v) => seen.push(v))
+describe("events", () => {
+  it("visibility fires on minimise and restore, with the new value", () => {
+    const id = openTestWindow("media-player");
+    const system = createSystemHandle("media-player", id);
+    const seen: boolean[] = [];
+    const off = system.on("visibility", (v) => seen.push(v));
 
-    useWindowStore.getState().hideWindow(id)
-    useWindowStore.getState().showWindow(id)
-    expect(seen).toEqual([false, true])
-    off()
-  })
+    useWindowStore.getState().hideWindow(id);
+    useWindowStore.getState().showWindow(id);
+    expect(seen).toEqual([false, true]);
+    off();
+  });
 
-  it('focus/blur fire on transitions only', () => {
-    const a = openTestWindow('notepad')
-    const b = openTestWindow('calculator')
-    const system = createSystemHandle('notepad', a)
-    let focus = 0
-    let blur = 0
-    system.on('focus', () => focus++)
-    system.on('blur', () => blur++)
+  it("focus/blur fire on transitions only", () => {
+    const a = openTestWindow("notepad");
+    const b = openTestWindow("calculator");
+    const system = createSystemHandle("notepad", a);
+    let focus = 0;
+    let blur = 0;
+    system.on("focus", () => focus++);
+    system.on("blur", () => blur++);
 
-    useWindowStore.getState().focusWindow(a)
-    useWindowStore.getState().focusWindow(b)
-    useWindowStore.getState().focusWindow(a)
-    expect(focus).toBe(2)
-    expect(blur).toBe(1)
-  })
-})
+    useWindowStore.getState().focusWindow(a);
+    useWindowStore.getState().focusWindow(b);
+    useWindowStore.getState().focusWindow(a);
+    expect(focus).toBe(2);
+    expect(blur).toBe(1);
+  });
+});
 
-describe('sound', () => {
-  it('reads the tray volume, in any mount', () => {
-    useSoundStore.getState().setVolume(0.4)
-    expect(createSystemHandle('media-player', null).sound?.get()).toEqual({
+describe("sound", () => {
+  it("reads the tray volume, in any mount", () => {
+    useSoundStore.getState().setVolume(0.4);
+    expect(createSystemHandle("media-player", null).sound?.get()).toEqual({
       volume: 0.4,
       muted: false,
-    })
-  })
+    });
+  });
 
-  it('sound-changed fires with the new volume and mute, and only when they change', () => {
-    const system = createSystemHandle('media-player', openTestWindow('media-player'))
-    const seen: unknown[] = []
-    const off = system.on('sound-changed', (s) => seen.push(s))
+  it("sound-changed fires with the new volume and mute, and only when they change", () => {
+    const system = createSystemHandle("media-player", openTestWindow("media-player"));
+    const seen: unknown[] = [];
+    const off = system.on("sound-changed", (s) => seen.push(s));
 
-    useSoundStore.getState().setVolume(0.3)
-    useSoundStore.getState().setMuted(true)
-    useSoundStore.getState().setMuted(true)
+    useSoundStore.getState().setVolume(0.3);
+    useSoundStore.getState().setMuted(true);
+    useSoundStore.getState().setMuted(true);
     expect(seen).toEqual([
       { volume: 0.3, muted: false },
       { volume: 0.3, muted: true },
-    ])
-    off()
-    useSoundStore.getState().setMuted(false)
-    expect(seen).toHaveLength(2)
-  })
-})
+    ]);
+    off();
+    useSoundStore.getState().setMuted(false);
+    expect(seen).toHaveLength(2);
+  });
+});

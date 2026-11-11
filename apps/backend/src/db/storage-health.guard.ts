@@ -1,9 +1,5 @@
-import {
-  CanActivate,
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { DbService } from './db.service';
+import { CanActivate, Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { DbService } from "./db.service";
 
 /**
  * Refuse every API request while a migration has failed.
@@ -25,9 +21,7 @@ export class StorageHealthGuard implements CanActivate {
 
   canActivate(): boolean {
     if (this.db.migrationFailure) {
-      throw new ServiceUnavailableException(
-        `System storage needs attention: ${this.db.migrationFailure}`,
-      );
+      throw new ServiceUnavailableException(`System storage needs attention: ${this.db.migrationFailure}`);
     }
     return true;
   }

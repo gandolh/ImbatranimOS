@@ -1,6 +1,6 @@
-export type SavedTab = { root: string; path: string }
+export type SavedTab = { root: string; path: string };
 
-const KEY = 'imbatranimos:code-editor:tabs'
+const KEY = "imbatranimos:code-editor:tabs";
 
 /**
  * Remember which files each editor window had open, for the length of a
@@ -21,44 +21,44 @@ const KEY = 'imbatranimos:code-editor:tabs'
  * wearing the name of work that is gone. A window closed on purpose drops its
  * set ({@link forgetTabSession}); one open when the page went keeps it.
  */
-type SessionRecord = { [windowId: string]: SavedTab[] }
+type SessionRecord = { [windowId: string]: SavedTab[] };
 
 function isTab(t: unknown): t is SavedTab {
   return (
-    typeof t === 'object' &&
+    typeof t === "object" &&
     t !== null &&
-    typeof (t as SavedTab).root === 'string' &&
-    typeof (t as SavedTab).path === 'string'
-  )
+    typeof (t as SavedTab).root === "string" &&
+    typeof (t as SavedTab).path === "string"
+  );
 }
 
 function readRecord(): SessionRecord {
   try {
-    const raw = sessionStorage.getItem(KEY)
-    if (!raw) return {}
-    const parsed: unknown = JSON.parse(raw)
+    const raw = sessionStorage.getItem(KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
     // The record before windows had their own: one shared list.
     if (Array.isArray(parsed)) {
-      const tabs = parsed.filter(isTab)
-      return tabs.length > 0 ? { shared: tabs } : {}
+      const tabs = parsed.filter(isTab);
+      return tabs.length > 0 ? { shared: tabs } : {};
     }
-    if (typeof parsed !== 'object' || parsed === null) return {}
-    const out: SessionRecord = {}
+    if (typeof parsed !== "object" || parsed === null) return {};
+    const out: SessionRecord = {};
     for (const [id, list] of Object.entries(parsed)) {
-      if (!Array.isArray(list)) continue
-      const tabs = list.filter(isTab)
-      if (tabs.length > 0) out[id] = tabs
+      if (!Array.isArray(list)) continue;
+      const tabs = list.filter(isTab);
+      if (tabs.length > 0) out[id] = tabs;
     }
-    return out
+    return out;
   } catch {
-    return {}
+    return {};
   }
 }
 
 function writeRecord(record: SessionRecord): void {
   try {
-    if (Object.keys(record).length === 0) sessionStorage.removeItem(KEY)
-    else sessionStorage.setItem(KEY, JSON.stringify(record))
+    if (Object.keys(record).length === 0) sessionStorage.removeItem(KEY);
+    else sessionStorage.setItem(KEY, JSON.stringify(record));
   } catch {
     // quota exceeded or storage disabled — the session record is optional
   }
@@ -66,30 +66,30 @@ function writeRecord(record: SessionRecord): void {
 
 /** SessionRecord one window's on-disk tabs; an empty set drops the window's entry. */
 export function saveTabSession(windowId: string, tabs: SavedTab[]): void {
-  const record = readRecord()
-  if (tabs.length > 0) record[windowId] = tabs
-  else delete record[windowId]
-  writeRecord(record)
+  const record = readRecord();
+  if (tabs.length > 0) record[windowId] = tabs;
+  else delete record[windowId];
+  writeRecord(record);
 }
 
 /** A window closed on purpose: its tabs are not something to bring back. */
 export function forgetTabSession(windowId: string): void {
-  const record = readRecord()
-  if (!(windowId in record)) return
-  delete record[windowId]
-  writeRecord(record)
+  const record = readRecord();
+  if (!(windowId in record)) return;
+  delete record[windowId];
+  writeRecord(record);
 }
 
 /** Every recorded window's tab set. */
 export function loadTabSession(): SavedTab[][] {
-  return Object.values(readRecord())
+  return Object.values(readRecord());
 }
 
 // Module-scoped, so they reset on reload exactly as the window ids do.
 /** The sets recorded before this page load, not yet claimed; read at the first claim. */
-let pool: [string, SavedTab[]][] | null = null
+let pool: [string, SavedTab[]][] | null = null;
 /** What each window of this page load claimed, so asking again answers the same. */
-const claimedBy = new Map<string, SavedTab[]>()
+const claimedBy = new Map<string, SavedTab[]>();
 
 /**
  * Hand one recorded tab set to each editor window that mounts after a reload,
@@ -101,22 +101,22 @@ const claimedBy = new Map<string, SavedTab[]>()
  * again under its own id.
  */
 export function claimTabSession(windowId: string): SavedTab[] {
-  const already = claimedBy.get(windowId)
-  if (already) return [...already]
-  pool ??= Object.entries(readRecord())
-  const next = pool.shift()
-  const tabs = next ? next[1] : []
-  claimedBy.set(windowId, tabs)
+  const already = claimedBy.get(windowId);
+  if (already) return [...already];
+  pool ??= Object.entries(readRecord());
+  const next = pool.shift();
+  const tabs = next ? next[1] : [];
+  claimedBy.set(windowId, tabs);
   if (next) {
-    const record = readRecord()
-    delete record[next[0]]
-    writeRecord(record)
+    const record = readRecord();
+    delete record[next[0]];
+    writeRecord(record);
   }
-  return [...tabs]
+  return [...tabs];
 }
 
 /** Test seam — the claims are module state and must be resettable. */
 export function resetTabSessionClaim(): void {
-  pool = null
-  claimedBy.clear()
+  pool = null;
+  claimedBy.clear();
 }

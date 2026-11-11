@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { resolve } from 'path';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { resolve } from "path";
 
-import type { Env } from '../../config/env.schema';
-import { DbService } from '../../db/db.service';
-import { loadCatalog } from '../marketplace/catalog';
-import { isUrlAppId } from '../marketplace/source-url';
-import { installGroupOf } from './install-group';
+import type { Env } from "../../config/env.schema";
+import { DbService } from "../../db/db.service";
+import { loadCatalog } from "../marketplace/catalog";
+import { isUrlAppId } from "../marketplace/source-url";
+import { installGroupOf } from "./install-group";
 
 /**
  * Which apps the catalog offers, and whether each is installed.
@@ -35,21 +35,15 @@ export class InstalledApps {
    * call, as the marketplace reads it: a handful of small files.
    */
   catalogAppIds(): Set<string> {
-    const { descriptors } = loadCatalog(
-      resolve(this.config.get('MARKETPLACE_DIR')),
-      { allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS') },
-    );
-    return new Set(
-      [...descriptors.values()].flatMap((d) => d.apps.map((a) => a.id)),
-    );
+    const { descriptors } = loadCatalog(resolve(this.config.get("MARKETPLACE_DIR")), {
+      allowLocalRepos: this.config.get("MARKETPLACE_ALLOW_LOCAL_REPOS"),
+    });
+    return new Set([...descriptors.values()].flatMap((d) => d.apps.map((a) => a.id)));
   }
 
   /** An app the catalog offers that no installed descriptor holds. */
   isUninstalledCatalogApp(appId: string): boolean {
-    return (
-      this.catalogAppIds().has(appId) &&
-      installGroupOf(this.dbs, appId) === null
-    );
+    return this.catalogAppIds().has(appId) && installGroupOf(this.dbs, appId) === null;
   }
 
   /**
@@ -66,11 +60,7 @@ export class InstalledApps {
    * app or an app from a URL that isn't installed.
    */
   isGone(appId: string): boolean {
-    return (
-      this.leaving.has(appId) ||
-      this.isUninstalledUrlApp(appId) ||
-      this.isUninstalledCatalogApp(appId)
-    );
+    return this.leaving.has(appId) || this.isUninstalledUrlApp(appId) || this.isUninstalledCatalogApp(appId);
   }
 
   /**
@@ -78,12 +68,8 @@ export class InstalledApps {
    * no token and write no data, so a window still open can't put back what
    * it removes. If it fails, the apps are still installed and stop leaving.
    */
-  async whileLeaving<T>(
-    appIds: readonly string[],
-    work: () => Promise<T>,
-  ): Promise<T> {
-    for (const id of appIds)
-      this.leaving.set(id, (this.leaving.get(id) ?? 0) + 1);
+  async whileLeaving<T>(appIds: readonly string[], work: () => Promise<T>): Promise<T> {
+    for (const id of appIds) this.leaving.set(id, (this.leaving.get(id) ?? 0) + 1);
     try {
       return await work();
     } finally {

@@ -1,29 +1,26 @@
-import { useVirtualizer, type Virtualizer } from '@tanstack/react-virtual'
+import { useVirtualizer, type Virtualizer } from "@tanstack/react-virtual";
 
 /**
  * The value `useVirtualList` returns — re-exported so add-ons can type the
  * virtualizer as a prop without deep-importing `@tanstack/react-virtual`.
  */
-export type VirtualList<TItemElement extends Element = HTMLElement> = Virtualizer<
-  HTMLElement,
-  TItemElement
->
+export type VirtualList<TItemElement extends Element = HTMLElement> = Virtualizer<HTMLElement, TItemElement>;
 
 type UseVirtualListArgs = {
   /** Number of rows in the (already-sorted) source array. */
-  count: number
+  count: number;
   /** Returns the scroll container element, or null before it mounts. */
-  getScrollElement: () => HTMLElement | null
+  getScrollElement: () => HTMLElement | null;
   /** Per-row height estimate; rows are re-measured once mounted. Defaults to 32px. */
-  estimateSize?: (index: number) => number
+  estimateSize?: (index: number) => number;
   /** Rows to render beyond the visible window. Defaults to 8. */
-  overscan?: number
+  overscan?: number;
   /**
    * Pixels of non-virtualized content before the list inside the same scroll
    * container (e.g. a table header). Keeps `scrollToIndex`/positions accurate.
    */
-  scrollMargin?: number
-}
+  scrollMargin?: number;
+};
 
 /**
  * Thin wrapper around TanStack's `useVirtualizer` that pins the two defaults we
@@ -49,5 +46,5 @@ export function useVirtualList<TItemElement extends Element = HTMLElement>({
     estimateSize: estimateSize ?? (() => 32),
     overscan,
     scrollMargin,
-  })
+  });
 }

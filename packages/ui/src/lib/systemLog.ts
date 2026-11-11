@@ -7,20 +7,20 @@
  * stays in the add-on, where it belongs. Sign-in history used to be derived
  * here too; nothing has logged sign-in since 2026-09-06.
  */
-export type LogLevel = 'info' | 'warn' | 'error'
-export type LogSource = 'server' | 'client'
+export type LogLevel = "info" | "warn" | "error";
+export type LogSource = "server" | "client";
 
 export interface LogEntry {
   /** ISO timestamp. */
-  t: string
-  level: LogLevel
+  t: string;
+  level: LogLevel;
   /** Stable dotted event name, e.g. `backup.restored`. */
-  event: string
+  event: string;
   /**
    * `client` means the browser reported it, so it is only as trustworthy as the
    * session that sent it. Never render the two the same way.
    */
-  source: LogSource
-  msg: string
-  meta?: unknown
+  source: LogSource;
+  msg: string;
+  meta?: unknown;
 }

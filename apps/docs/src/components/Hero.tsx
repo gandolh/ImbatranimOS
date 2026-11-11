@@ -17,27 +17,27 @@
  * secondary → button--secondary, minimal → a plain link. Starlight's `icon`
  * has no equivalent and is dropped. Styling hooks are `.doc-hero*`.
  */
-import type { ReactNode } from 'react'
-import Link from '@docusaurus/Link'
-import Heading from '@theme/Heading'
+import type { ReactNode } from "react";
+import Link from "@docusaurus/Link";
+import Heading from "@theme/Heading";
 
 interface Action {
-  text: string
-  link: string
-  variant?: 'primary' | 'secondary' | 'minimal'
+  text: string;
+  link: string;
+  variant?: "primary" | "secondary" | "minimal";
 }
 
 interface Props {
-  title: string
-  tagline?: ReactNode
-  actions?: Action[]
+  title: string;
+  tagline?: ReactNode;
+  actions?: Action[];
 }
 
 const variantClass = {
-  primary: 'button button--primary button--lg',
-  secondary: 'button button--secondary button--lg',
-  minimal: 'doc-hero__minimal',
-}
+  primary: "button button--primary button--lg",
+  secondary: "button button--secondary button--lg",
+  minimal: "doc-hero__minimal",
+};
 
 export default function Hero({ title, tagline, actions = [] }: Props) {
   return (
@@ -49,12 +49,12 @@ export default function Hero({ title, tagline, actions = [] }: Props) {
       {actions.length > 0 && (
         <div className="doc-hero__actions">
           {actions.map((a) => (
-            <Link key={a.text} className={variantClass[a.variant ?? 'primary']} to={a.link}>
+            <Link key={a.text} className={variantClass[a.variant ?? "primary"]} to={a.link}>
               {a.text}
             </Link>
           ))}
         </div>
       )}
     </header>
-  )
+  );
 }

@@ -5,8 +5,8 @@
  *
  * Light-only: literal colours, so the diagram cannot invert.
  */
-import clsx from 'clsx'
-import styles from './LayerStack.module.css'
+import clsx from "clsx";
+import styles from "./LayerStack.module.css";
 
 export default function LayerStack() {
   return (
@@ -62,5 +62,5 @@ export default function LayerStack() {
         </div>
       </div>
     </div>
-  )
+  );
 }

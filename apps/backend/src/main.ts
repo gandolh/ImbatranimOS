@@ -1,35 +1,31 @@
-import { NestFactory } from '@nestjs/core';
-import { Logger, ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import type { NestExpressApplication } from '@nestjs/platform-express';
-import { json } from 'express';
-import { AppModule } from './app.module';
-import { securityHeadersFor } from './security-headers';
-import {
-  browserProxyOriginOf,
-  ignoredEnvNotice,
-  type Env,
-} from './config/env.schema';
-import { DbService } from './db/db.service';
+import { NestFactory } from "@nestjs/core";
+import { Logger, ValidationPipe } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import type { NestExpressApplication } from "@nestjs/platform-express";
+import { json } from "express";
+import { AppModule } from "./app.module";
+import { securityHeadersFor } from "./security-headers";
+import { browserProxyOriginOf, ignoredEnvNotice, type Env } from "./config/env.schema";
+import { DbService } from "./db/db.service";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService<Env, true>);
   const notice = ignoredEnvNotice(process.env);
-  if (notice) new Logger('Config').warn(notice);
+  if (notice) new Logger("Config").warn(notice);
 
   // Behind a TLS-terminating reverse proxy, trust X-Forwarded-* so req.ip
   // (rate-limit key) and the secure-cookie decision reflect the real client.
-  if (config.get('TRUST_PROXY')) {
-    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  if (config.get("TRUST_PROXY")) {
+    app.getHttpAdapter().getInstance().set("trust proxy", 1);
   }
 
   app.use(
     securityHeadersFor(
       browserProxyOriginOf({
-        FRONTEND_URL: config.get('FRONTEND_URL'),
-        BROWSER_PROXY_PORT: config.get('BROWSER_PROXY_PORT'),
-        BROWSER_PROXY_ORIGIN: config.get('BROWSER_PROXY_ORIGIN'),
+        FRONTEND_URL: config.get("FRONTEND_URL"),
+        BROWSER_PROXY_PORT: config.get("BROWSER_PROXY_PORT"),
+        BROWSER_PROXY_ORIGIN: config.get("BROWSER_PROXY_ORIGIN"),
       }),
     ),
   );
@@ -38,11 +34,11 @@ async function bootstrap() {
   // req._body first, which makes the built-in 100 KB parser skip. Without this,
   // Notepad saves (PUT /files/content), the http-proxy DTO (10 MB body /
   // 14 MB bodyBase64) and `git apply` (1 MB patch) all 413 past ~100 KB.
-  app.use(json({ limit: '16mb' }));
-  app.setGlobalPrefix('api');
+  app.use(json({ limit: "16mb" }));
+  app.setGlobalPrefix("api");
   // credentials:true is required for the session cookie to flow cross-origin
   // in dev (Vite 5173 -> API 3001). In prod everything is same-origin.
-  app.enableCors({ origin: config.get('FRONTEND_URL'), credentials: true });
+  app.enableCors({ origin: config.get("FRONTEND_URL"), credentials: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   // Wire SIGTERM/SIGINT to Nest's lifecycle so onModuleDestroy actually runs in
@@ -57,17 +53,10 @@ async function bootstrap() {
   // the container would only hide the one message that explains it.
   const httpAdapter = app.getHttpAdapter();
   const db = app.get(DbService);
-  httpAdapter.get(
-    '/health',
-    (_req: unknown, res: { json: (data: unknown) => void }) => {
-      res.json(
-        db.migrationFailure
-          ? { status: 'degraded', reason: db.migrationFailure }
-          : { status: 'ok' },
-      );
-    },
-  );
+  httpAdapter.get("/health", (_req: unknown, res: { json: (data: unknown) => void }) => {
+    res.json(db.migrationFailure ? { status: "degraded", reason: db.migrationFailure } : { status: "ok" });
+  });
 
-  await app.listen(config.get('PORT'));
+  await app.listen(config.get("PORT"));
 }
 void bootstrap();

@@ -1,4 +1,4 @@
-import { basename } from 'path';
+import { basename } from "path";
 
 /**
  * Whether a closure (`nix path-info --recursive` output, one store path a
@@ -7,7 +7,5 @@ import { basename } from 'path';
  * for them Xwayland adds little, since its own closure is mostly theirs.
  */
 export function closureSpeaksX11(pathInfo: string): boolean {
-  return pathInfo
-    .split('\n')
-    .some((line) => /^[0-9a-z]{32}-libx11-\d/i.test(basename(line.trim())));
+  return pathInfo.split("\n").some((line) => /^[0-9a-z]{32}-libx11-\d/i.test(basename(line.trim())));
 }

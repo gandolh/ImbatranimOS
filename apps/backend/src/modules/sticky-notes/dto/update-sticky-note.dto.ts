@@ -1,19 +1,5 @@
-import {
-  IsBoolean,
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
-import {
-  COLORS,
-  MAX_CONTENT,
-  MAX_SIZE,
-  MIN_SIZE,
-} from './create-sticky-note.dto';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { COLORS, MAX_CONTENT, MAX_SIZE, MIN_SIZE } from "./create-sticky-note.dto";
 
 /** Every field optional. `color: null` clears back to the default surface. */
 export class UpdateStickyNoteDto {

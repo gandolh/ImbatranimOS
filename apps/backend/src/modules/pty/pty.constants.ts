@@ -1,7 +1,7 @@
-import { homedir, userInfo } from 'os';
-import { isValidSessionId } from '../wayland/wayland.protocol';
-import { sessionBusAddress } from '../linux-apps/session-bus.paths';
-import { soundServerEnv } from '../linux-apps/sound-server.paths';
+import { homedir, userInfo } from "os";
+import { isValidSessionId } from "../wayland/wayland.protocol";
+import { sessionBusAddress } from "../linux-apps/session-bus.paths";
+import { soundServerEnv } from "../linux-apps/sound-server.paths";
 
 /**
  * Path the terminal WebSocket listens on. Lives under the `/api` prefix so it
@@ -10,7 +10,7 @@ import { soundServerEnv } from '../linux-apps/sound-server.paths';
  * routes — a raw `ws` upgrade handler sees the untouched request URL, so we
  * match this literal path ourselves.
  */
-export const PTY_PATH = '/api/pty';
+export const PTY_PATH = "/api/pty";
 
 /** xterm-side scrollback is capped too; this is the pty geometry default. */
 export const DEFAULT_COLS = 80;
@@ -53,7 +53,7 @@ export function resolveShell(env: NodeJS.ProcessEnv = process.env): string {
   } catch {
     /* userInfo can throw on some platforms; fall through */
   }
-  return '/bin/sh';
+  return "/bin/sh";
 }
 
 /** Home directory to start the shell in, with a safe fallback. */
@@ -89,19 +89,12 @@ export function terminalEnv(
   delete env.DISPLAY;
   if (desktopSession && isValidSessionId(desktopSession)) {
     env.WAYLAND_DISPLAY = `wayland-${desktopSession}`;
-    if (
-      typeof x11Display === 'number' &&
-      Number.isInteger(x11Display) &&
-      x11Display >= 0
-    ) {
+    if (typeof x11Display === "number" && Number.isInteger(x11Display) && x11Display >= 0) {
       env.DISPLAY = `:${x11Display}`;
     }
     // The session's own bus: apps keep one instance and talk to the OS on it.
     if (runtimeDir) {
-      env.DBUS_SESSION_BUS_ADDRESS = sessionBusAddress(
-        runtimeDir,
-        desktopSession,
-      );
+      env.DBUS_SESSION_BUS_ADDRESS = sessionBusAddress(runtimeDir, desktopSession);
       Object.assign(env, soundServerEnv(runtimeDir, desktopSession));
     }
   } else {
@@ -113,9 +106,9 @@ export function terminalEnv(
   const stateHome = env.NIX_STATE_HOME?.trim();
   if (stateHome) {
     const profileBin = `${stateHome}/profile/bin`;
-    const parts = (env.PATH ?? '').split(':').filter((p) => p !== '');
+    const parts = (env.PATH ?? "").split(":").filter((p) => p !== "");
     if (!parts.includes(profileBin)) {
-      env.PATH = [profileBin, ...parts].join(':');
+      env.PATH = [profileBin, ...parts].join(":");
     }
   }
   return env;

@@ -1,8 +1,8 @@
-import { Button } from '../../shared/components/ui'
-import { AuthShell } from './AuthShell'
-import { localSignOut } from './api/authApi'
-import { LocalSetupScreen, LocalSignInScreen } from './LocalScreens'
-import { useAuthStore } from './store/authStore'
+import { Button } from "../../shared/components/ui";
+import { AuthShell } from "./AuthShell";
+import { localSignOut } from "./api/authApi";
+import { LocalSetupScreen, LocalSignInScreen } from "./LocalScreens";
+import { useAuthStore } from "./store/authStore";
 
 /**
  * The pre-desktop and suspended states, all rendered in the same panel: the
@@ -18,7 +18,7 @@ import { useAuthStore } from './store/authStore'
  * unsaved buffers and open windows across a walk away from the machine.
  */
 export function ScreenCover({ onDismiss }: { onDismiss: () => void }) {
-  const session = useAuthStore((s) => s.session)
+  const session = useAuthStore((s) => s.session);
 
   return (
     <AuthShell
@@ -26,7 +26,7 @@ export function ScreenCover({ onDismiss }: { onDismiss: () => void }) {
       subtitle={
         session
           ? `Signed in as ${session.username}. Anyone at this machine can uncover the screen — it hides your work, it does not protect it.`
-          : 'Anyone at this machine can uncover the screen — it hides your work, it does not protect it.'
+          : "Anyone at this machine can uncover the screen — it hides your work, it does not protect it."
       }
     >
       <div className="flex flex-col gap-2">
@@ -42,15 +42,15 @@ export function ScreenCover({ onDismiss }: { onDismiss: () => void }) {
         </button>
       </div>
     </AuthShell>
-  )
+  );
 }
 
 /** Nobody is signed in: the first-run setup on an unclaimed machine, else the sign-in. */
 export function SignedOutScreen() {
-  const identity = useAuthStore((s) => s.identity)
+  const identity = useAuthStore((s) => s.identity);
   return identity?.setUp === false ? (
     <LocalSetupScreen tokenRequired={identity.setupTokenRequired} />
   ) : (
     <LocalSignInScreen />
-  )
+  );
 }

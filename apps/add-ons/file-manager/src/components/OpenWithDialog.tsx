@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { Button, Checkbox, Dialog, cn, useSystem } from '@imbatranim/ui'
-import { marketplaceGap, marketplaceIntent, marketplaceTarget } from '../lib/marketplaceOpeners'
+import { useMemo, useState } from "react";
+import { Button, Checkbox, Dialog, cn, useSystem } from "@imbatranim/ui";
+import { marketplaceGap, marketplaceIntent, marketplaceTarget } from "../lib/marketplaceOpeners";
 
 /**
  * "Open with…" — the chooser, and the place a default gets set.
@@ -25,33 +25,33 @@ export function OpenWithDialog({
   onPick,
   onClose,
 }: {
-  fileName: string
-  onPick: (appId: string) => void
-  onClose: () => void
+  fileName: string;
+  onPick: (appId: string) => void;
+  onClose: () => void;
 }) {
-  const { associations, openApp } = useSystem().intents
-  const claimants = useMemo(() => associations.candidatesFor(fileName), [associations, fileName])
-  const everything = useMemo(() => associations.allCandidates(), [associations])
-  const [showAll, setShowAll] = useState(claimants.length === 0)
-  const [remember, setRemember] = useState(false)
-  const [picked, setPicked] = useState<string>(claimants[0]?.appId ?? '')
+  const { associations, openApp } = useSystem().intents;
+  const claimants = useMemo(() => associations.candidatesFor(fileName), [associations, fileName]);
+  const everything = useMemo(() => associations.allCandidates(), [associations]);
+  const [showAll, setShowAll] = useState(claimants.length === 0);
+  const [remember, setRemember] = useState(false);
+  const [picked, setPicked] = useState<string>(claimants[0]?.appId ?? "");
 
-  const key = associations.keyFor(fileName)
-  const target = marketplaceTarget(key)
-  const options = showAll ? everything : claimants.length > 0 ? claimants : everything
+  const key = associations.keyFor(fileName);
+  const target = marketplaceTarget(key);
+  const options = showAll ? everything : claimants.length > 0 ? claimants : everything;
 
   function confirm() {
-    if (picked === '') return
-    if (remember) associations.setDefault(key, picked)
-    onPick(picked)
-    onClose()
+    if (picked === "") return;
+    if (remember) associations.setDefault(key, picked);
+    onPick(picked);
+    onClose();
   }
 
   return (
     <Dialog
       open
       onOpenChange={(next) => {
-        if (!next) onClose()
+        if (!next) onClose();
       }}
       title="Open with"
       description={fileName}
@@ -63,21 +63,20 @@ export function OpenWithDialog({
                 rather than steering it into the text editor. */}
             {target ? (
               <>
-                No installed app opens .{key} files.{' '}
+                No installed app opens .{key} files.{" "}
                 <button
                   onClick={() => {
-                    openApp('settings', marketplaceIntent(target.descriptorId))
-                    onClose()
+                    openApp("settings", marketplaceIntent(target.descriptorId));
+                    onClose();
                   }}
                   className="text-primary focus-visible:ring-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 >
                   {target.name} in Settings → Marketplace
-                </button>{' '}
+                </button>{" "}
                 does.
               </>
             ) : (
-              (marketplaceGap(key) ??
-              'No app claims this file type. Pick one — the text editor opens most things.')
+              (marketplaceGap(key) ?? "No app claims this file type. Pick one — the text editor opens most things.")
             )}
           </p>
         )}
@@ -89,10 +88,10 @@ export function OpenWithDialog({
               onClick={() => setPicked(candidate.appId)}
               aria-pressed={picked === candidate.appId}
               className={cn(
-                'focus-visible:ring-primary border-outline-variant/50 rounded-item apricot:border-transparent flex w-full items-center gap-2 border-b px-2 py-1.5 text-left text-[12px] outline-none last:border-b-0 focus-visible:ring-2 focus-visible:ring-inset',
+                "focus-visible:ring-primary border-outline-variant/50 rounded-item apricot:border-transparent flex w-full items-center gap-2 border-b px-2 py-1.5 text-left text-[12px] outline-none last:border-b-0 focus-visible:ring-2 focus-visible:ring-inset",
                 picked === candidate.appId
-                  ? 'bg-primary-container text-on-primary-container'
-                  : 'hover:bg-surface-container-high'
+                  ? "bg-primary-container text-on-primary-container"
+                  : "hover:bg-surface-container-high",
               )}
             >
               {candidate.name}
@@ -116,7 +115,7 @@ export function OpenWithDialog({
         {/* Core's Checkbox is its own <label>; wrapping it in another would nest
             two labels for one control. */}
         <Checkbox
-          label={`Always use this for ${key.startsWith('.') ? key : `.${key}`} files`}
+          label={`Always use this for ${key.startsWith(".") ? key : `.${key}`} files`}
           checked={remember}
           onCheckedChange={(next) => setRemember(next)}
         />
@@ -125,11 +124,11 @@ export function OpenWithDialog({
           <Button variant="default" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" size="sm" disabled={picked === ''} onClick={confirm}>
+          <Button variant="primary" size="sm" disabled={picked === ""} onClick={confirm}>
             Open
           </Button>
         </div>
       </div>
     </Dialog>
-  )
+  );
 }

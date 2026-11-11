@@ -1,6 +1,6 @@
-import { readdirSync, readFileSync } from 'fs';
-import { isAbsolute, join, normalize, posix } from 'path';
-import { z } from 'zod';
+import { readdirSync, readFileSync } from "fs";
+import { isAbsolute, join, normalize, posix } from "path";
+import { z } from "zod";
 
 /**
  * The marketplace catalog: `marketplace/<id>.json` in THIS repo.
@@ -29,26 +29,14 @@ import { z } from 'zod';
  */
 
 /** The `system` capabilities a descriptor may ask for. */
-export const CAPABILITIES = [
-  'fs',
-  'http',
-  'intents',
-  'notify',
-  'shortcuts',
-  'schedule',
-] as const;
+export const CAPABILITIES = ["fs", "http", "intents", "notify", "shortcuts", "schedule"] as const;
 
 /** An argv: no shell, so a descriptor cannot smuggle `;` or `$(…)` into a command. */
 const argv = z.array(z.string().min(1).max(200)).min(1).max(32);
 
 /** {@link innerPath}'s rule, without its length: relative, no `\` or NUL, never climbing out. */
 export function isInnerPath(p: string): boolean {
-  return (
-    !isAbsolute(p) &&
-    !p.includes('\\') &&
-    !p.includes('\0') &&
-    !normalize(p).split('/').includes('..')
-  );
+  return !isAbsolute(p) && !p.includes("\\") && !p.includes("\0") && !normalize(p).split("/").includes("..");
 }
 
 /** A path inside the clone: relative, normalised, never climbing out. */
@@ -56,7 +44,7 @@ export const innerPath = z
   .string()
   .min(1)
   .max(200)
-  .refine(isInnerPath, 'must be a relative path inside the repository');
+  .refine(isInnerPath, "must be a relative path inside the repository");
 
 const size = z.object({
   w: z.number().int().min(200).max(4000),
@@ -64,32 +52,28 @@ const size = z.object({
 });
 
 /** A window's sizes. A URL app's manifest uses the same shape. */
-export const windowSchema = z
-  .object({ defaultSize: size, minSize: size })
-  .default({
-    defaultSize: { w: 960, h: 640 },
-    minSize: { w: 480, h: 320 },
-  });
+export const windowSchema = z.object({ defaultSize: size, minSize: size }).default({
+  defaultSize: { w: 960, h: 640 },
+  minSize: { w: 480, h: 320 },
+});
 
 /** A Lucide icon name. */
 export const iconSchema = z
   .string()
   .regex(/^[a-z0-9-]{1,40}$/)
-  .default('package');
+  .default("package");
 
-const isModule = (p: string) => p.endsWith('.mjs') || p.endsWith('.js');
+const isModule = (p: string) => p.endsWith(".mjs") || p.endsWith(".js");
 
 /**
  * The module the desktop imports. Inside an output directory (`dist/app.mjs`):
  * that directory is what gets served, and the app's top level holds its source
  * and node_modules.
  */
-export const entrySchema = innerPath
-  .refine(isModule, 'must be a .mjs or .js module')
-  .refine((p) => {
-    const dir = normalize(p).split('/').slice(0, -1);
-    return dir.length > 0 && !dir.includes('node_modules');
-  }, 'must be inside the build output directory, like dist/app.mjs');
+export const entrySchema = innerPath.refine(isModule, "must be a .mjs or .js module").refine((p) => {
+  const dir = normalize(p).split("/").slice(0, -1);
+  return dir.length > 0 && !dir.includes("node_modules");
+}, "must be inside the build output directory, like dist/app.mjs");
 
 /**
  * The rule for a descriptor's id and, since one catalog entry, several apps, for each of its apps'
@@ -98,10 +82,10 @@ export const entrySchema = innerPath
 const ID_PATTERN = /^[a-z][a-z0-9-]{1,39}$/;
 const idSchema = z
   .string()
-  .regex(ID_PATTERN, 'lowercase letters, digits and -')
+  .regex(ID_PATTERN, "lowercase letters, digits and -")
   // `x-…` is what an app installed from a URL is called. A
   // catalog app taking one could be mistaken for, or replace, one.
-  .refine((id) => !id.startsWith('x-'), 'must not start with x-');
+  .refine((id) => !id.startsWith("x-"), "must not start with x-");
 
 /**
  * A version 2 build's `output`: the one directory of the clone that is
@@ -109,21 +93,14 @@ const idSchema = z
  * clone's top (that holds the source) and never inside `node_modules`.
  */
 export const outputSchema = innerPath.refine((p) => {
-  const segments = posix.normalize(p).split('/').filter(Boolean);
-  return (
-    segments.length > 0 &&
-    !segments.every((s) => s === '.') &&
-    !segments.includes('node_modules')
-  );
-}, 'must be a build output directory inside the repository, like dist');
+  const segments = posix.normalize(p).split("/").filter(Boolean);
+  return segments.length > 0 && !segments.every((s) => s === ".") && !segments.includes("node_modules");
+}, "must be a build output directory inside the repository, like dist");
 
 /** A version 2 app's `entry`: a module inside the build's `output`, like `docs/app.mjs`. */
 export const appEntrySchema = innerPath
-  .refine(isModule, 'must be a .mjs or .js module')
-  .refine(
-    (p) => !posix.normalize(p).split('/').includes('node_modules'),
-    'must not be inside node_modules',
-  );
+  .refine(isModule, "must be a .mjs or .js module")
+  .refine((p) => !posix.normalize(p).split("/").includes("node_modules"), "must not be inside node_modules");
 
 /** The most stylesheets one kit app may list. */
 export const MAX_APP_STYLES = 8;
@@ -133,11 +110,8 @@ export const MAX_APP_STYLES = 8;
  * `output`, like `docs/app.css`. Never inside `node_modules`.
  */
 export const styleSchema = innerPath
-  .refine((p) => p.endsWith('.css'), 'must be a .css file')
-  .refine(
-    (p) => !posix.normalize(p).split('/').includes('node_modules'),
-    'must not be inside node_modules',
-  );
+  .refine((p) => p.endsWith(".css"), "must be a .css file")
+  .refine((p) => !posix.normalize(p).split("/").includes("node_modules"), "must not be inside node_modules");
 
 /**
  * The version of the desktop's shared kit (`SHARED_KIT_VERSION` in
@@ -147,20 +121,11 @@ export const sharedKitSchema = z.number().int().min(1);
 
 /** File types an app opens: extensions, or whole names for extensionless files. */
 export const opensSchema = z
-  .array(
-    z
-      .string()
-      .regex(
-        /^[a-z0-9][a-z0-9._+-]{0,30}$/,
-        'a lowercase extension, like docx',
-      ),
-  )
+  .array(z.string().regex(/^[a-z0-9][a-z0-9._+-]{0,30}$/, "a lowercase extension, like docx"))
   .max(40)
   .default([]);
 
-const capabilitiesSchema = z
-  .array(z.enum(CAPABILITIES))
-  .max(CAPABILITIES.length);
+const capabilitiesSchema = z.array(z.enum(CAPABILITIES)).max(CAPABILITIES.length);
 
 const serverSchema = z.object({
   command: argv,
@@ -168,7 +133,7 @@ const serverSchema = z.object({
   health: z
     .string()
     .regex(/^\/[^\s]*$/)
-    .default('/'),
+    .default("/"),
 });
 
 function repoSchema(options: { allowLocalRepos: boolean }) {
@@ -177,11 +142,8 @@ function repoSchema(options: { allowLocalRepos: boolean }) {
     .url()
     .refine((value) => {
       const protocol = new URL(value).protocol;
-      return (
-        protocol === 'https:' ||
-        (options.allowLocalRepos && protocol === 'file:')
-      );
-    }, 'must be an https:// repository');
+      return protocol === "https:" || (options.allowLocalRepos && protocol === "file:");
+    }, "must be an https:// repository");
 }
 
 function sourceSchema(options: { allowLocalRepos: boolean }) {
@@ -189,9 +151,7 @@ function sourceSchema(options: { allowLocalRepos: boolean }) {
     repo: repoSchema(options),
     // A full commit id, not a tag or branch: a tag can be moved, and the
     // pin is what makes the curated descriptor mean the code it reviewed.
-    ref: z
-      .string()
-      .regex(/^[0-9a-f]{40}$/, 'must be a full 40-character commit id'),
+    ref: z.string().regex(/^[0-9a-f]{40}$/, "must be a full 40-character commit id"),
     subdir: innerPath.optional(),
   });
 }
@@ -204,11 +164,11 @@ function descriptorV1Schema(options: { allowLocalRepos: boolean }) {
     schemaVersion: z.literal(1),
     id: idSchema,
     name: z.string().min(1).max(60),
-    description: z.string().max(300).default(''),
+    description: z.string().max(300).default(""),
     meta: z.array(z.string().max(40)).max(20).default([]),
     source: sourceSchema(options),
-    type: z.enum(['static', 'service']),
-    runtime: z.literal('native'),
+    type: z.enum(["static", "service"]),
+    runtime: z.literal("native"),
     build: z.object({
       install: argv.optional(),
       command: argv,
@@ -221,16 +181,12 @@ function descriptorV1Schema(options: { allowLocalRepos: boolean }) {
     minSystemVersion: z.number().int().min(1),
     // Stripped silently, a version 1 descriptor saying it is a kit app would
     // install as a mount app, and fail only when a window opens.
-    sharedKit: z
-      .undefined({ error: 'sharedKit needs schemaVersion 2' })
-      .optional(),
+    sharedKit: z.undefined({ error: "sharedKit needs schemaVersion 2" }).optional(),
     // A hook is a kit app's export, and only a version 2 descriptor has kit apps.
-    background: z
-      .undefined({ error: 'background needs schemaVersion 2 and sharedKit' })
-      .optional(),
+    background: z.undefined({ error: "background needs schemaVersion 2 and sharedKit" }).optional(),
     commandSources: z
       .undefined({
-        error: 'commandSources needs schemaVersion 2 and sharedKit',
+        error: "commandSources needs schemaVersion 2 and sharedKit",
       })
       .optional(),
   });
@@ -244,7 +200,7 @@ function descriptorV1Schema(options: { allowLocalRepos: boolean }) {
 export const suiteAppSchema = z.strictObject({
   id: idSchema,
   name: z.string().min(1).max(60),
-  description: z.string().max(300).default(''),
+  description: z.string().max(300).default(""),
   meta: z.array(z.string().max(40)).max(20).default([]),
   entry: appEntrySchema,
   window: windowSchema,
@@ -260,11 +216,7 @@ export const suiteAppSchema = z.strictObject({
     .array(styleSchema)
     .max(MAX_APP_STYLES)
     .default([])
-    .refine(
-      (list) =>
-        new Set(list.map((p) => posix.normalize(p))).size === list.length,
-      'lists a stylesheet twice',
-    ),
+    .refine((list) => new Set(list.map((p) => posix.normalize(p))).size === list.length, "lists a stylesheet twice"),
   /**
    * A kit app whose module exports `Background`, a component the desktop
    * mounts with no window from sign-in to sign-out while the app is
@@ -287,10 +239,10 @@ function descriptorV2Schema(options: { allowLocalRepos: boolean }) {
     schemaVersion: z.literal(2),
     id: idSchema,
     name: z.string().min(1).max(60),
-    description: z.string().max(300).default(''),
+    description: z.string().max(300).default(""),
     source: sourceSchema(options),
-    type: z.enum(['static', 'service']),
-    runtime: z.literal('native'),
+    type: z.enum(["static", "service"]),
+    runtime: z.literal("native"),
     build: z.object({
       install: argv.optional(),
       command: argv,
@@ -324,16 +276,16 @@ export interface Descriptor {
   id: string;
   name: string;
   description: string;
-  source: DescriptorV2['source'];
-  type: DescriptorV2['type'];
-  runtime: 'native';
+  source: DescriptorV2["source"];
+  type: DescriptorV2["type"];
+  runtime: "native";
   build: {
     install?: string[];
     command: string[];
     /** The served directory, inside the app's directory, normalised, no trailing `/`. */
     output: string;
   };
-  server?: DescriptorV2['server'];
+  server?: DescriptorV2["server"];
   apps: CatalogApp[];
   minSystemVersion: number;
   /**
@@ -345,7 +297,7 @@ export interface Descriptor {
 
 /** `dist/os/` and `./dist/os` → `dist/os`. */
 function normalDir(p: string): string {
-  return posix.normalize(p).replace(/\/+$/, '');
+  return posix.normalize(p).replace(/\/+$/, "");
 }
 
 /**
@@ -405,34 +357,29 @@ function fromV2(d: DescriptorV2): Descriptor {
 
 export function descriptorSchema(options: { allowLocalRepos: boolean }) {
   return z
-    .discriminatedUnion('schemaVersion', [
-      descriptorV1Schema(options),
-      descriptorV2Schema(options),
-    ])
-    .transform(
-      (d): Descriptor => (d.schemaVersion === 1 ? fromV1(d) : fromV2(d)),
-    )
+    .discriminatedUnion("schemaVersion", [descriptorV1Schema(options), descriptorV2Schema(options)])
+    .transform((d): Descriptor => (d.schemaVersion === 1 ? fromV1(d) : fromV2(d)))
     .superRefine((d, ctx) => {
-      if (d.type === 'service' && !d.server) {
+      if (d.type === "service" && !d.server) {
         ctx.addIssue({
-          code: 'custom',
-          path: ['server'],
-          message: 'a service app needs a server',
+          code: "custom",
+          path: ["server"],
+          message: "a service app needs a server",
         });
       }
-      if (d.type === 'static' && d.server) {
+      if (d.type === "static" && d.server) {
         ctx.addIssue({
-          code: 'custom',
-          path: ['server'],
-          message: 'a static app has no server',
+          code: "custom",
+          path: ["server"],
+          message: "a static app has no server",
         });
       }
       const seen = new Set<string>();
       d.apps.forEach((a, i) => {
         if (seen.has(a.id)) {
           ctx.addIssue({
-            code: 'custom',
-            path: ['apps', i, 'id'],
+            code: "custom",
+            path: ["apps", i, "id"],
             message: `${a.id} is listed twice`,
           });
         }
@@ -441,18 +388,18 @@ export function descriptorSchema(options: { allowLocalRepos: boolean }) {
         // desktop's tree, ships a stylesheet for the page.
         if (d.sharedKit === null && a.styles.length > 0) {
           ctx.addIssue({
-            code: 'custom',
-            path: ['apps', i, 'styles'],
-            message: 'only a kit app (with sharedKit) may list styles',
+            code: "custom",
+            path: ["apps", i, "styles"],
+            message: "only a kit app (with sharedKit) may list styles",
           });
         }
         // A hook is a named export the desktop renders or calls with its own
         // React and kit, which a module that exports `mount` never shares.
-        for (const hook of ['background', 'commandSources'] as const) {
+        for (const hook of ["background", "commandSources"] as const) {
           if (d.sharedKit === null && a[hook]) {
             ctx.addIssue({
-              code: 'custom',
-              path: ['apps', i, hook],
+              code: "custom",
+              path: ["apps", i, hook],
               message: `only a kit app (with sharedKit) may declare ${hook}`,
             });
           }
@@ -465,7 +412,7 @@ export function descriptorSchema(options: { allowLocalRepos: boolean }) {
  * The list of verified apps from a URL (`verified.ts`), which sits beside the
  * descriptors and is not one.
  */
-export const VERIFIED_FILE = 'verified.json';
+export const VERIFIED_FILE = "verified.json";
 
 export interface Catalog {
   /** By descriptor id. */
@@ -485,19 +432,16 @@ export interface Catalog {
  * would make one of them mean two things. An app may carry its own
  * descriptor's id; that is what a version 1 descriptor reads as.
  */
-export function loadCatalog(
-  dir: string,
-  options: { allowLocalRepos: boolean },
-): Catalog {
+export function loadCatalog(dir: string, options: { allowLocalRepos: boolean }): Catalog {
   const schema = descriptorSchema(options);
   const descriptors = new Map<string, Descriptor>();
-  const problems: Catalog['problems'] = [];
+  const problems: Catalog["problems"] = [];
   /** Id → the file that took it. */
   const taken = new Map<string, string>();
   let files: string[];
   try {
     files = readdirSync(dir)
-      .filter((f) => f.endsWith('.json') && f !== VERIFIED_FILE)
+      .filter((f) => f.endsWith(".json") && f !== VERIFIED_FILE)
       .sort();
   } catch {
     return { descriptors, problems };
@@ -505,7 +449,7 @@ export function loadCatalog(
   for (const file of files) {
     let raw: unknown;
     try {
-      raw = JSON.parse(readFileSync(join(dir, file), 'utf8'));
+      raw = JSON.parse(readFileSync(join(dir, file), "utf8"));
     } catch (err) {
       problems.push({ file, problem: `not JSON: ${(err as Error).message}` });
       continue;
@@ -515,7 +459,7 @@ export function loadCatalog(
       const issue = parsed.error.issues[0];
       problems.push({
         file,
-        problem: `${issue.path.join('.') || '(root)'}: ${issue.message}`,
+        problem: `${issue.path.join(".") || "(root)"}: ${issue.message}`,
       });
       continue;
     }

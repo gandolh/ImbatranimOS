@@ -1,15 +1,15 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { api } from '../../../lib/axios'
-import { notify } from '../../store/notificationStore'
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { api } from "../../../lib/axios";
+import { notify } from "../../store/notificationStore";
 
 interface Props {
-  appId: string
-  appName: string
-  children: ReactNode
+  appId: string;
+  appName: string;
+  children: ReactNode;
 }
 
 interface State {
-  crashed: boolean
+  crashed: boolean;
 }
 
 /**
@@ -31,36 +31,36 @@ interface State {
  * `componentDidCatch` for the same crash all the same.
  */
 export class DesktopLayerBoundary extends Component<Props, State> {
-  state: State = { crashed: false }
-  private reported = false
+  state: State = { crashed: false };
+  private reported = false;
 
   static getDerivedStateFromError(): State {
-    return { crashed: true }
+    return { crashed: true };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    const { appId, appName } = this.props
+    const { appId, appName } = this.props;
     if (!this.reported) {
-      this.reported = true
+      this.reported = true;
       notify({
         title: `${appName} stopped working on the desktop.`,
         body: error.message || undefined,
-        level: 'error',
+        level: "error",
         appId,
-      })
+      });
       // Into the system log too, as a window's crash is. Fire-and-forget:
       // failing to record a crash must not become an error of its own.
       void api
-        .post('/logs/client-error', {
+        .post("/logs/client-error", {
           appId,
-          message: `Desktop layer: ${error.message || 'stopped unexpectedly'}`.slice(0, 300),
+          message: `Desktop layer: ${error.message || "stopped unexpectedly"}`.slice(0, 300),
         })
-        .catch(() => undefined)
+        .catch(() => undefined);
     }
-    console.error(`[${appId}] desktop layer crashed`, error, info.componentStack)
+    console.error(`[${appId}] desktop layer crashed`, error, info.componentStack);
   }
 
   render(): ReactNode {
-    return this.state.crashed ? null : this.props.children
+    return this.state.crashed ? null : this.props.children;
   }
 }

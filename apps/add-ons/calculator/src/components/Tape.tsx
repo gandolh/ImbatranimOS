@@ -1,5 +1,5 @@
-import { Eraser } from 'lucide-react'
-import type { TapeEntry } from '../hooks/useCalcSession'
+import { Eraser } from "lucide-react";
+import type { TapeEntry } from "../hooks/useCalcSession";
 
 /**
  * Recent calculations, newest first, click to reuse.
@@ -16,9 +16,9 @@ export function Tape({
   onReuse,
   onClear,
 }: {
-  entries: TapeEntry[]
-  onReuse: (value: number, display: string) => void
-  onClear: () => void
+  entries: TapeEntry[];
+  onReuse: (value: number, display: string) => void;
+  onClear: () => void;
 }) {
   return (
     <div className="border-outline-variant bg-surface-container-lowest flex max-h-24 flex-none flex-col border-b">
@@ -37,9 +37,7 @@ export function Tape({
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         {entries.length === 0 ? (
-          <p className="text-on-surface-variant px-2 pb-1 text-[10px]">
-            Results land here — click one to reuse it.
-          </p>
+          <p className="text-on-surface-variant px-2 pb-1 text-[10px]">Results land here — click one to reuse it.</p>
         ) : (
           <ul>
             {entries.map((entry) => (
@@ -50,9 +48,7 @@ export function Tape({
                   title={`Reuse ${entry.value}`}
                   className="font-ui hover:bg-surface-container-high focus-visible:ring-primary flex w-full items-baseline gap-2 px-2 py-0.5 text-left text-[10px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 >
-                  <span className="text-on-surface-variant min-w-0 flex-1 truncate">
-                    {entry.expression}
-                  </span>
+                  <span className="text-on-surface-variant min-w-0 flex-1 truncate">{entry.expression}</span>
                   <span className="text-on-surface shrink-0 font-semibold">= {entry.result}</span>
                 </button>
               </li>
@@ -61,5 +57,5 @@ export function Tape({
         )}
       </div>
     </div>
-  )
+  );
 }

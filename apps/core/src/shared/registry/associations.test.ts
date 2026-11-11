@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   ASSOCIATIONS_KEY,
   TEXT_FALLBACK_APP,
@@ -10,12 +10,12 @@ import {
   knownExtensions,
   resolveOpener,
   useAssociationStore,
-} from './associations'
-import { useAddonStore } from '../store/addonStore'
-import { APP_REGISTRY } from './registry'
-import { DOTFILE_KEYS } from '../../lib/prefs'
-import { allOpenerCandidates, openerName } from './associations'
-import { syncLinuxLaunchers } from '../../modules/linux-windows/launchers'
+} from "./associations";
+import { useAddonStore } from "../store/addonStore";
+import { APP_REGISTRY } from "./registry";
+import { DOTFILE_KEYS } from "../../lib/prefs";
+import { allOpenerCandidates, openerName } from "./associations";
+import { syncLinuxLaunchers } from "../../modules/linux-windows/launchers";
 
 /**
  * Default apps and Open with — default apps.
@@ -26,273 +26,273 @@ import { syncLinuxLaunchers } from '../../modules/linux-windows/launchers'
  */
 
 beforeEach(() => {
-  localStorage.clear()
-  useAssociationStore.setState({ overrides: {} })
-  useAddonStore.setState({ disabled: [] })
-})
+  localStorage.clear();
+  useAssociationStore.setState({ overrides: {} });
+  useAddonStore.setState({ disabled: [] });
+});
 
-describe('extension parsing', () => {
-  it('reads the extension, lowercased', () => {
-    expect(extensionOf('notes.MD')).toBe('md')
-    expect(extensionOf('archive.tar.gz')).toBe('gz')
-  })
+describe("extension parsing", () => {
+  it("reads the extension, lowercased", () => {
+    expect(extensionOf("notes.MD")).toBe("md");
+    expect(extensionOf("archive.tar.gz")).toBe("gz");
+  });
 
-  it('treats a leading-dot name as having NO extension', () => {
+  it("treats a leading-dot name as having NO extension", () => {
     // `.env`.split('.') gives ['', 'env'], so a naive parse would call this an
     // "env file" and then fail to match the `.env` entry in the text-ish names.
-    expect(extensionOf('.env')).toBe('')
-    expect(extensionOf('.gitignore')).toBe('')
-  })
+    expect(extensionOf(".env")).toBe("");
+    expect(extensionOf(".gitignore")).toBe("");
+  });
 
-  it('returns nothing for a bare name', () => {
-    expect(extensionOf('Dockerfile')).toBe('')
-    expect(extensionOf('Makefile')).toBe('')
-  })
+  it("returns nothing for a bare name", () => {
+    expect(extensionOf("Dockerfile")).toBe("");
+    expect(extensionOf("Makefile")).toBe("");
+  });
 
-  it('keys an override by extension, or by whole name when there is none', () => {
-    expect(associationKey('a.CSV')).toBe('csv')
-    expect(associationKey('Dockerfile')).toBe('dockerfile')
-    expect(associationKey('.env')).toBe('.env')
-  })
-})
+  it("keys an override by extension, or by whole name when there is none", () => {
+    expect(associationKey("a.CSV")).toBe("csv");
+    expect(associationKey("Dockerfile")).toBe("dockerfile");
+    expect(associationKey(".env")).toBe(".env");
+  });
+});
 
-describe('the before/after table — every mapping the old constant had', () => {
+describe("the before/after table — every mapping the old constant had", () => {
   const cases: [string, string][] = [
-    ['notes.md', 'notepad'],
-    ['notes.markdown', 'notepad'],
-    ['a.txt', 'notepad'],
-    ['out.log', 'notepad'],
-    ['a.json', 'code-editor'],
-    ['a.ts', 'code-editor'],
-    ['a.tsx', 'code-editor'],
-    ['a.js', 'code-editor'],
-    ['a.css', 'code-editor'],
-    ['a.html', 'code-editor'],
-    ['a.sh', 'code-editor'],
-    ['a.py', 'code-editor'],
-    ['a.go', 'code-editor'],
-    ['a.rs', 'code-editor'],
-    ['a.yaml', 'code-editor'],
-    ['a.yml', 'code-editor'],
-    ['a.toml', 'code-editor'],
-    ['a.xml', 'code-editor'],
-    ['a.sql', 'code-editor'],
-    ['pic.png', 'image-viewer'],
-    ['pic.jpg', 'image-viewer'],
-    ['pic.svg', 'image-viewer'],
-    ['pic.avif', 'image-viewer'],
-    ['song.mp3', 'media-player'],
-    ['song.flac', 'media-player'],
-    ['clip.mp4', 'media-player'],
-    ['clip.mkv', 'media-player'],
-  ]
+    ["notes.md", "notepad"],
+    ["notes.markdown", "notepad"],
+    ["a.txt", "notepad"],
+    ["out.log", "notepad"],
+    ["a.json", "code-editor"],
+    ["a.ts", "code-editor"],
+    ["a.tsx", "code-editor"],
+    ["a.js", "code-editor"],
+    ["a.css", "code-editor"],
+    ["a.html", "code-editor"],
+    ["a.sh", "code-editor"],
+    ["a.py", "code-editor"],
+    ["a.go", "code-editor"],
+    ["a.rs", "code-editor"],
+    ["a.yaml", "code-editor"],
+    ["a.yml", "code-editor"],
+    ["a.toml", "code-editor"],
+    ["a.xml", "code-editor"],
+    ["a.sql", "code-editor"],
+    ["pic.png", "image-viewer"],
+    ["pic.jpg", "image-viewer"],
+    ["pic.svg", "image-viewer"],
+    ["pic.avif", "image-viewer"],
+    ["song.mp3", "media-player"],
+    ["song.flac", "media-player"],
+    ["clip.mp4", "media-player"],
+    ["clip.mkv", "media-player"],
+  ];
 
-  it.each(cases)('%s still opens in %s', (file, appId) => {
-    expect(resolveOpener(file).appId).toBe(appId)
-  })
-})
+  it.each(cases)("%s still opens in %s", (file, appId) => {
+    expect(resolveOpener(file).appId).toBe(appId);
+  });
+});
 
-describe('the user override wins', () => {
-  it('over the declared default', () => {
-    expect(resolveOpener('a.md').appId).toBe('notepad')
-    useAssociationStore.getState().setDefault('md', 'code-editor')
-    expect(resolveOpener('a.md')).toEqual({ appId: 'code-editor', reason: 'override' })
-  })
+describe("the user override wins", () => {
+  it("over the declared default", () => {
+    expect(resolveOpener("a.md").appId).toBe("notepad");
+    useAssociationStore.getState().setDefault("md", "code-editor");
+    expect(resolveOpener("a.md")).toEqual({ appId: "code-editor", reason: "override" });
+  });
 
-  it('and can be cleared back to the default', () => {
-    useAssociationStore.getState().setDefault('md', 'code-editor')
-    useAssociationStore.getState().clearDefault('md')
-    expect(resolveOpener('a.md').appId).toBe('notepad')
-  })
+  it("and can be cleared back to the default", () => {
+    useAssociationStore.getState().setDefault("md", "code-editor");
+    useAssociationStore.getState().clearDefault("md");
+    expect(resolveOpener("a.md").appId).toBe("notepad");
+  });
 
-  it('is ignored when it names an app that does not exist', () => {
-    useAssociationStore.getState().setDefault('md', 'an-app-that-was-removed')
-    expect(resolveOpener('a.md').appId).toBe('notepad')
-  })
+  it("is ignored when it names an app that does not exist", () => {
+    useAssociationStore.getState().setDefault("md", "an-app-that-was-removed");
+    expect(resolveOpener("a.md").appId).toBe("notepad");
+  });
 
-  it('is ignored when the chosen app has been DISABLED', () => {
-    useAssociationStore.getState().setDefault('md', 'code-editor')
-    useAddonStore.setState({ disabled: ['code-editor'] })
-    expect(resolveOpener('a.md').appId).toBe('notepad')
-  })
+  it("is ignored when the chosen app has been DISABLED", () => {
+    useAssociationStore.getState().setDefault("md", "code-editor");
+    useAddonStore.setState({ disabled: ["code-editor"] });
+    expect(resolveOpener("a.md").appId).toBe("notepad");
+  });
 
-  it('applies to an extensionless name too', () => {
-    useAssociationStore.getState().setDefault('dockerfile', 'notepad')
-    expect(resolveOpener('Dockerfile').appId).toBe('notepad')
-  })
-})
+  it("applies to an extensionless name too", () => {
+    useAssociationStore.getState().setDefault("dockerfile", "notepad");
+    expect(resolveOpener("Dockerfile").appId).toBe("notepad");
+  });
+});
 
-describe('a disabled app is not a candidate', () => {
-  it('drops out of the candidate list', () => {
-    expect(candidatesFor('a.md').map((c) => c.appId)).toContain('notepad')
-    useAddonStore.setState({ disabled: ['notepad'] })
-    expect(candidatesFor('a.md').map((c) => c.appId)).not.toContain('notepad')
-  })
+describe("a disabled app is not a candidate", () => {
+  it("drops out of the candidate list", () => {
+    expect(candidatesFor("a.md").map((c) => c.appId)).toContain("notepad");
+    useAddonStore.setState({ disabled: ["notepad"] });
+    expect(candidatesFor("a.md").map((c) => c.appId)).not.toContain("notepad");
+  });
 
-  it('FALLS BACK rather than dead-ending when it owned the extension', () => {
-    useAddonStore.setState({ disabled: ['notepad'] })
+  it("FALLS BACK rather than dead-ending when it owned the extension", () => {
+    useAddonStore.setState({ disabled: ["notepad"] });
     // `.md` is text, so the fallback catches it — not a dead double-click.
-    expect(resolveOpener('a.md')).toEqual({
+    expect(resolveOpener("a.md")).toEqual({
       appId: TEXT_FALLBACK_APP,
-      reason: 'text-fallback',
-    })
-  })
+      reason: "text-fallback",
+    });
+  });
 
-  it('hands a contested extension to the other claimant', () => {
+  it("hands a contested extension to the other claimant", () => {
     // No two built-ins share a type since the PDF viewer's retirement (norPDF and PDF Viewer
     // left together); a Marketplace app beside a built-in is the case now.
-    const markdown = APP_REGISTRY.find((a) => a.id === 'notepad')!
-    APP_REGISTRY.push({ ...markdown, id: 'other-markdown' })
+    const markdown = APP_REGISTRY.find((a) => a.id === "notepad")!;
+    APP_REGISTRY.push({ ...markdown, id: "other-markdown" });
     try {
-      useAddonStore.setState({ disabled: ['notepad'] })
-      expect(resolveOpener('a.md').appId).toBe('other-markdown')
+      useAddonStore.setState({ disabled: ["notepad"] });
+      expect(resolveOpener("a.md").appId).toBe("other-markdown");
     } finally {
       APP_REGISTRY.splice(
-        APP_REGISTRY.findIndex((a) => a.id === 'other-markdown'),
-        1
-      )
+        APP_REGISTRY.findIndex((a) => a.id === "other-markdown"),
+        1,
+      );
     }
-  })
-})
+  });
+});
 
-describe('THE DEAD DOUBLE-CLICK IS GONE', () => {
+describe("THE DEAD DOUBLE-CLICK IS GONE", () => {
   const textish = [
-    '.env',
-    '.gitignore',
-    '.bashrc',
-    'Dockerfile',
-    'Makefile',
-    'LICENSE',
-    'README',
-    'settings.ini',
-    'nginx.conf',
-    'app.cfg',
-    'package-lock.lock',
-    'main.lua',
-    'App.swift',
-    'style.scss',
-    'schema.graphql',
-    'deploy.tf',
-    'notes',
-  ]
+    ".env",
+    ".gitignore",
+    ".bashrc",
+    "Dockerfile",
+    "Makefile",
+    "LICENSE",
+    "README",
+    "settings.ini",
+    "nginx.conf",
+    "app.cfg",
+    "package-lock.lock",
+    "main.lua",
+    "App.swift",
+    "style.scss",
+    "schema.graphql",
+    "deploy.tf",
+    "notes",
+  ];
 
-  it.each(textish)('%s opens in the text editor instead of nothing', (name) => {
-    const resolved = resolveOpener(name)
-    expect(resolved.appId).toBe(TEXT_FALLBACK_APP)
-    expect(resolved.reason).toBe('text-fallback')
-  })
+  it.each(textish)("%s opens in the text editor instead of nothing", (name) => {
+    const resolved = resolveOpener(name);
+    expect(resolved.appId).toBe(TEXT_FALLBACK_APP);
+    expect(resolved.reason).toBe("text-fallback");
+  });
 
-  it.each(textish)('%s is recognised as text', (name) => {
-    expect(isTextish(name)).toBe(true)
-  })
+  it.each(textish)("%s is recognised as text", (name) => {
+    expect(isTextish(name)).toBe(true);
+  });
 
-  it('an unknown BINARY resolves to nothing, so the caller offers a chooser', () => {
+  it("an unknown BINARY resolves to nothing, so the caller offers a chooser", () => {
     // The one honest "we don't know" — and the caller must still show a dialog
     // rather than swallow the click.
-    const resolved = resolveOpener('firmware.bin')
-    expect(resolved.reason).toBe('none')
-    expect(resolved.appId).toBe('')
-    expect(isTextish('firmware.bin')).toBe(false)
-  })
+    const resolved = resolveOpener("firmware.bin");
+    expect(resolved.reason).toBe("none");
+    expect(resolved.appId).toBe("");
+    expect(isTextish("firmware.bin")).toBe(false);
+  });
 
-  it('a .docx with Docs retired resolves to nothing, never to a text editor', () => {
+  it("a .docx with Docs retired resolves to nothing, never to a text editor", () => {
     // Office in the Marketplace opens it; with the suite not installed the
     // file manager shows the chooser and names it.
-    expect(resolveOpener('letter.docx')).toEqual({ appId: '', reason: 'none' })
-    expect(isTextish('letter.docx')).toBe(false)
-  })
+    expect(resolveOpener("letter.docx")).toEqual({ appId: "", reason: "none" });
+    expect(isTextish("letter.docx")).toBe(false);
+  });
 
-  it('a .pptx or .ppt with Slides retired resolves to nothing', () => {
+  it("a .pptx or .ppt with Slides retired resolves to nothing", () => {
     // Office's Slides opens .pptx; nothing installed opens .ppt.
-    expect(resolveOpener('deck.pptx')).toEqual({ appId: '', reason: 'none' })
-    expect(resolveOpener('deck.ppt')).toEqual({ appId: '', reason: 'none' })
-    expect(isTextish('deck.pptx')).toBe(false)
-  })
+    expect(resolveOpener("deck.pptx")).toEqual({ appId: "", reason: "none" });
+    expect(resolveOpener("deck.ppt")).toEqual({ appId: "", reason: "none" });
+    expect(isTextish("deck.pptx")).toBe(false);
+  });
 
-  it('a .pdf with norPDF and PDF Viewer retired resolves to nothing', () => {
-    expect(resolveOpener('report.pdf')).toEqual({ appId: '', reason: 'none' })
-    expect(isTextish('report.pdf')).toBe(false)
-  })
+  it("a .pdf with norPDF and PDF Viewer retired resolves to nothing", () => {
+    expect(resolveOpener("report.pdf")).toEqual({ appId: "", reason: "none" });
+    expect(isTextish("report.pdf")).toBe(false);
+  });
 
-  it('a .xlsx or .xls with Sheets retired resolves to nothing; a .csv opens as text', () => {
-    expect(resolveOpener('book.xlsx')).toEqual({ appId: '', reason: 'none' })
-    expect(resolveOpener('book.xls')).toEqual({ appId: '', reason: 'none' })
-    expect(isTextish('book.xlsx')).toBe(false)
+  it("a .xlsx or .xls with Sheets retired resolves to nothing; a .csv opens as text", () => {
+    expect(resolveOpener("book.xlsx")).toEqual({ appId: "", reason: "none" });
+    expect(resolveOpener("book.xls")).toEqual({ appId: "", reason: "none" });
+    expect(isTextish("book.xlsx")).toBe(false);
     // CSV is text: with nothing installed that claims it, the text editor
     // opens it, as it does a .tsv. Office's Sheets, once installed, claims it.
-    expect(resolveOpener('data.csv')).toEqual({ appId: 'code-editor', reason: 'text-fallback' })
-  })
+    expect(resolveOpener("data.csv")).toEqual({ appId: "code-editor", reason: "text-fallback" });
+  });
 
-  it('falls back to nothing rather than crashing when even the editor is disabled', () => {
-    useAddonStore.setState({ disabled: ['code-editor'] })
-    expect(resolveOpener('nginx.conf').reason).toBe('none')
-  })
-})
+  it("falls back to nothing rather than crashing when even the editor is disabled", () => {
+    useAddonStore.setState({ disabled: ["code-editor"] });
+    expect(resolveOpener("nginx.conf").reason).toBe("none");
+  });
+});
 
-describe('the choice is a dotfile, not a browser-local setting', () => {
-  it('the persist key is registered in DOTFILE_KEYS', () => {
+describe("the choice is a dotfile, not a browser-local setting", () => {
+  it("the persist key is registered in DOTFILE_KEYS", () => {
     // Wiring the store to `prefsStorage` is NOT enough: `writePref` drops any key
     // that is not in this list, so the override persisted to localStorage and
     // never reached the server. Green unit tests and a working single browser
     // hid it — the only symptom was signing in somewhere else.
-    expect(DOTFILE_KEYS as readonly string[]).toContain(ASSOCIATIONS_KEY)
-  })
-})
+    expect(DOTFILE_KEYS as readonly string[]).toContain(ASSOCIATIONS_KEY);
+  });
+});
 
-describe('the Settings row list', () => {
-  it('is computed from the registry, so a new app appears with no second edit', () => {
-    const known = knownExtensions()
-    expect(known).toContain('md')
-    expect(known).toContain('png')
-    expect(known).toContain('mp3')
-    expect(known).toContain('mkv')
+describe("the Settings row list", () => {
+  it("is computed from the registry, so a new app appears with no second edit", () => {
+    const known = knownExtensions();
+    expect(known).toContain("md");
+    expect(known).toContain("png");
+    expect(known).toContain("mp3");
+    expect(known).toContain("mkv");
     // Sorted and unique.
-    expect([...new Set(known)]).toEqual(known)
-    expect([...known].sort()).toEqual(known)
-  })
-})
+    expect([...new Set(known)]).toEqual(known);
+    expect([...known].sort()).toEqual(known);
+  });
+});
 
-describe('installed Linux apps in Open with', () => {
+describe("installed Linux apps in Open with", () => {
   const writer = {
-    id: 'writer',
-    name: 'Writer',
-    comment: '',
+    id: "writer",
+    name: "Writer",
+    comment: "",
     hasIcon: false,
-    opens: ['odt', 'md'],
-  }
-  afterEach(() => syncLinuxLaunchers([]))
+    opens: ["odt", "md"],
+  };
+  afterEach(() => syncLinuxLaunchers([]));
 
-  it('come after the OS apps that open the type, marked as Linux apps', () => {
-    syncLinuxLaunchers([writer])
-    const md = candidatesFor('notes.md')
-    expect(md.length).toBeGreaterThan(1)
-    expect(md[md.length - 1]).toEqual({ appId: 'linux:writer', name: 'Writer', linux: true })
-    expect(md.slice(0, -1).some((c) => c.linux)).toBe(false)
-    expect(openerName('linux:writer')).toBe('Writer')
-    expect(allOpenerCandidates().at(-1)).toMatchObject({ appId: 'linux:writer', linux: true })
-  })
+  it("come after the OS apps that open the type, marked as Linux apps", () => {
+    syncLinuxLaunchers([writer]);
+    const md = candidatesFor("notes.md");
+    expect(md.length).toBeGreaterThan(1);
+    expect(md[md.length - 1]).toEqual({ appId: "linux:writer", name: "Writer", linux: true });
+    expect(md.slice(0, -1).some((c) => c.linux)).toBe(false);
+    expect(openerName("linux:writer")).toBe("Writer");
+    expect(allOpenerCandidates().at(-1)).toMatchObject({ appId: "linux:writer", linux: true });
+  });
 
-  it('never become the default by themselves', () => {
-    syncLinuxLaunchers([writer])
+  it("never become the default by themselves", () => {
+    syncLinuxLaunchers([writer]);
     // A type an OS app opens keeps its OS default.
-    expect(resolveOpener('notes.md').appId).toBe('notepad')
+    expect(resolveOpener("notes.md").appId).toBe("notepad");
     // A type only a Linux app opens still asks: nothing opens without a choice.
-    expect(candidatesFor('letter.odt').map((c) => c.appId)).toEqual(['linux:writer'])
-    expect(resolveOpener('letter.odt')).toEqual({ appId: '', reason: 'none' })
-  })
+    expect(candidatesFor("letter.odt").map((c) => c.appId)).toEqual(["linux:writer"]);
+    expect(resolveOpener("letter.odt")).toEqual({ appId: "", reason: "none" });
+  });
 
-  it('become the default when the user says Always use this', () => {
-    syncLinuxLaunchers([writer])
-    useAssociationStore.getState().setDefault('odt', 'linux:writer')
-    expect(resolveOpener('letter.odt')).toEqual({ appId: 'linux:writer', reason: 'override' })
+  it("become the default when the user says Always use this", () => {
+    syncLinuxLaunchers([writer]);
+    useAssociationStore.getState().setDefault("odt", "linux:writer");
+    expect(resolveOpener("letter.odt")).toEqual({ appId: "linux:writer", reason: "override" });
     // Uninstalled, the choice stops applying instead of dead-ending.
-    syncLinuxLaunchers([])
-    expect(resolveOpener('letter.odt').reason).toBe('none')
-  })
+    syncLinuxLaunchers([]);
+    expect(resolveOpener("letter.odt").reason).toBe("none");
+  });
 
-  it('add their types to the Settings rows', () => {
-    expect(knownExtensions()).not.toContain('odt')
-    syncLinuxLaunchers([writer])
-    expect(knownExtensions()).toContain('odt')
-  })
-})
+  it("add their types to the Settings rows", () => {
+    expect(knownExtensions()).not.toContain("odt");
+    syncLinuxLaunchers([writer]);
+    expect(knownExtensions()).toContain("odt");
+  });
+});

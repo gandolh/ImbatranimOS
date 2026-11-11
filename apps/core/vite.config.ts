@@ -1,11 +1,11 @@
-import { fileURLToPath } from 'node:url'
-import { defineConfig, loadEnv, type ProxyOptions } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import type { ISOLATION_HEADERS } from '../backend/src/security-headers.ts'
+import { fileURLToPath } from "node:url";
+import { defineConfig, loadEnv, type ProxyOptions } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import type { ISOLATION_HEADERS } from "../backend/src/security-headers.ts";
 
-const CORE_DIR = fileURLToPath(new URL('.', import.meta.url))
-const BACKEND_DIR = fileURLToPath(new URL('../backend', import.meta.url))
+const CORE_DIR = fileURLToPath(new URL(".", import.meta.url));
+const BACKEND_DIR = fileURLToPath(new URL("../backend", import.meta.url));
 
 /**
  * Local dev on one origin, the way Caddy serves the deploy: the API under
@@ -14,15 +14,15 @@ const BACKEND_DIR = fileURLToPath(new URL('../backend', import.meta.url))
  * Origin checks behave as they do in the deploy.
  */
 function devProxy(base: string, backendPort: string) {
-  const prefix = base.replace(/\/+$/, '')
+  const prefix = base.replace(/\/+$/, "");
   const proxy: Record<string, ProxyOptions> = {
     [`${prefix}/api`]: {
       target: `http://localhost:${backendPort}`,
       ws: true,
       rewrite: (url) => url.slice(prefix.length),
     },
-  }
-  return proxy
+  };
+  return proxy;
 }
 
 export default defineConfig(({ mode }) => {
@@ -32,8 +32,8 @@ export default defineConfig(({ mode }) => {
   // the prefix, and Caddy's handle_path strips it back off. Read through
   // `loadEnv` so local dev can set it in `.env.development` too; the build's
   // own environment still wins over any file.
-  const base = loadEnv(mode, CORE_DIR, 'VITE_BASE').VITE_BASE || '/'
-  const backendPort = loadEnv(mode, BACKEND_DIR, 'PORT').PORT || '3001'
+  const base = loadEnv(mode, CORE_DIR, "VITE_BASE").VITE_BASE || "/";
+  const backendPort = loadEnv(mode, BACKEND_DIR, "PORT").PORT || "3001";
 
   return {
     base,
@@ -48,9 +48,9 @@ export default defineConfig(({ mode }) => {
       // and this one fails to compile until it matches. The CSP stays the
       // deploy's alone: Vite's HMR preamble is inline script.
       headers: {
-        'Cross-Origin-Opener-Policy': 'same-origin',
-        'Cross-Origin-Embedder-Policy': 'require-corp',
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
       } satisfies typeof ISOLATION_HEADERS,
     },
-  }
-})
+  };
+});

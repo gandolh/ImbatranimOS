@@ -1,13 +1,13 @@
-import { ArrowDown, ArrowUp, Camera, RotateCcw } from 'lucide-react'
-import { Button, Checkbox } from '../../shared/components/ui'
-import { cn } from '../../lib/cn'
-import { APP_REGISTRY } from '../../shared/registry/registry'
-import { NON_DISABLEABLE } from '../../shared/registry/enabledApps'
-import { useAddonStore } from '../../shared/store/addonStore'
-import { useStartupStore } from '../../shared/store/startupStore'
-import { useWindowStore } from '../../shared/store/windowStore'
-import { startupCandidates } from '../../shared/lib/startup'
-import { useRegistryVersion } from '../../shared/registry/marketplace'
+import { ArrowDown, ArrowUp, Camera, RotateCcw } from "lucide-react";
+import { Button, Checkbox } from "../../shared/components/ui";
+import { cn } from "../../lib/cn";
+import { APP_REGISTRY } from "../../shared/registry/registry";
+import { NON_DISABLEABLE } from "../../shared/registry/enabledApps";
+import { useAddonStore } from "../../shared/store/addonStore";
+import { useStartupStore } from "../../shared/store/startupStore";
+import { useWindowStore } from "../../shared/store/windowStore";
+import { startupCandidates } from "../../shared/lib/startup";
+import { useRegistryVersion } from "../../shared/registry/marketplace";
 
 /**
  * Settings → Startup.
@@ -22,28 +22,28 @@ import { useRegistryVersion } from '../../shared/registry/marketplace'
  * app should bring its startup entry back with it.
  */
 export function StartupSettings() {
-  const apps = useStartupStore((s) => s.apps)
-  const toggle = useStartupStore((s) => s.toggle)
-  const move = useStartupStore((s) => s.move)
-  const setApps = useStartupStore((s) => s.setApps)
-  const clear = useStartupStore((s) => s.clear)
-  const disabled = useAddonStore((s) => s.disabled)
-  const windows = useWindowStore((s) => s.windows)
+  const apps = useStartupStore((s) => s.apps);
+  const toggle = useStartupStore((s) => s.toggle);
+  const move = useStartupStore((s) => s.move);
+  const setApps = useStartupStore((s) => s.setApps);
+  const clear = useStartupStore((s) => s.clear);
+  const disabled = useAddonStore((s) => s.disabled);
+  const windows = useWindowStore((s) => s.windows);
 
   // Marketplace apps join APP_REGISTRY when their listing arrives, which can
   // be after this pane mounts: re-render then, and read the
   // registry each render rather than once per mount. It is a few dozen apps.
-  useRegistryVersion()
-  const byId = new Map(APP_REGISTRY.map((a) => [a.id, a]))
+  useRegistryVersion();
+  const byId = new Map(APP_REGISTRY.map((a) => [a.id, a]));
 
   // What boot would actually open, computed by the same function boot uses — so
   // the count under the list cannot drift from behaviour. Not memoised: it is a
   // filter over at most a few dozen ids, and it reads the addon store internally,
   // so a dependency array would either be stale or be a lie eslint objects to.
-  const willOpen = startupCandidates(apps)
+  const willOpen = startupCandidates(apps);
 
-  const chosen = apps.filter((id) => byId.has(id))
-  const available = APP_REGISTRY.filter((app) => !apps.includes(app.id))
+  const chosen = apps.filter((id) => byId.has(id));
+  const available = APP_REGISTRY.filter((app) => !apps.includes(app.id));
 
   /**
    * "Use my current windows" — the way people actually build this list.
@@ -55,19 +55,19 @@ export function StartupSettings() {
    * so a second copy would open the same empty app twice).
    */
   function snapshot() {
-    const ordered = useWindowStore.getState().getOrderedWindows()
-    setApps(ordered.map((w) => w.appId))
+    const ordered = useWindowStore.getState().getOrderedWindows();
+    setApps(ordered.map((w) => w.appId));
   }
 
-  const isDisabled = (id: string) => disabled.includes(id) && !NON_DISABLEABLE.has(id)
+  const isDisabled = (id: string) => disabled.includes(id) && !NON_DISABLEABLE.has(id);
 
   return (
     <div>
       <p className="text-on-surface-variant mb-4 max-w-prose text-[12px]">
-        These open when you sign in, in this order — the last one ends up in front. They open{' '}
-        <span className="text-on-surface font-semibold">fresh, at their usual size</span>: window
-        positions belong to the tab you arranged them in, not to your account, so a new tab starts
-        from the list rather than from someone else&rsquo;s layout.
+        These open when you sign in, in this order — the last one ends up in front. They open{" "}
+        <span className="text-on-surface font-semibold">fresh, at their usual size</span>: window positions belong to
+        the tab you arranged them in, not to your account, so a new tab starts from the list rather than from someone
+        else&rsquo;s layout.
       </p>
 
       <div className="mb-3 flex items-center gap-2">
@@ -79,20 +79,14 @@ export function StartupSettings() {
           onClick={snapshot}
           title={
             windows.length === 0
-              ? 'Open the windows you want first'
-              : 'Replace the list with the windows open right now'
+              ? "Open the windows you want first"
+              : "Replace the list with the windows open right now"
           }
         >
           <Camera size={12} />
           Use my current windows
         </Button>
-        <Button
-          variant="default"
-          size="sm"
-          className="gap-1"
-          disabled={apps.length === 0}
-          onClick={clear}
-        >
+        <Button variant="default" size="sm" className="gap-1" disabled={apps.length === 0} onClick={clear}>
           <RotateCcw size={12} />
           Clear
         </Button>
@@ -100,16 +94,16 @@ export function StartupSettings() {
 
       {chosen.length === 0 ? (
         <p className="rounded-control border-outline-variant text-on-surface-variant border border-dashed px-3 py-4 text-[12px]">
-          Nothing opens at startup. Tick an app below, or arrange the windows you want and press{' '}
+          Nothing opens at startup. Tick an app below, or arrange the windows you want and press{" "}
           <span className="text-on-surface font-semibold">Use my current windows</span>.
         </p>
       ) : (
         <ol className="rounded-control border-outline-variant border">
           {chosen.map((id, index) => {
-            const app = byId.get(id)
-            if (!app) return null
-            const AppIcon = app.icon
-            const off = isDisabled(id)
+            const app = byId.get(id);
+            if (!app) return null;
+            const AppIcon = app.icon;
+            const off = isDisabled(id);
             return (
               <li
                 key={id}
@@ -124,8 +118,8 @@ export function StartupSettings() {
                 <span className="min-w-0 flex-1">
                   <span
                     className={cn(
-                      'block truncate text-[12px]',
-                      off ? 'text-on-surface-variant line-through' : 'text-on-surface'
+                      "block truncate text-[12px]",
+                      off ? "text-on-surface-variant line-through" : "text-on-surface",
                     )}
                   >
                     {app.name}
@@ -164,15 +158,15 @@ export function StartupSettings() {
                   Remove
                 </Button>
               </li>
-            )
+            );
           })}
         </ol>
       )}
 
       <p className="text-on-surface-variant mt-2 text-[11px]">
         {willOpen.length === 0
-          ? 'Nothing will open at startup.'
-          : `${willOpen.length} app${willOpen.length === 1 ? '' : 's'} will open at startup.`}
+          ? "Nothing will open at startup."
+          : `${willOpen.length} app${willOpen.length === 1 ? "" : "s"} will open at startup.`}
       </p>
 
       {available.length > 0 && (
@@ -189,9 +183,7 @@ export function StartupSettings() {
                 <span className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface flex h-6 w-6 shrink-0 items-center justify-center border">
                   <app.icon size={13} strokeWidth={1.75} />
                 </span>
-                <span className="text-on-surface min-w-0 flex-1 truncate text-[12px]">
-                  {app.name}
-                </span>
+                <span className="text-on-surface min-w-0 flex-1 truncate text-[12px]">{app.name}</span>
                 <Checkbox
                   aria-label={`Open ${app.name} at startup`}
                   checked={false}
@@ -203,5 +195,5 @@ export function StartupSettings() {
         </div>
       )}
     </div>
-  )
+  );
 }

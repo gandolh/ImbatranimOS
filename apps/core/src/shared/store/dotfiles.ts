@@ -1,12 +1,12 @@
-import { useAssociationStore } from '../registry/associations'
-import { useAddonStore } from './addonStore'
-import { useAppearanceStore, applyAppearance } from './appearanceStore'
-import { useDesktopStore } from './desktopStore'
-import { migrateRetiredAppIds } from './retiredApps'
-import { useSoundStore } from './soundStore'
-import { useStartPinsStore } from './startPinsStore'
-import { useStartupStore } from './startupStore'
-import { useWallpaperStore } from './wallpaperStore'
+import { useAssociationStore } from "../registry/associations";
+import { useAddonStore } from "./addonStore";
+import { useAppearanceStore, applyAppearance } from "./appearanceStore";
+import { useDesktopStore } from "./desktopStore";
+import { migrateRetiredAppIds } from "./retiredApps";
+import { useSoundStore } from "./soundStore";
+import { useStartPinsStore } from "./startPinsStore";
+import { useStartupStore } from "./startupStore";
+import { useWallpaperStore } from "./wallpaperStore";
 
 /**
  * Re-read every dotfile store from the mirror, after the server has filled it
@@ -34,8 +34,8 @@ export async function rehydrateDotfileStores(): Promise<void> {
     useStartupStore.persist.rehydrate(),
     useSoundStore.persist.rehydrate(),
     useStartPinsStore.persist.rehydrate(),
-  ])
+  ]);
   // On the server's copy, now that the stores hold it.
-  migrateRetiredAppIds()
-  applyAppearance(useAppearanceStore.getState())
+  migrateRetiredAppIds();
+  applyAppearance(useAppearanceStore.getState());
 }

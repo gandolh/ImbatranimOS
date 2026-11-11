@@ -17,81 +17,81 @@ import {
   toggleTask,
   type EditResult,
   type Selection,
-} from './markdownMarkers'
+} from "./markdownMarkers";
 
 export type FormatKind =
-  | 'bold'
-  | 'italic'
-  | 'strike'
-  | 'code'
-  | 'fence'
-  | 'h1'
-  | 'h2'
-  | 'h3'
-  | 'bullet'
-  | 'ordered'
-  | 'task'
-  | 'quote'
-  | 'link'
-  | 'table'
+  | "bold"
+  | "italic"
+  | "strike"
+  | "code"
+  | "fence"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "bullet"
+  | "ordered"
+  | "task"
+  | "quote"
+  | "link"
+  | "table";
 
 export function applyFormat(kind: FormatKind, text: string, sel: Selection): EditResult {
   switch (kind) {
-    case 'bold':
-      return toggleInline(text, sel, '**')
-    case 'italic':
+    case "bold":
+      return toggleInline(text, sel, "**");
+    case "italic":
       // A single `*`, not `_`: `_` inside snake_case_words is not emphasis in GFM but is
       // in CommonMark, and asterisks behave the same either way.
-      return toggleInline(text, sel, '*')
-    case 'strike':
-      return toggleInline(text, sel, '~~')
-    case 'code':
-      return toggleInline(text, sel, '`')
-    case 'fence':
-      return toggleFence(text, sel)
-    case 'h1':
-      return setHeading(text, sel, 1)
-    case 'h2':
-      return setHeading(text, sel, 2)
-    case 'h3':
-      return setHeading(text, sel, 3)
-    case 'bullet':
-      return toggleBullet(text, sel)
-    case 'ordered':
-      return toggleOrdered(text, sel)
-    case 'task':
-      return toggleTask(text, sel)
-    case 'quote':
-      return toggleQuote(text, sel)
-    case 'link':
-      return applyLink(text, sel)
-    case 'table':
-      return insertTable(text, sel)
+      return toggleInline(text, sel, "*");
+    case "strike":
+      return toggleInline(text, sel, "~~");
+    case "code":
+      return toggleInline(text, sel, "`");
+    case "fence":
+      return toggleFence(text, sel);
+    case "h1":
+      return setHeading(text, sel, 1);
+    case "h2":
+      return setHeading(text, sel, 2);
+    case "h3":
+      return setHeading(text, sel, 3);
+    case "bullet":
+      return toggleBullet(text, sel);
+    case "ordered":
+      return toggleOrdered(text, sel);
+    case "task":
+      return toggleTask(text, sel);
+    case "quote":
+      return toggleQuote(text, sel);
+    case "link":
+      return applyLink(text, sel);
+    case "table":
+      return insertTable(text, sel);
   }
 }
 
 /** What the toolbar shows, and what the shortcut hint says. */
-export type FormatDescriptor = { kind: FormatKind; label: string; hint: string }
+export type FormatDescriptor = { kind: FormatKind; label: string; hint: string };
 
 export const FORMAT_HINTS: Record<FormatKind, string> = {
-  bold: 'Ctrl+B',
-  italic: 'Ctrl+I',
-  strike: 'Ctrl+Shift+X',
-  code: 'Ctrl+E',
-  fence: 'Ctrl+Shift+E',
-  h1: 'Ctrl+Shift+1',
-  h2: 'Ctrl+Shift+2',
-  h3: 'Ctrl+Shift+3',
-  bullet: 'Ctrl+Shift+8',
-  ordered: 'Ctrl+Shift+7',
-  task: 'Ctrl+Shift+9',
-  quote: 'Ctrl+Shift+.',
-  link: 'Ctrl+K',
-  table: '',
-}
+  bold: "Ctrl+B",
+  italic: "Ctrl+I",
+  strike: "Ctrl+Shift+X",
+  code: "Ctrl+E",
+  fence: "Ctrl+Shift+E",
+  h1: "Ctrl+Shift+1",
+  h2: "Ctrl+Shift+2",
+  h3: "Ctrl+Shift+3",
+  bullet: "Ctrl+Shift+8",
+  ordered: "Ctrl+Shift+7",
+  task: "Ctrl+Shift+9",
+  quote: "Ctrl+Shift+.",
+  link: "Ctrl+K",
+  table: "",
+};
 
 /** The shape of a keydown this module needs — a real event satisfies it. */
-export type KeyLike = { key: string; code: string; shiftKey: boolean }
+export type KeyLike = { key: string; code: string; shiftKey: boolean };
 
 /**
  * The formatting action a modifier-held keystroke means, or null.
@@ -106,41 +106,41 @@ export type KeyLike = { key: string; code: string; shiftKey: boolean }
  * browser tab would be worse than not shipping one.
  */
 export function keyToFormat(event: KeyLike): FormatKind | null {
-  const key = event.key.toLowerCase()
+  const key = event.key.toLowerCase();
   if (event.shiftKey) {
     switch (event.code) {
-      case 'Digit1':
-        return 'h1'
-      case 'Digit2':
-        return 'h2'
-      case 'Digit3':
-        return 'h3'
-      case 'Digit7':
-        return 'ordered'
-      case 'Digit8':
-        return 'bullet'
-      case 'Digit9':
-        return 'task'
-      case 'Period':
-        return 'quote'
-      case 'KeyX':
-        return 'strike'
-      case 'KeyE':
-        return 'fence'
+      case "Digit1":
+        return "h1";
+      case "Digit2":
+        return "h2";
+      case "Digit3":
+        return "h3";
+      case "Digit7":
+        return "ordered";
+      case "Digit8":
+        return "bullet";
+      case "Digit9":
+        return "task";
+      case "Period":
+        return "quote";
+      case "KeyX":
+        return "strike";
+      case "KeyE":
+        return "fence";
       default:
-        return null
+        return null;
     }
   }
   switch (key) {
-    case 'b':
-      return 'bold'
-    case 'i':
-      return 'italic'
-    case 'k':
-      return 'link'
-    case 'e':
-      return 'code'
+    case "b":
+      return "bold";
+    case "i":
+      return "italic";
+    case "k":
+      return "link";
+    case "e":
+      return "code";
     default:
-      return null
+      return null;
   }
 }

@@ -1,10 +1,5 @@
-import type { HostInbound, TextEditMessage } from './wayland.protocol';
-import {
-  MAX_CLIPBOARD_BYTES,
-  MAX_RATIO,
-  MAX_TEXT_INPUT_BYTES,
-  MAX_VIEWPORT,
-} from './wayland.constants';
+import type { HostInbound, TextEditMessage } from "./wayland.protocol";
+import { MAX_CLIPBOARD_BYTES, MAX_RATIO, MAX_TEXT_INPUT_BYTES, MAX_VIEWPORT } from "./wayland.constants";
 
 /**
  * What the tab may say on `/api/wayland`, checked field by field before the
@@ -20,18 +15,17 @@ const KEYCODE_MAX = 0x2ff;
 /** Scroll per message, in pixels; more is a broken client, not a fast wheel. */
 const AXIS_MAX = 10_000;
 
-const isU32 = (v: unknown): v is number =>
-  typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 0xffffffff;
+const isU32 = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 0xffffffff;
 const isFiniteIn = (v: unknown, limit: number): v is number =>
-  typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= limit;
+  typeof v === "number" && Number.isFinite(v) && Math.abs(v) <= limit;
 const isIntIn = (v: unknown, min: number, max: number): v is number =>
-  typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
+  typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
 
 /**
  * The keyboard layouts Settings → Linux apps offers, by the id the tab sends.
  * The host builds each one's xkb keymap; anything else never reaches it.
  */
-export const KEYBOARD_LAYOUTS = ['us', 'ro'] as const;
+export const KEYBOARD_LAYOUTS = ["us", "ro"] as const;
 
 /** A viewport dimension from the tab: a positive integer, clamped. */
 export function clampSize(v: unknown): number {
@@ -45,14 +39,13 @@ export function clampSize(v: unknown): number {
  * it is missing or malformed. The host makes its ceiling the output's scale.
  */
 export function clampRatio(v: unknown): number {
-  const n = v === null || v === '' ? NaN : Number(v);
+  const n = v === null || v === "" ? NaN : Number(v);
   if (!Number.isFinite(n) || n <= 0) return 1;
   return Math.min(n, MAX_RATIO);
 }
 
 /** A high surrogate with no low one after it, or a low one with no high before. */
-const LONE_SURROGATE =
-  /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
 
 /**
  * Text for a text-input event: at most MAX_TEXT_INPUT_BYTES of UTF-8, and no
@@ -60,22 +53,19 @@ const LONE_SURROGATE =
  * JSON.stringify writes as an escape the host's parser refuses.
  */
 const isEditText = (v: unknown): v is string =>
-  typeof v === 'string' &&
-  !v.includes('\u0000') &&
+  typeof v === "string" &&
+  !v.includes("\u0000") &&
   !LONE_SURROGATE.test(v) &&
-  Buffer.byteLength(v, 'utf8') <= MAX_TEXT_INPUT_BYTES;
+  Buffer.byteLength(v, "utf8") <= MAX_TEXT_INPUT_BYTES;
 
 /**
  * The tab's edit of a Linux app's text field: each part optional, each one
  * present checked whole. Anything unknown in it is left behind.
  */
-function textEdit(
-  session: string,
-  m: Record<string, unknown>,
-): TextEditMessage | null {
+function textEdit(session: string, m: Record<string, unknown>): TextEditMessage | null {
   if (!isU32(m.toplevel)) return null;
   const out: TextEditMessage = {
-    type: 'text_edit',
+    type: "text_edit",
     session,
     toplevel: m.toplevel,
   };
@@ -83,7 +73,7 @@ function textEdit(
     const d = m.delete as Record<string, unknown> | null;
     if (
       !d ||
-      typeof d !== 'object' ||
+      typeof d !== "object" ||
       !isIntIn(d.before, 0, MAX_TEXT_INPUT_BYTES) ||
       !isIntIn(d.after, 0, MAX_TEXT_INPUT_BYTES)
     ) {
@@ -97,8 +87,8 @@ function textEdit(
   }
   if (m.preedit !== undefined) {
     const p = m.preedit as Record<string, unknown> | null;
-    if (!p || typeof p !== 'object' || !isEditText(p.text)) return null;
-    const bytes = Buffer.byteLength(p.text, 'utf8');
+    if (!p || typeof p !== "object" || !isEditText(p.text)) return null;
+    const bytes = Buffer.byteLength(p.text, "utf8");
     const cursorOk = (c: unknown) => c === undefined || isIntIn(c, -1, bytes);
     if (!cursorOk(p.cursor_begin) || !cursorOk(p.cursor_end)) return null;
     out.preedit = { text: p.text };
@@ -109,65 +99,54 @@ function textEdit(
 }
 
 /** Turn one message from the tab into one for the host, or null. */
-export function toHostMessage(
-  session: string,
-  m: Record<string, unknown>,
-): HostInbound | null {
+export function toHostMessage(session: string, m: Record<string, unknown>): HostInbound | null {
   switch (m.type) {
-    case 'viewport':
+    case "viewport":
       return {
-        type: 'output',
+        type: "output",
         session,
         width: clampSize(m.width),
         height: clampSize(m.height),
         ratio: clampRatio(m.ratio),
       };
-    case 'focus':
+    case "focus":
       if (m.toplevel !== null && !isU32(m.toplevel)) return null;
-      return { type: 'focus', session, toplevel: m.toplevel };
-    case 'pointer_motion':
-      if (
-        !isU32(m.toplevel) ||
-        !isFiniteIn(m.x, MAX_VIEWPORT * 2) ||
-        !isFiniteIn(m.y, MAX_VIEWPORT * 2)
-      ) {
+      return { type: "focus", session, toplevel: m.toplevel };
+    case "pointer_motion":
+      if (!isU32(m.toplevel) || !isFiniteIn(m.x, MAX_VIEWPORT * 2) || !isFiniteIn(m.y, MAX_VIEWPORT * 2)) {
         return null;
       }
       return {
-        type: 'pointer_motion',
+        type: "pointer_motion",
         session,
         toplevel: m.toplevel,
         x: m.x,
         y: m.y,
       };
-    case 'pointer_button':
-      if (
-        !isU32(m.toplevel) ||
-        !isIntIn(m.button, BUTTON_MIN, BUTTON_MAX) ||
-        typeof m.pressed !== 'boolean'
-      ) {
+    case "pointer_button":
+      if (!isU32(m.toplevel) || !isIntIn(m.button, BUTTON_MIN, BUTTON_MAX) || typeof m.pressed !== "boolean") {
         return null;
       }
       return {
-        type: 'pointer_button',
+        type: "pointer_button",
         session,
         toplevel: m.toplevel,
         button: m.button,
         pressed: m.pressed,
       };
-    case 'pointer_axis':
+    case "pointer_axis":
       if (
         !isU32(m.toplevel) ||
         !isFiniteIn(m.dx, AXIS_MAX) ||
         !isFiniteIn(m.dy, AXIS_MAX) ||
         !isIntIn(m.v120x, -AXIS_MAX * 120, AXIS_MAX * 120) ||
         !isIntIn(m.v120y, -AXIS_MAX * 120, AXIS_MAX * 120) ||
-        typeof m.wheel !== 'boolean'
+        typeof m.wheel !== "boolean"
       ) {
         return null;
       }
       return {
-        type: 'pointer_axis',
+        type: "pointer_axis",
         session,
         toplevel: m.toplevel,
         dx: m.dx,
@@ -176,26 +155,25 @@ export function toHostMessage(
         v120y: m.v120y,
         wheel: m.wheel,
       };
-    case 'pointer_leave':
-      return { type: 'pointer_leave', session };
-    case 'key':
-      if (!isIntIn(m.keycode, 1, KEYCODE_MAX) || typeof m.pressed !== 'boolean')
-        return null;
-      return { type: 'key', session, keycode: m.keycode, pressed: m.pressed };
-    case 'configure':
-      if (!isU32(m.toplevel) || typeof m.maximized !== 'boolean') return null;
+    case "pointer_leave":
+      return { type: "pointer_leave", session };
+    case "key":
+      if (!isIntIn(m.keycode, 1, KEYCODE_MAX) || typeof m.pressed !== "boolean") return null;
+      return { type: "key", session, keycode: m.keycode, pressed: m.pressed };
+    case "configure":
+      if (!isU32(m.toplevel) || typeof m.maximized !== "boolean") return null;
       return {
-        type: 'configure',
+        type: "configure",
         session,
         toplevel: m.toplevel,
         width: clampSize(m.width),
         height: clampSize(m.height),
         maximized: m.maximized,
       };
-    case 'close':
+    case "close":
       if (!isU32(m.toplevel)) return null;
-      return { type: 'close', session, toplevel: m.toplevel };
-    case 'position':
+      return { type: "close", session, toplevel: m.toplevel };
+    case "position":
       if (
         !isU32(m.toplevel) ||
         !isIntIn(m.x, -MAX_VIEWPORT, MAX_VIEWPORT) ||
@@ -204,45 +182,45 @@ export function toHostMessage(
         return null;
       }
       return {
-        type: 'position',
+        type: "position",
         session,
         toplevel: m.toplevel,
         x: m.x,
         y: m.y,
       };
-    case 'press_outside':
-      return { type: 'press_outside', session };
-    case 'visibility':
-      if (typeof m.visible !== 'boolean') return null;
-      return { type: 'visibility', session, visible: m.visible };
-    case 'toplevel_visible':
-      if (!isU32(m.toplevel) || typeof m.visible !== 'boolean') return null;
+    case "press_outside":
+      return { type: "press_outside", session };
+    case "visibility":
+      if (typeof m.visible !== "boolean") return null;
+      return { type: "visibility", session, visible: m.visible };
+    case "toplevel_visible":
+      if (!isU32(m.toplevel) || typeof m.visible !== "boolean") return null;
       return {
-        type: 'toplevel_visible',
+        type: "toplevel_visible",
         session,
         toplevel: m.toplevel,
         visible: m.visible,
       };
-    case 'keyboard_layout':
+    case "keyboard_layout":
       if (!(KEYBOARD_LAYOUTS as readonly unknown[]).includes(m.layout)) {
         return null;
       }
       return {
-        type: 'keyboard_layout',
+        type: "keyboard_layout",
         session,
         layout: m.layout as (typeof KEYBOARD_LAYOUTS)[number],
       };
-    case 'clipboard':
+    case "clipboard":
       // The tab's clipboard text for a paste key in a Linux window.
       if (
-        typeof m.text !== 'string' ||
+        typeof m.text !== "string" ||
         m.text.length === 0 ||
-        Buffer.byteLength(m.text, 'utf8') > MAX_CLIPBOARD_BYTES
+        Buffer.byteLength(m.text, "utf8") > MAX_CLIPBOARD_BYTES
       ) {
         return null;
       }
-      return { type: 'clipboard', session, text: m.text };
-    case 'text_edit':
+      return { type: "clipboard", session, text: m.text };
+    case "text_edit":
       return textEdit(session, m);
     default:
       return null;

@@ -1,13 +1,8 @@
-import { useMemo, useState } from 'react'
-import { RotateCcw, Search, X } from 'lucide-react'
-import { Button, Select } from '../../shared/components/ui'
-import { cn } from '../../lib/cn'
-import {
-  candidatesFor,
-  knownExtensions,
-  resolveOpener,
-  useAssociationStore,
-} from '../../shared/registry/associations'
+import { useMemo, useState } from "react";
+import { RotateCcw, Search, X } from "lucide-react";
+import { Button, Select } from "../../shared/components/ui";
+import { cn } from "../../lib/cn";
+import { candidatesFor, knownExtensions, resolveOpener, useAssociationStore } from "../../shared/registry/associations";
 
 /**
  * Settings → Default apps.
@@ -24,40 +19,40 @@ import {
  * everything because the user is asking for one file, once.
  */
 export function DefaultAppsSettings() {
-  const overrides = useAssociationStore((s) => s.overrides)
-  const setDefault = useAssociationStore((s) => s.setDefault)
-  const clearDefault = useAssociationStore((s) => s.clearDefault)
-  const clearAll = useAssociationStore((s) => s.clearAll)
-  const [query, setQuery] = useState('')
+  const overrides = useAssociationStore((s) => s.overrides);
+  const setDefault = useAssociationStore((s) => s.setDefault);
+  const clearDefault = useAssociationStore((s) => s.clearDefault);
+  const clearAll = useAssociationStore((s) => s.clearAll);
+  const [query, setQuery] = useState("");
 
   const rows = useMemo(() => {
-    const needle = query.trim().toLowerCase().replace(/^\./, '')
+    const needle = query.trim().toLowerCase().replace(/^\./, "");
     return knownExtensions()
-      .filter((ext) => needle === '' || ext.includes(needle))
+      .filter((ext) => needle === "" || ext.includes(needle))
       .map((ext) => {
         // A representative filename, so resolution is asked the same question
         // the file manager asks it.
-        const sample = ext.startsWith('.') ? ext : `sample.${ext}`
+        const sample = ext.startsWith(".") ? ext : `sample.${ext}`;
         return {
           ext,
           candidates: candidatesFor(sample),
           current: resolveOpener(sample),
-        }
+        };
       })
-      .filter((row) => row.candidates.length > 0)
+      .filter((row) => row.candidates.length > 0);
     // `overrides` is not referenced in the body but IS the input: `resolveOpener`
     // reads it from the store, so dropping it here would leave every row's
     // "current" value stale the moment a default changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, overrides])
+  }, [query, overrides]);
 
-  const changed = Object.keys(overrides).length
+  const changed = Object.keys(overrides).length;
 
   return (
     <div>
       <p className="text-on-surface-variant mb-4 max-w-prose text-[12px]">
-        Which app opens which kind of file. Only apps that say they handle a type appear here — to
-        open one file in something unusual, right-click it in Files and choose
+        Which app opens which kind of file. Only apps that say they handle a type appear here — to open one file in
+        something unusual, right-click it in Files and choose
         <span className="text-on-surface font-semibold"> Open with…</span>.
       </p>
 
@@ -68,38 +63,30 @@ export function DefaultAppsSettings() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') setQuery('')
+              if (e.key === "Escape") setQuery("");
             }}
             placeholder="Find a file type…"
             aria-label="Find a file type"
             className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
-          {query !== '' && (
-            <Button variant="ghost" size="sm" aria-label="Clear" onClick={() => setQuery('')}>
+          {query !== "" && (
+            <Button variant="ghost" size="sm" aria-label="Clear" onClick={() => setQuery("")}>
               <X size={11} />
             </Button>
           )}
         </div>
-        <Button
-          variant="default"
-          size="sm"
-          className="gap-1"
-          disabled={changed === 0}
-          onClick={clearAll}
-        >
+        <Button variant="default" size="sm" className="gap-1" disabled={changed === 0} onClick={clearAll}>
           <RotateCcw size={12} />
-          Reset all {changed > 0 ? `(${changed})` : ''}
+          Reset all {changed > 0 ? `(${changed})` : ""}
         </Button>
       </div>
 
       <div className="rounded-control border-outline-variant max-h-80 overflow-auto border">
         {rows.length === 0 ? (
-          <p className="text-on-surface-variant px-2 py-3 text-[12px]">
-            Nothing matches “{query.trim()}”.
-          </p>
+          <p className="text-on-surface-variant px-2 py-3 text-[12px]">Nothing matches “{query.trim()}”.</p>
         ) : (
           rows.map((row) => {
-            const overridden = overrides[row.ext] !== undefined
+            const overridden = overrides[row.ext] !== undefined;
             return (
               <div
                 key={row.ext}
@@ -121,21 +108,21 @@ export function DefaultAppsSettings() {
                 <button
                   onClick={() => clearDefault(row.ext)}
                   disabled={!overridden}
-                  title={overridden ? 'Back to the built-in default' : 'This is the default'}
+                  title={overridden ? "Back to the built-in default" : "This is the default"}
                   className={cn(
-                    'focus-visible:ring-primary shrink-0 text-[11px] underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                    "focus-visible:ring-primary shrink-0 text-[11px] underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset",
                     overridden
-                      ? 'text-on-surface-variant hover:text-on-surface'
-                      : 'text-on-surface-variant/40 cursor-default no-underline'
+                      ? "text-on-surface-variant hover:text-on-surface"
+                      : "text-on-surface-variant/40 cursor-default no-underline",
                   )}
                 >
-                  {overridden ? 'Reset' : 'default'}
+                  {overridden ? "Reset" : "default"}
                 </button>
               </div>
-            )
+            );
           })
         )}
       </div>
     </div>
-  )
+  );
 }

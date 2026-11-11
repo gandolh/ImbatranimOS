@@ -1,5 +1,5 @@
-import { Check, Copy, ListOrdered } from 'lucide-react'
-import { cn } from '@imbatranim/ui'
+import { Check, Copy, ListOrdered } from "lucide-react";
+import { cn } from "@imbatranim/ui";
 
 /**
  * The compact row between the display and the keypad: memory keys, the tape toggle, and the
@@ -22,71 +22,51 @@ export function CalcToolbar({
   copyTitle,
   copyEnabled,
 }: {
-  memory: number | null
-  onMemoryClear: () => void
-  onMemoryRecall: () => void
-  onMemoryAdd: () => void
-  onMemorySubtract: () => void
-  tapeOpen: boolean
-  onToggleTape: () => void
-  onCopy: () => void
-  copied: boolean
+  memory: number | null;
+  onMemoryClear: () => void;
+  onMemoryRecall: () => void;
+  onMemoryAdd: () => void;
+  onMemorySubtract: () => void;
+  tapeOpen: boolean;
+  onToggleTape: () => void;
+  onCopy: () => void;
+  copied: boolean;
   /** The value a copy would put on the clipboard, shown on hover. */
-  copyTitle: string
-  copyEnabled: boolean
+  copyTitle: string;
+  copyEnabled: boolean;
 }) {
   const key =
-    'font-ui rounded-control border-outline-variant text-on-surface hover:bg-surface-container-high ' +
-    'h-6 border px-1.5 text-[10px] font-semibold disabled:opacity-40 outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
+    "font-ui rounded-control border-outline-variant text-on-surface hover:bg-surface-container-high " +
+    "h-6 border px-1.5 text-[10px] font-semibold disabled:opacity-40 outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset";
 
   return (
     <div className="border-outline-variant bg-surface-container-low flex flex-none items-center gap-1 border-b px-2 py-1">
-      <button
-        type="button"
-        className={key}
-        onClick={onMemoryClear}
-        disabled={memory === null}
-        title="Clear memory"
-      >
+      <button type="button" className={key} onClick={onMemoryClear} disabled={memory === null} title="Clear memory">
         MC
       </button>
-      <button
-        type="button"
-        className={key}
-        onClick={onMemoryRecall}
-        disabled={memory === null}
-        title="Recall memory"
-      >
+      <button type="button" className={key} onClick={onMemoryRecall} disabled={memory === null} title="Recall memory">
         MR
       </button>
       <button type="button" className={key} onClick={onMemoryAdd} title="Add the display to memory">
         M+
       </button>
-      <button
-        type="button"
-        className={key}
-        onClick={onMemorySubtract}
-        title="Subtract the display from memory"
-      >
+      <button type="button" className={key} onClick={onMemorySubtract} title="Subtract the display from memory">
         M−
       </button>
       {/* The M indicator is the only way to know the register is not empty. */}
       <span
         className={cn(
-          'font-ui min-w-0 flex-1 truncate text-[10px] tabular-nums',
-          memory === null ? 'text-on-surface-variant/40' : 'text-primary'
+          "font-ui min-w-0 flex-1 truncate text-[10px] tabular-nums",
+          memory === null ? "text-on-surface-variant/40" : "text-primary",
         )}
-        title={memory === null ? 'Memory is empty' : `Memory holds ${memory}`}
+        title={memory === null ? "Memory is empty" : `Memory holds ${memory}`}
       >
-        {memory === null ? '' : `M ${memory}`}
+        {memory === null ? "" : `M ${memory}`}
       </span>
 
       <button
         type="button"
-        className={cn(
-          key,
-          tapeOpen && 'bg-primary-container text-on-primary-container border-primary'
-        )}
+        className={cn(key, tapeOpen && "bg-primary-container text-on-primary-container border-primary")}
         onClick={onToggleTape}
         aria-pressed={tapeOpen}
         aria-label="Tape"
@@ -100,10 +80,10 @@ export function CalcToolbar({
         onClick={onCopy}
         disabled={!copyEnabled}
         aria-label="Copy result"
-        title={copyEnabled ? `Copy ${copyTitle}` : 'Nothing to copy yet'}
+        title={copyEnabled ? `Copy ${copyTitle}` : "Nothing to copy yet"}
       >
         {copied ? <Check size={11} /> : <Copy size={11} />}
       </button>
     </div>
-  )
+  );
 }

@@ -21,12 +21,12 @@
  * notes root.
  */
 
-export type NotepadRoot = 'home' | 'notes'
+export type NotepadRoot = "home" | "notes";
 
 export const NOTEPAD_ROOTS: { id: NotepadRoot; label: string }[] = [
-  { id: 'home', label: 'Home' },
-  { id: 'notes', label: 'Notes' },
-]
+  { id: "home", label: "Home" },
+  { id: "notes", label: "Notes" },
+];
 
 /**
  * The root to open into, given whether the legacy `notes` root has anything in it.
@@ -36,8 +36,8 @@ export const NOTEPAD_ROOTS: { id: NotepadRoot; label: string }[] = [
  * Notepad would point at `home` and then jump.
  */
 export function defaultRoot(notesHasFiles: boolean | null): NotepadRoot | null {
-  if (notesHasFiles === null) return null
-  return notesHasFiles ? 'notes' : 'home'
+  if (notesHasFiles === null) return null;
+  return notesHasFiles ? "notes" : "home";
 }
 
 /**
@@ -51,16 +51,16 @@ export function defaultRoot(notesHasFiles: boolean | null): NotepadRoot | null {
  * 1 MiB is where a textarea starts to feel wrong in testing, and it is comfortably
  * above any note a person writes by hand.
  */
-export const MAX_OPEN_BYTES = 1024 * 1024
+export const MAX_OPEN_BYTES = 1024 * 1024;
 
 export function isTooLarge(bytes: number): boolean {
-  return Number.isFinite(bytes) && bytes > MAX_OPEN_BYTES
+  return Number.isFinite(bytes) && bytes > MAX_OPEN_BYTES;
 }
 
 /** Human size for the refusal message. */
 export function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes < 0) return 'unknown size'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (!Number.isFinite(bytes) || bytes < 0) return "unknown size";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

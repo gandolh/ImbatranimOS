@@ -1,6 +1,6 @@
-import type { StateStorage } from 'zustand/middleware'
-import { api } from './axios'
-import { useNotificationStore } from '../shared/store/notificationStore'
+import type { StateStorage } from "zustand/middleware";
+import { api } from "./axios";
+import { useNotificationStore } from "../shared/store/notificationStore";
 
 /**
  * Server-backed dotfiles, with a local mirror for the first paint.
@@ -28,11 +28,11 @@ import { useNotificationStore } from '../shared/store/notificationStore'
  */
 
 /** Debounce for the write-through. Long enough to coalesce a drag, short enough to survive a close. */
-const WRITE_DEBOUNCE_MS = 400
+const WRITE_DEBOUNCE_MS = 400;
 
 /** Backoff for a failed flush: 5s, doubling, capped. */
-const RETRY_BASE_MS = 5_000
-const RETRY_MAX_MS = 60_000
+const RETRY_BASE_MS = 5_000;
+const RETRY_MAX_MS = 60_000;
 
 /**
  * Keys that live on the server. Anything not in here is not a dotfile.
@@ -44,51 +44,51 @@ const RETRY_MAX_MS = 60_000
  * that way for exactly as long as it took to check the server copy.
  */
 export const DOTFILE_KEYS = [
-  'imbatranimos:appearance',
-  'wallpaper-storage',
-  'desktop-storage',
-  'imbatranimos:addons',
-  'imbatranimos:file-associations',
-  'imbatranimos:startup',
+  "imbatranimos:appearance",
+  "wallpaper-storage",
+  "desktop-storage",
+  "imbatranimos:addons",
+  "imbatranimos:file-associations",
+  "imbatranimos:startup",
   // Which retired built-ins' ids have been moved to the suite's.
-  'imbatranimos:app-id-migrations',
+  "imbatranimos:app-id-migrations",
   // Linux apps' preferences: the keyboard layout they type in.
-  'imbatranimos:linux-apps',
+  "imbatranimos:linux-apps",
   // The OS volume and mute from the tray.
-  'imbatranimos:sound',
+  "imbatranimos:sound",
   // Which apps Start pins.
-  'imbatranimos:start-pins',
-] as const
+  "imbatranimos:start-pins",
+] as const;
 
-type Cache = Map<string, string>
+type Cache = Map<string, string>;
 
 /** The in-memory mirror. Populated from localStorage at import, server on login. */
-const cache: Cache = new Map()
-const pendingWrites = new Map<string, string>()
-let writeTimer: ReturnType<typeof setTimeout> | undefined
-let hydrated = false
-let hydrating: Promise<void> | null = null
+const cache: Cache = new Map();
+const pendingWrites = new Map<string, string>();
+let writeTimer: ReturnType<typeof setTimeout> | undefined;
+let hydrated = false;
+let hydrating: Promise<void> | null = null;
 
 // Durability state. A batch stays queued until the server confirms
 // it, so a blip cannot silently discard a change the UI already shows.
-let inFlight = false
-let flushAgain = false
-let retryTimer: ReturnType<typeof setTimeout> | undefined
-let retryDelay = RETRY_BASE_MS
+let inFlight = false;
+let flushAgain = false;
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+let retryDelay = RETRY_BASE_MS;
 /** True after a 401: the writes are fine, the session is not. Wait for re-auth. */
-let waitingForAuth = false
+let waitingForAuth = false;
 
 function readLocal(key: string): string | null {
   try {
-    return localStorage.getItem(key)
+    return localStorage.getItem(key);
   } catch {
-    return null
+    return null;
   }
 }
 
 function writeLocal(key: string, value: string): void {
   try {
-    localStorage.setItem(key, value)
+    localStorage.setItem(key, value);
   } catch {
     // Quota or private mode. The server copy is the real one; losing the
     // first-paint cache costs a flash on the next boot, not any data.
@@ -98,13 +98,13 @@ function writeLocal(key: string, value: string): void {
 // Seed the mirror from localStorage at import time, so the synchronous
 // first-paint read in main.tsx has something before any network call.
 for (const key of DOTFILE_KEYS) {
-  const local = readLocal(key)
-  if (local !== null) cache.set(key, local)
+  const local = readLocal(key);
+  if (local !== null) cache.set(key, local);
 }
 
 /** True once the server's copy has been merged in. */
 export function prefsHydrated(): boolean {
-  return hydrated
+  return hydrated;
 }
 
 /**
@@ -121,60 +121,60 @@ export function prefsHydrated(): boolean {
  * same condition.
  */
 export function hydratePrefs(): Promise<void> {
-  if (hydrated) return Promise.resolve()
-  if (hydrating) return hydrating
+  if (hydrated) return Promise.resolve();
+  if (hydrating) return hydrating;
   hydrating = api
-    .get<Record<string, string>>('/prefs')
+    .get<Record<string, string>>("/prefs")
     .then((res) => {
-      const server = res.data ?? {}
-      const toSeed: { key: string; value: string }[] = []
+      const server = res.data ?? {};
+      const toSeed: { key: string; value: string }[] = [];
       for (const key of DOTFILE_KEYS) {
-        const remote = server[key]
-        if (typeof remote === 'string') {
-          cache.set(key, remote)
-          writeLocal(key, remote)
+        const remote = server[key];
+        if (typeof remote === "string") {
+          cache.set(key, remote);
+          writeLocal(key, remote);
         } else {
-          const local = cache.get(key)
-          if (local !== undefined) toSeed.push({ key, value: local })
+          const local = cache.get(key);
+          if (local !== undefined) toSeed.push({ key, value: local });
         }
       }
-      hydrated = true
+      hydrated = true;
       if (toSeed.length > 0) {
-        void api.put('/prefs', { entries: toSeed }).catch(() => undefined)
+        void api.put("/prefs", { entries: toSeed }).catch(() => undefined);
       }
     })
     .catch(() => {
       // Unreachable or unauthenticated: keep running on the local mirror. A
       // desktop that refuses to render because it could not read a wallpaper
       // would be a much worse failure than a wrong wallpaper.
-      hydrated = false
+      hydrated = false;
     })
     .finally(() => {
-      hydrating = null
-    })
-  return hydrating
+      hydrating = null;
+    });
+  return hydrating;
 }
 
 /** Read a dotfile from the mirror. Synchronous by design — see the note above. */
 export function readPref(key: string): string | null {
-  return cache.get(key) ?? null
+  return cache.get(key) ?? null;
 }
 
 /** Write a dotfile: mirror immediately, server on a debounce. */
 export function writePref(key: string, value: string): void {
-  cache.set(key, value)
-  writeLocal(key, value)
+  cache.set(key, value);
+  writeLocal(key, value);
   // Only push what the server is the owner of. A store that is not a dotfile
   // has no business in this table.
-  if (!(DOTFILE_KEYS as readonly string[]).includes(key)) return
-  pendingWrites.set(key, value)
-  if (writeTimer !== undefined) clearTimeout(writeTimer)
-  writeTimer = setTimeout(flushPrefs, WRITE_DEBOUNCE_MS)
+  if (!(DOTFILE_KEYS as readonly string[]).includes(key)) return;
+  pendingWrites.set(key, value);
+  if (writeTimer !== undefined) clearTimeout(writeTimer);
+  writeTimer = setTimeout(flushPrefs, WRITE_DEBOUNCE_MS);
 }
 
 /** HTTP status of a rejected axios call, when there is one. */
 function statusOf(err: unknown): number | undefined {
-  return (err as { response?: { status?: number } } | undefined)?.response?.status
+  return (err as { response?: { status?: number } } | undefined)?.response?.status;
 }
 
 /**
@@ -188,9 +188,9 @@ function statusOf(err: unknown): number | undefined {
 function reportSaveFailure(): void {
   useNotificationStore.getState().notify({
     title: "Couldn't save your settings",
-    body: 'The server refused the change. It has been discarded — try again.',
-    level: 'error',
-  })
+    body: "The server refused the change. It has been discarded — try again.",
+    level: "error",
+  });
 }
 
 /**
@@ -209,65 +209,65 @@ function reportSaveFailure(): void {
  */
 export function flushPrefs(): void {
   if (writeTimer !== undefined) {
-    clearTimeout(writeTimer)
-    writeTimer = undefined
+    clearTimeout(writeTimer);
+    writeTimer = undefined;
   }
   if (retryTimer !== undefined) {
-    clearTimeout(retryTimer)
-    retryTimer = undefined
+    clearTimeout(retryTimer);
+    retryTimer = undefined;
   }
-  if (pendingWrites.size === 0) return
+  if (pendingWrites.size === 0) return;
   // Keeping entries queued during the request means a second flush could
   // double-send; this guard replaces the accidental protection the old
   // clear-before-PUT provided.
   if (inFlight) {
-    flushAgain = true
-    return
+    flushAgain = true;
+    return;
   }
 
-  const sent = new Map(pendingWrites)
-  const entries = [...sent].map(([key, value]) => ({ key, value }))
-  inFlight = true
-  waitingForAuth = false
+  const sent = new Map(pendingWrites);
+  const entries = [...sent].map(([key, value]) => ({ key, value }));
+  inFlight = true;
+  waitingForAuth = false;
 
   void api
-    .put('/prefs', { entries })
+    .put("/prefs", { entries })
     .then(() => {
       // Only retire what was actually sent: a key rewritten mid-flight keeps
       // its newer value queued for the next flush.
       for (const [key, value] of sent) {
-        if (pendingWrites.get(key) === value) pendingWrites.delete(key)
+        if (pendingWrites.get(key) === value) pendingWrites.delete(key);
       }
-      retryDelay = RETRY_BASE_MS
+      retryDelay = RETRY_BASE_MS;
     })
     .catch((err: unknown) => {
-      const status = statusOf(err)
+      const status = statusOf(err);
       if (status === 401) {
         // Not a bad write — a dead session. Hold the batch; re-auth re-flushes
         // (AuthGate calls flushPrefs on the authenticated transition).
-        waitingForAuth = true
-        return
+        waitingForAuth = true;
+        return;
       }
       if (status !== undefined && status >= 400 && status < 500) {
         // The server saying no permanently. Retrying a malformed batch would
         // loop forever, so drop it and say so once.
         for (const [key, value] of sent) {
-          if (pendingWrites.get(key) === value) pendingWrites.delete(key)
+          if (pendingWrites.get(key) === value) pendingWrites.delete(key);
         }
-        reportSaveFailure()
-        return
+        reportSaveFailure();
+        return;
       }
       // 5xx or network: keep the batch and back off.
-      retryTimer = setTimeout(flushPrefs, retryDelay)
-      retryDelay = Math.min(retryDelay * 2, RETRY_MAX_MS)
+      retryTimer = setTimeout(flushPrefs, retryDelay);
+      retryDelay = Math.min(retryDelay * 2, RETRY_MAX_MS);
     })
     .finally(() => {
-      inFlight = false
+      inFlight = false;
       if (flushAgain) {
-        flushAgain = false
-        flushPrefs()
+        flushAgain = false;
+        flushPrefs();
       }
-    })
+    });
 }
 
 /**
@@ -284,16 +284,16 @@ export function flushPrefs(): void {
  * bfcache resurrection simply retries.
  */
 export function flushPrefsKeepalive(): void {
-  if (pendingWrites.size === 0) return
-  const entries = [...pendingWrites].map(([key, value]) => ({ key, value }))
+  if (pendingWrites.size === 0) return;
+  const entries = [...pendingWrites].map(([key, value]) => ({ key, value }));
   try {
     void fetch(`${import.meta.env.VITE_API_URL}/prefs`, {
-      method: 'PUT',
-      credentials: 'include',
+      method: "PUT",
+      credentials: "include",
       keepalive: true,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ entries }),
-    }).catch(() => undefined)
+    }).catch(() => undefined);
   } catch {
     // Nothing useful to do while the page is going away.
   }
@@ -301,7 +301,7 @@ export function flushPrefsKeepalive(): void {
 
 /** True while a batch is held back waiting for the session to come back. */
 export function prefsWaitingForAuth(): boolean {
-  return waitingForAuth
+  return waitingForAuth;
 }
 
 /**
@@ -316,38 +316,38 @@ export const prefsStorage: StateStorage = {
   getItem: (name) => readPref(name),
   setItem: (name, value) => writePref(name, value),
   removeItem: (name) => {
-    cache.delete(name)
+    cache.delete(name);
     try {
-      localStorage.removeItem(name)
+      localStorage.removeItem(name);
     } catch {
       /* nothing to do */
     }
-    void api.delete(`/prefs/${encodeURIComponent(name)}`).catch(() => undefined)
+    void api.delete(`/prefs/${encodeURIComponent(name)}`).catch(() => undefined);
   },
-}
+};
 
 /** Test seam: forget everything, as a fresh browser would have it. */
 export function resetPrefsForTest(): void {
-  cache.clear()
-  pendingWrites.clear()
-  hydrated = false
-  hydrating = null
-  if (writeTimer !== undefined) clearTimeout(writeTimer)
-  writeTimer = undefined
-  if (retryTimer !== undefined) clearTimeout(retryTimer)
-  retryTimer = undefined
-  inFlight = false
-  flushAgain = false
-  retryDelay = RETRY_BASE_MS
-  waitingForAuth = false
+  cache.clear();
+  pendingWrites.clear();
+  hydrated = false;
+  hydrating = null;
+  if (writeTimer !== undefined) clearTimeout(writeTimer);
+  writeTimer = undefined;
+  if (retryTimer !== undefined) clearTimeout(retryTimer);
+  retryTimer = undefined;
+  inFlight = false;
+  flushAgain = false;
+  retryDelay = RETRY_BASE_MS;
+  waitingForAuth = false;
 }
 
 /** Test seam: what is still queued for the server. */
 export function pendingPrefsForTest(): Record<string, string> {
-  return Object.fromEntries(pendingWrites)
+  return Object.fromEntries(pendingWrites);
 }
 
 /** Test seam: what the mirror currently holds. */
 export function prefsCacheForTest(): Record<string, string> {
-  return Object.fromEntries(cache)
+  return Object.fromEntries(cache);
 }

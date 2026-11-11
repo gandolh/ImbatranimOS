@@ -1,7 +1,7 @@
-import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsString, MaxLength } from "class-validator";
 
 /** The virtual roots the files API serves (see files.service ROOTS). */
-const ROOTS = ['home', 'notes'] as const;
+const ROOTS = ["home", "notes"] as const;
 
 export class RecordRecentDto {
   @IsIn(ROOTS)

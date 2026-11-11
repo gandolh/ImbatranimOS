@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from "react";
 import {
   Monitor,
   Palette,
@@ -11,25 +11,25 @@ import {
   Store,
   Boxes,
   RefreshCw,
-} from 'lucide-react'
-import { useSystem } from '@imbatranim/ui'
-import { Checkbox } from '../../shared/components/ui'
-import { APP_REGISTRY } from '../../shared/registry/registry'
-import { NON_DISABLEABLE } from '../../shared/registry/enabledApps'
-import { useAddonStore } from '../../shared/store/addonStore'
-import { ShortcutList } from '../../shared/components/shortcuts/ShortcutsOverlay'
-import { StorageSettings } from './StorageSettings'
-import { OldDataSettings } from './OldDataSettings'
-import { BackupSettings } from './BackupSettings'
-import { DefaultAppsSettings } from './DefaultAppsSettings'
-import { StartupSettings } from './StartupSettings'
-import { LocalPasswordForm } from '../auth/LocalScreens'
-import { AboutMachine } from './AboutMachine'
-import { AppearanceSettings } from './AppearanceSettings'
-import { MarketplaceSettings } from './MarketplaceSettings'
-import { LinuxAppsSettings } from './LinuxAppsSettings'
-import { UpdatesSettings } from './UpdatesSettings'
-import { useRegistryVersion } from '../../shared/registry/marketplace'
+} from "lucide-react";
+import { useSystem } from "@imbatranim/ui";
+import { Checkbox } from "../../shared/components/ui";
+import { APP_REGISTRY } from "../../shared/registry/registry";
+import { NON_DISABLEABLE } from "../../shared/registry/enabledApps";
+import { useAddonStore } from "../../shared/store/addonStore";
+import { ShortcutList } from "../../shared/components/shortcuts/ShortcutsOverlay";
+import { StorageSettings } from "./StorageSettings";
+import { OldDataSettings } from "./OldDataSettings";
+import { BackupSettings } from "./BackupSettings";
+import { DefaultAppsSettings } from "./DefaultAppsSettings";
+import { StartupSettings } from "./StartupSettings";
+import { LocalPasswordForm } from "../auth/LocalScreens";
+import { AboutMachine } from "./AboutMachine";
+import { AppearanceSettings } from "./AppearanceSettings";
+import { MarketplaceSettings } from "./MarketplaceSettings";
+import { LinuxAppsSettings } from "./LinuxAppsSettings";
+import { UpdatesSettings } from "./UpdatesSettings";
+import { useRegistryVersion } from "../../shared/registry/marketplace";
 
 function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: string }) {
   return (
@@ -39,32 +39,32 @@ function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: str
       </div>
       <h2 className="font-ui text-on-surface text-base font-semibold">{title}</h2>
     </div>
-  )
+  );
 }
 
 export function Settings() {
   // Lifted so the footer and the About panel show the same version from one fetch,
   // rather than either hardcoding it or fetching twice.
-  const [imageVersion, setImageVersion] = useState<string | null>(null)
-  const onVersion = useCallback((v: string) => setImageVersion(v), [])
+  const [imageVersion, setImageVersion] = useState<string | null>(null);
+  const onVersion = useCallback((v: string) => setImageVersion(v), []);
 
-  const disabledApps = useAddonStore((s) => s.disabled)
-  const toggleApp = useAddonStore((s) => s.toggle)
+  const disabledApps = useAddonStore((s) => s.disabled);
+  const toggleApp = useAddonStore((s) => s.toggle);
   // The Apps list includes installed marketplace apps.
-  useRegistryVersion()
+  useRegistryVersion();
 
   // An intent `{ marketplace: <descriptor id> }` asks for that row of the
   // Marketplace pane. The counter lets the same row be asked for again.
-  const system = useSystem()
-  const [focusRow, setFocusRow] = useState<{ id: string; n: number } | null>(null)
+  const system = useSystem();
+  const [focusRow, setFocusRow] = useState<{ id: string; n: number } | null>(null);
   useEffect(
     () =>
       system.intents.onIntent((payload) => {
-        const id = (payload as { marketplace?: unknown } | null | undefined)?.marketplace
-        if (typeof id === 'string') setFocusRow((prev) => ({ id, n: (prev?.n ?? 0) + 1 }))
+        const id = (payload as { marketplace?: unknown } | null | undefined)?.marketplace;
+        if (typeof id === "string") setFocusRow((prev) => ({ id, n: (prev?.n ?? 0) + 1 }));
       }),
-    [system]
-  )
+    [system],
+  );
 
   return (
     <div className="bg-surface text-on-surface flex h-full flex-col select-none">
@@ -85,14 +85,14 @@ export function Settings() {
         <section className="mb-10">
           <SectionHeader icon={LayoutGrid} title="Apps" />
           <p className="text-on-surface-variant mb-5 text-[12px]">
-            Turn add-ons on or off. Disabled apps disappear from Start, search, and the desktop —
-            their code never loads. Core apps stay on so you can't lock yourself out.
+            Turn add-ons on or off. Disabled apps disappear from Start, search, and the desktop — their code never
+            loads. Core apps stay on so you can't lock yourself out.
           </p>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
             {APP_REGISTRY.map((app) => {
-              const AppIcon = app.icon
-              const required = NON_DISABLEABLE.has(app.id)
-              const enabled = required || !disabledApps.includes(app.id)
+              const AppIcon = app.icon;
+              const required = NON_DISABLEABLE.has(app.id);
+              const enabled = required || !disabledApps.includes(app.id);
               return (
                 <div
                   key={app.id}
@@ -102,12 +102,8 @@ export function Settings() {
                     <AppIcon size={15} strokeWidth={1.75} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="font-ui text-on-surface block truncate text-[13px] font-medium">
-                      {app.name}
-                    </span>
-                    <span className="text-on-surface-variant block truncate text-[11px]">
-                      {app.description}
-                    </span>
+                    <span className="font-ui text-on-surface block truncate text-[13px] font-medium">{app.name}</span>
+                    <span className="text-on-surface-variant block truncate text-[11px]">{app.description}</span>
                   </span>
                   {required && (
                     <span className="text-on-surface-variant text-[9px] font-semibold tracking-widest uppercase">
@@ -121,7 +117,7 @@ export function Settings() {
                     onCheckedChange={() => toggleApp(app.id)}
                   />
                 </div>
-              )
+              );
             })}
           </div>
         </section>
@@ -173,8 +169,7 @@ export function Settings() {
         <section className="mb-10">
           <SectionHeader icon={Keyboard} title="Keyboard shortcuts" />
           <p className="font-ui text-on-surface-variant mb-3 text-[11px]">
-            Press <span className="text-on-surface font-semibold">?</span> anywhere on the desktop
-            to open this list.
+            Press <span className="text-on-surface font-semibold">?</span> anywhere on the desktop to open this list.
           </p>
           <ShortcutList />
         </section>
@@ -200,9 +195,9 @@ export function Settings() {
         {/* Driven by IMAGE_VERSION, not a literal. This said "v0.1 · preview" while
             package.json was at 1.0.0 — the OS reporting a version it was not. */}
         <span className="font-ui text-on-surface-variant text-[10px] tabular-nums">
-          {imageVersion ? `v${imageVersion}` : '—'}
+          {imageVersion ? `v${imageVersion}` : "—"}
         </span>
       </div>
     </div>
-  )
+  );
 }

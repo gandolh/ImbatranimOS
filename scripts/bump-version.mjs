@@ -12,21 +12,21 @@
 //   label and IMAGE_VERSION, which the About panel shows.
 // Workspace and add-on package.json versions are per-package and stay as they are.
 
-import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const stage = process.argv.includes('--stage');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const stage = process.argv.includes("--stage");
 
 function headVersion() {
   try {
-    const pkg = execFileSync('git', ['show', 'HEAD:package.json'], { cwd: root, encoding: 'utf8' });
+    const pkg = execFileSync("git", ["show", "HEAD:package.json"], { cwd: root, encoding: "utf8" });
     return JSON.parse(pkg).version;
   } catch {
     // No HEAD yet (first commit): start from the working copy.
-    return JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')).version;
+    return JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")).version;
   }
 }
 
@@ -39,7 +39,7 @@ const next = `${match[1]}.${Number(match[2]) + 1}.0`;
 
 function rewrite(file, edit) {
   const full = path.join(root, file);
-  const before = readFileSync(full, 'utf8');
+  const before = readFileSync(full, "utf8");
   const after = edit(before);
   if (after === before) {
     console.error(`bump-version: nothing to change in ${file}`);
@@ -54,21 +54,25 @@ const setJsonVersion = (text, replacer) => {
   return `${JSON.stringify(data, null, 2)}\n`;
 };
 
-rewrite('package.json', (t) => setJsonVersion(t, (d) => { d.version = next; }));
-rewrite('package-lock.json', (t) =>
+rewrite("package.json", (t) =>
   setJsonVersion(t, (d) => {
     d.version = next;
-    d.packages[''].version = next;
   }),
 );
-rewrite('infrastructure/Dockerfile', (t) =>
+rewrite("package-lock.json", (t) =>
+  setJsonVersion(t, (d) => {
+    d.version = next;
+    d.packages[""].version = next;
+  }),
+);
+rewrite("infrastructure/Dockerfile", (t) =>
   t
     .replace(/(org\.opencontainers\.image\.version=")[^"]*(")/, `$1${next}$2`)
     .replace(/(IMAGE_VERSION=)\S+/, `$1${next}`),
 );
 
 if (stage) {
-  execFileSync('git', ['add', 'package.json', 'package-lock.json', 'infrastructure/Dockerfile'], {
+  execFileSync("git", ["add", "package.json", "package-lock.json", "infrastructure/Dockerfile"], {
     cwd: root,
   });
 }

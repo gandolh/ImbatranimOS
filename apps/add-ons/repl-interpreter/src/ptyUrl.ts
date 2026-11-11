@@ -1,4 +1,4 @@
-import { desktopSessionId } from '@imbatranim/ui'
+import { desktopSessionId } from "@imbatranim/ui";
 
 /**
  * Build the terminal WebSocket URL for both dev and prod.
@@ -16,16 +16,16 @@ import { desktopSessionId } from '@imbatranim/ui'
 export function buildPtyUrl(cols: number, rows: number): string {
   // The desktop session (this tab) goes along so the shell's WAYLAND_DISPLAY
   // names this tab's socket: a Linux app started here opens its windows here.
-  const query = `?cols=${cols}&rows=${rows}&session=${encodeURIComponent(desktopSessionId())}`
-  const base = import.meta.env.VITE_API_URL as string | undefined
+  const query = `?cols=${cols}&rows=${rows}&session=${encodeURIComponent(desktopSessionId())}`;
+  const base = import.meta.env.VITE_API_URL as string | undefined;
 
   if (base) {
-    const u = new URL(base, window.location.href)
-    const scheme = u.protocol === 'https:' ? 'wss:' : 'ws:'
-    const path = u.pathname.replace(/\/+$/, '') // strip trailing slash
-    return `${scheme}//${u.host}${path}/pty${query}`
+    const u = new URL(base, window.location.href);
+    const scheme = u.protocol === "https:" ? "wss:" : "ws:";
+    const path = u.pathname.replace(/\/+$/, ""); // strip trailing slash
+    return `${scheme}//${u.host}${path}/pty${query}`;
   }
 
-  const scheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${scheme}//${window.location.host}/api/pty${query}`
+  const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${scheme}//${window.location.host}/api/pty${query}`;
 }

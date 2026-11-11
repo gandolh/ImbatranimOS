@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
-import { ArrowLeftRight } from 'lucide-react'
-import { cn } from '@imbatranim/ui'
-import { CATEGORIES, categoryById, convert, formatResult, type UnitId } from './engine/units'
+import { useMemo, useState } from "react";
+import { ArrowLeftRight } from "lucide-react";
+import { cn } from "@imbatranim/ui";
+import { CATEGORIES, categoryById, convert, formatResult, type UnitId } from "./engine/units";
 
 /**
  * The unit converter — the fourth mode tab every OS calculator
@@ -18,42 +18,42 @@ import { CATEGORIES, categoryById, convert, formatResult, type UnitId } from './
  * live in `engine/units.ts` and are tested there against the definitions.
  */
 export function ConverterPad({ windowId: _windowId }: { windowId: string }) {
-  const [categoryId, setCategoryId] = useState(CATEGORIES[0].id)
-  const category = useMemo(() => categoryById(categoryId), [categoryId])
-  const [from, setFrom] = useState<UnitId>(CATEGORIES[0].defaults[0])
-  const [to, setTo] = useState<UnitId>(CATEGORIES[0].defaults[1])
+  const [categoryId, setCategoryId] = useState(CATEGORIES[0].id);
+  const category = useMemo(() => categoryById(categoryId), [categoryId]);
+  const [from, setFrom] = useState<UnitId>(CATEGORIES[0].defaults[0]);
+  const [to, setTo] = useState<UnitId>(CATEGORIES[0].defaults[1]);
   /** The side the user is typing into, and its raw text. */
-  const [edited, setEdited] = useState<'from' | 'to'>('from')
-  const [raw, setRaw] = useState('1')
+  const [edited, setEdited] = useState<"from" | "to">("from");
+  const [raw, setRaw] = useState("1");
 
-  const parsed = Number(raw.trim())
-  const valid = raw.trim() !== '' && Number.isFinite(parsed)
+  const parsed = Number(raw.trim());
+  const valid = raw.trim() !== "" && Number.isFinite(parsed);
   const other = valid
-    ? convert(category.id, parsed, edited === 'from' ? from : to, edited === 'from' ? to : from)
-    : null
+    ? convert(category.id, parsed, edited === "from" ? from : to, edited === "from" ? to : from)
+    : null;
 
-  const fromValue = edited === 'from' ? raw : other === null ? '' : formatResult(other)
-  const toValue = edited === 'to' ? raw : other === null ? '' : formatResult(other)
+  const fromValue = edited === "from" ? raw : other === null ? "" : formatResult(other);
+  const toValue = edited === "to" ? raw : other === null ? "" : formatResult(other);
 
   function pickCategory(id: string) {
-    const next = categoryById(id)
-    setCategoryId(id)
-    setFrom(next.defaults[0])
-    setTo(next.defaults[1])
-    setEdited('from')
-    setRaw('1')
+    const next = categoryById(id);
+    setCategoryId(id);
+    setFrom(next.defaults[0]);
+    setTo(next.defaults[1]);
+    setEdited("from");
+    setRaw("1");
   }
 
   function swap() {
     // Swapping keeps the number the user is looking at on the side they are
     // looking at, which is what makes it read as "the other way round" rather
     // than as a reset.
-    const shown = edited === 'from' ? fromValue : toValue
-    const otherShown = edited === 'from' ? toValue : fromValue
-    setFrom(to)
-    setTo(from)
-    setRaw(edited === 'from' ? otherShown : shown)
-    setEdited('from')
+    const shown = edited === "from" ? fromValue : toValue;
+    const otherShown = edited === "from" ? toValue : fromValue;
+    setFrom(to);
+    setTo(from);
+    setRaw(edited === "from" ? otherShown : shown);
+    setEdited("from");
   }
 
   return (
@@ -65,10 +65,10 @@ export function ConverterPad({ windowId: _windowId }: { windowId: string }) {
             onClick={() => pickCategory(cat.id)}
             aria-pressed={cat.id === categoryId}
             className={cn(
-              'focus-visible:ring-primary font-ui rounded-control border px-2 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
+              "focus-visible:ring-primary font-ui rounded-control border px-2 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
               cat.id === categoryId
-                ? 'border-primary bg-primary-container text-on-primary-container'
-                : 'border-outline-variant text-on-surface hover:bg-surface-container'
+                ? "border-primary bg-primary-container text-on-primary-container"
+                : "border-outline-variant text-on-surface hover:bg-surface-container",
             )}
           >
             {cat.label}
@@ -82,8 +82,8 @@ export function ConverterPad({ windowId: _windowId }: { windowId: string }) {
         unit={from}
         units={category.units}
         onValue={(v) => {
-          setEdited('from')
-          setRaw(v)
+          setEdited("from");
+          setRaw(v);
         }}
         onUnit={setFrom}
       />
@@ -106,17 +106,15 @@ export function ConverterPad({ windowId: _windowId }: { windowId: string }) {
         unit={to}
         units={category.units}
         onValue={(v) => {
-          setEdited('to')
-          setRaw(v)
+          setEdited("to");
+          setRaw(v);
         }}
         onUnit={setTo}
       />
 
-      {!valid && raw.trim() !== '' && (
-        <span className="font-ui text-error text-[11px]">That is not a number.</span>
-      )}
+      {!valid && raw.trim() !== "" && <span className="font-ui text-error text-[11px]">That is not a number.</span>}
     </div>
-  )
+  );
 }
 
 function Side({
@@ -127,12 +125,12 @@ function Side({
   onValue,
   onUnit,
 }: {
-  label: string
-  value: string
-  unit: UnitId
-  units: { id: UnitId; label: string; symbol: string }[]
-  onValue: (value: string) => void
-  onUnit: (unit: UnitId) => void
+  label: string;
+  value: string;
+  unit: UnitId;
+  units: { id: UnitId; label: string; symbol: string }[];
+  onValue: (value: string) => void;
+  onUnit: (unit: UnitId) => void;
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -161,5 +159,5 @@ function Side({
         </select>
       </div>
     </div>
-  )
+  );
 }

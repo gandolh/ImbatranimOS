@@ -4,10 +4,10 @@ import {
   Injectable,
   type CanActivate,
   type ExecutionContext,
-} from '@nestjs/common';
-import type { Request } from 'express';
+} from "@nestjs/common";
+import type { Request } from "express";
 
-import { APP_TOKEN_HEADER, type AppIdentity } from './app-identity.types';
+import { APP_TOKEN_HEADER, type AppIdentity } from "./app-identity.types";
 
 /** A request once the guards have run: `appIdentity` is set by `AppIdentityGuard`. */
 export type IdentifiedRequest = Request & { appIdentity?: AppIdentity | null };
@@ -23,9 +23,7 @@ export type IdentifiedRequest = Request & { appIdentity?: AppIdentity | null };
 export function callingApp(req: IdentifiedRequest): AppIdentity | null {
   if (req.appIdentity !== undefined) return req.appIdentity;
   if (req.headers[APP_TOKEN_HEADER] !== undefined) {
-    throw new Error(
-      'This request carries an app token, but AppIdentityGuard did not run',
-    );
+    throw new Error("This request carries an app token, but AppIdentityGuard did not run");
   }
   return null;
 }
@@ -36,13 +34,12 @@ export function callingApp(req: IdentifiedRequest): AppIdentity | null {
  *   @Get('thing')
  *   thing(@CallingApp() app: AppIdentity | null) { ... }
  */
-export const CallingApp = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): AppIdentity | null =>
-    callingApp(ctx.switchToHttp().getRequest<IdentifiedRequest>()),
+export const CallingApp = createParamDecorator((_data: unknown, ctx: ExecutionContext): AppIdentity | null =>
+  callingApp(ctx.switchToHttp().getRequest<IdentifiedRequest>()),
 );
 
 /** The `code` in a 403's body when a route only the user may call is called by an app. */
-export const USER_ONLY = 'USER_ONLY';
+export const USER_ONLY = "USER_ONLY";
 
 /**
  * Refuse an app: the route is the user's alone (the Trash, archives,
@@ -52,7 +49,7 @@ export function requireUser(app: AppIdentity | null, what: string): void {
   if (app === null) return;
   throw new ForbiddenException({
     statusCode: 403,
-    error: 'Forbidden',
+    error: "Forbidden",
     code: USER_ONLY,
     message: `${app.appId} may not ${what}: only the user may`,
   });
@@ -65,7 +62,7 @@ export function requireUser(app: AppIdentity | null, what: string): void {
 @Injectable()
 export class UserOnlyGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
-    if (ctx.getType() !== 'http') return true;
+    if (ctx.getType() !== "http") return true;
     const req = ctx.switchToHttp().getRequest<IdentifiedRequest>();
     requireUser(callingApp(req), `call ${req.path}`);
     return true;

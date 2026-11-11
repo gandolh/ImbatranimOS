@@ -1,6 +1,6 @@
-import type { DbService } from '../../db/db.service';
-import { recordedBuild } from '../marketplace/recorded-build';
-import { SYSTEM_GROUP } from './app-identity.types';
+import type { DbService } from "../../db/db.service";
+import { recordedBuild } from "../marketplace/recorded-build";
+import { SYSTEM_GROUP } from "./app-identity.types";
 
 /**
  * The install group of an app: the id of the installed descriptor holding it,
@@ -10,9 +10,7 @@ import { SYSTEM_GROUP } from './app-identity.types';
  */
 export function installGroupOf(dbs: DbService, appId: string): string | null {
   const rows = dbs.db
-    .prepare(
-      "SELECT id, entry, entries FROM marketplace_apps WHERE runtime <> 'sandboxed' ORDER BY id",
-    )
+    .prepare("SELECT id, entry, entries FROM marketplace_apps WHERE runtime <> 'sandboxed' ORDER BY id")
     .all() as { id: string; entry: string; entries: string | null }[];
   for (const row of rows) {
     if (recordedBuild(row)?.entries.has(appId)) return row.id;

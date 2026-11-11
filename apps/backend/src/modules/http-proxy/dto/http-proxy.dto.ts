@@ -1,12 +1,4 @@
-import {
-  IsBase64,
-  IsEnum,
-  IsNotEmpty,
-  IsObject,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { IsBase64, IsEnum, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength } from "class-validator";
 
 /**
  * Methods the proxy will relay. Kept to the common verbs a REST client needs;
@@ -14,13 +6,13 @@ import {
  * (`CONNECT`, `TRACE`, made-up verbs) before it reaches the service.
  */
 export enum HttpProxyMethod {
-  GET = 'GET',
-  HEAD = 'HEAD',
-  POST = 'POST',
-  PUT = 'PUT',
-  PATCH = 'PATCH',
-  DELETE = 'DELETE',
-  OPTIONS = 'OPTIONS',
+  GET = "GET",
+  HEAD = "HEAD",
+  POST = "POST",
+  PUT = "PUT",
+  PATCH = "PATCH",
+  DELETE = "DELETE",
+  OPTIONS = "OPTIONS",
 }
 
 /**

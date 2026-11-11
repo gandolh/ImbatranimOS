@@ -1,5 +1,5 @@
-import { promises as fs } from 'fs';
-import type { PackageRow } from './package-index';
+import { promises as fs } from "fs";
+import type { PackageRow } from "./package-index";
 
 /**
  * The nixpkgs pins Linux apps install from, and the record of moving them.
@@ -52,7 +52,7 @@ const SNAPSHOT = /^nixos-(\d{2})\.(\d{2})\.(\d{1,9})\.([0-9a-f]{12})$/;
 const COMMIT = /^[0-9a-f]{40}$/;
 
 export function isCommit(value: unknown): value is string {
-  return typeof value === 'string' && COMMIT.test(value);
+  return typeof value === "string" && COMMIT.test(value);
 }
 
 /**
@@ -93,24 +93,20 @@ export function nextRelease(release: string): string | null {
   const m = RELEASE.exec(release);
   if (!m) return null;
   const year = Number(m[1]);
-  return Number(m[2]) < 11
-    ? `nixos-${m[1]}.11`
-    : `nixos-${String(year + 1).padStart(2, '0')}.05`;
+  return Number(m[2]) < 11 ? `nixos-${m[1]}.11` : `nixos-${String(year + 1).padStart(2, "0")}.05`;
 }
 
 /** A pin whose three parts agree with each other. */
 export function isPin(value: unknown): value is Pin {
   const p = value as Partial<Pin> | null;
-  if (!p || typeof p !== 'object') return false;
-  if (typeof p.snapshot !== 'string' || !isCommit(p.commit)) return false;
+  if (!p || typeof p !== "object") return false;
+  if (typeof p.snapshot !== "string" || !isCommit(p.commit)) return false;
   const s = parseSnapshot(p.snapshot);
   return !!s && s.release === p.release && p.commit.startsWith(s.short);
 }
 
 function generation(value: unknown): number | null {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0
-    ? value
-    : null;
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
 }
 
 /**
@@ -124,11 +120,9 @@ export function parsePinState(text: string): PinState {
   } catch {
     return { ...EMPTY_STATE };
   }
-  if (!raw || typeof raw !== 'object') return { ...EMPTY_STATE };
+  if (!raw || typeof raw !== "object") return { ...EMPTY_STATE };
   const pin = (v: unknown): Pin | null =>
-    isPin(v)
-      ? { release: v.release, snapshot: v.snapshot, commit: v.commit }
-      : null;
+    isPin(v) ? { release: v.release, snapshot: v.snapshot, commit: v.commit } : null;
   const prev = raw.previous as Partial<KeptPin> | undefined;
   const previousPin = pin(prev);
   return {
@@ -140,31 +134,28 @@ export function parsePinState(text: string): PinState {
           xwaylandGeneration: generation(prev?.xwaylandGeneration),
         }
       : null,
-    checkedAt: typeof raw.checkedAt === 'number' ? raw.checkedAt : null,
+    checkedAt: typeof raw.checkedAt === "number" ? raw.checkedAt : null,
     update: pin(raw.update),
     upgrade: pin(raw.upgrade),
   };
 }
 
 export async function readPinState(file: string): Promise<PinState> {
-  return parsePinState(await fs.readFile(file, 'utf8').catch(() => ''));
+  return parsePinState(await fs.readFile(file, "utf8").catch(() => ""));
 }
 
-export async function writePinState(
-  file: string,
-  state: PinState,
-): Promise<void> {
+export async function writePinState(file: string, state: PinState): Promise<void> {
   const tmp = `${file}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(state, null, 2) + '\n');
+  await fs.writeFile(tmp, JSON.stringify(state, null, 2) + "\n");
   await fs.rename(tmp, file);
 }
 
 /** The image's pin, from `nixpkgs-pin.env`'s values, when they agree. */
 export function imagePin(values: Record<string, string>): Pin | null {
   const pin = {
-    release: values.NIXPKGS_RELEASE ?? '',
-    snapshot: values.NIXPKGS_SNAPSHOT ?? '',
-    commit: values.NIXPKGS_COMMIT ?? '',
+    release: values.NIXPKGS_RELEASE ?? "",
+    snapshot: values.NIXPKGS_SNAPSHOT ?? "",
+    commit: values.NIXPKGS_COMMIT ?? "",
   };
   return isPin(pin) ? pin : null;
 }
@@ -173,10 +164,7 @@ export function imagePin(values: Record<string, string>): Pin | null {
  * The pin Nix installs from: the moved one, unless the image's own is at
  * least as new (an image with a newer pin wins).
  */
-export function effectivePin(
-  image: Pin | null,
-  state: PinState,
-): { pin: Pin | null; fromImage: boolean } {
+export function effectivePin(image: Pin | null, state: PinState): { pin: Pin | null; fromImage: boolean } {
   const moved = state.current;
   if (moved && (!image || compareSnapshots(moved.snapshot, image.snapshot) > 0))
     return { pin: moved, fromImage: false };
@@ -223,10 +211,7 @@ export function diffVersions(
 }
 
 /** The rows of a list, by attribute, for only the attributes asked about. */
-export function rowsByAttr(
-  rows: readonly PackageRow[],
-  attrs: ReadonlySet<string>,
-): Map<string, PackageRow> {
+export function rowsByAttr(rows: readonly PackageRow[], attrs: ReadonlySet<string>): Map<string, PackageRow> {
   const out = new Map<string, PackageRow>();
   for (const row of rows) if (attrs.has(row[0])) out.set(row[0], row);
   return out;

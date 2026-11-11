@@ -1,18 +1,18 @@
-import { useState } from 'react'
-import { Button, Dialog, useSystem } from '@imbatranim/ui'
+import { useState } from "react";
+import { Button, Dialog, useSystem } from "@imbatranim/ui";
 
 /** What is being extracted, for the dialog to name. */
 export type ExtractPrompt = {
   /** The archive file's name. */
-  archiveName: string
+  archiveName: string;
   /** What goes out: "everything", "3 items", or one entry's name. */
-  what: string
+  what: string;
   /**
    * Set for a lone compressed file (`notes.txt.gz`): the name it unpacks to,
    * beside the archive, rather than into a folder of its own.
    */
-  beside?: string
-}
+  beside?: string;
+};
 
 /**
  * Extract asks where. The default is the rule the backend already applies: a
@@ -28,39 +28,39 @@ export function ExtractDialog({
   onExtract,
   onClose,
 }: {
-  request: ExtractPrompt
+  request: ExtractPrompt;
   /** The archive's root: the backend extracts inside one root. */
-  root: string
+  root: string;
   /** The archive's path in that root; the folder chooser starts in its folder. */
-  archivePath: string
+  archivePath: string;
   /** `dest` is undefined for the default rule. */
-  onExtract: (dest: string | undefined) => void
-  onClose: () => void
+  onExtract: (dest: string | undefined) => void;
+  onClose: () => void;
 }) {
-  const { fs } = useSystem()
-  const [dest, setDest] = useState<string | undefined>(undefined)
-  const [error, setError] = useState<string | null>(null)
+  const { fs } = useSystem();
+  const [dest, setDest] = useState<string | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
 
   async function choose() {
-    setError(null)
-    const slash = archivePath.lastIndexOf('/')
+    setError(null);
+    const slash = archivePath.lastIndexOf("/");
     const picked = await fs.pickDirectory({
-      title: 'Extract to',
-      startIn: { root, path: slash === -1 ? '' : archivePath.slice(0, slash) },
-    })
-    if (!picked) return
+      title: "Extract to",
+      startIn: { root, path: slash === -1 ? "" : archivePath.slice(0, slash) },
+    });
+    if (!picked) return;
     if (picked.root !== root) {
-      setError('Pick a folder in the same place as the archive.')
-      return
+      setError("Pick a folder in the same place as the archive.");
+      return;
     }
-    setDest(picked.path)
+    setDest(picked.path);
   }
 
   return (
     <Dialog
       open
       onOpenChange={(next) => {
-        if (!next) onClose()
+        if (!next) onClose();
       }}
       title="Extract"
       description={`${request.what} from ${request.archiveName}`}
@@ -71,7 +71,7 @@ export function ExtractDialog({
             <>
               Beside it, as <span className="font-semibold">{request.beside}</span>.
               <span className="text-on-surface-variant">
-                {' '}
+                {" "}
                 A taken name gets a number; nothing existing is replaced.
               </span>
             </>
@@ -82,7 +82,7 @@ export function ExtractDialog({
             </>
           ) : (
             <>
-              Into <span className="font-semibold">{dest === '' ? 'the top folder' : dest}</span>
+              Into <span className="font-semibold">{dest === "" ? "the top folder" : dest}</span>
             </>
           )}
         </div>
@@ -98,8 +98,8 @@ export function ExtractDialog({
             variant="primary"
             size="sm"
             onClick={() => {
-              onExtract(dest)
-              onClose()
+              onExtract(dest);
+              onClose();
             }}
           >
             Extract
@@ -107,5 +107,5 @@ export function ExtractDialog({
         </div>
       </div>
     </Dialog>
-  )
+  );
 }

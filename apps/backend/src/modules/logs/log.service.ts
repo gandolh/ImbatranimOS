@@ -1,14 +1,14 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { createReadStream, promises as fs } from 'fs';
-import * as os from 'os';
-import { join, resolve } from 'path';
-import { serialiseEntry, redact } from './redact';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { createReadStream, promises as fs } from "fs";
+import * as os from "os";
+import { join, resolve } from "path";
+import { serialiseEntry, redact } from "./redact";
 
 /** Where the log lives, relative to the home volume. */
-const LOG_DIR = join('.imbatranim', 'logs');
-const LOG_NAME = 'system.log';
+const LOG_DIR = join(".imbatranim", "logs");
+const LOG_NAME = "system.log";
 /** One rotated generation. Two files total; the cap is per file. */
-const ROTATED_NAME = 'system.log.1';
+const ROTATED_NAME = "system.log.1";
 
 /**
  * Per-file cap. Two files, so the log can never cost more than ~4 MB of a volume
@@ -16,8 +16,7 @@ const ROTATED_NAME = 'system.log.1';
  * env change takes effect without a module reload — the same pattern the archive
  * module's caps use.
  */
-const MAX_FILE_BYTES = () =>
-  Number(process.env.LOG_MAX_FILE_BYTES) || 2 * 1024 * 1024;
+const MAX_FILE_BYTES = () => Number(process.env.LOG_MAX_FILE_BYTES) || 2 * 1024 * 1024;
 
 /** Ceiling on a single read, so the tail endpoint cannot be asked for the world. */
 const MAX_READ_LIMIT = 2000;
@@ -32,8 +31,8 @@ const DEFAULT_READ_LIMIT = 200;
  */
 const CLIENT_ENTRY_BUDGET = () => Number(process.env.LOG_CLIENT_BUDGET) || 500;
 
-export type LogLevel = 'info' | 'warn' | 'error';
-export type LogSource = 'server' | 'client';
+export type LogLevel = "info" | "warn" | "error";
+export type LogSource = "server" | "client";
 
 export interface LogEntry {
   /** ISO timestamp. */
@@ -128,13 +127,7 @@ export class LogService implements OnModuleInit {
    * because the audit log cannot be written; that would turn a disk problem into
    * a lockout.
    */
-  record(
-    level: LogLevel,
-    event: string,
-    msg: string,
-    meta?: unknown,
-    source: LogSource = 'server',
-  ): void {
+  record(level: LogLevel, event: string, msg: string, meta?: unknown, source: LogSource = "server"): void {
     const entry: LogEntry = {
       t: new Date().toISOString(),
       level,
@@ -147,14 +140,12 @@ export class LogService implements OnModuleInit {
       ...(meta === undefined ? {} : { meta: redact(meta) }),
     };
     const line = serialiseEntry(entry as unknown as Record<string, unknown>);
-    this.queue = this.queue
-      .then(() => this.append(line))
-      .catch(() => undefined);
+    this.queue = this.queue.then(() => this.append(line)).catch(() => undefined);
   }
 
   /** `info` for something that happened, `warn` for something suspicious. */
   audit(event: string, msg: string, meta?: unknown): void {
-    this.record('info', event, msg, meta);
+    this.record("info", event, msg, meta);
   }
 
   /**
@@ -164,7 +155,7 @@ export class LogService implements OnModuleInit {
   recordFromClient(event: string, msg: string, meta?: unknown): boolean {
     if (this.clientEntries >= CLIENT_ENTRY_BUDGET()) return false;
     this.clientEntries++;
-    this.record('error', event, msg, meta, 'client');
+    this.record("error", event, msg, meta, "client");
     return true;
   }
 
@@ -173,14 +164,12 @@ export class LogService implements OnModuleInit {
     try {
       const bytes = Buffer.byteLength(line);
       if (this.currentBytes + bytes > MAX_FILE_BYTES()) await this.rotate();
-      await fs.appendFile(this.path(), line, 'utf8');
+      await fs.appendFile(this.path(), line, "utf8");
       this.currentBytes += bytes;
     } catch (err) {
       if (!this.warnedAboutWriteFailure) {
         this.warnedAboutWriteFailure = true;
-        this.logger.warn(
-          `System log write failed (further failures silent): ${String(err)}`,
-        );
+        this.logger.warn(`System log write failed (further failures silent): ${String(err)}`);
       }
     }
   }
@@ -211,22 +200,15 @@ export class LogService implements OnModuleInit {
    * matches are in hand — so a narrow filter over a full log is a short read, not
    * a full one.
    */
-  async tail(
-    query: LogQuery = {},
-  ): Promise<{ entries: LogEntry[]; truncated: boolean }> {
-    const limit = Math.min(
-      Math.max(query.limit ?? DEFAULT_READ_LIMIT, 1),
-      MAX_READ_LIMIT,
-    );
-    const needle = query.q?.trim().toLowerCase() ?? '';
+  async tail(query: LogQuery = {}): Promise<{ entries: LogEntry[]; truncated: boolean }> {
+    const limit = Math.min(Math.max(query.limit ?? DEFAULT_READ_LIMIT, 1), MAX_READ_LIMIT);
+    const needle = query.q?.trim().toLowerCase() ?? "";
     const entries: LogEntry[] = [];
 
     for (const file of [this.path(), this.rotatedPath()]) {
       if (entries.length >= limit) break;
-      const lines = await this.readLinesBackwards(
-        file,
-        limit - entries.length,
-        (line) => this.matches(line, query.level, needle),
+      const lines = await this.readLinesBackwards(file, limit - entries.length, (line) =>
+        this.matches(line, query.level, needle),
       );
       entries.push(...lines);
     }
@@ -234,11 +216,7 @@ export class LogService implements OnModuleInit {
   }
 
   /** Cheap pre-filter on the raw text, before paying for a JSON parse. */
-  private matches(
-    line: string,
-    level: LogLevel | undefined,
-    needle: string,
-  ): boolean {
+  private matches(line: string, level: LogLevel | undefined, needle: string): boolean {
     if (level && !line.includes(`"level":"${level}"`)) return false;
     if (needle && !line.toLowerCase().includes(needle)) return false;
     return true;
@@ -248,11 +226,7 @@ export class LogService implements OnModuleInit {
    * Read `file` from the end, returning up to `want` parsed entries that pass
    * `keep`, newest first.
    */
-  private async readLinesBackwards(
-    file: string,
-    want: number,
-    keep: (line: string) => boolean,
-  ): Promise<LogEntry[]> {
+  private async readLinesBackwards(file: string, want: number, keep: (line: string) => boolean): Promise<LogEntry[]> {
     const size = await this.sizeOf(file);
     if (size === 0) return [];
 
@@ -260,15 +234,15 @@ export class LogService implements OnModuleInit {
     const out: LogEntry[] = [];
     let end = size;
     /** Bytes of a line split across the chunk boundary, carried into the next read. */
-    let carry = '';
+    let carry = "";
 
     while (end > 0 && out.length < want) {
       const start = Math.max(0, end - CHUNK);
       const chunk = await this.readRange(file, start, end - 1);
       const text = chunk + carry;
-      const parts = text.split('\n');
+      const parts = text.split("\n");
       // The first part is only a whole line when this chunk started at byte 0.
-      carry = start === 0 ? '' : (parts.shift() ?? '');
+      carry = start === 0 ? "" : (parts.shift() ?? "");
       for (let i = parts.length - 1; i >= 0 && out.length < want; i--) {
         const line = parts[i];
         if (line.length === 0 || !keep(line)) continue;
@@ -288,16 +262,16 @@ export class LogService implements OnModuleInit {
     return new Promise((res, rej) => {
       const chunks: Buffer[] = [];
       createReadStream(file, { start, end })
-        .on('data', (c: string | Buffer) => chunks.push(Buffer.from(c)))
-        .on('end', () => res(Buffer.concat(chunks).toString('utf8')))
-        .on('error', rej);
+        .on("data", (c: string | Buffer) => chunks.push(Buffer.from(c)))
+        .on("end", () => res(Buffer.concat(chunks).toString("utf8")))
+        .on("error", rej);
     });
   }
 
   private parse(line: string): LogEntry | null {
     try {
       const value = JSON.parse(line) as LogEntry;
-      return typeof value?.event === 'string' ? value : null;
+      return typeof value?.event === "string" ? value : null;
     } catch {
       // A torn line from a crash mid-append. Skipping it is right: one damaged
       // record must not make the rest of the log unreadable.

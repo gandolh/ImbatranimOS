@@ -1,12 +1,12 @@
-import type { NativeHostContext, SystemHandle, SystemServer } from '@imbatranim/ui'
-import type { Capability } from '../../shared/registry/marketplace'
+import type { NativeHostContext, SystemHandle, SystemServer } from "@imbatranim/ui";
+import type { Capability } from "../../shared/registry/marketplace";
 
 /**
  * Where things are, for the app: the third argument to `mount`, a kit app's
  * `host` prop. Defined in the kit since the shared kit, so an outside repo's
  * snapshot of `packages/ui/src` has it.
  */
-export type { NativeHostContext }
+export type { NativeHostContext };
 
 /**
  * What an installed app's module exports. The boundary is the
@@ -15,9 +15,9 @@ export type { NativeHostContext }
  * core's React and runs at full speed in the desktop's own page.
  */
 export type NativeAppModule = {
-  mount(container: HTMLElement, system: SystemHandle, host: NativeHostContext): void | Promise<void>
-  unmount?(container: HTMLElement): void
-}
+  mount(container: HTMLElement, system: SystemHandle, host: NativeHostContext): void | Promise<void>;
+  unmount?(container: HTMLElement): void;
+};
 
 /**
  * What a kit app's module exports instead: a component the
@@ -27,7 +27,7 @@ export type NativeAppModule = {
  * descriptor declares: `Background` and `commandSources`. Defined in the kit,
  * so an outside repo's snapshot has it.
  */
-export type { KitAppModule } from '@imbatranim/ui'
+export type { KitAppModule } from "@imbatranim/ui";
 
 /**
  * Members of the handle that are not capabilities: every app has them. `server`
@@ -37,16 +37,16 @@ export type { KitAppModule } from '@imbatranim/ui'
  * And `data`: an app's own folders reach nothing but its own.
  */
 const ALWAYS = new Set([
-  'protocolVersion',
-  'appId',
-  'windowId',
-  'window',
-  'appearance',
-  'sound',
-  'on',
-  'server',
-  'data',
-])
+  "protocolVersion",
+  "appId",
+  "windowId",
+  "window",
+  "appearance",
+  "sound",
+  "on",
+  "server",
+  "data",
+]);
 
 /**
  * The handle, minus the capabilities the descriptor did not ask for. Asking
@@ -59,28 +59,21 @@ const ALWAYS = new Set([
  * anchor), or is an app from a URL the verified list vouches for or the owner
  * trusted at its commit.
  */
-export function scopeHandle(
-  system: SystemHandle,
-  granted: readonly Capability[],
-  appName: string
-): SystemHandle {
-  const allowed = new Set<string>([...ALWAYS, ...granted])
+export function scopeHandle(system: SystemHandle, granted: readonly Capability[], appName: string): SystemHandle {
+  const allowed = new Set<string>([...ALWAYS, ...granted]);
   return new Proxy(system, {
     get(target, prop, receiver) {
-      if (typeof prop === 'string' && !allowed.has(prop) && prop in target) {
-        throw new Error(
-          `${appName} did not ask for system.${prop}; add "${prop}" to its descriptor's capabilities`
-        )
+      if (typeof prop === "string" && !allowed.has(prop) && prop in target) {
+        throw new Error(`${appName} did not ask for system.${prop}; add "${prop}" to its descriptor's capabilities`);
       }
-      return Reflect.get(target, prop, receiver) as unknown
+      return Reflect.get(target, prop, receiver) as unknown;
     },
-  })
+  });
 }
 
 /** `system` with `server` in place of the handle's own. */
 export function withServer(system: SystemHandle, server: SystemServer): SystemHandle {
   return new Proxy(system, {
-    get: (target, prop, receiver) =>
-      prop === 'server' ? server : (Reflect.get(target, prop, receiver) as unknown),
-  })
+    get: (target, prop, receiver) => (prop === "server" ? server : (Reflect.get(target, prop, receiver) as unknown)),
+  });
 }

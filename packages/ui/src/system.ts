@@ -28,17 +28,17 @@
  * - Bump {@link PROTOCOL_VERSION} on any breaking change.
  */
 
-export const PROTOCOL_VERSION = 2
+export const PROTOCOL_VERSION = 2;
 
 // ── Files ─────────────────────────────────────────────────────────────────────
 
 /** A chosen file: which jailed root it lives in, and the path inside it. */
-export type FileChoice = { root: string; path: string }
+export type FileChoice = { root: string; path: string };
 
 export type PickOpenOptions = {
-  title?: string
+  title?: string;
   /** Preferred extensions, lowercase without the dot. A hint, not a jail. */
-  extensions?: string[]
+  extensions?: string[];
   /**
    * The folder the dialog opens in, instead of the home root: a Save as that
    * starts beside the open document, say. A `path` that names a file means
@@ -48,13 +48,13 @@ export type PickOpenOptions = {
    * walk anywhere they could before. Since kit 1.1.0; an older desktop
    * ignores it and opens at the home root.
    */
-  startIn?: FileChoice
-}
+  startIn?: FileChoice;
+};
 
-export type PickSaveOptions = PickOpenOptions & { suggestedName?: string }
+export type PickSaveOptions = PickOpenOptions & { suggestedName?: string };
 
 export type PickDirectoryOptions = {
-  title?: string
+  title?: string;
   /**
    * The folder the chooser opens in: Extract to… starting in the archive's
    * folder, say. A `path` that names a file means the folder it is in. A
@@ -62,11 +62,11 @@ export type PickDirectoryOptions = {
    * jail, a folder that is gone) opens where it opens without one, with no
    * error. Since kit 1.8.0; an older desktop ignores it.
    */
-  startIn?: FileChoice
-}
+  startIn?: FileChoice;
+};
 
 /** A file's bytes and its version token. */
-export type VersionedBytes = { bytes: ArrayBuffer; version: string | null }
+export type VersionedBytes = { bytes: ArrayBuffer; version: string | null };
 
 export type UploadOptions = {
   /**
@@ -74,8 +74,8 @@ export type UploadOptions = {
    * whatever is there (a fresh Save as, an export). A file that is gone counts
    * as changed.
    */
-  expected?: string
-}
+  expected?: string;
+};
 
 /**
  * `system.fs` — the file syscalls, plus the OS file portal.
@@ -88,14 +88,14 @@ export type UploadOptions = {
  */
 export interface SystemFs {
   /** Fetch a file's raw bytes. Rejects with an HTTP-shaped error on failure. */
-  read(root: string, path: string): Promise<ArrayBuffer>
+  read(root: string, path: string): Promise<ArrayBuffer>;
   /**
    * {@link read}, plus the file's version token. An editor keeps the
    * token and hands it back on save, so a save over a file that changed on disk
    * since asks instead of overwriting. `version` is null when the backend sent
    * none.
    */
-  readWithVersion(root: string, path: string): Promise<VersionedBytes>
+  readWithVersion(root: string, path: string): Promise<VersionedBytes>;
   /**
    * Write bytes to a path (overwrites; creates parent directories). Throws
    * `UploadTooLargeError` when the backend refuses an over-cap body, and
@@ -107,20 +107,20 @@ export interface SystemFs {
     path: string,
     bytes: ArrayBuffer | Uint8Array,
     name: string,
-    opts?: UploadOptions
-  ): Promise<{ version: string | null }>
+    opts?: UploadOptions,
+  ): Promise<{ version: string | null }>;
   /** Bare URL for `<a href>`-style downloads (browser-native, cookie-authed). */
-  downloadUrl(root: string, path: string): string
+  downloadUrl(root: string, path: string): string;
   /** OS Open dialog. Resolves the choice, or null on cancel. */
-  pickOpen(opts?: PickOpenOptions): Promise<FileChoice | null>
+  pickOpen(opts?: PickOpenOptions): Promise<FileChoice | null>;
   /** OS Save-as dialog. Resolves the choice, or null on cancel. */
-  pickSave(opts?: PickSaveOptions): Promise<FileChoice | null>
+  pickSave(opts?: PickSaveOptions): Promise<FileChoice | null>;
   /** OS folder chooser. `path` is `''` at a root. */
-  pickDirectory(opts?: PickDirectoryOptions): Promise<FileChoice | null>
+  pickDirectory(opts?: PickDirectoryOptions): Promise<FileChoice | null>;
   /** Record a file in the OS-wide recents, attributed to this app. */
-  recordRecent(root: string, path: string): void
+  recordRecent(root: string, path: string): void;
   /** Drop a recents entry this app failed to reopen (self-heal). */
-  removeRecent(root: string, path: string): void
+  removeRecent(root: string, path: string): void;
   /**
    * Ask the OS to give this window one of this app's own recent files again
    * (or, for Git GUI, one of its recent repositories): what a window that
@@ -129,7 +129,7 @@ export interface SystemFs {
    * and reading it answers 403. A method, not an `http` call, because the
    * copy the grant names is the OS's to know.
    */
-  reopenRecent(root: string, path: string): Promise<void>
+  reopenRecent(root: string, path: string): Promise<void>;
 }
 
 // ── The app's own data ────────────────────────────────────────────────────────
@@ -145,12 +145,12 @@ export interface SystemFs {
  *   uninstalling the app always removes it; the other kinds stay unless the
  *   owner asks for them to go.
  */
-export type DataKind = 'config' | 'data' | 'state' | 'cache'
+export type DataKind = "config" | "data" | "state" | "cache";
 
 export type DataOptions = {
   /** Which of the app's folders. `data` when absent. */
-  kind?: DataKind
-}
+  kind?: DataKind;
+};
 
 export type DataWriteOptions = DataOptions & {
   /**
@@ -160,8 +160,8 @@ export type DataWriteOptions = DataOptions & {
    * over each other. Absent writes over whatever is there: for a cache, or a
    * file only this copy of the app ever writes.
    */
-  expected?: string | null
-}
+  expected?: string | null;
+};
 
 export type DataRemoveOptions = DataOptions & {
   /**
@@ -169,22 +169,22 @@ export type DataRemoveOptions = DataOptions & {
    * file that changed since stays, and the removal throws
    * `FileConflictError`, so a save from another window isn't lost with it.
    */
-  expected?: string
-}
+  expected?: string;
+};
 
 /** A file read from the app's folder: its text, and its version for the next write. */
-export type DataFile = { content: string; version: string }
+export type DataFile = { content: string; version: string };
 
 /** One entry of the app's folder. Links are not listed. */
 export type DataEntry = {
-  name: string
+  name: string;
   /** Its path inside the folder, to hand back to `read`, `list` or `remove`. */
-  path: string
-  type: 'file' | 'directory'
-  size: number
+  path: string;
+  type: "file" | "directory";
+  size: number;
   /** ISO 8601. */
-  modifiedAt: string
-}
+  modifiedAt: string;
+};
 
 /**
  * `system.data` — the app's own folders, its AppData. The OS makes a folder
@@ -199,34 +199,34 @@ export type DataEntry = {
  */
 export interface SystemData {
   /** A file's text and version, or null when there is no such file. */
-  read(path: string, opts?: DataOptions): Promise<DataFile | null>
+  read(path: string, opts?: DataOptions): Promise<DataFile | null>;
   /**
    * Write a file, making the folders on the way. Resolves the new version,
    * for the next write.
    */
-  write(path: string, content: string, opts?: DataWriteOptions): Promise<{ version: string }>
+  write(path: string, content: string, opts?: DataWriteOptions): Promise<{ version: string }>;
   /** A folder's entries, `''` for the app's folder itself; none for one not made yet. */
-  list(path?: string, opts?: DataOptions): Promise<DataEntry[]>
+  list(path?: string, opts?: DataOptions): Promise<DataEntry[]>;
   /** Remove a file or a folder and what is in it. Nothing there is not an error. */
-  remove(path: string, opts?: DataRemoveOptions): Promise<void>
+  remove(path: string, opts?: DataRemoveOptions): Promise<void>;
 }
 
 // ── HTTP (the escape hatch) ───────────────────────────────────────────────────
 
 export type SystemHttpRequestConfig = {
-  params?: Record<string, unknown>
-  headers?: Record<string, string>
-  responseType?: 'arraybuffer' | 'blob' | 'json' | 'text'
-  signal?: AbortSignal
-  timeout?: number
+  params?: Record<string, unknown>;
+  headers?: Record<string, string>;
+  responseType?: "arraybuffer" | "blob" | "json" | "text";
+  signal?: AbortSignal;
+  timeout?: number;
   /** Request body for methods whose signature has no data argument (DELETE). */
-  data?: unknown
-}
+  data?: unknown;
+};
 
 export interface SystemHttpResponse<T = unknown> {
-  data: T
-  status: number
-  headers: Record<string, unknown>
+  data: T;
+  status: number;
+  headers: Record<string, unknown>;
 }
 
 /**
@@ -239,23 +239,11 @@ export interface SystemHttpResponse<T = unknown> {
  * third-party apps arrive, this is the capability a manifest must ask for.
  */
 export interface SystemHttp {
-  get<T = unknown>(url: string, config?: SystemHttpRequestConfig): Promise<SystemHttpResponse<T>>
-  delete<T = unknown>(url: string, config?: SystemHttpRequestConfig): Promise<SystemHttpResponse<T>>
-  post<T = unknown>(
-    url: string,
-    data?: unknown,
-    config?: SystemHttpRequestConfig
-  ): Promise<SystemHttpResponse<T>>
-  put<T = unknown>(
-    url: string,
-    data?: unknown,
-    config?: SystemHttpRequestConfig
-  ): Promise<SystemHttpResponse<T>>
-  patch<T = unknown>(
-    url: string,
-    data?: unknown,
-    config?: SystemHttpRequestConfig
-  ): Promise<SystemHttpResponse<T>>
+  get<T = unknown>(url: string, config?: SystemHttpRequestConfig): Promise<SystemHttpResponse<T>>;
+  delete<T = unknown>(url: string, config?: SystemHttpRequestConfig): Promise<SystemHttpResponse<T>>;
+  post<T = unknown>(url: string, data?: unknown, config?: SystemHttpRequestConfig): Promise<SystemHttpResponse<T>>;
+  put<T = unknown>(url: string, data?: unknown, config?: SystemHttpRequestConfig): Promise<SystemHttpResponse<T>>;
+  patch<T = unknown>(url: string, data?: unknown, config?: SystemHttpRequestConfig): Promise<SystemHttpResponse<T>>;
 }
 
 // ── Window ────────────────────────────────────────────────────────────────────
@@ -271,19 +259,19 @@ export interface SystemHttp {
  */
 export interface SystemWindow {
   /** Retitle the window (title bar + taskbar). */
-  setTitle(title: string): void
+  setTitle(title: string): void;
   /** Ask to close — runs the close guard first, same as the title-bar X. */
-  requestClose(): void
+  requestClose(): void;
   /** Raise + focus this window. */
-  focus(): void
+  focus(): void;
   /** Minimise. */
-  hide(): void
+  hide(): void;
   /** Un-minimise (does not steal focus). */
-  show(): void
+  show(): void;
   /** True while this window is the top-most visible one on its workspace. */
-  isFocused(): boolean
+  isFocused(): boolean;
   /** False while minimised. (Workspace parking is not minimisation: workspaces.) */
-  isVisible(): boolean
+  isVisible(): boolean;
   /**
    * Register a close veto: settle false to keep the window open (unsaved
    * changes). Returns the unregister function. One guard per window — a second
@@ -297,23 +285,23 @@ export interface SystemWindow {
    * returns a promise of a boolean survives postMessage — the transport
    * proxies the call and awaits its settlement, pure data either way.
    */
-  onCloseRequest(guard: () => boolean | Promise<boolean>): () => void
+  onCloseRequest(guard: () => boolean | Promise<boolean>): () => void;
 }
 
 // ── Intents ───────────────────────────────────────────────────────────────────
 
 /** Why the opener resolved the way it did. */
 export type OpenerResolution = {
-  appId: string
-  reason: 'override' | 'declared' | 'text-fallback' | 'none'
-}
+  appId: string;
+  reason: "override" | "declared" | "text-fallback" | "none";
+};
 
 export type OpenerCandidate = {
-  appId: string
-  name: string
+  appId: string;
+  name: string;
   /** An installed Linux app, offered after the OS's own apps; never a default by itself. */
-  linux?: boolean
-}
+  linux?: boolean;
+};
 
 /**
  * `system.intents` — the shell: launching apps, and receiving what was thrown
@@ -331,28 +319,28 @@ export interface SystemIntents {
    * as this app hands it on: only a file this app holds, or one of its own
    * recent files to a window of its own; never the file's folder.
    */
-  openApp(appId: string, payload?: unknown): string
+  openApp(appId: string, payload?: unknown): string;
   /** Drain this window's pending intent, if any. */
-  consume<T = unknown>(): T | undefined
+  consume<T = unknown>(): T | undefined;
   /** Subscribe to intents for this window; pending payload delivered at once. */
-  onIntent(cb: (payload: unknown) => void): () => void
+  onIntent(cb: (payload: unknown) => void): () => void;
   /** The file-association registry, read side + the user's choice. */
   readonly associations: {
-    resolveOpener(fileName: string): OpenerResolution
-    candidatesFor(fileName: string): OpenerCandidate[]
-    allCandidates(): OpenerCandidate[]
+    resolveOpener(fileName: string): OpenerResolution;
+    candidatesFor(fileName: string): OpenerCandidate[];
+    allCandidates(): OpenerCandidate[];
     /** The override key for a filename: extension, or whole name when bare. */
-    keyFor(fileName: string): string
+    keyFor(fileName: string): string;
     /** Display name for an opener app id, or null if unknown. */
-    openerName(appId: string): string | null
+    openerName(appId: string): string | null;
     /** Persist "always open this type with …" (a dotfile). */
-    setDefault(key: string, appId: string): void
-  }
+    setDefault(key: string, appId: string): void;
+  };
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 
-export type SystemNotifyLevel = 'info' | 'success' | 'warning' | 'error'
+export type SystemNotifyLevel = "info" | "success" | "warning" | "error";
 
 /**
  * Input for `system.notify`. There is deliberately no `appId` field: the
@@ -371,42 +359,42 @@ export type SystemNotifyLevel = 'info' | 'success' | 'warning' | 'error'
  * press buttons in that app.
  */
 export type SystemNotifyAction = {
-  label: string
+  label: string;
   /**
    * Delivered verbatim as the `openApp` payload; must be JSON-safe. A file it
    * names is not given: the window reopens it with `fs.reopenRecent` when it
    * is one of the app's recent files.
    */
-  payload: unknown
-}
+  payload: unknown;
+};
 
 export type SystemNotifyInput = {
-  title: string
-  body?: string
-  level?: SystemNotifyLevel
+  title: string;
+  body?: string;
+  level?: SystemNotifyLevel;
   /**
    * Buttons rendered on the LIVE toast only. History rows keep click-to-open
    * but never render actions: a stale Undo pressed hours later is a footgun.
    */
-  actions?: readonly SystemNotifyAction[]
-}
+  actions?: readonly SystemNotifyAction[];
+};
 
 // ── Shortcuts ─────────────────────────────────────────────────────────────────
 
-export type ShortcutScope = 'Global' | 'Window management' | 'Editing'
+export type ShortcutScope = "Global" | "Window management" | "Editing";
 
 export type ShortcutDoc = {
   /** Stable id, so re-registration (HMR, remount) replaces rather than duplicates. */
-  id: string
+  id: string;
   /** Binding string, e.g. `mod+k`. */
-  keys: string
-  description: string
-  scope: ShortcutScope
+  keys: string;
+  description: string;
+  scope: ShortcutScope;
   /** Caveat shown beside the row — e.g. a key the browser may intercept first. */
-  note?: string
-}
+  note?: string;
+};
 
-export type ShortcutBinding = ShortcutDoc & { handler: () => void }
+export type ShortcutBinding = ShortcutDoc & { handler: () => void };
 
 /**
  * `system.shortcuts` — the OS shortcut registry. `register` binds AND
@@ -415,8 +403,8 @@ export type ShortcutBinding = ShortcutDoc & { handler: () => void }
  * binds itself inside its own DOM (an editor's mod+B).
  */
 export interface SystemShortcuts {
-  register(bindings: ShortcutBinding[]): () => void
-  document(docs: ShortcutDoc[]): () => void
+  register(bindings: ShortcutBinding[]): () => void;
+  document(docs: ShortcutDoc[]): () => void;
 }
 
 // ── Appearance ────────────────────────────────────────────────────────────────
@@ -425,7 +413,7 @@ export interface SystemShortcuts {
  * `theme` here is the mode, light or dark, inside whichever desktop theme
  * (Apricot or Classic) is on; `accent` is the current accent's hex.
  */
-export type SystemAppearanceState = { theme: 'dark' | 'light'; accent: string }
+export type SystemAppearanceState = { theme: "dark" | "light"; accent: string };
 
 /**
  * `system.appearance` — read the OS theme. Most apps need nothing here (the
@@ -434,7 +422,7 @@ export type SystemAppearanceState = { theme: 'dark' | 'light'; accent: string }
  * arrive via `on('appearance-changed', …)`.
  */
 export interface SystemAppearance {
-  get(): SystemAppearanceState
+  get(): SystemAppearanceState;
 }
 
 // ── Sound ─────────────────────────────────────────────────────────────────────
@@ -443,7 +431,7 @@ export interface SystemAppearance {
  * The OS volume from the tray: `volume` from 0 to 1, on the same scale as a
  * media element's `volume`, and whether the owner muted everything.
  */
-export type SystemSoundState = { volume: number; muted: boolean }
+export type SystemSoundState = { volume: number; muted: boolean };
 
 /**
  * `system.sound` — the OS volume, read-only. An app that makes sound plays at
@@ -453,12 +441,12 @@ export type SystemSoundState = { volume: number; muted: boolean }
  * the tray is the one place the OS volume changes.
  */
 export interface SystemSound {
-  get(): SystemSoundState
+  get(): SystemSoundState;
 }
 
 // ── Schedule ──────────────────────────────────────────────────────────────────
 
-export type ScheduleDomain = 'clock' | 'calendar' | 'todo'
+export type ScheduleDomain = "clock" | "calendar" | "todo";
 
 /**
  * `system.schedule` — atomic cross-tab occurrence claims, so two
@@ -467,13 +455,13 @@ export type ScheduleDomain = 'clock' | 'calendar' | 'todo'
  * silently missed alarm.
  */
 export interface SystemSchedule {
-  claim(domain: ScheduleDomain, itemId: string, occurrenceMs: number): Promise<boolean>
+  claim(domain: ScheduleDomain, itemId: string, occurrenceMs: number): Promise<boolean>;
 }
 
 // ── The app's server ──────────────────────────────────────────────────────────
 
 /** Where an app's server answers, through the desktop's session-checked proxy. */
-export type SystemServerAddress = { http: string; ws: string }
+export type SystemServerAddress = { http: string; ws: string };
 
 /**
  * `system.server` — the app's own server, for a marketplace app whose
@@ -497,7 +485,7 @@ export interface SystemServer {
    * being taken), the app's descriptor runs no server, or the window has
    * closed. The window stays open; a later call tries again.
    */
-  request(): Promise<SystemServerAddress>
+  request(): Promise<SystemServerAddress>;
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
@@ -509,51 +497,51 @@ export interface SystemServer {
  * `sound-changed` fires with the new OS volume (since kit 1.3.0).
  */
 export type SystemEventMap = {
-  focus: void
-  blur: void
-  visibility: boolean
-  'appearance-changed': SystemAppearanceState
-  'sound-changed': SystemSoundState
-}
+  focus: void;
+  blur: void;
+  visibility: boolean;
+  "appearance-changed": SystemAppearanceState;
+  "sound-changed": SystemSoundState;
+};
 
-export type SystemEvent = keyof SystemEventMap
+export type SystemEvent = keyof SystemEventMap;
 
 // ── The handle ────────────────────────────────────────────────────────────────
 
 export interface SystemHandle {
-  readonly protocolVersion: number
+  readonly protocolVersion: number;
   /** The app this handle was minted for. */
-  readonly appId: string
+  readonly appId: string;
   /** The window it is scoped to, or null outside one (background/layer/widget). */
-  readonly windowId: string | null
-  readonly fs: SystemFs
-  readonly http: SystemHttp
-  readonly window: SystemWindow
-  readonly intents: SystemIntents
-  readonly shortcuts: SystemShortcuts
-  readonly appearance: SystemAppearance
+  readonly windowId: string | null;
+  readonly fs: SystemFs;
+  readonly http: SystemHttp;
+  readonly window: SystemWindow;
+  readonly intents: SystemIntents;
+  readonly shortcuts: SystemShortcuts;
+  readonly appearance: SystemAppearance;
   /**
    * The OS volume. Since kit 1.3.0, and optional for that reason: a desktop
    * from before it has none, so an app that may run there plays at its own
    * volume when it is missing. Every app has it, needing no capability.
    */
-  readonly sound?: SystemSound
-  readonly schedule: SystemSchedule
+  readonly sound?: SystemSound;
+  readonly schedule: SystemSchedule;
   /**
    * The app's server, asked for when the app needs it. Since kit 1.2.0, and
    * optional for that reason: a desktop from before it has none, so an app
    * that may run there checks for it. Every app has it, needing no
    * capability; one whose descriptor runs no server gets a rejection.
    */
-  readonly server?: SystemServer
+  readonly server?: SystemServer;
   /**
    * The app's own folders. Since kit 1.4.0, and optional for that reason: a
    * desktop from before it has none, so an app that may run there checks for
    * it. Every app has it, needing no capability, a windowless one included.
    */
-  readonly data?: SystemData
+  readonly data?: SystemData;
   /** Raise a notification as this app. Returns the notification id. */
-  notify(input: SystemNotifyInput): string
+  notify(input: SystemNotifyInput): string;
   /** Subscribe to a compositor event. Returns the unsubscribe function. */
-  on<E extends SystemEvent>(event: E, cb: (payload: SystemEventMap[E]) => void): () => void
+  on<E extends SystemEvent>(event: E, cb: (payload: SystemEventMap[E]) => void): () => void;
 }

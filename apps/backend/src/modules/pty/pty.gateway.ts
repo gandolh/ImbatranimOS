@@ -1,19 +1,14 @@
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-} from '@nestjs/common';
-import { HttpAdapterHost } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import type { IncomingMessage, Server as HttpServer } from 'http';
-import type { Duplex } from 'stream';
-import { WebSocketServer, type WebSocket } from 'ws';
-import * as pty from 'node-pty';
-import type { Env } from '../../config/env.schema';
-import { LocalIdentityService } from '../auth/ws-auth';
-import { PtySession } from './pty-session';
-import { isPtyUpgrade, authorizeUpgrade } from './pty-upgrade';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from "@nestjs/common";
+import { HttpAdapterHost } from "@nestjs/core";
+import { ConfigService } from "@nestjs/config";
+import type { IncomingMessage, Server as HttpServer } from "http";
+import type { Duplex } from "stream";
+import { WebSocketServer, type WebSocket } from "ws";
+import * as pty from "node-pty";
+import type { Env } from "../../config/env.schema";
+import { LocalIdentityService } from "../auth/ws-auth";
+import { PtySession } from "./pty-session";
+import { isPtyUpgrade, authorizeUpgrade } from "./pty-upgrade";
 import {
   DEFAULT_COLS,
   DEFAULT_ROWS,
@@ -24,11 +19,11 @@ import {
   resolveHome,
   resolveShell,
   terminalEnv,
-} from './pty.constants';
-import { childEnv } from '../../child-env';
-import { UpgradeRoutes } from '../../upgrade-routes';
-import { raiseOomScore } from '../linux-apps/oom';
-import { WaylandGateway } from '../wayland/wayland.gateway';
+} from "./pty.constants";
+import { childEnv } from "../../child-env";
+import { UpgradeRoutes } from "../../upgrade-routes";
+import { raiseOomScore } from "../linux-apps/oom";
+import { WaylandGateway } from "../wayland/wayland.gateway";
 
 /**
  * How often to re-check that each live terminal's session is still valid, so
@@ -62,9 +57,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
   private httpServer: HttpServer | null = null;
   private readonly live = new Set<LiveSession>();
   private revokeTimer: NodeJS.Timeout | null = null;
-  private upgradeHandler:
-    | ((req: IncomingMessage, socket: Duplex, head: Buffer) => void)
-    | null = null;
+  private upgradeHandler: ((req: IncomingMessage, socket: Duplex, head: Buffer) => void) | null = null;
 
   constructor(
     private readonly adapterHost: HttpAdapterHost,
@@ -78,11 +71,9 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     // getHttpServer() is typed `any` on the base HttpAdapterHost<AbstractHttpAdapter>
     // generic (TServer defaults to `any`); the concrete adapter Nest wires up
     // here is always the Node http/https server this gateway attaches to.
-    const server = this.adapterHost.httpAdapter?.getHttpServer?.() as
-      | HttpServer
-      | undefined;
+    const server = this.adapterHost.httpAdapter?.getHttpServer?.() as HttpServer | undefined;
     if (!server) {
-      this.logger.error('No HTTP server available; terminal WS not attached');
+      this.logger.error("No HTTP server available; terminal WS not attached");
       return;
     }
     this.httpServer = server;
@@ -100,7 +91,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
           route.handle(req, socket, head);
           return;
         }
-        socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
+        socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
         socket.destroy();
         return;
       }
@@ -115,7 +106,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         this.logger.debug(`Terminal upgrade socket error: ${err.message}`);
         socket.destroy();
       };
-      socket.on('error', onSocketError);
+      socket.on("error", onSocketError);
 
       /*
        * Authorization is asynchronous, so this handler starts a promise rather
@@ -123,17 +114,13 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
        * an upgrade already does; nothing is spawned until the answer arrives.
        */
       void (async () => {
-        const record = await authorizeUpgrade(
-          req,
-          this.identity,
-          this.config.get('FRONTEND_URL'),
-        );
+        const record = await authorizeUpgrade(req, this.identity, this.config.get("FRONTEND_URL"));
         // The client left while the check ran: nothing to refuse and
         // nobody to spawn a shell for.
         if (socket.destroyed) return;
         if (!record) {
-          this.logger.warn('Rejected unauthorized terminal upgrade');
-          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          this.logger.warn("Rejected unauthorized terminal upgrade");
+          socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
           socket.destroy();
           return;
         }
@@ -143,23 +130,20 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         // anything.
         if (this.live.size >= MAX_SESSIONS) {
           this.logger.warn(`Terminal session cap reached (${MAX_SESSIONS})`);
-          socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+          socket.write("HTTP/1.1 503 Service Unavailable\r\n\r\n");
           socket.destroy();
           return;
         }
 
-        socket.off('error', onSocketError);
+        socket.off("error", onSocketError);
         this.wss!.handleUpgrade(req, socket, head, (ws) => {
           this.onConnection(ws, req);
         });
       })();
     };
-    server.on('upgrade', this.upgradeHandler);
+    server.on("upgrade", this.upgradeHandler);
 
-    this.revokeTimer = setInterval(
-      () => void this.sweepRevoked(),
-      REVOKE_SWEEP_MS,
-    );
+    this.revokeTimer = setInterval(() => void this.sweepRevoked(), REVOKE_SWEEP_MS);
     this.logger.log(`Terminal WS listening on ${PTY_PATH}`);
   }
 
@@ -169,15 +153,11 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     let ptyProcess: pty.IPty;
     try {
       ptyProcess = pty.spawn(resolveShell(), [], {
-        name: 'xterm-256color',
+        name: "xterm-256color",
         cols,
         rows,
         cwd: resolveHome(),
-        env: terminalEnv(
-          childEnv(),
-          desktopSession,
-          desktopSession ? this.wayland.x11Display(desktopSession) : null,
-        ),
+        env: terminalEnv(childEnv(), desktopSession, desktopSession ? this.wayland.x11Display(desktopSession) : null),
       });
       // What the shell starts (Linux apps among it) goes before the
       // backend when memory runs out.
@@ -185,11 +165,11 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     } catch (err) {
       this.logger.error(`Failed to spawn shell: ${(err as Error).message}`);
       try {
-        ws.send('\r\n[failed to start shell]\r\n');
+        ws.send("\r\n[failed to start shell]\r\n");
       } catch {
         /* noop */
       }
-      ws.close(1011, 'spawn-failed');
+      ws.close(1011, "spawn-failed");
       return;
     }
 
@@ -198,7 +178,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
       cookie: req.headers.cookie,
     };
     this.live.add(entry);
-    ws.on('close', () => this.live.delete(entry));
+    ws.on("close", () => this.live.delete(entry));
     this.logger.log(`Terminal opened (${this.live.size} live)`);
   }
 
@@ -215,10 +195,10 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
       const still = await authorizeUpgrade(
         { headers: { cookie: entry.cookie } },
         this.identity,
-        this.config.get('FRONTEND_URL'),
+        this.config.get("FRONTEND_URL"),
       );
       if (!still) {
-        entry.session.dispose(4401, 'session-revoked');
+        entry.session.dispose(4401, "session-revoked");
         this.live.delete(entry);
       }
     }
@@ -227,9 +207,9 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
   onModuleDestroy(): void {
     if (this.revokeTimer) clearInterval(this.revokeTimer);
     if (this.upgradeHandler && this.httpServer) {
-      this.httpServer.off('upgrade', this.upgradeHandler);
+      this.httpServer.off("upgrade", this.upgradeHandler);
     }
-    for (const entry of this.live) entry.session.dispose(1001, 'shutdown');
+    for (const entry of this.live) entry.session.dispose(1001, "shutdown");
     this.live.clear();
     this.wss?.close();
   }
@@ -237,8 +217,8 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
 /** The desktop session (tab) id the Terminal sends, if any. */
 function parseDesktopSession(url: string | undefined): string | null {
-  const q = url?.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
-  return q ? new URLSearchParams(q).get('session') : null;
+  const q = url?.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
+  return q ? new URLSearchParams(q).get("session") : null;
 }
 
 /** Read optional `cols`/`rows` from the upgrade URL query string. */
@@ -248,11 +228,11 @@ function parseGeometry(url: string | undefined): {
 } {
   let cols = DEFAULT_COLS;
   let rows = DEFAULT_ROWS;
-  const q = url?.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
+  const q = url?.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
   if (q) {
     const params = new URLSearchParams(q);
-    const c = Number(params.get('cols'));
-    const r = Number(params.get('rows'));
+    const c = Number(params.get("cols"));
+    const r = Number(params.get("rows"));
     // Clamp to sane bounds: reject non-positive and cap the upper end so a
     // client can't request an absurd geometry.
     if (Number.isFinite(c) && c > 0) cols = Math.min(Math.floor(c), MAX_COLS);

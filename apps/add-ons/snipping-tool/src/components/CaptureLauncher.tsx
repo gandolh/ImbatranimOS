@@ -1,6 +1,6 @@
-import { Crop, FolderOpen, Monitor, Timer } from 'lucide-react'
-import { Button, cn } from '@imbatranim/ui'
-import { DELAYS, type LaunchMode } from '../lib/captureModes'
+import { Crop, FolderOpen, Monitor, Timer } from "lucide-react";
+import { Button, cn } from "@imbatranim/ui";
+import { DELAYS, type LaunchMode } from "../lib/captureModes";
 
 /**
  * What the app opens to.
@@ -21,35 +21,30 @@ export function CaptureLauncher({
   onOpenSaved,
   busy,
 }: {
-  onArm: (mode: LaunchMode) => void
-  onOpenSaved: () => void
-  busy: boolean
+  onArm: (mode: LaunchMode) => void;
+  onOpenSaved: () => void;
+  busy: boolean;
 }) {
   const row =
-    'rounded-control flex w-full items-center gap-2 border px-2.5 py-2 text-left text-[12px] font-medium ' +
-    'border-outline-variant text-on-surface hover:bg-surface-container-high ' +
-    'disabled:cursor-not-allowed disabled:opacity-50' +
-    ' outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
+    "rounded-control flex w-full items-center gap-2 border px-2.5 py-2 text-left text-[12px] font-medium " +
+    "border-outline-variant text-on-surface hover:bg-surface-container-high " +
+    "disabled:cursor-not-allowed disabled:opacity-50" +
+    " outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset";
 
   return (
     <div className="bg-surface-container-lowest flex h-full flex-col gap-2 overflow-auto p-3">
       <button
         type="button"
-        className={cn(row, 'border-primary')}
+        className={cn(row, "border-primary")}
         disabled={busy}
-        onClick={() => onArm({ kind: 'region' })}
+        onClick={() => onArm({ kind: "region" })}
       >
         <Crop size={14} strokeWidth={1.75} />
         <span className="flex-1">Select a region</span>
         <span className="text-on-surface-variant text-[10px]">drag · Esc to cancel</span>
       </button>
 
-      <button
-        type="button"
-        className={row}
-        disabled={busy}
-        onClick={() => onArm({ kind: 'fullscreen' })}
-      >
+      <button type="button" className={row} disabled={busy} onClick={() => onArm({ kind: "fullscreen" })}>
         <Monitor size={14} strokeWidth={1.75} />
         <span className="flex-1">Whole desktop</span>
       </button>
@@ -60,7 +55,7 @@ export function CaptureLauncher({
           type="button"
           className={row}
           disabled={busy}
-          onClick={() => onArm({ kind: 'delayed', seconds })}
+          onClick={() => onArm({ kind: "delayed", seconds })}
         >
           <Timer size={14} strokeWidth={1.75} />
           <span className="flex-1">Whole desktop after {seconds}s</span>
@@ -79,9 +74,9 @@ export function CaptureLauncher({
 
       <p className="text-on-surface-variant mt-auto text-[10px] leading-relaxed">
         Captures are drawn from the desktop's own markup, not read off the screen, so
-        <span className="text-on-surface"> canvas and video content may be missing</span>. You will
-        be told when a capture contained any.
+        <span className="text-on-surface"> canvas and video content may be missing</span>. You will be told when a
+        capture contained any.
       </p>
     </div>
-  )
+  );
 }

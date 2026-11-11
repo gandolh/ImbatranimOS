@@ -1,55 +1,55 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { focusIntoWindowSoon } = vi.hoisted(() => ({ focusIntoWindowSoon: vi.fn() }))
-vi.mock('../components/window/focusIntoWindow', () => ({ focusIntoWindowSoon }))
-vi.mock('../registry/registry', () => ({
+const { focusIntoWindowSoon } = vi.hoisted(() => ({ focusIntoWindowSoon: vi.fn() }));
+vi.mock("../components/window/focusIntoWindow", () => ({ focusIntoWindowSoon }));
+vi.mock("../registry/registry", () => ({
   APP_REGISTRY: [
     {
-      id: 'terminal',
-      name: 'Terminal',
+      id: "terminal",
+      name: "Terminal",
       multiInstance: false,
       defaultSize: { width: 600, height: 400 },
       minSize: { width: 300, height: 200 },
     },
   ],
-}))
+}));
 
-import { useWindowStore, type WindowInstance } from '../store/windowStore'
-import { appsSource } from './appsSource'
+import { useWindowStore, type WindowInstance } from "../store/windowStore";
+import { appsSource } from "./appsSource";
 
 /** The taskbar focus fix: the palette bringing up an open app moves the keyboard into it. */
 
 const terminal: WindowInstance = {
-  id: 't1',
-  appId: 'terminal',
-  title: 'Terminal',
+  id: "t1",
+  appId: "terminal",
+  title: "Terminal",
   workspaceId: 1,
   isVisible: false,
   isMaximized: false,
   position: { x: 0, y: 0 },
   size: { width: 600, height: 400 },
   zIndex: 1,
-}
+};
 
-const item = { id: 'app:terminal', label: 'Terminal', group: 'Apps' }
+const item = { id: "app:terminal", label: "Terminal", group: "Apps" };
 
 beforeEach(() => {
-  vi.clearAllMocks()
-})
+  vi.clearAllMocks();
+});
 
-describe('appsSource.activate', () => {
-  it('shows the open window and moves focus into it', () => {
-    useWindowStore.setState({ windows: [terminal], activeWorkspace: 1, nextZIndex: 2 })
-    appsSource.activate(item)
-    expect(useWindowStore.getState().windows[0].isVisible).toBe(true)
-    expect(focusIntoWindowSoon).toHaveBeenCalledExactlyOnceWith('t1')
-  })
+describe("appsSource.activate", () => {
+  it("shows the open window and moves focus into it", () => {
+    useWindowStore.setState({ windows: [terminal], activeWorkspace: 1, nextZIndex: 2 });
+    appsSource.activate(item);
+    expect(useWindowStore.getState().windows[0].isVisible).toBe(true);
+    expect(focusIntoWindowSoon).toHaveBeenCalledExactlyOnceWith("t1");
+  });
 
-  it('leaves a newly opened window to its app', () => {
-    useWindowStore.setState({ windows: [], activeWorkspace: 1, nextZIndex: 1 })
-    appsSource.activate(item)
-    expect(useWindowStore.getState().windows).toHaveLength(1)
-    expect(focusIntoWindowSoon).not.toHaveBeenCalled()
-  })
-})
+  it("leaves a newly opened window to its app", () => {
+    useWindowStore.setState({ windows: [], activeWorkspace: 1, nextZIndex: 1 });
+    appsSource.activate(item);
+    expect(useWindowStore.getState().windows).toHaveLength(1);
+    expect(focusIntoWindowSoon).not.toHaveBeenCalled();
+  });
+});

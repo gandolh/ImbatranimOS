@@ -1,24 +1,21 @@
 // In-memory DB + a scratch FILES_ROOT so this e2e never touches real data.
 // Must be set before the modules (and config validation) are imported.
-process.env.DB_PATH = ':memory:';
+process.env.DB_PATH = ":memory:";
 // A small upload cap so the 413 over-cap test does not have to push 100 MB.
 // Read once at controller import time, hence set here at the very top.
-process.env.FILES_MAX_UPLOAD_BYTES = '2048';
+process.env.FILES_MAX_UPLOAD_BYTES = "2048";
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import type { Server } from 'http';
-import request from 'supertest';
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import { join } from 'path';
-import { ConfigModule } from '../src/config/config.module';
-import { DbModule } from '../src/db/db.module';
-import {
-  IdentityTestModule,
-  TEST_COOKIE,
-} from '../src/modules/identity/testing';
-import { FilesModule } from '../src/modules/files/files.module';
+import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication, ValidationPipe } from "@nestjs/common";
+import type { Server } from "http";
+import request from "supertest";
+import * as fs from "fs/promises";
+import * as os from "os";
+import { join } from "path";
+import { ConfigModule } from "../src/config/config.module";
+import { DbModule } from "../src/db/db.module";
+import { IdentityTestModule, TEST_COOKIE } from "../src/modules/identity/testing";
+import { FilesModule } from "../src/modules/files/files.module";
 
 /** Shapes of the response bodies this spec reads fields off of. */
 interface UploadResponse {
@@ -38,24 +35,21 @@ interface HttpErrorResponse {
  * stream, which is why this worked. The narrowing keeps the code honest about the
  * cast instead of the file quietly failing to type-check.
  */
-function binaryParser(
-  res: unknown,
-  cb: (err: Error | null, body: Buffer) => void,
-) {
+function binaryParser(res: unknown, cb: (err: Error | null, body: Buffer) => void) {
   const stream = res as NodeJS.ReadableStream;
   const chunks: Buffer[] = [];
-  stream.on('data', (c: Buffer) => chunks.push(Buffer.from(c)));
-  stream.on('end', () => cb(null, Buffer.concat(chunks)));
+  stream.on("data", (c: Buffer) => chunks.push(Buffer.from(c)));
+  stream.on("end", () => cb(null, Buffer.concat(chunks)));
 }
 
-describe('Files (e2e) — auth + binary round-trip', () => {
+describe("Files (e2e) — auth + binary round-trip", () => {
   let app: INestApplication<Server>;
   let http: ReturnType<typeof request>;
   let jail: string;
   let cookie: string;
 
   beforeAll(async () => {
-    jail = await fs.mkdtemp(join(os.tmpdir(), 'imb-files-e2e-'));
+    jail = await fs.mkdtemp(join(os.tmpdir(), "imb-files-e2e-"));
     process.env.FILES_ROOT = jail;
 
     // A Test module wiring ONLY the FS surface + auth (no AppModule), so the
@@ -65,10 +59,8 @@ describe('Files (e2e) — auth + binary round-trip', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.setGlobalPrefix("api");
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
     http = request(app.getHttpServer());
 
@@ -81,102 +73,97 @@ describe('Files (e2e) — auth + binary round-trip', () => {
     await fs.rm(jail, { recursive: true, force: true });
   });
 
-  describe('authentication', () => {
-    it('rejects a read route with no session (401)', async () => {
-      await http.get('/api/files?root=home').expect(401);
+  describe("authentication", () => {
+    it("rejects a read route with no session (401)", async () => {
+      await http.get("/api/files?root=home").expect(401);
     });
 
-    it('rejects a mutating route with no session (401)', async () => {
-      await http.delete('/api/files?root=home&path=x').expect(401);
+    it("rejects a mutating route with no session (401)", async () => {
+      await http.delete("/api/files?root=home&path=x").expect(401);
     });
 
-    it('allows the read route with a valid session (200)', async () => {
-      await http.get('/api/files?root=home').set('Cookie', cookie).expect(200);
+    it("allows the read route with a valid session (200)", async () => {
+      await http.get("/api/files?root=home").set("Cookie", cookie).expect(200);
     });
   });
 
-  describe('binary upload/download round-trip', () => {
+  describe("binary upload/download round-trip", () => {
     const bytes = Buffer.from([0x00, 0x10, 0xff, 0x80, 0x7f, 0x00, 0xde, 0xad]);
 
-    it('uploads a binary file that lands on the real disk', async () => {
+    it("uploads a binary file that lands on the real disk", async () => {
       await http
-        .post('/api/files/upload')
-        .set('Cookie', cookie)
-        .field('root', 'home')
-        .field('path', 'uploads/blob.bin')
-        .attach('file', bytes, 'blob.bin')
+        .post("/api/files/upload")
+        .set("Cookie", cookie)
+        .field("root", "home")
+        .field("path", "uploads/blob.bin")
+        .attach("file", bytes, "blob.bin")
         .expect(201);
 
-      const onDisk = await fs.readFile(join(jail, 'uploads/blob.bin'));
+      const onDisk = await fs.readFile(join(jail, "uploads/blob.bin"));
       expect(onDisk.equals(bytes)).toBe(true);
     });
 
-    it('downloads the same bytes back intact', async () => {
+    it("downloads the same bytes back intact", async () => {
       const res = await http
-        .get('/api/files/download?root=home&path=uploads/blob.bin')
-        .set('Cookie', cookie)
+        .get("/api/files/download?root=home&path=uploads/blob.bin")
+        .set("Cookie", cookie)
         .buffer(true)
         .parse(binaryParser)
         .expect(200);
       expect((res.body as Buffer).equals(bytes)).toBe(true);
       // Range-less GET still advertises range support so a media element knows
       // it can seek (this is what makes the Media Player scrubber work).
-      expect(res.headers['accept-ranges']).toBe('bytes');
+      expect(res.headers["accept-ranges"]).toBe("bytes");
     });
 
-    it('serves a byte range as 206 Partial Content (media seek)', async () => {
+    it("serves a byte range as 206 Partial Content (media seek)", async () => {
       // bytes=2-5 → the inclusive middle slice [0xff, 0x80, 0x7f, 0x00].
       const res = await http
-        .get('/api/files/download?root=home&path=uploads/blob.bin')
-        .set('Cookie', cookie)
-        .set('Range', 'bytes=2-5')
+        .get("/api/files/download?root=home&path=uploads/blob.bin")
+        .set("Cookie", cookie)
+        .set("Range", "bytes=2-5")
         .buffer(true)
         .parse(binaryParser)
         .expect(206);
-      expect(res.headers['content-range']).toBe(`bytes 2-5/${bytes.length}`);
-      expect(res.headers['content-length']).toBe('4');
+      expect(res.headers["content-range"]).toBe(`bytes 2-5/${bytes.length}`);
+      expect(res.headers["content-length"]).toBe("4");
       expect((res.body as Buffer).equals(bytes.subarray(2, 6))).toBe(true);
     });
 
-    it('answers 416 for a range past the end of the file', async () => {
+    it("answers 416 for a range past the end of the file", async () => {
       await http
-        .get('/api/files/download?root=home&path=uploads/blob.bin')
-        .set('Cookie', cookie)
-        .set('Range', `bytes=${bytes.length}-${bytes.length + 10}`)
+        .get("/api/files/download?root=home&path=uploads/blob.bin")
+        .set("Cookie", cookie)
+        .set("Range", `bytes=${bytes.length}-${bytes.length + 10}`)
         .expect(416);
     });
   });
 
-  describe('traversal refused over HTTP', () => {
-    it('refuses ../ escape with 400', async () => {
-      await http
-        .get('/api/files?root=home&path=../../etc')
-        .set('Cookie', cookie)
-        .expect(400);
+  describe("traversal refused over HTTP", () => {
+    it("refuses ../ escape with 400", async () => {
+      await http.get("/api/files?root=home&path=../../etc").set("Cookie", cookie).expect(400);
     });
 
-    it('cannot escape the jail via the multipart filename (originalname)', async () => {
+    it("cannot escape the jail via the multipart filename (originalname)", async () => {
       // No `path` field, so the controller falls back to file.originalname —
       // which is attacker-controlled. Two layers keep it safe: busboy strips
       // the filename to a basename, and resolveSafe would reject anything that
       // still contained `../`. Either way the invariant is: nothing lands
       // outside the jail. We assert the invariant, not the specific status.
       const res = await http
-        .post('/api/files/upload')
-        .set('Cookie', cookie)
-        .field('root', 'home')
-        .attach('file', Buffer.from('pwned'), '../../../../escape.txt');
+        .post("/api/files/upload")
+        .set("Cookie", cookie)
+        .field("root", "home")
+        .attach("file", Buffer.from("pwned"), "../../../../escape.txt");
       expect([201, 400]).toContain(res.status);
 
       // Nothing escaped to any ancestor of the jail.
-      await expect(
-        fs.stat(join(jail, '..', '..', '..', '..', 'escape.txt')),
-      ).rejects.toBeTruthy();
+      await expect(fs.stat(join(jail, "..", "..", "..", "..", "escape.txt"))).rejects.toBeTruthy();
 
       // If it was accepted, the returned path must stay inside the jail.
       if (res.status === 201) {
         const uploadBody = res.body as UploadResponse;
-        expect(uploadBody.path).not.toContain('..');
+        expect(uploadBody.path).not.toContain("..");
         const landed = join(jail, uploadBody.path);
         expect(landed.startsWith(jail)).toBe(true);
         await expect(fs.stat(landed)).resolves.toBeTruthy();
@@ -184,89 +171,80 @@ describe('Files (e2e) — auth + binary round-trip', () => {
     });
   });
 
-  describe('over-cap upload', () => {
-    it('rejects an upload above the size cap with a clean 413', async () => {
+  describe("over-cap upload", () => {
+    it("rejects an upload above the size cap with a clean 413", async () => {
       const tooBig = Buffer.alloc(4096, 0x41); // 4 KiB > 2 KiB cap
       const res = await http
-        .post('/api/files/upload')
-        .set('Cookie', cookie)
-        .field('root', 'home')
-        .field('path', 'big.bin')
-        .attach('file', tooBig, 'big.bin')
+        .post("/api/files/upload")
+        .set("Cookie", cookie)
+        .field("root", "home")
+        .field("path", "big.bin")
+        .attach("file", tooBig, "big.bin")
         .expect(413);
       expect((res.body as HttpErrorResponse).statusCode).toBe(413);
       // The over-cap file must not have been written.
-      await expect(fs.stat(join(jail, 'big.bin'))).rejects.toBeTruthy();
+      await expect(fs.stat(join(jail, "big.bin"))).rejects.toBeTruthy();
     });
 
-    it('still accepts an upload at/under the cap (201)', async () => {
+    it("still accepts an upload at/under the cap (201)", async () => {
       await http
-        .post('/api/files/upload')
-        .set('Cookie', cookie)
-        .field('root', 'home')
-        .field('path', 'small.bin')
-        .attach('file', Buffer.alloc(1024, 0x42), 'small.bin')
+        .post("/api/files/upload")
+        .set("Cookie", cookie)
+        .field("root", "home")
+        .field("path", "small.bin")
+        .attach("file", Buffer.alloc(1024, 0x42), "small.bin")
         .expect(201);
     });
   });
 
-  describe('saves detect external changes', () => {
-    it('a stale expected token is 409 with the current one; the file is unchanged', async () => {
+  describe("saves detect external changes", () => {
+    it("a stale expected token is 409 with the current one; the file is unchanged", async () => {
       const first = await http
-        .put('/api/files/content')
-        .set('Cookie', cookie)
-        .send({ root: 'home', path: 'conflict.txt', content: 'mine' })
+        .put("/api/files/content")
+        .set("Cookie", cookie)
+        .send({ root: "home", path: "conflict.txt", content: "mine" })
         .expect(200);
       const opened = (first.body as { version: string }).version;
-      await fs.appendFile(join(jail, 'conflict.txt'), '\nterminal');
+      await fs.appendFile(join(jail, "conflict.txt"), "\nterminal");
 
       const res = await http
-        .put('/api/files/content')
-        .set('Cookie', cookie)
+        .put("/api/files/content")
+        .set("Cookie", cookie)
         .send({
-          root: 'home',
-          path: 'conflict.txt',
-          content: 'mine!',
+          root: "home",
+          path: "conflict.txt",
+          content: "mine!",
           expected: opened,
         })
         .expect(409);
-      const read = await http
-        .get('/api/files/content?root=home&path=conflict.txt')
-        .set('Cookie', cookie)
-        .expect(200);
-      expect((res.body as { current: string }).current).toBe(
-        (read.body as { version: string }).version,
-      );
-      expect(await fs.readFile(join(jail, 'conflict.txt'), 'utf-8')).toBe(
-        'mine\nterminal',
-      );
+      const read = await http.get("/api/files/content?root=home&path=conflict.txt").set("Cookie", cookie).expect(200);
+      expect((res.body as { current: string }).current).toBe((read.body as { version: string }).version);
+      expect(await fs.readFile(join(jail, "conflict.txt"), "utf-8")).toBe("mine\nterminal");
     });
 
-    it('an upload with a stale token is 409; a download names the current token', async () => {
+    it("an upload with a stale token is 409; a download names the current token", async () => {
       await http
-        .post('/api/files/upload')
-        .set('Cookie', cookie)
-        .field('root', 'home')
-        .field('path', 'conflict.bin')
-        .field('expected', 'stale-0')
-        .attach('file', Buffer.from('new'), 'conflict.bin')
+        .post("/api/files/upload")
+        .set("Cookie", cookie)
+        .field("root", "home")
+        .field("path", "conflict.bin")
+        .field("expected", "stale-0")
+        .attach("file", Buffer.from("new"), "conflict.bin")
         .expect(409);
       const up = await http
-        .post('/api/files/upload')
-        .set('Cookie', cookie)
-        .field('root', 'home')
-        .field('path', 'conflict.bin')
-        .attach('file', Buffer.from('new'), 'conflict.bin')
+        .post("/api/files/upload")
+        .set("Cookie", cookie)
+        .field("root", "home")
+        .field("path", "conflict.bin")
+        .attach("file", Buffer.from("new"), "conflict.bin")
         .expect(201);
       const dl = await http
-        .get('/api/files/download?root=home&path=conflict.bin')
-        .set('Cookie', cookie)
+        .get("/api/files/download?root=home&path=conflict.bin")
+        .set("Cookie", cookie)
         .buffer(true)
         .parse(binaryParser)
         .expect(200);
-      expect(dl.headers['x-file-version']).toBe(
-        (up.body as { version: string }).version,
-      );
+      expect(dl.headers["x-file-version"]).toBe((up.body as { version: string }).version);
     });
   });
 });

@@ -1,15 +1,7 @@
-import { Transform } from 'class-transformer';
-import {
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { Transform } from "class-transformer";
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 
-export const LOG_LEVELS = ['info', 'warn', 'error'] as const;
+export const LOG_LEVELS = ["info", "warn", "error"] as const;
 
 export class LogQueryDto {
   @IsOptional()

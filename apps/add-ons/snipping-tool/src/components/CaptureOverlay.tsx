@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
-import type { Selection } from '../types'
+import { useEffect, useRef, useState } from "react";
+import type { Selection } from "../types";
 
 type Props = {
-  onSelect: (sel: Selection) => void
-  onCancel: () => void
-}
+  onSelect: (sel: Selection) => void;
+  onCancel: () => void;
+};
 
-type DragState = { startX: number; startY: number; curX: number; curY: number } | null
+type DragState = { startX: number; startY: number; curX: number; curY: number } | null;
 
 function normalize(d: NonNullable<DragState>): Selection {
   return {
@@ -14,7 +14,7 @@ function normalize(d: NonNullable<DragState>): Selection {
     y: Math.min(d.startY, d.curY),
     width: Math.abs(d.curX - d.startX),
     height: Math.abs(d.curY - d.startY),
-  }
+  };
 }
 
 /**
@@ -24,58 +24,58 @@ function normalize(d: NonNullable<DragState>): Selection {
  * the dim it paints — out of the actual shot.
  */
 export function CaptureOverlay({ onSelect, onCancel }: Props) {
-  const [drag, setDrag] = useState<DragState>(null)
-  const [cursor, setCursor] = useState<{ x: number; y: number }>({ x: -1, y: -1 })
-  const draggingRef = useRef(false)
+  const [drag, setDrag] = useState<DragState>(null);
+  const [cursor, setCursor] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
+  const draggingRef = useRef(false);
   // Mirrors `drag` so pointerup can read it in the handler body, not inside a state updater.
-  const dragRef = useRef<DragState>(null)
+  const dragRef = useRef<DragState>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onCancel()
-      } else if (e.key === 'Enter' || (e.key === 'a' && (e.ctrlKey || e.metaKey))) {
-        e.preventDefault()
-        onSelect({ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight })
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      } else if (e.key === "Enter" || (e.key === "a" && (e.ctrlKey || e.metaKey))) {
+        e.preventDefault();
+        onSelect({ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight });
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onSelect, onCancel])
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onSelect, onCancel]);
 
   function handlePointerDown(e: React.PointerEvent) {
-    if (e.button !== 0) return
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
-    draggingRef.current = true
-    dragRef.current = { startX: e.clientX, startY: e.clientY, curX: e.clientX, curY: e.clientY }
-    setDrag(dragRef.current)
+    if (e.button !== 0) return;
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    draggingRef.current = true;
+    dragRef.current = { startX: e.clientX, startY: e.clientY, curX: e.clientX, curY: e.clientY };
+    setDrag(dragRef.current);
   }
 
   function handlePointerMove(e: React.PointerEvent) {
-    setCursor({ x: e.clientX, y: e.clientY })
-    if (!draggingRef.current) return
-    if (!dragRef.current) return
-    dragRef.current = { ...dragRef.current, curX: e.clientX, curY: e.clientY }
-    setDrag(dragRef.current)
+    setCursor({ x: e.clientX, y: e.clientY });
+    if (!draggingRef.current) return;
+    if (!dragRef.current) return;
+    dragRef.current = { ...dragRef.current, curX: e.clientX, curY: e.clientY };
+    setDrag(dragRef.current);
   }
 
   function handlePointerUp() {
-    draggingRef.current = false
-    const d = dragRef.current
-    if (!d) return
-    const picked = normalize(d)
+    draggingRef.current = false;
+    const d = dragRef.current;
+    if (!d) return;
+    const picked = normalize(d);
     // Ignore stray clicks / tiny drags — keep the overlay up for a real drag.
     if (picked.width < 6 || picked.height < 6) {
-      dragRef.current = null
-      setDrag(null)
-      return
+      dragRef.current = null;
+      setDrag(null);
+      return;
     }
     // Called here, in the pointerup task, so the clipboard write rides the user's click.
-    onSelect(picked)
+    onSelect(picked);
   }
 
-  const sel = drag ? normalize(drag) : null
+  const sel = drag ? normalize(drag) : null;
 
   return (
     <div
@@ -84,30 +84,30 @@ export function CaptureOverlay({ onSelect, onCancel }: Props) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       style={{
-        position: 'fixed',
+        position: "fixed",
         inset: 0,
         zIndex: 100000,
-        cursor: 'crosshair',
-        userSelect: 'none',
-        touchAction: 'none',
-        fontFamily: 'var(--font-ui)',
+        cursor: "crosshair",
+        userSelect: "none",
+        touchAction: "none",
+        fontFamily: "var(--font-ui)",
       }}
     >
       {/* Dim: a full sheet when idle; a box-shadow "hole" once a region exists. */}
       {sel ? (
         <div
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: sel.x,
             top: sel.y,
             width: sel.width,
             height: sel.height,
-            boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
-            outline: '1px solid var(--accent, #c0263a)',
+            boxShadow: "0 0 0 9999px rgba(0,0,0,0.5)",
+            outline: "1px solid var(--accent, #c0263a)",
           }}
         />
       ) : (
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} />
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }} />
       )}
 
       {/* Crosshair guide lines while idle (before a drag starts). */}
@@ -115,22 +115,22 @@ export function CaptureOverlay({ onSelect, onCancel }: Props) {
         <>
           <div
             style={{
-              position: 'absolute',
+              position: "absolute",
               left: 0,
               right: 0,
               top: cursor.y,
               height: 1,
-              background: 'rgba(255,255,255,0.55)',
+              background: "rgba(255,255,255,0.55)",
             }}
           />
           <div
             style={{
-              position: 'absolute',
+              position: "absolute",
               top: 0,
               bottom: 0,
               left: cursor.x,
               width: 1,
-              background: 'rgba(255,255,255,0.55)',
+              background: "rgba(255,255,255,0.55)",
             }}
           />
         </>
@@ -140,15 +140,15 @@ export function CaptureOverlay({ onSelect, onCancel }: Props) {
       {sel && (sel.width > 0 || sel.height > 0) && (
         <div
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: sel.x,
             top: sel.y > 22 ? sel.y - 22 : sel.y + sel.height + 4,
-            padding: '2px 6px',
+            padding: "2px 6px",
             fontSize: 11,
             fontWeight: 600,
-            color: '#fff',
-            background: 'var(--accent, #c0263a)',
-            fontVariantNumeric: 'tabular-nums',
+            color: "#fff",
+            background: "var(--accent, #c0263a)",
+            fontVariantNumeric: "tabular-nums",
           }}
         >
           {Math.round(sel.width)} × {Math.round(sel.height)}
@@ -158,22 +158,21 @@ export function CaptureOverlay({ onSelect, onCancel }: Props) {
       {/* Instructions */}
       <div
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          padding: '6px 14px',
+          left: "50%",
+          transform: "translateX(-50%)",
+          padding: "6px 14px",
           fontSize: 12,
           fontWeight: 600,
-          color: '#fff',
-          background: 'rgba(20,20,24,0.85)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          whiteSpace: 'nowrap',
+          color: "#fff",
+          background: "rgba(20,20,24,0.85)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          whiteSpace: "nowrap",
         }}
       >
-        Drag to select a region &nbsp;·&nbsp; Enter for the whole desktop &nbsp;·&nbsp; Esc to
-        cancel
+        Drag to select a region &nbsp;·&nbsp; Enter for the whole desktop &nbsp;·&nbsp; Esc to cancel
       </div>
     </div>
-  )
+  );
 }

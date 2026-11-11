@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { useWindowStore } from '../../store/windowStore'
-import { isShellSuspended } from '../../../modules/auth/store/authStore'
-import { APP_REGISTRY } from '../../registry/registry'
-import { useDocumentedShortcuts } from '../../hooks/useRegisteredHotkeys'
-import { cn } from '../../../lib/cn'
-import { focusIntoWindowSoon } from '../window/focusIntoWindow'
-import { openOrAdvance, switcherOrder, commitTarget, type SwitcherState } from './switcherModel'
+import { useEffect, useRef, useState } from "react";
+import { useWindowStore } from "../../store/windowStore";
+import { isShellSuspended } from "../../../modules/auth/store/authStore";
+import { APP_REGISTRY } from "../../registry/registry";
+import { useDocumentedShortcuts } from "../../hooks/useRegisteredHotkeys";
+import { cn } from "../../../lib/cn";
+import { focusIntoWindowSoon } from "../window/focusIntoWindow";
+import { openOrAdvance, switcherOrder, commitTarget, type SwitcherState } from "./switcherModel";
 
 /**
  * The Alt+Tab switcher: see where you are going.
@@ -29,117 +29,117 @@ import { openOrAdvance, switcherOrder, commitTarget, type SwitcherState } from '
  * focused element untouched.
  */
 export function AltTabSwitcher() {
-  const [state, setState] = useState<SwitcherState | null>(null)
-  const stateRef = useRef(state)
+  const [state, setState] = useState<SwitcherState | null>(null);
+  const stateRef = useRef(state);
   useEffect(() => {
-    stateRef.current = state
-  })
+    stateRef.current = state;
+  });
   // Subscribed (not getState-in-render) so titles and minimized badges stay
   // live while the overlay is up; when closed this renders null instantly.
-  const windows = useWindowStore((s) => s.windows)
+  const windows = useWindowStore((s) => s.windows);
 
   useDocumentedShortcuts([
     {
-      id: 'window.switcher',
-      keys: 'alt+tab',
-      description: 'Switch windows (hold Alt, Tab to advance, release to commit)',
-      scope: 'Window management',
-      note: 'The host OS or browser may intercept this outside the kiosk',
+      id: "window.switcher",
+      keys: "alt+tab",
+      description: "Switch windows (hold Alt, Tab to advance, release to commit)",
+      scope: "Window management",
+      note: "The host OS or browser may intercept this outside the kiosk",
     },
     {
-      id: 'window.switcher-back',
-      keys: 'alt+shift+tab',
-      description: 'Switch windows backwards',
-      scope: 'Window management',
-      note: 'The host OS or browser may intercept this outside the kiosk',
+      id: "window.switcher-back",
+      keys: "alt+shift+tab",
+      description: "Switch windows backwards",
+      scope: "Window management",
+      note: "The host OS or browser may intercept this outside the kiosk",
     },
-  ])
+  ]);
 
   useEffect(() => {
     const commit = () => {
-      const id = commitTarget(stateRef.current)
-      setState(null)
-      if (!id) return
-      const store = useWindowStore.getState()
-      const win = store.windows.find((w) => w.id === id)
-      if (!win) return
+      const id = commitTarget(stateRef.current);
+      setState(null);
+      if (!id) return;
+      const store = useWindowStore.getState();
+      const win = store.windows.find((w) => w.id === id);
+      if (!win) return;
       // The taskbar's own click path: restore first when minimized, then
       // focus — never around the store, so the workspace-follow invariant in
       // focusWindow keeps holding.
-      if (!win.isVisible) store.showWindow(id)
-      store.focusWindow(id)
+      if (!win.isVisible) store.showWindow(id);
+      store.focusWindow(id);
       // And the keyboard goes with it, as a click inside would.
-      focusIntoWindowSoon(id)
-    }
+      focusIntoWindowSoon(id);
+    };
 
     // The switcher took this key: the focused app must not also act on it
     // (a Terminal would complete a command on the Tab).
     const take = (e: KeyboardEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-    }
+      e.preventDefault();
+      e.stopPropagation();
+    };
 
     const onKeyDown = (e: KeyboardEvent) => {
       // A covered screen eats no keys.
-      if (isShellSuspended()) return
-      if (e.key === 'Tab' && e.altKey) {
-        take(e)
-        const dir: 1 | -1 = e.shiftKey ? -1 : 1
+      if (isShellSuspended()) return;
+      if (e.key === "Tab" && e.altKey) {
+        take(e);
+        const dir: 1 | -1 = e.shiftKey ? -1 : 1;
         setState((prev) => {
-          if (prev) return openOrAdvance(prev, prev.ids, dir)
-          const { windows, activeWorkspace } = useWindowStore.getState()
-          const ordered = switcherOrder(windows, activeWorkspace).map((w) => w.id)
-          return openOrAdvance(null, ordered, dir)
-        })
-        return
+          if (prev) return openOrAdvance(prev, prev.ids, dir);
+          const { windows, activeWorkspace } = useWindowStore.getState();
+          const ordered = switcherOrder(windows, activeWorkspace).map((w) => w.id);
+          return openOrAdvance(null, ordered, dir);
+        });
+        return;
       }
-      if (!stateRef.current) return
+      if (!stateRef.current) return;
       // While open: arrows also move, Enter commits, Esc cancels.
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        take(e)
-        setState((prev) => (prev ? openOrAdvance(prev, prev.ids, 1) : prev))
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        take(e)
-        setState((prev) => (prev ? openOrAdvance(prev, prev.ids, -1) : prev))
-      } else if (e.key === 'Enter') {
-        take(e)
-        commit()
-      } else if (e.key === 'Escape') {
-        take(e)
-        setState(null)
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        take(e);
+        setState((prev) => (prev ? openOrAdvance(prev, prev.ids, 1) : prev));
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        take(e);
+        setState((prev) => (prev ? openOrAdvance(prev, prev.ids, -1) : prev));
+      } else if (e.key === "Enter") {
+        take(e);
+        commit();
+      } else if (e.key === "Escape") {
+        take(e);
+        setState(null);
       }
-    }
+    };
 
     const onKeyUp = (e: KeyboardEvent) => {
-      if (!stateRef.current) return
-      if (e.key === 'Alt') {
-        take(e)
-        commit()
+      if (!stateRef.current) return;
+      if (e.key === "Alt") {
+        take(e);
+        commit();
       }
-    }
+    };
 
     // The host OS stole focus mid-switch: the Alt keyup will never arrive.
     const onBlur = () => {
-      if (stateRef.current) commit()
-    }
+      if (stateRef.current) commit();
+    };
 
     // Capture phase: window is first on every key's path, so a
     // target that stops propagation (xterm on Tab) can't hide it from us.
-    window.addEventListener('keydown', onKeyDown, { capture: true })
-    window.addEventListener('keyup', onKeyUp, { capture: true })
-    window.addEventListener('blur', onBlur)
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    window.addEventListener("keyup", onKeyUp, { capture: true });
+    window.addEventListener("blur", onBlur);
     return () => {
-      window.removeEventListener('keydown', onKeyDown, { capture: true })
-      window.removeEventListener('keyup', onKeyUp, { capture: true })
-      window.removeEventListener('blur', onBlur)
-    }
-  }, [])
+      window.removeEventListener("keydown", onKeyDown, { capture: true });
+      window.removeEventListener("keyup", onKeyUp, { capture: true });
+      window.removeEventListener("blur", onBlur);
+    };
+  }, []);
 
-  if (!state) return null
+  if (!state) return null;
 
   const cells = state.ids
     .map((id) => windows.find((w) => w.id === id))
-    .filter((w): w is NonNullable<typeof w> => w !== undefined)
+    .filter((w): w is NonNullable<typeof w> => w !== undefined);
 
   return (
     <div
@@ -150,39 +150,39 @@ export function AltTabSwitcher() {
     >
       <div className="border-outline-variant bg-surface-container rounded-window flex max-w-[80vw] gap-2 overflow-x-auto border p-3 shadow-(--k-shadow-dialog)">
         {cells.map((w, i) => {
-          const app = APP_REGISTRY.find((a) => a.id === w.appId)
-          const Icon = app?.icon
-          const selected = i === state.index
+          const app = APP_REGISTRY.find((a) => a.id === w.appId);
+          const Icon = app?.icon;
+          const selected = i === state.index;
           return (
             <div
               key={w.id}
               className={cn(
-                'rounded-control flex w-[120px] shrink-0 flex-col items-center gap-2 border px-2 py-3',
+                "rounded-control flex w-[120px] shrink-0 flex-col items-center gap-2 border px-2 py-3",
                 selected
-                  ? 'border-primary bg-surface-container-high'
-                  : 'border-outline-variant bg-surface-container-low'
+                  ? "border-primary bg-surface-container-high"
+                  : "border-outline-variant bg-surface-container-low",
               )}
             >
               {Icon && (
                 <Icon
                   size={28}
                   strokeWidth={1.5}
-                  className={selected ? 'text-on-surface' : 'text-on-surface-variant'}
+                  className={selected ? "text-on-surface" : "text-on-surface-variant"}
                 />
               )}
               <span
                 className={cn(
-                  'font-ui w-full truncate text-center text-[11px]',
-                  selected ? 'text-on-surface font-semibold' : 'text-on-surface-variant'
+                  "font-ui w-full truncate text-center text-[11px]",
+                  selected ? "text-on-surface font-semibold" : "text-on-surface-variant",
                 )}
               >
                 {w.title}
-                {!w.isVisible ? ' (minimized)' : ''}
+                {!w.isVisible ? " (minimized)" : ""}
               </span>
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

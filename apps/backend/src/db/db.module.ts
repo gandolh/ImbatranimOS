@@ -1,7 +1,7 @@
-import { Global, Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
-import { DbService } from './db.service';
-import { StorageHealthGuard } from './storage-health.guard';
+import { Global, Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import { DbService } from "./db.service";
+import { StorageHealthGuard } from "./storage-health.guard";
 
 @Global()
 @Module({

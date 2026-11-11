@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { Play, Pause, Plus, RotateCcw, X } from 'lucide-react'
-import { Button, Input, cn } from '@imbatranim/ui'
-import { MAX_TIMERS, useClockStore } from '../clockStore'
-import { useNow } from '../useNow'
-import { formatClockDuration } from '../format'
-import { DEFAULT_TIMER_MS, parseDurationInput, remainingMs, type TimerEntry } from '../timerModel'
+import { useState } from "react";
+import { Play, Pause, Plus, RotateCcw, X } from "lucide-react";
+import { Button, Input, cn } from "@imbatranim/ui";
+import { MAX_TIMERS, useClockStore } from "../clockStore";
+import { useNow } from "../useNow";
+import { formatClockDuration } from "../format";
+import { DEFAULT_TIMER_MS, parseDurationInput, remainingMs, type TimerEntry } from "../timerModel";
 
-const PRESETS_MIN = [1, 5, 10, 20, 30, 60]
+const PRESETS_MIN = [1, 5, 10, 20, 30, 60];
 
 /**
  * One countdown.
@@ -17,32 +17,29 @@ const PRESETS_MIN = [1, 5, 10, 20, 30, 60]
  * counts ticks (see timerModel).
  */
 function TimerCard({ timer, now }: { timer: TimerEntry; now: number }) {
-  const setDuration = useClockStore((s) => s.setTimerDuration)
-  const setLabel = useClockStore((s) => s.setTimerLabel)
-  const start = useClockStore((s) => s.startTimer)
-  const pause = useClockStore((s) => s.pauseTimer)
-  const reset = useClockStore((s) => s.resetTimer)
-  const remove = useClockStore((s) => s.removeTimer)
-  const count = useClockStore((s) => s.timers.length)
-  const [customMinutes, setCustomMinutes] = useState('')
+  const setDuration = useClockStore((s) => s.setTimerDuration);
+  const setLabel = useClockStore((s) => s.setTimerLabel);
+  const start = useClockStore((s) => s.startTimer);
+  const pause = useClockStore((s) => s.pauseTimer);
+  const reset = useClockStore((s) => s.resetTimer);
+  const remove = useClockStore((s) => s.removeTimer);
+  const count = useClockStore((s) => s.timers.length);
+  const [customMinutes, setCustomMinutes] = useState("");
 
-  const remaining = remainingMs(timer, now)
-  const finished = remaining === 0 && timer.fired
+  const remaining = remainingMs(timer, now);
+  const finished = remaining === 0 && timer.fired;
 
-  const parsedCustom = parseDurationInput(customMinutes)
+  const parsedCustom = parseDurationInput(customMinutes);
 
   const applyCustom = () => {
-    if (parsedCustom === null) return
-    setDuration(timer.id, parsedCustom)
-    setCustomMinutes('')
-  }
+    if (parsedCustom === null) return;
+    setDuration(timer.id, parsedCustom);
+    setCustomMinutes("");
+  };
 
   return (
     <div
-      className={cn(
-        'border-outline-variant flex flex-col gap-2 border-b p-3',
-        finished && 'bg-surface-container-low'
-      )}
+      className={cn("border-outline-variant flex flex-col gap-2 border-b p-3", finished && "bg-surface-container-low")}
     >
       <div className="flex items-center gap-2">
         <Input
@@ -57,7 +54,7 @@ function TimerCard({ timer, now }: { timer: TimerEntry; now: number }) {
             type="button"
             onClick={() => remove(timer.id)}
             title="Remove timer"
-            aria-label={timer.label ? `Remove the ${timer.label} timer` : 'Remove this timer'}
+            aria-label={timer.label ? `Remove the ${timer.label} timer` : "Remove this timer"}
             className="text-on-surface-variant hover:text-error focus-visible:ring-primary shrink-0 p-1 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             <X size={12} strokeWidth={2} />
@@ -68,8 +65,8 @@ function TimerCard({ timer, now }: { timer: TimerEntry; now: number }) {
       <div className="flex items-center justify-between gap-2">
         <span
           className={cn(
-            'font-mono text-[32px] leading-none font-semibold tabular-nums',
-            finished ? 'text-error' : 'text-on-surface'
+            "font-mono text-[32px] leading-none font-semibold tabular-nums",
+            finished ? "text-error" : "text-on-surface",
           )}
         >
           {formatClockDuration(remaining)}
@@ -123,7 +120,7 @@ function TimerCard({ timer, now }: { timer: TimerEntry; now: number }) {
           aria-label="Custom duration in minutes, or mm:ss"
           onChange={(e) => setCustomMinutes(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') applyCustom()
+            if (e.key === "Enter") applyCustom();
           }}
           className="min-w-0 flex-1"
         />
@@ -132,27 +129,23 @@ function TimerCard({ timer, now }: { timer: TimerEntry; now: number }) {
           size="sm"
           onClick={applyCustom}
           disabled={timer.running || parsedCustom === null}
-          title={
-            parsedCustom === null && customMinutes !== ''
-              ? 'Type minutes (5), or mm:ss (0:30)'
-              : undefined
-          }
+          title={parsedCustom === null && customMinutes !== "" ? "Type minutes (5), or mm:ss (0:30)" : undefined}
         >
           Set
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 export function Timer() {
-  const timers = useClockStore((s) => s.timers)
-  const addTimer = useClockStore((s) => s.addTimer)
+  const timers = useClockStore((s) => s.timers);
+  const addTimer = useClockStore((s) => s.addTimer);
 
   // One interval for the whole tab, and only while something is running. The
   // value is a render trigger; every card recomputes from its own endAt.
-  const anyRunning = timers.some((t) => t.running)
-  const now = useNow(250, anyRunning)
+  const anyRunning = timers.some((t) => t.running);
+  const now = useNow(250, anyRunning);
 
   return (
     <div className="flex h-full flex-col">
@@ -173,16 +166,14 @@ export function Timer() {
         <Button
           variant="default"
           size="sm"
-          onClick={() => addTimer('', DEFAULT_TIMER_MS)}
+          onClick={() => addTimer("", DEFAULT_TIMER_MS)}
           disabled={timers.length >= MAX_TIMERS}
-          title={
-            timers.length >= MAX_TIMERS ? `Up to ${MAX_TIMERS} timers at once` : 'Add another timer'
-          }
+          title={timers.length >= MAX_TIMERS ? `Up to ${MAX_TIMERS} timers at once` : "Add another timer"}
         >
           <Plus size={12} strokeWidth={2} />
           Add timer
         </Button>
       </div>
     </div>
-  )
+  );
 }

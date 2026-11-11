@@ -1,16 +1,16 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
-import { ScheduleService } from './schedule.service';
-import { ClaimDto } from './dto/claim.dto';
+import { Body, Controller, HttpCode, Post } from "@nestjs/common";
+import { ScheduleService } from "./schedule.service";
+import { ClaimDto } from "./dto/claim.dto";
 
 /**
  * One route: claim an occurrence before toasting it. Session-authed
  * by the global guard like everything else.
  */
-@Controller('schedule')
+@Controller("schedule")
 export class ScheduleController {
   constructor(private readonly schedule: ScheduleService) {}
 
-  @Post('claim')
+  @Post("claim")
   @HttpCode(200)
   claim(@Body() dto: ClaimDto): { claimed: boolean } {
     return {

@@ -1,9 +1,9 @@
-export const ICON_WIDTH = 64
-export const ICON_HEIGHT = 80
-export const GRID_GAP = 16
-export const PADDING = 16
+export const ICON_WIDTH = 64;
+export const ICON_HEIGHT = 80;
+export const GRID_GAP = 16;
+export const PADDING = 16;
 
-export type Point = { x: number; y: number }
+export type Point = { x: number; y: number };
 
 /**
  * Place desktop icons in columns, top to bottom, wrapping into a new column.
@@ -27,61 +27,56 @@ export type Point = { x: number; y: number }
 export function layoutIcons(
   appIds: string[],
   pinned: Record<string, Point>,
-  viewport: { width: number; height: number }
+  viewport: { width: number; height: number },
 ): Record<string, Point> {
-  const stride = ICON_HEIGHT + GRID_GAP
-  const colStride = ICON_WIDTH + GRID_GAP
-  const usableHeight = Math.max(0, viewport.height - PADDING * 2)
-  const rows = Math.max(1, Math.floor((usableHeight + GRID_GAP) / stride))
+  const stride = ICON_HEIGHT + GRID_GAP;
+  const colStride = ICON_WIDTH + GRID_GAP;
+  const usableHeight = Math.max(0, viewport.height - PADDING * 2);
+  const rows = Math.max(1, Math.floor((usableHeight + GRID_GAP) / stride));
 
   // Cells a user-placed icon covers, so auto placement skips them. A pinned
   // icon sits wherever it was dropped, usually between grid cells, so it can
   // cover up to four of them. Marking only the one cell its corner rounds to
   // left the others free, and auto icons were laid on top of it.
   // The pinned point is clamped first because that is where it is drawn.
-  const taken = new Set<string>()
+  const taken = new Set<string>();
   for (const raw of Object.values(pinned)) {
-    const pos = clampToDesktop(raw, viewport)
-    const col0 = Math.floor((pos.x - PADDING) / colStride)
-    const row0 = Math.floor((pos.y - PADDING) / stride)
+    const pos = clampToDesktop(raw, viewport);
+    const col0 = Math.floor((pos.x - PADDING) / colStride);
+    const row0 = Math.floor((pos.y - PADDING) / stride);
     for (let col = Math.max(0, col0 - 1); col <= col0 + 1; col++) {
       for (let row = Math.max(0, row0 - 1); row <= row0 + 1; row++) {
         if (overlaps(pos, { x: PADDING + col * colStride, y: PADDING + row * stride })) {
-          taken.add(`${col},${row}`)
+          taken.add(`${col},${row}`);
         }
       }
     }
   }
 
-  const out: Record<string, Point> = {}
-  let cursor = 0
+  const out: Record<string, Point> = {};
+  let cursor = 0;
   for (const appId of appIds) {
-    if (pinned[appId]) continue
-    let col = Math.floor(cursor / rows)
-    let row = cursor % rows
+    if (pinned[appId]) continue;
+    let col = Math.floor(cursor / rows);
+    let row = cursor % rows;
     while (taken.has(`${col},${row}`)) {
-      cursor++
-      col = Math.floor(cursor / rows)
-      row = cursor % rows
+      cursor++;
+      col = Math.floor(cursor / rows);
+      row = cursor % rows;
     }
-    taken.add(`${col},${row}`)
+    taken.add(`${col},${row}`);
     out[appId] = {
       x: PADDING + col * colStride,
       y: PADDING + row * stride,
-    }
-    cursor++
+    };
+    cursor++;
   }
-  return out
+  return out;
 }
 
 /** Whether two icon footprints at these top-left corners intersect. */
 export function overlaps(a: Point, b: Point): boolean {
-  return (
-    a.x < b.x + ICON_WIDTH &&
-    b.x < a.x + ICON_WIDTH &&
-    a.y < b.y + ICON_HEIGHT &&
-    b.y < a.y + ICON_HEIGHT
-  )
+  return a.x < b.x + ICON_WIDTH && b.x < a.x + ICON_WIDTH && a.y < b.y + ICON_HEIGHT && b.y < a.y + ICON_HEIGHT;
 }
 
 /**
@@ -96,5 +91,5 @@ export function clampToDesktop(p: Point, viewport: { width: number; height: numb
   return {
     x: Math.max(0, Math.min(p.x, viewport.width - ICON_WIDTH)),
     y: Math.max(0, Math.min(p.y, viewport.height - ICON_HEIGHT)),
-  }
+  };
 }

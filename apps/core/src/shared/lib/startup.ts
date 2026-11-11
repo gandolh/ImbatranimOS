@@ -1,9 +1,9 @@
-import { APP_REGISTRY } from '../registry/registry'
-import { NON_DISABLEABLE } from '../registry/enabledApps'
-import { useAddonStore } from '../store/addonStore'
-import { useStartupStore } from '../store/startupStore'
-import { useWindowStore } from '../store/windowStore'
-import { openApp } from '../intents/openApp'
+import { APP_REGISTRY } from "../registry/registry";
+import { NON_DISABLEABLE } from "../registry/enabledApps";
+import { useAddonStore } from "../store/addonStore";
+import { useStartupStore } from "../store/startupStore";
+import { useWindowStore } from "../store/windowStore";
+import { openApp } from "../intents/openApp";
 
 /**
  * Startup apps — opening the set, exactly once, without fighting the
@@ -30,27 +30,27 @@ import { openApp } from '../intents/openApp'
  * The `sessionStorage`/dotfile split is exactly the brief's own model, applied one
  * level further in than the brief could see.
  */
-const RAN_KEY = 'imbatranimos:startup-ran'
+const RAN_KEY = "imbatranimos:startup-ran";
 
-function sessionFlag(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null {
+function sessionFlag(): Pick<Storage, "getItem" | "setItem" | "removeItem"> | null {
   try {
-    return window.sessionStorage
+    return window.sessionStorage;
   } catch {
-    return null
+    return null;
   }
 }
 
 export function startupHasRun(): boolean {
   try {
-    return sessionFlag()?.getItem(RAN_KEY) === '1'
+    return sessionFlag()?.getItem(RAN_KEY) === "1";
   } catch {
-    return false
+    return false;
   }
 }
 
 export function markStartupRan(): void {
   try {
-    sessionFlag()?.setItem(RAN_KEY, '1')
+    sessionFlag()?.setItem(RAN_KEY, "1");
   } catch {
     // Private mode or quota. Worst case the set opens again on the next reload,
     // which is a mild annoyance — not a reason to skip the feature.
@@ -60,7 +60,7 @@ export function markStartupRan(): void {
 /** Test seam: forget that this tab has booted. */
 export function resetStartupForTest(): void {
   try {
-    sessionFlag()?.removeItem(RAN_KEY)
+    sessionFlag()?.removeItem(RAN_KEY);
   } catch {
     /* nothing to do */
   }
@@ -75,11 +75,11 @@ export function resetStartupForTest(): void {
  * shows the same computation, so what the list says is what boot does.
  */
 export function startupCandidates(ids: string[] = useStartupStore.getState().apps): string[] {
-  const disabled = useAddonStore.getState()
+  const disabled = useAddonStore.getState();
   return ids.filter((id) => {
-    if (!APP_REGISTRY.some((app) => app.id === id)) return false
-    return !disabled.isDisabled(id) || NON_DISABLEABLE.has(id)
-  })
+    if (!APP_REGISTRY.some((app) => app.id === id)) return false;
+    return !disabled.isDisabled(id) || NON_DISABLEABLE.has(id);
+  });
 }
 
 /**
@@ -88,30 +88,28 @@ export function startupCandidates(ids: string[] = useStartupStore.getState().app
  * listing arrives. An id that never arrives is skipped then.
  */
 function waitsForRegistry(ids: string[] = useStartupStore.getState().apps): boolean {
-  const disabled = useAddonStore.getState()
+  const disabled = useAddonStore.getState();
   return ids.some(
-    (id) =>
-      !APP_REGISTRY.some((app) => app.id === id) &&
-      (!disabled.isDisabled(id) || NON_DISABLEABLE.has(id))
-  )
+    (id) => !APP_REGISTRY.some((app) => app.id === id) && (!disabled.isDisabled(id) || NON_DISABLEABLE.has(id)),
+  );
 }
 
 /** Open what {@link startupCandidates} says, in order; one throw skips one app. */
 function openStartupSet(): string[] {
-  const opened: string[] = []
+  const opened: string[] = [];
   for (const id of startupCandidates()) {
     try {
       // Plain `openApp`, no special-case placement: `openWindow` already scatters
       // new windows by ±100px around centre and clamps each against the viewport
       //, so a set of three lands visibly apart and none of them can
       // hang off a short screen. A hand-rolled stagger here would fight that.
-      const win = openApp(id)
-      if (win !== '') opened.push(id)
+      const win = openApp(id);
+      if (win !== "") opened.push(id);
     } catch {
       // A registry entry whose lazy import fails, say. Skip it and keep going.
     }
   }
-  return opened
+  return opened;
 }
 
 /**
@@ -132,16 +130,16 @@ function openStartupSet(): string[] {
  * desktop — with it.
  */
 export function runStartupApps(registryReady?: Promise<unknown>): Promise<string[]> {
-  if (startupHasRun()) return Promise.resolve([])
+  if (startupHasRun()) return Promise.resolve([]);
   // Whatever happens below, this tab has now had its one chance. Marked *before*
   // opening so a throw cannot leave the marker unset and re-run on every reload.
-  markStartupRan()
+  markStartupRan();
 
-  if (useWindowStore.getState().windows.length > 0) return Promise.resolve([])
+  if (useWindowStore.getState().windows.length > 0) return Promise.resolve([]);
 
   if (registryReady && waitsForRegistry()) {
-    const open = () => openStartupSet()
-    return registryReady.then(open, open)
+    const open = () => openStartupSet();
+    return registryReady.then(open, open);
   }
-  return Promise.resolve(openStartupSet())
+  return Promise.resolve(openStartupSet());
 }

@@ -1,13 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
 
-import { DbService } from '../../db/db.service';
-import type { AppIdentity } from './app-identity.types';
-import {
-  ancestorsOf,
-  modeKey,
-  ModeStore,
-  type ModeOp,
-} from './mode-store.service';
+import { DbService } from "../../db/db.service";
+import type { AppIdentity } from "./app-identity.types";
+import { ancestorsOf, modeKey, ModeStore, type ModeOp } from "./mode-store.service";
 
 /**
  * What a grant covers: one file (`file`, which may not exist yet: a Save as),
@@ -19,7 +14,7 @@ import {
  * and making new ones there, never writing over, renaming or removing one.
  * What an app that declares it gets beside an opened file.
  */
-export type GrantKind = 'file' | 'read' | 'folder' | 'listing' | 'assets';
+export type GrantKind = "file" | "read" | "folder" | "listing" | "assets";
 
 /** One grant: a running copy of an app may act as the user on `path`. */
 export interface FileGrant {
@@ -91,18 +86,11 @@ export class FileGrants {
    * opened in it), a `read` a `file`, an `assets` a `folder`, a `listing` an
    * `assets` (a note opened beside `assets/`, then a file opened in it).
    */
-  grant(
-    target: { instanceId: string; appId: string },
-    path: string,
-    kind: GrantKind,
-    now = Date.now(),
-  ): void {
+  grant(target: { instanceId: string; appId: string }, path: string, kind: GrantKind, now = Date.now()): void {
     const key = modeKey(path);
     const db = this.dbs.db;
     db.transaction(() => {
-      db.prepare('DELETE FROM file_grants WHERE created_at < ?').run(
-        now - GRANT_MAX_AGE_MS,
-      );
+      db.prepare("DELETE FROM file_grants WHERE created_at < ?").run(now - GRANT_MAX_AGE_MS);
       db.prepare(
         `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
          VALUES (?, ?, ?, ?, ?)
@@ -141,52 +129,46 @@ export class FileGrants {
 
   /** End every grant of every copy of one app: it was uninstalled. */
   revokeApp(appId: string): void {
-    this.dbs.db.prepare('DELETE FROM file_grants WHERE app_id = ?').run(appId);
+    this.dbs.db.prepare("DELETE FROM file_grants WHERE app_id = ?").run(appId);
   }
 
   /** End every grant of a running copy: its window closed. */
   revokeInstance(instanceId: string): void {
-    this.dbs.db
-      .prepare('DELETE FROM file_grants WHERE instance_id = ?')
-      .run(instanceId);
+    this.dbs.db.prepare("DELETE FROM file_grants WHERE instance_id = ?").run(instanceId);
   }
 
   /** Does something this copy was given let it do `op` to `path`? */
   covers(identity: AppIdentity, op: ModeOp, path: string): boolean {
     const key = modeKey(path);
     for (const grant of this.held(identity.instanceId, identity.appId)) {
-      if (grant.kind === 'file') {
+      if (grant.kind === "file") {
         if (key === grant.path && FILE_OPS.has(op)) return true;
         continue;
       }
-      if (grant.kind === 'read') {
-        if (key === grant.path && op === 'read') return true;
+      if (grant.kind === "read") {
+        if (key === grant.path && op === "read") return true;
         continue;
       }
-      if (grant.kind === 'listing') {
+      if (grant.kind === "listing") {
         if (key === grant.path) {
-          if (op === 'list' || op === 'traverse') return true;
+          if (op === "list" || op === "traverse") return true;
           continue;
         }
-        if (
-          op === 'read' &&
-          parentOf(key) === grant.path &&
-          !this.crossesAnotherApp(identity.appId, grant.path, key)
-        ) {
+        if (op === "read" && parentOf(key) === grant.path && !this.crossesAnotherApp(identity.appId, grant.path, key)) {
           return true;
         }
         continue;
       }
-      if (grant.kind === 'assets') {
+      if (grant.kind === "assets") {
         if (this.addsTo(identity.appId, grant.path, op, key)) return true;
         continue;
       }
       // A kind this build doesn't know (a newer database) gives nothing.
-      if (grant.kind !== 'folder') continue;
-      if (!within(grant.path, key) || op === 'chmod') continue;
+      if (grant.kind !== "folder") continue;
+      if (!within(grant.path, key) || op === "chmod") continue;
       // Making or deleting an entry is an act on its parent; the picked
       // folder's own entry is in a parent that wasn't given.
-      if ((op === 'create' || op === 'delete') && key === grant.path) continue;
+      if ((op === "create" || op === "delete") && key === grant.path) continue;
       if (this.crossesAnotherApp(identity.appId, grant.path, key)) continue;
       return true;
     }
@@ -200,16 +182,13 @@ export class FileGrants {
    * something is allowed only by such a grant, so that a file is never made
    * where the folder belongs, nor a folder inside it.
    */
-  addsAt(identity: AppIdentity, key: string): 'folder' | 'file' | null {
+  addsAt(identity: AppIdentity, key: string): "folder" | "file" | null {
     const at = modeKey(key);
     for (const grant of this.held(identity.instanceId, identity.appId)) {
-      if (grant.kind !== 'assets') continue;
-      if (at === grant.path) return 'folder';
-      if (
-        parentOf(at) === grant.path &&
-        !this.crossesAnotherApp(identity.appId, grant.path, at)
-      ) {
-        return 'file';
+      if (grant.kind !== "assets") continue;
+      if (at === grant.path) return "folder";
+      if (parentOf(at) === grant.path && !this.crossesAnotherApp(identity.appId, grant.path, at)) {
+        return "file";
       }
     }
     return null;
@@ -231,13 +210,9 @@ export class FileGrants {
    */
   private addsTo(appId: string, top: string, op: ModeOp, key: string): boolean {
     if (key === top) {
-      return op === 'create' || op === 'list' || op === 'traverse';
+      return op === "create" || op === "list" || op === "traverse";
     }
-    return (
-      (op === 'read' || op === 'create') &&
-      parentOf(key) === top &&
-      !this.crossesAnotherApp(appId, top, key)
-    );
+    return (op === "read" || op === "create") && parentOf(key) === top && !this.crossesAnotherApp(appId, top, key);
   }
 
   /**
@@ -247,9 +222,7 @@ export class FileGrants {
    */
   private crossesAnotherApp(appId: string, top: string, key: string): boolean {
     if (key === top) return false;
-    const below = [...ancestorsOf(key), key].filter(
-      (p) => p !== top && within(top, p),
-    );
+    const below = [...ancestorsOf(key), key].filter((p) => p !== top && within(top, p));
     for (const entry of this.modes.rows(below).values()) {
       if (entry.owner !== null && entry.owner !== appId) return true;
     }
@@ -258,16 +231,16 @@ export class FileGrants {
 }
 
 /** What a file grant lets its holder do to that one path. */
-const FILE_OPS: ReadonlySet<ModeOp> = new Set(['read', 'write', 'create']);
+const FILE_OPS: ReadonlySet<ModeOp> = new Set(["read", "write", "create"]);
 
 /** The folder `key` is in; `/` for `/` itself. */
 function parentOf(key: string): string {
-  const cut = key.lastIndexOf('/');
-  return cut <= 0 ? '/' : key.slice(0, cut);
+  const cut = key.lastIndexOf("/");
+  return cut <= 0 ? "/" : key.slice(0, cut);
 }
 
 /** True when `key` is `top` or under it. */
 function within(top: string, key: string): boolean {
   if (key === top) return true;
-  return key.startsWith(top === '/' ? '/' : `${top}/`);
+  return key.startsWith(top === "/" ? "/" : `${top}/`);
 }

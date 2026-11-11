@@ -1,18 +1,18 @@
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import { join } from 'path';
+import * as fs from "fs/promises";
+import * as os from "os";
+import { join } from "path";
 
-import type { DbService } from '../../db/db.service';
-import { makeTestDb } from '../identity/testing';
-import type { InstalledApps } from '../app-identity/installed-apps';
-import { ModeStore } from '../app-identity/mode-store.service';
-import type { LogService } from '../logs/log.service';
-import { AppDataService } from './app-data.service';
-import { DataMovesService } from './data-moves.service';
-import { FilesService } from '../files/files.service';
-import { RecentService } from '../files/recent.service';
+import type { DbService } from "../../db/db.service";
+import { makeTestDb } from "../identity/testing";
+import type { InstalledApps } from "../app-identity/installed-apps";
+import { ModeStore } from "../app-identity/mode-store.service";
+import type { LogService } from "../logs/log.service";
+import { AppDataService } from "./app-data.service";
+import { DataMovesService } from "./data-moves.service";
+import { FilesService } from "../files/files.service";
+import { RecentService } from "../files/recent.service";
 
-describe('DataMovesService', () => {
+describe("DataMovesService", () => {
   let home: string;
   let dbs: DbService;
   let modes: ModeStore;
@@ -24,7 +24,7 @@ describe('DataMovesService', () => {
   const prevRoot = process.env.FILES_ROOT;
 
   beforeEach(async () => {
-    home = await fs.mkdtemp(join(os.tmpdir(), 'imb-moves-home-'));
+    home = await fs.mkdtemp(join(os.tmpdir(), "imb-moves-home-"));
     process.env.FILES_ROOT = home;
     dbs = makeTestDb();
     modes = new ModeStore(dbs);
@@ -35,16 +35,9 @@ describe('DataMovesService', () => {
     data = new AppDataService(modes, installed);
     logged = [];
     const logs = {
-      record: (level: string, event: string, msg: string) =>
-        logged.push({ level, event, msg }),
+      record: (level: string, event: string, msg: string) => logged.push({ level, event, msg }),
     } as unknown as LogService;
-    moves = new DataMovesService(
-      dbs,
-      data,
-      new FilesService(),
-      new RecentService(dbs),
-      logs,
-    );
+    moves = new DataMovesService(dbs, data, new FilesService(), new RecentService(dbs), logs);
   });
 
   afterEach(async () => {
@@ -53,14 +46,11 @@ describe('DataMovesService', () => {
     await fs.rm(home, { recursive: true, force: true });
   });
 
-  const folder = (app: string, rest = '') =>
-    join(home, '.local', 'share', 'imbatranim', app, rest);
+  const folder = (app: string, rest = "") => join(home, ".local", "share", "imbatranim", app, rest);
   const readJson = async (app: string, rest: string) =>
-    JSON.parse(await fs.readFile(folder(app, rest), 'utf8')) as unknown;
+    JSON.parse(await fs.readFile(folder(app, rest), "utf8")) as unknown;
   const hasTable = (name: string) =>
-    dbs.db
-      .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
-      .get(name) !== undefined;
+    dbs.db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name) !== undefined;
 
   function seedTodos(): void {
     dbs.db.exec(`
@@ -85,37 +75,37 @@ describe('DataMovesService', () => {
     seedTodos();
     await moves.run();
 
-    expect(await readJson('todo', 'lists/3.json')).toEqual({
+    expect(await readJson("todo", "lists/3.json")).toEqual({
       id: 3,
-      name: 'Work',
+      name: "Work",
       position: 1,
       todos: [
         {
           id: 2,
-          text: 'Send the report',
+          text: "Send the report",
           completed: true,
           position: 1,
           dueAt: 1762700000000,
           priority: true,
-          createdAt: '2026-11-02 09:00:00',
-          updatedAt: '2026-11-03 10:00:00',
+          createdAt: "2026-11-02 09:00:00",
+          updatedAt: "2026-11-03 10:00:00",
         },
       ],
     });
-    expect(await readJson('todo', 'unfiled.json')).toEqual({
+    expect(await readJson("todo", "unfiled.json")).toEqual({
       todos: [
         expect.objectContaining({
           id: 1,
-          text: 'Walk the dog',
+          text: "Walk the dog",
           completed: false,
         }),
       ],
     });
-    expect(hasTable('todos')).toBe(false);
-    expect(hasTable('todo_lists')).toBe(false);
+    expect(hasTable("todos")).toBe(false);
+    expect(hasTable("todo_lists")).toBe(false);
     expect(logged).toContainEqual(
       expect.objectContaining({
-        event: 'app-data.move.done',
+        event: "app-data.move.done",
         msg: "Todo's data moved into its folder: 2 tasks in 1 list.",
       }),
     );
@@ -124,11 +114,11 @@ describe('DataMovesService', () => {
   it("writes Bookmarks' rows as one file of folders and links", async () => {
     seedBookmarks();
     await moves.run();
-    expect(await readJson('bookmarks', 'bookmarks.json')).toEqual({
+    expect(await readJson("bookmarks", "bookmarks.json")).toEqual({
       groups: [
         {
           id: 1,
-          name: 'Work',
+          name: "Work",
           icon: null,
           parentId: null,
           position: 1,
@@ -136,15 +126,15 @@ describe('DataMovesService', () => {
         },
         {
           id: 2,
-          name: 'Tools',
+          name: "Tools",
           icon: null,
           parentId: 1,
           position: 1,
           links: [
             {
               id: 5,
-              title: 'Tracker',
-              url: 'https://tracker.example',
+              title: "Tracker",
+              url: "https://tracker.example",
               icon: null,
               position: 1,
             },
@@ -152,13 +142,13 @@ describe('DataMovesService', () => {
         },
       ],
     });
-    expect(hasTable('bookmark_groups')).toBe(false);
-    expect(hasTable('bookmark_links')).toBe(false);
+    expect(hasTable("bookmark_groups")).toBe(false);
+    expect(hasTable("bookmark_links")).toBe(false);
   });
 
   it("moves Git GUI's recent repositories into its state folder and its OS recents", async () => {
-    await fs.mkdir(join(home, 'code', 'old'), { recursive: true });
-    await fs.mkdir(join(home, 'code', 'new'), { recursive: true });
+    await fs.mkdir(join(home, "code", "old"), { recursive: true });
+    await fs.mkdir(join(home, "code", "new"), { recursive: true });
     dbs.db.exec(`
       INSERT INTO git_recent_repos (root, path, app_id, last_opened) VALUES
         ('home', 'code/old', 'git-gui', '2026-11-01 08:00:00'),
@@ -167,55 +157,49 @@ describe('DataMovesService', () => {
         ('notes', 'other', 'hollow', '2026-11-07 08:00:00');
     `);
     await moves.run();
-    const state = join(home, '.local', 'state', 'imbatranim', 'git-gui');
-    expect(
-      JSON.parse(await fs.readFile(join(state, 'recents.json'), 'utf8')),
-    ).toEqual({
+    const state = join(home, ".local", "state", "imbatranim", "git-gui");
+    expect(JSON.parse(await fs.readFile(join(state, "recents.json"), "utf8"))).toEqual({
       repos: [
-        { root: 'home', path: 'code/new' },
-        { root: 'home', path: 'code/old' },
+        { root: "home", path: "code/new" },
+        { root: "home", path: "code/old" },
       ],
     });
-    expect(modes.stat(join(state, 'recents.json'))).toEqual({
-      owner: 'git-gui',
-      group: 'git-gui',
+    expect(modes.stat(join(state, "recents.json"))).toEqual({
+      owner: "git-gui",
+      group: "git-gui",
       mode: 0o600,
     });
     expect(
-      dbs.db
-        .prepare(
-          'SELECT root, path, app_id, writable, kind, last_opened FROM recent_files ORDER BY path',
-        )
-        .all(),
+      dbs.db.prepare("SELECT root, path, app_id, writable, kind, last_opened FROM recent_files ORDER BY path").all(),
     ).toEqual([
       {
-        root: 'home',
-        path: 'code/new',
-        app_id: 'git-gui',
+        root: "home",
+        path: "code/new",
+        app_id: "git-gui",
         writable: 1,
-        kind: 'folder',
-        last_opened: '2026-11-05 08:00:00',
+        kind: "folder",
+        last_opened: "2026-11-05 08:00:00",
       },
       {
-        root: 'home',
-        path: 'code/old',
-        app_id: 'git-gui',
+        root: "home",
+        path: "code/old",
+        app_id: "git-gui",
         writable: 1,
-        kind: 'folder',
-        last_opened: '2026-11-01 08:00:00',
+        kind: "folder",
+        last_opened: "2026-11-01 08:00:00",
       },
     ]);
-    expect(hasTable('git_recent_repos')).toBe(false);
+    expect(hasTable("git_recent_repos")).toBe(false);
     expect(logged).toContainEqual(
       expect.objectContaining({
-        event: 'app-data.move.done',
+        event: "app-data.move.done",
         msg: "Git GUI's data moved into its folder: 2 recent repositories.",
       }),
     );
   });
 
   it("leaves a recent already at a repository's path as it is", async () => {
-    await fs.mkdir(join(home, 'code', 'repo'), { recursive: true });
+    await fs.mkdir(join(home, "code", "repo"), { recursive: true });
     dbs.db.exec(`
       INSERT INTO recent_files (root, path, app_id, writable, kind)
         VALUES ('home', 'code/repo', 'code-editor', 1, 'folder');
@@ -223,62 +207,56 @@ describe('DataMovesService', () => {
         VALUES ('home', 'code/repo', 'git-gui');
     `);
     await moves.run();
-    expect(dbs.db.prepare('SELECT app_id FROM recent_files').all()).toEqual([
-      { app_id: 'code-editor' },
-    ]);
-    expect(hasTable('git_recent_repos')).toBe(false);
+    expect(dbs.db.prepare("SELECT app_id FROM recent_files").all()).toEqual([{ app_id: "code-editor" }]);
+    expect(hasTable("git_recent_repos")).toBe(false);
   });
 
-  it('moves only repositories still there as folders, the newest ten', async () => {
-    await fs.mkdir(join(home, 'code'), { recursive: true });
-    await fs.writeFile(join(home, 'code', 'now-a-file'), 'x');
+  it("moves only repositories still there as folders, the newest ten", async () => {
+    await fs.mkdir(join(home, "code"), { recursive: true });
+    await fs.writeFile(join(home, "code", "now-a-file"), "x");
     const insert = dbs.db.prepare(
       `INSERT INTO git_recent_repos (root, path, app_id, last_opened)
        VALUES ('home', ?, 'git-gui', ?)`,
     );
-    insert.run('code/gone', '2026-11-08 00:00:00');
-    insert.run('code/now-a-file', '2026-11-07 00:00:00');
+    insert.run("code/gone", "2026-11-08 00:00:00");
+    insert.run("code/now-a-file", "2026-11-07 00:00:00");
     for (let i = 0; i < 12; i++) {
-      const path = `code/r${String(i).padStart(2, '0')}`;
+      const path = `code/r${String(i).padStart(2, "0")}`;
       await fs.mkdir(join(home, path));
-      insert.run(path, `2026-11-01 00:00:${String(i).padStart(2, '0')}`);
+      insert.run(path, `2026-11-01 00:00:${String(i).padStart(2, "0")}`);
     }
     await moves.run();
-    const state = join(home, '.local', 'state', 'imbatranim', 'git-gui');
-    const { repos } = JSON.parse(
-      await fs.readFile(join(state, 'recents.json'), 'utf8'),
-    ) as { repos: { path: string }[] };
+    const state = join(home, ".local", "state", "imbatranim", "git-gui");
+    const { repos } = JSON.parse(await fs.readFile(join(state, "recents.json"), "utf8")) as {
+      repos: { path: string }[];
+    };
     expect(repos.map((r) => r.path)).toEqual(
-      [11, 10, 9, 8, 7, 6, 5, 4, 3, 2].map(
-        (i) => `code/r${String(i).padStart(2, '0')}`,
-      ),
+      [11, 10, 9, 8, 7, 6, 5, 4, 3, 2].map((i) => `code/r${String(i).padStart(2, "0")}`),
     );
-    const rows = dbs.db
-      .prepare(`SELECT path FROM recent_files WHERE app_id = 'git-gui'`)
-      .all() as { path: string }[];
+    const rows = dbs.db.prepare(`SELECT path FROM recent_files WHERE app_id = 'git-gui'`).all() as { path: string }[];
     expect(rows).toHaveLength(10);
-    expect(rows.some((r) => r.path === 'code/gone')).toBe(false);
-    expect(hasTable('git_recent_repos')).toBe(false);
+    expect(rows.some((r) => r.path === "code/gone")).toBe(false);
+    expect(hasTable("git_recent_repos")).toBe(false);
   });
 
   it("makes the files the app's own and private, though it isn't installed", async () => {
     seedTodos();
     await moves.run();
-    const file = modes.stat(folder('todo', 'unfiled.json'));
-    expect(file).toEqual({ owner: 'todo', group: 'todo', mode: 0o600 });
-    expect(modes.stat(folder('todo'))?.owner).toBe('todo');
+    const file = modes.stat(folder("todo", "unfiled.json"));
+    expect(file).toEqual({ owner: "todo", group: "todo", mode: 0o600 });
+    expect(modes.stat(folder("todo"))?.owner).toBe("todo");
   });
 
-  it('drops empty tables and writes nothing, saying nothing', async () => {
+  it("drops empty tables and writes nothing, saying nothing", async () => {
     await moves.run();
-    expect(hasTable('todos')).toBe(false);
-    expect(hasTable('bookmark_groups')).toBe(false);
-    expect(hasTable('git_recent_repos')).toBe(false);
-    await expect(fs.stat(folder('todo'))).rejects.toThrow();
+    expect(hasTable("todos")).toBe(false);
+    expect(hasTable("bookmark_groups")).toBe(false);
+    expect(hasTable("git_recent_repos")).toBe(false);
+    await expect(fs.stat(folder("todo"))).rejects.toThrow();
     expect(logged).toEqual([]);
   });
 
-  it('has nothing to do once the tables are gone', async () => {
+  it("has nothing to do once the tables are gone", async () => {
     seedTodos();
     await moves.run();
     logged = [];
@@ -286,46 +264,39 @@ describe('DataMovesService', () => {
     expect(logged).toEqual([]);
   });
 
-  it('queues overlapping runs, so one drops the tables and none logs a failure', async () => {
+  it("queues overlapping runs, so one drops the tables and none logs a failure", async () => {
     seedTodos();
     seedBookmarks();
     await Promise.all([moves.run(), moves.run(), moves.run()]);
 
-    expect(hasTable('todos')).toBe(false);
-    expect(hasTable('bookmark_links')).toBe(false);
-    expect(logged.filter((l) => l.level !== 'info')).toEqual([]);
-    expect(logged.filter((l) => l.event === 'app-data.move.done')).toHaveLength(
-      2,
-    );
+    expect(hasTable("todos")).toBe(false);
+    expect(hasTable("bookmark_links")).toBe(false);
+    expect(logged.filter((l) => l.level !== "info")).toEqual([]);
+    expect(logged.filter((l) => l.event === "app-data.move.done")).toHaveLength(2);
   });
 
-  it('keeps the rows and says so when a file cannot be written, and moves at the next start', async () => {
+  it("keeps the rows and says so when a file cannot be written, and moves at the next start", async () => {
     seedTodos();
     // A file where the app's folder should be: nothing can be written into it.
-    await fs.mkdir(join(home, '.local', 'share', 'imbatranim'), {
+    await fs.mkdir(join(home, ".local", "share", "imbatranim"), {
       recursive: true,
     });
-    await fs.writeFile(folder('todo'), 'in the way');
+    await fs.writeFile(folder("todo"), "in the way");
     await moves.run();
-    expect(hasTable('todos')).toBe(true);
-    expect(
-      (dbs.db.prepare('SELECT COUNT(*) AS n FROM todos').get() as { n: number })
-        .n,
-    ).toBe(2);
-    expect(logged).toContainEqual(
-      expect.objectContaining({ level: 'warn', event: 'app-data.move.failed' }),
-    );
+    expect(hasTable("todos")).toBe(true);
+    expect((dbs.db.prepare("SELECT COUNT(*) AS n FROM todos").get() as { n: number }).n).toBe(2);
+    expect(logged).toContainEqual(expect.objectContaining({ level: "warn", event: "app-data.move.failed" }));
 
-    await fs.rm(folder('todo'));
+    await fs.rm(folder("todo"));
     await moves.run();
-    expect(hasTable('todos')).toBe(false);
-    expect(await readJson('todo', 'unfiled.json')).toBeTruthy();
+    expect(hasTable("todos")).toBe(false);
+    expect(await readJson("todo", "unfiled.json")).toBeTruthy();
   });
 
-  it('finishes a move that stopped part-way, leaving what it wrote', async () => {
+  it("finishes a move that stopped part-way, leaving what it wrote", async () => {
     seedTodos();
     await moves.run();
-    const unfiled = await fs.readFile(folder('todo', 'unfiled.json'), 'utf8');
+    const unfiled = await fs.readFile(folder("todo", "unfiled.json"), "utf8");
     // As if the tables had not been dropped after the files were written.
     dbs.db.exec(`
       CREATE TABLE todo_lists (id INTEGER PRIMARY KEY, name TEXT, position INTEGER);
@@ -335,31 +306,26 @@ describe('DataMovesService', () => {
     `);
     seedTodos();
     await moves.run();
-    expect(hasTable('todos')).toBe(false);
-    expect(await fs.readFile(folder('todo', 'unfiled.json'), 'utf8')).toBe(
-      unfiled,
-    );
+    expect(hasTable("todos")).toBe(false);
+    expect(await fs.readFile(folder("todo", "unfiled.json"), "utf8")).toBe(unfiled);
   });
 
-  it('keeps the rows and says so when the tables cannot be dropped, never throwing', async () => {
+  it("keeps the rows and says so when the tables cannot be dropped, never throwing", async () => {
     seedTodos();
     // The drop is the move's only transaction.
-    const spy = jest.spyOn(dbs.db, 'transaction').mockImplementationOnce((() =>
-      () => {
-        throw new Error('database is locked');
-      }) as never);
+    const spy = jest.spyOn(dbs.db, "transaction").mockImplementationOnce((() => () => {
+      throw new Error("database is locked");
+    }) as never);
     await expect(moves.run()).resolves.toBeUndefined();
     spy.mockRestore();
-    expect(hasTable('todos')).toBe(true);
-    expect(logged).toContainEqual(
-      expect.objectContaining({ level: 'warn', event: 'app-data.move.failed' }),
-    );
+    expect(hasTable("todos")).toBe(true);
+    expect(logged).toContainEqual(expect.objectContaining({ level: "warn", event: "app-data.move.failed" }));
 
     await moves.run();
-    expect(hasTable('todos')).toBe(false);
+    expect(hasTable("todos")).toBe(false);
   });
 
-  it('sets the tables aside once the app has written a planned file since, recreating nothing', async () => {
+  it("sets the tables aside once the app has written a planned file since, recreating nothing", async () => {
     seedTodos();
     await moves.run();
     // The tables outlive the move (a crash before the drop, or a restored
@@ -373,28 +339,26 @@ describe('DataMovesService', () => {
     seedTodos();
     gone = false;
     const todoApp = {
-      appId: 'todo',
-      instanceId: 'todo-1',
+      appId: "todo",
+      instanceId: "todo-1",
       windowId: null,
-      groups: ['todo', 'accessories'],
+      groups: ["todo", "accessories"],
     };
-    await data.remove(todoApp, 'data', 'lists/3.json');
-    await data.write(todoApp, 'data', 'unfiled.json', '{"todos":[]}\n');
+    await data.remove(todoApp, "data", "lists/3.json");
+    await data.write(todoApp, "data", "unfiled.json", '{"todos":[]}\n');
     logged = [];
 
     await moves.run();
-    await expect(fs.stat(folder('todo', 'lists/3.json'))).rejects.toThrow();
-    expect(await fs.readFile(folder('todo', 'unfiled.json'), 'utf8')).toBe(
-      '{"todos":[]}\n',
-    );
-    expect(hasTable('todos')).toBe(false);
-    const day = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    await expect(fs.stat(folder("todo", "lists/3.json"))).rejects.toThrow();
+    expect(await fs.readFile(folder("todo", "unfiled.json"), "utf8")).toBe('{"todos":[]}\n');
+    expect(hasTable("todos")).toBe(false);
+    const day = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     expect(hasTable(`todos_premove_${day}`)).toBe(true);
     expect(hasTable(`todo_lists_premove_${day}`)).toBe(true);
     expect(logged).toEqual([
       expect.objectContaining({
-        level: 'warn',
-        event: 'app-data.move.set-aside',
+        level: "warn",
+        event: "app-data.move.set-aside",
       }),
     ]);
 
@@ -403,10 +367,10 @@ describe('DataMovesService', () => {
     expect(logged).toEqual([]);
   });
 
-  it('adopts a file it wrote whose mode row a crash lost, and finishes', async () => {
+  it("adopts a file it wrote whose mode row a crash lost, and finishes", async () => {
     seedTodos();
     await moves.run();
-    const unfiled = folder('todo', 'unfiled.json');
+    const unfiled = folder("todo", "unfiled.json");
     dbs.db.exec(`
       CREATE TABLE todo_lists (id INTEGER PRIMARY KEY, name TEXT, position INTEGER);
       CREATE TABLE todos (id INTEGER PRIMARY KEY, text TEXT, completed INTEGER,
@@ -417,16 +381,16 @@ describe('DataMovesService', () => {
     modes.remove(unfiled);
     expect(modes.stat(unfiled)).toBeNull();
     await moves.run();
-    expect(hasTable('todos')).toBe(false);
+    expect(hasTable("todos")).toBe(false);
     expect(modes.stat(unfiled)).toEqual({
-      owner: 'todo',
-      group: 'todo',
+      owner: "todo",
+      group: "todo",
       mode: 0o600,
     });
   });
 
-  it('keeps the rows when a file would pass the size limit, and says so', async () => {
-    const big = 'x'.repeat(260);
+  it("keeps the rows when a file would pass the size limit, and says so", async () => {
+    const big = "x".repeat(260);
     const insert = dbs.db.prepare(
       "INSERT INTO todos (text, completed, position, created_at, updated_at) VALUES (?, 0, ?, '', '')",
     );
@@ -435,10 +399,8 @@ describe('DataMovesService', () => {
       for (let i = 0; i < 20_000; i++) insert.run(big, i + 1);
     })();
     await moves.run();
-    expect(hasTable('todos')).toBe(true);
-    expect(logged).toContainEqual(
-      expect.objectContaining({ level: 'warn', event: 'app-data.move.failed' }),
-    );
-    await expect(fs.stat(folder('todo', 'unfiled.json'))).rejects.toThrow();
+    expect(hasTable("todos")).toBe(true);
+    expect(logged).toContainEqual(expect.objectContaining({ level: "warn", event: "app-data.move.failed" }));
+    await expect(fs.stat(folder("todo", "unfiled.json"))).rejects.toThrow();
   });
 });

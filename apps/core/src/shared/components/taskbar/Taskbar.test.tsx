@@ -1,31 +1,31 @@
 // @vitest-environment jsdom
-import { act } from 'react'
-import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { focusIntoWindowSoon, openApp } = vi.hoisted(() => ({
   focusIntoWindowSoon: vi.fn(),
   openApp: vi.fn<(appId: string) => string>(),
-}))
-vi.mock('../window/focusIntoWindow', () => ({ focusIntoWindowSoon }))
-vi.mock('../../intents/openApp', () => ({ openApp }))
+}));
+vi.mock("../window/focusIntoWindow", () => ({ focusIntoWindowSoon }));
+vi.mock("../../intents/openApp", () => ({ openApp }));
 // The registry is the composition root (every add-on); the taskbar needs it
 // only for icons.
-vi.mock('../../registry/registry', () => ({ APP_REGISTRY: [] }))
-vi.mock('./Tray', () => ({ Tray: () => null }))
-vi.mock('./WorkspacePips', () => ({ WorkspacePips: () => null }))
-vi.mock('../brand/Logo', () => ({ Logo: () => null }))
+vi.mock("../../registry/registry", () => ({ APP_REGISTRY: [] }));
+vi.mock("./Tray", () => ({ Tray: () => null }));
+vi.mock("./WorkspacePips", () => ({ WorkspacePips: () => null }));
+vi.mock("../brand/Logo", () => ({ Logo: () => null }));
 // Start renders one item that launches 'notepad', which is enough to drive
 // the taskbar's launch path.
-vi.mock('./StartMenu', () => ({
+vi.mock("./StartMenu", () => ({
   StartMenu: ({ onOpenApp }: { onOpenApp: (appId: string) => void }) => (
-    <button onClick={() => onOpenApp('notepad')}>Start: Notepad</button>
+    <button onClick={() => onOpenApp("notepad")}>Start: Notepad</button>
   ),
-}))
+}));
 
-import { useWindowStore, type WindowInstance } from '../../store/windowStore'
-import { Taskbar } from './Taskbar'
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+import { useWindowStore, type WindowInstance } from "../../store/windowStore";
+import { Taskbar } from "./Taskbar";
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /**
  * Raising a window from its task button moves the keyboard into it;
@@ -35,7 +35,7 @@ import { Taskbar } from './Taskbar'
 function win(id: string, z: number, over: Partial<WindowInstance> = {}): WindowInstance {
   return {
     id,
-    appId: 'notepad',
+    appId: "notepad",
     title: `Window ${id}`,
     workspaceId: 1,
     isVisible: true,
@@ -44,76 +44,75 @@ function win(id: string, z: number, over: Partial<WindowInstance> = {}): WindowI
     size: { width: 400, height: 300 },
     zIndex: z,
     ...over,
-  }
+  };
 }
 
-let container: HTMLDivElement
-let root: Root
+let container: HTMLDivElement;
+let root: Root;
 
 const click = (label: string) => {
-  const button = [...container.querySelectorAll('button')].find(
-    (b) =>
-      b.title === label || b.getAttribute('aria-label') === label || b.textContent?.trim() === label
-  )
-  if (!button) throw new Error(`No button "${label}" in: ${container.textContent}`)
+  const button = [...container.querySelectorAll("button")].find(
+    (b) => b.title === label || b.getAttribute("aria-label") === label || b.textContent?.trim() === label,
+  );
+  if (!button) throw new Error(`No button "${label}" in: ${container.textContent}`);
   act(() => {
-    button.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-  })
-}
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+};
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  vi.clearAllMocks();
   useWindowStore.setState({
-    windows: [win('a', 1), win('b', 2), win('c', 3, { isVisible: false })],
+    windows: [win("a", 1), win("b", 2), win("c", 3, { isVisible: false })],
     activeWorkspace: 1,
     nextZIndex: 4,
-  })
-  container = document.createElement('div')
-  document.body.appendChild(container)
-  root = createRoot(container)
-  act(() => root.render(<Taskbar />))
-})
+  });
+  container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+  act(() => root.render(<Taskbar />));
+});
 
 afterEach(() => {
-  act(() => root.unmount())
-  container.remove()
-})
+  act(() => root.unmount());
+  container.remove();
+});
 
 const top = () =>
   useWindowStore
     .getState()
     .windows.filter((w) => w.isVisible)
-    .sort((x, y) => y.zIndex - x.zIndex)[0]?.id
+    .sort((x, y) => y.zIndex - x.zIndex)[0]?.id;
 
-describe('Taskbar activation', () => {
-  it('raises a background window and moves focus into it', () => {
-    click('Window a')
-    expect(top()).toBe('a')
-    expect(focusIntoWindowSoon).toHaveBeenCalledExactlyOnceWith('a')
-  })
+describe("Taskbar activation", () => {
+  it("raises a background window and moves focus into it", () => {
+    click("Window a");
+    expect(top()).toBe("a");
+    expect(focusIntoWindowSoon).toHaveBeenCalledExactlyOnceWith("a");
+  });
 
-  it('restores a minimised window and moves focus into it', () => {
-    click('Window c')
-    const c = useWindowStore.getState().windows.find((w) => w.id === 'c')
-    expect(c?.isVisible).toBe(true)
-    expect(top()).toBe('c')
-    expect(focusIntoWindowSoon).toHaveBeenCalledExactlyOnceWith('c')
-  })
+  it("restores a minimised window and moves focus into it", () => {
+    click("Window c");
+    const c = useWindowStore.getState().windows.find((w) => w.id === "c");
+    expect(c?.isVisible).toBe(true);
+    expect(top()).toBe("c");
+    expect(focusIntoWindowSoon).toHaveBeenCalledExactlyOnceWith("c");
+  });
 
-  it('minimises the focused window and leaves focus where it is', () => {
-    click('Window b')
-    const b = useWindowStore.getState().windows.find((w) => w.id === 'b')
-    expect(b?.isVisible).toBe(false)
-    expect(focusIntoWindowSoon).not.toHaveBeenCalled()
-  })
+  it("minimises the focused window and leaves focus where it is", () => {
+    click("Window b");
+    const b = useWindowStore.getState().windows.find((w) => w.id === "b");
+    expect(b?.isVisible).toBe(false);
+    expect(focusIntoWindowSoon).not.toHaveBeenCalled();
+  });
 
-  it('launches from Start through openApp, which moves the keyboard itself', () => {
+  it("launches from Start through openApp, which moves the keyboard itself", () => {
     // openApp gives a window it raises the keyboard (openAppKeyboard.test.tsx);
     // the taskbar adds no second move of its own.
-    openApp.mockReturnValue('a')
-    click('Start')
-    click('Start: Notepad')
-    expect(openApp).toHaveBeenCalledExactlyOnceWith('notepad')
-    expect(focusIntoWindowSoon).not.toHaveBeenCalled()
-  })
-})
+    openApp.mockReturnValue("a");
+    click("Start");
+    click("Start: Notepad");
+    expect(openApp).toHaveBeenCalledExactlyOnceWith("notepad");
+    expect(focusIntoWindowSoon).not.toHaveBeenCalled();
+  });
+});

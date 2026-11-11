@@ -1,6 +1,6 @@
-import { Ban, Settings } from 'lucide-react'
-import { Button } from '@imbatranim/ui'
-import { openApp } from '../../shared/intents/openApp'
+import { Ban, Settings } from "lucide-react";
+import { Button } from "@imbatranim/ui";
+import { openApp } from "../../shared/intents/openApp";
 
 /**
  * What a window shows instead of a marketplace app that cannot run on this
@@ -30,11 +30,11 @@ export function RefusalPanel({ appName, reason }: { appName: string; reason: str
         className="gap-1"
         // The click still bubbles to the window root, which leaves Settings in
         // front because the click raised it.
-        onClick={() => openApp('settings')}
+        onClick={() => openApp("settings")}
       >
         <Settings size={12} strokeWidth={2} />
         Open Settings
       </Button>
     </div>
-  )
+  );
 }

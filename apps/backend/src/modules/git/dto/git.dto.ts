@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform, Type } from "class-transformer";
 import {
   ArrayNotEmpty,
   IsArray,
@@ -10,7 +10,7 @@ import {
   Max,
   MaxLength,
   Min,
-} from 'class-validator';
+} from "class-validator";
 
 /**
  * All git routes point at ONE repo, identified the same way the file manager
@@ -47,7 +47,7 @@ export class LogQueryDto extends RepoRefDto {
 export class DiffQueryDto extends RepoRefDto {
   // Accept the common truthy string encodings for a query-string boolean.
   @IsOptional()
-  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @Transform(({ value }) => value === true || value === "true" || value === "1")
   @IsBoolean()
   staged?: boolean;
 

@@ -1,16 +1,10 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { spawn, type ChildProcess } from 'child_process';
-import { randomUUID } from 'crypto';
-import { request } from 'http';
-import { createServer } from 'net';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, ServiceUnavailableException } from "@nestjs/common";
+import { spawn, type ChildProcess } from "child_process";
+import { randomUUID } from "crypto";
+import { request } from "http";
+import { createServer } from "net";
 
-import { LOG_TAIL_BYTES } from './run-step';
+import { LOG_TAIL_BYTES } from "./run-step";
 
 /** The ports app servers are given, on 127.0.0.1. Never published by the image. */
 export const PORT_FIRST = 41000;
@@ -40,9 +34,7 @@ export interface ServerSpec {
 }
 
 export type ServerStatus =
-  | { state: 'stopped' }
-  | { state: 'starting' | 'up'; port: number }
-  | { state: 'crashed'; reason: string };
+  { state: "stopped" } | { state: "starting" | "up"; port: number } | { state: "crashed"; reason: string };
 
 interface Running {
   /** The descriptor's id: a suite's apps share its one server. */
@@ -50,7 +42,7 @@ interface Running {
   spec: ServerSpec;
   port: number;
   child: ChildProcess | null;
-  state: 'starting' | 'up' | 'crashed';
+  state: "starting" | "up" | "crashed";
   reason?: string;
   ready: Promise<void>;
   /** Lease id → expiry. One per open window of any of the descriptor's apps. */
@@ -99,9 +91,9 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
 
   status(id: string): ServerStatus {
     const r = this.running.get(id);
-    if (!r) return { state: 'stopped' };
-    if (r.state === 'crashed') {
-      return { state: 'crashed', reason: r.reason ?? 'crashed' };
+    if (!r) return { state: "stopped" };
+    if (r.state === "crashed") {
+      return { state: "crashed", reason: r.reason ?? "crashed" };
     }
     return { state: r.state, port: r.port };
   }
@@ -109,33 +101,27 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
   /** The port of a server that is up, for the proxy. */
   portFor(id: string): number | null {
     const r = this.running.get(id);
-    return r && r.state === 'up' ? r.port : null;
+    return r && r.state === "up" ? r.port : null;
   }
 
   output(id: string): string {
-    return this.running.get(id)?.output.toString('utf8') ?? '';
+    return this.running.get(id)?.output.toString("utf8") ?? "";
   }
 
   /**
    * Claim the app's server for a window: start it if it is not running and
    * wait until it answers. Renewing passes the lease back.
    */
-  async acquire(
-    id: string,
-    spec: () => ServerSpec,
-    lease?: string,
-  ): Promise<{ lease: string }> {
+  async acquire(id: string, spec: () => ServerSpec, lease?: string): Promise<{ lease: string }> {
     let r = this.running.get(id);
-    if (r?.state === 'crashed') {
+    if (r?.state === "crashed") {
       // Asked for again after giving up: one more honest try.
       this.running.delete(id);
       r = undefined;
     }
     if (!r) {
       // One that crashed for good holds no process, so no slot.
-      const live = [...this.running.values()].filter(
-        (x) => x.state !== 'crashed',
-      );
+      const live = [...this.running.values()].filter((x) => x.state !== "crashed");
       if (live.length >= MAX_SERVERS) {
         throw new ServiceUnavailableException(
           `${MAX_SERVERS} app servers are running already; close one of those apps first`,
@@ -148,9 +134,7 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
     try {
       await r.ready;
     } catch (err) {
-      throw new ServiceUnavailableException(
-        err instanceof Error ? err.message : 'The app server did not start',
-      );
+      throw new ServiceUnavailableException(err instanceof Error ? err.message : "The app server did not start");
     }
     return { lease: id_ };
   }
@@ -184,7 +168,7 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
       for (const [lease, expiry] of r.leases) {
         if (expiry <= now) r.leases.delete(lease);
       }
-      if (r.state === 'crashed') continue;
+      if (r.state === "crashed") continue;
       if (r.leases.size === 0 && r.sockets === 0) {
         this.logger.log(`Stopping ${r.id}'s server: no window holds it`);
         void this.stop(r.id);
@@ -201,7 +185,7 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
       spec,
       port,
       child: null,
-      state: 'starting',
+      state: "starting",
       ready: Promise.resolve(),
       leases: new Map(),
       sockets: 0,
@@ -216,11 +200,11 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
   }
 
   private spawn(r: Running): void {
-    r.state = 'starting';
+    r.state = "starting";
     const env: NodeJS.ProcessEnv = {
       ...r.spec.env,
       [r.spec.portEnv]: String(r.port),
-      HOST: '127.0.0.1',
+      HOST: "127.0.0.1",
       NODE_OPTIONS: `--max-old-space-size=${MAX_OLD_SPACE_MB}`,
     };
     let child: ChildProcess;
@@ -229,10 +213,10 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
         cwd: r.spec.cwd,
         env,
         detached: true,
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: ["ignore", "pipe", "pipe"],
       });
     } catch (err) {
-      r.state = 'crashed';
+      r.state = "crashed";
       r.reason = (err as Error).message;
       r.ready = Promise.reject(new Error(r.reason));
       r.ready.catch(() => undefined);
@@ -245,16 +229,16 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
         r.output = r.output.subarray(r.output.length - LOG_TAIL_BYTES);
       }
     };
-    child.stdout?.on('data', keep);
-    child.stderr?.on('data', keep);
+    child.stdout?.on("data", keep);
+    child.stderr?.on("data", keep);
 
     let exited = false;
     const exit = new Promise<string>((resolve) => {
-      child.on('error', (err) => {
+      child.on("error", (err) => {
         exited = true;
         resolve(err.message);
       });
-      child.on('exit', (code, signal) => {
+      child.on("exit", (code, signal) => {
         exited = true;
         resolve(`exited with ${code ?? signal}`);
       });
@@ -265,16 +249,14 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
       while (Date.now() < deadline) {
         if (exited || r.stopping) break;
         if (await answers(r.port, r.spec.health)) {
-          r.state = 'up';
+          r.state = "up";
           return;
         }
         await new Promise((res) => setTimeout(res, 250));
       }
       if (!exited && !r.stopping) {
         void killGroup(child);
-        throw new Error(
-          `The server did not answer ${r.spec.health} within ${HEALTH_TIMEOUT_MS / 1000} s`,
-        );
+        throw new Error(`The server did not answer ${r.spec.health} within ${HEALTH_TIMEOUT_MS / 1000} s`);
       }
       throw new Error(`The server ${await exit} before it was ready`);
     })();
@@ -288,12 +270,12 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
       r.crashes = [...r.crashes.filter((t) => now - t < CRASH_WINDOW_MS), now];
       this.logger.warn(`${r.id}'s server ${why}`);
       if (r.crashes.length >= MAX_CRASHES) {
-        r.state = 'crashed';
+        r.state = "crashed";
         r.reason = `It crashed ${MAX_CRASHES} times in ${CRASH_WINDOW_MS / 60_000} minutes (last: ${why}); not restarting it`;
         return;
       }
       const delay = Math.min(30_000, 1000 * 2 ** (r.crashes.length - 1));
-      r.state = 'starting';
+      r.state = "starting";
       r.restartTimer = setTimeout(() => {
         r.restartTimer = null;
         if (!r.stopping && this.running.get(r.id) === r) this.spawn(r);
@@ -312,30 +294,27 @@ export class MarketplaceServers implements OnModuleInit, OnModuleDestroy {
       if (taken.has(port)) continue;
       if (await isFree(port)) return port;
     }
-    throw new ServiceUnavailableException('No free port for the app server');
+    throw new ServiceUnavailableException("No free port for the app server");
   }
 }
 
 function isFree(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const server = createServer();
-    server.once('error', () => resolve(false));
-    server.listen(port, '127.0.0.1', () => server.close(() => resolve(true)));
+    server.once("error", () => resolve(false));
+    server.listen(port, "127.0.0.1", () => server.close(() => resolve(true)));
   });
 }
 
 /** Any HTTP answer below 500 counts: the server is listening and sane. */
 function answers(port: number, path: string): Promise<boolean> {
   return new Promise((resolve) => {
-    const req = request(
-      { host: '127.0.0.1', port, path, method: 'GET', timeout: 2000 },
-      (res) => {
-        res.resume();
-        resolve((res.statusCode ?? 500) < 500);
-      },
-    );
-    req.on('timeout', () => req.destroy());
-    req.on('error', () => resolve(false));
+    const req = request({ host: "127.0.0.1", port, path, method: "GET", timeout: 2000 }, (res) => {
+      res.resume();
+      resolve((res.statusCode ?? 500) < 500);
+    });
+    req.on("timeout", () => req.destroy());
+    req.on("error", () => resolve(false));
     req.end();
   });
 }
@@ -352,12 +331,12 @@ async function killGroup(child: ChildProcess | null): Promise<void> {
       return false;
     }
   };
-  if (!signal('SIGTERM')) return;
+  if (!signal("SIGTERM")) return;
   const deadline = Date.now() + STOP_GRACE_MS;
   while (Date.now() < deadline) {
     await new Promise((res) => setTimeout(res, 100));
     // Signal 0: is anyone in the group left?
     if (!signal(0)) return;
   }
-  signal('SIGKILL');
+  signal("SIGKILL");
 }

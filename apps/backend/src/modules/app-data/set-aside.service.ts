@@ -1,15 +1,15 @@
-import { Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from "@nestjs/common";
 
-import { execFile } from 'child_process';
-import * as fs from 'fs/promises';
-import { tmpdir } from 'os';
-import { dirname, join } from 'path';
-import { promisify } from 'util';
+import { execFile } from "child_process";
+import * as fs from "fs/promises";
+import { tmpdir } from "os";
+import { dirname, join } from "path";
+import { promisify } from "util";
 
-import { DbService } from '../../db/db.service';
-import { FilesService } from '../files/files.service';
-import { LogService } from '../logs/log.service';
-import { DataMovesService } from './data-moves.service';
+import { DbService } from "../../db/db.service";
+import { FilesService } from "../files/files.service";
+import { LogService } from "../logs/log.service";
+import { DataMovesService } from "./data-moves.service";
 
 const execFileAsync = promisify(execFile);
 
@@ -24,7 +24,7 @@ const TAR_TIMEOUT_MS = 60_000;
 export const SET_ASIDE_TABLE =
   /^(todos|todo_lists|bookmark_links|bookmark_groups|git_recent_repos)_premove_(\d{8})(?:_(\d+))?$/;
 
-const README_FILE = 'README.txt';
+const README_FILE = "README.txt";
 const PARTIAL_NOTE = `Some apps have more than one folder for the same day. Their tables were set
 aside apart, so each folder holds only the tables that were set aside with it:
 a todo can sit in unfiled.json while the list it belonged to is in another
@@ -32,7 +32,7 @@ folder. Look in the sibling folders (2026-11-09.1 beside 2026-11-09).
 `;
 
 /** Which set-aside tables the owner has downloaded, beside the system log. */
-const DOWNLOADED_FILE = join('.imbatranim', 'set-aside-downloads.json');
+const DOWNLOADED_FILE = join(".imbatranim", "set-aside-downloads.json");
 
 /**
  * One set: the tables one move set aside together, found by their day and
@@ -84,16 +84,13 @@ export class SetAsideService {
    * own write (the jail, the atomic rename over a file the Save dialog agreed
    * to replace). 404 when nothing is set aside.
    */
-  download(
-    root: string,
-    path: string,
-  ): Promise<{ path: string; files: number }> {
+  download(root: string, path: string): Promise<{ path: string; files: number }> {
     return this.moves.queued(async () => {
       const { apps, sets } = await this.read();
       if (sets.length === 0) {
-        throw new NotFoundException('No older data is set aside');
+        throw new NotFoundException("No older data is set aside");
       }
-      const staging = await fs.mkdtemp(join(tmpdir(), 'imb-old-data-'));
+      const staging = await fs.mkdtemp(join(tmpdir(), "imb-old-data-"));
       try {
         let count = 0;
         const folders = new Set<string>();
@@ -101,10 +98,7 @@ export class SetAsideService {
           const dir = join(staging, set.folder, set.appId);
           await fs.mkdir(dir, { recursive: true, mode: 0o700 });
           folders.add(set.folder);
-          const planned = await this.moves.filesFrom(
-            set.appId,
-            (table) => set.tables[table] ?? null,
-          );
+          const planned = await this.moves.filesFrom(set.appId, (table) => set.tables[table] ?? null);
           for (const [rel, content] of planned) {
             const abs = join(dir, rel);
             await fs.mkdir(dirname(abs), { recursive: true, mode: 0o700 });
@@ -117,28 +111,23 @@ export class SetAsideService {
         // folder may hold only some of that move's tables (todos without
         // their lists): the archive says so.
         const notes: string[] = [];
-        if (
-          new Set(sets.map((s) => `${s.appId}/${s.folder.split('.')[0]}`))
-            .size < sets.length
-        ) {
+        if (new Set(sets.map((s) => `${s.appId}/${s.folder.split(".")[0]}`)).size < sets.length) {
           await fs.writeFile(join(staging, README_FILE), PARTIAL_NOTE, {
             mode: 0o600,
           });
           notes.push(README_FILE);
         }
-        const archive = join(staging, 'old-data.tar.gz');
+        const archive = join(staging, "old-data.tar.gz");
         // Named folders, not `.`: members carry no `./` prefix, and the
         // archive never lists itself.
-        await execFileAsync(
-          'tar',
-          ['-czf', archive, '-C', staging, ...[...folders].sort(), ...notes],
-          { timeout: TAR_TIMEOUT_MS },
-        );
+        await execFileAsync("tar", ["-czf", archive, "-C", staging, ...[...folders].sort(), ...notes], {
+          timeout: TAR_TIMEOUT_MS,
+        });
         const entry = await this.files.uploadFile(root, path, archive);
         await this.markDownloaded(sets);
         this.record(
-          'app-data.set-aside.downloaded',
-          `The older data of ${names(apps)} was saved to ${entry.path} (${count} ${count === 1 ? 'file' : 'files'}). It stays set aside until it is cleaned out.`,
+          "app-data.set-aside.downloaded",
+          `The older data of ${names(apps)} was saved to ${entry.path} (${count} ${count === 1 ? "file" : "files"}). It stays set aside until it is cleaned out.`,
         );
         return { path: entry.path, files: count };
       } finally {
@@ -160,8 +149,8 @@ export class SetAsideService {
       })();
       await this.writeDownloaded([]);
       this.record(
-        'app-data.set-aside.cleaned',
-        `The older data of ${names(apps)} was cleaned out: ${dropped.join(', ')}.`,
+        "app-data.set-aside.cleaned",
+        `The older data of ${names(apps)} was cleaned out: ${dropped.join(", ")}.`,
       );
       return { dropped };
     });
@@ -170,7 +159,7 @@ export class SetAsideService {
   private async read(): Promise<SetAsideStatus> {
     const found = this.tables();
     const sets: SetAsideSet[] = [];
-    const apps: SetAsideStatus['apps'] = [];
+    const apps: SetAsideStatus["apps"] = [];
     for (const move of this.moves.movedTables()) {
       // Grouped by day and number: one move's tables set aside together. When
       // the numbers differ on a day but each table appears once that day (one
@@ -183,15 +172,10 @@ export class SetAsideService {
         bases.set(t.base, (bases.get(t.base) ?? 0) + 1);
         perDay.set(t.day, bases);
       }
-      const byKey = new Map<
-        string,
-        { day: string; n: number; tables: Record<string, string> }
-      >();
+      const byKey = new Map<string, { day: string; n: number; tables: Record<string, string> }>();
       for (const t of found) {
         if (!move.tables.includes(t.base)) continue;
-        const once = [...(perDay.get(t.day)?.values() ?? [])].every(
-          (c) => c === 1,
-        );
+        const once = [...(perDay.get(t.day)?.values() ?? [])].every((c) => c === 1);
         const key = once ? t.day : `${t.day}_${t.n}`;
         const group = byKey.get(key) ?? { day: t.day, n: t.n, tables: {} };
         group.n = Math.min(group.n, t.n);
@@ -200,9 +184,7 @@ export class SetAsideService {
       }
       if (byKey.size === 0) continue;
       apps.push({ appId: move.appId, name: move.name });
-      const groups = [...byKey.values()].sort((a, b) =>
-        a.day === b.day ? a.n - b.n : a.day < b.day ? -1 : 1,
-      );
+      const groups = [...byKey.values()].sort((a, b) => (a.day === b.day ? a.n - b.n : a.day < b.day ? -1 : 1));
       // The first set of a day is the day's folder; later ones are numbered
       // like logrotate's: 2026-11-09, 2026-11-09.1, 2026-11-09.2.
       const seen = new Map<string, number>();
@@ -228,9 +210,7 @@ export class SetAsideService {
   /** The set-aside tables in the database now, parsed. */
   private tables(): { name: string; base: string; day: string; n: number }[] {
     if (this.dbs.migrationFailure || !this.dbs.db?.open) return [];
-    const rows = this.dbs.db
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
-      .all() as { name: string }[];
+    const rows = this.dbs.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[];
     const out: { name: string; base: string; day: string; n: number }[] = [];
     for (const { name } of rows) {
       const m = SET_ASIDE_TABLE.exec(name);
@@ -241,19 +221,15 @@ export class SetAsideService {
   }
 
   private async downloadedPath(): Promise<string> {
-    const { rootDir } = await this.files.resolveSafe('home', '');
+    const { rootDir } = await this.files.resolveSafe("home", "");
     return join(rootDir, DOWNLOADED_FILE);
   }
 
   private async readDownloaded(): Promise<Set<string>> {
     try {
-      const raw = await fs.readFile(await this.downloadedPath(), 'utf8');
+      const raw = await fs.readFile(await this.downloadedPath(), "utf8");
       const doc = JSON.parse(raw) as { tables?: unknown };
-      return new Set(
-        Array.isArray(doc.tables)
-          ? doc.tables.filter((t): t is string => typeof t === 'string')
-          : [],
-      );
+      return new Set(Array.isArray(doc.tables) ? doc.tables.filter((t): t is string => typeof t === "string") : []);
     } catch {
       return new Set();
     }
@@ -279,7 +255,7 @@ export class SetAsideService {
 
   private record(event: string, message: string): void {
     try {
-      this.logs?.record('info', event, message);
+      this.logs?.record("info", event, message);
     } catch {
       // The log table is the casualty; the download or the drop is done.
     }
@@ -289,6 +265,6 @@ export class SetAsideService {
 /** "Todo", "Todo and Bookmarks", "Todo, Bookmarks and Git GUI". */
 export function names(apps: readonly { name: string }[]): string {
   const all = apps.map((a) => a.name);
-  if (all.length <= 1) return all.join('');
-  return `${all.slice(0, -1).join(', ')} and ${all[all.length - 1]}`;
+  if (all.length <= 1) return all.join("");
+  return `${all.slice(0, -1).join(", ")} and ${all[all.length - 1]}`;
 }

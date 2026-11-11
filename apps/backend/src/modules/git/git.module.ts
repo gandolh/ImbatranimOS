@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
-import { FilesModule } from '../files/files.module';
-import { GitController } from './git.controller';
-import { GitService } from './git.service';
+import { Module } from "@nestjs/common";
+import { FilesModule } from "../files/files.module";
+import { GitController } from "./git.controller";
+import { GitService } from "./git.service";
 
 /**
  * Imports FilesModule to reuse its exported FilesService — specifically

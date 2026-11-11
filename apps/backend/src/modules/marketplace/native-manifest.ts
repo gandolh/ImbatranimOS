@@ -1,6 +1,6 @@
-import { descriptorSchema, type Descriptor } from './catalog';
-import { MANIFEST_FILE } from './manifest-file';
-import { deriveAppId } from './source-url';
+import { descriptorSchema, type Descriptor } from "./catalog";
+import { MANIFEST_FILE } from "./manifest-file";
+import { deriveAppId } from "./source-url";
 
 /**
  * `imbatranim.json` version 2: an app from a URL that builds from source
@@ -24,13 +24,13 @@ import { deriveAppId } from './source-url';
 export const NATIVE_MANIFEST_VERSION = 2;
 
 /** What the OS sets for a URL app, so its manifest may not. */
-const DERIVED_KEYS = ['id', 'source', 'runtime'] as const;
+const DERIVED_KEYS = ["id", "source", "runtime"] as const;
 
 /**
  * The id the catalog's schema checks while the manifest is validated. It is
  * replaced by the derived one before anything else sees the descriptor.
  */
-const PLACEHOLDER_ID = 'url-app';
+const PLACEHOLDER_ID = "url-app";
 
 /** The longest an app id may be (`isAppId`). */
 const MAX_APP_ID = 40;
@@ -42,9 +42,7 @@ export interface NativeSource {
   subdir: string | null;
 }
 
-export type NativeManifestResult =
-  | { ok: true; descriptor: Descriptor }
-  | { ok: false; problem: string };
+export type NativeManifestResult = { ok: true; descriptor: Descriptor } | { ok: false; problem: string };
 
 /**
  * The ids of a URL app's apps. One app (`build.entry`) takes the derived id.
@@ -68,26 +66,22 @@ export function parseNativeManifest(
 ): NativeManifestResult {
   const fail = (where: string, message: string): NativeManifestResult => ({
     ok: false,
-    problem: `${MANIFEST_FILE}: ${where ? `${where}: ` : ''}${message}`,
+    problem: `${MANIFEST_FILE}: ${where ? `${where}: ` : ""}${message}`,
   });
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    return fail('', 'must be a JSON object');
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return fail("", "must be a JSON object");
   }
   const { schemaVersion, ...fields } = raw as Record<string, unknown>;
   if (schemaVersion !== NATIVE_MANIFEST_VERSION) {
-    return fail('schemaVersion', `must be ${NATIVE_MANIFEST_VERSION}`);
+    return fail("schemaVersion", `must be ${NATIVE_MANIFEST_VERSION}`);
   }
   for (const key of DERIVED_KEYS) {
     if (key in fields) {
-      return fail(
-        key,
-        `an app from a URL does not set its ${key}: the OS derives it`,
-      );
+      return fail(key, `an app from a URL does not set its ${key}: the OS derives it`);
     }
   }
   const build = fields.build as Record<string, unknown> | undefined;
-  const suite =
-    !!build && typeof build === 'object' && build.output !== undefined;
+  const suite = !!build && typeof build === "object" && build.output !== undefined;
   const parsed = descriptorSchema(options).safeParse({
     ...fields,
     schemaVersion: suite ? 2 : 1,
@@ -95,11 +89,11 @@ export function parseNativeManifest(
     // The folder is the URL's, already checked against the clone; the
     // catalog's shorter limit on it is not the manifest's business.
     source: { repo: source.repo, ref: source.commit },
-    runtime: 'native',
+    runtime: "native",
   });
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
-    return fail(issue.path.join('.'), issue.message);
+    return fail(issue.path.join("."), issue.message);
   }
   const d = parsed.data;
   const derived = deriveAppId(source.repo, source.subdir);
@@ -110,10 +104,7 @@ export function parseNativeManifest(
   );
   const tooLong = ids.findIndex((id) => id.length > MAX_APP_ID);
   if (tooLong >= 0) {
-    return fail(
-      `apps.${tooLong}.id`,
-      `at most ${MAX_APP_ID - derived.length - 1} characters in an app from a URL`,
-    );
+    return fail(`apps.${tooLong}.id`, `at most ${MAX_APP_ID - derived.length - 1} characters in an app from a URL`);
   }
   return {
     ok: true,

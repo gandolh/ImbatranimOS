@@ -1,17 +1,14 @@
-import { Global, Injectable, Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
-import type { ConfigService } from '@nestjs/config';
+import { Global, Injectable, Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import type { ConfigService } from "@nestjs/config";
 
-import { DbService } from '../../db/db.service';
-import type { Env } from '../../config/env.schema';
-import {
-  LOCAL_SESSION_COOKIE,
-  LocalIdentityService,
-} from '../local-identity/local-identity.service';
-import { AppIdentityGuard } from '../app-identity/app-identity.guard';
-import { AppTokens } from '../app-identity/app-tokens';
-import { SessionGuard } from './identity.guard';
-import { AuthenticationError, type Caller } from './identity.types';
+import { DbService } from "../../db/db.service";
+import type { Env } from "../../config/env.schema";
+import { LOCAL_SESSION_COOKIE, LocalIdentityService } from "../local-identity/local-identity.service";
+import { AppIdentityGuard } from "../app-identity/app-identity.guard";
+import { AppTokens } from "../app-identity/app-tokens";
+import { SessionGuard } from "./identity.guard";
+import { AuthenticationError, type Caller } from "./identity.types";
 
 /**
  * Test fixtures for a guarded app.
@@ -27,7 +24,7 @@ import { AuthenticationError, type Caller } from './identity.types';
  * `local-identity.e2e-spec.ts` covers the real sign-in end to end.
  */
 
-const TEST_TOKEN = 'test-session';
+const TEST_TOKEN = "test-session";
 
 /** The cookie every fixture below signs in with. */
 export const TEST_COOKIE = `${LOCAL_SESSION_COOKIE}=${TEST_TOKEN}`;
@@ -47,11 +44,8 @@ export class FakeIdentityService extends LocalIdentityService {
   constructor() {
     // The real constructor's database and config are only read by the methods
     // this class overrides or that no test using it calls.
-    super(
-      undefined as unknown as DbService,
-      undefined as unknown as ConfigService<Env, true>,
-    );
-    this.signInAs(TEST_TOKEN, 'subject_test');
+    super(undefined as unknown as DbService, undefined as unknown as ConfigService<Env, true>);
+    this.signInAs(TEST_TOKEN, "subject_test");
   }
 
   /** Overridden: there is no environment to read. */
@@ -70,15 +64,11 @@ export class FakeIdentityService extends LocalIdentityService {
     this.sessions.delete(token);
   }
 
-  override authenticate(
-    cookieHeader: string | string[] | undefined,
-  ): Promise<Caller> {
-    const flat = Array.isArray(cookieHeader)
-      ? cookieHeader.join('; ')
-      : (cookieHeader ?? '');
+  override authenticate(cookieHeader: string | string[] | undefined): Promise<Caller> {
+    const flat = Array.isArray(cookieHeader) ? cookieHeader.join("; ") : (cookieHeader ?? "");
     let token: string | undefined;
-    for (const pair of flat.split(';')) {
-      const eq = pair.indexOf('=');
+    for (const pair of flat.split(";")) {
+      const eq = pair.indexOf("=");
       if (eq === -1) continue;
       if (pair.slice(0, eq).trim() !== LOCAL_SESSION_COOKIE) continue;
       const value = pair.slice(eq + 1).trim();
@@ -86,9 +76,7 @@ export class FakeIdentityService extends LocalIdentityService {
     }
 
     const session = token === undefined ? undefined : this.sessions.get(token);
-    return session
-      ? Promise.resolve(session)
-      : Promise.reject(new AuthenticationError('Session is not active'));
+    return session ? Promise.resolve(session) : Promise.reject(new AuthenticationError("Session is not active"));
   }
 }
 
@@ -116,7 +104,7 @@ export class IdentityTestModule {}
  */
 export function makeTestDb(): DbService {
   const config = {
-    get: (key: string) => (key === 'DB_PATH' ? ':memory:' : undefined),
+    get: (key: string) => (key === "DB_PATH" ? ":memory:" : undefined),
   } as unknown as ConfigService<Env, true>;
   const db = new DbService(config);
   db.onModuleInit();

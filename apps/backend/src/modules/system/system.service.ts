@@ -1,22 +1,10 @@
-import {
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  Optional,
-} from '@nestjs/common';
-import * as os from 'os';
-import * as fs from 'fs';
-import * as fsp from 'fs/promises';
-import * as path from 'path';
-import { LogService } from '../logs/log.service';
-import {
-  bytesPerSecond,
-  parseNetDev,
-  toSwapStats,
-  type NetTotals,
-  type SwapStats,
-} from './proc-net';
+import { ForbiddenException, Injectable, Logger, NotFoundException, Optional } from "@nestjs/common";
+import * as os from "os";
+import * as fs from "fs";
+import * as fsp from "fs/promises";
+import * as path from "path";
+import { LogService } from "../logs/log.service";
+import { bytesPerSecond, parseNetDev, toSwapStats, type NetTotals, type SwapStats } from "./proc-net";
 
 export type CpuStats = {
   percent: number;
@@ -145,11 +133,9 @@ const MIN_CPU_WINDOW_MS = 400;
  * Exported for unit tests; the /proc walk itself is environment-dependent but
  * this parser is pure.
  */
-export function parseProcStat(
-  raw: string,
-): { pid: number; comm: string; jiffies: number; rssPages: number } | null {
-  const open = raw.indexOf('(');
-  const close = raw.lastIndexOf(')');
+export function parseProcStat(raw: string): { pid: number; comm: string; jiffies: number; rssPages: number } | null {
+  const open = raw.indexOf("(");
+  const close = raw.lastIndexOf(")");
   if (open < 0 || close < 0 || close < open) return null;
 
   const pid = Number(raw.slice(0, open).trim());
@@ -165,23 +151,13 @@ export function parseProcStat(
   const stime = Number(rest[12]);
   const rssPages = Number(rest[21]);
 
-  if (
-    !Number.isFinite(pid) ||
-    !Number.isFinite(utime) ||
-    !Number.isFinite(stime) ||
-    !Number.isFinite(rssPages)
-  ) {
+  if (!Number.isFinite(pid) || !Number.isFinite(utime) || !Number.isFinite(stime) || !Number.isFinite(rssPages)) {
     return null;
   }
   return { pid, comm, jiffies: utime + stime, rssPages };
 }
 
-const ALLOWED_KILL_SIGNALS: NodeJS.Signals[] = [
-  'SIGTERM',
-  'SIGKILL',
-  'SIGINT',
-  'SIGHUP',
-];
+const ALLOWED_KILL_SIGNALS: NodeJS.Signals[] = ["SIGTERM", "SIGKILL", "SIGINT", "SIGHUP"];
 
 // Cap the process list returned per poll: the UI only renders a sorted table,
 // so returning the whole `ps` output just bloats every payload. Top-N by CPU
@@ -235,8 +211,7 @@ export class SystemService {
     const [one, five, fifteen] = os.loadavg();
     // Rounded to two decimals to match what `uptime` prints; the raw floats carry
     // more precision than the number means.
-    const round = (n: number) =>
-      Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+    const round = (n: number) => (Number.isFinite(n) ? Math.round(n * 100) / 100 : 0);
     return { one: round(one), five: round(five), fifteen: round(fifteen) };
   }
 
@@ -252,7 +227,7 @@ export class SystemService {
   private async getNetStats(): Promise<NetStats> {
     let totals: NetTotals = { rxBytes: 0, txBytes: 0 };
     try {
-      totals = parseNetDev(await fsp.readFile('/proc/net/dev', 'utf8'));
+      totals = parseNetDev(await fsp.readFile("/proc/net/dev", "utf8"));
     } catch (err) {
       // No /proc/net/dev (non-Linux dev machine): report zeros rather than failing
       // the whole stats call, which would blank the entire Overview.
@@ -266,16 +241,8 @@ export class SystemService {
       const elapsed = now - previous.at;
       if (elapsed >= MIN_CPU_WINDOW_MS) {
         this.lastNetRate = {
-          rxPerSec: bytesPerSecond(
-            previous.totals.rxBytes,
-            totals.rxBytes,
-            elapsed,
-          ),
-          txPerSec: bytesPerSecond(
-            previous.totals.txBytes,
-            totals.txBytes,
-            elapsed,
-          ),
+          rxPerSec: bytesPerSecond(previous.totals.rxBytes, totals.rxBytes, elapsed),
+          txPerSec: bytesPerSecond(previous.totals.txBytes, totals.txBytes, elapsed),
         };
         this.lastNetSample = { at: now, totals };
       }
@@ -302,16 +269,9 @@ export class SystemService {
         totalTick += tickDelta;
         // Per-core comes free from the sample that was already being taken; the
         // old code summed it and discarded the detail.
-        next.push(
-          tickDelta <= 0
-            ? 0
-            : Math.round(((tickDelta - idleDelta) / tickDelta) * 1000) / 10,
-        );
+        next.push(tickDelta <= 0 ? 0 : Math.round(((tickDelta - idleDelta) / tickDelta) * 1000) / 10);
       }
-      percent =
-        totalTick <= 0
-          ? this.lastCpuPercent
-          : Math.round(((totalTick - totalIdle) / totalTick) * 1000) / 10;
+      percent = totalTick <= 0 ? this.lastCpuPercent : Math.round(((totalTick - totalIdle) / totalTick) * 1000) / 10;
       perCore = next;
     }
 
@@ -339,9 +299,9 @@ export class SystemService {
     swap: SwapStats;
   }> {
     try {
-      const raw = await fsp.readFile('/proc/meminfo', 'utf8');
+      const raw = await fsp.readFile("/proc/meminfo", "utf8");
       const kv: Record<string, number> = {};
-      for (const line of raw.split('\n')) {
+      for (const line of raw.split("\n")) {
         const m = line.match(/^(\w+):\s+(\d+)\s*kB/);
         if (m) kv[m[1]] = Number(m[2]) * 1024;
       }
@@ -355,9 +315,7 @@ export class SystemService {
         swap: toSwapStats(kv.SwapTotal ?? 0, kv.SwapFree ?? 0),
       };
     } catch (err) {
-      this.logger.warn(
-        `/proc/meminfo unavailable, falling back to os module: ${(err as Error).message}`,
-      );
+      this.logger.warn(`/proc/meminfo unavailable, falling back to os module: ${(err as Error).message}`);
       return {
         memory: this.toMemoryStats(os.totalmem(), os.freemem()),
         swap: toSwapStats(0, 0),
@@ -365,13 +323,9 @@ export class SystemService {
     }
   }
 
-  private toMemoryStats(
-    totalBytes: number,
-    availableBytes: number,
-  ): MemoryStats {
+  private toMemoryStats(totalBytes: number, availableBytes: number): MemoryStats {
     const usedBytes = Math.max(totalBytes - availableBytes, 0);
-    const percent =
-      totalBytes === 0 ? 0 : Math.round((usedBytes / totalBytes) * 1000) / 10;
+    const percent = totalBytes === 0 ? 0 : Math.round((usedBytes / totalBytes) * 1000) / 10;
     return { totalBytes, usedBytes, availableBytes, percent };
   }
 
@@ -384,13 +338,10 @@ export class SystemService {
       // user, matching what `df` reports for a non-root caller.
       const freeBytes = stats.bavail * stats.bsize;
       const usedBytes = Math.max(totalBytes - freeBytes, 0);
-      const percent =
-        totalBytes === 0 ? 0 : Math.round((usedBytes / totalBytes) * 1000) / 10;
+      const percent = totalBytes === 0 ? 0 : Math.round((usedBytes / totalBytes) * 1000) / 10;
       return { path: target, totalBytes, usedBytes, freeBytes, percent };
     } catch (err) {
-      this.logger.warn(
-        `statfs failed for ${target}: ${(err as Error).message}`,
-      );
+      this.logger.warn(`statfs failed for ${target}: ${(err as Error).message}`);
       return {
         path: target,
         totalBytes: 0,
@@ -418,7 +369,7 @@ export class SystemService {
    */
   async getProcesses(): Promise<ProcessInfo[]> {
     try {
-      const entries = await fsp.readdir('/proc');
+      const entries = await fsp.readdir("/proc");
       const pids = entries
         .filter((e) => /^\d+$/.test(e))
         .map(Number)
@@ -438,7 +389,7 @@ export class SystemService {
             // A process can exit between readdir and these reads; that is
             // normal, not an error — skip it.
             [raw, uid] = await Promise.all([
-              fsp.readFile(`/proc/${pid}/stat`, 'utf8'),
+              fsp.readFile(`/proc/${pid}/stat`, "utf8"),
               fsp.stat(`/proc/${pid}`).then((s) => s.uid),
             ]);
           } catch {
@@ -455,11 +406,7 @@ export class SystemService {
           const before = previous?.jiffies.get(pid);
           const cpuPercent =
             before !== undefined && elapsedSec > 0
-              ? Math.max(
-                  0,
-                  ((stat.jiffies - before) / CLOCK_TICKS_PER_SEC / elapsedSec) *
-                    100,
-                )
+              ? Math.max(0, ((stat.jiffies - before) / CLOCK_TICKS_PER_SEC / elapsedSec) * 100)
               : null;
 
           const memBytes = stat.rssPages * PAGE_SIZE_BYTES;
@@ -467,10 +414,8 @@ export class SystemService {
             pid,
             uid,
             name: stat.comm,
-            cpuPercent:
-              cpuPercent === null ? null : Math.round(cpuPercent * 10) / 10,
-            memPercent:
-              totalMem > 0 ? Math.round((memBytes / totalMem) * 1000) / 10 : 0,
+            cpuPercent: cpuPercent === null ? null : Math.round(cpuPercent * 10) / 10,
+            memPercent: totalMem > 0 ? Math.round((memBytes / totalMem) * 1000) / 10 : 0,
             memBytes,
           };
         }),
@@ -489,11 +434,7 @@ export class SystemService {
           // is still unknown, is ordered by something meaningful. `?? -1` keeps a
           // null out of the subtraction — NaN there would make the sort order
           // depend on the input order and on the engine's sort implementation.
-          .sort(
-            (a, b) =>
-              (b.cpuPercent ?? -1) - (a.cpuPercent ?? -1) ||
-              b.memBytes - a.memBytes,
-          )
+          .sort((a, b) => (b.cpuPercent ?? -1) - (a.cpuPercent ?? -1) || b.memBytes - a.memBytes)
           .slice(0, MAX_PROCESSES)
       );
     } catch (err) {
@@ -517,30 +458,23 @@ export class SystemService {
   private getImageVersion(): string {
     if (process.env.IMAGE_VERSION) return process.env.IMAGE_VERSION;
     try {
-      const pkgPath = path.join(process.cwd(), 'package.json');
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as {
+      const pkgPath = path.join(process.cwd(), "package.json");
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")) as {
         version?: string;
       };
-      return pkg.version ?? 'unknown';
+      return pkg.version ?? "unknown";
     } catch {
-      return 'unknown';
+      return "unknown";
     }
   }
 
-  async killProcess(
-    pid: number,
-    signal: NodeJS.Signals = 'SIGTERM',
-  ): Promise<{ pid: number; signaled: boolean }> {
-    const safeSignal = ALLOWED_KILL_SIGNALS.includes(signal)
-      ? signal
-      : 'SIGTERM';
+  async killProcess(pid: number, signal: NodeJS.Signals = "SIGTERM"): Promise<{ pid: number; signaled: boolean }> {
+    const safeSignal = ALLOWED_KILL_SIGNALS.includes(signal) ? signal : "SIGTERM";
     const targetUid = await this.getProcessUid(pid);
-    const ownUid = typeof process.getuid === 'function' ? process.getuid() : 0;
+    const ownUid = typeof process.getuid === "function" ? process.getuid() : 0;
 
     if (targetUid !== ownUid) {
-      throw new ForbiddenException(
-        `Refusing to signal pid ${pid}: owned by a different user`,
-      );
+      throw new ForbiddenException(`Refusing to signal pid ${pid}: owned by a different user`);
     }
 
     // The name is read BEFORE the signal: afterwards /proc/<pid> may be gone,
@@ -551,21 +485,15 @@ export class SystemService {
       process.kill(pid, safeSignal);
     } catch (err) {
       const code = (err as NodeJS.ErrnoException).code;
-      if (code === 'ESRCH')
-        throw new NotFoundException(`No such process: ${pid}`);
+      if (code === "ESRCH") throw new NotFoundException(`No such process: ${pid}`);
       throw err;
     }
 
-    this.logs?.record(
-      'warn',
-      'process.killed',
-      `Sent ${safeSignal} to ${name}`,
-      {
-        pid,
-        name,
-        signal: safeSignal,
-      },
-    );
+    this.logs?.record("warn", "process.killed", `Sent ${safeSignal} to ${name}`, {
+      pid,
+      name,
+      signal: safeSignal,
+    });
     return { pid, signaled: true };
   }
 
@@ -575,7 +503,7 @@ export class SystemService {
   async getProcessUid(pid: number): Promise<number> {
     let raw: string;
     try {
-      raw = await fsp.readFile(`/proc/${pid}/status`, 'utf8');
+      raw = await fsp.readFile(`/proc/${pid}/status`, "utf8");
     } catch {
       throw new NotFoundException(`No such process: ${pid}`);
     }
@@ -590,7 +518,7 @@ export class SystemService {
   /** `Name:` from /proc/<pid>/status, for a log line a human can read. */
   private async processName(pid: number): Promise<string> {
     try {
-      const raw = await fsp.readFile(`/proc/${pid}/status`, 'utf8');
+      const raw = await fsp.readFile(`/proc/${pid}/status`, "utf8");
       return raw.match(/^Name:\s+(.*)$/m)?.[1]?.trim() || `pid ${pid}`;
     } catch {
       return `pid ${pid}`;

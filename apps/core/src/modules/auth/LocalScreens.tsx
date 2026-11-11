@@ -1,8 +1,8 @@
-import { useState, type FormEvent } from 'react'
-import { Button, Input } from '../../shared/components/ui'
-import { AuthShell, FieldHint } from './AuthShell'
-import { errorMessage, localChangePassword, localSetup, localSignIn } from './api/authApi'
-import { useAuthStore } from './store/authStore'
+import { useState, type FormEvent } from "react";
+import { Button, Input } from "../../shared/components/ui";
+import { AuthShell, FieldHint } from "./AuthShell";
+import { errorMessage, localChangePassword, localSetup, localSignIn } from "./api/authApi";
+import { useAuthStore } from "./store/authStore";
 
 /**
  * The machine's own sign-in (the only one since the move off Ward):
@@ -11,42 +11,42 @@ import { useAuthStore } from './store/authStore'
  */
 
 /** Matches the backend's `MIN_PASSWORD_LENGTH`. The backend is what enforces it. */
-const MIN_LENGTH = 10
+const MIN_LENGTH = 10;
 
 export function LocalSetupScreen({ tokenRequired }: { tokenRequired: boolean }) {
-  const refresh = useAuthStore((s) => s.refresh)
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [token, setToken] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const refresh = useAuthStore((s) => s.refresh);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [token, setToken] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const tooShort = password.length > 0 && password.length < MIN_LENGTH
-  const mismatch = confirm.length > 0 && confirm !== password
+  const tooShort = password.length > 0 && password.length < MIN_LENGTH;
+  const mismatch = confirm.length > 0 && confirm !== password;
   const canSubmit =
     !busy &&
     username.trim().length > 0 &&
     password.length >= MIN_LENGTH &&
     confirm === password &&
-    (!tokenRequired || token.length > 0)
+    (!tokenRequired || token.length > 0);
 
   async function submit(e: FormEvent) {
-    e.preventDefault()
-    if (!canSubmit) return
-    setBusy(true)
-    setError(null)
+    e.preventDefault();
+    if (!canSubmit) return;
+    setBusy(true);
+    setError(null);
     try {
       await localSetup({
         username: username.trim(),
         password,
         setupToken: tokenRequired ? token : undefined,
-      })
-      await localSignIn(password)
-      await refresh()
+      });
+      await localSignIn(password);
+      await refresh();
     } catch (err) {
-      setError(errorMessage(err, 'This machine could not be set up.'))
-      setBusy(false)
+      setError(errorMessage(err, "This machine could not be set up."));
+      setBusy(false);
     }
   }
 
@@ -91,43 +91,38 @@ export function LocalSetupScreen({ tokenRequired }: { tokenRequired: boolean }) 
         )}
         <p className="font-content text-on-surface-variant text-[11px]">
           Use at least {MIN_LENGTH} characters.
-          {tokenRequired && ' The setup token is the one whoever installed this machine was given.'}
+          {tokenRequired && " The setup token is the one whoever installed this machine was given."}
         </p>
         {tooShort && <FieldHint>Password must be at least {MIN_LENGTH} characters.</FieldHint>}
         {mismatch && <FieldHint>Passwords do not match.</FieldHint>}
         {error && <FieldHint>{error}</FieldHint>}
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={!canSubmit}
-          className="justify-center py-2"
-        >
-          {busy ? 'Setting up…' : 'Set up and sign in'}
+        <Button type="submit" variant="primary" disabled={!canSubmit} className="justify-center py-2">
+          {busy ? "Setting up…" : "Set up and sign in"}
         </Button>
       </form>
     </AuthShell>
-  )
+  );
 }
 
 export function LocalSignInScreen() {
-  const refresh = useAuthStore((s) => s.refresh)
-  const [password, setPassword] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const refresh = useAuthStore((s) => s.refresh);
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function submit(e: FormEvent) {
-    e.preventDefault()
-    if (busy || !password) return
-    setBusy(true)
-    setError(null)
+    e.preventDefault();
+    if (busy || !password) return;
+    setBusy(true);
+    setError(null);
     try {
-      await localSignIn(password)
-      setPassword('')
-      await refresh()
+      await localSignIn(password);
+      setPassword("");
+      await refresh();
     } catch (err) {
-      setError(errorMessage(err, 'That did not work. Try again.'))
+      setError(errorMessage(err, "That did not work. Try again."));
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
@@ -144,17 +139,12 @@ export function LocalSignInScreen() {
           onChange={(e) => setPassword(e.target.value)}
         />
         {error && <FieldHint>{error}</FieldHint>}
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={busy || !password}
-          className="justify-center py-2"
-        >
-          {busy ? 'Signing in…' : 'Sign in'}
+        <Button type="submit" variant="primary" disabled={busy || !password} className="justify-center py-2">
+          {busy ? "Signing in…" : "Sign in"}
         </Button>
       </form>
     </AuthShell>
-  )
+  );
 }
 
 /**
@@ -162,25 +152,25 @@ export function LocalSignInScreen() {
  * sessions end; this one carries on.
  */
 export function LocalPasswordForm() {
-  const [current, setCurrent] = useState('')
-  const [next, setNext] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function submit(e: FormEvent) {
-    e.preventDefault()
-    if (busy) return
-    setBusy(true)
-    setMessage(null)
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setMessage(null);
     try {
-      await localChangePassword(current, next)
-      setCurrent('')
-      setNext('')
-      setMessage({ ok: true, text: 'Password changed. Other sessions were signed out.' })
+      await localChangePassword(current, next);
+      setCurrent("");
+      setNext("");
+      setMessage({ ok: true, text: "Password changed. Other sessions were signed out." });
     } catch (err) {
-      setMessage({ ok: false, text: errorMessage(err, 'The password was not changed.') })
+      setMessage({ ok: false, text: errorMessage(err, "The password was not changed.") });
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
@@ -209,8 +199,8 @@ export function LocalPasswordForm() {
           <FieldHint>{message.text}</FieldHint>
         ))}
       <Button type="submit" disabled={busy || !current || next.length < MIN_LENGTH}>
-        {busy ? 'Changing…' : 'Change password'}
+        {busy ? "Changing…" : "Change password"}
       </Button>
     </form>
-  )
+  );
 }

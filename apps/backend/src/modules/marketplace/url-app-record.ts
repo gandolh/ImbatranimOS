@@ -1,10 +1,10 @@
-import { posix } from 'path';
-import { z } from 'zod';
+import { posix } from "path";
+import { z } from "zod";
 
-import { isInnerPath, type Descriptor } from './catalog';
-import type { InstalledRow } from './marketplace.service';
-import { parseNativeManifest } from './native-manifest';
-import { deriveAppId, type AppSource } from './source-url';
+import { isInnerPath, type Descriptor } from "./catalog";
+import type { InstalledRow } from "./marketplace.service";
+import { parseNativeManifest } from "./native-manifest";
+import { deriveAppId, type AppSource } from "./source-url";
 
 /**
  * Reading back the database row of an app installed from a URL.
@@ -29,7 +29,7 @@ const subdirSchema = z
   .min(1)
   .max(2000)
   .refine(isInnerPath)
-  .refine((p) => !p.split('/').some((s) => s === '' || s === '.'));
+  .refine((p) => !p.split("/").some((s) => s === "" || s === "."));
 
 const sourceSchema = z
   .object({
@@ -46,12 +46,12 @@ const sourceSchema = z
  * the OS's verified list vouched for it, or the owner said so. `at` is when.
  */
 export interface UrlTrust {
-  by: 'verified' | 'owner';
+  by: "verified" | "owner";
   at: number;
 }
 
 const trustSchema = z.strictObject({
-  by: z.enum(['verified', 'owner']),
+  by: z.enum(["verified", "owner"]),
   at: z.number().int().nonnegative(),
 });
 
@@ -60,13 +60,13 @@ const nativeSourceSchema = sourceSchema.extend({ trust: trustSchema }).strict();
 
 /** The `root` install stores for a subdirectory: normalized, '' for the top. */
 function storedRoot(subdir: string | null): string {
-  if (!subdir) return '';
+  if (!subdir) return "";
   const root = posix.normalize(subdir);
-  return root === '.' ? '' : root;
+  return root === "." ? "" : root;
 }
 
 function json(text: unknown): unknown {
-  if (typeof text !== 'string') return undefined;
+  if (typeof text !== "string") return undefined;
   try {
     return JSON.parse(text) as unknown;
   } catch {
@@ -85,22 +85,12 @@ export function retiredUrlApp(row: InstalledRow): {
   source: AppSource | null;
 } {
   const manifest = json(row.manifest);
-  const named =
-    manifest && typeof manifest === 'object'
-      ? (manifest as Record<string, unknown>).name
-      : undefined;
-  const name =
-    typeof named === 'string' && named.trim() !== ''
-      ? named.trim().slice(0, 60)
-      : String(row.id);
+  const named = manifest && typeof manifest === "object" ? (manifest as Record<string, unknown>).name : undefined;
+  const name = typeof named === "string" && named.trim() !== "" ? named.trim().slice(0, 60) : String(row.id);
   const source = sourceSchema.safeParse(json(row.source));
   return {
     name,
-    source:
-      source.success &&
-      deriveAppId(source.data.repo, source.data.subdir) === row.id
-        ? source.data
-        : null,
+    source: source.success && deriveAppId(source.data.repo, source.data.subdir) === row.id ? source.data : null,
   };
 }
 
@@ -122,38 +112,32 @@ export type NativeUrlRecord =
  * source's folder, and the stored manifest still reads as a descriptor. What
  * the build recorded (`entry`, `entries`) is `recordedBuild`'s to read.
  */
-export function readNativeUrlRow(
-  row: InstalledRow,
-  options: { allowLocalRepos: boolean },
-): NativeUrlRecord {
+export function readNativeUrlRow(row: InstalledRow, options: { allowLocalRepos: boolean }): NativeUrlRecord {
   const damaged = (what: string): NativeUrlRecord => ({
     ok: false,
     damaged: what,
   });
-  if (row.runtime !== 'native' || !URL_APP_ID.test(String(row.id))) {
-    return damaged('id');
+  if (row.runtime !== "native" || !URL_APP_ID.test(String(row.id))) {
+    return damaged("id");
   }
   const stored = nativeSourceSchema.safeParse(json(row.source));
-  if (
-    !stored.success ||
-    deriveAppId(stored.data.repo, stored.data.subdir) !== row.id
-  ) {
-    return damaged('source');
+  if (!stored.success || deriveAppId(stored.data.repo, stored.data.subdir) !== row.id) {
+    return damaged("source");
   }
   const { trust, ...source } = stored.data;
-  if (row.ref !== source.commit) return damaged('commit');
+  if (row.ref !== source.commit) return damaged("commit");
   if (
-    typeof row.build_id !== 'string' ||
+    typeof row.build_id !== "string" ||
     !BUILD_ID.test(row.build_id) ||
     !row.build_id.startsWith(source.commit.slice(0, 12))
   ) {
-    return damaged('build id');
+    return damaged("build id");
   }
-  if (row.root !== storedRoot(source.subdir)) return damaged('folder');
+  if (row.root !== storedRoot(source.subdir)) return damaged("folder");
   const manifest = json(row.manifest);
   const parsed = parseNativeManifest(manifest, source, options);
   if (!parsed.ok || parsed.descriptor.id !== row.id) {
-    return damaged('manifest');
+    return damaged("manifest");
   }
   return { ok: true, descriptor: parsed.descriptor, source, trust, manifest };
 }

@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from "vitest/config";
 
 // Clock's correctness lives in pure functions: the countdown/elapsed rounding
 // asymmetry (format.ts), the alarm firing decision (alarmSchedule.ts) and the
@@ -6,5 +6,5 @@ import { defineConfig } from 'vitest/config'
 // off-by-one that reads fine and behaves wrong, so they are unit-tested rather
 // than eyeballed.
 export default defineConfig({
-  test: { environment: 'node', include: ['src/**/*.test.ts'] },
-})
+  test: { environment: "node", include: ["src/**/*.test.ts"] },
+});

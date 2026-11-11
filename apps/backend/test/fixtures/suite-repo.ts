@@ -1,6 +1,6 @@
-import { execFileSync } from 'child_process';
-import { mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { execFileSync } from "child_process";
+import { mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
 
 /**
  * A two-app suite as a real git repository: one build that
@@ -91,9 +91,9 @@ createServer((req, res) => {
 function buildScript(withBeta: boolean): string {
   return `import { mkdirSync, writeFileSync } from 'fs';
 const files = ${JSON.stringify({
-    'dist/os/shared.mjs': SHARED,
-    'dist/os/alpha/app.mjs': ALPHA,
-    ...(withBeta ? { 'dist/os/beta/app.mjs': BETA } : {}),
+    "dist/os/shared.mjs": SHARED,
+    "dist/os/alpha/app.mjs": ALPHA,
+    ...(withBeta ? { "dist/os/beta/app.mjs": BETA } : {}),
   })};
 for (const [path, text] of Object.entries(files)) {
   mkdirSync(path.split('/').slice(0, -1).join('/'), { recursive: true });
@@ -105,15 +105,15 @@ console.log('built ' + Object.keys(files).length + ' files');
 }
 
 function git(cwd: string, ...args: string[]): string {
-  return execFileSync('git', args, {
+  return execFileSync("git", args, {
     cwd,
-    encoding: 'utf8',
+    encoding: "utf8",
     env: {
       ...process.env,
-      GIT_AUTHOR_NAME: 't',
-      GIT_AUTHOR_EMAIL: 't@example.com',
-      GIT_COMMITTER_NAME: 't',
-      GIT_COMMITTER_EMAIL: 't@example.com',
+      GIT_AUTHOR_NAME: "t",
+      GIT_AUTHOR_EMAIL: "t@example.com",
+      GIT_COMMITTER_NAME: "t",
+      GIT_COMMITTER_EMAIL: "t@example.com",
     },
   }).trim();
 }
@@ -121,17 +121,17 @@ function git(cwd: string, ...args: string[]): string {
 /** Write the repository into the empty (or missing) directory `dir`. */
 export function makeSuiteRepo(dir: string): SuiteRepo {
   mkdirSync(dir, { recursive: true });
-  git(dir, 'init', '-q', '-b', 'main');
-  writeFileSync(join(dir, 'build.mjs'), buildScript(true));
-  writeFileSync(join(dir, 'server.mjs'), SERVER);
-  git(dir, 'add', '.');
-  git(dir, 'commit', '-qm', 'two apps, one build');
-  const whole = git(dir, 'rev-parse', 'HEAD');
-  git(dir, 'checkout', '-q', '-b', 'leave-out-beta');
-  writeFileSync(join(dir, 'build.mjs'), buildScript(false));
-  git(dir, 'commit', '-qam', 'the build forgets beta');
-  const leavesOutBeta = git(dir, 'rev-parse', 'HEAD');
-  git(dir, 'checkout', '-q', 'main');
+  git(dir, "init", "-q", "-b", "main");
+  writeFileSync(join(dir, "build.mjs"), buildScript(true));
+  writeFileSync(join(dir, "server.mjs"), SERVER);
+  git(dir, "add", ".");
+  git(dir, "commit", "-qm", "two apps, one build");
+  const whole = git(dir, "rev-parse", "HEAD");
+  git(dir, "checkout", "-q", "-b", "leave-out-beta");
+  writeFileSync(join(dir, "build.mjs"), buildScript(false));
+  git(dir, "commit", "-qam", "the build forgets beta");
+  const leavesOutBeta = git(dir, "rev-parse", "HEAD");
+  git(dir, "checkout", "-q", "main");
   return { whole, leavesOutBeta };
 }
 
@@ -139,42 +139,38 @@ export function makeSuiteRepo(dir: string): SuiteRepo {
  * The version 2 descriptor for this repository: `suite`, with `suite-alpha`
  * (several windows, opens `.md`) and `suite-beta` (one window).
  */
-export function suiteDescriptor(
-  repo: string,
-  ref: string,
-  extra: Record<string, unknown> = {},
-) {
+export function suiteDescriptor(repo: string, ref: string, extra: Record<string, unknown> = {}) {
   return {
     schemaVersion: 2,
-    id: 'suite',
-    name: 'Suite',
-    description: 'Two apps from one build.',
+    id: "suite",
+    name: "Suite",
+    description: "Two apps from one build.",
     source: { repo, ref },
-    type: 'static',
-    runtime: 'native',
-    build: { command: ['node', 'build.mjs'], output: 'dist/os' },
+    type: "static",
+    runtime: "native",
+    build: { command: ["node", "build.mjs"], output: "dist/os" },
     apps: [
       {
-        id: 'suite-alpha',
-        name: 'Alpha',
-        description: 'Opens Markdown files, in as many windows as you like.',
-        meta: ['fixture'],
-        entry: 'alpha/app.mjs',
+        id: "suite-alpha",
+        name: "Alpha",
+        description: "Opens Markdown files, in as many windows as you like.",
+        meta: ["fixture"],
+        entry: "alpha/app.mjs",
         window: {
           defaultSize: { w: 520, h: 360 },
           minSize: { w: 320, h: 240 },
         },
-        icon: 'file-text',
-        opens: ['md'],
+        icon: "file-text",
+        opens: ["md"],
         multiInstance: true,
-        capabilities: ['fs', 'intents'],
+        capabilities: ["fs", "intents"],
       },
       {
-        id: 'suite-beta',
-        name: 'Beta',
-        description: 'One window.',
-        entry: 'beta/app.mjs',
-        icon: 'table',
+        id: "suite-beta",
+        name: "Beta",
+        description: "One window.",
+        entry: "beta/app.mjs",
+        icon: "table",
         capabilities: [],
       },
     ],

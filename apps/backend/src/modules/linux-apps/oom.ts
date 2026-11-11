@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from "node:fs";
 
 /**
  * Who goes first when the container runs out of memory. On the VPS the
@@ -19,10 +19,7 @@ export const LINUX_APP_OOM_SCORE_ADJ = 1000;
 export const REAPPLY_OOM_SCORE_AFTER_MS = [5_000, 30_000] as const;
 
 /** Raise a process's score; a process already gone is skipped. */
-export function raiseOomScore(
-  pid: number,
-  write: (path: string, data: string) => void = writeFileSync,
-): void {
+export function raiseOomScore(pid: number, write: (path: string, data: string) => void = writeFileSync): void {
   try {
     write(`/proc/${pid}/oom_score_adj`, String(LINUX_APP_OOM_SCORE_ADJ));
   } catch {
@@ -44,10 +41,7 @@ export function parseOomKills(text: string): number | null {
 export class OomKills {
   private seen: number | null;
 
-  constructor(
-    private readonly read: () => string = () =>
-      readFileSync('/sys/fs/cgroup/memory.events', 'utf8'),
-  ) {
+  constructor(private readonly read: () => string = () => readFileSync("/sys/fs/cgroup/memory.events", "utf8")) {
     this.seen = this.count();
   }
 

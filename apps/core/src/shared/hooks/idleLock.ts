@@ -12,92 +12,92 @@
  */
 export type IdleLockDeps = {
   /** Idle period before locking. `null` disables the controller. */
-  timeoutMs: number | null
-  onLock: () => void
+  timeoutMs: number | null;
+  onLock: () => void;
   /** A playing <audio>/<video> holds the lock, like a screensaver inhibitor. */
-  isMediaPlaying: () => boolean
-  now?: () => number
-}
+  isMediaPlaying: () => boolean;
+  now?: () => number;
+};
 
 export type IdleLockController = {
   /** Stamp user activity. Never schedules work — safe to call at pointermove rate. */
-  markActivity: () => void
+  markActivity: () => void;
   /**
    * Re-evaluate immediately (visibilitychange → visible). A background tab's
    * throttled timer may fire late; this locks on time when the tab returns.
    */
-  checkNow: () => void
+  checkNow: () => void;
   /** Change the period (Settings edit mid-countdown). `null` disables. */
-  setTimeoutMs: (ms: number | null) => void
-  dispose: () => void
-}
+  setTimeoutMs: (ms: number | null) => void;
+  dispose: () => void;
+};
 
 export function createIdleLock(deps: IdleLockDeps): IdleLockController {
-  const now = deps.now ?? Date.now
-  let timeoutMs = deps.timeoutMs
-  let lastActivity = now()
-  let timer: ReturnType<typeof setTimeout> | undefined
-  let disposed = false
+  const now = deps.now ?? Date.now;
+  let timeoutMs = deps.timeoutMs;
+  let lastActivity = now();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let disposed = false;
 
   function clearTimer() {
     if (timer !== undefined) {
-      clearTimeout(timer)
-      timer = undefined
+      clearTimeout(timer);
+      timer = undefined;
     }
   }
 
   function arm(delayMs: number) {
-    clearTimer()
-    timer = setTimeout(fire, delayMs)
+    clearTimer();
+    timer = setTimeout(fire, delayMs);
   }
 
   function fire() {
-    timer = undefined
-    if (disposed || timeoutMs === null) return
-    const remaining = lastActivity + timeoutMs - now()
+    timer = undefined;
+    if (disposed || timeoutMs === null) return;
+    const remaining = lastActivity + timeoutMs - now();
     if (remaining > 0) {
       // Activity arrived while the timer was pending — sleep out the remainder.
-      arm(remaining)
-      return
+      arm(remaining);
+      return;
     }
     if (deps.isMediaPlaying()) {
       // Playback counts as continuous activity: stamp and start a fresh period.
-      lastActivity = now()
-      arm(timeoutMs)
-      return
+      lastActivity = now();
+      arm(timeoutMs);
+      return;
     }
-    deps.onLock()
+    deps.onLock();
     // Locking unmounts the desktop (and this controller with it); if the caller
     // keeps it alive anyway, start a fresh period rather than lock-looping.
-    lastActivity = now()
-    arm(timeoutMs)
+    lastActivity = now();
+    arm(timeoutMs);
   }
 
   function start() {
-    lastActivity = now()
-    if (timeoutMs !== null) arm(timeoutMs)
+    lastActivity = now();
+    if (timeoutMs !== null) arm(timeoutMs);
   }
 
-  start()
+  start();
 
   return {
     markActivity: () => {
-      lastActivity = now()
+      lastActivity = now();
     },
     checkNow: () => {
-      if (disposed || timeoutMs === null) return
-      if (lastActivity + timeoutMs - now() <= 0) fire()
+      if (disposed || timeoutMs === null) return;
+      if (lastActivity + timeoutMs - now() <= 0) fire();
     },
     setTimeoutMs: (ms) => {
-      timeoutMs = ms
-      clearTimer()
+      timeoutMs = ms;
+      clearTimer();
       // A changed period measures from now, not from the stale stamp — changing
       // "30 min" to "5 min" after 20 idle minutes should not lock instantly.
-      start()
+      start();
     },
     dispose: () => {
-      disposed = true
-      clearTimer()
+      disposed = true;
+      clearTimer();
     },
-  }
+  };
 }

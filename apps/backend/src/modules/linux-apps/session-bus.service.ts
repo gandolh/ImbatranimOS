@@ -1,14 +1,14 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { spawn } from 'node:child_process';
-import { mkdirSync, rmSync } from 'node:fs';
-import { dirname } from 'node:path';
-import { BUS, DbusConnection } from './dbus/connection';
-import { NOTIFICATIONS, NotificationsServer } from './dbus/notifications';
-import { SETTINGS, APPEARANCE_PREF, SettingsServer } from './dbus/settings';
-import { PrefsService } from '../prefs/prefs.service';
-import { SessionApps } from '../wayland/session-apps';
-import { WaylandGateway } from '../wayland/wayland.gateway';
-import { sessionBusPath } from './session-bus.paths';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { spawn } from "node:child_process";
+import { mkdirSync, rmSync } from "node:fs";
+import { dirname } from "node:path";
+import { BUS, DbusConnection } from "./dbus/connection";
+import { NOTIFICATIONS, NotificationsServer } from "./dbus/notifications";
+import { SETTINGS, APPEARANCE_PREF, SettingsServer } from "./dbus/settings";
+import { PrefsService } from "../prefs/prefs.service";
+import { SessionApps } from "../wayland/session-apps";
+import { WaylandGateway } from "../wayland/wayland.gateway";
+import { sessionBusPath } from "./session-bus.paths";
 
 /** RequestName flag: fail rather than wait in the queue for the name. */
 const DO_NOT_QUEUE = 4;
@@ -17,8 +17,7 @@ const PRIMARY_OWNER = 1;
 /** How long the bus gets to say it's listening. */
 const START_TIMEOUT_MS = 5_000;
 
-const isU32 = (v: unknown): v is number =>
-  typeof v === 'number' && Number.isInteger(v) && v > 0 && v <= 0xffffffff;
+const isU32 = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v > 0 && v <= 0xffffffff;
 
 /**
  * A D-Bus session bus for each desktop session (one tab), and the OS's
@@ -74,16 +73,12 @@ export class SessionBusService implements OnModuleInit {
     try {
       await this.serveNotifications(session, path);
     } catch (e) {
-      this.logger.warn(
-        `Session bus without notifications: ${(e as Error).message}`,
-      );
+      this.logger.warn(`Session bus without notifications: ${(e as Error).message}`);
     }
     try {
       await this.serveSettings(session, path);
     } catch (e) {
-      this.logger.warn(
-        `Session bus without appearance settings: ${(e as Error).message}`,
-      );
+      this.logger.warn(`Session bus without appearance settings: ${(e as Error).message}`);
     }
   }
 
@@ -91,15 +86,9 @@ export class SessionBusService implements OnModuleInit {
   private startDaemon(session: string, path: string): Promise<boolean> {
     return new Promise((resolve) => {
       const child = spawn(
-        'dbus-daemon',
-        [
-          '--session',
-          `--address=unix:path=${path}`,
-          '--nofork',
-          '--nopidfile',
-          '--print-address=1',
-        ],
-        { detached: true, stdio: ['ignore', 'pipe', 'ignore'] },
+        "dbus-daemon",
+        ["--session", `--address=unix:path=${path}`, "--nofork", "--nopidfile", "--print-address=1"],
+        { detached: true, stdio: ["ignore", "pipe", "ignore"] },
       );
       let settled = false;
       const done = (ok: boolean) => {
@@ -109,46 +98,41 @@ export class SessionBusService implements OnModuleInit {
         resolve(ok);
       };
       const timer = setTimeout(() => {
-        this.logger.warn('The session bus did not start in time');
-        child.kill('SIGTERM');
+        this.logger.warn("The session bus did not start in time");
+        child.kill("SIGTERM");
         done(false);
       }, START_TIMEOUT_MS);
-      child.once('error', (e: NodeJS.ErrnoException) => {
-        if (e.code === 'ENOENT') {
+      child.once("error", (e: NodeJS.ErrnoException) => {
+        if (e.code === "ENOENT") {
           // An image without dbus-daemon: apps run without a bus, as before.
           this.unavailable = true;
-          this.logger.warn('No dbus-daemon in this image: no session bus');
+          this.logger.warn("No dbus-daemon in this image: no session bus");
         }
         done(false);
       });
-      child.once('spawn', () => {
+      child.once("spawn", () => {
         // Its group sleeps under the cover screen and ends with the session.
         this.apps.record(session, child.pid!);
-        child.once('exit', () => {
+        child.once("exit", () => {
           this.apps.exited(session, child.pid!);
           done(false);
         });
       });
       // It prints its address once it listens.
-      child.stdout?.once('data', () => done(true));
+      child.stdout?.once("data", () => done(true));
       child.unref();
     });
   }
 
-  private async serveNotifications(
-    session: string,
-    path: string,
-  ): Promise<void> {
+  private async serveNotifications(session: string, path: string): Promise<void> {
     const bus = await DbusConnection.open(path, process.getuid?.() ?? 0);
     const server = new NotificationsServer(
       (m) => bus.signal(m),
       {
-        show: (n) =>
-          this.gateway.sendToTab(session, { type: 'notification', ...n }),
-        close: (id) =>
-          this.gateway.sendToTab(session, { type: 'notification_close', id }),
+        show: (n) => this.gateway.sendToTab(session, { type: "notification", ...n }),
+        close: (id) => this.gateway.sendToTab(session, { type: "notification_close", id }),
       },
-      process.env.IMAGE_VERSION ?? '1',
+      process.env.IMAGE_VERSION ?? "1",
     );
     bus.onMethodCall((call) => server.handle(call));
     bus.onClose(() => {
@@ -158,8 +142,8 @@ export class SessionBusService implements OnModuleInit {
       destination: BUS.name,
       path: BUS.path,
       interface: BUS.interface,
-      member: 'RequestName',
-      signature: 'su',
+      member: "RequestName",
+      signature: "su",
       body: [NOTIFICATIONS.name, DO_NOT_QUEUE],
     });
     if (reply.body[0] !== PRIMARY_OWNER) {
@@ -172,10 +156,7 @@ export class SessionBusService implements OnModuleInit {
   /** Answer the Settings portal with the desktop's mode and accent. */
   private async serveSettings(session: string, path: string): Promise<void> {
     const bus = await DbusConnection.open(path, process.getuid?.() ?? 0);
-    const server = new SettingsServer(
-      (m) => bus.signal(m),
-      this.prefs.get(APPEARANCE_PREF),
-    );
+    const server = new SettingsServer((m) => bus.signal(m), this.prefs.get(APPEARANCE_PREF));
     bus.onMethodCall((call) => server.handle(call));
     bus.onClose(() => {
       if (this.settings.get(session) === server) this.settings.delete(session);
@@ -184,8 +165,8 @@ export class SessionBusService implements OnModuleInit {
       destination: BUS.name,
       path: BUS.path,
       interface: BUS.interface,
-      member: 'RequestName',
-      signature: 'su',
+      member: "RequestName",
+      signature: "su",
       body: [SETTINGS.name, DO_NOT_QUEUE],
     });
     if (reply.body[0] !== PRIMARY_OWNER) {
@@ -197,13 +178,13 @@ export class SessionBusService implements OnModuleInit {
 
   /** The owner closed or clicked a Linux app's notification in the OS. */
   private fromTab(session: string, m: Record<string, unknown>): boolean {
-    if (m.type === 'notification_action') {
-      if (isU32(m.id) && typeof m.key === 'string' && m.key.length <= 64) {
+    if (m.type === "notification_action") {
+      if (isU32(m.id) && typeof m.key === "string" && m.key.length <= 64) {
         this.servers.get(session)?.actionByUser(m.id, m.key);
       }
       return true;
     }
-    if (m.type !== 'notification_closed') return false;
+    if (m.type !== "notification_closed") return false;
     if (isU32(m.id)) this.servers.get(session)?.closedByUser(m.id);
     return true;
   }

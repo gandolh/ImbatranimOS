@@ -1,17 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, RefreshCw } from 'lucide-react'
-import { api } from '../../lib/axios'
-import { Button } from '../../shared/components/ui/Button'
-import { formatUptime } from '../../lib/formatUptime'
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Loader2, RefreshCw } from "lucide-react";
+import { api } from "../../lib/axios";
+import { Button } from "../../shared/components/ui/Button";
+import { formatUptime } from "../../lib/formatUptime";
 
 export type AboutInfo = {
-  hostname: string
-  kernel: string
-  platform: string
-  arch: string
-  uptimeSeconds: number
-  imageVersion: string
-}
+  hostname: string;
+  kernel: string;
+  platform: string;
+  arch: string;
+  uptimeSeconds: number;
+  imageVersion: string;
+};
 
 /**
  * Settings → About this machine.
@@ -29,24 +29,24 @@ export type AboutInfo = {
  */
 /** The bare API call. Plain function, no state — see the effect for why. */
 async function fetchAbout(): Promise<AboutInfo> {
-  const res = await api.get<AboutInfo>('/system/about')
-  return res.data
+  const res = await api.get<AboutInfo>("/system/about");
+  return res.data;
 }
 
-const READ_FAILED = 'Could not read this machine\u2019s details.'
+const READ_FAILED = "Could not read this machine\u2019s details.";
 
 export function AboutMachine({ onVersion }: { onVersion?: (version: string) => void }) {
-  const [info, setInfo] = useState<AboutInfo | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<AboutInfo | null>(null);
+  const [error, setError] = useState<string | null>(null);
   // Starts true: the mount effect fetches immediately, and every setState below
   // happens inside an async callback rather than synchronously in the effect body
   // (which would cascade renders — `react-hooks/set-state-in-effect`).
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(true);
 
-  const onVersionRef = useRef(onVersion)
+  const onVersionRef = useRef(onVersion);
   useEffect(() => {
-    onVersionRef.current = onVersion
-  }, [onVersion])
+    onVersionRef.current = onVersion;
+  }, [onVersion]);
 
   /**
    * Fetch on mount, with every setState inside the async IIFE.
@@ -59,52 +59,52 @@ export function AboutMachine({ onVersion }: { onVersion?: (version: string) => v
    * `StorageSettings`.
    */
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     void (async () => {
       try {
-        const data = await fetchAbout()
-        if (cancelled) return
-        setInfo(data)
-        setError(null)
-        onVersionRef.current?.(data.imageVersion)
+        const data = await fetchAbout();
+        if (cancelled) return;
+        setInfo(data);
+        setError(null);
+        onVersionRef.current?.(data.imageVersion);
       } catch {
-        if (cancelled) return
+        if (cancelled) return;
         // Named as a failure to READ the machine, not as a fact about it. The old
         // hardcoded rows could never fail, which is exactly why they were wrong.
-        setInfo(null)
-        setError(READ_FAILED)
+        setInfo(null);
+        setError(READ_FAILED);
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setLoading(false);
       }
-    })()
+    })();
     return () => {
-      cancelled = true
-    }
-  }, [])
+      cancelled = true;
+    };
+  }, []);
 
   const retry = useCallback(async () => {
-    setError(null)
-    setLoading(true)
+    setError(null);
+    setLoading(true);
     try {
-      const data = await fetchAbout()
-      setInfo(data)
-      onVersionRef.current?.(data.imageVersion)
+      const data = await fetchAbout();
+      setInfo(data);
+      onVersionRef.current?.(data.imageVersion);
     } catch {
-      setError(READ_FAILED)
+      setError(READ_FAILED);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   const rows: { label: string; value: string }[] = info
     ? [
-        { label: 'Hostname', value: info.hostname },
-        { label: 'Kernel', value: info.kernel },
-        { label: 'Platform', value: `${info.platform} · ${info.arch}` },
-        { label: 'Uptime', value: formatUptime(info.uptimeSeconds) },
-        { label: 'Image version', value: info.imageVersion },
+        { label: "Hostname", value: info.hostname },
+        { label: "Kernel", value: info.kernel },
+        { label: "Platform", value: `${info.platform} · ${info.arch}` },
+        { label: "Uptime", value: formatUptime(info.uptimeSeconds) },
+        { label: "Image version", value: info.imageVersion },
       ]
-    : []
+    : [];
 
   return (
     <div className="grid gap-2">
@@ -118,12 +118,7 @@ export function AboutMachine({ onVersion }: { onVersion?: (version: string) => v
       {error && !loading && (
         <div className="rounded-control border-outline-variant bg-surface-container-low flex items-center justify-between gap-3 border px-3 py-2.5">
           <span className="text-error font-content text-[12px]">{error}</span>
-          <Button
-            variant="default"
-            size="sm"
-            className="flex items-center gap-1"
-            onClick={() => void retry()}
-          >
+          <Button variant="default" size="sm" className="flex items-center gap-1" onClick={() => void retry()}>
             <RefreshCw size={11} />
             Retry
           </Button>
@@ -138,11 +133,9 @@ export function AboutMachine({ onVersion }: { onVersion?: (version: string) => v
           <span className="text-on-surface-variant text-[10px] font-semibold tracking-widest uppercase">
             {item.label}
           </span>
-          <span className="font-ui text-on-surface truncate text-[13px] font-semibold">
-            {item.value}
-          </span>
+          <span className="font-ui text-on-surface truncate text-[13px] font-semibold">{item.value}</span>
         </div>
       ))}
     </div>
-  )
+  );
 }

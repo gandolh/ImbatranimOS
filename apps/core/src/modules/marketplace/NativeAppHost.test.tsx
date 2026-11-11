@@ -1,32 +1,32 @@
 // @vitest-environment jsdom
 /// <reference types="node" />
-import { act } from 'react'
-import { createRoot, type Root } from 'react-dom/client'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs'
-import { join } from 'path'
-import { fileURLToPath, pathToFileURL } from 'url'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { SystemProvider } from '@imbatranim/ui'
-import { createSystemHandle } from '../../system/createSystemHandle'
-import { AppErrorBoundary } from '../../shared/components/window/AppErrorBoundary'
-import type { MarketplaceApp } from '../../shared/registry/marketplace'
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
+import { join } from "path";
+import { fileURLToPath, pathToFileURL } from "url";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SystemProvider } from "@imbatranim/ui";
+import { createSystemHandle } from "../../system/createSystemHandle";
+import { AppErrorBoundary } from "../../shared/components/window/AppErrorBoundary";
+import type { MarketplaceApp } from "../../shared/registry/marketplace";
 
-const post = vi.fn()
-const del = vi.fn()
-vi.mock('../../lib/axios', () => ({
+const post = vi.fn();
+const del = vi.fn();
+vi.mock("../../lib/axios", () => ({
   api: {
     post: (...args: unknown[]) => post(...args) as unknown,
     delete: (...args: unknown[]) => del(...args) as unknown,
   },
-}))
+}));
 
 // The browser imports the module by URL; the test runner imports the same
 // file by path.
-vi.mock('./loadModule', () => ({
+vi.mock("./loadModule", () => ({
   loadModule: (url: string) => import(/* @vite-ignore */ fileURLToPath(url)),
-}))
+}));
 
-const { NativeAppHost } = await import('./NativeAppHost')
+const { NativeAppHost } = await import("./NativeAppHost");
 
 /**
  * The marketplace install — the window side of a marketplace app: its module is imported,
@@ -38,51 +38,51 @@ const { NativeAppHost } = await import('./NativeAppHost')
  * imports it from the backend; the API base is pointed at its directory.
  */
 
-let dir: string
-let container: HTMLDivElement
-let root: Root
-let caught: unknown[]
+let dir: string;
+let container: HTMLDivElement;
+let root: Root;
+let caught: unknown[];
 
 function app(overrides: Partial<MarketplaceApp> = {}): MarketplaceApp {
   // A one-app descriptor unless the test says otherwise: its id is the app's.
-  const id = overrides.id ?? 'orbits'
+  const id = overrides.id ?? "orbits";
   return {
     id,
     descriptorId: id,
-    descriptorName: overrides.name ?? 'Orbits',
-    name: 'Orbits',
-    description: '',
+    descriptorName: overrides.name ?? "Orbits",
+    name: "Orbits",
+    description: "",
     meta: [],
-    type: 'static',
-    icon: 'rocket',
+    type: "static",
+    icon: "rocket",
     window: { defaultSize: { w: 640, h: 420 }, minSize: { w: 320, h: 240 } },
-    capabilities: ['notify'],
+    capabilities: ["notify"],
     multiInstance: false,
     opens: [],
     minSystemVersion: 2,
-    ref: 'a'.repeat(40),
-    runtime: 'native',
+    ref: "a".repeat(40),
+    runtime: "native",
     installed: {
-      ref: 'a'.repeat(40),
-      buildId: 'b1',
+      ref: "a".repeat(40),
+      buildId: "b1",
       installedAt: 0,
-      entryPath: 'app.mjs',
+      entryPath: "app.mjs",
       missing: false,
     },
     job: null,
-    server: { state: 'stopped' },
+    server: { state: "stopped" },
     ...overrides,
-  }
+  };
 }
 
 /** Write the module and point the API base at it. Returns where the module records what it saw. */
-function writeModule(source: string, name = 'app.mjs') {
-  writeFileSync(join(dir, name), source)
-  vi.stubEnv('VITE_API_URL', pathToFileURL(dir).href)
+function writeModule(source: string, name = "app.mjs") {
+  writeFileSync(join(dir, name), source);
+  vi.stubEnv("VITE_API_URL", pathToFileURL(dir).href);
 }
 
 function mount(a: MarketplaceApp) {
-  const system = createSystemHandle(a.id, null)
+  const system = createSystemHandle(a.id, null);
   act(() => {
     root.render(
       <AppErrorBoundary
@@ -93,30 +93,30 @@ function mount(a: MarketplaceApp) {
         <SystemProvider system={system}>
           <NativeAppHost windowId="w1" app={a} />
         </SystemProvider>
-      </AppErrorBoundary>
-    )
-  })
+      </AppErrorBoundary>,
+    );
+  });
 }
 
 /** Let the host's async load (lease, import, mount) run to the end. */
 async function settle() {
   for (let i = 0; i < 20; i++) {
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 10))
-    })
+      await new Promise((r) => setTimeout(r, 10));
+    });
   }
 }
 
 type Seen = {
-  mounted?: boolean
-  containerIsNode?: boolean
-  host?: { appId: string; assetBase: string; server: { http: string; ws: string } | null }
-  notify?: string
-  fsError?: string
-  unmounted?: boolean
-}
+  mounted?: boolean;
+  containerIsNode?: boolean;
+  host?: { appId: string; assetBase: string; server: { http: string; ws: string } | null };
+  notify?: string;
+  fsError?: string;
+  unmounted?: boolean;
+};
 
-const seen = () => (globalThis as { __seen?: Seen }).__seen ?? {}
+const seen = () => (globalThis as { __seen?: Seen }).__seen ?? {};
 
 const RECORDING_MODULE = `
 const seen = (globalThis.__seen = {})
@@ -131,114 +131,110 @@ export function mount(container, system, host) {
 export function unmount(container) {
   seen.unmounted = container instanceof HTMLElement
 }
-`
+`;
 
 beforeEach(() => {
   // Inside the project: the test runner imports nothing from outside its root.
-  const cache = join(process.cwd(), 'node_modules', '.cache')
-  mkdirSync(cache, { recursive: true })
-  dir = mkdtempSync(join(cache, 'native-host-'))
-  container = document.createElement('div')
-  document.body.appendChild(container)
-  root = createRoot(container, { onCaughtError: (e) => caught.push(e) })
-  caught = []
-  delete (globalThis as { __seen?: Seen }).__seen
-  post.mockReset()
-  del.mockReset()
-  post.mockResolvedValue({ data: { lease: 'lease-1', renewMs: 60_000 } })
-  del.mockResolvedValue({})
-})
+  const cache = join(process.cwd(), "node_modules", ".cache");
+  mkdirSync(cache, { recursive: true });
+  dir = mkdtempSync(join(cache, "native-host-"));
+  container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container, { onCaughtError: (e) => caught.push(e) });
+  caught = [];
+  delete (globalThis as { __seen?: Seen }).__seen;
+  post.mockReset();
+  del.mockReset();
+  post.mockResolvedValue({ data: { lease: "lease-1", renewMs: 60_000 } });
+  del.mockResolvedValue({});
+});
 
 afterEach(() => {
-  act(() => root.unmount())
-  container.remove()
-  vi.unstubAllEnvs()
-  rmSync(dir, { recursive: true, force: true })
-})
+  act(() => root.unmount());
+  container.remove();
+  vi.unstubAllEnvs();
+  rmSync(dir, { recursive: true, force: true });
+});
 
-describe('NativeAppHost', () => {
-  it('mounts the module into the window with a scoped handle, and unmounts it on close', async () => {
-    writeModule(RECORDING_MODULE)
-    mount(app())
-    await settle()
-    expect(seen().mounted).toBe(true)
-    expect(seen().containerIsNode).toBe(true)
-    expect(container.textContent).toContain('hello from the app')
-    expect(seen().notify).toBe('function')
-    expect(seen().fsError).toMatch(/Orbits did not ask for system\.fs/)
-    expect(seen().host?.appId).toBe('orbits')
-    expect(seen().host?.assetBase).toBe(`${pathToFileURL(dir).href}/`)
-    expect(seen().host?.server).toBeNull()
-    expect(post).not.toHaveBeenCalled()
+describe("NativeAppHost", () => {
+  it("mounts the module into the window with a scoped handle, and unmounts it on close", async () => {
+    writeModule(RECORDING_MODULE);
+    mount(app());
+    await settle();
+    expect(seen().mounted).toBe(true);
+    expect(seen().containerIsNode).toBe(true);
+    expect(container.textContent).toContain("hello from the app");
+    expect(seen().notify).toBe("function");
+    expect(seen().fsError).toMatch(/Orbits did not ask for system\.fs/);
+    expect(seen().host?.appId).toBe("orbits");
+    expect(seen().host?.assetBase).toBe(`${pathToFileURL(dir).href}/`);
+    expect(seen().host?.server).toBeNull();
+    expect(post).not.toHaveBeenCalled();
 
-    act(() => root.render(<></>))
-    expect(seen().unmounted).toBe(true)
-  })
+    act(() => root.render(<></>));
+    expect(seen().unmounted).toBe(true);
+  });
 
   it("leases a service app's server for as long as the window is open", async () => {
-    writeModule(RECORDING_MODULE)
-    mount(app({ id: 'pingpong', name: 'Ping Pong', type: 'service' }))
-    await settle()
-    expect(post).toHaveBeenCalledWith('/marketplace/apps/pingpong/lease', {})
-    const server = seen().host?.server
-    expect(server?.http).toMatch(/\/marketplace\/apps\/pingpong\/server$/)
-    expect(del).not.toHaveBeenCalled()
+    writeModule(RECORDING_MODULE);
+    mount(app({ id: "pingpong", name: "Ping Pong", type: "service" }));
+    await settle();
+    expect(post).toHaveBeenCalledWith("/marketplace/apps/pingpong/lease", {});
+    const server = seen().host?.server;
+    expect(server?.http).toMatch(/\/marketplace\/apps\/pingpong\/server$/);
+    expect(del).not.toHaveBeenCalled();
 
-    act(() => root.render(<></>))
-    expect(del).toHaveBeenCalledWith('/marketplace/apps/pingpong/lease/lease-1')
-  })
+    act(() => root.render(<></>));
+    expect(del).toHaveBeenCalledWith("/marketplace/apps/pingpong/lease/lease-1");
+  });
 
   it("leases a suite app's server by its descriptor's id, and keeps its own id for the app", async () => {
-    writeModule(RECORDING_MODULE)
+    writeModule(RECORDING_MODULE);
     mount(
       app({
-        id: 'sim-alpha',
-        descriptorId: 'sim',
-        descriptorName: 'Sim',
-        name: 'Alpha',
-        type: 'service',
+        id: "sim-alpha",
+        descriptorId: "sim",
+        descriptorName: "Sim",
+        name: "Alpha",
+        type: "service",
         multiInstance: true,
-      })
-    )
-    await settle()
-    expect(post).toHaveBeenCalledWith('/marketplace/apps/sim/lease', {})
-    expect(seen().host?.appId).toBe('sim-alpha')
-    expect(seen().host?.server?.http).toMatch(/\/marketplace\/apps\/sim\/server$/)
-    expect(seen().host?.server?.ws).toMatch(/^file:.*\/marketplace\/apps\/sim\/server$/)
+      }),
+    );
+    await settle();
+    expect(post).toHaveBeenCalledWith("/marketplace/apps/sim/lease", {});
+    expect(seen().host?.appId).toBe("sim-alpha");
+    expect(seen().host?.server?.http).toMatch(/\/marketplace\/apps\/sim\/server$/);
+    expect(seen().host?.server?.ws).toMatch(/^file:.*\/marketplace\/apps\/sim\/server$/);
 
-    act(() => root.render(<></>))
-    expect(del).toHaveBeenCalledWith('/marketplace/apps/sim/lease/lease-1')
-  })
+    act(() => root.render(<></>));
+    expect(del).toHaveBeenCalledWith("/marketplace/apps/sim/lease/lease-1");
+  });
 
-  it('shows a module without mount() as a crash of its own window', async () => {
-    writeModule('export const nothing = 1\n')
-    mount(app())
-    await settle()
-    expect(container.querySelector('[data-testid="fallback"]')?.textContent).toMatch(
-      /does not export mount/
-    )
-  })
+  it("shows a module without mount() as a crash of its own window", async () => {
+    writeModule("export const nothing = 1\n");
+    mount(app());
+    await settle();
+    expect(container.querySelector('[data-testid="fallback"]')?.textContent).toMatch(/does not export mount/);
+  });
 
-  it('shows a mount() that throws as a crash of its own window', async () => {
-    writeModule('export function mount() { throw new Error("the game broke") }\n')
-    mount(app())
-    await settle()
-    expect(container.querySelector('[data-testid="fallback"]')?.textContent).toBe('the game broke')
-  })
+  it("shows a mount() that throws as a crash of its own window", async () => {
+    writeModule('export function mount() { throw new Error("the game broke") }\n');
+    mount(app());
+    await settle();
+    expect(container.querySelector('[data-testid="fallback"]')?.textContent).toBe("the game broke");
+  });
 
-  it('refuses an app that needs a newer system protocol in a panel, before loading it', async () => {
-    writeModule(RECORDING_MODULE)
-    mount(app({ minSystemVersion: 99 }))
-    await settle()
+  it("refuses an app that needs a newer system protocol in a panel, before loading it", async () => {
+    writeModule(RECORDING_MODULE);
+    mount(app({ minSystemVersion: 99 }));
+    await settle();
     // A refusal is not a crash. No fallback, no client-error log.
-    const panel = container.querySelector('[data-refusal]')
-    expect(panel?.textContent).toContain(`Can't open ${app().name}`)
-    expect(panel?.textContent).toContain(
-      `${app().name} needs system protocol 99; this desktop speaks 2`
-    )
-    expect(panel?.querySelector('button')?.textContent).toBe('Open Settings')
-    expect(container.querySelector('[data-testid="fallback"]')).toBeNull()
-    expect(post).not.toHaveBeenCalled()
-    expect(seen().mounted).toBeUndefined()
-  })
-})
+    const panel = container.querySelector("[data-refusal]");
+    expect(panel?.textContent).toContain(`Can't open ${app().name}`);
+    expect(panel?.textContent).toContain(`${app().name} needs system protocol 99; this desktop speaks 2`);
+    expect(panel?.querySelector("button")?.textContent).toBe("Open Settings");
+    expect(container.querySelector('[data-testid="fallback"]')).toBeNull();
+    expect(post).not.toHaveBeenCalled();
+    expect(seen().mounted).toBeUndefined();
+  });
+});

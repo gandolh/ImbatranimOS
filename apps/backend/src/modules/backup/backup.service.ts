@@ -6,40 +6,34 @@ import {
   Logger,
   NotFoundException,
   PayloadTooLargeException,
-} from '@nestjs/common';
-import { execFile, spawn } from 'child_process';
-import { randomUUID } from 'crypto';
-import { promises as fs } from 'fs';
-import { tmpdir } from 'os';
-import { join, relative, sep } from 'path';
-import type { Readable } from 'stream';
-import { promisify } from 'util';
-import Database from 'better-sqlite3';
-import { DbService, LEDGER_VERSION } from '../../db/db.service';
-import { browserProfileKeyPath } from '../browser/browser-profile.service';
-import { marketplaceAppsDir } from '../marketplace/marketplace.service';
-import { KIND_DIRS, VENDOR_DIR } from '../app-data/app-data.paths';
-import { DataMovesService } from '../app-data/data-moves.service';
-import { FilesService } from '../files/files.service';
-import { TRASH_DIR } from '../files/trash.service';
-import { ArchiveService, parseTarListLine } from '../archive/archive.service';
-import { LogService } from '../logs/log.service';
-import { LocalIdentityService } from '../local-identity/local-identity.service';
-import { childEnv } from '../../child-env';
-import type {
-  BackupInfo,
-  BackupManifest,
-  RestoreEntry,
-  RestorePreview,
-} from './dto/backup.dto';
+} from "@nestjs/common";
+import { execFile, spawn } from "child_process";
+import { randomUUID } from "crypto";
+import { promises as fs } from "fs";
+import { tmpdir } from "os";
+import { join, relative, sep } from "path";
+import type { Readable } from "stream";
+import { promisify } from "util";
+import Database from "better-sqlite3";
+import { DbService, LEDGER_VERSION } from "../../db/db.service";
+import { browserProfileKeyPath } from "../browser/browser-profile.service";
+import { marketplaceAppsDir } from "../marketplace/marketplace.service";
+import { KIND_DIRS, VENDOR_DIR } from "../app-data/app-data.paths";
+import { DataMovesService } from "../app-data/data-moves.service";
+import { FilesService } from "../files/files.service";
+import { TRASH_DIR } from "../files/trash.service";
+import { ArchiveService, parseTarListLine } from "../archive/archive.service";
+import { LogService } from "../logs/log.service";
+import { LocalIdentityService } from "../local-identity/local-identity.service";
+import { childEnv } from "../../child-env";
+import type { BackupInfo, BackupManifest, RestoreEntry, RestorePreview } from "./dto/backup.dto";
 
 const execFileAsync = promisify(execFile);
 
 /** Wall-clock cap for a tar invocation that is not the streaming backup. */
 const TAR_TIMEOUT_MS = Number(process.env.BACKUP_TAR_TIMEOUT_MS) || 120_000;
 /** Cap on a captured member listing. */
-const TAR_MAX_BUFFER =
-  Number(process.env.BACKUP_TAR_MAX_BUFFER) || 32 * 1024 * 1024;
+const TAR_MAX_BUFFER = Number(process.env.BACKUP_TAR_MAX_BUFFER) || 32 * 1024 * 1024;
 /** How many members a restorable backup may declare. */
 const MAX_MEMBERS = Number(process.env.BACKUP_MAX_MEMBERS) || 200_000;
 /** How long an inspected upload stays applicable, and how many are kept. */
@@ -50,17 +44,16 @@ const MAX_PENDING_UPLOADS = 3;
  * user with an OS that cannot write its own database, so the check refuses a
  * restore that would land inside this margin rather than technically fitting.
  */
-const FREE_SPACE_MARGIN_BYTES =
-  Number(process.env.BACKUP_FREE_MARGIN_BYTES) || 64 * 1024 * 1024;
+const FREE_SPACE_MARGIN_BYTES = Number(process.env.BACKUP_FREE_MARGIN_BYTES) || 64 * 1024 * 1024;
 
 /** Where the manifest and the database snapshot ride inside the archive. */
-const STAGING_REL = join('.imbatranim', 'backup-staging');
+const STAGING_REL = join(".imbatranim", "backup-staging");
 const MANIFEST_MEMBER = `${STAGING_REL}/manifest.json`;
 const DB_SNAPSHOT_MEMBER = `${STAGING_REL}/db.sqlite`;
 
 /** Prefixes for restore scratch directories, kept at the home root. */
-const RESTORE_STAGING_PREFIX = '.imbatranim-restore-';
-const RESTORE_ROLLBACK_PREFIX = '.imbatranim-rollback-';
+const RESTORE_STAGING_PREFIX = ".imbatranim-restore-";
+const RESTORE_ROLLBACK_PREFIX = ".imbatranim-rollback-";
 
 /**
  * Strip the leading `./` tar puts on member names.
@@ -71,16 +64,16 @@ const RESTORE_ROLLBACK_PREFIX = '.imbatranim-rollback-';
  * hand-rolled tarball, not a workaround for a divergence.
  */
 export function normaliseMember(name: string): string {
-  let out = name.replace(/^\.\//, '');
-  while (out.startsWith('./')) out = out.slice(2);
+  let out = name.replace(/^\.\//, "");
+  while (out.startsWith("./")) out = out.slice(2);
   return out;
 }
 
 /** The first path segment of a member name, or '' for the archive root itself. */
 export function topLevelOf(member: string): string {
-  const normalised = normaliseMember(member).replace(/\/+$/, '');
-  if (normalised === '' || normalised === '.') return '';
-  return normalised.split('/')[0];
+  const normalised = normaliseMember(member).replace(/\/+$/, "");
+  if (normalised === "" || normalised === ".") return "";
+  return normalised.split("/")[0];
 }
 
 /**
@@ -92,14 +85,12 @@ export function topLevelOf(member: string): string {
  * plausible".
  */
 export function validateManifest(value: unknown): BackupManifest {
-  if (typeof value !== 'object' || value === null) {
-    throw new BadRequestException('That backup has an unreadable manifest');
+  if (typeof value !== "object" || value === null) {
+    throw new BadRequestException("That backup has an unreadable manifest");
   }
   const m = value as Record<string, unknown>;
-  if (m.product !== 'ImbatranimOS') {
-    throw new BadRequestException(
-      'That file is not an ImbatranimOS backup — its manifest names a different product',
-    );
+  if (m.product !== "ImbatranimOS") {
+    throw new BadRequestException("That file is not an ImbatranimOS backup — its manifest names a different product");
   }
   if (m.manifestVersion !== 1) {
     throw new BadRequestException(
@@ -108,24 +99,18 @@ export function validateManifest(value: unknown): BackupManifest {
       )}) and cannot be restored by this one`,
     );
   }
-  const createdAt = typeof m.createdAt === 'string' ? m.createdAt : '';
-  if (createdAt === '' || Number.isNaN(Date.parse(createdAt))) {
-    throw new BadRequestException('That backup has no usable creation date');
+  const createdAt = typeof m.createdAt === "string" ? m.createdAt : "";
+  if (createdAt === "" || Number.isNaN(Date.parse(createdAt))) {
+    throw new BadRequestException("That backup has no usable creation date");
   }
   return {
-    product: 'ImbatranimOS',
+    product: "ImbatranimOS",
     manifestVersion: 1,
     createdAt,
-    imageVersion:
-      typeof m.imageVersion === 'string' ? m.imageVersion : 'unknown',
-    home: typeof m.home === 'string' ? m.home : '',
-    database:
-      typeof m.database === 'string' && m.database !== ''
-        ? m.database
-        : DB_SNAPSHOT_MEMBER,
-    excluded: Array.isArray(m.excluded)
-      ? m.excluded.filter((e): e is string => typeof e === 'string')
-      : [],
+    imageVersion: typeof m.imageVersion === "string" ? m.imageVersion : "unknown",
+    home: typeof m.home === "string" ? m.home : "",
+    database: typeof m.database === "string" && m.database !== "" ? m.database : DB_SNAPSHOT_MEMBER,
+    excluded: Array.isArray(m.excluded) ? m.excluded.filter((e): e is string => typeof e === "string") : [],
   };
 }
 
@@ -169,7 +154,7 @@ export class BackupService {
   // ── shared ───────────────────────────────────────────────────────────────
 
   private async homeRoot(): Promise<string> {
-    const { rootDir } = await this.files.resolveSafe('home', '');
+    const { rootDir } = await this.files.resolveSafe("home", "");
     return rootDir;
   }
 
@@ -190,11 +175,11 @@ export class BackupService {
     const patterns = [
       // The Trash is not worth carrying, and the trash made it a real directory
       // rather than a metaphor.
-      `./${TRASH_DIR.split(sep).join('/')}`,
+      `./${TRASH_DIR.split(sep).join("/")}`,
       // Scratch directories belonging to an in-flight restore or extraction.
       `./${RESTORE_STAGING_PREFIX}*`,
       `./${RESTORE_ROLLBACK_PREFIX}*`,
-      './.archive-tmp-*',
+      "./.archive-tmp-*",
       // Apps' caches: anything in them can be rebuilt, so they aren't worth
       // the space. Their settings, data and state are carried.
       `./${KIND_DIRS.cache}/${VENDOR_DIR}`,
@@ -203,31 +188,22 @@ export class BackupService {
     // replaces it. If DB_PATH points outside the home it is not in the archive
     // at all and there is nothing to exclude.
     const dbRel = relative(home, this.db.path());
-    if (dbRel !== '' && !dbRel.startsWith('..') && !dbRel.startsWith(sep)) {
-      const posixRel = dbRel.split(sep).join('/');
-      patterns.push(
-        `./${posixRel}`,
-        `./${posixRel}-wal`,
-        `./${posixRel}-shm`,
-        `./${posixRel}-journal`,
-      );
+    if (dbRel !== "" && !dbRel.startsWith("..") && !dbRel.startsWith(sep)) {
+      const posixRel = dbRel.split(sep).join("/");
+      patterns.push(`./${posixRel}`, `./${posixRel}-wal`, `./${posixRel}-shm`, `./${posixRel}-journal`);
     }
     // The Browser's profile key. Left out so a backup carries only
     // the profile's ciphertext: whoever holds a backup holds no site's sign-in.
     const keyRel = relative(home, browserProfileKeyPath(this.db.path()));
-    if (!keyRel.startsWith('..') && !keyRel.startsWith(sep)) {
-      patterns.push(`./${keyRel.split(sep).join('/')}`);
+    if (!keyRel.startsWith("..") && !keyRel.startsWith(sep)) {
+      patterns.push(`./${keyRel.split(sep).join("/")}`);
     }
     // Installed marketplace apps: clones, node_modules and builds,
     // often hundreds of MB, all rebuilt from the catalog by Reinstall. The
     // restored database still lists them; the pane offers the reinstall.
     const appsRel = relative(home, marketplaceAppsDir(this.db.path()));
-    if (
-      appsRel !== '' &&
-      !appsRel.startsWith('..') &&
-      !appsRel.startsWith(sep)
-    ) {
-      patterns.push(`./${appsRel.split(sep).join('/')}`);
+    if (appsRel !== "" && !appsRel.startsWith("..") && !appsRel.startsWith(sep)) {
+      patterns.push(`./${appsRel.split(sep).join("/")}`);
     }
     return patterns;
   }
@@ -243,7 +219,7 @@ export class BackupService {
   /** What the UI shows before the user commits to a download. */
   async info(): Promise<BackupInfo> {
     const [size, free, excluded] = await Promise.all([
-      this.files.dirSize('home', ''),
+      this.files.dirSize("home", ""),
       this.freeBytes(),
       this.excludePatterns(),
     ]);
@@ -284,7 +260,7 @@ export class BackupService {
     dispose: () => Promise<void>;
   }> {
     if (this.backupInFlight) {
-      throw new ConflictException('A backup is already running');
+      throw new ConflictException("A backup is already running");
     }
     this.backupInFlight = true;
 
@@ -307,60 +283,49 @@ export class BackupService {
       // idiom would silently produce a different archive on Alpine.
       await fs.rm(stagingAbs, { recursive: true, force: true });
       await fs.mkdir(stagingAbs, { recursive: true });
-      this.db.snapshotTo(join(stagingAbs, 'db.sqlite'));
+      this.db.snapshotTo(join(stagingAbs, "db.sqlite"));
 
       const excluded = await this.excludePatterns();
       const manifest: BackupManifest = {
-        product: 'ImbatranimOS',
+        product: "ImbatranimOS",
         manifestVersion: 1,
         createdAt: new Date().toISOString(),
-        imageVersion: process.env.IMAGE_VERSION ?? 'unknown',
+        imageVersion: process.env.IMAGE_VERSION ?? "unknown",
         home,
         database: DB_SNAPSHOT_MEMBER,
         excluded,
       };
-      await fs.writeFile(
-        join(stagingAbs, 'manifest.json'),
-        JSON.stringify(manifest, null, 2),
-        'utf8',
-      );
+      await fs.writeFile(join(stagingAbs, "manifest.json"), JSON.stringify(manifest, null, 2), "utf8");
 
       // Recorded, and flushed, BEFORE tar starts reading. Written after the
       // spawn, this line landed in `.imbatranim/logs` while tar was reading it,
       // and GNU tar then exits 1 ("file changed as we read it"), failing the
       // backup about one run in three in the specs.
-      this.logs.audit('backup.taken', 'A backup was downloaded', {
+      this.logs.audit("backup.taken", "A backup was downloaded", {
         excluded: excluded.length,
       });
       await this.logs.flush();
 
-      const args = [
-        '-czf',
-        '-',
-        '-C',
-        home,
-        ...excluded.map((p) => `--exclude=${p}`),
-        '.',
-      ];
-      const child = spawn('tar', args, {
-        stdio: ['ignore', 'pipe', 'pipe'],
+      const args = ["-czf", "-", "-C", home, ...excluded.map((p) => `--exclude=${p}`), "."];
+      const child = spawn("tar", args, {
+        stdio: ["ignore", "pipe", "pipe"],
         env: childEnv(),
       });
       if (!child.stdout || !child.stderr) {
-        child.kill('SIGKILL');
-        throw new InternalServerErrorException('Could not start the backup');
+        child.kill("SIGKILL");
+        throw new InternalServerErrorException("Could not start the backup");
       }
       const stdout = child.stdout;
-      let stderr = '';
-      child.stderr.setEncoding('utf8');
-      child.stderr.on('data', (chunk: string) => {
+      let stderr = "";
+      child.stderr.setEncoding("utf8");
+      child.stderr.on("data", (chunk: string) => {
         // Bounded: a pathological tar could otherwise stream errors forever.
         if (stderr.length < 8192) stderr += chunk;
       });
 
       const done = new Promise<void>((resolve, reject) => {
-        child.on('error', reject);
-        child.on('close', (code) => {
+        child.on("error", reject);
+        child.on("close", (code) => {
           if (code === 0) resolve();
           else
             reject(
@@ -376,7 +341,7 @@ export class BackupService {
         stream: stdout,
         done,
         dispose: async () => {
-          if (child.exitCode === null) child.kill('SIGKILL');
+          if (child.exitCode === null) child.kill("SIGKILL");
           await dispose();
         },
       };
@@ -406,9 +371,8 @@ export class BackupService {
       const seen = new Map<string, RestoreEntry>();
       for (const member of listing.members) {
         const top = topLevelOf(member.name);
-        if (top === '' || seen.has(top)) continue;
-        const isDir =
-          member.directory || normaliseMember(member.name).includes('/');
+        if (top === "" || seen.has(top)) continue;
+        const isDir = member.directory || normaliseMember(member.name).includes("/");
         seen.set(top, {
           name: top,
           directory: isDir,
@@ -430,9 +394,7 @@ export class BackupService {
       return {
         id,
         manifest,
-        entries: [...seen.values()].sort((a, b) =>
-          a.name.localeCompare(b.name),
-        ),
+        entries: [...seen.values()].sort((a, b) => a.name.localeCompare(b.name)),
         fileCount: listing.members.filter((m) => !m.directory).length,
         totalBytes: listing.totalBytes,
         freeBytes: free,
@@ -461,9 +423,7 @@ export class BackupService {
   }> {
     const upload = this.pending.get(id);
     if (!upload) {
-      throw new NotFoundException(
-        'That upload has expired — choose the backup file again',
-      );
+      throw new NotFoundException("That upload has expired — choose the backup file again");
     }
     this.pending.delete(id);
 
@@ -471,8 +431,7 @@ export class BackupService {
     if (upload.totalBytes + FREE_SPACE_MARGIN_BYTES > free) {
       await fs.rm(upload.tarballPath, { force: true });
       throw new PayloadTooLargeException(
-        `This backup needs ${upload.totalBytes} bytes but only ${free} are free. ` +
-          'Free some space and try again.',
+        `This backup needs ${upload.totalBytes} bytes but only ${free} are free. ` + "Free some space and try again.",
       );
     }
 
@@ -483,40 +442,33 @@ export class BackupService {
     // inside it would pull the staging area out from under the restore.
     const stagingVirtual = `${RESTORE_STAGING_PREFIX}${token}`;
     const rollbackAbs = join(home, `${RESTORE_ROLLBACK_PREFIX}${token}`);
-    let stagingAbs = '';
+    let stagingAbs = "";
 
     try {
       const staged = await this.archive.stageTarExtraction({
-        root: 'home',
-        destVirtual: '',
+        root: "home",
+        destVirtual: "",
         tmpVirtual: stagingVirtual,
         archiveAbs: upload.tarballPath,
-        flavour: 'targz',
+        flavour: "targz",
         // The zip-bomb default (512 MB) is the wrong bound for a home volume;
         // free disk is the honest one. Every other guarantee is unchanged.
         maxTotalBytes: Math.max(free - FREE_SPACE_MARGIN_BYTES, 1),
       });
       stagingAbs = staged.stagingAbs;
 
-      const names = (await fs.readdir(stagingAbs)).filter((n) => n !== '.');
+      const names = (await fs.readdir(stagingAbs)).filter((n) => n !== ".");
       if (names.length === 0) {
-        throw new BadRequestException(
-          'That backup contains nothing to restore',
-        );
+        throw new BadRequestException("That backup contains nothing to restore");
       }
 
       // Check the snapshot is really there BEFORE anything moves. Discovering it
       // missing after the swap would leave a restored tree with no database at
       // the path the process reopens — an OS that boots into its setup screen
       // with the user's data present but unreachable.
-      const snapshotStaged = join(
-        stagingAbs,
-        normaliseMember(upload.manifest.database),
-      );
+      const snapshotStaged = join(stagingAbs, normaliseMember(upload.manifest.database));
       if (!(await this.exists(snapshotStaged))) {
-        throw new BadRequestException(
-          'That backup carries no database snapshot and cannot be restored',
-        );
+        throw new BadRequestException("That backup carries no database snapshot and cannot be restored");
       }
       // And that it opens, BEFORE anything moves. A snapshot that
       // only exists used to be swapped in, fail to open, and take the
@@ -524,12 +476,7 @@ export class BackupService {
       this.validateSnapshot(snapshotStaged);
 
       await fs.mkdir(rollbackAbs, { recursive: true });
-      const { restored, undo } = await this.swapIn(
-        home,
-        stagingAbs,
-        rollbackAbs,
-        names,
-      );
+      const { restored, undo } = await this.swapIn(home, stagingAbs, rollbackAbs, names);
 
       // The database last, and only once the tree it belongs to is in place.
       // If it cannot be installed, the swap is undone before the `finally`
@@ -541,9 +488,7 @@ export class BackupService {
         try {
           this.db.reopen();
         } catch (reopenErr) {
-          this.logger.error(
-            `Restore rollback could not reopen the database: ${String(reopenErr)}`,
-          );
+          this.logger.error(`Restore rollback could not reopen the database: ${String(reopenErr)}`);
         }
         throw err;
       }
@@ -551,12 +496,10 @@ export class BackupService {
       // Recorded AFTER the swap, so the line exists only if it really happened
       // — and it lands in the log the restore just brought in, which is the
       // right place for it: this is the newest thing that machine did.
-      this.logs.record(
-        'warn',
-        'backup.restored',
-        'The home directory was restored from a backup',
-        { from: upload.manifest.createdAt, entries: restored.length },
-      );
+      this.logs.record("warn", "backup.restored", "The home directory was restored from a backup", {
+        from: upload.manifest.createdAt,
+        entries: restored.length,
+      });
 
       // A backup from before the move brings the old tables back and no data
       // files. Move them now, on the restored database and home, rather than
@@ -566,9 +509,7 @@ export class BackupService {
       try {
         await this.moves.run();
       } catch (err) {
-        this.logger.warn(
-          `The data moves failed after the restore and run again at the next start: ${String(err)}`,
-        );
+        this.logger.warn(`The data moves failed after the restore and run again at the next start: ${String(err)}`);
       }
 
       return {
@@ -580,7 +521,7 @@ export class BackupService {
       throw this.translateDiskFull(err);
     } finally {
       await fs.rm(upload.tarballPath, { force: true });
-      if (stagingAbs !== '') {
+      if (stagingAbs !== "") {
         await fs.rm(stagingAbs, { recursive: true, force: true });
       }
       // The pre-restore copy is deleted on the way out. Keeping it would double
@@ -643,9 +584,7 @@ export class BackupService {
       try {
         await step();
       } catch (rollbackErr) {
-        this.logger.error(
-          `Restore rollback step failed: ${String(rollbackErr)}`,
-        );
+        this.logger.error(`Restore rollback step failed: ${String(rollbackErr)}`);
       }
     }
   }
@@ -662,9 +601,9 @@ export class BackupService {
         readonly: true,
         fileMustExist: true,
       });
-      const check = snapshot.pragma('quick_check', { simple: true });
-      if (check !== 'ok') throw new Error(String(check));
-      const version = Number(snapshot.pragma('user_version', { simple: true }));
+      const check = snapshot.pragma("quick_check", { simple: true });
+      if (check !== "ok") throw new Error(String(check));
+      const version = Number(snapshot.pragma("user_version", { simple: true }));
       if (version > LEDGER_VERSION) {
         throw new BadRequestException(
           `That backup's database comes from a newer ImbatranimOS (schema ${version}, this one knows ${LEDGER_VERSION}) and cannot be restored here`,
@@ -692,15 +631,10 @@ export class BackupService {
    * the backup's sessions: so every session ends, and the next sign-in is with
    * the restored password.
    */
-  private async installDatabase(
-    home: string,
-    manifest: BackupManifest,
-  ): Promise<void> {
+  private async installDatabase(home: string, manifest: BackupManifest): Promise<void> {
     const snapshotAbs = join(home, normaliseMember(manifest.database));
     if (!(await this.exists(snapshotAbs))) {
-      throw new InternalServerErrorException(
-        'The restored archive carried no database snapshot',
-      );
+      throw new InternalServerErrorException("The restored archive carried no database snapshot");
     }
     this.db.replaceWith(snapshotAbs);
     this.localIdentity.revokeAll();
@@ -719,20 +653,16 @@ export class BackupService {
   }> {
     let stdout: string;
     try {
-      ({ stdout } = await execFileAsync('tar', ['-tzvf', tarballPath], {
+      ({ stdout } = await execFileAsync("tar", ["-tzvf", tarballPath], {
         timeout: TAR_TIMEOUT_MS,
         maxBuffer: TAR_MAX_BUFFER,
       }));
     } catch {
-      throw new BadRequestException(
-        'That file could not be read as a .tar.gz archive',
-      );
+      throw new BadRequestException("That file could not be read as a .tar.gz archive");
     }
-    const lines = stdout.split('\n').filter((l) => l.trim().length > 0);
+    const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
     if (lines.length > MAX_MEMBERS) {
-      throw new PayloadTooLargeException(
-        `That archive declares too many entries (max ${MAX_MEMBERS})`,
-      );
+      throw new PayloadTooLargeException(`That archive declares too many entries (max ${MAX_MEMBERS})`);
     }
     let totalBytes = 0;
     const members = lines.map((line) => {
@@ -747,46 +677,26 @@ export class BackupService {
   }
 
   /** Extract only the manifest, and refuse anything that is not one of ours. */
-  private async readManifest(
-    tarballPath: string,
-    members: { name: string }[],
-  ): Promise<BackupManifest> {
-    const match = members.find(
-      (m) => normaliseMember(m.name) === MANIFEST_MEMBER,
-    );
+  private async readManifest(tarballPath: string, members: { name: string }[]): Promise<BackupManifest> {
+    const match = members.find((m) => normaliseMember(m.name) === MANIFEST_MEMBER);
     if (!match) {
-      throw new BadRequestException(
-        'That file is not an ImbatranimOS backup — it has no backup manifest',
-      );
+      throw new BadRequestException("That file is not an ImbatranimOS backup — it has no backup manifest");
     }
     // Staged outside the home volume: reading a manifest should not write into
     // the tree that is about to be replaced.
-    const tmpDir = await fs.mkdtemp(join(tmpdir(), 'imbatranim-manifest-'));
+    const tmpDir = await fs.mkdtemp(join(tmpdir(), "imbatranim-manifest-"));
     try {
       // The member name is taken from tar's own listing, never from the client,
       // and goes after `--` so a name beginning with `-` cannot become an option.
-      await execFileAsync(
-        'tar',
-        [
-          '-xzf',
-          tarballPath,
-          '-C',
-          tmpDir,
-          '--no-same-owner',
-          '--',
-          match.name,
-        ],
-        { timeout: TAR_TIMEOUT_MS },
-      );
-      const raw = await fs.readFile(
-        join(tmpDir, normaliseMember(match.name)),
-        'utf8',
-      );
+      await execFileAsync("tar", ["-xzf", tarballPath, "-C", tmpDir, "--no-same-owner", "--", match.name], {
+        timeout: TAR_TIMEOUT_MS,
+      });
+      const raw = await fs.readFile(join(tmpDir, normaliseMember(match.name)), "utf8");
       let parsed: unknown;
       try {
         parsed = JSON.parse(raw);
       } catch {
-        throw new BadRequestException('That backup has an unreadable manifest');
+        throw new BadRequestException("That backup has an unreadable manifest");
       }
       return validateManifest(parsed);
     } finally {
@@ -810,10 +720,10 @@ export class BackupService {
    */
   private translateDiskFull(err: unknown): Error {
     const code = (err as { code?: string } | null)?.code;
-    const message = err instanceof Error ? err.message : '';
-    if (code === 'ENOSPC' || code === 'EDQUOT' || /ENOSPC/.test(message)) {
+    const message = err instanceof Error ? err.message : "";
+    if (code === "ENOSPC" || code === "EDQUOT" || /ENOSPC/.test(message)) {
       return new PayloadTooLargeException(
-        'The disk filled up while restoring — your home directory was left unchanged. Free some space and try again.',
+        "The disk filled up while restoring — your home directory was left unchanged. Free some space and try again.",
       );
     }
     return err instanceof Error ? err : new Error(String(err));
@@ -831,9 +741,7 @@ export class BackupService {
 
   private capUploads(): void {
     while (this.pending.size > MAX_PENDING_UPLOADS) {
-      const oldest = [...this.pending.entries()].sort(
-        (a, b) => a[1].at - b[1].at,
-      )[0];
+      const oldest = [...this.pending.entries()].sort((a, b) => a[1].at - b[1].at)[0];
       this.pending.delete(oldest[0]);
       void fs.rm(oldest[1].tarballPath, { force: true });
     }

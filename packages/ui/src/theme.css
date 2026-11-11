@@ -62,7 +62,7 @@
   /* Fonts — the UI font follows the theme (Figtree in Apricot, Space Grotesk
      in Classic, set per token block in index.css); Inter is the content font */
   --font-ui: var(--k-font-ui);
-  --font-content: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-content: "Inter", ui-sans-serif, system-ui, sans-serif;
 
   /* Corners — per theme (index.css): Apricot's soft radii, 0 in Classic.
      Only these six; numeric rounded-* classes are not used. `small` is for

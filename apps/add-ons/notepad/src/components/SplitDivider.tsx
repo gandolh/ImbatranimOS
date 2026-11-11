@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react'
-import { cn } from '@imbatranim/ui'
-import { MAX_RATIO, MIN_RATIO } from '../store/markdownViewStore'
+import { useCallback, useState } from "react";
+import { cn } from "@imbatranim/ui";
+import { MAX_RATIO, MIN_RATIO } from "../store/markdownViewStore";
 
 /**
  * The draggable boundary between editor and preview.
@@ -20,44 +20,44 @@ export function SplitDivider({
   onDrag,
   onCommit,
 }: {
-  ratio: number
+  ratio: number;
   /** Width of the pane container, to turn pixel deltas into a ratio. */
-  containerWidth: number
-  onDrag: (ratio: number) => void
-  onCommit: () => void
+  containerWidth: number;
+  onDrag: (ratio: number) => void;
+  onCommit: () => void;
 }) {
-  const [dragging, setDragging] = useState(false)
+  const [dragging, setDragging] = useState(false);
 
   const onMouseDown = useCallback(
     (event: React.MouseEvent) => {
-      event.preventDefault()
-      if (containerWidth <= 0) return
-      const startX = event.clientX
-      const startRatio = ratio
-      setDragging(true)
+      event.preventDefault();
+      if (containerWidth <= 0) return;
+      const startX = event.clientX;
+      const startRatio = ratio;
+      setDragging(true);
 
       const onMove = (move: MouseEvent) => {
-        onDrag(startRatio + (move.clientX - startX) / containerWidth)
-      }
+        onDrag(startRatio + (move.clientX - startX) / containerWidth);
+      };
       const onUp = () => {
-        setDragging(false)
-        onCommit()
-        window.removeEventListener('mousemove', onMove)
-        window.removeEventListener('mouseup', onUp)
-      }
-      window.addEventListener('mousemove', onMove)
-      window.addEventListener('mouseup', onUp)
+        setDragging(false);
+        onCommit();
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
     },
-    [containerWidth, onCommit, onDrag, ratio]
-  )
+    [containerWidth, onCommit, onDrag, ratio],
+  );
 
   const nudge = useCallback(
     (delta: number) => {
-      onDrag(ratio + delta)
-      onCommit()
+      onDrag(ratio + delta);
+      onCommit();
     },
-    [onCommit, onDrag, ratio]
-  )
+    [onCommit, onDrag, ratio],
+  );
 
   return (
     <div
@@ -71,24 +71,24 @@ export function SplitDivider({
       onMouseDown={onMouseDown}
       onDoubleClick={() => nudge(0.5 - ratio)}
       onKeyDown={(event) => {
-        if (event.key === 'ArrowLeft') {
-          event.preventDefault()
-          nudge(-0.02)
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          nudge(-0.02);
         }
-        if (event.key === 'ArrowRight') {
-          event.preventDefault()
-          nudge(0.02)
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          nudge(0.02);
         }
-        if (event.key === 'Home') {
-          event.preventDefault()
-          nudge(0.5 - ratio)
+        if (event.key === "Home") {
+          event.preventDefault();
+          nudge(0.5 - ratio);
         }
       }}
       className={cn(
-        'border-outline-variant w-[5px] shrink-0 cursor-col-resize border-x',
-        'focus:outline-primary focus:outline focus:outline-1',
-        dragging ? 'bg-primary' : 'bg-surface-container-low hover:bg-surface-container-high'
+        "border-outline-variant w-[5px] shrink-0 cursor-col-resize border-x",
+        "focus:outline-primary focus:outline focus:outline-1",
+        dragging ? "bg-primary" : "bg-surface-container-low hover:bg-surface-container-high",
       )}
     />
-  )
+  );
 }

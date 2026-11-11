@@ -38,53 +38,49 @@
  */
 
 type MapWithGetOrInsert<K, V> = Map<K, V> & {
-  getOrInsert(key: K, value: V): V
-  getOrInsertComputed(key: K, callback: (key: K) => V): V
-}
+  getOrInsert(key: K, value: V): V;
+  getOrInsertComputed(key: K, callback: (key: K) => V): V;
+};
 
 /**
  * Install the methods if they are missing. Idempotent and safe to call from
  * every entry point that is about to load pdf.js.
  */
 export function installMapGetOrInsert(): void {
-  const proto = Map.prototype as unknown as Partial<MapWithGetOrInsert<unknown, unknown>>
+  const proto = Map.prototype as unknown as Partial<MapWithGetOrInsert<unknown, unknown>>;
 
-  if (typeof proto.getOrInsert !== 'function') {
-    Object.defineProperty(Map.prototype, 'getOrInsert', {
+  if (typeof proto.getOrInsert !== "function") {
+    Object.defineProperty(Map.prototype, "getOrInsert", {
       value: function getOrInsert<K, V>(this: Map<K, V>, key: K, value: V): V {
         // `has` then `get`, not `get() ?? insert`: a stored `undefined` is a
         // present entry and must not be overwritten.
-        if (this.has(key)) return this.get(key) as V
-        this.set(key, value)
-        return value
+        if (this.has(key)) return this.get(key) as V;
+        this.set(key, value);
+        return value;
       },
       writable: true,
       configurable: true,
       enumerable: false,
-    })
+    });
   }
 
-  if (typeof proto.getOrInsertComputed !== 'function') {
-    Object.defineProperty(Map.prototype, 'getOrInsertComputed', {
-      value: function getOrInsertComputed<K, V>(
-        this: Map<K, V>,
-        key: K,
-        callback: (key: K) => V
-      ): V {
-        if (typeof callback !== 'function') {
-          throw new TypeError('getOrInsertComputed: callback must be a function')
+  if (typeof proto.getOrInsertComputed !== "function") {
+    Object.defineProperty(Map.prototype, "getOrInsertComputed", {
+      value: function getOrInsertComputed<K, V>(this: Map<K, V>, key: K, callback: (key: K) => V): V {
+        if (typeof callback !== "function") {
+          throw new TypeError("getOrInsertComputed: callback must be a function");
         }
-        if (this.has(key)) return this.get(key) as V
-        const value = callback(key)
+        if (this.has(key)) return this.get(key) as V;
+        const value = callback(key);
         // Re-check: the callback can mutate this map (pdf.js's own callbacks
         // push into structures that may touch it). The spec sets unconditionally
         // after computing, and so does this — last write wins, matching it.
-        this.set(key, value)
-        return value
+        this.set(key, value);
+        return value;
       },
       writable: true,
       configurable: true,
       enumerable: false,
-    })
+    });
   }
 }

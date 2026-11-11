@@ -1,4 +1,4 @@
-import { extensionOf } from '../api/listDir'
+import { extensionOf } from "../api/listDir";
 
 /**
  * Human-readable message for a native `HTMLMediaElement` error. Every branch
@@ -6,18 +6,18 @@ import { extensionOf } from '../api/listDir'
  * event surfaces cleanly as UI copy, never a crash.
  */
 export function describeMediaError(error: MediaError | null): string {
-  if (!error) return 'This file could not be played.'
+  if (!error) return "This file could not be played.";
   switch (error.code) {
     case MediaError.MEDIA_ERR_ABORTED:
-      return 'Playback was aborted.'
+      return "Playback was aborted.";
     case MediaError.MEDIA_ERR_NETWORK:
-      return 'A network error interrupted playback.'
+      return "A network error interrupted playback.";
     case MediaError.MEDIA_ERR_DECODE:
-      return 'This file is corrupt or uses an encoding this browser can’t decode.'
+      return "This file is corrupt or uses an encoding this browser can’t decode.";
     case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-      return 'This browser can’t play this file format.'
+      return "This browser can’t play this file format.";
     default:
-      return 'This file could not be played.'
+      return "This file could not be played.";
   }
 }
 
@@ -33,18 +33,18 @@ export function describeMediaError(error: MediaError | null): string {
  */
 export function codecHint(path: string): string {
   switch (extensionOf(path)) {
-    case 'mkv':
-      return 'Matroska can carry any codec; browsers decode only a few of them (VP8/VP9, AV1, and H.264 in some builds).'
-    case 'mov':
-    case 'm4v':
-    case 'mp4':
-      return 'The container is supported, so it is the codec inside that this browser lacks — H.265/HEVC is the usual one.'
-    case 'flac':
-    case 'opus':
-    case 'oga':
-      return 'Support for this audio format varies between browser builds.'
+    case "mkv":
+      return "Matroska can carry any codec; browsers decode only a few of them (VP8/VP9, AV1, and H.264 in some builds).";
+    case "mov":
+    case "m4v":
+    case "mp4":
+      return "The container is supported, so it is the codec inside that this browser lacks — H.265/HEVC is the usual one.";
+    case "flac":
+    case "opus":
+    case "oga":
+      return "Support for this audio format varies between browser builds.";
     default:
-      return ''
+      return "";
   }
 }
 
@@ -63,10 +63,10 @@ export function codecHint(path: string): string {
 export function mediaErrorReport(
   error: MediaError | null,
   path: string,
-  name: string
+  name: string,
 ): { message: string; hint: string } {
   // A network failure says nothing about the codec, so the container hint would be a red
   // herring exactly when the user needs to know it is not their file's fault.
-  const hint = error && error.code !== MediaError.MEDIA_ERR_NETWORK ? codecHint(path) : ''
-  return { message: `${name} — ${describeMediaError(error)}`, hint }
+  const hint = error && error.code !== MediaError.MEDIA_ERR_NETWORK ? codecHint(path) : "";
+  return { message: `${name} — ${describeMediaError(error)}`, hint };
 }

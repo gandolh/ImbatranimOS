@@ -1,5 +1,5 @@
-import { spawn } from 'child_process';
-import { StringDecoder } from 'string_decoder';
+import { spawn } from "child_process";
+import { StringDecoder } from "string_decoder";
 
 /** The most of a step's output kept for the build log. The end is what explains a failure. */
 export const LOG_TAIL_BYTES = 64 * 1024;
@@ -43,10 +43,7 @@ export interface StepOptions {
  * build started (`npm` → `node` → `esbuild` …), not just the top process.
  * Output is kept as a rolling tail: a chatty build cannot fill memory.
  */
-export function runStep(
-  command: readonly string[],
-  options: StepOptions,
-): Promise<StepResult> {
+export function runStep(command: readonly string[], options: StepOptions): Promise<StepResult> {
   return new Promise((resolve) => {
     let tail = Buffer.alloc(0);
     const keep = (chunk: Buffer) => {
@@ -61,24 +58,24 @@ export function runStep(
         cwd: options.cwd,
         env: options.env,
         detached: true,
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: ["ignore", "pipe", "pipe"],
       });
     } catch (err) {
-      resolve({ ok: false, reason: (err as Error).message, output: '' });
+      resolve({ ok: false, reason: (err as Error).message, output: "" });
       return;
     }
     let timedOut = false;
     let stopped = false;
     const killGroup = () => {
       try {
-        if (child.pid) process.kill(-child.pid, 'SIGKILL');
+        if (child.pid) process.kill(-child.pid, "SIGKILL");
       } catch {
         // already gone
       }
     };
     const { onStdout } = options;
     child.stdout?.on(
-      'data',
+      "data",
       onStdout
         ? (chunk: Buffer) => {
             if (stopped) return;
@@ -89,32 +86,32 @@ export function runStep(
           }
         : keep,
     );
-    child.stderr?.on('data', keep);
+    child.stderr?.on("data", keep);
     const timer = setTimeout(() => {
       timedOut = true;
       killGroup();
     }, options.timeoutMs);
 
-    child.on('error', (err) => {
+    child.on("error", (err) => {
       clearTimeout(timer);
       resolve({
         ok: false,
         reason: err.message,
-        output: tail.toString('utf8'),
+        output: tail.toString("utf8"),
       });
     });
-    child.on('close', (code, signal) => {
+    child.on("close", (code, signal) => {
       clearTimeout(timer);
       // A build that left background children behind does not keep them.
       killGroup();
-      const output = tail.toString('utf8');
+      const output = tail.toString("utf8");
       if (stopped) {
         resolve({ ok: true, stopped: true, output });
       } else if (timedOut) {
         resolve({
           ok: false,
           timedOut: true,
-          reason: `${command.join(' ')} took longer than ${Math.round(options.timeoutMs / 1000)} s`,
+          reason: `${command.join(" ")} took longer than ${Math.round(options.timeoutMs / 1000)} s`,
           output,
         });
       } else if (code === 0) {
@@ -122,7 +119,7 @@ export function runStep(
       } else {
         resolve({
           ok: false,
-          reason: `${command.join(' ')} exited with ${code ?? signal}`,
+          reason: `${command.join(" ")} exited with ${code ?? signal}`,
           output,
         });
       }
@@ -144,19 +141,19 @@ export function eachLine(onLine: (line: string) => void): {
 } {
   // `partial` is checked on every chunk, so it never grows past one chunk
   // beyond the limit.
-  const decoder = new StringDecoder('utf8');
-  let partial = '';
+  const decoder = new StringDecoder("utf8");
+  let partial = "";
   return {
     onStdout: (chunk) => {
-      const lines = (partial + decoder.write(chunk)).split('\n');
+      const lines = (partial + decoder.write(chunk)).split("\n");
       partial = lines.pop()!;
       for (const line of lines) onLine(line);
       return partial.length <= MAX_LINE_LENGTH;
     },
     end: () => {
       const last = partial + decoder.end();
-      partial = '';
-      if (last !== '') onLine(last);
+      partial = "";
+      if (last !== "") onLine(last);
     },
   };
 }

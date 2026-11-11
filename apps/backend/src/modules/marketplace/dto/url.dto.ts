@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class InspectUrlDto {
   /** What the owner pasted. `parseSourceUrl` says what is wrong with it, in words the pane shows. */

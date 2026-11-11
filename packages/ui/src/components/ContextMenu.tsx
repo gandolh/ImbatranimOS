@@ -1,32 +1,32 @@
-import { useEffect, useMemo, type ReactNode } from 'react'
-import { Menu } from '@base-ui/react/menu'
-import { Check } from 'lucide-react'
-import { cn } from '../cn'
+import { useEffect, useMemo, type ReactNode } from "react";
+import { Menu } from "@base-ui/react/menu";
+import { Check } from "lucide-react";
+import { cn } from "../cn";
 
 export type ContextMenuItem =
   | {
-      type?: 'item'
-      label: string
-      icon?: ReactNode
-      onSelect: () => void
-      danger?: boolean
-      disabled?: boolean
+      type?: "item";
+      label: string;
+      icon?: ReactNode;
+      onSelect: () => void;
+      danger?: boolean;
+      disabled?: boolean;
       /** Present = render as a menuitemcheckbox with this state. */
-      checked?: boolean
+      checked?: boolean;
     }
-  | { type: 'separator' }
+  | { type: "separator" }
   /** Escape hatch for one-off rows (the taskbar's workspace grid). */
-  | { type: 'custom'; key: string; children: ReactNode }
+  | { type: "custom"; key: string; children: ReactNode };
 
 type ContextMenuProps = {
   /** Viewport coordinates of the pointer (raw clientX/clientY). */
-  x: number
-  y: number
-  items: ContextMenuItem[]
-  onClose: () => void
+  x: number;
+  y: number;
+  items: ContextMenuItem[];
+  onClose: () => void;
   /** Accessible name for the menu. */
-  label?: string
-}
+  label?: string;
+};
 
 /**
  * THE right-click menu — the third hand-rolled copy triggered the
@@ -40,22 +40,21 @@ type ContextMenuProps = {
  *
  * Callers keep the imperative shape: `{menu && <ContextMenu x y items onClose/>}`.
  */
-export function ContextMenu({ x, y, items, onClose, label = 'Context menu' }: ContextMenuProps) {
+export function ContextMenu({ x, y, items, onClose, label = "Context menu" }: ContextMenuProps) {
   // A point anchor at the stored pointer position — the positioner treats it
   // like any element and flips/shifts to keep the popup fully on screen.
   const anchor = useMemo(
     () => ({
-      getBoundingClientRect: () =>
-        ({ x, y, top: y, left: x, bottom: y, right: x, width: 0, height: 0 }) as DOMRect,
+      getBoundingClientRect: () => ({ x, y, top: y, left: x, bottom: y, right: x, width: 0, height: 0 }) as DOMRect,
     }),
-    [x, y]
-  )
+    [x, y],
+  );
 
   useEffect(() => {
-    const onScroll = () => onClose()
-    window.addEventListener('scroll', onScroll, true)
-    return () => window.removeEventListener('scroll', onScroll, true)
-  }, [onClose])
+    const onScroll = () => onClose();
+    window.addEventListener("scroll", onScroll, true);
+    return () => window.removeEventListener("scroll", onScroll, true);
+  }, [onClose]);
 
   return (
     <Menu.Root open onOpenChange={(next) => !next && onClose()} modal={false}>
@@ -72,32 +71,30 @@ export function ContextMenu({ x, y, items, onClose, label = 'Context menu' }: Co
             aria-label={label}
             // Right-click on the open menu is swallowed, never re-opened.
             onContextMenu={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
+              e.preventDefault();
+              e.stopPropagation();
             }}
             className={cn(
-              'border-outline-variant bg-surface-container-lowest rounded-menu min-w-40 border px-(--k-list-inset) py-1',
-              'shadow-(--k-shadow-popup) outline-none'
+              "border-outline-variant bg-surface-container-lowest rounded-menu min-w-40 border px-(--k-list-inset) py-1",
+              "shadow-(--k-shadow-popup) outline-none",
             )}
           >
             {items.map((item, i) => {
-              if (item.type === 'separator') {
-                return (
-                  <Menu.Separator key={i} className="border-outline-variant/50 my-1 border-t" />
-                )
+              if (item.type === "separator") {
+                return <Menu.Separator key={i} className="border-outline-variant/50 my-1 border-t" />;
               }
-              if (item.type === 'custom') {
-                return <div key={item.key}>{item.children}</div>
+              if (item.type === "custom") {
+                return <div key={item.key}>{item.children}</div>;
               }
-              const isCheckbox = item.checked !== undefined
+              const isCheckbox = item.checked !== undefined;
               const itemClass = cn(
-                'font-ui rounded-item flex w-full cursor-default items-center gap-2 px-3 py-1 text-left text-[12px] outline-none select-none',
+                "font-ui rounded-item flex w-full cursor-default items-center gap-2 px-3 py-1 text-left text-[12px] outline-none select-none",
                 item.disabled
-                  ? 'text-on-surface-variant/50'
+                  ? "text-on-surface-variant/50"
                   : item.danger
-                    ? 'text-error data-[highlighted]:bg-error data-[highlighted]:text-on-error'
-                    : 'text-on-surface data-[highlighted]:bg-primary-container data-[highlighted]:text-on-primary-container'
-              )
+                    ? "text-error data-[highlighted]:bg-error data-[highlighted]:text-on-error"
+                    : "text-on-surface data-[highlighted]:bg-primary-container data-[highlighted]:text-on-primary-container",
+              );
               if (isCheckbox) {
                 return (
                   <Menu.CheckboxItem
@@ -112,7 +109,7 @@ export function ContextMenu({ x, y, items, onClose, label = 'Context menu' }: Co
                     </span>
                     <span className="flex-1">{item.label}</span>
                   </Menu.CheckboxItem>
-                )
+                );
               }
               return (
                 <Menu.Item
@@ -121,16 +118,14 @@ export function ContextMenu({ x, y, items, onClose, label = 'Context menu' }: Co
                   onClick={() => !item.disabled && item.onSelect()}
                   className={itemClass}
                 >
-                  {item.icon && (
-                    <span className="flex w-3.5 shrink-0 justify-center">{item.icon}</span>
-                  )}
+                  {item.icon && <span className="flex w-3.5 shrink-0 justify-center">{item.icon}</span>}
                   <span className="flex-1">{item.label}</span>
                 </Menu.Item>
-              )
+              );
             })}
           </Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.Root>
-  )
+  );
 }

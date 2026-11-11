@@ -15,48 +15,48 @@
  */
 
 // Styling helper
-export { cn } from './cn'
+export { cn } from "./cn";
 
 // UI kit
-export { Button } from './components/Button'
-export { Checkbox } from './components/Checkbox'
-export { Dialog } from './components/Dialog'
-export { Input } from './components/Input'
-export { ScrollArea } from './components/ScrollArea'
-export { Select } from './components/Select'
-export { Separator } from './components/Separator'
-export { Tooltip } from './components/Tooltip'
-export { ConfirmDialog, useConfirm } from './components/ConfirmDialog'
-export { UnsavedChangesDialog } from './components/UnsavedChangesDialog'
-export { FileConflictDialog, type FileConflictDialogProps } from './components/FileConflictDialog'
-export { ContextMenu, type ContextMenuItem } from './components/ContextMenu'
-export { PromptDialog, usePrompt } from './components/PromptDialog'
+export { Button } from "./components/Button";
+export { Checkbox } from "./components/Checkbox";
+export { Dialog } from "./components/Dialog";
+export { Input } from "./components/Input";
+export { ScrollArea } from "./components/ScrollArea";
+export { Select } from "./components/Select";
+export { Separator } from "./components/Separator";
+export { Tooltip } from "./components/Tooltip";
+export { ConfirmDialog, useConfirm } from "./components/ConfirmDialog";
+export { UnsavedChangesDialog } from "./components/UnsavedChangesDialog";
+export { FileConflictDialog, type FileConflictDialogProps } from "./components/FileConflictDialog";
+export { ContextMenu, type ContextMenuItem } from "./components/ContextMenu";
+export { PromptDialog, usePrompt } from "./components/PromptDialog";
 
 // Pure hooks
-export { useVirtualList } from './hooks/useVirtualList'
-export type { VirtualList } from './hooks/useVirtualList'
-export { useElementSize, type ElementSize, type ElementSizeRef } from './hooks/useElementSize'
+export { useVirtualList } from "./hooks/useVirtualList";
+export type { VirtualList } from "./hooks/useVirtualList";
+export { useElementSize, type ElementSize, type ElementSizeRef } from "./hooks/useElementSize";
 
 // Pure utilities
-export { installMapGetOrInsert } from './lib/mapGetOrInsert'
-export { isTextEntry } from './lib/textEntry'
-export { desktopSessionId, renewDesktopSessionId } from './lib/desktopSession'
-export { fileName, FileConflictError, UploadTooLargeError } from './lib/files'
-export { saveOverRead, type SaveOverReadOutcome } from './lib/saveOverRead'
-export { describeFileFailure, type FileFailureOptions } from './lib/fileFailureText'
+export { installMapGetOrInsert } from "./lib/mapGetOrInsert";
+export { isTextEntry } from "./lib/textEntry";
+export { desktopSessionId, renewDesktopSessionId } from "./lib/desktopSession";
+export { fileName, FileConflictError, UploadTooLargeError } from "./lib/files";
+export { saveOverRead, type SaveOverReadOutcome } from "./lib/saveOverRead";
+export { describeFileFailure, type FileFailureOptions } from "./lib/fileFailureText";
 
 // Backend log contract (pure types)
-export type { LogEntry, LogLevel, LogSource } from './lib/systemLog'
+export type { LogEntry, LogLevel, LogSource } from "./lib/systemLog";
 
 // The shared react-query client. A library concern, not a capability: in a
 // future sandboxed world each app bundles its own; in-process everyone shares
 // this one, exactly as before the split.
-export { queryClient } from './queryClient'
+export { queryClient } from "./queryClient";
 
 // ── The protocol ──────────────────────────────────────────────────
 // `system.ts` is the spec; the provider/context pair is how the compositor
 // injects a handle and how apps + SDK hooks reach it.
-export { PROTOCOL_VERSION } from './system'
+export { PROTOCOL_VERSION } from "./system";
 export type {
   DataEntry,
   DataFile,
@@ -96,12 +96,12 @@ export type {
   SystemWindow,
   UploadOptions,
   VersionedBytes,
-} from './system'
-export { SystemProvider, useSystem } from './systemContext'
+} from "./system";
+export { SystemProvider, useSystem } from "./systemContext";
 
 // The shared kit: what a marketplace kit app reads from the
 // desktop at runtime instead of bundling, and the props it is rendered with.
-export { SHARED_KIT_MODULES, SHARED_KIT_VERSION } from './sharedKit'
+export { SHARED_KIT_MODULES, SHARED_KIT_VERSION } from "./sharedKit";
 export type {
   KitAppModule,
   KitAppProps,
@@ -109,10 +109,10 @@ export type {
   NativeHostContext,
   SharedKitModule,
   WindowlessSystemHandle,
-} from './sharedKit'
+} from "./sharedKit";
 // What a command source is: a built-in add-on's manifest lists them, a kit
 // app's module exports them.
-export type { CommandItem, CommandSource, CommandSourceContext } from './commandSource'
+export type { CommandItem, CommandSource, CommandSourceContext } from "./commandSource";
 
 // Capability-consuming SDK hooks — the old core hooks, re-homed onto the
 // handle. No windowId arguments: the handle already knows its window.
@@ -127,16 +127,7 @@ export {
   useUnsavedGuard,
   useWindowVisible,
   type TopWindowKeydownOptions,
-} from './hooks/systemHooks'
-export { useSystemSound } from './hooks/systemSound'
-export {
-  useFileConflict,
-  type FileConflict,
-  type FileConflictChoice,
-} from './hooks/useFileConflict'
-export {
-  useFileDialog,
-  useOpenIntent,
-  resetOpenedFilesForTest,
-  type OpenedFile,
-} from './hooks/openIntent'
+} from "./hooks/systemHooks";
+export { useSystemSound } from "./hooks/systemSound";
+export { useFileConflict, type FileConflict, type FileConflictChoice } from "./hooks/useFileConflict";
+export { useFileDialog, useOpenIntent, resetOpenedFilesForTest, type OpenedFile } from "./hooks/openIntent";

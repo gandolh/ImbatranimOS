@@ -1,5 +1,5 @@
-import { ArrowDown, ArrowUp, CaseSensitive, Replace, X } from 'lucide-react'
-import { Button, cn } from '@imbatranim/ui'
+import { ArrowDown, ArrowUp, CaseSensitive, Replace, X } from "lucide-react";
+import { Button, cn } from "@imbatranim/ui";
 
 /**
  * Find (and optionally replace) over the textarea.
@@ -26,25 +26,25 @@ export function FindBar({
   onClose,
   inputRef,
 }: {
-  query: string
-  onQueryChange: (value: string) => void
-  replacement: string
-  onReplacementChange: (value: string) => void
-  caseSensitive: boolean
-  onToggleCase: () => void
-  showReplace: boolean
-  onToggleReplace: () => void
-  matchCount: number
+  query: string;
+  onQueryChange: (value: string) => void;
+  replacement: string;
+  onReplacementChange: (value: string) => void;
+  caseSensitive: boolean;
+  onToggleCase: () => void;
+  showReplace: boolean;
+  onToggleReplace: () => void;
+  matchCount: number;
   /** 1-based index of the highlighted match, or 0 when none. */
-  currentMatch: number
-  onNext: () => void
-  onPrevious: () => void
-  onReplaceOne: () => void
-  onReplaceAll: () => void
-  onClose: () => void
-  inputRef: React.Ref<HTMLInputElement>
+  currentMatch: number;
+  onNext: () => void;
+  onPrevious: () => void;
+  onReplaceOne: () => void;
+  onReplaceAll: () => void;
+  onClose: () => void;
+  inputRef: React.Ref<HTMLInputElement>;
 }) {
-  const noMatches = query.length > 0 && matchCount === 0
+  const noMatches = query.length > 0 && matchCount === 0;
 
   return (
     <div className="border-outline-variant bg-surface-container-low shrink-0 border-b px-2 py-1">
@@ -54,32 +54,32 @@ export function FindBar({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              if (e.shiftKey) onPrevious()
-              else onNext()
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (e.shiftKey) onPrevious();
+              else onNext();
             }
-            if (e.key === 'Escape') {
-              e.preventDefault()
-              onClose()
+            if (e.key === "Escape") {
+              e.preventDefault();
+              onClose();
             }
           }}
           placeholder="Find"
           aria-label="Find"
           className={cn(
-            'focus-visible:ring-primary rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface w-40 border px-1 py-0 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
+            "focus-visible:ring-primary rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface w-40 border px-1 py-0 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
             // The only signal that a search failed. Colour alone would not do it, so
             // the count beside it says "No results" in words too.
-            noMatches && 'border-error'
+            noMatches && "border-error",
           )}
         />
         <span
           className={cn(
-            'font-ui min-w-[72px] text-[10px] tabular-nums',
-            noMatches ? 'text-error' : 'text-on-surface-variant'
+            "font-ui min-w-[72px] text-[10px] tabular-nums",
+            noMatches ? "text-error" : "text-on-surface-variant",
           )}
         >
-          {query.length === 0 ? '' : noMatches ? 'No results' : `${currentMatch} of ${matchCount}`}
+          {query.length === 0 ? "" : noMatches ? "No results" : `${currentMatch} of ${matchCount}`}
         </span>
 
         <Button
@@ -103,7 +103,7 @@ export function FindBar({
           <ArrowDown size={11} />
         </Button>
         <Button
-          variant={caseSensitive ? 'selected' : 'ghost'}
+          variant={caseSensitive ? "selected" : "ghost"}
           size="sm"
           className="h-5 w-5 p-0"
           aria-label="Match case"
@@ -113,7 +113,7 @@ export function FindBar({
           <CaseSensitive size={12} />
         </Button>
         <Button
-          variant={showReplace ? 'selected' : 'ghost'}
+          variant={showReplace ? "selected" : "ghost"}
           size="sm"
           className="h-5 w-5 p-0"
           aria-label="Toggle replace"
@@ -124,13 +124,7 @@ export function FindBar({
         </Button>
 
         <div className="flex-1" />
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 w-5 p-0"
-          aria-label="Close find"
-          onClick={onClose}
-        >
+        <Button variant="ghost" size="sm" className="h-5 w-5 p-0" aria-label="Close find" onClick={onClose}>
           <X size={11} />
         </Button>
       </div>
@@ -141,13 +135,13 @@ export function FindBar({
             value={replacement}
             onChange={(e) => onReplacementChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                onReplaceOne()
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onReplaceOne();
               }
-              if (e.key === 'Escape') {
-                e.preventDefault()
-                onClose()
+              if (e.key === "Escape") {
+                e.preventDefault();
+                onClose();
               }
             }}
             placeholder="Replace with"
@@ -175,5 +169,5 @@ export function FindBar({
         </div>
       )}
     </div>
-  )
+  );
 }

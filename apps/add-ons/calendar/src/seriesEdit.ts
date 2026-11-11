@@ -1,6 +1,6 @@
-import dayjs from 'dayjs'
-import { occurrenceDateOf } from './recurrence'
-import type { CalendarEvent, CalendarEventInput, EditScope } from './types'
+import dayjs from "dayjs";
+import { occurrenceDateOf } from "./recurrence";
+import type { CalendarEvent, CalendarEventInput, EditScope } from "./types";
 
 /**
  * Editing and deleting one instance of a repeating event.
@@ -28,37 +28,37 @@ import type { CalendarEvent, CalendarEventInput, EditScope } from './types'
 
 export type SeriesPlan = {
   /** Fields to PATCH onto the original event. */
-  patch?: Partial<CalendarEventInput>
+  patch?: Partial<CalendarEventInput>;
   /** A new event to POST — a detached instance, or the tail of a split series. */
-  create?: CalendarEventInput
+  create?: CalendarEventInput;
   /** True when the original row should be deleted outright. */
-  deleteOriginal?: boolean
-}
+  deleteOriginal?: boolean;
+};
 
 /** What the dialog collected, as absolute instants on the edited occurrence. */
-export type EditedFields = Omit<CalendarEventInput, 'recurrence' | 'exceptions'> & {
-  recurrence?: CalendarEventInput['recurrence']
-}
+export type EditedFields = Omit<CalendarEventInput, "recurrence" | "exceptions"> & {
+  recurrence?: CalendarEventInput["recurrence"];
+};
 
 /** The instance the user opened. */
 export type EditedOccurrence = {
   /** The series' own start, i.e. `event.start`. */
-  seriesStart: number
+  seriesStart: number;
   /** This occurrence's start before the edit. */
-  occurrenceStart: number
-  occurrenceDate: string
+  occurrenceStart: number;
+  occurrenceDate: string;
   /** Position in the series, 0 for the first. */
-  index: number
+  index: number;
   /** True when this is the first occurrence of the series. */
-  isFirst: boolean
-}
+  isFirst: boolean;
+};
 
 /**
  * `until` is inclusive, so a series that must stop before `date` ends the day
  * before it.
  */
 function dayBefore(date: string): string {
-  return dayjs(date).subtract(1, 'day').format('YYYY-MM-DD')
+  return dayjs(date).subtract(1, "day").format("YYYY-MM-DD");
 }
 
 /**
@@ -71,18 +71,18 @@ export function planEdit(
   event: CalendarEvent,
   occurrence: EditedOccurrence,
   edited: EditedFields,
-  scope: EditScope
+  scope: EditScope,
 ): SeriesPlan {
   // A one-off event has exactly one meaning for every scope.
   if (!event.recurrence) {
-    return { patch: { ...edited, recurrence: edited.recurrence ?? null } }
+    return { patch: { ...edited, recurrence: edited.recurrence ?? null } };
   }
 
-  if (scope === 'all') {
+  if (scope === "all") {
     // Apply the change as a delta so earlier occurrences survive.
-    const shift = edited.start - occurrence.occurrenceStart
-    const duration = edited.end - edited.start
-    const newStart = occurrence.seriesStart + shift
+    const shift = edited.start - occurrence.occurrenceStart;
+    const duration = edited.end - edited.start;
+    const newStart = occurrence.seriesStart + shift;
     return {
       patch: {
         ...edited,
@@ -92,35 +92,33 @@ export function planEdit(
         // `null` means the user chose "Does not repeat" and must clear it (T1-6).
         recurrence: edited.recurrence !== undefined ? edited.recurrence : event.recurrence,
       },
-    }
+    };
   }
 
-  if (scope === 'single') {
+  if (scope === "single") {
     return {
       patch: { exceptions: [...event.exceptions, occurrence.occurrenceDate] },
       create: { ...edited, recurrence: null, exceptions: [] },
-    }
+    };
   }
 
   // scope === 'following'
   if (occurrence.isFirst) {
     // Nothing precedes it, so "this and following" is "all" — and truncating the
     // original to end before its own start would leave an empty series behind.
-    return planEdit(event, occurrence, edited, 'all')
+    return planEdit(event, occurrence, edited, "all");
   }
 
-  const cut = occurrence.occurrenceDate
+  const cut = occurrence.occurrenceDate;
   // `undefined` means the rule was left untouched; `null` means the user cleared
   // it ("Does not repeat") and the tail must not repeat either (T1-6).
-  const ruleWasEdited = edited.recurrence !== undefined
-  const rule = ruleWasEdited ? edited.recurrence : event.recurrence
+  const ruleWasEdited = edited.recurrence !== undefined;
+  const rule = ruleWasEdited ? edited.recurrence : event.recurrence;
   // A `count` cannot survive a split as-is: the head now ends on a date, and the
   // tail carries however many occurrences were left. Anything else changes how
   // many times the event happens, which the user did not ask for.
   const remainingCount =
-    event.recurrence.count !== undefined
-      ? Math.max(1, event.recurrence.count - occurrence.index)
-      : undefined
+    event.recurrence.count !== undefined ? Math.max(1, event.recurrence.count - occurrence.index) : undefined;
 
   return {
     patch: {
@@ -141,36 +139,32 @@ export function planEdit(
         : null,
       exceptions: event.exceptions.filter((date) => date >= cut),
     },
-  }
+  };
 }
 
 /** Plan a delete. Same three scopes, no new fields involved. */
-export function planDelete(
-  event: CalendarEvent,
-  occurrence: EditedOccurrence,
-  scope: EditScope
-): SeriesPlan {
-  if (!event.recurrence || scope === 'all') return { deleteOriginal: true }
+export function planDelete(event: CalendarEvent, occurrence: EditedOccurrence, scope: EditScope): SeriesPlan {
+  if (!event.recurrence || scope === "all") return { deleteOriginal: true };
 
-  if (scope === 'single') {
-    return { patch: { exceptions: [...event.exceptions, occurrence.occurrenceDate] } }
+  if (scope === "single") {
+    return { patch: { exceptions: [...event.exceptions, occurrence.occurrenceDate] } };
   }
 
   // 'following' — dropping the first occurrence drops the whole series.
-  if (occurrence.isFirst) return { deleteOriginal: true }
+  if (occurrence.isFirst) return { deleteOriginal: true };
 
-  const cut = occurrence.occurrenceDate
+  const cut = occurrence.occurrenceDate;
   return {
     patch: {
       recurrence: { ...event.recurrence, until: dayBefore(cut), count: undefined },
       exceptions: event.exceptions.filter((date) => date < cut),
     },
-  }
+  };
 }
 
 /** Whether the scope question is worth asking at all. */
 export function needsScopeChoice(event: CalendarEvent): boolean {
-  return event.recurrence !== null
+  return event.recurrence !== null;
 }
 
 /** The occurrence descriptor for an instance of `event` starting at `start`. */
@@ -181,5 +175,5 @@ export function occurrenceOf(event: CalendarEvent, start: number, index = 0): Ed
     occurrenceDate: occurrenceDateOf(start),
     index,
     isFirst: occurrenceDateOf(start) === occurrenceDateOf(event.start),
-  }
+  };
 }

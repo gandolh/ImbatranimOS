@@ -1,16 +1,10 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
-import { randomBytes } from 'crypto';
-import { promises as fs } from 'fs';
-import { basename } from 'path';
+import { HttpException, HttpStatus, Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { randomBytes } from "crypto";
+import { promises as fs } from "fs";
+import { basename } from "path";
 
-import type { Descriptor } from './catalog';
-import type { AppSource } from './source-url';
+import type { Descriptor } from "./catalog";
+import type { AppSource } from "./source-url";
 
 /** How long a checked app waits for the owner's Install or Cancel. */
 export const PENDING_TTL_MS = 15 * 60_000;
@@ -96,8 +90,8 @@ export class PendingInspections implements OnModuleInit, OnModuleDestroy {
     this.cloning.delete(basename(dir));
   }
 
-  add(entry: Omit<PendingInspection, 'expiresAt'>, now = Date.now()): string {
-    const pending = randomBytes(16).toString('hex');
+  add(entry: Omit<PendingInspection, "expiresAt">, now = Date.now()): string {
+    const pending = randomBytes(16).toString("hex");
     this.entries.set(pending, { ...entry, expiresAt: now + PENDING_TTL_MS });
     return pending;
   }

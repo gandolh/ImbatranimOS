@@ -1,9 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module } from "@nestjs/common";
 
-import { AppTokensController } from './app-tokens.controller';
-import { FileGrants } from './file-grants.service';
-import { InstalledApps } from './installed-apps';
-import { ModeStore } from './mode-store.service';
+import { AppTokensController } from "./app-tokens.controller";
+import { FileGrants } from "./file-grants.service";
+import { InstalledApps } from "./installed-apps";
+import { ModeStore } from "./mode-store.service";
 
 /**
  * App identity: the routes core registers and ends app tokens on, the store

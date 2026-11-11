@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { DbService } from '../../db/db.service';
+import { Injectable } from "@nestjs/common";
+import { DbService } from "../../db/db.service";
 
 /** The list is a glance, not an archive — files are pruned to this on every write. */
 const MAX_RECENTS = 50;
@@ -11,7 +11,7 @@ const MAX_RECENTS = 50;
 export const MAX_FOLDER_RECENTS_PER_APP = 10;
 
 /** A file, or a folder an app works in (Git GUI's repositories). */
-export type RecentKind = 'file' | 'folder';
+export type RecentKind = "file" | "folder";
 
 export interface RecentFile {
   id: number;
@@ -75,7 +75,7 @@ export class RecentService {
     path: string,
     appId: string,
     writable: boolean | undefined = true,
-    kind: RecentKind = 'file',
+    kind: RecentKind = "file",
   ): void {
     const w = writable === undefined ? null : writable ? 1 : 0;
     const tx = this.db.db.transaction(() => {
@@ -136,21 +136,11 @@ export class RecentService {
    * `appId`'s own recent at `(root, path)`: whether it could write it then,
    * and whether it was a file or a folder; null for none.
    */
-  ownRecent(
-    root: string,
-    path: string,
-    appId: string,
-  ): { writable: boolean; kind: RecentKind } | null {
+  ownRecent(root: string, path: string, appId: string): { writable: boolean; kind: RecentKind } | null {
     const row = this.db.db
-      .prepare(
-        `SELECT writable, kind FROM recent_files WHERE root = ? AND path = ? AND app_id = ?`,
-      )
-      .get(root, path, appId) as
-      | { writable: number; kind: RecentKind }
-      | undefined;
-    return row === undefined
-      ? null
-      : { writable: row.writable === 1, kind: row.kind };
+      .prepare(`SELECT writable, kind FROM recent_files WHERE root = ? AND path = ? AND app_id = ?`)
+      .get(root, path, appId) as { writable: number; kind: RecentKind } | undefined;
+    return row === undefined ? null : { writable: row.writable === 1, kind: row.kind };
   }
 
   /**
@@ -159,16 +149,10 @@ export class RecentService {
    */
   remove(root: string, path: string, appId?: string): void {
     if (appId === undefined) {
-      this.db.db
-        .prepare(`DELETE FROM recent_files WHERE root = ? AND path = ?`)
-        .run(root, path);
+      this.db.db.prepare(`DELETE FROM recent_files WHERE root = ? AND path = ?`).run(root, path);
       return;
     }
-    this.db.db
-      .prepare(
-        `DELETE FROM recent_files WHERE root = ? AND path = ? AND app_id = ?`,
-      )
-      .run(root, path, appId);
+    this.db.db.prepare(`DELETE FROM recent_files WHERE root = ? AND path = ? AND app_id = ?`).run(root, path, appId);
   }
 
   /**
@@ -177,9 +161,7 @@ export class RecentService {
    * before.
    */
   removeApps(appIds: readonly string[]): void {
-    const remove = this.db.db.prepare(
-      `DELETE FROM recent_files WHERE app_id = ?`,
-    );
+    const remove = this.db.db.prepare(`DELETE FROM recent_files WHERE app_id = ?`);
     this.db.db.transaction(() => {
       for (const appId of appIds) remove.run(appId);
     })();

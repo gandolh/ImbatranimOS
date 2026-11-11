@@ -8,38 +8,38 @@
  * its windows in the tab that shell belongs to.
  */
 
-const KEY = 'imbatranim:desktop-session'
-const VALID = /^[A-Za-z0-9_-]{16,64}$/
+const KEY = "imbatranim:desktop-session";
+const VALID = /^[A-Za-z0-9_-]{16,64}$/;
 
 /** Where the id lives when `sessionStorage` throws (some private modes). */
-let fallback: string | null = null
+let fallback: string | null = null;
 
 function store(): Storage | null {
   try {
-    return window.sessionStorage
+    return window.sessionStorage;
   } catch {
-    return null
+    return null;
   }
 }
 
 function randomId(): string {
-  const bytes = new Uint8Array(16)
-  crypto.getRandomValues(bytes)
-  let text = ''
-  for (const b of bytes) text += String.fromCharCode(b)
-  return btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let text = "";
+  for (const b of bytes) text += String.fromCharCode(b);
+  return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 /** This tab's id, made on first use. */
 export function desktopSessionId(): string {
   try {
-    const saved = store()?.getItem(KEY)
-    if (saved && VALID.test(saved)) return saved
+    const saved = store()?.getItem(KEY);
+    if (saved && VALID.test(saved)) return saved;
   } catch {
     /* fall through to the in-memory id */
   }
-  if (fallback) return fallback
-  return renewDesktopSessionId()
+  if (fallback) return fallback;
+  return renewDesktopSessionId();
 }
 
 /**
@@ -48,12 +48,12 @@ export function desktopSessionId(): string {
  * id and the tab calls this.
  */
 export function renewDesktopSessionId(): string {
-  const id = randomId()
-  fallback = id
+  const id = randomId();
+  fallback = id;
   try {
-    store()?.setItem(KEY, id)
+    store()?.setItem(KEY, id);
   } catch {
     /* the in-memory id serves this page */
   }
-  return id
+  return id;
 }

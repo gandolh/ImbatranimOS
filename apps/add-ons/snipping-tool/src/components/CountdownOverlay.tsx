@@ -14,30 +14,30 @@ export function CountdownOverlay({ remaining }: { remaining: number }) {
     <div
       data-snip-overlay
       style={{
-        position: 'fixed',
+        position: "fixed",
         inset: 0,
         zIndex: 100000,
-        pointerEvents: 'none',
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
+        pointerEvents: "none",
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "center",
         paddingTop: 16,
-        fontFamily: 'var(--font-ui)',
+        fontFamily: "var(--font-ui)",
       }}
     >
       <div
         style={{
-          padding: '6px 14px',
+          padding: "6px 14px",
           fontSize: 12,
           fontWeight: 600,
-          color: '#fff',
-          background: 'rgba(20,20,24,0.85)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          whiteSpace: 'nowrap',
+          color: "#fff",
+          background: "rgba(20,20,24,0.85)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          whiteSpace: "nowrap",
         }}
       >
         Capturing the whole desktop in {remaining}s — open what you need now
       </div>
     </div>
-  )
+  );
 }

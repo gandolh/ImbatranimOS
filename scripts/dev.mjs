@@ -11,28 +11,24 @@
 //
 // Arguments are passed on to `docker compose watch`.
 
-import { spawn } from 'node:child_process';
-import { mkdirSync, readFileSync, unwatchFile, watchFile, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import {
-  normaliseDockerfile,
-  normaliseLockfile,
-  normalisePackageJson,
-} from './normalise-manifests.mjs';
+import { spawn } from "node:child_process";
+import { mkdirSync, readFileSync, unwatchFile, watchFile, writeFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { normaliseDockerfile, normaliseLockfile, normalisePackageJson } from "./normalise-manifests.mjs";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const out = path.join(root, 'infrastructure', '.dev-deps');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const out = path.join(root, "infrastructure", ".dev-deps");
 
 const COPIES = [
-  { from: 'package.json', to: 'package.json', normalise: normalisePackageJson },
-  { from: 'package-lock.json', to: 'package-lock.json', normalise: normaliseLockfile },
-  { from: 'infrastructure/Dockerfile', to: 'Dockerfile', normalise: normaliseDockerfile },
+  { from: "package.json", to: "package.json", normalise: normalisePackageJson },
+  { from: "package-lock.json", to: "package-lock.json", normalise: normaliseLockfile },
+  { from: "infrastructure/Dockerfile", to: "Dockerfile", normalise: normaliseDockerfile },
 ];
 
 function read(file) {
   try {
-    return readFileSync(file, 'utf8');
+    return readFileSync(file, "utf8");
   } catch {
     return null;
   }
@@ -62,28 +58,20 @@ refresh();
 for (const { from } of COPIES) watchFile(path.join(root, from), { interval: 1000 }, refresh);
 
 const compose = spawn(
-  'docker',
-  [
-    'compose',
-    '-f',
-    'infrastructure/docker-compose.yml',
-    '--profile',
-    'dev',
-    'watch',
-    ...process.argv.slice(2),
-  ],
-  { cwd: root, stdio: 'inherit' },
+  "docker",
+  ["compose", "-f", "infrastructure/docker-compose.yml", "--profile", "dev", "watch", ...process.argv.slice(2)],
+  { cwd: root, stdio: "inherit" },
 );
 
 // Ctrl+C reaches Compose from the terminal by itself; a second one from here
 // would make it force-stop. Stay alive until it has shut down.
-process.on('SIGINT', () => {});
-process.on('SIGTERM', () => compose.kill('SIGTERM'));
-compose.on('exit', (code, signal) => {
+process.on("SIGINT", () => {});
+process.on("SIGTERM", () => compose.kill("SIGTERM"));
+compose.on("exit", (code, signal) => {
   for (const { from } of COPIES) unwatchFile(path.join(root, from));
   process.exit(code ?? (signal ? 1 : 0));
 });
-compose.on('error', (err) => {
+compose.on("error", (err) => {
   console.error(`dev: could not start docker compose: ${err.message}`);
   process.exit(1);
 });

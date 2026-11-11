@@ -1,19 +1,19 @@
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import { join } from 'path';
+import * as fs from "fs/promises";
+import * as os from "os";
+import { join } from "path";
 
 // Replace the real git binary with a mock so we can assert EXACTLY what is
 // handed to execa: the file, the arg array, and the options — proving no shell
 // and no command string, without depending on git being installed. The mock fn
 // is `mock`-prefixed so the (hoisted) jest.mock factory may reference it.
 const mockExeca = jest.fn();
-jest.mock('execa', () => ({
+jest.mock("execa", () => ({
   __esModule: true,
   execa: mockExeca,
 }));
 
-import { GitService } from './git.service';
-import { FilesService } from '../files/files.service';
+import { GitService } from "./git.service";
+import { FilesService } from "../files/files.service";
 
 /** The shape of the execa options object the service passes. */
 type ExecaOpts = {
@@ -28,21 +28,21 @@ type ExecaCall = [string, string[], ExecaOpts];
 /** Typed view over the recorded execa calls (mock.calls is otherwise `any[]`). */
 const calls = (): ExecaCall[] => mockExeca.mock.calls as ExecaCall[];
 
-describe('GitService.exec (execa contract — no shell, array args)', () => {
+describe("GitService.exec (execa contract — no shell, array args)", () => {
   let service: GitService;
   let jail: string;
   const prevEnv = process.env.FILES_ROOT;
 
   beforeEach(async () => {
-    jail = await fs.mkdtemp(join(os.tmpdir(), 'imb-git-exec-'));
+    jail = await fs.mkdtemp(join(os.tmpdir(), "imb-git-exec-"));
     process.env.FILES_ROOT = jail;
     mockExeca.mockReset();
     // `--is-inside-work-tree` → "true"; `--show-toplevel` → the jail dir itself
     // (so the new top-level-within-jail containment check passes); everything
     // else → "true". Context-aware so resolveRepo's guards are satisfied.
     mockExeca.mockImplementation((_file: string, args: string[]) => {
-      const stdout = args.includes('--show-toplevel') ? jail : 'true';
-      return Promise.resolve({ stdout, stderr: '', exitCode: 0 });
+      const stdout = args.includes("--show-toplevel") ? jail : "true";
+      return Promise.resolve({ stdout, stderr: "", exitCode: 0 });
     });
     service = new GitService(new FilesService());
   });
@@ -53,29 +53,29 @@ describe('GitService.exec (execa contract — no shell, array args)', () => {
   });
 
   it('spawns "git" with an explicit array and never enables a shell', async () => {
-    await service.exec('/some/repo', ['status', '--porcelain']);
+    await service.exec("/some/repo", ["status", "--porcelain"]);
 
     expect(mockExeca).toHaveBeenCalledTimes(1);
     const [file, args, opts] = calls()[0];
-    expect(file).toBe('git');
+    expect(file).toBe("git");
     expect(Array.isArray(args)).toBe(true);
-    expect(args).toEqual(['status', '--porcelain']);
+    expect(args).toEqual(["status", "--porcelain"]);
     // The load-bearing assertions: no shell, bounded, fixed cwd.
     expect(opts.shell).toBe(false);
-    expect(opts.cwd).toBe('/some/repo');
-    expect(typeof opts.timeout).toBe('number');
-    expect(typeof opts.maxBuffer).toBe('number');
+    expect(opts.cwd).toBe("/some/repo");
+    expect(typeof opts.timeout).toBe("number");
+    expect(typeof opts.maxBuffer).toBe("number");
     // Pathspec magic disabled so a pathspec is always a literal path.
-    expect(opts.env?.GIT_LITERAL_PATHSPECS).toBe('1');
+    expect(opts.env?.GIT_LITERAL_PATHSPECS).toBe("1");
   });
 
   // A repository runs its own hooks, pager and helpers inside git, so git's
   // environment is the backend's minus its secrets, and execa must not merge
   // process.env back in (extendEnv) behind it.
   it("hands git the backend's environment without SETUP_TOKEN", async () => {
-    process.env.SETUP_TOKEN = 'test-secret';
+    process.env.SETUP_TOKEN = "test-secret";
     try {
-      await service.exec('/some/repo', ['status', '--porcelain']);
+      await service.exec("/some/repo", ["status", "--porcelain"]);
     } finally {
       delete process.env.SETUP_TOKEN;
     }
@@ -83,36 +83,36 @@ describe('GitService.exec (execa contract — no shell, array args)', () => {
     expect(opts.extendEnv).toBe(false);
     expect(opts.env?.SETUP_TOKEN).toBeUndefined();
     expect(opts.env?.PATH).toBe(process.env.PATH);
-    expect(opts.env?.GIT_TERMINAL_PROMPT).toBe('0');
+    expect(opts.env?.GIT_TERMINAL_PROMPT).toBe("0");
   });
 
-  it('stage passes pathspecs after a `--` separator, even a `-`-leading one', async () => {
+  it("stage passes pathspecs after a `--` separator, even a `-`-leading one", async () => {
     // resolveRepo stat check needs the dir to exist; rev-parse is mocked "true".
-    const { entries } = await service.stage('home', ['-rf', 'a.txt'], '');
+    const { entries } = await service.stage("home", ["-rf", "a.txt"], "");
     expect(Array.isArray(entries)).toBe(true);
 
-    const addCall = calls().find((c) => c[1].includes('add'));
+    const addCall = calls().find((c) => c[1].includes("add"));
     expect(addCall).toBeDefined();
     const args = addCall![1];
-    expect(args).toContain('--');
+    expect(args).toContain("--");
     // Both pathspecs sit AFTER the `--`, so neither can be read as a flag.
-    expect(args.indexOf('--')).toBeLessThan(args.indexOf('-rf'));
-    expect(args.indexOf('--')).toBeLessThan(args.indexOf('a.txt'));
+    expect(args.indexOf("--")).toBeLessThan(args.indexOf("-rf"));
+    expect(args.indexOf("--")).toBeLessThan(args.indexOf("a.txt"));
     // Every execa call is (string, string[]) — never a single command string.
     for (const call of calls()) {
-      expect(typeof call[0]).toBe('string');
+      expect(typeof call[0]).toBe("string");
       expect(Array.isArray(call[1])).toBe(true);
     }
   });
 
-  it('commit passes the message as a single `-m <msg>` array element', async () => {
-    await service.commit('home', 'hello; rm -rf ~', '');
-    const commitCall = calls().find((c) => c[1].includes('commit'));
+  it("commit passes the message as a single `-m <msg>` array element", async () => {
+    await service.commit("home", "hello; rm -rf ~", "");
+    const commitCall = calls().find((c) => c[1].includes("commit"));
     expect(commitCall).toBeDefined();
     const args = commitCall![1];
-    const mIdx = args.indexOf('-m');
+    const mIdx = args.indexOf("-m");
     expect(mIdx).toBeGreaterThan(-1);
     // The whole message is ONE argument — never split, never shell-interpreted.
-    expect(args[mIdx + 1]).toBe('hello; rm -rf ~');
+    expect(args[mIdx + 1]).toBe("hello; rm -rf ~");
   });
 });

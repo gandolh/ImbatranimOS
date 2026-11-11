@@ -12,16 +12,16 @@
  * every second is noise.
  */
 export function formatUptime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return 'unknown'
+  if (!Number.isFinite(seconds) || seconds < 0) return "unknown";
 
-  const total = Math.floor(seconds)
-  if (total < 60) return `${total}s`
+  const total = Math.floor(seconds);
+  if (total < 60) return `${total}s`;
 
-  const days = Math.floor(total / 86_400)
-  const hours = Math.floor((total % 86_400) / 3600)
-  const minutes = Math.floor((total % 3600) / 60)
+  const days = Math.floor(total / 86_400);
+  const hours = Math.floor((total % 86_400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
 
-  if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`
-  if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
-  return `${minutes}m`
+  if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+  if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  return `${minutes}m`;
 }

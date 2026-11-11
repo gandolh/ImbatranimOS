@@ -8,34 +8,21 @@ import {
   NotFoundException,
   Param,
   Post,
-} from '@nestjs/common';
-import {
-  IsBoolean,
-  IsIn,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-} from 'class-validator';
-import * as fs from 'fs/promises';
-import { dirname, join } from 'path';
+} from "@nestjs/common";
+import { IsBoolean, IsIn, IsOptional, IsString, Matches, MaxLength } from "class-validator";
+import * as fs from "fs/promises";
+import { dirname, join } from "path";
 
-import {
-  SYSTEM_GROUP,
-  type AppIdentity,
-} from '../app-identity/app-identity.types';
-import { APP_ID, INSTANCE_ID } from '../app-identity/app-tokens.controller';
-import { CallingApp, requireUser } from '../app-identity/calling-app';
-import {
-  FileGrants,
-  type GrantKind,
-} from '../app-identity/file-grants.service';
-import type { ModeOp } from '../app-identity/mode-store.service';
-import { FilesService } from './files.service';
-import { RecentService } from './recent.service';
+import { SYSTEM_GROUP, type AppIdentity } from "../app-identity/app-identity.types";
+import { APP_ID, INSTANCE_ID } from "../app-identity/app-tokens.controller";
+import { CallingApp, requireUser } from "../app-identity/calling-app";
+import { FileGrants, type GrantKind } from "../app-identity/file-grants.service";
+import type { ModeOp } from "../app-identity/mode-store.service";
+import { FilesService } from "./files.service";
+import { RecentService } from "./recent.service";
 
 /** The virtual roots the files API serves. */
-const ROOTS = ['home', 'notes'] as const;
+const ROOTS = ["home", "notes"] as const;
 
 export class GrantFileDto {
   /** The running copy given the file: its window's id. */
@@ -61,8 +48,8 @@ export class GrantFileDto {
    * the folder chooser a folder. Absent, what is there decides.
    */
   @IsOptional()
-  @IsIn(['file', 'folder'])
-  expect?: 'file' | 'folder';
+  @IsIn(["file", "folder"])
+  expect?: "file" | "folder";
 
   /**
    * Also give the file's folder to read (list it, read the files directly in
@@ -111,7 +98,7 @@ export class GrantFileDto {
  * only the OS gives: an app's own open never gets the folder. `withAssets`
  * likewise gives the `assets/` folder beside the file to add to.
  */
-@Controller('files/grants')
+@Controller("files/grants")
 export class GrantsController {
   constructor(
     private readonly files: FilesService,
@@ -121,39 +108,30 @@ export class GrantsController {
 
   @Post()
   @HttpCode(204)
-  async grant(
-    @CallingApp() who: AppIdentity | null,
-    @Body() dto: GrantFileDto,
-  ): Promise<void> {
+  async grant(@CallingApp() who: AppIdentity | null, @Body() dto: GrantFileDto): Promise<void> {
     if (dto.appId === SYSTEM_GROUP) {
       throw new BadRequestException(`${SYSTEM_GROUP} is a group, not an app`);
     }
     const { abs, key } = await this.files.resolveSafe(dto.root, dto.path);
     const stat = await fs.stat(abs).catch(() => null);
     if (stat && !stat.isFile() && !stat.isDirectory()) {
-      throw new BadRequestException('Only a file or a folder can be given');
+      throw new BadRequestException("Only a file or a folder can be given");
     }
-    const kind: GrantKind = stat?.isDirectory() ? 'folder' : 'file';
-    if (!stat && dto.expect === 'folder') {
-      throw new NotFoundException('There is no folder there');
+    const kind: GrantKind = stat?.isDirectory() ? "folder" : "file";
+    if (!stat && dto.expect === "folder") {
+      throw new NotFoundException("There is no folder there");
     }
     if (dto.withFolder && who !== null) {
-      throw new ForbiddenException(
-        `${who.appId} may not give a file's folder: only the OS does`,
-      );
+      throw new ForbiddenException(`${who.appId} may not give a file's folder: only the OS does`);
     }
     if (dto.withAssets && who !== null) {
-      throw new ForbiddenException(
-        `${who.appId} may not give the assets folder beside a file: only the OS does`,
-      );
+      throw new ForbiddenException(`${who.appId} may not give the assets folder beside a file: only the OS does`);
     }
-    if ((dto.withFolder || dto.withAssets) && kind !== 'file') {
-      throw new BadRequestException('Only a file comes with its folder');
+    if ((dto.withFolder || dto.withAssets) && kind !== "file") {
+      throw new BadRequestException("Only a file comes with its folder");
     }
     if (dto.expect !== undefined && dto.expect !== kind) {
-      throw new BadRequestException(
-        kind === 'folder' ? 'That is a folder' : 'That is not a folder',
-      );
+      throw new BadRequestException(kind === "folder" ? "That is a folder" : "That is not a folder");
     }
     let given: GrantKind = kind;
     if (who !== null) given = this.handOn(who, dto, key, kind, stat !== null);
@@ -162,19 +140,17 @@ export class GrantsController {
     if (!dto.withFolder && !dto.withAssets) return;
     const there = await fs.stat(dirname(abs)).catch(() => null);
     if (dirname(key) === key || !there?.isDirectory()) return;
-    if (dto.withFolder) this.grants.grant(target, dirname(key), 'listing');
+    if (dto.withFolder) this.grants.grant(target, dirname(key), "listing");
     if (dto.withAssets) {
       // Not followed: a link named `assets` would lead the adding elsewhere.
-      const assets = await fs
-        .lstat(join(dirname(abs), 'assets'))
-        .catch(() => null);
-      const assetsKey = join(dirname(key), 'assets');
+      const assets = await fs.lstat(join(dirname(abs), "assets")).catch(() => null);
+      const assetsKey = join(dirname(key), "assets");
       // Nor into another app's folder: its data isn't the note's to add to.
       if (
         (assets === null || assets.isDirectory()) &&
         !this.grants.ownedByAnother(dto.appId, [dirname(key), assetsKey])
       ) {
-        this.grants.grant(target, assetsKey, 'assets');
+        this.grants.grant(target, assetsKey, "assets");
       }
     }
   }
@@ -188,48 +164,33 @@ export class GrantsController {
    * recents (one the OS opened with it, or one it recorded while it held
    * the folder whole). Anything else is refused, naming the path.
    */
-  private handOn(
-    who: AppIdentity,
-    dto: GrantFileDto,
-    key: string,
-    kind: GrantKind,
-    exists: boolean,
-  ): GrantKind {
+  private handOn(who: AppIdentity, dto: GrantFileDto, key: string, kind: GrantKind, exists: boolean): GrantKind {
     const mine = who.appId === dto.appId;
-    if (kind === 'file' && exists) {
-      const canRead = this.files.can(who, 'read', key) !== null;
-      const canWrite = this.files.can(who, 'write', key) !== null;
-      if (canRead && canWrite) return 'file';
-      const recent = mine
-        ? this.recent.ownRecent(dto.root, dto.path, who.appId)
-        : null;
-      if (recent?.kind === 'file') return recent.writable ? 'file' : 'read';
-      this.files.assertCan(who, 'read', key, dto.root, dto.path);
-      return 'read';
+    if (kind === "file" && exists) {
+      const canRead = this.files.can(who, "read", key) !== null;
+      const canWrite = this.files.can(who, "write", key) !== null;
+      if (canRead && canWrite) return "file";
+      const recent = mine ? this.recent.ownRecent(dto.root, dto.path, who.appId) : null;
+      if (recent?.kind === "file") return recent.writable ? "file" : "read";
+      this.files.assertCan(who, "read", key, dto.root, dto.path);
+      return "read";
     }
-    if (
-      kind === 'folder' &&
-      mine &&
-      this.recent.ownRecent(dto.root, dto.path, who.appId)?.kind === 'folder'
-    ) {
-      return 'folder';
+    if (kind === "folder" && mine && this.recent.ownRecent(dto.root, dto.path, who.appId)?.kind === "folder") {
+      return "folder";
     }
-    const ops: ModeOp[] = kind === 'folder' ? ['list', 'write'] : ['create'];
+    const ops: ModeOp[] = kind === "folder" ? ["list", "write"] : ["create"];
     for (const op of ops) {
       this.files.assertCan(who, op, key, dto.root, dto.path);
     }
     return kind;
   }
 
-  @Delete(':instanceId')
+  @Delete(":instanceId")
   @HttpCode(204)
-  revoke(
-    @CallingApp() who: AppIdentity | null,
-    @Param('instanceId') instanceId: string,
-  ): void {
-    requireUser(who, 'end what a window was given');
+  revoke(@CallingApp() who: AppIdentity | null, @Param("instanceId") instanceId: string): void {
+    requireUser(who, "end what a window was given");
     if (!INSTANCE_ID.test(instanceId)) {
-      throw new BadRequestException('Not an instance id');
+      throw new BadRequestException("Not an instance id");
     }
     this.grants.revokeInstance(instanceId);
   }

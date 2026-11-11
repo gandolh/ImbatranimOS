@@ -1,9 +1,9 @@
-import React, { useRef, useCallback, useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { createPortal } from 'react-dom'
-import { useDrag } from '@use-gesture/react'
-import { Minus, Square, X, Copy } from 'lucide-react'
-import { cn } from '../../../lib/cn'
+import React, { useRef, useCallback, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
+import { useDrag } from "@use-gesture/react";
+import { Minus, Square, X, Copy } from "lucide-react";
+import { cn } from "../../../lib/cn";
 import {
   useWindowStore,
   type SnapRegion,
@@ -11,61 +11,61 @@ import {
   TASKBAR_HEIGHT,
   TITLEBAR_MIN_VISIBLE,
   topVisibleWindowId,
-} from '../../store/windowStore'
-import { SnapOverlay } from './SnapOverlay'
-import { forgetWindowFocus, rememberWindowFocus } from './focusIntoWindow'
+} from "../../store/windowStore";
+import { SnapOverlay } from "./SnapOverlay";
+import { forgetWindowFocus, rememberWindowFocus } from "./focusIntoWindow";
 
-type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
+type ResizeDirection = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 
 type WindowProps = {
-  windowId: string
-  minSize: { width: number; height: number }
-  children: React.ReactNode
-  isFocused: boolean
+  windowId: string;
+  minSize: { width: number; height: number };
+  children: React.ReactNode;
+  isFocused: boolean;
   /**
    * False when this window lives on a workspace that is not on screen. It is
    * still mounted — see the `display` rule below.
    */
-  onActiveWorkspace?: boolean
+  onActiveWorkspace?: boolean;
   /**
    * The frame and resize edges without the title bar: a Linux app that draws
    * its own title bar gets no second one. Its own bar moves the window.
    */
-  frameOnly?: boolean
+  frameOnly?: boolean;
   /**
    * Open and close with the fade only, no zoom. Chromium's renderer crashed
    * (2026-11-03, headless and full builds) when any window's zoom ran while a
    * Linux app's window was on screen and drawing: as it opened, and when
    * another window opened beside Firefox playing a video.
    */
-  fadeOnly?: boolean
-}
+  fadeOnly?: boolean;
+};
 
 type ResizeHandleProps = {
-  direction: ResizeDirection
-  instanceId: string
-  minSize: { width: number; height: number }
-}
+  direction: ResizeDirection;
+  instanceId: string;
+  minSize: { width: number; height: number };
+};
 
 function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
-  const updatePosition = useWindowStore((s) => s.updatePosition)
-  const updateSize = useWindowStore((s) => s.updateSize)
+  const updatePosition = useWindowStore((s) => s.updatePosition);
+  const updateSize = useWindowStore((s) => s.updateSize);
 
   const startRef = useRef<{
-    x: number
-    y: number
-    width: number
-    height: number
-    posX: number
-    posY: number
-  } | null>(null)
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    posX: number;
+    posY: number;
+  } | null>(null);
 
   const bind = useDrag(
     ({ first, movement: [mx, my], event }) => {
-      event.stopPropagation()
+      event.stopPropagation();
 
-      const win = useWindowStore.getState().windows.find((w) => w.id === instanceId)
-      if (!win) return
+      const win = useWindowStore.getState().windows.find((w) => w.id === instanceId);
+      if (!win) return;
 
       if (first) {
         startRef.current = {
@@ -75,78 +75,78 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
           height: win.size.height,
           posX: win.position.x,
           posY: win.position.y,
-        }
+        };
       }
 
-      const start = startRef.current
-      if (!start) return
+      const start = startRef.current;
+      if (!start) return;
 
-      const maxW = window.innerWidth - start.posX
-      const maxH = window.innerHeight - TASKBAR_HEIGHT - start.posY
+      const maxW = window.innerWidth - start.posX;
+      const maxH = window.innerHeight - TASKBAR_HEIGHT - start.posY;
 
-      let newW = start.width
-      let newH = start.height
-      let newX = start.posX
-      let newY = start.posY
+      let newW = start.width;
+      let newH = start.height;
+      let newX = start.posX;
+      let newY = start.posY;
 
-      if (direction.includes('e')) {
-        newW = Math.max(minSize.width, Math.min(maxW, start.width + mx))
+      if (direction.includes("e")) {
+        newW = Math.max(minSize.width, Math.min(maxW, start.width + mx));
       }
-      if (direction.includes('s')) {
-        newH = Math.max(minSize.height, Math.min(maxH, start.height + my))
+      if (direction.includes("s")) {
+        newH = Math.max(minSize.height, Math.min(maxH, start.height + my));
       }
-      if (direction.includes('w')) {
-        const delta = Math.min(mx, start.width - minSize.width)
-        newW = start.width - delta
-        newX = start.posX + delta
+      if (direction.includes("w")) {
+        const delta = Math.min(mx, start.width - minSize.width);
+        newW = start.width - delta;
+        newX = start.posX + delta;
       }
-      if (direction.includes('n')) {
-        const minY = 0
-        const maxDelta = start.posY - minY
-        const delta = Math.min(my, start.height - minSize.height)
-        const clampedDelta = Math.max(delta, -maxDelta)
-        newH = start.height - clampedDelta
-        newY = start.posY + clampedDelta
+      if (direction.includes("n")) {
+        const minY = 0;
+        const maxDelta = start.posY - minY;
+        const delta = Math.min(my, start.height - minSize.height);
+        const clampedDelta = Math.max(delta, -maxDelta);
+        newH = start.height - clampedDelta;
+        newY = start.posY + clampedDelta;
       }
 
-      updateSize(instanceId, { width: newW, height: newH })
-      updatePosition(instanceId, { x: newX, y: newY })
+      updateSize(instanceId, { width: newW, height: newH });
+      updatePosition(instanceId, { x: newX, y: newY });
     },
-    { filterTaps: true }
-  )
+    { filterTaps: true },
+  );
 
   const cursorMap: Record<ResizeDirection, string> = {
-    n: 'cursor-n-resize',
-    s: 'cursor-s-resize',
-    e: 'cursor-e-resize',
-    w: 'cursor-w-resize',
-    ne: 'cursor-ne-resize',
-    nw: 'cursor-nw-resize',
-    se: 'cursor-se-resize',
-    sw: 'cursor-sw-resize',
-  }
+    n: "cursor-n-resize",
+    s: "cursor-s-resize",
+    e: "cursor-e-resize",
+    w: "cursor-w-resize",
+    ne: "cursor-ne-resize",
+    nw: "cursor-nw-resize",
+    se: "cursor-se-resize",
+    sw: "cursor-sw-resize",
+  };
 
   const positionClasses: Record<ResizeDirection, string> = {
-    n: 'top-0 left-1 right-1 h-1',
-    s: 'bottom-0 left-1 right-1 h-1',
-    e: 'top-1 right-0 bottom-1 w-1',
-    w: 'top-1 left-0 bottom-1 w-1',
-    ne: 'top-0 right-0 w-2 h-2',
-    nw: 'top-0 left-0 w-2 h-2',
-    se: 'bottom-0 right-0 w-2 h-2',
-    sw: 'bottom-0 left-0 w-2 h-2',
-  }
+    n: "top-0 left-1 right-1 h-1",
+    s: "bottom-0 left-1 right-1 h-1",
+    e: "top-1 right-0 bottom-1 w-1",
+    w: "top-1 left-0 bottom-1 w-1",
+    ne: "top-0 right-0 w-2 h-2",
+    nw: "top-0 left-0 w-2 h-2",
+    se: "bottom-0 right-0 w-2 h-2",
+    sw: "bottom-0 left-0 w-2 h-2",
+  };
   // Apricot's rounded frame clips its corners, hit-testing included, so an 8px
   // handle there is mostly unreachable; the corners grab 12px instead.
-  const corner = direction.length === 2 ? 'apricot:h-3 apricot:w-3' : ''
+  const corner = direction.length === 2 ? "apricot:h-3 apricot:w-3" : "";
 
   return (
     <div
       {...bind()}
-      className={cn('absolute z-10', cursorMap[direction], positionClasses[direction], corner)}
-      style={{ touchAction: 'none' }}
+      className={cn("absolute z-10", cursorMap[direction], positionClasses[direction], corner)}
+      style={{ touchAction: "none" }}
     />
-  )
+  );
 }
 
 export const Window = React.memo(function Window({
@@ -158,61 +158,58 @@ export const Window = React.memo(function Window({
   frameOnly = false,
   fadeOnly = false,
 }: WindowProps) {
-  const instance = useWindowStore((s) => s.windows.find((w) => w.id === windowId))
-  const closeWindow = useWindowStore((s) => s.closeWindow)
-  const hideWindow = useWindowStore((s) => s.hideWindow)
-  const maximizeWindow = useWindowStore((s) => s.maximizeWindow)
-  const restoreWindow = useWindowStore((s) => s.restoreWindow)
-  const focusWindow = useWindowStore((s) => s.focusWindow)
-  const updatePosition = useWindowStore((s) => s.updatePosition)
-  const snapWindow = useWindowStore((s) => s.snapWindow)
-  const unsnap = useWindowStore((s) => s.unsnap)
+  const instance = useWindowStore((s) => s.windows.find((w) => w.id === windowId));
+  const closeWindow = useWindowStore((s) => s.closeWindow);
+  const hideWindow = useWindowStore((s) => s.hideWindow);
+  const maximizeWindow = useWindowStore((s) => s.maximizeWindow);
+  const restoreWindow = useWindowStore((s) => s.restoreWindow);
+  const focusWindow = useWindowStore((s) => s.focusWindow);
+  const updatePosition = useWindowStore((s) => s.updatePosition);
+  const snapWindow = useWindowStore((s) => s.snapWindow);
+  const unsnap = useWindowStore((s) => s.unsnap);
 
-  const dragStartWindowPos = useRef<{ x: number; y: number } | null>(null)
-  const [snapPreview, setSnapPreview] = useState<SnapRegion | null>(null)
+  const dragStartWindowPos = useRef<{ x: number; y: number } | null>(null);
+  const [snapPreview, setSnapPreview] = useState<SnapRegion | null>(null);
 
   const titleBarBind = useDrag(
     ({ first, last, movement: [mx, my], xy: [px, py], event }) => {
-      event.stopPropagation()
+      event.stopPropagation();
 
-      if (!instance) return
-      if (instance.isMaximized) return
+      if (!instance) return;
+      if (instance.isMaximized) return;
 
       if (first) {
-        dragStartWindowPos.current = { x: instance.position.x, y: instance.position.y }
-        focusWindow(instance.id)
+        dragStartWindowPos.current = { x: instance.position.x, y: instance.position.y };
+        focusWindow(instance.id);
 
         // If currently snapped, unsnap and start dragging from restored position
         if (instance.snapState) {
-          unsnap(instance.id)
+          unsnap(instance.id);
         }
       }
 
-      const startPos = dragStartWindowPos.current
-      if (!startPos) return
+      const startPos = dragStartWindowPos.current;
+      if (!startPos) return;
 
       // Move window
-      const newX = Math.max(0, Math.min(startPos.x + mx, window.innerWidth - instance.size.width))
-      const newY = Math.max(
-        0,
-        Math.min(startPos.y + my, window.innerHeight - TASKBAR_HEIGHT - TITLEBAR_MIN_VISIBLE)
-      )
-      updatePosition(instance.id, { x: newX, y: newY })
+      const newX = Math.max(0, Math.min(startPos.x + mx, window.innerWidth - instance.size.width));
+      const newY = Math.max(0, Math.min(startPos.y + my, window.innerHeight - TASKBAR_HEIGHT - TITLEBAR_MIN_VISIBLE));
+      updatePosition(instance.id, { x: newX, y: newY });
 
       // Detect snap region from pointer position
-      const detected = detectSnapRegion(px, py)
-      setSnapPreview(detected)
+      const detected = detectSnapRegion(px, py);
+      setSnapPreview(detected);
 
       if (last) {
-        setSnapPreview(null)
+        setSnapPreview(null);
         if (detected) {
-          snapWindow(instance.id, detected)
+          snapWindow(instance.id, detected);
         }
-        dragStartWindowPos.current = null
+        dragStartWindowPos.current = null;
       }
     },
-    { filterTaps: true }
-  )
+    { filterTaps: true },
+  );
 
   // A click anywhere in a window raises it, unless the click itself brought
   // another window to the front: an Open button that opened or
@@ -222,56 +219,51 @@ export const Window = React.memo(function Window({
   // every open, raise or restore mints a z from it, closing and minimising
   // don't. So if the counter moved and this window is not the top one now,
   // the click raised another window and this one stays where it is.
-  const zAtClickStart = useRef<number | null>(null)
+  const zAtClickStart = useRef<number | null>(null);
   const handleWindowClickCapture = useCallback(() => {
-    zAtClickStart.current = useWindowStore.getState().nextZIndex
-  }, [])
+    zAtClickStart.current = useWindowStore.getState().nextZIndex;
+  }, []);
   const handleWindowClick = useCallback(() => {
-    const before = zAtClickStart.current
-    zAtClickStart.current = null
+    const before = zAtClickStart.current;
+    zAtClickStart.current = null;
     const raisedAnother =
-      before !== null &&
-      useWindowStore.getState().nextZIndex !== before &&
-      topVisibleWindowId() !== windowId
-    if (raisedAnother) return
-    focusWindow(windowId)
-  }, [focusWindow, windowId])
+      before !== null && useWindowStore.getState().nextZIndex !== before && topVisibleWindowId() !== windowId;
+    if (raisedAnother) return;
+    focusWindow(windowId);
+  }, [focusWindow, windowId]);
 
   const handleMaximizeToggle = useCallback(
     (e: React.MouseEvent) => {
-      e.stopPropagation()
+      e.stopPropagation();
       if (instance?.isMaximized) {
-        restoreWindow(windowId)
+        restoreWindow(windowId);
       } else {
-        maximizeWindow(windowId)
+        maximizeWindow(windowId);
       }
     },
-    [windowId, instance?.isMaximized, maximizeWindow, restoreWindow]
-  )
+    [windowId, instance?.isMaximized, maximizeWindow, restoreWindow],
+  );
 
   const handleHide = useCallback(
     (e: React.MouseEvent) => {
-      e.stopPropagation()
-      hideWindow(windowId)
+      e.stopPropagation();
+      hideWindow(windowId);
     },
-    [hideWindow, windowId]
-  )
+    [hideWindow, windowId],
+  );
 
   const handleClose = useCallback(
     (e: React.MouseEvent) => {
-      e.stopPropagation()
-      closeWindow(windowId)
+      e.stopPropagation();
+      closeWindow(windowId);
     },
-    [closeWindow, windowId]
-  )
+    [closeWindow, windowId],
+  );
 
-  const handleContentFocus = useCallback(
-    (e: React.FocusEvent) => rememberWindowFocus(windowId, e.target),
-    [windowId]
-  )
-  useEffect(() => () => forgetWindowFocus(windowId), [windowId])
+  const handleContentFocus = useCallback((e: React.FocusEvent) => rememberWindowFocus(windowId, e.target), [windowId]);
+  useEffect(() => () => forgetWindowFocus(windowId), [windowId]);
 
-  if (!instance) return null
+  if (!instance) return null;
 
   return (
     <>
@@ -284,9 +276,9 @@ export const Window = React.memo(function Window({
           initial={{ opacity: 0, scale: fadeOnly ? 1 : 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: fadeOnly ? 1 : 0.95, transition: { duration: 0.1 } }}
-          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
           style={{
-            position: 'fixed',
+            position: "fixed",
             left: instance.position.x,
             top: instance.position.y,
             width: instance.size.width,
@@ -295,17 +287,17 @@ export const Window = React.memo(function Window({
             // Hidden, not unmounted, for a window that is minimised OR on
             // another workspace — same mechanism, same reason: the app keeps
             // its sockets, its buffers and its scroll position.
-            display: instance.isVisible && onActiveWorkspace ? 'flex' : 'none',
-            flexDirection: 'column',
-            fontFamily: 'var(--font-ui)',
+            display: instance.isVisible && onActiveWorkspace ? "flex" : "none",
+            flexDirection: "column",
+            fontFamily: "var(--font-ui)",
           }}
           className={cn(
-            'bg-surface-container-low overflow-hidden',
+            "bg-surface-container-low overflow-hidden",
             // Square against the screen's edges: maximised or snapped.
-            !instance.isMaximized && !instance.snapState && 'rounded-window',
+            !instance.isMaximized && !instance.snapState && "rounded-window",
             isFocused
-              ? 'border-primary apricot:border-outline-variant border shadow-(--k-shadow-window-focused)'
-              : 'border-outline-variant border shadow-(--k-shadow-window)'
+              ? "border-primary apricot:border-outline-variant border shadow-(--k-shadow-window-focused)"
+              : "border-outline-variant border shadow-(--k-shadow-window)",
           )}
           onClickCapture={handleWindowClickCapture}
           onClick={handleWindowClick}
@@ -318,13 +310,8 @@ export const Window = React.memo(function Window({
           {/* Resize handles — only when not maximized */}
           {!instance.isMaximized && (
             <>
-              {(['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as ResizeDirection[]).map((dir) => (
-                <ResizeHandle
-                  key={dir}
-                  direction={dir}
-                  instanceId={instance.id}
-                  minSize={minSize}
-                />
+              {(["n", "s", "e", "w", "ne", "nw", "se", "sw"] as ResizeDirection[]).map((dir) => (
+                <ResizeHandle key={dir} direction={dir} instanceId={instance.id} minSize={minSize} />
               ))}
             </>
           )}
@@ -335,28 +322,23 @@ export const Window = React.memo(function Window({
             {...titleBarBind()}
             onDoubleClick={handleMaximizeToggle}
             style={{
-              touchAction: 'none',
-              userSelect: 'none',
-              display: frameOnly ? 'none' : undefined,
+              touchAction: "none",
+              userSelect: "none",
+              display: frameOnly ? "none" : undefined,
             }}
             className={cn(
-              'flex h-[30px] shrink-0 items-center justify-between border-b pr-1 pl-3',
+              "flex h-[30px] shrink-0 items-center justify-between border-b pr-1 pl-3",
               isFocused
-                ? 'bg-surface-container-high border-outline-variant text-on-surface'
-                : 'bg-surface-container border-outline-variant text-on-surface-variant'
+                ? "bg-surface-container-high border-outline-variant text-on-surface"
+                : "bg-surface-container border-outline-variant text-on-surface-variant",
             )}
           >
             {/* Left: accent tick + title */}
             <span className="flex min-w-0 items-center gap-2 pr-2 select-none">
               <span
-                className={cn(
-                  'rounded-control h-2.5 w-2.5 shrink-0',
-                  isFocused ? 'bg-primary' : 'bg-outline-variant'
-                )}
+                className={cn("rounded-control h-2.5 w-2.5 shrink-0", isFocused ? "bg-primary" : "bg-outline-variant")}
               />
-              <span className="truncate text-[12px] leading-none font-semibold tracking-tight">
-                {instance.title}
-              </span>
+              <span className="truncate text-[12px] leading-none font-semibold tracking-tight">{instance.title}</span>
             </span>
 
             {/* Right: window controls */}
@@ -370,15 +352,8 @@ export const Window = React.memo(function Window({
               <TitleBarButton onClick={handleHide} title="Minimize">
                 <Minus size={13} strokeWidth={2} />
               </TitleBarButton>
-              <TitleBarButton
-                onClick={handleMaximizeToggle}
-                title={instance.isMaximized ? 'Restore' : 'Maximize'}
-              >
-                {instance.isMaximized ? (
-                  <Copy size={12} strokeWidth={2} />
-                ) : (
-                  <Square size={11} strokeWidth={2} />
-                )}
+              <TitleBarButton onClick={handleMaximizeToggle} title={instance.isMaximized ? "Restore" : "Maximize"}>
+                {instance.isMaximized ? <Copy size={12} strokeWidth={2} /> : <Square size={11} strokeWidth={2} />}
               </TitleBarButton>
               <TitleBarButton onClick={handleClose} title="Close" isClose>
                 <X size={13} strokeWidth={2} />
@@ -400,15 +375,15 @@ export const Window = React.memo(function Window({
         </motion.div>
       </AnimatePresence>
     </>
-  )
-})
+  );
+});
 
 type TitleBarButtonProps = {
-  onClick: (e: React.MouseEvent) => void
-  title: string
-  isClose?: boolean
-  children: React.ReactNode
-}
+  onClick: (e: React.MouseEvent) => void;
+  title: string;
+  isClose?: boolean;
+  children: React.ReactNode;
+};
 
 function TitleBarButton({ onClick, title, isClose = false, children }: TitleBarButtonProps) {
   return (
@@ -416,14 +391,14 @@ function TitleBarButton({ onClick, title, isClose = false, children }: TitleBarB
       onClick={onClick}
       title={title}
       className={cn(
-        'rounded-control flex h-7 w-7 items-center justify-center',
-        'cursor-pointer border-none text-current outline-none',
-        'transition-colors duration-75',
-        isClose ? 'hover:bg-error hover:text-on-error' : 'hover:bg-surface-container-highest',
-        'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
+        "rounded-control flex h-7 w-7 items-center justify-center",
+        "cursor-pointer border-none text-current outline-none",
+        "transition-colors duration-75",
+        isClose ? "hover:bg-error hover:text-on-error" : "hover:bg-surface-container-highest",
+        "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
       )}
     >
       {children}
     </button>
-  )
+  );
 }

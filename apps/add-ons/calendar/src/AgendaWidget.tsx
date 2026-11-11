@@ -1,11 +1,11 @@
-import { useMemo } from 'react'
-import dayjs from 'dayjs'
-import { useSystem } from '@imbatranim/ui'
-import { useEventsQuery } from './queries/calendarQueries'
-import { expandOccurrences } from './recurrence'
+import { useMemo } from "react";
+import dayjs from "dayjs";
+import { useSystem } from "@imbatranim/ui";
+import { useEventsQuery } from "./queries/calendarQueries";
+import { expandOccurrences } from "./recurrence";
 
 /** Enough for a glance; the app itself is one click away. */
-const MAX_ROWS = 4
+const MAX_ROWS = 4;
 
 /**
  * Today's agenda on the desktop. Reads the same events cache the
@@ -13,23 +13,23 @@ const MAX_ROWS = 4
  * requests while either is alive.
  */
 export function AgendaWidget() {
-  const system = useSystem()
-  const { data: events } = useEventsQuery()
+  const system = useSystem();
+  const { data: events } = useEventsQuery();
 
   const today = useMemo(() => {
-    const start = dayjs().startOf('day').valueOf()
-    const end = dayjs().endOf('day').valueOf()
+    const start = dayjs().startOf("day").valueOf();
+    const end = dayjs().endOf("day").valueOf();
     return (events ?? [])
       .flatMap((event) => expandOccurrences(event, start, end))
       .sort((a, b) => a.start - b.start)
-      .slice(0, MAX_ROWS)
-  }, [events])
+      .slice(0, MAX_ROWS);
+  }, [events]);
 
   return (
     <div className="flex h-full w-full flex-col px-2.5 py-1.5">
       <button
         type="button"
-        onClick={() => system.intents.openApp('calendar')}
+        onClick={() => system.intents.openApp("calendar")}
         className="font-ui text-on-surface-variant hover:text-on-surface focus-visible:ring-primary w-fit text-left text-[9px] font-semibold tracking-widest uppercase outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         Today
@@ -43,15 +43,13 @@ export function AgendaWidget() {
           {today.map((o) => (
             <li key={`${o.event.id}:${o.start}`} className="flex items-baseline gap-1.5">
               <span className="text-on-surface-variant font-mono text-[10px] tabular-nums">
-                {o.event.allDay ? 'all day' : dayjs(o.start).format('HH:mm')}
+                {o.event.allDay ? "all day" : dayjs(o.start).format("HH:mm")}
               </span>
-              <span className="font-ui text-on-surface min-w-0 truncate text-[11px]">
-                {o.event.title}
-              </span>
+              <span className="font-ui text-on-surface min-w-0 truncate text-[11px]">{o.event.title}</span>
             </li>
           ))}
         </ul>
       )}
     </div>
-  )
+  );
 }

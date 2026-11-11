@@ -1,19 +1,14 @@
-import { useEffect, useRef } from 'react'
-import { useSystem } from '@imbatranim/ui'
-import { getClockState, useClockStore } from './clockStore'
-import { dueOccurrence, firedPatch, SNOOZE_LABEL } from './alarmSchedule'
-import { formatClockDuration } from './format'
-import { completionBody, isDue } from './timerModel'
-import { patchAlarm } from './api/clockApi'
-import {
-  applyAlarmPatchLocally,
-  invalidateAlarms,
-  peekAlarms,
-  useAlarmsQuery,
-} from './queries/clockQueries'
+import { useEffect, useRef } from "react";
+import { useSystem } from "@imbatranim/ui";
+import { getClockState, useClockStore } from "./clockStore";
+import { dueOccurrence, firedPatch, SNOOZE_LABEL } from "./alarmSchedule";
+import { formatClockDuration } from "./format";
+import { completionBody, isDue } from "./timerModel";
+import { patchAlarm } from "./api/clockApi";
+import { applyAlarmPatchLocally, invalidateAlarms, peekAlarms, useAlarmsQuery } from "./queries/clockQueries";
 
 /** Refresh cadence for the alarms cache with no window open. */
-const ALARMS_REFETCH_MS = 60_000
+const ALARMS_REFETCH_MS = 60_000;
 
 /**
  * The Clock's desktop-lifetime service: alarm and timer firing,
@@ -39,33 +34,33 @@ const ALARMS_REFETCH_MS = 60_000
  * schedule and http are touched here.
  */
 export function ClockBackground() {
-  const system = useSystem()
-  useAlarmsQuery({ refetchIntervalMs: ALARMS_REFETCH_MS })
+  const system = useSystem();
+  useAlarmsQuery({ refetchIntervalMs: ALARMS_REFETCH_MS });
 
   // Seeded inside the effect (render must stay pure): the window opens at
   // mount, so nothing before the first tick can be "due since".
-  const lastTickRef = useRef(0)
+  const lastTickRef = useRef(0);
 
   useEffect(() => {
-    lastTickRef.current = Date.now()
+    lastTickRef.current = Date.now();
     const id = setInterval(() => {
-      const now = new Date()
-      const since = lastTickRef.current
-      lastTickRef.current = now.getTime()
+      const now = new Date();
+      const since = lastTickRef.current;
+      lastTickRef.current = now.getTime();
 
       for (const alarm of peekAlarms()) {
-        const due = dueOccurrence(alarm, now, since)
-        if (due === null) continue
+        const due = dueOccurrence(alarm, now, since);
+        if (due === null) continue;
 
         // Record the ring in the cache synchronously, *then* persist. The local
         // write is what stops the next tick from firing again a second later,
         // while the PATCH is still in flight. Keyed to the occurrence's minute,
         // not the observing tick's.
-        const patch = firedPatch(alarm, new Date(due.occurrenceMs))
-        applyAlarmPatchLocally(alarm.id, patch)
+        const patch = firedPatch(alarm, new Date(due.occurrenceMs));
+        applyAlarmPatchLocally(alarm.id, patch);
         void patchAlarm(system.http, alarm.id, patch)
           .catch(() => undefined)
-          .finally(() => invalidateAlarms())
+          .finally(() => invalidateAlarms());
 
         // The in-window banner (with Snooze) appears if a Clock window is open
         // in this tab — unconditionally, it is per-tab UI state.
@@ -74,37 +69,37 @@ export function ClockBackground() {
           label: alarm.label,
           time: alarm.time,
           at: due.occurrenceMs,
-        })
+        });
 
-        void system.schedule.claim('clock', String(alarm.id), due.occurrenceMs).then((claimed) => {
-          if (!claimed) return
+        void system.schedule.claim("clock", String(alarm.id), due.occurrenceMs).then((claimed) => {
+          if (!claimed) return;
           system.notify({
-            title: due.reason === 'snooze' ? 'Alarm (snoozed)' : 'Alarm',
+            title: due.reason === "snooze" ? "Alarm (snoozed)" : "Alarm",
             body: alarm.label ? `${alarm.label} — ${alarm.time}` : `It's ${alarm.time}`,
-            level: 'info',
+            level: "info",
             // Since the reminder scheduler an alarm can fire with NO Clock window open —
             // exactly when a button-less toast hurt most (dismiss, Start menu,
             // launch Clock, find the alarm: four steps). The action is data,
             // so it works from a cold desktop.
-            actions: [{ label: SNOOZE_LABEL, payload: { action: 'snooze', alarmId: alarm.id } }],
-          })
-        })
+            actions: [{ label: SNOOZE_LABEL, payload: { action: "snooze", alarmId: alarm.id } }],
+          });
+        });
       }
 
-      const nowMs = now.getTime()
+      const nowMs = now.getTime();
       for (const timer of getClockState().timers) {
-        if (!isDue(timer, nowMs)) continue
-        useClockStore.getState().completeTimer(timer.id)
+        if (!isDue(timer, nowMs)) continue;
+        useClockStore.getState().completeTimer(timer.id);
         system.notify({
-          title: 'Timer finished',
+          title: "Timer finished",
           body: completionBody(timer, formatClockDuration(timer.durationMs)),
-          level: 'info',
-        })
+          level: "info",
+        });
       }
-    }, 1000)
+    }, 1000);
 
-    return () => clearInterval(id)
-  }, [system])
+    return () => clearInterval(id);
+  }, [system]);
 
-  return null
+  return null;
 }

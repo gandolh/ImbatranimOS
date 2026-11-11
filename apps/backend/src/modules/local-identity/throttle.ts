@@ -7,10 +7,7 @@
  * and it keeps an attacker from filling the database.
  */
 export class SignInThrottle {
-  private readonly failures = new Map<
-    string,
-    { count: number; until: number }
-  >();
+  private readonly failures = new Map<string, { count: number; until: number }>();
 
   constructor(
     private readonly free = 5,
@@ -26,8 +23,7 @@ export class SignInThrottle {
   fail(key: string, now = Date.now()): void {
     const count = (this.failures.get(key)?.count ?? 0) + 1;
     const over = count - this.free;
-    const wait =
-      over > 0 ? Math.min(this.maxWaitMs, 1000 * 2 ** (over - 1)) : 0;
+    const wait = over > 0 ? Math.min(this.maxWaitMs, 1000 * 2 ** (over - 1)) : 0;
     this.failures.set(key, { count, until: now + wait });
     if (this.failures.size > 10_000) this.failures.clear(); // a flood, not a person
   }

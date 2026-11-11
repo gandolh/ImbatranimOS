@@ -1,4 +1,4 @@
-import type { FsEntry } from '../types'
+import type { FsEntry } from "../types";
 
 /**
  * Paste arithmetic — where each clipboard entry lands, and what to
@@ -9,7 +9,7 @@ import type { FsEntry } from '../types'
  * has (`useDeleteFlow`), and getting "3 of 5" right is worth a test.
  */
 
-export type PasteMove = { from: string; to: string; name: string }
+export type PasteMove = { from: string; to: string; name: string };
 
 /**
  * Destination path for each entry, pasted into `destDir`.
@@ -20,9 +20,9 @@ export type PasteMove = { from: string; to: string; name: string }
  */
 export function pasteMoves(entries: readonly FsEntry[], destDir: string): PasteMove[] {
   return entries.map((entry) => {
-    const name = entry.path.split('/').pop() ?? entry.name
-    return { from: entry.path, to: destDir ? `${destDir}/${name}` : name, name }
-  })
+    const name = entry.path.split("/").pop() ?? entry.name;
+    return { from: entry.path, to: destDir ? `${destDir}/${name}` : name, name };
+  });
 }
 
 /**
@@ -31,17 +31,13 @@ export function pasteMoves(entries: readonly FsEntry[], destDir: string): PasteM
  * meant by Ctrl+C then Ctrl+V without moving.
  */
 export function isNoOpPaste(move: PasteMove): boolean {
-  return move.from === move.to
+  return move.from === move.to;
 }
 
 /** One message for a partly-failed paste, or null when everything landed. */
-export function pasteFailureMessage(
-  mode: 'copy' | 'cut',
-  failed: readonly PasteMove[],
-  total: number
-): string | null {
-  if (failed.length === 0) return null
-  const verb = mode === 'cut' ? 'move' : 'paste'
-  if (total === 1) return `Could not ${verb} “${failed[0].name}”.`
-  return `Could not ${verb} ${failed.length} of ${total} items.`
+export function pasteFailureMessage(mode: "copy" | "cut", failed: readonly PasteMove[], total: number): string | null {
+  if (failed.length === 0) return null;
+  const verb = mode === "cut" ? "move" : "paste";
+  if (total === 1) return `Could not ${verb} “${failed[0].name}”.`;
+  return `Could not ${verb} ${failed.length} of ${total} items.`;
 }

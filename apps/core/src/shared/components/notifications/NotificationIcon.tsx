@@ -1,8 +1,8 @@
-import { APP_REGISTRY } from '../../registry/registry'
-import { cn } from '../../../lib/cn'
-import { LevelIcon } from './LevelIcon'
-import { levelColorClass } from './levelStyle'
-import type { NotificationLevel } from '../../store/notificationStore'
+import { APP_REGISTRY } from "../../registry/registry";
+import { cn } from "../../../lib/cn";
+import { LevelIcon } from "./LevelIcon";
+import { levelColorClass } from "./levelStyle";
+import type { NotificationLevel } from "../../store/notificationStore";
 
 /**
  * The icon on a notification — the raising app's when `appId` resolves,
@@ -20,22 +20,15 @@ export function NotificationIcon({
   size,
   className,
 }: {
-  appId?: string
-  level: NotificationLevel
-  size: number
-  className?: string
+  appId?: string;
+  level: NotificationLevel;
+  size: number;
+  className?: string;
 }) {
-  const app = appId ? APP_REGISTRY.find((a) => a.id === appId) : undefined
+  const app = appId ? APP_REGISTRY.find((a) => a.id === appId) : undefined;
   if (app) {
-    const Icon = app.icon
-    return (
-      <Icon
-        size={size}
-        strokeWidth={1.75}
-        aria-hidden
-        className={cn('text-on-surface-variant', className)}
-      />
-    )
+    const Icon = app.icon;
+    return <Icon size={size} strokeWidth={1.75} aria-hidden className={cn("text-on-surface-variant", className)} />;
   }
-  return <LevelIcon size={size} level={level} className={cn(levelColorClass(level), className)} />
+  return <LevelIcon size={size} level={level} className={cn(levelColorClass(level), className)} />;
 }

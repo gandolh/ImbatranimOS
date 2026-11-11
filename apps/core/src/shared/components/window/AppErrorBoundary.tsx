@@ -1,12 +1,12 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { api } from '../../../lib/axios'
-import { notify } from '../../store/notificationStore'
-import { shouldReportCrash } from './crashToastGuard'
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { api } from "../../../lib/axios";
+import { notify } from "../../store/notificationStore";
+import { shouldReportCrash } from "./crashToastGuard";
 
 interface Props {
-  appId: string
-  appName: string
-  children: ReactNode
+  appId: string;
+  appName: string;
+  children: ReactNode;
   /**
    * Rendered instead of the children after a catch.
    *
@@ -15,11 +15,11 @@ interface Props {
    * child in the same state that just threw, which usually throws again — a
    * "Reload" that visibly does nothing. Remounting is what the user means.
    */
-  fallback: (error: Error) => ReactNode
+  fallback: (error: Error) => ReactNode;
 }
 
 interface State {
-  error: Error | null
+  error: Error | null;
 }
 
 /**
@@ -44,41 +44,41 @@ interface State {
  *   it. The limit is documented rather than half-solved.
  */
 export class AppErrorBoundary extends Component<Props, State> {
-  state: State = { error: null }
+  state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
-    return { error }
+    return { error };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    const { appId, appName } = this.props
+    const { appId, appName } = this.props;
     if (shouldReportCrash(appId)) {
       notify({
         title: `${appName} crashed`,
-        body: error.message || 'The app stopped unexpectedly.',
-        level: 'error',
+        body: error.message || "The app stopped unexpectedly.",
+        level: "error",
         appId,
-      })
+      });
       // Also into the system log, so the crash is still findable
       // tomorrow rather than only in a toast the user may have missed. Behind
       // the same guard as the toast — a render loop should not become a
       // request loop — and fire-and-forget, because failing to record a crash
       // must not itself become an error.
       void api
-        .post('/logs/client-error', {
+        .post("/logs/client-error", {
           appId,
-          message: (error.message || 'The app stopped unexpectedly.').slice(0, 300),
+          message: (error.message || "The app stopped unexpectedly.").slice(0, 300),
         })
-        .catch(() => undefined)
+        .catch(() => undefined);
     }
     // Still goes to the console: the toast is for the user, this is for whoever
     // is debugging, and the component stack is the useful half.
-    console.error(`[${appId}] crashed`, error, info.componentStack)
+    console.error(`[${appId}] crashed`, error, info.componentStack);
   }
 
   render(): ReactNode {
-    const { error } = this.state
-    if (error) return this.props.fallback(error)
-    return this.props.children
+    const { error } = this.state;
+    if (error) return this.props.fallback(error);
+    return this.props.children;
   }
 }

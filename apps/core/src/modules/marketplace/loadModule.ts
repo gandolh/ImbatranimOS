@@ -3,5 +3,5 @@
  * for the browser's module loader, which the test runner does not have.
  */
 export function loadModule(url: string): Promise<unknown> {
-  return import(/* @vite-ignore */ url)
+  return import(/* @vite-ignore */ url);
 }

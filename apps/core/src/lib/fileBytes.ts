@@ -1,25 +1,20 @@
-import {
-  FileConflictError,
-  UploadTooLargeError,
-  type SystemHttp,
-  type VersionedBytes,
-} from '@imbatranim/ui'
-import { api } from './axios'
+import { FileConflictError, UploadTooLargeError, type SystemHttp, type VersionedBytes } from "@imbatranim/ui";
+import { api } from "./axios";
 
 /**
  * The client a call goes out on: core's shared one by default (the user's
  * calls), or an app's own `system.http`, which carries that app's token.
  */
-const shared = api as unknown as SystemHttp
+const shared = api as unknown as SystemHttp;
 
 /** True when an error carries an HTTP status (axios-style), matching `status`. */
 function hasHttpStatus(err: unknown, status: number): boolean {
   return (
-    typeof err === 'object' &&
+    typeof err === "object" &&
     err !== null &&
-    'response' in err &&
+    "response" in err &&
     (err as { response?: { status?: number } }).response?.status === status
-  )
+  );
 }
 
 /**
@@ -30,43 +25,39 @@ function hasHttpStatus(err: unknown, status: number): boolean {
  *
  * `GET /api/files/download?root=&path=` streams `application/octet-stream`.
  */
-export async function fetchFileBytes(
-  root: string,
-  path: string,
-  client: SystemHttp = shared
-): Promise<ArrayBuffer> {
-  const res = await client.get<ArrayBuffer>('/files/download', {
+export async function fetchFileBytes(root: string, path: string, client: SystemHttp = shared): Promise<ArrayBuffer> {
+  const res = await client.get<ArrayBuffer>("/files/download", {
     params: { root, path },
-    responseType: 'arraybuffer',
-  })
-  return res.data
+    responseType: "arraybuffer",
+  });
+  return res.data;
 }
 
 /** The backend's version token for the bytes it streamed. */
-const VERSION_HEADER = 'x-file-version'
+const VERSION_HEADER = "x-file-version";
 
 function versionFrom(headers: unknown): string | null {
-  const value = (headers as Record<string, unknown> | undefined)?.[VERSION_HEADER]
-  return typeof value === 'string' && value !== '' ? value : null
+  const value = (headers as Record<string, unknown> | undefined)?.[VERSION_HEADER];
+  return typeof value === "string" && value !== "" ? value : null;
 }
 
 /** {@link fetchFileBytes} plus the `X-File-Version` the download carries. */
 export async function fetchFileBytesWithVersion(
   root: string,
   path: string,
-  client: SystemHttp = shared
+  client: SystemHttp = shared,
 ): Promise<VersionedBytes> {
-  const res = await client.get<ArrayBuffer>('/files/download', {
+  const res = await client.get<ArrayBuffer>("/files/download", {
     params: { root, path },
-    responseType: 'arraybuffer',
-  })
-  return { bytes: res.data, version: versionFrom(res.headers) }
+    responseType: "arraybuffer",
+  });
+  return { bytes: res.data, version: versionFrom(res.headers) };
 }
 
 // UploadTooLargeError moved to @imbatranim/ui: the class is part of
 // the protocol — apps `instanceof` against it, so it ships with the SDK and the
 // capability implementation here throws the SDK's class.
-export { UploadTooLargeError } from '@imbatranim/ui'
+export { UploadTooLargeError } from "@imbatranim/ui";
 
 /**
  * Serialize+save bytes back to the same path via `POST /api/files/upload`
@@ -80,39 +71,39 @@ export async function uploadFileBytes(
   bytes: ArrayBuffer | Uint8Array,
   name: string,
   opts: { expected?: string } = {},
-  client: SystemHttp = shared
+  client: SystemHttp = shared,
 ): Promise<{ version: string | null }> {
-  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
+  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   // Copy into a standalone ArrayBuffer so the Blob owns contiguous bytes.
   const blob = new Blob([view.slice()], {
-    type: 'application/octet-stream',
-  })
-  const form = new FormData()
-  form.append('root', root)
-  form.append('path', path)
-  if (opts.expected !== undefined) form.append('expected', opts.expected)
-  form.append('file', blob, name)
+    type: "application/octet-stream",
+  });
+  const form = new FormData();
+  form.append("root", root);
+  form.append("path", path);
+  if (opts.expected !== undefined) form.append("expected", opts.expected);
+  form.append("file", blob, name);
   try {
-    const res = await client.post<{ version?: unknown }>('/files/upload', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    const version = res.data?.version
-    return { version: typeof version === 'string' ? version : null }
+    const res = await client.post<{ version?: unknown }>("/files/upload", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    const version = res.data?.version;
+    return { version: typeof version === "string" ? version : null };
   } catch (err) {
     if (hasHttpStatus(err, 413)) {
-      throw new UploadTooLargeError()
+      throw new UploadTooLargeError();
     }
     if (hasHttpStatus(err, 409)) {
-      throw new FileConflictError(conflictCurrent(err))
+      throw new FileConflictError(conflictCurrent(err));
     }
-    throw err
+    throw err;
   }
 }
 
 /** The 409 body's `current` token (null when the file is gone). */
 function conflictCurrent(err: unknown): string | null {
-  const current = (err as { response?: { data?: { current?: unknown } } }).response?.data?.current
-  return typeof current === 'string' ? current : null
+  const current = (err as { response?: { data?: { current?: unknown } } }).response?.data?.current;
+  return typeof current === "string" ? current : null;
 }
 
 /**
@@ -121,9 +112,9 @@ function conflictCurrent(err: unknown): string | null {
  * {@link fetchFileBytes} when the bytes must cross the authenticated client.
  */
 export function downloadUrl(root: string, path: string): string {
-  const base = import.meta.env.VITE_API_URL as string
-  return `${base}/files/download?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}`
+  const base = import.meta.env.VITE_API_URL as string;
+  return `${base}/files/download?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}`;
 }
 
 // fileName moved to @imbatranim/ui: pure string helper, SDK-side.
-export { fileName } from '@imbatranim/ui'
+export { fileName } from "@imbatranim/ui";

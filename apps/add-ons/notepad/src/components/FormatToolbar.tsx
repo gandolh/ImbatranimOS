@@ -14,12 +14,12 @@ import {
   Quote,
   Strikethrough,
   Table,
-} from 'lucide-react'
-import type { ComponentType } from 'react'
-import { Tooltip, cn } from '@imbatranim/ui'
-import { FORMAT_HINTS, type FormatKind } from '../lib/formatActions'
+} from "lucide-react";
+import type { ComponentType } from "react";
+import { Tooltip, cn } from "@imbatranim/ui";
+import { FORMAT_HINTS, type FormatKind } from "../lib/formatActions";
 
-type IconType = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
+type IconType = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
 
 /**
  * Icons live here as data rather than JSX so the row is one `map`, and each icon is
@@ -27,28 +27,28 @@ type IconType = ComponentType<{ size?: number; strokeWidth?: number; className?:
  */
 const GROUPS: { kind: FormatKind; icon: IconType; label: string }[][] = [
   [
-    { kind: 'bold', icon: Bold, label: 'Bold' },
-    { kind: 'italic', icon: Italic, label: 'Italic' },
-    { kind: 'strike', icon: Strikethrough, label: 'Strikethrough' },
-    { kind: 'code', icon: Code, label: 'Inline code' },
-    { kind: 'fence', icon: Braces, label: 'Code block' },
+    { kind: "bold", icon: Bold, label: "Bold" },
+    { kind: "italic", icon: Italic, label: "Italic" },
+    { kind: "strike", icon: Strikethrough, label: "Strikethrough" },
+    { kind: "code", icon: Code, label: "Inline code" },
+    { kind: "fence", icon: Braces, label: "Code block" },
   ],
   [
-    { kind: 'h1', icon: Heading1, label: 'Heading 1' },
-    { kind: 'h2', icon: Heading2, label: 'Heading 2' },
-    { kind: 'h3', icon: Heading3, label: 'Heading 3' },
+    { kind: "h1", icon: Heading1, label: "Heading 1" },
+    { kind: "h2", icon: Heading2, label: "Heading 2" },
+    { kind: "h3", icon: Heading3, label: "Heading 3" },
   ],
   [
-    { kind: 'bullet', icon: List, label: 'Bullet list' },
-    { kind: 'ordered', icon: ListOrdered, label: 'Numbered list' },
-    { kind: 'task', icon: ListTodo, label: 'Task list' },
-    { kind: 'quote', icon: Quote, label: 'Quote' },
+    { kind: "bullet", icon: List, label: "Bullet list" },
+    { kind: "ordered", icon: ListOrdered, label: "Numbered list" },
+    { kind: "task", icon: ListTodo, label: "Task list" },
+    { kind: "quote", icon: Quote, label: "Quote" },
   ],
   [
-    { kind: 'link', icon: LinkIcon, label: 'Link' },
-    { kind: 'table', icon: Table, label: 'Table' },
+    { kind: "link", icon: LinkIcon, label: "Link" },
+    { kind: "table", icon: Table, label: "Table" },
   ],
-]
+];
 
 /**
  * The formatting row.
@@ -68,10 +68,10 @@ export function FormatToolbar({
   imageBusy,
   disabled,
 }: {
-  onApply: (kind: FormatKind) => void
-  onInsertImage: () => void
-  imageBusy: boolean
-  disabled: boolean
+  onApply: (kind: FormatKind) => void;
+  onInsertImage: () => void;
+  imageBusy: boolean;
+  disabled: boolean;
 }) {
   return (
     <div className="border-outline-variant bg-surface-container-lowest flex shrink-0 items-center gap-0.5 overflow-x-auto border-b px-2 py-0.5">
@@ -79,21 +79,18 @@ export function FormatToolbar({
         <div key={group[0].kind} className="flex items-center gap-0.5">
           {index > 0 && <span className="bg-outline-variant mx-1 h-4 w-px shrink-0" />}
           {group.map(({ kind, icon: Icon, label }) => (
-            <Tooltip
-              key={kind}
-              content={FORMAT_HINTS[kind] ? `${label} (${FORMAT_HINTS[kind]})` : label}
-            >
+            <Tooltip key={kind} content={FORMAT_HINTS[kind] ? `${label} (${FORMAT_HINTS[kind]})` : label}>
               <button
                 type="button"
                 aria-label={label}
                 disabled={disabled}
                 onMouseDown={(event) => {
-                  event.preventDefault()
-                  onApply(kind)
+                  event.preventDefault();
+                  onApply(kind);
                 }}
                 className={cn(
-                  'focus-visible:ring-primary text-on-surface flex h-6 w-6 shrink-0 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset',
-                  'hover:bg-surface-container-high disabled:opacity-40'
+                  "focus-visible:ring-primary text-on-surface flex h-6 w-6 shrink-0 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                  "hover:bg-surface-container-high disabled:opacity-40",
                 )}
               >
                 <Icon size={13} />
@@ -110,17 +107,17 @@ export function FormatToolbar({
           aria-label="Insert image"
           disabled={disabled || imageBusy}
           onMouseDown={(event) => {
-            event.preventDefault()
-            onInsertImage()
+            event.preventDefault();
+            onInsertImage();
           }}
           className={cn(
-            'focus-visible:ring-primary text-on-surface flex h-6 w-6 shrink-0 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset',
-            'hover:bg-surface-container-high disabled:opacity-40'
+            "focus-visible:ring-primary text-on-surface flex h-6 w-6 shrink-0 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset",
+            "hover:bg-surface-container-high disabled:opacity-40",
           )}
         >
-          <ImageIcon size={13} className={imageBusy ? 'animate-pulse' : undefined} />
+          <ImageIcon size={13} className={imageBusy ? "animate-pulse" : undefined} />
         </button>
       </Tooltip>
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import { execFileSync } from 'child_process';
-import { mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { execFileSync } from "child_process";
+import { mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
 
 /**
  * A kit suite as a real git repository: one build that writes two
@@ -198,9 +198,9 @@ const KIT_CSS = `@layer utilities {
 function buildScript(withStyle: boolean): string {
   return `import { mkdirSync, writeFileSync } from 'fs';
 const files = ${JSON.stringify({
-    'dist/os/notes/app.mjs': NOTES,
-    'dist/os/hello/app.mjs': HELLO,
-    ...(withStyle ? { 'dist/os/kit.css': KIT_CSS } : {}),
+    "dist/os/notes/app.mjs": NOTES,
+    "dist/os/hello/app.mjs": HELLO,
+    ...(withStyle ? { "dist/os/kit.css": KIT_CSS } : {}),
   })};
 for (const [path, text] of Object.entries(files)) {
   mkdirSync(path.split('/').slice(0, -1).join('/'), { recursive: true });
@@ -211,15 +211,15 @@ console.log('built ' + Object.keys(files).length + ' files');
 }
 
 function git(cwd: string, ...args: string[]): string {
-  return execFileSync('git', args, {
+  return execFileSync("git", args, {
     cwd,
-    encoding: 'utf8',
+    encoding: "utf8",
     env: {
       ...process.env,
-      GIT_AUTHOR_NAME: 't',
-      GIT_AUTHOR_EMAIL: 't@example.com',
-      GIT_COMMITTER_NAME: 't',
-      GIT_COMMITTER_EMAIL: 't@example.com',
+      GIT_AUTHOR_NAME: "t",
+      GIT_AUTHOR_EMAIL: "t@example.com",
+      GIT_COMMITTER_NAME: "t",
+      GIT_COMMITTER_EMAIL: "t@example.com",
     },
   }).trim();
 }
@@ -227,16 +227,16 @@ function git(cwd: string, ...args: string[]): string {
 /** Write the repository into the empty (or missing) directory `dir`. */
 export function makeKitRepo(dir: string): KitRepo {
   mkdirSync(dir, { recursive: true });
-  git(dir, 'init', '-q', '-b', 'main');
-  writeFileSync(join(dir, 'build.mjs'), buildScript(true));
-  git(dir, 'add', '.');
-  git(dir, 'commit', '-qm', 'two kit apps, one stylesheet');
-  const whole = git(dir, 'rev-parse', 'HEAD');
-  git(dir, 'checkout', '-q', '-b', 'leave-out-style');
-  writeFileSync(join(dir, 'build.mjs'), buildScript(false));
-  git(dir, 'commit', '-qam', 'the build forgets the stylesheet');
-  const leavesOutStyle = git(dir, 'rev-parse', 'HEAD');
-  git(dir, 'checkout', '-q', 'main');
+  git(dir, "init", "-q", "-b", "main");
+  writeFileSync(join(dir, "build.mjs"), buildScript(true));
+  git(dir, "add", ".");
+  git(dir, "commit", "-qm", "two kit apps, one stylesheet");
+  const whole = git(dir, "rev-parse", "HEAD");
+  git(dir, "checkout", "-q", "-b", "leave-out-style");
+  writeFileSync(join(dir, "build.mjs"), buildScript(false));
+  git(dir, "commit", "-qam", "the build forgets the stylesheet");
+  const leavesOutStyle = git(dir, "rev-parse", "HEAD");
+  git(dir, "checkout", "-q", "main");
   return { whole, leavesOutStyle };
 }
 
@@ -245,49 +245,45 @@ export function makeKitRepo(dir: string): KitRepo {
  * kit 1, with `kit-notes` (several windows, opens `.kitnote`, reads and writes
  * files) and `kit-hello` (one window, no capabilities), both listing `kit.css`.
  */
-export function kitDescriptor(
-  repo: string,
-  ref: string,
-  extra: Record<string, unknown> = {},
-) {
+export function kitDescriptor(repo: string, ref: string, extra: Record<string, unknown> = {}) {
   return {
     schemaVersion: 2,
-    id: 'kit',
-    name: 'Kit Fixture',
-    description: 'Two kit apps from one build, sharing the desktop’s kit.',
+    id: "kit",
+    name: "Kit Fixture",
+    description: "Two kit apps from one build, sharing the desktop’s kit.",
     source: { repo, ref },
-    type: 'static',
-    runtime: 'native',
-    build: { command: ['node', 'build.mjs'], output: 'dist/os' },
+    type: "static",
+    runtime: "native",
+    build: { command: ["node", "build.mjs"], output: "dist/os" },
     sharedKit: 1,
     apps: [
       {
-        id: 'kit-notes',
-        name: 'Kit Notes',
-        description: 'Edits a text file with the desktop’s own kit.',
-        meta: ['fixture'],
-        entry: 'notes/app.mjs',
-        styles: ['kit.css'],
+        id: "kit-notes",
+        name: "Kit Notes",
+        description: "Edits a text file with the desktop’s own kit.",
+        meta: ["fixture"],
+        entry: "notes/app.mjs",
+        styles: ["kit.css"],
         window: {
           defaultSize: { w: 560, h: 400 },
           minSize: { w: 320, h: 240 },
         },
-        icon: 'file-pen',
-        opens: ['kitnote'],
+        icon: "file-pen",
+        opens: ["kitnote"],
         multiInstance: true,
-        capabilities: ['fs', 'intents'],
+        capabilities: ["fs", "intents"],
       },
       {
-        id: 'kit-hello',
-        name: 'Kit Hello',
-        description: 'Asks for nothing.',
-        entry: 'hello/app.mjs',
-        styles: ['kit.css'],
+        id: "kit-hello",
+        name: "Kit Hello",
+        description: "Asks for nothing.",
+        entry: "hello/app.mjs",
+        styles: ["kit.css"],
         window: {
           defaultSize: { w: 420, h: 260 },
           minSize: { w: 320, h: 200 },
         },
-        icon: 'briefcase',
+        icon: "briefcase",
         capabilities: [],
       },
     ],

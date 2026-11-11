@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module } from "@nestjs/common";
 
-import { BrowserController } from './browser.controller';
-import { BrowserProfileService } from './browser-profile.service';
-import { BrowserProxyServer } from './browser-proxy.server';
+import { BrowserController } from "./browser.controller";
+import { BrowserProfileService } from "./browser-profile.service";
+import { BrowserProxyServer } from "./browser-proxy.server";
 
 /**
  * The Browser: the proxy origin's listener and Wisp relay, and the

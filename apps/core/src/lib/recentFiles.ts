@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
-import type { SystemHttp } from '@imbatranim/ui'
-import { api } from './axios'
-import { queryClient } from './queryClient'
-import { currentAppId } from '../shared/store/retiredApps'
+import { useQuery } from "@tanstack/react-query";
+import type { SystemHttp } from "@imbatranim/ui";
+import { api } from "./axios";
+import { queryClient } from "./queryClient";
+import { currentAppId } from "../shared/store/retiredApps";
 
 /**
  * OS-wide recent files — the client half of `/api/files/recent`.
@@ -13,23 +13,23 @@ import { currentAppId } from '../shared/store/retiredApps'
  * Recent tab and the palette's "Recent files" source.
  */
 export type RecentFile = {
-  id: number
-  root: string
-  path: string
-  appId: string
+  id: number;
+  root: string;
+  path: string;
+  appId: string;
   /**
    * A folder is an app's place to work (Git GUI's repositories): Start and
    * the palette open it in its app; the file picker leaves it out. Absent
    * from a backend older than the kind.
    */
-  kind?: 'file' | 'folder'
-  lastOpened: string
-}
+  kind?: "file" | "folder";
+  lastOpened: string;
+};
 
-export const RECENT_FILES_KEY = ['files', 'recent'] as const
+export const RECENT_FILES_KEY = ["files", "recent"] as const;
 
 function invalidate(): void {
-  void queryClient.invalidateQueries({ queryKey: RECENT_FILES_KEY })
+  void queryClient.invalidateQueries({ queryKey: RECENT_FILES_KEY });
 }
 
 /**
@@ -38,15 +38,15 @@ function invalidate(): void {
  * it to the top of the list; reading through the map keeps the order.
  */
 async function getRecentFiles(): Promise<RecentFile[]> {
-  const rows = (await api.get<RecentFile[]>('/files/recent')).data
-  return rows.map((r) => ({ ...r, appId: currentAppId(r.appId) }))
+  const rows = (await api.get<RecentFile[]>("/files/recent")).data;
+  return rows.map((r) => ({ ...r, appId: currentAppId(r.appId) }));
 }
 
 export function useRecentFilesQuery() {
   return useQuery({
     queryKey: RECENT_FILES_KEY,
     queryFn: getRecentFiles,
-  })
+  });
 }
 
 /**
@@ -58,33 +58,29 @@ export function recordRecentFile(
   root: string,
   path: string,
   appId: string,
-  client: SystemHttp = api as unknown as SystemHttp
+  client: SystemHttp = api as unknown as SystemHttp,
 ): void {
   void client
-    .post('/files/recent', { root, path, appId })
+    .post("/files/recent", { root, path, appId })
     .then(invalidate)
-    .catch(() => undefined)
+    .catch(() => undefined);
 }
 
 /** Self-heal: drop an entry whose file turned out to be gone. */
-export function removeRecentFile(
-  root: string,
-  path: string,
-  client: SystemHttp = api as unknown as SystemHttp
-): void {
+export function removeRecentFile(root: string, path: string, client: SystemHttp = api as unknown as SystemHttp): void {
   void client
-    .delete('/files/recent', { params: { root, path } })
+    .delete("/files/recent", { params: { root, path } })
     .then(invalidate)
-    .catch(() => undefined)
+    .catch(() => undefined);
 }
 
 /** The privacy affordance: wipe the list. */
 export async function clearRecentFiles(): Promise<void> {
-  await api.delete('/files/recent/all')
-  invalidate()
+  await api.delete("/files/recent/all");
+  invalidate();
 }
 
 /** Non-hook read for imperative callers (the palette source). */
 export async function fetchRecentFiles(): Promise<RecentFile[]> {
-  return getRecentFiles()
+  return getRecentFiles();
 }

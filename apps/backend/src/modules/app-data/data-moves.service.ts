@@ -1,24 +1,15 @@
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  Optional,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, OnApplicationBootstrap, Optional } from "@nestjs/common";
 
-import * as fs from 'fs/promises';
-import { join } from 'path';
+import * as fs from "fs/promises";
+import { join } from "path";
 
-import { DbService } from '../../db/db.service';
-import { FilesService } from '../files/files.service';
-import {
-  MAX_FOLDER_RECENTS_PER_APP,
-  RecentService,
-} from '../files/recent.service';
-import { LogService } from '../logs/log.service';
-import type { AppIdentity } from '../app-identity/app-identity.types';
-import { AppDataService } from './app-data.service';
-import type { DataKind } from './app-data.paths';
+import { DbService } from "../../db/db.service";
+import { FilesService } from "../files/files.service";
+import { MAX_FOLDER_RECENTS_PER_APP, RecentService } from "../files/recent.service";
+import { LogService } from "../logs/log.service";
+import type { AppIdentity } from "../app-identity/app-identity.types";
+import { AppDataService } from "./app-data.service";
+import type { DataKind } from "./app-data.paths";
 
 /**
  * One-time moves of data the OS kept for an app in its own database into the
@@ -77,9 +68,7 @@ type Move = {
   /** Which of the app's folders the files go in. */
   kind: DataKind;
   /** The files to write, by path in the app's folder, and what they hold. */
-  files():
-    | { files: Map<string, string>; summary: string }
-    | Promise<{ files: Map<string, string>; summary: string }>;
+  files(): { files: Map<string, string>; summary: string } | Promise<{ files: Map<string, string>; summary: string }>;
   /** Rows the OS keeps itself, written in the transaction that drops the tables. */
   keep?(): void;
 };
@@ -170,21 +159,14 @@ export class DataMovesService implements OnApplicationBootstrap {
    * move, Git GUI's repositories whose folder is gone are kept: this is a full
    * copy for the owner, not what the app would reopen.
    */
-  async filesFrom(
-    appId: string,
-    from: TableSource,
-  ): Promise<Map<string, string>> {
+  async filesFrom(appId: string, from: TableSource): Promise<Map<string, string>> {
     const move = this.moves(from, true).find((m) => m.appId === appId);
     if (!move) return new Map();
     return (await move.files()).files;
   }
 
   private moves(from: TableSource = live, keepGone = false): Move[] {
-    return [
-      this.todoMove(from),
-      this.bookmarksMove(from),
-      this.gitRecentsMove(from, keepGone),
-    ];
+    return [this.todoMove(from), this.bookmarksMove(from), this.gitRecentsMove(from, keepGone)];
   }
 
   private async runOnce(): Promise<void> {
@@ -199,7 +181,7 @@ export class DataMovesService implements OnApplicationBootstrap {
       } catch (err) {
         const message = `${move.name}'s data could not be moved into its folder, so it stays in the database and the move runs again at the next start: ${errorText(err)}`;
         this.logger.warn(message);
-        this.record('warn', 'app-data.move.failed', message, move.appId);
+        this.record("warn", "app-data.move.failed", message, move.appId);
       }
     }
   }
@@ -239,12 +221,7 @@ export class DataMovesService implements OnApplicationBootstrap {
     })();
     const summary = planned.summary;
     if (summary) {
-      this.record(
-        'info',
-        'app-data.move.done',
-        `${move.name}'s data moved into its folder: ${summary}.`,
-        move.appId,
-      );
+      this.record("info", "app-data.move.done", `${move.name}'s data moved into its folder: ${summary}.`, move.appId);
     }
   }
 
@@ -254,22 +231,17 @@ export class DataMovesService implements OnApplicationBootstrap {
    * missing file doesn't differ; {@link AppDataService.place} checks the
    * rest when it writes.
    */
-  private async differs(
-    appId: string,
-    kind: DataKind,
-    path: string,
-    content: string,
-  ): Promise<boolean> {
+  private async differs(appId: string, kind: DataKind, path: string, content: string): Promise<boolean> {
     const abs = join(this.data.folder(appId, kind), path);
     const stat = await fs.lstat(abs).catch(() => null);
     if (!stat) return false;
     if (!stat.isFile()) return true;
-    return !(await fs.readFile(abs)).equals(Buffer.from(content, 'utf8'));
+    return !(await fs.readFile(abs)).equals(Buffer.from(content, "utf8"));
   }
 
   /** Rename the tables out of the move's way, data kept, and say why once. */
   private setAside(move: Move, tables: readonly string[], path: string): void {
-    const day = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    const day = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     const names: string[] = [];
     this.dbs.db.transaction(() => {
       for (const table of tables) {
@@ -281,35 +253,32 @@ export class DataMovesService implements OnApplicationBootstrap {
         names.push(name);
       }
     })();
-    const message = `${move.name} has written its own ${path} since its data was first moved, so the move stops there and writes nothing more. The old rows are kept, set aside as ${names.join(', ')}.`;
+    const message = `${move.name} has written its own ${path} since its data was first moved, so the move stops there and writes nothing more. The old rows are kept, set aside as ${names.join(", ")}.`;
     this.logger.warn(message);
-    this.record('warn', 'app-data.move.set-aside', message, move.appId);
+    this.record("warn", "app-data.move.set-aside", message, move.appId);
   }
 
   private todoMove(from: TableSource): Move {
     return {
-      appId: 'todo',
-      group: 'accessories',
-      name: 'Todo',
-      tables: ['todos', 'todo_lists'],
-      kind: 'data',
+      appId: "todo",
+      group: "accessories",
+      name: "Todo",
+      tables: ["todos", "todo_lists"],
+      kind: "data",
       files: () => {
         const todos = this.rows<TodoRow>(
-          from('todos'),
-          (
-            table,
-          ) => `SELECT id, text, completed, position, due_at, priority, list_id,
+          from("todos"),
+          (table) => `SELECT id, text, completed, position, due_at, priority, list_id,
                   created_at, updated_at
              FROM ${table} ORDER BY position ASC, id ASC`,
         );
         const lists = this.rows<ListRow>(
-          from('todo_lists'),
-          (table) =>
-            `SELECT id, name, position FROM ${table} ORDER BY position ASC, id ASC`,
+          from("todo_lists"),
+          (table) => `SELECT id, name, position FROM ${table} ORDER BY position ASC, id ASC`,
         );
         const files = new Map<string, string>();
         if (todos.length === 0 && lists.length === 0) {
-          return { files, summary: '' };
+          return { files, summary: "" };
         }
         const stored = (t: TodoRow) => ({
           id: t.id,
@@ -334,15 +303,13 @@ export class DataMovesService implements OnApplicationBootstrap {
           );
         }
         // A task whose list is gone is unfiled, as the app shows it.
-        const unfiled = todos.filter(
-          (t) => t.list_id === null || !listIds.has(t.list_id),
-        );
+        const unfiled = todos.filter((t) => t.list_id === null || !listIds.has(t.list_id));
         if (unfiled.length > 0) {
-          files.set('unfiled.json', json({ todos: unfiled.map(stored) }));
+          files.set("unfiled.json", json({ todos: unfiled.map(stored) }));
         }
         return {
           files,
-          summary: `${count(todos.length, 'task')} in ${count(lists.length, 'list')}`,
+          summary: `${count(todos.length, "task")} in ${count(lists.length, "list")}`,
         };
       },
     };
@@ -350,29 +317,25 @@ export class DataMovesService implements OnApplicationBootstrap {
 
   private bookmarksMove(from: TableSource): Move {
     return {
-      appId: 'bookmarks',
-      group: 'accessories',
-      name: 'Bookmarks',
-      tables: ['bookmark_links', 'bookmark_groups'],
-      kind: 'data',
+      appId: "bookmarks",
+      group: "accessories",
+      name: "Bookmarks",
+      tables: ["bookmark_links", "bookmark_groups"],
+      kind: "data",
       files: () => {
         const groups = this.rows<GroupRow>(
-          from('bookmark_groups'),
-          (table) =>
-            `SELECT id, name, icon, parent_id, position FROM ${table} ORDER BY position ASC, id ASC`,
+          from("bookmark_groups"),
+          (table) => `SELECT id, name, icon, parent_id, position FROM ${table} ORDER BY position ASC, id ASC`,
         );
         const links = this.rows<LinkRow>(
-          from('bookmark_links'),
-          (table) =>
-            `SELECT id, group_id, title, url, icon, position FROM ${table} ORDER BY position ASC, id ASC`,
+          from("bookmark_links"),
+          (table) => `SELECT id, group_id, title, url, icon, position FROM ${table} ORDER BY position ASC, id ASC`,
         );
         const files = new Map<string, string>();
-        if (groups.length === 0) return { files, summary: '' };
-        const kept = links.filter((l) =>
-          groups.some((g) => g.id === l.group_id),
-        );
+        if (groups.length === 0) return { files, summary: "" };
+        const kept = links.filter((l) => groups.some((g) => g.id === l.group_id));
         files.set(
-          'bookmarks.json',
+          "bookmarks.json",
           json({
             groups: groups.map((g) => ({
               id: g.id,
@@ -394,7 +357,7 @@ export class DataMovesService implements OnApplicationBootstrap {
         );
         return {
           files,
-          summary: `${count(kept.length, 'bookmark')} in ${count(groups.length, 'folder')}`,
+          summary: `${count(kept.length, "bookmark")} in ${count(groups.length, "folder")}`,
         };
       },
     };
@@ -404,38 +367,30 @@ export class DataMovesService implements OnApplicationBootstrap {
     /** Git GUI's rows whose folder is still there, newest first, as many as it keeps. */
     let kept: RepoRow[] = [];
     return {
-      appId: 'git-gui',
-      group: 'developer',
-      name: 'Git GUI',
-      tables: ['git_recent_repos'],
-      kind: 'state',
+      appId: "git-gui",
+      group: "developer",
+      name: "Git GUI",
+      tables: ["git_recent_repos"],
+      kind: "state",
       files: async () => {
         // Only Git GUI's rows: a repository the user recorded had no app to
         // go to. A folder that is gone, or is no folder now, isn't moved.
         const rows = this.rows<RepoRow>(
-          from('git_recent_repos'),
+          from("git_recent_repos"),
           (table) => `SELECT root, path, last_opened FROM ${table}
             WHERE app_id = 'git-gui' ORDER BY last_opened DESC, id DESC`,
         );
         kept = [];
         for (const row of rows) {
           if (kept.length === MAX_FOLDER_RECENTS_PER_APP) break;
-          if (keepGone || (await this.isFolder(row.root, row.path)))
-            kept.push(row);
+          if (keepGone || (await this.isFolder(row.root, row.path))) kept.push(row);
         }
         const files = new Map<string, string>();
-        if (kept.length === 0) return { files, summary: '' };
-        files.set(
-          'recents.json',
-          json({ repos: kept.map((r) => ({ root: r.root, path: r.path })) }),
-        );
+        if (kept.length === 0) return { files, summary: "" };
+        files.set("recents.json", json({ repos: kept.map((r) => ({ root: r.root, path: r.path })) }));
         return {
           files,
-          summary: count(
-            kept.length,
-            'recent repository',
-            'recent repositories',
-          ),
+          summary: count(kept.length, "recent repository", "recent repositories"),
         };
       },
       keep: () => {
@@ -448,7 +403,7 @@ export class DataMovesService implements OnApplicationBootstrap {
            ON CONFLICT(root, path) DO NOTHING`,
         );
         for (const r of kept) insert.run(r.root, r.path, r.last_opened);
-        this.recent.prune('git-gui');
+        this.recent.prune("git-gui");
       },
     };
   }
@@ -463,13 +418,7 @@ export class DataMovesService implements OnApplicationBootstrap {
   }
 
   private hasTable(name: string): boolean {
-    return (
-      this.dbs.db
-        .prepare(
-          "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
-        )
-        .get(name) !== undefined
-    );
+    return this.dbs.db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name) !== undefined;
   }
 
   /**
@@ -481,12 +430,7 @@ export class DataMovesService implements OnApplicationBootstrap {
     return this.dbs.db.prepare(sql(table)).all() as T[];
   }
 
-  private record(
-    level: 'info' | 'warn',
-    event: string,
-    message: string,
-    appId: string,
-  ): void {
+  private record(level: "info" | "warn", event: string, message: string, appId: string): void {
     try {
       this.logs?.record(level, event, message, { appId });
     } catch {

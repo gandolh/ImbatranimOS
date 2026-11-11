@@ -1,19 +1,19 @@
-import { Music, Video, ListMusic, History } from 'lucide-react'
-import { ScrollArea, Tooltip, cn } from '@imbatranim/ui'
-import type { Track } from '../api/listDir'
-import { formatTime } from '../lib/formatTime'
-import { resumeKey } from '../lib/resume'
+import { Music, Video, ListMusic, History } from "lucide-react";
+import { ScrollArea, Tooltip, cn } from "@imbatranim/ui";
+import type { Track } from "../api/listDir";
+import { formatTime } from "../lib/formatTime";
+import { resumeKey } from "../lib/resume";
 
 type PlaylistProps = {
-  tracks: Track[]
-  activePath: string | null
+  tracks: Track[];
+  activePath: string | null;
   /** Probed durations by path; absent until the probe reaches that track. */
-  durations: Record<string, number>
+  durations: Record<string, number>;
   /** Remembered positions, `root:path` → seconds. */
-  resume: Record<string, number>
-  root: string
-  onSelect: (path: string) => void
-}
+  resume: Record<string, number>;
+  root: string;
+  onSelect: (path: string) => void;
+};
 
 /**
  * The folder queue — sibling media files, name-sorted, click to switch.
@@ -36,26 +36,24 @@ export function Playlist({ tracks, activePath, durations, resume, root, onSelect
       <ScrollArea className="min-h-0 flex-1">
         <ul className="flex flex-col px-(--k-list-inset)">
           {tracks.map((track) => {
-            const active = track.path === activePath
-            const Icon = track.kind === 'video' ? Video : Music
+            const active = track.path === activePath;
+            const Icon = track.kind === "video" ? Video : Music;
             return (
               <li key={track.path}>
                 <button
                   type="button"
                   onClick={() => onSelect(track.path)}
                   className={cn(
-                    'focus-visible:ring-primary font-ui border-outline-variant rounded-item apricot:border-transparent flex w-full cursor-pointer items-center gap-1.5 border-b px-2 py-1.5 text-left text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                    "focus-visible:ring-primary font-ui border-outline-variant rounded-item apricot:border-transparent flex w-full cursor-pointer items-center gap-1.5 border-b px-2 py-1.5 text-left text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
                     active
-                      ? 'bg-primary-container text-on-primary-container'
-                      : 'text-on-surface hover:bg-surface-container-high'
+                      ? "bg-primary-container text-on-primary-container"
+                      : "text-on-surface hover:bg-surface-container-high",
                   )}
                 >
                   <Icon size={12} className="shrink-0" />
                   <span className="min-w-0 flex-1 truncate">{track.name}</span>
                   {resume[resumeKey(root, track.path)] !== undefined && (
-                    <Tooltip
-                      content={`Resumes at ${formatTime(resume[resumeKey(root, track.path)])}`}
-                    >
+                    <Tooltip content={`Resumes at ${formatTime(resume[resumeKey(root, track.path)])}`}>
                       <History size={11} className="shrink-0 opacity-70" />
                     </Tooltip>
                   )}
@@ -66,10 +64,10 @@ export function Playlist({ tracks, activePath, durations, resume, root, onSelect
                   )}
                 </button>
               </li>
-            )
+            );
           })}
         </ul>
       </ScrollArea>
     </div>
-  )
+  );
 }

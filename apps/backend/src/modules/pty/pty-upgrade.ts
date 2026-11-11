@@ -1,7 +1,7 @@
-import type { IncomingMessage } from 'http';
-import { PTY_PATH } from './pty.constants';
+import type { IncomingMessage } from "http";
+import { PTY_PATH } from "./pty.constants";
 
-import type { Caller, LocalIdentityService } from '../auth/ws-auth';
+import type { Caller, LocalIdentityService } from "../auth/ws-auth";
 
 /**
  * True when a raw upgrade request targets the terminal endpoint. The URL may
@@ -11,7 +11,7 @@ import type { Caller, LocalIdentityService } from '../auth/ws-auth';
  */
 export function isPtyUpgrade(url: string | undefined): boolean {
   if (!url) return false;
-  const path = url.split('?', 1)[0];
+  const path = url.split("?", 1)[0];
   return path === PTY_PATH;
 }
 
@@ -23,10 +23,7 @@ export function isPtyUpgrade(url: string | undefined): boolean {
  * present it must equal the configured frontend URL or the request Host; an
  * absent Origin (same-origin / non-browser clients) is allowed.
  */
-export function isOriginAllowed(
-  req: Pick<IncomingMessage, 'headers'>,
-  frontendUrl: string,
-): boolean {
+export function isOriginAllowed(req: Pick<IncomingMessage, "headers">, frontendUrl: string): boolean {
   const origin = req.headers.origin;
   if (!origin) return true;
   let originHost: string;
@@ -46,8 +43,8 @@ export function isOriginAllowed(
  * no cookie middleware is involved.
  */
 export async function authorizeUpgrade(
-  req: Pick<IncomingMessage, 'headers'>,
-  identity: Pick<LocalIdentityService, 'authenticate'>,
+  req: Pick<IncomingMessage, "headers">,
+  identity: Pick<LocalIdentityService, "authenticate">,
   frontendUrl: string,
 ): Promise<Caller | null> {
   if (!isOriginAllowed(req, frontendUrl)) return null;

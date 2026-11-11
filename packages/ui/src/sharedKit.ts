@@ -1,6 +1,6 @@
-import type { ComponentType } from 'react'
-import type { CommandSource } from './commandSource'
-import type { SystemHandle } from './system'
+import type { ComponentType } from "react";
+import type { CommandSource } from "./commandSource";
+import type { SystemHandle } from "./system";
 
 /**
  * The shared kit: what a marketplace **kit app** links against at
@@ -25,38 +25,38 @@ import type { SystemHandle } from './system'
  * Declared inline on purpose: an outside repo's snapshot of this directory
  * reads the value from this line.
  */
-export const SHARED_KIT_VERSION = 1
+export const SHARED_KIT_VERSION = 1;
 
 /** The specifiers the desktop shares, the keys of `__imbatranimShared.modules`. */
 export const SHARED_KIT_MODULES = [
-  'react',
-  'react/jsx-runtime',
-  'react-dom',
-  'react-dom/client',
-  '@imbatranim/ui',
-] as const
+  "react",
+  "react/jsx-runtime",
+  "react-dom",
+  "react-dom/client",
+  "@imbatranim/ui",
+] as const;
 
-export type SharedKitModule = (typeof SHARED_KIT_MODULES)[number]
+export type SharedKitModule = (typeof SHARED_KIT_MODULES)[number];
 
 /**
  * Where things are, for a marketplace app: the third argument to a module's
  * `mount`, and a kit app's `host` prop.
  */
 export type NativeHostContext = {
-  appId: string
+  appId: string;
   /** The URL of the directory the app's module was served from, ending in `/`. */
-  assetBase: string
+  assetBase: string;
   /**
    * A `mount` app's server, through the desktop's session-checked proxy,
    * leased while its window is open. Null for a static app, and always null
    * for a kit app (since kit 1.2.0): a kit app asks with
    * `system.server.request()` when it needs the server.
    */
-  server: { http: string; ws: string } | null
-}
+  server: { http: string; ws: string } | null;
+};
 
 /** The props the desktop renders a kit app's `App` export with. */
-export type KitAppProps = { windowId: string; host: NativeHostContext }
+export type KitAppProps = { windowId: string; host: NativeHostContext };
 
 /**
  * The handle a kit app's `Background` reads with `useSystem()` (since kit
@@ -65,10 +65,10 @@ export type KitAppProps = { windowId: string; host: NativeHostContext }
  * `server.request()` rejects: only a window holds the app's server. The rest
  * is fenced to the descriptor's capabilities, as a window's handle is.
  */
-export type WindowlessSystemHandle = SystemHandle & { readonly windowId: null }
+export type WindowlessSystemHandle = SystemHandle & { readonly windowId: null };
 
 /** The props the desktop renders a kit app's `Background` export with. */
-export type KitBackgroundProps = { host: NativeHostContext }
+export type KitBackgroundProps = { host: NativeHostContext };
 
 /**
  * What a kit app's module exports (since kit 1.5.0 for the hooks). `App` is
@@ -78,14 +78,14 @@ export type KitBackgroundProps = { host: NativeHostContext }
  * window open. A declared hook the module does not export is refused by name.
  */
 export type KitAppModule = {
-  App: ComponentType<KitAppProps>
+  App: ComponentType<KitAppProps>;
   /**
    * Mounted with no window from sign-in until sign-out while the app is
    * enabled. Renders nothing; it exists for its effects, which are cheap: one
    * slow interval, no per-frame work. One that throws is hidden with one
    * notification until it is turned off and on, or the page reloads.
    */
-  Background?: ComponentType<KitBackgroundProps>
+  Background?: ComponentType<KitBackgroundProps>;
   /** Searched by the command palette and Start while the app is enabled. */
-  commandSources?: readonly CommandSource[]
-}
+  commandSources?: readonly CommandSource[];
+};

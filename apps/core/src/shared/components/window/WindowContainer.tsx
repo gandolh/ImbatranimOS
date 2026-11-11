@@ -1,21 +1,21 @@
-import { Suspense, memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { useShallow } from 'zustand/shallow'
-import { topVisibleWindowId, useWindowStore } from '../../store/windowStore'
-import { Window } from './Window'
-import { APP_REGISTRY, type AppConfig } from '../../registry/registry'
-import { SystemProvider } from '@imbatranim/ui'
-import { createSystemHandle } from '../../../system/createSystemHandle'
-import { AppErrorBoundary } from './AppErrorBoundary'
-import { AppErrorFallback } from './AppErrorFallback'
-import { useRegistryVersion } from '../../registry/marketplace'
-import { focusIntoNewWindowSoon } from './focusIntoWindow'
-import { isLinuxWindow } from '../../../modules/linux-windows/kind'
-import { LinuxWindowBody } from '../../../modules/linux-windows/LinuxWindowBody'
-import { useLinuxWindowsStore } from '../../../modules/linux-windows/linuxWindowsStore'
+import { Suspense, memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useShallow } from "zustand/shallow";
+import { topVisibleWindowId, useWindowStore } from "../../store/windowStore";
+import { Window } from "./Window";
+import { APP_REGISTRY, type AppConfig } from "../../registry/registry";
+import { SystemProvider } from "@imbatranim/ui";
+import { createSystemHandle } from "../../../system/createSystemHandle";
+import { AppErrorBoundary } from "./AppErrorBoundary";
+import { AppErrorFallback } from "./AppErrorFallback";
+import { useRegistryVersion } from "../../registry/marketplace";
+import { focusIntoNewWindowSoon } from "./focusIntoWindow";
+import { isLinuxWindow } from "../../../modules/linux-windows/kind";
+import { LinuxWindowBody } from "../../../modules/linux-windows/LinuxWindowBody";
+import { useLinuxWindowsStore } from "../../../modules/linux-windows/linuxWindowsStore";
 
 // Field separator for the per-window projection key. `␟` (SYMBOL FOR UNIT
 // SEPARATOR) cannot occur in a uuid or an app-id slug, so splitting is safe.
-const SEP = '␟'
+const SEP = "␟";
 
 /**
  * Subscribe to a projection that deliberately omits `position`/`size`, so the
@@ -26,30 +26,29 @@ const SEP = '␟'
  * shallow-equal), the trap the old raw-`windows` subscription fell into.
  */
 function useOrderedWindows(): {
-  id: string
-  appId: string
-  zIndex: number
-  isVisible: boolean
-  workspaceId: number
+  id: string;
+  appId: string;
+  zIndex: number;
+  isVisible: boolean;
+  workspaceId: number;
 }[] {
   const keys = useWindowStore(
     useShallow((s) =>
       s.windows.map(
-        (w) =>
-          `${w.id}${SEP}${w.appId}${SEP}${w.zIndex}${SEP}${w.isVisible ? 1 : 0}${SEP}${w.workspaceId}`
-      )
-    )
-  )
+        (w) => `${w.id}${SEP}${w.appId}${SEP}${w.zIndex}${SEP}${w.isVisible ? 1 : 0}${SEP}${w.workspaceId}`,
+      ),
+    ),
+  );
   return keys.map((k) => {
-    const [id, appId, zIndex, isVisible, workspaceId] = k.split(SEP)
+    const [id, appId, zIndex, isVisible, workspaceId] = k.split(SEP);
     return {
       id,
       appId,
       zIndex: Number(zIndex),
-      isVisible: isVisible === '1',
+      isVisible: isVisible === "1",
       workspaceId: Number(workspaceId),
-    }
-  })
+    };
+  });
   // Deliberately NOT sorted by zIndex: each Window stacks by its own CSS
   // z-index inside this container's stacking context, so DOM order doesn't
   // decide what is on top. Reordering the list on every focus would make React
@@ -59,22 +58,22 @@ function useOrderedWindows(): {
 }
 
 export function WindowContainer() {
-  const orderedWindows = useOrderedWindows()
-  const activeWorkspace = useWindowStore((s) => s.activeWorkspace)
+  const orderedWindows = useOrderedWindows();
+  const activeWorkspace = useWindowStore((s) => s.activeWorkspace);
   // A restored window of a marketplace app finds its app once the catalog
   // has loaded; until then it is an empty frame.
-  useRegistryVersion()
+  useRegistryVersion();
   // The one shared definition of "focused", now workspace-scoped:
   // the taskbar highlight, window chrome and every window-scoped hotkey read
   // this same helper so they can never disagree.
-  const focusedId = topVisibleWindowId()
+  const focusedId = topVisibleWindowId();
 
   return (
     // Own stacking context: window zIndex grows unboundedly (persisted, bumped
     // on every focus), so left in the root context it would climb past portaled
     // overlays and swallow dialogs/selects/tooltips. `isolation:isolate` confines
     // the whole window band to this wrapper; overlays sit in a higher band above it.
-    <div style={{ isolation: 'isolate' }}>
+    <div style={{ isolation: "isolate" }}>
       {/*
         EVERY window is rendered, on every workspace — a window on an inactive
         workspace is hidden with `display:none`, exactly as a minimised one is,
@@ -95,7 +94,7 @@ export function WindowContainer() {
         />
       ))}
     </div>
-  )
+  );
 }
 
 /**
@@ -120,30 +119,30 @@ const WindowSlot = memo(function WindowSlot({
   isFocused,
   onActiveWorkspace,
 }: {
-  windowId: string
-  app: AppConfig | undefined
-  appId: string
-  isFocused: boolean
-  onActiveWorkspace: boolean
+  windowId: string;
+  app: AppConfig | undefined;
+  appId: string;
+  isFocused: boolean;
+  onActiveWorkspace: boolean;
 }) {
-  const closeWindow = useWindowStore((s) => s.closeWindow)
+  const closeWindow = useWindowStore((s) => s.closeWindow);
   // A Linux app that draws its own title bar gets the frame only.
-  const frameOnly = useLinuxWindowsStore((s) => s.byWindow[windowId]?.decorations === 'client')
+  const frameOnly = useLinuxWindowsStore((s) => s.byWindow[windowId]?.decorations === "client");
   // While a Linux app's window is open, windows open and close without the
   // zoom (see Window's fadeOnly).
-  const linuxOpen = useLinuxWindowsStore((s) => Object.keys(s.byWindow).length > 0)
-  const [remountKey, setRemountKey] = useState(0)
+  const linuxOpen = useLinuxWindowsStore((s) => Object.keys(s.byWindow).length > 0);
+  const [remountKey, setRemountKey] = useState(0);
 
-  const reload = useCallback(() => setRemountKey((k) => k + 1), [])
-  const close = useCallback(() => closeWindow(windowId), [closeWindow, windowId])
+  const reload = useCallback(() => setRemountKey((k) => k + 1), []);
+  const close = useCallback(() => closeWindow(windowId), [closeWindow, windowId]);
 
   // One handle per (app, window) mount, stable across renders — hooks key
   // their effects on it, and a fresh object per render would re-bind them all.
-  const system = useMemo(() => createSystemHandle(appId, windowId), [appId, windowId])
+  const system = useMemo(() => createSystemHandle(appId, windowId), [appId, windowId]);
 
-  const AppComponent = app?.component
-  const minSize = app?.minSize ?? { width: 240, height: 180 }
-  const appName = app?.name ?? appId
+  const AppComponent = app?.component;
+  const minSize = app?.minSize ?? { width: 240, height: 180 };
+  const appName = app?.name ?? appId;
 
   return (
     <Window
@@ -165,9 +164,7 @@ const WindowSlot = memo(function WindowSlot({
           key={remountKey}
           appId={appId}
           appName={appName}
-          fallback={(error) => (
-            <AppErrorFallback appName={appName} error={error} onReload={reload} onClose={close} />
-          )}
+          fallback={(error) => <AppErrorFallback appName={appName} error={error} onReload={reload} onClose={close} />}
         >
           {/* Inside the boundary on purpose: a lazy chunk that fails to load
               throws, and that is a crash the user should see handled the same
@@ -195,11 +192,11 @@ const WindowSlot = memo(function WindowSlot({
         <div className="text-on-surface-variant p-3 text-sm">Unknown app: {appId}</div>
       )}
     </Window>
-  )
-})
+  );
+});
 
 /** A new window takes the keyboard once its app is on screen. */
 function FirstFocus({ windowId }: { windowId: string }) {
-  useEffect(() => focusIntoNewWindowSoon(windowId), [windowId])
-  return null
+  useEffect(() => focusIntoNewWindowSoon(windowId), [windowId]);
+  return null;
 }

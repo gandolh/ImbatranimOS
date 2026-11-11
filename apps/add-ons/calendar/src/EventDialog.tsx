@@ -1,57 +1,57 @@
-import { useState } from 'react'
-import dayjs from 'dayjs'
-import { Repeat } from 'lucide-react'
-import { Button, Checkbox, Dialog, Input, Select, cn, useConfirm } from '@imbatranim/ui'
-import { COLOR_OPTIONS, COLOR_SWATCH } from './eventStyle'
-import { RecurrenceFields } from './RecurrenceFields'
-import { draftFromRule, ruleFromDraft, type RecurrenceDraft } from './recurrenceDraft'
-import { needsScopeChoice } from './seriesEdit'
-import type { CalendarEvent, EditScope, EventColor, EventDialogState } from './types'
-import type { EditedFields } from './seriesEdit'
+import { useState } from "react";
+import dayjs from "dayjs";
+import { Repeat } from "lucide-react";
+import { Button, Checkbox, Dialog, Input, Select, cn, useConfirm } from "@imbatranim/ui";
+import { COLOR_OPTIONS, COLOR_SWATCH } from "./eventStyle";
+import { RecurrenceFields } from "./RecurrenceFields";
+import { draftFromRule, ruleFromDraft, type RecurrenceDraft } from "./recurrenceDraft";
+import { needsScopeChoice } from "./seriesEdit";
+import type { CalendarEvent, EditScope, EventColor, EventDialogState } from "./types";
+import type { EditedFields } from "./seriesEdit";
 
 const REMINDER_OPTIONS = [
-  { value: 'none', label: 'No reminder' },
-  { value: '5', label: '5 minutes before' },
-  { value: '10', label: '10 minutes before' },
-  { value: '15', label: '15 minutes before' },
-  { value: '30', label: '30 minutes before' },
-  { value: '60', label: '1 hour before' },
-  { value: '1440', label: '1 day before' },
-]
+  { value: "none", label: "No reminder" },
+  { value: "5", label: "5 minutes before" },
+  { value: "10", label: "10 minutes before" },
+  { value: "15", label: "15 minutes before" },
+  { value: "30", label: "30 minutes before" },
+  { value: "60", label: "1 hour before" },
+  { value: "1440", label: "1 day before" },
+];
 
 const SCOPE_OPTIONS: { value: EditScope; label: string; hint: string }[] = [
-  { value: 'single', label: 'This event', hint: 'Detaches it from the series' },
-  { value: 'following', label: 'This and following', hint: 'Splits the series here' },
-  { value: 'all', label: 'All events', hint: 'Changes the whole series' },
-]
+  { value: "single", label: "This event", hint: "Detaches it from the series" },
+  { value: "following", label: "This and following", hint: "Splits the series here" },
+  { value: "all", label: "All events", hint: "Changes the whole series" },
+];
 
 type EventDialogProps = {
-  state: EventDialogState | null
-  onClose: () => void
-  onCreate: (fields: EditedFields) => void
-  onUpdate: (event: CalendarEvent, fields: EditedFields, scope: EditScope) => void
-  onDelete: (event: CalendarEvent, scope: EditScope) => void
-}
+  state: EventDialogState | null;
+  onClose: () => void;
+  onCreate: (fields: EditedFields) => void;
+  onUpdate: (event: CalendarEvent, fields: EditedFields, scope: EditScope) => void;
+  onDelete: (event: CalendarEvent, scope: EditScope) => void;
+};
 
 type FormState = {
-  title: string
-  notes: string
-  allDay: boolean
-  startDate: string
-  startTime: string
-  endDate: string
-  endTime: string
-  reminder: string
-  color: EventColor | 'none'
-  recurrence: RecurrenceDraft
-}
+  title: string;
+  notes: string;
+  allDay: boolean;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  reminder: string;
+  color: EventColor | "none";
+  recurrence: RecurrenceDraft;
+};
 
 function toDate(ms: number): string {
-  return dayjs(ms).format('YYYY-MM-DD')
+  return dayjs(ms).format("YYYY-MM-DD");
 }
 
 function toTime(ms: number): string {
-  return dayjs(ms).format('HH:mm')
+  return dayjs(ms).format("HH:mm");
 }
 
 /**
@@ -61,53 +61,49 @@ function toTime(ms: number): string {
  * opening the third Monday of a weekly standup must show that Monday's date. The
  * recurrence rule comes from the series, because that is where it lives.
  */
-function formFromEvent(
-  event: CalendarEvent,
-  occurrenceStart: number,
-  occurrenceEnd: number
-): FormState {
+function formFromEvent(event: CalendarEvent, occurrenceStart: number, occurrenceEnd: number): FormState {
   return {
     title: event.title,
-    notes: event.notes ?? '',
+    notes: event.notes ?? "",
     allDay: event.allDay,
     startDate: toDate(occurrenceStart),
     startTime: toTime(occurrenceStart),
     endDate: toDate(occurrenceEnd),
     endTime: toTime(occurrenceEnd),
-    reminder: event.reminderMinutes ? String(event.reminderMinutes) : 'none',
-    color: event.color ?? 'none',
+    reminder: event.reminderMinutes ? String(event.reminderMinutes) : "none",
+    color: event.color ?? "none",
     recurrence: draftFromRule(event.recurrence),
-  }
+  };
 }
 
 function formFromSlot(start: number, end: number, allDay: boolean): FormState {
   return {
-    title: '',
-    notes: '',
+    title: "",
+    notes: "",
     allDay,
     startDate: toDate(start),
     startTime: toTime(start),
     endDate: toDate(end),
     endTime: toTime(end),
-    reminder: 'none',
-    color: 'none',
+    reminder: "none",
+    color: "none",
     recurrence: draftFromRule(null),
-  }
+  };
 }
 
 /** Stable identity for a dialog state — used to resync the form when the
  * caller swaps in a different event/slot (state adjustment during render,
  * not an effect — mirrors the resync idiom used by Bookmarks/StickyNotes). */
 function stateKey(state: EventDialogState | null): string {
-  if (!state) return 'closed'
-  return state.mode === 'edit'
+  if (!state) return "closed";
+  return state.mode === "edit"
     ? `edit-${state.event.id}-${state.occurrenceDate}`
-    : `create-${state.start}-${state.end}`
+    : `create-${state.start}-${state.end}`;
 }
 
 /** The hour a timed event defaults to when it was not created from a time slot. */
-const DEFAULT_HOUR = '09:00'
-const DEFAULT_END_HOUR = '10:00'
+const DEFAULT_HOUR = "09:00";
+const DEFAULT_END_HOUR = "10:00";
 
 /**
  * Toggle all-day, fixing up the times.
@@ -119,69 +115,64 @@ const DEFAULT_END_HOUR = '10:00'
  * being given times should keep its span, not collapse to an hour.
  */
 function withAllDay(form: FormState, allDay: boolean): FormState {
-  if (allDay || form.startDate !== form.endDate) return { ...form, allDay }
-  const wholeDay =
-    form.startTime === '00:00' && (form.endTime === '23:59' || form.endTime === '00:00')
-  if (!wholeDay) return { ...form, allDay }
-  return { ...form, allDay, startTime: DEFAULT_HOUR, endTime: DEFAULT_END_HOUR }
+  if (allDay || form.startDate !== form.endDate) return { ...form, allDay };
+  const wholeDay = form.startTime === "00:00" && (form.endTime === "23:59" || form.endTime === "00:00");
+  if (!wholeDay) return { ...form, allDay };
+  return { ...form, allDay, startTime: DEFAULT_HOUR, endTime: DEFAULT_END_HOUR };
 }
 
 function initialForm(state: EventDialogState | null): FormState {
-  if (!state) return formFromSlot(Date.now(), Date.now(), true)
-  return state.mode === 'edit'
+  if (!state) return formFromSlot(Date.now(), Date.now(), true);
+  return state.mode === "edit"
     ? formFromEvent(state.event, state.occurrenceStart, state.occurrenceEnd)
-    : formFromSlot(state.start, state.end, state.allDay)
+    : formFromSlot(state.start, state.end, state.allDay);
 }
 
 export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: EventDialogProps) {
-  const { confirm, confirmDialog } = useConfirm()
+  const { confirm, confirmDialog } = useConfirm();
 
-  const [form, setForm] = useState<FormState>(() => initialForm(state))
-  const [key, setKey] = useState(() => stateKey(state))
-  const [error, setError] = useState<string | null>(null)
+  const [form, setForm] = useState<FormState>(() => initialForm(state));
+  const [key, setKey] = useState(() => stateKey(state));
+  const [error, setError] = useState<string | null>(null);
   // Which part of a series an edit applies to. "This event" is the safe default:
   // it changes the least, and the other two are one click away.
-  const [scope, setScope] = useState<EditScope>('single')
+  const [scope, setScope] = useState<EditScope>("single");
 
-  const nextKey = stateKey(state)
+  const nextKey = stateKey(state);
   if (nextKey !== key) {
-    setKey(nextKey)
-    setError(null)
-    setScope('single')
-    if (state) setForm(initialForm(state))
+    setKey(nextKey);
+    setError(null);
+    setScope("single");
+    if (state) setForm(initialForm(state));
   }
 
-  const editing = state?.mode === 'edit' ? state.event : null
-  const askScope = editing !== null && needsScopeChoice(editing)
+  const editing = state?.mode === "edit" ? state.event : null;
+  const askScope = editing !== null && needsScopeChoice(editing);
 
   function buildFields(): EditedFields | null {
     if (!form.title.trim()) {
-      setError('Title is required.')
-      return null
+      setError("Title is required.");
+      return null;
     }
 
-    const start = form.allDay
-      ? dayjs(form.startDate).startOf('day')
-      : dayjs(`${form.startDate}T${form.startTime}`)
-    const end = form.allDay
-      ? dayjs(form.endDate).endOf('day')
-      : dayjs(`${form.endDate}T${form.endTime}`)
+    const start = form.allDay ? dayjs(form.startDate).startOf("day") : dayjs(`${form.startDate}T${form.startTime}`);
+    const end = form.allDay ? dayjs(form.endDate).endOf("day") : dayjs(`${form.endDate}T${form.endTime}`);
 
     if (!start.isValid() || !end.isValid()) {
-      setError('Those dates are not valid.')
-      return null
+      setError("Those dates are not valid.");
+      return null;
     }
     if (end.isBefore(start)) {
-      setError('End must be after start.')
-      return null
+      setError("End must be after start.");
+      return null;
     }
 
-    const rule = ruleFromDraft(form.recurrence)
-    if (rule?.until && dayjs(rule.until).endOf('day').isBefore(start)) {
+    const rule = ruleFromDraft(form.recurrence);
+    if (rule?.until && dayjs(rule.until).endOf("day").isBefore(start)) {
       // Otherwise the event silently has no occurrences at all — it exists in
       // storage and appears nowhere, which reads as a bug rather than a choice.
-      setError('The repeat ends before the first occurrence.')
-      return null
+      setError("The repeat ends before the first occurrence.");
+      return null;
     }
 
     return {
@@ -190,37 +181,37 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
       allDay: form.allDay,
       start: start.valueOf(),
       end: end.valueOf(),
-      color: form.color === 'none' ? undefined : form.color,
-      reminderMinutes: form.reminder === 'none' ? undefined : Number(form.reminder),
+      color: form.color === "none" ? undefined : form.color,
+      reminderMinutes: form.reminder === "none" ? undefined : Number(form.reminder),
       recurrence: rule,
-    }
+    };
   }
 
   function handleSave() {
-    const fields = buildFields()
-    if (!fields) return
-    if (editing) onUpdate(editing, fields, askScope ? scope : 'all')
-    else onCreate(fields)
-    onClose()
+    const fields = buildFields();
+    if (!fields) return;
+    if (editing) onUpdate(editing, fields, askScope ? scope : "all");
+    else onCreate(fields);
+    onClose();
   }
 
   async function handleDelete() {
-    if (!editing) return
+    if (!editing) return;
     const scopeLabel = askScope
       ? {
-          single: 'this occurrence of',
-          following: 'this and every later',
-          all: 'every occurrence of',
+          single: "this occurrence of",
+          following: "this and every later",
+          all: "every occurrence of",
         }[scope]
-      : ''
+      : "";
     const ok = await confirm({
-      title: 'Delete event',
+      title: "Delete event",
       message: askScope ? `Delete ${scopeLabel} “${editing.title}”?` : `Delete “${editing.title}”?`,
       destructive: true,
-    })
+    });
     if (ok) {
-      onDelete(editing, askScope ? scope : 'all')
-      onClose()
+      onDelete(editing, askScope ? scope : "all");
+      onClose();
     }
   }
 
@@ -229,7 +220,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
       <Dialog
         open={state !== null}
         onOpenChange={(next) => !next && onClose()}
-        title={state?.mode === 'edit' ? 'Edit event' : 'New event'}
+        title={state?.mode === "edit" ? "Edit event" : "New event"}
         className="max-h-[80vh] w-[360px] overflow-y-auto"
       >
         <div className="flex flex-col gap-3">
@@ -289,10 +280,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
             )}
           </div>
 
-          <RecurrenceFields
-            draft={form.recurrence}
-            onChange={(recurrence) => setForm((f) => ({ ...f, recurrence }))}
-          />
+          <RecurrenceFields draft={form.recurrence} onChange={(recurrence) => setForm((f) => ({ ...f, recurrence }))} />
 
           <Select
             label="Reminder"
@@ -309,11 +297,11 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
               <button
                 type="button"
                 aria-label="Default colour"
-                aria-pressed={form.color === 'none'}
-                onClick={() => setForm((f) => ({ ...f, color: 'none' }))}
+                aria-pressed={form.color === "none"}
+                onClick={() => setForm((f) => ({ ...f, color: "none" }))}
                 className={cn(
-                  'focus-visible:ring-primary rounded-small bg-primary h-5 w-5 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
-                  form.color === 'none' ? 'border-on-surface' : 'border-outline-variant'
+                  "focus-visible:ring-primary rounded-small bg-primary h-5 w-5 border outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                  form.color === "none" ? "border-on-surface" : "border-outline-variant",
                 )}
               />
               {COLOR_OPTIONS.map((color) => (
@@ -324,9 +312,9 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
                   aria-pressed={form.color === color}
                   onClick={() => setForm((f) => ({ ...f, color }))}
                   className={cn(
-                    'focus-visible:ring-primary rounded-small h-5 w-5 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                    "focus-visible:ring-primary rounded-small h-5 w-5 border outline-none focus-visible:ring-2 focus-visible:ring-inset",
                     COLOR_SWATCH[color],
-                    form.color === color ? 'border-on-surface' : 'border-outline-variant'
+                    form.color === color ? "border-on-surface" : "border-outline-variant",
                   )}
                 />
               ))}
@@ -393,5 +381,5 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
       </Dialog>
       {confirmDialog}
     </>
-  )
+  );
 }

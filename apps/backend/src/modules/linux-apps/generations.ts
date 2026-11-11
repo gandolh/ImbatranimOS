@@ -1,5 +1,5 @@
-import { promises as fs } from 'fs';
-import { basename, dirname, join, resolve } from 'path';
+import { promises as fs } from "fs";
+import { basename, dirname, join, resolve } from "path";
 
 /**
  * A Nix profile's generations, read from its links: `profile` points at
@@ -19,9 +19,7 @@ export interface Generations {
 const LINK = /^(.+)-(\d+)-link$/;
 
 /** The profile's current generation, or null when it has none. */
-export async function currentGeneration(
-  profile: string,
-): Promise<Generations | null> {
+export async function currentGeneration(profile: string): Promise<Generations | null> {
   let path = profile;
   for (let hops = 0; hops < 4; hops++) {
     const target = await fs.readlink(path).catch(() => null);
@@ -34,18 +32,12 @@ export async function currentGeneration(
   return null;
 }
 
-export function generationLink(
-  g: Pick<Generations, 'dir' | 'name'>,
-  n: number,
-): string {
+export function generationLink(g: Pick<Generations, "dir" | "name">, n: number): string {
   return join(g.dir, `${g.name}-${n}-link`);
 }
 
 /** Whether generation `n` is still on disk (a garbage collection with -d deletes it). */
-export async function hasGeneration(
-  profile: string,
-  n: number,
-): Promise<boolean> {
+export async function hasGeneration(profile: string, n: number): Promise<boolean> {
   const g = await currentGeneration(profile);
   if (!g) return false;
   return fs
@@ -59,10 +51,7 @@ export async function hasGeneration(
  * does (it unlinks them), so a garbage collection can take what only they
  * held. The current generation is never deleted.
  */
-export async function deleteGenerationsExcept(
-  profile: string,
-  keep: readonly number[],
-): Promise<number[]> {
+export async function deleteGenerationsExcept(profile: string, keep: readonly number[]): Promise<number[]> {
   const g = await currentGeneration(profile);
   if (!g) return [];
   const deleted: number[] = [];

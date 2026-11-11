@@ -1,6 +1,6 @@
-import { createReadStream } from 'fs';
-import { StringDecoder } from 'string_decoder';
-import { createBrotliDecompress } from 'zlib';
+import { createReadStream } from "fs";
+import { StringDecoder } from "string_decoder";
+import { createBrotliDecompress } from "zlib";
 
 /**
  * The pinned release's package list, `packages.json.br`, searched locally.
@@ -33,7 +33,7 @@ const DESCRIPTION_MAX = 200;
  */
 export function isValidAttr(attr: unknown): attr is string {
   return (
-    typeof attr === 'string' &&
+    typeof attr === "string" &&
     attr.length > 0 &&
     attr.length <= 200 &&
     /^[A-Za-z0-9_+-]+(\.[A-Za-z0-9_+-]+)*$/.test(attr)
@@ -58,25 +58,17 @@ interface RawPackage {
  * allowing them, so they read as unavailable, and this machine allows them.
  */
 export function toRow(attr: string, p: RawPackage): PackageRow | null {
-  if (p.system !== 'x86_64-linux') return null;
+  if (p.system !== "x86_64-linux") return null;
   const meta = p.meta ?? {};
   const licenses = Array.isArray(meta.license) ? meta.license : [meta.license];
-  const unfree = licenses.some(
-    (l) =>
-      typeof l === 'object' &&
-      l !== null &&
-      (l as { free?: unknown }).free === false,
-  );
+  const unfree = licenses.some((l) => typeof l === "object" && l !== null && (l as { free?: unknown }).free === false);
   if (meta.available === false && !unfree) return null;
-  const text = (v: unknown) => (typeof v === 'string' ? v : '');
+  const text = (v: unknown) => (typeof v === "string" ? v : "");
   return [
     attr,
     text(p.pname),
     text(p.version),
-    text(meta.description)
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, DESCRIPTION_MAX),
+    text(meta.description).replace(/\s+/g, " ").trim().slice(0, DESCRIPTION_MAX),
     unfree ? 1 : 0,
   ];
 }
@@ -91,15 +83,13 @@ export class PackageScanner {
   private inString = false;
   private escaped = false;
   /** The last string closed at depth 2: the attribute a value belongs to. */
-  private key = '';
+  private key = "";
   private keyBuf: string[] | null = null;
   /** The current package object's text, while inside one. */
   private body: string[] = [];
   private bodyStart = -1;
 
-  constructor(
-    private readonly onPackage: (attr: string, json: string) => void,
-  ) {}
+  constructor(private readonly onPackage: (attr: string, json: string) => void) {}
 
   push(chunk: string): void {
     let segStart = this.bodyStart >= 0 ? 0 : -1;
@@ -113,7 +103,7 @@ export class PackageScanner {
         } else if (c === 0x22 /* " */) {
           this.inString = false;
           if (this.keyBuf) {
-            this.key = this.keyBuf.join('');
+            this.key = this.keyBuf.join("");
             this.keyBuf = null;
           }
           continue;
@@ -135,7 +125,7 @@ export class PackageScanner {
       } else if (c === 0x7d /* } */ || c === 0x5d /* ] */) {
         if (this.depth === 3 && this.bodyStart >= 0) {
           this.body.push(chunk.slice(segStart, i + 1));
-          this.onPackage(this.key, this.body.join(''));
+          this.onPackage(this.key, this.body.join(""));
           this.body = [];
           this.bodyStart = -1;
           segStart = -1;
@@ -164,14 +154,14 @@ export function buildIndex(brPath: string): Promise<PackageRow[]> {
       const row = toRow(attr, p);
       if (row) rows.push(row);
     });
-    const decoder = new StringDecoder('utf8');
+    const decoder = new StringDecoder("utf8");
     const stream = createReadStream(brPath).pipe(createBrotliDecompress());
-    stream.on('data', (chunk: Buffer) => scanner.push(decoder.write(chunk)));
-    stream.on('end', () => {
+    stream.on("data", (chunk: Buffer) => scanner.push(decoder.write(chunk)));
+    stream.on("end", () => {
       scanner.push(decoder.end());
       resolve(rows);
     });
-    stream.on('error', reject);
+    stream.on("error", reject);
   });
 }
 
@@ -181,25 +171,16 @@ export function buildIndex(brPath: string): Promise<PackageRow[]> {
  * that start with the query, then other name matches, then description
  * matches; shorter attributes first within each.
  */
-export function searchIndex(
-  rows: readonly PackageRow[],
-  query: string,
-  limit: number,
-): SearchResult[] {
+export function searchIndex(rows: readonly PackageRow[], query: string, limit: number): SearchResult[] {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
-  const q = words.join(' ');
+  const q = words.join(" ");
   const scored: { row: PackageRow; score: number }[] = [];
   for (const row of rows) {
     const attr = row[0].toLowerCase();
     const pname = row[1].toLowerCase();
     const desc = row[3].toLowerCase();
-    if (
-      !words.every(
-        (w) => attr.includes(w) || pname.includes(w) || desc.includes(w),
-      )
-    )
-      continue;
+    if (!words.every((w) => attr.includes(w) || pname.includes(w) || desc.includes(w))) continue;
     let score = 0;
     if (attr === q || pname === q) score = 100;
     else if (attr.startsWith(q) || pname.startsWith(q)) score = 60;
@@ -207,12 +188,7 @@ export function searchIndex(
     else score = 10;
     scored.push({ row, score });
   }
-  scored.sort(
-    (a, b) =>
-      b.score - a.score ||
-      a.row[0].length - b.row[0].length ||
-      (a.row[0] < b.row[0] ? -1 : 1),
-  );
+  scored.sort((a, b) => b.score - a.score || a.row[0].length - b.row[0].length || (a.row[0] < b.row[0] ? -1 : 1));
   return scored.slice(0, limit).map(({ row }) => ({
     attr: row[0],
     pname: row[1],

@@ -1,28 +1,22 @@
-import {
-  ConflictException,
-  Global,
-  Module,
-  ValidationPipe,
-  type INestApplication,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Test } from '@nestjs/testing';
-import { execFileSync } from 'child_process';
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'fs';
-import type { Server } from 'http';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import request from 'supertest';
+import { ConflictException, Global, Module, ValidationPipe, type INestApplication } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Test } from "@nestjs/testing";
+import { execFileSync } from "child_process";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "fs";
+import type { Server } from "http";
+import { tmpdir } from "os";
+import { join } from "path";
+import request from "supertest";
 
-import { DbModule } from '../src/db/db.module';
-import { DbService } from '../src/db/db.service';
-import { installGroupOf } from '../src/modules/app-identity/install-group';
-import { IdentityModule } from '../src/modules/identity/identity.module';
-import { MarketplaceModule } from '../src/modules/marketplace/marketplace.module';
-import { MarketplaceService } from '../src/modules/marketplace/marketplace.service';
-import { deriveAppId } from '../src/modules/marketplace/source-url';
-import { PtyModule } from '../src/modules/pty/pty.module';
-import { UpgradeRoutesModule } from '../src/upgrade-routes';
+import { DbModule } from "../src/db/db.module";
+import { DbService } from "../src/db/db.service";
+import { installGroupOf } from "../src/modules/app-identity/install-group";
+import { IdentityModule } from "../src/modules/identity/identity.module";
+import { MarketplaceModule } from "../src/modules/marketplace/marketplace.module";
+import { MarketplaceService } from "../src/modules/marketplace/marketplace.service";
+import { deriveAppId } from "../src/modules/marketplace/source-url";
+import { PtyModule } from "../src/modules/pty/pty.module";
+import { UpgradeRoutesModule } from "../src/upgrade-routes";
 
 /**
  * Apps from a URL that build from source and run natively, end to end,
@@ -32,18 +26,18 @@ import { UpgradeRoutesModule } from '../src/upgrade-routes';
  * the verified list moves, and the build is served on the native routes as
  * a catalog app's is.
  */
-const PASSWORD = 'correct horse battery';
+const PASSWORD = "correct horse battery";
 
 function git(cwd: string, ...args: string[]): string {
-  return execFileSync('git', args, {
+  return execFileSync("git", args, {
     cwd,
-    encoding: 'utf8',
+    encoding: "utf8",
     env: {
       ...process.env,
-      GIT_AUTHOR_NAME: 't',
-      GIT_AUTHOR_EMAIL: 't@example.com',
-      GIT_COMMITTER_NAME: 't',
-      GIT_COMMITTER_EMAIL: 't@example.com',
+      GIT_AUTHOR_NAME: "t",
+      GIT_AUTHOR_EMAIL: "t@example.com",
+      GIT_COMMITTER_NAME: "t",
+      GIT_COMMITTER_EMAIL: "t@example.com",
     },
   }).trim();
 }
@@ -62,11 +56,11 @@ function nativeManifest(name: string, extra: Record<string, unknown> = {}) {
   return JSON.stringify({
     schemaVersion: 2,
     name: name[0].toUpperCase() + name.slice(1),
-    description: 'Built from source.',
-    type: 'static',
-    build: { command: ['node', 'build.js', name], entry: `dist/${name}.mjs` },
-    capabilities: ['fs', 'notify'],
-    icon: 'notebook',
+    description: "Built from source.",
+    type: "static",
+    build: { command: ["node", "build.js", name], entry: `dist/${name}.mjs` },
+    capabilities: ["fs", "notify"],
+    icon: "notebook",
     minSystemVersion: 2,
     ...extra,
   });
@@ -108,7 +102,7 @@ interface Inspected {
   current: { commit: string } | null;
 }
 
-describe('apps from a URL built from source (e2e)', () => {
+describe("apps from a URL built from source (e2e)", () => {
   let work: string;
   let prevFilesRoot: string | undefined;
   let repo: string;
@@ -121,94 +115,94 @@ describe('apps from a URL built from source (e2e)', () => {
   let id: string;
 
   const commitAll = (message: string) => {
-    git(repo, 'add', '.');
-    git(repo, 'commit', '-qm', message);
-    return git(repo, 'rev-parse', 'HEAD');
+    git(repo, "add", ".");
+    git(repo, "commit", "-qm", message);
+    return git(repo, "rev-parse", "HEAD");
   };
 
   /** Write the verified list as the sync script does, naming `apps`. */
   const verify = (apps: { subdir?: string; commit: string }[]) =>
     writeFileSync(
-      join(catalog, 'verified.json'),
+      join(catalog, "verified.json"),
       JSON.stringify({
-        from: 'imbatranim-apps',
-        commit: 'f'.repeat(40),
+        from: "imbatranim-apps",
+        commit: "f".repeat(40),
         apps: apps.map((a) => ({ repo: `file://${repo}`, ...a })),
       }),
     );
 
   beforeAll(async () => {
-    work = mkdtempSync(join(tmpdir(), 'imb-marketplace-native-'));
+    work = mkdtempSync(join(tmpdir(), "imb-marketplace-native-"));
     prevFilesRoot = process.env.FILES_ROOT;
-    process.env.FILES_ROOT = join(work, 'home');
-    repo = join(work, 'repo');
-    writeApp(join(repo, 'apps', 'notes'), {
-      'imbatranim.json': nativeManifest('notes'),
-      'build.js': BUILD_JS,
-      'version.txt': 'v1',
+    process.env.FILES_ROOT = join(work, "home");
+    repo = join(work, "repo");
+    writeApp(join(repo, "apps", "notes"), {
+      "imbatranim.json": nativeManifest("notes"),
+      "build.js": BUILD_JS,
+      "version.txt": "v1",
     });
-    writeApp(join(repo, 'apps', 'desk'), {
-      'imbatranim.json': JSON.stringify({
+    writeApp(join(repo, "apps", "desk"), {
+      "imbatranim.json": JSON.stringify({
         schemaVersion: 2,
-        name: 'Desk',
-        type: 'static',
-        build: { command: ['node', 'build.js', 'tasks'], output: 'dist' },
+        name: "Desk",
+        type: "static",
+        build: { command: ["node", "build.js", "tasks"], output: "dist" },
         apps: [
           {
-            id: 'tasks',
-            name: 'Tasks',
-            entry: 'tasks.mjs',
-            capabilities: ['notify'],
+            id: "tasks",
+            name: "Tasks",
+            entry: "tasks.mjs",
+            capabilities: ["notify"],
           },
         ],
         minSystemVersion: 2,
       }),
-      'build.js': BUILD_JS,
-      'version.txt': 'desk',
+      "build.js": BUILD_JS,
+      "version.txt": "desk",
     });
-    writeApp(join(repo, 'apps', 'broken'), {
-      'imbatranim.json': nativeManifest('broken', {
+    writeApp(join(repo, "apps", "broken"), {
+      "imbatranim.json": nativeManifest("broken", {
         build: {
-          command: ['node', 'build.js', 'broken', 'fail'],
-          entry: 'dist/broken.mjs',
+          command: ["node", "build.js", "broken", "fail"],
+          entry: "dist/broken.mjs",
         },
       }),
-      'build.js': BUILD_JS,
-      'version.txt': 'x',
+      "build.js": BUILD_JS,
+      "version.txt": "x",
     });
-    writeApp(join(repo, 'apps', 'greedy'), {
-      'imbatranim.json': nativeManifest('greedy', { capabilities: ['root'] }),
+    writeApp(join(repo, "apps", "greedy"), {
+      "imbatranim.json": nativeManifest("greedy", { capabilities: ["root"] }),
     });
-    writeApp(join(repo, 'apps', 'named'), {
-      'imbatranim.json': nativeManifest('named', { id: 'notepad' }),
+    writeApp(join(repo, "apps", "named"), {
+      "imbatranim.json": nativeManifest("named", { id: "notepad" }),
     });
-    writeApp(join(repo, 'apps', 'prebuilt'), {
-      'imbatranim.json': JSON.stringify({
+    writeApp(join(repo, "apps", "prebuilt"), {
+      "imbatranim.json": JSON.stringify({
         schemaVersion: 1,
-        name: 'Prebuilt',
-        entry: 'dist/prebuilt.mjs',
-        capabilities: ['notify'],
+        name: "Prebuilt",
+        entry: "dist/prebuilt.mjs",
+        capabilities: ["notify"],
         minSystemVersion: 2,
       }),
     });
-    writeApp(join(repo, 'apps', 'prebuilt', 'dist'), {
-      'prebuilt.mjs': 'export function mount() {}\n',
+    writeApp(join(repo, "apps", "prebuilt", "dist"), {
+      "prebuilt.mjs": "export function mount() {}\n",
     });
-    git(repo, 'init', '-q', '-b', 'main');
-    commitAll('v1');
+    git(repo, "init", "-q", "-b", "main");
+    commitAll("v1");
     notesUrl = `file://${repo}#main/apps/notes`;
-    id = deriveAppId(`file://${repo}`, 'apps/notes');
+    id = deriveAppId(`file://${repo}`, "apps/notes");
 
-    catalog = join(work, 'catalog');
+    catalog = join(work, "catalog");
     mkdirSync(catalog);
     const values: Record<string, unknown> = {
-      DB_PATH: join(work, 'home', '.imbatranim', 'db.sqlite'),
-      FRONTEND_URL: 'http://localhost:5173',
+      DB_PATH: join(work, "home", ".imbatranim", "db.sqlite"),
+      FRONTEND_URL: "http://localhost:5173",
       MARKETPLACE_DIR: catalog,
       MARKETPLACE_ALLOW_LOCAL_REPOS: true,
     };
-    mkdirSync(join(work, 'home', '.imbatranim'), { recursive: true });
-    appsDir = join(work, 'home', '.imbatranim', 'apps');
+    mkdirSync(join(work, "home", ".imbatranim"), { recursive: true });
+    appsDir = join(work, "home", ".imbatranim", "apps");
 
     @Global()
     @Module({
@@ -223,37 +217,22 @@ describe('apps from a URL built from source (e2e)', () => {
     class TestConfig {}
 
     const moduleRef = await Test.createTestingModule({
-      imports: [
-        TestConfig,
-        DbModule,
-        IdentityModule,
-        UpgradeRoutesModule,
-        PtyModule,
-        MarketplaceModule,
-      ],
+      imports: [TestConfig, DbModule, IdentityModule, UpgradeRoutesModule, PtyModule, MarketplaceModule],
     }).compile();
     app = moduleRef.createNestApplication<INestApplication<Server>>({
       logger: false,
     });
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.setGlobalPrefix("api");
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
     http = request(app.getHttpServer());
 
-    await http
-      .post('/api/identity/local/setup')
-      .send({ username: 'Ana', password: PASSWORD })
-      .expect(204);
-    const signedIn = await http
-      .post('/api/identity/local/sign-in')
-      .send({ password: PASSWORD })
-      .expect(204);
-    cookie = [signedIn.headers['set-cookie']]
+    await http.post("/api/identity/local/setup").send({ username: "Ana", password: PASSWORD }).expect(204);
+    const signedIn = await http.post("/api/identity/local/sign-in").send({ password: PASSWORD }).expect(204);
+    cookie = [signedIn.headers["set-cookie"]]
       .flat()
-      .map((c: string) => c.split(';')[0])
-      .join('; ');
+      .map((c: string) => c.split(";")[0])
+      .join("; ");
   }, 30_000);
 
   afterAll(async () => {
@@ -264,54 +243,40 @@ describe('apps from a URL built from source (e2e)', () => {
   });
 
   const inspect = async (url: string): Promise<Inspected> =>
-    (
-      await http
-        .post('/api/marketplace/url/inspect')
-        .set('Cookie', cookie)
-        .send({ url })
-        .expect(200)
-    ).body as Inspected;
+    (await http.post("/api/marketplace/url/inspect").set("Cookie", cookie).send({ url }).expect(200)).body as Inspected;
 
   const install = (pending: string, trust?: boolean) =>
     http
-      .post('/api/marketplace/url/install')
-      .set('Cookie', cookie)
+      .post("/api/marketplace/url/install")
+      .set("Cookie", cookie)
       .send(trust === undefined ? { pending } : { pending, trust });
 
   const settled = () => app.get(MarketplaceService).settled();
 
   const listed = async (): Promise<Listed[]> =>
-    (
-      (await http.get('/api/marketplace').set('Cookie', cookie).expect(200))
-        .body as { apps: Listed[] }
-    ).apps;
+    ((await http.get("/api/marketplace").set("Cookie", cookie).expect(200)).body as { apps: Listed[] }).apps;
 
-  const builds = (appId: string) =>
-    readdirSync(appsDir).filter((n) => n.startsWith(`${appId}@`));
+  const builds = (appId: string) => readdirSync(appsDir).filter((n) => n.startsWith(`${appId}@`));
 
   /** The installed module's text, fetched on the native route. */
   const served = async (entryPath: string) =>
-    (await http.get(`/api/${entryPath}`).set('Cookie', cookie).expect(200))
-      .text;
+    (await http.get(`/api/${entryPath}`).set("Cookie", cookie).expect(200)).text;
 
-  it('checks an app built from source as unverified, listing what it asks for', async () => {
+  it("checks an app built from source as unverified, listing what it asks for", async () => {
     const checked = await inspect(notesUrl);
     expect(checked).toMatchObject({
       id,
-      runtime: 'native',
+      runtime: "native",
       verified: false,
-      type: 'static',
-      apps: [{ id, name: 'Notes', capabilities: ['fs', 'notify'] }],
-      manifest: { name: 'Notes', capabilities: ['fs', 'notify'] },
+      type: "static",
+      apps: [{ id, name: "Notes", capabilities: ["fs", "notify"] }],
+      manifest: { name: "Notes", capabilities: ["fs", "notify"] },
       current: null,
     });
-    await http
-      .delete(`/api/marketplace/url/pending/${checked.pending}`)
-      .set('Cookie', cookie)
-      .expect(204);
+    await http.delete(`/api/marketplace/url/pending/${checked.pending}`).set("Cookie", cookie).expect(204);
   });
 
-  it('refuses an unverified app until the owner trusts it, then builds it from the checked clone', async () => {
+  it("refuses an unverified app until the owner trusts it, then builds it from the checked clone", async () => {
     const checked = await inspect(notesUrl);
     const refused = await install(checked.pending).expect(403);
     expect((refused.body as { message: string }).message).toBe(
@@ -319,25 +284,22 @@ describe('apps from a URL built from source (e2e)', () => {
     );
     await install(checked.pending, false).expect(403);
     // Refused is not used up: the same check can still be trusted.
-    const queued = (await install(checked.pending, true).expect(200))
-      .body as Listed;
-    expect(queued).toMatchObject({ id, runtime: 'native' });
+    const queued = (await install(checked.pending, true).expect(200)).body as Listed;
+    expect(queued).toMatchObject({ id, runtime: "native" });
     expect(queued.job).not.toBeNull();
     await settled();
     // Built where it was checked: no second clone.
     expect(builds(id)).toHaveLength(1);
-    expect(builds(id)[0]).toMatch(
-      new RegExp(`^${id}@${checked.source.commit.slice(0, 12)}-`),
-    );
+    expect(builds(id)[0]).toMatch(new RegExp(`^${id}@${checked.source.commit.slice(0, 12)}-`));
 
     const notes = (await listed()).find((a) => a.id === id)!;
     expect(notes).toMatchObject({
       descriptorId: id,
-      runtime: 'native',
+      runtime: "native",
       ref: checked.source.commit,
-      capabilities: ['fs', 'notify'],
-      source: { commit: checked.source.commit, subdir: 'apps/notes' },
-      trust: { by: 'owner', at: expect.any(Number) as number },
+      capabilities: ["fs", "notify"],
+      source: { commit: checked.source.commit, subdir: "apps/notes" },
+      trust: { by: "owner", at: expect.any(Number) as number },
       job: null,
     });
     expect(notes.installed?.missing).toBe(false);
@@ -346,10 +308,10 @@ describe('apps from a URL built from source (e2e)', () => {
     expect(installGroupOf(app.get(DbService), id)).toBe(id);
   }, 30_000);
 
-  it('asks again for a new commit: trust is per commit', async () => {
+  it("asks again for a new commit: trust is per commit", async () => {
     const before = (await listed()).find((a) => a.id === id)!;
-    writeFileSync(join(repo, 'apps', 'notes', 'version.txt'), 'v2');
-    const next = commitAll('v2');
+    writeFileSync(join(repo, "apps", "notes", "version.txt"), "v2");
+    const next = commitAll("v2");
     const checked = await inspect(notesUrl);
     expect(checked).toMatchObject({
       verified: false,
@@ -357,18 +319,13 @@ describe('apps from a URL built from source (e2e)', () => {
       current: { commit: before.ref },
     });
     await install(checked.pending).expect(403);
-    await http
-      .delete(`/api/marketplace/url/pending/${checked.pending}`)
-      .set('Cookie', cookie)
-      .expect(204);
-    expect((await listed()).find((a) => a.id === id)?.installed?.ref).toBe(
-      before.ref,
-    );
+    await http.delete(`/api/marketplace/url/pending/${checked.pending}`).set("Cookie", cookie).expect(204);
+    expect((await listed()).find((a) => a.id === id)?.installed?.ref).toBe(before.ref);
   });
 
-  it('installs a verified commit with no trust asked, and records it as verified', async () => {
-    const tip = git(repo, 'rev-parse', 'HEAD');
-    verify([{ subdir: 'apps/notes', commit: tip }]);
+  it("installs a verified commit with no trust asked, and records it as verified", async () => {
+    const tip = git(repo, "rev-parse", "HEAD");
+    verify([{ subdir: "apps/notes", commit: tip }]);
     const checked = await inspect(notesUrl);
     expect(checked.verified).toBe(true);
     await install(checked.pending).expect(200);
@@ -377,62 +334,53 @@ describe('apps from a URL built from source (e2e)', () => {
     expect(notes).toMatchObject({
       ref: tip,
       installed: { ref: tip },
-      trust: { by: 'verified' },
+      trust: { by: "verified" },
     });
     expect(await served(notes.installed!.entryPath!)).toContain('"v2"');
     expect(builds(id)).toHaveLength(1);
   }, 30_000);
 
-  it('updates a verified app when the verified list moves, through the install route', async () => {
-    const old = git(repo, 'rev-parse', 'HEAD');
-    writeFileSync(join(repo, 'apps', 'notes', 'version.txt'), 'v3');
-    const next = commitAll('v3');
+  it("updates a verified app when the verified list moves, through the install route", async () => {
+    const old = git(repo, "rev-parse", "HEAD");
+    writeFileSync(join(repo, "apps", "notes", "version.txt"), "v3");
+    const next = commitAll("v3");
     expect((await listed()).find((a) => a.id === id)?.ref).toBe(old);
-    verify([{ subdir: 'apps/notes', commit: next }]);
+    verify([{ subdir: "apps/notes", commit: next }]);
     const outdated = (await listed()).find((a) => a.id === id)!;
     expect(outdated.ref).toBe(next);
     expect(outdated.installed?.ref).toBe(old);
 
-    await http
-      .post(`/api/marketplace/apps/${id}/install`)
-      .set('Cookie', cookie)
-      .expect(202);
+    await http.post(`/api/marketplace/apps/${id}/install`).set("Cookie", cookie).expect(202);
     await settled();
     const notes = (await listed()).find((a) => a.id === id)!;
     expect(notes.job).toBeNull();
     expect(notes.installed?.ref).toBe(next);
-    expect(notes.trust?.by).toBe('verified');
+    expect(notes.trust?.by).toBe("verified");
     expect(await served(notes.installed!.entryPath!)).toContain('"v3"');
     verify([]);
   }, 30_000);
 
-  it('stops calling an app verified once the list no longer names its commit', async () => {
+  it("stops calling an app verified once the list no longer names its commit", async () => {
     const notes = (await listed()).find((a) => a.id === id)!;
     // The list is empty again: the record still says how it was installed.
     expect(notes.trust).toEqual({
-      by: 'verified',
+      by: "verified",
       at: expect.any(Number) as number,
       verified: false,
     });
     expect(notes.ref).toBe(notes.installed?.ref);
-    verify([{ subdir: 'apps/notes', commit: notes.installed!.ref }]);
-    expect((await listed()).find((a) => a.id === id)?.trust?.verified).toBe(
-      true,
-    );
+    verify([{ subdir: "apps/notes", commit: notes.installed!.ref }]);
+    expect((await listed()).find((a) => a.id === id)?.trust?.verified).toBe(true);
     verify([]);
   });
 
-  it('keeps the check, and its clone, when another install of the app wins the race', async () => {
-    const deskId = deriveAppId(`file://${repo}`, 'apps/desk');
+  it("keeps the check, and its clone, when another install of the app wins the race", async () => {
+    const deskId = deriveAppId(`file://${repo}`, "apps/desk");
     const checked = await inspect(`file://${repo}#main/apps/desk`);
     const marketplace = app.get(MarketplaceService);
-    const spy = jest
-      .spyOn(marketplace, 'installFromUrl')
-      .mockImplementationOnce(() => {
-        throw new ConflictException(
-          'It is being installed; wait for that to finish',
-        );
-      });
+    const spy = jest.spyOn(marketplace, "installFromUrl").mockImplementationOnce(() => {
+      throw new ConflictException("It is being installed; wait for that to finish");
+    });
     try {
       await install(checked.pending, true).expect(409);
     } finally {
@@ -440,115 +388,94 @@ describe('apps from a URL built from source (e2e)', () => {
     }
     // Still held: Cancel deletes the clone, as expiry would.
     expect(builds(deskId)).toHaveLength(1);
-    await http
-      .delete(`/api/marketplace/url/pending/${checked.pending}`)
-      .set('Cookie', cookie)
-      .expect(204);
+    await http.delete(`/api/marketplace/url/pending/${checked.pending}`).set("Cookie", cookie).expect(204);
     expect(builds(deskId)).toEqual([]);
   });
 
-  it('rebuilds a trusted app at its own commit, and no other, through the install route', async () => {
-    const tip = git(repo, 'rev-parse', 'HEAD');
+  it("rebuilds a trusted app at its own commit, and no other, through the install route", async () => {
+    const tip = git(repo, "rev-parse", "HEAD");
     const checked = await inspect(`file://${repo}#main/apps/desk`);
     await install(checked.pending, true).expect(200);
     await settled();
-    const deskId = deriveAppId(`file://${repo}`, 'apps/desk');
-    writeFileSync(join(repo, 'apps', 'desk', 'version.txt'), 'desk 2');
-    commitAll('desk 2');
-    await http
-      .post(`/api/marketplace/apps/${deskId}/install`)
-      .set('Cookie', cookie)
-      .expect(202);
+    const deskId = deriveAppId(`file://${repo}`, "apps/desk");
+    writeFileSync(join(repo, "apps", "desk", "version.txt"), "desk 2");
+    commitAll("desk 2");
+    await http.post(`/api/marketplace/apps/${deskId}/install`).set("Cookie", cookie).expect(202);
     await settled();
     const tasks = (await listed()).find((a) => a.descriptorId === deskId)!;
     expect(tasks.installed?.ref).toBe(tip);
-    expect(tasks.trust?.by).toBe('owner');
+    expect(tasks.trust?.by).toBe("owner");
     expect(await served(tasks.installed!.entryPath!)).toContain('"desk"');
   }, 30_000);
 
-  it('names each app of several under the derived id', async () => {
-    const deskId = deriveAppId(`file://${repo}`, 'apps/desk');
+  it("names each app of several under the derived id", async () => {
+    const deskId = deriveAppId(`file://${repo}`, "apps/desk");
     const apps = (await listed()).filter((a) => a.descriptorId === deskId);
     expect(apps.map((a) => a.id)).toEqual([`${deskId}-tasks`]);
     expect(installGroupOf(app.get(DbService), `${deskId}-tasks`)).toBe(deskId);
   });
 
-  it('refuses a manifest the catalog schema refuses, or one that names its own id', async () => {
+  it("refuses a manifest the catalog schema refuses, or one that names its own id", async () => {
     const greedy = await http
-      .post('/api/marketplace/url/inspect')
-      .set('Cookie', cookie)
+      .post("/api/marketplace/url/inspect")
+      .set("Cookie", cookie)
       .send({ url: `file://${repo}#main/apps/greedy` })
       .expect(400);
-    expect((greedy.body as { message: string }).message).toMatch(
-      /^imbatranim\.json: capabilities\.0: /,
-    );
+    expect((greedy.body as { message: string }).message).toMatch(/^imbatranim\.json: capabilities\.0: /);
     const named = await http
-      .post('/api/marketplace/url/inspect')
-      .set('Cookie', cookie)
+      .post("/api/marketplace/url/inspect")
+      .set("Cookie", cookie)
       .send({ url: `file://${repo}#main/apps/named` })
       .expect(400);
     expect((named.body as { message: string }).message).toBe(
-      'imbatranim.json: id: an app from a URL does not set its id: the OS derives it',
+      "imbatranim.json: id: an app from a URL does not set its id: the OS derives it",
     );
   });
 
-  it('lists a failed first build with its job, and Clear forgets it', async () => {
-    const brokenId = deriveAppId(`file://${repo}`, 'apps/broken');
+  it("lists a failed first build with its job, and Clear forgets it", async () => {
+    const brokenId = deriveAppId(`file://${repo}`, "apps/broken");
     const checked = await inspect(`file://${repo}#main/apps/broken`);
     await install(checked.pending, true).expect(200);
     await settled();
     const broken = (await listed()).find((a) => a.id === brokenId)!;
     expect(broken.installed).toBeNull();
-    expect(broken.job?.state).toBe('failed');
+    expect(broken.job?.state).toBe("failed");
     expect(builds(brokenId)).toEqual([]);
-    await http
-      .delete(`/api/marketplace/apps/${brokenId}`)
-      .set('Cookie', cookie)
-      .expect(204);
+    await http.delete(`/api/marketplace/apps/${brokenId}`).set("Cookie", cookie).expect(204);
     expect((await listed()).some((a) => a.id === brokenId)).toBe(false);
   }, 30_000);
 
-  it('refuses a prebuilt (version 1) app at the check: the OS no longer installs that kind', async () => {
+  it("refuses a prebuilt (version 1) app at the check: the OS no longer installs that kind", async () => {
     const res = await http
-      .post('/api/marketplace/url/inspect')
-      .set('Cookie', cookie)
+      .post("/api/marketplace/url/inspect")
+      .set("Cookie", cookie)
       .send({ url: `file://${repo}#main/apps/prebuilt` })
       .expect(400);
     expect((res.body as { message: string }).message).toBe(
-      'This app uses the old format, which this OS no longer installs.',
+      "This app uses the old format, which this OS no longer installs.",
     );
-    expect(builds(deriveAppId(`file://${repo}`, 'apps/prebuilt'))).toEqual([]);
+    expect(builds(deriveAppId(`file://${repo}`, "apps/prebuilt"))).toEqual([]);
   });
 
   it("reaches the native runtime's routes as a catalog app does", async () => {
     // A static app has no server: refused as a catalog app's would be (409),
     // not as an id no native app holds (404).
-    await http
-      .post(`/api/marketplace/apps/${id}/lease`)
-      .set('Cookie', cookie)
-      .send({})
-      .expect(409);
+    await http.post(`/api/marketplace/apps/${id}/lease`).set("Cookie", cookie).send({}).expect(409);
     await http
       .get(`/api/marketplace/apps/${id}/log`)
-      .set('Cookie', cookie)
+      .set("Cookie", cookie)
       .expect(200)
-      .expect((res) => expect(res.text).toContain('verified'));
+      .expect((res) => expect(res.text).toContain("verified"));
   });
 
-  it('uninstalls a native app: the row and the builds go', async () => {
-    await http
-      .delete(`/api/marketplace/apps/${id}`)
-      .set('Cookie', cookie)
-      .expect(204);
+  it("uninstalls a native app: the row and the builds go", async () => {
+    await http.delete(`/api/marketplace/apps/${id}`).set("Cookie", cookie).expect(204);
     expect(builds(id)).toEqual([]);
     expect((await listed()).some((a) => a.id === id)).toBe(false);
-    await http
-      .post(`/api/marketplace/apps/${id}/install`)
-      .set('Cookie', cookie)
-      .expect(404);
+    await http.post(`/api/marketplace/apps/${id}/install`).set("Cookie", cookie).expect(404);
   });
 
-  it('replaces a leftover sandboxed row of the same app when it installs', async () => {
+  it("replaces a leftover sandboxed row of the same app when it installs", async () => {
     const db = app.get(DbService).db;
     db.prepare(
       `INSERT INTO marketplace_apps (id, ref, build_id, root, entry, entries, installed_at, runtime)
@@ -557,10 +484,11 @@ describe('apps from a URL built from source (e2e)', () => {
     const checked = await inspect(notesUrl);
     await install(checked.pending, true).expect(200);
     await settled();
-    const row = db
-      .prepare('SELECT runtime, ref FROM marketplace_apps WHERE id = ?')
-      .all(id) as { runtime: string; ref: string }[];
-    expect(row).toEqual([{ runtime: 'native', ref: checked.source.commit }]);
+    const row = db.prepare("SELECT runtime, ref FROM marketplace_apps WHERE id = ?").all(id) as {
+      runtime: string;
+      ref: string;
+    }[];
+    expect(row).toEqual([{ runtime: "native", ref: checked.source.commit }]);
     expect(installGroupOf(app.get(DbService), id)).toBe(id);
   }, 30_000);
 });

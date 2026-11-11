@@ -27,7 +27,7 @@ export class TreeTally {
   /** The output was not ls-tree's: the totals cannot be trusted. */
   malformed = false;
 
-  private head = '';
+  private head = "";
   private inPath = false;
 
   /** Count one chunk of output. */
@@ -42,14 +42,14 @@ export class TreeTally {
         continue;
       }
       const tab = chunk.indexOf(TAB, i);
-      this.head += chunk.toString('latin1', i, tab === -1 ? chunk.length : tab);
+      this.head += chunk.toString("latin1", i, tab === -1 ? chunk.length : tab);
       if (this.head.length > MAX_HEAD) {
         this.malformed = true;
         return;
       }
       if (tab === -1) return;
       this.count(this.head);
-      this.head = '';
+      this.head = "";
       this.inPath = true;
       i = tab + 1;
     }
@@ -57,16 +57,12 @@ export class TreeTally {
 
   /** True when the output stopped mid-record: it was cut short. */
   get partial(): boolean {
-    return this.inPath || this.head !== '';
+    return this.inPath || this.head !== "";
   }
 
   /** True while both totals are within the limits. */
   within(limits: { bytes: number; entries: number }): boolean {
-    return (
-      !this.malformed &&
-      this.entries <= limits.entries &&
-      this.bytes <= limits.bytes
-    );
+    return !this.malformed && this.entries <= limits.entries && this.bytes <= limits.bytes;
   }
 
   private count(head: string): void {
@@ -76,7 +72,7 @@ export class TreeTally {
       return;
     }
     this.entries += 1;
-    if (type === 'blob') {
+    if (type === "blob") {
       if (!/^\d{1,15}$/.test(size)) {
         this.malformed = true;
         return;

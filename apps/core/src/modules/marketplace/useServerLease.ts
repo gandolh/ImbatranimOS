@@ -1,19 +1,17 @@
-import { useEffect, useState } from 'react'
-import type { NativeHostContext } from '@imbatranim/ui'
-import { api } from '../../lib/axios'
-import { descriptorIdOf, type MarketplaceApp } from '../../shared/registry/marketplace'
-import { apiUrl } from './apiUrl'
+import { useEffect, useState } from "react";
+import type { NativeHostContext } from "@imbatranim/ui";
+import { api } from "../../lib/axios";
+import { descriptorIdOf, type MarketplaceApp } from "../../shared/registry/marketplace";
+import { apiUrl } from "./apiUrl";
 
 /** Where an app's server answers, through the desktop's session-checked proxy. */
-export type ServerAddress = NonNullable<NativeHostContext['server']>
+export type ServerAddress = NonNullable<NativeHostContext["server"]>;
 
 /** Where a window's lease on its app's server stands. */
 export type ServerLease =
-  | { state: 'starting' }
-  | { state: 'ready'; server: NativeHostContext['server'] }
-  | { state: 'failed'; error: Error }
+  { state: "starting" } | { state: "ready"; server: NativeHostContext["server"] } | { state: "failed"; error: Error };
 
-type LeasedApp = Pick<MarketplaceApp, 'id' | 'descriptorId' | 'descriptorName' | 'name' | 'type'>
+type LeasedApp = Pick<MarketplaceApp, "id" | "descriptorId" | "descriptorName" | "name" | "type">;
 
 /**
  * One window's claim on its app's server, taken when something asks for it.
@@ -31,86 +29,83 @@ type LeasedApp = Pick<MarketplaceApp, 'id' | 'descriptorId' | 'descriptorName' |
  * window is still open.
  */
 export type ServerClaim = {
-  request(): Promise<ServerAddress>
-  open(): void
-  close(): void
-}
+  request(): Promise<ServerAddress>;
+  open(): void;
+  close(): void;
+};
 
 /** The backend's sentence when it gave one (a full server table, a start that failed). */
 function reason(err: unknown): string | null {
-  const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message
-  if (typeof message === 'string' && message) return message
-  return err instanceof Error && err.message ? err.message : null
+  const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+  if (typeof message === "string" && message) return message;
+  return err instanceof Error && err.message ? err.message : null;
 }
 
 export function createServerClaim(app: LeasedApp): ServerClaim {
-  const descriptor = descriptorIdOf(app)
-  const owner = app.descriptorName || app.name
-  let closed = false
-  let lease: string | null = null
-  let renew: ReturnType<typeof setInterval> | undefined
-  let pending: Promise<ServerAddress> | null = null
+  const descriptor = descriptorIdOf(app);
+  const owner = app.descriptorName || app.name;
+  let closed = false;
+  let lease: string | null = null;
+  let renew: ReturnType<typeof setInterval> | undefined;
+  let pending: Promise<ServerAddress> | null = null;
 
   const drop = (id: string) => {
-    void api.delete(`/marketplace/apps/${descriptor}/lease/${id}`).catch(() => undefined)
-  }
+    void api.delete(`/marketplace/apps/${descriptor}/lease/${id}`).catch(() => undefined);
+  };
 
   const release = () => {
-    if (renew !== undefined) clearInterval(renew)
-    renew = undefined
-    if (lease) drop(lease)
-    lease = null
-    pending = null
-  }
+    if (renew !== undefined) clearInterval(renew);
+    renew = undefined;
+    if (lease) drop(lease);
+    lease = null;
+    pending = null;
+  };
 
   async function take(): Promise<ServerAddress> {
-    let data: { lease: string; renewMs: number }
+    let data: { lease: string; renewMs: number };
     try {
-      ;({ data } = await api.post<{ lease: string; renewMs: number }>(
-        `/marketplace/apps/${descriptor}/lease`,
-        {}
-      ))
+      ({ data } = await api.post<{ lease: string; renewMs: number }>(`/marketplace/apps/${descriptor}/lease`, {}));
     } catch (err) {
-      pending = null
-      const why = reason(err)
-      throw new Error(`${owner}'s server didn't start${why ? `: ${why}` : '.'}`, { cause: err })
+      pending = null;
+      const why = reason(err);
+      throw new Error(`${owner}'s server didn't start${why ? `: ${why}` : "."}`, { cause: err });
     }
     if (closed) {
       // The window closed while the server was starting.
-      drop(data.lease)
-      throw new Error(`${app.name}'s window is closed.`)
+      drop(data.lease);
+      throw new Error(`${app.name}'s window is closed.`);
     }
-    lease = data.lease
+    lease = data.lease;
     renew = setInterval(() => {
-      void api.post(`/marketplace/apps/${descriptor}/lease`, { lease }).catch(() => undefined)
-    }, data.renewMs)
-    const http = apiUrl(`marketplace/apps/${descriptor}/server`)
-    const ws = new URL(http)
-    ws.protocol = http.protocol === 'https:' ? 'wss:' : 'ws:'
-    return { http: http.href, ws: ws.href }
+      void api.post(`/marketplace/apps/${descriptor}/lease`, { lease }).catch(() => undefined);
+    }, data.renewMs);
+    const http = apiUrl(`marketplace/apps/${descriptor}/server`);
+    const ws = new URL(http);
+    ws.protocol = http.protocol === "https:" ? "wss:" : "ws:";
+    return { http: http.href, ws: ws.href };
   }
 
   return {
     request() {
-      if (app.type !== 'service') {
-        return Promise.reject(new Error(`${app.name} has no server: its descriptor runs none.`))
+      if (app.type !== "service") {
+        return Promise.reject(new Error(`${app.name} has no server: its descriptor runs none.`));
       }
-      if (closed) return Promise.reject(new Error(`${app.name}'s window is closed.`))
-      pending ??= take()
-      return pending
+      if (closed) return Promise.reject(new Error(`${app.name}'s window is closed.`));
+      pending ??= take();
+      return pending;
     },
     open() {
-      closed = false
+      closed = false;
     },
     close() {
-      closed = true
-      release()
+      closed = true;
+      release();
     },
-  }
+  };
 }
 
 /** A static app has no server, and nothing to wait for. */
-const NO_SERVER: ServerLease = { state: 'ready', server: null }
+const NO_SERVER: ServerLease = { state: "ready", server: null };
 
 /**
  * Hold a `mount` app's server for as long as its window is open, from the
@@ -119,27 +114,27 @@ const NO_SERVER: ServerLease = { state: 'ready', server: null }
  * the same claim.
  */
 export function useServerLease(app: LeasedApp): ServerLease {
-  const service = app.type === 'service'
-  const [lease, setLease] = useState<ServerLease>({ state: 'starting' })
-  const { id, descriptorId, descriptorName, name, type } = app
+  const service = app.type === "service";
+  const [lease, setLease] = useState<ServerLease>({ state: "starting" });
+  const { id, descriptorId, descriptorName, name, type } = app;
 
   useEffect(() => {
-    if (!service) return
-    let cancelled = false
-    const claim = createServerClaim({ id, descriptorId, descriptorName, name, type })
+    if (!service) return;
+    let cancelled = false;
+    const claim = createServerClaim({ id, descriptorId, descriptorName, name, type });
     claim.request().then(
       (server) => {
-        if (!cancelled) setLease({ state: 'ready', server })
+        if (!cancelled) setLease({ state: "ready", server });
       },
       (error: Error) => {
-        if (!cancelled) setLease({ state: 'failed', error })
-      }
-    )
+        if (!cancelled) setLease({ state: "failed", error });
+      },
+    );
     return () => {
-      cancelled = true
-      claim.close()
-    }
-  }, [service, id, descriptorId, descriptorName, name, type])
+      cancelled = true;
+      claim.close();
+    };
+  }, [service, id, descriptorId, descriptorName, name, type]);
 
-  return service ? lease : NO_SERVER
+  return service ? lease : NO_SERVER;
 }

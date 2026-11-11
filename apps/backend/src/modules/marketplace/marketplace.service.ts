@@ -5,52 +5,32 @@ import {
   Logger,
   NotFoundException,
   OnModuleInit,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { randomBytes } from 'crypto';
-import { promises as fs } from 'fs';
-import { tmpdir } from 'os';
-import { dirname, join, posix, relative, resolve, sep } from 'path';
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { randomBytes } from "crypto";
+import { promises as fs } from "fs";
+import { tmpdir } from "os";
+import { dirname, join, posix, relative, resolve, sep } from "path";
 
-import type { Env } from '../../config/env.schema';
-import { DbService } from '../../db/db.service';
-import { AppDataService } from '../app-data/app-data.service';
-import { RecentService } from '../files/recent.service';
-import { AppTokens } from '../app-identity/app-tokens';
-import { FileGrants } from '../app-identity/file-grants.service';
-import { InstalledApps } from '../app-identity/installed-apps';
-import { z } from 'zod';
+import type { Env } from "../../config/env.schema";
+import { DbService } from "../../db/db.service";
+import { AppDataService } from "../app-data/app-data.service";
+import { RecentService } from "../files/recent.service";
+import { AppTokens } from "../app-identity/app-tokens";
+import { FileGrants } from "../app-identity/file-grants.service";
+import { InstalledApps } from "../app-identity/installed-apps";
+import { z } from "zod";
 
-import {
-  loadCatalog,
-  type Catalog,
-  type CatalogApp,
-  type Descriptor,
-} from './catalog';
-import {
-  MarketplaceServers,
-  type ServerSpec,
-} from './marketplace-servers.service';
-import { PendingInspections } from './pending-inspections';
-import { readManifestJson, manifestVersion } from './manifest-file';
-import {
-  NATIVE_MANIFEST_VERSION,
-  parseNativeManifest,
-} from './native-manifest';
-import { isAppId, recordedBuild, recordedKitApp } from './recorded-build';
-import { runStep } from './run-step';
-import { isUrlAppId, type AppSource } from './source-url';
-import {
-  readNativeUrlRow,
-  retiredUrlApp,
-  type UrlTrust,
-} from './url-app-record';
-import {
-  isVerified,
-  loadVerified,
-  verifiedEntry,
-  type VerifiedList,
-} from './verified';
+import { loadCatalog, type Catalog, type CatalogApp, type Descriptor } from "./catalog";
+import { MarketplaceServers, type ServerSpec } from "./marketplace-servers.service";
+import { PendingInspections } from "./pending-inspections";
+import { readManifestJson, manifestVersion } from "./manifest-file";
+import { NATIVE_MANIFEST_VERSION, parseNativeManifest } from "./native-manifest";
+import { isAppId, recordedBuild, recordedKitApp } from "./recorded-build";
+import { runStep } from "./run-step";
+import { isUrlAppId, type AppSource } from "./source-url";
+import { readNativeUrlRow, retiredUrlApp, type UrlTrust } from "./url-app-record";
+import { isVerified, loadVerified, verifiedEntry, type VerifiedList } from "./verified";
 
 /** How long a clone may take. A shallow fetch of one commit. */
 const FETCH_TIMEOUT_MS = 5 * 60_000;
@@ -66,13 +46,13 @@ export const MAX_SERVED_BYTES = 256 * 1024 * 1024;
  * whole directory out: it is rebuilt from the catalog.
  */
 export function marketplaceAppsDir(dbPath: string): string {
-  if (dbPath === ':memory:') {
+  if (dbPath === ":memory:") {
     return join(tmpdir(), `imbatranim-apps-${process.pid}`);
   }
-  return join(dirname(dbPath), 'apps');
+  return join(dirname(dbPath), "apps");
 }
 
-export type JobState = 'queued' | 'fetching' | 'building' | 'failed';
+export type JobState = "queued" | "fetching" | "building" | "failed";
 
 export interface Job {
   state: JobState;
@@ -109,7 +89,7 @@ export interface InstalledRow {
    * retired: it lists as no longer supported, runs nothing and can only be
    * uninstalled.
    */
-  runtime: 'native' | 'sandboxed';
+  runtime: "native" | "sandboxed";
   /**
    * A URL app's {@link AppSource}, as JSON; a native one's also carries its
    * trust record ({@link UrlTrust}) as `trust`. Null for a catalog app.
@@ -151,10 +131,10 @@ export interface MarketplaceApp {
   name: string;
   description: string;
   meta: string[];
-  type: Descriptor['type'];
+  type: Descriptor["type"];
   icon: string;
-  window: CatalogApp['window'];
-  capabilities: CatalogApp['capabilities'];
+  window: CatalogApp["window"];
+  capabilities: CatalogApp["capabilities"];
   /** Whether a second launch opens a second window. False unless the descriptor says so. */
   multiInstance: boolean;
   /** The file types it offers to open (Open With). Empty when none. */
@@ -185,7 +165,7 @@ export interface MarketplaceApp {
   /** The commit the catalog pins now; for a URL app, the installed one. */
   ref: string;
   /** It runs in the desktop's page: a catalog app, or an app from a URL built from source. */
-  runtime: 'native';
+  runtime: "native";
   /** Where a URL app came from. Absent for a catalog app. */
   source?: AppSource;
   /**
@@ -214,7 +194,7 @@ export interface MarketplaceApp {
     missing: boolean;
   } | null;
   job: Job | null;
-  server: ReturnType<MarketplaceServers['status']>;
+  server: ReturnType<MarketplaceServers["status"]>;
 }
 
 /**
@@ -241,9 +221,9 @@ interface Known {
 
 /** What a build fetches and builds: a catalog descriptor, or an app from a URL. */
 type BuildTarget =
-  | { kind: 'catalog'; d: Descriptor }
+  | { kind: "catalog"; d: Descriptor }
   | {
-      kind: 'url';
+      kind: "url";
       /** The descriptor at the commit being built, once known. */
       d: Descriptor | null;
       /** Its `imbatranim.json` as read, when `d` is known. */
@@ -255,7 +235,7 @@ type BuildTarget =
     };
 
 /** The pieces of the environment a build or an app's server gets. Nothing else. */
-const PASSED_THROUGH = ['PATH', 'LANG', 'LC_ALL', 'TZ'] as const;
+const PASSED_THROUGH = ["PATH", "LANG", "LC_ALL", "TZ"] as const;
 
 /**
  * The marketplace: installs the apps the in-repo catalog
@@ -308,14 +288,10 @@ export class MarketplaceService implements OnModuleInit {
     }
     const verified = this.verified();
     if (verified.problem) {
-      this.logger.warn(
-        `marketplace/verified.json verifies nothing: ${verified.problem}`,
-      );
+      this.logger.warn(`marketplace/verified.json verifies nothing: ${verified.problem}`);
     }
     if (descriptors.size > 0) {
-      this.logger.log(
-        `Marketplace catalog: ${[...descriptors.keys()].join(', ')}`,
-      );
+      this.logger.log(`Marketplace catalog: ${[...descriptors.keys()].join(", ")}`);
     }
     await this.sweepStaleBuilds();
   }
@@ -329,8 +305,8 @@ export class MarketplaceService implements OnModuleInit {
    * in development a descriptor being edited takes effect without a restart.
    */
   catalog(): Catalog {
-    return loadCatalog(resolve(this.config.get('MARKETPLACE_DIR')), {
-      allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
+    return loadCatalog(resolve(this.config.get("MARKETPLACE_DIR")), {
+      allowLocalRepos: this.config.get("MARKETPLACE_ALLOW_LOCAL_REPOS"),
     });
   }
 
@@ -339,8 +315,8 @@ export class MarketplaceService implements OnModuleInit {
    * catalog.
    */
   verified(): VerifiedList {
-    return loadVerified(resolve(this.config.get('MARKETPLACE_DIR')), {
-      allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
+    return loadVerified(resolve(this.config.get("MARKETPLACE_DIR")), {
+      allowLocalRepos: this.config.get("MARKETPLACE_ALLOW_LOCAL_REPOS"),
     });
   }
 
@@ -353,7 +329,7 @@ export class MarketplaceService implements OnModuleInit {
     if (d) return { d, url: null };
     if (!isUrlAppId(id)) return null;
     const row = this.row(id);
-    if (row?.runtime !== 'native') return null;
+    if (row?.runtime !== "native") return null;
     const record = this.nativeUrlRecord(row);
     return record.ok
       ? {
@@ -365,26 +341,22 @@ export class MarketplaceService implements OnModuleInit {
 
   private nativeUrlRecord(row: InstalledRow) {
     return readNativeUrlRow(row, {
-      allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
+      allowLocalRepos: this.config.get("MARKETPLACE_ALLOW_LOCAL_REPOS"),
     });
   }
 
   /** True while an install of `id` is queued or running. */
   isInstalling(id: string): boolean {
     const job = this.jobs.get(id);
-    return !!job && job.state !== 'failed';
+    return !!job && job.state !== "failed";
   }
 
   row(id: string): InstalledRow | undefined {
-    return this.dbs.db
-      .prepare('SELECT * FROM marketplace_apps WHERE id = ?')
-      .get(id) as InstalledRow | undefined;
+    return this.dbs.db.prepare("SELECT * FROM marketplace_apps WHERE id = ?").get(id) as InstalledRow | undefined;
   }
 
   private rows(): InstalledRow[] {
-    return this.dbs.db
-      .prepare('SELECT * FROM marketplace_apps ORDER BY id')
-      .all() as InstalledRow[];
+    return this.dbs.db.prepare("SELECT * FROM marketplace_apps ORDER BY id").all() as InstalledRow[];
   }
 
   buildDir(id: string, buildId: string): string {
@@ -406,7 +378,7 @@ export class MarketplaceService implements OnModuleInit {
     const verified = this.verified();
     if (verified.problem) {
       problems.push({
-        file: 'verified.json',
+        file: "verified.json",
         problem: `${verified.problem}; no app from a URL is verified`,
       });
     }
@@ -416,7 +388,7 @@ export class MarketplaceService implements OnModuleInit {
       out.push(...(await this.entriesOf(d, rows.get(d.id), null, verified)));
     }
     for (const row of rows.values()) {
-      if (row.runtime === 'sandboxed') {
+      if (row.runtime === "sandboxed") {
         // A prebuilt app from a URL, installed before that path was retired.
         // Nothing of it runs any more; it is listed so it can be uninstalled.
         const retired = retiredUrlApp(row);
@@ -432,12 +404,7 @@ export class MarketplaceService implements OnModuleInit {
         const record = this.nativeUrlRecord(row);
         if (record.ok) {
           out.push(
-            ...(await this.entriesOf(
-              record.descriptor,
-              row,
-              { source: record.source, trust: record.trust },
-              verified,
-            )),
+            ...(await this.entriesOf(record.descriptor, row, { source: record.source, trust: record.trust }, verified)),
           );
         } else {
           problems.push({
@@ -454,14 +421,14 @@ export class MarketplaceService implements OnModuleInit {
       if (descriptors.has(row.id)) continue;
       problems.push({
         file: `${row.id}.json`,
-        problem: 'installed, but no longer in the catalog: uninstall it',
+        problem: "installed, but no longer in the catalog: uninstall it",
         appId: row.id,
       });
     }
     // A URL app's first install, queued, building or failed: no row yet, or
     // only a retired sandboxed one, which the install replaces.
     for (const [id, k] of this.urlJobs) {
-      if (!rows.has(id) || rows.get(id)?.runtime === 'sandboxed')
+      if (!rows.has(id) || rows.get(id)?.runtime === "sandboxed")
         out.push(...(await this.entriesOf(k.d, undefined, k.url, verified)));
     }
     return { apps: out, problems };
@@ -476,17 +443,15 @@ export class MarketplaceService implements OnModuleInit {
   private async entriesOf(
     d: Descriptor,
     row: InstalledRow | undefined,
-    url: Known['url'],
+    url: Known["url"],
     verified: VerifiedList,
   ): Promise<MarketplaceApp[]> {
     const out: MarketplaceApp[] = [];
     let ref = d.source.ref;
-    let trust: MarketplaceApp['trust'];
+    let trust: MarketplaceApp["trust"];
     if (url) {
       const commit = row?.ref ?? url.source.commit;
-      ref =
-        verifiedEntry(verified, url.source.repo, url.source.subdir)?.commit ??
-        commit;
+      ref = verifiedEntry(verified, url.source.repo, url.source.subdir)?.commit ?? commit;
       trust = {
         ...url.trust,
         verified: isVerified(verified, { ...url.source, commit }),
@@ -497,11 +462,10 @@ export class MarketplaceService implements OnModuleInit {
     // next install, and lists as missing.
     const recorded = row ? recordedBuild(row) : null;
     for (const a of d.apps) {
-      let installed: MarketplaceApp['installed'] = null;
+      let installed: MarketplaceApp["installed"] = null;
       const built = recorded?.entries.get(a.id);
       if (row) {
-        const served = (p: string) =>
-          `marketplace/apps/${d.id}/b/${row.build_id}/${urlPath(p)}`;
+        const served = (p: string) => `marketplace/apps/${d.id}/b/${row.build_id}/${urlPath(p)}`;
         installed = {
           ref: row.ref,
           buildId: row.build_id,
@@ -512,14 +476,7 @@ export class MarketplaceService implements OnModuleInit {
           }),
           missing:
             built === undefined ||
-            !(await exists(
-              join(
-                this.buildDir(d.id, row.build_id),
-                row.root,
-                recorded!.output,
-                built.entry,
-              ),
-            )),
+            !(await exists(join(this.buildDir(d.id, row.build_id), row.root, recorded!.output, built.entry))),
         };
       }
       out.push({
@@ -544,7 +501,7 @@ export class MarketplaceService implements OnModuleInit {
         sharedKit: built ? built.sharedKit : d.sharedKit,
         catalogSharedKit: d.sharedKit,
         ref,
-        runtime: 'native',
+        runtime: "native",
         ...(url && { source: url.source, trust }),
         installed,
         job: this.jobs.get(d.id) ?? null,
@@ -556,7 +513,7 @@ export class MarketplaceService implements OnModuleInit {
 
   async log(id: string): Promise<string> {
     if (!isAppId(id)) throw new NotFoundException();
-    const build = await fs.readFile(this.logPath(id), 'utf8').catch(() => '');
+    const build = await fs.readFile(this.logPath(id), "utf8").catch(() => "");
     const server = this.servers.output(id);
     return server ? `${build}\n── server ──\n${server}` : build;
   }
@@ -570,13 +527,9 @@ export class MarketplaceService implements OnModuleInit {
    * symlink, a dotfile. A leftover sandboxed URL app's files are never
    * served.
    */
-  async servedFile(
-    id: string,
-    buildId: string,
-    segments: string[],
-  ): Promise<string> {
+  async servedFile(id: string, buildId: string, segments: string[]): Promise<string> {
     const row = this.known(id) ? this.row(id) : undefined;
-    if (!row || row.runtime !== 'native' || row.build_id !== buildId) {
+    if (!row || row.runtime !== "native" || row.build_id !== buildId) {
       throw new NotFoundException();
     }
     return resolveServed(this.servedRoot(row), segments);
@@ -603,7 +556,7 @@ export class MarketplaceService implements OnModuleInit {
    */
   refuseUnlessNative(id: string): void {
     const runtime = this.row(id)?.runtime;
-    if (runtime === 'sandboxed' || (isUrlAppId(id) && runtime !== 'native')) {
+    if (runtime === "sandboxed" || (isUrlAppId(id) && runtime !== "native")) {
       throw new NotFoundException();
     }
   }
@@ -619,14 +572,14 @@ export class MarketplaceService implements OnModuleInit {
     const row = d ? this.row(id) : undefined;
     if (!d || !row) throw new NotFoundException();
     if (!d.server) throw new ConflictException(`${d.name} has no server`);
-    if (this.jobs.has(id) && this.jobs.get(id)?.state !== 'failed') {
+    if (this.jobs.has(id) && this.jobs.get(id)?.state !== "failed") {
       throw new ConflictException(`${d.name} is being installed`);
     }
     const cwd = join(this.buildDir(id, row.build_id), row.root);
     return {
       command: d.server.command,
       cwd,
-      env: this.childEnv({ NODE_ENV: 'production' }),
+      env: this.childEnv({ NODE_ENV: "production" }),
       health: d.server.health,
       portEnv: d.server.portEnv,
     };
@@ -653,17 +606,17 @@ export class MarketplaceService implements OnModuleInit {
     if (this.isInstalling(id)) {
       throw new ConflictException(`${d.name} is already being installed`);
     }
-    if (!url) return this.enqueue(id, { kind: 'catalog', d });
+    if (!url) return this.enqueue(id, { kind: "catalog", d });
     const verified = this.verified();
     const listed = verifiedEntry(verified, url.source.repo, url.source.subdir);
     const commit = listed?.commit ?? url.source.commit;
     return this.enqueue(id, {
-      kind: 'url',
+      kind: "url",
       // Read again from the fresh clone: the manifest is the commit's.
       d: null,
       manifest: null,
       source: { ...url.source, commit },
-      trust: listed ? { by: 'verified', at: Date.now() } : url.trust,
+      trust: listed ? { by: "verified", at: Date.now() } : url.trust,
       fetched: null,
     });
   }
@@ -673,14 +626,9 @@ export class MarketplaceService implements OnModuleInit {
    * place. The caller has made sure it is verified at that commit or the owner
    * trusts it, and that `id` is not being installed already.
    */
-  installFromUrl(
-    id: string,
-    target: Extract<BuildTarget, { kind: 'url' }> & { d: Descriptor },
-  ): Job {
+  installFromUrl(id: string, target: Extract<BuildTarget, { kind: "url" }> & { d: Descriptor }): Job {
     if (this.isInstalling(id)) {
-      throw new ConflictException(
-        `${target.d.name} is already being installed`,
-      );
+      throw new ConflictException(`${target.d.name} is already being installed`);
     }
     this.urlJobs.set(id, {
       d: target.d,
@@ -703,18 +651,16 @@ export class MarketplaceService implements OnModuleInit {
   }
 
   private enqueue(id: string, target: BuildTarget): Job {
-    const job: Job = { state: 'queued' };
+    const job: Job = { state: "queued" };
     this.jobs.set(id, job);
     this.queue = this.queue
       .then(() => this.build(id, target, job))
       .catch(async (err: unknown) => {
-        job.state = 'failed';
+        job.state = "failed";
         job.reason = err instanceof Error ? err.message : String(err);
         this.logger.error(`Installing ${id} failed: ${job.reason}`);
-        if (target.kind === 'url' && target.fetched) {
-          await fs
-            .rm(target.fetched.dir, { recursive: true, force: true })
-            .catch(() => undefined);
+        if (target.kind === "url" && target.fetched) {
+          await fs.rm(target.fetched.dir, { recursive: true, force: true }).catch(() => undefined);
         }
       });
     return job;
@@ -746,16 +692,11 @@ export class MarketplaceService implements OnModuleInit {
    * first (if they can't be removed, the app stays installed and the error
    * says so), then their recents.
    */
-  async uninstall(
-    id: string,
-    { removeData = false }: { removeData?: boolean } = {},
-  ): Promise<void> {
+  async uninstall(id: string, { removeData = false }: { removeData?: boolean } = {}): Promise<void> {
     if (!isAppId(id)) throw new NotFoundException();
     const job = this.jobs.get(id);
-    if (job && job.state !== 'failed') {
-      throw new ConflictException(
-        'It is being installed; wait for that to finish',
-      );
+    if (job && job.state !== "failed") {
+      throw new ConflictException("It is being installed; wait for that to finish");
     }
     const row = this.row(id);
     if (!row && !job) throw new NotFoundException();
@@ -781,7 +722,7 @@ export class MarketplaceService implements OnModuleInit {
         // stay, as its data does.
         this.recent.removeApps(apps);
       }
-      this.dbs.db.prepare('DELETE FROM marketplace_apps WHERE id = ?').run(id);
+      this.dbs.db.prepare("DELETE FROM marketplace_apps WHERE id = ?").run(id);
       this.jobs.delete(id);
       this.urlJobs.delete(id);
       await this.removeBuilds(id, null);
@@ -790,24 +731,17 @@ export class MarketplaceService implements OnModuleInit {
     });
   }
 
-  private async build(
-    id: string,
-    target: BuildTarget,
-    job: Job,
-  ): Promise<void> {
-    const url = target.kind === 'url' ? target : null;
+  private async build(id: string, target: BuildTarget, job: Job): Promise<void> {
+    const url = target.kind === "url" ? target : null;
     const repo = url ? url.source.repo : target.d!.source.repo;
     const commit = url ? url.source.commit : target.d!.source.ref;
     const subdir = url ? url.source.subdir : target.d!.source.subdir;
-    const buildId =
-      url?.fetched?.buildId ??
-      `${commit.slice(0, 12)}-${randomBytes(4).toString('hex')}`;
+    const buildId = url?.fetched?.buildId ?? `${commit.slice(0, 12)}-${randomBytes(4).toString("hex")}`;
     const dir = this.buildDir(id, buildId);
     const log: string[] = [];
-    const writeLog = () =>
-      fs.writeFile(this.logPath(id), log.join('\n'), { mode: 0o600 });
+    const writeLog = () => fs.writeFile(this.logPath(id), log.join("\n"), { mode: 0o600 });
     const fail = async (reason: string) => {
-      job.state = 'failed';
+      job.state = "failed";
       job.reason = reason;
       log.push(`\n✗ ${reason}`);
       await writeLog().catch(() => undefined);
@@ -820,12 +754,12 @@ export class MarketplaceService implements OnModuleInit {
       env: NodeJS.ProcessEnv,
       timeoutMs: number,
     ): Promise<boolean> => {
-      log.push(`$ ${argv.join(' ')}`);
+      log.push(`$ ${argv.join(" ")}`);
       const result = await runStep(argv, { cwd, env, timeoutMs });
       if (result.output) log.push(result.output.trimEnd());
       await writeLog();
       if (!result.ok) {
-        await fail(`${label}: ${result.reason ?? 'failed'}`);
+        await fail(`${label}: ${result.reason ?? "failed"}`);
         return false;
       }
       return true;
@@ -834,13 +768,11 @@ export class MarketplaceService implements OnModuleInit {
     await this.prepareDirs();
     log.push(
       `Installing ${target.d?.name ?? id} from ${repo} at ${commit}` +
-        (url
-          ? ` (${url.trust.by === 'verified' ? 'verified' : 'trusted by you'})`
-          : ''),
+        (url ? ` (${url.trust.by === "verified" ? "verified" : "trusted by you"})` : ""),
     );
 
     // ── fetch exactly the pinned commit, unless a URL check already did ──
-    job.state = 'fetching';
+    job.state = "fetching";
     if (url?.fetched) {
       log.push(`Using the checked clone (${buildId})`);
     } else {
@@ -849,7 +781,7 @@ export class MarketplaceService implements OnModuleInit {
     }
 
     // ── the app's directory, which must really be inside the clone ──
-    const rootRel = subdir ? posix.normalize(subdir) : '';
+    const rootRel = subdir ? posix.normalize(subdir) : "";
     const root = join(dir, rootRel);
     if (!(await isDirectoryWithin(dir, root))) {
       await fail(`${subdir} is not a directory in the repository`);
@@ -878,18 +810,11 @@ export class MarketplaceService implements OnModuleInit {
     }
 
     // ── build ──
-    job.state = 'building';
+    job.state = "building";
     const env = this.childEnv({});
     if (
-      (d.build.install &&
-        !(await step(
-          'Installing dependencies',
-          d.build.install,
-          root,
-          env,
-          BUILD_TIMEOUT_MS,
-        ))) ||
-      !(await step('Building', d.build.command, root, env, BUILD_TIMEOUT_MS))
+      (d.build.install && !(await step("Installing dependencies", d.build.install, root, env, BUILD_TIMEOUT_MS))) ||
+      !(await step("Building", d.build.command, root, env, BUILD_TIMEOUT_MS))
     ) {
       return;
     }
@@ -957,7 +882,7 @@ export class MarketplaceService implements OnModuleInit {
         id,
         ref: commit,
         build_id: buildId,
-        root: rootRel === '.' ? '' : rootRel,
+        root: rootRel === "." ? "" : rootRel,
         entry: suite ? output : posix.join(output, d.apps[0].entry),
         entries: suite
           ? JSON.stringify(
@@ -980,9 +905,7 @@ export class MarketplaceService implements OnModuleInit {
             )
           : null,
         installed_at: Date.now(),
-        source: url
-          ? JSON.stringify({ ...url.source, trust: url.trust })
-          : null,
+        source: url ? JSON.stringify({ ...url.source, trust: url.trust }) : null,
         manifest: url ? JSON.stringify(manifest) : null,
       });
     this.jobs.delete(id);
@@ -1000,16 +923,10 @@ export class MarketplaceService implements OnModuleInit {
   private async readNativeManifest(
     root: string,
     source: AppSource,
-  ): Promise<
-    | { ok: true; d: Descriptor; manifest: unknown }
-    | { ok: false; problem: string }
-  > {
+  ): Promise<{ ok: true; d: Descriptor; manifest: unknown } | { ok: false; problem: string }> {
     let raw: unknown;
     try {
-      raw = await readManifestJson(
-        root,
-        source.subdir ? `${source.subdir} in ${source.repo}` : source.repo,
-      );
+      raw = await readManifestJson(root, source.subdir ? `${source.subdir} in ${source.repo}` : source.repo);
     } catch (err) {
       return { ok: false, problem: (err as Error).message };
     }
@@ -1020,11 +937,9 @@ export class MarketplaceService implements OnModuleInit {
       };
     }
     const parsed = parseNativeManifest(raw, source, {
-      allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
+      allowLocalRepos: this.config.get("MARKETPLACE_ALLOW_LOCAL_REPOS"),
     });
-    return parsed.ok
-      ? { ok: true, d: parsed.descriptor, manifest: raw }
-      : { ok: false, problem: parsed.problem };
+    return parsed.ok ? { ok: true, d: parsed.descriptor, manifest: raw } : { ok: false, problem: parsed.problem };
   }
 
   /**
@@ -1048,34 +963,26 @@ export class MarketplaceService implements OnModuleInit {
   ): Promise<boolean> {
     const gitEnv = this.gitEnv(repo);
     if (
-      !(await step('git init', gitArgv('init', '-q'), dir, gitEnv, 30_000)) ||
+      !(await step("git init", gitArgv("init", "-q"), dir, gitEnv, 30_000)) ||
       !(await step(
-        'Fetching the source',
-        gitArgv('fetch', '-q', '--depth', '1', '--no-tags', '--', repo, commit),
+        "Fetching the source",
+        gitArgv("fetch", "-q", "--depth", "1", "--no-tags", "--", repo, commit),
         dir,
         gitEnv,
         FETCH_TIMEOUT_MS,
       )) ||
       (beforeCheckout && !(await beforeCheckout(gitEnv))) ||
-      !(await step(
-        'Checking out',
-        gitArgv('checkout', '-q', '--detach', 'FETCH_HEAD'),
-        dir,
-        gitEnv,
-        60_000,
-      ))
+      !(await step("Checking out", gitArgv("checkout", "-q", "--detach", "FETCH_HEAD"), dir, gitEnv, 60_000))
     ) {
       return false;
     }
-    const head = await runStep(gitArgv('rev-parse', 'HEAD'), {
+    const head = await runStep(gitArgv("rev-parse", "HEAD"), {
       cwd: dir,
       env: gitEnv,
       timeoutMs: 30_000,
     });
     if (head.output.trim() !== commit) {
-      await fail(
-        `The fetched commit is ${head.output.trim() || 'unknown'}, not ${commit}`,
-      );
+      await fail(`The fetched commit is ${head.output.trim() || "unknown"}, not ${commit}`);
       return false;
     }
     return true;
@@ -1090,21 +997,21 @@ export class MarketplaceService implements OnModuleInit {
    * nor `~/.gitconfig` (with whatever tokens they hold) is read.
    */
   childEnv(extra: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-    const cache = join(this.appsDir(), '.cache');
+    const cache = join(this.appsDir(), ".cache");
     const env: NodeJS.ProcessEnv = {};
     for (const name of PASSED_THROUGH) {
       if (process.env[name] !== undefined) env[name] = process.env[name];
     }
-    env.PATH ??= '/usr/local/bin:/usr/bin:/bin';
+    env.PATH ??= "/usr/local/bin:/usr/bin:/bin";
     return {
       ...env,
-      HOME: join(cache, 'home'),
-      TMPDIR: join(cache, 'tmp'),
-      npm_config_cache: join(cache, 'npm'),
-      npm_config_update_notifier: 'false',
-      npm_config_fund: 'false',
-      npm_config_audit: 'false',
-      CI: '1',
+      HOME: join(cache, "home"),
+      TMPDIR: join(cache, "tmp"),
+      npm_config_cache: join(cache, "npm"),
+      npm_config_update_notifier: "false",
+      npm_config_fund: "false",
+      npm_config_audit: "false",
+      CI: "1",
       ...extra,
     };
   }
@@ -1112,18 +1019,18 @@ export class MarketplaceService implements OnModuleInit {
   /** {@link childEnv}, plus git told to use the descriptor's protocol and nothing else. */
   gitEnv(repo: string): NodeJS.ProcessEnv {
     return this.childEnv({
-      GIT_TERMINAL_PROMPT: '0',
-      GIT_CONFIG_NOSYSTEM: '1',
-      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_TERMINAL_PROMPT: "0",
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_CONFIG_GLOBAL: "/dev/null",
       // The catalog allowed exactly this repo's scheme. Redirects and
       // submodules cannot switch to another (`ext::` above all).
-      GIT_ALLOW_PROTOCOL: new URL(repo).protocol === 'file:' ? 'file' : 'https',
+      GIT_ALLOW_PROTOCOL: new URL(repo).protocol === "file:" ? "file" : "https",
     });
   }
 
   async prepareDirs(): Promise<void> {
-    const cache = join(this.appsDir(), '.cache');
-    for (const d of ['home', 'tmp', 'npm']) {
+    const cache = join(this.appsDir(), ".cache");
+    for (const d of ["home", "tmp", "npm"]) {
       await fs.mkdir(join(cache, d), { recursive: true, mode: 0o700 });
     }
   }
@@ -1137,11 +1044,7 @@ export class MarketplaceService implements OnModuleInit {
   async removeBuilds(id: string, keep: string | null): Promise<void> {
     const names = await fs.readdir(this.appsDir()).catch(() => [] as string[]);
     for (const name of names) {
-      if (
-        name.startsWith(`${id}@`) &&
-        name !== `${id}@${keep}` &&
-        !this.pendings.holds(name)
-      ) {
+      if (name.startsWith(`${id}@`) && name !== `${id}@${keep}` && !this.pendings.holds(name)) {
         await fs.rm(join(this.appsDir(), name), {
           recursive: true,
           force: true,
@@ -1160,7 +1063,7 @@ export class MarketplaceService implements OnModuleInit {
     const live = new Set(this.rows().map((r) => `${r.id}@${r.build_id}`));
     const names = await fs.readdir(this.appsDir()).catch(() => [] as string[]);
     for (const name of names) {
-      if (name.includes('@') && !live.has(name)) {
+      if (name.includes("@") && !live.has(name)) {
         await fs.rm(join(this.appsDir(), name), {
           recursive: true,
           force: true,
@@ -1171,7 +1074,7 @@ export class MarketplaceService implements OnModuleInit {
 }
 
 /** The kinds of an app's data that outlive an uninstall unless the owner asks. */
-const KEPT_DATA_KINDS = ['config', 'data', 'state'] as const;
+const KEPT_DATA_KINDS = ["config", "data", "state"] as const;
 
 /**
  * The apps a row holds: its build's apps, or the row's own id for one whose
@@ -1185,7 +1088,7 @@ function appsOfRow(row: InstalledRow | undefined, id: string): string[] {
 
 /** A path inside a build as it goes in a URL: each segment encoded. */
 function urlPath(p: string): string {
-  return p.split('/').map(encodeURIComponent).join('/');
+  return p.split("/").map(encodeURIComponent).join("/");
 }
 
 /** True when `rel`, inside the real directory `realDir`, is really a file there. */
@@ -1200,19 +1103,16 @@ async function isFileWithin(realDir: string, rel: string): Promise<boolean> {
 
 /** git with nothing from the repository allowed to run during the fetch. */
 export function gitArgv(...args: string[]): string[] {
-  return ['git', '-c', 'core.hooksPath=/dev/null', ...args];
+  return ["git", "-c", "core.hooksPath=/dev/null", ...args];
 }
 
 export function isInside(root: string, path: string): boolean {
   const rel = relative(root, path);
-  return rel !== '' && !rel.startsWith('..') && !rel.startsWith(sep);
+  return rel !== "" && !rel.startsWith("..") && !rel.startsWith(sep);
 }
 
 /** True when `path` is a directory that really (through symlinks) is `dir` or inside it. */
-export async function isDirectoryWithin(
-  dir: string,
-  path: string,
-): Promise<boolean> {
+export async function isDirectoryWithin(dir: string, path: string): Promise<boolean> {
   try {
     const realDir = await fs.realpath(dir);
     const realPath = await fs.realpath(path);
@@ -1229,28 +1129,18 @@ export async function isDirectoryWithin(
  * one holding a separator, a path that climbs out or reaches through a
  * symlink, or anything that is not a file.
  */
-export async function resolveServed(
-  servedRoot: string,
-  segments: string[],
-): Promise<string> {
+export async function resolveServed(servedRoot: string, segments: string[]): Promise<string> {
   if (
     segments.length === 0 ||
-    segments.some(
-      (s) =>
-        s === '' ||
-        s.startsWith('.') ||
-        s.includes('/') ||
-        s.includes('\\') ||
-        s.includes('\0'),
-    )
+    segments.some((s) => s === "" || s.startsWith(".") || s.includes("/") || s.includes("\\") || s.includes("\0"))
   ) {
     throw new NotFoundException();
   }
   try {
     const realRoot = await fs.realpath(servedRoot);
     const abs = await fs.realpath(join(servedRoot, ...segments));
-    if (!isInside(realRoot, abs)) throw new Error('outside');
-    if (!(await fs.stat(abs)).isFile()) throw new Error('not a file');
+    if (!isInside(realRoot, abs)) throw new Error("outside");
+    if (!(await fs.stat(abs)).isFile()) throw new Error("not a file");
     return abs;
   } catch {
     throw new NotFoundException();
@@ -1270,11 +1160,7 @@ export async function exists(path: string): Promise<boolean> {
  * Bytes under `dir`, without following symlinks (a link out of the build is
  * not served: `servedFile` refuses it). Stops counting once past `cap`.
  */
-export async function directorySize(
-  dir: string,
-  within: string,
-  cap = MAX_SERVED_BYTES,
-): Promise<number> {
+export async function directorySize(dir: string, within: string, cap = MAX_SERVED_BYTES): Promise<number> {
   if (!isInside(within, dir) && dir !== within) return Infinity;
   let total = 0;
   const stack = [dir];
@@ -1289,4 +1175,4 @@ export async function directorySize(
   return total;
 }
 
-export { isAppId, recordedBuild, type RecordedApp } from './recorded-build';
+export { isAppId, recordedBuild, type RecordedApp } from "./recorded-build";

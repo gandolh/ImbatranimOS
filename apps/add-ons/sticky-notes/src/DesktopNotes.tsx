@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
-import { useConfirm } from '@imbatranim/ui'
-import { DesktopNote } from './DesktopNote'
+import { useEffect, useRef, useState } from "react";
+import { useConfirm } from "@imbatranim/ui";
+import { DesktopNote } from "./DesktopNote";
 import {
   useDeleteStickyNoteMutation,
   useStickyNotesQuery,
   useUpdateStickyNoteMutation,
-} from './queries/stickyNotesQueries'
-import { notePreview } from './noteStyle'
+} from "./queries/stickyNotesQueries";
+import { notePreview } from "./noteStyle";
 
 /**
  * The desktop layer — the reason this app exists next to Notepad and Todo.
@@ -26,30 +26,30 @@ import { notePreview } from './noteStyle'
  *   z-order, and the window manager owns that.
  */
 export function DesktopNotes() {
-  const { data: notes } = useStickyNotesQuery()
-  const update = useUpdateStickyNoteMutation()
-  const remove = useDeleteStickyNoteMutation()
-  const { confirm, confirmDialog } = useConfirm()
-  const ref = useRef<HTMLDivElement>(null)
-  const [bounds, setBounds] = useState({ width: 0, height: 0 })
+  const { data: notes } = useStickyNotesQuery();
+  const update = useUpdateStickyNoteMutation();
+  const remove = useDeleteStickyNoteMutation();
+  const { confirm, confirmDialog } = useConfirm();
+  const ref = useRef<HTMLDivElement>(null);
+  const [bounds, setBounds] = useState({ width: 0, height: 0 });
 
   // The layer's own size, for clamping a drag. Measured rather than assumed from
   // the viewport, because the desktop stops above the taskbar.
   useEffect(() => {
     const measure = () => {
-      const el = ref.current
-      if (el) setBounds({ width: el.clientWidth, height: el.clientHeight })
-    }
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [])
+      const el = ref.current;
+      if (el) setBounds({ width: el.clientWidth, height: el.clientHeight });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
 
   // Only an array is a list of notes. A wrong API base answers with the page's
   // HTML, and calling .filter on that took the whole desktop down with it
   // (2026-11-03): this layer runs on the desktop, outside any window's
   // error boundary.
-  const placed = (Array.isArray(notes) ? notes : []).filter((note) => note.onDesktop)
+  const placed = (Array.isArray(notes) ? notes : []).filter((note) => note.onDesktop);
 
   return (
     <div ref={ref} className="absolute inset-0">
@@ -62,16 +62,16 @@ export function DesktopNotes() {
             onPatch={(id, patch) => update.mutate({ id, patch })}
             onDelete={async (target) => {
               const ok = await confirm({
-                title: 'Delete note',
+                title: "Delete note",
                 message: `Delete “${notePreview(target.content)}”? This cannot be undone.`,
                 destructive: true,
-              })
-              if (ok) remove.mutate(target.id)
+              });
+              if (ok) remove.mutate(target.id);
             }}
           />
         ))}
       {/* The confirm dialog is a modal, so it needs pointer events back. */}
       <div className="pointer-events-auto">{confirmDialog}</div>
     </div>
-  )
+  );
 }

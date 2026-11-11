@@ -1,7 +1,7 @@
-import { APP_REGISTRY } from './registry'
-import type { AppConfig } from './registry'
-import { useAddonStore } from '../store/addonStore'
-import { useRegistryVersion } from './marketplace'
+import { APP_REGISTRY } from "./registry";
+import type { AppConfig } from "./registry";
+import { useAddonStore } from "../store/addonStore";
+import { useRegistryVersion } from "./marketplace";
 
 /**
  * Core apps that can never be disabled — hiding them would lock the user out of
@@ -9,21 +9,21 @@ import { useRegistryVersion } from './marketplace'
  * are shown-but-locked in Settings, and both the launcher filter and openApp
  * honor this set.
  */
-export const NON_DISABLEABLE = new Set(['settings', 'file-manager', 'terminal'])
+export const NON_DISABLEABLE = new Set(["settings", "file-manager", "terminal"]);
 
 function filterEnabled(disabled: string[]): AppConfig[] {
-  return APP_REGISTRY.filter((app) => !disabled.includes(app.id) || NON_DISABLEABLE.has(app.id))
+  return APP_REGISTRY.filter((app) => !disabled.includes(app.id) || NON_DISABLEABLE.has(app.id));
 }
 
 /** Reactive: APP_REGISTRY minus disabled ids (non-disableable always kept). */
 export function useEnabledApps(): AppConfig[] {
-  const disabled = useAddonStore((s) => s.disabled)
+  const disabled = useAddonStore((s) => s.disabled);
   // Marketplace apps arrive after boot.
-  useRegistryVersion()
-  return filterEnabled(disabled)
+  useRegistryVersion();
+  return filterEnabled(disabled);
 }
 
 /** Non-reactive read for imperative callers (command sources, intents). */
 export function getEnabledApps(): AppConfig[] {
-  return filterEnabled(useAddonStore.getState().disabled)
+  return filterEnabled(useAddonStore.getState().disabled);
 }

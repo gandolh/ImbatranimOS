@@ -1,12 +1,4 @@
-import {
-  ArrayMaxSize,
-  ArrayNotEmpty,
-  IsArray,
-  IsIn,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { ArrayMaxSize, ArrayNotEmpty, IsArray, IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 /**
  * POST /api/archive/extract — unpack `path` (a .zip, a tarball, or a lone
@@ -62,7 +54,7 @@ export class ListDto {
 /** GET /api/archive/job/:id — poll a running extraction. */
 export interface ArchiveJob {
   id: string;
-  state: 'running' | 'done' | 'failed';
+  state: "running" | "done" | "failed";
   /** 0-100. Best-effort: entries processed over entries expected. */
   percent: number;
   entriesDone: number;
@@ -102,20 +94,20 @@ export interface ArchiveListing {
   truncated: boolean;
 }
 
-export type ArchiveFormat = 'zip' | 'targz';
+export type ArchiveFormat = "zip" | "targz";
 
 /**
  * Tar flavours this module can READ. Creating is a smaller set — see
  * {@link ArchiveService.detectFormat} for the verified read/create matrix and why
  * `.tar.xz` is read-only in the shipped image.
  */
-export type TarFlavour = 'tar' | 'targz' | 'tarbz2' | 'tarxz';
+export type TarFlavour = "tar" | "targz" | "tarbz2" | "tarxz";
 
 /**
  * One compressed file with no tar inside (`notes.txt.gz`): it unpacks to one
  * file beside itself, named without the suffix.
  */
-export type LoneFlavour = 'gz' | 'xz' | 'bz2';
+export type LoneFlavour = "gz" | "xz" | "bz2";
 
 /**
  * POST /api/archive/compress — pack `paths[]` (files/dirs inside `root`) into
@@ -135,6 +127,6 @@ export class CompressDto {
   @IsNotEmpty()
   dest: string;
 
-  @IsIn(['zip', 'targz'])
+  @IsIn(["zip", "targz"])
   format: ArchiveFormat;
 }

@@ -1,5 +1,5 @@
 /** The Linux windows WebSocket, beside the Terminal's under `/api`. */
-export const WAYLAND_PATH = '/api/wayland';
+export const WAYLAND_PATH = "/api/wayland";
 
 /**
  * Desktop sessions with Linux windows at once. One per tab; each costs a

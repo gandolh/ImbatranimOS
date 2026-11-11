@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from "vitest/config";
 
 /**
  * Kept separate from vite.config.ts on purpose: the app build must not carry a
@@ -16,7 +16,7 @@ import { defineConfig } from 'vitest/config'
  */
 export default defineConfig({
   test: {
-    environment: 'node',
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    environment: "node",
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
-})
+});

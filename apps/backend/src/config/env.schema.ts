@@ -1,21 +1,19 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Env booleans arrive as strings ("true"/"1"). Coerce leniently; unset -> default.
 const envBool = (def: boolean) =>
   z
     .string()
     .optional()
-    .transform((v) =>
-      v === undefined || v === '' ? def : v === 'true' || v === '1',
-    );
+    .transform((v) => (v === undefined || v === "" ? def : v === "true" || v === "1"));
 
 export const envSchema = z
   .object({
     PORT: z.coerce.number().default(3001),
-    FRONTEND_URL: z.string().url().default('http://localhost:5173'),
-    DB_PATH: z.string().default('../../data/db.sqlite'),
-    NOTES_DIR: z.string().default('../../data/notes'),
-    CONFIGS_DIR: z.string().default('../../data/configs'),
+    FRONTEND_URL: z.string().url().default("http://localhost:5173"),
+    DB_PATH: z.string().default("../../data/db.sqlite"),
+    NOTES_DIR: z.string().default("../../data/notes"),
+    CONFIGS_DIR: z.string().default("../../data/configs"),
     // When set (prod image), Nest serves the built frontend from this dir on
     // the same port as the API. Unset in dev — Vite serves the frontend.
     STATIC_ROOT: z.string().optional(),
@@ -47,7 +45,7 @@ export const envSchema = z
     //
     // The catalog: the repo's `marketplace/` directory, one descriptor per
     // installable app. Only what is described there can be installed.
-    MARKETPLACE_DIR: z.string().default('../../marketplace'),
+    MARKETPLACE_DIR: z.string().default("../../marketplace"),
     // Lets a descriptor's repo be a `file://` path. For tests and for trying a
     // game from a local checkout; never needed in production.
     MARKETPLACE_ALLOW_LOCAL_REPOS: envBool(false),
@@ -57,12 +55,10 @@ export const envSchema = z
     // The Wayland host the backend starts when a desktop session first opens
     // its Linux windows socket. Built from apps/wayland-host; the image puts
     // it here. Missing, Linux apps are unavailable and nothing else changes.
-    WAYLAND_HOST_BIN: z
-      .string()
-      .default('/usr/local/bin/imbatranim-wayland-host'),
+    WAYLAND_HOST_BIN: z.string().default("/usr/local/bin/imbatranim-wayland-host"),
     // How a window's changed pixels travel: lossless WebP (the default) or
     // deflate-compressed RGBA. Kept switchable for measuring.
-    WAYLAND_HOST_ENCODING: z.enum(['webp', 'deflate']).default('webp'),
+    WAYLAND_HOST_ENCODING: z.enum(["webp", "deflate"]).default("webp"),
 
     // Trust X-Forwarded-* from a front proxy so req.ip / protocol are real
     // (needed for correct secure-cookie behaviour behind Caddy/nginx). Keep
@@ -73,15 +69,15 @@ export const envSchema = z
     if (env.BROWSER_PROXY_ORIGIN && env.BROWSER_PROXY_PORT === undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['BROWSER_PROXY_ORIGIN'],
-        message: 'BROWSER_PROXY_ORIGIN needs BROWSER_PROXY_PORT as well.',
+        path: ["BROWSER_PROXY_ORIGIN"],
+        message: "BROWSER_PROXY_ORIGIN needs BROWSER_PROXY_PORT as well.",
       });
     }
     const proxy = browserProxyOriginOf(env);
     if (proxy && proxy === new URL(env.FRONTEND_URL).origin) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['BROWSER_PROXY_ORIGIN'],
+        path: ["BROWSER_PROXY_ORIGIN"],
         message:
           "The Browser's proxy origin must differ from the desktop's (FRONTEND_URL): proxied pages would otherwise run with the desktop's rights.",
       });
@@ -112,7 +108,7 @@ export function browserProxyOriginOf(env: {
  * silently, so the boot names them once (`main.ts`). `child-env.ts` still keeps
  * them out of child processes, since one of them was a key.
  */
-export const IGNORED_ENV_PREFIX = 'WARD_';
+export const IGNORED_ENV_PREFIX = "WARD_";
 
 /** The boot's one line about ignored variables, or null when there are none. */
 export function ignoredEnvNotice(env: NodeJS.ProcessEnv): string | null {
@@ -120,7 +116,7 @@ export function ignoredEnvNotice(env: NodeJS.ProcessEnv): string | null {
     .filter((name) => name.startsWith(IGNORED_ENV_PREFIX))
     .sort();
   if (names.length === 0) return null;
-  return `Ignoring ${names.join(', ')}: this machine signs people in itself (brief 157). Remove them from the environment.`;
+  return `Ignoring ${names.join(", ")}: this machine signs people in itself (brief 157). Remove them from the environment.`;
 }
 
 export type Env = z.infer<typeof envSchema>;

@@ -1,52 +1,49 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DesktopIcon } from './DesktopIcon'
-import { useEnabledApps } from '../../registry/enabledApps'
-import { TASKBAR_HEIGHT } from '../../store/windowStore'
-import { useDesktopStore } from '../../store/desktopStore'
-import { openApp } from '../../intents/openApp'
-import { clampToDesktop, layoutIcons } from './layoutIcons'
-import { iconsInRect, isDrag, normalizeRect, type DragRect } from './marquee'
-import { isTextEntry } from '../../hooks/shortcutRegistry'
-import type { Wallpaper } from '../../store/wallpaperStore'
-import { wallpaperById } from './wallpapers'
-import { WindowContainer } from '../window/WindowContainer'
-import { WidgetLayer } from './WidgetLayer'
-import { DesktopLayerBoundary } from './DesktopLayerBoundary'
-import { WindowlessSystemProvider } from '../../../system/WindowlessSystemProvider'
-import { DesktopContextMenu, DesktopIconContextMenu } from './DesktopContextMenu'
-import { useElementSize } from '../../hooks/useElementSize'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DesktopIcon } from "./DesktopIcon";
+import { useEnabledApps } from "../../registry/enabledApps";
+import { TASKBAR_HEIGHT } from "../../store/windowStore";
+import { useDesktopStore } from "../../store/desktopStore";
+import { openApp } from "../../intents/openApp";
+import { clampToDesktop, layoutIcons } from "./layoutIcons";
+import { iconsInRect, isDrag, normalizeRect, type DragRect } from "./marquee";
+import { isTextEntry } from "../../hooks/shortcutRegistry";
+import type { Wallpaper } from "../../store/wallpaperStore";
+import { wallpaperById } from "./wallpapers";
+import { WindowContainer } from "../window/WindowContainer";
+import { WidgetLayer } from "./WidgetLayer";
+import { DesktopLayerBoundary } from "./DesktopLayerBoundary";
+import { WindowlessSystemProvider } from "../../../system/WindowlessSystemProvider";
+import { DesktopContextMenu, DesktopIconContextMenu } from "./DesktopContextMenu";
+import { useElementSize } from "../../hooks/useElementSize";
 
 type DesktopProps = {
-  wallpaper: Wallpaper
-}
+  wallpaper: Wallpaper;
+};
 
 export function Desktop({ wallpaper }: DesktopProps) {
-  const paper = wallpaperById(wallpaper)
-  const Scene = paper.scene
-  const enabledApps = useEnabledApps()
-  const iconPositions = useDesktopStore((s) => s.iconPositions)
-  const updateIconPosition = useDesktopStore((s) => s.updateIconPosition)
-  const setAutoPositions = useDesktopStore((s) => s.setAutoPositions)
-  const clearPins = useDesktopStore((s) => s.clearPins)
-  const iconLayerRef = useRef<HTMLDivElement>(null)
+  const paper = wallpaperById(wallpaper);
+  const Scene = paper.scene;
+  const enabledApps = useEnabledApps();
+  const iconPositions = useDesktopStore((s) => s.iconPositions);
+  const updateIconPosition = useDesktopStore((s) => s.updateIconPosition);
+  const setAutoPositions = useDesktopStore((s) => s.setAutoPositions);
+  const clearPins = useDesktopStore((s) => s.clearPins);
+  const iconLayerRef = useRef<HTMLDivElement>(null);
   // Widgets clamp against the live desktop bounds.
-  const [desktopSize, sizeRef] = useElementSize()
-  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null)
-  const [iconMenuAt, setIconMenuAt] = useState<{ x: number; y: number } | null>(null)
+  const [desktopSize, sizeRef] = useElementSize();
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const [iconMenuAt, setIconMenuAt] = useState<{ x: number; y: number } | null>(null);
   // Selection is ephemeral component state, never persisted.
-  const [selected, setSelected] = useState<Set<string>>(() => new Set())
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
   // The live rubber band, in icon-layer coordinates. Null when not dragging.
-  const [band, setBand] = useState<DragRect | null>(null)
-  const dragRef = useRef<DragRect | null>(null)
-  const additiveRef = useRef(false)
-  const baseSelectionRef = useRef<Set<string>>(new Set())
+  const [band, setBand] = useState<DragRect | null>(null);
+  const dragRef = useRef<DragRect | null>(null);
+  const additiveRef = useRef(false);
+  const baseSelectionRef = useRef<Set<string>>(new Set());
 
   // The icons actually drawn — `settings` lives in the Start menu, not on the
   // desktop, so it must not consume a grid cell (it used to, leaving a hole).
-  const desktopApps = useMemo(
-    () => enabledApps.filter((app) => app.id !== 'settings'),
-    [enabledApps]
-  )
+  const desktopApps = useMemo(() => enabledApps.filter((app) => app.id !== "settings"), [enabledApps]);
 
   // Every enabled app that contributes a desktop layer. Keyed by app id so a
   // roster change cannot remount an unrelated layer.
@@ -55,21 +52,18 @@ export function Desktop({ wallpaper }: DesktopProps) {
       enabledApps
         .filter((app) => app.desktopLayer !== undefined)
         .map((app) => ({ id: app.id, name: app.name, Layer: app.desktopLayer! })),
-    [enabledApps]
-  )
+    [enabledApps],
+  );
   // A primitive, not an array: `useEnabledApps()` returns a fresh array on every
   // render, so an array dependency here re-ran the effect, which wrote to the
   // store, which re-rendered — an infinite loop.
-  const appIdsKey = desktopApps.map((a) => a.id).join(',')
+  const appIdsKey = desktopApps.map((a) => a.id).join(",");
 
   // One measured size for icons and widgets alike, falling back to
   // the window before the first measurement lands.
-  const boundsWidth = desktopSize.width || window.innerWidth
-  const boundsHeight = desktopSize.height || window.innerHeight - TASKBAR_HEIGHT
-  const bounds = useMemo(
-    () => ({ width: boundsWidth, height: boundsHeight }),
-    [boundsWidth, boundsHeight]
-  )
+  const boundsWidth = desktopSize.width || window.innerWidth;
+  const boundsHeight = desktopSize.height || window.innerHeight - TASKBAR_HEIGHT;
+  const bounds = useMemo(() => ({ width: boundsWidth, height: boundsHeight }), [boundsWidth, boundsHeight]);
 
   // Auto-place every non-pinned icon, and re-place on desktop-size or roster
   // changes. Reading the store imperatively keeps `iconPositions` out of the
@@ -81,28 +75,28 @@ export function Desktop({ wallpaper }: DesktopProps) {
   // `resize` listener debounced through `requestAnimationFrame`: the icons
   // now follow the same box the widgets clamp against.
   const place = useCallback(() => {
-    const current = useDesktopStore.getState().iconPositions
-    const pinned: Record<string, { x: number; y: number }> = {}
+    const current = useDesktopStore.getState().iconPositions;
+    const pinned: Record<string, { x: number; y: number }> = {};
     for (const [id, pos] of Object.entries(current)) {
-      if (pos.pinned) pinned[id] = { x: pos.x, y: pos.y }
+      if (pos.pinned) pinned[id] = { x: pos.x, y: pos.y };
     }
-    setAutoPositions(layoutIcons(appIdsKey ? appIdsKey.split(',') : [], pinned, bounds))
-  }, [appIdsKey, setAutoPositions, bounds])
+    setAutoPositions(layoutIcons(appIdsKey ? appIdsKey.split(",") : [], pinned, bounds));
+  }, [appIdsKey, setAutoPositions, bounds]);
 
   useEffect(() => {
-    place()
-  }, [place])
+    place();
+  }, [place]);
 
   // Where each icon is drawn. A pinned icon is clamped into the desktop; the
   // store keeps the owner's point for when the desktop grows back.
   // The marquee hit-tests these, so it selects what the owner sees.
   const drawnPositions = useMemo(() => {
-    const out: Record<string, { x: number; y: number }> = {}
+    const out: Record<string, { x: number; y: number }> = {};
     for (const [id, pos] of Object.entries(iconPositions)) {
-      out[id] = pos.pinned ? clampToDesktop(pos, bounds) : { x: pos.x, y: pos.y }
+      out[id] = pos.pinned ? clampToDesktop(pos, bounds) : { x: pos.x, y: pos.y };
     }
-    return out
-  }, [iconPositions, bounds])
+    return out;
+  }, [iconPositions, bounds]);
 
   /**
    * Launch through the shared `openApp`, not `openWindow` directly.
@@ -115,25 +109,25 @@ export function Desktop({ wallpaper }: DesktopProps) {
    */
   function handleOpen(appId: string) {
     // An app already open comes to the front with the keyboard (openApp).
-    openApp(appId)
+    openApp(appId);
   }
 
   /** Open every selected icon (or just this one), the single-instance path. */
   const openSelection = useCallback(
     (fallbackId?: string) => {
-      const ids = selected.size > 0 ? [...selected] : fallbackId ? [fallbackId] : []
-      for (const id of ids) openApp(id)
-      setSelected(new Set())
+      const ids = selected.size > 0 ? [...selected] : fallbackId ? [fallbackId] : [];
+      for (const id of ids) openApp(id);
+      setSelected(new Set());
     },
-    [selected]
-  )
+    [selected],
+  );
 
   const handleAutoArrange = useCallback(() => {
-    clearPins()
-    place()
-  }, [clearPins, place])
+    clearPins();
+    place();
+  }, [clearPins, place]);
 
-  const desktopAppIds = useMemo(() => desktopApps.map((a) => a.id), [desktopApps])
+  const desktopAppIds = useMemo(() => desktopApps.map((a) => a.id), [desktopApps]);
 
   /**
    * Escape clears the selection, Enter opens it. A window listener, not a
@@ -148,59 +142,59 @@ export function Desktop({ wallpaper }: DesktopProps) {
    * has its own Enter, and running both would open the app twice.
    */
   useEffect(() => {
-    if (selected.size === 0) return
+    if (selected.size === 0) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.target !== document.body || isTextEntry(e.target as HTMLElement)) return
-      if (e.key === 'Escape') {
-        setSelected(new Set())
-      } else if (e.key === 'Enter') {
-        e.preventDefault()
-        openSelection()
+      if (e.target !== document.body || isTextEntry(e.target as HTMLElement)) return;
+      if (e.key === "Escape") {
+        setSelected(new Set());
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        openSelection();
       }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [selected, openSelection])
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected, openSelection]);
 
   // ── Marquee (the user-filed drag-selection todo) ────────────────────────────
   // Only a press on TRUE background starts one: icons stop their own pointer
   // events, and widgets/notes/windows target other elements entirely.
   const onLayerPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return
-    if (e.target !== e.currentTarget) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const start = { x: e.clientX - rect.left, y: e.clientY - rect.top }
-    dragRef.current = { x1: start.x, y1: start.y, x2: start.x, y2: start.y }
+    if (e.button !== 0) return;
+    if (e.target !== e.currentTarget) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const start = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    dragRef.current = { x1: start.x, y1: start.y, x2: start.x, y2: start.y };
     // Ctrl-drag ADDS to the selection; a plain drag replaces it.
-    additiveRef.current = e.ctrlKey || e.metaKey
-    baseSelectionRef.current = additiveRef.current ? new Set(selected) : new Set()
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }
+    additiveRef.current = e.ctrlKey || e.metaKey;
+    baseSelectionRef.current = additiveRef.current ? new Set(selected) : new Set();
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
 
   const onLayerPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current
-    if (!drag) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const next: DragRect = { ...drag, x2: e.clientX - rect.left, y2: e.clientY - rect.top }
-    dragRef.current = next
-    if (!isDrag(next)) return
-    setBand(next)
+    const drag = dragRef.current;
+    if (!drag) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const next: DragRect = { ...drag, x2: e.clientX - rect.left, y2: e.clientY - rect.top };
+    dragRef.current = next;
+    if (!isDrag(next)) return;
+    setBand(next);
     // Live feedback: the hit set is recomputed every move, so icons highlight
     // as the band crosses them.
-    const hits = iconsInRect(drawnPositions, normalizeRect(next), desktopAppIds)
-    setSelected(new Set([...baseSelectionRef.current, ...hits]))
-  }
+    const hits = iconsInRect(drawnPositions, normalizeRect(next), desktopAppIds);
+    setSelected(new Set([...baseSelectionRef.current, ...hits]));
+  };
 
   const endMarquee = (e: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current
-    dragRef.current = null
-    setBand(null)
+    const drag = dragRef.current;
+    dragRef.current = null;
+    setBand(null);
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId)
+      e.currentTarget.releasePointerCapture(e.pointerId);
     }
     // A press that never became a drag is a plain background click: clear.
-    if (drag && !isDrag(drag) && !additiveRef.current) setSelected(new Set())
-  }
+    if (drag && !isDrag(drag) && !additiveRef.current) setSelected(new Set());
+  };
 
   return (
     <div
@@ -216,13 +210,13 @@ export function Desktop({ wallpaper }: DesktopProps) {
         // attribute. `data-window-id` is real (Window.tsx), so window
         // interiors keep whatever their app decided; everything else on the
         // desktop always gets the background menu.
-        if ((e.target as HTMLElement).closest('[data-window-id]')) return
-        e.preventDefault()
-        setIconMenuAt(null)
+        if ((e.target as HTMLElement).closest("[data-window-id]")) return;
+        e.preventDefault();
+        setIconMenuAt(null);
         // Raw viewport coordinates: the kit menu portals to body and positions
         // in viewport space — the old container-relative math died
         // with the absolutely-positioned local menu.
-        setMenuAt({ x: e.clientX, y: e.clientY })
+        setMenuAt({ x: e.clientX, y: e.clientY });
       }}
     >
       {/* A scene wallpaper, under everything and never a click target. */}
@@ -240,8 +234,8 @@ export function Desktop({ wallpaper }: DesktopProps) {
         onPointerCancel={endMarquee}
       >
         {desktopApps.map((app) => {
-          const pos = drawnPositions[app.id]
-          if (!pos) return null
+          const pos = drawnPositions[app.id];
+          if (!pos) return null;
           return (
             <DesktopIcon
               key={app.id}
@@ -254,22 +248,22 @@ export function Desktop({ wallpaper }: DesktopProps) {
               onSelect={(e) => {
                 // Ctrl/⌘+click toggles membership; a plain click selects one.
                 setSelected((prev) => {
-                  if (!(e.ctrlKey || e.metaKey)) return new Set([app.id])
-                  const next = new Set(prev)
-                  if (next.has(app.id)) next.delete(app.id)
-                  else next.add(app.id)
-                  return next
-                })
+                  if (!(e.ctrlKey || e.metaKey)) return new Set([app.id]);
+                  const next = new Set(prev);
+                  if (next.has(app.id)) next.delete(app.id);
+                  else next.add(app.id);
+                  return next;
+                });
               }}
               onContextMenu={(e) => {
                 // Right-click selects the icon it opened on unless it is
                 // already part of a multi-selection — the file manager's rule.
-                setSelected((prev) => (prev.has(app.id) ? prev : new Set([app.id])))
-                setMenuAt(null)
-                setIconMenuAt({ x: e.clientX, y: e.clientY })
+                setSelected((prev) => (prev.has(app.id) ? prev : new Set([app.id])));
+                setMenuAt(null);
+                setIconMenuAt({ x: e.clientX, y: e.clientY });
               }}
             />
-          )
+          );
         })}
 
         {band && isDrag(band) && (
@@ -318,14 +312,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
         <WidgetLayer bounds={bounds} />
       </div>
 
-      {menuAt && (
-        <DesktopContextMenu
-          x={menuAt.x}
-          y={menuAt.y}
-          bounds={bounds}
-          onClose={() => setMenuAt(null)}
-        />
-      )}
+      {menuAt && <DesktopContextMenu x={menuAt.x} y={menuAt.y} bounds={bounds} onClose={() => setMenuAt(null)} />}
 
       {iconMenuAt && (
         <DesktopIconContextMenu
@@ -340,5 +327,5 @@ export function Desktop({ wallpaper }: DesktopProps) {
 
       <WindowContainer />
     </div>
-  )
+  );
 }

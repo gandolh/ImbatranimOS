@@ -26,20 +26,18 @@
  * need them; the HTTP client uses `fetch` with `Request` and `Response`.
  */
 
-const g = globalThis
+const g = globalThis;
 
 export const network = Object.freeze({
-  fetch: typeof g.fetch === 'function' ? g.fetch.bind(g) : undefined,
+  fetch: typeof g.fetch === "function" ? g.fetch.bind(g) : undefined,
   Request: g.Request,
   Response: g.Response,
   Headers: g.Headers,
   XMLHttpRequest: g.XMLHttpRequest as typeof XMLHttpRequest | undefined,
   WebSocket: g.WebSocket as typeof WebSocket | undefined,
   getRandomValues:
-    typeof g.crypto?.getRandomValues === 'function'
-      ? g.crypto.getRandomValues.bind(g.crypto)
-      : undefined,
-})
+    typeof g.crypto?.getRandomValues === "function" ? g.crypto.getRandomValues.bind(g.crypto) : undefined,
+});
 
 /**
  * What axios's fetch adapter reads instead of the globals. One frozen object
@@ -50,9 +48,9 @@ export const NETWORK_ENV = Object.freeze({
   fetch: network.fetch,
   Request: network.Request,
   Response: network.Response,
-})
+});
 
-const HEX = '0123456789abcdef'
+const HEX = "0123456789abcdef";
 
 /**
  * `bytes` random bytes as lowercase hex, from the captured generator. Built
@@ -60,14 +58,14 @@ const HEX = '0123456789abcdef'
  * byte of it.
  */
 export function randomHex(bytes: number): string {
-  const getRandomValues = network.getRandomValues
-  if (!getRandomValues) throw new Error('This browser has no crypto.getRandomValues')
-  const buf = new Uint8Array(bytes)
-  getRandomValues(buf)
-  let out = ''
+  const getRandomValues = network.getRandomValues;
+  if (!getRandomValues) throw new Error("This browser has no crypto.getRandomValues");
+  const buf = new Uint8Array(bytes);
+  getRandomValues(buf);
+  let out = "";
   for (let i = 0; i < bytes; i++) {
-    const b = buf[i]
-    out = out + HEX[b >> 4] + HEX[b & 15]
+    const b = buf[i];
+    out = out + HEX[b >> 4] + HEX[b & 15];
   }
-  return out
+  return out;
 }

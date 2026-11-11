@@ -1,6 +1,6 @@
-import { epoxyPath } from '@mercuryworkshop/epoxy-transport';
-import { scramjetPath } from '@mercuryworkshop/scramjet/path';
-import { dirname, join } from 'path';
+import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
+import { scramjetPath } from "@mercuryworkshop/scramjet/path";
+import { dirname, join } from "path";
 
 /**
  * Every file the proxy origin serves, by exact path. Anything not
@@ -21,36 +21,27 @@ function distOf(entry: string): string {
   return dirname(require.resolve(entry));
 }
 
-const JS = 'text/javascript; charset=utf-8';
+const JS = "text/javascript; charset=utf-8";
 
 export function proxyAssets(): ReadonlyMap<string, ProxyAsset> {
-  const ours = join(__dirname, 'static');
+  const ours = join(__dirname, "static");
   // `scramjetPath` and `epoxyPath` are the packages' own pointers at their dist.
-  const bareMux = distOf('@mercuryworkshop/bare-mux');
+  const bareMux = distOf("@mercuryworkshop/bare-mux");
   return new Map<string, ProxyAsset>([
+    ["/host.html", { file: join(ours, "host.html"), type: "text/html; charset=utf-8" }],
+    ["/host.js", { file: join(ours, "host.js"), type: JS }],
+    ["/sw.js", { file: join(ours, "sw.js"), type: JS }],
+    ["/scram/scramjet.all.js", { file: join(scramjetPath, "scramjet.all.js"), type: JS }],
+    ["/scram/scramjet.sync.js", { file: join(scramjetPath, "scramjet.sync.js"), type: JS }],
     [
-      '/host.html',
-      { file: join(ours, 'host.html'), type: 'text/html; charset=utf-8' },
-    ],
-    ['/host.js', { file: join(ours, 'host.js'), type: JS }],
-    ['/sw.js', { file: join(ours, 'sw.js'), type: JS }],
-    [
-      '/scram/scramjet.all.js',
-      { file: join(scramjetPath, 'scramjet.all.js'), type: JS },
-    ],
-    [
-      '/scram/scramjet.sync.js',
-      { file: join(scramjetPath, 'scramjet.sync.js'), type: JS },
-    ],
-    [
-      '/scram/scramjet.wasm.wasm',
+      "/scram/scramjet.wasm.wasm",
       {
-        file: join(scramjetPath, 'scramjet.wasm.wasm'),
-        type: 'application/wasm',
+        file: join(scramjetPath, "scramjet.wasm.wasm"),
+        type: "application/wasm",
       },
     ],
-    ['/baremux/index.js', { file: join(bareMux, 'index.js'), type: JS }],
-    ['/baremux/worker.js', { file: join(bareMux, 'worker.js'), type: JS }],
-    ['/epoxy/index.mjs', { file: join(epoxyPath, 'index.mjs'), type: JS }],
+    ["/baremux/index.js", { file: join(bareMux, "index.js"), type: JS }],
+    ["/baremux/worker.js", { file: join(bareMux, "worker.js"), type: JS }],
+    ["/epoxy/index.mjs", { file: join(epoxyPath, "index.mjs"), type: JS }],
   ]);
 }

@@ -12,20 +12,20 @@
  * ninety copies of itself. Keyed per app so a second app crashing is still
  * reported; the crash of *another* window is new information.
  */
-const TOAST_DEDUPE_MS = 5_000
+const TOAST_DEDUPE_MS = 5_000;
 
 /** Module-scoped, so a remount cannot reset the guard and re-open the flood. */
-const lastToastAt = new Map<string, number>()
+const lastToastAt = new Map<string, number>();
 
 /** True when this app's crash should raise a notification. Records the decision. */
 export function shouldReportCrash(appId: string, now = Date.now()): boolean {
-  const previous = lastToastAt.get(appId) ?? 0
-  if (now - previous < TOAST_DEDUPE_MS) return false
-  lastToastAt.set(appId, now)
-  return true
+  const previous = lastToastAt.get(appId) ?? 0;
+  if (now - previous < TOAST_DEDUPE_MS) return false;
+  lastToastAt.set(appId, now);
+  return true;
 }
 
 /** Forget the history. For tests, and for nothing else. */
 export function resetCrashToastHistory(): void {
-  lastToastAt.clear()
+  lastToastAt.clear();
 }

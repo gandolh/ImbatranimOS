@@ -8,19 +8,19 @@ import {
   PayloadTooLargeException,
   RequestTimeoutException,
   ServiceUnavailableException,
-} from '@nestjs/common';
-import { unzip, zip, type Unzipped, type AsyncZippable } from 'fflate';
-import { execFile, spawn, type ChildProcess } from 'child_process';
-import { promisify } from 'util';
-import * as fs from 'fs/promises';
-import { constants as fsConstants, createReadStream, type Stats } from 'fs';
-import { Transform, Writable } from 'stream';
-import { pipeline } from 'stream/promises';
-import { createGunzip } from 'zlib';
-import { basename, dirname, join, posix, relative, sep } from 'path';
-import { randomUUID } from 'crypto';
-import { FilesService } from '../files/files.service';
-import { childEnv } from '../../child-env';
+} from "@nestjs/common";
+import { unzip, zip, type Unzipped, type AsyncZippable } from "fflate";
+import { execFile, spawn, type ChildProcess } from "child_process";
+import { promisify } from "util";
+import * as fs from "fs/promises";
+import { constants as fsConstants, createReadStream, type Stats } from "fs";
+import { Transform, Writable } from "stream";
+import { pipeline } from "stream/promises";
+import { createGunzip } from "zlib";
+import { basename, dirname, join, posix, relative, sep } from "path";
+import { randomUUID } from "crypto";
+import { FilesService } from "../files/files.service";
+import { childEnv } from "../../child-env";
 import type {
   ArchiveEntry,
   ArchiveJob,
@@ -28,7 +28,7 @@ import type {
   ArchiveListing,
   LoneFlavour,
   TarFlavour,
-} from './dto/archive.dto';
+} from "./dto/archive.dto";
 
 /**
  * Spawn the real `tar` binary with a fixed argv array and NO shell. We use
@@ -43,8 +43,7 @@ const execFileAsync = promisify(execFile);
 /** Wall-clock cap so a wedged tar can't hang a request. */
 const TAR_TIMEOUT_MS = Number(process.env.ARCHIVE_TAR_TIMEOUT_MS) || 60_000;
 /** Cap on tar's captured stdout (the member listing). */
-const TAR_MAX_BUFFER =
-  Number(process.env.ARCHIVE_TAR_MAX_BUFFER) || 32 * 1024 * 1024;
+const TAR_MAX_BUFFER = Number(process.env.ARCHIVE_TAR_MAX_BUFFER) || 32 * 1024 * 1024;
 
 /**
  * Resource caps (zip-bomb / OOM guard). All env-overridable so the deploy can
@@ -54,13 +53,10 @@ const TAR_MAX_BUFFER =
  * is re-checked against actually-inflated bytes.
  */
 const MAX_ENTRIES = () => Number(process.env.ARCHIVE_MAX_ENTRIES) || 10_000;
-const MAX_TOTAL_BYTES = () =>
-  Number(process.env.ARCHIVE_MAX_TOTAL_BYTES) || 512 * 1024 * 1024;
-const MAX_ENTRY_BYTES = () =>
-  Number(process.env.ARCHIVE_MAX_ENTRY_BYTES) || 512 * 1024 * 1024;
+const MAX_TOTAL_BYTES = () => Number(process.env.ARCHIVE_MAX_TOTAL_BYTES) || 512 * 1024 * 1024;
+const MAX_ENTRY_BYTES = () => Number(process.env.ARCHIVE_MAX_ENTRY_BYTES) || 512 * 1024 * 1024;
 /** Cap on the compressed archive itself, so reading it can't blow the heap. */
-const MAX_ARCHIVE_BYTES = () =>
-  Number(process.env.ARCHIVE_MAX_ARCHIVE_BYTES) || 200 * 1024 * 1024;
+const MAX_ARCHIVE_BYTES = () => Number(process.env.ARCHIVE_MAX_ARCHIVE_BYTES) || 200 * 1024 * 1024;
 /**
  * Max plausible uncompressed:compressed ratio. DEFLATE's theoretical ceiling is
  * ~1032:1; we allow generous headroom. Critically, this bounds the per-entry /
@@ -69,23 +65,17 @@ const MAX_ARCHIVE_BYTES = () =>
  * 512 MiB) can't force `unzipSync` to pre-allocate the forged size. Without this
  * the absolute caps alone permit a ~1500x memory-amplification DoS.
  */
-const MAX_COMPRESSION_RATIO = () =>
-  Number(process.env.ARCHIVE_MAX_RATIO) || 2000;
+const MAX_COMPRESSION_RATIO = () => Number(process.env.ARCHIVE_MAX_RATIO) || 2000;
 /** A suffix that may name one compressed file rather than a tarball. */
 const LONE_SUFFIX = /\.(gz|xz|bz2)$/i;
 /** The tar flavour a lone compressed file turns out to be when a tar is inside. */
 const TAR_OF: Record<LoneFlavour, TarFlavour> = {
-  gz: 'targz',
-  xz: 'tarxz',
-  bz2: 'tarbz2',
+  gz: "targz",
+  xz: "tarxz",
+  bz2: "tarbz2",
 };
 /** What `link()` fails with on a file system that has no hard links. */
-const NO_HARD_LINKS: ReadonlySet<string> = new Set([
-  'EPERM',
-  'ENOTSUP',
-  'EOPNOTSUPP',
-  'EXDEV',
-]);
+const NO_HARD_LINKS: ReadonlySet<string> = new Set(["EPERM", "ENOTSUP", "EOPNOTSUPP", "EXDEV"]);
 
 /** Remove the folders `mkdir -p` made, from `leaf` up to `top`, while they are empty. */
 async function removeMade(leaf: string, top: string): Promise<void> {
@@ -136,8 +126,8 @@ class PeekDone extends Error {}
  * when nothing would be left (a file called just `.gz`).
  */
 export function loneOutputName(archiveName: string): string | null {
-  const name = archiveName.replace(LONE_SUFFIX, '');
-  return name === '' || name === '.' || name === '..' ? null : name;
+  const name = archiveName.replace(LONE_SUFFIX, "");
+  return name === "" || name === "." || name === ".." ? null : name;
 }
 
 /**
@@ -147,10 +137,8 @@ export function loneOutputName(archiveName: string): string | null {
  */
 export function numberedName(name: string, n: number): string {
   if (n === 1) return name;
-  const dot = name.lastIndexOf('.');
-  return dot > 0
-    ? `${name.slice(0, dot)} (${n})${name.slice(dot)}`
-    : `${name} (${n})`;
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? `${name.slice(0, dot)} (${n})${name.slice(dot)}` : `${name} (${n})`;
 }
 
 /**
@@ -159,15 +147,11 @@ export function numberedName(name: string, n: number): string {
  * Empty when nothing is left, or only dots (`.gz`, `..gz`).
  */
 function deriveName(fileName: string): string {
-  const base = fileName.replace(
-    /\.(zip|tgz|tbz2?|txz|tar\.gz|tar\.bz2|tar\.xz|tar|gz|xz|bz2)$/i,
-    '',
-  );
-  return base === '.' || base === '..' ? '' : base;
+  const base = fileName.replace(/\.(zip|tgz|tbz2?|txz|tar\.gz|tar\.bz2|tar\.xz|tar|gz|xz|bz2)$/i, "");
+  return base === "." || base === ".." ? "" : base;
 }
 
-const isLone = (format: string): format is LoneFlavour =>
-  format === 'gz' || format === 'xz' || format === 'bz2';
+const isLone = (format: string): format is LoneFlavour => format === "gz" || format === "xz" || format === "bz2";
 
 /** A write's full disk, as the 503 the files module answers with. */
 async function diskFull<T>(op: () => Promise<T>): Promise<T> {
@@ -175,10 +159,8 @@ async function diskFull<T>(op: () => Promise<T>): Promise<T> {
     return await op();
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
-    if (code === 'ENOSPC' || code === 'EDQUOT') {
-      throw new ServiceUnavailableException(
-        'The disk is full — free some space and try again.',
-      );
+    if (code === "ENOSPC" || code === "EDQUOT") {
+      throw new ServiceUnavailableException("The disk is full — free some space and try again.");
     }
     throw err;
   }
@@ -205,15 +187,12 @@ const MAX_JOBS = 50;
  * The replacement character is also NUL-free and slash-free, so a repaired name
  * cannot become a traversal that the raw bytes were not.
  */
-export function decodeEntryName(
-  bytes: Uint8Array,
-  utf8Flag: boolean,
-): { name: string; repaired: boolean } {
-  const strict = new TextDecoder('utf-8', { fatal: true });
+export function decodeEntryName(bytes: Uint8Array, utf8Flag: boolean): { name: string; repaired: boolean } {
+  const strict = new TextDecoder("utf-8", { fatal: true });
   try {
     return { name: strict.decode(bytes), repaired: false };
   } catch {
-    const lossy = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    const lossy = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
     void utf8Flag;
     return { name: lossy, repaired: true };
   }
@@ -230,9 +209,7 @@ export function dosDateToIso(dosDate: number, dosTime: number): string | null {
   const seconds = (dosTime & 0x1f) * 2;
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
   // DOS timestamps carry no zone; treated as UTC so the value is at least stable.
-  const date = new Date(
-    Date.UTC(year, month - 1, day, hours, minutes, seconds),
-  );
+  const date = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
@@ -247,32 +224,27 @@ export function dosDateToIso(dosDate: number, dosTime: number): string | null {
  */
 export function parseTarListLine(line: string): ArchiveEntry {
   // e.g. "-rw-r--r-- 1000/1000  1234 2026-08-05 12:34:56 dir/my file.txt"
-  const match =
-    /^([dlbcps-])\S{9}\s+\S+\s+(\d+)\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}(?::\d{2})?)\s+(.*)$/.exec(
-      line,
-    );
+  const match = /^([dlbcps-])\S{9}\s+\S+\s+(\d+)\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}(?::\d{2})?)\s+(.*)$/.exec(line);
   if (!match) {
     const name = line.trim();
     return {
       name,
       size: null,
       compressedSize: null,
-      directory: name.endsWith('/'),
+      directory: name.endsWith("/"),
       modified: null,
       nameRepaired: false,
     };
   }
   const [, typeChar, sizeText, date, time, rest] = match;
   // A tar listing writes a link as "name -> target"; the entry is the left side.
-  const name = typeChar === 'l' ? rest.split(' -> ')[0] : rest;
-  const parsed = new Date(
-    `${date}T${time.length === 5 ? `${time}:00` : time}Z`,
-  );
+  const name = typeChar === "l" ? rest.split(" -> ")[0] : rest;
+  const parsed = new Date(`${date}T${time.length === 5 ? `${time}:00` : time}Z`);
   return {
     name,
     size: Number(sizeText),
     compressedSize: null,
-    directory: typeChar === 'd' || name.endsWith('/'),
+    directory: typeChar === "d" || name.endsWith("/"),
     modified: Number.isNaN(parsed.getTime()) ? null : parsed.toISOString(),
     nameRepaired: false,
   };
@@ -304,10 +276,7 @@ export class ArchiveService {
    * a restart — which is exactly the state the temp-dir-then-move flow exists to
    * make impossible.
    */
-  private readonly jobs = new Map<
-    string,
-    { job: ArchiveJob; startedAt: number }
-  >();
+  private readonly jobs = new Map<string, { job: ArchiveJob; startedAt: number }>();
 
   // ── jobs (progress) ───────────────────────────────────────────────────────
 
@@ -324,16 +293,11 @@ export class ArchiveService {
    * result, so it must not be guessable by another request. Jobs are also
    * per-process and expire, so a stale id cannot resurrect an old result.
    */
-  startExtractJob(
-    root: string,
-    path: string,
-    dest?: string,
-    entries?: string[],
-  ): { id: string } {
+  startExtractJob(root: string, path: string, dest?: string, entries?: string[]): { id: string } {
     const id = randomUUID();
     const job: ArchiveJob = {
       id,
-      state: 'running',
+      state: "running",
       percent: 0,
       entriesDone: 0,
       entriesTotal: entries?.length ?? 0,
@@ -344,18 +308,18 @@ export class ArchiveService {
     // Deliberately not awaited: the caller gets an id immediately and polls.
     void this.extract(root, path, dest, entries)
       .then((result) => {
-        job.state = 'done';
+        job.state = "done";
         job.percent = 100;
         job.entriesDone = result.entries;
         job.entriesTotal = result.entries;
         job.result = result;
       })
       .catch((err: unknown) => {
-        job.state = 'failed';
+        job.state = "failed";
         // The message is the user-facing one the service already composed
         // ("…past the size cap", "Refusing symlink entry…"), which is the whole
         // point of surfacing a failure rather than a silent stall.
-        job.error = err instanceof Error ? err.message : 'Extraction failed';
+        job.error = err instanceof Error ? err.message : "Extraction failed";
       });
 
     return { id };
@@ -363,7 +327,7 @@ export class ArchiveService {
 
   getJob(id: string): ArchiveJob {
     const found = this.jobs.get(id);
-    if (!found) throw new NotFoundException('No such extraction job');
+    if (!found) throw new NotFoundException("No such extraction job");
     return found.job;
   }
 
@@ -371,15 +335,13 @@ export class ArchiveService {
   private sweepJobs(): void {
     const cutoff = Date.now() - JOB_TTL_MS;
     for (const [id, entry] of this.jobs) {
-      if (entry.job.state !== 'running' && entry.startedAt < cutoff) {
+      if (entry.job.state !== "running" && entry.startedAt < cutoff) {
         this.jobs.delete(id);
       }
     }
     // A hard cap as well, in case something never finishes.
     if (this.jobs.size > MAX_JOBS) {
-      const oldest = [...this.jobs.entries()].sort(
-        (a, b) => a[1].startedAt - b[1].startedAt,
-      );
+      const oldest = [...this.jobs.entries()].sort((a, b) => a[1].startedAt - b[1].startedAt);
       for (const [id] of oldest.slice(0, this.jobs.size - MAX_JOBS)) {
         this.jobs.delete(id);
       }
@@ -405,9 +367,7 @@ export class ArchiveService {
     const { abs: archiveAbs } = await this.files.resolveSafe(root, path);
     const stat = await this.statFile(archiveAbs);
     if (stat.size > MAX_ARCHIVE_BYTES()) {
-      throw new PayloadTooLargeException(
-        `Archive is too large to read (max ${MAX_ARCHIVE_BYTES()} bytes)`,
-      );
+      throw new PayloadTooLargeException(`Archive is too large to read (max ${MAX_ARCHIVE_BYTES()} bytes)`);
     }
     const format = await this.detectFormat(path, archiveAbs);
     if (isLone(format)) {
@@ -431,22 +391,19 @@ export class ArchiveService {
     }
     const destVirtual = this.deriveDest(path);
 
-    const raw =
-      format === 'zip'
-        ? await this.listZip(archiveAbs)
-        : await this.listTar(archiveAbs, format);
+    const raw = format === "zip" ? await this.listZip(archiveAbs) : await this.listTar(archiveAbs, format);
 
     // Jail-check every declared name against a hypothetical extraction.
     const entries: ArchiveEntry[] = [];
     const refused: { name: string; reason: string }[] = [];
     for (const entry of raw.entries) {
       try {
-        await this.resolveEntry(root, destVirtual, '', entry.name);
+        await this.resolveEntry(root, destVirtual, "", entry.name);
         entries.push(entry);
       } catch (err) {
         refused.push({
           name: entry.name,
-          reason: err instanceof Error ? err.message : 'refused',
+          reason: err instanceof Error ? err.message : "refused",
         });
       }
     }
@@ -487,7 +444,7 @@ export class ArchiveService {
         break;
       }
     }
-    if (eocd < 0) throw new BadRequestException('Not a valid zip archive');
+    if (eocd < 0) throw new BadRequestException("Not a valid zip archive");
 
     const declared = view.getUint16(eocd + 10, true);
     const total = Math.min(declared, MAX_ENTRIES());
@@ -496,11 +453,8 @@ export class ArchiveService {
     const entries: ArchiveEntry[] = [];
     let encrypted = false;
     for (let n = 0; n < total; n++) {
-      if (
-        cdOffset + 46 > data.length ||
-        view.getUint32(cdOffset, true) !== CDH_SIG
-      ) {
-        throw new BadRequestException('Corrupt zip central directory');
+      if (cdOffset + 46 > data.length || view.getUint32(cdOffset, true) !== CDH_SIG) {
+        throw new BadRequestException("Corrupt zip central directory");
       }
       const flags = view.getUint16(cdOffset + 8, true);
       if ((flags & 0x1) !== 0) encrypted = true;
@@ -516,15 +470,12 @@ export class ArchiveService {
       // officially CP437; decoding it as UTF-8 is what mangles a legacy Windows
       // zip. Either way the result is repaired to something the jail can reason
       // about, and the row says so — see decodeEntryName.
-      const { name, repaired } = decodeEntryName(
-        nameBytes,
-        (flags & 0x800) !== 0,
-      );
+      const { name, repaired } = decodeEntryName(nameBytes, (flags & 0x800) !== 0);
       entries.push({
         name,
         size: uncompressed === 0xffffffff ? null : uncompressed,
         compressedSize: compressedSize === 0xffffffff ? null : compressedSize,
-        directory: name.endsWith('/'),
+        directory: name.endsWith("/"),
         modified: dosDateToIso(dosDate, dosTime),
         nameRepaired: repaired,
       });
@@ -549,12 +500,12 @@ export class ArchiveService {
     truncated: boolean;
   }> {
     const flag = this.tarFlag(flavour);
-    const { stdout } = await execFileAsync('tar', [`-tv${flag}f`, archiveAbs], {
+    const { stdout } = await execFileAsync("tar", [`-tv${flag}f`, archiveAbs], {
       timeout: TAR_TIMEOUT_MS,
       env: childEnv(),
       maxBuffer: TAR_MAX_BUFFER,
     });
-    const lines = stdout.split('\n').filter((l) => l.trim().length > 0);
+    const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
     const truncated = lines.length > MAX_ENTRIES();
     const entries: ArchiveEntry[] = [];
     for (const line of lines.slice(0, MAX_ENTRIES())) {
@@ -581,9 +532,7 @@ export class ArchiveService {
     const { abs: archiveAbs } = await this.files.resolveSafe(root, path);
     const stat = await this.statFile(archiveAbs);
     if (stat.size > MAX_ARCHIVE_BYTES()) {
-      throw new PayloadTooLargeException(
-        `Archive is too large to extract (max ${MAX_ARCHIVE_BYTES()} bytes)`,
-      );
+      throw new PayloadTooLargeException(`Archive is too large to extract (max ${MAX_ARCHIVE_BYTES()} bytes)`);
     }
 
     // The format first, so an archive this module can't read leaves nothing
@@ -599,27 +548,17 @@ export class ArchiveService {
     // Always re-jailed.
     if (dest === undefined && !deriveName(basename(path))) {
       // A `.gz` with a tar inside has no name left to make a folder of.
-      throw new BadRequestException(
-        `Can't name a folder for ${basename(path)}: rename it first`,
-      );
+      throw new BadRequestException(`Can't name a folder for ${basename(path)}: rename it first`);
     }
-    const destVirtual =
-      dest ?? (await this.freeDest(root, this.deriveDest(path)));
+    const destVirtual = dest ?? (await this.freeDest(root, this.deriveDest(path)));
     const { abs: destAbs } = await this.files.resolveSafe(root, destVirtual);
 
     await fs.mkdir(destAbs, { recursive: true });
 
-    if (format === 'zip') {
+    if (format === "zip") {
       return this.extractZip(root, destVirtual, destAbs, archiveAbs, only);
     }
-    return this.extractTar(
-      root,
-      destVirtual,
-      destAbs,
-      archiveAbs,
-      format,
-      only,
-    );
+    return this.extractTar(root, destVirtual, destAbs, archiveAbs, format, only);
   }
 
   /**
@@ -668,23 +607,19 @@ export class ArchiveService {
         });
       });
     } catch {
-      throw new BadRequestException('Corrupt or unreadable zip archive');
+      throw new BadRequestException("Corrupt or unreadable zip archive");
     }
 
     const names = Object.keys(unzipped);
     if (names.length > MAX_ENTRIES()) {
-      throw new PayloadTooLargeException(
-        `Archive has too many entries (max ${MAX_ENTRIES()})`,
-      );
+      throw new PayloadTooLargeException(`Archive has too many entries (max ${MAX_ENTRIES()})`);
     }
     let actualTotal = 0;
     for (const name of names) {
       const size = unzipped[name].length;
       actualTotal += size;
       if (size >= MAX_ENTRY_BYTES() || actualTotal >= MAX_TOTAL_BYTES()) {
-        throw new PayloadTooLargeException(
-          `Archive uncompresses past the size cap (max ${MAX_TOTAL_BYTES()} bytes)`,
-        );
+        throw new PayloadTooLargeException(`Archive uncompresses past the size cap (max ${MAX_TOTAL_BYTES()} bytes)`);
       }
     }
 
@@ -692,10 +627,7 @@ export class ArchiveService {
     // extraction on ANY escape, BEFORE writing anything.
     const absByName = new Map<string, string>();
     for (const name of names) {
-      absByName.set(
-        name,
-        await this.resolveEntry(root, destVirtual, destAbs, name),
-      );
+      absByName.set(name, await this.resolveEntry(root, destVirtual, destAbs, name));
     }
 
     // A selected name the archive does not declare is a client inventing a path.
@@ -703,9 +635,7 @@ export class ArchiveService {
       const declared = new Set(names);
       for (const wanted of only) {
         if (!declared.has(wanted)) {
-          throw new BadRequestException(
-            `That archive does not contain an entry named ${wanted}`,
-          );
+          throw new BadRequestException(`That archive does not contain an entry named ${wanted}`);
         }
       }
     }
@@ -718,7 +648,7 @@ export class ArchiveService {
     for (const name of names) {
       if (only && !only.has(name)) continue;
       const abs = absByName.get(name)!;
-      if (name.endsWith('/')) {
+      if (name.endsWith("/")) {
         await fs.mkdir(abs, { recursive: true });
         continue;
       }
@@ -752,13 +682,11 @@ export class ArchiveService {
         break;
       }
     }
-    if (eocd < 0) throw new BadRequestException('Not a valid zip archive');
+    if (eocd < 0) throw new BadRequestException("Not a valid zip archive");
 
     const totalEntries = view.getUint16(eocd + 10, true);
     if (totalEntries > MAX_ENTRIES()) {
-      throw new PayloadTooLargeException(
-        `Archive has too many entries (max ${MAX_ENTRIES()})`,
-      );
+      throw new PayloadTooLargeException(`Archive has too many entries (max ${MAX_ENTRIES()})`);
     }
     let cdOffset = view.getUint32(eocd + 16, true);
 
@@ -772,11 +700,8 @@ export class ArchiveService {
 
     let declaredTotal = 0;
     for (let n = 0; n < totalEntries; n++) {
-      if (
-        cdOffset + 46 > data.length ||
-        view.getUint32(cdOffset, true) !== CDH_SIG
-      ) {
-        throw new BadRequestException('Corrupt zip central directory');
+      if (cdOffset + 46 > data.length || view.getUint32(cdOffset, true) !== CDH_SIG) {
+        throw new BadRequestException("Corrupt zip central directory");
       }
       const uncompressed = view.getUint32(cdOffset + 24, true);
       const nameLen = view.getUint16(cdOffset + 28, true);
@@ -786,9 +711,7 @@ export class ArchiveService {
       const size = uncompressed === 0xffffffff ? Infinity : uncompressed;
       declaredTotal += size;
       if (size >= entryCap || declaredTotal >= totalCap) {
-        throw new PayloadTooLargeException(
-          `Archive uncompresses past the size cap (max ${totalCap} bytes)`,
-        );
+        throw new PayloadTooLargeException(`Archive uncompresses past the size cap (max ${totalCap} bytes)`);
       }
       cdOffset += 46 + nameLen + extraLen + commentLen;
     }
@@ -814,7 +737,7 @@ export class ArchiveService {
     only?: Set<string>,
   ): Promise<ExtractResult> {
     const tmpVirtual = join(
-      dirname(destVirtual) || '.',
+      dirname(destVirtual) || ".",
       `.archive-tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     );
     const staged = await this.stageTarExtraction({
@@ -865,24 +788,22 @@ export class ArchiveService {
     const { root, destVirtual, tmpVirtual, archiveAbs, flavour, only } = opts;
     const flag = this.tarFlag(flavour);
     const listArgs = [`-t${flag}f`, archiveAbs];
-    const { stdout } = await execFileAsync('tar', listArgs, {
+    const { stdout } = await execFileAsync("tar", listArgs, {
       timeout: TAR_TIMEOUT_MS,
       env: childEnv(),
       maxBuffer: TAR_MAX_BUFFER,
     });
-    const members = stdout.split('\n').filter((l) => l.length > 0);
+    const members = stdout.split("\n").filter((l) => l.length > 0);
 
     if (members.length > MAX_ENTRIES()) {
-      throw new PayloadTooLargeException(
-        `Archive has too many entries (max ${MAX_ENTRIES()})`,
-      );
+      throw new PayloadTooLargeException(`Archive has too many entries (max ${MAX_ENTRIES()})`);
     }
 
     // (a) name-based jail check, before any extraction. EVERY declared member is
     // checked, not only the selected ones: tar is being handed the archive whole,
     // so a dangerous member elsewhere in it is still a reason to refuse the file.
     for (const member of members) {
-      await this.resolveEntry(root, destVirtual, '', member);
+      await this.resolveEntry(root, destVirtual, "", member);
     }
     if (only) {
       // A selected name that the archive does not declare is a client inventing a
@@ -890,9 +811,7 @@ export class ArchiveService {
       const declared = new Set(members);
       for (const wanted of only) {
         if (!declared.has(wanted)) {
-          throw new BadRequestException(
-            `That archive does not contain an entry named ${wanted}`,
-          );
+          throw new BadRequestException(`That archive does not contain an entry named ${wanted}`);
         }
       }
     }
@@ -910,21 +829,18 @@ export class ArchiveService {
       const extractArgs = [
         `-x${flag}f`,
         archiveAbs,
-        '-C',
+        "-C",
         stagingAbs,
-        '--no-same-owner',
-        ...(only ? ['--', ...members.filter((m) => only.has(m))] : []),
+        "--no-same-owner",
+        ...(only ? ["--", ...members.filter((m) => only.has(m))] : []),
       ];
-      await execFileAsync('tar', extractArgs, {
+      await execFileAsync("tar", extractArgs, {
         timeout: TAR_TIMEOUT_MS,
         env: childEnv(),
       });
 
       // (c) walk the extracted tree; reject symlink-escapes + enforce byte cap.
-      const totalBytes = await this.verifyExtractedTree(
-        stagingAbs,
-        opts.maxTotalBytes,
-      );
+      const totalBytes = await this.verifyExtractedTree(stagingAbs, opts.maxTotalBytes);
       return { stagingAbs, members, totalBytes };
     } catch (err) {
       await fs.rm(stagingAbs, { recursive: true, force: true });
@@ -937,10 +853,7 @@ export class ArchiveService {
    * symlink whose realpath escapes `rootAbs`, and enforces the total-bytes cap
    * against the real on-disk sizes. Returns the total bytes.
    */
-  private async verifyExtractedTree(
-    rootAbs: string,
-    maxTotalBytes = MAX_TOTAL_BYTES(),
-  ): Promise<number> {
+  private async verifyExtractedTree(rootAbs: string, maxTotalBytes = MAX_TOTAL_BYTES()): Promise<number> {
     const realRoot = await fs.realpath(rootAbs);
     let total = 0;
     let count = 0;
@@ -949,9 +862,7 @@ export class ArchiveService {
       for (const d of dirents) {
         const abs = join(absDir, d.name);
         if (++count > MAX_ENTRIES()) {
-          throw new PayloadTooLargeException(
-            `Archive has too many entries (max ${MAX_ENTRIES()})`,
-          );
+          throw new PayloadTooLargeException(`Archive has too many entries (max ${MAX_ENTRIES()})`);
         }
         if (d.isSymbolicLink()) {
           // A symlink may not resolve anywhere outside the temp root.
@@ -962,17 +873,10 @@ export class ArchiveService {
             // Broken/dangling link — still verify its literal target can't climb
             // out lexically before rejecting outright.
             const target = await fs.readlink(abs);
-            throw new BadRequestException(
-              `Refusing symlink entry pointing outside the archive: ${target}`,
-            );
+            throw new BadRequestException(`Refusing symlink entry pointing outside the archive: ${target}`);
           }
-          if (
-            realTarget !== realRoot &&
-            !realTarget.startsWith(realRoot + sep)
-          ) {
-            throw new BadRequestException(
-              'Refusing symlink entry that escapes the extraction directory',
-            );
+          if (realTarget !== realRoot && !realTarget.startsWith(realRoot + sep)) {
+            throw new BadRequestException("Refusing symlink entry that escapes the extraction directory");
           }
           continue;
         }
@@ -986,14 +890,12 @@ export class ArchiveService {
           // `tar` binary is resolved from PATH — don't depend on its behaviour.
           if (st.nlink > 1) {
             throw new BadRequestException(
-              'Refusing hardlink entry in archive (shares an inode outside the extraction directory)',
+              "Refusing hardlink entry in archive (shares an inode outside the extraction directory)",
             );
           }
           total += st.size;
           if (total >= maxTotalBytes) {
-            throw new PayloadTooLargeException(
-              `Archive uncompresses past the size cap (max ${maxTotalBytes} bytes)`,
-            );
+            throw new PayloadTooLargeException(`Archive uncompresses past the size cap (max ${maxTotalBytes} bytes)`);
           }
         }
       }
@@ -1096,24 +998,17 @@ export class ArchiveService {
     const name = this.loneName(path);
     if (only && (only.size !== 1 || !only.has(name))) {
       const [wanted] = [...only].filter((n) => n !== name);
-      throw new BadRequestException(
-        `That archive does not contain an entry named ${wanted ?? name}`,
-      );
+      throw new BadRequestException(`That archive does not contain an entry named ${wanted ?? name}`);
     }
 
-    const parent = posix.dirname(path.replace(/\\/g, '/'));
-    const folderVirtual = dest ?? (parent === '.' ? '' : parent);
-    const { abs: folderAbs } = await this.files.resolveSafe(
-      root,
-      folderVirtual,
-    );
+    const parent = posix.dirname(path.replace(/\\/g, "/"));
+    const folderVirtual = dest ?? (parent === "." ? "" : parent);
+    const { abs: folderAbs } = await this.files.resolveSafe(root, folderVirtual);
     // The first folder this made, if any: taken back if the unpack fails.
-    const made = await fs
-      .mkdir(folderAbs, { recursive: true })
-      .catch(() => undefined);
+    const made = await fs.mkdir(folderAbs, { recursive: true }).catch(() => undefined);
     const folder = await fs.stat(folderAbs).catch(() => null);
     if (!folder?.isDirectory()) {
-      throw new BadRequestException(`Not a folder: ${folderVirtual || '/'}`);
+      throw new BadRequestException(`Not a folder: ${folderVirtual || "/"}`);
     }
     // Everything below happens in the folder's real path, checked again once
     // the file is in.
@@ -1126,34 +1021,28 @@ export class ArchiveService {
     let ok = false;
     let handle: fs.FileHandle | undefined;
     try {
-      const writer = await diskFull(() => fs.open(staged, 'wx'));
+      const writer = await diskFull(() => fs.open(staged, "wx"));
       const out = writer.createWriteStream();
       created = true;
       // A second descriptor on the same file, kept open: the re-check below
       // stats the file by it, whatever the folder's path reaches by then.
-      handle = await fs.open(staged, 'r');
+      handle = await fs.open(staged, "r");
 
-      const totalBytes = await this.decompressInto(archiveAbs, kind, out).catch(
-        (err: unknown) => {
-          // Closes the staging file when the stream never got going.
-          out.destroy();
-          throw err;
-        },
-      );
-      const placed = await diskFull(() =>
-        this.placeNumbered(staged, realFolder, name),
-      );
+      const totalBytes = await this.decompressInto(archiveAbs, kind, out).catch((err: unknown) => {
+        // Closes the staging file when the stream never got going.
+        out.destroy();
+        throw err;
+      });
+      const placed = await diskFull(() => this.placeNumbered(staged, realFolder, name));
       if ((await fs.realpath(realFolder).catch(() => null)) !== realFolder) {
         // Take back only the file this made (the staging file's inode), not
         // whatever the name now reaches.
         const ours = await handle.stat();
-        const there = await fs
-          .lstat(join(realFolder, placed))
-          .catch(() => null);
+        const there = await fs.lstat(join(realFolder, placed)).catch(() => null);
         if (there?.ino === ours.ino && there.dev === ours.dev) {
           await fs.rm(join(realFolder, placed), { force: true });
         }
-        throw new BadRequestException('The folder changed while extracting');
+        throw new BadRequestException("The folder changed while extracting");
       }
       ok = true;
       return {
@@ -1191,28 +1080,24 @@ export class ArchiveService {
    * included, where a rename would replace it; a file system without hard
    * links gets an exclusive copy instead. Returns the name it took.
    */
-  private async placeNumbered(
-    staged: string,
-    folder: string,
-    name: string,
-  ): Promise<string> {
+  private async placeNumbered(staged: string, folder: string, name: string): Promise<string> {
     for (let n = 1; n <= MAX_ENTRIES(); n++) {
       const candidate = numberedName(name, n);
       const target = join(folder, candidate);
       try {
         await fs.link(staged, target).catch((err: NodeJS.ErrnoException) => {
-          if (!NO_HARD_LINKS.has(err.code ?? '')) throw err;
+          if (!NO_HARD_LINKS.has(err.code ?? "")) throw err;
           return fs.copyFile(staged, target, fsConstants.COPYFILE_EXCL);
         });
         return candidate;
       } catch (err) {
         const code = (err as NodeJS.ErrnoException).code;
-        if (code === 'ENAMETOOLONG') {
+        if (code === "ENAMETOOLONG") {
           throw new BadRequestException(
             `The name ${candidate.slice(0, 60)}… is too long to number: rename the archive first`,
           );
         }
-        if (code !== 'EEXIST') throw err;
+        if (code !== "EEXIST") throw err;
       }
     }
     throw new ConflictException(`Too many files named like ${name} here`);
@@ -1222,9 +1107,7 @@ export class ArchiveService {
   private loneName(path: string): string {
     const name = loneOutputName(basename(path));
     if (!name) {
-      throw new BadRequestException(
-        `Can't name the file inside ${basename(path)}: rename it first`,
-      );
+      throw new BadRequestException(`Can't name the file inside ${basename(path)}: rename it first`);
     }
     return name;
   }
@@ -1238,22 +1121,14 @@ export class ArchiveService {
    * isn't applied: it bounds a pre-allocation driven by a zip header, which a
    * stream doesn't make, and honest xz and bzip2 files pass 2000:1.
    */
-  private async decompressInto(
-    archiveAbs: string,
-    kind: LoneFlavour,
-    sink: Writable,
-  ): Promise<number> {
+  private async decompressInto(archiveAbs: string, kind: LoneFlavour, sink: Writable): Promise<number> {
     const cap = Math.min(MAX_ENTRY_BYTES(), MAX_TOTAL_BYTES());
     let total = 0;
     const counter = new Transform({
       transform(chunk: Buffer, _enc, done) {
         total += chunk.length;
         if (total > cap) {
-          done(
-            new PayloadTooLargeException(
-              `Archive uncompresses past the size cap (max ${cap} bytes)`,
-            ),
-          );
+          done(new PayloadTooLargeException(`Archive uncompresses past the size cap (max ${cap} bytes)`));
         } else done(null, chunk);
       },
     });
@@ -1265,11 +1140,7 @@ export class ArchiveService {
    * The first `bytes` of the decompressed stream, or all of it when shorter.
    * Stops the decompressor once it has them.
    */
-  private async peekDecompressed(
-    archiveAbs: string,
-    kind: LoneFlavour,
-    bytes: number,
-  ): Promise<Buffer> {
+  private async peekDecompressed(archiveAbs: string, kind: LoneFlavour, bytes: number): Promise<Buffer> {
     const chunks: Buffer[] = [];
     let have = 0;
     const sink = new Writable({
@@ -1303,12 +1174,7 @@ export class ArchiveService {
    * left behind; a child that can't start is a 500 saying so, a non-zero exit
    * a 400 (the file is damaged), and the module's tar timeout bounds the lot.
    */
-  private async decompress(
-    archiveAbs: string,
-    kind: LoneFlavour,
-    through: Transform,
-    sink: Writable,
-  ): Promise<void> {
+  private async decompress(archiveAbs: string, kind: LoneFlavour, through: Transform, sink: Writable): Promise<void> {
     // At most a couple at once: each can hold a thread, a child and a file.
     await this.loneSlot.acquire();
     try {
@@ -1326,26 +1192,17 @@ export class ArchiveService {
   ): Promise<void> {
     const signal = AbortSignal.timeout(TAR_TIMEOUT_MS);
     const late = (): never => {
-      throw new RequestTimeoutException(
-        `Decompressing took too long (over ${TAR_TIMEOUT_MS / 1000} s)`,
-      );
+      throw new RequestTimeoutException(`Decompressing took too long (over ${TAR_TIMEOUT_MS / 1000} s)`);
     };
-    const damaged = () =>
-      new BadRequestException(`The ${kind} file is damaged or not ${kind}`);
+    const damaged = () => new BadRequestException(`The ${kind} file is damaged or not ${kind}`);
 
-    if (kind === 'gz') {
+    if (kind === "gz") {
       try {
-        await pipeline(
-          createReadStream(archiveAbs),
-          createGunzip(),
-          through,
-          sink,
-          { signal },
-        );
+        await pipeline(createReadStream(archiveAbs), createGunzip(), through, sink, { signal });
       } catch (err) {
         if (signal.aborted) late();
         if (err instanceof HttpException || err instanceof PeekDone) throw err;
-        if (String((err as NodeJS.ErrnoException).code).startsWith('Z_')) {
+        if (String((err as NodeJS.ErrnoException).code).startsWith("Z_")) {
           throw damaged();
         }
         throw err;
@@ -1354,7 +1211,7 @@ export class ArchiveService {
     }
 
     const command = this.decompressorCommand(kind);
-    const input = await fs.open(archiveAbs, 'r');
+    const input = await fs.open(archiveAbs, "r");
     let child: ChildProcess;
     // Listened for before anything awaits: a child that can't start says so
     // on the next tick, and an 'error' nobody hears would crash the process.
@@ -1362,29 +1219,25 @@ export class ArchiveService {
     let exited: Promise<number | null>;
     try {
       child = spawn(command, [], {
-        stdio: [input.fd, 'pipe', 'pipe'],
+        stdio: [input.fd, "pipe", "pipe"],
         env: childEnv(),
       });
-      child.on('error', (err) => {
+      child.on("error", (err) => {
         startError = err;
       });
-      exited = new Promise<number | null>((resolve) =>
-        child.on('close', (code) => resolve(code)),
-      );
+      exited = new Promise<number | null>((resolve) => child.on("close", (code) => resolve(code)));
     } finally {
       // The child has its own copy of the descriptor by now.
       await input.close();
     }
     child.stderr!.resume();
     const unavailable = () =>
-      new InternalServerErrorException(
-        `Can't unpack ${kind} files here: ${command} is not available`,
-      );
+      new InternalServerErrorException(`Can't unpack ${kind} files here: ${command} is not available`);
 
     try {
       await pipeline(child.stdout!, through, sink, { signal });
     } catch (err) {
-      child.kill('SIGKILL');
+      child.kill("SIGKILL");
       await exited;
       if (startError) throw unavailable();
       if (signal.aborted) late();
@@ -1396,24 +1249,24 @@ export class ArchiveService {
   }
 
   /** The program that decompresses `kind` to stdout. A seam for the tests. */
-  protected decompressorCommand(kind: Exclude<LoneFlavour, 'gz'>): string {
-    return kind === 'xz' ? 'xzcat' : 'bzcat';
+  protected decompressorCommand(kind: Exclude<LoneFlavour, "gz">): string {
+    return kind === "xz" ? "xzcat" : "bzcat";
   }
 
   /** Which compressor wrote this file, from its first bytes; null for none. */
   private async sniffCompression(abs: string): Promise<LoneFlavour | null> {
-    const fh = await fs.open(abs, 'r');
+    const fh = await fs.open(abs, "r");
     const head = Buffer.alloc(6);
     try {
       await fh.read(head, 0, 6, 0);
     } finally {
       await fh.close();
     }
-    if (head[0] === 0x1f && head[1] === 0x8b) return 'gz';
+    if (head[0] === 0x1f && head[1] === 0x8b) return "gz";
     if (head.equals(Buffer.from([0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00]))) {
-      return 'xz';
+      return "xz";
     }
-    if (head.subarray(0, 3).toString('latin1') === 'BZh') return 'bz2';
+    if (head.subarray(0, 3).toString("latin1") === "BZh") return "bz2";
     return null;
   }
 
@@ -1432,13 +1285,8 @@ export class ArchiveService {
    * creatable format is another combination to keep tested for no user gain.
    * Extraction, where the user has no choice about the format, supports all four.
    */
-  async compress(
-    root: string,
-    paths: string[],
-    dest: string,
-    format: ArchiveFormat,
-  ): Promise<CompressResult> {
-    const { rootDir } = await this.files.resolveSafe(root, '');
+  async compress(root: string, paths: string[], dest: string, format: ArchiveFormat): Promise<CompressResult> {
+    const { rootDir } = await this.files.resolveSafe(root, "");
     const { abs: destAbs } = await this.files.resolveSafe(root, dest);
 
     // Resolve + existence-check every source through the jail.
@@ -1453,16 +1301,13 @@ export class ArchiveService {
 
     await fs.mkdir(dirname(destAbs), { recursive: true });
 
-    if (format === 'zip') {
+    if (format === "zip") {
       return this.compressZip(sources, destAbs);
     }
     return this.compressTarGz(rootDir, sources, destAbs);
   }
 
-  private async compressZip(
-    sources: { abs: string; rel: string }[],
-    destAbs: string,
-  ): Promise<CompressResult> {
+  private async compressZip(sources: { abs: string; rel: string }[], destAbs: string): Promise<CompressResult> {
     const tree: AsyncZippable = {};
     let bytes = 0;
     let entries = 0;
@@ -1472,14 +1317,10 @@ export class ArchiveService {
       bytes += st.size;
       entries++;
       if (entries > MAX_ENTRIES()) {
-        throw new PayloadTooLargeException(
-          `Too many files to compress (max ${MAX_ENTRIES()})`,
-        );
+        throw new PayloadTooLargeException(`Too many files to compress (max ${MAX_ENTRIES()})`);
       }
       if (bytes > MAX_TOTAL_BYTES()) {
-        throw new PayloadTooLargeException(
-          `Selection is too large to compress (max ${MAX_TOTAL_BYTES()} bytes)`,
-        );
+        throw new PayloadTooLargeException(`Selection is too large to compress (max ${MAX_TOTAL_BYTES()} bytes)`);
       }
       const buf = await fs.readFile(abs);
       tree[name] = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -1524,18 +1365,17 @@ export class ArchiveService {
   ): Promise<CompressResult> {
     // Relative member names, packed with cwd = the jail root. No shell.
     const rels = sources.map((s) => s.rel);
-    await execFileAsync(
-      'tar',
-      ['-czf', destAbs, '-C', rootDir, '--no-same-owner', ...rels],
-      { timeout: TAR_TIMEOUT_MS, env: childEnv() },
-    );
+    await execFileAsync("tar", ["-czf", destAbs, "-C", rootDir, "--no-same-owner", ...rels], {
+      timeout: TAR_TIMEOUT_MS,
+      env: childEnv(),
+    });
     // Count members for the response (list back the built archive).
-    const { stdout } = await execFileAsync('tar', ['-tzf', destAbs], {
+    const { stdout } = await execFileAsync("tar", ["-tzf", destAbs], {
       timeout: TAR_TIMEOUT_MS,
       env: childEnv(),
       maxBuffer: TAR_MAX_BUFFER,
     });
-    const members = stdout.split('\n').filter((l) => l && !l.endsWith('/'));
+    const members = stdout.split("\n").filter((l) => l && !l.endsWith("/"));
     const st = await fs.stat(destAbs);
     return { dest: basename(destAbs), entries: members.length, bytes: st.size };
   }
@@ -1548,20 +1388,15 @@ export class ArchiveService {
    * name to the destination and runs it through `resolveSafe`, which enforces
    * the lexical + realpath containment jail. Returns the safe absolute path.
    */
-  private async resolveEntry(
-    root: string,
-    destVirtual: string,
-    _destAbs: string,
-    entryName: string,
-  ): Promise<string> {
-    const name = entryName.replace(/\/+$/, ''); // tolerate dir trailing slash
+  private async resolveEntry(root: string, destVirtual: string, _destAbs: string, entryName: string): Promise<string> {
+    const name = entryName.replace(/\/+$/, ""); // tolerate dir trailing slash
     if (name.length === 0) {
       // Root entry ('./' or '/') — maps to the dest itself.
       const { abs } = await this.files.resolveSafe(root, destVirtual);
       return abs;
     }
-    if (name.includes('\0')) {
-      throw new BadRequestException('Invalid entry name (NUL byte)');
+    if (name.includes("\0")) {
+      throw new BadRequestException("Invalid entry name (NUL byte)");
     }
     // Reject absolute + drive-letter + UNC style names outright.
     if (/^([/\\]|[a-zA-Z]:)/.test(name)) {
@@ -1569,10 +1404,8 @@ export class ArchiveService {
     }
     // Reject any `..` path segment (forward or back slash).
     const segs = name.split(/[/\\]+/);
-    if (segs.some((s) => s === '..')) {
-      throw new BadRequestException(
-        `Refusing archive entry that escapes the destination: ${name}`,
-      );
+    if (segs.some((s) => s === "..")) {
+      throw new BadRequestException(`Refusing archive entry that escapes the destination: ${name}`);
     }
     const virtual = posix.join(destVirtual, ...segs);
     const { abs } = await this.files.resolveSafe(root, virtual);
@@ -1613,42 +1446,33 @@ export class ArchiveService {
    * anything else is one compressed file ({@link extractLone}). The zip and
    * tar suffixes above are taken as they always were.
    */
-  private async detectFormat(
-    path: string,
-    archiveAbs: string,
-  ): Promise<TarFlavour | 'zip' | LoneFlavour> {
+  private async detectFormat(path: string, archiveAbs: string): Promise<TarFlavour | "zip" | LoneFlavour> {
     const bySuffix = this.formatBySuffix(path);
     if (bySuffix) return bySuffix;
     if (!LONE_SUFFIX.test(path)) {
       throw new BadRequestException(
-        'Unsupported archive format (expected .zip, .tar, .tar.gz, .tgz, .tar.bz2, .tar.xz, .gz, .xz or .bz2)',
+        "Unsupported archive format (expected .zip, .tar, .tar.gz, .tgz, .tar.bz2, .tar.xz, .gz, .xz or .bz2)",
       );
     }
     const kind = await this.sniffCompression(archiveAbs);
     if (!kind) {
-      throw new BadRequestException(
-        `${basename(path)} is not a gzip, xz or bzip2 file`,
-      );
+      throw new BadRequestException(`${basename(path)} is not a gzip, xz or bzip2 file`);
     }
     const head = await this.peekDecompressed(archiveAbs, kind, 512);
-    const tar = head.subarray(257, 262).toString('latin1') === 'ustar';
+    const tar = head.subarray(257, 262).toString("latin1") === "ustar";
     return tar ? TAR_OF[kind] : kind;
   }
 
   /** The zip and tar formats, by name alone; null for any other name. */
-  private formatBySuffix(path: string): TarFlavour | 'zip' | null {
+  private formatBySuffix(path: string): TarFlavour | "zip" | null {
     const lower = path.toLowerCase();
-    if (lower.endsWith('.zip')) return 'zip';
-    if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) return 'targz';
-    if (
-      lower.endsWith('.tar.bz2') ||
-      lower.endsWith('.tbz2') ||
-      lower.endsWith('.tbz')
-    ) {
-      return 'tarbz2';
+    if (lower.endsWith(".zip")) return "zip";
+    if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz")) return "targz";
+    if (lower.endsWith(".tar.bz2") || lower.endsWith(".tbz2") || lower.endsWith(".tbz")) {
+      return "tarbz2";
     }
-    if (lower.endsWith('.tar.xz') || lower.endsWith('.txz')) return 'tarxz';
-    if (lower.endsWith('.tar')) return 'tar';
+    if (lower.endsWith(".tar.xz") || lower.endsWith(".txz")) return "tarxz";
+    if (lower.endsWith(".tar")) return "tar";
     return null;
   }
 
@@ -1662,21 +1486,21 @@ export class ArchiveService {
    */
   private tarFlag(flavour: TarFlavour): string {
     switch (flavour) {
-      case 'targz':
-        return 'z';
-      case 'tarbz2':
-        return 'j';
-      case 'tarxz':
-        return 'J';
+      case "targz":
+        return "z";
+      case "tarbz2":
+        return "j";
+      case "tarxz":
+        return "J";
       default:
-        return '';
+        return "";
     }
   }
 
   private deriveDest(path: string): string {
     const dir = dirname(path);
     const base = deriveName(basename(path));
-    return dir === '.' ? base : posix.join(dir, base);
+    return dir === "." ? base : posix.join(dir, base);
   }
 
   private async statFile(abs: string): Promise<Stats> {
@@ -1684,14 +1508,14 @@ export class ArchiveService {
     try {
       stat = await fs.stat(abs);
     } catch {
-      throw new NotFoundException('Archive not found');
+      throw new NotFoundException("Archive not found");
     }
     if (stat.isDirectory()) {
-      throw new BadRequestException('Path is a directory, not an archive');
+      throw new BadRequestException("Path is a directory, not an archive");
     }
     // A FIFO or a device would block a thread when read.
     if (!stat.isFile()) {
-      throw new BadRequestException('Path is not a regular file');
+      throw new BadRequestException("Path is not a regular file");
     }
     return stat;
   }

@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from "express";
 
 /**
  * Content-Security-Policy for the served desktop. Hand-rolled (no helmet) and
@@ -57,7 +57,7 @@ function policy(browserProxyOrigin: string | null): string {
     // The Browser app frames its proxy origin, that one origin and
     // no other. Without it, frames stay at default-src 'self'.
     ...(browserProxyOrigin ? [`frame-src 'self' ${browserProxyOrigin}`] : []),
-  ].join('; ');
+  ].join("; ");
 }
 
 /**
@@ -74,8 +74,7 @@ function policy(browserProxyOrigin: string | null): string {
  * Frames the desktop serves send `require-corp` whatever this says (see
  * {@link FRAME_EMBEDDER_POLICY}).
  */
-export const EMBEDDER_POLICY: 'require-corp' | 'credentialless' =
-  'require-corp';
+export const EMBEDDER_POLICY: "require-corp" | "credentialless" = "require-corp";
 
 /**
  * What a document the desktop frames sends: its Browser's proxy origin. A
@@ -84,7 +83,7 @@ export const EMBEDDER_POLICY: 'require-corp' | 'credentialless' =
  * {@link EMBEDDER_POLICY} by every browser, where a `credentialless` frame
  * would be refused by Safari.
  */
-export const FRAME_EMBEDDER_POLICY = 'require-corp';
+export const FRAME_EMBEDDER_POLICY = "require-corp";
 
 /**
  * The two headers that make the desktop cross-origin isolated
@@ -95,8 +94,8 @@ export const FRAME_EMBEDDER_POLICY = 'require-corp';
  * desktop's page in development.
  */
 export const ISOLATION_HEADERS = {
-  'Cross-Origin-Opener-Policy': 'same-origin',
-  'Cross-Origin-Embedder-Policy': EMBEDDER_POLICY,
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Embedder-Policy": EMBEDDER_POLICY,
 } as const;
 
 /**
@@ -109,15 +108,11 @@ export const ISOLATION_HEADERS = {
  */
 export function securityHeadersFor(browserProxyOrigin: string | null) {
   const csp = policy(browserProxyOrigin);
-  return function securityHeaders(
-    _req: Request,
-    res: Response,
-    next: NextFunction,
-  ): void {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', csp);
+  return function securityHeaders(_req: Request, res: Response, next: NextFunction): void {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    res.setHeader("Content-Security-Policy", csp);
     for (const [name, value] of Object.entries(ISOLATION_HEADERS)) {
       res.setHeader(name, value);
     }

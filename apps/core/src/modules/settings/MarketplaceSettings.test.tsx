@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
-import { act } from 'react'
-import { createRoot, type Root } from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { get, post, del } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), del: vi.fn() }))
-vi.mock('../../lib/axios', () => ({ api: { get, post, delete: del } }))
+const { get, post, del } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), del: vi.fn() }));
+vi.mock("../../lib/axios", () => ({ api: { get, post, delete: del } }));
 
-import { syncMarketplaceApps, type MarketplaceApp } from '../../shared/registry/marketplace'
-import { MarketplaceSettings } from './MarketplaceSettings'
-import type { Inspection } from './urlApps'
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+import { syncMarketplaceApps, type MarketplaceApp } from "../../shared/registry/marketplace";
+import { MarketplaceSettings } from "./MarketplaceSettings";
+import type { Inspection } from "./urlApps";
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /**
  * "Check for update" on an app installed from a URL and trusted by the owner. The stored
@@ -19,558 +19,531 @@ import type { Inspection } from './urlApps'
  * different app altogether, which must not be offered as this row's update.
  */
 
-const OLD = 'a'.repeat(40)
-const NEW = 'b'.repeat(40)
-const ID = 'x-0123456789ab'
-const MOVED =
-  'This URL now points to a different app. Install it from the field above if you want it.'
+const OLD = "a".repeat(40);
+const NEW = "b".repeat(40);
+const ID = "x-0123456789ab";
+const MOVED = "This URL now points to a different app. Install it from the field above if you want it.";
 
 function urlApp(): MarketplaceApp {
   return {
     id: ID,
     descriptorId: ID,
-    descriptorName: 'Hollow',
-    name: 'Hollow',
-    description: 'A small town sim.',
+    descriptorName: "Hollow",
+    name: "Hollow",
+    description: "A small town sim.",
     meta: [],
-    type: 'static',
-    icon: 'gamepad-2',
+    type: "static",
+    icon: "gamepad-2",
     window: { defaultSize: { w: 960, h: 640 }, minSize: { w: 640, h: 400 } },
-    capabilities: ['notify'],
+    capabilities: ["notify"],
     multiInstance: false,
     opens: [],
     minSystemVersion: 2,
     ref: OLD,
-    runtime: 'native',
+    runtime: "native",
     source: {
-      url: 'https://github.com/o/r/tree/main/sub',
-      repo: 'https://github.com/o/r',
-      ref: 'main',
+      url: "https://github.com/o/r/tree/main/sub",
+      repo: "https://github.com/o/r",
+      ref: "main",
       commit: OLD,
-      subdir: 'sub',
+      subdir: "sub",
     },
-    trust: { by: 'owner', at: 1, verified: false },
+    trust: { by: "owner", at: 1, verified: false },
     installed: {
       ref: OLD,
-      buildId: 'b1',
+      buildId: "b1",
       installedAt: 0,
       entryPath: `marketplace/apps/${ID}/b/b1/hollow.mjs`,
       missing: false,
     },
     job: null,
-    server: { state: 'stopped' },
-  }
+    server: { state: "stopped" },
+  };
 }
 
 function inspection(over: Partial<Inspection> = {}): Inspection {
   return {
-    pending: 'p2',
+    pending: "p2",
     id: ID,
-    runtime: 'native',
+    runtime: "native",
     verified: false,
     manifest: {
-      name: 'Hollow',
-      description: 'A small town sim.',
+      name: "Hollow",
+      description: "A small town sim.",
       meta: [],
-      icon: 'gamepad-2',
-      capabilities: ['notify'],
+      icon: "gamepad-2",
+      capabilities: ["notify"],
     },
     source: { ...urlApp().source!, commit: NEW },
     current: { commit: OLD },
     ...over,
-  }
+  };
 }
 
-let container: HTMLDivElement
-let root: Root
+let container: HTMLDivElement;
+let root: Root;
 
 beforeEach(() => {
-  vi.clearAllMocks()
-  get.mockResolvedValue({ data: { apps: [urlApp()], problems: [] } })
-  del.mockResolvedValue({})
-  container = document.createElement('div')
-  document.body.appendChild(container)
-  root = createRoot(container)
-})
+  vi.clearAllMocks();
+  get.mockResolvedValue({ data: { apps: [urlApp()], problems: [] } });
+  del.mockResolvedValue({});
+  container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+});
 
 afterEach(() => {
-  act(() => root.unmount())
-  container.remove()
-  syncMarketplaceApps([])
-})
+  act(() => root.unmount());
+  container.remove();
+  syncMarketplaceApps([]);
+});
 
 async function render(focusRow: { id: string; n: number } | null = null) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   await act(async () => {
     root.render(
       <QueryClientProvider client={client}>
         <MarketplaceSettings focusRow={focusRow} />
-      </QueryClientProvider>
-    )
-  })
+      </QueryClientProvider>,
+    );
+  });
   await act(async () => {
-    await new Promise((r) => setTimeout(r, 0))
-  })
-  expect(container.textContent).toContain('Hollow')
+    await new Promise((r) => setTimeout(r, 0));
+  });
+  expect(container.textContent).toContain("Hollow");
 }
 
 const button = (label: string) =>
-  [...container.querySelectorAll('button')].find((b) => b.textContent === label) as
-    | HTMLButtonElement
-    | undefined
+  [...container.querySelectorAll("button")].find((b) => b.textContent === label) as HTMLButtonElement | undefined;
 
 async function checkForUpdate() {
-  await act(async () => button('Check for update')!.click())
+  await act(async () => button("Check for update")!.click());
   await act(async () => {
-    await new Promise((r) => setTimeout(r, 0))
-  })
+    await new Promise((r) => setTimeout(r, 0));
+  });
 }
 
-describe('MarketplaceSettings: Check for update on a URL app', () => {
-  it('re-inspects the stored URL and offers a new commit of the same app', async () => {
-    post.mockResolvedValueOnce({ data: inspection() })
-    await render()
-    await checkForUpdate()
-    expect(post).toHaveBeenCalledWith('/marketplace/url/inspect', {
-      url: 'https://github.com/o/r/tree/main/sub',
-    })
-    expect(container.textContent).toContain("This app isn't verified")
-    await act(async () => button('More info')!.click())
-    expect(container.textContent).toContain(`Installed at ${OLD.slice(0, 7)}. This replaces it.`)
-    expect(button('Trust and install')).toBeDefined()
-    expect(del).not.toHaveBeenCalled()
-  })
+describe("MarketplaceSettings: Check for update on a URL app", () => {
+  it("re-inspects the stored URL and offers a new commit of the same app", async () => {
+    post.mockResolvedValueOnce({ data: inspection() });
+    await render();
+    await checkForUpdate();
+    expect(post).toHaveBeenCalledWith("/marketplace/url/inspect", {
+      url: "https://github.com/o/r/tree/main/sub",
+    });
+    expect(container.textContent).toContain("This app isn't verified");
+    await act(async () => button("More info")!.click());
+    expect(container.textContent).toContain(`Installed at ${OLD.slice(0, 7)}. This replaces it.`);
+    expect(button("Trust and install")).toBeDefined();
+    expect(del).not.toHaveBeenCalled();
+  });
 
-  it('says up to date at the same commit, and drops the inspection', async () => {
-    post.mockResolvedValueOnce({ data: inspection({ source: urlApp().source! }) })
-    await render()
-    await checkForUpdate()
-    expect(container.textContent).toContain('Up to date.')
-    expect(container.textContent).not.toContain("This app isn't verified")
-    expect(del).toHaveBeenCalledWith('/marketplace/url/pending/p2')
-  })
+  it("says up to date at the same commit, and drops the inspection", async () => {
+    post.mockResolvedValueOnce({ data: inspection({ source: urlApp().source! }) });
+    await render();
+    await checkForUpdate();
+    expect(container.textContent).toContain("Up to date.");
+    expect(container.textContent).not.toContain("This app isn't verified");
+    expect(del).toHaveBeenCalledWith("/marketplace/url/pending/p2");
+  });
 
-  it('refuses to offer a different app as this one’s update', async () => {
+  it("refuses to offer a different app as this one’s update", async () => {
     post.mockResolvedValueOnce({
       data: inspection({
-        id: 'x-ffffffffffff',
-        manifest: { ...inspection().manifest, name: 'Something Else' },
+        id: "x-ffffffffffff",
+        manifest: { ...inspection().manifest, name: "Something Else" },
         current: null,
       }),
-    })
-    await render()
-    await checkForUpdate()
-    expect(del).toHaveBeenCalledWith('/marketplace/url/pending/p2')
-    expect(container.textContent).toContain(MOVED)
-    expect(container.textContent).not.toContain("This app isn't verified")
-    expect(container.textContent).not.toContain('Something Else')
-    expect(button('More info')).toBeUndefined()
+    });
+    await render();
+    await checkForUpdate();
+    expect(del).toHaveBeenCalledWith("/marketplace/url/pending/p2");
+    expect(container.textContent).toContain(MOVED);
+    expect(container.textContent).not.toContain("This app isn't verified");
+    expect(container.textContent).not.toContain("Something Else");
+    expect(button("More info")).toBeUndefined();
 
     // A later check that finds the app again clears the message.
-    post.mockResolvedValueOnce({ data: inspection({ pending: 'p3', source: urlApp().source! }) })
-    await checkForUpdate()
-    expect(container.textContent).not.toContain(MOVED)
-    expect(container.textContent).toContain('Up to date.')
-  })
-})
+    post.mockResolvedValueOnce({ data: inspection({ pending: "p3", source: urlApp().source! }) });
+    await checkForUpdate();
+    expect(container.textContent).not.toContain(MOVED);
+    expect(container.textContent).toContain("Up to date.");
+  });
+});
 
-describe('MarketplaceSettings: an app from a URL built from source', () => {
-  const nativeApp = (
-    by: 'verified' | 'owner',
-    over: Partial<MarketplaceApp> = {},
-    verified = by === 'verified'
-  ) => ({
+describe("MarketplaceSettings: an app from a URL built from source", () => {
+  const nativeApp = (by: "verified" | "owner", over: Partial<MarketplaceApp> = {}, verified = by === "verified") => ({
     ...urlApp(),
     trust: { by, at: 1, verified },
     ...over,
-  })
+  });
 
-  it('shows its source and a Verified badge, and updates as the verified list moves', async () => {
-    get.mockResolvedValue({ data: { apps: [nativeApp('verified', { ref: NEW })], problems: [] } })
-    post.mockResolvedValue({})
-    await render()
-    const text = container.textContent!
-    expect(text).toContain('From a URL')
-    expect(text).toContain('Verified')
-    expect(text).toContain('github.com/o/r · main · aaaaaaa · in sub')
-    expect(text).toContain('An update is available')
-    expect(button('Check for update')).toBeUndefined()
-    await act(async () => button('Update')!.click())
-    expect(post).toHaveBeenCalledWith(`/marketplace/apps/${ID}/install`)
-  })
+  it("shows its source and a Verified badge, and updates as the verified list moves", async () => {
+    get.mockResolvedValue({ data: { apps: [nativeApp("verified", { ref: NEW })], problems: [] } });
+    post.mockResolvedValue({});
+    await render();
+    const text = container.textContent!;
+    expect(text).toContain("From a URL");
+    expect(text).toContain("Verified");
+    expect(text).toContain("github.com/o/r · main · aaaaaaa · in sub");
+    expect(text).toContain("An update is available");
+    expect(button("Check for update")).toBeUndefined();
+    await act(async () => button("Update")!.click());
+    expect(post).toHaveBeenCalledWith(`/marketplace/apps/${ID}/install`);
+  });
 
-  it('stops calling it Verified once the verified list no longer names its commit', async () => {
+  it("stops calling it Verified once the verified list no longer names its commit", async () => {
     get.mockResolvedValue({
-      data: { apps: [nativeApp('verified', {}, false)], problems: [] },
-    })
-    await render()
-    expect(container.textContent).toContain('No longer verified')
-    const badges = [...container.querySelectorAll('span')].map((el) => el.textContent)
-    expect(badges).not.toContain('Verified')
-    expect(button('Check for update')).toBeDefined()
-  })
+      data: { apps: [nativeApp("verified", {}, false)], problems: [] },
+    });
+    await render();
+    expect(container.textContent).toContain("No longer verified");
+    const badges = [...container.querySelectorAll("span")].map((el) => el.textContent);
+    expect(badges).not.toContain("Verified");
+    expect(button("Check for update")).toBeDefined();
+  });
 
   it('says "Trusted by you", and checks for a new commit, which asks for trust again', async () => {
-    get.mockResolvedValue({ data: { apps: [nativeApp('owner')], problems: [] } })
-    post.mockResolvedValueOnce({ data: inspection() })
-    await render()
-    expect(container.textContent).toContain('Trusted by you')
-    expect(button('Update')).toBeUndefined()
-    await checkForUpdate()
-    expect(container.textContent).toContain("This app isn't verified")
-    expect(button('More info')).toBeDefined()
-  })
-})
+    get.mockResolvedValue({ data: { apps: [nativeApp("owner")], problems: [] } });
+    post.mockResolvedValueOnce({ data: inspection() });
+    await render();
+    expect(container.textContent).toContain("Trusted by you");
+    expect(button("Update")).toBeUndefined();
+    await checkForUpdate();
+    expect(container.textContent).toContain("This app isn't verified");
+    expect(button("More info")).toBeDefined();
+  });
+});
 
-describe('MarketplaceSettings: problems', () => {
-  it('offers Uninstall for an installed app whose record is damaged, apart from catalog problems', async () => {
+describe("MarketplaceSettings: problems", () => {
+  it("offers Uninstall for an installed app whose record is damaged, apart from catalog problems", async () => {
     get.mockResolvedValue({
       data: {
         apps: [urlApp()],
         problems: [
-          { file: 'broken.json', problem: 'not JSON' },
+          { file: "broken.json", problem: "not JSON" },
           {
-            file: 'x-dead00000000',
-            problem: 'installed from a URL, but its stored manifest is damaged: uninstall it',
-            appId: 'x-dead00000000',
+            file: "x-dead00000000",
+            problem: "installed from a URL, but its stored manifest is damaged: uninstall it",
+            appId: "x-dead00000000",
           },
         ],
       },
-    })
-    await render()
-    expect(container.textContent).toContain('Installed apps that could not be read')
-    expect(container.textContent).toContain('Catalog entries that could not be read')
-    expect(container.textContent).toContain('broken.json')
+    });
+    await render();
+    expect(container.textContent).toContain("Installed apps that could not be read");
+    expect(container.textContent).toContain("Catalog entries that could not be read");
+    expect(container.textContent).toContain("broken.json");
 
-    const uninstalls = () =>
-      [...container.querySelectorAll('button')].filter((b) => b.textContent === 'Uninstall')
+    const uninstalls = () => [...container.querySelectorAll("button")].filter((b) => b.textContent === "Uninstall");
     // One for the URL app's row, one for the damaged record.
-    expect(uninstalls()).toHaveLength(2)
-    await act(async () => uninstalls()[1].click())
-    const confirmButton = [...document.querySelectorAll('button')]
-      .filter((b) => b.textContent === 'Uninstall')
-      .find((b) => !container.contains(b) || b.closest('[role="dialog"], [role="alertdialog"]'))
-    expect(confirmButton).toBeDefined()
-    await act(async () => confirmButton!.click())
+    expect(uninstalls()).toHaveLength(2);
+    await act(async () => uninstalls()[1].click());
+    const confirmButton = [...document.querySelectorAll("button")]
+      .filter((b) => b.textContent === "Uninstall")
+      .find((b) => !container.contains(b) || b.closest('[role="dialog"], [role="alertdialog"]'));
+    expect(confirmButton).toBeDefined();
+    await act(async () => confirmButton!.click());
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 0))
-    })
-    expect(del).toHaveBeenCalledWith('/marketplace/apps/x-dead00000000')
-  })
-})
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(del).toHaveBeenCalledWith("/marketplace/apps/x-dead00000000");
+  });
+});
 
-describe('MarketplaceSettings: a prebuilt app from a URL left from before', () => {
+describe("MarketplaceSettings: a prebuilt app from a URL left from before", () => {
   const retired = {
-    file: 'x-01d000000000',
-    problem: 'Old is a prebuilt app from a URL, which this OS no longer supports: uninstall it',
-    appId: 'x-01d000000000',
-    retired: { name: 'Old Hollow', source: urlApp().source! },
-  }
+    file: "x-01d000000000",
+    problem: "Old is a prebuilt app from a URL, which this OS no longer supports: uninstall it",
+    appId: "x-01d000000000",
+    retired: { name: "Old Hollow", source: urlApp().source! },
+  };
 
-  it('lists as no longer supported, with its source and Uninstall, and no Open', async () => {
-    get.mockResolvedValue({ data: { apps: [urlApp()], problems: [retired] } })
-    await render()
-    const row = container.querySelector('[data-descriptor-id="x-01d000000000"]')!
-    expect(row.textContent).toContain('Old Hollow')
-    expect(row.textContent).toContain('No longer supported')
-    expect(row.textContent).toContain('github.com/o/r · main · aaaaaaa · in sub')
-    expect([...row.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Uninstall'])
+  it("lists as no longer supported, with its source and Uninstall, and no Open", async () => {
+    get.mockResolvedValue({ data: { apps: [urlApp()], problems: [retired] } });
+    await render();
+    const row = container.querySelector('[data-descriptor-id="x-01d000000000"]')!;
+    expect(row.textContent).toContain("Old Hollow");
+    expect(row.textContent).toContain("No longer supported");
+    expect(row.textContent).toContain("github.com/o/r · main · aaaaaaa · in sub");
+    expect([...row.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Uninstall"]);
     // Not among the records that could not be read.
-    expect(container.textContent).not.toContain('Installed apps that could not be read')
-  })
+    expect(container.textContent).not.toContain("Installed apps that could not be read");
+  });
 
-  it('names it by what the listing has when its source no longer reads', async () => {
+  it("names it by what the listing has when its source no longer reads", async () => {
     get.mockResolvedValue({
       data: {
         apps: [urlApp()],
-        problems: [{ ...retired, retired: { name: 'x-01d000000000', source: null } }],
+        problems: [{ ...retired, retired: { name: "x-01d000000000", source: null } }],
       },
-    })
-    await render()
-    const row = container.querySelector('[data-descriptor-id="x-01d000000000"]')!
-    expect(row.textContent).toContain('x-01d000000000')
-    expect(row.textContent).not.toContain('github.com')
-  })
+    });
+    await render();
+    const row = container.querySelector('[data-descriptor-id="x-01d000000000"]')!;
+    expect(row.textContent).toContain("x-01d000000000");
+    expect(row.textContent).not.toContain("github.com");
+  });
 
-  it('uninstalls it, with its data when the box is ticked', async () => {
-    get.mockResolvedValue({ data: { apps: [urlApp()], problems: [retired] } })
-    await render()
-    const row = container.querySelector('[data-descriptor-id="x-01d000000000"]')!
-    await act(async () => row.querySelector('button')!.click())
-    expect(document.body.textContent).toContain('This OS no longer runs prebuilt apps from a URL.')
+  it("uninstalls it, with its data when the box is ticked", async () => {
+    get.mockResolvedValue({ data: { apps: [urlApp()], problems: [retired] } });
+    await render();
+    const row = container.querySelector('[data-descriptor-id="x-01d000000000"]')!;
+    await act(async () => row.querySelector("button")!.click());
+    expect(document.body.textContent).toContain("This OS no longer runs prebuilt apps from a URL.");
     const box = document.querySelector(
-      '[role="dialog"] [role="checkbox"], [role="alertdialog"] [role="checkbox"]'
-    ) as HTMLElement
-    await act(async () => box.click())
-    const confirmButton = [...document.querySelectorAll('button')]
-      .filter((b) => b.textContent === 'Uninstall')
-      .find((b) => b.closest('[role="dialog"], [role="alertdialog"]'))
-    await act(async () => confirmButton!.click())
+      '[role="dialog"] [role="checkbox"], [role="alertdialog"] [role="checkbox"]',
+    ) as HTMLElement;
+    await act(async () => box.click());
+    const confirmButton = [...document.querySelectorAll("button")]
+      .filter((b) => b.textContent === "Uninstall")
+      .find((b) => b.closest('[role="dialog"], [role="alertdialog"]'));
+    await act(async () => confirmButton!.click());
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 0))
-    })
-    expect(del).toHaveBeenCalledWith('/marketplace/apps/x-01d000000000?removeData=1')
-  })
-})
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(del).toHaveBeenCalledWith("/marketplace/apps/x-01d000000000?removeData=1");
+  });
+});
 
 /** An app of the two-app suite `office`. */
-function officeApp(
-  id: string,
-  name: string,
-  installed: boolean,
-  extra: Partial<MarketplaceApp> = {}
-): MarketplaceApp {
+function officeApp(id: string, name: string, installed: boolean, extra: Partial<MarketplaceApp> = {}): MarketplaceApp {
   return {
     ...urlApp(),
     id,
-    descriptorId: 'office',
-    descriptorName: 'Office',
+    descriptorId: "office",
+    descriptorName: "Office",
     name,
     description: `${name}, from the suite.`,
-    icon: 'file-text',
-    runtime: 'native',
+    icon: "file-text",
+    runtime: "native",
     source: undefined,
     ref: OLD,
     installed: installed
       ? {
           ref: OLD,
-          buildId: 'b1',
+          buildId: "b1",
           installedAt: 0,
           entryPath: `marketplace/apps/office/b/b1/${id}/app.mjs`,
           missing: false,
         }
       : null,
     ...extra,
-  }
+  };
 }
 
-describe('MarketplaceSettings: a descriptor with several apps', () => {
+describe("MarketplaceSettings: a descriptor with several apps", () => {
   const suite = (installed: boolean) => [
-    officeApp('office-docs', 'Docs', installed, { multiInstance: true }),
-    officeApp('office-sheets', 'Sheets', installed),
-  ]
+    officeApp("office-docs", "Docs", installed, { multiInstance: true }),
+    officeApp("office-sheets", "Sheets", installed),
+  ];
 
   async function renderSuite(apps: MarketplaceApp[]) {
-    get.mockResolvedValue({ data: { apps, problems: [] } })
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    get.mockResolvedValue({ data: { apps, problems: [] } });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     await act(async () => {
       root.render(
         <QueryClientProvider client={client}>
           <MarketplaceSettings />
-        </QueryClientProvider>
-      )
-    })
+        </QueryClientProvider>,
+      );
+    });
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 0))
-    })
+      await new Promise((r) => setTimeout(r, 0));
+    });
   }
 
-  const buttons = (label: string) =>
-    [...container.querySelectorAll('button')].filter((b) => b.textContent === label)
+  const buttons = (label: string) => [...container.querySelectorAll("button")].filter((b) => b.textContent === label);
 
-  it('shows the suite as one row, with its apps under its name', async () => {
-    await renderSuite(suite(true))
-    expect(container.textContent).toContain('Office')
-    expect(container.textContent).toContain('2 apps')
-    const list = container.querySelector('ul[aria-label="Office\'s apps"]')!
-    expect([...list.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
-      'DocsDocs, from the suite.Open',
-      'SheetsSheets, from the suite.Open',
-    ])
-    expect(buttons('Uninstall')).toHaveLength(1)
-    expect(buttons('Log')).toHaveLength(1)
-    expect(container.querySelector('button[aria-label="Open Docs"]')).not.toBeNull()
-    expect(container.querySelector('button[aria-label="Open Sheets"]')).not.toBeNull()
-  })
+  it("shows the suite as one row, with its apps under its name", async () => {
+    await renderSuite(suite(true));
+    expect(container.textContent).toContain("Office");
+    expect(container.textContent).toContain("2 apps");
+    const list = container.querySelector('ul[aria-label="Office\'s apps"]')!;
+    expect([...list.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
+      "DocsDocs, from the suite.Open",
+      "SheetsSheets, from the suite.Open",
+    ]);
+    expect(buttons("Uninstall")).toHaveLength(1);
+    expect(buttons("Log")).toHaveLength(1);
+    expect(container.querySelector('button[aria-label="Open Docs"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Open Sheets"]')).not.toBeNull();
+  });
 
-  it('installs the descriptor, once', async () => {
-    post.mockResolvedValue({ data: { state: 'queued' } })
-    await renderSuite(suite(false))
-    expect(buttons('Install')).toHaveLength(1)
-    expect(buttons('Open')).toHaveLength(0)
-    await act(async () => buttons('Install')[0].click())
-    expect(post).toHaveBeenCalledTimes(1)
-    expect(post).toHaveBeenCalledWith('/marketplace/apps/office/install')
-  })
+  it("installs the descriptor, once", async () => {
+    post.mockResolvedValue({ data: { state: "queued" } });
+    await renderSuite(suite(false));
+    expect(buttons("Install")).toHaveLength(1);
+    expect(buttons("Open")).toHaveLength(0);
+    await act(async () => buttons("Install")[0].click());
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(post).toHaveBeenCalledWith("/marketplace/apps/office/install");
+  });
 
   it("reads the descriptor's log", async () => {
-    await renderSuite(suite(true))
+    await renderSuite(suite(true));
     get.mockImplementation((url: string) =>
       Promise.resolve(
-        url === '/marketplace'
-          ? { data: { apps: suite(true), problems: [] } }
-          : { data: 'built 3 files' }
-      )
-    )
-    await act(async () => buttons('Log')[0].click())
-    expect(get).toHaveBeenCalledWith('/marketplace/apps/office/log', { responseType: 'text' })
-    expect(container.textContent).toContain('built 3 files')
-  })
+        url === "/marketplace" ? { data: { apps: suite(true), problems: [] } } : { data: "built 3 files" },
+      ),
+    );
+    await act(async () => buttons("Log")[0].click());
+    expect(get).toHaveBeenCalledWith("/marketplace/apps/office/log", { responseType: "text" });
+    expect(container.textContent).toContain("built 3 files");
+  });
 
   it("uninstalls the descriptor and closes every one of its apps' windows", async () => {
-    await renderSuite(suite(true))
-    const { useWindowStore } = await import('../../shared/store/windowStore')
-    const before = useWindowStore.getState()
-    const closed: string[] = []
+    await renderSuite(suite(true));
+    const { useWindowStore } = await import("../../shared/store/windowStore");
+    const before = useWindowStore.getState();
+    const closed: string[] = [];
     useWindowStore.setState({
       windows: [
-        { id: 'w1', appId: 'office-docs' },
-        { id: 'w2', appId: 'office-docs' },
-        { id: 'w3', appId: 'office-sheets' },
-        { id: 'w4', appId: 'notepad' },
+        { id: "w1", appId: "office-docs" },
+        { id: "w2", appId: "office-docs" },
+        { id: "w3", appId: "office-sheets" },
+        { id: "w4", appId: "notepad" },
       ] as never,
       closeWindow: (id: string) => closed.push(id),
-    })
-    await act(async () => buttons('Uninstall')[0].click())
-    expect(document.body.textContent).toContain('Its apps (Docs, Sheets) go with it')
-    const confirmButton = [...document.querySelectorAll('button')]
-      .filter((b) => b.textContent === 'Uninstall')
-      .find((b) => b.closest('[role="dialog"], [role="alertdialog"]'))
-    await act(async () => confirmButton!.click())
+    });
+    await act(async () => buttons("Uninstall")[0].click());
+    expect(document.body.textContent).toContain("Its apps (Docs, Sheets) go with it");
+    const confirmButton = [...document.querySelectorAll("button")]
+      .filter((b) => b.textContent === "Uninstall")
+      .find((b) => b.closest('[role="dialog"], [role="alertdialog"]'));
+    await act(async () => confirmButton!.click());
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 0))
-    })
-    expect(del).toHaveBeenCalledWith('/marketplace/apps/office')
-    expect(closed).toEqual(['w1', 'w2', 'w3'])
-    useWindowStore.setState({ windows: before.windows, closeWindow: before.closeWindow })
-  })
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(del).toHaveBeenCalledWith("/marketplace/apps/office");
+    expect(closed).toEqual(["w1", "w2", "w3"]);
+    useWindowStore.setState({ windows: before.windows, closeWindow: before.closeWindow });
+  });
 
   it('uninstalling keeps the data unless "Also remove its data" is ticked', async () => {
-    await renderSuite(suite(true))
+    await renderSuite(suite(true));
     const dialogButton = (label: string) =>
-      [...document.querySelectorAll('button')]
+      [...document.querySelectorAll("button")]
         .filter((b) => b.textContent === label)
-        .find((b) => b.closest('[role="dialog"], [role="alertdialog"]'))
+        .find((b) => b.closest('[role="dialog"], [role="alertdialog"]'));
     const settle = () =>
       act(async () => {
-        await new Promise((r) => setTimeout(r, 0))
-      })
+        await new Promise((r) => setTimeout(r, 0));
+      });
 
-    await act(async () => buttons('Uninstall')[0].click())
-    expect(document.body.textContent).toContain('Their settings and data stay for a reinstall')
-    expect(document.body.textContent).toContain('Also remove its data')
-    await act(async () => dialogButton('Uninstall')!.click())
-    await settle()
-    expect(del).toHaveBeenLastCalledWith('/marketplace/apps/office')
+    await act(async () => buttons("Uninstall")[0].click());
+    expect(document.body.textContent).toContain("Their settings and data stay for a reinstall");
+    expect(document.body.textContent).toContain("Also remove its data");
+    await act(async () => dialogButton("Uninstall")!.click());
+    await settle();
+    expect(del).toHaveBeenLastCalledWith("/marketplace/apps/office");
 
-    await act(async () => buttons('Uninstall')[0].click())
-    const box = document.querySelector<HTMLElement>('[role="dialog"] [role="checkbox"]')
-    expect(box).not.toBeNull()
-    expect(box!.getAttribute('aria-checked')).toBe('false')
-    await act(async () => box!.click())
-    await act(async () => dialogButton('Uninstall')!.click())
-    await settle()
-    expect(del).toHaveBeenLastCalledWith('/marketplace/apps/office?removeData=1')
+    await act(async () => buttons("Uninstall")[0].click());
+    const box = document.querySelector<HTMLElement>('[role="dialog"] [role="checkbox"]');
+    expect(box).not.toBeNull();
+    expect(box!.getAttribute("aria-checked")).toBe("false");
+    await act(async () => box!.click());
+    await act(async () => dialogButton("Uninstall")!.click());
+    await settle();
+    expect(del).toHaveBeenLastCalledWith("/marketplace/apps/office?removeData=1");
 
     // A new prompt starts unticked.
-    await act(async () => buttons('Uninstall')[0].click())
-    expect(
-      document.querySelector('[role="dialog"] [role="checkbox"]')!.getAttribute('aria-checked')
-    ).toBe('false')
-    await act(async () => dialogButton('Uninstall')!.click())
-    await settle()
-    expect(del).toHaveBeenLastCalledWith('/marketplace/apps/office')
-  })
+    await act(async () => buttons("Uninstall")[0].click());
+    expect(document.querySelector('[role="dialog"] [role="checkbox"]')!.getAttribute("aria-checked")).toBe("false");
+    await act(async () => dialogButton("Uninstall")!.click());
+    await settle();
+    expect(del).toHaveBeenLastCalledWith("/marketplace/apps/office");
+  });
 
-  it('says a kit suite built for another shared kit needs an update', async () => {
+  it("says a kit suite built for another shared kit needs an update", async () => {
     await renderSuite([
-      officeApp('office-docs', 'Docs', true, { sharedKit: 99 }),
-      officeApp('office-sheets', 'Sheets', true, { sharedKit: 99 }),
-    ])
-    expect(container.textContent).toContain(
-      'Needs an update: built for shared kit 99, this desktop has 1'
-    )
-    act(() => root.unmount())
-    root = createRoot(container)
-    await renderSuite(suite(true).map((a) => ({ ...a, sharedKit: 1 })))
-    expect(container.textContent).not.toContain('Needs an update')
-    expect(container.textContent).toContain('Installed · aaaaaaa')
-  })
+      officeApp("office-docs", "Docs", true, { sharedKit: 99 }),
+      officeApp("office-sheets", "Sheets", true, { sharedKit: 99 }),
+    ]);
+    expect(container.textContent).toContain("Needs an update: built for shared kit 99, this desktop has 1");
+    act(() => root.unmount());
+    root = createRoot(container);
+    await renderSuite(suite(true).map((a) => ({ ...a, sharedKit: 1 })));
+    expect(container.textContent).not.toContain("Needs an update");
+    expect(container.textContent).toContain("Installed · aaaaaaa");
+  });
 
-  it('offers Rebuild at the same ref when the catalog now names this desktop’s kit', async () => {
-    post.mockResolvedValue({ data: { state: 'queued' } })
+  it("offers Rebuild at the same ref when the catalog now names this desktop’s kit", async () => {
+    post.mockResolvedValue({ data: { state: "queued" } });
     await renderSuite([
-      officeApp('office-docs', 'Docs', true, { sharedKit: 99, catalogSharedKit: 1 }),
-      officeApp('office-sheets', 'Sheets', true, { sharedKit: 99, catalogSharedKit: 1 }),
-    ])
-    expect(container.textContent).toContain(
-      'Built for shared kit 99; a rebuild for kit 1 is available'
-    )
-    expect(container.textContent).not.toContain('Needs an update')
-    expect(buttons('Rebuild')).toHaveLength(1)
-    expect(buttons('Update')).toHaveLength(0)
-    expect(buttons('Reinstall')).toHaveLength(0)
-    await act(async () => buttons('Rebuild')[0].click())
-    expect(post).toHaveBeenCalledExactlyOnceWith('/marketplace/apps/office/install')
-  })
+      officeApp("office-docs", "Docs", true, { sharedKit: 99, catalogSharedKit: 1 }),
+      officeApp("office-sheets", "Sheets", true, { sharedKit: 99, catalogSharedKit: 1 }),
+    ]);
+    expect(container.textContent).toContain("Built for shared kit 99; a rebuild for kit 1 is available");
+    expect(container.textContent).not.toContain("Needs an update");
+    expect(buttons("Rebuild")).toHaveLength(1);
+    expect(buttons("Update")).toHaveLength(0);
+    expect(buttons("Reinstall")).toHaveLength(0);
+    await act(async () => buttons("Rebuild")[0].click());
+    expect(post).toHaveBeenCalledExactlyOnceWith("/marketplace/apps/office/install");
+  });
 
-  it('keeps the mismatch text and offers nothing when the catalog names another kit too', async () => {
+  it("keeps the mismatch text and offers nothing when the catalog names another kit too", async () => {
     for (const catalogSharedKit of [99, undefined]) {
       // undefined: a backend from before the same-ref rebuild, which cannot say.
       await renderSuite([
-        officeApp('office-docs', 'Docs', true, { sharedKit: 99, catalogSharedKit }),
-        officeApp('office-sheets', 'Sheets', true, { sharedKit: 99, catalogSharedKit }),
-      ])
-      expect(container.textContent).toContain(
-        'Needs an update: built for shared kit 99, this desktop has 1'
-      )
-      for (const label of ['Rebuild', 'Update', 'Reinstall', 'Install']) {
-        expect(buttons(label)).toHaveLength(0)
+        officeApp("office-docs", "Docs", true, { sharedKit: 99, catalogSharedKit }),
+        officeApp("office-sheets", "Sheets", true, { sharedKit: 99, catalogSharedKit }),
+      ]);
+      expect(container.textContent).toContain("Needs an update: built for shared kit 99, this desktop has 1");
+      for (const label of ["Rebuild", "Update", "Reinstall", "Install"]) {
+        expect(buttons(label)).toHaveLength(0);
       }
-      act(() => root.unmount())
-      root = createRoot(container)
+      act(() => root.unmount());
+      root = createRoot(container);
     }
-  })
+  });
 
-  it('still says Update for a new ref and Reinstall for a missing build, not Rebuild', async () => {
-    const mismatched = { sharedKit: 99, catalogSharedKit: 1 }
+  it("still says Update for a new ref and Reinstall for a missing build, not Rebuild", async () => {
+    const mismatched = { sharedKit: 99, catalogSharedKit: 1 };
     await renderSuite([
-      officeApp('office-docs', 'Docs', true, { ...mismatched, ref: NEW }),
-      officeApp('office-sheets', 'Sheets', true, { ...mismatched, ref: NEW }),
-    ])
-    expect(buttons('Update')).toHaveLength(1)
-    expect(buttons('Rebuild')).toHaveLength(0)
-    act(() => root.unmount())
-    root = createRoot(container)
+      officeApp("office-docs", "Docs", true, { ...mismatched, ref: NEW }),
+      officeApp("office-sheets", "Sheets", true, { ...mismatched, ref: NEW }),
+    ]);
+    expect(buttons("Update")).toHaveLength(1);
+    expect(buttons("Rebuild")).toHaveLength(0);
+    act(() => root.unmount());
+    root = createRoot(container);
 
-    const gone = officeApp('office-docs', 'Docs', true, mismatched)
+    const gone = officeApp("office-docs", "Docs", true, mismatched);
     await renderSuite([
       { ...gone, installed: { ...gone.installed!, missing: true } },
-      officeApp('office-sheets', 'Sheets', true, mismatched),
-    ])
-    expect(buttons('Reinstall')).toHaveLength(1)
-    expect(buttons('Rebuild')).toHaveLength(0)
-  })
+      officeApp("office-sheets", "Sheets", true, mismatched),
+    ]);
+    expect(buttons("Reinstall")).toHaveLength(1);
+    expect(buttons("Rebuild")).toHaveLength(0);
+  });
 
-  it('says when a built-in app has one of its apps’ ids', async () => {
-    await renderSuite([
-      officeApp('settings', 'Settings', true),
-      officeApp('office-sheets', 'Sheets', true),
-    ])
+  it("says when a built-in app has one of its apps’ ids", async () => {
+    await renderSuite([officeApp("settings", "Settings", true), officeApp("office-sheets", "Sheets", true)]);
     expect(container.textContent).toContain(
-      'A built-in app already has the id settings, so the built-in opens instead.'
-    )
-    expect(container.querySelector('button[aria-label="Open Settings"]')).toBeNull()
-    expect(container.querySelector('button[aria-label="Open Sheets"]')).not.toBeNull()
-  })
-})
+      "A built-in app already has the id settings, so the built-in opens instead.",
+    );
+    expect(container.querySelector('button[aria-label="Open Settings"]')).toBeNull();
+    expect(container.querySelector('button[aria-label="Open Sheets"]')).not.toBeNull();
+  });
+});
 
-describe('MarketplaceSettings: scrolling to a row from an intent', () => {
-  const scroll = vi.fn()
+describe("MarketplaceSettings: scrolling to a row from an intent", () => {
+  const scroll = vi.fn();
   beforeEach(() => {
-    scroll.mockClear()
-    Element.prototype.scrollIntoView = scroll
-  })
+    scroll.mockClear();
+    Element.prototype.scrollIntoView = scroll;
+  });
 
-  it('scrolls to the row and highlights it', async () => {
-    await render({ id: ID, n: 1 })
-    expect(scroll).toHaveBeenCalledTimes(1)
-    expect(container.querySelector(`[data-descriptor-id="${ID}"]`)?.className).toContain('ring-2')
-  })
+  it("scrolls to the row and highlights it", async () => {
+    await render({ id: ID, n: 1 });
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(container.querySelector(`[data-descriptor-id="${ID}"]`)?.className).toContain("ring-2");
+  });
 
-  it('does nothing when the id is not in the catalog', async () => {
-    await render({ id: 'not-there', n: 1 })
-    expect(scroll).not.toHaveBeenCalled()
-    expect(container.querySelector('.ring-2')).toBeNull()
-  })
-})
+  it("does nothing when the id is not in the catalog", async () => {
+    await render({ id: "not-there", n: 1 });
+    expect(scroll).not.toHaveBeenCalled();
+    expect(container.querySelector(".ring-2")).toBeNull();
+  });
+});

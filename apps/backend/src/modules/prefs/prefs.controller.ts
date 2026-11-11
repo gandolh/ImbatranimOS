@@ -1,15 +1,6 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Put,
-} from '@nestjs/common';
-import { PrefsService } from './prefs.service';
-import { PutPrefsDto } from './dto/prefs.dto';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Put } from "@nestjs/common";
+import { PrefsService } from "./prefs.service";
+import { PutPrefsDto } from "./dto/prefs.dto";
 
 /**
  * The dotfile store.
@@ -19,7 +10,7 @@ import { PutPrefsDto } from './dto/prefs.dto';
  * used, and a route that lets an unauthenticated caller **write** them could
  * rearrange someone's desktop from across the internet.
  */
-@Controller('prefs')
+@Controller("prefs")
 export class PrefsController {
   constructor(private readonly prefs: PrefsService) {}
 
@@ -37,9 +28,9 @@ export class PrefsController {
   }
 
   /** DELETE /api/prefs/:key — reset one dotfile to its built-in default */
-  @Delete(':key')
+  @Delete(":key")
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('key') key: string) {
+  remove(@Param("key") key: string) {
     this.prefs.remove(key);
   }
 }

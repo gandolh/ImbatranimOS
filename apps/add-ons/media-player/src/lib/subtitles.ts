@@ -24,16 +24,16 @@
  * with dots (they exist) still works.
  */
 
-export type Cue = { start: number; end: number; text: string }
+export type Cue = { start: number; end: number; text: string };
 
 /** Extensions searched for beside a video, best first. */
-export const SUBTITLE_EXTENSIONS = ['vtt', 'srt'] as const
+export const SUBTITLE_EXTENSIONS = ["vtt", "srt"] as const;
 
 /** `path` without its extension, or the whole path when it has none. */
 export function stripExtension(path: string): string {
-  const at = path.lastIndexOf('.')
-  const slash = path.lastIndexOf('/')
-  return at > slash ? path.slice(0, at) : path
+  const at = path.lastIndexOf(".");
+  const slash = path.lastIndexOf("/");
+  return at > slash ? path.slice(0, at) : path;
 }
 
 /**
@@ -46,26 +46,24 @@ export function stripExtension(path: string): string {
  * guessing at those belongs to a feature this brief does not have.
  */
 export function findSubtitle(paths: string[], videoPath: string): string | null {
-  const base = stripExtension(videoPath)
+  const base = stripExtension(videoPath);
   for (const ext of SUBTITLE_EXTENSIONS) {
-    const match = paths.find(
-      (p) => stripExtension(p) === base && p.toLowerCase().endsWith(`.${ext}`)
-    )
-    if (match) return match
+    const match = paths.find((p) => stripExtension(p) === base && p.toLowerCase().endsWith(`.${ext}`));
+    if (match) return match;
   }
-  return null
+  return null;
 }
 
 /** `hh:mm:ss,mmm` / `mm:ss.mmm` → seconds, or null when it is not a timestamp. */
 export function parseTimestamp(raw: string): number | null {
-  const match = /^(?:(\d+):)?(\d{1,2}):(\d{1,2})(?:[.,](\d{1,3}))?$/.exec(raw.trim())
-  if (!match) return null
-  const [, h, m, s, ms] = match
-  const millis = ms ? Number(ms.padEnd(3, '0')) : 0
-  return Number(h ?? 0) * 3600 + Number(m) * 60 + Number(s) + millis / 1000
+  const match = /^(?:(\d+):)?(\d{1,2}):(\d{1,2})(?:[.,](\d{1,3}))?$/.exec(raw.trim());
+  if (!match) return null;
+  const [, h, m, s, ms] = match;
+  const millis = ms ? Number(ms.padEnd(3, "0")) : 0;
+  return Number(h ?? 0) * 3600 + Number(m) * 60 + Number(s) + millis / 1000;
 }
 
-const TIMING = /^(.+?)\s*-->\s*([^\s]+)(?:\s+(.*))?$/
+const TIMING = /^(.+?)\s*-->\s*([^\s]+)(?:\s+(.*))?$/;
 
 /**
  * Cues from a WebVTT or SubRip file, in file order.
@@ -76,27 +74,27 @@ const TIMING = /^(.+?)\s*-->\s*([^\s]+)(?:\s+(.*))?$/
  * ignored by construction, because only lines containing `-->` start a cue.
  */
 export function parseSubtitles(source: string): Cue[] {
-  const lines = source.replace(/\r\n?/g, '\n').split('\n')
-  const cues: Cue[] = []
+  const lines = source.replace(/\r\n?/g, "\n").split("\n");
+  const cues: Cue[] = [];
   for (let i = 0; i < lines.length; i++) {
-    const timing = TIMING.exec(lines[i])
-    if (!timing) continue
-    const start = parseTimestamp(timing[1])
-    const end = parseTimestamp(timing[2])
-    if (start === null || end === null || end <= start) continue
-    const text: string[] = []
+    const timing = TIMING.exec(lines[i]);
+    if (!timing) continue;
+    const start = parseTimestamp(timing[1]);
+    const end = parseTimestamp(timing[2]);
+    if (start === null || end === null || end <= start) continue;
+    const text: string[] = [];
     // Cue text runs to the next blank line — or to the next timing line, for files that
     // omit the blank separator.
     for (let j = i + 1; j < lines.length; j++) {
-      if (lines[j].trim() === '') break
-      if (TIMING.test(lines[j])) break
-      text.push(lines[j])
-      i = j
+      if (lines[j].trim() === "") break;
+      if (TIMING.test(lines[j])) break;
+      text.push(lines[j]);
+      i = j;
     }
-    if (text.length === 0) continue
-    cues.push({ start, end, text: text.join('\n') })
+    if (text.length === 0) continue;
+    cues.push({ start, end, text: text.join("\n") });
   }
-  return cues
+  return cues;
 }
 
 /**
@@ -108,5 +106,5 @@ export function parseSubtitles(source: string): Cue[] {
  * `{\an8}` in front of the line.
  */
 export function stripSsaOverrides(text: string): string {
-  return text.replace(/\{\\[^}]*\}/g, '').trim()
+  return text.replace(/\{\\[^}]*\}/g, "").trim();
 }

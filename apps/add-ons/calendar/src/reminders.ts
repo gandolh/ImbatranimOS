@@ -1,11 +1,11 @@
-import { useEffect } from 'react'
-import dayjs from 'dayjs'
-import { useSystem } from '@imbatranim/ui'
-import { expandOccurrences } from './recurrence'
-import { peekEvents } from './queries/calendarQueries'
+import { useEffect } from "react";
+import dayjs from "dayjs";
+import { useSystem } from "@imbatranim/ui";
+import { expandOccurrences } from "./recurrence";
+import { peekEvents } from "./queries/calendarQueries";
 
 /** How often the reminder check runs while the tab is open. */
-const CHECK_INTERVAL_MS = 60_000
+const CHECK_INTERVAL_MS = 60_000;
 
 /**
  * Window (after the trigger instant) during which a reminder may still fire.
@@ -13,14 +13,14 @@ const CHECK_INTERVAL_MS = 60_000
  * narrow enough that reopening the app long after a trigger has passed
  * (e.g. the tab was closed for days) doesn't dump a wave of stale toasts.
  */
-const FIRE_WINDOW_MS = 90_000
+const FIRE_WINDOW_MS = 90_000;
 
 /**
  * How far ahead to expand a recurring event when looking for a due reminder. A
  * reminder is at most four weeks before its event (the DTO's cap), so nothing
  * beyond this window can be due now.
  */
-const LOOKAHEAD_MS = 31 * 24 * 60 * 60 * 1000
+const LOOKAHEAD_MS = 31 * 24 * 60 * 60 * 1000;
 
 /**
  * Already-notified occurrences, as `eventId:YYYY-MM-DD`.
@@ -36,18 +36,18 @@ const LOOKAHEAD_MS = 31 * 24 * 60 * 60 * 1000
  * Module-level rather than per-hook, so it survives the window being closed and
  * reopened within the same page load.
  */
-const notified = new Set<string>()
+const notified = new Set<string>();
 
 /** Bounded so a long-lived session cannot grow it without limit. */
-const MAX_NOTIFIED = 500
+const MAX_NOTIFIED = 500;
 
 function remember(key: string): void {
   if (notified.size >= MAX_NOTIFIED) {
     // A Set iterates in insertion order, so this drops the oldest.
-    const oldest = notified.values().next().value
-    if (oldest !== undefined) notified.delete(oldest)
+    const oldest = notified.values().next().value;
+    if (oldest !== undefined) notified.delete(oldest);
   }
-  notified.add(key)
+  notified.add(key);
 }
 
 /**
@@ -61,40 +61,40 @@ function remember(key: string): void {
  * callback lives outside React's render cycle and must not re-subscribe every minute.
  */
 export function useCalendarReminders(): void {
-  const system = useSystem()
+  const system = useSystem();
   useEffect(() => {
     function check() {
-      const now = Date.now()
+      const now = Date.now();
       for (const event of peekEvents()) {
-        if (!event.reminderMinutes) continue
-        const offsetMs = event.reminderMinutes * 60_000
+        if (!event.reminderMinutes) continue;
+        const offsetMs = event.reminderMinutes * 60_000;
 
         for (const occurrence of expandOccurrences(event, now, now + LOOKAHEAD_MS)) {
-          const trigger = occurrence.start - offsetMs
-          if (now < trigger || now >= trigger + FIRE_WINDOW_MS) continue
+          const trigger = occurrence.start - offsetMs;
+          if (now < trigger || now >= trigger + FIRE_WINDOW_MS) continue;
 
-          const key = `${event.id}:${occurrence.occurrenceDate}`
-          if (notified.has(key)) continue
-          remember(key)
+          const key = `${event.id}:${occurrence.occurrenceDate}`;
+          if (notified.has(key)) continue;
+          remember(key);
           // Cross-tab dedupe: the trigger instant is derived from
           // stored fields, so every tab computes the same claim key and exactly
           // one of them toasts.
-          void system.schedule.claim('calendar', String(event.id), trigger).then((claimed) => {
-            if (!claimed) return
+          void system.schedule.claim("calendar", String(event.id), trigger).then((claimed) => {
+            if (!claimed) return;
             system.notify({
               title: event.title,
               body: event.allDay
-                ? `Today · ${dayjs(occurrence.start).format('MMM D')}`
-                : `Starting at ${dayjs(occurrence.start).format('HH:mm')}`,
-              level: 'info',
-            })
-          })
+                ? `Today · ${dayjs(occurrence.start).format("MMM D")}`
+                : `Starting at ${dayjs(occurrence.start).format("HH:mm")}`,
+              level: "info",
+            });
+          });
         }
       }
     }
 
-    check()
-    const id = setInterval(check, CHECK_INTERVAL_MS)
-    return () => clearInterval(id)
-  }, [system])
+    check();
+    const id = setInterval(check, CHECK_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [system]);
 }

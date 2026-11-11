@@ -14,59 +14,59 @@ import {
   Maximize2,
   Captions,
   CaptionsOff,
-} from 'lucide-react'
-import { Button, Tooltip, cn } from '@imbatranim/ui'
-import { formatTime } from '../lib/formatTime'
-import { Timebar } from './Timebar'
-import { SKIP_SECONDS, PLAYBACK_RATES } from '../lib/transport'
-import type { RepeatMode } from '../lib/queueOrder'
+} from "lucide-react";
+import { Button, Tooltip, cn } from "@imbatranim/ui";
+import { formatTime } from "../lib/formatTime";
+import { Timebar } from "./Timebar";
+import { SKIP_SECONDS, PLAYBACK_RATES } from "../lib/transport";
+import type { RepeatMode } from "../lib/queueOrder";
 
 type TransportBarProps = {
-  isPlaying: boolean
-  currentTime: number
-  duration: number
-  volume: number
-  muted: boolean
-  canPrev: boolean
-  canNext: boolean
-  disabled: boolean
-  onTogglePlay: () => void
-  onSeek: (time: number) => void
-  onVolumeChange: (volume: number) => void
-  onToggleMute: () => void
-  onPrev: () => void
-  onNext: () => void
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  volume: number;
+  muted: boolean;
+  canPrev: boolean;
+  canNext: boolean;
+  disabled: boolean;
+  onTogglePlay: () => void;
+  onSeek: (time: number) => void;
+  onVolumeChange: (volume: number) => void;
+  onToggleMute: () => void;
+  onPrev: () => void;
+  onNext: () => void;
   /** Buffered ranges as [start, end] pairs. */
-  buffered: [number, number][]
-  playbackRate: number
-  onRateChange: (rate: number) => void
+  buffered: [number, number][];
+  playbackRate: number;
+  onRateChange: (rate: number) => void;
   /** Relative skip in seconds; negative goes back. */
-  onSkip: (seconds: number) => void
-  repeat: RepeatMode
-  onCycleRepeat: () => void
-  shuffle: boolean
-  onToggleShuffle: () => void
+  onSkip: (seconds: number) => void;
+  repeat: RepeatMode;
+  onCycleRepeat: () => void;
+  shuffle: boolean;
+  onToggleShuffle: () => void;
   /** Only offered for video. */
-  onFullscreen: (() => void) | null
+  onFullscreen: (() => void) | null;
   /** `null` when the file has no sidecar subtitle. */
-  subtitlesOn: boolean | null
-  onToggleSubtitles: () => void
-}
+  subtitlesOn: boolean | null;
+  onToggleSubtitles: () => void;
+};
 
 // Native range inputs, stripped of the browser's default (rounded) chrome and
 // re-skinned flat/square to match the OS's Win7-classic, no-rounded-corners
 // look — using the token accent color rather than a hardcoded one.
 const RANGE_CLASSES =
-  'h-1 cursor-pointer appearance-none bg-surface-container-high accent-primary ' +
-  '[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-primary ' +
-  '[&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary ' +
-  'disabled:cursor-not-allowed disabled:opacity-50 ' +
-  'focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2'
+  "h-1 cursor-pointer appearance-none bg-surface-container-high accent-primary " +
+  "[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-primary " +
+  "[&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary " +
+  "disabled:cursor-not-allowed disabled:opacity-50 " +
+  "focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2";
 
 function VolumeIcon({ volume, muted }: { volume: number; muted: boolean }) {
-  if (muted || volume === 0) return <VolumeX size={14} />
-  if (volume < 0.5) return <Volume1 size={14} />
-  return <Volume2 size={14} />
+  if (muted || volume === 0) return <VolumeX size={14} />;
+  if (volume < 0.5) return <Volume1 size={14} />;
+  return <Volume2 size={14} />;
 }
 
 /** Custom transport bar over a native media element with `controls` off. */
@@ -139,14 +139,14 @@ export function TransportBar({
         >
           <RotateCcw size={13} />
         </Button>
-        <Tooltip content={isPlaying ? 'Pause' : 'Play'}>
+        <Tooltip content={isPlaying ? "Pause" : "Play"}>
           <Button
             variant="primary"
             size="sm"
             className="h-7 w-7 shrink-0 p-0"
             // Icon-only, so the tooltip is not enough: a tooltip is not an accessible name
             // and never reaches a screen reader.
-            aria-label={isPlaying ? 'Pause' : 'Play'}
+            aria-label={isPlaying ? "Pause" : "Play"}
             onClick={onTogglePlay}
             disabled={disabled}
           >
@@ -177,9 +177,9 @@ export function TransportBar({
           </Button>
         </Tooltip>
 
-        <Tooltip content={shuffle ? 'Shuffle is on' : 'Shuffle'}>
+        <Tooltip content={shuffle ? "Shuffle is on" : "Shuffle"}>
           <Button
-            variant={shuffle ? 'selected' : 'ghost'}
+            variant={shuffle ? "selected" : "ghost"}
             size="sm"
             className="ml-1 h-6 w-6 shrink-0 p-0"
             aria-label="Shuffle"
@@ -190,16 +190,10 @@ export function TransportBar({
           </Button>
         </Tooltip>
         <Tooltip
-          content={
-            repeat === 'off'
-              ? 'Repeat: off'
-              : repeat === 'all'
-                ? 'Repeat: whole queue'
-                : 'Repeat: this track'
-          }
+          content={repeat === "off" ? "Repeat: off" : repeat === "all" ? "Repeat: whole queue" : "Repeat: this track"}
         >
           <Button
-            variant={repeat === 'off' ? 'ghost' : 'selected'}
+            variant={repeat === "off" ? "ghost" : "selected"}
             size="sm"
             className="h-6 w-6 shrink-0 p-0"
             // Three states, so `aria-pressed` cannot carry it: the mode goes in the label
@@ -207,16 +201,16 @@ export function TransportBar({
             aria-label={`Repeat: ${repeat}`}
             onClick={onCycleRepeat}
           >
-            {repeat === 'one' ? <Repeat1 size={13} /> : <Repeat size={13} />}
+            {repeat === "one" ? <Repeat1 size={13} /> : <Repeat size={13} />}
           </Button>
         </Tooltip>
 
         <div className="flex-1" />
 
         {subtitlesOn !== null && (
-          <Tooltip content={subtitlesOn ? 'Hide subtitles' : 'Show subtitles'}>
+          <Tooltip content={subtitlesOn ? "Hide subtitles" : "Show subtitles"}>
             <Button
-              variant={subtitlesOn ? 'selected' : 'ghost'}
+              variant={subtitlesOn ? "selected" : "ghost"}
               size="sm"
               className="h-6 w-6 shrink-0 p-0"
               aria-label="Subtitles"
@@ -243,12 +237,12 @@ export function TransportBar({
           ))}
         </select>
 
-        <Tooltip content={muted ? 'Unmute' : 'Mute'}>
+        <Tooltip content={muted ? "Unmute" : "Mute"}>
           <Button
             variant="ghost"
             size="sm"
             className="h-6 w-6 shrink-0 p-0"
-            aria-label={muted ? 'Unmute' : 'Mute'}
+            aria-label={muted ? "Unmute" : "Mute"}
             aria-pressed={muted}
             onClick={onToggleMute}
             disabled={disabled}
@@ -259,7 +253,7 @@ export function TransportBar({
         <input
           type="range"
           aria-label="Volume"
-          className={cn(RANGE_CLASSES, 'w-16 flex-none')}
+          className={cn(RANGE_CLASSES, "w-16 flex-none")}
           min={0}
           max={1}
           step={0.01}
@@ -283,5 +277,5 @@ export function TransportBar({
         )}
       </div>
     </div>
-  )
+  );
 }

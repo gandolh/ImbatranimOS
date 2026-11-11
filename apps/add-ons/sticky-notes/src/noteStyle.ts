@@ -1,4 +1,4 @@
-import type { NoteColor } from './types'
+import type { NoteColor } from "./types";
 
 /**
  * How a note is painted.
@@ -28,41 +28,41 @@ import type { NoteColor } from './types'
 /** Border + fill per colour. Literal class strings — Tailwind cannot see
  *  constructed names, so an interpolated `border-${color}` would not exist. */
 const COLOR_CLASS: Record<NoteColor, string> = {
-  blue: 'border-sky-500/60 bg-sky-500/15',
-  green: 'border-emerald-500/60 bg-emerald-500/15',
-  amber: 'border-amber-500/60 bg-amber-500/15',
-  red: 'border-rose-500/60 bg-rose-500/15',
-  purple: 'border-violet-500/60 bg-violet-500/15',
-  slate: 'border-slate-400/60 bg-slate-400/15',
-}
+  blue: "border-sky-500/60 bg-sky-500/15",
+  green: "border-emerald-500/60 bg-emerald-500/15",
+  amber: "border-amber-500/60 bg-amber-500/15",
+  red: "border-rose-500/60 bg-rose-500/15",
+  purple: "border-violet-500/60 bg-violet-500/15",
+  slate: "border-slate-400/60 bg-slate-400/15",
+};
 
-const DEFAULT_CLASS = 'border-outline-variant bg-surface-container'
+const DEFAULT_CLASS = "border-outline-variant bg-surface-container";
 
 export function noteColorClass(color: NoteColor | null): string {
-  return color ? COLOR_CLASS[color] : DEFAULT_CLASS
+  return color ? COLOR_CLASS[color] : DEFAULT_CLASS;
 }
 
 /** Solid swatches for the picker, where the point IS to show the hue. */
 export const COLOR_SWATCH: Record<NoteColor, string> = {
-  blue: 'bg-sky-500',
-  green: 'bg-emerald-500',
-  amber: 'bg-amber-500',
-  red: 'bg-rose-500',
-  purple: 'bg-violet-500',
-  slate: 'bg-slate-400',
-}
+  blue: "bg-sky-500",
+  green: "bg-emerald-500",
+  amber: "bg-amber-500",
+  red: "bg-rose-500",
+  purple: "bg-violet-500",
+  slate: "bg-slate-400",
+};
 
-export const COLOR_OPTIONS: NoteColor[] = ['blue', 'green', 'amber', 'red', 'purple', 'slate']
+export const COLOR_OPTIONS: NoteColor[] = ["blue", "green", "amber", "red", "purple", "slate"];
 
 /** The first line of a note, for a row preview or a window title. */
 export function noteTitle(content: string): string {
-  const firstLine = content.split('\n').find((line) => line.trim() !== '')
-  return firstLine?.trim().slice(0, 60) ?? ''
+  const firstLine = content.split("\n").find((line) => line.trim() !== "");
+  return firstLine?.trim().slice(0, 60) ?? "";
 }
 
 /** What a row shows when the note has no text yet. */
-export const EMPTY_LABEL = '(empty note)'
+export const EMPTY_LABEL = "(empty note)";
 
 export function notePreview(content: string): string {
-  return noteTitle(content) || EMPTY_LABEL
+  return noteTitle(content) || EMPTY_LABEL;
 }

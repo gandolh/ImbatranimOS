@@ -14,19 +14,19 @@ import {
   UseFilters,
   UseInterceptors,
   BadRequestException,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import type { Request, Response } from 'express';
-import { basename } from 'path';
-import { tmpdir } from 'os';
-import { pipeline } from 'node:stream';
-import * as fs from 'fs/promises';
-import type { AppIdentity } from '../app-identity/app-identity.types';
-import { CallingApp } from '../app-identity/calling-app';
-import { FilesService } from './files.service';
-import { TrashService } from './trash.service';
-import { MulterExceptionFilter } from './multer-exception.filter';
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { diskStorage } from "multer";
+import type { Request, Response } from "express";
+import { basename } from "path";
+import { tmpdir } from "os";
+import { pipeline } from "node:stream";
+import * as fs from "fs/promises";
+import type { AppIdentity } from "../app-identity/app-identity.types";
+import { CallingApp } from "../app-identity/calling-app";
+import { FilesService } from "./files.service";
+import { TrashService } from "./trash.service";
+import { MulterExceptionFilter } from "./multer-exception.filter";
 import {
   WriteContentDto,
   CreateDirectoryDto,
@@ -35,14 +35,13 @@ import {
   ListQueryDto,
   RootPathQueryDto,
   SearchQueryDto,
-} from './dto/files.dto';
+} from "./dto/files.dto";
 
 /**
  * Upload size cap (bytes). Env-overridable; defaults to 100 MB. Uploads over
  * this are rejected by multer before they reach the service.
  */
-const MAX_UPLOAD_BYTES =
-  Number(process.env.FILES_MAX_UPLOAD_BYTES) || 100 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = Number(process.env.FILES_MAX_UPLOAD_BYTES) || 100 * 1024 * 1024;
 
 /**
  * The files API. Every route takes the calling app: none is the user (the
@@ -50,7 +49,7 @@ const MAX_UPLOAD_BYTES =
  * do what its own modes allow and what its window was given (a file opened
  * with it, or one picked in the OS's dialog). See `FileAccess`.
  */
-@Controller('files')
+@Controller("files")
 export class FilesController {
   constructor(
     private readonly filesService: FilesService,
@@ -60,14 +59,14 @@ export class FilesController {
   /** GET /api/files?root=&path=  → Entry[] */
   @Get()
   list(@CallingApp() who: AppIdentity | null, @Query() q: ListQueryDto) {
-    return this.filesService.list(q.root, q.path ?? '', who);
+    return this.filesService.list(q.root, q.path ?? "", who);
   }
 
   /**
    * GET /api/files/stat?root=&path= → Entry: one entry, for a file the caller
    * may read or a folder it may list.
    */
-  @Get('stat')
+  @Get("stat")
   stat(@CallingApp() who: AppIdentity | null, @Query() q: RootPathQueryDto) {
     return this.filesService.stat(q.root, q.path, who);
   }
@@ -84,12 +83,12 @@ export class FilesController {
    * Storage and (per the file manager explorer parity work) file-manager Properties: one implementation,
    * two consumers.
    */
-  @Get('size')
+  @Get("size")
   dirSize(@CallingApp() who: AppIdentity | null, @Query() q: RootPathQueryDto) {
     return this.filesService.dirSize(q.root, q.path, who);
   }
 
-  @Get('search')
+  @Get("search")
   search(@CallingApp() who: AppIdentity | null, @Query() q: SearchQueryDto) {
     return this.filesService.search(
       q.root,
@@ -104,7 +103,7 @@ export class FilesController {
   }
 
   /** GET /api/files/content?root=&path= → { path, content } (text) */
-  @Get('content')
+  @Get("content")
   content(@CallingApp() who: AppIdentity | null, @Query() q: RootPathQueryDto) {
     return this.filesService.readFile(q.root, q.path, who);
   }
@@ -117,63 +116,52 @@ export class FilesController {
    * whole file from byte 0 and can't jump to an unbuffered position. The Files
    * "Download" button issues a plain (range-less) GET and still gets a 200.
    */
-  @Get('download')
+  @Get("download")
   async download(
     @CallingApp() who: AppIdentity | null,
     @Query() q: RootPathQueryDto,
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const { abs, size, version } = await this.filesService.statFile(
-      q.root,
-      q.path,
-      who,
-    );
+    const { abs, size, version } = await this.filesService.statFile(q.root, q.path, who);
     // The token a save sends back as `expected`.
-    res.setHeader('X-File-Version', version);
+    res.setHeader("X-File-Version", version);
     const filename = basename(q.path);
     res.setHeader(
-      'Content-Disposition',
+      "Content-Disposition",
       `attachment; filename="${sanitizeHeaderFilename(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
     );
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Accept-Ranges", "bytes");
 
     const range = parseRangeHeader(req.headers.range, size);
-    if (range === 'unsatisfiable') {
-      res.setHeader('Content-Range', `bytes */${size}`);
+    if (range === "unsatisfiable") {
+      res.setHeader("Content-Range", `bytes */${size}`);
       res.status(416).end();
       return;
     }
     if (range) {
       res.status(206);
-      res.setHeader(
-        'Content-Range',
-        `bytes ${range.start}-${range.end}/${size}`,
-      );
-      res.setHeader('Content-Length', range.end - range.start + 1);
+      res.setHeader("Content-Range", `bytes ${range.start}-${range.end}/${size}`);
+      res.setHeader("Content-Length", range.end - range.start + 1);
       // stream.pipeline (not bare .pipe): a source 'error' with no listener
       // would otherwise throw and crash the process, and a client abort would
       // leak the file descriptor. pipeline destroys both ends on any error.
-      pipeline(
-        this.filesService.openRange(abs, range.start, range.end),
-        res,
-        noop,
-      );
+      pipeline(this.filesService.openRange(abs, range.start, range.end), res, noop);
       return;
     }
 
-    res.setHeader('Content-Length', size);
+    res.setHeader("Content-Length", size);
     // Open the whole file straight from the already-jailed absolute path — no
     // redundant re-resolve + re-stat — and pipe through stream.pipeline.
     pipeline(this.filesService.openFile(abs), res, noop);
   }
 
   /** POST /api/files/upload  multipart: root, path, file → Entry */
-  @Post('upload')
+  @Post("upload")
   @UseFilters(MulterExceptionFilter)
   @UseInterceptors(
-    FileInterceptor('file', {
+    FileInterceptor("file", {
       // Stream the upload straight to a temp file on disk instead of buffering
       // the whole thing in the heap; the service moves it into the jail.
       storage: diskStorage({ destination: tmpdir() }),
@@ -183,58 +171,40 @@ export class FilesController {
   async upload(
     @CallingApp() who: AppIdentity | null,
     @UploadedFile() file: { path: string; originalname: string },
-    @Body('root') root: string,
-    @Body('path') path: string,
-    @Body('expected') expected?: string,
+    @Body("root") root: string,
+    @Body("path") path: string,
+    @Body("expected") expected?: string,
   ) {
     if (!root || !file) {
       // The early throw skips uploadFile's finally cleanup, so multer's temp
       // file would be orphaned. Remove it here before rejecting.
       if (file) await fs.rm(file.path, { force: true });
-      throw new BadRequestException('root and file required');
+      throw new BadRequestException("root and file required");
     }
     const virtualPath = path || file.originalname;
-    return this.filesService.uploadFile(
-      root,
-      virtualPath,
-      file.path,
-      expected || undefined,
-      who,
-    );
+    return this.filesService.uploadFile(root, virtualPath, file.path, expected || undefined, who);
   }
 
   /** PUT /api/files/content  body: { root, path, content } → Entry */
-  @Put('content')
-  writeContent(
-    @CallingApp() who: AppIdentity | null,
-    @Body() dto: WriteContentDto,
-  ) {
-    return this.filesService.writeFile(
-      dto.root,
-      dto.path,
-      dto.content,
-      dto.expected,
-      who,
-    );
+  @Put("content")
+  writeContent(@CallingApp() who: AppIdentity | null, @Body() dto: WriteContentDto) {
+    return this.filesService.writeFile(dto.root, dto.path, dto.content, dto.expected, who);
   }
 
   /** POST /api/files/directory  body: { root, path } → Entry */
-  @Post('directory')
-  createDirectory(
-    @CallingApp() who: AppIdentity | null,
-    @Body() dto: CreateDirectoryDto,
-  ) {
+  @Post("directory")
+  createDirectory(@CallingApp() who: AppIdentity | null, @Body() dto: CreateDirectoryDto) {
     return this.filesService.createDirectory(dto.root, dto.path, who);
   }
 
   /** POST /api/files/move  body: { root, from, to } → Entry */
-  @Post('move')
+  @Post("move")
   move(@CallingApp() who: AppIdentity | null, @Body() dto: MoveDto) {
     return this.filesService.move(dto.root, dto.from, dto.to, who);
   }
 
   /** POST /api/files/copy  body: { root, from, to } → Entry */
-  @Post('copy')
+  @Post("copy")
   copy(@CallingApp() who: AppIdentity | null, @Body() dto: CopyDto) {
     return this.filesService.copy(dto.root, dto.from, dto.to, who);
   }
@@ -250,17 +220,11 @@ export class FilesController {
   async deleteItem(
     @CallingApp() who: AppIdentity | null,
     @Query() q: RootPathQueryDto,
-    @Query('trash') trash?: string,
+    @Query("trash") trash?: string,
   ) {
-    if (trash === '1' && q.root === 'home') {
+    if (trash === "1" && q.root === "home") {
       // Trashing is deleting, as far as who may: it leaves the folder.
-      const { key } = await this.filesService.check(
-        who,
-        'delete',
-        q.root,
-        q.path,
-        { follow: false },
-      );
+      const { key } = await this.filesService.check(who, "delete", q.root, q.path, { follow: false });
       await this.trashService.trash(q.path);
       this.filesService.forget(key);
       return;
@@ -287,7 +251,7 @@ function noop(): void {
 
 function sanitizeHeaderFilename(name: string): string {
   // eslint-disable-next-line no-control-regex
-  return name.replace(/["\\\x00-\x1f]/g, '_');
+  return name.replace(/["\\\x00-\x1f]/g, "_");
 }
 
 /**
@@ -301,25 +265,25 @@ function sanitizeHeaderFilename(name: string): string {
 function parseRangeHeader(
   header: string | undefined,
   size: number,
-): { start: number; end: number } | 'unsatisfiable' | null {
+): { start: number; end: number } | "unsatisfiable" | null {
   if (!header) return null;
   const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
   if (!match) return null;
   const [, startStr, endStr] = match;
-  if (startStr === '' && endStr === '') return null;
+  if (startStr === "" && endStr === "") return null;
 
   let start: number;
   let end: number;
-  if (startStr === '') {
+  if (startStr === "") {
     // Suffix form `bytes=-N`: the last N bytes.
     const suffix = Number(endStr);
-    if (suffix <= 0) return 'unsatisfiable';
+    if (suffix <= 0) return "unsatisfiable";
     start = Math.max(0, size - suffix);
     end = size - 1;
   } else {
     start = Number(startStr);
-    end = endStr === '' ? size - 1 : Math.min(Number(endStr), size - 1);
+    end = endStr === "" ? size - 1 : Math.min(Number(endStr), size - 1);
   }
-  if (start > end || start >= size || start < 0) return 'unsatisfiable';
+  if (start > end || start >= size || start < 0) return "unsatisfiable";
   return { start, end };
 }

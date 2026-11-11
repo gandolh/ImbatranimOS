@@ -1,11 +1,11 @@
-import { ConfigService } from '@nestjs/config';
-import Database from 'better-sqlite3';
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { DbService, LEDGER_VERSION } from './db.service';
-import { StorageHealthGuard } from './storage-health.guard';
-import type { Env } from '../config/env.schema';
+import { ConfigService } from "@nestjs/config";
+import Database from "better-sqlite3";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { DbService, LEDGER_VERSION } from "./db.service";
+import { StorageHealthGuard } from "./storage-health.guard";
+import type { Env } from "../config/env.schema";
 
 /**
  * The migration ledger.
@@ -18,7 +18,7 @@ import type { Env } from '../config/env.schema';
 
 function configFor(path: string): ConfigService<Env, true> {
   return {
-    get: (key: string) => (key === 'DB_PATH' ? path : undefined),
+    get: (key: string) => (key === "DB_PATH" ? path : undefined),
   } as unknown as ConfigService<Env, true>;
 }
 
@@ -32,9 +32,7 @@ function openService(path: string): DbService {
 function schemaDump(db: Database.Database): string {
   const tables = (
     db
-      .prepare(
-        `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
-      )
+      .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
       .all() as { name: string }[]
   ).map((t) => t.name);
   return tables
@@ -47,35 +45,33 @@ function schemaDump(db: Database.Database): string {
       )
         .map((c) => `${c.name}:${c.type}`)
         .sort()
-        .join(',');
+        .join(",");
       return `${name}(${cols})`;
     })
-    .join('\n');
+    .join("\n");
 }
 
-describe('DbService migration ledger', () => {
+describe("DbService migration ledger", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'imb-b110-'));
+    dir = mkdtempSync(join(tmpdir(), "imb-b110-"));
   });
 
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('a fresh database ends stamped at the newest version', () => {
-    const svc = openService(join(dir, 'fresh.sqlite'));
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
+  it("a fresh database ends stamped at the newest version", () => {
+    const svc = openService(join(dir, "fresh.sqlite"));
+    expect(Number(svc.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
     expect(svc.migrationFailure).toBeNull();
     svc.onModuleDestroy();
   });
 
-  it('an OLD-shape database migrates to exactly the fresh schema', () => {
+  it("an OLD-shape database migrates to exactly the fresh schema", () => {
     // Build a pre-brief-73/75/94 database by hand at version 0.
-    const oldPath = join(dir, 'old.sqlite');
+    const oldPath = join(dir, "old.sqlite");
     const raw = new Database(oldPath);
     raw.exec(`
       CREATE TABLE recent_files (
@@ -104,69 +100,59 @@ describe('DbService migration ledger', () => {
       );
     `);
     raw.prepare(`INSERT INTO todos (text) VALUES ('carried over')`).run();
-    expect(Number(raw.pragma('user_version', { simple: true }))).toBe(0);
+    expect(Number(raw.pragma("user_version", { simple: true }))).toBe(0);
     raw.close();
 
     const migrated = openService(oldPath);
-    const fresh = openService(join(dir, 'fresh.sqlite'));
+    const fresh = openService(join(dir, "fresh.sqlite"));
 
     expect(migrated.migrationFailure).toBeNull();
-    expect(Number(migrated.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
+    expect(Number(migrated.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
     // The whole point: a migrated database is indistinguishable from a fresh one.
     expect(schemaDump(migrated.db)).toBe(schemaDump(fresh.db));
     // …and the user's data came with it.
-    expect(migrated.db.prepare(`SELECT text FROM todos`).all()).toEqual([
-      { text: 'carried over' },
-    ]);
+    expect(migrated.db.prepare(`SELECT text FROM todos`).all()).toEqual([{ text: "carried over" }]);
     // The old-shape recent_files was dropped and rebuilt.
     const recentCols = (
       migrated.db.prepare(`PRAGMA table_info(recent_files)`).all() as {
         name: string;
       }[]
     ).map((c) => c.name);
-    expect(recentCols).toContain('root');
+    expect(recentCols).toContain("root");
 
     migrated.onModuleDestroy();
     fresh.onModuleDestroy();
   });
 
-  it('an already-migrated PRE-LEDGER database converts, then runs nothing', () => {
-    const path = join(dir, 'current.sqlite');
+  it("an already-migrated PRE-LEDGER database converts, then runs nothing", () => {
+    const path = join(dir, "current.sqlite");
     // Migrate once, then pretend it predates the ledger.
     const first = openService(path);
-    first.db.pragma('user_version = 0');
+    first.db.pragma("user_version = 0");
     const before = schemaDump(first.db);
 
     // The conversion re-attempts every historical step; the narrow
     // expected-skips are what make that safe.
     first.migrate();
     expect(first.migrationFailure).toBeNull();
-    expect(Number(first.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
+    expect(Number(first.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
     expect(schemaDump(first.db)).toBe(before);
 
     // A second run is a single PRAGMA read: nothing left above the stamp.
     first.migrate();
-    expect(Number(first.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
+    expect(Number(first.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
     first.onModuleDestroy();
   });
 
-  it('a REAL failure is recorded, does not stamp past the step, and 503s', () => {
-    const path = join(dir, 'broken.sqlite');
+  it("a REAL failure is recorded, does not stamp past the step, and 503s", () => {
+    const path = join(dir, "broken.sqlite");
     // A genuinely unexpected error, not an expected skip: an object of the
     // same name already exists, so the baseline CREATE cannot proceed. (File
     // permissions cannot simulate this — the container runs as root, which
     // ignores them.) The old bare `catch {}` would have swallowed exactly this
     // class of error and left the schema half-built.
     const raw = new Database(path);
-    raw.exec(
-      `CREATE TABLE t (a INTEGER); CREATE VIEW sticky_notes AS SELECT * FROM t`,
-    );
+    raw.exec(`CREATE TABLE t (a INTEGER); CREATE VIEW sticky_notes AS SELECT * FROM t`);
     raw.close();
 
     const svc = openService(path);
@@ -177,7 +163,7 @@ describe('DbService migration ledger', () => {
     expect(svc.migrationFailure).toMatch(/migration 2 \(sticky-note-columns\)/);
     expect(svc.migrationFailure).toMatch(/Cannot add a column to a view/);
     // Stamped at 1, not 2: the next boot resumes at the failed step.
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(1);
+    expect(Number(svc.db.pragma("user_version", { simple: true }))).toBe(1);
 
     // …and every API request answers honestly instead of 500ing later.
     const guard = new StorageHealthGuard(svc);
@@ -185,36 +171,34 @@ describe('DbService migration ledger', () => {
 
     // Clear the obstruction and let it run from the beginning (step 1 owns the
     // real table, and the ledger already counted it done).
-    svc.db.exec('DROP VIEW sticky_notes');
-    svc.db.pragma('user_version = 0');
+    svc.db.exec("DROP VIEW sticky_notes");
+    svc.db.pragma("user_version = 0");
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
+    expect(Number(svc.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
     expect(new StorageHealthGuard(svc).canActivate()).toBe(true);
     svc.onModuleDestroy();
   });
 
-  it('a VACUUM INTO snapshot carries the stamp (so restores stay current)', () => {
-    const svc = openService(join(dir, 'src.sqlite'));
-    const snap = join(dir, 'snap.sqlite');
+  it("a VACUUM INTO snapshot carries the stamp (so restores stay current)", () => {
+    const svc = openService(join(dir, "src.sqlite"));
+    const snap = join(dir, "snap.sqlite");
     svc.snapshotTo(snap);
 
     const copy = new Database(snap);
-    expect(Number(copy.pragma('user_version', { simple: true }))).toBe(
-      Number(svc.db.pragma('user_version', { simple: true })),
+    expect(Number(copy.pragma("user_version", { simple: true }))).toBe(
+      Number(svc.db.pragma("user_version", { simple: true })),
     );
     copy.close();
     svc.onModuleDestroy();
   });
 });
 
-describe('DbService — the old credential tables are dropped', () => {
+describe("DbService — the old credential tables are dropped", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'imb-b150-'));
+    dir = mkdtempSync(join(tmpdir(), "imb-b150-"));
   });
 
   afterEach(() => {
@@ -222,14 +206,10 @@ describe('DbService — the old credential tables are dropped', () => {
   });
 
   const tables = (db: Database.Database) =>
-    (
-      db
-        .prepare(`SELECT name FROM sqlite_master WHERE type = 'table'`)
-        .all() as { name: string }[]
-    ).map((t) => t.name);
+    (db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table'`).all() as { name: string }[]).map((t) => t.name);
 
-  it('a pre-ledger database holding a password hash migrates to 7 without either table', () => {
-    const path = join(dir, 'upgraded.sqlite');
+  it("a pre-ledger database holding a password hash migrates to 7 without either table", () => {
+    const path = join(dir, "upgraded.sqlite");
     // What every install from before 2026-09-06 has: the owner's password hash,
     // TOTP secret and sessions, at user_version 0.
     const old = new Database(path);
@@ -255,46 +235,44 @@ describe('DbService — the old credential tables are dropped', () => {
 
     const svc = openService(path);
     expect(svc.migrationFailure).toBeNull();
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
-    expect(tables(svc.db)).not.toContain('auth_user');
-    expect(tables(svc.db)).not.toContain('auth_sessions');
+    expect(Number(svc.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
+    expect(tables(svc.db)).not.toContain("auth_user");
+    expect(tables(svc.db)).not.toContain("auth_sessions");
     // Step 8: the local sign-in's own tables, empty until claimed.
-    expect(tables(svc.db)).toContain('local_owner');
-    expect(tables(svc.db)).toContain('local_session');
+    expect(tables(svc.db)).toContain("local_owner");
+    expect(tables(svc.db)).toContain("local_session");
 
     // And a backup taken now carries neither.
-    const snap = join(dir, 'snap.sqlite');
+    const snap = join(dir, "snap.sqlite");
     svc.snapshotTo(snap);
     const copy = new Database(snap, { readonly: true });
-    expect(tables(copy)).not.toContain('auth_user');
-    expect(tables(copy)).not.toContain('auth_sessions');
+    expect(tables(copy)).not.toContain("auth_user");
+    expect(tables(copy)).not.toContain("auth_sessions");
     copy.close();
     svc.onModuleDestroy();
   });
 
-  it('a fresh database ends without them too', () => {
-    const svc = openService(join(dir, 'fresh.sqlite'));
-    expect(tables(svc.db)).not.toContain('auth_user');
-    expect(tables(svc.db)).not.toContain('auth_sessions');
+  it("a fresh database ends without them too", () => {
+    const svc = openService(join(dir, "fresh.sqlite"));
+    expect(tables(svc.db)).not.toContain("auth_user");
+    expect(tables(svc.db)).not.toContain("auth_sessions");
     svc.onModuleDestroy();
   });
 });
 
-describe('DbService — a database that will not open', () => {
+describe("DbService — a database that will not open", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'imb-b154-db-'));
+    dir = mkdtempSync(join(tmpdir(), "imb-b154-db-"));
   });
 
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('boots degraded instead of throwing when the file is not a database', () => {
-    const path = join(dir, 'corrupt.sqlite');
+  it("boots degraded instead of throwing when the file is not a database", () => {
+    const path = join(dir, "corrupt.sqlite");
     writeFileSync(path, Buffer.alloc(8192, 7));
     const svc = new DbService(configFor(path));
     const error = console.error;
@@ -310,27 +288,25 @@ describe('DbService — a database that will not open', () => {
     svc.onModuleDestroy();
   });
 
-  it('replaceWith puts the previous database back when the new one will not open', () => {
-    const svc = openService(join(dir, 'live.sqlite'));
+  it("replaceWith puts the previous database back when the new one will not open", () => {
+    const svc = openService(join(dir, "live.sqlite"));
     svc.db.prepare("INSERT INTO todos (text) VALUES ('keep me')").run();
-    const bad = join(dir, 'incoming.sqlite');
+    const bad = join(dir, "incoming.sqlite");
     writeFileSync(bad, Buffer.alloc(8192, 7));
 
     expect(() => svc.replaceWith(bad)).toThrow();
 
-    const rows = svc.db.prepare('SELECT text FROM todos').all() as {
+    const rows = svc.db.prepare("SELECT text FROM todos").all() as {
       text: string;
     }[];
-    expect(rows.map((r) => r.text)).toEqual(['keep me']);
+    expect(rows.map((r) => r.text)).toEqual(["keep me"]);
     expect(svc.migrationFailure).toBeNull();
     svc.onModuleDestroy();
   });
 
-  it('the exported ledger version is the one a fresh database ends at', () => {
-    const svc = openService(join(dir, 'fresh.sqlite'));
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
+  it("the exported ledger version is the one a fresh database ends at", () => {
+    const svc = openService(join(dir, "fresh.sqlite"));
+    expect(Number(svc.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
     svc.onModuleDestroy();
   });
 });
@@ -338,19 +314,19 @@ describe('DbService — a database that will not open', () => {
 /** The step that makes `file_modes`. */
 const FILE_MODES_STEP = 13;
 
-describe('DbService — the file modes table', () => {
+describe("DbService — the file modes table", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'imb-modes-'));
+    dir = mkdtempSync(join(tmpdir(), "imb-modes-"));
   });
 
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('a live database one step behind gains the table and keeps its data', () => {
-    const path = join(dir, 'live.sqlite');
+  it("a live database one step behind gains the table and keeps its data", () => {
+    const path = join(dir, "live.sqlite");
     const first = openService(path);
     first.db.prepare("INSERT INTO todos (text) VALUES ('still here')").run();
     first.db
@@ -360,32 +336,26 @@ describe('DbService — the file modes table', () => {
       )
       .run();
     // As the VPS has it before this step.
-    first.db.exec('DROP TABLE file_modes');
+    first.db.exec("DROP TABLE file_modes");
     first.db.pragma(`user_version = ${FILE_MODES_STEP - 1}`);
     first.onModuleDestroy();
 
     const svc = openService(path);
     expect(svc.migrationFailure).toBeNull();
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
-    expect(svc.db.prepare('SELECT text FROM todos').all()).toEqual([
-      { text: 'still here' },
-    ]);
-    expect(svc.db.prepare('SELECT id FROM marketplace_apps').all()).toEqual([
-      { id: 'imbatranim-office' },
-    ]);
+    expect(Number(svc.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
+    expect(svc.db.prepare("SELECT text FROM todos").all()).toEqual([{ text: "still here" }]);
+    expect(svc.db.prepare("SELECT id FROM marketplace_apps").all()).toEqual([{ id: "imbatranim-office" }]);
     const cols = (
-      svc.db.prepare('PRAGMA table_info(file_modes)').all() as {
+      svc.db.prepare("PRAGMA table_info(file_modes)").all() as {
         name: string;
       }[]
     ).map((c) => c.name);
-    expect(cols).toEqual(['path', 'owner', 'group_name', 'mode', 'updated_at']);
+    expect(cols).toEqual(["path", "owner", "group_name", "mode", "updated_at"]);
     svc.onModuleDestroy();
   });
 
-  it('running the step again keeps the rows already there', () => {
-    const svc = openService(join(dir, 'again.sqlite'));
+  it("running the step again keeps the rows already there", () => {
+    const svc = openService(join(dir, "again.sqlite"));
     svc.db
       .prepare(
         `INSERT INTO file_modes (path, owner, group_name, mode, updated_at)
@@ -395,37 +365,35 @@ describe('DbService — the file modes table', () => {
     svc.db.pragma(`user_version = ${FILE_MODES_STEP - 1}`);
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
-    expect(svc.db.prepare('SELECT owner, mode FROM file_modes').all()).toEqual([
-      { owner: 'notes', mode: 448 },
-    ]);
+    expect(svc.db.prepare("SELECT owner, mode FROM file_modes").all()).toEqual([{ owner: "notes", mode: 448 }]);
     svc.onModuleDestroy();
   });
 
-  it('refuses a mode outside 0 to 0o7777', () => {
-    const svc = openService(join(dir, 'check.sqlite'));
+  it("refuses a mode outside 0 to 0o7777", () => {
+    const svc = openService(join(dir, "check.sqlite"));
     const insert = svc.db.prepare(
       `INSERT INTO file_modes (path, owner, group_name, mode, updated_at)
        VALUES (?, NULL, 'system', ?, 1)`,
     );
-    expect(() => insert.run('/a', 0o10000)).toThrow(/CHECK constraint/);
-    expect(() => insert.run('/b', -1)).toThrow(/CHECK constraint/);
+    expect(() => insert.run("/a", 0o10000)).toThrow(/CHECK constraint/);
+    expect(() => insert.run("/b", -1)).toThrow(/CHECK constraint/);
     svc.onModuleDestroy();
   });
 });
 
-describe('DbService — the file grants table', () => {
+describe("DbService — the file grants table", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'imb-grants-'));
+    dir = mkdtempSync(join(tmpdir(), "imb-grants-"));
   });
 
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('a live database one step behind gains the table and keeps its modes', () => {
-    const path = join(dir, 'live.sqlite');
+  it("a live database one step behind gains the table and keeps its modes", () => {
+    const path = join(dir, "live.sqlite");
     const first = openService(path);
     first.db
       .prepare(
@@ -433,54 +401,40 @@ describe('DbService — the file grants table', () => {
          VALUES ('/home/imbatranim/.config/imbatranim/notepad', 'notepad', 'notepad', 448, 1)`,
       )
       .run();
-    first.db.exec('DROP TABLE file_grants');
-    first.db.pragma('user_version = 13');
+    first.db.exec("DROP TABLE file_grants");
+    first.db.pragma("user_version = 13");
     first.onModuleDestroy();
 
     const svc = openService(path);
     expect(svc.migrationFailure).toBeNull();
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
-    expect(svc.db.prepare('SELECT owner FROM file_modes').all()).toEqual([
-      { owner: 'notepad' },
-    ]);
+    expect(Number(svc.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
+    expect(svc.db.prepare("SELECT owner FROM file_modes").all()).toEqual([{ owner: "notepad" }]);
     const cols = (
-      svc.db.prepare('PRAGMA table_info(file_grants)').all() as {
+      svc.db.prepare("PRAGMA table_info(file_grants)").all() as {
         name: string;
       }[]
     ).map((c) => c.name);
-    expect(cols).toEqual([
-      'instance_id',
-      'app_id',
-      'path',
-      'kind',
-      'created_at',
-    ]);
+    expect(cols).toEqual(["instance_id", "app_id", "path", "kind", "created_at"]);
     svc.onModuleDestroy();
   });
 
-  it('running the step again keeps the grants already there, and refuses an unknown kind', () => {
-    const svc = openService(join(dir, 'again.sqlite'));
+  it("running the step again keeps the grants already there, and refuses an unknown kind", () => {
+    const svc = openService(join(dir, "again.sqlite"));
     const insert = svc.db.prepare(
       `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
        VALUES (?, 'notepad', ?, ?, 1)`,
     );
-    insert.run('w1', '/home/imbatranim/a.txt', 'file');
-    svc.db.pragma('user_version = 13');
+    insert.run("w1", "/home/imbatranim/a.txt", "file");
+    svc.db.pragma("user_version = 13");
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
-    expect(svc.db.prepare('SELECT path FROM file_grants').all()).toEqual([
-      { path: '/home/imbatranim/a.txt' },
-    ]);
-    expect(() => insert.run('w1', '/b', 'everything')).toThrow(
-      /CHECK constraint/,
-    );
+    expect(svc.db.prepare("SELECT path FROM file_grants").all()).toEqual([{ path: "/home/imbatranim/a.txt" }]);
+    expect(() => insert.run("w1", "/b", "everything")).toThrow(/CHECK constraint/);
     svc.onModuleDestroy();
   });
 
-  it('a database at step 16 reads its recent files as read only', () => {
-    const svc = openService(join(dir, 'recents.sqlite'));
+  it("a database at step 16 reads its recent files as read only", () => {
+    const svc = openService(join(dir, "recents.sqlite"));
     svc.db.exec(`
       DROP TABLE recent_files;
       CREATE TABLE recent_files (
@@ -493,26 +447,22 @@ describe('DbService — the file grants table', () => {
       );
       INSERT INTO recent_files (root, path, app_id) VALUES ('home', 'a.txt', 'notepad');
     `);
-    svc.db.pragma('user_version = 16');
+    svc.db.pragma("user_version = 16");
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
-    expect(
-      svc.db.prepare('SELECT path, writable FROM recent_files').all(),
-    ).toEqual([{ path: 'a.txt', writable: 0 }]);
+    expect(svc.db.prepare("SELECT path, writable FROM recent_files").all()).toEqual([{ path: "a.txt", writable: 0 }]);
     // A database that ran the step when it backfilled them writable: set
     // back to 16, running it again makes them read only.
-    svc.db.exec('UPDATE recent_files SET writable = 1');
-    svc.db.pragma('user_version = 16');
+    svc.db.exec("UPDATE recent_files SET writable = 1");
+    svc.db.pragma("user_version = 16");
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
-    expect(
-      svc.db.prepare('SELECT path, writable FROM recent_files').all(),
-    ).toEqual([{ path: 'a.txt', writable: 0 }]);
+    expect(svc.db.prepare("SELECT path, writable FROM recent_files").all()).toEqual([{ path: "a.txt", writable: 0 }]);
     svc.onModuleDestroy();
   });
 
-  it('a database at step 15 gives its recent repos to Git GUI', () => {
-    const svc = openService(join(dir, 'repos.sqlite'));
+  it("a database at step 15 gives its recent repos to Git GUI", () => {
+    const svc = openService(join(dir, "repos.sqlite"));
     svc.db.exec(`
       DROP TABLE git_recent_repos;
       CREATE TABLE git_recent_repos (
@@ -524,21 +474,21 @@ describe('DbService — the file grants table', () => {
       );
       INSERT INTO git_recent_repos (root, path) VALUES ('home', 'repo');
     `);
-    svc.db.pragma('user_version = 15');
+    svc.db.pragma("user_version = 15");
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
-    expect(
-      svc.db.prepare('SELECT root, path, app_id FROM git_recent_repos').all(),
-    ).toEqual([{ root: 'home', path: 'repo', app_id: 'git-gui' }]);
+    expect(svc.db.prepare("SELECT root, path, app_id FROM git_recent_repos").all()).toEqual([
+      { root: "home", path: "repo", app_id: "git-gui" },
+    ]);
     // Again: the column is there, and nothing changes.
-    svc.db.pragma('user_version = 15');
+    svc.db.pragma("user_version = 15");
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
     svc.onModuleDestroy();
   });
 
-  it('a database at step 14 keeps its grants and takes a listing grant', () => {
-    const svc = openService(join(dir, 'listing.sqlite'));
+  it("a database at step 14 keeps its grants and takes a listing grant", () => {
+    const svc = openService(join(dir, "listing.sqlite"));
     // The table as step 14 made it: two kinds.
     svc.db.exec(`
       DROP TABLE file_grants;
@@ -555,22 +505,16 @@ describe('DbService — the file grants table', () => {
       `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
        VALUES (?, 'notepad', ?, ?, 1)`,
     );
-    insert.run('w1', '/home/imbatranim/a.txt', 'file');
-    insert.run('w1', '/home/imbatranim/Pictures', 'folder');
-    expect(() => insert.run('w1', '/home/imbatranim', 'listing')).toThrow(
-      /CHECK constraint/,
-    );
-    svc.db.pragma('user_version = 14');
+    insert.run("w1", "/home/imbatranim/a.txt", "file");
+    insert.run("w1", "/home/imbatranim/Pictures", "folder");
+    expect(() => insert.run("w1", "/home/imbatranim", "listing")).toThrow(/CHECK constraint/);
+    svc.db.pragma("user_version = 14");
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
-    expect(
-      svc.db.prepare('SELECT path, kind FROM file_grants ORDER BY path').all(),
-    ).toEqual([
-      { path: '/home/imbatranim/Pictures', kind: 'folder' },
-      { path: '/home/imbatranim/a.txt', kind: 'file' },
+    expect(Number(svc.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
+    expect(svc.db.prepare("SELECT path, kind FROM file_grants ORDER BY path").all()).toEqual([
+      { path: "/home/imbatranim/Pictures", kind: "folder" },
+      { path: "/home/imbatranim/a.txt", kind: "file" },
     ]);
     // insert was prepared against the old table; prepare again.
     svc.db
@@ -583,8 +527,8 @@ describe('DbService — the file grants table', () => {
     svc.onModuleDestroy();
   });
 
-  it('a database at step 18 keeps its grants and takes an assets grant', () => {
-    const svc = openService(join(dir, 'assets.sqlite'));
+  it("a database at step 18 keeps its grants and takes an assets grant", () => {
+    const svc = openService(join(dir, "assets.sqlite"));
     // The table as step 15 made it: four kinds.
     svc.db.exec(`
       DROP TABLE file_grants;
@@ -601,29 +545,23 @@ describe('DbService — the file grants table', () => {
       `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)
        VALUES (?, 'notepad', ?, ?, 1)`,
     );
-    insert.run('w1', '/home/imbatranim/a.md', 'file');
-    insert.run('w1', '/home/imbatranim', 'listing');
-    expect(() => insert.run('w1', '/home/imbatranim/assets', 'assets')).toThrow(
-      /CHECK constraint/,
-    );
-    svc.db.pragma('user_version = 18');
+    insert.run("w1", "/home/imbatranim/a.md", "file");
+    insert.run("w1", "/home/imbatranim", "listing");
+    expect(() => insert.run("w1", "/home/imbatranim/assets", "assets")).toThrow(/CHECK constraint/);
+    svc.db.pragma("user_version = 18");
     svc.migrate();
     expect(svc.migrationFailure).toBeNull();
-    expect(Number(svc.db.pragma('user_version', { simple: true }))).toBe(
-      LEDGER_VERSION,
-    );
-    expect(
-      svc.db.prepare('SELECT path, kind FROM file_grants ORDER BY path').all(),
-    ).toEqual([
-      { path: '/home/imbatranim', kind: 'listing' },
-      { path: '/home/imbatranim/a.md', kind: 'file' },
+    expect(Number(svc.db.pragma("user_version", { simple: true }))).toBe(LEDGER_VERSION);
+    expect(svc.db.prepare("SELECT path, kind FROM file_grants ORDER BY path").all()).toEqual([
+      { path: "/home/imbatranim", kind: "listing" },
+      { path: "/home/imbatranim/a.md", kind: "file" },
     ]);
     const indexes = (
-      svc.db.prepare('PRAGMA index_list(file_grants)').all() as {
+      svc.db.prepare("PRAGMA index_list(file_grants)").all() as {
         name: string;
       }[]
     ).map((i) => i.name);
-    expect(indexes).toContain('file_grants_created_at');
+    expect(indexes).toContain("file_grants_created_at");
     svc.db
       .prepare(
         `INSERT INTO file_grants (instance_id, app_id, path, kind, created_at)

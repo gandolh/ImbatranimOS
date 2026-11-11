@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Get, Post, UseGuards } from '@nestjs/common';
-import { IsString, MaxLength } from 'class-validator';
+import { Body, Controller, Delete, Get, Post, UseGuards } from "@nestjs/common";
+import { IsString, MaxLength } from "class-validator";
 
-import { UserOnlyGuard } from '../app-identity/calling-app';
-import { SetAsideService, type SetAsideStatus } from './set-aside.service';
+import { UserOnlyGuard } from "../app-identity/calling-app";
+import { SetAsideService, type SetAsideStatus } from "./set-aside.service";
 
 export class DownloadSetAsideDto {
   /** The file root the Save dialog gave (`home`, `notes`). */
@@ -25,7 +25,7 @@ export class DownloadSetAsideDto {
  *   written at the path the Save dialog gave; 404 when nothing is set aside;
  * - `DELETE` → `{ dropped }`, every set-aside table dropped.
  */
-@Controller('system/old-data')
+@Controller("system/old-data")
 @UseGuards(UserOnlyGuard)
 export class SetAsideController {
   constructor(private readonly setAside: SetAsideService) {}
@@ -35,10 +35,8 @@ export class SetAsideController {
     return this.setAside.status();
   }
 
-  @Post('download')
-  download(
-    @Body() dto: DownloadSetAsideDto,
-  ): Promise<{ path: string; files: number }> {
+  @Post("download")
+  download(@Body() dto: DownloadSetAsideDto): Promise<{ path: string; files: number }> {
     return this.setAside.download(dto.root, dto.path);
   }
 

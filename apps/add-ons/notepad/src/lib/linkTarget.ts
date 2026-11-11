@@ -1,16 +1,16 @@
-import type { SystemIntents } from '@imbatranim/ui'
+import type { SystemIntents } from "@imbatranim/ui";
 
-type Associations = SystemIntents['associations']
+type Associations = SystemIntents["associations"];
 
 /** What following a relative link should do. */
-export type LinkTarget = { kind: 'markdown' } | { kind: 'app'; appId: string } | { kind: 'none' }
+export type LinkTarget = { kind: "markdown" } | { kind: "app"; appId: string } | { kind: "none" };
 
-const MARKDOWN = /\.(md|markdown)$/i
+const MARKDOWN = /\.(md|markdown)$/i;
 
 /** The basename of a root-relative path — what the registry matches on. */
 export function baseName(path: string): string {
-  const i = path.lastIndexOf('/')
-  return i === -1 ? path : path.slice(i + 1)
+  const i = path.lastIndexOf("/");
+  return i === -1 ? path : path.slice(i + 1);
 }
 
 /**
@@ -28,7 +28,7 @@ export function baseName(path: string): string {
  * and saying so beats opening something that will render it as garbage.
  */
 export function linkTarget(assoc: Associations, path: string): LinkTarget {
-  if (MARKDOWN.test(path)) return { kind: 'markdown' }
-  const { appId } = assoc.resolveOpener(baseName(path))
-  return appId === '' ? { kind: 'none' } : { kind: 'app', appId }
+  if (MARKDOWN.test(path)) return { kind: "markdown" };
+  const { appId } = assoc.resolveOpener(baseName(path));
+  return appId === "" ? { kind: "none" } : { kind: "app", appId };
 }

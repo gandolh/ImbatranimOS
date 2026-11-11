@@ -30,45 +30,45 @@ export const PROTOCOL_VERSION = 9;
 const SESSION_ID = /^[A-Za-z0-9_-]{16,64}$/;
 
 export function isValidSessionId(id: unknown): id is string {
-  return typeof id === 'string' && SESSION_ID.test(id);
+  return typeof id === "string" && SESSION_ID.test(id);
 }
 
 /** Backend → host. */
 export type HostInbound =
   | {
-      type: 'session_open';
+      type: "session_open";
       session: string;
       width: number;
       height: number;
       /** The tab's devicePixelRatio; the output's scale is its ceiling. */
       ratio: number;
     }
-  | { type: 'session_close'; session: string }
+  | { type: "session_close"; session: string }
   | {
-      type: 'output';
+      type: "output";
       session: string;
       width: number;
       height: number;
       ratio: number;
     }
-  | { type: 'frame_ack'; session: string; toplevel: number }
-  | { type: 'focus'; session: string; toplevel: number | null }
+  | { type: "frame_ack"; session: string; toplevel: number }
+  | { type: "focus"; session: string; toplevel: number | null }
   | {
-      type: 'pointer_motion';
+      type: "pointer_motion";
       session: string;
       toplevel: number;
       x: number;
       y: number;
     }
   | {
-      type: 'pointer_button';
+      type: "pointer_button";
       session: string;
       toplevel: number;
       button: number;
       pressed: boolean;
     }
   | {
-      type: 'pointer_axis';
+      type: "pointer_axis";
       session: string;
       toplevel: number;
       dx: number;
@@ -77,36 +77,36 @@ export type HostInbound =
       v120y: number;
       wheel: boolean;
     }
-  | { type: 'pointer_leave'; session: string }
-  | { type: 'key'; session: string; keycode: number; pressed: boolean }
+  | { type: "pointer_leave"; session: string }
+  | { type: "key"; session: string; keycode: number; pressed: boolean }
   | {
-      type: 'configure';
+      type: "configure";
       session: string;
       toplevel: number;
       width: number;
       height: number;
       maximized: boolean;
     }
-  | { type: 'close'; session: string; toplevel: number }
+  | { type: "close"; session: string; toplevel: number }
   | {
-      type: 'position';
+      type: "position";
       session: string;
       toplevel: number;
       x: number;
       y: number;
     }
-  | { type: 'press_outside'; session: string }
-  | { type: 'resync'; session: string }
-  | { type: 'freeze'; session: string; frozen: boolean }
-  | { type: 'visibility'; session: string; visible: boolean }
-  | { type: 'keyboard_layout'; session: string; layout: 'us' | 'ro' }
+  | { type: "press_outside"; session: string }
+  | { type: "resync"; session: string }
+  | { type: "freeze"; session: string; frozen: boolean }
+  | { type: "visibility"; session: string; visible: boolean }
+  | { type: "keyboard_layout"; session: string; layout: "us" | "ro" }
   | {
-      type: 'toplevel_visible';
+      type: "toplevel_visible";
       session: string;
       toplevel: number;
       visible: boolean;
     }
-  | { type: 'clipboard'; session: string; text: string }
+  | { type: "clipboard"; session: string; text: string }
   | TextEditMessage;
 
 /**
@@ -115,7 +115,7 @@ export type HostInbound =
  * Offsets and lengths are UTF-8 bytes.
  */
 export type TextEditMessage = {
-  type: 'text_edit';
+  type: "text_edit";
   session: string;
   toplevel: number;
   /** Bytes to delete before and after the cursor, outside the selection. */
@@ -131,7 +131,7 @@ export type TextEditMessage = {
  * text stays on the session's socket and is never logged.
  */
 export type TextInputMessage = {
-  type: 'text_input';
+  type: "text_input";
   session: string;
   toplevel: number;
   enabled: boolean;
@@ -146,32 +146,32 @@ export type TextInputMessage = {
   anchor: number;
   /** The cursor's rectangle in the toplevel's surface coordinates. */
   rect: { x: number; y: number; width: number; height: number } | null;
-  cause: 'input_method' | 'other';
+  cause: "input_method" | "other";
 };
 
 /** Host → backend, JSON kind. */
 export type HostOutbound =
-  | { type: 'hello'; version: number }
+  | { type: "hello"; version: number }
   | {
-      type: 'session_ready';
+      type: "session_ready";
       session: string;
       display: string;
       /** The X display reserved for the session's X11 apps, or null. */
       x11_display: number | null;
     }
-  | { type: 'session_failed'; session: string; reason: string }
+  | { type: "session_failed"; session: string; reason: string }
   | ToplevelMessage
   | PopupMessage
-  | { type: 'clients'; session: string; pids: number[] }
-  | { type: 'cursor'; session: string; name: string; image?: CursorImage }
+  | { type: "clients"; session: string; pids: number[] }
+  | { type: "cursor"; session: string; name: string; image?: CursorImage }
   | {
-      type: 'request';
+      type: "request";
       session: string;
       toplevel: number;
       action: string;
       edges?: string;
     }
-  | { type: 'clipboard'; session: string; text: string }
+  | { type: "clipboard"; session: string; text: string }
   | TextInputMessage;
 
 /**
@@ -193,7 +193,7 @@ export type CursorImage = {
 
 export type ToplevelMessage =
   | {
-      type: 'toplevel_created' | 'toplevel_updated';
+      type: "toplevel_created" | "toplevel_updated";
       session: string;
       toplevel: number;
       title: string;
@@ -204,13 +204,13 @@ export type ToplevelMessage =
       /** Image pixels per surface coordinate. */
       scale: number;
       geometry: { x: number; y: number; width: number; height: number };
-      decorations: 'server' | 'client';
+      decorations: "server" | "client";
       min_width: number;
       min_height: number;
       max_width: number;
       max_height: number;
     }
-  | { type: 'toplevel_destroyed'; session: string; toplevel: number };
+  | { type: "toplevel_destroyed"; session: string; toplevel: number };
 
 /**
  * A menu, dropdown or tooltip. Its id shares the toplevels' id space, so
@@ -218,7 +218,7 @@ export type ToplevelMessage =
  */
 export type PopupMessage =
   | {
-      type: 'popup_created' | 'popup_updated';
+      type: "popup_created" | "popup_updated";
       session: string;
       popup: number;
       parent: number;
@@ -230,16 +230,16 @@ export type PopupMessage =
       geometry: { x: number; y: number; width: number; height: number };
       grab: boolean;
     }
-  | { type: 'popup_destroyed'; session: string; popup: number };
+  | { type: "popup_destroyed"; session: string; popup: number };
 
 export type Decoded =
-  | { kind: 'json'; message: HostOutbound }
-  | { kind: 'frame'; session: string; body: Buffer }
+  | { kind: "json"; message: HostOutbound }
+  | { kind: "frame"; session: string; body: Buffer }
   /** One Opus packet of a session's sound: its sequence number, then the packet. */
-  | { kind: 'audio'; session: string; body: Buffer };
+  | { kind: "audio"; session: string; body: Buffer };
 
 export function encodeJson(message: HostInbound): Buffer {
-  const json = Buffer.from(JSON.stringify(message), 'utf8');
+  const json = Buffer.from(JSON.stringify(message), "utf8");
   const head = Buffer.alloc(5);
   head.writeUInt32LE(json.length + 1, 0);
   head.writeUInt8(KIND_JSON, 4);
@@ -265,9 +265,8 @@ export class Decoder {
       if (this.buffered < 4) break;
       const head = this.peek(4);
       const len = head.readUInt32LE(0);
-      if (len === 0) throw new ProtocolError('empty message');
-      if (len > MAX_MESSAGE)
-        throw new ProtocolError(`message too large: ${len}`);
+      if (len === 0) throw new ProtocolError("empty message");
+      if (len > MAX_MESSAGE) throw new ProtocolError(`message too large: ${len}`);
       if (this.buffered < 4 + len) break;
       const message = this.take(4 + len).subarray(4);
       out.push(decodeMessage(message));
@@ -283,8 +282,7 @@ export class Decoder {
   }
 
   private take(n: number): Buffer {
-    const all =
-      this.chunks.length === 1 ? this.chunks[0] : Buffer.concat(this.chunks);
+    const all = this.chunks.length === 1 ? this.chunks[0] : Buffer.concat(this.chunks);
     const taken = all.subarray(0, n);
     const rest = all.subarray(n);
     this.chunks = rest.length > 0 ? [rest] : [];
@@ -299,34 +297,26 @@ function decodeMessage(message: Buffer): Decoded {
   if (kind === KIND_JSON) {
     let parsed: unknown;
     try {
-      parsed = JSON.parse(payload.toString('utf8'));
+      parsed = JSON.parse(payload.toString("utf8"));
     } catch {
-      throw new ProtocolError('bad JSON');
+      throw new ProtocolError("bad JSON");
     }
-    if (
-      !parsed ||
-      typeof parsed !== 'object' ||
-      typeof (parsed as { type?: unknown }).type !== 'string'
-    ) {
-      throw new ProtocolError('JSON message without a type');
+    if (!parsed || typeof parsed !== "object" || typeof (parsed as { type?: unknown }).type !== "string") {
+      throw new ProtocolError("JSON message without a type");
     }
-    return { kind: 'json', message: parsed as HostOutbound };
+    return { kind: "json", message: parsed as HostOutbound };
   }
   if (kind === KIND_FRAME || kind === KIND_AUDIO) {
-    const what = kind === KIND_FRAME ? 'frame' : 'audio';
-    if (payload.length < 1)
-      throw new ProtocolError(`${what} without a session`);
+    const what = kind === KIND_FRAME ? "frame" : "audio";
+    if (payload.length < 1) throw new ProtocolError(`${what} without a session`);
     const sidLen = payload[0];
     // A frame's header is 14 bytes; a sound packet's sequence number 4.
-    if (payload.length < 1 + sidLen + (kind === KIND_FRAME ? 14 : 5))
-      throw new ProtocolError(`short ${what}`);
-    const session = payload.subarray(1, 1 + sidLen).toString('ascii');
+    if (payload.length < 1 + sidLen + (kind === KIND_FRAME ? 14 : 5)) throw new ProtocolError(`short ${what}`);
+    const session = payload.subarray(1, 1 + sidLen).toString("ascii");
     // Copied rather than a view, so one small message doesn't keep a whole
     // read buffer alive.
     const body = Buffer.from(payload.subarray(1 + sidLen));
-    return kind === KIND_FRAME
-      ? { kind: 'frame', session, body }
-      : { kind: 'audio', session, body };
+    return kind === KIND_FRAME ? { kind: "frame", session, body } : { kind: "audio", session, body };
   }
   throw new ProtocolError(`unknown kind ${kind}`);
 }

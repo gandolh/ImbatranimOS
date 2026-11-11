@@ -7,33 +7,33 @@
  */
 
 /** Shared with Calendar's event colours — see `noteStyle.ts` for why. */
-export type NoteColor = 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'slate'
+export type NoteColor = "blue" | "green" | "amber" | "red" | "purple" | "slate";
 
 export type StickyNote = {
-  id: number
-  content: string
+  id: number;
+  content: string;
   /** Position on the desktop layer, px from its top-left. */
-  x: number
-  y: number
-  width: number
-  height: number
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   /** null uses the default surface treatment. */
-  color: NoteColor | null
+  color: NoteColor | null;
   /** False means the note exists only in the manager window. */
-  onDesktop: boolean
-  createdAt: string
-  updatedAt: string
-}
+  onDesktop: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type StickyNoteInput = {
-  content?: string
-  x?: number
-  y?: number
-  width?: number
-  height?: number
-  color?: NoteColor | null
-  onDesktop?: boolean
-}
+  content?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  color?: NoteColor | null;
+  onDesktop?: boolean;
+};
 
 /** Same fields; separate name so a create and a patch cannot be confused. */
-export type StickyNotePatch = StickyNoteInput
+export type StickyNotePatch = StickyNoteInput;

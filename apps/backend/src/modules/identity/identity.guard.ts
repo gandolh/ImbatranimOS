@@ -1,20 +1,14 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Reflector } from '@nestjs/core';
-import type { Request } from 'express';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Reflector } from "@nestjs/core";
+import type { Request } from "express";
 
-import type { Env } from '../../config/env.schema';
-import { IS_PUBLIC_KEY } from '../auth/public.decorator';
-import { LocalIdentityService } from '../local-identity/local-identity.service';
-import { AuthenticationError, type Caller } from './identity.types';
+import type { Env } from "../../config/env.schema";
+import { IS_PUBLIC_KEY } from "../auth/public.decorator";
+import { LocalIdentityService } from "../local-identity/local-identity.service";
+import { AuthenticationError, type Caller } from "./identity.types";
 
-const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
  * The global guard (registered via `APP_GUARD`): every route needs a session
@@ -45,17 +39,14 @@ export class SessionGuard implements CanActivate {
 
     this.checkOrigin(req);
 
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      ctx.getHandler(),
-      ctx.getClass(),
-    ]);
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [ctx.getHandler(), ctx.getClass()]);
     if (isPublic) return true;
 
     try {
       req.caller = await this.identity.authenticate(req.headers.cookie);
     } catch (error) {
       if (error instanceof AuthenticationError) {
-        throw new UnauthorizedException('Authentication required');
+        throw new UnauthorizedException("Authentication required");
       }
       throw error;
     }
@@ -71,14 +62,14 @@ export class SessionGuard implements CanActivate {
     if (!MUTATING_METHODS.has(req.method)) return;
     const origin = req.headers.origin;
     if (!origin) return;
-    const frontend = this.config.get('FRONTEND_URL', { infer: true });
+    const frontend = this.config.get("FRONTEND_URL", { infer: true });
     let originHost: string;
     try {
       originHost = new URL(origin).host;
     } catch {
-      throw new ForbiddenException('Bad origin');
+      throw new ForbiddenException("Bad origin");
     }
     if (origin === frontend || originHost === req.headers.host) return;
-    throw new ForbiddenException('Cross-origin request rejected');
+    throw new ForbiddenException("Cross-origin request rejected");
   }
 }

@@ -1,4 +1,4 @@
-import type { FsEntry } from '../types'
+import type { FsEntry } from "../types";
 
 /**
  * Ordering and filtering for the file list.
@@ -16,20 +16,20 @@ import type { FsEntry } from '../types'
  * inode size the user cannot see.
  */
 
-export type SortKey = 'name' | 'size' | 'modified'
-export type SortDir = 'asc' | 'desc'
+export type SortKey = "name" | "size" | "modified";
+export type SortDir = "asc" | "desc";
 
-export const SORT_KEYS: readonly SortKey[] = ['name', 'size', 'modified']
+export const SORT_KEYS: readonly SortKey[] = ["name", "size", "modified"];
 
 /** Column header labels, so the header and the persisted key cannot drift. */
 export const SORT_LABELS: Record<SortKey, string> = {
-  name: 'Name',
-  size: 'Size',
-  modified: 'Modified',
-}
+  name: "Name",
+  size: "Size",
+  modified: "Modified",
+};
 
 function compareName(a: FsEntry, b: FsEntry): number {
-  return a.name.localeCompare(b.name)
+  return a.name.localeCompare(b.name);
 }
 
 /**
@@ -43,29 +43,29 @@ function compareName(a: FsEntry, b: FsEntry): number {
  * while the files beneath them run Z→A from the same click reads as a bug.
  */
 function compareSize(a: FsEntry, b: FsEntry): number {
-  if (a.type === 'directory' && b.type === 'directory') return compareName(a, b)
-  return a.size - b.size
+  if (a.type === "directory" && b.type === "directory") return compareName(a, b);
+  return a.size - b.size;
 }
 
 function compareModified(a: FsEntry, b: FsEntry): number {
-  const at = Date.parse(a.modifiedAt)
-  const bt = Date.parse(b.modifiedAt)
+  const at = Date.parse(a.modifiedAt);
+  const bt = Date.parse(b.modifiedAt);
   // An unparseable timestamp sorts last rather than poisoning the comparator with
   // NaN, which would make the sort order depend on the input order (and on the
   // engine's sort implementation).
-  const aBad = Number.isNaN(at)
-  const bBad = Number.isNaN(bt)
-  if (aBad && bBad) return compareName(a, b)
-  if (aBad) return 1
-  if (bBad) return -1
-  return at - bt
+  const aBad = Number.isNaN(at);
+  const bBad = Number.isNaN(bt);
+  if (aBad && bBad) return compareName(a, b);
+  if (aBad) return 1;
+  if (bBad) return -1;
+  return at - bt;
 }
 
 const COMPARATORS: Record<SortKey, (a: FsEntry, b: FsEntry) => number> = {
   name: compareName,
   size: compareSize,
   modified: compareModified,
-}
+};
 
 /**
  * Sort a directory listing. Never mutates the input — it is TanStack Query's
@@ -73,24 +73,24 @@ const COMPARATORS: Record<SortKey, (a: FsEntry, b: FsEntry) => number> = {
  * readers.
  */
 export function sortEntries(entries: FsEntry[], key: SortKey, dir: SortDir): FsEntry[] {
-  const compare = COMPARATORS[key]
-  const sign = dir === 'desc' ? -1 : 1
+  const compare = COMPARATORS[key];
+  const sign = dir === "desc" ? -1 : 1;
   return [...entries].sort((a, b) => {
     // Directories first, and NOT flipped by direction: "reverse by name" should
     // still list folders above files, or descending order would hide every folder
     // below a long file list.
-    if (a.type !== b.type) return a.type === 'directory' ? -1 : 1
-    const primary = compare(a, b) * sign
-    if (primary !== 0) return primary
+    if (a.type !== b.type) return a.type === "directory" ? -1 : 1;
+    const primary = compare(a, b) * sign;
+    if (primary !== 0) return primary;
     // Name is the tiebreak for every key, so the order is total and stable: two
     // files of equal size must not swap places between renders.
-    return key === 'name' ? 0 : compareName(a, b)
-  })
+    return key === "name" ? 0 : compareName(a, b);
+  });
 }
 
 /** Whether an entry is hidden by the dotfile convention. */
 export function isHidden(entry: FsEntry): boolean {
-  return entry.name.startsWith('.')
+  return entry.name.startsWith(".");
 }
 
 /**
@@ -101,8 +101,8 @@ export function isHidden(entry: FsEntry): boolean {
  * .bashrc" is a reasonable thing to want.
  */
 export function filterHidden(entries: FsEntry[], showHidden: boolean): FsEntry[] {
-  if (showHidden) return entries
-  return entries.filter((e) => !isHidden(e))
+  if (showHidden) return entries;
+  return entries.filter((e) => !isHidden(e));
 }
 
 /**
@@ -113,28 +113,25 @@ export function filterHidden(entries: FsEntry[], showHidden: boolean): FsEntry[]
  * (biggest and newest first), which is what the user means by "sort by size".
  * Clicking the active column flips it.
  */
-export function nextSort(
-  current: { key: SortKey; dir: SortDir },
-  clicked: SortKey
-): { key: SortKey; dir: SortDir } {
+export function nextSort(current: { key: SortKey; dir: SortDir }, clicked: SortKey): { key: SortKey; dir: SortDir } {
   if (current.key === clicked) {
-    return { key: clicked, dir: current.dir === 'asc' ? 'desc' : 'asc' }
+    return { key: clicked, dir: current.dir === "asc" ? "desc" : "asc" };
   }
-  return { key: clicked, dir: clicked === 'name' ? 'asc' : 'desc' }
+  return { key: clicked, dir: clicked === "name" ? "asc" : "desc" };
 }
 
 /** `aria-sort` value for a column header. */
 export function ariaSort(
   column: SortKey,
-  current: { key: SortKey; dir: SortDir }
-): 'ascending' | 'descending' | 'none' {
-  if (current.key !== column) return 'none'
-  return current.dir === 'asc' ? 'ascending' : 'descending'
+  current: { key: SortKey; dir: SortDir },
+): "ascending" | "descending" | "none" {
+  if (current.key !== column) return "none";
+  return current.dir === "asc" ? "ascending" : "descending";
 }
 
 /** Icons-view tile geometry, shared by the grid and the virtualizer's estimator. */
-export const TILE_WIDTH = 96
-export const TILE_HEIGHT = 92
+export const TILE_WIDTH = 96;
+export const TILE_HEIGHT = 92;
 
 /**
  * How many tiles fit across a pane of `width` CSS pixels.
@@ -144,12 +141,12 @@ export const TILE_HEIGHT = 92
  * dragged to nothing.
  */
 export function gridColumns(width: number): number {
-  if (!Number.isFinite(width) || width <= 0) return 1
-  return Math.max(1, Math.floor(width / TILE_WIDTH))
+  if (!Number.isFinite(width) || width <= 0) return 1;
+  return Math.max(1, Math.floor(width / TILE_WIDTH));
 }
 
 /** Number of grid rows needed for `count` entries at `columns` per row. */
 export function gridRowCount(count: number, columns: number): number {
-  if (count <= 0) return 0
-  return Math.ceil(count / Math.max(1, columns))
+  if (count <= 0) return 0;
+  return Math.ceil(count / Math.max(1, columns));
 }

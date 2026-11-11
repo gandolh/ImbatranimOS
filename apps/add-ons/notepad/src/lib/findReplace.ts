@@ -10,7 +10,7 @@
  * misses the last match, or a search that hangs the tab.
  */
 
-export type Match = { start: number; end: number }
+export type Match = { start: number; end: number };
 
 /**
  * Every occurrence of `query` in `text`.
@@ -24,20 +24,20 @@ export type Match = { start: number; end: number }
  * `text.length + 1` matches the instant the find bar opens.
  */
 export function findMatches(text: string, query: string, caseSensitive: boolean): Match[] {
-  if (!query) return []
-  const haystack = caseSensitive ? text : text.toLowerCase()
-  const needle = caseSensitive ? query : query.toLowerCase()
-  const out: Match[] = []
-  let from = 0
+  if (!query) return [];
+  const haystack = caseSensitive ? text : text.toLowerCase();
+  const needle = caseSensitive ? query : query.toLowerCase();
+  const out: Match[] = [];
+  let from = 0;
   for (;;) {
-    const at = haystack.indexOf(needle, from)
-    if (at === -1) break
-    out.push({ start: at, end: at + needle.length })
+    const at = haystack.indexOf(needle, from);
+    if (at === -1) break;
+    out.push({ start: at, end: at + needle.length });
     // Advance by the needle length, so matches do not overlap: searching "aa" in
     // "aaaa" finds 2, not 3. Advancing by 1 would also make a 1-char query O(n²).
-    from = at + needle.length
+    from = at + needle.length;
   }
-  return out
+  return out;
 }
 
 /**
@@ -47,30 +47,26 @@ export function findMatches(text: string, query: string, caseSensitive: boolean)
  * nothing more looks broken. Returns -1 when there is nothing to jump to.
  */
 export function matchIndexFrom(matches: Match[], caret: number, direction: 1 | -1): number {
-  if (matches.length === 0) return -1
+  if (matches.length === 0) return -1;
   if (direction === 1) {
-    const at = matches.findIndex((m) => m.start >= caret)
-    return at === -1 ? 0 : at
+    const at = matches.findIndex((m) => m.start >= caret);
+    return at === -1 ? 0 : at;
   }
   for (let i = matches.length - 1; i >= 0; i--) {
-    if (matches[i].end <= caret) return i
+    if (matches[i].end <= caret) return i;
   }
-  return matches.length - 1
+  return matches.length - 1;
 }
 
 /** Replace one span, returning the new text and where the caret should land. */
-export function replaceRange(
-  text: string,
-  match: Match,
-  replacement: string
-): { text: string; caret: number } {
+export function replaceRange(text: string, match: Match, replacement: string): { text: string; caret: number } {
   return {
     text: text.slice(0, match.start) + replacement + text.slice(match.end),
     // After the inserted text, so a subsequent "find next" moves forward rather
     // than finding the replacement again (which, if the replacement contains the
     // query, is an infinite replace loop).
     caret: match.start + replacement.length,
-  }
+  };
 }
 
 /**
@@ -84,28 +80,28 @@ export function replaceAll(
   text: string,
   query: string,
   replacement: string,
-  caseSensitive: boolean
+  caseSensitive: boolean,
 ): { text: string; count: number } {
-  const matches = findMatches(text, query, caseSensitive)
-  if (matches.length === 0) return { text, count: 0 }
-  let out = ''
-  let cursor = 0
+  const matches = findMatches(text, query, caseSensitive);
+  if (matches.length === 0) return { text, count: 0 };
+  let out = "";
+  let cursor = 0;
   for (const m of matches) {
-    out += text.slice(cursor, m.start) + replacement
-    cursor = m.end
+    out += text.slice(cursor, m.start) + replacement;
+    cursor = m.end;
   }
-  out += text.slice(cursor)
-  return { text: out, count: matches.length }
+  out += text.slice(cursor);
+  return { text: out, count: matches.length };
 }
 
 export type MinimalEdit = {
   /** Start of the replaced span in the original string. */
-  start: number
+  start: number;
   /** End of the replaced span in the original string. */
-  end: number
+  end: number;
   /** Text to put in its place — empty for a pure deletion. */
-  insert: string
-}
+  insert: string;
+};
 
 /**
  * The smallest contiguous replacement that turns `before` into `after`.
@@ -118,26 +114,23 @@ export type MinimalEdit = {
  * that changed, computed here by trimming the common prefix and suffix.
  */
 export function minimalEdit(before: string, after: string): MinimalEdit {
-  if (before === after) return { start: 0, end: 0, insert: '' }
+  if (before === after) return { start: 0, end: 0, insert: "" };
 
-  let prefix = 0
-  const maxPrefix = Math.min(before.length, after.length)
-  while (prefix < maxPrefix && before[prefix] === after[prefix]) prefix++
+  let prefix = 0;
+  const maxPrefix = Math.min(before.length, after.length);
+  while (prefix < maxPrefix && before[prefix] === after[prefix]) prefix++;
 
-  let suffix = 0
-  const maxSuffix = maxPrefix - prefix
-  while (
-    suffix < maxSuffix &&
-    before[before.length - 1 - suffix] === after[after.length - 1 - suffix]
-  ) {
-    suffix++
+  let suffix = 0;
+  const maxSuffix = maxPrefix - prefix;
+  while (suffix < maxSuffix && before[before.length - 1 - suffix] === after[after.length - 1 - suffix]) {
+    suffix++;
   }
 
   return {
     start: prefix,
     end: before.length - suffix,
     insert: after.slice(prefix, after.length - suffix),
-  }
+  };
 }
 
 /**
@@ -147,25 +140,25 @@ export function minimalEdit(before: string, after: string): MinimalEdit {
  * bar reading "Ln 0, Col 0" would not match anything the user could cross-reference.
  */
 export function caretPosition(text: string, caret: number): { line: number; column: number } {
-  const clamped = Math.max(0, Math.min(text.length, Number.isFinite(caret) ? caret : 0))
-  const before = text.slice(0, clamped)
-  const lastBreak = before.lastIndexOf('\n')
+  const clamped = Math.max(0, Math.min(text.length, Number.isFinite(caret) ? caret : 0));
+  const before = text.slice(0, clamped);
+  const lastBreak = before.lastIndexOf("\n");
   return {
-    line: before.split('\n').length,
+    line: before.split("\n").length,
     // The caret sits AFTER the newline that starts the line, so column 1 is the
     // first character of that line.
     column: clamped - lastBreak,
-  }
+  };
 }
 
 /** Character and word counts for the status bar. */
 export function textStats(text: string): { chars: number; words: number; lines: number } {
-  const trimmed = text.trim()
+  const trimmed = text.trim();
   return {
     // Code points, not UTF-16 units, so an emoji counts as one character rather
     // than two — the same reasoning as Docs' word count.
     chars: [...text].length,
-    words: trimmed === '' ? 0 : trimmed.split(/\s+/).length,
-    lines: text === '' ? 1 : text.split('\n').length,
-  }
+    words: trimmed === "" ? 0 : trimmed.split(/\s+/).length,
+    lines: text === "" ? 1 : text.split("\n").length,
+  };
 }

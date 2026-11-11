@@ -1,14 +1,14 @@
-import { useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { cn } from '../../../lib/cn'
-import type { AppConfig } from '../../registry/registry'
-import { ICON_HEIGHT, ICON_WIDTH, clampToDesktop } from './layoutIcons'
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import { cn } from "../../../lib/cn";
+import type { AppConfig } from "../../registry/registry";
+import { ICON_HEIGHT, ICON_WIDTH, clampToDesktop } from "./layoutIcons";
 
 type DesktopIconProps = {
-  app: AppConfig
-  onOpen: () => void
-  position: { x: number; y: number }
-  onPositionChange: (pos: { x: number; y: number }) => void
+  app: AppConfig;
+  onOpen: () => void;
+  position: { x: number; y: number };
+  onPositionChange: (pos: { x: number; y: number }) => void;
   /**
    * The desktop's measured size. Drag limits are numbers derived from it, not
    * a ref to the desktop element: with a ref, framer-motion listens for window
@@ -17,17 +17,17 @@ type DesktopIconProps = {
    * resize therefore froze every icon part way to its new grid cell, squeezed
    * together, until a reload. Numeric limits have no such listener.
    */
-  bounds: { width: number; height: number }
+  bounds: { width: number; height: number };
   /**
    * Selection is owned by Desktop — it is a set across icons now
    * (marquee, Ctrl+click), which no per-icon `useState` can express. It is also
    * deliberately ephemeral: the desktop store persists to a dotfile, and a
    * selection surviving a reload would be a bug, not a feature.
    */
-  selected: boolean
-  onSelect: (e: React.MouseEvent) => void
-  onContextMenu: (e: React.MouseEvent) => void
-}
+  selected: boolean;
+  onSelect: (e: React.MouseEvent) => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+};
 
 export function DesktopIcon({
   app,
@@ -39,7 +39,7 @@ export function DesktopIcon({
   onSelect,
   onContextMenu,
 }: DesktopIconProps) {
-  const Icon = app.icon
+  const Icon = app.icon;
   // In the x/y motion values' own space: the icon is placed by transform from
   // the desktop's top-left corner. Memoised so a re-render does not hand
   // framer-motion a new object.
@@ -50,8 +50,8 @@ export function DesktopIcon({
       right: Math.max(0, bounds.width - ICON_WIDTH),
       bottom: Math.max(0, bounds.height - ICON_HEIGHT),
     }),
-    [bounds.width, bounds.height]
-  )
+    [bounds.width, bounds.height],
+  );
 
   return (
     <motion.div
@@ -64,16 +64,14 @@ export function DesktopIcon({
         // only limits what is drawn during the drag; `info.offset` is the full
         // pointer movement, so a flick past the edge would otherwise be stored
         // (and pinned) out of bounds and redraw off-screen, unrecoverable.
-        onPositionChange(
-          clampToDesktop({ x: position.x + info.offset.x, y: position.y + info.offset.y }, bounds)
-        )
+        onPositionChange(clampToDesktop({ x: position.x + info.offset.x, y: position.y + info.offset.y }, bounds));
       }}
       initial={false}
       animate={{ x: position.x, y: position.y }}
       whileDrag={{ scale: 1.05, zIndex: 10 }}
       className={cn(
-        'absolute top-0 left-0 flex w-[64px] cursor-default flex-col items-center gap-1 select-none',
-        'focus-visible:ring-primary outline-none focus-visible:ring-2'
+        "absolute top-0 left-0 flex w-[64px] cursor-default flex-col items-center gap-1 select-none",
+        "focus-visible:ring-primary outline-none focus-visible:ring-2",
       )}
       role="button"
       aria-label={app.name}
@@ -84,30 +82,30 @@ export function DesktopIcon({
       // menu, not the background one.
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => {
-        e.stopPropagation()
-        onSelect(e)
+        e.stopPropagation();
+        onSelect(e);
       }}
       onDoubleClick={onOpen}
       onContextMenu={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        onContextMenu(e)
+        e.preventDefault();
+        e.stopPropagation();
+        onContextMenu(e);
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onOpen()
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
         }
       }}
     >
       {/* Icon box */}
       <div
         className={cn(
-          'rounded-tile flex h-12 w-12 items-center justify-center border transition-colors',
+          "rounded-tile flex h-12 w-12 items-center justify-center border transition-colors",
           selected
-            ? 'border-primary bg-primary-container text-on-primary-container'
+            ? "border-primary bg-primary-container text-on-primary-container"
             : // Apricot puts each icon on a light tile, drawn in the strong accent.
-              'border-outline-variant bg-surface-container-low/80 text-on-surface apricot:border-transparent apricot:bg-surface-container-lowest apricot:text-primary apricot:shadow-(--k-shadow-tile) backdrop-blur-sm'
+              "border-outline-variant bg-surface-container-low/80 text-on-surface apricot:border-transparent apricot:bg-surface-container-lowest apricot:text-primary apricot:shadow-(--k-shadow-tile) backdrop-blur-sm",
         )}
       >
         <Icon size={22} strokeWidth={1.5} className="text-current" />
@@ -116,16 +114,16 @@ export function DesktopIcon({
       {/* Label */}
       <span
         className={cn(
-          'font-ui rounded-item text-center leading-tight',
-          'w-full overflow-hidden px-1 py-0.5 text-[11px]',
-          'line-clamp-2 break-words',
+          "font-ui rounded-item text-center leading-tight",
+          "w-full overflow-hidden px-1 py-0.5 text-[11px]",
+          "line-clamp-2 break-words",
           selected
-            ? 'bg-primary-container text-on-primary-container'
-            : 'text-on-surface [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]'
+            ? "bg-primary-container text-on-primary-container"
+            : "text-on-surface [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]",
         )}
       >
         {app.name}
       </span>
     </motion.div>
-  )
+  );
 }

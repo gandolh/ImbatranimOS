@@ -1,6 +1,6 @@
-import dayjs from 'dayjs'
-import type { Occurrence } from './recurrence'
-import type { EventColor } from './types'
+import dayjs from "dayjs";
+import type { Occurrence } from "./recurrence";
+import type { EventColor } from "./types";
 
 /**
  * How an event is painted, in one place.
@@ -17,32 +17,32 @@ import type { EventColor } from './types'
  * constructed class names, and they would silently not exist in the bundle.
  */
 const COLOR_CLASS: Record<EventColor, string> = {
-  blue: 'border-l-sky-500 bg-sky-500/15',
-  green: 'border-l-emerald-500 bg-emerald-500/15',
-  amber: 'border-l-amber-500 bg-amber-500/15',
-  red: 'border-l-rose-500 bg-rose-500/15',
-  purple: 'border-l-violet-500 bg-violet-500/15',
-  slate: 'border-l-slate-400 bg-slate-400/15',
-}
+  blue: "border-l-sky-500 bg-sky-500/15",
+  green: "border-l-emerald-500 bg-emerald-500/15",
+  amber: "border-l-amber-500 bg-amber-500/15",
+  red: "border-l-rose-500 bg-rose-500/15",
+  purple: "border-l-violet-500 bg-violet-500/15",
+  slate: "border-l-slate-400 bg-slate-400/15",
+};
 
 /** The accent-tinted default, for an event with no colour of its own. */
-const DEFAULT_CLASS = 'border-l-primary bg-surface-container-high'
+const DEFAULT_CLASS = "border-l-primary bg-surface-container-high";
 
 export function eventColorClass(color: EventColor | undefined): string {
-  return color ? COLOR_CLASS[color] : DEFAULT_CLASS
+  return color ? COLOR_CLASS[color] : DEFAULT_CLASS;
 }
 
 /** The swatch used by the colour picker in the dialog. */
 export const COLOR_SWATCH: Record<EventColor, string> = {
-  blue: 'bg-sky-500',
-  green: 'bg-emerald-500',
-  amber: 'bg-amber-500',
-  red: 'bg-rose-500',
-  purple: 'bg-violet-500',
-  slate: 'bg-slate-400',
-}
+  blue: "bg-sky-500",
+  green: "bg-emerald-500",
+  amber: "bg-amber-500",
+  red: "bg-rose-500",
+  purple: "bg-violet-500",
+  slate: "bg-slate-400",
+};
 
-export const COLOR_OPTIONS: EventColor[] = ['blue', 'green', 'amber', 'red', 'purple', 'slate']
+export const COLOR_OPTIONS: EventColor[] = ["blue", "green", "amber", "red", "purple", "slate"];
 
 /**
  * The label for one occurrence on one day.
@@ -52,19 +52,19 @@ export const COLOR_OPTIONS: EventColor[] = ['blue', 'green', 'amber', 'red', 'pu
  * the event does not start at 09:00 on days two and three.
  */
 export function occurrenceLabel(occurrence: Occurrence, day: dayjs.Dayjs): string {
-  const { event } = occurrence
-  const startsToday = dayjs(occurrence.start).isSame(day, 'day')
-  const endsToday = dayjs(occurrence.end).isSame(day, 'day')
+  const { event } = occurrence;
+  const startsToday = dayjs(occurrence.start).isSame(day, "day");
+  const endsToday = dayjs(occurrence.end).isSame(day, "day");
 
-  if (event.allDay) return event.title
-  if (startsToday && endsToday) return `${dayjs(occurrence.start).format('HH:mm')} ${event.title}`
-  if (startsToday) return `${dayjs(occurrence.start).format('HH:mm')} ${event.title} →`
-  if (endsToday) return `→ ${event.title} until ${dayjs(occurrence.end).format('HH:mm')}`
-  return `→ ${event.title}`
+  if (event.allDay) return event.title;
+  if (startsToday && endsToday) return `${dayjs(occurrence.start).format("HH:mm")} ${event.title}`;
+  if (startsToday) return `${dayjs(occurrence.start).format("HH:mm")} ${event.title} →`;
+  if (endsToday) return `→ ${event.title} until ${dayjs(occurrence.end).format("HH:mm")}`;
+  return `→ ${event.title}`;
 }
 
 /** Sort for a day cell: all-day and continuing events above the timed ones. */
 export function compareForDay(a: Occurrence, b: Occurrence): number {
-  const rank = (o: Occurrence) => (o.event.allDay ? 0 : 1)
-  return rank(a) - rank(b) || a.start - b.start || a.event.title.localeCompare(b.event.title)
+  const rank = (o: Occurrence) => (o.event.allDay ? 0 : 1);
+  return rank(a) - rank(b) || a.start - b.start || a.event.title.localeCompare(b.event.title);
 }

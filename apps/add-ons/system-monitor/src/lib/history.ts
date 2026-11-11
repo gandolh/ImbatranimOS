@@ -16,16 +16,16 @@
  * adding a chart library for three of them fails the lightweight test.
  */
 
-export const HISTORY_LENGTH = 120
+export const HISTORY_LENGTH = 120;
 
 /** Append to a bounded history, dropping the oldest sample when full. */
 export function pushSample(history: number[], value: number, limit = HISTORY_LENGTH): number[] {
   // A non-finite reading would render as a gap in the path and then poison the
   // scale; treat it as 0, which is what an unreadable gauge means here.
-  const safe = Number.isFinite(value) ? value : 0
-  const next = history.length >= limit ? history.slice(history.length - limit + 1) : history.slice()
-  next.push(safe)
-  return next
+  const safe = Number.isFinite(value) ? value : 0;
+  const next = history.length >= limit ? history.slice(history.length - limit + 1) : history.slice();
+  next.push(safe);
+  return next;
 }
 
 /**
@@ -42,26 +42,26 @@ export function pushSample(history: number[], value: number, limit = HISTORY_LEN
  * information.
  */
 export function sparklinePoints(history: number[], width: number, height: number): string {
-  if (history.length < 2 || width <= 0 || height <= 0) return ''
-  const stepX = width / (history.length - 1)
+  if (history.length < 2 || width <= 0 || height <= 0) return "";
+  const stepX = width / (history.length - 1);
   return history
     .map((value, i) => {
-      const clamped = Math.max(0, Math.min(100, value))
-      const x = i * stepX
-      const y = height - (clamped / 100) * height
+      const clamped = Math.max(0, Math.min(100, value));
+      const x = i * stepX;
+      const y = height - (clamped / 100) * height;
       // Two decimals: enough for sub-pixel smoothness, short enough that a
       // 120-point path stays a reasonable attribute length.
-      return `${x.toFixed(2)},${y.toFixed(2)}`
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
     })
-    .join(' ')
+    .join(" ");
 }
 
 /** Bytes/sec as a short human string, for the network row. */
 export function formatRate(bytesPerSec: number): string {
-  if (!Number.isFinite(bytesPerSec) || bytesPerSec < 0) return '—'
-  if (bytesPerSec < 1024) return `${Math.round(bytesPerSec)} B/s`
-  if (bytesPerSec < 1024 * 1024) return `${(bytesPerSec / 1024).toFixed(1)} KB/s`
-  return `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB/s`
+  if (!Number.isFinite(bytesPerSec) || bytesPerSec < 0) return "—";
+  if (bytesPerSec < 1024) return `${Math.round(bytesPerSec)} B/s`;
+  if (bytesPerSec < 1024 * 1024) return `${(bytesPerSec / 1024).toFixed(1)} KB/s`;
+  return `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB/s`;
 }
 
 /**
@@ -72,8 +72,8 @@ export function formatRate(bytesPerSec: number): string {
  * log line.
  */
 export function matchesFilter(process: { name: string; pid: number }, query: string): boolean {
-  const q = query.trim().toLowerCase()
-  if (!q) return true
-  if (process.name.toLowerCase().includes(q)) return true
-  return /^\d+$/.test(q) && String(process.pid).startsWith(q)
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  if (process.name.toLowerCase().includes(q)) return true;
+  return /^\d+$/.test(q) && String(process.pid).startsWith(q);
 }

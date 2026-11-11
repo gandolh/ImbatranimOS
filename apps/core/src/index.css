@@ -1,10 +1,10 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 /* The design tokens (the @theme block), shared with marketplace kit apps. */
-@import '../../../packages/ui/src/theme.css';
-@plugin '@tailwindcss/typography';
+@import "../../../packages/ui/src/theme.css";
+@plugin "@tailwindcss/typography";
 /* Add-on packages live outside core's auto-detection root — scan them too. */
-@source '../../add-ons';
-@source '../../../packages/ui';
+@source "../../add-ons";
+@source "../../../packages/ui";
 
 /*
  * Fonts are vendored (latin subset, variable-weight woff2) and served from
@@ -17,25 +17,25 @@
  * font in both. Sources and versions: assets/fonts/README.md.
  */
 @font-face {
-  font-family: 'Figtree';
+  font-family: "Figtree";
   font-style: normal;
   font-weight: 300 900;
   font-display: swap;
-  src: url('./assets/fonts/figtree-latin-var.woff2') format('woff2');
+  src: url("./assets/fonts/figtree-latin-var.woff2") format("woff2");
 }
 @font-face {
-  font-family: 'Space Grotesk';
+  font-family: "Space Grotesk";
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url('./assets/fonts/space-grotesk-latin-var.woff2') format('woff2');
+  src: url("./assets/fonts/space-grotesk-latin-var.woff2") format("woff2");
 }
 @font-face {
-  font-family: 'Inter';
+  font-family: "Inter";
   font-style: normal;
   font-weight: 400 600;
   font-display: swap;
-  src: url('./assets/fonts/inter-latin-var.woff2') format('woff2');
+  src: url("./assets/fonts/inter-latin-var.woff2") format("woff2");
 }
 
 /*
@@ -66,7 +66,7 @@
 
 /* ── Apricot, light — also the bare default (the sign-in screen, nothing saved) ─ */
 :root,
-[data-os-theme='apricot'][data-theme='light'] {
+[data-os-theme="apricot"][data-theme="light"] {
   --k-surface: #fbf3ea;
   --k-surface-dim: #e9d6c4;
   --k-surface-bright: #fffdf9;
@@ -84,7 +84,7 @@
   --k-error: #ba1a1a;
   --k-error-container: #ffdad6;
   --k-on-error-container: #93000a;
-  --k-font-ui: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  --k-font-ui: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --k-shadow-window: 0 10px 28px rgba(140, 84, 48, 0.14);
   --k-shadow-window-focused: 0 18px 44px rgba(140, 84, 48, 0.2), 0 2px 8px rgba(140, 84, 48, 0.1);
   --k-shadow-menu: 0 18px 48px rgba(140, 84, 48, 0.24);
@@ -111,7 +111,7 @@
 }
 
 /* ── Apricot, dark ───────────────────────────────────────────────────────────── */
-[data-os-theme='apricot'][data-theme='dark'] {
+[data-os-theme="apricot"][data-theme="dark"] {
   --k-surface: #1f1916;
   --k-surface-dim: #181310;
   --k-surface-bright: #2e2622;
@@ -129,7 +129,7 @@
   --k-error: #ff7171; /* Classic's #ff6b6b, lifted to clear 4.5:1 on highest */
   --k-error-container: #3a1516;
   --k-on-error-container: #ffb4ab;
-  --k-font-ui: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  --k-font-ui: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --k-shadow-window: 0 10px 28px rgba(0, 0, 0, 0.4);
   --k-shadow-window-focused: 0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
   --k-shadow-menu: 0 18px 48px rgba(0, 0, 0, 0.6);
@@ -156,7 +156,7 @@
 }
 
 /* ── Classic, dark ───────────────────────────────────────────────────────────── */
-[data-os-theme='classic'][data-theme='dark'] {
+[data-os-theme="classic"][data-theme="dark"] {
   --k-surface: #0d0d0e;
   --k-surface-dim: #070708;
   --k-surface-bright: #1b1b1d;
@@ -174,13 +174,13 @@
   --k-error: #ff6b6b;
   --k-error-container: #3a1516;
   --k-on-error-container: #ffb4ab;
-  --k-font-ui: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --k-font-ui: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
 
   color-scheme: dark;
 }
 
 /* ── Classic, light ──────────────────────────────────────────────────────────── */
-[data-os-theme='classic'][data-theme='light'] {
+[data-os-theme="classic"][data-theme="light"] {
   --k-surface: #f3f3f1;
   --k-surface-dim: #e0e0dc;
   --k-surface-bright: #ffffff;
@@ -198,7 +198,7 @@
   --k-error: #ba1a1a;
   --k-error-container: #ffdad6;
   --k-on-error-container: #93000a;
-  --k-font-ui: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --k-font-ui: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
 
   color-scheme: light;
 }
@@ -207,7 +207,7 @@
 /* The radii are Tailwind tokens in the kit's theme.css (rounded-window and so
    on); Apricot's shadows change with the mode, so they sit in its blocks above. */
 :root,
-[data-os-theme='apricot'] {
+[data-os-theme="apricot"] {
   --k-radius-window: 12px;
   --k-radius-menu: 14px;
   --k-radius-control: 8px;
@@ -219,7 +219,7 @@
   --k-list-inset: 6px;
 }
 
-[data-os-theme='classic'] {
+[data-os-theme="classic"] {
   --k-radius-window: 0px;
   --k-radius-menu: 0px;
   --k-radius-control: 0px;
@@ -242,7 +242,7 @@
 
 /* Classic is square everywhere, so nothing can drift into a curve there —
    except inside an element scoped to Apricot (Settings' theme card). */
-:root[data-os-theme='classic'] *:not([data-os-theme='apricot'], [data-os-theme='apricot'] *) {
+:root[data-os-theme="classic"] *:not([data-os-theme="apricot"], [data-os-theme="apricot"] *) {
   border-radius: 0 !important;
 }
 

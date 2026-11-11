@@ -1,14 +1,9 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { queryClient, useSystem, type SystemHandle } from '@imbatranim/ui'
-import {
-  createStickyNote,
-  deleteStickyNote,
-  fetchStickyNotes,
-  updateStickyNote,
-} from '../api/stickyNotesApi'
-import type { StickyNote, StickyNoteInput, StickyNotePatch } from '../types'
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient, useSystem, type SystemHandle } from "@imbatranim/ui";
+import { createStickyNote, deleteStickyNote, fetchStickyNotes, updateStickyNote } from "../api/stickyNotesApi";
+import type { StickyNote, StickyNoteInput, StickyNotePatch } from "../types";
 
-export const NOTES_KEY = ['sticky-notes'] as const
+export const NOTES_KEY = ["sticky-notes"] as const;
 
 /**
  * Report a failed write.
@@ -20,64 +15,63 @@ export const NOTES_KEY = ['sticky-notes'] as const
 function reportFailure(system: SystemHandle, action: string): void {
   system.notify({
     title: `Could not ${action}`,
-    body: 'The change was not saved.',
-    level: 'error',
-  })
+    body: "The change was not saved.",
+    level: "error",
+  });
 }
 
 export function useStickyNotesQuery() {
-  const system = useSystem()
-  return useQuery({ queryKey: NOTES_KEY, queryFn: () => fetchStickyNotes(system.http) })
+  const system = useSystem();
+  return useQuery({ queryKey: NOTES_KEY, queryFn: () => fetchStickyNotes(system.http) });
 }
 
 export function useCreateStickyNoteMutation() {
-  const system = useSystem()
+  const system = useSystem();
   return useMutation({
     mutationFn: (input: StickyNoteInput) => createStickyNote(system.http, input),
-    onError: () => reportFailure(system, 'create that note'),
+    onError: () => reportFailure(system, "create that note"),
     onSettled: () => queryClient.invalidateQueries({ queryKey: NOTES_KEY }),
-  })
+  });
 }
 
 export function useUpdateStickyNoteMutation() {
-  const system = useSystem()
+  const system = useSystem();
   return useMutation({
-    mutationFn: ({ id, patch }: { id: number; patch: StickyNotePatch }) =>
-      updateStickyNote(system.http, id, patch),
+    mutationFn: ({ id, patch }: { id: number; patch: StickyNotePatch }) => updateStickyNote(system.http, id, patch),
     // Optimistic: a dragged note must stay where it was dropped, not snap back to
     // its old position for the length of a round trip.
     onMutate: async ({ id, patch }) => {
-      await queryClient.cancelQueries({ queryKey: NOTES_KEY })
-      const previous = queryClient.getQueryData<StickyNote[]>(NOTES_KEY)
+      await queryClient.cancelQueries({ queryKey: NOTES_KEY });
+      const previous = queryClient.getQueryData<StickyNote[]>(NOTES_KEY);
       queryClient.setQueryData<StickyNote[]>(NOTES_KEY, (old) =>
-        old?.map((n) => (n.id === id ? applyPatch(n, patch) : n))
-      )
-      return { previous }
+        old?.map((n) => (n.id === id ? applyPatch(n, patch) : n)),
+      );
+      return { previous };
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(NOTES_KEY, ctx.previous)
-      reportFailure(system, 'save that note')
+      if (ctx?.previous) queryClient.setQueryData(NOTES_KEY, ctx.previous);
+      reportFailure(system, "save that note");
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: NOTES_KEY }),
-  })
+  });
 }
 
 export function useDeleteStickyNoteMutation() {
-  const system = useSystem()
+  const system = useSystem();
   return useMutation({
     mutationFn: (id: number) => deleteStickyNote(system.http, id),
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: NOTES_KEY })
-      const previous = queryClient.getQueryData<StickyNote[]>(NOTES_KEY)
-      queryClient.setQueryData<StickyNote[]>(NOTES_KEY, (old) => old?.filter((n) => n.id !== id))
-      return { previous }
+      await queryClient.cancelQueries({ queryKey: NOTES_KEY });
+      const previous = queryClient.getQueryData<StickyNote[]>(NOTES_KEY);
+      queryClient.setQueryData<StickyNote[]>(NOTES_KEY, (old) => old?.filter((n) => n.id !== id));
+      return { previous };
     },
     onError: (_err, _id, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(NOTES_KEY, ctx.previous)
-      reportFailure(system, 'delete that note')
+      if (ctx?.previous) queryClient.setQueryData(NOTES_KEY, ctx.previous);
+      reportFailure(system, "delete that note");
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: NOTES_KEY }),
-  })
+  });
 }
 
 /** `color: null` is meaningful, so a plain spread would not do. */
@@ -91,5 +85,5 @@ function applyPatch(note: StickyNote, patch: StickyNotePatch): StickyNote {
     ...(patch.height !== undefined ? { height: patch.height } : {}),
     ...(patch.color !== undefined ? { color: patch.color } : {}),
     ...(patch.onDesktop !== undefined ? { onDesktop: patch.onDesktop } : {}),
-  }
+  };
 }

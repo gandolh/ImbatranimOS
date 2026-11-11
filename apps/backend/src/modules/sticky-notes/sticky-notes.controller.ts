@@ -1,20 +1,9 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  ParseIntPipe,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import { StickyNotesService } from './sticky-notes.service';
-import { CreateStickyNoteDto } from './dto/create-sticky-note.dto';
-import { UpdateStickyNoteDto } from './dto/update-sticky-note.dto';
+import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe, HttpCode, HttpStatus } from "@nestjs/common";
+import { StickyNotesService } from "./sticky-notes.service";
+import { CreateStickyNoteDto } from "./dto/create-sticky-note.dto";
+import { UpdateStickyNoteDto } from "./dto/update-sticky-note.dto";
 
-@Controller('sticky-notes')
+@Controller("sticky-notes")
 export class StickyNotesController {
   constructor(private readonly stickynotesService: StickyNotesService) {}
 
@@ -29,17 +18,14 @@ export class StickyNotesController {
     return this.stickynotesService.create(dto);
   }
 
-  @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateStickyNoteDto,
-  ) {
+  @Patch(":id")
+  update(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateStickyNoteDto) {
     return this.stickynotesService.update(id, dto);
   }
 
-  @Delete(':id')
+  @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param("id", ParseIntPipe) id: number) {
     this.stickynotesService.remove(id);
   }
 }

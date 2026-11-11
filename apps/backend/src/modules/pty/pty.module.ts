@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { WaylandModule } from '../wayland/wayland.module';
-import { PtyGateway } from './pty.gateway';
+import { Module } from "@nestjs/common";
+import { WaylandModule } from "../wayland/wayland.module";
+import { PtyGateway } from "./pty.gateway";
 
 /**
  * Terminal. A real login shell in a window, streamed over an

@@ -1,9 +1,9 @@
-import { Module } from '@nestjs/common';
-import { AppDataModule } from '../app-data/app-data.module';
-import { ArchiveModule } from '../archive/archive.module';
-import { FilesModule } from '../files/files.module';
-import { BackupController } from './backup.controller';
-import { BackupService } from './backup.service';
+import { Module } from "@nestjs/common";
+import { AppDataModule } from "../app-data/app-data.module";
+import { ArchiveModule } from "../archive/archive.module";
+import { FilesModule } from "../files/files.module";
+import { BackupController } from "./backup.controller";
+import { BackupService } from "./backup.service";
 
 /**
  * Backup and restore.

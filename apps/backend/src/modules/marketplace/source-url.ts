@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash } from "crypto";
 
 /**
  * Where an app installed from a URL comes from: the URL the owner
@@ -37,9 +37,9 @@ export interface ParsedSourceUrl {
 /** A URL or a ref that cannot be installed. The message is shown to the owner. */
 export class SourceUrlError extends Error {}
 
-export const ONLY_GITHUB = 'Only github.com URLs can be installed for now.';
+export const ONLY_GITHUB = "Only github.com URLs can be installed for now.";
 const NOT_A_REPO =
-  'That is not a repository URL. Paste https://github.com/<owner>/<repo>, or …/tree/<branch>/<folder> for an app in a folder.';
+  "That is not a repository URL. Paste https://github.com/<owner>/<repo>, or …/tree/<branch>/<folder> for an app in a folder.";
 
 /** GitHub's own rule for owner and repository names, near enough. */
 const NAME = /^[A-Za-z0-9_.-]+$/;
@@ -47,7 +47,7 @@ const FULL_SHA = /^[0-9a-fA-F]{40}$/;
 /** One line of `git ls-remote`: `<sha>\t<ref>`. */
 const REF_LINE = /^([0-9a-f]{40})\t(\S+)$/;
 /** What ls-remote appends to an annotated tag's name for the commit it points at. */
-const PEELED = '^{}';
+const PEELED = "^{}";
 /** Deeper than any real app's folder. Keeps the ls-remote argv bounded. */
 const MAX_SEGMENTS = 32;
 const MAX_URL_LENGTH = 2000;
@@ -64,68 +64,54 @@ const MAX_URL_LENGTH = 2000;
  * the URL parser would fold `..` away, so a URL that climbs is refused rather
  * than quietly meaning something else.
  */
-export function parseSourceUrl(
-  input: string,
-  options: { allowLocalRepos: boolean },
-): ParsedSourceUrl {
+export function parseSourceUrl(input: string, options: { allowLocalRepos: boolean }): ParsedSourceUrl {
   const text = input.trim();
   // The URL parser drops tabs and newlines and reads `\` as `/`, so a URL
   // holding them would mean one thing to it and another to the raw-path read
   // below. No real repository URL has them.
-  if (
-    text === '' ||
-    text.length > MAX_URL_LENGTH ||
-    /[\s\\]/.test(text) ||
-    hasControl(text)
-  ) {
+  if (text === "" || text.length > MAX_URL_LENGTH || /[\s\\]/.test(text) || hasControl(text)) {
     throw new SourceUrlError(NOT_A_REPO);
   }
   if (/^file:/i.test(text)) {
     if (!options.allowLocalRepos) throw new SourceUrlError(ONLY_GITHUB);
     return parseFileUrl(text);
   }
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text)
-    ? text
-    : `https://${text}`;
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`;
   let url: URL;
   try {
     url = new URL(withScheme);
   } catch {
     throw new SourceUrlError(NOT_A_REPO);
   }
-  if (url.hostname.toLowerCase() !== 'github.com') {
+  if (url.hostname.toLowerCase() !== "github.com") {
     throw new SourceUrlError(ONLY_GITHUB);
   }
-  if (url.protocol !== 'https:') {
-    throw new SourceUrlError(
-      'Use the https:// address of the repository on github.com.',
-    );
+  if (url.protocol !== "https:") {
+    throw new SourceUrlError("Use the https:// address of the repository on github.com.");
   }
   if (url.username || url.password || url.port) {
     throw new SourceUrlError(
-      'That URL carries a user name, a password or a port. Paste the plain https://github.com/<owner>/<repo> address.',
+      "That URL carries a user name, a password or a port. Paste the plain https://github.com/<owner>/<repo> address.",
     );
   }
 
   // The path as typed: everything after the authority, up to `?` or `#`.
-  const rawPath = /^[a-z][a-z0-9+.-]*:\/\/[^/?#]*([^?#]*)/i.exec(
-    withScheme,
-  )![1];
-  const segments = rawPath.split('/').slice(1);
-  if (segments.length > 0 && segments[segments.length - 1] === '') {
+  const rawPath = /^[a-z][a-z0-9+.-]*:\/\/[^/?#]*([^?#]*)/i.exec(withScheme)![1];
+  const segments = rawPath.split("/").slice(1);
+  if (segments.length > 0 && segments[segments.length - 1] === "") {
     segments.pop();
   }
   const [owner, repoName, tree, ...rest] = segments;
   if (owner === undefined || repoName === undefined) {
     throw new SourceUrlError(NOT_A_REPO);
   }
-  const repo = repoName.replace(/\.git$/i, '');
+  const repo = repoName.replace(/\.git$/i, "");
   for (const name of [owner, repo]) {
-    if (!NAME.test(name) || name === '.' || name === '..') {
+    if (!NAME.test(name) || name === "." || name === "..") {
       throw new SourceUrlError(NOT_A_REPO);
     }
   }
-  if (tree !== undefined && (tree !== 'tree' || rest.length === 0)) {
+  if (tree !== undefined && (tree !== "tree" || rest.length === 0)) {
     throw new SourceUrlError(NOT_A_REPO);
   }
   return {
@@ -143,25 +129,20 @@ function parseFileUrl(text: string): ParsedSourceUrl {
   } catch {
     throw new SourceUrlError(NOT_A_REPO);
   }
-  const hashAt = text.indexOf('#');
-  const rawPath = (hashAt === -1 ? text : text.slice(0, hashAt)).replace(
-    /^file:\/\/[^/]*/i,
-    '',
-  );
+  const hashAt = text.indexOf("#");
+  const rawPath = (hashAt === -1 ? text : text.slice(0, hashAt)).replace(/^file:\/\/[^/]*/i, "");
   if (
-    url.host !== '' ||
-    url.search !== '' ||
-    !rawPath.startsWith('/') ||
-    rawPath.split('/').some((s) => s === '.' || s === '..')
+    url.host !== "" ||
+    url.search !== "" ||
+    !rawPath.startsWith("/") ||
+    rawPath.split("/").some((s) => s === "." || s === "..")
   ) {
-    throw new SourceUrlError(
-      'A local repository is file:///absolute/path[#<ref>[/<folder>]].',
-    );
+    throw new SourceUrlError("A local repository is file:///absolute/path[#<ref>[/<folder>]].");
   }
-  const path = rawPath.replace(/\/+$/, '') || '/';
-  const fragment = hashAt === -1 ? '' : text.slice(hashAt + 1);
-  const refPath = fragment === '' ? [] : fragment.split('/');
-  if (refPath.length > 0 && refPath[refPath.length - 1] === '') refPath.pop();
+  const path = rawPath.replace(/\/+$/, "") || "/";
+  const fragment = hashAt === -1 ? "" : text.slice(hashAt + 1);
+  const refPath = fragment === "" ? [] : fragment.split("/");
+  if (refPath.length > 0 && refPath[refPath.length - 1] === "") refPath.pop();
   return { repo: `file://${path}`, refPath: decodeSegments(refPath) };
 }
 
@@ -175,13 +156,7 @@ function decodeSegments(raw: string[]): string[] {
     } catch {
       throw new SourceUrlError(NOT_A_REPO);
     }
-    if (
-      decoded === '' ||
-      decoded === '.' ||
-      decoded === '..' ||
-      /[/\\]/.test(decoded) ||
-      hasControl(decoded)
-    ) {
+    if (decoded === "" || decoded === "." || decoded === ".." || /[/\\]/.test(decoded) || hasControl(decoded)) {
       throw new SourceUrlError(NOT_A_REPO);
     }
     return decoded;
@@ -210,12 +185,8 @@ export function lsRemotePatterns(refPath: string[]): string[] {
   if (refPath.length === 0 || FULL_SHA.test(refPath[0])) return [];
   const patterns: string[] = [];
   for (let k = 1; k <= refPath.length; k++) {
-    const name = refPath.slice(0, k).join('/');
-    patterns.push(
-      `refs/heads/${name}`,
-      `refs/tags/${name}`,
-      `refs/tags/${name}^{}`,
-    );
+    const name = refPath.slice(0, k).join("/");
+    patterns.push(`refs/heads/${name}`, `refs/tags/${name}`, `refs/tags/${name}^{}`);
   }
   return patterns;
 }
@@ -262,9 +233,9 @@ export function commitTipLines(commit: string): (line: string) => boolean {
 function tipCommits(refs: ReadonlyMap<string, string>): Set<string> {
   const tips = new Set<string>();
   for (const [ref, sha] of refs) {
-    if (ref.startsWith('refs/heads/') && !ref.endsWith(PEELED)) {
+    if (ref.startsWith("refs/heads/") && !ref.endsWith(PEELED)) {
       tips.add(sha);
-    } else if (ref.startsWith('refs/tags/')) {
+    } else if (ref.startsWith("refs/tags/")) {
       if (ref.endsWith(PEELED) || !refs.has(`${ref}${PEELED}`)) tips.add(sha);
     }
   }
@@ -296,14 +267,10 @@ export interface ResolvedRef {
  *
  * Throws a {@link SourceUrlError} naming the ref when nothing matches.
  */
-export function resolveRef(
-  lsRemoteOutput: string,
-  refPath: string[],
-  repo: string,
-): ResolvedRef {
+export function resolveRef(lsRemoteOutput: string, refPath: string[], repo: string): ResolvedRef {
   const refs = new Map<string, string>();
   let headTarget: string | null = null;
-  for (const line of lsRemoteOutput.split('\n')) {
+  for (const line of lsRemoteOutput.split("\n")) {
     const symref = /^ref: (\S+)\tHEAD$/.exec(line);
     if (symref) {
       headTarget = symref[1];
@@ -312,16 +279,14 @@ export function resolveRef(
     const m = REF_LINE.exec(line);
     if (m) refs.set(m[2], m[1]);
   }
-  const subdirOf = (rest: string[]) => (rest.length ? rest.join('/') : null);
+  const subdirOf = (rest: string[]) => (rest.length ? rest.join("/") : null);
 
   if (refPath.length === 0) {
-    const commit = refs.get('HEAD');
+    const commit = refs.get("HEAD");
     if (!commit) {
       throw new SourceUrlError(`${repo} has no default branch to install.`);
     }
-    const branch = headTarget?.startsWith('refs/heads/')
-      ? headTarget.slice('refs/heads/'.length)
-      : null;
+    const branch = headTarget?.startsWith("refs/heads/") ? headTarget.slice("refs/heads/".length) : null;
     return { ref: branch, commit, subdir: null };
   }
 
@@ -336,17 +301,14 @@ export function resolveRef(
   }
 
   for (let k = refPath.length; k >= 1; k--) {
-    const name = refPath.slice(0, k).join('/');
-    const commit =
-      refs.get(`refs/heads/${name}`) ??
-      refs.get(`refs/tags/${name}^{}`) ??
-      refs.get(`refs/tags/${name}`);
+    const name = refPath.slice(0, k).join("/");
+    const commit = refs.get(`refs/heads/${name}`) ?? refs.get(`refs/tags/${name}^{}`) ?? refs.get(`refs/tags/${name}`);
     if (commit) {
       return { ref: name, commit, subdir: subdirOf(refPath.slice(k)) };
     }
   }
 
-  const asked = refPath.join('/');
+  const asked = refPath.join("/");
   if (/^[0-9a-f]{4,39}$/i.test(refPath[0])) {
     throw new SourceUrlError(
       `There is no branch or tag "${refPath[0]}" in ${repo}. A commit needs its full 40-character id.`,
@@ -366,16 +328,10 @@ export function resolveRef(
  * `/tree/<ref>[/<subdir>]` (or `#<ref>[/<subdir>]` for `file:`) when a ref was
  * asked for. The default branch stays implicit, so an update follows it.
  */
-export function sourceUrl(
-  repo: string,
-  askedRef: string | null,
-  subdir: string | null,
-): string {
+export function sourceUrl(repo: string, askedRef: string | null, subdir: string | null): string {
   if (askedRef === null) return repo;
-  const path = [...askedRef.split('/'), ...(subdir ? subdir.split('/') : [])]
-    .map(encodeURIComponent)
-    .join('/');
-  return repo.startsWith('file:') ? `${repo}#${path}` : `${repo}/tree/${path}`;
+  const path = [...askedRef.split("/"), ...(subdir ? subdir.split("/") : [])].map(encodeURIComponent).join("/");
+  return repo.startsWith("file:") ? `${repo}#${path}` : `${repo}/tree/${path}`;
 }
 
 /**
@@ -384,13 +340,13 @@ export function sourceUrl(
  * another app's id, and the same app pasted twice is the same app.
  */
 export function deriveAppId(repo: string, subdir: string | null): string {
-  const hash = createHash('sha256')
-    .update(`${repo}#${subdir ?? ''}`)
-    .digest('hex');
+  const hash = createHash("sha256")
+    .update(`${repo}#${subdir ?? ""}`)
+    .digest("hex");
   return `x-${hash.slice(0, 12)}`;
 }
 
 /** An id only an app installed from a URL has. The catalog refuses ids like it. */
 export function isUrlAppId(id: string): boolean {
-  return id.startsWith('x-');
+  return id.startsWith("x-");
 }

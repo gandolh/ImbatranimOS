@@ -1,24 +1,11 @@
-import * as fs from 'fs/promises';
-import {
-  Body,
-  Controller,
-  Delete,
-  ForbiddenException,
-  Get,
-  HttpCode,
-  Post,
-  Query,
-} from '@nestjs/common';
-import type { AppIdentity } from '../app-identity/app-identity.types';
-import { CallingApp, requireUser } from '../app-identity/calling-app';
-import { FilesService } from './files.service';
-import type { ModeOp } from '../app-identity/mode-store.service';
-import {
-  RecentService,
-  type RecentFile,
-  type RecentKind,
-} from './recent.service';
-import { RecordRecentDto, RemoveRecentQueryDto } from './dto/recent.dto';
+import * as fs from "fs/promises";
+import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, Post, Query } from "@nestjs/common";
+import type { AppIdentity } from "../app-identity/app-identity.types";
+import { CallingApp, requireUser } from "../app-identity/calling-app";
+import { FilesService } from "./files.service";
+import type { ModeOp } from "../app-identity/mode-store.service";
+import { RecentService, type RecentFile, type RecentKind } from "./recent.service";
+import { RecordRecentDto, RemoveRecentQueryDto } from "./dto/recent.dto";
 
 /**
  * OS-wide recent files. Session-authed by the global guard.
@@ -34,7 +21,7 @@ import { RecordRecentDto, RemoveRecentQueryDto } from './dto/recent.dto';
  * An app sees and removes only its own entries; the whole list, and clearing
  * it, are the user's.
  */
-@Controller('files/recent')
+@Controller("files/recent")
 export class RecentController {
   constructor(
     private readonly recent: RecentService,
@@ -49,25 +36,20 @@ export class RecentController {
 
   @Post()
   @HttpCode(204)
-  async record(
-    @CallingApp() who: AppIdentity | null,
-    @Body() dto: RecordRecentDto,
-  ): Promise<void> {
+  async record(@CallingApp() who: AppIdentity | null, @Body() dto: RecordRecentDto): Promise<void> {
     const kind = await this.kindAt(dto.root, dto.path);
     if (who === null) {
       this.recent.record(dto.root, dto.path, dto.appId, true, kind);
       return;
     }
     if (dto.appId !== who.appId) {
-      throw new ForbiddenException(
-        `${who.appId} may not record a recent file for ${dto.appId}`,
-      );
+      throw new ForbiddenException(`${who.appId} may not record a recent file for ${dto.appId}`);
     }
     // What the app may do to it now is what a reopen gives later: a file it
     // may only read is recorded as such. A folder only by an app that holds
     // it whole, listing and writing in it, as a picked folder is given.
-    const ops: ModeOp[] = kind === 'folder' ? ['list', 'write'] : ['read'];
-    let key = '';
+    const ops: ModeOp[] = kind === "folder" ? ["list", "write"] : ["read"];
+    let key = "";
     try {
       for (const op of ops) {
         ({ key } = await this.files.check(who, op, dto.root, dto.path));
@@ -81,8 +63,7 @@ export class RecentController {
       }
       throw err;
     }
-    const writable =
-      kind === 'folder' || this.files.can(who, 'write', key) !== null;
+    const writable = kind === "folder" || this.files.can(who, "write", key) !== null;
     this.recent.record(dto.root, dto.path, dto.appId, writable, kind);
   }
 
@@ -92,22 +73,19 @@ export class RecentController {
       .resolveSafe(root, path)
       .then(({ abs }) => fs.stat(abs))
       .catch(() => null);
-    return stat?.isDirectory() ? 'folder' : 'file';
+    return stat?.isDirectory() ? "folder" : "file";
   }
 
-  @Delete('all')
+  @Delete("all")
   @HttpCode(204)
   clear(@CallingApp() who: AppIdentity | null): void {
-    requireUser(who, 'clear the recent files');
+    requireUser(who, "clear the recent files");
     this.recent.clear();
   }
 
   @Delete()
   @HttpCode(204)
-  remove(
-    @CallingApp() who: AppIdentity | null,
-    @Query() query: RemoveRecentQueryDto,
-  ): void {
+  remove(@CallingApp() who: AppIdentity | null, @Query() query: RemoveRecentQueryDto): void {
     this.recent.remove(query.root, query.path, who?.appId);
   }
 }

@@ -1,4 +1,4 @@
-import { SYSTEM_GROUP, type AppIdentity } from './app-identity.types';
+import { SYSTEM_GROUP, type AppIdentity } from "./app-identity.types";
 
 /**
  * Unix modes for the apps' data area, checked by the OS rather than Linux.
@@ -22,7 +22,7 @@ export const R = 4;
 export const W = 2;
 export const X = 1;
 
-export type EntryKind = 'file' | 'directory';
+export type EntryKind = "file" | "directory";
 
 /** A path's owner, group and mode. `owner` null is the user. */
 export interface ModeEntry {
@@ -62,7 +62,7 @@ export const SHARED_FILE_MODE = 0o660;
 export const SHARED_DIRECTORY_MODE = 0o770;
 
 export function impliedEntry(kind: EntryKind): ModeEntry {
-  return kind === 'directory' ? IMPLIED_DIRECTORY : IMPLIED_FILE;
+  return kind === "directory" ? IMPLIED_DIRECTORY : IMPLIED_FILE;
 }
 
 /** The three bits (`rwx`, 0 to 7) that apply to an app on an entry. */
@@ -73,11 +73,7 @@ export function classBits(identity: AppIdentity, entry: ModeEntry): number {
 }
 
 /** True when the caller holds every bit of `want` (R, W, X or a sum) on `entry`. */
-export function permits(
-  identity: AppIdentity | null,
-  entry: ModeEntry,
-  want: number,
-): boolean {
+export function permits(identity: AppIdentity | null, entry: ModeEntry, want: number): boolean {
   if (identity === null) return true;
   return (classBits(identity, entry) & want) === want;
 }
@@ -105,12 +101,11 @@ export function newEntry(
 ): ModeEntry | null {
   const inherits = (parent.mode & S_ISGID) !== 0;
   if (identity === null && !inherits) return null;
-  const shared =
-    kind === 'directory' ? SHARED_DIRECTORY_MODE : SHARED_FILE_MODE;
-  const own = kind === 'directory' ? PRIVATE_DIRECTORY_MODE : PRIVATE_FILE_MODE;
+  const shared = kind === "directory" ? SHARED_DIRECTORY_MODE : SHARED_FILE_MODE;
+  const own = kind === "directory" ? PRIVATE_DIRECTORY_MODE : PRIVATE_FILE_MODE;
   const base = mode ?? (identity === null ? shared : own);
   assertMode(base);
-  const setgid = inherits && kind === 'directory' ? S_ISGID : 0;
+  const setgid = inherits && kind === "directory" ? S_ISGID : 0;
   return {
     owner: identity?.appId ?? null,
     group: inherits ? parent.group : (identity?.appId ?? SYSTEM_GROUP),
@@ -127,20 +122,14 @@ export function assertMode(mode: number): void {
 /** `ls -l`'s nine permission letters, with s/S and t/T for setuid, setgid and sticky. */
 export function formatMode(mode: number): string {
   assertMode(mode);
-  const triplet = (bits: number, special: boolean, letter: 's' | 't') =>
-    (bits & R ? 'r' : '-') +
-    (bits & W ? 'w' : '-') +
-    (special
-      ? bits & X
-        ? letter
-        : letter.toUpperCase()
-      : bits & X
-        ? 'x'
-        : '-');
+  const triplet = (bits: number, special: boolean, letter: "s" | "t") =>
+    (bits & R ? "r" : "-") +
+    (bits & W ? "w" : "-") +
+    (special ? (bits & X ? letter : letter.toUpperCase()) : bits & X ? "x" : "-");
   return (
-    triplet((mode >> 6) & 7, (mode & S_ISUID) !== 0, 's') +
-    triplet((mode >> 3) & 7, (mode & S_ISGID) !== 0, 's') +
-    triplet(mode & 7, (mode & S_ISVTX) !== 0, 't')
+    triplet((mode >> 6) & 7, (mode & S_ISUID) !== 0, "s") +
+    triplet((mode >> 3) & 7, (mode & S_ISGID) !== 0, "s") +
+    triplet(mode & 7, (mode & S_ISVTX) !== 0, "t")
   );
 }
 
@@ -154,10 +143,10 @@ export function parseMode(text: string): number {
   for (let i = 0; i < 3; i++) {
     const [r, w, x] = text.slice(i * 3, i * 3 + 3);
     let bits = 0;
-    if (r === 'r') bits |= R;
-    if (w === 'w') bits |= W;
-    if (x === 'x' || x === 's' || x === 't') bits |= X;
-    if (x === 's' || x === 'S' || x === 't' || x === 'T') mode |= specials[i];
+    if (r === "r") bits |= R;
+    if (w === "w") bits |= W;
+    if (x === "x" || x === "s" || x === "t") bits |= X;
+    if (x === "s" || x === "S" || x === "t" || x === "T") mode |= specials[i];
     mode |= bits << ((2 - i) * 3);
   }
   return mode;

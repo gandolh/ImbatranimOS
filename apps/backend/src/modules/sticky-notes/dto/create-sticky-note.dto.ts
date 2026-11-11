@@ -1,13 +1,4 @@
-import {
-  IsBoolean,
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 
 /** A sticky note is a scrap, not a document (rich text is out of scope). */
 export const MAX_CONTENT = 10_000;
@@ -20,14 +11,7 @@ export const MAX_CONTENT = 10_000;
  * border plus a low-alpha fill rather than a solid block of colour. Reusing the
  * set rather than inventing a second one is the point — see the brief outcome.
  */
-export const COLORS = [
-  'blue',
-  'green',
-  'amber',
-  'red',
-  'purple',
-  'slate',
-] as const;
+export const COLORS = ["blue", "green", "amber", "red", "purple", "slate"] as const;
 
 /** Bounds for a desktop note, so a bad drag cannot store something unusable. */
 export const MIN_SIZE = 120;

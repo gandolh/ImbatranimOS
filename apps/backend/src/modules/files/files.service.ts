@@ -6,18 +6,18 @@ import {
   Optional,
   PayloadTooLargeException,
   ServiceUnavailableException,
-} from '@nestjs/common';
-import { join, resolve, relative, basename, dirname, sep } from 'path';
-import * as fs from 'fs/promises';
-import { constants as fsConstants, createReadStream } from 'fs';
-import type { Dirent, Stats } from 'fs';
-import * as os from 'os';
-import { randomUUID } from 'crypto';
-import type { Readable } from 'stream';
+} from "@nestjs/common";
+import { join, resolve, relative, basename, dirname, sep } from "path";
+import * as fs from "fs/promises";
+import { constants as fsConstants, createReadStream } from "fs";
+import type { Dirent, Stats } from "fs";
+import * as os from "os";
+import { randomUUID } from "crypto";
+import type { Readable } from "stream";
 
-import type { AppIdentity } from '../app-identity/app-identity.types';
-import type { ModeOp } from '../app-identity/mode-store.service';
-import { addOnlyRefusal, FileAccess, type Access } from './file-access';
+import type { AppIdentity } from "../app-identity/app-identity.types";
+import type { ModeOp } from "../app-identity/mode-store.service";
+import { addOnlyRefusal, FileAccess, type Access } from "./file-access";
 
 /**
  * Cap for the text-content endpoint. Reading into a UTF-8 string materialises
@@ -25,8 +25,7 @@ import { addOnlyRefusal, FileAccess, type Access } from './file-access';
  * spike memory / stall the event loop. Large files should go through the
  * streaming download path instead. Env-overridable; defaults to 5 MB.
  */
-const MAX_TEXT_FILE_BYTES =
-  Number(process.env.FILES_MAX_TEXT_BYTES) || 5 * 1024 * 1024;
+const MAX_TEXT_FILE_BYTES = Number(process.env.FILES_MAX_TEXT_BYTES) || 5 * 1024 * 1024;
 
 /**
  * A cheap "has this file changed" token: the modification time in
@@ -34,17 +33,12 @@ const MAX_TEXT_FILE_BYTES =
  * files on every listing; two writes inside one millisecond with the same size
  * are the accepted blind spot.
  */
-export function versionOf(stat: Pick<Stats, 'mtimeMs' | 'size'>): string {
+export function versionOf(stat: Pick<Stats, "mtimeMs" | "size">): string {
   return `${Math.trunc(stat.mtimeMs)}-${stat.size}`;
 }
 
 /** What `link()` fails with on a file system that has no hard links. */
-const NO_HARD_LINKS: ReadonlySet<string> = new Set([
-  'EPERM',
-  'ENOTSUP',
-  'EOPNOTSUPP',
-  'EXDEV',
-]);
+const NO_HARD_LINKS: ReadonlySet<string> = new Set(["EPERM", "ENOTSUP", "EOPNOTSUPP", "EXDEV"]);
 
 /**
  * A 409 for a name already taken, for a caller that may add a file there but
@@ -53,9 +47,9 @@ const NO_HARD_LINKS: ReadonlySet<string> = new Set([
 function nameTaken(current: string | null): ConflictException {
   return new ConflictException({
     statusCode: 409,
-    error: 'Conflict',
-    code: 'NAME_TAKEN',
-    message: 'That name is taken: pick another',
+    error: "Conflict",
+    code: "NAME_TAKEN",
+    message: "That name is taken: pick another",
     current,
   });
 }
@@ -63,7 +57,7 @@ function nameTaken(current: string | null): ConflictException {
 export interface FileEntry {
   name: string;
   path: string;
-  type: 'file' | 'directory';
+  type: "file" | "directory";
   size: number;
   modifiedAt: string;
   /** ctime — POSIX has no true birth time on every filesystem. */
@@ -88,7 +82,7 @@ export interface SearchMatch {
 export interface SearchHit {
   name: string;
   path: string;
-  type: 'file' | 'directory';
+  type: "file" | "directory";
   /**
    * Which lines matched, for a `content=1` search that asked for them
    *. Absent on name-only matches and on every request that did
@@ -123,10 +117,8 @@ async function withDiskSpaceCheck<T>(op: () => Promise<T>): Promise<T> {
     return await op();
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
-    if (code === 'ENOSPC' || code === 'EDQUOT') {
-      throw new ServiceUnavailableException(
-        'The disk is full — free some space and try again.',
-      );
+    if (code === "ENOSPC" || code === "EDQUOT") {
+      throw new ServiceUnavailableException("The disk is full — free some space and try again.");
     }
     throw err;
   }
@@ -142,7 +134,7 @@ export interface SearchResult {
  * Directories the search walk never descends into. `node_modules`/`.git` are
  * huge + never interesting; dot-directories are skipped separately by prefix.
  */
-const SEARCH_SKIP_DIRS = new Set(['node_modules', '.git']);
+const SEARCH_SKIP_DIRS = new Set(["node_modules", ".git"]);
 
 /**
  * Where the `notes` root lives. Both roots resolve dynamically (see
@@ -162,7 +154,7 @@ const SEARCH_SKIP_DIRS = new Set(['node_modules', '.git']);
  * The fallback keeps the previous behaviour when NOTES_DIR is unset.
  */
 function notesRoot(): string {
-  return resolve(process.env.NOTES_DIR || resolve(process.cwd(), 'data/notes'));
+  return resolve(process.env.NOTES_DIR || resolve(process.cwd(), "data/notes"));
 }
 
 /** A path resolved inside a root: where it is, and the key its modes and grants are kept under. */
@@ -207,8 +199,8 @@ export class FilesService {
 
   /** Resolve a root name to an absolute directory. Throws if unknown. */
   private getRootDir(root: string): string {
-    if (root === 'home') return this.homeRoot();
-    if (root === 'notes') return notesRoot();
+    if (root === "home") return this.homeRoot();
+    if (root === "notes") return notesRoot();
     throw new BadRequestException(`Unknown root: ${root}`);
   }
 
@@ -256,7 +248,7 @@ export class FilesService {
     return (
       (sep.test(after) && !sep.test(before)) ||
       (dotdot.test(after) && !dotdot.test(before)) ||
-      (after.includes('\0') && !before.includes('\0'))
+      (after.includes("\0") && !before.includes("\0"))
     );
   }
 
@@ -273,11 +265,9 @@ export class FilesService {
     for (;;) {
       try {
         const real = await fs.realpath(current);
-        return missing.length
-          ? resolve(real, ...missing.slice().reverse())
-          : real;
+        return missing.length ? resolve(real, ...missing.slice().reverse()) : real;
       } catch (e) {
-        if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+        if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
         const parent = dirname(current);
         if (parent === current) return p; // nothing on this path exists
         missing.push(basename(current));
@@ -301,23 +291,23 @@ export class FilesService {
    *  5. Symlink jail: realpath both the root and the target (or its nearest
    *     existing ancestor) and re-verify containment — kills symlink escapes.
    */
-  async resolveSafe(root: string, virtualPath = ''): Promise<Located> {
+  async resolveSafe(root: string, virtualPath = ""): Promise<Located> {
     const rootDir = this.getRootDir(root);
-    let vp = this.fullyDecode(virtualPath ?? '');
-    if (vp.includes('\0')) throw new BadRequestException('Invalid path');
-    vp = vp.replace(/^[/\\]+/, '');
+    let vp = this.fullyDecode(virtualPath ?? "");
+    if (vp.includes("\0")) throw new BadRequestException("Invalid path");
+    vp = vp.replace(/^[/\\]+/, "");
     const abs = resolve(rootDir, vp);
 
     // (4) lexical containment
     if (abs !== rootDir && !abs.startsWith(rootDir + sep)) {
-      throw new BadRequestException('Path traversal detected');
+      throw new BadRequestException("Path traversal detected");
     }
 
     // (5) symlink containment
     const realRoot = await this.realpathAllowingMissing(rootDir);
     const realTarget = await this.realpathAllowingMissing(abs);
     if (realTarget !== realRoot && !realTarget.startsWith(realRoot + sep)) {
-      throw new BadRequestException('Path traversal detected');
+      throw new BadRequestException("Path traversal detected");
     }
 
     return { rootDir, abs, key: join(rootDir, relative(realRoot, realTarget)) };
@@ -335,15 +325,15 @@ export class FilesService {
    * inside the jail (symlink-proof), but the leaf is taken lexically so it can
    * be `lstat`/`unlink`ed as the link it is, never its target.
    */
-  async resolveSafeNoFollow(root: string, virtualPath = ''): Promise<Located> {
+  async resolveSafeNoFollow(root: string, virtualPath = ""): Promise<Located> {
     const rootDir = this.getRootDir(root);
-    let vp = this.fullyDecode(virtualPath ?? '');
-    if (vp.includes('\0')) throw new BadRequestException('Invalid path');
-    vp = vp.replace(/^[/\\]+/, '');
+    let vp = this.fullyDecode(virtualPath ?? "");
+    if (vp.includes("\0")) throw new BadRequestException("Invalid path");
+    vp = vp.replace(/^[/\\]+/, "");
     const abs = resolve(rootDir, vp);
 
     if (abs !== rootDir && !abs.startsWith(rootDir + sep)) {
-      throw new BadRequestException('Path traversal detected');
+      throw new BadRequestException("Path traversal detected");
     }
     // No leaf (the root itself) — nothing to follow; defer to resolveSafe.
     if (abs === rootDir) return { rootDir, abs, key: rootDir };
@@ -351,7 +341,7 @@ export class FilesService {
     const realRoot = await this.realpathAllowingMissing(rootDir);
     const realParent = await this.realpathAllowingMissing(dirname(abs));
     if (realParent !== realRoot && !realParent.startsWith(realRoot + sep)) {
-      throw new BadRequestException('Path traversal detected');
+      throw new BadRequestException("Path traversal detected");
     }
     // Return the lexical abs (like resolveSafe) — the containment check above
     // used the realpath, but lstat/unlink never follow the final component, so
@@ -367,7 +357,7 @@ export class FilesService {
 
   /** Why `who` may do `op` to `key`, or null. The user always may. */
   can(who: AppIdentity | null, op: ModeOp, key: string): Access | null {
-    if (who === null) return 'user';
+    if (who === null) return "user";
     // Without the checks there is no way to tell, so an app is refused.
     return this.access?.how(who, op, key) ?? null;
   }
@@ -377,24 +367,15 @@ export class FilesService {
    * `assets/` folder to add to: what it may make there (see
    * `FileAccess.addOnly`). Null for everyone else.
    */
-  private addOnly(
-    who: AppIdentity | null,
-    key: string,
-  ): 'folder' | 'file' | null {
+  private addOnly(who: AppIdentity | null, key: string): "folder" | "file" | null {
     return this.access?.addOnly(who, key) ?? null;
   }
 
   /** {@link can}, refusing with a 403 that names the path as `who` gave it. */
-  assertCan(
-    who: AppIdentity | null,
-    op: ModeOp,
-    key: string,
-    root: string,
-    path: string,
-  ): Access {
-    if (who === null) return 'user';
+  assertCan(who: AppIdentity | null, op: ModeOp, key: string, root: string, path: string): Access {
+    if (who === null) return "user";
     if (!this.access) {
-      throw new Error('The files service was built without its checks');
+      throw new Error("The files service was built without its checks");
     }
     return this.access.assert(who, op, key, { root, path });
   }
@@ -415,12 +396,7 @@ export class FilesService {
   }
 
   /** Record what `who` just made at `key` (see `FileAccess.made`). */
-  private recordMade(
-    who: AppIdentity | null,
-    access: Access,
-    key: string,
-    kind: 'file' | 'directory',
-  ): void {
+  private recordMade(who: AppIdentity | null, access: Access, key: string, kind: "file" | "directory"): void {
     this.access?.made(who, access, key, kind);
   }
 
@@ -469,13 +445,13 @@ export class FilesService {
     const existing = await fs.stat(abs).catch(() => null);
     if (existing) {
       if (existing.isDirectory()) {
-        this.assertCan(who, 'write', key, root, virtualPath);
-        throw new BadRequestException('Path is a directory');
+        this.assertCan(who, "write", key, root, virtualPath);
+        throw new BadRequestException("Path is a directory");
       }
-      if (this.addOnly(who, key) === 'file') {
+      if (this.addOnly(who, key) === "file") {
         throw nameTaken(versionOf(existing));
       }
-      this.assertCan(who, 'write', key, root, virtualPath);
+      this.assertCan(who, "write", key, root, virtualPath);
       return { record: () => undefined, exclusive: false };
     }
     const folders = await this.missingFolders(dirname(abs));
@@ -484,32 +460,28 @@ export class FilesService {
     // Adding to `assets/` makes a file directly in it, and at most the
     // folder itself: never a file where the folder goes, nor the folders
     // above it.
-    if (adds === 'folder' || (adds === 'file' && folders.length > 1)) {
+    if (adds === "folder" || (adds === "file" && folders.length > 1)) {
       throw addOnlyRefusal(who!, { root, path: virtualPath });
     }
     // Given the file (or a folder above it), the folders typed with it come
     // with it. Otherwise the app may make the outermost folder in its own
     // folders, and what is made inside that is its own.
-    let access = this.can(who, 'create', key);
-    if (
-      access === null &&
-      folders.length > 0 &&
-      this.can(who, 'create', keyOf(folders[0])) === 'mode'
-    ) {
-      access = 'mode';
+    let access = this.can(who, "create", key);
+    if (access === null && folders.length > 0 && this.can(who, "create", keyOf(folders[0])) === "mode") {
+      access = "mode";
     }
-    access ??= this.assertCan(who, 'create', key, root, virtualPath);
+    access ??= this.assertCan(who, "create", key, root, virtualPath);
     const made = access;
     return {
       record: () => {
         for (const folder of folders) {
-          this.recordMade(who, made, keyOf(folder), 'directory');
+          this.recordMade(who, made, keyOf(folder), "directory");
         }
-        this.recordMade(who, made, key, 'file');
+        this.recordMade(who, made, key, "file");
       },
       // Its own folders' new files are the app's to write over; only what
       // it was given to add to is placed exclusively.
-      exclusive: adds === 'file',
+      exclusive: adds === "file",
     };
   }
 
@@ -526,17 +498,17 @@ export class FilesService {
     const stat = await fs.lstat(absPath);
     // Report the target type for symlinks so the UI treats them sensibly,
     // falling back to the link itself if the target is broken.
-    let type: 'file' | 'directory' = stat.isDirectory() ? 'directory' : 'file';
+    let type: "file" | "directory" = stat.isDirectory() ? "directory" : "file";
     let size = stat.size;
     let version = versionOf(stat);
     if (stat.isSymbolicLink()) {
       try {
         const t = await fs.stat(absPath);
-        type = t.isDirectory() ? 'directory' : 'file';
+        type = t.isDirectory() ? "directory" : "file";
         size = t.size;
         version = versionOf(t);
       } catch {
-        type = 'file';
+        type = "file";
       }
     }
     return {
@@ -546,22 +518,17 @@ export class FilesService {
       size,
       modifiedAt: stat.mtime.toISOString(),
       createdAt: stat.ctime.toISOString(),
-      mode: (stat.mode & 0o777).toString(8).padStart(3, '0'),
+      mode: (stat.mode & 0o777).toString(8).padStart(3, "0"),
       isSymlink: stat.isSymbolicLink(),
       version,
     };
   }
 
-  async list(
-    root: string,
-    virtualPath = '',
-    who: AppIdentity | null = null,
-  ): Promise<FileEntry[]> {
-    const { rootDir, abs } = await this.check(who, 'list', root, virtualPath);
-    if (!(await this.exists(abs)))
-      throw new NotFoundException('Directory not found');
+  async list(root: string, virtualPath = "", who: AppIdentity | null = null): Promise<FileEntry[]> {
+    const { rootDir, abs } = await this.check(who, "list", root, virtualPath);
+    if (!(await this.exists(abs))) throw new NotFoundException("Directory not found");
     const stat = await fs.stat(abs);
-    if (!stat.isDirectory()) throw new BadRequestException('Not a directory');
+    if (!stat.isDirectory()) throw new BadRequestException("Not a directory");
 
     const entries = await fs.readdir(abs, { withFileTypes: true });
     // An entry can vanish between readdir and lstat — e.g. uploadFile stages a
@@ -572,7 +539,7 @@ export class FilesService {
     const mapped = await Promise.all(
       entries.map((e) =>
         this.toEntry(rootDir, join(abs, e.name)).catch((err) => {
-          if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+          if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
           throw err;
         }),
       ),
@@ -597,8 +564,7 @@ export class FilesService {
       // Wall-clock budget; past it we return partial results + truncated.
       budgetMs: Number(process.env.FILES_SEARCH_BUDGET_MS) || 3000,
       // Per-file size cap for the content grep; larger files are skipped.
-      maxContentBytes:
-        Number(process.env.FILES_SEARCH_MAX_CONTENT_BYTES) || 256 * 1024,
+      maxContentBytes: Number(process.env.FILES_SEARCH_MAX_CONTENT_BYTES) || 256 * 1024,
       /** Matching lines reported per file. A results panel wants a
        *  taste of each file, not a second copy of it. */
       maxMatchesPerFile: Number(process.env.FILES_SEARCH_MAX_MATCHES) || 5,
@@ -634,21 +600,15 @@ export class FilesService {
     who: AppIdentity | null = null,
   ): Promise<SearchResult> {
     // Jail the root exactly like every other endpoint (throws on escape).
-    const { rootDir } = await this.resolveSafe(root, '');
+    const { rootDir } = await this.resolveSafe(root, "");
     // The scope is jailed the same way — a traversal `path` throws here, and
     // the walk can only ever descend from what came back. An app searches
     // only a folder it may list, and the walk skips what it may not see.
-    const { abs: startDir, key: startKey } = await this.check(
-      who,
-      'list',
-      root,
-      opts.path ?? '',
-    );
+    const { abs: startDir, key: startKey } = await this.check(who, "list", root, opts.path ?? "");
     // The walk never follows a link, so a path under the start keys as its
     // place under the start's key.
     const keyOf = (abs: string) => join(startKey, relative(startDir, abs));
-    const may = (op: ModeOp, abs: string) =>
-      this.can(who, op, keyOf(abs)) !== null;
+    const may = (op: ModeOp, abs: string) => this.can(who, op, keyOf(abs)) !== null;
 
     const needle = query.toLowerCase();
     const wantContent = opts.content === true;
@@ -668,11 +628,7 @@ export class FilesService {
     if (needle.length === 0) return { items, truncated };
 
     const capHit = (): boolean => {
-      if (
-        items.length >= bounds.maxResults ||
-        scanned >= bounds.maxEntries ||
-        Date.now() > deadline
-      ) {
+      if (items.length >= bounds.maxResults || scanned >= bounds.maxEntries || Date.now() > deadline) {
         truncated = true;
         return true;
       }
@@ -698,18 +654,18 @@ export class FilesService {
 
         const isDir = entry.isDirectory();
         // Always skip heavy/noisy dirs and any dot-directory.
-        if (isDir && (SEARCH_SKIP_DIRS.has(name) || name.startsWith('.'))) {
+        if (isDir && (SEARCH_SKIP_DIRS.has(name) || name.startsWith("."))) {
           continue;
         }
 
         scanned++;
         const abs = join(absDir, name);
-        const type: 'file' | 'directory' = isDir ? 'directory' : 'file';
+        const type: "file" | "directory" = isDir ? "directory" : "file";
 
         const nameMatched = name.toLowerCase().includes(needle);
         let matched = nameMatched;
         let matches: SearchMatch[] | undefined;
-        if (wantContent && entry.isFile() && may('read', abs)) {
+        if (wantContent && entry.isFile() && may("read", abs)) {
           // Even a name match is scanned when line data was asked for: a hit
           // whose name matches but whose body also does should still show the
           // lines, or the panel would list it with nothing under it.
@@ -734,7 +690,7 @@ export class FilesService {
           if (capHit()) return;
         }
 
-        if (isDir && may('list', abs)) {
+        if (isDir && may("list", abs)) {
           await walk(abs, depth + 1);
           if (truncated) return;
         }
@@ -777,13 +733,13 @@ export class FilesService {
       for (let i = 0; i < sniff; i++) {
         if (buf[i] === 0) return null; // NUL ⇒ treat as binary, skip
       }
-      const text = buf.toString('utf-8');
+      const text = buf.toString("utf-8");
       // One cheap check before splitting: most files do not match at all, and
       // splitting a 256KB file into lines to learn that is pure waste.
       if (!text.toLowerCase().includes(needle)) return [];
 
       const out: SearchMatch[] = [];
-      const lines = text.split('\n');
+      const lines = text.split("\n");
       for (let i = 0; i < lines.length; i++) {
         if (out.length >= bounds.maxMatchesPerFile) break;
         const line = lines[i];
@@ -791,10 +747,7 @@ export class FilesService {
         const trimmed = line.trim();
         out.push({
           line: i + 1,
-          text:
-            trimmed.length > bounds.maxMatchChars
-              ? trimmed.slice(0, bounds.maxMatchChars)
-              : trimmed,
+          text: trimmed.length > bounds.maxMatchChars ? trimmed.slice(0, bounds.maxMatchChars) : trimmed,
         });
       }
       return out;
@@ -808,18 +761,16 @@ export class FilesService {
     virtualPath: string,
     who: AppIdentity | null = null,
   ): Promise<{ path: string; content: string; version: string }> {
-    const { abs } = await this.check(who, 'read', root, virtualPath);
-    if (!(await this.exists(abs)))
-      throw new NotFoundException('File not found');
+    const { abs } = await this.check(who, "read", root, virtualPath);
+    if (!(await this.exists(abs))) throw new NotFoundException("File not found");
     const stat = await fs.stat(abs);
-    if (stat.isDirectory())
-      throw new BadRequestException('Path is a directory');
+    if (stat.isDirectory()) throw new BadRequestException("Path is a directory");
     if (stat.size > MAX_TEXT_FILE_BYTES) {
       throw new PayloadTooLargeException(
         `File is too large to open as text (max ${MAX_TEXT_FILE_BYTES} bytes); download it instead`,
       );
     }
-    const content = await fs.readFile(abs, 'utf-8');
+    const content = await fs.readFile(abs, "utf-8");
     return { path: virtualPath, content, version: versionOf(stat) };
   }
 
@@ -833,12 +784,10 @@ export class FilesService {
     virtualPath: string,
     who: AppIdentity | null = null,
   ): Promise<{ abs: string; size: number; version: string }> {
-    const { abs } = await this.check(who, 'read', root, virtualPath);
-    if (!(await this.exists(abs)))
-      throw new NotFoundException('File not found');
+    const { abs } = await this.check(who, "read", root, virtualPath);
+    if (!(await this.exists(abs))) throw new NotFoundException("File not found");
     const stat = await fs.stat(abs);
-    if (stat.isDirectory())
-      throw new BadRequestException('Path is a directory');
+    if (stat.isDirectory()) throw new BadRequestException("Path is a directory");
     return { abs, size: stat.size, version: versionOf(stat) };
   }
 
@@ -872,34 +821,25 @@ export class FilesService {
   ): Promise<FileEntry> {
     const located = await this.resolveSafe(root, virtualPath);
     const { rootDir, abs } = located;
-    const { record, exclusive } = await this.checkWrite(
-      who,
-      located,
-      root,
-      virtualPath,
-    );
+    const { record, exclusive } = await this.checkWrite(who, located, root, virtualPath);
     await this.assertVersion(abs, expected);
     await withDiskSpaceCheck(() => fs.mkdir(dirname(abs), { recursive: true }));
     // Atomic like an upload: `fs.writeFile` onto `abs` truncated it
     // first, so a full disk mid-save left Notepad's file empty.
     await this.writeAtomically(
       abs,
-      (staged) => fs.writeFile(staged, content, 'utf-8'),
+      (staged) => fs.writeFile(staged, content, "utf-8"),
       exclusive ? located : undefined,
     );
     record();
     return this.toEntry(rootDir, abs);
   }
 
-  async createFile(
-    root: string,
-    virtualPath: string,
-    content = '',
-  ): Promise<FileEntry> {
+  async createFile(root: string, virtualPath: string, content = ""): Promise<FileEntry> {
     const { rootDir, abs } = await this.resolveSafe(root, virtualPath);
-    if (await this.exists(abs)) throw new BadRequestException('Already exists');
+    if (await this.exists(abs)) throw new BadRequestException("Already exists");
     await fs.mkdir(dirname(abs), { recursive: true });
-    await fs.writeFile(abs, content, 'utf-8');
+    await fs.writeFile(abs, content, "utf-8");
     return this.toEntry(rootDir, abs);
   }
 
@@ -919,12 +859,7 @@ export class FilesService {
     try {
       const located = await this.resolveSafe(root, virtualPath);
       const { rootDir, abs } = located;
-      const { record, exclusive } = await this.checkWrite(
-        who,
-        located,
-        root,
-        virtualPath,
-      );
+      const { record, exclusive } = await this.checkWrite(who, located, root, virtualPath);
       await this.assertVersion(abs, expected);
       await withDiskSpaceCheck(async () => {
         await fs.mkdir(dirname(abs), { recursive: true });
@@ -932,11 +867,7 @@ export class FilesService {
 
       // The multer temp file is copied rather than renamed into place, because
       // it genuinely can be on another mount.
-      await this.writeAtomically(
-        abs,
-        (staged) => fs.copyFile(tmpPath, staged),
-        exclusive ? located : undefined,
-      );
+      await this.writeAtomically(abs, (staged) => fs.copyFile(tmpPath, staged), exclusive ? located : undefined);
       record();
       return this.toEntry(rootDir, abs);
     } finally {
@@ -958,8 +889,8 @@ export class FilesService {
     if (current === expected) return;
     throw new ConflictException({
       statusCode: 409,
-      error: 'Conflict',
-      message: 'The file changed on disk since it was opened',
+      error: "Conflict",
+      message: "The file changed on disk since it was opened",
       current,
     });
   }
@@ -990,10 +921,7 @@ export class FilesService {
     write: (stagedPath: string) => Promise<void>,
     exclusive?: Located,
   ): Promise<void> {
-    const staged = join(
-      dirname(abs),
-      `.${basename(abs)}.imbatranim-${randomUUID()}.part`,
-    );
+    const staged = join(dirname(abs), `.${basename(abs)}.imbatranim-${randomUUID()}.part`);
     if (exclusive) {
       await this.placeNew(exclusive, (to) => write(to), staged);
       return;
@@ -1030,25 +958,22 @@ export class FilesService {
   private async placeNew(
     located: Located,
     write: (stagedPath: string) => Promise<void>,
-    staged = join(
-      dirname(located.abs),
-      `.${basename(located.abs)}.imbatranim-${randomUUID()}.part`,
-    ),
+    staged = join(dirname(located.abs), `.${basename(located.abs)}.imbatranim-${randomUUID()}.part`),
   ): Promise<void> {
     const { abs } = located;
     const parent = await fs.lstat(dirname(abs));
-    if (!parent.isDirectory()) throw new BadRequestException('Not a folder');
+    if (!parent.isDirectory()) throw new BadRequestException("Not a folder");
     const where = await this.parentAsChecked(located);
     try {
       await withDiskSpaceCheck(() => write(staged));
       await withDiskSpaceCheck(() =>
         fs.link(staged, abs).catch((err: NodeJS.ErrnoException) => {
-          if (!NO_HARD_LINKS.has(err.code ?? '')) throw err;
+          if (!NO_HARD_LINKS.has(err.code ?? "")) throw err;
           return fs.copyFile(staged, abs, fsConstants.COPYFILE_EXCL);
         }),
       );
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
+      if ((err as NodeJS.ErrnoException).code === "EEXIST") {
         const there = await fs.stat(abs).catch(() => null);
         throw nameTaken(there ? versionOf(there) : null);
       }
@@ -1058,7 +983,7 @@ export class FilesService {
     }
     if ((await fs.realpath(dirname(abs)).catch(() => null)) !== where) {
       await fs.rm(abs, { force: true });
-      throw new BadRequestException('The folder changed while writing');
+      throw new BadRequestException("The folder changed while writing");
     }
   }
 
@@ -1071,16 +996,12 @@ export class FilesService {
     const real = await fs.realpath(dirname(abs));
     const realRoot = await fs.realpath(rootDir);
     if (join(rootDir, relative(realRoot, real)) !== dirname(key)) {
-      throw new BadRequestException('The folder changed while writing');
+      throw new BadRequestException("The folder changed while writing");
     }
     return real;
   }
 
-  async createDirectory(
-    root: string,
-    virtualPath: string,
-    who: AppIdentity | null = null,
-  ): Promise<FileEntry> {
+  async createDirectory(root: string, virtualPath: string, who: AppIdentity | null = null): Promise<FileEntry> {
     const { rootDir, abs, key } = await this.resolveSafe(root, virtualPath);
     const folders = await this.missingFolders(abs);
     const keyOf = (p: string) => join(key, relative(abs, p));
@@ -1089,58 +1010,36 @@ export class FilesService {
     // its own too.
     const accesses: Access[] = [];
     for (const folder of folders) {
-      accesses.push(
-        accesses[0] === 'mode'
-          ? 'mode'
-          : this.assertCan(who, 'create', keyOf(folder), root, virtualPath),
-      );
+      accesses.push(accesses[0] === "mode" ? "mode" : this.assertCan(who, "create", keyOf(folder), root, virtualPath));
       // Given `assets/` to add files to, an app may make the folder itself,
       // never one inside it.
-      if (this.addOnly(who, keyOf(folder)) === 'file') {
+      if (this.addOnly(who, keyOf(folder)) === "file") {
         throw addOnlyRefusal(who!, { root, path: virtualPath });
       }
     }
     if (folders.length === 0) {
-      this.assertCan(who, 'create', key, root, virtualPath);
-      throw new BadRequestException('Already exists');
+      this.assertCan(who, "create", key, root, virtualPath);
+      throw new BadRequestException("Already exists");
     }
     await withDiskSpaceCheck(() => fs.mkdir(abs, { recursive: true }));
-    folders.forEach((folder, i) =>
-      this.recordMade(who, accesses[i], keyOf(folder), 'directory'),
-    );
+    folders.forEach((folder, i) => this.recordMade(who, accesses[i], keyOf(folder), "directory"));
     return this.toEntry(rootDir, abs);
   }
 
-  async move(
-    root: string,
-    from: string,
-    to: string,
-    who: AppIdentity | null = null,
-  ): Promise<FileEntry> {
-    const {
-      rootDir,
-      abs: absFrom,
-      key: keyFrom,
-    } = await this.check(who, 'delete', root, from, { follow: false });
-    const { abs: absTo, key: keyTo } = await this.check(
-      who,
-      'create',
-      root,
-      to,
-    );
+  async move(root: string, from: string, to: string, who: AppIdentity | null = null): Promise<FileEntry> {
+    const { rootDir, abs: absFrom, key: keyFrom } = await this.check(who, "delete", root, from, { follow: false });
+    const { abs: absTo, key: keyTo } = await this.check(who, "create", root, to);
     // A move carries what it is, its owner included, so nothing moves into
     // a folder an app may only add new files to: the app would own it.
     if (this.addOnly(who, keyTo) !== null) {
       throw addOnlyRefusal(who!, { root, path: to });
     }
-    if (!(await this.exists(absFrom)))
-      throw new NotFoundException('Source not found');
+    if (!(await this.exists(absFrom))) throw new NotFoundException("Source not found");
     // Moving a directory into itself (a → a/b) is a raw EINVAL 500; reject it.
     if (absTo === absFrom || absTo.startsWith(absFrom + sep)) {
-      throw new BadRequestException('Cannot move a folder into itself');
+      throw new BadRequestException("Cannot move a folder into itself");
     }
-    if (await this.exists(absTo))
-      throw new BadRequestException('Destination already exists');
+    if (await this.exists(absTo)) throw new BadRequestException("Destination already exists");
     await withDiskSpaceCheck(async () => {
       await fs.mkdir(dirname(absTo), { recursive: true });
       await fs.rename(absFrom, absTo);
@@ -1150,45 +1049,30 @@ export class FilesService {
     return this.toEntry(rootDir, absTo);
   }
 
-  async copy(
-    root: string,
-    from: string,
-    to: string,
-    who: AppIdentity | null = null,
-  ): Promise<FileEntry> {
+  async copy(root: string, from: string, to: string, who: AppIdentity | null = null): Promise<FileEntry> {
     const located = await this.resolveSafe(root, from);
     const { rootDir, abs: absFrom, key: keyFrom } = located;
     const target = await this.resolveSafe(root, to);
     const { abs: absTo, key: keyTo } = target;
     const source = await fs.stat(absFrom).catch(() => null);
     // A folder is copied whole, so it needs listing; a file, reading.
-    this.assertCan(
-      who,
-      source?.isDirectory() ? 'list' : 'read',
-      keyFrom,
-      root,
-      from,
-    );
-    const access = this.assertCan(who, 'create', keyTo, root, to);
+    this.assertCan(who, source?.isDirectory() ? "list" : "read", keyFrom, root, from);
+    const access = this.assertCan(who, "create", keyTo, root, to);
     // Into a folder an app may only add files to: one file, directly in it,
     // placed without replacing anything.
     const adds = this.addOnly(who, keyTo);
     if (
-      adds === 'folder' ||
-      (adds === 'file' &&
-        (source?.isDirectory() ||
-          (await this.missingFolders(dirname(absTo))).length > 1))
+      adds === "folder" ||
+      (adds === "file" && (source?.isDirectory() || (await this.missingFolders(dirname(absTo))).length > 1))
     ) {
       throw addOnlyRefusal(who!, { root, path: to });
     }
-    if (!(await this.exists(absFrom)))
-      throw new NotFoundException('Source not found');
+    if (!(await this.exists(absFrom))) throw new NotFoundException("Source not found");
     // Copying a directory into itself (a → a/b) recurses / EINVALs into a 500.
     if (absTo === absFrom || absTo.startsWith(absFrom + sep)) {
-      throw new BadRequestException('Cannot copy a folder into itself');
+      throw new BadRequestException("Cannot copy a folder into itself");
     }
-    if (await this.exists(absTo))
-      throw new BadRequestException('Destination already exists');
+    if (await this.exists(absTo)) throw new BadRequestException("Destination already exists");
     // Wrap the writes in withDiskSpaceCheck so a full volume surfaces as a
     // clear 503 rather than a generic 500 — same as writeFile/uploadFile.
     const stat = await fs.stat(absFrom);
@@ -1196,29 +1080,22 @@ export class FilesService {
       await fs.mkdir(dirname(absTo), { recursive: true });
       if (stat.isDirectory()) {
         await fs.cp(absFrom, absTo, { recursive: true });
-      } else if (adds === 'file') {
+      } else if (adds === "file") {
         await this.placeNew(target, (staged) => fs.copyFile(absFrom, staged));
       } else {
         // Never over a file that appeared since the check above.
-        await fs
-          .copyFile(absFrom, absTo, fsConstants.COPYFILE_EXCL)
-          .catch((err: NodeJS.ErrnoException) => {
-            if (err.code === 'EEXIST') {
-              throw new BadRequestException('Destination already exists');
-            }
-            throw err;
-          });
+        await fs.copyFile(absFrom, absTo, fsConstants.COPYFILE_EXCL).catch((err: NodeJS.ErrnoException) => {
+          if (err.code === "EEXIST") {
+            throw new BadRequestException("Destination already exists");
+          }
+          throw err;
+        });
       }
     });
-    this.recordMade(
-      who,
-      access,
-      keyTo,
-      stat.isDirectory() ? 'directory' : 'file',
-    );
+    this.recordMade(who, access, keyTo, stat.isDirectory() ? "directory" : "file");
     // A folder an app copies inside its own folders is its own all the way
     // down, or it couldn't read what it just made.
-    if (access === 'mode' && stat.isDirectory()) {
+    if (access === "mode" && stat.isDirectory()) {
       const inside = await fs.readdir(absTo, {
         recursive: true,
         withFileTypes: true,
@@ -1228,33 +1105,24 @@ export class FilesService {
       inside.sort((a, b) => depth(a) - depth(b));
       for (const inner of inside) {
         const at = join(inner.parentPath, inner.name);
-        this.recordMade(
-          who,
-          access,
-          join(keyTo, relative(absTo, at)),
-          inner.isDirectory() ? 'directory' : 'file',
-        );
+        this.recordMade(who, access, join(keyTo, relative(absTo, at)), inner.isDirectory() ? "directory" : "file");
       }
     }
     return this.toEntry(rootDir, absTo);
   }
 
-  async delete(
-    root: string,
-    virtualPath: string,
-    who: AppIdentity | null = null,
-  ): Promise<void> {
+  async delete(root: string, virtualPath: string, who: AppIdentity | null = null): Promise<void> {
     // No-follow resolve + lstat: a broken symlink (its target ENOENTs) or one
     // pointing out of the jail must still be removable — we operate on the link
     // itself, never its target.
-    const { abs, key } = await this.check(who, 'delete', root, virtualPath, {
+    const { abs, key } = await this.check(who, "delete", root, virtualPath, {
       follow: false,
     });
     let stat: Stats;
     try {
       stat = await fs.lstat(abs);
     } catch {
-      throw new NotFoundException('Not found');
+      throw new NotFoundException("Not found");
     }
     if (stat.isSymbolicLink()) {
       await fs.unlink(abs); // remove the link, never chase its target
@@ -1271,16 +1139,12 @@ export class FilesService {
    * it may list. Lets an app given one file learn its size without listing
    * the folder it is in.
    */
-  async stat(
-    root: string,
-    virtualPath: string,
-    who: AppIdentity | null = null,
-  ): Promise<FileEntry> {
+  async stat(root: string, virtualPath: string, who: AppIdentity | null = null): Promise<FileEntry> {
     const { rootDir, abs, key } = await this.resolveSafe(root, virtualPath);
-    if (this.can(who, 'read', key) === null) {
-      this.assertCan(who, 'list', key, root, virtualPath);
+    if (this.can(who, "read", key) === null) {
+      this.assertCan(who, "list", key, root, virtualPath);
     }
-    if (!(await this.exists(abs))) throw new NotFoundException('Not found');
+    if (!(await this.exists(abs))) throw new NotFoundException("Not found");
     return this.toEntry(rootDir, abs);
   }
 
@@ -1296,12 +1160,8 @@ export class FilesService {
    * `truncated: true` rather than hanging. Symlinks are never followed, so the
    * walk cannot leave the jail or loop.
    */
-  async dirSize(
-    root: string,
-    virtualPath = '',
-    who: AppIdentity | null = null,
-  ): Promise<DirSize> {
-    const { abs } = await this.check(who, 'list', root, virtualPath);
+  async dirSize(root: string, virtualPath = "", who: AppIdentity | null = null): Promise<DirSize> {
+    const { abs } = await this.check(who, "list", root, virtualPath);
     const bounds = this.searchBounds();
     const deadline = Date.now() + bounds.budgetMs;
 
@@ -1346,7 +1206,7 @@ export class FilesService {
     };
 
     const st = await fs.lstat(abs).catch(() => null);
-    if (!st) throw new NotFoundException('Not found');
+    if (!st) throw new NotFoundException("Not found");
     if (!st.isDirectory()) {
       return { bytes: st.size, files: 1, directories: 0, truncated: false };
     }

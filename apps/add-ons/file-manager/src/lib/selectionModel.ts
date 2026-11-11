@@ -9,18 +9,14 @@
  */
 
 /** What a click or an arrow means, derived from the modifier keys. */
-export type SelectMode = 'replace' | 'toggle' | 'range'
+export type SelectMode = "replace" | "toggle" | "range";
 
-export function modeFromEvent(e: {
-  ctrlKey: boolean
-  metaKey: boolean
-  shiftKey: boolean
-}): SelectMode {
+export function modeFromEvent(e: { ctrlKey: boolean; metaKey: boolean; shiftKey: boolean }): SelectMode {
   // Shift wins over Ctrl: Ctrl+Shift+click is a range everywhere else in the
   // world, and picking "toggle" there would make the two modifiers fight.
-  if (e.shiftKey) return 'range'
-  if (e.ctrlKey || e.metaKey) return 'toggle'
-  return 'replace'
+  if (e.shiftKey) return "range";
+  if (e.ctrlKey || e.metaKey) return "toggle";
+  return "replace";
 }
 
 /**
@@ -35,12 +31,12 @@ export function modeFromEvent(e: {
  * asked for a range ending here, and "here" is the half we can still honour.
  */
 export function rangeBetween(orderedPaths: string[], from: string, to: string): string[] {
-  const b = orderedPaths.indexOf(to)
-  if (b === -1) return []
-  const a = orderedPaths.indexOf(from)
-  if (a === -1) return [to]
-  const [lo, hi] = a <= b ? [a, b] : [b, a]
-  return orderedPaths.slice(lo, hi + 1)
+  const b = orderedPaths.indexOf(to);
+  if (b === -1) return [];
+  const a = orderedPaths.indexOf(from);
+  if (a === -1) return [to];
+  const [lo, hi] = a <= b ? [a, b] : [b, a];
+  return orderedPaths.slice(lo, hi + 1);
 }
 
 /**
@@ -55,19 +51,19 @@ export function applySelect(
   mode: SelectMode,
   path: string,
   orderedPaths: string[],
-  anchor: string | null
+  anchor: string | null,
 ): Set<string> {
-  if (mode === 'range') {
-    return new Set(rangeBetween(orderedPaths, anchor ?? path, path))
+  if (mode === "range") {
+    return new Set(rangeBetween(orderedPaths, anchor ?? path, path));
   }
-  const next = new Set(prev)
-  if (mode === 'toggle') {
-    if (next.has(path)) next.delete(path)
-    else next.add(path)
-    return next
+  const next = new Set(prev);
+  if (mode === "toggle") {
+    if (next.has(path)) next.delete(path);
+    else next.add(path);
+    return next;
   }
-  if (next.size === 1 && next.has(path)) return new Set()
-  return new Set([path])
+  if (next.size === 1 && next.has(path)) return new Set();
+  return new Set([path]);
 }
 
 /**
@@ -78,5 +74,5 @@ export function applySelect(
  * a one-row window down the list.
  */
 export function nextAnchor(mode: SelectMode, path: string, anchor: string | null): string | null {
-  return mode === 'range' ? (anchor ?? path) : path
+  return mode === "range" ? (anchor ?? path) : path;
 }

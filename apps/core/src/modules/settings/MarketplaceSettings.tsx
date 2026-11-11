@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Checkbox, SHARED_KIT_VERSION, cn, useConfirm } from '@imbatranim/ui'
-import { api } from '../../lib/axios'
-import { openApp } from '../../shared/intents/openApp'
-import { useWindowStore } from '../../shared/store/windowStore'
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button, Checkbox, SHARED_KIT_VERSION, cn, useConfirm } from "@imbatranim/ui";
+import { api } from "../../lib/axios";
+import { openApp } from "../../shared/intents/openApp";
+import { useWindowStore } from "../../shared/store/windowStore";
 import {
   descriptorIdOf,
   loadMarketplace,
@@ -11,22 +11,22 @@ import {
   rebuildFixesKit,
   useBuiltInClashes,
   type MarketplaceApp,
-} from '../../shared/registry/marketplace'
-import { ConsentCard, InstallFromUrl, SourceBadge } from './InstallFromUrl'
-import { apiMessage, sourceLine, trustBadge, type Inspection } from './urlApps'
+} from "../../shared/registry/marketplace";
+import { ConsentCard, InstallFromUrl, SourceBadge } from "./InstallFromUrl";
+import { apiMessage, sourceLine, trustBadge, type Inspection } from "./urlApps";
 
-type Problem = Awaited<ReturnType<typeof loadMarketplace>>['problems'][number]
+type Problem = Awaited<ReturnType<typeof loadMarketplace>>["problems"][number];
 
-const JOB_LABEL: Record<NonNullable<MarketplaceApp['job']>['state'], string> = {
-  queued: 'Waiting for another install…',
-  fetching: 'Downloading the source…',
-  building: 'Building…',
-  failed: 'Install failed',
-}
+const JOB_LABEL: Record<NonNullable<MarketplaceApp["job"]>["state"], string> = {
+  queued: "Waiting for another install…",
+  fetching: "Downloading the source…",
+  building: "Building…",
+  failed: "Install failed",
+};
 
 function errorMessage(err: unknown): string {
-  const data = (err as { response?: { data?: { message?: unknown } } }).response?.data
-  return typeof data?.message === 'string' ? data.message : 'The request failed'
+  const data = (err as { response?: { data?: { message?: unknown } } }).response?.data;
+  return typeof data?.message === "string" ? data.message : "The request failed";
 }
 
 /**
@@ -35,35 +35,35 @@ function errorMessage(err: unknown): string {
  * log, so the row reads them from the first.
  */
 type Row = {
-  descriptorId: string
+  descriptorId: string;
   /** The row's heading: the descriptor's name. */
-  name: string
-  apps: MarketplaceApp[]
+  name: string;
+  apps: MarketplaceApp[];
   /** More than the one app a version 1 descriptor is: the apps are listed under the heading. */
-  suite: boolean
-}
+  suite: boolean;
+};
 
 function rowsOf(apps: MarketplaceApp[]): Row[] {
-  const rows: Row[] = []
-  const byDescriptor = new Map<string, Row>()
+  const rows: Row[] = [];
+  const byDescriptor = new Map<string, Row>();
   for (const app of apps) {
-    const descriptorId = descriptorIdOf(app)
-    const existing = byDescriptor.get(descriptorId)
+    const descriptorId = descriptorIdOf(app);
+    const existing = byDescriptor.get(descriptorId);
     if (existing) {
-      existing.apps.push(app)
-      existing.suite = true
-      continue
+      existing.apps.push(app);
+      existing.suite = true;
+      continue;
     }
     const row: Row = {
       descriptorId,
       name: app.descriptorName ?? app.name,
       apps: [app],
       suite: app.id !== descriptorId,
-    }
-    rows.push(row)
-    byDescriptor.set(descriptorId, row)
+    };
+    rows.push(row);
+    byDescriptor.set(descriptorId, row);
   }
-  return rows
+  return rows;
 }
 
 /**
@@ -81,286 +81,273 @@ export function MarketplaceSettings({
   focusRow = null,
 }: {
   /** A row to scroll to and highlight; a new `n` asks again for the same `id`. */
-  focusRow?: { id: string; n: number } | null
+  focusRow?: { id: string; n: number } | null;
 } = {}) {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ['marketplace'],
+    queryKey: ["marketplace"],
     // Also syncs the desktop's registry, so a finished install shows in Start.
     queryFn: loadMarketplace,
-    refetchInterval: (q) =>
-      q.state.data?.apps.some((a) => a.job && a.job.state !== 'failed') ? 2000 : false,
-  })
-  const listing = query.data ?? null
-  const [actionError, setActionError] = useState<string | null>(null)
-  const error = actionError ?? (query.error ? errorMessage(query.error) : null)
-  const [log, setLog] = useState<{ id: string; text: string } | null>(null)
-  const { confirm, confirmDialog } = useConfirm()
-  const clashes = useBuiltInClashes()
+    refetchInterval: (q) => (q.state.data?.apps.some((a) => a.job && a.job.state !== "failed") ? 2000 : false),
+  });
+  const listing = query.data ?? null;
+  const [actionError, setActionError] = useState<string | null>(null);
+  const error = actionError ?? (query.error ? errorMessage(query.error) : null);
+  const [log, setLog] = useState<{ id: string; text: string } | null>(null);
+  const { confirm, confirmDialog } = useConfirm();
+  const clashes = useBuiltInClashes();
 
-  const [update, setUpdate] = useState<{ id: string; inspection: Inspection } | null>(null)
+  const [update, setUpdate] = useState<{ id: string; inspection: Inspection } | null>(null);
   /** The URL app whose stored URL now resolves to a different app. */
-  const [moved, setMoved] = useState<string | null>(null)
-  const [rowNote, setRowNote] = useState<{ id: string; text: string } | null>(null)
-  const noteTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [moved, setMoved] = useState<string | null>(null);
+  const [rowNote, setRowNote] = useState<{ id: string; text: string } | null>(null);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const note = (id: string, text: string) => {
-    setRowNote({ id, text })
-    clearTimeout(noteTimer.current)
-    noteTimer.current = setTimeout(() => setRowNote(null), 4000)
-  }
+    setRowNote({ id, text });
+    clearTimeout(noteTimer.current);
+    noteTimer.current = setTimeout(() => setRowNote(null), 4000);
+  };
 
   const checkForUpdate = async (app: MarketplaceApp) => {
-    if (!app.source) return
-    setError(null)
-    setMoved((id) => (id === app.id ? null : id))
-    note(app.id, 'Checking…')
+    if (!app.source) return;
+    setError(null);
+    setMoved((id) => (id === app.id ? null : id));
+    note(app.id, "Checking…");
     try {
-      const { data } = await api.post<Inspection>('/marketplace/url/inspect', {
+      const { data } = await api.post<Inspection>("/marketplace/url/inspect", {
         url: app.source.url,
-      })
+      });
       const discard = () =>
-        void Promise.resolve(api.delete(`/marketplace/url/pending/${data.pending}`)).catch(() => {})
+        void Promise.resolve(api.delete(`/marketplace/url/pending/${data.pending}`)).catch(() => {});
       if (data.id !== descriptorIdOf(app)) {
         // The stored URL now resolves to another folder or app (its id is
         // derived from the source). A consent card in this row would read as
         // an update to this app while installing something else beside it.
-        discard()
-        setRowNote(null)
-        setMoved(app.id)
+        discard();
+        setRowNote(null);
+        setMoved(app.id);
       } else if (data.source.commit === app.source.commit) {
-        discard()
-        note(app.id, 'Up to date.')
+        discard();
+        note(app.id, "Up to date.");
       } else {
-        setRowNote(null)
-        setUpdate({ id: app.id, inspection: data })
+        setRowNote(null);
+        setUpdate({ id: app.id, inspection: data });
       }
     } catch (err) {
-      setRowNote(null)
-      setError(apiMessage(err, "Couldn't reach that repository."))
+      setRowNote(null);
+      setError(apiMessage(err, "Couldn't reach that repository."));
     }
-  }
+  };
 
-  const [highlight, setHighlight] = useState<string | null>(null)
-  const rowRefs = useRef(new Map<string, HTMLElement>())
-  const loaded = !!listing
+  const [highlight, setHighlight] = useState<string | null>(null);
+  const rowRefs = useRef(new Map<string, HTMLElement>());
+  const loaded = !!listing;
   useEffect(() => {
-    if (!focusRow || !loaded) return
+    if (!focusRow || !loaded) return;
     // An id not in the catalog finds no row, and nothing happens.
-    const el = rowRefs.current.get(focusRow.id)
-    if (!el) return
-    el.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
-    setHighlight(focusRow.id)
-    const timer = setTimeout(() => setHighlight(null), 2500)
-    return () => clearTimeout(timer)
-  }, [focusRow, loaded])
+    const el = rowRefs.current.get(focusRow.id);
+    if (!el) return;
+    el.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    setHighlight(focusRow.id);
+    const timer = setTimeout(() => setHighlight(null), 2500);
+    return () => clearTimeout(timer);
+  }, [focusRow, loaded]);
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['marketplace'] })
-  const setError = setActionError
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["marketplace"] });
+  const setError = setActionError;
 
   const install = async (row: Row) => {
     try {
-      await api.post(`/marketplace/apps/${row.descriptorId}/install`)
-      setError(null)
+      await api.post(`/marketplace/apps/${row.descriptorId}/install`);
+      setError(null);
     } catch (err) {
-      setError(errorMessage(err))
+      setError(errorMessage(err));
     }
-    await refresh()
-  }
+    await refresh();
+  };
 
   /** The uninstall prompt's "Also remove its data", read once the prompt is answered. */
-  const removeData = useRef(false)
+  const removeData = useRef(false);
 
   const uninstall = async (row: Row) => {
-    const names = row.apps.map((a) => a.name).join(', ')
-    removeData.current = false
+    const names = row.apps.map((a) => a.name).join(", ");
+    removeData.current = false;
     const ok = await confirm({
       title: `Uninstall ${row.name}?`,
       message: (
         <>
           {row.suite
             ? `Its apps (${names}) go with it: the downloaded source and build are deleted, and their windows close.`
-            : 'Its downloaded source and build are deleted, and its window closes.'}{' '}
+            : "Its downloaded source and build are deleted, and its window closes."}{" "}
           {row.suite
-            ? 'Their caches go too. Their settings and data stay for a reinstall unless you tick the box; files they saved elsewhere stay either way.'
-            : 'Its cache goes too. Its settings and data stay for a reinstall unless you tick the box; files it saved elsewhere stay either way.'}
+            ? "Their caches go too. Their settings and data stay for a reinstall unless you tick the box; files they saved elsewhere stay either way."
+            : "Its cache goes too. Its settings and data stay for a reinstall unless you tick the box; files it saved elsewhere stay either way."}
           <span className="mt-3 block">
             <Checkbox
               label="Also remove its data"
               onCheckedChange={(checked) => {
-                removeData.current = checked === true
+                removeData.current = checked === true;
               }}
             />
           </span>
         </>
       ),
-      confirmLabel: 'Uninstall',
+      confirmLabel: "Uninstall",
       destructive: true,
-    })
-    if (!ok) return
-    const ids = new Set(row.apps.map((a) => a.id))
-    const { windows, closeWindow } = useWindowStore.getState()
-    for (const w of windows) if (ids.has(w.appId)) closeWindow(w.id)
+    });
+    if (!ok) return;
+    const ids = new Set(row.apps.map((a) => a.id));
+    const { windows, closeWindow } = useWindowStore.getState();
+    for (const w of windows) if (ids.has(w.appId)) closeWindow(w.id);
     try {
-      await api.delete(
-        `/marketplace/apps/${row.descriptorId}${removeData.current ? '?removeData=1' : ''}`
-      )
-      setError(null)
+      await api.delete(`/marketplace/apps/${row.descriptorId}${removeData.current ? "?removeData=1" : ""}`);
+      setError(null);
     } catch (err) {
-      setError(errorMessage(err))
+      setError(errorMessage(err));
     }
-    if (log?.id === row.descriptorId) setLog(null)
-    await refresh()
-  }
+    if (log?.id === row.descriptorId) setLog(null);
+    await refresh();
+  };
 
   // An installed app whose stored record is damaged is not in the list, only
   // in `problems`; uninstalling it is the way out (the backend's own advice).
   const uninstallBroken = async (appId: string) => {
     const ok = await confirm({
-      title: 'Uninstall this app?',
-      message:
-        'Its record on this machine is damaged. Its files are deleted and its windows close.',
-      confirmLabel: 'Uninstall',
+      title: "Uninstall this app?",
+      message: "Its record on this machine is damaged. Its files are deleted and its windows close.",
+      confirmLabel: "Uninstall",
       destructive: true,
-    })
-    if (!ok) return
-    const { windows, closeWindow } = useWindowStore.getState()
-    for (const w of windows) if (w.appId === appId) closeWindow(w.id)
+    });
+    if (!ok) return;
+    const { windows, closeWindow } = useWindowStore.getState();
+    for (const w of windows) if (w.appId === appId) closeWindow(w.id);
     try {
-      await api.delete(`/marketplace/apps/${appId}`)
-      setError(null)
+      await api.delete(`/marketplace/apps/${appId}`);
+      setError(null);
     } catch (err) {
-      setError(errorMessage(err))
+      setError(errorMessage(err));
     }
-    await refresh()
-  }
+    await refresh();
+  };
 
   // A prebuilt app from a URL, installed before this OS stopped running that
   // kind: it can't open, so Uninstall is all there is.
   const uninstallRetired = async (p: Problem) => {
-    removeData.current = false
+    removeData.current = false;
     const ok = await confirm({
       title: `Uninstall ${p.retired!.name}?`,
       message: (
         <>
-          This OS no longer runs prebuilt apps from a URL. Its downloaded files are deleted. Its
-          settings and data stay unless you tick the box.
+          This OS no longer runs prebuilt apps from a URL. Its downloaded files are deleted. Its settings and data stay
+          unless you tick the box.
           <span className="mt-3 block">
             <Checkbox
               label="Also remove its data"
               onCheckedChange={(checked) => {
-                removeData.current = checked === true
+                removeData.current = checked === true;
               }}
             />
           </span>
         </>
       ),
-      confirmLabel: 'Uninstall',
+      confirmLabel: "Uninstall",
       destructive: true,
-    })
-    if (!ok) return
+    });
+    if (!ok) return;
     try {
-      await api.delete(`/marketplace/apps/${p.appId}${removeData.current ? '?removeData=1' : ''}`)
-      setError(null)
+      await api.delete(`/marketplace/apps/${p.appId}${removeData.current ? "?removeData=1" : ""}`);
+      setError(null);
     } catch (err) {
-      setError(errorMessage(err))
+      setError(errorMessage(err));
     }
-    await refresh()
-  }
+    await refresh();
+  };
 
   const showLog = async (descriptorId: string) => {
-    if (log?.id === descriptorId) return setLog(null)
+    if (log?.id === descriptorId) return setLog(null);
     try {
       const { data } = await api.get<string>(`/marketplace/apps/${descriptorId}/log`, {
-        responseType: 'text',
-      })
-      setLog({ id: descriptorId, text: data || 'Nothing logged yet.' })
+        responseType: "text",
+      });
+      setLog({ id: descriptorId, text: data || "Nothing logged yet." });
     } catch (err) {
-      setError(errorMessage(err))
+      setError(errorMessage(err));
     }
-  }
+  };
 
   if (!listing) {
-    return <p className="text-on-surface-variant text-[12px]">{error ?? 'Loading the catalog…'}</p>
+    return <p className="text-on-surface-variant text-[12px]">{error ?? "Loading the catalog…"}</p>;
   }
 
-  const retiredApps = listing.problems.filter((p) => p.appId && p.retired)
-  const brokenApps = listing.problems.filter((p) => p.appId && !p.retired)
-  const catalogProblems = listing.problems.filter((p) => !p.appId)
+  const retiredApps = listing.problems.filter((p) => p.appId && p.retired);
+  const brokenApps = listing.problems.filter((p) => p.appId && !p.retired);
+  const catalogProblems = listing.problems.filter((p) => !p.appId);
 
   return (
     <div>
       <InstallFromUrl onInstalled={() => void refresh()} />
       <p className="text-on-surface-variant mb-5 text-[12px]">
-        Apps from other repositories, built on this machine from the exact commit the catalog names.
-        An install downloads the source and runs its build, which can take minutes.
+        Apps from other repositories, built on this machine from the exact commit the catalog names. An install
+        downloads the source and runs its build, which can take minutes.
       </p>
       {error && <p className="text-error mb-3 text-[12px]">{error}</p>}
       {listing.apps.length === 0 && (
         <p className="text-on-surface-variant text-[12px]">
-          The catalog is empty. Apps are added to it in the OS repository, under{' '}
-          <code>marketplace/</code>.
+          The catalog is empty. Apps are added to it in the OS repository, under <code>marketplace/</code>.
         </p>
       )}
       <div className="grid gap-2">
         {rowsOf(listing.apps).map((row) => {
           // The apps of a descriptor share its install, job and server.
-          const app = row.apps[0]
+          const app = row.apps[0];
           // An app from a URL: a catalog app's row, plus where it came from
           // and who vouched for its commit.
-          const nativeUrl = !!app.source
-          const badge = nativeUrl && app.trust ? trustBadge(app.trust) : null
+          const nativeUrl = !!app.source;
+          const badge = nativeUrl && app.trust ? trustBadge(app.trust) : null;
           // Only a verified app updates as the verified list moves.
-          const checksForUpdates = nativeUrl && badge?.label !== 'Verified'
-          const Icon = marketplaceIcon(row.suite ? 'package' : app.icon)
-          const installed = app.installed
-          const missing = row.apps.some((a) => a.installed?.missing)
-          const working = app.job && app.job.state !== 'failed'
-          const outdated = installed && installed.ref !== app.ref
+          const checksForUpdates = nativeUrl && badge?.label !== "Verified";
+          const Icon = marketplaceIcon(row.suite ? "package" : app.icon);
+          const installed = app.installed;
+          const missing = row.apps.some((a) => a.installed?.missing);
+          const working = app.job && app.job.state !== "failed";
+          const outdated = installed && installed.ref !== app.ref;
           // A kit app built for another shared kit will not open here.
           const mismatched = row.apps.find(
-            (a) => typeof a.sharedKit === 'number' && a.sharedKit !== SHARED_KIT_VERSION
-          )
-          const kitMismatch = mismatched?.sharedKit
+            (a) => typeof a.sharedKit === "number" && a.sharedKit !== SHARED_KIT_VERSION,
+          );
+          const kitMismatch = mismatched?.sharedKit;
           // At the same ref, with the build present, Update and Reinstall do
           // not show; if the catalog now names this desktop's kit, the same
           // install rebuilds it for this kit.
           const rebuild =
-            !!installed &&
-            !missing &&
-            !outdated &&
-            !!mismatched &&
-            rebuildFixesKit(mismatched, SHARED_KIT_VERSION)
-          const clashing = (a: MarketplaceApp) => clashes.includes(a.id)
-          const canOpen = (a: MarketplaceApp) =>
-            !!a.installed && !a.installed.missing && !working && !clashing(a)
-          let state: string
-          if (working) state = JOB_LABEL[app.job!.state]
-          else if (app.job?.state === 'failed')
-            state = `${JOB_LABEL.failed}: ${app.job.reason ?? ''}`
+            !!installed && !missing && !outdated && !!mismatched && rebuildFixesKit(mismatched, SHARED_KIT_VERSION);
+          const clashing = (a: MarketplaceApp) => clashes.includes(a.id);
+          const canOpen = (a: MarketplaceApp) => !!a.installed && !a.installed.missing && !working && !clashing(a);
+          let state: string;
+          if (working) state = JOB_LABEL[app.job!.state];
+          else if (app.job?.state === "failed") state = `${JOB_LABEL.failed}: ${app.job.reason ?? ""}`;
           else if (rebuild)
-            state = `Built for shared kit ${kitMismatch}; a rebuild for kit ${SHARED_KIT_VERSION} is available`
+            state = `Built for shared kit ${kitMismatch}; a rebuild for kit ${SHARED_KIT_VERSION} is available`;
           else if (kitMismatch !== undefined)
-            state = `Needs an update: built for shared kit ${kitMismatch}, this desktop has ${SHARED_KIT_VERSION}`
-          else if (!installed) state = 'Not installed'
-          else if (missing) state = 'Its build is missing (restored from a backup?)'
-          else if (outdated) state = 'An update is available'
-          else state = `Installed · ${installed.ref.slice(0, 7)}`
-          if (app.server.state === 'crashed') state = `Server stopped: ${app.server.reason}`
+            state = `Needs an update: built for shared kit ${kitMismatch}, this desktop has ${SHARED_KIT_VERSION}`;
+          else if (!installed) state = "Not installed";
+          else if (missing) state = "Its build is missing (restored from a backup?)";
+          else if (outdated) state = "An update is available";
+          else state = `Installed · ${installed.ref.slice(0, 7)}`;
+          if (app.server.state === "crashed") state = `Server stopped: ${app.server.reason}`;
           return (
             <div
               key={row.descriptorId}
               data-descriptor-id={row.descriptorId}
               ref={(el) => {
-                if (el) rowRefs.current.set(row.descriptorId, el)
-                else rowRefs.current.delete(row.descriptorId)
+                if (el) rowRefs.current.set(row.descriptorId, el);
+                else rowRefs.current.delete(row.descriptorId);
               }}
               // min-w-0: a grid item is as wide as its content by default, and
               // a long job reason would widen every row past the window.
               className={cn(
-                'rounded-control bg-surface-container-low min-w-0 border px-3 py-2.5 transition-colors',
-                highlight === row.descriptorId
-                  ? 'border-primary ring-primary ring-2'
-                  : 'border-outline-variant'
+                "rounded-control bg-surface-container-low min-w-0 border px-3 py-2.5 transition-colors",
+                highlight === row.descriptorId ? "border-primary ring-primary ring-2" : "border-outline-variant",
               )}
             >
               <div className="flex items-center gap-3">
@@ -378,20 +365,16 @@ export function MarketplaceSettings({
                     {badge && <SourceBadge warn={badge.warn}>{badge.label}</SourceBadge>}
                     {row.suite && (
                       <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
-                        {row.apps.length === 1 ? '1 app' : `${row.apps.length} apps`}
+                        {row.apps.length === 1 ? "1 app" : `${row.apps.length} apps`}
                       </span>
                     )}
-                    {app.type === 'service' && (
+                    {app.type === "service" && (
                       <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
                         With server
                       </span>
                     )}
                   </span>
-                  <span
-                    className="text-on-surface-variant block truncate text-[11px]"
-                    title={state}
-                    aria-live="polite"
-                  >
+                  <span className="text-on-surface-variant block truncate text-[11px]" title={state} aria-live="polite">
                     {rowNote?.id === app.id ? rowNote.text : state}
                   </span>
                   {nativeUrl && (
@@ -407,12 +390,8 @@ export function MarketplaceSettings({
                     </Button>
                   )}
                   {!working && (!installed || missing || outdated) && (
-                    <Button
-                      size="sm"
-                      variant={installed ? 'default' : 'primary'}
-                      onClick={() => void install(row)}
-                    >
-                      {!installed ? 'Install' : missing ? 'Reinstall' : 'Update'}
+                    <Button size="sm" variant={installed ? "default" : "primary"} onClick={() => void install(row)}>
+                      {!installed ? "Install" : missing ? "Reinstall" : "Update"}
                     </Button>
                   )}
                   {!working && rebuild && (
@@ -428,26 +407,21 @@ export function MarketplaceSettings({
                       Check for update
                     </Button>
                   )}
-                  {(installed || app.job?.state === 'failed') && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => void showLog(row.descriptorId)}
-                    >
+                  {(installed || app.job?.state === "failed") && (
+                    <Button size="sm" variant="ghost" onClick={() => void showLog(row.descriptorId)}>
                       Log
                     </Button>
                   )}
-                  {(installed || app.job?.state === 'failed') && !working && (
+                  {(installed || app.job?.state === "failed") && !working && (
                     <Button size="sm" variant="ghost" onClick={() => void uninstall(row)}>
-                      {installed ? 'Uninstall' : 'Clear'}
+                      {installed ? "Uninstall" : "Clear"}
                     </Button>
                   )}
                 </div>
               </div>
               {moved === app.id && (
                 <p className="text-on-surface mt-2 text-[11px]" role="status">
-                  This URL now points to a different app. Install it from the field above if you
-                  want it.
+                  This URL now points to a different app. Install it from the field above if you want it.
                 </p>
               )}
               {update?.id === app.id && (
@@ -455,62 +429,45 @@ export function MarketplaceSettings({
                   inspection={update.inspection}
                   onCancel={() => setUpdate(null)}
                   onInstalled={() => {
-                    setUpdate(null)
-                    note(app.id, 'Updated.')
-                    void refresh()
+                    setUpdate(null);
+                    note(app.id, "Updated.");
+                    void refresh();
                   }}
                 />
               )}
               {row.suite ? (
-                <ul
-                  className="border-outline-variant mt-2 grid border-t pt-1"
-                  aria-label={`${row.name}'s apps`}
-                >
+                <ul className="border-outline-variant mt-2 grid border-t pt-1" aria-label={`${row.name}'s apps`}>
                   {row.apps.map((a) => {
-                    const AppIcon = marketplaceIcon(a.icon)
+                    const AppIcon = marketplaceIcon(a.icon);
                     return (
                       <li key={a.id} className="flex min-h-7 min-w-0 items-center gap-2 py-0.5">
-                        <AppIcon
-                          size={12}
-                          strokeWidth={1.75}
-                          className="text-on-surface-variant shrink-0"
-                        />
-                        <span className="font-ui text-on-surface shrink-0 text-[12px] font-medium">
-                          {a.name}
-                        </span>
+                        <AppIcon size={12} strokeWidth={1.75} className="text-on-surface-variant shrink-0" />
+                        <span className="font-ui text-on-surface shrink-0 text-[12px] font-medium">{a.name}</span>
                         <span
                           className="text-on-surface-variant min-w-0 flex-1 truncate text-[11px]"
-                          role={clashing(a) ? 'status' : undefined}
+                          role={clashing(a) ? "status" : undefined}
                         >
                           {clashing(a)
                             ? `A built-in app already has the id ${a.id}, so the built-in opens instead.`
                             : a.description}
                         </span>
                         {canOpen(a) && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            aria-label={`Open ${a.name}`}
-                            onClick={() => openApp(a.id)}
-                          >
+                          <Button size="sm" variant="ghost" aria-label={`Open ${a.name}`} onClick={() => openApp(a.id)}>
                             Open
                           </Button>
                         )}
                       </li>
-                    )
+                    );
                   })}
                 </ul>
               ) : (
                 <>
                   {clashing(app) && (
                     <p className="text-on-surface mt-2 text-[11px]" role="status">
-                      A built-in app already has the id <code>{app.id}</code>, so the built-in opens
-                      instead.
+                      A built-in app already has the id <code>{app.id}</code>, so the built-in opens instead.
                     </p>
                   )}
-                  {app.description && (
-                    <p className="text-on-surface-variant mt-2 text-[11px]">{app.description}</p>
-                  )}
+                  {app.description && <p className="text-on-surface-variant mt-2 text-[11px]">{app.description}</p>}
                 </>
               )}
               {log?.id === row.descriptorId && (
@@ -519,10 +476,10 @@ export function MarketplaceSettings({
                 </pre>
               )}
             </div>
-          )
+          );
         })}
         {retiredApps.map((p) => {
-          const Icon = marketplaceIcon('package')
+          const Icon = marketplaceIcon("package");
           return (
             <div
               key={p.file}
@@ -557,7 +514,7 @@ export function MarketplaceSettings({
                 </div>
               </div>
             </div>
-          )
+          );
         })}
       </div>
       {brokenApps.length > 0 && (
@@ -595,5 +552,5 @@ export function MarketplaceSettings({
       )}
       {confirmDialog}
     </div>
-  )
+  );
 }

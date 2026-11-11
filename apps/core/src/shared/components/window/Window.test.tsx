@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
-import { act } from 'react'
-import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { useWindowStore, topVisibleWindowId, type WindowInstance } from '../../store/windowStore'
-import { useAuthStore } from '../../../modules/auth/store/authStore'
-import { Window } from './Window'
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+import { useWindowStore, topVisibleWindowId, type WindowInstance } from "../../store/windowStore";
+import { useAuthStore } from "../../../modules/auth/store/authStore";
+import { Window } from "./Window";
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /**
  * A click anywhere in a window raises it, unless that click
@@ -26,11 +26,11 @@ function win(id: string, z: number, over: Partial<WindowInstance> = {}): WindowI
     size: { width: 400, height: 300 },
     zIndex: z,
     ...over,
-  }
+  };
 }
 
-let container: HTMLDivElement
-let root: Root
+let container: HTMLDivElement;
+let root: Root;
 
 /** Window `a` with one button whose click runs `action`. */
 function renderA(action: () => void) {
@@ -41,114 +41,103 @@ function renderA(action: () => void) {
         <button data-testid="open" onClick={action}>
           Open
         </button>
-      </Window>
-    )
-  )
+      </Window>,
+    ),
+  );
 }
 
 const click = (testId: string) => {
-  const el = container.querySelector<HTMLElement>(`[data-testid="${testId}"]`)!
-  act(() => el.click())
-}
+  const el = container.querySelector<HTMLElement>(`[data-testid="${testId}"]`)!;
+  act(() => el.click());
+};
 
 beforeEach(() => {
-  useAuthStore.setState({ authenticated: true, everAuthenticated: true, locked: false })
-  container = document.createElement('div')
-  document.body.appendChild(container)
-  root = createRoot(container)
-})
+  useAuthStore.setState({ authenticated: true, everAuthenticated: true, locked: false });
+  container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+});
 
 afterEach(() => {
-  act(() => root.unmount())
-  container.remove()
-})
+  act(() => root.unmount());
+  container.remove();
+});
 
-describe('a click in a window', () => {
-  it('leaves an already open window it raised in front', () => {
+describe("a click in a window", () => {
+  it("leaves an already open window it raised in front", () => {
     useWindowStore.setState({
-      windows: [win('a', 2), win('b', 1)],
+      windows: [win("a", 2), win("b", 1)],
       nextZIndex: 3,
       activeWorkspace: 1,
-    })
-    renderA(() => useWindowStore.getState().focusWindow('b'))
-    click('open')
-    expect(topVisibleWindowId()).toBe('b')
-  })
+    });
+    renderA(() => useWindowStore.getState().focusWindow("b"));
+    click("open");
+    expect(topVisibleWindowId()).toBe("b");
+  });
 
-  it('leaves a window it opened in front', () => {
-    useWindowStore.setState({ windows: [win('a', 1)], nextZIndex: 2, activeWorkspace: 1 })
-    let opened = ''
+  it("leaves a window it opened in front", () => {
+    useWindowStore.setState({ windows: [win("a", 1)], nextZIndex: 2, activeWorkspace: 1 });
+    let opened = "";
     renderA(() => {
       opened = useWindowStore
         .getState()
-        .openWindow(
-          'calculator',
-          'Calculator',
-          { width: 300, height: 300 },
-          { width: 100, height: 100 }
-        )
-    })
-    click('open')
-    expect(opened).not.toBe('')
-    expect(topVisibleWindowId()).toBe(opened)
-  })
+        .openWindow("calculator", "Calculator", { width: 300, height: 300 }, { width: 100, height: 100 });
+    });
+    click("open");
+    expect(opened).not.toBe("");
+    expect(topVisibleWindowId()).toBe(opened);
+  });
 
-  it('raises a background window when its content is clicked', () => {
+  it("raises a background window when its content is clicked", () => {
     useWindowStore.setState({
-      windows: [win('a', 1), win('b', 2)],
+      windows: [win("a", 1), win("b", 2)],
       nextZIndex: 3,
       activeWorkspace: 1,
-    })
-    renderA(() => {})
-    click('body')
-    expect(topVisibleWindowId()).toBe('a')
-  })
+    });
+    renderA(() => {});
+    click("body");
+    expect(topVisibleWindowId()).toBe("a");
+  });
 
-  it('raises a background window when its button only minimises another', () => {
+  it("raises a background window when its button only minimises another", () => {
     // Nothing was brought up: the top changes, but no window was raised.
     useWindowStore.setState({
-      windows: [win('a', 1), win('b', 2), win('t', 3)],
+      windows: [win("a", 1), win("b", 2), win("t", 3)],
       nextZIndex: 4,
       activeWorkspace: 1,
-    })
-    renderA(() => useWindowStore.getState().hideWindow('t'))
-    click('open')
-    expect(topVisibleWindowId()).toBe('a')
-  })
+    });
+    renderA(() => useWindowStore.getState().hideWindow("t"));
+    click("open");
+    expect(topVisibleWindowId()).toBe("a");
+  });
 
-  it('mints no z for a click in the window already on top', () => {
+  it("mints no z for a click in the window already on top", () => {
     useWindowStore.setState({
-      windows: [win('a', 2), win('b', 1)],
+      windows: [win("a", 2), win("b", 1)],
       nextZIndex: 3,
       activeWorkspace: 1,
-    })
-    renderA(() => {})
-    click('body')
-    expect(useWindowStore.getState().nextZIndex).toBe(3)
-    expect(topVisibleWindowId()).toBe('a')
-  })
-})
+    });
+    renderA(() => {});
+    click("body");
+    expect(useWindowStore.getState().nextZIndex).toBe(3);
+    expect(topVisibleWindowId()).toBe("a");
+  });
+});
 
 describe("a Linux app's frame-only window", () => {
-  it('has the frame and no title bar when the app draws its own', () => {
-    useWindowStore.setState({ windows: [win('a', 1)] })
+  it("has the frame and no title bar when the app draws its own", () => {
+    useWindowStore.setState({ windows: [win("a", 1)] });
     for (const frameOnly of [false, true]) {
       act(() =>
         root.render(
-          <Window
-            windowId="a"
-            minSize={{ width: 100, height: 100 }}
-            isFocused={false}
-            frameOnly={frameOnly}
-          >
+          <Window windowId="a" minSize={{ width: 100, height: 100 }} isFocused={false} frameOnly={frameOnly}>
             <p>content</p>
-          </Window>
-        )
-      )
-      const bar = container.querySelector<HTMLElement>('[data-window-content]')!
-        .previousElementSibling as HTMLElement
-      expect(bar.style.display).toBe(frameOnly ? 'none' : '')
-      expect(container.querySelector('[data-window-id="a"]')).not.toBeNull()
+          </Window>,
+        ),
+      );
+      const bar = container.querySelector<HTMLElement>("[data-window-content]")!.previousElementSibling as HTMLElement;
+      expect(bar.style.display).toBe(frameOnly ? "none" : "");
+      expect(container.querySelector('[data-window-id="a"]')).not.toBeNull();
     }
-  })
-})
+  });
+});

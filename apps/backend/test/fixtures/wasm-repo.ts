@@ -1,6 +1,6 @@
-import { execFileSync } from 'child_process';
-import { mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { execFileSync } from "child_process";
+import { mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
 
 /**
  * A kit app that runs WebAssembly, with threads, as a real git repository:
@@ -175,15 +175,15 @@ console.log('built 3 files');
 }
 
 function git(cwd: string, ...args: string[]): string {
-  return execFileSync('git', args, {
+  return execFileSync("git", args, {
     cwd,
-    encoding: 'utf8',
+    encoding: "utf8",
     env: {
       ...process.env,
-      GIT_AUTHOR_NAME: 't',
-      GIT_AUTHOR_EMAIL: 't@example.com',
-      GIT_COMMITTER_NAME: 't',
-      GIT_COMMITTER_EMAIL: 't@example.com',
+      GIT_AUTHOR_NAME: "t",
+      GIT_AUTHOR_EMAIL: "t@example.com",
+      GIT_COMMITTER_NAME: "t",
+      GIT_COMMITTER_EMAIL: "t@example.com",
     },
   }).trim();
 }
@@ -191,44 +191,40 @@ function git(cwd: string, ...args: string[]): string {
 /** Write the repository into the empty (or missing) directory `dir`. */
 export function makeWasmRepo(dir: string): WasmRepo {
   mkdirSync(dir, { recursive: true });
-  git(dir, 'init', '-q', '-b', 'main');
-  writeFileSync(join(dir, 'build.mjs'), buildScript());
-  git(dir, 'add', '.');
-  git(dir, 'commit', '-qm', 'a kit app with WebAssembly and a worker');
-  return { whole: git(dir, 'rev-parse', 'HEAD') };
+  git(dir, "init", "-q", "-b", "main");
+  writeFileSync(join(dir, "build.mjs"), buildScript());
+  git(dir, "add", ".");
+  git(dir, "commit", "-qm", "a kit app with WebAssembly and a worker");
+  return { whole: git(dir, "rev-parse", "HEAD") };
 }
 
 /**
  * The version 2 descriptor for this repository: `wasm`, built against shared
  * kit 1, with one app, `wasm-threads`, that asks for no capability.
  */
-export function wasmDescriptor(
-  repo: string,
-  ref: string,
-  extra: Record<string, unknown> = {},
-) {
+export function wasmDescriptor(repo: string, ref: string, extra: Record<string, unknown> = {}) {
   return {
     schemaVersion: 2,
-    id: 'wasm',
-    name: 'WASM Fixture',
-    description: 'A kit app running WebAssembly on the page and in a worker.',
+    id: "wasm",
+    name: "WASM Fixture",
+    description: "A kit app running WebAssembly on the page and in a worker.",
     source: { repo, ref },
-    type: 'static',
-    runtime: 'native',
-    build: { command: ['node', 'build.mjs'], output: 'dist/os' },
+    type: "static",
+    runtime: "native",
+    build: { command: ["node", "build.mjs"], output: "dist/os" },
     sharedKit: 1,
     apps: [
       {
-        id: 'wasm-threads',
-        name: 'WASM Threads',
-        description: 'add(2, 3) from a .wasm, and a worker sharing memory.',
-        meta: ['fixture'],
-        entry: 'threads/app.mjs',
+        id: "wasm-threads",
+        name: "WASM Threads",
+        description: "add(2, 3) from a .wasm, and a worker sharing memory.",
+        meta: ["fixture"],
+        entry: "threads/app.mjs",
         window: {
           defaultSize: { w: 480, h: 240 },
           minSize: { w: 360, h: 200 },
         },
-        icon: 'puzzle',
+        icon: "puzzle",
         capabilities: [],
       },
     ],

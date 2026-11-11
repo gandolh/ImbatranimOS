@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
   IsArray,
@@ -12,20 +12,13 @@ import {
   MaxLength,
   Min,
   ValidateNested,
-} from 'class-validator';
+} from "class-validator";
 
 /** `YYYY-MM-DD`, the only date-without-time format this API speaks. */
 export const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-export const FREQUENCIES = ['daily', 'weekly', 'monthly', 'yearly'] as const;
-export const COLORS = [
-  'blue',
-  'green',
-  'amber',
-  'red',
-  'purple',
-  'slate',
-] as const;
+export const FREQUENCIES = ["daily", "weekly", "monthly", "yearly"] as const;
+export const COLORS = ["blue", "green", "amber", "red", "purple", "slate"] as const;
 
 const MAX_TITLE = 300;
 const MAX_NOTES = 10_000;
@@ -58,7 +51,7 @@ export class RecurrenceDto {
   @IsOptional()
   byWeekday?: number[];
 
-  @Matches(ISO_DATE, { message: 'until must be YYYY-MM-DD' })
+  @Matches(ISO_DATE, { message: "until must be YYYY-MM-DD" })
   @IsOptional()
   until?: string;
 
@@ -107,7 +100,7 @@ export class CreateEventDto {
 
   @IsArray()
   @ArrayMaxSize(MAX_EXCEPTIONS)
-  @Matches(ISO_DATE, { each: true, message: 'exceptions must be YYYY-MM-DD' })
+  @Matches(ISO_DATE, { each: true, message: "exceptions must be YYYY-MM-DD" })
   @IsOptional()
   exceptions?: string[];
 }
@@ -153,7 +146,7 @@ export class UpdateEventDto {
 
   @IsArray()
   @ArrayMaxSize(MAX_EXCEPTIONS)
-  @Matches(ISO_DATE, { each: true, message: 'exceptions must be YYYY-MM-DD' })
+  @Matches(ISO_DATE, { each: true, message: "exceptions must be YYYY-MM-DD" })
   @IsOptional()
   exceptions?: string[];
 }

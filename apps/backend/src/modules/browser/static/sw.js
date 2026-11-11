@@ -16,7 +16,7 @@
  * Only the host page (/host.html) may load the jar or receive it. Proxied
  * pages share this origin, so the check is on the client's URL.
  */
-importScripts('/scram/scramjet.all.js');
+importScripts("/scram/scramjet.all.js");
 
 const JAR_PUSH_DELAY_MS = 500;
 const JAR_WAIT_MS = 1500;
@@ -28,14 +28,14 @@ let pushTimer = null;
 
 function isHost(client) {
   try {
-    return new URL(client.url).pathname === '/host.html';
+    return new URL(client.url).pathname === "/host.html";
   } catch {
     return false;
   }
 }
 
 async function hosts() {
-  const all = await self.clients.matchAll({ type: 'window' });
+  const all = await self.clients.matchAll({ type: "window" });
   return all.filter(isHost);
 }
 
@@ -52,7 +52,7 @@ function jarReady() {
     jarWaiters.push(resolve);
     setTimeout(resolve, JAR_WAIT_MS);
     hosts().then((list) => {
-      for (const client of list) client.postMessage({ imb: 'jar-request' });
+      for (const client of list) client.postMessage({ imb: "jar-request" });
     });
   });
 }
@@ -62,24 +62,24 @@ function pushJarSoon() {
   pushTimer = setTimeout(async () => {
     pushTimer = null;
     const jar = scramjet.cookieStore.dump();
-    for (const client of await hosts()) client.postMessage({ imb: 'jar', jar });
+    for (const client of await hosts()) client.postMessage({ imb: "jar", jar });
   }, JAR_PUSH_DELAY_MS);
 }
 
 // Registered BEFORE Scramjet's own listener, so it runs first and can stop a
 // message from reaching it.
-self.addEventListener('message', (event) => {
+self.addEventListener("message", (event) => {
   const data = event.data;
-  if (!data || typeof data !== 'object') return;
+  if (!data || typeof data !== "object") return;
 
-  if (data.imb === 'jar-load') {
+  if (data.imb === "jar-load") {
     event.stopImmediatePropagation();
     if (!event.source || !isHost(event.source)) return;
-    if (typeof data.jar !== 'string') return;
+    if (typeof data.jar !== "string") return;
     try {
       scramjet.cookieStore.load(data.jar);
     } catch {
-      scramjet.cookieStore.load('{}');
+      scramjet.cookieStore.load("{}");
     }
     markJarLoaded();
     return;
@@ -87,9 +87,9 @@ self.addEventListener('message', (event) => {
 
   // A page set document.cookie. Scramjet's handler would apply it AND write
   // the whole jar to IndexedDB; apply it here instead, without the write.
-  if (data.scramjet$type === 'cookie' && !('scramjet$token' in data)) {
+  if (data.scramjet$type === "cookie" && !("scramjet$token" in data)) {
     event.stopImmediatePropagation();
-    if (typeof data.cookie === 'string' && typeof data.url === 'string') {
+    if (typeof data.cookie === "string" && typeof data.url === "string") {
       scramjet.cookieStore.setCookies([data.cookie], new URL(data.url));
     }
   }
@@ -114,24 +114,15 @@ scramjet.cookieStore.setCookies = (...args) => {
 // one. `require-corp` asks nothing of a proxied page, since all it loads
 // comes through this worker from this origin; a load that slips past the
 // rewriter to another origin is refused instead of fetched directly.
-const ISOLATED_DESTINATIONS = new Set([
-  'document',
-  'iframe',
-  'frame',
-  'worker',
-  'sharedworker',
-]);
+const ISOLATED_DESTINATIONS = new Set(["document", "iframe", "frame", "worker", "sharedworker"]);
 
 function isolated(request, response) {
-  if (
-    !ISOLATED_DESTINATIONS.has(request.destination) &&
-    request.mode !== 'navigate'
-  ) {
+  if (!ISOLATED_DESTINATIONS.has(request.destination) && request.mode !== "navigate") {
     return response;
   }
   try {
     const headers = new Headers(response.headers);
-    headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+    headers.set("Cross-Origin-Embedder-Policy", "require-corp");
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
@@ -143,12 +134,12 @@ function isolated(request, response) {
   }
 }
 
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (event) => {
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
   event.respondWith(
     (async () => {
       await scramjet.loadConfig();

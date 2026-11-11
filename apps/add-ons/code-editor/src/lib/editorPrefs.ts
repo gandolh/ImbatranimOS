@@ -1,18 +1,18 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-export const FONT_SIZES = [11, 12, 13, 14, 16, 18] as const
+export const FONT_SIZES = [11, 12, 13, 14, 16, 18] as const;
 
 export type EditorPrefs = {
-  minimap: boolean
-  wordWrap: boolean
-  fontSize: number
-  formatOnSave: boolean
-}
+  minimap: boolean;
+  wordWrap: boolean;
+  fontSize: number;
+  formatOnSave: boolean;
+};
 
 type EditorPrefsStore = EditorPrefs & {
-  set: <K extends keyof EditorPrefs>(key: K, value: EditorPrefs[K]) => void
-}
+  set: <K extends keyof EditorPrefs>(key: K, value: EditorPrefs[K]) => void;
+};
 
 /**
  * Editor preferences, shared by every Code Editor window and remembered
@@ -40,6 +40,6 @@ export const useEditorPrefs = create<EditorPrefsStore>()(
       formatOnSave: false,
       set: (key, value) => set({ [key]: value } as Partial<EditorPrefs>),
     }),
-    { name: 'imbatranimos:code-editor:prefs' }
-  )
-)
+    { name: "imbatranimos:code-editor:prefs" },
+  ),
+);

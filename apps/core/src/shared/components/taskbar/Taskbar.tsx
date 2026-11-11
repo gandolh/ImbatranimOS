@@ -1,42 +1,37 @@
-import { useState, useRef } from 'react'
-import { useShallow } from 'zustand/shallow'
-import { Search } from 'lucide-react'
-import { cn } from '../../../lib/cn'
-import {
-  TASKBAR_HEIGHT,
-  topVisibleWindowId,
-  useWindowStore,
-  type WorkspaceId,
-} from '../../store/windowStore'
-import { usePaletteStore } from '../../store/paletteStore'
-import { APP_REGISTRY } from '../../registry/registry'
-import { openApp } from '../../intents/openApp'
-import { Logo } from '../brand/Logo'
-import { StartMenu } from './StartMenu'
-import { Tray } from './Tray'
-import { WorkspacePips } from './WorkspacePips'
-import { TaskbarContextMenu } from './TaskbarContextMenu'
-import { launchLinuxApp, linuxLauncherActions } from '../../../modules/linux-windows/launchers'
-import { focusIntoWindowSoon } from '../window/focusIntoWindow'
+import { useState, useRef } from "react";
+import { useShallow } from "zustand/shallow";
+import { Search } from "lucide-react";
+import { cn } from "../../../lib/cn";
+import { TASKBAR_HEIGHT, topVisibleWindowId, useWindowStore, type WorkspaceId } from "../../store/windowStore";
+import { usePaletteStore } from "../../store/paletteStore";
+import { APP_REGISTRY } from "../../registry/registry";
+import { openApp } from "../../intents/openApp";
+import { Logo } from "../brand/Logo";
+import { StartMenu } from "./StartMenu";
+import { Tray } from "./Tray";
+import { WorkspacePips } from "./WorkspacePips";
+import { TaskbarContextMenu } from "./TaskbarContextMenu";
+import { launchLinuxApp, linuxLauncherActions } from "../../../modules/linux-windows/launchers";
+import { focusIntoWindowSoon } from "../window/focusIntoWindow";
 
 // Field separator for the task-button projection; cannot occur in a uuid, slug,
 // or realistic window title. Title goes last and is rejoined so a stray one is harmless.
-const SEP = '␟'
+const SEP = "␟";
 
 export function Taskbar() {
-  const showWindow = useWindowStore((s) => s.showWindow)
-  const hideWindow = useWindowStore((s) => s.hideWindow)
-  const maximizeWindow = useWindowStore((s) => s.maximizeWindow)
-  const restoreWindow = useWindowStore((s) => s.restoreWindow)
-  const focusWindow = useWindowStore((s) => s.focusWindow)
-  const closeWindow = useWindowStore((s) => s.closeWindow)
-  const moveWindowToWorkspace = useWindowStore((s) => s.moveWindowToWorkspace)
-  const activeWorkspace = useWindowStore((s) => s.activeWorkspace)
-  const openPalette = usePaletteStore((s) => s.openPalette)
+  const showWindow = useWindowStore((s) => s.showWindow);
+  const hideWindow = useWindowStore((s) => s.hideWindow);
+  const maximizeWindow = useWindowStore((s) => s.maximizeWindow);
+  const restoreWindow = useWindowStore((s) => s.restoreWindow);
+  const focusWindow = useWindowStore((s) => s.focusWindow);
+  const closeWindow = useWindowStore((s) => s.closeWindow);
+  const moveWindowToWorkspace = useWindowStore((s) => s.moveWindowToWorkspace);
+  const activeWorkspace = useWindowStore((s) => s.activeWorkspace);
+  const openPalette = usePaletteStore((s) => s.openPalette);
 
-  const [startOpen, setStartOpen] = useState(false)
-  const startBtnRef = useRef<HTMLButtonElement>(null)
-  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null)
+  const [startOpen, setStartOpen] = useState(false);
+  const startBtnRef = useRef<HTMLButtonElement>(null);
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
 
   // Project only what a task button renders (id/appId/visibility/workspace/title)
   // — NOT position or size — so a drag/resize does not re-render the whole
@@ -46,31 +41,31 @@ export function Taskbar() {
     useShallow((s) =>
       s.windows.map(
         (w) =>
-          `${w.id}${SEP}${w.appId}${SEP}${w.isVisible ? 1 : 0}${SEP}${w.isMaximized ? 1 : 0}${SEP}${w.workspaceId}${SEP}${w.title}`
-      )
-    )
+          `${w.id}${SEP}${w.appId}${SEP}${w.isVisible ? 1 : 0}${SEP}${w.isMaximized ? 1 : 0}${SEP}${w.workspaceId}${SEP}${w.title}`,
+      ),
+    ),
   ).map((k) => {
-    const [id, appId, isVisible, isMaximized, workspaceId, ...titleParts] = k.split(SEP)
+    const [id, appId, isVisible, isMaximized, workspaceId, ...titleParts] = k.split(SEP);
     return {
       id,
       appId,
-      isVisible: isVisible === '1',
-      isMaximized: isMaximized === '1',
+      isVisible: isVisible === "1",
+      isMaximized: isMaximized === "1",
       workspaceId: Number(workspaceId) as WorkspaceId,
       title: titleParts.join(SEP),
-    }
-  })
+    };
+  });
 
   // Only the current workspace's windows get a button — that is what a taskbar
   // per virtual desktop means. The others are reachable via their pip.
-  const visibleWindows = allTasks.filter((w) => w.workspaceId === activeWorkspace)
+  const visibleWindows = allTasks.filter((w) => w.workspaceId === activeWorkspace);
 
   // Focus from the shared, workspace-scoped helper (topmost visible window on the
   // active desktop). Selecting the derived id keeps this re-rendering only when
   // focus changes, not on every drag frame.
-  const focusedId = useWindowStore(() => topVisibleWindowId())
+  const focusedId = useWindowStore(() => topVisibleWindowId());
 
-  const menuWindow = menu ? allTasks.find((w) => w.id === menu.id) : undefined
+  const menuWindow = menu ? allTasks.find((w) => w.id === menu.id) : undefined;
 
   /**
    * Start-menu launch, through the shared `openApp`.
@@ -86,7 +81,7 @@ export function Taskbar() {
    * something of its own.
    */
   function launchApp(appId: string) {
-    openApp(appId)
+    openApp(appId);
   }
 
   /**
@@ -95,17 +90,17 @@ export function Taskbar() {
    * the window; minimising leaves it on the button.
    */
   function handleTaskClick(id: string) {
-    const win = useWindowStore.getState().windows.find((w) => w.id === id)
-    if (!win) return
+    const win = useWindowStore.getState().windows.find((w) => w.id === id);
+    if (!win) return;
     if (!win.isVisible) {
-      showWindow(id)
-      focusWindow(id)
-      focusIntoWindowSoon(id)
+      showWindow(id);
+      focusWindow(id);
+      focusIntoWindowSoon(id);
     } else if (win.id === topVisibleWindowId()) {
-      hideWindow(id) // minimize the focused window
+      hideWindow(id); // minimize the focused window
     } else {
-      focusWindow(id)
-      focusIntoWindowSoon(id)
+      focusWindow(id);
+      focusIntoWindowSoon(id);
     }
   }
 
@@ -123,18 +118,18 @@ export function Taskbar() {
         aria-expanded={startOpen}
         aria-label="Start"
         className={cn(
-          'group rounded-control relative flex items-center gap-2 px-4 outline-none',
-          'border-outline-variant apricot:border-r-0 border-r',
-          'hover:bg-surface-container-high',
-          'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
-          startOpen && 'bg-surface-container-high'
+          "group rounded-control relative flex items-center gap-2 px-4 outline-none",
+          "border-outline-variant apricot:border-r-0 border-r",
+          "hover:bg-surface-container-high",
+          "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
+          startOpen && "bg-surface-container-high",
         )}
       >
         {/* accent edge when open */}
         <span
           className={cn(
-            'bg-primary apricot:hidden absolute inset-x-0 top-0 h-[2px] transition-opacity',
-            startOpen ? 'opacity-100' : 'opacity-0'
+            "bg-primary apricot:hidden absolute inset-x-0 top-0 h-[2px] transition-opacity",
+            startOpen ? "opacity-100" : "opacity-0",
           )}
         />
         <Logo size={22} className="text-on-surface" />
@@ -143,13 +138,7 @@ export function Taskbar() {
         </span>
       </button>
 
-      {startOpen && (
-        <StartMenu
-          anchorRef={startBtnRef}
-          onClose={() => setStartOpen(false)}
-          onOpenApp={launchApp}
-        />
-      )}
+      {startOpen && <StartMenu anchorRef={startBtnRef} onClose={() => setStartOpen(false)} onOpenApp={launchApp} />}
 
       {/* Search launcher — opens the command palette (also Mod+K) */}
       <button
@@ -157,10 +146,10 @@ export function Taskbar() {
         aria-label="Search"
         title="Search (Ctrl+K)"
         className={cn(
-          'group rounded-control relative flex items-center gap-2 px-3 outline-none',
-          'border-outline-variant apricot:border-r-0 apricot:bg-surface-container border-r',
-          'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high',
-          'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
+          "group rounded-control relative flex items-center gap-2 px-3 outline-none",
+          "border-outline-variant apricot:border-r-0 apricot:bg-surface-container border-r",
+          "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high",
+          "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
         )}
       >
         <Search size={16} strokeWidth={1.75} className="shrink-0" />
@@ -169,49 +158,43 @@ export function Taskbar() {
       {/* Running-window buttons */}
       <div className="apricot:px-0 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">
         {visibleWindows.map((win) => {
-          const app = APP_REGISTRY.find((a) => a.id === win.appId)
-          const Icon = app?.icon
-          const isFocused = win.id === focusedId
-          const minimized = !win.isVisible
+          const app = APP_REGISTRY.find((a) => a.id === win.appId);
+          const Icon = app?.icon;
+          const isFocused = win.id === focusedId;
+          const minimized = !win.isVisible;
           return (
             <button
               key={win.id}
               onClick={() => handleTaskClick(win.id)}
               onContextMenu={(e) => {
-                e.preventDefault()
-                setMenu({ id: win.id, x: e.clientX, y: e.clientY })
+                e.preventDefault();
+                setMenu({ id: win.id, x: e.clientX, y: e.clientY });
               }}
               title={win.title}
               className={cn(
-                'rounded-control relative flex h-[34px] max-w-[168px] min-w-[44px] shrink-0 items-center gap-2 px-2.5 outline-none',
-                'border border-transparent text-[12px]',
-                'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset',
+                "rounded-control relative flex h-[34px] max-w-[168px] min-w-[44px] shrink-0 items-center gap-2 px-2.5 outline-none",
+                "border border-transparent text-[12px]",
+                "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
                 isFocused
-                  ? 'border-outline-variant apricot:border-transparent bg-surface-container-high text-on-surface'
+                  ? "border-outline-variant apricot:border-transparent bg-surface-container-high text-on-surface"
                   : minimized
-                    ? 'text-on-surface-variant hover:bg-surface-container'
-                    : 'text-on-surface hover:bg-surface-container'
+                    ? "text-on-surface-variant hover:bg-surface-container"
+                    : "text-on-surface hover:bg-surface-container",
               )}
             >
               {/* focus indicator — an accent bar along the bottom; in Apricot a
                   short centred dot */}
               <span
                 className={cn(
-                  'bg-primary absolute inset-x-0 bottom-0 h-[2px] transition-opacity',
-                  'apricot:inset-x-auto apricot:left-1/2 apricot:bottom-[3px] apricot:h-[3px] apricot:w-3.5 apricot:-translate-x-1/2 apricot:rounded-control',
-                  isFocused ? 'opacity-100' : 'opacity-0'
+                  "bg-primary absolute inset-x-0 bottom-0 h-[2px] transition-opacity",
+                  "apricot:inset-x-auto apricot:left-1/2 apricot:bottom-[3px] apricot:h-[3px] apricot:w-3.5 apricot:-translate-x-1/2 apricot:rounded-control",
+                  isFocused ? "opacity-100" : "opacity-0",
                 )}
               />
-              {Icon && (
-                <Icon
-                  size={15}
-                  strokeWidth={1.75}
-                  className={cn('shrink-0', minimized && 'opacity-60')}
-                />
-              )}
-              <span className={cn('truncate', minimized && 'opacity-60')}>{win.title}</span>
+              {Icon && <Icon size={15} strokeWidth={1.75} className={cn("shrink-0", minimized && "opacity-60")} />}
+              <span className={cn("truncate", minimized && "opacity-60")}>{win.title}</span>
             </button>
-          )
+          );
         })}
       </div>
 
@@ -230,35 +213,35 @@ export function Taskbar() {
           appActions={linuxLauncherActions(menuWindow.appId).map((a) => ({
             label: a.name,
             onSelect: () => {
-              void launchLinuxApp(menuWindow.appId, a.id)
-              setMenu(null)
+              void launchLinuxApp(menuWindow.appId, a.id);
+              setMenu(null);
             },
           }))}
           currentWorkspace={menuWindow.workspaceId}
           isMaximized={menuWindow.isMaximized}
           onMoveToWorkspace={(id: WorkspaceId) => {
-            moveWindowToWorkspace(menu.id, id)
-            setMenu(null)
+            moveWindowToWorkspace(menu.id, id);
+            setMenu(null);
           }}
           onToggleMaximize={() => {
             if (menuWindow.isMaximized) {
-              restoreWindow(menu.id)
+              restoreWindow(menu.id);
             } else {
-              maximizeWindow(menu.id)
+              maximizeWindow(menu.id);
             }
-            setMenu(null)
+            setMenu(null);
           }}
           onMinimize={() => {
-            hideWindow(menu.id)
-            setMenu(null)
+            hideWindow(menu.id);
+            setMenu(null);
           }}
           onClose={() => {
-            closeWindow(menu.id)
-            setMenu(null)
+            closeWindow(menu.id);
+            setMenu(null);
           }}
           onDismiss={() => setMenu(null)}
         />
       )}
     </div>
-  )
+  );
 }

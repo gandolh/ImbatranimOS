@@ -11,16 +11,16 @@
  * and a queue whose current track has vanished because the folder changed underneath.
  */
 
-export type RepeatMode = 'off' | 'one' | 'all'
+export type RepeatMode = "off" | "one" | "all";
 
 /** Why the queue is advancing: the track finished, or the user pressed a button. */
-export type AdvanceReason = 'ended' | 'manual'
+export type AdvanceReason = "ended" | "manual";
 
-export const REPEAT_MODES: RepeatMode[] = ['off', 'all', 'one']
+export const REPEAT_MODES: RepeatMode[] = ["off", "all", "one"];
 
 /** The next repeat mode in the cycle the button walks through. */
 export function nextRepeatMode(mode: RepeatMode): RepeatMode {
-  return REPEAT_MODES[(REPEAT_MODES.indexOf(mode) + 1) % REPEAT_MODES.length]
+  return REPEAT_MODES[(REPEAT_MODES.indexOf(mode) + 1) % REPEAT_MODES.length];
 }
 
 /**
@@ -31,14 +31,14 @@ export function nextRepeatMode(mode: RepeatMode): RepeatMode {
  * track each time it was read.
  */
 function seeded(seed: number): () => number {
-  let a = seed >>> 0
+  let a = seed >>> 0;
   return () => {
-    a = (a + 0x6d2b79f5) >>> 0
-    let t = a
-    t = Math.imul(t ^ (t >>> 15), t | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 /**
@@ -55,14 +55,14 @@ function seeded(seed: number): () => number {
  * all — only what `advance` picks next.
  */
 export function shuffledOrder(paths: string[], seed: number): string[] {
-  const rest = [...paths]
-  const random = seeded(seed)
+  const rest = [...paths];
+  const random = seeded(seed);
   // Fisher–Yates, back to front.
   for (let i = rest.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1))
-    ;[rest[i], rest[j]] = [rest[j], rest[i]]
+    const j = Math.floor(random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
   }
-  return rest
+  return rest;
 }
 
 /**
@@ -78,30 +78,24 @@ export function advance(
   current: string | null,
   direction: 1 | -1,
   repeat: RepeatMode,
-  reason: AdvanceReason = 'manual'
+  reason: AdvanceReason = "manual",
 ): string | null {
-  if (order.length === 0) return null
-  if (repeat === 'one' && reason === 'ended') return current
-  const at = current === null ? -1 : order.indexOf(current)
+  if (order.length === 0) return null;
+  if (repeat === "one" && reason === "ended") return current;
+  const at = current === null ? -1 : order.indexOf(current);
   // The current track is not in the queue (folder changed, or nothing selected yet):
   // start from whichever end the direction implies rather than returning nothing.
-  if (at === -1) return direction === 1 ? order[0] : order[order.length - 1]
-  const next = at + direction
-  if (next >= 0 && next < order.length) return order[next]
+  if (at === -1) return direction === 1 ? order[0] : order[order.length - 1];
+  const next = at + direction;
+  if (next >= 0 && next < order.length) return order[next];
   // Repeat-one wraps too, for *manual* navigation only: it means "this queue does not
   // end", so pressing Next on the last track should reach the first rather than find a
   // dead button. Only `reason: 'ended'` gets the replay behaviour.
-  if (repeat === 'all' || repeat === 'one')
-    return direction === 1 ? order[0] : order[order.length - 1]
-  return null
+  if (repeat === "all" || repeat === "one") return direction === 1 ? order[0] : order[order.length - 1];
+  return null;
 }
 
 /** Whether a Prev/Next button should be enabled, given the same rules. */
-export function canAdvance(
-  order: string[],
-  current: string | null,
-  direction: 1 | -1,
-  repeat: RepeatMode
-): boolean {
-  return advance(order, current, direction, repeat, 'manual') !== null
+export function canAdvance(order: string[], current: string | null, direction: 1 | -1, repeat: RepeatMode): boolean {
+  return advance(order, current, direction, repeat, "manual") !== null;
 }

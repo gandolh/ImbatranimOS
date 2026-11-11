@@ -1,4 +1,4 @@
-import { Logo } from '../../shared/components/brand/Logo'
+import { Logo } from "../../shared/components/brand/Logo";
 
 /**
  * The full-screen panel every pre-desktop state renders inside: the session
@@ -10,16 +10,16 @@ export function AuthShell({
   subtitle,
   children,
 }: {
-  title: string
-  subtitle: string
-  children: React.ReactNode
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
 }) {
   return (
     <div
       className="bg-surface relative flex h-screen w-screen items-center justify-center"
       style={{
-        backgroundImage: 'radial-gradient(var(--k-outline-variant) 1px, transparent 1px)',
-        backgroundSize: '24px 24px',
+        backgroundImage: "radial-gradient(var(--k-outline-variant) 1px, transparent 1px)",
+        backgroundSize: "24px 24px",
       }}
     >
       {/* subtle vignette so the card reads as a lit panel */}
@@ -45,9 +45,9 @@ export function AuthShell({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export function FieldHint({ children }: { children: React.ReactNode }) {
-  return <p className="font-content text-error text-[11px]">{children}</p>
+  return <p className="font-content text-error text-[11px]">{children}</p>;
 }

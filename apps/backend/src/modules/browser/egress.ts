@@ -1,6 +1,6 @@
-import { lookup as dnsLookup } from 'dns/promises';
-import { isIP } from 'net';
-import ipaddr from 'ipaddr.js';
+import { lookup as dnsLookup } from "dns/promises";
+import { isIP } from "net";
+import ipaddr from "ipaddr.js";
 
 /**
  * Where the Browser's relay may connect — the OPPOSITE stance from
@@ -20,12 +20,10 @@ import ipaddr from 'ipaddr.js';
  */
 
 /** The ports a page may reach. Web traffic only: no SMTP, no SSH, no databases. */
-export const ALLOWED_PORTS: ReadonlySet<number> = new Set([
-  80, 443, 8080, 8443,
-]);
+export const ALLOWED_PORTS: ReadonlySet<number> = new Set([80, 443, 8080, 8443]);
 
 export class EgressRefusedError extends Error {
-  override readonly name = 'EgressRefusedError';
+  override readonly name = "EgressRefusedError";
 }
 
 /**
@@ -44,8 +42,8 @@ export function isPublicAddress(address: string): boolean {
   } catch {
     return false;
   }
-  if (parsed.range() !== 'unicast') return false;
-  if (parsed.kind() === 'ipv6') {
+  if (parsed.range() !== "unicast") return false;
+  if (parsed.kind() === "ipv6") {
     // The deprecated IPv4-compatible block, ::/96 (`::7f00:1` is ::127.0.0.1).
     // ipaddr.js calls it unicast.
     const parts = (parsed as ipaddr.IPv6).parts;
@@ -61,8 +59,7 @@ export interface ResolvedTarget {
 
 type Lookup = (host: string) => Promise<{ address: string; family: number }[]>;
 
-const systemLookup: Lookup = (host) =>
-  dnsLookup(host, { all: true, verbatim: true });
+const systemLookup: Lookup = (host) => dnsLookup(host, { all: true, verbatim: true });
 
 /**
  * Resolve a stream's destination and decide on it.
@@ -80,8 +77,8 @@ export async function resolvePublicTarget(
     throw new EgressRefusedError(`port ${port} is not a web port`);
   }
   // A bracketed IPv6 literal arrives with its brackets from some clients.
-  const host = hostname.trim().replace(/^\[(.*)\]$/, '$1');
-  if (host === '') throw new EgressRefusedError('no destination');
+  const host = hostname.trim().replace(/^\[(.*)\]$/, "$1");
+  if (host === "") throw new EgressRefusedError("no destination");
 
   let answers: { address: string; family: number }[];
   if (isIP(host)) {

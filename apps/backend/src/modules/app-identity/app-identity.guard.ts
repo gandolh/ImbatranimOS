@@ -1,20 +1,11 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 
-import { IS_PUBLIC_KEY } from '../auth/public.decorator';
-import type { Caller } from '../identity/identity.types';
-import {
-  APP_TOKEN_HEADER,
-  APP_TOKEN_REFUSED,
-  type AppIdentity,
-} from './app-identity.types';
-import { AppTokens } from './app-tokens';
-import type { IdentifiedRequest } from './calling-app';
+import { IS_PUBLIC_KEY } from "../auth/public.decorator";
+import type { Caller } from "../identity/identity.types";
+import { APP_TOKEN_HEADER, APP_TOKEN_REFUSED, type AppIdentity } from "./app-identity.types";
+import { AppTokens } from "./app-tokens";
+import type { IdentifiedRequest } from "./calling-app";
 
 /**
  * The second global guard: which app is calling.
@@ -36,19 +27,14 @@ export class AppIdentityGuard implements CanActivate {
   ) {}
 
   canActivate(ctx: ExecutionContext): boolean {
-    if (ctx.getType() !== 'http') return true;
-    const req = ctx
-      .switchToHttp()
-      .getRequest<IdentifiedRequest & { caller?: Caller }>();
+    if (ctx.getType() !== "http") return true;
+    const req = ctx.switchToHttp().getRequest<IdentifiedRequest & { caller?: Caller }>();
     req.appIdentity = null;
 
     const raw = req.headers[APP_TOKEN_HEADER];
     if (raw === undefined) return true;
 
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      ctx.getHandler(),
-      ctx.getClass(),
-    ]);
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [ctx.getHandler(), ctx.getClass()]);
     if (isPublic) return true;
 
     // SessionGuard has refused every non-public route without a session, so
@@ -56,8 +42,7 @@ export class AppIdentityGuard implements CanActivate {
     const caller = req.caller;
     if (!caller) throw refused();
 
-    const identity: AppIdentity | null =
-      typeof raw === 'string' ? this.tokens.resolve(raw, caller.sid) : null;
+    const identity: AppIdentity | null = typeof raw === "string" ? this.tokens.resolve(raw, caller.sid) : null;
     if (!identity) throw refused();
     req.appIdentity = identity;
     return true;
@@ -67,9 +52,8 @@ export class AppIdentityGuard implements CanActivate {
 function refused(): ForbiddenException {
   return new ForbiddenException({
     statusCode: 403,
-    error: 'Forbidden',
+    error: "Forbidden",
     code: APP_TOKEN_REFUSED,
-    message:
-      "This app's token is not valid: it was never issued, has ended, or belongs to another session",
+    message: "This app's token is not valid: it was never issued, has ended, or belongs to another session",
   });
 }

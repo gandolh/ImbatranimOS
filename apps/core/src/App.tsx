@@ -1,148 +1,147 @@
-import { useEffect, useRef } from 'react'
-import { Taskbar } from './shared/components/taskbar'
-import { Desktop } from './shared/components/desktop'
-import { useCurrentWallpaper } from './shared/store/wallpaperStore'
-import { setMinSizeResolver, useWindowStore } from './shared/store/windowStore'
-import { APP_REGISTRY } from './shared/registry/registry'
-import { usePaletteStore } from './shared/store/paletteStore'
-import { useAppearanceStore, applyAppearance } from './shared/store/appearanceStore'
-import { CommandPalette } from './shared/components/CommandPalette'
-import { ToastHost } from './shared/components/notifications'
-import { BackgroundServices } from './shared/components/BackgroundServices'
-import { LinuxWindowsService } from './modules/linux-windows/LinuxWindowsService'
-import { useDocumentedShortcuts, useRegisteredHotkeys } from './shared/hooks/useRegisteredHotkeys'
-import { ShortcutsOverlay } from './shared/components/shortcuts/ShortcutsOverlay'
-import { AltTabSwitcher } from './shared/components/switcher/AltTabSwitcher'
-import { useWindowHotkeys } from './shared/hooks/useWindowHotkeys'
-import { useIdleLock } from './shared/hooks/useIdleLock'
-import { runStartupApps } from './shared/lib/startup'
-import { FilePortalHost } from './system/filePortal'
-import { OldDataNoticeHost } from './shared/components/OldDataNotice'
-import { loadMarketplace } from './shared/registry/marketplace'
+import { useEffect, useRef } from "react";
+import { Taskbar } from "./shared/components/taskbar";
+import { Desktop } from "./shared/components/desktop";
+import { useCurrentWallpaper } from "./shared/store/wallpaperStore";
+import { setMinSizeResolver, useWindowStore } from "./shared/store/windowStore";
+import { APP_REGISTRY } from "./shared/registry/registry";
+import { usePaletteStore } from "./shared/store/paletteStore";
+import { useAppearanceStore, applyAppearance } from "./shared/store/appearanceStore";
+import { CommandPalette } from "./shared/components/CommandPalette";
+import { ToastHost } from "./shared/components/notifications";
+import { BackgroundServices } from "./shared/components/BackgroundServices";
+import { LinuxWindowsService } from "./modules/linux-windows/LinuxWindowsService";
+import { useDocumentedShortcuts, useRegisteredHotkeys } from "./shared/hooks/useRegisteredHotkeys";
+import { ShortcutsOverlay } from "./shared/components/shortcuts/ShortcutsOverlay";
+import { AltTabSwitcher } from "./shared/components/switcher/AltTabSwitcher";
+import { useWindowHotkeys } from "./shared/hooks/useWindowHotkeys";
+import { useIdleLock } from "./shared/hooks/useIdleLock";
+import { runStartupApps } from "./shared/lib/startup";
+import { FilePortalHost } from "./system/filePortal";
+import { OldDataNoticeHost } from "./shared/components/OldDataNotice";
+import { loadMarketplace } from "./shared/registry/marketplace";
 
 export default function App() {
-  const wallpaper = useCurrentWallpaper()
-  const theme = useAppearanceStore((s) => s.theme)
-  const mode = useAppearanceStore((s) => s.mode)
-  const accents = useAppearanceStore((s) => s.accents)
-  const paletteOpen = usePaletteStore((s) => s.open)
-  const setPaletteOpen = usePaletteStore((s) => s.setOpen)
-  const openPalette = usePaletteStore((s) => s.openPalette)
+  const wallpaper = useCurrentWallpaper();
+  const theme = useAppearanceStore((s) => s.theme);
+  const mode = useAppearanceStore((s) => s.mode);
+  const accents = useAppearanceStore((s) => s.accents);
+  const paletteOpen = usePaletteStore((s) => s.open);
+  const setPaletteOpen = usePaletteStore((s) => s.setOpen);
+  const openPalette = usePaletteStore((s) => s.openPalette);
 
   // Reflect the persisted theme, mode and accent onto <html> so the CSS vars resolve.
   useEffect(() => {
-    applyAppearance({ theme, mode, accents })
-  }, [theme, mode, accents])
+    applyAppearance({ theme, mode, accents });
+  }, [theme, mode, accents]);
 
   // Installed marketplace apps join the registry. A failure only
   // means they are missing from Start until the next load; Settings retries.
   // The startup effect below waits on this first listing when the startup
   // list names a Marketplace app; it runs after this effect.
-  const firstListing = useRef<Promise<unknown> | null>(null)
+  const firstListing = useRef<Promise<unknown> | null>(null);
   useEffect(() => {
-    const listing = loadMarketplace()
-    listing.catch(() => undefined)
-    firstListing.current = listing
-  }, [])
+    const listing = loadMarketplace();
+    listing.catch(() => undefined);
+    firstListing.current = listing;
+  }, []);
 
   useRegisteredHotkeys([
     {
-      id: 'global.palette',
-      keys: 'mod+k',
-      description: 'Open the command palette',
-      scope: 'Global',
+      id: "global.palette",
+      keys: "mod+k",
+      description: "Open the command palette",
+      scope: "Global",
       handler: () => openPalette(),
     },
-  ])
+  ]);
 
   // Bound per-editor by useSaveHotkey, documented once here — see
   // useDocumentedShortcuts for why it is not registered from the hook itself.
   useDocumentedShortcuts([
     {
-      id: 'editing.save',
-      keys: 'mod+s',
-      description: 'Save the document in the focused editor',
-      scope: 'Editing',
+      id: "editing.save",
+      keys: "mod+s",
+      description: "Save the document in the focused editor",
+      scope: "Editing",
     },
     {
-      id: 'editing.find-in-files',
-      keys: 'mod+shift+f',
-      description: 'Find in files, in Code Editor',
-      scope: 'Editing',
+      id: "editing.find-in-files",
+      keys: "mod+shift+f",
+      description: "Find in files, in Code Editor",
+      scope: "Editing",
       // A window-level capture listener gated on window focus (the mod+s
       // pattern), because focus normally sits inside Monaco's own textarea
       // where a text-entry-ignoring binding would be dead. Documented here so
       // the row does not appear and vanish as editor windows open and close.
-      note: 'Only while a Code Editor window has focus',
+      note: "Only while a Code Editor window has focus",
     },
     {
-      id: 'editing.goto-line',
-      keys: 'mod+g',
-      description: 'Go to line, in Code Editor',
-      scope: 'Editing',
+      id: "editing.goto-line",
+      keys: "mod+g",
+      description: "Go to line, in Code Editor",
+      scope: "Editing",
       // Monaco owns this binding and only sees it while the text area has
       // focus. Documented here rather than from the add-on so the row does not
       // appear and vanish as editor windows open and close.
-      note: 'Only while the code editor itself has focus',
+      note: "Only while the code editor itself has focus",
     },
     {
-      id: 'editing.markdown-format',
-      keys: 'mod+b',
-      description:
-        'Format the selection in a Markdown file in Notepad (also mod+I, mod+K, mod+E, mod+shift+1-3/7-9)',
-      scope: 'Editing',
+      id: "editing.markdown-format",
+      keys: "mod+b",
+      description: "Format the selection in a Markdown file in Notepad (also mod+I, mod+K, mod+E, mod+shift+1-3/7-9)",
+      scope: "Editing",
       // Bound on Notepad's textarea for a Markdown file, so it is focus-scoped, and it
       // deliberately shadows the global mod+K palette binding while that textarea has
       // focus — inserting a link is the more likely intent with a text cursor in a
       // document. Documented here rather than from the add-on so the row does not appear
       // and vanish as editor windows open and close.
-      note: 'Only while a Markdown file in Notepad has the text cursor',
+      note: "Only while a Markdown file in Notepad has the text cursor",
     },
     {
-      id: 'files.verbs',
-      keys: 'f2 · del · mod+c/x/v/a',
-      description: 'Rename, delete, copy, cut, paste and select all, in File Manager',
-      scope: 'Editing',
+      id: "files.verbs",
+      keys: "f2 · del · mod+c/x/v/a",
+      description: "Rename, delete, copy, cut, paste and select all, in File Manager",
+      scope: "Editing",
       // Bound on the file list itself, alongside the arrow keys, so they act on
       // the list the user is looking at and go inert while a rename or a dialog
       // owns the keyboard. Shift+Delete skips the Trash; Shift+F10 or the menu
       // key opens the context menu on the selected row.
-      note: 'Only while the File Manager file list has focus',
+      note: "Only while the File Manager file list has focus",
     },
     {
-      id: 'files.range-select',
-      keys: 'shift+click · shift+arrows',
-      description: 'Extend the selection to a range, in File Manager',
-      scope: 'Editing',
-      note: 'Only while the File Manager file list has focus',
+      id: "files.range-select",
+      keys: "shift+click · shift+arrows",
+      description: "Extend the selection to a range, in File Manager",
+      scope: "Editing",
+      note: "Only while the File Manager file list has focus",
     },
     {
-      id: 'files.search',
-      keys: 'mod+f',
-      description: 'Search the current folder, in File Manager',
-      scope: 'Editing',
+      id: "files.search",
+      keys: "mod+f",
+      description: "Search the current folder, in File Manager",
+      scope: "Editing",
       // Window-scoped via useTopWindowKeydown (not the app-root onKeyDown that
       // Ctrl+H uses, which is dead until something inside the app has focus).
       // Documented here so the row does not appear and vanish as File Manager
       // windows open and close.
-      note: 'Only while a File Manager window has focus',
+      note: "Only while a File Manager window has focus",
     },
     {
-      id: 'files.toggle-hidden',
-      keys: 'mod+h',
-      description: 'Show or hide hidden files, in File Manager',
-      scope: 'Editing',
+      id: "files.toggle-hidden",
+      keys: "mod+h",
+      description: "Show or hide hidden files, in File Manager",
+      scope: "Editing",
       // Bound on the File Manager's own root so it is window-scoped; a global
       // binding would toggle a background window's dotfiles. Documented here so
       // the row does not appear and vanish as File Manager windows open and close.
-      note: 'Only while a File Manager window has focus',
+      note: "Only while a File Manager window has focus",
     },
-  ])
+  ]);
 
   // SWARM:S4 layout restore boot ──────────────────────────────────────────────
-  const restoreLayout = useWindowStore((s) => s.restoreLayout)
-  const persistLayout = useWindowStore((s) => s.persistLayout)
-  const windows = useWindowStore((s) => s.windows)
+  const restoreLayout = useWindowStore((s) => s.restoreLayout);
+  const persistLayout = useWindowStore((s) => s.persistLayout);
+  const windows = useWindowStore((s) => s.windows);
 
   // Restore this tab's layout, then open the startup set — in that
   // order, and in one effect, because the second decision depends on the first.
@@ -159,81 +158,79 @@ export default function App() {
     // The store learns minSize through this resolver — importing
     // APP_REGISTRY into windowStore would couple it to the manifest graph.
     // Same fallback WindowContainer uses for unknown apps.
-    setMinSizeResolver(
-      (appId) => APP_REGISTRY.find((a) => a.id === appId)?.minSize ?? { width: 240, height: 180 }
-    )
-    restoreLayout()
+    setMinSizeResolver((appId) => APP_REGISTRY.find((a) => a.id === appId)?.minSize ?? { width: 240, height: 180 });
+    restoreLayout();
     // The layout may have been saved at a different resolution — re-fit it to
     // the viewport this tab actually has before the first paint settles.
-    useWindowStore.getState().reflowToViewport()
-    void runStartupApps(firstListing.current ?? undefined)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    useWindowStore.getState().reflowToViewport();
+    void runStartupApps(firstListing.current ?? undefined);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fit windows when the browser viewport changes — devtools,
   // half-screen snap of the host window, a projector. Trailing debounce so
   // dragging the browser's resize handle reflows once, not per frame; the
   // 500ms persist debounce below then coalesces the writes.
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const onResize = () => {
-      if (timer !== undefined) clearTimeout(timer)
+      if (timer !== undefined) clearTimeout(timer);
       timer = setTimeout(() => {
-        timer = undefined
-        useWindowStore.getState().reflowToViewport()
-      }, 200)
-    }
-    window.addEventListener('resize', onResize)
+        timer = undefined;
+        useWindowStore.getState().reflowToViewport();
+      }, 200);
+    };
+    window.addEventListener("resize", onResize);
     return () => {
-      if (timer !== undefined) clearTimeout(timer)
-      window.removeEventListener('resize', onResize)
-    }
-  }, [])
+      if (timer !== undefined) clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
 
   // Persist layout whenever windows change. Drag/resize mints a new `windows`
   // array ~60x/sec, so writing synchronously on every change would run a
   // JSON.stringify + localStorage.setItem per frame and jank the drag. Debounce
   // to at most one write per 500ms (trailing). Serialization is unchanged —
   // persistLayout() still writes the exact same schema.
-  const persistTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    if (persistTimer.current !== undefined) clearTimeout(persistTimer.current)
+    if (persistTimer.current !== undefined) clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
-      persistTimer.current = undefined
-      persistLayout()
-    }, 500)
+      persistTimer.current = undefined;
+      persistLayout();
+    }, 500);
 
     return () => {
-      if (persistTimer.current !== undefined) clearTimeout(persistTimer.current)
-    }
-  }, [windows]) // eslint-disable-line react-hooks/exhaustive-deps
+      if (persistTimer.current !== undefined) clearTimeout(persistTimer.current);
+    };
+  }, [windows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Flush any pending debounced write when the tab is hidden or unloaded so the
   // final drag/resize position is never lost. Registered once for the app's life.
   useEffect(() => {
     const flush = () => {
       if (persistTimer.current !== undefined) {
-        clearTimeout(persistTimer.current)
-        persistTimer.current = undefined
+        clearTimeout(persistTimer.current);
+        persistTimer.current = undefined;
       }
-      persistLayout()
-    }
+      persistLayout();
+    };
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') flush()
-    }
-    window.addEventListener('beforeunload', flush)
-    document.addEventListener('visibilitychange', onVisibilityChange)
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("beforeunload", flush);
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
-      window.removeEventListener('beforeunload', flush)
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+      window.removeEventListener("beforeunload", flush);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 4c: keyboard window management (Alt+Tab, Mod+W, Mod+M, Mod+Enter)
-  useWindowHotkeys()
+  useWindowHotkeys();
   // Auto-lock after idle — Settings → Security owns the timeout.
-  useIdleLock()
+  useIdleLock();
   // ── /SWARM:S4 layout restore boot ──────────────────────────────────────────
 
   return (
@@ -255,5 +252,5 @@ export default function App() {
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       {/* SWARM:S4 layout restore boot */}
     </div>
-  )
+  );
 }

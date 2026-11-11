@@ -1,6 +1,6 @@
-import { Global, Injectable, Module } from '@nestjs/common';
-import type { IncomingMessage } from 'http';
-import type { Duplex } from 'stream';
+import { Global, Injectable, Module } from "@nestjs/common";
+import type { IncomingMessage } from "http";
+import type { Duplex } from "stream";
 
 /** A WebSocket endpoint on the desktop's port, other than the terminal's. */
 export interface UpgradeRoute {
@@ -30,7 +30,7 @@ export class UpgradeRoutes {
 
   find(url: string | undefined): UpgradeRoute | undefined {
     if (!url) return undefined;
-    const path = url.split('?', 1)[0];
+    const path = url.split("?", 1)[0];
     for (const route of this.routes) {
       if (route.matches(path)) return route;
     }

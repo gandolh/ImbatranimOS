@@ -15,9 +15,5 @@
  * as an API decision.
  */
 
-export type { AppConfig, AddonManifest, WidgetConfig } from './contract'
-export type {
-  CommandSource,
-  CommandSourceContext,
-  CommandItem,
-} from './shared/commands/CommandSourcesRegistry'
+export type { AppConfig, AddonManifest, WidgetConfig } from "./contract";
+export type { CommandSource, CommandSourceContext, CommandItem } from "./shared/commands/CommandSourcesRegistry";

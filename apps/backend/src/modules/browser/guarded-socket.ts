@@ -1,7 +1,7 @@
-import { Logger } from '@nestjs/common';
-import { Socket } from 'net';
+import { Logger } from "@nestjs/common";
+import { Socket } from "net";
 
-import { resolvePublicTarget } from './egress';
+import { resolvePublicTarget } from "./egress";
 
 /** A destination that has not answered by now is given up on. */
 const CONNECT_TIMEOUT_MS = 10_000;
@@ -9,7 +9,7 @@ const CONNECT_TIMEOUT_MS = 10_000;
 /** Chunks held for the page before the remote side is paused. */
 const HIGH_WATER = 128;
 
-const logger = new Logger('BrowserRelay');
+const logger = new Logger("BrowserRelay");
 
 /**
  * The TCP socket the Wisp relay opens for each stream, with the egress rule
@@ -40,9 +40,7 @@ export class GuardedTcpSocket {
     try {
       target = await resolvePublicTarget(this.hostname, this.port);
     } catch (err) {
-      logger.warn(
-        `Refused a stream to ${this.hostname}:${this.port}: ${(err as Error).message}`,
-      );
+      logger.warn(`Refused a stream to ${this.hostname}:${this.port}: ${(err as Error).message}`);
       throw err;
     }
     await new Promise<void>((resolve, reject) => {
@@ -51,21 +49,21 @@ export class GuardedTcpSocket {
       socket.setNoDelay(true);
       const timer = setTimeout(() => {
         socket.destroy();
-        reject(new Error('connect timed out'));
+        reject(new Error("connect timed out"));
       }, CONNECT_TIMEOUT_MS);
-      socket.once('connect', () => {
+      socket.once("connect", () => {
         clearTimeout(timer);
         resolve();
       });
-      socket.on('data', (chunk: Buffer) => this.push(chunk));
+      socket.on("data", (chunk: Buffer) => this.push(chunk));
       // 'close' always follows 'error'; the handler only keeps an unhandled
       // error from taking the process down.
-      socket.on('error', () => undefined);
-      socket.on('close', () => {
+      socket.on("error", () => undefined);
+      socket.on("close", () => {
         clearTimeout(timer);
         this.finish();
         // A no-op once connected.
-        reject(new Error('closed before connecting'));
+        reject(new Error("closed before connecting"));
       });
       socket.connect({
         host: target.address,
@@ -152,7 +150,7 @@ export class RefusedUdpSocket {
     readonly port: number,
   ) {}
   connect(): Promise<void> {
-    return Promise.reject(new Error('UDP streams are not allowed'));
+    return Promise.reject(new Error("UDP streams are not allowed"));
   }
   recv(): Promise<null> {
     return Promise.resolve(null);

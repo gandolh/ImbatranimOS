@@ -1,6 +1,6 @@
-import { ContextMenu, type ContextMenuItem } from '@imbatranim/ui'
-import { WORKSPACE_IDS, type WorkspaceId } from '../../store/windowStore'
-import { cn } from '../../../lib/cn'
+import { ContextMenu, type ContextMenuItem } from "@imbatranim/ui";
+import { WORKSPACE_IDS, type WorkspaceId } from "../../store/windowStore";
+import { cn } from "../../../lib/cn";
 
 /**
  * Right-click menu on a taskbar button (kit-backed since the context-menu kit —
@@ -24,33 +24,33 @@ export function TaskbarContextMenu({
   onDismiss,
   appActions = [],
 }: {
-  x: number
-  y: number
-  windowTitle: string
+  x: number;
+  y: number;
+  windowTitle: string;
   /** The app's own actions, a Linux app's desktop actions (Firefox's New Window). */
-  appActions?: { label: string; onSelect: () => void }[]
-  currentWorkspace: WorkspaceId
-  isMaximized: boolean
-  onMoveToWorkspace: (id: WorkspaceId) => void
-  onToggleMaximize: () => void
-  onMinimize: () => void
-  onClose: () => void
-  onDismiss: () => void
+  appActions?: { label: string; onSelect: () => void }[];
+  currentWorkspace: WorkspaceId;
+  isMaximized: boolean;
+  onMoveToWorkspace: (id: WorkspaceId) => void;
+  onToggleMaximize: () => void;
+  onMinimize: () => void;
+  onClose: () => void;
+  onDismiss: () => void;
 }) {
   const items: ContextMenuItem[] = [
     {
-      type: 'custom',
-      key: 'title',
+      type: "custom",
+      key: "title",
       children: (
         <div className="border-outline-variant text-on-surface-variant truncate border-b px-2.5 py-1.5 text-[11px] font-semibold">
           {windowTitle}
         </div>
       ),
     },
-    ...(appActions.length > 0 ? [...appActions, { type: 'separator' as const }] : []),
+    ...(appActions.length > 0 ? [...appActions, { type: "separator" as const }] : []),
     {
-      type: 'custom',
-      key: 'workspaces',
+      type: "custom",
+      key: "workspaces",
       children: (
         <>
           <div className="text-on-surface-variant px-2.5 pt-1.5 text-[10px] font-semibold tracking-widest uppercase">
@@ -65,10 +65,10 @@ export function TaskbarContextMenu({
                 onClick={() => onMoveToWorkspace(id)}
                 aria-label={`Move to workspace ${id}`}
                 className={cn(
-                  'focus-visible:ring-primary rounded-control border-outline-variant flex h-[24px] flex-1 items-center justify-center border text-[11px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                  "focus-visible:ring-primary rounded-control border-outline-variant flex h-[24px] flex-1 items-center justify-center border text-[11px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset",
                   id === currentWorkspace
-                    ? 'bg-surface-container-high text-on-surface-variant cursor-default'
-                    : 'hover:bg-primary-container hover:text-on-primary-container hover:border-primary'
+                    ? "bg-surface-container-high text-on-surface-variant cursor-default"
+                    : "hover:bg-primary-container hover:text-on-primary-container hover:border-primary",
                 )}
               >
                 {id}
@@ -78,19 +78,11 @@ export function TaskbarContextMenu({
         </>
       ),
     },
-    { type: 'separator' },
-    { label: isMaximized ? 'Restore' : 'Maximize', onSelect: onToggleMaximize },
-    { label: 'Minimize', onSelect: onMinimize },
-    { label: 'Close', onSelect: onClose, danger: true },
-  ]
+    { type: "separator" },
+    { label: isMaximized ? "Restore" : "Maximize", onSelect: onToggleMaximize },
+    { label: "Minimize", onSelect: onMinimize },
+    { label: "Close", onSelect: onClose, danger: true },
+  ];
 
-  return (
-    <ContextMenu
-      x={x}
-      y={y}
-      items={items}
-      onClose={onDismiss}
-      label={`Actions for ${windowTitle}`}
-    />
-  )
+  return <ContextMenu x={x} y={y} items={items} onClose={onDismiss} label={`Actions for ${windowTitle}`} />;
 }

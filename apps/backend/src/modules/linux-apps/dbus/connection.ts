@@ -1,12 +1,5 @@
-import { connect, type Socket } from 'node:net';
-import {
-  decodeMessage,
-  encodeMessage,
-  messageLength,
-  MessageType,
-  NO_REPLY_EXPECTED,
-  type Message,
-} from './wire';
+import { connect, type Socket } from "node:net";
+import { decodeMessage, encodeMessage, messageLength, MessageType, NO_REPLY_EXPECTED, type Message } from "./wire";
 
 /**
  * A client connection to a D-Bus bus over a Unix socket: EXTERNAL auth as
@@ -16,15 +9,13 @@ import {
  */
 
 export const BUS = {
-  name: 'org.freedesktop.DBus',
-  path: '/org/freedesktop/DBus',
-  interface: 'org.freedesktop.DBus',
+  name: "org.freedesktop.DBus",
+  path: "/org/freedesktop/DBus",
+  interface: "org.freedesktop.DBus",
 } as const;
 
 /** What a method call handler answers: a reply, or an error by name. */
-export type HandlerResult =
-  | { signature?: string; body?: unknown[] }
-  | { error: string; message: string };
+export type HandlerResult = { signature?: string; body?: unknown[] } | { error: string; message: string };
 
 export type MethodHandler = (call: Message) => HandlerResult | undefined;
 
@@ -57,7 +48,7 @@ export class DbusConnection {
   private closeListeners: (() => void)[] = [];
   private closed = false;
   /** The bus's name for this connection, after `Hello`. */
-  uniqueName = '';
+  uniqueName = "";
 
   /**
    * Connect to a bus at a Unix socket path and say `Hello`. `uid` is the
@@ -70,9 +61,9 @@ export class DbusConnection {
       destination: BUS.name,
       path: BUS.path,
       interface: BUS.interface,
-      member: 'Hello',
+      member: "Hello",
     });
-    c.uniqueName = typeof reply.body[0] === 'string' ? reply.body[0] : '';
+    c.uniqueName = typeof reply.body[0] === "string" ? reply.body[0] : "";
     return c;
   }
 
@@ -81,37 +72,37 @@ export class DbusConnection {
       const socket = connect(path);
       this.socket = socket;
       let authed = false;
-      let text = '';
+      let text = "";
       const fail = (e: Error) => {
         if (authed) return;
         socket.destroy();
         reject(e);
       };
-      socket.once('error', fail);
-      socket.on('connect', () => {
-        const hexUid = Buffer.from(String(uid), 'ascii').toString('hex');
-        socket.write(Buffer.from(`\0AUTH EXTERNAL ${hexUid}\r\n`, 'ascii'));
+      socket.once("error", fail);
+      socket.on("connect", () => {
+        const hexUid = Buffer.from(String(uid), "ascii").toString("hex");
+        socket.write(Buffer.from(`\0AUTH EXTERNAL ${hexUid}\r\n`, "ascii"));
       });
-      socket.on('data', (chunk: Buffer) => {
+      socket.on("data", (chunk: Buffer) => {
         if (authed) {
           this.onData(chunk);
           return;
         }
-        text += chunk.toString('latin1');
-        const line = text.indexOf('\r\n');
+        text += chunk.toString("latin1");
+        const line = text.indexOf("\r\n");
         if (line < 0) return;
         const reply = text.slice(0, line);
-        if (!reply.startsWith('OK ')) {
+        if (!reply.startsWith("OK ")) {
           fail(new Error(`bus refused authentication: ${reply}`));
           return;
         }
         authed = true;
-        socket.write('BEGIN\r\n');
-        socket.off('error', fail);
-        socket.on('error', () => this.shutdown());
-        socket.on('close', () => this.shutdown());
+        socket.write("BEGIN\r\n");
+        socket.off("error", fail);
+        socket.on("error", () => this.shutdown());
+        socket.on("close", () => this.shutdown());
         // Anything after the OK line is already binary.
-        const rest = Buffer.from(text.slice(line + 2), 'latin1');
+        const rest = Buffer.from(text.slice(line + 2), "latin1");
         if (rest.length) this.onData(rest);
         resolve();
       });
@@ -142,7 +133,7 @@ export class DbusConnection {
     return this.serial;
   }
 
-  private send(m: Omit<Message, 'serial'>): number {
+  private send(m: Omit<Message, "serial">): number {
     const serial = this.nextSerial();
     if (!this.closed) this.socket?.write(encodeMessage({ ...m, serial }));
     return serial;
@@ -157,7 +148,7 @@ export class DbusConnection {
     signature?: string;
     body?: unknown[];
   }): Promise<Message> {
-    if (this.closed) return Promise.reject(new Error('bus connection closed'));
+    if (this.closed) return Promise.reject(new Error("bus connection closed"));
     return new Promise((resolve, reject) => {
       const serial = this.send({
         type: MessageType.MethodCall,
@@ -175,13 +166,7 @@ export class DbusConnection {
   }
 
   /** Emit a signal to whoever listens. */
-  signal(m: {
-    path: string;
-    interface: string;
-    member: string;
-    signature?: string;
-    body?: unknown[];
-  }): void {
+  signal(m: { path: string; interface: string; member: string; signature?: string; body?: unknown[] }): void {
     this.send({
       type: MessageType.Signal,
       flags: NO_REPLY_EXPECTED,
@@ -196,9 +181,7 @@ export class DbusConnection {
   }
 
   private onData(chunk: Buffer): void {
-    this.buffer = this.buffer.length
-      ? Buffer.concat([this.buffer, chunk])
-      : chunk;
+    this.buffer = this.buffer.length ? Buffer.concat([this.buffer, chunk]) : chunk;
     try {
       for (;;) {
         const length = messageLength(this.buffer);
@@ -215,18 +198,15 @@ export class DbusConnection {
 
   private dispatch(m: Message): void {
     if (m.type === MessageType.MethodReturn || m.type === MessageType.Error) {
-      const waiting =
-        m.replySerial !== undefined
-          ? this.pending.get(m.replySerial)
-          : undefined;
+      const waiting = m.replySerial !== undefined ? this.pending.get(m.replySerial) : undefined;
       if (!waiting) return;
       this.pending.delete(m.replySerial!);
       clearTimeout(waiting.timer);
       if (m.type === MessageType.Error) {
         waiting.reject(
           new DbusError(
-            m.errorName ?? 'org.freedesktop.DBus.Error.Failed',
-            typeof m.body[0] === 'string' ? m.body[0] : '',
+            m.errorName ?? "org.freedesktop.DBus.Error.Failed",
+            typeof m.body[0] === "string" ? m.body[0] : "",
           ),
         );
       } else {
@@ -244,23 +224,23 @@ export class DbusConnection {
       result = this.handler?.(m);
     } catch (e) {
       result = {
-        error: 'org.freedesktop.DBus.Error.Failed',
+        error: "org.freedesktop.DBus.Error.Failed",
         message: (e as Error).message,
       };
     }
     result ??= {
-      error: 'org.freedesktop.DBus.Error.UnknownMethod',
-      message: `No such method ${m.interface ?? ''}.${m.member ?? ''}`,
+      error: "org.freedesktop.DBus.Error.UnknownMethod",
+      message: `No such method ${m.interface ?? ""}.${m.member ?? ""}`,
     };
     if (m.flags & NO_REPLY_EXPECTED) return;
-    if ('error' in result) {
+    if ("error" in result) {
       this.send({
         type: MessageType.Error,
         flags: NO_REPLY_EXPECTED,
         errorName: result.error,
         replySerial: m.serial,
         destination: m.sender,
-        signature: 's',
+        signature: "s",
         body: [result.message],
       });
     } else {
@@ -280,7 +260,7 @@ export class DbusConnection {
     this.closed = true;
     for (const [, p] of this.pending) {
       clearTimeout(p.timer);
-      p.reject(new Error('bus connection closed'));
+      p.reject(new Error("bus connection closed"));
     }
     this.pending.clear();
     for (const l of this.closeListeners) l();

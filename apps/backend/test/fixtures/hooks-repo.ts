@@ -1,6 +1,6 @@
-import { execFileSync } from 'child_process';
-import { mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { execFileSync } from "child_process";
+import { mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
 
 /**
  * Kit apps that declare hooks, as a real git repository: one build that
@@ -148,8 +148,8 @@ export function App() {
 function buildScript(): string {
   return `import { mkdirSync, writeFileSync } from 'fs';
 const files = ${JSON.stringify({
-    'dist/os/ticker/app.mjs': TICKER,
-    'dist/os/hookless/app.mjs': HOOKLESS,
+    "dist/os/ticker/app.mjs": TICKER,
+    "dist/os/hookless/app.mjs": HOOKLESS,
   })};
 for (const [path, text] of Object.entries(files)) {
   mkdirSync(path.split('/').slice(0, -1).join('/'), { recursive: true });
@@ -160,15 +160,15 @@ console.log('built ' + Object.keys(files).length + ' files');
 }
 
 function git(cwd: string, ...args: string[]): string {
-  return execFileSync('git', args, {
+  return execFileSync("git", args, {
     cwd,
-    encoding: 'utf8',
+    encoding: "utf8",
     env: {
       ...process.env,
-      GIT_AUTHOR_NAME: 't',
-      GIT_AUTHOR_EMAIL: 't@example.com',
-      GIT_COMMITTER_NAME: 't',
-      GIT_COMMITTER_EMAIL: 't@example.com',
+      GIT_AUTHOR_NAME: "t",
+      GIT_AUTHOR_EMAIL: "t@example.com",
+      GIT_COMMITTER_NAME: "t",
+      GIT_COMMITTER_EMAIL: "t@example.com",
     },
   }).trim();
 }
@@ -176,11 +176,11 @@ function git(cwd: string, ...args: string[]): string {
 /** Write the repository into the empty (or missing) directory `dir`. Resolves its one commit. */
 export function makeHooksRepo(dir: string): string {
   mkdirSync(dir, { recursive: true });
-  git(dir, 'init', '-q', '-b', 'main');
-  writeFileSync(join(dir, 'build.mjs'), buildScript());
-  git(dir, 'add', '.');
-  git(dir, 'commit', '-qm', 'a kit app with hooks, and one missing its export');
-  return git(dir, 'rev-parse', 'HEAD');
+  git(dir, "init", "-q", "-b", "main");
+  writeFileSync(join(dir, "build.mjs"), buildScript());
+  git(dir, "add", ".");
+  git(dir, "commit", "-qm", "a kit app with hooks, and one missing its export");
+  return git(dir, "rev-parse", "HEAD");
 }
 
 /**
@@ -188,48 +188,44 @@ export function makeHooksRepo(dir: string): string {
  * shared kit 1: `kit-ticker` declares both hooks and asks for `notify`;
  * `kit-hookless` declares `background` and asks for nothing.
  */
-export function hooksDescriptor(
-  repo: string,
-  ref: string,
-  extra: Record<string, unknown> = {},
-) {
+export function hooksDescriptor(repo: string, ref: string, extra: Record<string, unknown> = {}) {
   return {
     schemaVersion: 2,
-    id: 'kit-hooks',
-    name: 'Hooks Fixture',
-    description: 'A kit app that runs with no window, and one that cannot.',
+    id: "kit-hooks",
+    name: "Hooks Fixture",
+    description: "A kit app that runs with no window, and one that cannot.",
     source: { repo, ref },
-    type: 'static',
-    runtime: 'native',
-    build: { command: ['node', 'build.mjs'], output: 'dist/os' },
+    type: "static",
+    runtime: "native",
+    build: { command: ["node", "build.mjs"], output: "dist/os" },
     sharedKit: 1,
     apps: [
       {
-        id: 'kit-ticker',
-        name: 'Ticker',
-        description: 'Counts in the background and answers in the palette.',
-        meta: ['fixture'],
-        entry: 'ticker/app.mjs',
+        id: "kit-ticker",
+        name: "Ticker",
+        description: "Counts in the background and answers in the palette.",
+        meta: ["fixture"],
+        entry: "ticker/app.mjs",
         window: {
           defaultSize: { w: 420, h: 240 },
           minSize: { w: 320, h: 200 },
         },
-        icon: 'rocket',
-        capabilities: ['notify'],
+        icon: "rocket",
+        capabilities: ["notify"],
         background: true,
         commandSources: true,
       },
       {
-        id: 'kit-hookless',
-        name: 'Hookless',
-        description: 'Declares a background service it does not export.',
-        meta: ['fixture'],
-        entry: 'hookless/app.mjs',
+        id: "kit-hookless",
+        name: "Hookless",
+        description: "Declares a background service it does not export.",
+        meta: ["fixture"],
+        entry: "hookless/app.mjs",
         window: {
           defaultSize: { w: 420, h: 200 },
           minSize: { w: 320, h: 160 },
         },
-        icon: 'puzzle',
+        icon: "puzzle",
         capabilities: [],
         background: true,
       },

@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Terminal as XTerm } from '@xterm/xterm'
-import { buildPtyUrl } from '../ptyUrl'
-import { classifyClose, MAX_RETRIES, retryDelay } from '../lib/closeReason'
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Terminal as XTerm } from "@xterm/xterm";
+import { buildPtyUrl } from "../ptyUrl";
+import { classifyClose, MAX_RETRIES, retryDelay } from "../lib/closeReason";
 
 export type PtyStatus =
-  | { kind: 'connecting' }
-  | { kind: 'open' }
+  | { kind: "connecting" }
+  | { kind: "open" }
   /** Waiting out a backoff delay before attempt `attempt` of MAX_RETRIES. */
-  | { kind: 'retrying'; attempt: number; message: string }
+  | { kind: "retrying"; attempt: number; message: string }
   /** Gave up automatically, or hit a settled end state. `canRetry` drives the button. */
-  | { kind: 'closed'; message: string; canRetry: boolean }
+  | { kind: "closed"; message: string; canRetry: boolean };
 
 type UsePtyConnectionArgs = {
   /**
@@ -22,14 +22,14 @@ type UsePtyConnectionArgs = {
    *
    * **Must be stable.** See the effect's dependency note.
    */
-  getTerm: () => XTerm | null
+  getTerm: () => XTerm | null;
   /**
    * Bumped by the caller once the terminal exists. This — not the instance — is
    * what tells the effect below there is something to connect to, and it is the
    * effect's only dependency.
    */
-  generation: number
-}
+  generation: number;
+};
 
 /**
  * Owns the PTY socket: connect, stream, classify a close, reconnect with backoff,
@@ -65,7 +65,7 @@ type UsePtyConnectionArgs = {
  * actually is, and it needs neither.
  */
 export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) {
-  const [status, setStatus] = useState<PtyStatus>({ kind: 'connecting' })
+  const [status, setStatus] = useState<PtyStatus>({ kind: "connecting" });
 
   /**
    * The live connection's own operations, published by the effect below.
@@ -74,40 +74,40 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
    * optional-chained rather than asserting.
    */
   const apiRef = useRef<{
-    sendInput: (data: string) => void
-    sendResize: (cols: number, rows: number) => void
-    reconnect: () => void
-  } | null>(null)
+    sendInput: (data: string) => void;
+    sendResize: (cols: number, rows: number) => void;
+    reconnect: () => void;
+  } | null>(null);
 
   useEffect(() => {
-    if (generation <= 0) return
+    if (generation <= 0) return;
 
-    let disposed = false
-    let socket: WebSocket | null = null
-    let timer: ReturnType<typeof setTimeout> | null = null
-    let attempt = 0
+    let disposed = false;
+    let socket: WebSocket | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let attempt = 0;
     /** Frames typed before the socket is open, flushed on connect. */
-    let pending: string[] = []
+    let pending: string[] = [];
 
-    const write = (data: string | Uint8Array) => getTerm()?.write(data)
+    const write = (data: string | Uint8Array) => getTerm()?.write(data);
     /** Dim status line inside the terminal, so it scrolls with the history. */
-    const writeStatus = (text: string) => write(`\r\n\x1b[2m${text}\x1b[0m\r\n`)
+    const writeStatus = (text: string) => write(`\r\n\x1b[2m${text}\x1b[0m\r\n`);
 
     const sendFrame = (frame: string) => {
-      if (socket && socket.readyState === WebSocket.OPEN) socket.send(frame)
+      if (socket && socket.readyState === WebSocket.OPEN) socket.send(frame);
       // Buffered rather than dropped: typing during a reconnect must not be
       // silently swallowed. The original code did this for the pre-open window and
       // the behaviour has to survive here.
-      else pending.push(frame)
-    }
+      else pending.push(frame);
+    };
 
     const sendResize = (cols: number, rows: number) => {
       // Unlike input there is no value in replaying a stale geometry — a reconnect
       // sends the current size itself — so this is dropped rather than queued.
       if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'resize', cols, rows }))
+        socket.send(JSON.stringify({ type: "resize", cols, rows }));
       }
-    }
+    };
 
     /**
      * Ask the API who we are, to explain a handshake refusal accurately.
@@ -123,147 +123,144 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
      */
     const describeAuthFailure = async (): Promise<string | null> => {
       try {
-        const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api'
-        const res = await fetch(`${base}/me`, { credentials: 'include' })
-        if (res.ok) return null
-        if (res.status === 401) return 'Signed out — sign in again from the desktop.'
-        if (res.status === 403) return 'This account has no access to this system.'
-        return 'The backend is not reachable.'
+        const base = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api";
+        const res = await fetch(`${base}/me`, { credentials: "include" });
+        if (res.ok) return null;
+        if (res.status === 401) return "Signed out — sign in again from the desktop.";
+        if (res.status === 403) return "This account has no access to this system.";
+        return "The backend is not reachable.";
       } catch {
         // The API is unreachable too, which is its own answer.
-        return 'The backend is not reachable.'
+        return "The backend is not reachable.";
       }
-    }
+    };
 
     function connect() {
-      const term = getTerm()
-      if (disposed || !term) return
+      const term = getTerm();
+      if (disposed || !term) return;
 
-      setStatus({ kind: 'connecting' })
-      let everOpened = false
+      setStatus({ kind: "connecting" });
+      let everOpened = false;
 
-      const ws = new WebSocket(buildPtyUrl(term.cols, term.rows))
-      socket = ws
+      const ws = new WebSocket(buildPtyUrl(term.cols, term.rows));
+      socket = ws;
 
       ws.onopen = () => {
-        everOpened = true
-        attempt = 0
-        setStatus({ kind: 'open' })
-        for (const frame of pending) ws.send(frame)
-        pending = []
+        everOpened = true;
+        attempt = 0;
+        setStatus({ kind: "open" });
+        for (const frame of pending) ws.send(frame);
+        pending = [];
         // Re-assert the geometry: the pty spawned at the URL's cols/rows, but the
         // window may have been resized while disconnected, and `stty size` has to
         // agree with what xterm is showing after a reconnect.
-        const live = getTerm()
-        if (live) sendResize(live.cols, live.rows)
-      }
+        const live = getTerm();
+        if (live) sendResize(live.cols, live.rows);
+      };
 
       ws.onmessage = (ev) => {
-        write(typeof ev.data === 'string' ? ev.data : new Uint8Array(ev.data as ArrayBuffer))
-      }
+        write(typeof ev.data === "string" ? ev.data : new Uint8Array(ev.data as ArrayBuffer));
+      };
 
       ws.onclose = (ev) => {
-        if (disposed) return
-        socket = null
-        const verdict = classifyClose(ev.code, ev.reason ?? '', everOpened)
+        if (disposed) return;
+        socket = null;
+        const verdict = classifyClose(ev.code, ev.reason ?? "", everOpened);
 
         if (!verdict.retry) {
-          writeStatus(verdict.message)
+          writeStatus(verdict.message);
           setStatus({
-            kind: 'closed',
+            kind: "closed",
             message: verdict.message,
             canRetry: verdict.allowManualRetry,
-          })
-          return
+          });
+          return;
         }
 
-        attempt += 1
+        attempt += 1;
         if (attempt > MAX_RETRIES) {
-          const give = `${verdict.message} Giving up after ${MAX_RETRIES} attempts.`
-          writeStatus(give)
-          setStatus({ kind: 'closed', message: give, canRetry: true })
+          const give = `${verdict.message} Giving up after ${MAX_RETRIES} attempts.`;
+          writeStatus(give);
+          setStatus({ kind: "closed", message: give, canRetry: true });
           // Resolve the real cause now that automatic recovery has failed, so the
           // message names the problem instead of guessing at it.
           if (verdict.checkAuth) {
             void describeAuthFailure().then((detail) => {
-              if (!detail || disposed) return
-              writeStatus(detail)
-              setStatus({ kind: 'closed', message: detail, canRetry: true })
-            })
+              if (!detail || disposed) return;
+              writeStatus(detail);
+              setStatus({ kind: "closed", message: detail, canRetry: true });
+            });
           }
-          return
+          return;
         }
 
-        const delay = retryDelay(attempt)
-        writeStatus(`${verdict.message} reconnecting in ${Math.round(delay / 1000)}s…`)
-        setStatus({ kind: 'retrying', attempt, message: verdict.message })
+        const delay = retryDelay(attempt);
+        writeStatus(`${verdict.message} reconnecting in ${Math.round(delay / 1000)}s…`);
+        setStatus({ kind: "retrying", attempt, message: verdict.message });
         timer = setTimeout(() => {
-          timer = null
-          connect()
-        }, delay)
-      }
+          timer = null;
+          connect();
+        }, delay);
+      };
 
       // `onerror` fires immediately before `onclose` for a refused handshake.
       // Writing here too would print two lines for one failure, so the close
       // handler owns all user-facing reporting.
-      ws.onerror = () => {}
+      ws.onerror = () => {};
     }
 
     const reconnect = () => {
-      if (disposed) return
+      if (disposed) return;
       if (timer) {
-        clearTimeout(timer)
-        timer = null
+        clearTimeout(timer);
+        timer = null;
       }
       // A manual retry is the user saying "try now", so the automatic budget starts
       // over rather than the click being spent on the last remaining attempt.
-      attempt = 0
-      const existing = socket
-      socket = null
+      attempt = 0;
+      const existing = socket;
+      socket = null;
       try {
-        existing?.close()
+        existing?.close();
       } catch {
         /* already gone */
       }
-      writeStatus('reconnecting — this starts a NEW shell')
-      connect()
-    }
+      writeStatus("reconnecting — this starts a NEW shell");
+      connect();
+    };
 
     apiRef.current = {
-      sendInput: (data) => sendFrame(JSON.stringify({ type: 'input', data })),
+      sendInput: (data) => sendFrame(JSON.stringify({ type: "input", data })),
       sendResize,
       reconnect,
-    }
-    connect()
+    };
+    connect();
 
     return () => {
-      disposed = true
-      apiRef.current = null
-      if (timer) clearTimeout(timer)
-      timer = null
-      const ws = socket
-      socket = null
+      disposed = true;
+      apiRef.current = null;
+      if (timer) clearTimeout(timer);
+      timer = null;
+      const ws = socket;
+      socket = null;
       // Closing the socket is what makes the server reap the pty.
       try {
-        ws?.close()
+        ws?.close();
       } catch {
         /* noop */
       }
-    }
+    };
     // `generation` ONLY. `getTerm` is contractually stable (the caller wraps it in
     // useCallback), and adding it would mean any caller slip re-runs this effect —
     // which tears down a live shell and loses the user's session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generation])
+  }, [generation]);
 
   // Stable wrappers, so consumers can put these in their own dependency arrays
   // without re-subscribing every render.
-  const sendInput = useCallback((data: string) => apiRef.current?.sendInput(data), [])
-  const sendResize = useCallback(
-    (cols: number, rows: number) => apiRef.current?.sendResize(cols, rows),
-    []
-  )
-  const reconnect = useCallback(() => apiRef.current?.reconnect(), [])
+  const sendInput = useCallback((data: string) => apiRef.current?.sendInput(data), []);
+  const sendResize = useCallback((cols: number, rows: number) => apiRef.current?.sendResize(cols, rows), []);
+  const reconnect = useCallback(() => apiRef.current?.reconnect(), []);
 
-  return { status, sendInput, sendResize, reconnect }
+  return { status, sendInput, sendResize, reconnect };
 }

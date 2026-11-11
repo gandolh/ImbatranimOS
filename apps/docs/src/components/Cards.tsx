@@ -12,17 +12,17 @@
  * whole card a link (Starlight's LinkCard). Styling hooks are `.doc-card*` in
  * src/css/custom.css, so each project frames cards in its own language.
  */
-import type { ReactNode } from 'react'
-import Link from '@docusaurus/Link'
+import type { ReactNode } from "react";
+import Link from "@docusaurus/Link";
 
 export function CardGrid({ children }: { children: ReactNode }) {
-  return <div className="doc-card-grid">{children}</div>
+  return <div className="doc-card-grid">{children}</div>;
 }
 
 interface CardProps {
-  title: string
-  href?: string
-  children?: ReactNode
+  title: string;
+  href?: string;
+  children?: ReactNode;
 }
 
 export function Card({ title, href, children }: CardProps) {
@@ -31,12 +31,12 @@ export function Card({ title, href, children }: CardProps) {
       <p className="doc-card__title">{title}</p>
       {children && <div className="doc-card__body">{children}</div>}
     </>
-  )
+  );
   return href ? (
     <Link className="doc-card doc-card--link" to={href}>
       {body}
     </Link>
   ) : (
     <div className="doc-card">{body}</div>
-  )
+  );
 }

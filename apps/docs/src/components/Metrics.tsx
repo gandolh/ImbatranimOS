@@ -7,12 +7,12 @@
  * Light-only: literal colors, so the tiles cannot invert. Change the accent in
  * Metrics.module.css (or set --accent on a parent).
  */
-import styles from './Metrics.module.css'
+import styles from "./Metrics.module.css";
 
 interface Item {
-  v: string
-  unit?: string
-  k: string
+  v: string;
+  unit?: string;
+  k: string;
 }
 
 export default function Metrics({ items }: { items: Item[] }) {
@@ -28,5 +28,5 @@ export default function Metrics({ items }: { items: Item[] }) {
         </div>
       ))}
     </div>
-  )
+  );
 }

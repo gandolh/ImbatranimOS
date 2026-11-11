@@ -4,7 +4,7 @@ import {
   BACKPRESSURE_POLL_MS,
   MAX_COLS,
   MAX_ROWS,
-} from './pty.constants';
+} from "./pty.constants";
 
 /** Minimal disposable, matching node-pty's IDisposable. */
 export interface Disposable {
@@ -42,9 +42,7 @@ const WS_OPEN = 1;
 type TimerHandle = ReturnType<typeof setInterval>;
 
 /** Client → server control frames. Keystrokes travel as `input`. */
-type ClientMessage =
-  | { type: 'input'; data: string }
-  | { type: 'resize'; cols: number; rows: number };
+type ClientMessage = { type: "input"; data: string } | { type: "resize"; cols: number; rows: number };
 
 export interface PtySessionOptions {
   highWater?: number;
@@ -86,16 +84,15 @@ export class PtySession {
     this.highWater = opts.highWater ?? BACKPRESSURE_HIGH_WATER;
     this.lowWater = opts.lowWater ?? BACKPRESSURE_LOW_WATER;
     this.pollMs = opts.pollMs ?? BACKPRESSURE_POLL_MS;
-    this.setIntervalFn =
-      opts.setIntervalFn ?? ((fn, ms) => setInterval(fn, ms));
+    this.setIntervalFn = opts.setIntervalFn ?? ((fn, ms) => setInterval(fn, ms));
     this.clearIntervalFn = opts.clearIntervalFn ?? ((h) => clearInterval(h));
 
     this.disposables.push(this.pty.onData((d) => this.onPtyData(d)));
     this.disposables.push(this.pty.onExit((e) => this.onPtyExit(e)));
 
-    this.socket.on('message', (raw: unknown) => this.onClientMessage(raw));
-    this.socket.on('close', () => this.dispose());
-    this.socket.on('error', () => this.dispose());
+    this.socket.on("message", (raw: unknown) => this.onClientMessage(raw));
+    this.socket.on("close", () => this.dispose());
+    this.socket.on("error", () => this.dispose());
   }
 
   // ── pty → socket ───────────────────────────────────────────────────────
@@ -111,7 +108,7 @@ export class PtySession {
     this.safeSend(`\r\n[process exited (code ${e.exitCode})]\r\n`);
     // Close the socket cleanly; dispose() reaps timers/listeners. The pty is
     // already gone, so kill() is a harmless no-op guarded by try/catch.
-    this.dispose(1000, 'pty-exit');
+    this.dispose(1000, "pty-exit");
   }
 
   /**
@@ -148,7 +145,7 @@ export class PtySession {
     if (this.disposed) return;
     const msg = this.parseMessage(raw);
     if (!msg) return;
-    if (msg.type === 'input') {
+    if (msg.type === "input") {
       try {
         this.pty.write(msg.data);
       } catch {
@@ -168,12 +165,9 @@ export class PtySession {
   /** Parse + validate a client frame; returns null for anything malformed. */
   private parseMessage(raw: unknown): ClientMessage | null {
     let text: string;
-    if (typeof raw === 'string') text = raw;
-    else if (raw instanceof Buffer) text = raw.toString('utf8');
-    else if (
-      raw &&
-      typeof (raw as { toString?: unknown }).toString === 'function'
-    ) {
+    if (typeof raw === "string") text = raw;
+    else if (raw instanceof Buffer) text = raw.toString("utf8");
+    else if (raw && typeof (raw as { toString?: unknown }).toString === "function") {
       // Catch-all for exotic WS payload shapes (e.g. ArrayBuffer) that are
       // neither `string` nor `Buffer`. `raw` is `unknown` here and its
       // constituents can't be narrowed further without changing which
@@ -191,19 +185,15 @@ export class PtySession {
     } catch {
       return null;
     }
-    if (!parsed || typeof parsed !== 'object') return null;
+    if (!parsed || typeof parsed !== "object") return null;
     const msg = parsed as Record<string, unknown>;
 
-    if (msg.type === 'input' && typeof msg.data === 'string') {
-      return { type: 'input', data: msg.data };
+    if (msg.type === "input" && typeof msg.data === "string") {
+      return { type: "input", data: msg.data };
     }
-    if (
-      msg.type === 'resize' &&
-      Number.isFinite(msg.cols) &&
-      Number.isFinite(msg.rows)
-    ) {
+    if (msg.type === "resize" && Number.isFinite(msg.cols) && Number.isFinite(msg.rows)) {
       return {
-        type: 'resize',
+        type: "resize",
         cols: msg.cols as number,
         rows: msg.rows as number,
       };
@@ -217,7 +207,7 @@ export class PtySession {
    * Reap everything. Idempotent — safe to call from socket close, pty exit,
    * or an external session-revocation sweep.
    */
-  dispose(code = 1000, reason = 'closed'): void {
+  dispose(code = 1000, reason = "closed"): void {
     if (this.disposed) return;
     this.disposed = true;
 

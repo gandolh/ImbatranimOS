@@ -1,32 +1,32 @@
-import { Test } from '@nestjs/testing';
-import type { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import type { AddressInfo, Server } from 'net';
-import { WebSocket } from 'ws';
-import { PtyGateway } from '../src/modules/pty/pty.gateway';
-import { LocalIdentityService } from '../src/modules/auth/ws-auth';
-import { UpgradeRoutes } from '../src/upgrade-routes';
+import { Test } from "@nestjs/testing";
+import type { INestApplication } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import type { AddressInfo, Server } from "net";
+import { WebSocket } from "ws";
+import { PtyGateway } from "../src/modules/pty/pty.gateway";
+import { LocalIdentityService } from "../src/modules/auth/ws-auth";
+import { UpgradeRoutes } from "../src/upgrade-routes";
 
 /**
  * End-to-end proof of the terminal gateway against a REAL http server and a
  * REAL pty (login shell). The sign-in is faked so no DB is needed: the token
  * "good" is valid, everything else is rejected.
  */
-describe('PtyGateway (e2e)', () => {
+describe("PtyGateway (e2e)", () => {
   let app: INestApplication<Server>;
   let url: string;
 
   const fakeSession = {
-    subject: 'subject_owner',
-    username: 'owner',
-    sid: 'sid_good',
+    subject: "subject_owner",
+    username: "owner",
+    sid: "sid_good",
   };
   /** A sign-in that recognises one cookie. */
   const identityMock = {
     authenticate: (cookieHeader: string | undefined) =>
-      cookieHeader?.includes('imb_session=good')
+      cookieHeader?.includes("imb_session=good")
         ? Promise.resolve(fakeSession)
-        : Promise.reject(new Error('session is not active')),
+        : Promise.reject(new Error("session is not active")),
   };
 
   beforeAll(async () => {
@@ -38,8 +38,7 @@ describe('PtyGateway (e2e)', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: (key: string) =>
-              key === 'FRONTEND_URL' ? 'http://localhost:5173' : undefined,
+            get: (key: string) => (key === "FRONTEND_URL" ? "http://localhost:5173" : undefined),
           },
         },
       ],
@@ -55,58 +54,51 @@ describe('PtyGateway (e2e)', () => {
     await app.close();
   });
 
-  it('refuses an unauthenticated upgrade (no cookie)', async () => {
+  it("refuses an unauthenticated upgrade (no cookie)", async () => {
     const ws = new WebSocket(url);
     const status = await new Promise<number | string>((resolve) => {
-      ws.on('unexpected-response', (_req, res) => resolve(res.statusCode ?? 0));
-      ws.on('open', () => resolve('opened'));
-      ws.on('error', (e) => resolve(String(e)));
+      ws.on("unexpected-response", (_req, res) => resolve(res.statusCode ?? 0));
+      ws.on("open", () => resolve("opened"));
+      ws.on("error", (e) => resolve(String(e)));
     });
     ws.close();
     expect(status).toBe(401);
   });
 
-  it('opens a real shell for an authenticated upgrade and echoes input', async () => {
-    const ws = new WebSocket(url, { headers: { cookie: 'imb_session=good' } });
+  it("opens a real shell for an authenticated upgrade and echoes input", async () => {
+    const ws = new WebSocket(url, { headers: { cookie: "imb_session=good" } });
     const output = await new Promise<string>((resolve, reject) => {
-      let buf = '';
-      const timer = setTimeout(
-        () => reject(new Error(`no echo; got: ${buf}`)),
-        8000,
-      );
-      ws.on('open', () => {
-        ws.send(
-          JSON.stringify({ type: 'input', data: 'echo IMBATRANIM_OK\r' }),
-        );
+      let buf = "";
+      const timer = setTimeout(() => reject(new Error(`no echo; got: ${buf}`)), 8000);
+      ws.on("open", () => {
+        ws.send(JSON.stringify({ type: "input", data: "echo IMBATRANIM_OK\r" }));
       });
-      ws.on('message', (data) => {
+      ws.on("message", (data) => {
         // ws's `RawData` union includes `ArrayBuffer`, which falls back to
         // Object's default toString(); this test server only ever sends
         // text frames (Buffer), so the runtime value is always meaningfully
         // stringified even though the type can't express that narrowing.
         // eslint-disable-next-line @typescript-eslint/no-base-to-string
         buf += data.toString();
-        if (buf.includes('IMBATRANIM_OK')) {
+        if (buf.includes("IMBATRANIM_OK")) {
           clearTimeout(timer);
           resolve(buf);
         }
       });
-      ws.on('error', reject);
+      ws.on("error", reject);
     });
     ws.close();
-    expect(output).toContain('IMBATRANIM_OK');
+    expect(output).toContain("IMBATRANIM_OK");
   }, 15000);
 
-  it('runs two independent shells at once', async () => {
+  it("runs two independent shells at once", async () => {
     async function shellPid(cookie: string): Promise<string> {
       const ws = new WebSocket(url, { headers: { cookie } });
       return new Promise((resolve, reject) => {
-        let buf = '';
-        const timer = setTimeout(() => reject(new Error('timeout')), 8000);
-        ws.on('open', () =>
-          ws.send(JSON.stringify({ type: 'input', data: 'echo PID=$$\r' })),
-        );
-        ws.on('message', (d) => {
+        let buf = "";
+        const timer = setTimeout(() => reject(new Error("timeout")), 8000);
+        ws.on("open", () => ws.send(JSON.stringify({ type: "input", data: "echo PID=$$\r" })));
+        ws.on("message", (d) => {
           // Same rationale as the echo test above: RawData's ArrayBuffer
           // member has no custom toString, but this server only sends text.
           // eslint-disable-next-line @typescript-eslint/no-base-to-string
@@ -118,39 +110,33 @@ describe('PtyGateway (e2e)', () => {
             resolve(m[1]);
           }
         });
-        ws.on('error', reject);
+        ws.on("error", reject);
       });
     }
-    const [a, b] = await Promise.all([
-      shellPid('imb_session=good'),
-      shellPid('imb_session=good'),
-    ]);
+    const [a, b] = await Promise.all([shellPid("imb_session=good"), shellPid("imb_session=good")]);
     expect(a).not.toBe(b); // two distinct shell processes
   }, 20000);
 
   it("keeps SETUP_TOKEN out of the shell's environment", async () => {
     const before = process.env.SETUP_TOKEN;
-    process.env.SETUP_TOKEN = 'e2e-secret-setup-token';
+    process.env.SETUP_TOKEN = "e2e-secret-setup-token";
     try {
       const ws = new WebSocket(url, {
-        headers: { cookie: 'imb_session=good' },
+        headers: { cookie: "imb_session=good" },
       });
       // The typed line is echoed back too; `%s` keeps it from matching.
       const m = await new Promise<RegExpMatchArray>((resolve, reject) => {
-        let buf = '';
-        const timer = setTimeout(
-          () => reject(new Error(`no output; got: ${buf}`)),
-          8000,
-        );
-        ws.on('open', () =>
+        let buf = "";
+        const timer = setTimeout(() => reject(new Error(`no output; got: ${buf}`)), 8000);
+        ws.on("open", () =>
           ws.send(
             JSON.stringify({
-              type: 'input',
+              type: "input",
               data: `printf 'K=[%s] H=%s P=%s\\n' "$SETUP_TOKEN" "\${HOME:+set}" "\${PATH:+set}"\r`,
             }),
           ),
         );
-        ws.on('message', (d) => {
+        ws.on("message", (d) => {
           // This server only sends text frames.
           // eslint-disable-next-line @typescript-eslint/no-base-to-string
           buf += d.toString();
@@ -161,13 +147,13 @@ describe('PtyGateway (e2e)', () => {
             resolve(found);
           }
         });
-        ws.on('error', reject);
+        ws.on("error", reject);
       });
-      expect(m[1]).toBe('');
-      expect(m[2]).toBe('set');
-      expect(m[3]).toBe('set');
+      expect(m[1]).toBe("");
+      expect(m[2]).toBe("set");
+      expect(m[3]).toBe("set");
       // Scrubbed from the shell, not from the backend.
-      expect(process.env.SETUP_TOKEN).toBe('e2e-secret-setup-token');
+      expect(process.env.SETUP_TOKEN).toBe("e2e-secret-setup-token");
     } finally {
       if (before === undefined) delete process.env.SETUP_TOKEN;
       else process.env.SETUP_TOKEN = before;

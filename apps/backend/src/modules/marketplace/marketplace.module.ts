@@ -1,14 +1,14 @@
-import { Module } from '@nestjs/common';
+import { Module } from "@nestjs/common";
 
-import { AppDataModule } from '../app-data/app-data.module';
-import { AppIdentityModule } from '../app-identity/app-identity.module';
-import { FilesModule } from '../files/files.module';
-import { MarketplaceController } from './marketplace.controller';
-import { MarketplaceServers } from './marketplace-servers.service';
-import { MarketplaceUrlApps } from './marketplace-url.service';
-import { MarketplaceService } from './marketplace.service';
-import { MarketplaceWsProxy } from './marketplace-ws.proxy';
-import { PendingInspections } from './pending-inspections';
+import { AppDataModule } from "../app-data/app-data.module";
+import { AppIdentityModule } from "../app-identity/app-identity.module";
+import { FilesModule } from "../files/files.module";
+import { MarketplaceController } from "./marketplace.controller";
+import { MarketplaceServers } from "./marketplace-servers.service";
+import { MarketplaceUrlApps } from "./marketplace-url.service";
+import { MarketplaceService } from "./marketplace.service";
+import { MarketplaceWsProxy } from "./marketplace-ws.proxy";
+import { PendingInspections } from "./pending-inspections";
 
 /**
  * The app marketplace: installs the apps `marketplace/*.json`
@@ -21,12 +21,6 @@ import { PendingInspections } from './pending-inspections';
 @Module({
   imports: [AppDataModule, AppIdentityModule, FilesModule],
   controllers: [MarketplaceController],
-  providers: [
-    MarketplaceService,
-    MarketplaceServers,
-    MarketplaceWsProxy,
-    MarketplaceUrlApps,
-    PendingInspections,
-  ],
+  providers: [MarketplaceService, MarketplaceServers, MarketplaceWsProxy, MarketplaceUrlApps, PendingInspections],
 })
 export class MarketplaceModule {}

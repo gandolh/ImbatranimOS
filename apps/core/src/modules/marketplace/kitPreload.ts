@@ -1,7 +1,7 @@
-import type { MarketplaceApp } from '../../shared/registry/marketplace'
-import { apiUrl } from './apiUrl'
-import { addKitStyles } from './kitStyles'
-import { kitRefusal, protocolRefusal } from './refusals'
+import type { MarketplaceApp } from "../../shared/registry/marketplace";
+import { apiUrl } from "./apiUrl";
+import { addKitStyles } from "./kitStyles";
+import { kitRefusal, protocolRefusal } from "./refusals";
 
 /**
  * A kit app's files start loading as its window opens, beside the
@@ -25,7 +25,7 @@ import { kitRefusal, protocolRefusal } from './refusals'
  * imports nothing heavy.
  */
 
-const PRELOAD_ATTR = 'data-kit-preload'
+const PRELOAD_ATTR = "data-kit-preload";
 
 /**
  * Start fetching the module at `href` without evaluating it. Once per URL
@@ -35,16 +35,16 @@ const PRELOAD_ATTR = 'data-kit-preload'
  */
 export function preloadModule(href: string): void {
   for (const link of document.head.querySelectorAll<HTMLLinkElement>(`link[${PRELOAD_ATTR}]`)) {
-    if (link.getAttribute('href') === href) return
+    if (link.getAttribute("href") === href) return;
   }
-  const link = document.createElement('link')
-  link.rel = 'modulepreload'
-  link.setAttribute(PRELOAD_ATTR, '')
-  link.setAttribute('href', href)
-  const settle = () => link.remove()
-  link.addEventListener('load', settle, { once: true })
-  link.addEventListener('error', settle, { once: true })
-  document.head.append(link)
+  const link = document.createElement("link");
+  link.rel = "modulepreload";
+  link.setAttribute(PRELOAD_ATTR, "");
+  link.setAttribute("href", href);
+  const settle = () => link.remove();
+  link.addEventListener("load", settle, { once: true });
+  link.addEventListener("error", settle, { once: true });
+  document.head.append(link);
 }
 
 /**
@@ -55,14 +55,14 @@ export function preloadModule(href: string): void {
  * needs nothing from the registry at run time.
  */
 export function preloadKitApp(app: MarketplaceApp, build: string | null): void {
-  if (protocolRefusal(app) ?? kitRefusal(app)) return
-  const entryPath = app.installed?.entryPath
-  if (!entryPath || !build) return
-  preloadModule(apiUrl(entryPath).href)
+  if (protocolRefusal(app) ?? kitRefusal(app)) return;
+  const entryPath = app.installed?.entryPath;
+  if (!entryPath || !build) return;
+  preloadModule(apiUrl(entryPath).href);
   // The host adds the same links again and waits for them; addKitStyles
   // reuses a build's links, so this only starts them sooner.
   void addKitStyles(
     build,
-    (app.installed?.stylePaths ?? []).map((p) => apiUrl(p).href)
-  )
+    (app.installed?.stylePaths ?? []).map((p) => apiUrl(p).href),
+  );
 }

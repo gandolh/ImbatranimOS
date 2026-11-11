@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
-import { FilesModule } from '../files/files.module';
-import { ArchiveController } from './archive.controller';
-import { ArchiveService } from './archive.service';
+import { Module } from "@nestjs/common";
+import { FilesModule } from "../files/files.module";
+import { ArchiveController } from "./archive.controller";
+import { ArchiveService } from "./archive.service";
 
 /**
  * Archive manager. Imports {@link FilesModule} to reuse `FilesService` — the

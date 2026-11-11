@@ -6,7 +6,7 @@
  *
  * One line per type the suite took over; each retirement run adds its own.
  */
-const OFFICE = { name: 'Office', descriptorId: 'imbatranim-office' }
+const OFFICE = { name: "Office", descriptorId: "imbatranim-office" };
 
 const SUITE_TYPES: Readonly<Record<string, { name: string; descriptorId: string }>> = {
   docx: OFFICE,
@@ -16,7 +16,7 @@ const SUITE_TYPES: Readonly<Record<string, { name: string; descriptorId: string 
   // A .csv opens in the text editor while nothing claims it, so
   // this shows only when that editor is disabled too.
   csv: OFFICE,
-}
+};
 
 /**
  * Old binary formats a retired built-in opened and the suite refuses by name
@@ -26,11 +26,11 @@ const SUITE_TYPES: Readonly<Record<string, { name: string; descriptorId: string 
 const REFUSED_TYPES: Readonly<Record<string, string>> = {
   ppt: "No app here opens .ppt files (PowerPoint 97-2003). Office's Slides opens .pptx.",
   xls: "No app here opens .xls files (Excel 97-2003). Office's Sheets opens .xlsx.",
-}
+};
 
 /** The Marketplace entry that opens `key`: its name, and the descriptor id Settings scrolls to. */
 export function marketplaceTarget(key: string): { name: string; descriptorId: string } | null {
-  return Object.hasOwn(SUITE_TYPES, key) ? SUITE_TYPES[key] : null
+  return Object.hasOwn(SUITE_TYPES, key) ? SUITE_TYPES[key] : null;
 }
 
 /**
@@ -38,7 +38,7 @@ export function marketplaceTarget(key: string): { name: string; descriptorId: st
  * of one descriptor.
  */
 export function marketplaceIntent(descriptorId: string): { marketplace: string } {
-  return { marketplace: descriptorId }
+  return { marketplace: descriptorId };
 }
 
 /**
@@ -47,9 +47,7 @@ export function marketplaceIntent(descriptorId: string): { marketplace: string }
  * is known to open it.
  */
 export function marketplaceGap(key: string): string | null {
-  if (Object.hasOwn(REFUSED_TYPES, key)) return REFUSED_TYPES[key]
-  const target = marketplaceTarget(key)
-  return target
-    ? `No installed app opens .${key} files. ${target.name} in Settings → Marketplace does.`
-    : null
+  if (Object.hasOwn(REFUSED_TYPES, key)) return REFUSED_TYPES[key];
+  const target = marketplaceTarget(key);
+  return target ? `No installed app opens .${key} files. ${target.name} in Settings → Marketplace does.` : null;
 }

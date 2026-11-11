@@ -1,28 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  AlertTriangle,
-  ChevronDown,
-  ChevronRight,
-  RefreshCw,
-  ScrollText,
-  Search,
-  X,
-} from 'lucide-react'
-import { Button, cn, useSystem, useVirtualList } from '@imbatranim/ui'
-import { eventLabel, formatWhen, summarise, type LogEntry, type LogLevel } from './lib/logFormat'
-import { errorMessage, fetchLogs } from './lib/logsApi'
-import { APP_NAME } from './appName'
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw, ScrollText, Search, X } from "lucide-react";
+import { Button, cn, useSystem, useVirtualList } from "@imbatranim/ui";
+import { eventLabel, formatWhen, summarise, type LogEntry, type LogLevel } from "./lib/logFormat";
+import { errorMessage, fetchLogs } from "./lib/logsApi";
+import { APP_NAME } from "./appName";
 
 /** How often Follow re-reads the tail. Slow enough to be free, fast enough to feel live. */
-const FOLLOW_MS = 3000
+const FOLLOW_MS = 3000;
 /** Row height estimate; rows re-measure once mounted. */
-const ROW_HEIGHT = 30
+const ROW_HEIGHT = 30;
 
 const LEVELS: { id: LogLevel; label: string }[] = [
-  { id: 'info', label: 'Info' },
-  { id: 'warn', label: 'Warnings' },
-  { id: 'error', label: 'Errors' },
-]
+  { id: "info", label: "Info" },
+  { id: "warn", label: "Warnings" },
+  { id: "error", label: "Errors" },
+];
 
 /**
  * The system log.
@@ -37,66 +29,66 @@ const LEVELS: { id: LogLevel; label: string }[] = [
  * size-capped tail, and would be slower on exactly the log that needs it most.
  */
 export function Logs() {
-  const system = useSystem()
-  const [level, setLevel] = useState<LogLevel | null>(null)
-  const [query, setQuery] = useState('')
-  const [follow, setFollow] = useState(false)
-  const [entries, setEntries] = useState<LogEntry[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [expanded, setExpanded] = useState<number | null>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const notifiedRef = useRef(false)
+  const system = useSystem();
+  const [level, setLevel] = useState<LogLevel | null>(null);
+  const [query, setQuery] = useState("");
+  const [follow, setFollow] = useState(false);
+  const [entries, setEntries] = useState<LogEntry[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const notifiedRef = useRef(false);
 
   const load = useCallback(
     async (quiet: boolean) => {
-      if (!quiet) setLoading(true)
+      if (!quiet) setLoading(true);
       try {
         const page = await fetchLogs(system.http, {
           level: level ?? undefined,
           q: query.trim() || undefined,
-        })
-        setEntries(page.entries)
-        setError(null)
+        });
+        setEntries(page.entries);
+        setError(null);
       } catch (err) {
-        const message = errorMessage(err)
-        setError(message)
+        const message = errorMessage(err);
+        setError(message);
         // Notified once, not on every poll: Follow would otherwise turn one
         // outage into a toast every three seconds.
         if (!notifiedRef.current) {
-          notifiedRef.current = true
-          system.notify({ title: 'Cannot read the log', body: message, level: 'error' })
+          notifiedRef.current = true;
+          system.notify({ title: "Cannot read the log", body: message, level: "error" });
         }
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     },
-    [level, query, system]
-  )
+    [level, query, system],
+  );
 
   // Debounced so typing in the filter is one request, not one per keystroke.
   useEffect(() => {
-    const id = window.setTimeout(() => void load(false), 250)
-    return () => window.clearTimeout(id)
-  }, [load])
+    const id = window.setTimeout(() => void load(false), 250);
+    return () => window.clearTimeout(id);
+  }, [load]);
 
   useEffect(() => {
-    if (!follow) return
-    const id = window.setInterval(() => void load(true), FOLLOW_MS)
-    return () => window.clearInterval(id)
-  }, [follow, load])
+    if (!follow) return;
+    const id = window.setInterval(() => void load(true), FOLLOW_MS);
+    return () => window.clearInterval(id);
+  }, [follow, load]);
 
   const rows = useVirtualList({
     count: entries.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => ROW_HEIGHT,
-  })
+  });
 
   const counts = useMemo(() => {
-    const out = { info: 0, warn: 0, error: 0 }
-    for (const e of entries) out[e.level]++
-    return out
-  }, [entries])
+    const out = { info: 0, warn: 0, error: 0 };
+    for (const e of entries) out[e.level]++;
+    return out;
+  }, [entries]);
 
   return (
     <div className="bg-surface text-on-surface flex h-full flex-col">
@@ -110,19 +102,14 @@ export function Logs() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') setQuery('')
+              if (e.key === "Escape") setQuery("");
             }}
             placeholder="Filter the log…"
             aria-label="Filter the log"
             className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
-          {query !== '' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label="Clear filter"
-              onClick={() => setQuery('')}
-            >
+          {query !== "" && (
+            <Button variant="ghost" size="sm" aria-label="Clear filter" onClick={() => setQuery("")}>
               <X size={11} />
             </Button>
           )}
@@ -134,10 +121,10 @@ export function Logs() {
             onClick={() => setLevel((current) => (current === l.id ? null : l.id))}
             aria-pressed={level === l.id}
             className={cn(
-              'focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset',
+              "focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
               level === l.id
-                ? 'bg-primary-container text-on-primary-container border-primary'
-                : 'hover:bg-surface-container-high'
+                ? "bg-primary-container text-on-primary-container border-primary"
+                : "hover:bg-surface-container-high",
             )}
           >
             {l.label}
@@ -149,16 +136,16 @@ export function Logs() {
           aria-pressed={follow}
           title="Re-read the newest entries every few seconds"
           className={cn(
-            'focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset',
+            "focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
             follow
-              ? 'bg-primary-container text-on-primary-container border-primary'
-              : 'hover:bg-surface-container-high'
+              ? "bg-primary-container text-on-primary-container border-primary"
+              : "hover:bg-surface-container-high",
           )}
         >
           Follow
         </button>
         <Button variant="ghost" size="sm" aria-label="Refresh" onClick={() => void load(false)}>
-          <RefreshCw size={12} className={cn(loading && 'animate-spin')} />
+          <RefreshCw size={12} className={cn(loading && "animate-spin")} />
         </Button>
       </div>
 
@@ -173,37 +160,35 @@ export function Logs() {
         {entries.length === 0 ? (
           <div className="text-on-surface-variant px-3 py-4 text-[12px]">
             {loading
-              ? 'Reading the log…'
+              ? "Reading the log…"
               : query || level
-                ? 'Nothing in the log matches that.'
-                : 'The log is empty. Events appear here as the machine does things.'}
+                ? "Nothing in the log matches that."
+                : "The log is empty. Events appear here as the machine does things."}
           </div>
         ) : (
-          <div style={{ height: rows.getTotalSize(), position: 'relative' }}>
+          <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((row) => {
-              const entry = entries[row.index]
+              const entry = entries[row.index];
               return (
                 <div
                   key={row.key}
                   ref={rows.measureElement}
                   data-index={row.index}
                   style={{
-                    position: 'absolute',
+                    position: "absolute",
                     top: 0,
                     left: 0,
-                    width: '100%',
+                    width: "100%",
                     transform: `translateY(${row.start}px)`,
                   }}
                 >
                   <Row
                     entry={entry}
                     open={expanded === row.index}
-                    onToggle={() =>
-                      setExpanded((current) => (current === row.index ? null : row.index))
-                    }
+                    onToggle={() => setExpanded((current) => (current === row.index ? null : row.index))}
                   />
                 </div>
-              )
+              );
             })}
           </div>
         )}
@@ -217,11 +202,11 @@ export function Logs() {
         <span>Newest first</span>
       </div>
     </div>
-  )
+  );
 }
 
 function Row({ entry, open, onToggle }: { entry: LogEntry; open: boolean; onToggle: () => void }) {
-  const when = formatWhen(entry.t)
+  const when = formatWhen(entry.t);
   return (
     <div className="border-outline-variant/50 border-b">
       <button
@@ -236,12 +221,8 @@ function Row({ entry, open, onToggle }: { entry: LogEntry; open: boolean; onTogg
         )}
         <span
           className={cn(
-            'w-1 shrink-0 self-stretch',
-            entry.level === 'error'
-              ? 'bg-error'
-              : entry.level === 'warn'
-                ? 'bg-primary'
-                : 'bg-outline-variant'
+            "w-1 shrink-0 self-stretch",
+            entry.level === "error" ? "bg-error" : entry.level === "warn" ? "bg-primary" : "bg-outline-variant",
           )}
         />
         <span
@@ -252,7 +233,7 @@ function Row({ entry, open, onToggle }: { entry: LogEntry; open: boolean; onTogg
         </span>
         <span className="w-[130px] shrink-0 truncate font-semibold">{eventLabel(entry.event)}</span>
         <span className="min-w-0 flex-1 truncate">{summarise(entry)}</span>
-        {entry.source === 'client' && (
+        {entry.source === "client" && (
           <span
             className="text-on-surface-variant shrink-0 text-[10px]"
             title="Reported by the browser, not observed by the server"
@@ -260,9 +241,7 @@ function Row({ entry, open, onToggle }: { entry: LogEntry; open: boolean; onTogg
             browser
           </span>
         )}
-        <span className="text-on-surface-variant shrink-0 text-[10px] tabular-nums">
-          {when.relative}
-        </span>
+        <span className="text-on-surface-variant shrink-0 text-[10px] tabular-nums">{when.relative}</span>
       </button>
       {open && (
         <pre className="bg-surface-container-lowest text-on-surface-variant overflow-auto px-3 py-1.5 font-mono text-[11px] whitespace-pre-wrap">
@@ -270,5 +249,5 @@ function Row({ entry, open, onToggle }: { entry: LogEntry; open: boolean; onTogg
         </pre>
       )}
     </div>
-  )
+  );
 }

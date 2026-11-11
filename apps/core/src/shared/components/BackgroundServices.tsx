@@ -1,8 +1,8 @@
-import { Component, Suspense, type ErrorInfo, type ReactNode } from 'react'
-import { api } from '../../lib/axios'
-import { WindowlessSystemProvider } from '../../system/WindowlessSystemProvider'
-import { useEnabledApps } from '../registry/enabledApps'
-import { notify } from '../store/notificationStore'
+import { Component, Suspense, type ErrorInfo, type ReactNode } from "react";
+import { api } from "../../lib/axios";
+import { WindowlessSystemProvider } from "../../system/WindowlessSystemProvider";
+import { useEnabledApps } from "../registry/enabledApps";
+import { notify } from "../store/notificationStore";
 
 /**
  * Mounts every enabled app's `background` service component: a built-in
@@ -26,30 +26,26 @@ import { notify } from '../store/notificationStore'
  * notification, and the desktop and the other services stay.
  */
 export function BackgroundServices() {
-  const apps = useEnabledApps()
+  const apps = useEnabledApps();
   return (
     <>
       {apps.map((app) =>
         app.background ? (
-          <BackgroundServiceBoundary
-            key={`bg-${app.id}-${serialOf(app.background)}`}
-            appId={app.id}
-            appName={app.name}
-          >
+          <BackgroundServiceBoundary key={`bg-${app.id}-${serialOf(app.background)}`} appId={app.id} appName={app.name}>
             <Suspense fallback={null}>
               <WindowlessSystemProvider appId={app.id}>
                 <app.background />
               </WindowlessSystemProvider>
             </Suspense>
           </BackgroundServiceBoundary>
-        ) : null
+        ) : null,
       )}
     </>
-  )
+  );
 }
 
-const serials = new WeakMap<object, number>()
-let nextSerial = 0
+const serials = new WeakMap<object, number>();
+let nextSerial = 0;
 
 /**
  * A number per service component, for its key: a rebuilt kit app brings a
@@ -57,12 +53,12 @@ let nextSerial = 0
  * than the old build's, crashed or not.
  */
 function serialOf(service: object): number {
-  let serial = serials.get(service)
+  let serial = serials.get(service);
   if (serial === undefined) {
-    serial = nextSerial++
-    serials.set(service, serial)
+    serial = nextSerial++;
+    serials.set(service, serial);
   }
-  return serial
+  return serial;
 }
 
 /**
@@ -80,36 +76,36 @@ class BackgroundServiceBoundary extends Component<
   { appId: string; appName: string; children: ReactNode },
   { crashed: boolean }
 > {
-  state = { crashed: false }
-  private reported = false
+  state = { crashed: false };
+  private reported = false;
 
   static getDerivedStateFromError(): { crashed: boolean } {
-    return { crashed: true }
+    return { crashed: true };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    const { appId, appName } = this.props
+    const { appId, appName } = this.props;
     if (!this.reported) {
-      this.reported = true
+      this.reported = true;
       notify({
         title: `${appName} stopped working in the background.`,
         body: error.message || undefined,
-        level: 'error',
+        level: "error",
         appId,
-      })
+      });
       // Into the system log too, as a window's crash is. Fire-and-forget:
       // failing to record a crash must not become an error of its own.
       void api
-        .post('/logs/client-error', {
+        .post("/logs/client-error", {
           appId,
-          message: `Background service: ${error.message || 'stopped unexpectedly'}`.slice(0, 300),
+          message: `Background service: ${error.message || "stopped unexpectedly"}`.slice(0, 300),
         })
-        .catch(() => undefined)
+        .catch(() => undefined);
     }
-    console.error(`[${appId}] background service crashed`, error, info.componentStack)
+    console.error(`[${appId}] background service crashed`, error, info.componentStack);
   }
 
   render(): ReactNode {
-    return this.state.crashed ? null : this.props.children
+    return this.state.crashed ? null : this.props.children;
   }
 }

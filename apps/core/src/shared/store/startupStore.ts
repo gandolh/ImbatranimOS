@@ -1,6 +1,6 @@
-import { create } from 'zustand'
-import { createJSONStorage, persist } from 'zustand/middleware'
-import { prefsStorage } from '../../lib/prefs'
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { prefsStorage } from "../../lib/prefs";
 
 /**
  * Startup apps — what opens when you sit down at the machine.
@@ -18,19 +18,19 @@ import { prefsStorage } from '../../lib/prefs'
  */
 type StartupStore = {
   /** App ids, in the order they should open. */
-  apps: string[]
+  apps: string[];
   /** Add or remove one app, keeping the rest of the order intact. */
-  toggle: (id: string) => void
+  toggle: (id: string) => void;
   /** Move an entry one place earlier or later. A no-op at either end. */
-  move: (id: string, delta: -1 | 1) => void
+  move: (id: string, delta: -1 | 1) => void;
   /** Replace the list wholesale — used by "Use my current windows". */
-  setApps: (ids: string[]) => void
-  clear: () => void
-}
+  setApps: (ids: string[]) => void;
+  clear: () => void;
+};
 
 /** De-duplicate while keeping first-seen order. */
 function unique(ids: string[]): string[] {
-  return [...new Set(ids)]
+  return [...new Set(ids)];
 }
 
 export const useStartupStore = create<StartupStore>()(
@@ -43,23 +43,23 @@ export const useStartupStore = create<StartupStore>()(
         })),
       move: (id, delta) =>
         set((s) => {
-          const from = s.apps.indexOf(id)
-          const to = from + delta
-          if (from === -1 || to < 0 || to >= s.apps.length) return s
-          const next = [...s.apps]
+          const from = s.apps.indexOf(id);
+          const to = from + delta;
+          if (from === -1 || to < 0 || to >= s.apps.length) return s;
+          const next = [...s.apps];
           // Swap rather than splice-and-insert: for a single-step move they are
           // the same result, and the swap cannot silently drop an entry.
-          ;[next[from], next[to]] = [next[to], next[from]]
-          return { apps: next }
+          [next[from], next[to]] = [next[to], next[from]];
+          return { apps: next };
         }),
       setApps: (ids) => set({ apps: unique(ids) }),
       clear: () => set({ apps: [] }),
     }),
     {
-      name: 'imbatranimos:startup',
+      name: "imbatranimos:startup",
       // Registered in DOTFILE_KEYS — without that entry `writePref` drops it and
       // the list never leaves this browser (default apps and Open with learned that the hard way).
       storage: createJSONStorage(() => prefsStorage),
-    }
-  )
-)
+    },
+  ),
+);

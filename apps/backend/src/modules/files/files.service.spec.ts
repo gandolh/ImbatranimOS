@@ -1,9 +1,9 @@
-import { ConflictException } from '@nestjs/common';
-import { FilesService } from './files.service';
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import { join } from 'path';
-import type { Readable } from 'stream';
+import { ConflictException } from "@nestjs/common";
+import { FilesService } from "./files.service";
+import * as fs from "fs/promises";
+import * as os from "os";
+import { join } from "path";
+import type { Readable } from "stream";
 
 /** Drain a readable stream into a single Buffer. */
 async function collect(stream: Readable): Promise<Buffer> {
@@ -14,7 +14,7 @@ async function collect(stream: Readable): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
-describe('FilesService (jail + real filesystem)', () => {
+describe("FilesService (jail + real filesystem)", () => {
   let service: FilesService;
   let jail: string;
   let outside: string;
@@ -22,8 +22,8 @@ describe('FilesService (jail + real filesystem)', () => {
 
   beforeEach(async () => {
     // A fresh scratch dir per test IS the `home` root for this run.
-    jail = await fs.mkdtemp(join(os.tmpdir(), 'imb-jail-'));
-    outside = await fs.mkdtemp(join(os.tmpdir(), 'imb-outside-'));
+    jail = await fs.mkdtemp(join(os.tmpdir(), "imb-jail-"));
+    outside = await fs.mkdtemp(join(os.tmpdir(), "imb-outside-"));
     process.env.FILES_ROOT = jail;
     service = new FilesService();
   });
@@ -34,254 +34,210 @@ describe('FilesService (jail + real filesystem)', () => {
     await fs.rm(outside, { recursive: true, force: true });
   });
 
-  describe('real filesystem round-trips', () => {
-    it('mkdir + createFile land on the real disk and list back', async () => {
-      await service.createDirectory('home', 'projects');
-      await service.createFile('home', 'projects/readme.txt', 'hi');
+  describe("real filesystem round-trips", () => {
+    it("mkdir + createFile land on the real disk and list back", async () => {
+      await service.createDirectory("home", "projects");
+      await service.createFile("home", "projects/readme.txt", "hi");
 
       // Confirm on the ACTUAL disk, not just via the API.
-      const onDisk = await fs.readFile(
-        join(jail, 'projects/readme.txt'),
-        'utf-8',
-      );
-      expect(onDisk).toBe('hi');
+      const onDisk = await fs.readFile(join(jail, "projects/readme.txt"), "utf-8");
+      expect(onDisk).toBe("hi");
 
-      const listing = await service.list('home', 'projects');
-      expect(listing.map((e) => e.name).sort()).toEqual(['readme.txt']);
+      const listing = await service.list("home", "projects");
+      expect(listing.map((e) => e.name).sort()).toEqual(["readme.txt"]);
     });
 
-    it('addresses a real file whose name contains a percent-escape literal', async () => {
+    it("addresses a real file whose name contains a percent-escape literal", async () => {
       // `a%2Bb.txt` and `report%20v2.txt` are LITERAL names. The old decoder
       // unwrapped them to `a+b.txt` / `report v2.txt`, making the real files
       // unaddressable. They must round-trip verbatim.
-      await service.createFile('home', 'a%2Bb.txt', 'plus');
-      await service.createFile('home', 'report%20v2.txt', 'space');
+      await service.createFile("home", "a%2Bb.txt", "plus");
+      await service.createFile("home", "report%20v2.txt", "space");
 
-      expect(await fs.readFile(join(jail, 'a%2Bb.txt'), 'utf-8')).toBe('plus');
-      expect(await fs.readFile(join(jail, 'report%20v2.txt'), 'utf-8')).toBe(
-        'space',
-      );
+      expect(await fs.readFile(join(jail, "a%2Bb.txt"), "utf-8")).toBe("plus");
+      expect(await fs.readFile(join(jail, "report%20v2.txt"), "utf-8")).toBe("space");
 
-      expect((await service.readFile('home', 'a%2Bb.txt')).content).toBe(
-        'plus',
-      );
-      expect((await service.readFile('home', 'report%20v2.txt')).content).toBe(
-        'space',
-      );
+      expect((await service.readFile("home", "a%2Bb.txt")).content).toBe("plus");
+      expect((await service.readFile("home", "report%20v2.txt")).content).toBe("space");
 
-      const names = (await service.list('home')).map((e) => e.name);
-      expect(names).toContain('a%2Bb.txt');
-      expect(names).toContain('report%20v2.txt');
+      const names = (await service.list("home")).map((e) => e.name);
+      expect(names).toContain("a%2Bb.txt");
+      expect(names).toContain("report%20v2.txt");
     });
 
-    it('a file created directly on disk shows up via list (and vice versa)', async () => {
-      await fs.writeFile(join(jail, 'external.txt'), 'made outside the api');
-      const listing = await service.list('home');
-      expect(listing.find((e) => e.name === 'external.txt')).toBeTruthy();
+    it("a file created directly on disk shows up via list (and vice versa)", async () => {
+      await fs.writeFile(join(jail, "external.txt"), "made outside the api");
+      const listing = await service.list("home");
+      expect(listing.find((e) => e.name === "external.txt")).toBeTruthy();
     });
 
-    it('round-trips a BINARY file byte-for-byte through upload + download', async () => {
+    it("round-trips a BINARY file byte-for-byte through upload + download", async () => {
       // Bytes, not a string: include NUL, 0xFF, and non-UTF-8 sequences.
-      const bytes = Buffer.from([
-        0x00, 0x01, 0x02, 0xff, 0xfe, 0x80, 0x7f, 0x00, 0xab, 0xcd,
-      ]);
+      const bytes = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe, 0x80, 0x7f, 0x00, 0xab, 0xcd]);
       // uploadFile now consumes an on-disk temp file (multer diskStorage), so
       // stage the bytes in a temp path — the service moves it into the jail.
-      const tmpSrc = join(outside, 'upload-src.dat');
+      const tmpSrc = join(outside, "upload-src.dat");
       await fs.writeFile(tmpSrc, bytes);
-      await service.uploadFile('home', 'bin/blob.dat', tmpSrc);
+      await service.uploadFile("home", "bin/blob.dat", tmpSrc);
       // The temp file is removed after a successful move.
       await expect(fs.stat(tmpSrc)).rejects.toThrow();
 
-      const stream = await service.readFileStream('home', 'bin/blob.dat');
+      const stream = await service.readFileStream("home", "bin/blob.dat");
       const out = await collect(stream);
       expect(out.equals(bytes)).toBe(true);
       // And it really exists on disk with the same bytes.
-      const onDisk = await fs.readFile(join(jail, 'bin/blob.dat'));
+      const onDisk = await fs.readFile(join(jail, "bin/blob.dat"));
       expect(onDisk.equals(bytes)).toBe(true);
     });
 
-    it('move renames on the real disk', async () => {
-      await service.createFile('home', 'a.txt', 'x');
-      await service.move('home', 'a.txt', 'b.txt');
-      await expect(fs.stat(join(jail, 'a.txt'))).rejects.toBeTruthy();
-      expect(await fs.readFile(join(jail, 'b.txt'), 'utf-8')).toBe('x');
+    it("move renames on the real disk", async () => {
+      await service.createFile("home", "a.txt", "x");
+      await service.move("home", "a.txt", "b.txt");
+      await expect(fs.stat(join(jail, "a.txt"))).rejects.toBeTruthy();
+      expect(await fs.readFile(join(jail, "b.txt"), "utf-8")).toBe("x");
     });
 
-    it('delete removes from the real disk', async () => {
-      await service.createFile('home', 'gone.txt', 'x');
-      await service.delete('home', 'gone.txt');
-      await expect(fs.stat(join(jail, 'gone.txt'))).rejects.toBeTruthy();
+    it("delete removes from the real disk", async () => {
+      await service.createFile("home", "gone.txt", "x");
+      await service.delete("home", "gone.txt");
+      await expect(fs.stat(join(jail, "gone.txt"))).rejects.toBeTruthy();
     });
   });
 
-  describe('path-traversal jail', () => {
-    it('refuses ../../etc/passwd', async () => {
-      await expect(
-        service.resolveSafe('home', '../../etc/passwd'),
-      ).rejects.toThrow(/traversal/i);
-      await expect(service.list('home', '../../etc')).rejects.toThrow(
-        /traversal/i,
-      );
+  describe("path-traversal jail", () => {
+    it("refuses ../../etc/passwd", async () => {
+      await expect(service.resolveSafe("home", "../../etc/passwd")).rejects.toThrow(/traversal/i);
+      await expect(service.list("home", "../../etc")).rejects.toThrow(/traversal/i);
     });
 
-    it('refuses deeper ../ escapes and absolute re-rooting', async () => {
-      await expect(
-        service.resolveSafe('home', '../../../../../../etc/passwd'),
-      ).rejects.toThrow(/traversal/i);
+    it("refuses deeper ../ escapes and absolute re-rooting", async () => {
+      await expect(service.resolveSafe("home", "../../../../../../etc/passwd")).rejects.toThrow(/traversal/i);
       // An absolute path must be treated as root-relative, never re-root.
-      const { abs } = await service.resolveSafe('home', '/etc/passwd');
-      expect(abs).toBe(join(jail, 'etc/passwd'));
+      const { abs } = await service.resolveSafe("home", "/etc/passwd");
+      expect(abs).toBe(join(jail, "etc/passwd"));
     });
 
-    it('refuses percent-encoded traversal (%2e%2e)', async () => {
+    it("refuses percent-encoded traversal (%2e%2e)", async () => {
       // Single-encoded traversal still unwraps all the way to `..` and is
       // rejected by the jail — whether the separators are literal or encoded.
-      await expect(
-        service.resolveSafe('home', '%2e%2e/%2e%2e/etc/passwd'),
-      ).rejects.toThrow(/traversal/i);
-      await expect(
-        service.resolveSafe('home', '%2e%2e%2f%2e%2e%2fetc%2fpasswd'),
-      ).rejects.toThrow(/traversal/i);
+      await expect(service.resolveSafe("home", "%2e%2e/%2e%2e/etc/passwd")).rejects.toThrow(/traversal/i);
+      await expect(service.resolveSafe("home", "%2e%2e%2f%2e%2e%2fetc%2fpasswd")).rejects.toThrow(/traversal/i);
     });
 
-    it('treats double-encoded %252e as a safe in-jail literal (no over-decode)', async () => {
+    it("treats double-encoded %252e as a safe in-jail literal (no over-decode)", async () => {
       // The decoder stops unwrapping once a pass reveals no new separator/`..`,
       // so `%252e%252e` stays a literal directory name rather than being
       // decoded twice into `..`. That is SAFE: it resolves INSIDE the jail and
       // never becomes traversal. Over-decoding it was the same bug that made a
       // real file named `a%2Bb.txt` unaddressable.
-      const { abs } = await service.resolveSafe(
-        'home',
-        '%252e%252e/%252e%252e/etc',
-      );
-      expect(abs.startsWith(jail + '/')).toBe(true);
-      expect(abs).toBe(join(jail, '%252e%252e/%252e%252e/etc'));
+      const { abs } = await service.resolveSafe("home", "%252e%252e/%252e%252e/etc");
+      expect(abs.startsWith(jail + "/")).toBe(true);
+      expect(abs).toBe(join(jail, "%252e%252e/%252e%252e/etc"));
     });
 
-    it('refuses NUL byte injection', async () => {
-      await expect(
-        service.resolveSafe('home', 'ok\0/../../etc'),
-      ).rejects.toThrow();
+    it("refuses NUL byte injection", async () => {
+      await expect(service.resolveSafe("home", "ok\0/../../etc")).rejects.toThrow();
     });
 
-    it('refuses a symlink that points outside the jail', async () => {
+    it("refuses a symlink that points outside the jail", async () => {
       // Plant a secret outside, then a symlink inside the jail pointing at it.
-      await fs.writeFile(join(outside, 'secret.txt'), 'top secret');
-      await fs.symlink(outside, join(jail, 'escape'), 'dir');
+      await fs.writeFile(join(outside, "secret.txt"), "top secret");
+      await fs.symlink(outside, join(jail, "escape"), "dir");
 
       // Traversing the symlink must be refused even though the link itself
       // lives inside the jail (lexical check passes; realpath does not).
-      await expect(
-        service.resolveSafe('home', 'escape/secret.txt'),
-      ).rejects.toThrow(/traversal/i);
-      await expect(service.list('home', 'escape')).rejects.toThrow(
-        /traversal/i,
-      );
-      await expect(
-        service.readFile('home', 'escape/secret.txt'),
-      ).rejects.toThrow(/traversal/i);
+      await expect(service.resolveSafe("home", "escape/secret.txt")).rejects.toThrow(/traversal/i);
+      await expect(service.list("home", "escape")).rejects.toThrow(/traversal/i);
+      await expect(service.readFile("home", "escape/secret.txt")).rejects.toThrow(/traversal/i);
     });
 
-    it('refuses writing THROUGH a symlinked directory to escape the jail', async () => {
-      await fs.symlink(outside, join(jail, 'link'), 'dir');
+    it("refuses writing THROUGH a symlinked directory to escape the jail", async () => {
+      await fs.symlink(outside, join(jail, "link"), "dir");
       // Target file does not exist yet — parent (the symlink) resolves out.
-      await expect(
-        service.createFile('home', 'link/planted.txt', 'nope'),
-      ).rejects.toThrow(/traversal/i);
+      await expect(service.createFile("home", "link/planted.txt", "nope")).rejects.toThrow(/traversal/i);
     });
 
-    it('allows legitimate nested paths inside the jail', async () => {
-      const { abs } = await service.resolveSafe('home', 'a/b/c.txt');
-      expect(abs).toBe(join(jail, 'a/b/c.txt'));
+    it("allows legitimate nested paths inside the jail", async () => {
+      const { abs } = await service.resolveSafe("home", "a/b/c.txt");
+      expect(abs).toBe(join(jail, "a/b/c.txt"));
     });
 
-    it('refuses a mid-segment ../ that climbs out (a/../../etc)', async () => {
-      await expect(
-        service.resolveSafe('home', 'a/b/../../../etc/passwd'),
-      ).rejects.toThrow(/traversal/i);
+    it("refuses a mid-segment ../ that climbs out (a/../../etc)", async () => {
+      await expect(service.resolveSafe("home", "a/b/../../../etc/passwd")).rejects.toThrow(/traversal/i);
     });
 
-    it('normalises an in-jail mid-segment ../ without escaping', async () => {
+    it("normalises an in-jail mid-segment ../ without escaping", async () => {
       // a/b/../c collapses to a/c — still inside the jail, so allowed.
-      const { abs } = await service.resolveSafe('home', 'a/b/../c.txt');
-      expect(abs).toBe(join(jail, 'a/c.txt'));
+      const { abs } = await service.resolveSafe("home", "a/b/../c.txt");
+      expect(abs).toBe(join(jail, "a/c.txt"));
     });
 
-    it('treats backslashes as literal filename chars on POSIX (no escape)', async () => {
+    it("treats backslashes as literal filename chars on POSIX (no escape)", async () => {
       // On Linux `\` is NOT a path separator, so "..\..\etc" is a single
       // weird-but-contained segment, never a traversal. It must resolve inside
       // the jail rather than climb out.
-      const { abs } = await service.resolveSafe('home', '..\\..\\etc');
+      const { abs } = await service.resolveSafe("home", "..\\..\\etc");
       expect(abs.startsWith(jail)).toBe(true);
     });
 
-    it('strips a leading backslash run so it cannot re-root', async () => {
-      const { abs } = await service.resolveSafe('home', '\\\\etc\\passwd');
+    it("strips a leading backslash run so it cannot re-root", async () => {
+      const { abs } = await service.resolveSafe("home", "\\\\etc\\passwd");
       expect(abs.startsWith(jail)).toBe(true);
     });
   });
 
-  describe('delete acts on the link itself (never the target)', () => {
-    it('removes a BROKEN symlink instead of 404ing', async () => {
+  describe("delete acts on the link itself (never the target)", () => {
+    it("removes a BROKEN symlink instead of 404ing", async () => {
       // resolveSafe followed the link → the missing target read as "not found",
       // so the UI could never clear a dangling link.
-      await fs.symlink('does-not-exist', join(jail, 'broken'));
-      await expect(service.delete('home', 'broken')).resolves.toBeUndefined();
-      await expect(fs.lstat(join(jail, 'broken'))).rejects.toThrow();
+      await fs.symlink("does-not-exist", join(jail, "broken"));
+      await expect(service.delete("home", "broken")).resolves.toBeUndefined();
+      await expect(fs.lstat(join(jail, "broken"))).rejects.toThrow();
     });
 
-    it('removes an OUT-OF-JAIL symlink without touching its target', async () => {
+    it("removes an OUT-OF-JAIL symlink without touching its target", async () => {
       // resolveSafe realpathed the leaf out of the jail → 400, so the UI could
       // never remove such a link. Delete must unlink the link and leave the
       // outside target intact.
-      await fs.writeFile(join(outside, 'secret.txt'), 'top secret');
-      await fs.symlink(join(outside, 'secret.txt'), join(jail, 'escape'));
+      await fs.writeFile(join(outside, "secret.txt"), "top secret");
+      await fs.symlink(join(outside, "secret.txt"), join(jail, "escape"));
 
-      await expect(service.delete('home', 'escape')).resolves.toBeUndefined();
-      await expect(fs.lstat(join(jail, 'escape'))).rejects.toThrow();
+      await expect(service.delete("home", "escape")).resolves.toBeUndefined();
+      await expect(fs.lstat(join(jail, "escape"))).rejects.toThrow();
       // The target outside the jail is untouched.
-      expect(await fs.readFile(join(outside, 'secret.txt'), 'utf-8')).toBe(
-        'top secret',
-      );
+      expect(await fs.readFile(join(outside, "secret.txt"), "utf-8")).toBe("top secret");
     });
 
-    it('still 404s a path that simply does not exist', async () => {
-      await expect(service.delete('home', 'nope.txt')).rejects.toThrow(
-        /not found/i,
-      );
+    it("still 404s a path that simply does not exist", async () => {
+      await expect(service.delete("home", "nope.txt")).rejects.toThrow(/not found/i);
     });
   });
 
-  describe('move/copy reject nesting a folder into itself (400, not 500)', () => {
+  describe("move/copy reject nesting a folder into itself (400, not 500)", () => {
     beforeEach(async () => {
-      await service.createDirectory('home', 'a');
+      await service.createDirectory("home", "a");
     });
 
-    it('move a → a/b is a 400', async () => {
-      await expect(service.move('home', 'a', 'a/b')).rejects.toThrow(
-        /into itself/i,
-      );
+    it("move a → a/b is a 400", async () => {
+      await expect(service.move("home", "a", "a/b")).rejects.toThrow(/into itself/i);
     });
 
-    it('copy a → a/b is a 400', async () => {
-      await expect(service.copy('home', 'a', 'a/b')).rejects.toThrow(
-        /into itself/i,
-      );
+    it("copy a → a/b is a 400", async () => {
+      await expect(service.copy("home", "a", "a/b")).rejects.toThrow(/into itself/i);
     });
   });
 
-  describe('search (jailed + bounded)', () => {
+  describe("search (jailed + bounded)", () => {
     // Env caps are read per-call by searchBounds(); snapshot/restore so a cap
     // test can dial one down without leaking into the next test.
     const capEnvKeys = [
-      'FILES_SEARCH_MAX_RESULTS',
-      'FILES_SEARCH_MAX_ENTRIES',
-      'FILES_SEARCH_MAX_DEPTH',
-      'FILES_SEARCH_BUDGET_MS',
-      'FILES_SEARCH_MAX_CONTENT_BYTES',
-      'FILES_SEARCH_MAX_MATCHES',
-      'FILES_SEARCH_MAX_MATCH_CHARS',
+      "FILES_SEARCH_MAX_RESULTS",
+      "FILES_SEARCH_MAX_ENTRIES",
+      "FILES_SEARCH_MAX_DEPTH",
+      "FILES_SEARCH_BUDGET_MS",
+      "FILES_SEARCH_MAX_CONTENT_BYTES",
+      "FILES_SEARCH_MAX_MATCHES",
+      "FILES_SEARCH_MAX_MATCH_CHARS",
     ];
     const capEnvSnapshot: Record<string, string | undefined> = {};
     beforeEach(() => {
@@ -294,294 +250,268 @@ describe('FilesService (jail + real filesystem)', () => {
       }
     });
 
-    it('finds a file by case-insensitive filename substring', async () => {
-      await service.createDirectory('home', 'docs');
-      await service.createFile('home', 'docs/Report-2026.txt', 'body');
-      await service.createFile('home', 'docs/notes.md', 'body');
+    it("finds a file by case-insensitive filename substring", async () => {
+      await service.createDirectory("home", "docs");
+      await service.createFile("home", "docs/Report-2026.txt", "body");
+      await service.createFile("home", "docs/notes.md", "body");
 
-      const { items, truncated } = await service.search('home', 'report');
+      const { items, truncated } = await service.search("home", "report");
       expect(truncated).toBe(false);
-      expect(items.map((i) => i.name)).toEqual(['Report-2026.txt']);
-      expect(items[0].path).toBe(join('docs', 'Report-2026.txt'));
-      expect(items[0].type).toBe('file');
+      expect(items.map((i) => i.name)).toEqual(["Report-2026.txt"]);
+      expect(items[0].path).toBe(join("docs", "Report-2026.txt"));
+      expect(items[0].type).toBe("file");
     });
 
-    it('matches directory names too and returns type directory', async () => {
-      await service.createDirectory('home', 'my-secret-folder');
-      const { items } = await service.search('home', 'secret');
+    it("matches directory names too and returns type directory", async () => {
+      await service.createDirectory("home", "my-secret-folder");
+      const { items } = await service.search("home", "secret");
       expect(items).toEqual([
         {
-          name: 'my-secret-folder',
-          path: 'my-secret-folder',
-          type: 'directory',
+          name: "my-secret-folder",
+          path: "my-secret-folder",
+          type: "directory",
         },
       ]);
     });
 
-    it('content grep finds a string inside a text file (content flag)', async () => {
-      await service.createFile('home', 'a.txt', 'hello WORLD inside');
-      await service.createFile('home', 'b.txt', 'nothing here');
+    it("content grep finds a string inside a text file (content flag)", async () => {
+      await service.createFile("home", "a.txt", "hello WORLD inside");
+      await service.createFile("home", "b.txt", "nothing here");
 
       // Without content: no filename match for "world".
-      const plain = await service.search('home', 'world');
+      const plain = await service.search("home", "world");
       expect(plain.items).toEqual([]);
 
       // With content: case-insensitive body hit.
-      const grep = await service.search('home', 'world', { content: true });
-      expect(grep.items.map((i) => i.name)).toEqual(['a.txt']);
+      const grep = await service.search("home", "world", { content: true });
+      expect(grep.items.map((i) => i.name)).toEqual(["a.txt"]);
     });
 
-    it('content grep skips binary files (NUL byte) and oversized files', async () => {
+    it("content grep skips binary files (NUL byte) and oversized files", async () => {
       // Binary file whose bytes happen to spell the needle around a NUL.
       await fs.writeFile(
-        join(jail, 'blob.bin'),
+        join(jail, "blob.bin"),
         Buffer.from([0x6e, 0x65, 0x65, 0x64, 0x00, 0x6c, 0x65]), // "need\0le"
       );
-      const bin = await service.search('home', 'need', { content: true });
+      const bin = await service.search("home", "need", { content: true });
       expect(bin.items).toEqual([]);
 
       // Oversized text file is skipped by the per-file content cap.
-      process.env.FILES_SEARCH_MAX_CONTENT_BYTES = '8';
-      await service.createFile('home', 'big.txt', 'this is a long needle line');
-      const big = await service.search('home', 'needle', { content: true });
+      process.env.FILES_SEARCH_MAX_CONTENT_BYTES = "8";
+      await service.createFile("home", "big.txt", "this is a long needle line");
+      const big = await service.search("home", "needle", { content: true });
       expect(big.items).toEqual([]);
     });
 
-    it('jail holds: an unknown root is rejected via resolveSafe', async () => {
-      await expect(service.search('nope', 'x')).rejects.toThrow(
-        /unknown root/i,
-      );
+    it("jail holds: an unknown root is rejected via resolveSafe", async () => {
+      await expect(service.search("nope", "x")).rejects.toThrow(/unknown root/i);
     });
 
-    it('jail holds: a symlink out of the jail is never followed', async () => {
+    it("jail holds: a symlink out of the jail is never followed", async () => {
       // A matching file lives OUTSIDE the jail; a symlink inside points at it.
-      await fs.writeFile(join(outside, 'target-secret.txt'), 'x');
-      await fs.symlink(outside, join(jail, 'escape'), 'dir');
+      await fs.writeFile(join(outside, "target-secret.txt"), "x");
+      await fs.symlink(outside, join(jail, "escape"), "dir");
 
-      const { items } = await service.search('home', 'secret');
+      const { items } = await service.search("home", "secret");
       // The symlink dir is not descended, so the outside file never surfaces.
       expect(items).toEqual([]);
     });
 
-    it('result cap trips → truncated, list bounded', async () => {
-      process.env.FILES_SEARCH_MAX_RESULTS = '3';
+    it("result cap trips → truncated, list bounded", async () => {
+      process.env.FILES_SEARCH_MAX_RESULTS = "3";
       for (let i = 0; i < 10; i++) {
-        await service.createFile('home', `match-${i}.txt`, 'x');
+        await service.createFile("home", `match-${i}.txt`, "x");
       }
-      const { items, truncated } = await service.search('home', 'match');
+      const { items, truncated } = await service.search("home", "match");
       expect(items).toHaveLength(3);
       expect(truncated).toBe(true);
     });
 
-    it('entry-scan cap trips → truncated', async () => {
-      process.env.FILES_SEARCH_MAX_ENTRIES = '2';
+    it("entry-scan cap trips → truncated", async () => {
+      process.env.FILES_SEARCH_MAX_ENTRIES = "2";
       for (let i = 0; i < 10; i++) {
-        await service.createFile('home', `file-${i}.txt`, 'x');
+        await service.createFile("home", `file-${i}.txt`, "x");
       }
-      const { truncated } = await service.search('home', 'zzz-no-match');
+      const { truncated } = await service.search("home", "zzz-no-match");
       expect(truncated).toBe(true);
     });
 
-    it('skips node_modules, .git and dot-directories', async () => {
-      await service.createDirectory('home', 'node_modules');
-      await service.createFile('home', 'node_modules/match.txt', 'x');
-      await service.createDirectory('home', '.git');
-      await service.createFile('home', '.git/match.txt', 'x');
-      await service.createDirectory('home', '.hidden');
-      await service.createFile('home', '.hidden/match.txt', 'x');
-      await service.createFile('home', 'match.txt', 'x');
+    it("skips node_modules, .git and dot-directories", async () => {
+      await service.createDirectory("home", "node_modules");
+      await service.createFile("home", "node_modules/match.txt", "x");
+      await service.createDirectory("home", ".git");
+      await service.createFile("home", ".git/match.txt", "x");
+      await service.createDirectory("home", ".hidden");
+      await service.createFile("home", ".hidden/match.txt", "x");
+      await service.createFile("home", "match.txt", "x");
 
-      const { items } = await service.search('home', 'match');
+      const { items } = await service.search("home", "match");
       // Only the top-level file; the heavy/dot dirs are never descended.
-      expect(items.map((i) => i.path)).toEqual(['match.txt']);
+      expect(items.map((i) => i.path)).toEqual(["match.txt"]);
     });
 
     // The optional `path` scope. Additive — omitting it keeps the
     // whole-root walk the palette has always had.
-    describe('folder scope', () => {
+    describe("folder scope", () => {
       beforeEach(async () => {
-        await service.createDirectory('home', 'docs');
-        await service.createDirectory('home', 'docs/sub');
-        await service.createFile('home', 'docs/report-a.md', 'x');
-        await service.createFile('home', 'docs/sub/report-c.md', 'x');
-        await service.createFile('home', 'report-b.md', 'x');
+        await service.createDirectory("home", "docs");
+        await service.createDirectory("home", "docs/sub");
+        await service.createFile("home", "docs/report-a.md", "x");
+        await service.createFile("home", "docs/sub/report-c.md", "x");
+        await service.createFile("home", "report-b.md", "x");
       });
 
-      it('searches only under the scope', async () => {
-        const { items } = await service.search('home', 'report', {
-          path: 'docs',
+      it("searches only under the scope", async () => {
+        const { items } = await service.search("home", "report", {
+          path: "docs",
         });
-        expect(items.map((i) => i.path).sort()).toEqual([
-          'docs/report-a.md',
-          'docs/sub/report-c.md',
-        ]);
+        expect(items.map((i) => i.path).sort()).toEqual(["docs/report-a.md", "docs/sub/report-c.md"]);
       });
 
-      it('emits ROOT-relative paths, not scope-relative ones', async () => {
-        const { items } = await service.search('home', 'report-a', {
-          path: 'docs',
+      it("emits ROOT-relative paths, not scope-relative ones", async () => {
+        const { items } = await service.search("home", "report-a", {
+          path: "docs",
         });
         // `docs/report-a.md`, NOT `report-a.md` — a scoped response is shaped
         // exactly like an unscoped one, so no consumer has to know which it is.
-        expect(items.map((i) => i.path)).toEqual(['docs/report-a.md']);
+        expect(items.map((i) => i.path)).toEqual(["docs/report-a.md"]);
       });
 
-      it('omitting the scope still walks the whole root', async () => {
-        const { items } = await service.search('home', 'report');
-        expect(items.map((i) => i.path).sort()).toEqual([
-          'docs/report-a.md',
-          'docs/sub/report-c.md',
-          'report-b.md',
-        ]);
+      it("omitting the scope still walks the whole root", async () => {
+        const { items } = await service.search("home", "report");
+        expect(items.map((i) => i.path).sort()).toEqual(["docs/report-a.md", "docs/sub/report-c.md", "report-b.md"]);
       });
 
-      it('an empty scope is the same as no scope', async () => {
-        const scoped = await service.search('home', 'report', { path: '' });
-        const unscoped = await service.search('home', 'report');
+      it("an empty scope is the same as no scope", async () => {
+        const scoped = await service.search("home", "report", { path: "" });
+        const unscoped = await service.search("home", "report");
         expect(scoped).toEqual(unscoped);
       });
 
-      it('rejects a traversal scope — the jail applies to it too', async () => {
-        await expect(
-          service.search('home', 'report', { path: '../..' }),
-        ).rejects.toThrow(/traversal/i);
+      it("rejects a traversal scope — the jail applies to it too", async () => {
+        await expect(service.search("home", "report", { path: "../.." })).rejects.toThrow(/traversal/i);
       });
 
-      it('still honours the caps inside a scope', async () => {
-        process.env.FILES_SEARCH_MAX_RESULTS = '1';
-        const { items, truncated } = await service.search('home', 'report', {
-          path: 'docs',
+      it("still honours the caps inside a scope", async () => {
+        process.env.FILES_SEARCH_MAX_RESULTS = "1";
+        const { items, truncated } = await service.search("home", "report", {
+          path: "docs",
         });
         expect(items).toHaveLength(1);
         expect(truncated).toBe(true);
       });
 
-      it('scopes the content grep as well', async () => {
-        await service.createFile('home', 'docs/has.txt', 'needle here');
-        await service.createFile('home', 'outside.txt', 'needle here');
+      it("scopes the content grep as well", async () => {
+        await service.createFile("home", "docs/has.txt", "needle here");
+        await service.createFile("home", "outside.txt", "needle here");
 
-        const { items } = await service.search('home', 'needle', {
+        const { items } = await service.search("home", "needle", {
           content: true,
-          path: 'docs',
+          path: "docs",
         });
-        expect(items.map((i) => i.path)).toEqual(['docs/has.txt']);
+        expect(items.map((i) => i.path)).toEqual(["docs/has.txt"]);
       });
     });
 
     // Per-match line data, opt-in on top of `content`.
-    describe('match lines', () => {
+    describe("match lines", () => {
       beforeEach(async () => {
         await service.createFile(
-          'home',
-          'code.ts',
-          [
-            'const a = 1',
-            'function needle() {}',
-            'const b = 2',
-            '  needle()  ',
-          ].join('\n'),
+          "home",
+          "code.ts",
+          ["const a = 1", "function needle() {}", "const b = 2", "  needle()  "].join("\n"),
         );
       });
 
-      it('reports 1-based line numbers and the trimmed line text', async () => {
-        const { items } = await service.search('home', 'needle', {
+      it("reports 1-based line numbers and the trimmed line text", async () => {
+        const { items } = await service.search("home", "needle", {
           content: true,
           matches: true,
         });
-        const hit = items.find((i) => i.path === 'code.ts');
+        const hit = items.find((i) => i.path === "code.ts");
         expect(hit?.matches).toEqual([
-          { line: 2, text: 'function needle() {}' },
-          { line: 4, text: 'needle()' },
+          { line: 2, text: "function needle() {}" },
+          { line: 4, text: "needle()" },
         ]);
       });
 
-      it('omits `matches` entirely unless asked for — the palette shape is untouched', async () => {
-        const withContent = await service.search('home', 'needle', {
+      it("omits `matches` entirely unless asked for — the palette shape is untouched", async () => {
+        const withContent = await service.search("home", "needle", {
           content: true,
         });
-        expect(withContent.items[0]).not.toHaveProperty('matches');
+        expect(withContent.items[0]).not.toHaveProperty("matches");
 
-        const nameOnly = await service.search('home', 'code');
-        expect(nameOnly.items[0]).not.toHaveProperty('matches');
+        const nameOnly = await service.search("home", "code");
+        expect(nameOnly.items[0]).not.toHaveProperty("matches");
       });
 
-      it('is byte-identical to the pre-brief-113 response when not opted in', async () => {
-        const { items } = await service.search('home', 'needle', {
+      it("is byte-identical to the pre-brief-113 response when not opted in", async () => {
+        const { items } = await service.search("home", "needle", {
           content: true,
         });
-        expect(items).toEqual([
-          { name: 'code.ts', path: 'code.ts', type: 'file' },
-        ]);
+        expect(items).toEqual([{ name: "code.ts", path: "code.ts", type: "file" }]);
       });
 
-      it('caps the matches reported per file', async () => {
-        process.env.FILES_SEARCH_MAX_MATCHES = '2';
-        await service.createFile(
-          'home',
-          'many.txt',
-          ['needle', 'needle', 'needle', 'needle'].join('\n'),
-        );
-        const { items } = await service.search('home', 'needle', {
+      it("caps the matches reported per file", async () => {
+        process.env.FILES_SEARCH_MAX_MATCHES = "2";
+        await service.createFile("home", "many.txt", ["needle", "needle", "needle", "needle"].join("\n"));
+        const { items } = await service.search("home", "needle", {
           content: true,
           matches: true,
         });
-        const hit = items.find((i) => i.path === 'many.txt');
+        const hit = items.find((i) => i.path === "many.txt");
         expect(hit?.matches).toHaveLength(2);
         expect(hit?.matches?.map((m) => m.line)).toEqual([1, 2]);
       });
 
-      it('caps the length of a single previewed line', async () => {
-        process.env.FILES_SEARCH_MAX_MATCH_CHARS = '20';
-        await service.createFile(
-          'home',
-          'long.txt',
-          `needle${'x'.repeat(500)}`,
-        );
-        const { items } = await service.search('home', 'needle', {
+      it("caps the length of a single previewed line", async () => {
+        process.env.FILES_SEARCH_MAX_MATCH_CHARS = "20";
+        await service.createFile("home", "long.txt", `needle${"x".repeat(500)}`);
+        const { items } = await service.search("home", "needle", {
           content: true,
           matches: true,
         });
-        const hit = items.find((i) => i.path === 'long.txt');
+        const hit = items.find((i) => i.path === "long.txt");
         expect(hit?.matches?.[0].text).toHaveLength(20);
       });
 
-      it('matches case-insensitively, like the rest of the search', async () => {
-        await service.createFile('home', 'case.txt', 'NEEDLE in caps');
-        const { items } = await service.search('home', 'needle', {
+      it("matches case-insensitively, like the rest of the search", async () => {
+        await service.createFile("home", "case.txt", "NEEDLE in caps");
+        const { items } = await service.search("home", "needle", {
           content: true,
           matches: true,
         });
-        const hit = items.find((i) => i.path === 'case.txt');
-        expect(hit?.matches).toEqual([{ line: 1, text: 'NEEDLE in caps' }]);
+        const hit = items.find((i) => i.path === "case.txt");
+        expect(hit?.matches).toEqual([{ line: 1, text: "NEEDLE in caps" }]);
       });
 
-      it('skips binary files without reporting lines', async () => {
-        await service.createFile('home', 'bin.dat', 'needle\u0000needle');
-        const { items } = await service.search('home', 'needle', {
+      it("skips binary files without reporting lines", async () => {
+        await service.createFile("home", "bin.dat", "needle\u0000needle");
+        const { items } = await service.search("home", "needle", {
           content: true,
           matches: true,
         });
-        expect(items.map((i) => i.path)).not.toContain('bin.dat');
+        expect(items.map((i) => i.path)).not.toContain("bin.dat");
       });
 
-      it('still returns a name hit with no lines when only the NAME matches', async () => {
-        await service.createFile('home', 'needle-named.txt', 'nothing inside');
-        const { items } = await service.search('home', 'needle', {
+      it("still returns a name hit with no lines when only the NAME matches", async () => {
+        await service.createFile("home", "needle-named.txt", "nothing inside");
+        const { items } = await service.search("home", "needle", {
           content: true,
           matches: true,
         });
-        const hit = items.find((i) => i.path === 'needle-named.txt');
+        const hit = items.find((i) => i.path === "needle-named.txt");
         expect(hit).toBeDefined();
         expect(hit?.matches).toBeUndefined();
       });
     });
   });
 
-  describe('uploadFile is atomic', () => {
+  describe("uploadFile is atomic", () => {
     /** A multer-style on-disk temp file. */
     async function stageTmp(content: string): Promise<string> {
-      const dir = await fs.mkdtemp(join(os.tmpdir(), 'imb-up-'));
-      const p = join(dir, 'upload.bin');
+      const dir = await fs.mkdtemp(join(os.tmpdir(), "imb-up-"));
+      const p = join(dir, "upload.bin");
       await fs.writeFile(p, content);
       return p;
     }
@@ -591,225 +521,170 @@ describe('FilesService (jail + real filesystem)', () => {
     // test that cannot spy on the module is a better test anyway — these are
     // failures that actually happen.
 
-    it('replaces an existing file with the new bytes', async () => {
-      await service.createFile('home', 'doc.txt', 'old contents');
-      await service.uploadFile(
-        'home',
-        'doc.txt',
-        await stageTmp('new contents'),
-      );
-      expect(await fs.readFile(join(jail, 'doc.txt'), 'utf-8')).toBe(
-        'new contents',
-      );
+    it("replaces an existing file with the new bytes", async () => {
+      await service.createFile("home", "doc.txt", "old contents");
+      await service.uploadFile("home", "doc.txt", await stageTmp("new contents"));
+      expect(await fs.readFile(join(jail, "doc.txt"), "utf-8")).toBe("new contents");
     });
 
-    it('leaves the original intact when the source vanishes mid-upload', async () => {
+    it("leaves the original intact when the source vanishes mid-upload", async () => {
       // The bug this replaces: `copyFile` onto the destination TRUNCATES it
       // first, so any failure after that point left the user's file empty and
       // the original bytes gone. Every save in the OS goes through this method.
-      await service.createFile('home', 'important.txt', 'the only copy');
-      const tmp = await stageTmp('replacement');
+      await service.createFile("home", "important.txt", "the only copy");
+      const tmp = await stageTmp("replacement");
       await fs.rm(tmp);
 
-      await expect(
-        service.uploadFile('home', 'important.txt', tmp),
-      ).rejects.toThrow();
+      await expect(service.uploadFile("home", "important.txt", tmp)).rejects.toThrow();
 
-      expect(await fs.readFile(join(jail, 'important.txt'), 'utf-8')).toBe(
-        'the only copy',
-      );
-      expect(await fs.readdir(jail)).toEqual(['important.txt']);
+      expect(await fs.readFile(join(jail, "important.txt"), "utf-8")).toBe("the only copy");
+      expect(await fs.readdir(jail)).toEqual(["important.txt"]);
     });
 
-    it('leaves the original intact when the commit itself fails', async () => {
+    it("leaves the original intact when the commit itself fails", async () => {
       // A directory in the destination's place makes the RENAME fail — i.e. after
       // the staged copy has already succeeded, which is the half-written window
       // the old code could not survive.
-      await service.createDirectory('home', 'blocked');
-      await service.createFile('home', 'blocked/keep.txt', 'still here');
+      await service.createDirectory("home", "blocked");
+      await service.createFile("home", "blocked/keep.txt", "still here");
 
-      await expect(
-        service.uploadFile('home', 'blocked', await stageTmp('replacement')),
-      ).rejects.toThrow();
+      await expect(service.uploadFile("home", "blocked", await stageTmp("replacement"))).rejects.toThrow();
 
       // The directory and its contents survive, and no staging file is left.
-      expect(await fs.readFile(join(jail, 'blocked/keep.txt'), 'utf-8')).toBe(
-        'still here',
-      );
-      expect(await fs.readdir(jail)).toEqual(['blocked']);
+      expect(await fs.readFile(join(jail, "blocked/keep.txt"), "utf-8")).toBe("still here");
+      expect(await fs.readdir(jail)).toEqual(["blocked"]);
     });
 
-    it('removes the multer temp file on success', async () => {
+    it("removes the multer temp file on success", async () => {
       // Otherwise every save slowly fills the temp directory.
-      const tmp = await stageTmp('hello');
-      await service.uploadFile('home', 'new.bin', tmp);
+      const tmp = await stageTmp("hello");
+      await service.uploadFile("home", "new.bin", tmp);
       await expect(fs.access(tmp)).rejects.toThrow();
     });
 
-    it('removes the multer temp file when the commit fails', async () => {
-      await service.createDirectory('home', 'blocked');
-      const tmp = await stageTmp('replacement');
-      await expect(
-        service.uploadFile('home', 'blocked', tmp),
-      ).rejects.toThrow();
+    it("removes the multer temp file when the commit fails", async () => {
+      await service.createDirectory("home", "blocked");
+      const tmp = await stageTmp("replacement");
+      await expect(service.uploadFile("home", "blocked", tmp)).rejects.toThrow();
       await expect(fs.access(tmp)).rejects.toThrow();
     });
 
-    it('creates a file that did not exist yet, including its parents', async () => {
-      await service.uploadFile(
-        'home',
-        'nested/new.bin',
-        await stageTmp('hello'),
-      );
-      expect(await fs.readFile(join(jail, 'nested/new.bin'), 'utf-8')).toBe(
-        'hello',
-      );
+    it("creates a file that did not exist yet, including its parents", async () => {
+      await service.uploadFile("home", "nested/new.bin", await stageTmp("hello"));
+      expect(await fs.readFile(join(jail, "nested/new.bin"), "utf-8")).toBe("hello");
     });
 
-    it('preserves the existing file mode across the rename', async () => {
+    it("preserves the existing file mode across the rename", async () => {
       // A rename carries the STAGED file's mode. Without copying the previous
       // mode across, saving a 0600 file would quietly widen it to the temp's.
-      await service.createFile('home', 'secret.txt', 'old');
-      await fs.chmod(join(jail, 'secret.txt'), 0o600);
-      await service.uploadFile('home', 'secret.txt', await stageTmp('new'));
+      await service.createFile("home", "secret.txt", "old");
+      await fs.chmod(join(jail, "secret.txt"), 0o600);
+      await service.uploadFile("home", "secret.txt", await stageTmp("new"));
 
-      const mode = (await fs.stat(join(jail, 'secret.txt'))).mode & 0o777;
+      const mode = (await fs.stat(join(jail, "secret.txt"))).mode & 0o777;
       expect(mode).toBe(0o600);
     });
 
-    it('still refuses to escape the jail', async () => {
-      await expect(
-        service.uploadFile('home', '../escape.bin', await stageTmp('nope')),
-      ).rejects.toThrow();
-      await expect(
-        fs.access(join(outside, '..', 'escape.bin')),
-      ).rejects.toThrow();
+    it("still refuses to escape the jail", async () => {
+      await expect(service.uploadFile("home", "../escape.bin", await stageTmp("nope"))).rejects.toThrow();
+      await expect(fs.access(join(outside, "..", "escape.bin"))).rejects.toThrow();
     });
   });
 
-  describe('writeFile is atomic too', () => {
+  describe("writeFile is atomic too", () => {
     // The injected mid-write failure, which needs a mocked `fs/promises`, is in
     // files.service.write.spec.ts so the mock stays out of this file.
 
-    it('replaces an existing file and leaves no staging file', async () => {
-      await service.createFile('home', 'note.txt', 'old contents');
-      await service.writeFile('home', 'note.txt', 'new contents');
-      expect(await fs.readFile(join(jail, 'note.txt'), 'utf-8')).toBe(
-        'new contents',
-      );
-      expect(await fs.readdir(jail)).toEqual(['note.txt']);
+    it("replaces an existing file and leaves no staging file", async () => {
+      await service.createFile("home", "note.txt", "old contents");
+      await service.writeFile("home", "note.txt", "new contents");
+      expect(await fs.readFile(join(jail, "note.txt"), "utf-8")).toBe("new contents");
+      expect(await fs.readdir(jail)).toEqual(["note.txt"]);
     });
 
-    it('creates a file that did not exist yet, including its parents', async () => {
-      await service.writeFile('home', 'a/b/new.txt', 'hello');
-      expect(await fs.readFile(join(jail, 'a/b/new.txt'), 'utf-8')).toBe(
-        'hello',
-      );
+    it("creates a file that did not exist yet, including its parents", async () => {
+      await service.writeFile("home", "a/b/new.txt", "hello");
+      expect(await fs.readFile(join(jail, "a/b/new.txt"), "utf-8")).toBe("hello");
     });
 
-    it('preserves the existing file mode', async () => {
-      await service.createFile('home', 'secret.txt', 'old');
-      await fs.chmod(join(jail, 'secret.txt'), 0o600);
-      await service.writeFile('home', 'secret.txt', 'new');
-      const mode = (await fs.stat(join(jail, 'secret.txt'))).mode & 0o777;
+    it("preserves the existing file mode", async () => {
+      await service.createFile("home", "secret.txt", "old");
+      await fs.chmod(join(jail, "secret.txt"), 0o600);
+      await service.writeFile("home", "secret.txt", "new");
+      const mode = (await fs.stat(join(jail, "secret.txt"))).mode & 0o777;
       expect(mode).toBe(0o600);
     });
 
-    it('leaves a directory in the way untouched, with no staging file', async () => {
-      await service.createDirectory('home', 'blocked');
-      await service.createFile('home', 'blocked/keep.txt', 'still here');
-      await expect(
-        service.writeFile('home', 'blocked', 'replacement'),
-      ).rejects.toThrow();
-      expect(await fs.readFile(join(jail, 'blocked/keep.txt'), 'utf-8')).toBe(
-        'still here',
-      );
-      expect(await fs.readdir(jail)).toEqual(['blocked']);
+    it("leaves a directory in the way untouched, with no staging file", async () => {
+      await service.createDirectory("home", "blocked");
+      await service.createFile("home", "blocked/keep.txt", "still here");
+      await expect(service.writeFile("home", "blocked", "replacement")).rejects.toThrow();
+      expect(await fs.readFile(join(jail, "blocked/keep.txt"), "utf-8")).toBe("still here");
+      expect(await fs.readdir(jail)).toEqual(["blocked"]);
     });
   });
 
-  describe('saves detect external changes', () => {
+  describe("saves detect external changes", () => {
     const tmpUpload = async (content: string) => {
-      const dir = await fs.mkdtemp(join(os.tmpdir(), 'imb-155-'));
-      const p = join(dir, 'up.bin');
+      const dir = await fs.mkdtemp(join(os.tmpdir(), "imb-155-"));
+      const p = join(dir, "up.bin");
       await fs.writeFile(p, content);
       return p;
     };
 
-    it('reports a version on read and on every entry', async () => {
-      const entry = await service.writeFile('home', 'a.txt', 'one');
-      const read = await service.readFile('home', 'a.txt');
+    it("reports a version on read and on every entry", async () => {
+      const entry = await service.writeFile("home", "a.txt", "one");
+      const read = await service.readFile("home", "a.txt");
       expect(read.version).toBe(entry.version);
       expect(read.version).toMatch(/^\d+-3$/);
     });
 
-    it('writes when the expected version still matches, and returns the new one', async () => {
-      const first = await service.writeFile('home', 'a.txt', 'one');
-      const second = await service.writeFile(
-        'home',
-        'a.txt',
-        'two!',
-        first.version,
-      );
-      expect(await fs.readFile(join(jail, 'a.txt'), 'utf-8')).toBe('two!');
+    it("writes when the expected version still matches, and returns the new one", async () => {
+      const first = await service.writeFile("home", "a.txt", "one");
+      const second = await service.writeFile("home", "a.txt", "two!", first.version);
+      expect(await fs.readFile(join(jail, "a.txt"), "utf-8")).toBe("two!");
       expect(second.version).not.toBe(first.version);
     });
 
-    it('refuses a stale version with 409 and the current token, writing nothing', async () => {
-      const opened = await service.writeFile('home', 'notes.txt', 'mine');
+    it("refuses a stale version with 409 and the current token, writing nothing", async () => {
+      const opened = await service.writeFile("home", "notes.txt", "mine");
       // The Terminal appends a line meanwhile.
-      await fs.appendFile(join(jail, 'notes.txt'), '\nfrom the terminal');
+      await fs.appendFile(join(jail, "notes.txt"), "\nfrom the terminal");
       const err = (await service
-        .writeFile('home', 'notes.txt', 'mine plus one', opened.version)
+        .writeFile("home", "notes.txt", "mine plus one", opened.version)
         .catch((e: unknown) => e)) as ConflictException;
       expect(err).toBeInstanceOf(ConflictException);
       const body = err.getResponse() as { current: string | null };
-      expect(body.current).toBe(
-        (await service.readFile('home', 'notes.txt')).version,
-      );
-      expect(await fs.readFile(join(jail, 'notes.txt'), 'utf-8')).toBe(
-        'mine\nfrom the terminal',
-      );
+      expect(body.current).toBe((await service.readFile("home", "notes.txt")).version);
+      expect(await fs.readFile(join(jail, "notes.txt"), "utf-8")).toBe("mine\nfrom the terminal");
     });
 
-    it('a file deleted meanwhile is a conflict with current null', async () => {
-      const opened = await service.writeFile('home', 'gone.txt', 'x');
-      await fs.rm(join(jail, 'gone.txt'));
+    it("a file deleted meanwhile is a conflict with current null", async () => {
+      const opened = await service.writeFile("home", "gone.txt", "x");
+      await fs.rm(join(jail, "gone.txt"));
       const err = (await service
-        .writeFile('home', 'gone.txt', 'y', opened.version)
+        .writeFile("home", "gone.txt", "y", opened.version)
         .catch((e: unknown) => e)) as ConflictException;
       expect((err.getResponse() as { current: unknown }).current).toBeNull();
     });
 
-    it('no expected token is the old blind overwrite', async () => {
-      await service.writeFile('home', 'a.txt', 'one');
-      await fs.appendFile(join(jail, 'a.txt'), ' changed');
-      await service.writeFile('home', 'a.txt', 'overwrite');
-      expect(await fs.readFile(join(jail, 'a.txt'), 'utf-8')).toBe('overwrite');
+    it("no expected token is the old blind overwrite", async () => {
+      await service.writeFile("home", "a.txt", "one");
+      await fs.appendFile(join(jail, "a.txt"), " changed");
+      await service.writeFile("home", "a.txt", "overwrite");
+      expect(await fs.readFile(join(jail, "a.txt"), "utf-8")).toBe("overwrite");
     });
 
-    it('uploads honour the same precondition', async () => {
-      const opened = await service.writeFile('home', 'doc.bin', 'v1');
-      await fs.writeFile(join(jail, 'doc.bin'), 'v1 edited elsewhere');
-      await expect(
-        service.uploadFile(
-          'home',
-          'doc.bin',
-          await tmpUpload('v2'),
-          opened.version,
-        ),
-      ).rejects.toBeInstanceOf(ConflictException);
-      expect(await fs.readFile(join(jail, 'doc.bin'), 'utf-8')).toBe(
-        'v1 edited elsewhere',
+    it("uploads honour the same precondition", async () => {
+      const opened = await service.writeFile("home", "doc.bin", "v1");
+      await fs.writeFile(join(jail, "doc.bin"), "v1 edited elsewhere");
+      await expect(service.uploadFile("home", "doc.bin", await tmpUpload("v2"), opened.version)).rejects.toBeInstanceOf(
+        ConflictException,
       );
-      const current = (await service.readFile('home', 'doc.bin')).version;
-      await service.uploadFile(
-        'home',
-        'doc.bin',
-        await tmpUpload('v2'),
-        current,
-      );
-      expect(await fs.readFile(join(jail, 'doc.bin'), 'utf-8')).toBe('v2');
+      expect(await fs.readFile(join(jail, "doc.bin"), "utf-8")).toBe("v1 edited elsewhere");
+      const current = (await service.readFile("home", "doc.bin")).version;
+      await service.uploadFile("home", "doc.bin", await tmpUpload("v2"), current);
+      expect(await fs.readFile(join(jail, "doc.bin"), "utf-8")).toBe("v2");
     });
   });
 });

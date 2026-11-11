@@ -1,13 +1,13 @@
 // In-memory DB so the e2e never touches a real file.
-process.env.DB_PATH = ':memory:';
+process.env.DB_PATH = ":memory:";
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import type { Server } from 'http';
-import request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication, ValidationPipe } from "@nestjs/common";
+import type { Server } from "http";
+import request from "supertest";
+import { AppModule } from "./../src/app.module";
 
-describe('AppModule (e2e)', () => {
+describe("AppModule (e2e)", () => {
   let app: INestApplication<Server>;
 
   beforeEach(async () => {
@@ -16,10 +16,8 @@ describe('AppModule (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.setGlobalPrefix("api");
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
   });
 
@@ -29,7 +27,7 @@ describe('AppModule (e2e)', () => {
 
   // Smoke test: the app boots and its global auth guard is wired — an
   // unauthenticated API call is rejected. (The sign-in itself: local-identity.e2e-spec.)
-  it('rejects an unauthenticated API request (401)', () => {
-    return request(app.getHttpServer()).get('/api/sticky-notes').expect(401);
+  it("rejects an unauthenticated API request (401)", () => {
+    return request(app.getHttpServer()).get("/api/sticky-notes").expect(401);
   });
 });

@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { AlertTriangle, RotateCcw, X } from 'lucide-react'
-import { Button } from '../ui'
+import { useState } from "react";
+import { AlertTriangle, RotateCcw, X } from "lucide-react";
+import { Button } from "../ui";
 
 /**
  * What a crashed app's window shows instead of the app.
@@ -22,12 +22,12 @@ export function AppErrorFallback({
   onReload,
   onClose,
 }: {
-  appName: string
-  error: Error
-  onReload: () => void
-  onClose: () => void
+  appName: string;
+  error: Error;
+  onReload: () => void;
+  onClose: () => void;
 }) {
-  const [showDetails, setShowDetails] = useState(false)
+  const [showDetails, setShowDetails] = useState(false);
 
   return (
     <div className="bg-surface text-on-surface flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
@@ -35,8 +35,7 @@ export function AppErrorFallback({
       <div>
         <p className="text-[13px] font-semibold">{appName} stopped working</p>
         <p className="text-on-surface-variant mt-1 max-w-sm text-[12px]">
-          The rest of the desktop is fine. Reload the app to start it again — anything it had not
-          saved is gone.
+          The rest of the desktop is fine. Reload the app to start it again — anything it had not saved is gone.
         </p>
       </div>
 
@@ -55,7 +54,7 @@ export function AppErrorFallback({
         onClick={() => setShowDetails((v) => !v)}
         className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary text-[11px] underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
-        {showDetails ? 'Hide details' : 'Show details'}
+        {showDetails ? "Hide details" : "Show details"}
       </button>
       {showDetails && (
         <pre className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface-variant max-h-32 w-full max-w-md overflow-auto border p-2 text-left font-mono text-[11px] whitespace-pre-wrap">
@@ -63,5 +62,5 @@ export function AppErrorFallback({
         </pre>
       )}
     </div>
-  )
+  );
 }

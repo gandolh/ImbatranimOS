@@ -1,23 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  PREVIEW_PANE_DEFAULT_WIDTH,
-  PREVIEW_PANE_MAX_WIDTH,
-  PREVIEW_PANE_MIN_WIDTH,
-} from '../store/previewPaneStore'
+import { useCallback, useEffect, useRef, useState } from "react";
+import { PREVIEW_PANE_DEFAULT_WIDTH, PREVIEW_PANE_MAX_WIDTH, PREVIEW_PANE_MIN_WIDTH } from "../store/previewPaneStore";
 
 /** One arrow press. Shift makes it a coarse jump, the SplitDivider convention. */
-const NUDGE_PX = 16
-const COARSE_PX = 64
+const NUDGE_PX = 16;
+const COARSE_PX = 64;
 
 // Below this app-window width the preview pane hides regardless of its
 // on/off setting — there just isn't room for tree + list + pane at once.
-export const PREVIEW_PANE_COLLAPSE_WIDTH = 640
+export const PREVIEW_PANE_COLLAPSE_WIDTH = 640;
 
 type PreviewPaneControls = {
-  open: boolean
-  width: number
-  setWidth: (width: number) => void
-}
+  open: boolean;
+  width: number;
+  setWidth: (width: number) => void;
+};
 
 /**
  * Preview-pane splitter wiring: watches the app-window width with a
@@ -30,46 +26,46 @@ type PreviewPaneControls = {
  * `previewPaneVisible`, and the `onMouseDown` handler for the splitter handle.
  */
 export function usePaneResize(previewPane: PreviewPaneControls) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [containerWidth, setContainerWidth] = useState<number | null>(null)
-  const [resizing, setResizing] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+  const [resizing, setResizing] = useState(false);
 
   useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
+    const el = containerRef.current;
+    if (!el) return;
     const observer = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (entry) setContainerWidth(entry.contentRect.width)
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+      const entry = entries[0];
+      if (entry) setContainerWidth(entry.contentRect.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const previewPaneVisible =
-    previewPane.open && (containerWidth === null || containerWidth >= PREVIEW_PANE_COLLAPSE_WIDTH)
+    previewPane.open && (containerWidth === null || containerWidth >= PREVIEW_PANE_COLLAPSE_WIDTH);
 
   const handlePaneResizeStart = useCallback(
     (e: React.MouseEvent) => {
-      e.preventDefault()
-      const startX = e.clientX
-      const startWidth = previewPane.width
-      setResizing(true)
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = previewPane.width;
+      setResizing(true);
 
       function onMove(moveEvent: MouseEvent) {
         // Pane sits to the right of the list; dragging the handle left grows it.
-        const delta = startX - moveEvent.clientX
-        previewPane.setWidth(startWidth + delta)
+        const delta = startX - moveEvent.clientX;
+        previewPane.setWidth(startWidth + delta);
       }
       function onUp() {
-        setResizing(false)
-        window.removeEventListener('mousemove', onMove)
-        window.removeEventListener('mouseup', onUp)
+        setResizing(false);
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
       }
-      window.addEventListener('mousemove', onMove)
-      window.addEventListener('mouseup', onUp)
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
     },
-    [previewPane]
-  )
+    [previewPane],
+  );
 
   /**
    * The keyboard half of the splitter.
@@ -81,35 +77,32 @@ export function usePaneResize(previewPane: PreviewPaneControls) {
    */
   const handlePaneResizeKey = useCallback(
     (e: React.KeyboardEvent) => {
-      const coarse = e.shiftKey
-      const stepPx = coarse ? COARSE_PX : NUDGE_PX
+      const coarse = e.shiftKey;
+      const stepPx = coarse ? COARSE_PX : NUDGE_PX;
       switch (e.key) {
-        case 'ArrowLeft':
-          previewPane.setWidth(previewPane.width + stepPx)
-          break
-        case 'ArrowRight':
-          previewPane.setWidth(previewPane.width - stepPx)
-          break
-        case 'Home':
-          previewPane.setWidth(PREVIEW_PANE_DEFAULT_WIDTH)
-          break
-        case 'End':
-          previewPane.setWidth(PREVIEW_PANE_MAX_WIDTH)
-          break
+        case "ArrowLeft":
+          previewPane.setWidth(previewPane.width + stepPx);
+          break;
+        case "ArrowRight":
+          previewPane.setWidth(previewPane.width - stepPx);
+          break;
+        case "Home":
+          previewPane.setWidth(PREVIEW_PANE_DEFAULT_WIDTH);
+          break;
+        case "End":
+          previewPane.setWidth(PREVIEW_PANE_MAX_WIDTH);
+          break;
         default:
-          return
+          return;
       }
-      e.preventDefault()
-      e.stopPropagation()
+      e.preventDefault();
+      e.stopPropagation();
     },
-    [previewPane]
-  )
+    [previewPane],
+  );
 
   /** Double-click the handle to put the pane back to its default width. */
-  const handlePaneResizeReset = useCallback(
-    () => previewPane.setWidth(PREVIEW_PANE_DEFAULT_WIDTH),
-    [previewPane]
-  )
+  const handlePaneResizeReset = useCallback(() => previewPane.setWidth(PREVIEW_PANE_DEFAULT_WIDTH), [previewPane]);
 
   return {
     containerRef,
@@ -120,5 +113,5 @@ export function usePaneResize(previewPane: PreviewPaneControls) {
     handlePaneResizeReset,
     paneMin: PREVIEW_PANE_MIN_WIDTH,
     paneMax: PREVIEW_PANE_MAX_WIDTH,
-  }
+  };
 }

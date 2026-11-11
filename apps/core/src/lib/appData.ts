@@ -5,22 +5,22 @@ import {
   type DataKind,
   type SystemData,
   type SystemHttp,
-} from '@imbatranim/ui'
+} from "@imbatranim/ui";
 
 /** The status of an axios-style error, if it carries one. */
 function statusOf(err: unknown): number | undefined {
-  const status = (err as { response?: { status?: unknown } } | null)?.response?.status
-  return typeof status === 'number' ? status : undefined
+  const status = (err as { response?: { status?: unknown } } | null)?.response?.status;
+  return typeof status === "number" ? status : undefined;
 }
 
 /** The 409 body's `current` version (null when the file is gone). */
 function conflictCurrent(err: unknown): string | null {
-  const current = (err as { response?: { data?: { current?: unknown } } }).response?.data?.current
-  return typeof current === 'string' ? current : null
+  const current = (err as { response?: { data?: { current?: unknown } } }).response?.data?.current;
+  return typeof current === "string" ? current : null;
 }
 
-function route(kind: DataKind | undefined, what: 'file' | 'list'): string {
-  return `/system/data/${encodeURIComponent(kind ?? 'data')}/${what}`
+function route(kind: DataKind | undefined, what: "file" | "list"): string {
+  return `/system/data/${encodeURIComponent(kind ?? "data")}/${what}`;
 }
 
 /**
@@ -34,53 +34,47 @@ export function createSystemData(http: SystemHttp): SystemData {
   return {
     async read(path, opts) {
       try {
-        const res = await http.get<DataFile>(route(opts?.kind, 'file'), { params: { path } })
-        return { content: res.data.content, version: res.data.version }
+        const res = await http.get<DataFile>(route(opts?.kind, "file"), { params: { path } });
+        return { content: res.data.content, version: res.data.version };
       } catch (err) {
-        if (statusOf(err) === 404) return null
-        throw err
+        if (statusOf(err) === 404) return null;
+        throw err;
       }
     },
 
     async write(path, content, opts) {
       try {
-        const res = await http.put<{ version: string }>(route(opts?.kind, 'file'), {
+        const res = await http.put<{ version: string }>(route(opts?.kind, "file"), {
           path,
           content,
           // Left out when absent, so the write goes over whatever is there.
           ...(opts?.expected !== undefined ? { expected: opts.expected } : {}),
-        })
-        return { version: res.data.version }
+        });
+        return { version: res.data.version };
       } catch (err) {
         if (statusOf(err) === 409) {
-          throw new FileConflictError(
-            conflictCurrent(err),
-            'It changed since it was read, in another window or tab.'
-          )
+          throw new FileConflictError(conflictCurrent(err), "It changed since it was read, in another window or tab.");
         }
-        throw err
+        throw err;
       }
     },
 
-    async list(path = '', opts) {
-      const res = await http.get<DataEntry[]>(route(opts?.kind, 'list'), { params: { path } })
-      return res.data
+    async list(path = "", opts) {
+      const res = await http.get<DataEntry[]>(route(opts?.kind, "list"), { params: { path } });
+      return res.data;
     },
 
     async remove(path, opts) {
       try {
-        await http.delete(route(opts?.kind, 'file'), {
+        await http.delete(route(opts?.kind, "file"), {
           params: { path, ...(opts?.expected !== undefined ? { expected: opts.expected } : {}) },
-        })
+        });
       } catch (err) {
         if (statusOf(err) === 409) {
-          throw new FileConflictError(
-            conflictCurrent(err),
-            'It changed since it was read, in another window or tab.'
-          )
+          throw new FileConflictError(conflictCurrent(err), "It changed since it was read, in another window or tab.");
         }
-        throw err
+        throw err;
       }
     },
-  }
+  };
 }

@@ -1,4 +1,4 @@
-import type { SystemData, SystemHttp } from './system'
+import type { SystemData, SystemHttp } from "./system";
 
 /**
  * A command source: one group of results in the command palette and Start's
@@ -12,14 +12,14 @@ import type { SystemData, SystemHttp } from './system'
 
 export type CommandItem = {
   /** Unique within its source and stable across searches. */
-  id: string
+  id: string;
   /** What the result says. */
-  label: string
+  label: string;
   /** Optional secondary text (a path, a URL). */
-  subtitle?: string
+  subtitle?: string;
   /** The source's `group`: the section the result is listed under. */
-  group: string
-}
+  group: string;
+};
 
 /**
  * What a source may use while searching. Grown deliberately: it is protocol
@@ -31,17 +31,17 @@ export type CommandItem = {
  * like the handle's. Since kit 1.6.0, and optional for that reason; a
  * built-in's sources have none, since they search as the user.
  */
-export type CommandSourceContext = { http: SystemHttp; data?: SystemData }
+export type CommandSourceContext = { http: SystemHttp; data?: SystemData };
 
 export type CommandSource = {
   /** The section header, unique among the sources the desktop has. */
-  group: string
+  group: string;
   /**
    * The results for `query`. A source that needs nothing from `ctx` declares
    * `search(query)`. A kit app's source catches its own failures and answers
    * `[]`: one that throws or rejects is hidden with one notification.
    */
-  search(query: string, ctx: CommandSourceContext): Promise<CommandItem[]>
+  search(query: string, ctx: CommandSourceContext): Promise<CommandItem[]>;
   /** The owner picked `item`, one of this source's results. */
-  activate(item: CommandItem): void
-}
+  activate(item: CommandItem): void;
+};

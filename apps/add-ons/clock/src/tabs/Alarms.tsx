@@ -1,30 +1,22 @@
-import { useState } from 'react'
-import { Plus, Trash2, Info, BellOff } from 'lucide-react'
-import { Button, Checkbox, Input, cn } from '@imbatranim/ui'
-import {
-  DAY_LETTERS,
-  EVERY_DAY,
-  NO_REPEAT,
-  WEEKDAYS,
-  describeDays,
-  repeatsOn,
-  toggleDay,
-} from '../alarmSchedule'
-import { currentHHmm } from '../format'
+import { useState } from "react";
+import { Plus, Trash2, Info, BellOff } from "lucide-react";
+import { Button, Checkbox, Input, cn } from "@imbatranim/ui";
+import { DAY_LETTERS, EVERY_DAY, NO_REPEAT, WEEKDAYS, describeDays, repeatsOn, toggleDay } from "../alarmSchedule";
+import { currentHHmm } from "../format";
 import {
   useAlarmsQuery,
   useCreateAlarmMutation,
   useDeleteAlarmMutation,
   usePatchAlarmMutation,
-} from '../queries/clockQueries'
-import type { Alarm } from '../types'
+} from "../queries/clockQueries";
+import type { Alarm } from "../types";
 
 /** The three masks worth a shortcut; anything else is built from the letters. */
 const PRESETS: { label: string; mask: string }[] = [
-  { label: 'Once', mask: NO_REPEAT },
-  { label: 'Every day', mask: EVERY_DAY },
-  { label: 'Weekdays', mask: WEEKDAYS },
-]
+  { label: "Once", mask: NO_REPEAT },
+  { label: "Every day", mask: EVERY_DAY },
+  { label: "Weekdays", mask: WEEKDAYS },
+];
 
 /**
  * The weekday chip row.
@@ -38,16 +30,16 @@ function DayPicker({
   onChange,
   showPresets = false,
 }: {
-  mask: string
-  onChange: (mask: string) => void
+  mask: string;
+  onChange: (mask: string) => void;
   /** Only the New-alarm form has room for these; a row shows the letters alone. */
-  showPresets?: boolean
+  showPresets?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-1">
         {DAY_LETTERS.map((letter, index) => {
-          const on = repeatsOn(mask, index)
+          const on = repeatsOn(mask, index);
           return (
             <button
               key={index}
@@ -55,18 +47,18 @@ function DayPicker({
               aria-pressed={on}
               // The letters repeat (T/T, S/S), so the accessible name must say
               // which day it is rather than leaving a screen reader with "T".
-              aria-label={`Repeat on ${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][index]}`}
+              aria-label={`Repeat on ${["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index]}`}
               onClick={() => onChange(toggleDay(mask, index))}
               className={cn(
-                'focus-visible:ring-primary font-ui rounded-control h-6 w-6 border text-[10px] font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                "focus-visible:ring-primary font-ui rounded-control h-6 w-6 border text-[10px] font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
                 on
-                  ? 'border-primary bg-primary-container text-on-primary-container'
-                  : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
+                  ? "border-primary bg-primary-container text-on-primary-container"
+                  : "border-outline-variant text-on-surface-variant hover:text-on-surface",
               )}
             >
               {letter}
             </button>
-          )
+          );
         })}
         {showPresets && (
           <div className="ml-1 flex items-center gap-1">
@@ -76,10 +68,10 @@ function DayPicker({
                 type="button"
                 onClick={() => onChange(preset.mask)}
                 className={cn(
-                  'focus-visible:ring-primary rounded-control font-ui border px-1.5 py-0.5 text-[10px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                  "focus-visible:ring-primary rounded-control font-ui border px-1.5 py-0.5 text-[10px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
                   mask === preset.mask
-                    ? 'border-outline text-on-surface'
-                    : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
+                    ? "border-outline text-on-surface"
+                    : "border-outline-variant text-on-surface-variant hover:text-on-surface",
                 )}
               >
                 {preset.label}
@@ -90,25 +82,23 @@ function DayPicker({
       </div>
       <p className="font-ui text-on-surface-variant text-[10px]">
         {describeDays(mask)}
-        {showPresets &&
-          mask === NO_REPEAT &&
-          ' — rings at the next time it comes round, then turns itself off'}
+        {showPresets && mask === NO_REPEAT && " — rings at the next time it comes round, then turns itself off"}
       </p>
     </div>
-  )
+  );
 }
 
 function AddAlarmRow() {
-  const create = useCreateAlarmMutation()
-  const [label, setLabel] = useState('')
-  const [time, setTime] = useState('07:00')
-  const [days, setDays] = useState(NO_REPEAT)
+  const create = useCreateAlarmMutation();
+  const [label, setLabel] = useState("");
+  const [time, setTime] = useState("07:00");
+  const [days, setDays] = useState(NO_REPEAT);
 
   const handleAdd = () => {
-    if (!time) return
-    create.mutate({ label: label.trim(), time, days })
-    setLabel('')
-  }
+    if (!time) return;
+    create.mutate({ label: label.trim(), time, days });
+    setLabel("");
+  };
 
   return (
     <div className="flex flex-col gap-2">
@@ -134,36 +124,30 @@ function AddAlarmRow() {
             onChange={(e) => setLabel(e.target.value)}
           />
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleAdd}
-          disabled={!time || create.isPending}
-        >
+        <Button variant="primary" size="sm" onClick={handleAdd} disabled={!time || create.isPending}>
           <Plus size={12} strokeWidth={2} />
           Add
         </Button>
       </div>
       <DayPicker mask={days} onChange={setDays} showPresets />
     </div>
-  )
+  );
 }
 
 function AlarmRow({ alarm }: { alarm: Alarm }) {
-  const patch = usePatchAlarmMutation()
-  const remove = useDeleteAlarmMutation()
+  const patch = usePatchAlarmMutation();
+  const remove = useDeleteAlarmMutation();
 
   // The time it will ring, not "in N minutes": an absolute time needs no ticking
   // clock to stay true, so this row does not have to re-render every minute.
-  const snoozedUntilHHmm =
-    alarm.snoozedUntil !== null ? currentHHmm(new Date(alarm.snoozedUntil)) : null
+  const snoozedUntilHHmm = alarm.snoozedUntil !== null ? currentHHmm(new Date(alarm.snoozedUntil)) : null;
 
   return (
     <div className="border-outline-variant group flex items-start justify-between gap-2 border-b px-3 py-2">
       <div className="flex min-w-0 items-start gap-3">
         <Checkbox
           checked={alarm.enabled}
-          aria-label={`${alarm.enabled ? 'Disable' : 'Enable'} the ${alarm.time} alarm`}
+          aria-label={`${alarm.enabled ? "Disable" : "Enable"} the ${alarm.time} alarm`}
           onCheckedChange={(next) =>
             patch.mutate({
               id: alarm.id,
@@ -176,25 +160,18 @@ function AlarmRow({ alarm }: { alarm: Alarm }) {
         <div className="min-w-0">
           <p
             className={cn(
-              'font-mono text-[15px] tabular-nums',
-              alarm.enabled ? 'text-on-surface' : 'text-on-surface-variant line-through'
+              "font-mono text-[15px] tabular-nums",
+              alarm.enabled ? "text-on-surface" : "text-on-surface-variant line-through",
             )}
           >
             {alarm.time}
           </p>
-          {alarm.label && (
-            <p className="font-ui text-on-surface-variant truncate text-[11px]">{alarm.label}</p>
-          )}
+          {alarm.label && <p className="font-ui text-on-surface-variant truncate text-[11px]">{alarm.label}</p>}
           <div className="mt-1">
-            <DayPicker
-              mask={alarm.days}
-              onChange={(days) => patch.mutate({ id: alarm.id, patch: { days } })}
-            />
+            <DayPicker mask={alarm.days} onChange={(days) => patch.mutate({ id: alarm.id, patch: { days } })} />
           </div>
           {snoozedUntilHHmm !== null && (
-            <p className="font-ui text-primary mt-1 text-[10px]">
-              Snoozed — rings again at {snoozedUntilHHmm}
-            </p>
+            <p className="font-ui text-primary mt-1 text-[10px]">Snoozed — rings again at {snoozedUntilHHmm}</p>
           )}
           {!alarm.enabled && alarm.lastFiredAt !== null && alarm.days === NO_REPEAT && (
             <p className="font-ui text-on-surface-variant mt-1 flex items-center gap-1 text-[10px]">
@@ -214,27 +191,24 @@ function AlarmRow({ alarm }: { alarm: Alarm }) {
         <Trash2 size={12} strokeWidth={2} />
       </button>
     </div>
-  )
+  );
 }
 
 export function Alarms() {
-  const { data: alarms, isPending, isError } = useAlarmsQuery()
+  const { data: alarms, isPending, isError } = useAlarmsQuery();
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-col gap-2 p-3">
-        <p className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
-          New alarm
-        </p>
+        <p className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">New alarm</p>
         <AddAlarmRow />
       </div>
 
       <div className="border-outline-variant bg-surface-container-low flex items-start gap-2 border-y px-3 py-2">
         <Info size={12} strokeWidth={2} className="text-on-surface-variant mt-0.5 shrink-0" />
         <p className="font-ui text-on-surface-variant text-[11px]">
-          Alarms fire while the desktop is open — this window can be closed. Closing the browser tab
-          silences them. The alarms themselves are saved in your computer, so they are the same from
-          any browser you open it in.
+          Alarms fire while the desktop is open — this window can be closed. Closing the browser tab silences them. The
+          alarms themselves are saved in your computer, so they are the same from any browser you open it in.
         </p>
       </div>
 
@@ -256,5 +230,5 @@ export function Alarms() {
         )}
       </div>
     </div>
-  )
+  );
 }

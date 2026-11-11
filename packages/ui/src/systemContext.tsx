@@ -1,5 +1,5 @@
-import { createContext, useContext, type ReactNode } from 'react'
-import type { SystemHandle } from './system'
+import { createContext, useContext, type ReactNode } from "react";
+import type { SystemHandle } from "./system";
 
 /**
  * The channel the compositor injects the handle through. Lives in the SDK —
@@ -7,16 +7,10 @@ import type { SystemHandle } from './system'
  * compositor provides into it, apps and SDK hooks read from it, and neither may
  * import the other.
  */
-const SystemContext = createContext<SystemHandle | null>(null)
+const SystemContext = createContext<SystemHandle | null>(null);
 
-export function SystemProvider({
-  system,
-  children,
-}: {
-  system: SystemHandle
-  children: ReactNode
-}) {
-  return <SystemContext.Provider value={system}>{children}</SystemContext.Provider>
+export function SystemProvider({ system, children }: { system: SystemHandle; children: ReactNode }) {
+  return <SystemContext.Provider value={system}>{children}</SystemContext.Provider>;
 }
 
 /**
@@ -28,11 +22,9 @@ export function SystemProvider({
 // would be two files for one idea.
 // eslint-disable-next-line react-refresh/only-export-components
 export function useSystem(): SystemHandle {
-  const system = useContext(SystemContext)
+  const system = useContext(SystemContext);
   if (system === null) {
-    throw new Error(
-      'useSystem() outside a SystemProvider — app components only run mounted by the compositor.'
-    )
+    throw new Error("useSystem() outside a SystemProvider — app components only run mounted by the compositor.");
   }
-  return system
+  return system;
 }

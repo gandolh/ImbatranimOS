@@ -1,15 +1,15 @@
-import { useState } from 'react'
-import { ChevronRight, Folder, FolderOpen, HardDrive } from 'lucide-react'
-import { cn } from '@imbatranim/ui'
-import { useDirectoryQuery } from '../queries/filesQueries'
-import type { FsEntry } from '../types'
+import { useState } from "react";
+import { ChevronRight, Folder, FolderOpen, HardDrive } from "lucide-react";
+import { cn } from "@imbatranim/ui";
+import { useDirectoryQuery } from "../queries/filesQueries";
+import type { FsEntry } from "../types";
 
 type FolderTreeProps = {
-  root: string
-  rootLabel: string
-  currentPath: string
-  onNavigate: (path: string) => void
-}
+  root: string;
+  rootLabel: string;
+  currentPath: string;
+  onNavigate: (path: string) => void;
+};
 
 /**
  * Windows-explorer-style left pane: a lazily-expanding tree of folders.
@@ -19,46 +19,40 @@ export function FolderTree({ root, rootLabel, currentPath, onNavigate }: FolderT
   return (
     <div className="font-ui flex h-full flex-col gap-0.5 px-(--k-list-inset) py-1 text-[12px]">
       <button
-        onClick={() => onNavigate('')}
+        onClick={() => onNavigate("")}
         className={cn(
-          'focus-visible:ring-primary rounded-item flex items-center gap-1 px-2 py-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset',
-          currentPath === ''
-            ? 'bg-primary-container text-on-primary-container'
-            : 'text-on-surface hover:bg-surface-container'
+          "focus-visible:ring-primary rounded-item flex items-center gap-1 px-2 py-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset",
+          currentPath === ""
+            ? "bg-primary-container text-on-primary-container"
+            : "text-on-surface hover:bg-surface-container",
         )}
       >
         <HardDrive size={14} strokeWidth={1.5} className="shrink-0" />
         <span className="truncate font-medium">{rootLabel}</span>
       </button>
-      <TreeChildren
-        root={root}
-        parentPath=""
-        depth={1}
-        currentPath={currentPath}
-        onNavigate={onNavigate}
-      />
+      <TreeChildren root={root} parentPath="" depth={1} currentPath={currentPath} onNavigate={onNavigate} />
     </div>
-  )
+  );
 }
 
 type TreeChildrenProps = {
-  root: string
-  parentPath: string
-  depth: number
-  currentPath: string
-  onNavigate: (path: string) => void
-}
+  root: string;
+  parentPath: string;
+  depth: number;
+  currentPath: string;
+  onNavigate: (path: string) => void;
+};
 
 function TreeChildren({ root, parentPath, depth, currentPath, onNavigate }: TreeChildrenProps) {
-  const query = useDirectoryQuery(root, parentPath)
-  const dirs = (query.data ?? []).filter((e) => e.type === 'directory')
+  const query = useDirectoryQuery(root, parentPath);
+  const dirs = (query.data ?? []).filter((e) => e.type === "directory");
 
   if (query.isLoading) {
     return (
       <div className="text-on-surface-variant px-2 py-0.5" style={{ paddingLeft: depth * 14 }}>
         …
       </div>
-    )
+    );
   }
 
   return (
@@ -77,48 +71,42 @@ function TreeChildren({ root, parentPath, depth, currentPath, onNavigate }: Tree
           />
         ))}
     </>
-  )
+  );
 }
 
 type TreeNodeProps = {
-  root: string
-  entry: FsEntry
-  depth: number
-  currentPath: string
-  onNavigate: (path: string) => void
-}
+  root: string;
+  entry: FsEntry;
+  depth: number;
+  currentPath: string;
+  onNavigate: (path: string) => void;
+};
 
 function TreeNode({ root, entry, depth, currentPath, onNavigate }: TreeNodeProps) {
-  const [expanded, setExpanded] = useState(false)
-  const isActive = currentPath === entry.path
+  const [expanded, setExpanded] = useState(false);
+  const isActive = currentPath === entry.path;
   // Keep the ancestor chain of the active path visually open.
-  const onActivePath = currentPath === entry.path || currentPath.startsWith(entry.path + '/')
-  const open = expanded || onActivePath
+  const onActivePath = currentPath === entry.path || currentPath.startsWith(entry.path + "/");
+  const open = expanded || onActivePath;
 
   return (
     <div>
       <div
         className={cn(
-          'rounded-item flex items-center gap-0.5',
-          isActive
-            ? 'bg-primary-container text-on-primary-container'
-            : 'text-on-surface hover:bg-surface-container'
+          "rounded-item flex items-center gap-0.5",
+          isActive ? "bg-primary-container text-on-primary-container" : "text-on-surface hover:bg-surface-container",
         )}
         style={{ paddingLeft: depth * 14 - 8 }}
       >
         <button
           onClick={(e) => {
-            e.stopPropagation()
-            setExpanded((v) => !v)
+            e.stopPropagation();
+            setExpanded((v) => !v);
           }}
           className="text-on-surface-variant focus-visible:ring-primary flex h-5 w-4 shrink-0 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset"
-          aria-label={open ? 'Collapse' : 'Expand'}
+          aria-label={open ? "Collapse" : "Expand"}
         >
-          <ChevronRight
-            size={12}
-            strokeWidth={2}
-            className={cn('transition-transform', open && 'rotate-90')}
-          />
+          <ChevronRight size={12} strokeWidth={2} className={cn("transition-transform", open && "rotate-90")} />
         </button>
         <button
           onClick={() => onNavigate(entry.path)}
@@ -142,5 +130,5 @@ function TreeNode({ root, entry, depth, currentPath, onNavigate }: TreeNodeProps
         />
       )}
     </div>
-  )
+  );
 }

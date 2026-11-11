@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -14,42 +14,42 @@ import {
   Type,
   Undo2,
   X,
-} from 'lucide-react'
-import { cn, useSystem } from '@imbatranim/ui'
-import type { Annotation, Point, Tool } from '../types'
-import { saveScreenshot, screenshotFilename } from '../api/screenshotApi'
-import { isWorthKeeping, normalizeRect, pixelateBlockSize } from '../lib/annotationGeometry'
-import { canCopyImages, canvasToPng, copyPng } from '../lib/clipboard'
+} from "lucide-react";
+import { cn, useSystem } from "@imbatranim/ui";
+import type { Annotation, Point, Tool } from "../types";
+import { saveScreenshot, screenshotFilename } from "../api/screenshotApi";
+import { isWorthKeeping, normalizeRect, pixelateBlockSize } from "../lib/annotationGeometry";
+import { canCopyImages, canvasToPng, copyPng } from "../lib/clipboard";
 
 type Props = {
   /** The cropped base image, at device-pixel resolution. */
-  image: HTMLCanvasElement
+  image: HTMLCanvasElement;
   /** What the capture may have missed, or null when the region was clean. */
-  notice: string | null
+  notice: string | null;
   /** Back to the launcher, keeping the app open. */
-  onBack: () => void
-  onClose: () => void
-}
+  onBack: () => void;
+  onClose: () => void;
+};
 
-const COLORS = ['#c0263a', '#111111', '#ffffff', '#f5c518', '#2e7d32', '#1565c0']
+const COLORS = ["#c0263a", "#111111", "#ffffff", "#f5c518", "#2e7d32", "#1565c0"];
 
 const TOOLS: { id: Tool; label: string; Icon: typeof Square }[] = [
-  { id: 'arrow', label: 'Arrow', Icon: ArrowUpRight },
-  { id: 'rect', label: 'Rectangle', Icon: Square },
-  { id: 'text', label: 'Text', Icon: Type },
+  { id: "arrow", label: "Arrow", Icon: ArrowUpRight },
+  { id: "rect", label: "Rectangle", Icon: Square },
+  { id: "text", label: "Text", Icon: Type },
   // Two redaction tools, in the order you should reach for them. Black out destroys the
   // pixels; pixelate only scrambles them, and a fine mosaic of *text* is recoverable.
   {
-    id: 'blackout',
-    label: 'Black out (destroys the pixels — use this for secrets)',
+    id: "blackout",
+    label: "Black out (destroys the pixels — use this for secrets)",
     Icon: SquareSlash,
   },
-  { id: 'pixelate', label: 'Pixelate (scrambles; recoverable on small text)', Icon: Grid2x2 },
-  { id: 'freehand', label: 'Freehand', Icon: Pencil },
-]
+  { id: "pixelate", label: "Pixelate (scrambles; recoverable on small text)", Icon: Grid2x2 },
+  { id: "freehand", label: "Freehand", Icon: Pencil },
+];
 
 /** The one fixed colour in the app: a redaction is not a styling choice. */
-const BLACKOUT_FILL = '#0b0b0d'
+const BLACKOUT_FILL = "#0b0b0d";
 
 /**
  * The desktop's UI font stack, read at draw time: `ctx.font` can't take a CSS
@@ -57,198 +57,187 @@ const BLACKOUT_FILL = '#0b0b0d'
  * in Classic).
  */
 function uiFont(): string {
-  const stack = getComputedStyle(document.documentElement).getPropertyValue('--font-ui').trim()
-  return stack || 'sans-serif'
+  const stack = getComputedStyle(document.documentElement).getPropertyValue("--font-ui").trim();
+  return stack || "sans-serif";
 }
 
-const canCopy = canCopyImages()
-const toBlob = canvasToPng
+const canCopy = canCopyImages();
+const toBlob = canvasToPng;
 
 export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
-  const system = useSystem()
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const ratio = window.devicePixelRatio || 1
-  const stroke = Math.max(2, Math.round(3 * ratio))
-  const fontSize = Math.round(18 * ratio)
+  const system = useSystem();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const ratio = window.devicePixelRatio || 1;
+  const stroke = Math.max(2, Math.round(3 * ratio));
+  const fontSize = Math.round(18 * ratio);
 
-  const [tool, setTool] = useState<Tool>('arrow')
-  const [color, setColor] = useState(COLORS[0])
-  const [annotations, setAnnotations] = useState<Annotation[]>([])
-  const [draft, setDraft] = useState<Annotation | null>(null)
+  const [tool, setTool] = useState<Tool>("arrow");
+  const [color, setColor] = useState(COLORS[0]);
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [draft, setDraft] = useState<Annotation | null>(null);
   const [textDraft, setTextDraft] = useState<{
-    cx: number
-    cy: number
-    left: number
-    top: number
-    value: string
-  } | null>(null)
-  const [status, setStatus] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+    cx: number;
+    cy: number;
+    left: number;
+    top: number;
+    value: string;
+  } | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   /**
    * The OS's Save dialog is open. The stage sits above every window and
    * dialog (it covers the desktop it captured), so it steps aside while the
    * dialog is up, or the dialog would open under it, unseen.
    */
-  const [picking, setPicking] = useState(false)
-  const [noticeOpen, setNoticeOpen] = useState(true)
+  const [picking, setPicking] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(true);
 
-  const draggingRef = useRef(false)
+  const draggingRef = useRef(false);
 
   // ── drawing ────────────────────────────────────────────────────────────────
   const drawOne = useCallback(
     (ctx: CanvasRenderingContext2D, a: Annotation) => {
-      ctx.save()
+      ctx.save();
       switch (a.type) {
-        case 'rect': {
-          ctx.strokeStyle = a.color
-          ctx.lineWidth = stroke
-          ctx.strokeRect(a.x, a.y, a.w, a.h)
-          break
+        case "rect": {
+          ctx.strokeStyle = a.color;
+          ctx.lineWidth = stroke;
+          ctx.strokeRect(a.x, a.y, a.w, a.h);
+          break;
         }
-        case 'arrow': {
-          const { x1, y1, x2, y2 } = a
-          ctx.strokeStyle = a.color
-          ctx.fillStyle = a.color
-          ctx.lineWidth = stroke
-          ctx.lineCap = 'round'
-          ctx.beginPath()
-          ctx.moveTo(x1, y1)
-          ctx.lineTo(x2, y2)
-          ctx.stroke()
-          const angle = Math.atan2(y2 - y1, x2 - x1)
-          const head = Math.max(10, stroke * 4)
-          ctx.beginPath()
-          ctx.moveTo(x2, y2)
-          ctx.lineTo(
-            x2 - head * Math.cos(angle - Math.PI / 6),
-            y2 - head * Math.sin(angle - Math.PI / 6)
-          )
-          ctx.lineTo(
-            x2 - head * Math.cos(angle + Math.PI / 6),
-            y2 - head * Math.sin(angle + Math.PI / 6)
-          )
-          ctx.closePath()
-          ctx.fill()
-          break
+        case "arrow": {
+          const { x1, y1, x2, y2 } = a;
+          ctx.strokeStyle = a.color;
+          ctx.fillStyle = a.color;
+          ctx.lineWidth = stroke;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+          const angle = Math.atan2(y2 - y1, x2 - x1);
+          const head = Math.max(10, stroke * 4);
+          ctx.beginPath();
+          ctx.moveTo(x2, y2);
+          ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+          ctx.closePath();
+          ctx.fill();
+          break;
         }
-        case 'text': {
-          ctx.fillStyle = a.color
-          ctx.font = `600 ${a.size}px ${uiFont()}`
-          ctx.textBaseline = 'top'
-          a.text.split('\n').forEach((line, i) => {
-            ctx.fillText(line, a.x, a.y + i * a.size * 1.25)
-          })
-          break
+        case "text": {
+          ctx.fillStyle = a.color;
+          ctx.font = `600 ${a.size}px ${uiFont()}`;
+          ctx.textBaseline = "top";
+          a.text.split("\n").forEach((line, i) => {
+            ctx.fillText(line, a.x, a.y + i * a.size * 1.25);
+          });
+          break;
         }
-        case 'freehand': {
-          if (a.points.length < 2) break
-          ctx.strokeStyle = a.color
-          ctx.lineWidth = stroke
-          ctx.lineJoin = 'round'
-          ctx.lineCap = 'round'
-          ctx.beginPath()
-          ctx.moveTo(a.points[0].x, a.points[0].y)
-          for (const p of a.points.slice(1)) ctx.lineTo(p.x, p.y)
-          ctx.stroke()
-          break
+        case "freehand": {
+          if (a.points.length < 2) break;
+          ctx.strokeStyle = a.color;
+          ctx.lineWidth = stroke;
+          ctx.lineJoin = "round";
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(a.points[0].x, a.points[0].y);
+          for (const p of a.points.slice(1)) ctx.lineTo(p.x, p.y);
+          ctx.stroke();
+          break;
         }
-        case 'blackout': {
+        case "blackout": {
           // A flat fill on the same canvas the export reads, so the pixels underneath are
           // gone from the moment it is drawn — there is no layer to peel off in the PNG.
-          ctx.fillStyle = BLACKOUT_FILL
-          ctx.fillRect(
-            Math.min(a.x, a.x + a.w),
-            Math.min(a.y, a.y + a.h),
-            Math.abs(a.w),
-            Math.abs(a.h)
-          )
-          break
+          ctx.fillStyle = BLACKOUT_FILL;
+          ctx.fillRect(Math.min(a.x, a.x + a.w), Math.min(a.y, a.y + a.h), Math.abs(a.w), Math.abs(a.h));
+          break;
         }
-        case 'pixelate': {
-          const x = Math.round(Math.min(a.x, a.x + a.w))
-          const y = Math.round(Math.min(a.y, a.y + a.h))
-          const w = Math.max(1, Math.round(Math.abs(a.w)))
-          const h = Math.max(1, Math.round(Math.abs(a.h)))
-          const bs = pixelateBlockSize(ratio)
-          const tmp = document.createElement('canvas')
-          tmp.width = Math.max(1, Math.floor(w / bs))
-          tmp.height = Math.max(1, Math.floor(h / bs))
-          const tctx = tmp.getContext('2d')
-          if (!tctx) break
-          tctx.imageSmoothingEnabled = false
+        case "pixelate": {
+          const x = Math.round(Math.min(a.x, a.x + a.w));
+          const y = Math.round(Math.min(a.y, a.y + a.h));
+          const w = Math.max(1, Math.round(Math.abs(a.w)));
+          const h = Math.max(1, Math.round(Math.abs(a.h)));
+          const bs = pixelateBlockSize(ratio);
+          const tmp = document.createElement("canvas");
+          tmp.width = Math.max(1, Math.floor(w / bs));
+          tmp.height = Math.max(1, Math.floor(h / bs));
+          const tctx = tmp.getContext("2d");
+          if (!tctx) break;
+          tctx.imageSmoothingEnabled = false;
           // Sample from the pristine base image so redaction is irreversible.
-          tctx.drawImage(image, x, y, w, h, 0, 0, tmp.width, tmp.height)
-          ctx.imageSmoothingEnabled = false
-          ctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, x, y, w, h)
-          ctx.imageSmoothingEnabled = true
-          break
+          tctx.drawImage(image, x, y, w, h, 0, 0, tmp.width, tmp.height);
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, x, y, w, h);
+          ctx.imageSmoothingEnabled = true;
+          break;
         }
       }
-      ctx.restore()
+      ctx.restore();
     },
-    [stroke, ratio, image]
-  )
+    [stroke, ratio, image],
+  );
 
   const redraw = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.drawImage(image, 0, 0)
-    for (const a of annotations) drawOne(ctx, a)
-    if (draft) drawOne(ctx, draft)
-  }, [image, annotations, draft, drawOne])
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(image, 0, 0);
+    for (const a of annotations) drawOne(ctx, a);
+    if (draft) drawOne(ctx, draft);
+  }, [image, annotations, draft, drawOne]);
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    canvas.width = image.width
-    canvas.height = image.height
-  }, [image])
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.width = image.width;
+    canvas.height = image.height;
+  }, [image]);
 
   useEffect(() => {
-    redraw()
-  }, [redraw])
+    redraw();
+  }, [redraw]);
 
   // ── pointer → canvas coordinate mapping ──────────────────────────────────────
   function toCanvasCoords(e: React.PointerEvent): Point {
-    const canvas = canvasRef.current!
-    const rect = canvas.getBoundingClientRect()
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
     return {
       x: ((e.clientX - rect.left) / rect.width) * canvas.width,
       y: ((e.clientY - rect.top) / rect.height) * canvas.height,
-    }
+    };
   }
 
   function handlePointerDown(e: React.PointerEvent) {
-    if (e.button !== 0 || textDraft) return
-    const { x, y } = toCanvasCoords(e)
-    if (tool === 'text') {
-      setTextDraft({ cx: x, cy: y, left: e.clientX, top: e.clientY, value: '' })
-      return
+    if (e.button !== 0 || textDraft) return;
+    const { x, y } = toCanvasCoords(e);
+    if (tool === "text") {
+      setTextDraft({ cx: x, cy: y, left: e.clientX, top: e.clientY, value: "" });
+      return;
     }
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
-    draggingRef.current = true
-    if (tool === 'rect') setDraft({ type: 'rect', x, y, w: 0, h: 0, color })
-    else if (tool === 'pixelate') setDraft({ type: 'pixelate', x, y, w: 0, h: 0 })
-    else if (tool === 'blackout') setDraft({ type: 'blackout', x, y, w: 0, h: 0 })
-    else if (tool === 'arrow') setDraft({ type: 'arrow', x1: x, y1: y, x2: x, y2: y, color })
-    else if (tool === 'freehand') setDraft({ type: 'freehand', points: [{ x, y }], color })
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    draggingRef.current = true;
+    if (tool === "rect") setDraft({ type: "rect", x, y, w: 0, h: 0, color });
+    else if (tool === "pixelate") setDraft({ type: "pixelate", x, y, w: 0, h: 0 });
+    else if (tool === "blackout") setDraft({ type: "blackout", x, y, w: 0, h: 0 });
+    else if (tool === "arrow") setDraft({ type: "arrow", x1: x, y1: y, x2: x, y2: y, color });
+    else if (tool === "freehand") setDraft({ type: "freehand", points: [{ x, y }], color });
   }
 
   function handlePointerMove(e: React.PointerEvent) {
-    if (!draggingRef.current) return
-    const { x, y } = toCanvasCoords(e)
+    if (!draggingRef.current) return;
+    const { x, y } = toCanvasCoords(e);
     setDraft((d) => {
-      if (!d) return d
-      if (d.type === 'rect' || d.type === 'pixelate' || d.type === 'blackout') {
-        return { ...d, w: x - d.x, h: y - d.y }
+      if (!d) return d;
+      if (d.type === "rect" || d.type === "pixelate" || d.type === "blackout") {
+        return { ...d, w: x - d.x, h: y - d.y };
       }
-      if (d.type === 'arrow') return { ...d, x2: x, y2: y }
-      if (d.type === 'freehand') return { ...d, points: [...d.points, { x, y }] }
-      return d
-    })
+      if (d.type === "arrow") return { ...d, x2: x, y2: y };
+      if (d.type === "freehand") return { ...d, points: [...d.points, { x, y }] };
+      return d;
+    });
   }
 
   // The two setStates run SEQUENTIALLY, never one nested in the other's updater.
@@ -257,124 +246,121 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
   // the annotation was committed twice. Reading the current draft and then
   // issuing each update once keeps every commit exactly once.
   function commitDraft() {
-    draggingRef.current = false
-    const d = draft
-    if (d && isWorthKeeping(d)) setAnnotations((prev) => [...prev, normalizeRect(d)])
-    setDraft(null)
+    draggingRef.current = false;
+    const d = draft;
+    if (d && isWorthKeeping(d)) setAnnotations((prev) => [...prev, normalizeRect(d)]);
+    setDraft(null);
   }
 
   function commitText() {
-    const t = textDraft
+    const t = textDraft;
     if (t && t.value.trim()) {
-      const value = t.value
-      setAnnotations((prev) => [
-        ...prev,
-        { type: 'text', x: t.cx, y: t.cy, text: value, color, size: fontSize },
-      ])
+      const value = t.value;
+      setAnnotations((prev) => [...prev, { type: "text", x: t.cx, y: t.cy, text: value, color, size: fontSize }]);
     }
-    setTextDraft(null)
+    setTextDraft(null);
   }
 
   function undo() {
-    setAnnotations((prev) => prev.slice(0, -1))
+    setAnnotations((prev) => prev.slice(0, -1));
   }
 
   // ── exits ────────────────────────────────────────────────────────────────────
   async function doExit(fn: () => Promise<string>) {
-    if (busy) return
-    setBusy(true)
+    if (busy) return;
+    setBusy(true);
     try {
-      const msg = await fn()
-      setStatus(msg)
-      setTimeout(onClose, 900)
+      const msg = await fn();
+      setStatus(msg);
+      setTimeout(onClose, 900);
     } catch (err) {
-      setStatus(`Failed: ${err instanceof Error ? err.message : String(err)}`)
-      setBusy(false)
+      setStatus(`Failed: ${err instanceof Error ? err.message : String(err)}`);
+      setBusy(false);
     } finally {
-      setPicking(false)
+      setPicking(false);
     }
   }
 
   const onSave = async () => {
-    if (busy) return
-    setBusy(true)
+    if (busy) return;
+    setBusy(true);
     try {
-      const blob = await toBlob(canvasRef.current!)
-      setPicking(true)
-      const where = await saveScreenshot(system.fs, blob, () => setPicking(false))
+      const blob = await toBlob(canvasRef.current!);
+      setPicking(true);
+      const where = await saveScreenshot(system.fs, blob, () => setPicking(false));
       // Cancelled: the capture stays open to save, copy or edit.
       if (where === null) {
-        setBusy(false)
-        return
+        setBusy(false);
+        return;
       }
-      setStatus(`Saved to ${where}`)
-      setTimeout(onClose, 900)
+      setStatus(`Saved to ${where}`);
+      setTimeout(onClose, 900);
     } catch (err) {
-      setStatus(`Failed: ${err instanceof Error ? err.message : String(err)}`)
-      setBusy(false)
+      setStatus(`Failed: ${err instanceof Error ? err.message : String(err)}`);
+      setBusy(false);
     }
-  }
+  };
 
   const onCopy = () =>
     doExit(async () => {
-      const result = await copyPng(toBlob(canvasRef.current!))
-      if (!result.ok) throw new Error(result.reason)
-      return 'Copied to clipboard'
-    })
+      const result = await copyPng(toBlob(canvasRef.current!));
+      if (!result.ok) throw new Error(result.reason);
+      return "Copied to clipboard";
+    });
 
   // The two apps are a pipeline — annotate here, edit properly there.
   const onEditInPaint = () =>
     doExit(() => {
-      system.intents.openApp('paint', { dataUrl: canvasRef.current!.toDataURL('image/png') })
-      return Promise.resolve('Opened in Paint')
-    })
+      system.intents.openApp("paint", { dataUrl: canvasRef.current!.toDataURL("image/png") });
+      return Promise.resolve("Opened in Paint");
+    });
 
   const onDownload = () =>
     doExit(async () => {
-      const blob = await toBlob(canvasRef.current!)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = screenshotFilename()
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      setTimeout(() => URL.revokeObjectURL(url), 4000)
-      return 'Downloaded'
-    })
+      const blob = await toBlob(canvasRef.current!);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = screenshotFilename();
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      return "Downloaded";
+    });
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       // The Save dialog's Escape cancels the dialog, not the capture.
-      if (textDraft || picking) return
-      if (e.key === 'Escape') onBack()
-      else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault()
-        undo()
+      if (textDraft || picking) return;
+      if (e.key === "Escape") onBack();
+      else if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+        e.preventDefault();
+        undo();
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [textDraft, onBack, picking])
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [textDraft, onBack, picking]);
 
   const tbBtn =
-    'rounded-control flex h-8 w-8 items-center justify-center border outline-none transition-colors ' +
-    'border-outline-variant text-on-surface hover:bg-surface-container-high ' +
-    'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset'
+    "rounded-control flex h-8 w-8 items-center justify-center border outline-none transition-colors " +
+    "border-outline-variant text-on-surface hover:bg-surface-container-high " +
+    "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset";
 
   return (
     <div
       data-snip-overlay
       aria-hidden={picking || undefined}
       style={{
-        position: 'fixed',
+        position: "fixed",
         inset: 0,
         zIndex: 100000,
-        visibility: picking ? 'hidden' : undefined,
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'rgba(10,10,12,0.92)',
-        fontFamily: 'var(--font-ui)',
+        visibility: picking ? "hidden" : undefined,
+        display: "flex",
+        flexDirection: "column",
+        background: "rgba(10,10,12,0.92)",
+        fontFamily: "var(--font-ui)",
       }}
     >
       {/* Win7-classic toolbar */}
@@ -390,7 +376,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
               key={id}
               title={label}
               onClick={() => setTool(id)}
-              className={cn(tbBtn, tool === id && 'bg-surface-container-high border-primary')}
+              className={cn(tbBtn, tool === id && "bg-surface-container-high border-primary")}
             >
               <Icon size={15} strokeWidth={1.75} />
             </button>
@@ -407,8 +393,8 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
               title={c}
               onClick={() => setColor(c)}
               className={cn(
-                'focus-visible:ring-primary rounded-small h-6 w-6 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
-                color === c ? 'border-primary ring-primary ring-1' : 'border-outline-variant'
+                "focus-visible:ring-primary rounded-small h-6 w-6 border outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                color === c ? "border-primary ring-primary ring-1" : "border-outline-variant",
               )}
               style={{ background: c }}
             />
@@ -421,7 +407,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
           title="Undo (Ctrl+Z)"
           onClick={undo}
           disabled={!annotations.length}
-          className={cn(tbBtn, !annotations.length && 'cursor-not-allowed opacity-40')}
+          className={cn(tbBtn, !annotations.length && "cursor-not-allowed opacity-40")}
         >
           <Undo2 size={15} strokeWidth={1.75} />
         </button>
@@ -434,20 +420,18 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
             title="Save to ~/Pictures/Screenshots"
             onClick={onSave}
             disabled={busy}
-            className={cn(tbBtn, 'w-auto gap-1.5 px-2.5 text-[12px] font-semibold')}
+            className={cn(tbBtn, "w-auto gap-1.5 px-2.5 text-[12px] font-semibold")}
           >
             <Save size={14} strokeWidth={1.75} /> Save
           </button>
           <button
-            title={
-              canCopy ? 'Copy to clipboard' : 'Clipboard needs a secure context (HTTPS/localhost)'
-            }
+            title={canCopy ? "Copy to clipboard" : "Clipboard needs a secure context (HTTPS/localhost)"}
             onClick={onCopy}
             disabled={busy || !canCopy}
             className={cn(
               tbBtn,
-              'w-auto gap-1.5 px-2.5 text-[12px] font-semibold',
-              !canCopy && 'cursor-not-allowed opacity-40'
+              "w-auto gap-1.5 px-2.5 text-[12px] font-semibold",
+              !canCopy && "cursor-not-allowed opacity-40",
             )}
           >
             <Copy size={14} strokeWidth={1.75} /> Copy
@@ -456,7 +440,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
             title="Edit in Paint"
             onClick={onEditInPaint}
             disabled={busy}
-            className={cn(tbBtn, 'w-auto gap-1.5 px-2.5 text-[12px] font-semibold')}
+            className={cn(tbBtn, "w-auto gap-1.5 px-2.5 text-[12px] font-semibold")}
           >
             <Palette size={14} strokeWidth={1.75} /> Edit in Paint
           </button>
@@ -464,23 +448,18 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
             title="Download to this device"
             onClick={onDownload}
             disabled={busy}
-            className={cn(tbBtn, 'w-auto gap-1.5 px-2.5 text-[12px] font-semibold')}
+            className={cn(tbBtn, "w-auto gap-1.5 px-2.5 text-[12px] font-semibold")}
           >
             <Download size={14} strokeWidth={1.75} /> Download
           </button>
-          <button
-            title="Back to capture modes (Esc)"
-            aria-label="Back"
-            onClick={onBack}
-            className={cn(tbBtn)}
-          >
+          <button title="Back to capture modes (Esc)" aria-label="Back" onClick={onBack} className={cn(tbBtn)}>
             <ArrowLeft size={15} strokeWidth={1.75} />
           </button>
           <button
             title="Close the tool"
             aria-label="Close"
             onClick={onClose}
-            className={cn(tbBtn, 'hover:bg-error hover:text-on-error')}
+            className={cn(tbBtn, "hover:bg-error hover:text-on-error")}
           >
             <X size={15} strokeWidth={1.75} />
           </button>
@@ -514,12 +493,12 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
             // `calc(100vh - 140px)` hardcoded the toolbar height — and this toolbar wraps,
             // so at narrow widths it is two or three rows tall and the canvas ran off the
             // bottom of its own stage.
-            maxWidth: '100%',
-            maxHeight: '100%',
-            cursor: tool === 'text' ? 'text' : 'crosshair',
-            touchAction: 'none',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
-            outline: '1px solid rgba(255,255,255,0.12)',
+            maxWidth: "100%",
+            maxHeight: "100%",
+            cursor: tool === "text" ? "text" : "crosshair",
+            touchAction: "none",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+            outline: "1px solid rgba(255,255,255,0.12)",
           }}
         />
 
@@ -532,26 +511,26 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
             onChange={(e) => setTextDraft((t) => (t ? { ...t, value: e.target.value } : t))}
             onBlur={commitText}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                commitText()
-              } else if (e.key === 'Escape') {
-                e.preventDefault()
-                setTextDraft(null)
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitText();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                setTextDraft(null);
               }
             }}
             placeholder="Type, then Enter"
             style={{
-              position: 'fixed',
+              position: "fixed",
               left: textDraft.left,
               top: textDraft.top,
               zIndex: 100001,
-              font: '600 16px var(--font-ui)',
+              font: "600 16px var(--font-ui)",
               color,
-              background: 'rgba(255,255,255,0.95)',
-              border: '1px solid var(--accent, #c0263a)',
-              padding: '2px 6px',
-              outline: 'none',
+              background: "rgba(255,255,255,0.95)",
+              border: "1px solid var(--accent, #c0263a)",
+              padding: "2px 6px",
+              outline: "none",
               minWidth: 120,
             }}
           />
@@ -564,5 +543,5 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
         )}
       </div>
     </div>
-  )
+  );
 }

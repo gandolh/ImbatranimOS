@@ -1,22 +1,19 @@
-import { createElement, useState, type FormEvent, type JSX } from 'react'
-import { cn } from '@imbatranim/ui'
-import { api } from '../../lib/axios'
-import { Button, Input } from '../../shared/components/ui'
-import { marketplaceIcon } from '../../shared/registry/marketplace'
-import { apiMessage, capabilityText, publisher, sourceLine, type Inspection } from './urlApps'
+import { createElement, useState, type FormEvent, type JSX } from "react";
+import { cn } from "@imbatranim/ui";
+import { api } from "../../lib/axios";
+import { Button, Input } from "../../shared/components/ui";
+import { marketplaceIcon } from "../../shared/registry/marketplace";
+import { apiMessage, capabilityText, publisher, sourceLine, type Inspection } from "./urlApps";
 
 /** A small all-caps label beside a name: Verified, Not verified. */
 export function SourceBadge({ children, warn = false }: { children: string; warn?: boolean }) {
   return (
     <span
-      className={cn(
-        'ml-2 text-[9px] font-semibold tracking-widest uppercase',
-        warn ? 'text-error' : 'text-primary'
-      )}
+      className={cn("ml-2 text-[9px] font-semibold tracking-widest uppercase", warn ? "text-error" : "text-primary")}
     >
       {children}
     </span>
-  )
+  );
 }
 
 function Capabilities({ capabilities }: { capabilities: string[] }) {
@@ -35,7 +32,7 @@ function Capabilities({ capabilities }: { capabilities: string[] }) {
         </>
       )}
     </div>
-  )
+  );
 }
 
 /**
@@ -49,51 +46,47 @@ export function ConsentCard({
   onInstalled,
   onCancel,
 }: {
-  inspection: Inspection
-  onInstalled: () => void
-  onCancel: () => void
+  inspection: Inspection;
+  onInstalled: () => void;
+  onCancel: () => void;
 }) {
-  const { manifest, source, current } = inspection
-  const unverified = !inspection.verified
-  const same = current?.commit === source.commit
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [moreInfo, setMoreInfo] = useState(false)
+  const { manifest, source, current } = inspection;
+  const unverified = !inspection.verified;
+  const same = current?.commit === source.commit;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [moreInfo, setMoreInfo] = useState(false);
 
   const install = async () => {
-    setBusy(true)
-    setError(null)
+    setBusy(true);
+    setError(null);
     try {
       await api.post(
-        '/marketplace/url/install',
-        unverified ? { pending: inspection.pending, trust: true } : { pending: inspection.pending }
-      )
-      onInstalled()
+        "/marketplace/url/install",
+        unverified ? { pending: inspection.pending, trust: true } : { pending: inspection.pending },
+      );
+      onInstalled();
     } catch (err) {
-      setError(apiMessage(err, 'The install failed.'))
-      setBusy(false)
+      setError(apiMessage(err, "The install failed."));
+      setBusy(false);
     }
-  }
+  };
 
   const cancel = () => {
-    void Promise.resolve(api.delete(`/marketplace/url/pending/${inspection.pending}`)).catch(
-      () => {}
-    )
-    onCancel()
-  }
+    void Promise.resolve(api.delete(`/marketplace/url/pending/${inspection.pending}`)).catch(() => {});
+    onCancel();
+  };
 
   const replaces = current && (
     <p className="text-on-surface mt-2 text-[11px]">
-      {same
-        ? 'Already installed at this commit.'
-        : `Installed at ${current.commit.slice(0, 7)}. This replaces it.`}
+      {same ? "Already installed at this commit." : `Installed at ${current.commit.slice(0, 7)}. This replaces it.`}
     </p>
-  )
+  );
   const apps = inspection.apps && inspection.apps.length > 1 && (
     <p className="text-on-surface-variant mt-2 text-[11px]">
-      Its apps: {inspection.apps.map((a) => a.name).join(', ')}
+      Its apps: {inspection.apps.map((a) => a.name).join(", ")}
     </p>
-  )
+  );
   const footer = (primary: JSX.Element) => (
     <>
       {error && <p className="text-error mt-2 text-[12px]">{error}</p>}
@@ -104,7 +97,7 @@ export function ConsentCard({
         </Button>
       </div>
     </>
-  )
+  );
 
   if (unverified) {
     return (
@@ -112,12 +105,9 @@ export function ConsentCard({
         aria-label={`${manifest.name} is not verified`}
         className="rounded-control border-error bg-surface-container-low mt-3 border px-3 py-3"
       >
-        <p className="font-ui text-on-surface text-[13px] font-semibold">
-          This app isn&apos;t verified
-        </p>
+        <p className="font-ui text-on-surface text-[13px] font-semibold">This app isn&apos;t verified</p>
         <p className="text-on-surface-variant mt-1 text-[11px]">
-          Nobody has reviewed {manifest.name} at this commit. Install it only if you trust where it
-          comes from.
+          Nobody has reviewed {manifest.name} at this commit. Install it only if you trust where it comes from.
         </p>
         <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[11px]">
           <dt className="text-on-surface-variant">App</dt>
@@ -136,36 +126,29 @@ export function ConsentCard({
         </p>
         {moreInfo && (
           <div className="mt-2 text-[11px]">
-            {manifest.description && (
-              <p className="text-on-surface-variant">{manifest.description}</p>
-            )}
+            {manifest.description && <p className="text-on-surface-variant">{manifest.description}</p>}
             {apps}
             <p className="text-on-surface-variant mt-2">{sourceLine(source)}</p>
             <p className="text-on-surface mt-2">
-              It is built from source on this machine and runs like the other apps. Trust covers
-              this commit only: each update asks again.
+              It is built from source on this machine and runs like the other apps. Trust covers this commit only: each
+              update asks again.
             </p>
             {replaces}
           </div>
         )}
         {footer(
           moreInfo ? (
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={busy || same}
-              onClick={() => void install()}
-            >
-              {busy ? 'Installing…' : 'Trust and install'}
+            <Button size="sm" variant="destructive" disabled={busy || same} onClick={() => void install()}>
+              {busy ? "Installing…" : "Trust and install"}
             </Button>
           ) : (
             <Button size="sm" variant="default" onClick={() => setMoreInfo(true)}>
               More info
             </Button>
-          )
+          ),
         )}
       </section>
-    )
+    );
   }
 
   return (
@@ -179,14 +162,10 @@ export function ConsentCard({
             {manifest.name}
             <SourceBadge>Verified</SourceBadge>
           </span>
-          <span className="text-on-surface-variant block truncate text-[11px]">
-            {sourceLine(source)}
-          </span>
+          <span className="text-on-surface-variant block truncate text-[11px]">{sourceLine(source)}</span>
         </span>
       </div>
-      {manifest.description && (
-        <p className="text-on-surface-variant mt-2 text-[11px]">{manifest.description}</p>
-      )}
+      {manifest.description && <p className="text-on-surface-variant mt-2 text-[11px]">{manifest.description}</p>}
       {apps}
       {replaces}
       <Capabilities capabilities={manifest.capabilities} />
@@ -194,50 +173,49 @@ export function ConsentCard({
         role="note"
         className="border-primary text-on-surface bg-surface-container-lowest mt-3 border-l-2 px-2.5 py-2 text-[11px]"
       >
-        This commit is verified. It is built from source on this machine and runs like the other
-        apps, as you.
+        This commit is verified. It is built from source on this machine and runs like the other apps, as you.
       </p>
       {footer(
         <Button size="sm" variant="primary" disabled={busy || same} onClick={() => void install()}>
-          {busy ? 'Installing…' : 'Install'}
-        </Button>
+          {busy ? "Installing…" : "Install"}
+        </Button>,
       )}
     </div>
-  )
+  );
 }
 
 /** Settings → Marketplace → "Install from a URL". */
 export function InstallFromUrl({ onInstalled }: { onInstalled: () => void }) {
-  const [url, setUrl] = useState('')
-  const [checking, setChecking] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [inspection, setInspection] = useState<Inspection | null>(null)
-  const [done, setDone] = useState(false)
+  const [url, setUrl] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [inspection, setInspection] = useState<Inspection | null>(null);
+  const [done, setDone] = useState(false);
 
   const check = async (e?: FormEvent) => {
-    e?.preventDefault()
-    const value = url.trim()
-    if (!value || checking) return
-    setChecking(true)
-    setError(null)
-    setDone(false)
+    e?.preventDefault();
+    const value = url.trim();
+    if (!value || checking) return;
+    setChecking(true);
+    setError(null);
+    setDone(false);
     try {
-      const { data } = await api.post<Inspection>('/marketplace/url/inspect', { url: value })
-      setInspection(data)
+      const { data } = await api.post<Inspection>("/marketplace/url/inspect", { url: value });
+      setInspection(data);
     } catch (err) {
-      setInspection(null)
-      setError(apiMessage(err, "Couldn't reach that repository."))
+      setInspection(null);
+      setError(apiMessage(err, "Couldn't reach that repository."));
     } finally {
-      setChecking(false)
+      setChecking(false);
     }
-  }
+  };
 
   return (
     <section className="mb-6">
       <h3 className="font-ui text-on-surface mb-1 text-[12px] font-semibold">Install from a URL</h3>
       <p className="text-on-surface-variant mb-3 text-[12px]">
-        Paste a GitHub link to an app that ships an <code>imbatranim.json</code>. A verified app
-        installs straight away; any other asks for your trust first.
+        Paste a GitHub link to an app that ships an <code>imbatranim.json</code>. A verified app installs straight away;
+        any other asks for your trust first.
       </p>
       <form onSubmit={(e) => void check(e)} className="flex items-start gap-2">
         <div className="max-w-[420px] flex-1">
@@ -251,7 +229,7 @@ export function InstallFromUrl({ onInstalled }: { onInstalled: () => void }) {
           />
         </div>
         <Button type="submit" size="md" disabled={checking || !url.trim()}>
-          {checking ? 'Checking…' : 'Check'}
+          {checking ? "Checking…" : "Check"}
         </Button>
       </form>
       {error && <p className="text-error mt-2 text-[12px]">{error}</p>}
@@ -265,17 +243,17 @@ export function InstallFromUrl({ onInstalled }: { onInstalled: () => void }) {
           key={inspection.pending}
           inspection={inspection}
           onCancel={() => {
-            setInspection(null)
-            setUrl('')
+            setInspection(null);
+            setUrl("");
           }}
           onInstalled={() => {
-            setInspection(null)
-            setUrl('')
-            setDone(true)
-            onInstalled()
+            setInspection(null);
+            setUrl("");
+            setDone(true);
+            onInstalled();
           }}
         />
       )}
     </section>
-  )
+  );
 }

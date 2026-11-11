@@ -1,36 +1,27 @@
-import {
-  BadRequestException,
-  InternalServerErrorException,
-  PayloadTooLargeException,
-} from '@nestjs/common';
-import { execFile, spawnSync } from 'child_process';
-import { promisify } from 'util';
-import { gzipSync } from 'zlib';
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import { join } from 'path';
-import { randomUUID } from 'crypto';
-import { FilesService } from '../files/files.service';
-import {
-  ArchiveService,
-  loneOutputName,
-  numberedName,
-} from './archive.service';
+import { BadRequestException, InternalServerErrorException, PayloadTooLargeException } from "@nestjs/common";
+import { execFile, spawnSync } from "child_process";
+import { promisify } from "util";
+import { gzipSync } from "zlib";
+import * as fs from "fs/promises";
+import * as os from "os";
+import { join } from "path";
+import { randomUUID } from "crypto";
+import { FilesService } from "../files/files.service";
+import { ArchiveService, loneOutputName, numberedName } from "./archive.service";
 
 const execFileAsync = promisify(execFile);
 
 /** Compress `data` with the host's own `xz` or `bzip2` CLI. */
-function compressWith(tool: 'xz' | 'bzip2', data: Buffer): Buffer {
-  const run = spawnSync(tool, ['-c'], { input: data });
-  if (run.status !== 0)
-    throw new Error(`${tool} failed: ${run.stderr.toString()}`);
+function compressWith(tool: "xz" | "bzip2", data: Buffer): Buffer {
+  const run = spawnSync(tool, ["-c"], { input: data });
+  if (run.status !== 0) throw new Error(`${tool} failed: ${run.stderr.toString()}`);
   return run.stdout;
 }
 
-const COMPRESS: Record<'gz' | 'xz' | 'bz2', (data: Buffer) => Buffer> = {
+const COMPRESS: Record<"gz" | "xz" | "bz2", (data: Buffer) => Buffer> = {
   gz: (data) => gzipSync(data),
-  xz: (data) => compressWith('xz', data),
-  bz2: (data) => compressWith('bzip2', data),
+  xz: (data) => compressWith("xz", data),
+  bz2: (data) => compressWith("bzip2", data),
 };
 
 /**
@@ -39,7 +30,7 @@ const COMPRESS: Record<'gz' | 'xz' | 'bz2', (data: Buffer) => Buffer> = {
  * the compressed file stays. Real files, real zlib, and the host's real
  * `xzcat`/`bzcat` (the image's are busybox applets that read the same way).
  */
-describe('ArchiveService — a lone compressed file', () => {
+describe("ArchiveService — a lone compressed file", () => {
   let files: FilesService;
   let service: ArchiveService;
   let jail: string;
@@ -48,12 +39,12 @@ describe('ArchiveService — a lone compressed file', () => {
   const prevCap = process.env.ARCHIVE_MAX_TOTAL_BYTES;
 
   beforeEach(async () => {
-    jail = await fs.mkdtemp(join(os.tmpdir(), 'imb-lone-jail-'));
-    outside = await fs.mkdtemp(join(os.tmpdir(), 'imb-lone-out-'));
+    jail = await fs.mkdtemp(join(os.tmpdir(), "imb-lone-jail-"));
+    outside = await fs.mkdtemp(join(os.tmpdir(), "imb-lone-out-"));
     process.env.FILES_ROOT = jail;
     files = new FilesService();
     service = new ArchiveService(files);
-    await fs.mkdir(join(jail, 'docs'));
+    await fs.mkdir(join(jail, "docs"));
   });
 
   afterEach(async () => {
@@ -64,303 +55,235 @@ describe('ArchiveService — a lone compressed file', () => {
     await fs.rm(outside, { recursive: true, force: true });
   });
 
-  const text = Buffer.from('line one\nline two\n'.repeat(50));
-  const docs = () => fs.readdir(join(jail, 'docs')).then((n) => n.sort());
+  const text = Buffer.from("line one\nline two\n".repeat(50));
+  const docs = () => fs.readdir(join(jail, "docs")).then((n) => n.sort());
 
-  describe.each(['gz', 'xz', 'bz2'] as const)('a .%s file', (kind) => {
-    it('unpacks next to itself without the suffix, and stays', async () => {
+  describe.each(["gz", "xz", "bz2"] as const)("a .%s file", (kind) => {
+    it("unpacks next to itself without the suffix, and stays", async () => {
       const packed = COMPRESS[kind](text);
       await fs.writeFile(join(jail, `docs/notes.txt.${kind}`), packed);
 
-      const res = await service.extract('home', `docs/notes.txt.${kind}`);
+      const res = await service.extract("home", `docs/notes.txt.${kind}`);
 
       expect(res).toEqual({
-        dest: 'docs/notes.txt',
+        dest: "docs/notes.txt",
         entries: 1,
         totalBytes: text.length,
       });
-      expect(await fs.readFile(join(jail, 'docs/notes.txt'))).toEqual(text);
-      expect(await fs.readFile(join(jail, `docs/notes.txt.${kind}`))).toEqual(
-        packed,
-      );
+      expect(await fs.readFile(join(jail, "docs/notes.txt"))).toEqual(text);
+      expect(await fs.readFile(join(jail, `docs/notes.txt.${kind}`))).toEqual(packed);
       // Nothing else: no staging file left behind.
-      expect(await docs()).toEqual(['notes.txt', `notes.txt.${kind}`]);
+      expect(await docs()).toEqual(["notes.txt", `notes.txt.${kind}`]);
     });
 
-    it('takes a number when the name is taken, and leaves the taken file alone', async () => {
-      await fs.writeFile(
-        join(jail, `docs/notes.txt.${kind}`),
-        COMPRESS[kind](text),
-      );
-      await fs.writeFile(join(jail, 'docs/notes.txt'), 'mine');
+    it("takes a number when the name is taken, and leaves the taken file alone", async () => {
+      await fs.writeFile(join(jail, `docs/notes.txt.${kind}`), COMPRESS[kind](text));
+      await fs.writeFile(join(jail, "docs/notes.txt"), "mine");
 
-      const first = await service.extract('home', `docs/notes.txt.${kind}`);
-      const second = await service.extract('home', `docs/notes.txt.${kind}`);
+      const first = await service.extract("home", `docs/notes.txt.${kind}`);
+      const second = await service.extract("home", `docs/notes.txt.${kind}`);
 
-      expect(first.dest).toBe('docs/notes (2).txt');
-      expect(second.dest).toBe('docs/notes (3).txt');
-      expect(await fs.readFile(join(jail, 'docs/notes.txt'), 'utf8')).toBe(
-        'mine',
-      );
-      expect(await fs.readFile(join(jail, 'docs/notes (3).txt'))).toEqual(text);
+      expect(first.dest).toBe("docs/notes (2).txt");
+      expect(second.dest).toBe("docs/notes (3).txt");
+      expect(await fs.readFile(join(jail, "docs/notes.txt"), "utf8")).toBe("mine");
+      expect(await fs.readFile(join(jail, "docs/notes (3).txt"))).toEqual(text);
     });
 
-    it('refuses past the size cap and leaves nothing behind', async () => {
-      process.env.ARCHIVE_MAX_TOTAL_BYTES = '4096';
+    it("refuses past the size cap and leaves nothing behind", async () => {
+      process.env.ARCHIVE_MAX_TOTAL_BYTES = "4096";
       // A few hundred bytes that expand to 1 MiB: a small bomb.
-      await fs.writeFile(
-        join(jail, `docs/zeros.${kind}`),
-        COMPRESS[kind](Buffer.alloc(1024 * 1024)),
-      );
+      await fs.writeFile(join(jail, `docs/zeros.${kind}`), COMPRESS[kind](Buffer.alloc(1024 * 1024)));
 
-      await expect(
-        service.extract('home', `docs/zeros.${kind}`),
-      ).rejects.toBeInstanceOf(PayloadTooLargeException);
+      await expect(service.extract("home", `docs/zeros.${kind}`)).rejects.toBeInstanceOf(PayloadTooLargeException);
       expect(await docs()).toEqual([`zeros.${kind}`]);
     });
 
-    it('refuses a damaged file and leaves nothing behind', async () => {
+    it("refuses a damaged file and leaves nothing behind", async () => {
       const packed = COMPRESS[kind](Buffer.from(text.toString().repeat(20)));
       // The header survives (so it is still recognised); the rest is cut.
-      await fs.writeFile(
-        join(jail, `docs/cut.txt.${kind}`),
-        packed.subarray(0, Math.floor(packed.length / 2)),
-      );
+      await fs.writeFile(join(jail, `docs/cut.txt.${kind}`), packed.subarray(0, Math.floor(packed.length / 2)));
 
-      await expect(
-        service.extract('home', `docs/cut.txt.${kind}`),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.extract("home", `docs/cut.txt.${kind}`)).rejects.toBeInstanceOf(BadRequestException);
       expect(await docs()).toEqual([`cut.txt.${kind}`]);
     });
   });
 
-  it('reads the format from the content, not the suffix', async () => {
+  it("reads the format from the content, not the suffix", async () => {
     // xz bytes under a .gz name still unpack (with xzcat).
-    await fs.writeFile(join(jail, 'docs/odd.txt.gz'), COMPRESS.xz(text));
-    const res = await service.extract('home', 'docs/odd.txt.gz');
-    expect(res.dest).toBe('docs/odd.txt');
-    expect(await fs.readFile(join(jail, 'docs/odd.txt'))).toEqual(text);
+    await fs.writeFile(join(jail, "docs/odd.txt.gz"), COMPRESS.xz(text));
+    const res = await service.extract("home", "docs/odd.txt.gz");
+    expect(res.dest).toBe("docs/odd.txt");
+    expect(await fs.readFile(join(jail, "docs/odd.txt"))).toEqual(text);
   });
 
-  it('refuses a file whose content is not compressed, writing nothing', async () => {
-    await fs.writeFile(join(jail, 'docs/fake.gz'), 'plain text, not gzip');
-    await expect(service.extract('home', 'docs/fake.gz')).rejects.toThrow(
-      /not a gzip, xz or bzip2 file/,
-    );
-    expect(await docs()).toEqual(['fake.gz']);
+  it("refuses a file whose content is not compressed, writing nothing", async () => {
+    await fs.writeFile(join(jail, "docs/fake.gz"), "plain text, not gzip");
+    await expect(service.extract("home", "docs/fake.gz")).rejects.toThrow(/not a gzip, xz or bzip2 file/);
+    expect(await docs()).toEqual(["fake.gz"]);
   });
 
-  it('a .gz holding a tar still extracts as a tarball, into a folder', async () => {
-    await fs.mkdir(join(jail, 'src'));
-    await fs.writeFile(join(jail, 'src/a.txt'), 'alpha');
-    await execFileAsync('tar', [
-      '-czf',
-      join(jail, 'docs/bundle.gz'),
-      '-C',
-      jail,
-      'src',
-    ]);
+  it("a .gz holding a tar still extracts as a tarball, into a folder", async () => {
+    await fs.mkdir(join(jail, "src"));
+    await fs.writeFile(join(jail, "src/a.txt"), "alpha");
+    await execFileAsync("tar", ["-czf", join(jail, "docs/bundle.gz"), "-C", jail, "src"]);
 
-    const res = await service.extract('home', 'docs/bundle.gz');
+    const res = await service.extract("home", "docs/bundle.gz");
 
-    expect(res.dest).toBe('docs/bundle');
-    expect(await fs.readFile(join(jail, 'docs/bundle/src/a.txt'), 'utf8')).toBe(
-      'alpha',
-    );
+    expect(res.dest).toBe("docs/bundle");
+    expect(await fs.readFile(join(jail, "docs/bundle/src/a.txt"), "utf8")).toBe("alpha");
   });
 
-  it('a .tar.gz is still a tarball', async () => {
-    await fs.mkdir(join(jail, 'src'));
-    await fs.writeFile(join(jail, 'src/a.txt'), 'alpha');
-    await execFileAsync('tar', [
-      '-czf',
-      join(jail, 'docs/bundle.tar.gz'),
-      '-C',
-      jail,
-      'src',
-    ]);
+  it("a .tar.gz is still a tarball", async () => {
+    await fs.mkdir(join(jail, "src"));
+    await fs.writeFile(join(jail, "src/a.txt"), "alpha");
+    await execFileAsync("tar", ["-czf", join(jail, "docs/bundle.tar.gz"), "-C", jail, "src"]);
 
-    const res = await service.extract('home', 'docs/bundle.tar.gz');
+    const res = await service.extract("home", "docs/bundle.tar.gz");
 
-    expect(res.dest).toBe('docs/bundle');
-    expect(await fs.readFile(join(jail, 'docs/bundle/src/a.txt'), 'utf8')).toBe(
-      'alpha',
-    );
+    expect(res.dest).toBe("docs/bundle");
+    expect(await fs.readFile(join(jail, "docs/bundle/src/a.txt"), "utf8")).toBe("alpha");
   });
 
-  it('unpacks into a chosen folder', async () => {
-    await fs.writeFile(join(jail, 'docs/notes.txt.gz'), COMPRESS.gz(text));
-    await fs.mkdir(join(jail, 'elsewhere'));
+  it("unpacks into a chosen folder", async () => {
+    await fs.writeFile(join(jail, "docs/notes.txt.gz"), COMPRESS.gz(text));
+    await fs.mkdir(join(jail, "elsewhere"));
 
-    const res = await service.extract('home', 'docs/notes.txt.gz', 'elsewhere');
+    const res = await service.extract("home", "docs/notes.txt.gz", "elsewhere");
 
-    expect(res.dest).toBe('elsewhere/notes.txt');
-    expect(await fs.readFile(join(jail, 'elsewhere/notes.txt'))).toEqual(text);
+    expect(res.dest).toBe("elsewhere/notes.txt");
+    expect(await fs.readFile(join(jail, "elsewhere/notes.txt"))).toEqual(text);
   });
 
-  it('does not write through a symlink at the name: it takes the next number', async () => {
-    await fs.writeFile(join(jail, 'docs/notes.txt.gz'), COMPRESS.gz(text));
+  it("does not write through a symlink at the name: it takes the next number", async () => {
+    await fs.writeFile(join(jail, "docs/notes.txt.gz"), COMPRESS.gz(text));
     // A dangling link pointing out of the jail, sitting on the output name.
-    await fs.symlink(join(outside, 'planted'), join(jail, 'docs/notes.txt'));
+    await fs.symlink(join(outside, "planted"), join(jail, "docs/notes.txt"));
 
-    const res = await service.extract('home', 'docs/notes.txt.gz');
+    const res = await service.extract("home", "docs/notes.txt.gz");
 
-    expect(res.dest).toBe('docs/notes (2).txt');
-    await expect(fs.stat(join(outside, 'planted'))).rejects.toThrow();
+    expect(res.dest).toBe("docs/notes (2).txt");
+    await expect(fs.stat(join(outside, "planted"))).rejects.toThrow();
     expect(await fs.readdir(outside)).toEqual([]);
   });
 
-  it('refuses a folder outside the jail, or one that is a link out of it', async () => {
-    await fs.writeFile(join(jail, 'docs/notes.txt.gz'), COMPRESS.gz(text));
-    await fs.symlink(outside, join(jail, 'out-link'));
+  it("refuses a folder outside the jail, or one that is a link out of it", async () => {
+    await fs.writeFile(join(jail, "docs/notes.txt.gz"), COMPRESS.gz(text));
+    await fs.symlink(outside, join(jail, "out-link"));
 
-    await expect(
-      service.extract('home', 'docs/notes.txt.gz', '../escape'),
-    ).rejects.toThrow(/traversal/i);
-    await expect(
-      service.extract('home', 'docs/notes.txt.gz', 'out-link'),
-    ).rejects.toThrow(/traversal/i);
+    await expect(service.extract("home", "docs/notes.txt.gz", "../escape")).rejects.toThrow(/traversal/i);
+    await expect(service.extract("home", "docs/notes.txt.gz", "out-link")).rejects.toThrow(/traversal/i);
     expect(await fs.readdir(outside)).toEqual([]);
   });
 
-  it('refuses entries it does not have', async () => {
-    await fs.writeFile(join(jail, 'docs/notes.txt.gz'), COMPRESS.gz(text));
-    await expect(
-      service.extract('home', 'docs/notes.txt.gz', undefined, ['../x']),
-    ).rejects.toThrow(/does not contain an entry named \.\.\/x/);
+  it("refuses entries it does not have", async () => {
+    await fs.writeFile(join(jail, "docs/notes.txt.gz"), COMPRESS.gz(text));
+    await expect(service.extract("home", "docs/notes.txt.gz", undefined, ["../x"])).rejects.toThrow(
+      /does not contain an entry named \.\.\/x/,
+    );
     // Its one entry, by the listed name, is fine.
-    const res = await service.extract('home', 'docs/notes.txt.gz', undefined, [
-      'notes.txt',
-    ]);
-    expect(res.dest).toBe('docs/notes.txt');
+    const res = await service.extract("home", "docs/notes.txt.gz", undefined, ["notes.txt"]);
+    expect(res.dest).toBe("docs/notes.txt");
   });
 
-  it('lists as one file named without the suffix', async () => {
+  it("lists as one file named without the suffix", async () => {
     const packed = COMPRESS.bz2(text);
-    await fs.writeFile(join(jail, 'docs/notes.txt.bz2'), packed);
+    await fs.writeFile(join(jail, "docs/notes.txt.bz2"), packed);
 
-    const listing = await service.list('home', 'docs/notes.txt.bz2');
+    const listing = await service.list("home", "docs/notes.txt.bz2");
 
-    expect(listing.format).toBe('bz2');
+    expect(listing.format).toBe("bz2");
     expect(listing.entries).toEqual([
       expect.objectContaining({
-        name: 'notes.txt',
+        name: "notes.txt",
         compressedSize: packed.length,
         directory: false,
       }),
     ]);
-    expect(await docs()).toEqual(['notes.txt.bz2']);
+    expect(await docs()).toEqual(["notes.txt.bz2"]);
   });
 
-  it('says so when the decompressor is missing, instead of crashing', async () => {
+  it("says so when the decompressor is missing, instead of crashing", async () => {
     class NoXz extends ArchiveService {
       protected decompressorCommand(): string {
-        return 'imbatranim-no-such-xzcat';
+        return "imbatranim-no-such-xzcat";
       }
     }
-    await fs.writeFile(join(jail, 'docs/notes.txt.xz'), COMPRESS.xz(text));
+    await fs.writeFile(join(jail, "docs/notes.txt.xz"), COMPRESS.xz(text));
 
-    const err = await new NoXz(files)
-      .extract('home', 'docs/notes.txt.xz')
-      .catch((e: unknown) => e);
+    const err = await new NoXz(files).extract("home", "docs/notes.txt.xz").catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(InternalServerErrorException);
-    expect((err as Error).message).toMatch(
-      /imbatranim-no-such-xzcat is not available/,
-    );
-    expect(await docs()).toEqual(['notes.txt.xz']);
+    expect((err as Error).message).toMatch(/imbatranim-no-such-xzcat is not available/);
+    expect(await docs()).toEqual(["notes.txt.xz"]);
   });
 
-  it('still refuses an unknown format, and leaves no folder for it', async () => {
-    await fs.writeFile(join(jail, 'docs/thing.rar'), 'x');
-    await expect(service.extract('home', 'docs/thing.rar')).rejects.toThrow(
-      /Unsupported archive format/,
-    );
-    expect(await docs()).toEqual(['thing.rar']);
+  it("still refuses an unknown format, and leaves no folder for it", async () => {
+    await fs.writeFile(join(jail, "docs/thing.rar"), "x");
+    await expect(service.extract("home", "docs/thing.rar")).rejects.toThrow(/Unsupported archive format/);
+    expect(await docs()).toEqual(["thing.rar"]);
   });
 
-  it('takes output exactly the size of the cap', async () => {
+  it("takes output exactly the size of the cap", async () => {
     process.env.ARCHIVE_MAX_TOTAL_BYTES = String(text.length);
-    await fs.writeFile(join(jail, 'docs/notes.txt.gz'), COMPRESS.gz(text));
-    const res = await service.extract('home', 'docs/notes.txt.gz');
+    await fs.writeFile(join(jail, "docs/notes.txt.gz"), COMPRESS.gz(text));
+    const res = await service.extract("home", "docs/notes.txt.gz");
     expect(res.totalBytes).toBe(text.length);
   });
 
-  it('refuses a FIFO named like an archive without opening it', async () => {
-    spawnSync('mkfifo', [join(jail, 'docs/x.gz')]);
-    await expect(service.extract('home', 'docs/x.gz')).rejects.toThrow(
-      BadRequestException,
-    );
-    await expect(service.list('home', 'docs/x.gz')).rejects.toThrow(
-      /not a regular file/,
-    );
+  it("refuses a FIFO named like an archive without opening it", async () => {
+    spawnSync("mkfifo", [join(jail, "docs/x.gz")]);
+    await expect(service.extract("home", "docs/x.gz")).rejects.toThrow(BadRequestException);
+    await expect(service.list("home", "docs/x.gz")).rejects.toThrow(/not a regular file/);
   });
 
-  it('refuses a tar inside a file with no name left to make a folder of', async () => {
-    await fs.mkdir(join(jail, 'src'));
-    await fs.writeFile(join(jail, 'src/a.txt'), 'alpha');
-    await execFileAsync('tar', [
-      '-czf',
-      join(jail, 'docs/.gz'),
-      '-C',
-      jail,
-      'src',
-    ]);
-    await expect(service.extract('home', 'docs/.gz')).rejects.toThrow(
-      /rename it first/,
-    );
-    expect(await docs()).toEqual(['.gz']);
+  it("refuses a tar inside a file with no name left to make a folder of", async () => {
+    await fs.mkdir(join(jail, "src"));
+    await fs.writeFile(join(jail, "src/a.txt"), "alpha");
+    await execFileAsync("tar", ["-czf", join(jail, "docs/.gz"), "-C", jail, "src"]);
+    await expect(service.extract("home", "docs/.gz")).rejects.toThrow(/rename it first/);
+    expect(await docs()).toEqual([".gz"]);
   });
 
-  it('answers 400 when numbering a clash would pass the name limit', async () => {
-    const stem = 'a'.repeat(248);
+  it("answers 400 when numbering a clash would pass the name limit", async () => {
+    const stem = "a".repeat(248);
     await fs.writeFile(join(jail, `docs/${stem}.txt.gz`), COMPRESS.gz(text));
-    await fs.writeFile(join(jail, `docs/${stem}.txt`), 'mine');
-    await expect(
-      service.extract('home', `docs/${stem}.txt.gz`),
-    ).rejects.toThrow(BadRequestException);
+    await fs.writeFile(join(jail, `docs/${stem}.txt`), "mine");
+    await expect(service.extract("home", `docs/${stem}.txt.gz`)).rejects.toThrow(BadRequestException);
     expect(await docs()).toEqual([`${stem}.txt`, `${stem}.txt.gz`]);
   });
 
-  it('clears staged files an old crash left, and keeps a recent one', async () => {
+  it("clears staged files an old crash left, and keeps a recent one", async () => {
     const stale = join(jail, `docs/.extract-${randomUUID()}.part`);
     const fresh = join(jail, `docs/.extract-${randomUUID()}.part`);
-    await fs.writeFile(stale, 'half');
-    await fs.writeFile(fresh, 'half');
+    await fs.writeFile(stale, "half");
+    await fs.writeFile(fresh, "half");
     const old = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
     await fs.utimes(stale, old, old);
-    await fs.writeFile(join(jail, 'docs/notes.txt.gz'), COMPRESS.gz(text));
+    await fs.writeFile(join(jail, "docs/notes.txt.gz"), COMPRESS.gz(text));
 
-    await service.extract('home', 'docs/notes.txt.gz');
+    await service.extract("home", "docs/notes.txt.gz");
 
     await expect(fs.stat(stale)).rejects.toThrow();
     await expect(fs.stat(fresh)).resolves.toBeDefined();
   });
 
-  it('removes a folder it made when the unpack fails', async () => {
+  it("removes a folder it made when the unpack fails", async () => {
     const packed = COMPRESS.gz(text);
-    await fs.writeFile(
-      join(jail, 'docs/bad.gz'),
-      packed.subarray(0, packed.length - 12),
-    );
-    await expect(
-      service.extract('home', 'docs/bad.gz', 'made/inside'),
-    ).rejects.toThrow(BadRequestException);
-    await expect(fs.stat(join(jail, 'made'))).rejects.toThrow();
+    await fs.writeFile(join(jail, "docs/bad.gz"), packed.subarray(0, packed.length - 12));
+    await expect(service.extract("home", "docs/bad.gz", "made/inside")).rejects.toThrow(BadRequestException);
+    await expect(fs.stat(join(jail, "made"))).rejects.toThrow();
     // A folder that was there already stays.
-    await expect(
-      service.extract('home', 'docs/bad.gz', 'docs'),
-    ).rejects.toThrow(BadRequestException);
-    expect(await docs()).toEqual(['bad.gz']);
+    await expect(service.extract("home", "docs/bad.gz", "docs")).rejects.toThrow(BadRequestException);
+    expect(await docs()).toEqual(["bad.gz"]);
   });
 
-  it('unpacks at most two at a time', async () => {
+  it("unpacks at most two at a time", async () => {
     let active = 0;
     let most = 0;
     const seam = service as unknown as {
       decompressNow: () => Promise<void>;
     };
-    jest.spyOn(seam, 'decompressNow').mockImplementation(async () => {
+    jest.spyOn(seam, "decompressNow").mockImplementation(async () => {
       active++;
       most = Math.max(most, active);
       await new Promise((r) => setTimeout(r, 15));
@@ -369,43 +292,41 @@ describe('ArchiveService — a lone compressed file', () => {
     for (let i = 0; i < 5; i++) {
       await fs.writeFile(join(jail, `docs/f${i}.txt.gz`), COMPRESS.gz(text));
     }
-    await Promise.all(
-      [0, 1, 2, 3, 4].map((i) => service.extract('home', `docs/f${i}.txt.gz`)),
-    );
+    await Promise.all([0, 1, 2, 3, 4].map((i) => service.extract("home", `docs/f${i}.txt.gz`)));
     expect(most).toBe(2);
   });
 
-  it('runs as a job, like any extraction', async () => {
-    await fs.writeFile(join(jail, 'docs/notes.txt.gz'), COMPRESS.gz(text));
-    const { id } = service.startExtractJob('home', 'docs/notes.txt.gz');
-    for (let i = 0; i < 100 && service.getJob(id).state === 'running'; i++) {
+  it("runs as a job, like any extraction", async () => {
+    await fs.writeFile(join(jail, "docs/notes.txt.gz"), COMPRESS.gz(text));
+    const { id } = service.startExtractJob("home", "docs/notes.txt.gz");
+    for (let i = 0; i < 100 && service.getJob(id).state === "running"; i++) {
       await new Promise((r) => setTimeout(r, 10));
     }
     expect(service.getJob(id)).toMatchObject({
-      state: 'done',
-      result: { dest: 'docs/notes.txt', entries: 1 },
+      state: "done",
+      result: { dest: "docs/notes.txt", entries: 1 },
     });
   });
 });
 
-describe('naming a lone compressed file’s output', () => {
+describe("naming a lone compressed file’s output", () => {
   it.each([
-    ['notes.txt.gz', 'notes.txt'],
-    ['NOTES.TXT.XZ', 'NOTES.TXT'],
-    ['data.bz2', 'data'],
-    ['.bashrc.gz', '.bashrc'],
-    ['.gz', null],
-  ])('%s → %s', (archive, out) => {
+    ["notes.txt.gz", "notes.txt"],
+    ["NOTES.TXT.XZ", "NOTES.TXT"],
+    ["data.bz2", "data"],
+    [".bashrc.gz", ".bashrc"],
+    [".gz", null],
+  ])("%s → %s", (archive, out) => {
     expect(loneOutputName(archive)).toBe(out);
   });
 
   it.each([
-    ['notes.txt', 2, 'notes (2).txt'],
-    ['archive.tar', 3, 'archive (3).tar'],
-    ['data', 2, 'data (2)'],
-    ['.bashrc', 2, '.bashrc (2)'],
-    ['notes.txt', 1, 'notes.txt'],
-  ])('%s, number %d → %s', (name, n, out) => {
+    ["notes.txt", 2, "notes (2).txt"],
+    ["archive.tar", 3, "archive (3).tar"],
+    ["data", 2, "data (2)"],
+    [".bashrc", 2, ".bashrc (2)"],
+    ["notes.txt", 1, "notes.txt"],
+  ])("%s, number %d → %s", (name, n, out) => {
     expect(numberedName(name, n)).toBe(out);
   });
 });

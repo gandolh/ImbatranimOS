@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 
 /**
  * Ticks a `Date.now()` timestamp on an interval so a component re-renders to
@@ -17,18 +17,18 @@ import { useEffect, useState } from 'react'
  * from before the click). One task-queue turn instead of one interval closes it.
  */
 export function useNow(intervalMs: number, active = true): number {
-  const [now, setNow] = useState(() => Date.now())
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (!active) return
-    const tick = () => setNow(Date.now())
-    const catchUp = setTimeout(tick, 0)
-    const id = setInterval(tick, intervalMs)
+    if (!active) return;
+    const tick = () => setNow(Date.now());
+    const catchUp = setTimeout(tick, 0);
+    const id = setInterval(tick, intervalMs);
     return () => {
-      clearTimeout(catchUp)
-      clearInterval(id)
-    }
-  }, [intervalMs, active])
+      clearTimeout(catchUp);
+      clearInterval(id);
+    };
+  }, [intervalMs, active]);
 
-  return now
+  return now;
 }

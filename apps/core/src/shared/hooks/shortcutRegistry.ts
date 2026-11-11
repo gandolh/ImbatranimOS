@@ -1,23 +1,23 @@
-import { create } from 'zustand'
+import { create } from "zustand";
 
-export type ShortcutScope = 'Global' | 'Window management' | 'Editing'
+export type ShortcutScope = "Global" | "Window management" | "Editing";
 
 export type Shortcut = {
   /** Stable id, so re-registration (HMR, remount) replaces rather than duplicates. */
-  id: string
+  id: string;
   /** Binding string in `useGlobalHotkeys` syntax, e.g. `mod+k`. */
-  keys: string
-  description: string
-  scope: ShortcutScope
+  keys: string;
+  description: string;
+  scope: ShortcutScope;
   /** Caveat shown beside the row — e.g. a key the browser may intercept first. */
-  note?: string
-}
+  note?: string;
+};
 
 type ShortcutStore = {
-  shortcuts: Record<string, Shortcut>
-  register: (list: Shortcut[]) => void
-  unregister: (ids: string[]) => void
-}
+  shortcuts: Record<string, Shortcut>;
+  register: (list: Shortcut[]) => void;
+  unregister: (ids: string[]) => void;
+};
 
 /**
  * The one list of keyboard shortcuts in the OS.
@@ -34,7 +34,7 @@ export const useShortcutStore = create<ShortcutStore>()((set) => ({
 
   register: (list) =>
     set((state) => {
-      const next = { ...state.shortcuts }
+      const next = { ...state.shortcuts };
       for (const s of list) {
         if (
           import.meta.env.DEV &&
@@ -43,33 +43,33 @@ export const useShortcutStore = create<ShortcutStore>()((set) => ({
         ) {
           console.warn(
             `[shortcuts] "${s.keys}" is registered twice in scope "${s.scope}" ` +
-              `(${s.id}). One of them will never fire.`
-          )
+              `(${s.id}). One of them will never fire.`,
+          );
         }
-        next[s.id] = s
+        next[s.id] = s;
       }
-      return { shortcuts: next }
+      return { shortcuts: next };
     }),
 
   unregister: (ids) =>
     set((state) => {
-      const next = { ...state.shortcuts }
-      for (const id of ids) delete next[id]
-      return { shortcuts: next }
+      const next = { ...state.shortcuts };
+      for (const id of ids) delete next[id];
+      return { shortcuts: next };
     }),
-}))
+}));
 
-export const SCOPE_ORDER: ShortcutScope[] = ['Global', 'Window management', 'Editing']
+export const SCOPE_ORDER: ShortcutScope[] = ["Global", "Window management", "Editing"];
 
 /** Registered shortcuts, grouped by scope in a stable display order. */
 export function groupShortcuts(shortcuts: Shortcut[]): [ShortcutScope, Shortcut[]][] {
   return SCOPE_ORDER.map(
     (scope) =>
-      [
-        scope,
-        shortcuts.filter((s) => s.scope === scope).sort((a, b) => a.keys.localeCompare(b.keys)),
-      ] as [ShortcutScope, Shortcut[]]
-  ).filter(([, list]) => list.length > 0)
+      [scope, shortcuts.filter((s) => s.scope === scope).sort((a, b) => a.keys.localeCompare(b.keys))] as [
+        ShortcutScope,
+        Shortcut[],
+      ],
+  ).filter(([, list]) => list.length > 0);
 }
 
 /**
@@ -80,21 +80,21 @@ export function groupShortcuts(shortcuts: Shortcut[]): [ShortcutScope, Shortcut[
  * hidden textarea, and it must receive every keystroke it is given.
  */
 // isTextEntry moved to @imbatranim/ui: pure DOM predicate, SDK-side.
-export { isTextEntry } from '@imbatranim/ui'
+export { isTextEntry } from "@imbatranim/ui";
 
 /** Human-readable binding, e.g. `mod+k` → `Ctrl + K` (or `⌘ + K` on a Mac). */
 export function formatKeys(keys: string, mac: boolean): string {
   return keys
-    .split('+')
+    .split("+")
     .map((part) => {
-      const p = part.trim().toLowerCase()
-      if (p === 'mod') return mac ? '⌘' : 'Ctrl'
-      if (p === 'alt') return mac ? '⌥' : 'Alt'
-      if (p === 'shift') return mac ? '⇧' : 'Shift'
-      if (p === 'ctrl') return 'Ctrl'
-      if (p === 'esc') return 'Esc'
-      if (p.length === 1) return p.toUpperCase()
-      return p.charAt(0).toUpperCase() + p.slice(1)
+      const p = part.trim().toLowerCase();
+      if (p === "mod") return mac ? "⌘" : "Ctrl";
+      if (p === "alt") return mac ? "⌥" : "Alt";
+      if (p === "shift") return mac ? "⇧" : "Shift";
+      if (p === "ctrl") return "Ctrl";
+      if (p === "esc") return "Esc";
+      if (p.length === 1) return p.toUpperCase();
+      return p.charAt(0).toUpperCase() + p.slice(1);
     })
-    .join(' + ')
+    .join(" + ");
 }

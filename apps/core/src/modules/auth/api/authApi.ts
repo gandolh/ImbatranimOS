@@ -1,4 +1,4 @@
-import { api } from '../../../lib/axios'
+import { api } from "../../../lib/axios";
 
 /**
  * Who is signed in.
@@ -11,61 +11,57 @@ import { api } from '../../../lib/axios'
 
 export interface Session {
   /** Stable for the owner. */
-  subject: string
-  username: string
+  subject: string;
+  username: string;
 }
 
 export interface AuthStatus {
-  authenticated: boolean
-  session: Session | null
+  authenticated: boolean;
+  session: Session | null;
 }
 
 /** Probe the session through the backend's own guarded surface. */
 export async function getStatus(): Promise<AuthStatus> {
   try {
-    const res = await api.get<{ user: Session }>('/me')
-    return { authenticated: true, session: res.data.user }
+    const res = await api.get<{ user: Session }>("/me");
+    return { authenticated: true, session: res.data.user };
   } catch {
-    return { authenticated: false, session: null }
+    return { authenticated: false, session: null };
   }
 }
 
 /** Whether an owner exists, and whether claiming needs the operator's token. */
 export interface Identity {
-  setUp: boolean
-  setupTokenRequired: boolean
+  setUp: boolean;
+  setupTokenRequired: boolean;
 }
 
 /** Public: asked before anybody is signed in. */
 export async function getIdentity(): Promise<Identity> {
-  const res = await api.get<Identity>('/identity')
-  return res.data
+  const res = await api.get<Identity>("/identity");
+  return res.data;
 }
 
 /** The message the backend gave, for showing under a form. */
 export function errorMessage(err: unknown, fallback: string): string {
-  const data = (err as { response?: { data?: { message?: unknown } } }).response?.data
-  const message = Array.isArray(data?.message) ? data.message[0] : data?.message
-  return typeof message === 'string' && message ? message : fallback
+  const data = (err as { response?: { data?: { message?: unknown } } }).response?.data;
+  const message = Array.isArray(data?.message) ? data.message[0] : data?.message;
+  return typeof message === "string" && message ? message : fallback;
 }
 
 /** Claim an unclaimed machine: the owner's name, password and, if required, the setup token. */
-export async function localSetup(input: {
-  username: string
-  password: string
-  setupToken?: string
-}): Promise<void> {
-  await api.post('/identity/local/setup', input)
+export async function localSetup(input: { username: string; password: string; setupToken?: string }): Promise<void> {
+  await api.post("/identity/local/setup", input);
 }
 
 export async function localSignIn(password: string): Promise<void> {
-  await api.post('/identity/local/sign-in', { password })
+  await api.post("/identity/local/sign-in", { password });
 }
 
 export async function localSignOut(): Promise<void> {
-  await api.post('/identity/local/sign-out')
+  await api.post("/identity/local/sign-out");
 }
 
 export async function localChangePassword(current: string, next: string): Promise<void> {
-  await api.post('/identity/local/password', { current, next })
+  await api.post("/identity/local/password", { current, next });
 }

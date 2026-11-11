@@ -21,7 +21,7 @@
  * the other pane's anchors.
  */
 
-export type Anchor = { line: number; top: number }
+export type Anchor = { line: number; top: number };
 
 /**
  * Anchors sorted by line, with duplicates and non-monotonic tops dropped.
@@ -33,15 +33,15 @@ export type Anchor = { line: number; top: number }
  * while the editor scrolls down.
  */
 export function normalizeAnchors(anchors: Anchor[]): Anchor[] {
-  const sorted = [...anchors].sort((a, b) => a.line - b.line || a.top - b.top)
-  const out: Anchor[] = []
+  const sorted = [...anchors].sort((a, b) => a.line - b.line || a.top - b.top);
+  const out: Anchor[] = [];
   for (const anchor of sorted) {
-    const last = out[out.length - 1]
-    if (last && last.line === anchor.line) continue
-    if (last && anchor.top < last.top) continue
-    out.push(anchor)
+    const last = out[out.length - 1];
+    if (last && last.line === anchor.line) continue;
+    if (last && anchor.top < last.top) continue;
+    out.push(anchor);
   }
-  return out
+  return out;
 }
 
 /**
@@ -53,36 +53,36 @@ export function normalizeAnchors(anchors: Anchor[]): Anchor[] {
  * at the bottom instead of tracking.
  */
 export function topForLine(anchors: Anchor[], line: number): number {
-  if (anchors.length === 0) return 0
-  if (line <= anchors[0].line) return anchors[0].top
-  const last = anchors[anchors.length - 1]
-  if (line >= last.line) return last.top
+  if (anchors.length === 0) return 0;
+  if (line <= anchors[0].line) return anchors[0].top;
+  const last = anchors[anchors.length - 1];
+  if (line >= last.line) return last.top;
   for (let i = 1; i < anchors.length; i++) {
-    const b = anchors[i]
-    if (b.line < line) continue
-    const a = anchors[i - 1]
-    const span = b.line - a.line
-    if (span <= 0) return a.top
-    return a.top + ((line - a.line) / span) * (b.top - a.top)
+    const b = anchors[i];
+    if (b.line < line) continue;
+    const a = anchors[i - 1];
+    const span = b.line - a.line;
+    if (span <= 0) return a.top;
+    return a.top + ((line - a.line) / span) * (b.top - a.top);
   }
-  return last.top
+  return last.top;
 }
 
 /** The inverse: a fractional source line for a pixel top. */
 export function lineForTop(anchors: Anchor[], top: number): number {
-  if (anchors.length === 0) return 1
-  if (top <= anchors[0].top) return anchors[0].line
-  const last = anchors[anchors.length - 1]
-  if (top >= last.top) return last.line
+  if (anchors.length === 0) return 1;
+  if (top <= anchors[0].top) return anchors[0].line;
+  const last = anchors[anchors.length - 1];
+  if (top >= last.top) return last.line;
   for (let i = 1; i < anchors.length; i++) {
-    const b = anchors[i]
-    if (b.top < top) continue
-    const a = anchors[i - 1]
-    const span = b.top - a.top
-    if (span <= 0) return a.line
-    return a.line + ((top - a.top) / span) * (b.line - a.line)
+    const b = anchors[i];
+    if (b.top < top) continue;
+    const a = anchors[i - 1];
+    const span = b.top - a.top;
+    if (span <= 0) return a.line;
+    return a.line + ((top - a.top) / span) * (b.line - a.line);
   }
-  return last.line
+  return last.line;
 }
 
 /**
@@ -96,11 +96,11 @@ export function lineForTop(anchors: Anchor[], top: number): number {
  */
 export function mapScroll(
   from: { anchors: Anchor[]; scrollTop: number },
-  to: { anchors: Anchor[]; scrollHeight: number; clientHeight: number }
+  to: { anchors: Anchor[]; scrollHeight: number; clientHeight: number },
 ): number {
-  const line = lineForTop(from.anchors, from.scrollTop)
-  const target = topForLine(to.anchors, line)
-  return Math.max(0, Math.min(target, Math.max(0, to.scrollHeight - to.clientHeight)))
+  const line = lineForTop(from.anchors, from.scrollTop);
+  const target = topForLine(to.anchors, line);
+  return Math.max(0, Math.min(target, Math.max(0, to.scrollHeight - to.clientHeight)));
 }
 
 /**
@@ -111,5 +111,5 @@ export function mapScroll(
  * kind of bug that shows up as "sync is off by one screenful near the end".
  */
 export function anchorsFromLineTops(lineTops: number[]): Anchor[] {
-  return lineTops.map((top, index) => ({ line: index + 1, top }))
+  return lineTops.map((top, index) => ({ line: index + 1, top }));
 }

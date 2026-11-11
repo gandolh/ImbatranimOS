@@ -1,6 +1,6 @@
-import type { SystemHandle } from '@imbatranim/ui'
-import { importClockState } from './api/clockApi'
-import { LEGACY_KEY, describeMigration, readLegacyClockState } from './legacyClockState'
+import type { SystemHandle } from "@imbatranim/ui";
+import { importClockState } from "./api/clockApi";
+import { LEGACY_KEY, describeMigration, readLegacyClockState } from "./legacyClockState";
 
 /**
  * One-time hand-over of the pre-brief-71 `localStorage` state.
@@ -17,7 +17,7 @@ import { LEGACY_KEY, describeMigration, readLegacyClockState } from './legacyClo
  */
 
 /** Guard so the hand-over is attempted once per page load, not once per mount. */
-let attempted = false
+let attempted = false;
 
 /**
  * Hand the legacy state over, if any is still sitting in this browser.
@@ -30,57 +30,57 @@ let attempted = false
  * Takes the handle: not a hook, and it needs both `http` and `notify`.
  */
 export async function migrateLegacyClockState(system: SystemHandle): Promise<boolean> {
-  if (attempted) return false
-  attempted = true
+  if (attempted) return false;
+  attempted = true;
 
-  let raw: string | null
+  let raw: string | null;
   try {
-    raw = localStorage.getItem(LEGACY_KEY)
+    raw = localStorage.getItem(LEGACY_KEY);
   } catch {
     // A browser with storage disabled has nothing to hand over.
-    return false
+    return false;
   }
-  if (raw === null) return false
+  if (raw === null) return false;
 
-  const legacy = readLegacyClockState(raw)
+  const legacy = readLegacyClockState(raw);
   if (legacy === null || legacy.worldClocks.length + legacy.alarms.length === 0) {
     // Nothing usable in there; the key is dead weight.
-    forgetLegacyKey()
-    return false
+    forgetLegacyKey();
+    return false;
   }
 
   try {
     const result = await importClockState(system.http, {
       worldClocks: legacy.worldClocks,
       alarms: legacy.alarms,
-    })
-    if (!result.imported) return false
+    });
+    if (!result.imported) return false;
 
-    forgetLegacyKey()
+    forgetLegacyKey();
     system.notify({
-      title: 'Clock data moved into your computer',
+      title: "Clock data moved into your computer",
       body: describeMigration(result.worldClocks, result.alarms),
-      level: 'success',
-    })
+      level: "success",
+    });
     if (legacy.skipped > 0) {
       system.notify({
-        title: 'Some old clock entries were skipped',
-        body: `${legacy.skipped} entr${legacy.skipped === 1 ? 'y was' : 'ies were'} unreadable and could not be moved.`,
-        level: 'warning',
-      })
+        title: "Some old clock entries were skipped",
+        body: `${legacy.skipped} entr${legacy.skipped === 1 ? "y was" : "ies were"} unreadable and could not be moved.`,
+        level: "warning",
+      });
     }
-    return true
+    return true;
   } catch {
     // Offline, or a payload the server rejected: leave the key alone and let the
     // next load try again.
-    attempted = false
-    return false
+    attempted = false;
+    return false;
   }
 }
 
 function forgetLegacyKey(): void {
   try {
-    localStorage.removeItem(LEGACY_KEY)
+    localStorage.removeItem(LEGACY_KEY);
   } catch {
     // A browser that refuses to remove it will simply be asked again; the server
     // refuses a second import either way.

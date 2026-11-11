@@ -1,7 +1,7 @@
-import type { SystemHttp } from '@imbatranim/ui'
-import { api } from './axios'
+import type { SystemHttp } from "@imbatranim/ui";
+import { api } from "./axios";
 
-export type ScheduleDomain = 'clock' | 'calendar' | 'todo'
+export type ScheduleDomain = "clock" | "calendar" | "todo";
 
 /**
  * Ask the backend whether this tab won a scheduled occurrence.
@@ -19,16 +19,16 @@ export async function claimScheduleOccurrence(
   domain: ScheduleDomain,
   itemId: string,
   occurrenceMs: number,
-  client: SystemHttp = api as unknown as SystemHttp
+  client: SystemHttp = api as unknown as SystemHttp,
 ): Promise<boolean> {
   try {
-    const { data } = await client.post<{ claimed: boolean }>('/schedule/claim', {
+    const { data } = await client.post<{ claimed: boolean }>("/schedule/claim", {
       domain,
       itemId,
       occurrenceMs,
-    })
-    return data.claimed
+    });
+    return data.claimed;
   } catch {
-    return true
+    return true;
   }
 }

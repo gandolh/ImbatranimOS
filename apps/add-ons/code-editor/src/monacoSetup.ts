@@ -21,41 +21,41 @@
  * — Monaco itself plus every worker chunk — lands in the editor's lazy chunk and
  * never inflates the eager desktop bundle.
  */
-import * as monaco from 'monaco-editor'
-import { loader } from '@monaco-editor/react'
+import * as monaco from "monaco-editor";
+import { loader } from "@monaco-editor/react";
 // Monaco 0.56+ exports `./*` from `esm/vs/`, so these paths omit that prefix.
-import EditorWorker from 'monaco-editor/editor/editor.worker?worker'
-import JsonWorker from 'monaco-editor/languages/features/json/json.worker?worker'
-import CssWorker from 'monaco-editor/languages/features/css/css.worker?worker'
-import HtmlWorker from 'monaco-editor/languages/features/html/html.worker?worker'
-import TsWorker from 'monaco-editor/languages/features/typescript/ts.worker?worker'
+import EditorWorker from "monaco-editor/editor/editor.worker?worker";
+import JsonWorker from "monaco-editor/languages/features/json/json.worker?worker";
+import CssWorker from "monaco-editor/languages/features/css/css.worker?worker";
+import HtmlWorker from "monaco-editor/languages/features/html/html.worker?worker";
+import TsWorker from "monaco-editor/languages/features/typescript/ts.worker?worker";
 
 declare global {
   // Monaco reads this global to obtain its language-service workers.
-  var MonacoEnvironment: monaco.Environment | undefined
+  var MonacoEnvironment: monaco.Environment | undefined;
 }
 
 self.MonacoEnvironment = {
   getWorker(_workerId: string, label: string): Worker {
     switch (label) {
-      case 'json':
-        return new JsonWorker()
-      case 'css':
-      case 'scss':
-      case 'less':
-        return new CssWorker()
-      case 'html':
-      case 'handlebars':
-      case 'razor':
-        return new HtmlWorker()
-      case 'typescript':
-      case 'javascript':
-        return new TsWorker()
+      case "json":
+        return new JsonWorker();
+      case "css":
+      case "scss":
+      case "less":
+        return new CssWorker();
+      case "html":
+      case "handlebars":
+      case "razor":
+        return new HtmlWorker();
+      case "typescript":
+      case "javascript":
+        return new TsWorker();
       default:
-        return new EditorWorker()
+        return new EditorWorker();
     }
   },
-}
+};
 
 // Serve `@monaco-editor/react` the bundled Monaco instead of the CDN loader.
-loader.config({ monaco })
+loader.config({ monaco });

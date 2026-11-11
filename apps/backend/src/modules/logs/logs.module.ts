@@ -1,8 +1,8 @@
-import { Global, Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
-import { LogService } from './log.service';
-import { LogsController } from './logs.controller';
-import { AuditExceptionFilter } from './audit-exception.filter';
+import { Global, Module } from "@nestjs/common";
+import { APP_FILTER } from "@nestjs/core";
+import { LogService } from "./log.service";
+import { LogsController } from "./logs.controller";
+import { AuditExceptionFilter } from "./audit-exception.filter";
 
 /**
  * The system log.
@@ -17,10 +17,7 @@ import { AuditExceptionFilter } from './audit-exception.filter';
 @Global()
 @Module({
   controllers: [LogsController],
-  providers: [
-    LogService,
-    { provide: APP_FILTER, useClass: AuditExceptionFilter },
-  ],
+  providers: [LogService, { provide: APP_FILTER, useClass: AuditExceptionFilter }],
   exports: [LogService],
 })
 export class LogsModule {}

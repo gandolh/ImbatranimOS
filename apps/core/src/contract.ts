@@ -1,5 +1,5 @@
-import { type ComponentType, type LazyExoticComponent } from 'react'
-import type { CommandSource } from './shared/commands/CommandSourcesRegistry'
+import { type ComponentType, type LazyExoticComponent } from "react";
+import type { CommandSource } from "./shared/commands/CommandSourcesRegistry";
 
 /**
  * A desktop widget an app contributes: a small always-visible
@@ -14,13 +14,13 @@ import type { CommandSource } from './shared/commands/CommandSourcesRegistry'
  */
 export type WidgetConfig = {
   /** Unique within the app; the stored key is `<appId>:<id>`. */
-  id: string
+  id: string;
   /** Shown in the desktop's "Add widget" menu. */
-  name: string
-  component: ComponentType | LazyExoticComponent<ComponentType>
+  name: string;
+  component: ComponentType | LazyExoticComponent<ComponentType>;
   /** Fixed size in px — widgets are not resizable (v1). */
-  defaultSize: { width: number; height: number }
-}
+  defaultSize: { width: number; height: number };
+};
 
 /**
  * The add-on contract. An add-on package (`apps/add-ons/<app>`) exports a
@@ -29,17 +29,15 @@ export type WidgetConfig = {
  * aggregates them into APP_REGISTRY and registers their command sources.
  */
 export type AppConfig = {
-  id: string
-  name: string
-  description: string
-  meta: string[]
-  icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
-  component:
-    | ComponentType<{ windowId: string }>
-    | LazyExoticComponent<ComponentType<{ windowId: string }>>
-  multiInstance: boolean
-  defaultSize: { width: number; height: number }
-  minSize: { width: number; height: number }
+  id: string;
+  name: string;
+  description: string;
+  meta: string[];
+  icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  component: ComponentType<{ windowId: string }> | LazyExoticComponent<ComponentType<{ windowId: string }>>;
+  multiInstance: boolean;
+  defaultSize: { width: number; height: number };
+  minSize: { width: number; height: number };
   /**
    * Lowercase file extensions this app can open — the `.desktop` `MimeType=`
    * analogue.
@@ -55,7 +53,7 @@ export type AppConfig = {
    * chosen, the **first in registry order** wins. Extensionless names
    * (`Dockerfile`, `Makefile`) are matched too — see `extensionOf`.
    */
-  opens?: string[]
+  opens?: string[];
   /**
    * The app reads the folder of a file the OS opens with it: a file opened
    * from Files, Open With or a launcher, or picked in the OS's Open or Save
@@ -65,7 +63,7 @@ export type AppConfig = {
    * relative images. Without it, the app gets the file alone. An open the
    * app makes itself never brings the folder.
    */
-  readsOpenedFolder?: boolean
+  readsOpenedFolder?: boolean;
   /**
    * The app adds files under an `assets/` folder beside a file the OS opens
    * with it (an open from Files, Open With or a launcher, or a pick in the
@@ -75,7 +73,7 @@ export type AppConfig = {
    * another. For a document's attachments, such as Notepad's pasted images.
    * An open the app makes itself never brings it.
    */
-  attachesUnderAssets?: boolean
+  attachesUnderAssets?: boolean;
   /**
    * Optional component painted on the **desktop**, beneath every window.
    *
@@ -98,7 +96,7 @@ export type AppConfig = {
    *   notification says "<name> stopped working on the desktop." The rest of
    *   the desktop stays.
    */
-  desktopLayer?: ComponentType | LazyExoticComponent<ComponentType>
+  desktopLayer?: ComponentType | LazyExoticComponent<ComponentType>;
   /**
    * Optional headless **desktop-lifetime service**: mounted by the
    * shell from login to tab close, whether or not any of the app's windows are
@@ -114,12 +112,12 @@ export type AppConfig = {
    *   occurrence-shaped notification must be claimed first (see
    *   `claimScheduleOccurrence`) so a second desktop tab does not double-toast.
    */
-  background?: ComponentType
+  background?: ComponentType;
   /** Desktop widgets this app contributes — hosted by core's layer. */
-  widgets?: WidgetConfig[]
-}
+  widgets?: WidgetConfig[];
+};
 
 export type AddonManifest = AppConfig & {
   /** Optional command-palette sources this app contributes. */
-  commandSources?: CommandSource[]
-}
+  commandSources?: CommandSource[];
+};

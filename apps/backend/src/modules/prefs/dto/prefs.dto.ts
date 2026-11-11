@@ -1,11 +1,5 @@
-import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsString,
-  MaxLength,
-  MinLength,
-  ValidateNested,
-} from 'class-validator';
+import { Type } from "class-transformer";
+import { IsArray, IsString, MaxLength, MinLength, ValidateNested } from "class-validator";
 
 /**
  * Longest a single dotfile value may be.

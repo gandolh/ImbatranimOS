@@ -1,14 +1,14 @@
-import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip'
-import { isValidElement, type ReactElement, type ReactNode } from 'react'
-import { cn } from '../cn'
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
+import { isValidElement, type ReactElement, type ReactNode } from "react";
+import { cn } from "../cn";
 
 type TooltipProps = {
-  content: ReactNode
-  children: ReactNode
-  side?: 'top' | 'bottom' | 'left' | 'right'
-}
+  content: ReactNode;
+  children: ReactNode;
+  side?: "top" | "bottom" | "left" | "right";
+};
 
-export function Tooltip({ content, children, side = 'top' }: TooltipProps) {
+export function Tooltip({ content, children, side = "top" }: TooltipProps) {
   // base-ui's Trigger renders its own <button> unless `render` is given, so
   // the usual `<Tooltip><Button/></Tooltip>` emitted <button> inside <button>:
   // invalid HTML, and the outer button can swallow the inner one's clicks.
@@ -19,7 +19,7 @@ export function Tooltip({ content, children, side = 'top' }: TooltipProps) {
     <BaseTooltip.Trigger render={children as ReactElement} />
   ) : (
     <BaseTooltip.Trigger>{children}</BaseTooltip.Trigger>
-  )
+  );
 
   return (
     <BaseTooltip.Provider delay={400}>
@@ -30,9 +30,9 @@ export function Tooltip({ content, children, side = 'top' }: TooltipProps) {
           <BaseTooltip.Positioner side={side} sideOffset={4} className="z-[1100]">
             <BaseTooltip.Popup
               className={cn(
-                'border-outline-variant bg-inverse-surface rounded-control border px-2 py-1',
-                'font-ui text-inverse-on-surface text-[11px]',
-                'shadow-(--k-shadow-tooltip)'
+                "border-outline-variant bg-inverse-surface rounded-control border px-2 py-1",
+                "font-ui text-inverse-on-surface text-[11px]",
+                "shadow-(--k-shadow-tooltip)",
               )}
             >
               {content}
@@ -41,5 +41,5 @@ export function Tooltip({ content, children, side = 'top' }: TooltipProps) {
         </BaseTooltip.Portal>
       </BaseTooltip.Root>
     </BaseTooltip.Provider>
-  )
+  );
 }

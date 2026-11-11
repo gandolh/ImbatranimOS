@@ -5,9 +5,9 @@
  * See `apps/add-ons/file-manager/src/api/filesApi.ts` for the canonical source.
  */
 export type FsEntry = {
-  name: string
-  path: string
-  type: 'file' | 'directory'
-  size: number
-  modifiedAt: string
-}
+  name: string;
+  path: string;
+  type: "file" | "directory";
+  size: number;
+  modifiedAt: string;
+};

@@ -1,13 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-  Optional,
-} from '@nestjs/common';
-import { basename, dirname, join, relative, sep } from 'path';
-import * as fs from 'fs/promises';
-import { FilesService } from './files.service';
-import { LogService } from '../logs/log.service';
+import { BadRequestException, Injectable, NotFoundException, Optional } from "@nestjs/common";
+import { basename, dirname, join, relative, sep } from "path";
+import * as fs from "fs/promises";
+import { FilesService } from "./files.service";
+import { LogService } from "../logs/log.service";
 
 /**
  * Trash, following the freedesktop spec.
@@ -26,7 +21,7 @@ import { LogService } from '../logs/log.service';
  * confirm-then-permanent deletion.
  */
 
-export const TRASH_DIR = join('.local', 'share', 'Trash');
+export const TRASH_DIR = join(".local", "share", "Trash");
 
 export interface TrashEntry {
   /** Name inside Trash/files — the handle for restore/delete. */
@@ -47,7 +42,7 @@ export interface TrashEntry {
  * implement.
  */
 function formatTrashDate(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, '0');
+  const p = (n: number) => String(n).padStart(2, "0");
   return (
     `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` +
     `T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
@@ -66,13 +61,13 @@ export class TrashService {
    * separators readable, matching what other implementations write.
    */
   private encodePath(p: string): string {
-    return p.split('/').map(encodeURIComponent).join('/');
+    return p.split("/").map(encodeURIComponent).join("/");
   }
 
   private async trashDirs(): Promise<{ filesDir: string; infoDir: string }> {
-    const { abs } = await this.files.resolveSafe('home', TRASH_DIR);
-    const filesDir = join(abs, 'files');
-    const infoDir = join(abs, 'info');
+    const { abs } = await this.files.resolveSafe("home", TRASH_DIR);
+    const filesDir = join(abs, "files");
+    const infoDir = join(abs, "info");
     await fs.mkdir(filesDir, { recursive: true });
     await fs.mkdir(infoDir, { recursive: true });
     return { filesDir, infoDir };
@@ -88,14 +83,14 @@ export class TrashService {
   private assertPlainId(id: string): void {
     if (
       !id ||
-      id === '.' ||
-      id === '..' ||
-      id.includes('/') ||
-      id.includes('\\') ||
-      id.includes('\0') ||
+      id === "." ||
+      id === ".." ||
+      id.includes("/") ||
+      id.includes("\\") ||
+      id.includes("\0") ||
       basename(id) !== id
     ) {
-      throw new BadRequestException('Invalid trash id');
+      throw new BadRequestException("Invalid trash id");
     }
   }
 
@@ -109,11 +104,8 @@ export class TrashService {
       } catch {
         return candidate;
       }
-      const dot = name.indexOf('.', 1);
-      candidate =
-        dot > 0
-          ? `${name.slice(0, dot)}-${n}${name.slice(dot)}`
-          : `${name}-${n}`;
+      const dot = name.indexOf(".", 1);
+      candidate = dot > 0 ? `${name.slice(0, dot)}-${n}${name.slice(dot)}` : `${name}-${n}`;
       n++;
     }
   }
@@ -121,24 +113,21 @@ export class TrashService {
   async trash(virtualPath: string): Promise<{ id: string }> {
     // No-follow resolve: a broken symlink, or one pointing out of the jail,
     // must still be trashable — we move the link itself, never its target.
-    const { rootDir, abs } = await this.files.resolveSafeNoFollow(
-      'home',
-      virtualPath,
-    );
+    const { rootDir, abs } = await this.files.resolveSafeNoFollow("home", virtualPath);
 
     const rel = relative(rootDir, abs);
-    if (!rel || rel.startsWith('..')) {
-      throw new BadRequestException('Cannot trash the home root');
+    if (!rel || rel.startsWith("..")) {
+      throw new BadRequestException("Cannot trash the home root");
     }
     // Trashing the trash (or anything inside it) would recurse into itself.
     if (rel === TRASH_DIR || rel.startsWith(TRASH_DIR + sep)) {
-      throw new BadRequestException('Cannot trash the Trash');
+      throw new BadRequestException("Cannot trash the Trash");
     }
 
     try {
       await fs.lstat(abs);
     } catch {
-      throw new NotFoundException('Not found');
+      throw new NotFoundException("Not found");
     }
 
     const { filesDir, infoDir } = await this.trashDirs();
@@ -148,9 +137,9 @@ export class TrashService {
     // unrestorable, whereas a stale info/ with no files/ is merely ignored.
     const info =
       `[Trash Info]\n` +
-      `Path=${this.encodePath(rel.split(sep).join('/'))}\n` +
+      `Path=${this.encodePath(rel.split(sep).join("/"))}\n` +
       `DeletionDate=${formatTrashDate(new Date())}\n`;
-    await fs.writeFile(join(infoDir, `${id}.trashinfo`), info, 'utf8');
+    await fs.writeFile(join(infoDir, `${id}.trashinfo`), info, "utf8");
 
     try {
       await fs.rename(abs, join(filesDir, id));
@@ -169,12 +158,12 @@ export class TrashService {
     for (const id of names) {
       let raw: string;
       try {
-        raw = await fs.readFile(join(infoDir, `${id}.trashinfo`), 'utf8');
+        raw = await fs.readFile(join(infoDir, `${id}.trashinfo`), "utf8");
       } catch {
         continue; // no info file — not restorable, so not listed
       }
-      const pathLine = /^Path=(.*)$/m.exec(raw)?.[1] ?? '';
-      const dateLine = /^DeletionDate=(.*)$/m.exec(raw)?.[1] ?? '';
+      const pathLine = /^Path=(.*)$/m.exec(raw)?.[1] ?? "";
+      const dateLine = /^DeletionDate=(.*)$/m.exec(raw)?.[1] ?? "";
       let originalPath: string;
       try {
         originalPath = decodeURIComponent(pathLine);
@@ -204,36 +193,33 @@ export class TrashService {
     const infoPath = join(infoDir, `${id}.trashinfo`);
     let raw: string;
     try {
-      raw = await fs.readFile(infoPath, 'utf8');
+      raw = await fs.readFile(infoPath, "utf8");
     } catch {
-      throw new NotFoundException('No such trash entry');
+      throw new NotFoundException("No such trash entry");
     }
-    const pathLine = /^Path=(.*)$/m.exec(raw)?.[1] ?? '';
+    const pathLine = /^Path=(.*)$/m.exec(raw)?.[1] ?? "";
     let original: string;
     try {
       original = decodeURIComponent(pathLine);
     } catch {
-      throw new BadRequestException('Corrupt trash entry');
+      throw new BadRequestException("Corrupt trash entry");
     }
 
     // The recorded path is UNTRUSTED: a hand-written .trashinfo could name
     // `../../etc/passwd` or an absolute path, which would turn restore into a
     // write-anywhere primitive. Put it through the same jail as any client
     // path, and refuse anything that resolves outside the home root.
-    const { rootDir, abs: target } = await this.files.resolveSafe(
-      'home',
-      original,
-    );
+    const { rootDir, abs: target } = await this.files.resolveSafe("home", original);
     const rel = relative(rootDir, target);
-    if (!rel || rel.startsWith('..')) {
-      throw new BadRequestException('Trash entry has an invalid original path');
+    if (!rel || rel.startsWith("..")) {
+      throw new BadRequestException("Trash entry has an invalid original path");
     }
 
     const source = join(filesDir, id);
     try {
       await fs.lstat(source);
     } catch {
-      throw new NotFoundException('No such trash entry');
+      throw new NotFoundException("No such trash entry");
     }
 
     // Never clobber something that has taken the original name since.
@@ -252,7 +238,7 @@ export class TrashService {
     await fs.mkdir(dirname(dest), { recursive: true });
     await fs.rename(source, dest);
     await fs.rm(infoPath, { force: true });
-    return { path: relative(rootDir, dest).split(sep).join('/') };
+    return { path: relative(rootDir, dest).split(sep).join("/") };
   }
 
   async remove(id: string): Promise<void> {
@@ -265,20 +251,12 @@ export class TrashService {
     const original = await this.originalPathOf(infoDir, id);
     // assertPlainId guarantees a bare filename, so this virtual path cannot
     // escape; resolveSafe re-checks it anyway (lexical + symlink containment).
-    const { abs } = await this.files.resolveSafe(
-      'home',
-      [TRASH_DIR.split(sep).join('/'), 'files', id].join('/'),
-    );
+    const { abs } = await this.files.resolveSafe("home", [TRASH_DIR.split(sep).join("/"), "files", id].join("/"));
     await fs.rm(abs, { recursive: true, force: true });
     await fs.rm(join(infoDir, `${id}.trashinfo`), { force: true });
-    this.logs?.record(
-      'warn',
-      'files.deleted',
-      'A trashed item was deleted for good',
-      {
-        originalPath: original ?? `(unknown, trash id ${id})`,
-      },
-    );
+    this.logs?.record("warn", "files.deleted", "A trashed item was deleted for good", {
+      originalPath: original ?? `(unknown, trash id ${id})`,
+    });
   }
 
   async empty(): Promise<{ removed: number }> {
@@ -291,20 +269,17 @@ export class TrashService {
     for (const name of infos) {
       await fs.rm(join(infoDir, name), { force: true });
     }
-    this.logs?.record('warn', 'files.trash.emptied', 'The Trash was emptied', {
+    this.logs?.record("warn", "files.trash.emptied", "The Trash was emptied", {
       items: names.length,
     });
     return { removed: names.length };
   }
 
   /** The path an item had before it was trashed, or null if unknowable. */
-  private async originalPathOf(
-    infoDir: string,
-    id: string,
-  ): Promise<string | null> {
+  private async originalPathOf(infoDir: string, id: string): Promise<string | null> {
     try {
-      const raw = await fs.readFile(join(infoDir, `${id}.trashinfo`), 'utf8');
-      const pathLine = /^Path=(.*)$/m.exec(raw)?.[1] ?? '';
+      const raw = await fs.readFile(join(infoDir, `${id}.trashinfo`), "utf8");
+      const pathLine = /^Path=(.*)$/m.exec(raw)?.[1] ?? "";
       try {
         return decodeURIComponent(pathLine);
       } catch {

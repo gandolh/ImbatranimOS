@@ -1,15 +1,6 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
-import { UserOnlyGuard } from '../app-identity/calling-app';
-import { TrashService, type TrashEntry } from './trash.service';
+import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from "@nestjs/common";
+import { UserOnlyGuard } from "../app-identity/calling-app";
+import { TrashService, type TrashEntry } from "./trash.service";
 
 /**
  * Trash routes.
@@ -19,7 +10,7 @@ import { TrashService, type TrashEntry } from './trash.service';
  * Trash holds whatever was deleted, so only the user (Files) may look in it,
  * bring things back or empty it; an app's call is refused.
  */
-@Controller('files/trash')
+@Controller("files/trash")
 @UseGuards(UserOnlyGuard)
 export class TrashController {
   constructor(private readonly trash: TrashService) {}
@@ -29,14 +20,14 @@ export class TrashController {
     return this.trash.list();
   }
 
-  @Post(':id/restore')
-  restore(@Param('id') id: string): Promise<{ path: string }> {
+  @Post(":id/restore")
+  restore(@Param("id") id: string): Promise<{ path: string }> {
     return this.trash.restore(id);
   }
 
-  @Delete(':id')
+  @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string): Promise<void> {
+  async remove(@Param("id") id: string): Promise<void> {
     await this.trash.remove(id);
   }
 

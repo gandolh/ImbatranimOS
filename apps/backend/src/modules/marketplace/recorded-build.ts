@@ -1,13 +1,8 @@
-import { posix } from 'path';
-import { z } from 'zod';
+import { posix } from "path";
+import { z } from "zod";
 
-import {
-  appEntrySchema,
-  MAX_APP_STYLES,
-  sharedKitSchema,
-  styleSchema,
-} from './catalog';
-import type { InstalledRow } from './marketplace.service';
+import { appEntrySchema, MAX_APP_STYLES, sharedKitSchema, styleSchema } from "./catalog";
+import type { InstalledRow } from "./marketplace.service";
 
 /*
  * Reading what an installed row records, apart from the marketplace service
@@ -51,7 +46,7 @@ export const recordedKitApp = z.strictObject({
  * then lists as missing, and a reinstall writes it again.
  */
 export function recordedBuild(
-  row: Pick<InstalledRow, 'id' | 'entry' | 'entries'>,
+  row: Pick<InstalledRow, "id" | "entry" | "entries">,
 ): { output: string; entries: ReadonlyMap<string, RecordedApp> } | null {
   if (row.entries == null) {
     return {
@@ -76,13 +71,13 @@ export function recordedBuild(
   } catch {
     return null;
   }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return null;
   }
   const entries = new Map<string, RecordedApp>();
   for (const [id, value] of Object.entries(parsed)) {
     if (!isAppId(id)) return null;
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       if (!appEntrySchema.safeParse(value).success) return null;
       entries.set(id, {
         entry: posix.normalize(value),

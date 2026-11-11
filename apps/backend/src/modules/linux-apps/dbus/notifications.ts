@@ -1,5 +1,5 @@
-import type { HandlerResult } from './connection';
-import type { Message } from './wire';
+import type { HandlerResult } from "./connection";
+import type { Message } from "./wire";
 
 /**
  * `org.freedesktop.Notifications` on a session's bus: a Linux app's
@@ -17,9 +17,9 @@ import type { Message } from './wire';
  */
 
 export const NOTIFICATIONS = {
-  name: 'org.freedesktop.Notifications',
-  path: '/org/freedesktop/Notifications',
-  interface: 'org.freedesktop.Notifications',
+  name: "org.freedesktop.Notifications",
+  path: "/org/freedesktop/Notifications",
+  interface: "org.freedesktop.Notifications",
 } as const;
 
 /** NotificationClosed reasons. */
@@ -81,8 +81,7 @@ const INTROSPECTION = `<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object I
 </node>
 `;
 
-const clip = (s: unknown, max: number) =>
-  typeof s === 'string' ? s.slice(0, max) : '';
+const clip = (s: unknown, max: number) => (typeof s === "string" ? s.slice(0, max) : "");
 
 export class NotificationsServer {
   private nextId = 1;
@@ -102,22 +101,22 @@ export class NotificationsServer {
   handle(call: Message): HandlerResult | undefined {
     if (call.path !== NOTIFICATIONS.path) return undefined;
     switch (`${call.interface ?? NOTIFICATIONS.interface}.${call.member}`) {
-      case 'org.freedesktop.Notifications.GetCapabilities':
-        return { signature: 'as', body: [['actions', 'body']] };
-      case 'org.freedesktop.Notifications.GetServerInformation':
+      case "org.freedesktop.Notifications.GetCapabilities":
+        return { signature: "as", body: [["actions", "body"]] };
+      case "org.freedesktop.Notifications.GetServerInformation":
         return {
-          signature: 'ssss',
-          body: ['ImbatranimOS', 'imbatranim', this.version, '1.2'],
+          signature: "ssss",
+          body: ["ImbatranimOS", "imbatranim", this.version, "1.2"],
         };
-      case 'org.freedesktop.Notifications.Notify':
+      case "org.freedesktop.Notifications.Notify":
         return this.notify(call);
-      case 'org.freedesktop.Notifications.CloseNotification':
-        if (call.signature !== 'u') return badArgs('CloseNotification', 'u');
+      case "org.freedesktop.Notifications.CloseNotification":
+        if (call.signature !== "u") return badArgs("CloseNotification", "u");
         this.closeByCall(call.body[0] as number);
         return {};
-      case 'org.freedesktop.DBus.Introspectable.Introspect':
-        return { signature: 's', body: [INTROSPECTION] };
-      case 'org.freedesktop.DBus.Peer.Ping':
+      case "org.freedesktop.DBus.Introspectable.Introspect":
+        return { signature: "s", body: [INTROSPECTION] };
+      case "org.freedesktop.DBus.Peer.Ping":
         return {};
       default:
         return undefined;
@@ -125,24 +124,14 @@ export class NotificationsServer {
   }
 
   private notify(call: Message): HandlerResult {
-    if (call.signature !== 'susssasa{sv}i') {
-      return badArgs('Notify', 'susssasa{sv}i');
+    if (call.signature !== "susssasa{sv}i") {
+      return badArgs("Notify", "susssasa{sv}i");
     }
-    const [app, replaces, , summary, body, actions] = call.body as [
-      string,
-      number,
-      string,
-      string,
-      string,
-      unknown,
-    ];
+    const [app, replaces, , summary, body, actions] = call.body as [string, number, string, string, string, unknown];
     // Actions arrive as key, label pairs.
-    const hasDefault =
-      Array.isArray(actions) &&
-      actions.some((k, i) => i % 2 === 0 && k === 'default');
+    const hasDefault = Array.isArray(actions) && actions.some((k, i) => i % 2 === 0 && k === "default");
     // A replacement keeps its id, as the spec asks; an unknown one is new.
-    const id =
-      replaces > 0 && this.open.has(replaces) ? replaces : this.allocate();
+    const id = replaces > 0 && this.open.has(replaces) ? replaces : this.allocate();
     this.open.set(id, hasDefault);
     this.tab.show({
       id,
@@ -151,7 +140,7 @@ export class NotificationsServer {
       body: clip(body, MAX_BODY),
       hasDefault,
     });
-    return { signature: 'u', body: [id] };
+    return { signature: "u", body: [id] };
   }
 
   private allocate(): number {
@@ -177,13 +166,13 @@ export class NotificationsServer {
    * one, then close it as dismissed. Only `default` is ever invoked.
    */
   actionByUser(id: number, key: string): void {
-    if (key !== 'default' || !this.open.has(id)) return;
+    if (key !== "default" || !this.open.has(id)) return;
     if (this.open.get(id)) {
       this.signal({
         path: NOTIFICATIONS.path,
         interface: NOTIFICATIONS.interface,
-        member: 'ActionInvoked',
-        signature: 'us',
+        member: "ActionInvoked",
+        signature: "us",
         body: [id, key],
       });
     }
@@ -194,8 +183,8 @@ export class NotificationsServer {
     this.signal({
       path: NOTIFICATIONS.path,
       interface: NOTIFICATIONS.interface,
-      member: 'NotificationClosed',
-      signature: 'uu',
+      member: "NotificationClosed",
+      signature: "uu",
       body: [id, reason],
     });
   }
@@ -203,7 +192,7 @@ export class NotificationsServer {
 
 function badArgs(member: string, signature: string): HandlerResult {
   return {
-    error: 'org.freedesktop.DBus.Error.InvalidArgs',
+    error: "org.freedesktop.DBus.Error.InvalidArgs",
     message: `${member} takes (${signature})`,
   };
 }

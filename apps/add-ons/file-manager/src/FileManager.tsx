@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   FolderPlus,
   Clipboard,
@@ -15,40 +15,33 @@ import {
   List,
   Lock,
   PackageOpen,
-} from 'lucide-react'
-import {
-  Button,
-  ConfirmDialog,
-  useConfirm,
-  usePrompt,
-  useSystem,
-  useTopWindowKeydown,
-} from '@imbatranim/ui'
-import { TrashDialog } from './components/TrashDialog'
-import { PropertiesDialog } from './components/PropertiesDialog'
-import { Input } from '@imbatranim/ui'
-import { Dialog } from '@imbatranim/ui'
-import { ScrollArea } from '@imbatranim/ui'
-import { Tooltip } from '@imbatranim/ui'
-import { cn } from '@imbatranim/ui'
-import { useVirtualList } from '@imbatranim/ui'
-import { useElementSize } from '@imbatranim/ui'
-import { Breadcrumb } from './components/Breadcrumb'
-import { SearchBox } from './components/SearchBox'
-import { SearchResults } from './components/SearchResults'
-import { FileList } from './components/FileList'
-import { FileGrid } from './components/FileGrid'
-import { FolderTree } from './components/FolderTree'
-import { UploadDropzone } from './components/UploadDropzone'
-import { PreviewPane } from './components/PreviewPane'
-import { ContextMenu } from '@imbatranim/ui'
-import { FS_ROOTS } from './types'
-import type { FsEntry } from './types'
-import { resolveOpenApp } from './lib/openWith'
-import { OpenWithDialog } from './components/OpenWithDialog'
-import { ExtractDialog, type ExtractPrompt } from './components/ExtractDialog'
-import { compressPaths, errorMessage } from './api/archiveApi'
-import { runExtractJob } from './lib/extractJob'
+} from "lucide-react";
+import { Button, ConfirmDialog, useConfirm, usePrompt, useSystem, useTopWindowKeydown } from "@imbatranim/ui";
+import { TrashDialog } from "./components/TrashDialog";
+import { PropertiesDialog } from "./components/PropertiesDialog";
+import { Input } from "@imbatranim/ui";
+import { Dialog } from "@imbatranim/ui";
+import { ScrollArea } from "@imbatranim/ui";
+import { Tooltip } from "@imbatranim/ui";
+import { cn } from "@imbatranim/ui";
+import { useVirtualList } from "@imbatranim/ui";
+import { useElementSize } from "@imbatranim/ui";
+import { Breadcrumb } from "./components/Breadcrumb";
+import { SearchBox } from "./components/SearchBox";
+import { SearchResults } from "./components/SearchResults";
+import { FileList } from "./components/FileList";
+import { FileGrid } from "./components/FileGrid";
+import { FolderTree } from "./components/FolderTree";
+import { UploadDropzone } from "./components/UploadDropzone";
+import { PreviewPane } from "./components/PreviewPane";
+import { ContextMenu } from "@imbatranim/ui";
+import { FS_ROOTS } from "./types";
+import type { FsEntry } from "./types";
+import { resolveOpenApp } from "./lib/openWith";
+import { OpenWithDialog } from "./components/OpenWithDialog";
+import { ExtractDialog, type ExtractPrompt } from "./components/ExtractDialog";
+import { compressPaths, errorMessage } from "./api/archiveApi";
+import { runExtractJob } from "./lib/extractJob";
 import {
   archiveKind,
   crumbTarget,
@@ -56,33 +49,21 @@ import {
   folderEntries,
   loneOutputName,
   uniqueArchiveName,
-} from './lib/archiveView'
-import { buildMenuItems } from './lib/buildMenuItems'
-import {
-  makeBlankFile,
-  uniqueNewFileName,
-  newFileOpener,
-  type NewFileKind,
-} from './lib/newFileTemplates'
-import {
-  sortEntries,
-  filterHidden,
-  nextSort,
-  gridColumns,
-  gridRowCount,
-  TILE_HEIGHT,
-} from './lib/fileSort'
-import { usePreviewPaneSettings } from './store/previewPaneStore'
-import { useFileViewSettings } from './store/fileViewStore'
-import { parentOf, resultCountLabel, scopeLabel } from './lib/searchPresentation'
-import type { SelectMode } from './lib/selectionModel'
-import { useFileSearch } from './hooks/useFileSearch'
-import { useFileVerbKeys } from './hooks/useFileVerbKeys'
-import { useFileSelection } from './hooks/useFileSelection'
-import { useFileClipboard } from './hooks/useFileClipboard'
-import { useDeleteFlow } from './hooks/useDeleteFlow'
-import { usePaneResize } from './hooks/usePaneResize'
-import { useListKeyboardNav } from './hooks/useListKeyboardNav'
+} from "./lib/archiveView";
+import { buildMenuItems } from "./lib/buildMenuItems";
+import { makeBlankFile, uniqueNewFileName, newFileOpener, type NewFileKind } from "./lib/newFileTemplates";
+import { sortEntries, filterHidden, nextSort, gridColumns, gridRowCount, TILE_HEIGHT } from "./lib/fileSort";
+import { usePreviewPaneSettings } from "./store/previewPaneStore";
+import { useFileViewSettings } from "./store/fileViewStore";
+import { parentOf, resultCountLabel, scopeLabel } from "./lib/searchPresentation";
+import type { SelectMode } from "./lib/selectionModel";
+import { useFileSearch } from "./hooks/useFileSearch";
+import { useFileVerbKeys } from "./hooks/useFileVerbKeys";
+import { useFileSelection } from "./hooks/useFileSelection";
+import { useFileClipboard } from "./hooks/useFileClipboard";
+import { useDeleteFlow } from "./hooks/useDeleteFlow";
+import { usePaneResize } from "./hooks/usePaneResize";
+import { useListKeyboardNav } from "./hooks/useListKeyboardNav";
 import {
   useArchiveListingQuery,
   useDirectoryQuery,
@@ -92,131 +73,131 @@ import {
   useCopyEntryMutation,
   useWriteContentMutation,
   useUploadFileMutation,
-} from './queries/filesQueries'
+} from "./queries/filesQueries";
 
 type MenuState = {
-  x: number
-  y: number
-  entry: FsEntry | null
-}
+  x: number;
+  y: number;
+  entry: FsEntry | null;
+};
 
 function dirOf(p: string): string {
-  const i = p.lastIndexOf('/')
-  return i === -1 ? '' : p.slice(0, i)
+  const i = p.lastIndexOf("/");
+  return i === -1 ? "" : p.slice(0, i);
 }
 
 function baseOf(p: string): string {
-  return p.slice(p.lastIndexOf('/') + 1)
+  return p.slice(p.lastIndexOf("/") + 1);
 }
 
 /** Extract everything: a lone compressed file names the one file it holds. */
 function extractAllPrompt(archiveName: string): ExtractPrompt {
-  const beside = loneOutputName(archiveName)
-  return beside ? { archiveName, what: beside, beside } : { archiveName, what: 'everything' }
+  const beside = loneOutputName(archiveName);
+  return beside ? { archiveName, what: beside, beside } : { archiveName, what: "everything" };
 }
 
-const READ_ONLY_NOTE = 'This is a read-only view of an archive. Extract it to change anything.'
+const READ_ONLY_NOTE = "This is a read-only view of an archive. Extract it to change anything.";
 
 function triggerDownload(url: string, name: string) {
-  const a = document.createElement('a')
-  a.href = url
-  a.download = name
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 export function FileManager({ windowId: _windowId }: { windowId: string }) {
-  const system = useSystem()
-  const [root, setRoot] = useState(FS_ROOTS[0].id)
-  const rootCfg = FS_ROOTS.find((r) => r.id === root) ?? FS_ROOTS[0]
-  const [path, setPath] = useState('')
+  const system = useSystem();
+  const [root, setRoot] = useState(FS_ROOTS[0].id);
+  const rootCfg = FS_ROOTS.find((r) => r.id === root) ?? FS_ROOTS[0];
+  const [path, setPath] = useState("");
 
   // An archive open as a read-only folder: `path` stays the folder the archive
   // sits in, `inner` is where we are inside it.
-  const [archive, setArchive] = useState<{ path: string; name: string } | null>(null)
-  const [inner, setInner] = useState('')
-  const inArchive = archive !== null
+  const [archive, setArchive] = useState<{ path: string; name: string } | null>(null);
+  const [inner, setInner] = useState("");
+  const inArchive = archive !== null;
   /** The extract dialog's pending request: which archive, and which entries (absent = all). */
   const [extractFor, setExtractFor] = useState<{
-    prompt: ExtractPrompt
-    archivePath: string
-    names?: string[]
-  } | null>(null)
+    prompt: ExtractPrompt;
+    archivePath: string;
+    names?: string[];
+  } | null>(null);
   /** The running extraction, for the progress strip. */
-  const [job, setJob] = useState<{ label: string; percent: number } | null>(null)
-  const mountedRef = useRef(true)
+  const [job, setJob] = useState<{ label: string; percent: number } | null>(null);
+  const mountedRef = useRef(true);
   useEffect(() => {
-    mountedRef.current = true
+    mountedRef.current = true;
     return () => {
-      mountedRef.current = false
-    }
-  }, [])
-  const queryClient = useQueryClient()
+      mountedRef.current = false;
+    };
+  }, []);
+  const queryClient = useQueryClient();
 
   // Drain a one-shot navigate intent (from the command palette's file search)
   // exactly once — ref-guarded so StrictMode's double-mount can't consume twice.
   // `navigatePath` is separate from the editor apps' `openPath` intent: it moves
   // *this* window to a directory rather than opening a file elsewhere. An empty
   // navigatePath ('') means the root itself, so guard on `!== undefined`.
-  const navConsumedRef = useRef(false)
+  const navConsumedRef = useRef(false);
   useEffect(() => {
-    if (navConsumedRef.current) return
-    navConsumedRef.current = true
+    if (navConsumedRef.current) return;
+    navConsumedRef.current = true;
     const intent = system.intents.consume<{
-      navigatePath?: string
-      openPath?: string
-      root?: string
-    }>()
+      navigatePath?: string;
+      openPath?: string;
+      root?: string;
+    }>();
     // An archive opened from elsewhere (the desktop, a search, Open with) lands
     // here like a double-click on it in its folder.
-    const kind = intent?.openPath ? archiveKind(intent.openPath) : null
+    const kind = intent?.openPath ? archiveKind(intent.openPath) : null;
     // Draining a one-shot open-intent on mount is the intended "sync from an
     // external system" use of an effect; it runs at most once (ref-guarded).
     /* eslint-disable react-hooks/set-state-in-effect */
     if (intent?.openPath && intent.root && kind) {
-      const at = intent.openPath
-      setRoot(intent.root)
-      setPath(dirOf(at))
-      if (kind === 'browse') setArchive({ path: at, name: baseOf(at) })
-      else setExtractFor({ prompt: extractAllPrompt(baseOf(at)), archivePath: at })
+      const at = intent.openPath;
+      setRoot(intent.root);
+      setPath(dirOf(at));
+      if (kind === "browse") setArchive({ path: at, name: baseOf(at) });
+      else setExtractFor({ prompt: extractAllPrompt(baseOf(at)), archivePath: at });
     } else if (intent?.navigatePath !== undefined && intent.root) {
-      setRoot(intent.root)
-      setPath(intent.navigatePath)
+      setRoot(intent.root);
+      setPath(intent.navigatePath);
     }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [system])
+  }, [system]);
 
   // Search state. Ephemeral window state on purpose — a search is a
   // question you are asking right now, not a setting; nothing here belongs in
   // the dotfile.
-  const [query, setQuery] = useState('')
-  const [contentMode, setContentMode] = useState(false)
-  const [selectedHitPath, setSelectedHitPath] = useState<string | null>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
-  const resultsRef = useRef<HTMLDivElement>(null)
+  const [query, setQuery] = useState("");
+  const [contentMode, setContentMode] = useState(false);
+  const [selectedHitPath, setSelectedHitPath] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Rename state
-  const [renamingPath, setRenamingPath] = useState<string | null>(null)
+  const [renamingPath, setRenamingPath] = useState<string | null>(null);
   /** The file whose "Open with" chooser is showing, if any. */
-  const [openWithFor, setOpenWithFor] = useState<FsEntry | null>(null)
-  const [renameValue, setRenameValue] = useState('')
+  const [openWithFor, setOpenWithFor] = useState<FsEntry | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   // Create folder dialog
-  const [showNewFolder, setShowNewFolder] = useState(false)
-  const [newFolderName, setNewFolderName] = useState('')
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
 
   // Surfaced error for batch delete / upload / create failures.
-  const [actionError, setActionError] = useState<string | null>(null)
-  const [trashOpen, setTrashOpen] = useState(false)
-  const [propsEntry, setPropsEntry] = useState<FsEntry | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [propsEntry, setPropsEntry] = useState<FsEntry | null>(null);
 
   // Right-click context menu
-  const [menu, setMenu] = useState<MenuState | null>(null)
+  const [menu, setMenu] = useState<MenuState | null>(null);
 
   // File input ref for upload picker
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const openFilePicker = useCallback(() => fileInputRef.current?.click(), [])
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const openFilePicker = useCallback(() => fileInputRef.current?.click(), []);
 
   // Preview pane: on/off + width persist across sessions; visibility also
   // collapses at small app-window widths regardless of the persisted setting.
@@ -233,16 +214,16 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
    */
   const failAction = useCallback(
     (message: string) => {
-      setActionError(message)
-      system.notify({ title: 'File Manager', body: message, level: 'error' })
+      setActionError(message);
+      system.notify({ title: "File Manager", body: message, level: "error" });
     },
-    [system]
-  )
+    [system],
+  );
 
   // Sort key/direction, hidden-file visibility and view mode — persisted.
-  const view = useFileViewSettings()
+  const view = useFileViewSettings();
 
-  const previewPane = usePreviewPaneSettings()
+  const previewPane = usePreviewPaneSettings();
   const {
     containerRef,
     resizing,
@@ -252,41 +233,41 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     handlePaneResizeReset,
     paneMin,
     paneMax,
-  } = usePaneResize(previewPane)
+  } = usePaneResize(previewPane);
 
-  const dirQuery = useDirectoryQuery(root, path)
-  const archiveQuery = useArchiveListingQuery(root, archive?.path ?? null)
-  const archiveListing = archiveQuery.data
+  const dirQuery = useDirectoryQuery(root, path);
+  const archiveQuery = useArchiveListingQuery(root, archive?.path ?? null);
+  const archiveListing = archiveQuery.data;
   const archiveEntries = useMemo(
     () => (archiveListing ? folderEntries(archiveListing, inner) : []),
-    [archiveListing, inner]
-  )
-  const createDirMutation = useCreateDirectoryMutation(root, path)
-  const writeContentMutation = useWriteContentMutation(root, path)
-  const { prompt: promptName, promptDialog } = usePrompt()
-  const { confirm, confirmDialog } = useConfirm()
-  const deleteMutation = useDeleteEntryMutation(root, path)
-  const moveMutation = useMoveEntryMutation(root, path)
-  const copyMutation = useCopyEntryMutation(root, path)
-  const uploadMutation = useUploadFileMutation(root, path)
+    [archiveListing, inner],
+  );
+  const createDirMutation = useCreateDirectoryMutation(root, path);
+  const writeContentMutation = useWriteContentMutation(root, path);
+  const { prompt: promptName, promptDialog } = usePrompt();
+  const { confirm, confirmDialog } = useConfirm();
+  const deleteMutation = useDeleteEntryMutation(root, path);
+  const moveMutation = useMoveEntryMutation(root, path);
+  const copyMutation = useCopyEntryMutation(root, path);
+  const uploadMutation = useUploadFileMutation(root, path);
 
-  const selection = useFileSelection()
-  const { selected, setSelected } = selection
-  const clipboard = useFileClipboard({ path, copyMutation, moveMutation, onError: failAction })
+  const selection = useFileSelection();
+  const { selected, setSelected } = selection;
+  const clipboard = useFileClipboard({ path, copyMutation, moveMutation, onError: failAction });
   const deleteFlow = useDeleteFlow({
     selected,
     setSelected,
     deleteMutation,
     onError: failAction,
     // Only the home root has a Trash; notes is a separate tree.
-    trashEnabled: root === 'home',
+    trashEnabled: root === "home",
     onTrashed: (label, count) =>
       system.notify({
-        title: count === 1 ? 'Moved to Trash' : `Moved ${count} items to Trash`,
+        title: count === 1 ? "Moved to Trash" : `Moved ${count} items to Trash`,
         body: count === 1 ? label : undefined,
-        level: 'info',
+        level: "info",
       }),
-  })
+  });
 
   /**
    * Drop the search and go back to the listing.
@@ -297,84 +278,79 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
    * Escape must restore the pane exactly as it was.
    */
   function clearSearch() {
-    setQuery('')
-    setSelectedHitPath(null)
+    setQuery("");
+    setSelectedHitPath(null);
   }
 
   function switchRoot(nextRoot: string) {
-    setRoot(nextRoot)
-    setPath('')
-    setArchive(null)
-    setInner('')
-    selection.clear()
-    clipboard.clear()
-    clearSearch()
+    setRoot(nextRoot);
+    setPath("");
+    setArchive(null);
+    setInner("");
+    selection.clear();
+    clipboard.clear();
+    clearSearch();
   }
 
   function navigate(nextPath: string) {
-    setPath(nextPath)
-    setArchive(null)
-    setInner('')
-    selection.clear()
+    setPath(nextPath);
+    setArchive(null);
+    setInner("");
+    selection.clear();
     // Results are scoped to the folder they were found in; carrying the query
     // across a navigation would silently re-run it somewhere else.
-    clearSearch()
+    clearSearch();
   }
 
   /** Open an archive file like a folder: read-only, from the folder it sits in. */
   function openArchive(entry: FsEntry) {
-    setPath(dirOf(entry.path))
-    setArchive({ path: entry.path, name: entry.name })
-    setInner('')
-    selection.clear()
-    clearSearch()
+    setPath(dirOf(entry.path));
+    setArchive({ path: entry.path, name: entry.name });
+    setInner("");
+    selection.clear();
+    clearSearch();
   }
 
   /** The one reply to anything that would change an archive. */
   function blockedInArchive(): boolean {
-    if (!inArchive) return false
-    setActionError(READ_ONLY_NOTE)
-    return true
+    if (!inArchive) return false;
+    setActionError(READ_ONLY_NOTE);
+    return true;
   }
 
   /** A handler that does nothing inside an archive but say why. */
   function guarded<A extends unknown[]>(fn: (...args: A) => void): (...args: A) => void {
     return (...args) => {
-      if (!blockedInArchive()) fn(...args)
-    }
+      if (!blockedInArchive()) fn(...args);
+    };
   }
 
   /** Ask where to extract `names` (absent = everything) from this archive. */
   function askExtract(archivePath: string, archiveName: string, what: string, names?: string[]) {
     if (job) {
-      failAction('An extraction is already running.')
-      return
+      failAction("An extraction is already running.");
+      return;
     }
     setExtractFor({
       prompt: names ? { archiveName, what } : extractAllPrompt(archiveName),
       archivePath,
       names,
-    })
+    });
   }
 
   /** Extract from the archive on screen: the entry or selection clicked, else everything. */
   function extractFromView(entry: FsEntry | null) {
-    if (!archive || !archiveListing) return
-    const targets = entry ? verbTargets(entry) : []
+    if (!archive || !archiveListing) return;
+    const targets = entry ? verbTargets(entry) : [];
     if (targets.length === 0) {
-      askExtract(archive.path, archive.name, 'everything')
-      return
+      askExtract(archive.path, archive.name, "everything");
+      return;
     }
     const names = entryNamesFor(
       archiveListing,
-      targets.map((t) => t.path)
-    )
-    askExtract(
-      archive.path,
-      archive.name,
-      targets.length === 1 ? targets[0].name : `${targets.length} items`,
-      names
-    )
+      targets.map((t) => t.path),
+    );
+    askExtract(archive.path, archive.name, targets.length === 1 ? targets[0].name : `${targets.length} items`, names);
   }
 
   /**
@@ -385,239 +361,232 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     archivePath: string,
     prompt: ExtractPrompt,
     names: string[] | undefined,
-    dest: string | undefined
+    dest: string | undefined,
   ) {
-    const label = `Extracting ${prompt.what} from ${prompt.archiveName}`
-    setJob({ label, percent: 0 })
+    const label = `Extracting ${prompt.what} from ${prompt.archiveName}`;
+    setJob({ label, percent: 0 });
     try {
-      const result = await runExtractJob(
-        system.http,
-        { root, path: archivePath, dest, entries: names },
-        (percent) => {
-          if (mountedRef.current) setJob({ label, percent })
-        }
-      )
+      const result = await runExtractJob(system.http, { root, path: archivePath, dest, entries: names }, (percent) => {
+        if (mountedRef.current) setJob({ label, percent });
+      });
       system.notify({
-        title: 'Extraction complete',
+        title: "Extraction complete",
         body: `${prompt.archiveName} → ${result.dest}`,
-        level: 'success',
-      })
-      void queryClient.invalidateQueries({ queryKey: ['fs-list'] })
+        level: "success",
+      });
+      void queryClient.invalidateQueries({ queryKey: ["fs-list"] });
     } catch (err) {
-      const message = `Could not extract ${prompt.archiveName}: ${errorMessage(err)}`
-      system.notify({ title: 'File Manager', body: message, level: 'error' })
-      if (mountedRef.current) setActionError(message)
+      const message = `Could not extract ${prompt.archiveName}: ${errorMessage(err)}`;
+      system.notify({ title: "File Manager", body: message, level: "error" });
+      if (mountedRef.current) setActionError(message);
     } finally {
-      if (mountedRef.current) setJob(null)
+      if (mountedRef.current) setJob(null);
     }
   }
 
   /** A folder crumb inside an archive: out of it, or up and down within it. */
   function handleCrumb(clicked: string) {
     if (!archive) {
-      navigate(clicked)
-      return
+      navigate(clicked);
+      return;
     }
-    const target = crumbTarget(archive.path, clicked)
+    const target = crumbTarget(archive.path, clicked);
     if (target.leave) {
-      navigate(target.path)
-      return
+      navigate(target.path);
+      return;
     }
-    setInner(target.inner)
-    selection.clear()
+    setInner(target.inner);
+    selection.clear();
   }
 
   function handleOpen(entry: FsEntry) {
     if (inArchive) {
       // Nothing inside an archive opens in place: folders are walked, and a
       // file is offered for extraction.
-      if (entry.type === 'directory') {
-        setInner(entry.path)
-        selection.clear()
-      } else extractFromView(entry)
-      return
+      if (entry.type === "directory") {
+        setInner(entry.path);
+        selection.clear();
+      } else extractFromView(entry);
+      return;
     }
-    if (entry.type === 'directory') {
-      navigate(entry.path)
-      return
+    if (entry.type === "directory") {
+      navigate(entry.path);
+      return;
     }
-    const kind = archiveKind(entry.name)
-    if (kind === 'browse') {
-      openArchive(entry)
-      return
+    const kind = archiveKind(entry.name);
+    if (kind === "browse") {
+      openArchive(entry);
+      return;
     }
-    if (kind === 'extract') {
+    if (kind === "extract") {
       // A lone .gz or .xz has no folder to show.
-      askExtract(entry.path, entry.name, 'everything')
-      return
+      askExtract(entry.path, entry.name, "everything");
+      return;
     }
     // Routing goes through the handle's association registry: the
     // user's choice, then whichever app declares the type, then a text fallback.
-    const appId = resolveOpenApp(system.intents.associations, root, entry.name)
+    const appId = resolveOpenApp(system.intents.associations, root, entry.name);
     if (appId) {
       // openApp records the OS-wide recent at the choke point — an
       // app cannot attribute a recent to another app any more, so the shell does.
-      system.intents.openApp(appId, { openPath: entry.path, root })
-      return
+      system.intents.openApp(appId, { openPath: entry.path, root });
+      return;
     }
     // Nothing claims it and it is not text — an unknown binary. Ask, rather
     // than swallowing the click, which is what this did for every unmapped
     // extension before default apps and Open with and is the single worst thing an OS can do to
     // a double-click.
-    setOpenWithFor(entry)
+    setOpenWithFor(entry);
   }
 
   /** Open one file with a specific app, and remember the choice if asked. */
   function openEntryWith(entry: FsEntry, appId: string) {
-    system.intents.openApp(appId, { openPath: entry.path, root })
+    system.intents.openApp(appId, { openPath: entry.path, root });
   }
 
   function handleRename(entry: FsEntry) {
-    if (blockedInArchive()) return
-    setRenamingPath(entry.path)
-    setRenameValue(entry.name)
+    if (blockedInArchive()) return;
+    setRenamingPath(entry.path);
+    setRenameValue(entry.name);
   }
 
   function handleRenameCommit() {
     if (!renamingPath || !renameValue.trim()) {
-      setRenamingPath(null)
-      return
+      setRenamingPath(null);
+      return;
     }
-    const trimmed = renameValue.trim()
-    const dir = renamingPath.includes('/')
-      ? renamingPath.substring(0, renamingPath.lastIndexOf('/'))
-      : ''
+    const trimmed = renameValue.trim();
+    const dir = renamingPath.includes("/") ? renamingPath.substring(0, renamingPath.lastIndexOf("/")) : "";
     // Same guards as handleNewFile: a filename, not a path, and not already taken
     // in this directory. Rename had neither check nor any error feedback (M4).
-    if (/[\\/]/.test(trimmed) || trimmed === '.' || trimmed === '..') {
-      failAction('That name is not a valid filename.')
-      setRenamingPath(null)
-      return
+    if (/[\\/]/.test(trimmed) || trimmed === "." || trimmed === "..") {
+      failAction("That name is not a valid filename.");
+      setRenamingPath(null);
+      return;
     }
-    const newPath = dir ? `${dir}/${trimmed}` : trimmed
+    const newPath = dir ? `${dir}/${trimmed}` : trimmed;
     if (newPath === renamingPath) {
-      setRenamingPath(null)
-      return
+      setRenamingPath(null);
+      return;
     }
     if ((dirQuery.data ?? []).some((e) => e.name === trimmed && e.path !== renamingPath)) {
-      failAction(`"${trimmed}" already exists here.`)
-      setRenamingPath(null)
-      return
+      failAction(`"${trimmed}" already exists here.`);
+      setRenamingPath(null);
+      return;
     }
     moveMutation.mutate(
       { from: renamingPath, to: newPath },
-      { onError: () => failAction(`Could not rename to "${trimmed}".`) }
-    )
-    setRenamingPath(null)
+      { onError: () => failAction(`Could not rename to "${trimmed}".`) },
+    );
+    setRenamingPath(null);
   }
 
   function handleCreateFolder() {
-    if (!newFolderName.trim()) return
+    if (!newFolderName.trim()) return;
     createDirMutation.mutate(newFolderName.trim(), {
       onSuccess: () => {
-        setShowNewFolder(false)
-        setNewFolderName('')
+        setShowNewFolder(false);
+        setNewFolderName("");
       },
-    })
+    });
   }
 
   async function handleNewFile() {
-    if (blockedInArchive()) return
+    if (blockedInArchive()) return;
     const name = await promptName({
-      title: 'New file',
-      message: 'Include the extension — it decides which app opens the file.',
-      placeholder: 'notes.md',
-    })
-    if (!name) return
-    const trimmed = name.trim()
+      title: "New file",
+      message: "Include the extension — it decides which app opens the file.",
+      placeholder: "notes.md",
+    });
+    if (!name) return;
+    const trimmed = name.trim();
     // A filename, not a path: the backend jails this anyway, but refusing here
     // gives a real message instead of a 400.
-    if (!trimmed || /[\\/]/.test(trimmed) || trimmed === '.' || trimmed === '..') {
-      failAction('That name is not a valid filename.')
-      return
+    if (!trimmed || /[\\/]/.test(trimmed) || trimmed === "." || trimmed === "..") {
+      failAction("That name is not a valid filename.");
+      return;
     }
     if ((dirQuery.data ?? []).some((e) => e.name === trimmed)) {
-      failAction(`"${trimmed}" already exists here.`)
-      return
+      failAction(`"${trimmed}" already exists here.`);
+      return;
     }
-    const filePath = path ? `${path}/${trimmed}` : trimmed
+    const filePath = path ? `${path}/${trimmed}` : trimmed;
     writeContentMutation.mutate(
-      { path: filePath, content: '' },
+      { path: filePath, content: "" },
       {
-        onSuccess: () =>
-          handleOpen({ name: trimmed, path: filePath, type: 'file', size: 0, modifiedAt: '' }),
+        onSuccess: () => handleOpen({ name: trimmed, path: filePath, type: "file", size: 0, modifiedAt: "" }),
         onError: () => failAction(`Could not create "${trimmed}".`),
-      }
-    )
+      },
+    );
   }
 
   function handleNewOfficeFile(kind: NewFileKind) {
-    if (blockedInArchive()) return
+    if (blockedInArchive()) return;
     // Born in the file manager: write a blank template at the current directory
     // under a non-colliding name, then open it straight into the editor.
-    const existing = (dirQuery.data ?? []).map((e) => e.name)
-    const name = uniqueNewFileName(kind, existing)
-    const filePath = path ? `${path}/${name}` : name
-    const file = makeBlankFile(kind, name)
+    const existing = (dirQuery.data ?? []).map((e) => e.name);
+    const name = uniqueNewFileName(kind, existing);
+    const filePath = path ? `${path}/${name}` : name;
+    const file = makeBlankFile(kind, name);
     uploadMutation.mutate(
       { path: filePath, file },
       {
         onSuccess: () => {
           // The menu offers the kind only while some app opens it.
-          const appId = newFileOpener(system.intents.associations, kind)
-          if (appId) system.intents.openApp(appId, { openPath: filePath, root })
+          const appId = newFileOpener(system.intents.associations, kind);
+          if (appId) system.intents.openApp(appId, { openPath: filePath, root });
         },
-      }
-    )
+      },
+    );
   }
 
   async function handleUploadFiles(files: File[]) {
-    if (blockedInArchive()) return
+    if (blockedInArchive()) return;
     // Never silently overwrite: an upload (or a drag-drop) whose name already
     // exists here used to clobber the file on disk with no warning (M5). Ask
     // before replacing; if declined, upload only the names that collide with
     // nothing and skip the rest.
-    const existing = new Set((dirQuery.data ?? []).map((e) => e.name))
-    const clashes = files.filter((f) => existing.has(f.name))
-    let toUpload = files
+    const existing = new Set((dirQuery.data ?? []).map((e) => e.name));
+    const clashes = files.filter((f) => existing.has(f.name));
+    let toUpload = files;
     if (clashes.length > 0) {
       const ok = await confirm({
-        title: clashes.length === 1 ? 'Replace file?' : 'Replace files?',
+        title: clashes.length === 1 ? "Replace file?" : "Replace files?",
         message:
           clashes.length === 1
             ? `"${clashes[0].name}" already exists here. Uploading replaces it.`
             : `${clashes.length} files already exist here and will be replaced: ${clashes
                 .map((f) => f.name)
-                .join(', ')}.`,
+                .join(", ")}.`,
         destructive: true,
-        confirmLabel: 'Replace',
-      })
+        confirmLabel: "Replace",
+      });
       if (!ok) {
-        toUpload = files.filter((f) => !existing.has(f.name))
-        if (toUpload.length === 0) return
+        toUpload = files.filter((f) => !existing.has(f.name));
+        if (toUpload.length === 0) return;
       }
     }
     const results = await Promise.allSettled(
       toUpload.map((file) => {
-        const filePath = path ? `${path}/${file.name}` : file.name
-        return uploadMutation.mutateAsync({ path: filePath, file })
-      })
-    )
-    const failed = toUpload.filter((_, i) => results[i].status === 'rejected')
+        const filePath = path ? `${path}/${file.name}` : file.name;
+        return uploadMutation.mutateAsync({ path: filePath, file });
+      }),
+    );
+    const failed = toUpload.filter((_, i) => results[i].status === "rejected");
     if (failed.length > 0) {
       failAction(
-        `Failed to upload ${failed.length} file${failed.length !== 1 ? 's' : ''}: ${failed
+        `Failed to upload ${failed.length} file${failed.length !== 1 ? "s" : ""}: ${failed
           .map((f) => f.name)
-          .join(', ')}.`
-      )
+          .join(", ")}.`,
+      );
     }
   }
 
   function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files
+    const files = e.target.files;
     if (files && files.length > 0) {
-      handleUploadFiles(Array.from(files))
-      e.target.value = ''
+      handleUploadFiles(Array.from(files));
+      e.target.value = "";
     }
   }
 
@@ -636,21 +605,21 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     selection.select(
       entryPath,
       mode,
-      orderedEntries.map((en) => en.path)
-    )
+      orderedEntries.map((en) => en.path),
+    );
   }
 
   function verbTargets(entry: FsEntry): FsEntry[] {
-    return selected.has(entry.path) && selectedEntries.length > 1 ? selectedEntries : [entry]
+    return selected.has(entry.path) && selectedEntries.length > 1 ? selectedEntries : [entry];
   }
 
   function openEntryMenu(entry: FsEntry, e: React.MouseEvent) {
-    setMenu({ x: e.clientX, y: e.clientY, entry })
+    setMenu({ x: e.clientX, y: e.clientY, entry });
   }
 
   function openBackgroundMenu(e: React.MouseEvent) {
-    e.preventDefault()
-    setMenu({ x: e.clientX, y: e.clientY, entry: null })
+    e.preventDefault();
+    setMenu({ x: e.clientX, y: e.clientY, entry: null });
   }
 
   // `openFilePicker` reads fileInputRef, but only when the Upload item is
@@ -684,62 +653,59 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         onRefresh: () => (inArchive ? archiveQuery.refetch() : dirQuery.refetch()),
         inArchive,
         onExtractAll: () => extractFromView(null),
-        onExtract: (entry) =>
-          inArchive ? extractFromView(entry) : askExtract(entry.path, entry.name, 'everything'),
+        onExtract: (entry) => (inArchive ? extractFromView(entry) : askExtract(entry.path, entry.name, "everything")),
         onEditInPaint: (entry) => {
-          system.intents.openApp('paint', { openPath: entry.path, root })
+          system.intents.openApp("paint", { openPath: entry.path, root });
         },
         onCompare: (() => {
           // Exactly two files selected, the clicked entry one of them — the
           // only state where "Compare" can mean something.
-          if (!menu.entry || menu.entry.type !== 'file') return null
-          if (selected.size !== 2 || !selected.has(menu.entry.path)) return null
-          const files = (dirQuery.data ?? []).filter(
-            (e) => selected.has(e.path) && e.type === 'file'
-          )
-          if (files.length !== 2) return null
+          if (!menu.entry || menu.entry.type !== "file") return null;
+          if (selected.size !== 2 || !selected.has(menu.entry.path)) return null;
+          const files = (dirQuery.data ?? []).filter((e) => selected.has(e.path) && e.type === "file");
+          if (files.length !== 2) return null;
           return () =>
-            system.intents.openApp('diff', {
+            system.intents.openApp("diff", {
               leftRoot: root,
               leftPath: files[0].path,
               rightRoot: root,
               rightPath: files[1].path,
-            })
+            });
         })(),
         onCompress: (entry) => {
           const paths =
             selected.has(entry.path) && selected.size > 1
               ? orderedEntries.filter((e) => selected.has(e.path)).map((e) => e.path)
-              : [entry.path]
-          void handleCompress(paths, paths.length > 1 ? 'archive' : entry.name)
+              : [entry.path];
+          void handleCompress(paths, paths.length > 1 ? "archive" : entry.name);
         },
       })
-    : []
+    : [];
   /* eslint-enable react-hooks/refs */
 
   /** Pack these paths into a new .zip in the folder on screen, beside what is there. */
   async function handleCompress(paths: string[], base: string) {
     const name = uniqueArchiveName(
       base,
-      (dirQuery.data ?? []).map((e) => e.name)
-    )
-    const dest = path ? `${path}/${name}` : name
+      (dirQuery.data ?? []).map((e) => e.name),
+    );
+    const dest = path ? `${path}/${name}` : name;
     try {
-      const res = await compressPaths(system.http, root, paths, dest, 'zip')
+      const res = await compressPaths(system.http, root, paths, dest, "zip");
       system.notify({
-        title: 'Archive created',
-        body: `${res.entries} file${res.entries === 1 ? '' : 's'} → ${res.dest}`,
-        level: 'success',
-      })
-      void queryClient.invalidateQueries({ queryKey: ['fs-list'] })
+        title: "Archive created",
+        body: `${res.entries} file${res.entries === 1 ? "" : "s"} → ${res.dest}`,
+        level: "success",
+      });
+      void queryClient.invalidateQueries({ queryKey: ["fs-list"] });
     } catch (err) {
-      failAction(`Could not create ${name}: ${errorMessage(err)}`)
+      failAction(`Could not create ${name}: ${errorMessage(err)}`);
     }
   }
 
-  const entries = inArchive ? archiveEntries : (dirQuery.data ?? [])
-  const isLoading = inArchive ? archiveQuery.isLoading : dirQuery.isLoading
-  const isError = inArchive ? archiveQuery.isError : dirQuery.isError
+  const entries = inArchive ? archiveEntries : (dirQuery.data ?? []);
+  const isLoading = inArchive ? archiveQuery.isLoading : dirQuery.isLoading;
+  const isError = inArchive ? archiveQuery.isError : dirQuery.isError;
 
   // Filter, then sort, ONCE — and pass the result down. FileList used to re-sort
   // internally with its own call, which happened to agree only because both used
@@ -747,10 +713,10 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   // independent sorts would have let arrow-key movement disagree with what is on
   // screen. `orderedEntries` is now the single order for the virtualizer, keyboard
   // nav, selection and the rendering.
-  const visibleEntries = filterHidden(entries, view.showHidden)
-  const orderedEntries = sortEntries(visibleEntries, view.sort.key, view.sort.dir)
-  const selectedEntries = orderedEntries.filter((e) => selected.has(e.path))
-  const hiddenCount = entries.length - visibleEntries.length
+  const visibleEntries = filterHidden(entries, view.showHidden);
+  const orderedEntries = sortEntries(visibleEntries, view.sort.key, view.sort.dir);
+  const selectedEntries = orderedEntries.filter((e) => selected.has(e.path));
+  const hiddenCount = entries.length - visibleEntries.length;
 
   // One name for one entry, a count for many — the clipboard went multi-entry
   // in file manager keyboard parity and both the toolbar badge and the status bar read from here.
@@ -758,11 +724,11 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     ? clipboard.clipboard.entries.length === 1
       ? clipboard.clipboard.entries[0].name
       : `${clipboard.clipboard.entries.length} items`
-    : ''
+    : "";
 
   // ── Search ──────────────────────────────────────────────────────
-  const searchActive = !inArchive && query.trim().length > 0
-  const search = useFileSearch(root, path, query, contentMode)
+  const searchActive = !inArchive && query.trim().length > 0;
+  const search = useFileSearch(root, path, query, contentMode);
 
   /**
    * Open a hit through the same door as a listing row.
@@ -773,8 +739,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
    * association registry (not a hardcoded editor) and lets a directory hit
    * navigate this window, which clears the search on its way through.
    */
-  function openHit(hit: { name: string; path: string; type: 'file' | 'directory' }) {
-    handleOpen({ ...hit, size: 0, modifiedAt: '' })
+  function openHit(hit: { name: string; path: string; type: "file" | "directory" }) {
+    handleOpen({ ...hit, size: 0, modifiedAt: "" });
   }
 
   /**
@@ -787,24 +753,16 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
    * the directory already on screen, which is the same query key `dirQuery`
    * uses: no extra request in the common case.
    */
-  const hitParentPath = selectedHitPath ? parentOf(selectedHitPath) : path
-  const hitDirQuery = useDirectoryQuery(root, searchActive ? hitParentPath : path)
+  const hitParentPath = selectedHitPath ? parentOf(selectedHitPath) : path;
+  const hitDirQuery = useDirectoryQuery(root, searchActive ? hitParentPath : path);
   const selectedHitEntry =
-    searchActive && selectedHitPath
-      ? ((hitDirQuery.data ?? []).find((e) => e.path === selectedHitPath) ?? null)
-      : null
+    searchActive && selectedHitPath ? ((hitDirQuery.data ?? []).find((e) => e.path === selectedHitPath) ?? null) : null;
   // Nothing inside an archive is a file on disk to preview.
-  const previewEntries = inArchive
-    ? []
-    : searchActive
-      ? selectedHitEntry
-        ? [selectedHitEntry]
-        : []
-      : selectedEntries
+  const previewEntries = inArchive ? [] : searchActive ? (selectedHitEntry ? [selectedHitEntry] : []) : selectedEntries;
 
   function focusSearch() {
-    searchInputRef.current?.focus()
-    searchInputRef.current?.select()
+    searchInputRef.current?.focus();
+    searchInputRef.current?.select();
   }
 
   /**
@@ -820,40 +778,40 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
    */
   useTopWindowKeydown(
     (e) => {
-      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'f') return
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "f") return;
       // One text field must keep the key: the inline rename input. Stealing
       // focus mid-rename abandons the edit with no way to tell it happened.
-      if (renamingPath !== null) return
-      e.preventDefault()
-      focusSearch()
+      if (renamingPath !== null) return;
+      e.preventDefault();
+      focusSearch();
     },
-    { ignoreTextEntry: false }
-  )
+    { ignoreTextEntry: false },
+  );
 
   // The scroll container is the ScrollArea viewport that wraps the list; we get
   // it directly via `viewportRef` (no reliance on library-internal DOM attrs).
   // The virtualizer is created here so both the list rendering and keyboard nav
   // share one instance — the latter needs `scrollToIndex` to reveal off-screen
   // rows. `listContainerRef` points at the list wrapper for header measurement.
-  const viewportRef = useRef<HTMLDivElement>(null)
-  const listContainerRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const listContainerRef = useRef<HTMLDivElement>(null);
 
   // FileList keeps its (non-virtualized) <thead> inside the same scroll
   // container, so the rows start `headerHeight` px down. Feeding that as
   // `scrollMargin` keeps scrollToIndex and the row offsets accurate.
-  const [headerHeight, setHeaderHeight] = useState(0)
-  const showList = !isLoading && !isError && orderedEntries.length > 0
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const showList = !isLoading && !isError && orderedEntries.length > 0;
   useLayoutEffect(() => {
-    if (!showList || view.viewMode !== 'details') return
-    const thead = listContainerRef.current?.querySelector('thead')
-    if (thead) setHeaderHeight(thead.getBoundingClientRect().height)
-  }, [showList, view.viewMode])
+    if (!showList || view.viewMode !== "details") return;
+    const thead = listContainerRef.current?.querySelector("thead");
+    if (thead) setHeaderHeight(thead.getBoundingClientRect().height);
+  }, [showList, view.viewMode]);
 
   // Icons view needs the pane's width to know how many tiles fit. Measured with
   // core's `useElementSize` (a ref callback — see that hook for why a mount effect
   // does not bind here either).
-  const [listPane, attachListPane] = useElementSize()
-  const columns = view.viewMode === 'icons' ? gridColumns(listPane.width) : 1
+  const [listPane, attachListPane] = useElementSize();
+  const columns = view.viewMode === "icons" ? gridColumns(listPane.width) : 1;
 
   /**
    * ONE virtualizer, whose items mean different things per view mode: a table row
@@ -866,7 +824,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
    * down. Icons has no header, so passing that offset would place every tile a
    * header's height away from where the virtualizer believes it is.
    */
-  const isIcons = view.viewMode === 'icons'
+  const isIcons = view.viewMode === "icons";
   // Typed as HTMLElement rather than HTMLTableRowElement: the same virtualizer
   // measures a <tr> in Details and a <div> row in Icons.
   const rowVirtualizer = useVirtualList<HTMLElement>({
@@ -874,7 +832,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     getScrollElement: () => viewportRef.current,
     estimateSize: () => (isIcons ? TILE_HEIGHT : 29),
     scrollMargin: isIcons ? 0 : headerHeight,
-  })
+  });
 
   /**
    * The list wrapper is both measured (for the Icons column count) and kept in a
@@ -885,11 +843,11 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
    */
   const attachListContainer = useCallback(
     (el: HTMLDivElement | null) => {
-      listContainerRef.current = el
-      return attachListPane(el)
+      listContainerRef.current = el;
+      return attachListPane(el);
     },
-    [attachListPane]
-  )
+    [attachListPane],
+  );
 
   const { handleListKeyDown } = useListKeyboardNav({
     orderedEntries,
@@ -902,10 +860,9 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     getCursor: selection.getCursor,
     // The nav hook speaks in ENTRY indices; the virtualizer in Icons mode counts
     // rows. This is the one place that conversion happens.
-    scrollToIndex: (index) =>
-      rowVirtualizer.scrollToIndex(isIcons ? Math.floor(index / columns) : index),
+    scrollToIndex: (index) => rowVirtualizer.scrollToIndex(isIcons ? Math.floor(index / columns) : index),
     columns,
-  })
+  });
 
   /**
    * Every modal this app can put up. The verb keys must be inert while any of
@@ -919,7 +876,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     openWithFor !== null ||
     propsEntry !== null ||
     extractFor !== null ||
-    deleteFlow.dialogOpen
+    deleteFlow.dialogOpen;
 
   const { handleVerbKeyDown } = useFileVerbKeys({
     orderedEntries,
@@ -931,23 +888,22 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     onDelete: guarded((permanent: boolean) => {
       // One selected row goes through the single flow so the dialog names the
       // file; several go through the batch flow, exactly as the toolbar does.
-      if (selectedEntries.length === 1) deleteFlow.requestSingle(selectedEntries[0], permanent)
-      else deleteFlow.requestBatch(permanent)
+      if (selectedEntries.length === 1) deleteFlow.requestSingle(selectedEntries[0], permanent);
+      else deleteFlow.requestBatch(permanent);
     }),
     onCopy: guarded(clipboard.copy),
     onCut: guarded(clipboard.cut),
     onPaste: guarded(() => void clipboard.paste()),
     onSelectAll: selection.selectAll,
     onOpenMenu: (entry, point) => setMenu({ x: point.x, y: point.y, entry }),
-    scrollToIndex: (index) =>
-      rowVirtualizer.scrollToIndex(isIcons ? Math.floor(index / columns) : index),
+    scrollToIndex: (index) => rowVirtualizer.scrollToIndex(isIcons ? Math.floor(index / columns) : index),
     listRef: listContainerRef,
-  })
+  });
 
   /** Arrows and Enter first, then the verbs — neither claims the other's keys. */
   function handleListKeys(e: React.KeyboardEvent) {
-    handleListKeyDown(e)
-    if (!e.defaultPrevented) handleVerbKeyDown(e)
+    handleListKeyDown(e);
+    if (!e.defaultPrevented) handleVerbKeyDown(e);
   }
 
   /**
@@ -961,20 +917,16 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
    * shortcuts overlay without flickering as windows open and close.
    */
   function handleAppKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'h') return
+    if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "h") return;
     // Never steal the key from a text field — renaming a file is the obvious case.
-    const target = e.target as HTMLElement | null
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
-    e.preventDefault()
-    view.toggleHidden()
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+    e.preventDefault();
+    view.toggleHidden();
   }
 
   return (
-    <div
-      ref={containerRef}
-      onKeyDown={handleAppKeyDown}
-      className="bg-surface-container-lowest flex h-full flex-col"
-    >
+    <div ref={containerRef} onKeyDown={handleAppKeyDown} className="bg-surface-container-lowest flex h-full flex-col">
       {/* Toolbar */}
       <div className="border-outline-variant bg-surface-container-low flex items-center gap-1 border-b px-2 py-1">
         {/* Root switcher */}
@@ -982,7 +934,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           {FS_ROOTS.map((r) => (
             <Button
               key={r.id}
-              variant={r.id === root ? 'selected' : 'default'}
+              variant={r.id === root ? "selected" : "default"}
               size="sm"
               onClick={() => switchRoot(r.id)}
             >
@@ -1016,13 +968,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           <Upload size={12} />
           Upload
         </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={handleFileInputChange}
-        />
+        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileInputChange} />
 
         {clipboard.clipboard && (
           <Button
@@ -1032,9 +978,9 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             onClick={guarded(() => void clipboard.paste())}
           >
             <Clipboard size={12} />
-            Paste{' '}
+            Paste{" "}
             <span className="text-on-surface-variant">
-              ({clipboard.clipboard.mode === 'cut' ? 'move' : 'copy'}: {clipboardLabel})
+              ({clipboard.clipboard.mode === "cut" ? "move" : "copy"}: {clipboardLabel})
             </span>
           </Button>
         )}
@@ -1057,7 +1003,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           </Button>
         )}
 
-        {root === 'home' && (
+        {root === "home" && (
           <Button
             variant="ghost"
             size="sm"
@@ -1080,9 +1026,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         >
           <RefreshCw
             size={12}
-            className={cn(
-              (inArchive ? archiveQuery.isFetching : dirQuery.isFetching) && 'animate-spin'
-            )}
+            className={cn((inArchive ? archiveQuery.isFetching : dirQuery.isFetching) && "animate-spin")}
           />
         </Button>
 
@@ -1091,12 +1035,12 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             view.showHidden
               ? `Hide hidden files (Ctrl+H)`
               : hiddenCount > 0
-                ? `Show ${hiddenCount} hidden item${hiddenCount === 1 ? '' : 's'} (Ctrl+H)`
-                : 'Show hidden files (Ctrl+H)'
+                ? `Show ${hiddenCount} hidden item${hiddenCount === 1 ? "" : "s"} (Ctrl+H)`
+                : "Show hidden files (Ctrl+H)"
           }
         >
           <Button
-            variant={view.showHidden ? 'selected' : 'ghost'}
+            variant={view.showHidden ? "selected" : "ghost"}
             size="sm"
             className="h-5 w-5 p-0"
             aria-pressed={view.showHidden}
@@ -1107,23 +1051,21 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           </Button>
         </Tooltip>
 
-        <Tooltip content={view.viewMode === 'icons' ? 'Details view' : 'Icons view'}>
+        <Tooltip content={view.viewMode === "icons" ? "Details view" : "Icons view"}>
           <Button
             variant="ghost"
             size="sm"
             className="h-5 w-5 p-0"
-            aria-label={
-              view.viewMode === 'icons' ? 'Switch to details view' : 'Switch to icons view'
-            }
-            onClick={() => view.setViewMode(view.viewMode === 'icons' ? 'details' : 'icons')}
+            aria-label={view.viewMode === "icons" ? "Switch to details view" : "Switch to icons view"}
+            onClick={() => view.setViewMode(view.viewMode === "icons" ? "details" : "icons")}
           >
-            {view.viewMode === 'icons' ? <List size={12} /> : <LayoutGrid size={12} />}
+            {view.viewMode === "icons" ? <List size={12} /> : <LayoutGrid size={12} />}
           </Button>
         </Tooltip>
 
-        <Tooltip content={previewPane.open ? 'Hide preview pane' : 'Show preview pane'}>
+        <Tooltip content={previewPane.open ? "Hide preview pane" : "Show preview pane"}>
           <Button
-            variant={previewPane.open ? 'selected' : 'ghost'}
+            variant={previewPane.open ? "selected" : "ghost"}
             size="sm"
             className="h-5 w-5 p-0"
             // The other two toolbar toggles already name themselves; this one
@@ -1157,9 +1099,9 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
               onRun={search.run}
               onClear={clearSearch}
               onStepIntoResults={() => {
-                if (search.hits.length === 0) return
-                setSelectedHitPath(search.hits[0].path)
-                resultsRef.current?.focus()
+                if (search.hits.length === 0) return;
+                setSelectedHitPath(search.hits[0].path);
+                resultsRef.current?.focus();
               }}
               searching={search.searching}
               inputRef={searchInputRef}
@@ -1173,11 +1115,10 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           <Lock size={11} className="text-on-surface-variant shrink-0" aria-hidden />
           <span className="font-ui text-on-surface-variant min-w-0 flex-1 text-[11px]">
             Read-only: inside {archive.name}. Extract to open or change files.
-            {archiveListing.encrypted && ' It is encrypted, so it cannot be extracted.'}
-            {archiveListing.truncated &&
-              ' The list is cut short because the archive is very large.'}
+            {archiveListing.encrypted && " It is encrypted, so it cannot be extracted."}
+            {archiveListing.truncated && " The list is cut short because the archive is very large."}
             {archiveListing.refused.length > 0 &&
-              ` ${archiveListing.refused.length} unsafe entr${archiveListing.refused.length === 1 ? 'y' : 'ies'} (${archiveListing.refused[0].name}) will make extraction fail.`}
+              ` ${archiveListing.refused.length} unsafe entr${archiveListing.refused.length === 1 ? "y" : "ies"} (${archiveListing.refused[0].name}) will make extraction fail.`}
           </span>
           <Button
             variant="default"
@@ -1185,8 +1126,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             className="flex items-center gap-1"
             disabled={selected.size === 0 || archiveListing.encrypted || job !== null}
             onClick={() => {
-              const first = selectedEntries[0]
-              if (first) extractFromView(first)
+              const first = selectedEntries[0];
+              if (first) extractFromView(first);
             }}
           >
             <PackageOpen size={12} />
@@ -1216,10 +1157,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            <div
-              className="bg-primary h-full transition-all"
-              style={{ width: `${job.percent}%` }}
-            />
+            <div className="bg-primary h-full transition-all" style={{ width: `${job.percent}%` }} />
           </div>
           <span className="font-ui text-on-surface-variant w-8 text-right text-[11px] tabular-nums">
             {job.percent}%
@@ -1231,12 +1169,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       {actionError && (
         <div className="border-outline-variant bg-surface-container-low flex items-center gap-2 border-b px-2 py-1">
           <span className="font-ui text-error flex-1 text-[12px]">{actionError}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-5 w-5 p-0"
-            onClick={() => setActionError(null)}
-          >
+          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setActionError(null)}>
             <X size={11} />
           </Button>
         </div>
@@ -1247,12 +1180,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         {/* Left: folder tree */}
         <div className="border-outline-variant bg-surface-container-low w-52 shrink-0 border-r">
           <ScrollArea className="h-full w-full">
-            <FolderTree
-              root={root}
-              rootLabel={rootCfg.label}
-              currentPath={path}
-              onNavigate={navigate}
-            />
+            <FolderTree root={root} rootLabel={rootCfg.label} currentPath={path} onNavigate={navigate} />
           </ScrollArea>
         </div>
 
@@ -1276,8 +1204,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             onSelect={setSelectedHitPath}
             onOpen={openHit}
             onDismiss={() => {
-              clearSearch()
-              focusSearch()
+              clearSearch();
+              focusSearch();
             }}
             containerRef={resultsRef}
           />
@@ -1296,7 +1224,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
               )}
               {isError && (
                 <div className="text-error font-ui flex items-center justify-center py-12 text-[12px]">
-                  {inArchive ? `Could not read ${archive.name}.` : 'Failed to load directory.'}
+                  {inArchive ? `Could not read ${archive.name}.` : "Failed to load directory."}
                 </div>
               )}
               {!isLoading && !isError && (
@@ -1315,7 +1243,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
                     <div className="text-on-surface-variant flex flex-col items-center justify-center gap-2 py-12">
                       <EyeOff size={32} strokeWidth={1} />
                       <span className="font-ui text-[12px]">
-                        {hiddenCount} hidden item{hiddenCount === 1 ? '' : 's'}, nothing else here
+                        {hiddenCount} hidden item{hiddenCount === 1 ? "" : "s"}, nothing else here
                       </span>
                       <Button variant="default" size="sm" onClick={view.toggleHidden}>
                         Show hidden files
@@ -1387,9 +1315,9 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
               aria-valuemax={paneMax}
               aria-valuenow={previewPane.width}
               className={cn(
-                'bg-outline-variant hover:bg-primary w-1 shrink-0 cursor-col-resize transition-colors',
-                'focus-visible:bg-primary focus-visible:w-1.5 focus-visible:outline-none',
-                resizing && 'bg-primary'
+                "bg-outline-variant hover:bg-primary w-1 shrink-0 cursor-col-resize transition-colors",
+                "focus-visible:bg-primary focus-visible:w-1.5 focus-visible:outline-none",
+                resizing && "bg-primary",
               )}
             />
             <div
@@ -1418,7 +1346,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
               truncated={search.truncated}
             />
           ) : (
-            `${entries.length} item${entries.length !== 1 ? 's' : ''}`
+            `${entries.length} item${entries.length !== 1 ? "s" : ""}`
           )}
           {!searchActive && selected.size > 0 && ` · ${selected.size} selected`}
           {clipboard.clipboard && ` · Clipboard: ${clipboardLabel} (${clipboard.clipboard.mode})`}
@@ -1426,9 +1354,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       </div>
 
       {/* Right-click context menu */}
-      {menu && (
-        <ContextMenu x={menu.x} y={menu.y} items={menuItems} onClose={() => setMenu(null)} />
-      )}
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems} onClose={() => setMenu(null)} />}
 
       {/* New folder dialog */}
       <Dialog open={showNewFolder} onOpenChange={setShowNewFolder} title="New Folder">
@@ -1439,8 +1365,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCreateFolder()
-              if (e.key === 'Escape') setShowNewFolder(false)
+              if (e.key === "Enter") handleCreateFolder();
+              if (e.key === "Escape") setShowNewFolder(false);
             }}
             autoFocus
             placeholder="e.g. new-folder"
@@ -1473,9 +1399,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           request={extractFor.prompt}
           root={root}
           archivePath={extractFor.archivePath}
-          onExtract={(dest) =>
-            void runExtract(extractFor.archivePath, extractFor.prompt, extractFor.names, dest)
-          }
+          onExtract={(dest) => void runExtract(extractFor.archivePath, extractFor.prompt, extractFor.names, dest)}
           onClose={() => setExtractFor(null)}
         />
       )}
@@ -1496,9 +1420,9 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         currentPath={path}
         onRestored={(p) =>
           system.notify({
-            title: 'Restored from Trash',
+            title: "Restored from Trash",
             body: p,
-            level: 'success',
+            level: "success",
           })
         }
         onError={failAction}
@@ -1512,26 +1436,24 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           await an imperative promise would be churn for no gain. */}
       <ConfirmDialog
         open={deleteFlow.dialogOpen}
-        title={deleteFlow.willTrash ? 'Move to Trash' : 'Delete permanently'}
+        title={deleteFlow.willTrash ? "Move to Trash" : "Delete permanently"}
         // The copy must match what actually happens: claiming "cannot be undone"
         // for a move to the Trash would train the user to distrust the warning
         // that matters.
         message={
           <>
-            {deleteFlow.willTrash ? 'Move ' : 'Permanently delete '}
+            {deleteFlow.willTrash ? "Move " : "Permanently delete "}
             <span className="font-semibold">{deleteFlow.deleteLabel}</span>
-            {deleteFlow.willTrash
-              ? ' to the Trash? You can restore it from there.'
-              : '? This cannot be undone.'}
+            {deleteFlow.willTrash ? " to the Trash? You can restore it from there." : "? This cannot be undone."}
           </>
         }
-        confirmLabel={deleteFlow.willTrash ? 'Move to Trash' : 'Delete permanently'}
+        confirmLabel={deleteFlow.willTrash ? "Move to Trash" : "Delete permanently"}
         destructive
         onConfirm={deleteFlow.confirm}
         onCancel={deleteFlow.cancel}
       />
     </div>
-  )
+  );
 }
 
 /**
@@ -1552,15 +1474,13 @@ function SearchStatus({
   searching,
   truncated,
 }: {
-  rootLabel: string
-  path: string
-  query: string
-  count: number
-  searching: boolean
-  truncated: boolean
+  rootLabel: string;
+  path: string;
+  query: string;
+  count: number;
+  searching: boolean;
+  truncated: boolean;
 }) {
-  const head = searching && count === 0 ? 'Searching' : resultCountLabel(count)
-  return (
-    <>{`${head} for “${query}” in ${scopeLabel(rootLabel, path)}${truncated ? ' · stopped early' : ''}`}</>
-  )
+  const head = searching && count === 0 ? "Searching" : resultCountLabel(count);
+  return <>{`${head} for “${query}” in ${scopeLabel(rootLabel, path)}${truncated ? " · stopped early" : ""}`}</>;
 }

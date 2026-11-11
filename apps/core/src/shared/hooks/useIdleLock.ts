@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
-import { createIdleLock } from './idleLock'
-import { useSecurityStore } from '../store/securityStore'
-import { useAuthStore } from '../../modules/auth/store/authStore'
-import { linuxWindowsDrawing } from '../../modules/linux-windows/linuxWindowsStore'
-import { linuxSound } from '../../modules/linux-windows/sound'
+import { useEffect } from "react";
+import { createIdleLock } from "./idleLock";
+import { useSecurityStore } from "../store/securityStore";
+import { useAuthStore } from "../../modules/auth/store/authStore";
+import { linuxWindowsDrawing } from "../../modules/linux-windows/linuxWindowsStore";
+import { linuxSound } from "../../modules/linux-windows/sound";
 
 /**
  * Auto-lock after idle (overlay since the lock keeps the desktop work). The desktop stays
@@ -16,11 +16,11 @@ import { linuxSound } from '../../modules/linux-windows/sound'
  * screensaver, and uncovering asks only that the session is still live.
  */
 export function useIdleLock(): void {
-  const minutes = useSecurityStore((s) => s.idleLockMinutes)
-  const lock = useAuthStore((s) => s.lock)
+  const minutes = useSecurityStore((s) => s.idleLockMinutes);
+  const lock = useAuthStore((s) => s.lock);
 
   useEffect(() => {
-    if (minutes === 0) return
+    if (minutes === 0) return;
 
     const ctl = createIdleLock({
       timeoutMs: minutes * 60_000,
@@ -30,37 +30,35 @@ export function useIdleLock(): void {
       // window still drawing (a video in Firefox), but not a still one, and
       // Linux apps' sound playing (music in a minimized Firefox).
       isMediaPlaying: () =>
-        Array.from(document.querySelectorAll<HTMLMediaElement>('audio, video')).some(
-          (m) => !m.paused && !m.ended
-        ) ||
+        Array.from(document.querySelectorAll<HTMLMediaElement>("audio, video")).some((m) => !m.paused && !m.ended) ||
         linuxWindowsDrawing() ||
         linuxSound.playing(),
-    })
+    });
 
     // Activity only stamps a timestamp (no timer churn), so a raw pointermove
     // listener is already cheap — but throttle anyway so the stamp is not
     // written 60×/sec during a drag.
-    let lastStamp = 0
+    let lastStamp = 0;
     const onActivity = () => {
-      const t = Date.now()
-      if (t - lastStamp < 1000) return
-      lastStamp = t
-      ctl.markActivity()
-    }
+      const t = Date.now();
+      if (t - lastStamp < 1000) return;
+      lastStamp = t;
+      ctl.markActivity();
+    };
     // Background tabs throttle timers; re-check the deadline when the tab
     // becomes visible again so a due lock lands immediately.
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') ctl.checkNow()
-    }
+      if (document.visibilityState === "visible") ctl.checkNow();
+    };
 
-    const events: (keyof WindowEventMap)[] = ['pointerdown', 'pointermove', 'keydown', 'wheel']
-    for (const e of events) window.addEventListener(e, onActivity, { passive: true })
-    document.addEventListener('visibilitychange', onVisibility)
+    const events: (keyof WindowEventMap)[] = ["pointerdown", "pointermove", "keydown", "wheel"];
+    for (const e of events) window.addEventListener(e, onActivity, { passive: true });
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      for (const e of events) window.removeEventListener(e, onActivity)
-      document.removeEventListener('visibilitychange', onVisibility)
-      ctl.dispose()
-    }
-  }, [minutes, lock])
+      for (const e of events) window.removeEventListener(e, onActivity);
+      document.removeEventListener("visibilitychange", onVisibility);
+      ctl.dispose();
+    };
+  }, [minutes, lock]);
 }

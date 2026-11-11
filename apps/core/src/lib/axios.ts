@@ -1,12 +1,12 @@
-import axios from 'axios'
+import axios from "axios";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { "Content-Type": "application/json" },
   // Send the httpOnly session cookie on every request (required cross-origin
   // in dev: Vite :5173 -> API :3001; harmless same-origin in prod).
   withCredentials: true,
-})
+});
 
 /*
  * A 401 from a guarded route means the session ended (signed out elsewhere,
@@ -19,11 +19,11 @@ export const api = axios.create({
 api.interceptors.response.use(
   (res) => res,
   (err: unknown) => {
-    const config = (err as { config?: { url?: string } }).config
-    const status = (err as { response?: { status?: number } }).response?.status
-    if (status === 401 && !String(config?.url ?? '').startsWith('/identity/')) {
-      window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+    const config = (err as { config?: { url?: string } }).config;
+    const status = (err as { response?: { status?: number } }).response?.status;
+    if (status === 401 && !String(config?.url ?? "").startsWith("/identity/")) {
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
     }
-    return Promise.reject(err)
-  }
-)
+    return Promise.reject(err);
+  },
+);

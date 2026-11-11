@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Terminal as XTerm } from '@xterm/xterm'
-import { FitAddon } from '@xterm/addon-fit'
-import { SearchAddon } from '@xterm/addon-search'
-import { Unicode11Addon } from '@xterm/addon-unicode11'
-import { WebLinksAddon } from '@xterm/addon-web-links'
-import '@xterm/xterm/css/xterm.css'
-import { ChevronDown, ChevronUp, Plug, RotateCw, Search, X } from 'lucide-react'
-import { Button, useSystem, useSystemAppearance } from '@imbatranim/ui'
-import { usePtyConnection } from './hooks/usePtyConnection'
-import { buildXtermTheme, documentVarResolver } from './lib/xtermTheme'
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Terminal as XTerm } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+import { SearchAddon } from "@xterm/addon-search";
+import { Unicode11Addon } from "@xterm/addon-unicode11";
+import { WebLinksAddon } from "@xterm/addon-web-links";
+import "@xterm/xterm/css/xterm.css";
+import { ChevronDown, ChevronUp, Plug, RotateCw, Search, X } from "lucide-react";
+import { Button, useSystem, useSystemAppearance } from "@imbatranim/ui";
+import { usePtyConnection } from "./hooks/usePtyConnection";
+import { buildXtermTheme, documentVarResolver } from "./lib/xtermTheme";
 import {
   DEFAULT_FONT_SIZE,
   loadFontSize,
@@ -16,13 +16,12 @@ import {
   stepFontSize,
   MIN_FONT_SIZE,
   MAX_FONT_SIZE,
-} from './lib/fontSize'
+} from "./lib/fontSize";
 
 /** Cap scrollback so a long-running flood can't grow xterm's buffer unbounded. */
-const SCROLLBACK = 5000
+const SCROLLBACK = 5000;
 
-const FONT_FAMILY =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Code", "Roboto Mono", monospace'
+const FONT_FAMILY = 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Code", "Roboto Mono", monospace';
 
 /**
  * A real login shell in a window, over an authenticated WebSocket to the PTY
@@ -54,45 +53,45 @@ export function Terminal(_props: { windowId: string }) {
    * effects and the connection hook below can depend on "there is a terminal now"
    * without the instance itself being render data.
    */
-  const termRef = useRef<XTerm | null>(null)
-  const fitRef = useRef<FitAddon | null>(null)
-  const searchRef = useRef<SearchAddon | null>(null)
-  const hostRef = useRef<HTMLDivElement | null>(null)
-  const [generation, setGeneration] = useState(0)
+  const termRef = useRef<XTerm | null>(null);
+  const fitRef = useRef<FitAddon | null>(null);
+  const searchRef = useRef<SearchAddon | null>(null);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const [generation, setGeneration] = useState(0);
   /** Stable reader for the instance — never a render-time ref access. */
-  const getTerm = useCallback(() => termRef.current, [])
+  const getTerm = useCallback(() => termRef.current, []);
 
-  const [fontSize, setFontSize] = useState(loadFontSize)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const searchInputRef = useRef<HTMLInputElement>(null)
+  const [fontSize, setFontSize] = useState(loadFontSize);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const system = useSystem()
+  const system = useSystem();
 
   // Subscribed, not read once at mount: changing the theme or accent in Settings
   // has to restyle an already-open terminal, which the old read-at-mount accent
   // could not do.
-  const { theme, accent } = useSystemAppearance()
+  const { theme, accent } = useSystemAppearance();
 
   /** Re-fit and tell the pty, so SIGWINCH matches what xterm now shows. */
   const refit = useCallback((send?: (cols: number, rows: number) => void, t?: XTerm | null) => {
     try {
-      fitRef.current?.fit()
+      fitRef.current?.fit();
     } catch {
       /* container may be mid-layout or zero-sized */
     }
-    const inst = t ?? null
-    if (inst && send) send(inst.cols, inst.rows)
-  }, [])
+    const inst = t ?? null;
+    if (inst && send) send(inst.cols, inst.rows);
+  }, []);
 
   // The hook sends its own initial resize on every (re)connect, so there is no
   // `onOpen` callback to thread back in — which also removes the cycle an earlier
   // draft had, where `onOpen` needed the `sendResize` produced by the same call.
-  const { status, sendInput, sendResize, reconnect } = usePtyConnection({ getTerm, generation })
+  const { status, sendInput, sendResize, reconnect } = usePtyConnection({ getTerm, generation });
 
   const attachHost = useCallback((host: HTMLDivElement | null) => {
-    hostRef.current = host
-    if (!host) return
+    hostRef.current = host;
+    if (!host) return;
 
     const instance = new XTerm({
       scrollback: SCROLLBACK,
@@ -106,16 +105,16 @@ export function Terminal(_props: { windowId: string }) {
       fontSize: loadFontSize(),
       fontFamily: FONT_FAMILY,
       theme: buildXtermTheme(
-        document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark',
-        documentVarResolver()
+        document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark",
+        documentVarResolver(),
       ),
-    })
-    const fit = new FitAddon()
-    instance.loadAddon(fit)
-    fitRef.current = fit
-    const search = new SearchAddon()
-    instance.loadAddon(search)
-    searchRef.current = search
+    });
+    const fit = new FitAddon();
+    instance.loadAddon(fit);
+    fitRef.current = fit;
+    const search = new SearchAddon();
+    instance.loadAddon(search);
+    searchRef.current = search;
     /**
      * Unicode 11 cell widths.
      *
@@ -128,81 +127,78 @@ export function Terminal(_props: { windowId: string }) {
      * a command line. Same sanctioned @xterm/addon-* family as fit, search and
      * web-links; `activeVersion` is what actually swaps the table in.
      */
-    instance.loadAddon(new Unicode11Addon())
-    instance.unicode.activeVersion = '11'
+    instance.loadAddon(new Unicode11Addon());
+    instance.unicode.activeVersion = "11";
     // Makes URLs in output clickable. The first callback arg is the MouseEvent.
     instance.loadAddon(
       new WebLinksAddon((_, uri) => {
         // Explicit noopener/noreferrer: output can contain any URL, including one a
         // remote command printed, and a terminal must not hand it a window handle.
-        window.open(uri, '_blank', 'noopener,noreferrer')
-      })
-    )
-    instance.open(host)
+        window.open(uri, "_blank", "noopener,noreferrer");
+      }),
+    );
+    instance.open(host);
 
     // Fit before the socket opens so the pty spawns at the right geometry.
     try {
-      fit.fit()
+      fit.fit();
     } catch {
       /* container may not be laid out yet on first paint */
     }
 
-    termRef.current = instance
-    setGeneration((g) => g + 1)
+    termRef.current = instance;
+    setGeneration((g) => g + 1);
 
     return () => {
-      fitRef.current = null
-      searchRef.current = null
-      termRef.current = null
-      instance.dispose()
-    }
-  }, [])
+      fitRef.current = null;
+      searchRef.current = null;
+      termRef.current = null;
+      instance.dispose();
+    };
+  }, []);
 
   // ── Input → socket ────────────────────────────────────────────────────────
   useEffect(() => {
-    const instance = termRef.current
-    if (!instance) return
-    const sub = instance.onData(sendInput)
-    return () => sub.dispose()
-  }, [generation, sendInput])
+    const instance = termRef.current;
+    if (!instance) return;
+    const sub = instance.onData(sendInput);
+    return () => sub.dispose();
+  }, [generation, sendInput]);
 
   // ── Resize → fit → SIGWINCH ───────────────────────────────────────────────
   useEffect(() => {
-    const host = hostRef.current
-    const instance = termRef.current
-    if (!host || !instance) return
-    const ro = new ResizeObserver(() => refit(sendResize, instance))
-    ro.observe(host)
-    return () => ro.disconnect()
-  }, [generation, sendResize, refit])
+    const host = hostRef.current;
+    const instance = termRef.current;
+    if (!host || !instance) return;
+    const ro = new ResizeObserver(() => refit(sendResize, instance));
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, [generation, sendResize, refit]);
 
   // ── Theme / accent changes restyle the live terminal ──────────────────────
   useEffect(() => {
-    const instance = termRef.current
-    if (!instance) return
+    const instance = termRef.current;
+    if (!instance) return;
     // Read AFTER the appearance store has pushed `data-theme` and `--accent` onto
     // the root. `applyAppearance` runs in an effect in App.tsx, and effects run
     // parent-first, so by the time this child effect fires the vars are current.
-    instance.options.theme = buildXtermTheme(
-      theme === 'light' ? 'light' : 'dark',
-      documentVarResolver()
-    )
+    instance.options.theme = buildXtermTheme(theme === "light" ? "light" : "dark", documentVarResolver());
     // `accent` is in the deps because it changes `--accent`, which the resolver
     // reads — the value itself is not referenced here.
-  }, [generation, theme, accent])
+  }, [generation, theme, accent]);
 
   // ── Font size ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    const instance = termRef.current
-    if (!instance) return
-    instance.options.fontSize = fontSize
-    saveFontSize(fontSize)
-    refit(sendResize, instance)
-  }, [generation, fontSize, sendResize, refit])
+    const instance = termRef.current;
+    if (!instance) return;
+    instance.options.fontSize = fontSize;
+    saveFontSize(fontSize);
+    refit(sendResize, instance);
+  }, [generation, fontSize, sendResize, refit]);
 
   const zoom = useCallback((direction: 1 | -1 | 0) => {
-    setFontSize((prev) => stepFontSize(prev, direction))
-  }, [])
+    setFontSize((prev) => stepFontSize(prev, direction));
+  }, []);
 
   // ── Clipboard ─────────────────────────────────────────────────────────────
 
@@ -215,30 +211,30 @@ export function Terminal(_props: { windowId: string }) {
    */
   const paste = useCallback(async () => {
     try {
-      const text = await navigator.clipboard.readText()
-      if (text) sendInput(text)
+      const text = await navigator.clipboard.readText();
+      if (text) sendInput(text);
     } catch {
       system.notify({
-        title: 'Paste blocked',
-        body: 'The browser would not grant clipboard access. Use the keyboard shortcut for your platform, or allow clipboard permission for this site.',
-        level: 'warning',
-      })
+        title: "Paste blocked",
+        body: "The browser would not grant clipboard access. Use the keyboard shortcut for your platform, or allow clipboard permission for this site.",
+        level: "warning",
+      });
     }
-  }, [sendInput, system])
+  }, [sendInput, system]);
 
   const copy = useCallback(async () => {
-    const selection = termRef.current?.getSelection()
-    if (!selection) return
+    const selection = termRef.current?.getSelection();
+    if (!selection) return;
     try {
-      await navigator.clipboard.writeText(selection)
+      await navigator.clipboard.writeText(selection);
     } catch {
       system.notify({
-        title: 'Copy blocked',
-        body: 'The browser would not grant clipboard access.',
-        level: 'warning',
-      })
+        title: "Copy blocked",
+        body: "The browser would not grant clipboard access.",
+        level: "warning",
+      });
     }
-  }, [system])
+  }, [system]);
 
   /**
    * Terminal-wide key handling, registered with xterm rather than on the DOM.
@@ -252,13 +248,13 @@ export function Terminal(_props: { windowId: string }) {
    * convention.
    */
   useEffect(() => {
-    const instance = termRef.current
-    if (!instance) return
+    const instance = termRef.current;
+    if (!instance) return;
     instance.attachCustomKeyEventHandler((e) => {
-      if (e.type !== 'keydown') return true
-      const mod = e.ctrlKey || e.metaKey
+      if (e.type !== "keydown") return true;
+      const mod = e.ctrlKey || e.metaKey;
       if (mod && e.shiftKey) {
-        const key = e.key.toLowerCase()
+        const key = e.key.toLowerCase();
         // NOTE: 'v' is deliberately NOT handled here.
         //
         // Measured: a Ctrl+Shift+V keystroke produces one keydown AND one native
@@ -273,69 +269,69 @@ export function Terminal(_props: { windowId: string }) {
         // does not need the `clipboard-read` permission that `readText()` does.
         // The gestures below have no native path into the pty, so those still go
         // through `paste()`.
-        if (key === 'c') {
-          void copy()
-          return false
+        if (key === "c") {
+          void copy();
+          return false;
         }
-        if (key === 'f') {
-          setSearchOpen(true)
+        if (key === "f") {
+          setSearchOpen(true);
           // Focus on the next tick: the input may not be mounted yet this frame.
-          requestAnimationFrame(() => searchInputRef.current?.focus())
-          return false
+          requestAnimationFrame(() => searchInputRef.current?.focus());
+          return false;
         }
       }
       if (mod && !e.shiftKey) {
         // Ctrl+= as well as Ctrl++ : on most layouts `+` needs Shift, so the
         // unshifted key that shares it has to count or zoom-in is unreachable.
-        if (e.key === '+' || e.key === '=') {
-          zoom(1)
-          return false
+        if (e.key === "+" || e.key === "=") {
+          zoom(1);
+          return false;
         }
-        if (e.key === '-' || e.key === '_') {
-          zoom(-1)
-          return false
+        if (e.key === "-" || e.key === "_") {
+          zoom(-1);
+          return false;
         }
-        if (e.key === '0') {
-          zoom(0)
-          return false
+        if (e.key === "0") {
+          zoom(0);
+          return false;
         }
       }
-      if (e.key === 'Escape' && searchOpen) {
-        setSearchOpen(false)
-        searchRef.current?.clearDecorations()
-        instance.focus()
-        return false
+      if (e.key === "Escape" && searchOpen) {
+        setSearchOpen(false);
+        searchRef.current?.clearDecorations();
+        instance.focus();
+        return false;
       }
-      return true
-    })
-  }, [generation, paste, copy, zoom, searchOpen])
+      return true;
+    });
+  }, [generation, paste, copy, zoom, searchOpen]);
 
   const findNext = useCallback((value: string) => {
-    if (!value) return
-    searchRef.current?.findNext(value, { decorations: undefined })
-  }, [])
+    if (!value) return;
+    searchRef.current?.findNext(value, { decorations: undefined });
+  }, []);
   const findPrevious = useCallback((value: string) => {
-    if (!value) return
-    searchRef.current?.findPrevious(value, { decorations: undefined })
-  }, [])
+    if (!value) return;
+    searchRef.current?.findPrevious(value, { decorations: undefined });
+  }, []);
 
   // ── Middle-click paste, and a right-click that pastes too ─────────────────
   // The X11 convention, and the one thing users try first in a browser terminal.
   const onAuxClick = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 1) return
-      e.preventDefault()
-      void paste()
+      if (e.button !== 1) return;
+      e.preventDefault();
+      void paste();
     },
-    [paste]
-  )
+    [paste],
+  );
 
   const statusLine =
-    status.kind === 'retrying'
+    status.kind === "retrying"
       ? `${status.message} reconnecting (${status.attempt}/5)`
-      : status.kind === 'closed'
+      : status.kind === "closed"
         ? status.message
-        : null
+        : null;
 
   return (
     <div className="bg-surface flex h-full w-full flex-col overflow-hidden">
@@ -347,10 +343,8 @@ export function Terminal(_props: { windowId: string }) {
           {statusLine && (
             <>
               <Plug size={11} className="text-on-surface-variant shrink-0" />
-              <span className="font-ui text-on-surface-variant min-w-0 flex-1 truncate text-[11px]">
-                {statusLine}
-              </span>
-              {status.kind === 'closed' && status.canRetry && (
+              <span className="font-ui text-on-surface-variant min-w-0 flex-1 truncate text-[11px]">{statusLine}</span>
+              {status.kind === "closed" && status.canRetry && (
                 <Button
                   variant="primary"
                   size="sm"
@@ -370,19 +364,19 @@ export function Terminal(_props: { windowId: string }) {
                 ref={searchInputRef}
                 value={searchTerm}
                 onChange={(e) => {
-                  setSearchTerm(e.target.value)
-                  findNext(e.target.value)
+                  setSearchTerm(e.target.value);
+                  findNext(e.target.value);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    if (e.shiftKey) findPrevious(searchTerm)
-                    else findNext(searchTerm)
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (e.shiftKey) findPrevious(searchTerm);
+                    else findNext(searchTerm);
                   }
-                  if (e.key === 'Escape') {
-                    e.preventDefault()
-                    setSearchOpen(false)
-                    termRef.current?.focus()
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    setSearchOpen(false);
+                    termRef.current?.focus();
                   }
                 }}
                 placeholder="Find in scrollback"
@@ -413,8 +407,8 @@ export function Terminal(_props: { windowId: string }) {
                 className="h-5 w-5 p-0"
                 aria-label="Close search"
                 onClick={() => {
-                  setSearchOpen(false)
-                  termRef.current?.focus()
+                  setSearchOpen(false);
+                  termRef.current?.focus();
                 }}
               >
                 <X size={11} />
@@ -432,8 +426,8 @@ export function Terminal(_props: { windowId: string }) {
         onContextMenu={(e) => {
           // Right-click pastes, the way most browser terminals behave. Preventing
           // the native menu is the point: its Paste item cannot reach the pty.
-          e.preventDefault()
-          void paste()
+          e.preventDefault();
+          void paste();
         }}
       >
         <div ref={attachHost} className="h-full w-full" />
@@ -445,5 +439,5 @@ export function Terminal(_props: { windowId: string }) {
         Font size {fontSize} of {MIN_FONT_SIZE}–{MAX_FONT_SIZE}, default {DEFAULT_FONT_SIZE}
       </span>
     </div>
-  )
+  );
 }

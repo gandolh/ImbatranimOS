@@ -1,27 +1,26 @@
-import type { ChildProcess } from 'child_process';
-import { randomBytes } from 'crypto';
-import * as fs from 'fs/promises';
-import * as http from 'http';
-import type { AddressInfo } from 'net';
-import * as os from 'os';
-import { join } from 'path';
-import { ConfigService } from '@nestjs/config';
-import type { Response } from 'express';
-import { FilesService } from '../files/files.service';
-import { ArchiveService } from '../archive/archive.service';
-import { DbService } from '../../db/db.service';
-import { LogService } from '../logs/log.service';
-import { makeLocalIdentity } from '../identity/testing';
-import type { DataMovesService } from '../app-data/data-moves.service';
-import { BackupService } from './backup.service';
-import { BackupController } from './backup.controller';
+import type { ChildProcess } from "child_process";
+import { randomBytes } from "crypto";
+import * as fs from "fs/promises";
+import * as http from "http";
+import type { AddressInfo } from "net";
+import * as os from "os";
+import { join } from "path";
+import { ConfigService } from "@nestjs/config";
+import type { Response } from "express";
+import { FilesService } from "../files/files.service";
+import { ArchiveService } from "../archive/archive.service";
+import { DbService } from "../../db/db.service";
+import { LogService } from "../logs/log.service";
+import { makeLocalIdentity } from "../identity/testing";
+import type { DataMovesService } from "../app-data/data-moves.service";
+import { BackupService } from "./backup.service";
+import { BackupController } from "./backup.controller";
 
 /** Every child the service spawns, so the test can see tar's fate. */
 const children: ChildProcess[] = [];
 // Builtin exports cannot be spied on in Node 24; wrap `spawn` instead.
-jest.mock('child_process', () => {
-  const actual =
-    jest.requireActual<typeof import('child_process')>('child_process');
+jest.mock("child_process", () => {
+  const actual = jest.requireActual<typeof import("child_process")>("child_process");
   return {
     ...actual,
     spawn: (...args: Parameters<typeof actual.spawn>) => {
@@ -39,7 +38,7 @@ jest.mock('child_process', () => {
  * bytes so tar is still writing when the client leaves: with `.pipe()` it then
  * blocked on a full pipe forever and every later backup answered 409.
  */
-describe('BackupController.download — an interrupted download', () => {
+describe("BackupController.download — an interrupted download", () => {
   let home: string;
   let db: DbService;
   let service: BackupService;
@@ -48,10 +47,7 @@ describe('BackupController.download — an interrupted download', () => {
   const prevRoot = process.env.FILES_ROOT;
 
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-  const waitFor = async (
-    check: () => boolean | Promise<boolean>,
-    what: string,
-  ) => {
+  const waitFor = async (check: () => boolean | Promise<boolean>, what: string) => {
     for (const end = Date.now() + 10_000; Date.now() < end; await sleep(50)) {
       if (await check()) return;
     }
@@ -64,28 +60,22 @@ describe('BackupController.download — an interrupted download', () => {
     );
 
   beforeEach(async () => {
-    home = await fs.mkdtemp(join(os.tmpdir(), 'imb-b142-home-'));
+    home = await fs.mkdtemp(join(os.tmpdir(), "imb-b142-home-"));
     process.env.FILES_ROOT = home;
-    await fs.mkdir(join(home, '.imbatranim'), { recursive: true });
-    await fs.writeFile(join(home, 'big.bin'), randomBytes(8 * 1024 * 1024));
+    await fs.mkdir(join(home, ".imbatranim"), { recursive: true });
+    await fs.writeFile(join(home, "big.bin"), randomBytes(8 * 1024 * 1024));
 
     const config = {
-      get: (key: string) =>
-        key === 'DB_PATH' ? join(home, '.imbatranim', 'db.sqlite') : 24,
+      get: (key: string) => (key === "DB_PATH" ? join(home, ".imbatranim", "db.sqlite") : 24),
     } as unknown as ConfigService<never, true>;
     db = new DbService(config);
     db.onModuleInit();
     const files = new FilesService();
     const logs = new LogService();
     await logs.onModuleInit();
-    service = new BackupService(
-      files,
-      new ArchiveService(files),
-      db,
-      logs,
-      makeLocalIdentity(db),
-      { run: () => Promise.resolve() } as unknown as DataMovesService,
-    );
+    service = new BackupService(files, new ArchiveService(files), db, logs, makeLocalIdentity(db), {
+      run: () => Promise.resolve(),
+    } as unknown as DataMovesService);
     const controller = new BackupController(service);
 
     children.length = 0;
@@ -95,12 +85,12 @@ describe('BackupController.download — an interrupted download', () => {
         res.end(err.message);
       });
     });
-    await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
     port = (server.address() as AddressInfo).port;
   });
 
   afterEach(async () => {
-    for (const child of children) child.kill('SIGKILL');
+    for (const child of children) child.kill("SIGKILL");
     await new Promise((r) => server.close(r));
     db.db.close();
     process.env.FILES_ROOT = prevRoot;
@@ -113,39 +103,36 @@ describe('BackupController.download — an interrupted download', () => {
       http
         .get(`http://127.0.0.1:${port}/`, (res) => {
           let bytes = 0;
-          res.on('data', (chunk: Buffer) => (bytes += chunk.length));
-          res.on('end', () => resolve({ status: res.statusCode ?? 0, bytes }));
-          res.on('error', reject);
+          res.on("data", (chunk: Buffer) => (bytes += chunk.length));
+          res.on("end", () => resolve({ status: res.statusCode ?? 0, bytes }));
+          res.on("error", reject);
         })
-        .on('error', reject);
+        .on("error", reject);
     });
 
-  it('kills tar, frees the slot and removes the staging copy when the client leaves', async () => {
+  it("kills tar, frees the slot and removes the staging copy when the client leaves", async () => {
     await new Promise<void>((resolve, reject) => {
       const req = http.get(`http://127.0.0.1:${port}/`, (res) => {
-        res.once('data', () => {
+        res.once("data", () => {
           // The first chunk is in: the client goes away mid-download.
           req.destroy();
           resolve();
         });
       });
-      req.on('error', () => undefined);
-      req.setTimeout(10_000, () => reject(new Error('no first chunk')));
+      req.on("error", () => undefined);
+      req.setTimeout(10_000, () => reject(new Error("no first chunk")));
     });
 
-    const tarChild = children.find((c) => c.spawnfile === 'tar');
+    const tarChild = children.find((c) => c.spawnfile === "tar");
     expect(tarChild).toBeDefined();
+    await waitFor(() => tarChild!.exitCode !== null || tarChild!.signalCode !== null, "tar to exit");
     await waitFor(
-      () => tarChild!.exitCode !== null || tarChild!.signalCode !== null,
-      'tar to exit',
-    );
-    await waitFor(
-      async () => !(await exists(join(home, '.imbatranim', 'backup-staging'))),
-      'the staging directory to be removed',
+      async () => !(await exists(join(home, ".imbatranim", "backup-staging"))),
+      "the staging directory to be removed",
     );
     await waitFor(
       () => !(service as unknown as { backupInFlight: boolean }).backupInFlight,
-      'the backup slot to be freed',
+      "the backup slot to be freed",
     );
 
     const second = await download();

@@ -9,15 +9,15 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { randomBytes } from 'crypto';
-import { promises as fs } from 'fs';
-import { dirname, join, posix } from 'path';
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { randomBytes } from "crypto";
+import { promises as fs } from "fs";
+import { dirname, join, posix } from "path";
 
-import type { Env } from '../../config/env.schema';
-import type { CatalogApp, Descriptor } from './catalog';
-import { manifestVersion, readManifestJson } from './manifest-file';
+import type { Env } from "../../config/env.schema";
+import type { CatalogApp, Descriptor } from "./catalog";
+import { manifestVersion, readManifestJson } from "./manifest-file";
 import {
   directorySize,
   exists,
@@ -27,10 +27,10 @@ import {
   type InstalledRow,
   type MarketplaceApp,
   type StepRunner,
-} from './marketplace.service';
-import { parseNativeManifest } from './native-manifest';
-import { PendingInspections } from './pending-inspections';
-import { eachLine, runStep, type StepResult } from './run-step';
+} from "./marketplace.service";
+import { parseNativeManifest } from "./native-manifest";
+import { PendingInspections } from "./pending-inspections";
+import { eachLine, runStep, type StepResult } from "./run-step";
 import {
   commitTipLines,
   deriveAppId,
@@ -43,8 +43,8 @@ import {
   type AppSource,
   type ParsedSourceUrl,
   type ResolvedRef,
-} from './source-url';
-import { TreeTally } from './tree-tally';
+} from "./source-url";
+import { TreeTally } from "./tree-tally";
 
 /** How long listing a repository's refs may take. */
 const LS_REMOTE_TIMEOUT_MS = 60_000;
@@ -60,8 +60,7 @@ export const MAX_CLONE_ENTRIES = 20_000;
  */
 const OLD_MANIFEST_VERSION = 1;
 /** What the check answers for one. */
-export const OLD_FORMAT_REFUSAL =
-  'This app uses the old format, which this OS no longer installs.';
+export const OLD_FORMAT_REFUSAL = "This app uses the old format, which this OS no longer installs.";
 
 /**
  * What the pane's consent card shows for a checked app.
@@ -74,10 +73,10 @@ export const OLD_FORMAT_REFUSAL =
 export interface Inspection {
   pending: string;
   id: string;
-  runtime: 'native';
+  runtime: "native";
   verified: boolean;
   /** Its build type: `service` runs a server of its own. */
-  type: Descriptor['type'];
+  type: Descriptor["type"];
   apps: { id: string; name: string; icon: string; capabilities: string[] }[];
   manifest: {
     name: string;
@@ -85,7 +84,7 @@ export interface Inspection {
     meta: string[];
     icon: string;
     capabilities: string[];
-    window: CatalogApp['window'];
+    window: CatalogApp["window"];
     minSystemVersion: number;
   };
   source: AppSource;
@@ -139,7 +138,7 @@ export class MarketplaceUrlApps {
     let parsed: ParsedSourceUrl;
     try {
       parsed = parseSourceUrl(url, {
-        allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
+        allowLocalRepos: this.config.get("MARKETPLACE_ALLOW_LOCAL_REPOS"),
       });
     } catch (err) {
       throw asHttpError(err);
@@ -169,7 +168,7 @@ export class MarketplaceUrlApps {
       commit: resolved.commit,
       subdir: resolved.subdir,
     };
-    const buildId = `${resolved.commit.slice(0, 12)}-${randomBytes(4).toString('hex')}`;
+    const buildId = `${resolved.commit.slice(0, 12)}-${randomBytes(4).toString("hex")}`;
     const dir = this.marketplace.buildDir(id, buildId);
     this.pendings.startCloning(dir);
     try {
@@ -177,15 +176,7 @@ export class MarketplaceUrlApps {
       if (manifestVersion(raw) === OLD_MANIFEST_VERSION) {
         throw new BadRequestException(OLD_FORMAT_REFUSAL);
       }
-      return this.checkedNative(
-        id,
-        buildId,
-        dir,
-        root,
-        raw,
-        source,
-        this.marketplace.row(id),
-      );
+      return this.checkedNative(id, buildId, dir, root, raw, source, this.marketplace.row(id));
     } catch (err) {
       await fs.rm(dir, { recursive: true, force: true });
       throw err;
@@ -208,7 +199,7 @@ export class MarketplaceUrlApps {
     row: InstalledRow | undefined,
   ): Inspection {
     const parsed = parseNativeManifest(raw, source, {
-      allowLocalRepos: this.config.get('MARKETPLACE_ALLOW_LOCAL_REPOS'),
+      allowLocalRepos: this.config.get("MARKETPLACE_ALLOW_LOCAL_REPOS"),
     });
     if (!parsed.ok) throw new BadRequestException(parsed.problem);
     const d = parsed.descriptor;
@@ -225,7 +216,7 @@ export class MarketplaceUrlApps {
     return {
       pending,
       id,
-      runtime: 'native',
+      runtime: "native",
       verified: this.marketplace.isVerified(source),
       type: d.type,
       apps: d.apps.map((a) => ({
@@ -238,7 +229,7 @@ export class MarketplaceUrlApps {
         name: d.name,
         description: d.description,
         meta: first.meta,
-        icon: d.apps.length === 1 ? first.icon : 'package',
+        icon: d.apps.length === 1 ? first.icon : "package",
         capabilities,
         window: first.window,
         minSystemVersion: d.minSystemVersion,
@@ -258,17 +249,12 @@ export class MarketplaceUrlApps {
       const commit = isCommitRefPath(parsed.refPath);
       const args =
         parsed.refPath.length === 0
-          ? ['ls-remote', '--symref', '--', parsed.repo, 'HEAD']
+          ? ["ls-remote", "--symref", "--", parsed.repo, "HEAD"]
           : commit
-            ? ['ls-remote', '--heads', '--tags', '--', parsed.repo]
-            : [
-                'ls-remote',
-                '--',
-                parsed.repo,
-                ...lsRemotePatterns(parsed.refPath),
-              ];
+            ? ["ls-remote", "--heads", "--tags", "--", parsed.repo]
+            : ["ls-remote", "--", parsed.repo, ...lsRemotePatterns(parsed.refPath)];
       const kept: string[] = [];
-      const keep = commitTipLines(parsed.refPath[0] ?? '');
+      const keep = commitTipLines(parsed.refPath[0] ?? "");
       const lines = eachLine((line) => {
         if (keep(line)) kept.push(line);
       });
@@ -277,7 +263,7 @@ export class MarketplaceUrlApps {
       // global config" does not cover (in development, `data/apps` sits inside
       // the OS's own checkout). So: an empty directory of its own, and no
       // looking above it.
-      const cwd = join(this.marketplace.appsDir(), '.cache', 'ls-remote');
+      const cwd = join(this.marketplace.appsDir(), ".cache", "ls-remote");
       await fs.mkdir(cwd, { recursive: true, mode: 0o700 });
       const listed = await runStep(gitArgv(...args), {
         cwd,
@@ -289,14 +275,10 @@ export class MarketplaceUrlApps {
         ...(commit ? { onStdout: lines.onStdout } : {}),
       });
       if (!listed.ok || listed.stopped) {
-        throw fetchFailure('Reading the branches', listed, parsed.repo);
+        throw fetchFailure("Reading the branches", listed, parsed.repo);
       }
       lines.end();
-      return resolveRef(
-        commit ? kept.join('\n') : listed.output,
-        parsed.refPath,
-        parsed.repo,
-      );
+      return resolveRef(commit ? kept.join("\n") : listed.output, parsed.refPath, parsed.repo);
     } catch (err) {
       throw asHttpError(err);
     }
@@ -307,10 +289,7 @@ export class MarketplaceUrlApps {
    * came: the clone's size and the subdirectory. Answers the app's folder in
    * the clone and its `imbatranim.json`, parsed as JSON but not validated.
    */
-  private async cloneAndRead(
-    dir: string,
-    source: AppSource,
-  ): Promise<{ root: string; raw: unknown }> {
+  private async cloneAndRead(dir: string, source: AppSource): Promise<{ root: string; raw: unknown }> {
     await fs.mkdir(dir, { recursive: true });
     const step: StepRunner = async (label, argv, cwd, env, timeoutMs) => {
       const result = await runStep(argv, { cwd, env, timeoutMs });
@@ -334,10 +313,8 @@ export class MarketplaceUrlApps {
       throw new BadRequestException(overClone(bytes));
     }
 
-    const where = source.subdir
-      ? `${source.subdir} in ${source.repo}`
-      : source.repo;
-    const rootRel = source.subdir ? posix.normalize(source.subdir) : '';
+    const where = source.subdir ? `${source.subdir} in ${source.repo}` : source.repo;
+    const rootRel = source.subdir ? posix.normalize(source.subdir) : "";
     const root = join(dir, rootRel);
     if (!(await isDirectoryWithin(dir, root))) {
       throw new BadRequestException(
@@ -345,7 +322,7 @@ export class MarketplaceUrlApps {
       );
     }
     const raw = await readManifestJson(root, where);
-    return { root: rootRel === '.' ? '' : rootRel, raw };
+    return { root: rootRel === "." ? "" : rootRel, raw };
   }
 
   /**
@@ -356,13 +333,9 @@ export class MarketplaceUrlApps {
    * before a single file is written: the fetched history's size first, then
    * the tree's, from `git ls-tree`, every path's blob counted.
    */
-  private async measureBeforeCheckout(
-    dir: string,
-    source: AppSource,
-    gitEnv: NodeJS.ProcessEnv,
-  ): Promise<boolean> {
+  private async measureBeforeCheckout(dir: string, source: AppSource, gitEnv: NodeJS.ProcessEnv): Promise<boolean> {
     const limits = this.cloneLimits;
-    const gitDir = join(dir, '.git');
+    const gitDir = join(dir, ".git");
     if ((await directorySize(gitDir, dir, limits.bytes)) > limits.bytes) {
       throw new BadRequestException(overClone(limits.bytes));
     }
@@ -374,28 +347,22 @@ export class MarketplaceUrlApps {
     // it. No filter driver is configured (no system or global config), so
     // `-filter` only makes that explicit. The files come out byte for byte as
     // committed.
-    await fs.mkdir(join(gitDir, 'info'), { recursive: true });
-    await fs.writeFile(
-      join(gitDir, 'info', 'attributes'),
-      '* -text -eol -ident -filter -working-tree-encoding\n',
-    );
+    await fs.mkdir(join(gitDir, "info"), { recursive: true });
+    await fs.writeFile(join(gitDir, "info", "attributes"), "* -text -eol -ident -filter -working-tree-encoding\n");
 
     const tally = new TreeTally();
-    const listed = await runStep(
-      gitArgv('ls-tree', '-r', '-l', '-z', '--full-tree', 'FETCH_HEAD'),
-      {
-        cwd: dir,
-        env: gitEnv,
-        timeoutMs: LS_TREE_TIMEOUT_MS,
-        onStdout: (chunk) => {
-          tally.push(chunk);
-          return tally.within(limits);
-        },
+    const listed = await runStep(gitArgv("ls-tree", "-r", "-l", "-z", "--full-tree", "FETCH_HEAD"), {
+      cwd: dir,
+      env: gitEnv,
+      timeoutMs: LS_TREE_TIMEOUT_MS,
+      onStdout: (chunk) => {
+        tally.push(chunk);
+        return tally.within(limits);
       },
-    );
+    });
     if (tally.entries > limits.entries) {
       throw new BadRequestException(
-        `The repository holds more than ${limits.entries.toLocaleString('en-US')} files at that commit, the most an app from a URL may have.`,
+        `The repository holds more than ${limits.entries.toLocaleString("en-US")} files at that commit, the most an app from a URL may have.`,
       );
     }
     if (tally.bytes > limits.bytes) {
@@ -403,12 +370,9 @@ export class MarketplaceUrlApps {
         `The files at that commit come to more than ${limits.bytes / 1048576} MB, the most an app from a URL may be.`,
       );
     }
-    if (!listed.ok)
-      throw fetchFailure('Listing the files', listed, source.repo);
+    if (!listed.ok) throw fetchFailure("Listing the files", listed, source.repo);
     if (tally.malformed || tally.partial) {
-      throw new BadGatewayException(
-        `Listing the files from ${source.repo} failed: git's answer could not be read.`,
-      );
+      throw new BadGatewayException(`Listing the files from ${source.repo} failed: git's answer could not be read.`);
     }
     return true;
   }
@@ -423,14 +387,11 @@ export class MarketplaceUrlApps {
    * trust record. Without it the answer is a 403.
    */
   async install(pending: string, trust = false): Promise<MarketplaceApp> {
-    const gone = () =>
-      new NotFoundException('That check has expired. Check the URL again.');
+    const gone = () => new NotFoundException("That check has expired. Check the URL again.");
     const checked = this.pendings.get(pending);
     if (!checked) throw gone();
     if (this.marketplace.isInstalling(checked.id)) {
-      throw new ConflictException(
-        'It is being installed; wait for that to finish',
-      );
+      throw new ConflictException("It is being installed; wait for that to finish");
     }
     // Read again now: the list could have changed since the check.
     const verified = this.marketplace.isVerified(checked.source);
@@ -449,16 +410,16 @@ export class MarketplaceUrlApps {
     // while the check still holds its clone, which Cancel or expiry
     // deletes.
     this.marketplace.installFromUrl(checked.id, {
-      kind: 'url',
+      kind: "url",
       d: checked.native.descriptor,
       manifest: checked.native.manifest,
       source: checked.source,
-      trust: { by: verified ? 'verified' : 'owner', at: Date.now() },
+      trust: { by: verified ? "verified" : "owner", at: Date.now() },
       fetched: { dir: checked.dir, buildId: checked.buildId },
     });
     this.pendings.take(pending);
     this.logger.log(
-      `Queued ${checked.id} from ${checked.source.url} at ${checked.source.commit} (${verified ? 'verified' : 'trusted by the owner'})`,
+      `Queued ${checked.id} from ${checked.source.url} at ${checked.source.commit} (${verified ? "verified" : "trusted by the owner"})`,
     );
     const [listed] = await this.marketplace.listed(checked.id);
     if (!listed) throw new InternalServerErrorException();
@@ -478,23 +439,16 @@ function overClone(bytes: number): string {
 
 /** A refused URL or ref is the owner's to fix: 400. Anything already HTTP stays as it is. */
 function asHttpError(err: unknown): unknown {
-  if (err instanceof SourceUrlError)
-    return new BadRequestException(err.message);
+  if (err instanceof SourceUrlError) return new BadRequestException(err.message);
   return err;
 }
 
 /** A git command that failed against the repository: 504 past its deadline, 502 otherwise. */
-function fetchFailure(
-  label: string,
-  result: StepResult,
-  repo: string,
-): HttpException {
+function fetchFailure(label: string, result: StepResult, repo: string): HttpException {
   if (result.timedOut) {
-    return new GatewayTimeoutException(
-      `${label} from ${repo} took too long. Try again later.`,
-    );
+    return new GatewayTimeoutException(`${label} from ${repo} took too long. Try again later.`);
   }
-  const lines = result.output.trim().split('\n');
+  const lines = result.output.trim().split("\n");
   const last = lines[lines.length - 1]?.trim().slice(0, 300);
   // What git says for a repository that does not exist: GitHub asks for a
   // password (and prompts are off) rather than admit it, as it does for a
@@ -508,7 +462,5 @@ function fetchFailure(
       `${repo} was not found, or it is private. Only public repositories can be installed.`,
     );
   }
-  return new BadGatewayException(
-    `${label} from ${repo} failed: ${last || result.reason || 'git failed'}`,
-  );
+  return new BadGatewayException(`${label} from ${repo} failed: ${last || result.reason || "git failed"}`);
 }

@@ -1,21 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { GripHorizontal, Palette, Trash2, X } from 'lucide-react'
-import { cn } from '@imbatranim/ui'
-import { COLOR_OPTIONS, COLOR_SWATCH, noteColorClass } from './noteStyle'
-import { clampNote } from './noteGeometry'
-import { usePointerDrag } from './usePointerDrag'
-import type { NoteColor, StickyNote, StickyNotePatch } from './types'
+import { useCallback, useEffect, useRef, useState } from "react";
+import { GripHorizontal, Palette, Trash2, X } from "lucide-react";
+import { cn } from "@imbatranim/ui";
+import { COLOR_OPTIONS, COLOR_SWATCH, noteColorClass } from "./noteStyle";
+import { clampNote } from "./noteGeometry";
+import { usePointerDrag } from "./usePointerDrag";
+import type { NoteColor, StickyNote, StickyNotePatch } from "./types";
 
 /** Debounce before persisting typing, and how long "Saved" lingers. */
-const SAVE_DEBOUNCE_MS = 800
+const SAVE_DEBOUNCE_MS = 800;
 
 type DesktopNoteProps = {
-  note: StickyNote
+  note: StickyNote;
   /** The desktop layer's size, for clamping. */
-  bounds: { width: number; height: number }
-  onPatch: (id: number, patch: StickyNotePatch) => void
-  onDelete: (note: StickyNote) => void
-}
+  bounds: { width: number; height: number };
+  onPatch: (id: number, patch: StickyNotePatch) => void;
+  onDelete: (note: StickyNote) => void;
+};
 
 /**
  * One note on the desktop.
@@ -28,93 +28,91 @@ type DesktopNoteProps = {
  * release** — a PATCH per pointer move would be dozens of writes for one drag.
  */
 export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProps) {
-  const [preview, setPreview] = useState<{ x: number; y: number; w: number; h: number } | null>(
-    null
-  )
-  const [content, setContent] = useState(note.content)
-  const [paletteOpen, setPaletteOpen] = useState(false)
-  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [preview, setPreview] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [content, setContent] = useState(note.content);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The typed-but-not-yet-persisted value, so the debounce can be FLUSHED (not
   // just cancelled) when the note unmounts. Latest `onPatch`/`note.id` are kept in
   // a ref because the unmount cleanup runs with the mount-time closure (M7).
-  const pending = useRef<string | null>(null)
-  const latest = useRef({ id: note.id, onPatch })
+  const pending = useRef<string | null>(null);
+  const latest = useRef({ id: note.id, onPatch });
   useEffect(() => {
-    latest.current = { id: note.id, onPatch }
-  })
+    latest.current = { id: note.id, onPatch };
+  });
 
   // Resync when the note changes underneath us (another window edited it) —
   // state adjustment during render rather than an effect, the house idiom.
-  const [prevContent, setPrevContent] = useState(note.content)
+  const [prevContent, setPrevContent] = useState(note.content);
   if (note.content !== prevContent) {
-    setPrevContent(note.content)
-    setContent(note.content)
+    setPrevContent(note.content);
+    setContent(note.content);
   }
 
   // Kept inside the desktop: a note dragged past the edge would otherwise be
   // unreachable after a reload, with no way to get it back. See `noteGeometry.ts`.
   const clamp = useCallback(
     (x: number, y: number, w: number, h: number) => clampNote({ x, y, w, h }, bounds),
-    [bounds]
-  )
+    [bounds],
+  );
 
   const move = usePointerDrag({
     onMove: ({ dx, dy }) => setPreview(clamp(note.x + dx, note.y + dy, note.width, note.height)),
     onCommit: ({ dx, dy }) => {
-      const next = clamp(note.x + dx, note.y + dy, note.width, note.height)
-      setPreview(null)
-      if (next.x !== note.x || next.y !== note.y) onPatch(note.id, { x: next.x, y: next.y })
+      const next = clamp(note.x + dx, note.y + dy, note.width, note.height);
+      setPreview(null);
+      if (next.x !== note.x || next.y !== note.y) onPatch(note.id, { x: next.x, y: next.y });
     },
-  })
+  });
 
   const resize = usePointerDrag({
     onMove: ({ dx, dy }) => setPreview(clamp(note.x, note.y, note.width + dx, note.height + dy)),
     onCommit: ({ dx, dy }) => {
-      const next = clamp(note.x, note.y, note.width + dx, note.height + dy)
-      setPreview(null)
+      const next = clamp(note.x, note.y, note.width + dx, note.height + dy);
+      setPreview(null);
       if (next.w !== note.width || next.h !== note.height) {
-        onPatch(note.id, { width: next.w, height: next.h })
+        onPatch(note.id, { width: next.w, height: next.h });
       }
     },
-  })
+  });
 
   const handleContent = useCallback(
     (value: string) => {
-      setContent(value)
-      pending.current = value
-      if (debounce.current) clearTimeout(debounce.current)
+      setContent(value);
+      pending.current = value;
+      if (debounce.current) clearTimeout(debounce.current);
       debounce.current = setTimeout(() => {
-        debounce.current = null
-        pending.current = null
-        onPatch(note.id, { content: value })
-      }, SAVE_DEBOUNCE_MS)
+        debounce.current = null;
+        pending.current = null;
+        onPatch(note.id, { content: value });
+      }, SAVE_DEBOUNCE_MS);
     },
-    [note.id, onPatch]
-  )
+    [note.id, onPatch],
+  );
 
   useEffect(
     () => () => {
-      if (debounce.current) clearTimeout(debounce.current)
+      if (debounce.current) clearTimeout(debounce.current);
       // Flush the last ≤800ms of typing instead of dropping it: taking the note off
       // the desktop or pressing Back unmounts this component, and merely clearing
       // the timer lost whatever had not yet been persisted (M7).
       if (pending.current !== null) {
-        latest.current.onPatch(latest.current.id, { content: pending.current })
-        pending.current = null
+        latest.current.onPatch(latest.current.id, { content: pending.current });
+        pending.current = null;
       }
     },
-    []
-  )
+    [],
+  );
 
-  const box = preview ?? { x: note.x, y: note.y, w: note.width, h: note.height }
-  const busy = move.dragging || resize.dragging
+  const box = preview ?? { x: note.x, y: note.y, w: note.width, h: note.height };
+  const busy = move.dragging || resize.dragging;
 
   return (
     <div
       className={cn(
-        'rounded-control pointer-events-auto absolute flex flex-col border shadow-sm',
+        "rounded-control pointer-events-auto absolute flex flex-col border shadow-sm",
         noteColorClass(note.color),
-        busy && 'opacity-90'
+        busy && "opacity-90",
       )}
       style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
     >
@@ -122,8 +120,8 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
       <div
         {...move.handlers}
         className={cn(
-          'border-outline-variant/50 flex h-6 shrink-0 items-center gap-1 border-b px-1',
-          move.dragging ? 'cursor-grabbing' : 'cursor-grab'
+          "border-outline-variant/50 flex h-6 shrink-0 items-center gap-1 border-b px-1",
+          move.dragging ? "cursor-grabbing" : "cursor-grab",
         )}
       >
         <GripHorizontal size={12} className="text-on-surface-variant shrink-0" />
@@ -168,13 +166,13 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
           <button
             type="button"
             onClick={() => {
-              onPatch(note.id, { color: null })
-              setPaletteOpen(false)
+              onPatch(note.id, { color: null });
+              setPaletteOpen(false);
             }}
             aria-label="Default colour"
             className={cn(
-              'focus-visible:ring-primary rounded-small bg-surface-container h-4 w-4 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
-              note.color === null ? 'border-on-surface' : 'border-outline-variant'
+              "focus-visible:ring-primary rounded-small bg-surface-container h-4 w-4 border outline-none focus-visible:ring-2 focus-visible:ring-inset",
+              note.color === null ? "border-on-surface" : "border-outline-variant",
             )}
           />
           {COLOR_OPTIONS.map((color: NoteColor) => (
@@ -182,14 +180,14 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
               key={color}
               type="button"
               onClick={() => {
-                onPatch(note.id, { color })
-                setPaletteOpen(false)
+                onPatch(note.id, { color });
+                setPaletteOpen(false);
               }}
               aria-label={color}
               className={cn(
-                'focus-visible:ring-primary rounded-small h-4 w-4 border outline-none focus-visible:ring-2 focus-visible:ring-inset',
+                "focus-visible:ring-primary rounded-small h-4 w-4 border outline-none focus-visible:ring-2 focus-visible:ring-inset",
                 COLOR_SWATCH[color],
-                note.color === color ? 'border-on-surface' : 'border-outline-variant'
+                note.color === color ? "border-on-surface" : "border-outline-variant",
               )}
             />
           ))}
@@ -213,9 +211,9 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
         className="absolute right-0 bottom-0 h-3 w-3 cursor-nwse-resize"
         style={{
           ...resize.handlers.style,
-          background: 'linear-gradient(135deg, transparent 50%, var(--k-outline-variant) 50%)',
+          background: "linear-gradient(135deg, transparent 50%, var(--k-outline-variant) 50%)",
         }}
       />
     </div>
-  )
+  );
 }

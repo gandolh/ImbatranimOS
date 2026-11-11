@@ -1,24 +1,24 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Button } from './Button'
-import { Dialog } from './Dialog'
-import { Input } from './Input'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Button } from "./Button";
+import { Dialog } from "./Dialog";
+import { Input } from "./Input";
 
 export type PromptOptions = {
-  title: string
-  message?: string
-  placeholder?: string
-  initialValue?: string
-  confirmLabel?: string
-  cancelLabel?: string
-}
+  title: string;
+  message?: string;
+  placeholder?: string;
+  initialValue?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+};
 
-type PromptDialogProps = Omit<PromptOptions, 'initialValue'> & {
-  open: boolean
-  value: string
-  onValueChange: (value: string) => void
-  onConfirm: (value: string) => void
-  onCancel: () => void
-}
+type PromptDialogProps = Omit<PromptOptions, "initialValue"> & {
+  open: boolean;
+  value: string;
+  onValueChange: (value: string) => void;
+  onConfirm: (value: string) => void;
+  onCancel: () => void;
+};
 
 /**
  * A themed prompt dialog built on core's {@link Dialog} + {@link Input}.
@@ -35,12 +35,12 @@ export function PromptDialog({
   title,
   message,
   placeholder,
-  confirmLabel = 'OK',
-  cancelLabel = 'Cancel',
+  confirmLabel = "OK",
+  cancelLabel = "Cancel",
   onConfirm,
   onCancel,
 }: PromptDialogProps) {
-  const trimmed = value.trim()
+  const trimmed = value.trim();
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()} title={title}>
@@ -51,7 +51,7 @@ export function PromptDialog({
         placeholder={placeholder}
         onChange={(e) => onValueChange(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && trimmed) onConfirm(trimmed)
+          if (e.key === "Enter" && trimmed) onConfirm(trimmed);
         }}
         className="mb-4"
       />
@@ -64,10 +64,10 @@ export function PromptDialog({
         </Button>
       </div>
     </Dialog>
-  )
+  );
 }
 
-type PromptState = PromptOptions & { open: boolean; value: string }
+type PromptState = PromptOptions & { open: boolean; value: string };
 
 /**
  * Imperative prompt dialog. Call `prompt(opts)` to open the themed dialog and
@@ -86,40 +86,40 @@ type PromptState = PromptOptions & { open: boolean; value: string }
 // boundary, so exporting it alongside <PromptDialog> is safe.
 // eslint-disable-next-line react-refresh/only-export-components
 export function usePrompt(): {
-  prompt: (opts: PromptOptions) => Promise<string | null>
-  promptDialog: ReactNode
+  prompt: (opts: PromptOptions) => Promise<string | null>;
+  promptDialog: ReactNode;
 } {
   const [state, setState] = useState<PromptState>({
     open: false,
-    title: '',
-    value: '',
-  })
-  const resolverRef = useRef<((value: string | null) => void) | null>(null)
+    title: "",
+    value: "",
+  });
+  const resolverRef = useRef<((value: string | null) => void) | null>(null);
 
   const prompt = useCallback((opts: PromptOptions) => {
     return new Promise<string | null>((resolve) => {
       // A re-entrant call while a dialog is still pending settles the prior
       // promise as null so its awaiter never hangs.
-      resolverRef.current?.(null)
-      resolverRef.current = resolve
-      setState({ ...opts, open: true, value: opts.initialValue ?? '' })
-    })
-  }, [])
+      resolverRef.current?.(null);
+      resolverRef.current = resolve;
+      setState({ ...opts, open: true, value: opts.initialValue ?? "" });
+    });
+  }, []);
 
   const settle = useCallback((value: string | null) => {
-    resolverRef.current?.(value)
-    resolverRef.current = null
-    setState((prev) => ({ ...prev, open: false }))
-  }, [])
+    resolverRef.current?.(value);
+    resolverRef.current = null;
+    setState((prev) => ({ ...prev, open: false }));
+  }, []);
 
   // If the host unmounts with a prompt still pending, settle it null rather than
   // leaving the awaiter hung forever.
   useEffect(() => {
     return () => {
-      resolverRef.current?.(null)
-      resolverRef.current = null
-    }
-  }, [])
+      resolverRef.current?.(null);
+      resolverRef.current = null;
+    };
+  }, []);
 
   const promptDialog: ReactNode = (
     <PromptDialog
@@ -134,7 +134,7 @@ export function usePrompt(): {
       onConfirm={(value) => settle(value)}
       onCancel={() => settle(null)}
     />
-  )
+  );
 
-  return { prompt, promptDialog }
+  return { prompt, promptDialog };
 }

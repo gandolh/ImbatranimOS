@@ -1,14 +1,9 @@
-import {
-  Injectable,
-  Optional,
-  OnModuleInit,
-  OnModuleDestroy,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import Database from 'better-sqlite3';
-import { existsSync, renameSync, rmSync } from 'fs';
-import type { Env } from '../config/env.schema';
-import { LogService } from '../modules/logs/log.service';
+import { Injectable, Optional, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import Database from "better-sqlite3";
+import { existsSync, renameSync, rmSync } from "fs";
+import type { Env } from "../config/env.schema";
+import { LogService } from "../modules/logs/log.service";
 
 /** The only ALTER TABLE ADD COLUMN failure that means "already applied". */
 const DUPLICATE_COLUMN = /duplicate column name/i;
@@ -64,8 +59,8 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
 
   /** Open `DB_PATH` in WAL mode and bring it to the newest schema. */
   private open(): void {
-    this.db = new Database(this.config.get('DB_PATH'));
-    this.db.pragma('journal_mode = WAL');
+    this.db = new Database(this.config.get("DB_PATH"));
+    this.db.pragma("journal_mode = WAL");
     this.migrate();
   }
 
@@ -81,7 +76,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
 
   /** Where the database file lives. Backup and restore both need this. */
   path(): string {
-    return this.config.get('DB_PATH');
+    return this.config.get("DB_PATH");
   }
 
   /**
@@ -98,7 +93,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    * is **bound as a parameter**, not interpolated into the SQL text.
    */
   snapshotTo(destPath: string): void {
-    this.db.prepare('VACUUM INTO ?').run(destPath);
+    this.db.prepare("VACUUM INTO ?").run(destPath);
   }
 
   /**
@@ -124,7 +119,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     const previous = `${target}.previous`;
     this.db.close();
     const hadPrevious = existsSync(target);
-    for (const suffix of ['-wal', '-shm']) {
+    for (const suffix of ["-wal", "-shm"]) {
       rmSync(target + suffix, { force: true });
     }
     if (hadPrevious) renameSync(target, previous);
@@ -134,7 +129,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       if (this.migrationFailure) throw new Error(this.migrationFailure);
     } catch (err) {
       if (this.db?.open) this.db.close();
-      for (const suffix of ['', '-wal', '-shm']) {
+      for (const suffix of ["", "-wal", "-shm"]) {
         rmSync(target + suffix, { force: true });
       }
       if (hadPrevious) {
@@ -173,80 +168,80 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    */
   migrate() {
     const steps: { toVersion: number; name: string; run: () => void }[] = [
-      { toVersion: 1, name: 'baseline', run: () => this.stepBaseline() },
+      { toVersion: 1, name: "baseline", run: () => this.stepBaseline() },
       {
         toVersion: 2,
-        name: 'sticky-note-columns',
+        name: "sticky-note-columns",
         run: () => this.stepStickyNoteColumns(),
       },
-      { toVersion: 3, name: 'todo-columns', run: () => this.stepTodoColumns() },
+      { toVersion: 3, name: "todo-columns", run: () => this.stepTodoColumns() },
       {
         toVersion: 4,
-        name: 'bookmark-shape',
+        name: "bookmark-shape",
         run: () => this.stepBookmarkShape(),
       },
       {
         toVersion: 5,
-        name: 'totp-last-step',
+        name: "totp-last-step",
         run: () => this.stepTotpLastStep(),
       },
-      { toVersion: 6, name: 'backfills', run: () => this.stepBackfills() },
+      { toVersion: 6, name: "backfills", run: () => this.stepBackfills() },
       {
         toVersion: 7,
-        name: 'drop-old-auth',
+        name: "drop-old-auth",
         run: () => this.stepDropOldAuth(),
       },
       {
         toVersion: 8,
-        name: 'local-identity',
+        name: "local-identity",
         run: () => this.stepLocalIdentity(),
       },
       {
         toVersion: 9,
-        name: 'browser-profile',
+        name: "browser-profile",
         run: () => this.stepBrowserProfile(),
       },
       {
         toVersion: 10,
-        name: 'marketplace-apps',
+        name: "marketplace-apps",
         run: () => this.stepMarketplaceApps(),
       },
       {
         toVersion: 11,
-        name: 'marketplace-url-apps',
+        name: "marketplace-url-apps",
         run: () => this.stepMarketplaceUrlApps(),
       },
       {
         toVersion: 12,
-        name: 'marketplace-entries',
+        name: "marketplace-entries",
         run: () => this.stepMarketplaceEntries(),
       },
-      { toVersion: 13, name: 'file-modes', run: () => this.stepFileModes() },
-      { toVersion: 14, name: 'file-grants', run: () => this.stepFileGrants() },
+      { toVersion: 13, name: "file-modes", run: () => this.stepFileModes() },
+      { toVersion: 14, name: "file-grants", run: () => this.stepFileGrants() },
       {
         toVersion: 15,
-        name: 'file-grant-listing',
+        name: "file-grant-listing",
         run: () => this.stepFileGrantListing(),
       },
       {
         toVersion: 16,
-        name: 'git-recent-app',
+        name: "git-recent-app",
         run: () => this.stepGitRecentApp(),
       },
       {
         toVersion: 17,
-        name: 'recent-writable',
+        name: "recent-writable",
         run: () => this.stepRecentWritable(),
       },
-      { toVersion: 18, name: 'recent-kind', run: () => this.stepRecentKind() },
+      { toVersion: 18, name: "recent-kind", run: () => this.stepRecentKind() },
       {
         toVersion: 19,
-        name: 'file-grant-assets',
+        name: "file-grant-assets",
         run: () => this.stepFileGrantAssets(),
       },
     ];
 
-    const current = Number(this.db.pragma('user_version', { simple: true }));
+    const current = Number(this.db.pragma("user_version", { simple: true }));
     for (const step of steps) {
       if (step.toVersion <= current) continue;
       try {
@@ -272,18 +267,14 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    * founding rationale. So boot continues, the flag makes every API request
    * answer an honest 503, and the reason is recorded where it can be read.
    */
-  private reportMigrationFailure(
-    toVersion: number,
-    name: string,
-    err: unknown,
-  ): void {
-    const code = (err as { code?: string } | undefined)?.code ?? 'unknown';
+  private reportMigrationFailure(toVersion: number, name: string, err: unknown): void {
+    const code = (err as { code?: string } | undefined)?.code ?? "unknown";
     const message = err instanceof Error ? err.message : String(err);
     this.migrationFailure = `migration ${toVersion} (${name}) failed: ${code} — ${message}`;
 
     console.error(`[db] ${this.migrationFailure}`);
     try {
-      this.logs?.record('error', 'db.migrate.failed', this.migrationFailure, {
+      this.logs?.record("error", "db.migrate.failed", this.migrationFailure, {
         toVersion,
         step: name,
         code,
@@ -302,10 +293,8 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     // are deliberately not migrated: they were Notepad's bare paths with no
     // root — "recently opened" hints, not data — and the one-filesystem notepad moved Notepad's
     // default root out from under them, so their meaning is unrecoverable.
-    const recentCols = this.db
-      .prepare(`PRAGMA table_info(recent_files)`)
-      .all() as { name: string }[];
-    if (recentCols.length > 0 && !recentCols.some((c) => c.name === 'root')) {
+    const recentCols = this.db.prepare(`PRAGMA table_info(recent_files)`).all() as { name: string }[];
+    if (recentCols.length > 0 && !recentCols.some((c) => c.name === "root")) {
       this.db.exec(`DROP TABLE recent_files`);
     }
 
@@ -493,10 +482,10 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     // second pair of coordinate columns was added. on_desktop defaults to 0 so
     // every existing note stays list-only until the user places it.
     for (const column of [
-      'width INTEGER NOT NULL DEFAULT 200',
-      'height INTEGER NOT NULL DEFAULT 180',
-      'color TEXT',
-      'on_desktop INTEGER NOT NULL DEFAULT 0',
+      "width INTEGER NOT NULL DEFAULT 200",
+      "height INTEGER NOT NULL DEFAULT 180",
+      "color TEXT",
+      "on_desktop INTEGER NOT NULL DEFAULT 0",
     ]) {
       try {
         this.db.exec(`ALTER TABLE sticky_notes ADD COLUMN ${column}`);
@@ -514,15 +503,15 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     // separately, because ALTER TABLE cannot add several at once and one
     // already-exists must not skip the rest.
     for (const column of [
-      'position INTEGER NOT NULL DEFAULT 0',
+      "position INTEGER NOT NULL DEFAULT 0",
       // Due_at is epoch ms with local wall-clock meaning, matching
       // Calendar; NULL means no due date, which is the common case.
-      'due_at INTEGER',
-      'priority INTEGER NOT NULL DEFAULT 0',
+      "due_at INTEGER",
+      "priority INTEGER NOT NULL DEFAULT 0",
       // No REFERENCES clause: `PRAGMA foreign_keys` is never enabled on this
       // connection, so one would be decorative. The service deletes a list and
       // unfiles its todos in one transaction instead.
-      'list_id INTEGER',
+      "list_id INTEGER",
     ]) {
       try {
         this.db.exec(`ALTER TABLE todos ADD COLUMN ${column}`);
@@ -543,7 +532,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     // worse than renaming once here. RENAME COLUMN needs SQLite 3.25+, which
     // better-sqlite3 has; the catch makes the second run a no-op.
     try {
-      this.db.exec('ALTER TABLE bookmark_links RENAME COLUMN href TO url');
+      this.db.exec("ALTER TABLE bookmark_links RENAME COLUMN href TO url");
     } catch (err) {
       // Expected only when the rename already happened: the old column is
       // gone. Anything else is a real failure.
@@ -555,8 +544,8 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       // off, so it would be decorative. The service deletes a folder subtree
       // explicitly, in one transaction — see the note on deleteGroup, which is the
       // bug the todo dates work handed over.
-      'parent_id INTEGER',
-      'position INTEGER NOT NULL DEFAULT 0',
+      "parent_id INTEGER",
+      "position INTEGER NOT NULL DEFAULT 0",
     ]) {
       try {
         this.db.exec(`ALTER TABLE bookmark_groups ADD COLUMN ${column}`);
@@ -567,17 +556,13 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
       }
     }
     try {
-      this.db.exec(
-        'ALTER TABLE bookmark_links ADD COLUMN position INTEGER NOT NULL DEFAULT 0',
-      );
+      this.db.exec("ALTER TABLE bookmark_links ADD COLUMN position INTEGER NOT NULL DEFAULT 0");
     } catch (err) {
       if (!isAlreadyApplied(err, DUPLICATE_COLUMN)) throw err;
     }
 
     // Speeds up the subtree walk that deleteGroup and the cycle guard both do.
-    this.db.exec(
-      'CREATE INDEX IF NOT EXISTS idx_bookmark_groups_parent ON bookmark_groups(parent_id)',
-    );
+    this.db.exec("CREATE INDEX IF NOT EXISTS idx_bookmark_groups_parent ON bookmark_groups(parent_id)");
   }
 
   /** Step 5 — TOTP replay protection column. */
@@ -586,7 +571,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     // accepted. A verify is rejected when its step <= this, so a code cannot be
     // used twice within its window. NULL until the first successful verify.
     try {
-      this.db.exec('ALTER TABLE auth_user ADD COLUMN totp_last_step INTEGER');
+      this.db.exec("ALTER TABLE auth_user ADD COLUMN totp_last_step INTEGER");
     } catch (err) {
       if (!isAlreadyApplied(err, DUPLICATE_COLUMN)) throw err;
     }
@@ -669,11 +654,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    * its resolved source and its manifest are stored with it, as JSON.
    */
   private stepMarketplaceUrlApps() {
-    for (const column of [
-      "runtime TEXT NOT NULL DEFAULT 'native'",
-      'source TEXT',
-      'manifest TEXT',
-    ]) {
+    for (const column of ["runtime TEXT NOT NULL DEFAULT 'native'", "source TEXT", "manifest TEXT"]) {
       try {
         this.db.exec(`ALTER TABLE marketplace_apps ADD COLUMN ${column}`);
       } catch (err) {
@@ -691,7 +672,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    */
   private stepMarketplaceEntries() {
     try {
-      this.db.exec('ALTER TABLE marketplace_apps ADD COLUMN entries TEXT');
+      this.db.exec("ALTER TABLE marketplace_apps ADD COLUMN entries TEXT");
     } catch (err) {
       if (!isAlreadyApplied(err, DUPLICATE_COLUMN)) throw err;
     }
@@ -800,13 +781,11 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    */
   private stepGitRecentApp() {
     try {
-      this.db.exec('ALTER TABLE git_recent_repos ADD COLUMN app_id TEXT');
+      this.db.exec("ALTER TABLE git_recent_repos ADD COLUMN app_id TEXT");
     } catch (err) {
       if (!isAlreadyApplied(err, /duplicate column name/i)) throw err;
     }
-    this.db.exec(
-      "UPDATE git_recent_repos SET app_id = 'git-gui' WHERE app_id IS NULL",
-    );
+    this.db.exec("UPDATE git_recent_repos SET app_id = 'git-gui' WHERE app_id IS NULL");
   }
 
   /**
@@ -823,15 +802,13 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    */
   private stepRecentWritable() {
     try {
-      this.db.exec(
-        'ALTER TABLE recent_files ADD COLUMN writable INTEGER NOT NULL DEFAULT 0',
-      );
+      this.db.exec("ALTER TABLE recent_files ADD COLUMN writable INTEGER NOT NULL DEFAULT 0");
     } catch (err) {
       if (!isAlreadyApplied(err, /duplicate column name/i)) throw err;
     }
     // Also when the column was there already: a database that ran this step
     // when it backfilled every row as writable is set right by running it again.
-    this.db.exec('UPDATE recent_files SET writable = 0');
+    this.db.exec("UPDATE recent_files SET writable = 0");
   }
 
   /**
@@ -852,9 +829,7 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
   }
 
   private stepDropOldAuth() {
-    this.db.exec(
-      'DROP TABLE IF EXISTS auth_sessions; DROP TABLE IF EXISTS auth_user;',
-    );
+    this.db.exec("DROP TABLE IF EXISTS auth_sessions; DROP TABLE IF EXISTS auth_user;");
   }
 
   /** Step 6 — the one-time repairs. Their recurring causes are fixed in the services. */
@@ -889,12 +864,8 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
     if (check.total === 0) return;
     if (check.zeros === 0 && check.distinct_positions === check.total) return;
 
-    const rows = this.db
-      .prepare('SELECT id FROM todos ORDER BY position ASC, id ASC')
-      .all() as { id: number }[];
-    const update = this.db.prepare(
-      'UPDATE todos SET position = @position WHERE id = @id',
-    );
+    const rows = this.db.prepare("SELECT id FROM todos ORDER BY position ASC, id ASC").all() as { id: number }[];
+    const update = this.db.prepare("UPDATE todos SET position = @position WHERE id = @id");
     this.db.transaction(() => {
       rows.forEach((row, index) => {
         update.run({ position: index + 1, id: row.id });
@@ -911,24 +882,18 @@ export class DbService implements OnModuleInit, OnModuleDestroy {
    * than global, because order only means anything among siblings.
    */
   private backfillBookmarkPositions() {
-    const groups = this.db
-      .prepare(
-        'SELECT id, parent_id FROM bookmark_groups ORDER BY position ASC, id ASC',
-      )
-      .all() as { id: number; parent_id: number | null }[];
-    const links = this.db
-      .prepare(
-        'SELECT id, group_id FROM bookmark_links ORDER BY position ASC, id ASC',
-      )
-      .all() as { id: number; group_id: number }[];
+    const groups = this.db.prepare("SELECT id, parent_id FROM bookmark_groups ORDER BY position ASC, id ASC").all() as {
+      id: number;
+      parent_id: number | null;
+    }[];
+    const links = this.db.prepare("SELECT id, group_id FROM bookmark_links ORDER BY position ASC, id ASC").all() as {
+      id: number;
+      group_id: number;
+    }[];
     if (groups.length === 0 && links.length === 0) return;
 
-    const groupUpdate = this.db.prepare(
-      'UPDATE bookmark_groups SET position = @position WHERE id = @id',
-    );
-    const linkUpdate = this.db.prepare(
-      'UPDATE bookmark_links SET position = @position WHERE id = @id',
-    );
+    const groupUpdate = this.db.prepare("UPDATE bookmark_groups SET position = @position WHERE id = @id");
+    const linkUpdate = this.db.prepare("UPDATE bookmark_links SET position = @position WHERE id = @id");
     const nextIn = (seen: Map<number | null, number>, key: number | null) => {
       const next = (seen.get(key) ?? 0) + 1;
       seen.set(key, next);

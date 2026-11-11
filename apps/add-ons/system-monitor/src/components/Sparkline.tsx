@@ -1,4 +1,4 @@
-import { sparklinePoints } from '../lib/history'
+import { sparklinePoints } from "../lib/history";
 
 /**
  * A history trace, as inline SVG.
@@ -14,13 +14,13 @@ export function Sparkline({
   history,
   label,
 }: {
-  history: number[]
+  history: number[];
   /** For the accessible name — a bare trace is meaningless to a screen reader. */
-  label: string
+  label: string;
 }) {
-  const W = 200
-  const H = 28
-  const points = sparklinePoints(history, W, H)
+  const W = 200;
+  const H = 28;
+  const points = sparklinePoints(history, W, H);
 
   if (!points) {
     // Not enough samples yet. Said out loud rather than rendering an empty box,
@@ -29,11 +29,11 @@ export function Sparkline({
       <div className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface-variant flex h-[28px] items-center justify-center overflow-hidden border font-mono text-[9px]">
         collecting…
       </div>
-    )
+    );
   }
 
-  const latest = history[history.length - 1]
-  const peak = Math.max(...history)
+  const latest = history[history.length - 1];
+  const peak = Math.max(...history);
 
   return (
     <div className="rounded-control border-outline-variant bg-surface-container-lowest relative overflow-hidden border">
@@ -69,5 +69,5 @@ export function Sparkline({
         peak {peak.toFixed(0)}%
       </span>
     </div>
-  )
+  );
 }

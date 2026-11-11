@@ -12,21 +12,21 @@
  */
 
 export type TimerEntry = {
-  id: string
+  id: string;
   /** Optional name — "Tea", "Pasta". Empty is fine and common. */
-  label: string
+  label: string;
   /** Configured length, restored by Reset. */
-  durationMs: number
+  durationMs: number;
   /** Instant the countdown reaches zero. Non-null only while running. */
-  endAt: number | null
+  endAt: number | null;
   /** Remaining span while paused (and before the first start). */
-  pausedRemainingMs: number
-  running: boolean
+  pausedRemainingMs: number;
+  running: boolean;
   /** True once it has notified for this run — stops it firing twice. */
-  fired: boolean
-}
+  fired: boolean;
+};
 
-export const DEFAULT_TIMER_MS = 5 * 60 * 1000
+export const DEFAULT_TIMER_MS = 5 * 60 * 1000;
 
 export function createTimer(id: string, label: string, durationMs: number): TimerEntry {
   return {
@@ -37,7 +37,7 @@ export function createTimer(id: string, label: string, durationMs: number): Time
     pausedRemainingMs: durationMs,
     running: false,
     fired: false,
-  }
+  };
 }
 
 /**
@@ -50,37 +50,37 @@ export function createTimer(id: string, label: string, durationMs: number): Time
  */
 export function remainingMs(timer: TimerEntry, now: number): number {
   if (timer.running && timer.endAt !== null) {
-    return Math.min(timer.durationMs, Math.max(0, timer.endAt - now))
+    return Math.min(timer.durationMs, Math.max(0, timer.endAt - now));
   }
-  return timer.pausedRemainingMs
+  return timer.pausedRemainingMs;
 }
 
 export function isDue(timer: TimerEntry, now: number): boolean {
-  return timer.running && timer.endAt !== null && !timer.fired && now >= timer.endAt
+  return timer.running && timer.endAt !== null && !timer.fired && now >= timer.endAt;
 }
 
 /** Start (or resume): the remaining span becomes an end instant. */
 export function start(timer: TimerEntry, now: number): TimerEntry {
-  if (timer.running) return timer
-  const remaining = timer.pausedRemainingMs > 0 ? timer.pausedRemainingMs : timer.durationMs
+  if (timer.running) return timer;
+  const remaining = timer.pausedRemainingMs > 0 ? timer.pausedRemainingMs : timer.durationMs;
   return {
     ...timer,
     running: true,
     fired: false,
     endAt: now + remaining,
     pausedRemainingMs: remaining,
-  }
+  };
 }
 
 /** Pause: the end instant becomes a remaining span. The inverse of `start`. */
 export function pause(timer: TimerEntry, now: number): TimerEntry {
-  if (!timer.running || timer.endAt === null) return timer
+  if (!timer.running || timer.endAt === null) return timer;
   return {
     ...timer,
     running: false,
     endAt: null,
     pausedRemainingMs: Math.max(0, timer.endAt - now),
-  }
+  };
 }
 
 export function reset(timer: TimerEntry): TimerEntry {
@@ -90,21 +90,21 @@ export function reset(timer: TimerEntry): TimerEntry {
     endAt: null,
     pausedRemainingMs: timer.durationMs,
     fired: false,
-  }
+  };
 }
 
 /** Change the configured length. Refused while running — that is a Reset first. */
 export function setDuration(timer: TimerEntry, durationMs: number): TimerEntry {
-  if (timer.running) return timer
-  return { ...timer, durationMs, pausedRemainingMs: durationMs, fired: false }
+  if (timer.running) return timer;
+  return { ...timer, durationMs, pausedRemainingMs: durationMs, fired: false };
 }
 
 export function complete(timer: TimerEntry): TimerEntry {
-  return { ...timer, running: false, endAt: null, pausedRemainingMs: 0, fired: true }
+  return { ...timer, running: false, endAt: null, pausedRemainingMs: 0, fired: true };
 }
 
 /** Nothing sensible asks for a countdown longer than a day. */
-export const MAX_TIMER_MS = 24 * 60 * 60 * 1000
+export const MAX_TIMER_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Parse what the user typed into the custom-duration box.
@@ -119,34 +119,32 @@ export const MAX_TIMER_MS = 24 * 60 * 60 * 1000
  * Returns null for anything unusable, so the caller can simply refuse.
  */
 export function parseDurationInput(text: string): number | null {
-  const trimmed = text.trim()
-  if (trimmed === '') return null
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
 
-  if (trimmed.includes(':')) {
-    const parts = trimmed.split(':')
-    if (parts.length > 3) return null
-    if (!parts.every((p) => /^\d{1,3}$/.test(p.trim()))) return null
-    const numbers = parts.map((p) => Number(p.trim()))
+  if (trimmed.includes(":")) {
+    const parts = trimmed.split(":");
+    if (parts.length > 3) return null;
+    if (!parts.every((p) => /^\d{1,3}$/.test(p.trim()))) return null;
+    const numbers = parts.map((p) => Number(p.trim()));
     // The last two fields are minutes and seconds, so they are base-60; only the
     // leading field may exceed 59 ("90:00" is a legitimate ninety minutes).
-    const [h, m, s] = parts.length === 3 ? numbers : [0, ...numbers]
-    if (parts.length === 3 && (m > 59 || s > 59)) return null
-    if (parts.length === 2 && s > 59) return null
-    const ms = (h * 3600 + m * 60 + s) * 1000
-    if (ms <= 0 || ms > MAX_TIMER_MS) return null
-    return ms
+    const [h, m, s] = parts.length === 3 ? numbers : [0, ...numbers];
+    if (parts.length === 3 && (m > 59 || s > 59)) return null;
+    if (parts.length === 2 && s > 59) return null;
+    const ms = (h * 3600 + m * 60 + s) * 1000;
+    if (ms <= 0 || ms > MAX_TIMER_MS) return null;
+    return ms;
   }
 
-  const minutes = Number(trimmed)
-  if (!Number.isFinite(minutes) || minutes <= 0) return null
-  const ms = Math.round(minutes * 60_000)
-  if (ms <= 0 || ms > MAX_TIMER_MS) return null
-  return ms
+  const minutes = Number(trimmed);
+  if (!Number.isFinite(minutes) || minutes <= 0) return null;
+  const ms = Math.round(minutes * 60_000);
+  if (ms <= 0 || ms > MAX_TIMER_MS) return null;
+  return ms;
 }
 
 /** Notification body — names the timer when it has a name. */
 export function completionBody(timer: TimerEntry, formatted: string): string {
-  return timer.label
-    ? `“${timer.label}” (${formatted}) reached zero.`
-    : `Your ${formatted} countdown reached zero.`
+  return timer.label ? `“${timer.label}” (${formatted}) reached zero.` : `Your ${formatted} countdown reached zero.`;
 }

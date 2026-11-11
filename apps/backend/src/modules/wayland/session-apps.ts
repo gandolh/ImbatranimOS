@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { readFileSync } from 'fs';
+import { Injectable } from "@nestjs/common";
+import { readFileSync } from "fs";
 
 /** What `/proc/<pid>/stat` says about a process's groups. */
 export interface ProcGroups {
@@ -11,9 +11,9 @@ export interface ProcGroups {
 
 /** Parse `/proc/<pid>/stat`. The command name may hold spaces and parentheses. */
 export function parseStat(stat: string): ProcGroups | null {
-  const end = stat.lastIndexOf(')');
+  const end = stat.lastIndexOf(")");
   if (end < 0) return null;
-  const fields = stat.slice(end + 2).split(' ');
+  const fields = stat.slice(end + 2).split(" ");
   // state ppid pgrp session tty_nr ...
   const pgrp = Number(fields[2]);
   const session = Number(fields[3]);
@@ -24,7 +24,7 @@ export function parseStat(stat: string): ProcGroups | null {
 
 export function procGroups(pid: number): ProcGroups | null {
   try {
-    return parseStat(readFileSync(`/proc/${pid}/stat`, 'utf8'));
+    return parseStat(readFileSync(`/proc/${pid}/stat`, "utf8"));
   } catch {
     return null;
   }
@@ -39,10 +39,7 @@ export function procGroups(pid: number): ProcGroups | null {
  * (a session leader with a terminal, which an app started without job
  * control shares) or the backend's.
  */
-export function clientGroups(
-  pids: readonly number[],
-  own: number | null = ownGroup(),
-): number[] {
+export function clientGroups(pids: readonly number[], own: number | null = ownGroup()): number[] {
   const out = new Set<number>();
   for (const pid of pids) {
     const g = procGroups(pid);
@@ -55,16 +52,12 @@ export function clientGroups(
 
 let cachedOwnGroup: number | null | undefined;
 export function ownGroup(): number | null {
-  if (cachedOwnGroup === undefined)
-    cachedOwnGroup = procGroups(process.pid)?.pgrp ?? null;
+  if (cachedOwnGroup === undefined) cachedOwnGroup = procGroups(process.pid)?.pgrp ?? null;
   return cachedOwnGroup;
 }
 
 /** Signal each group; a group already gone is skipped. Returns the groups signalled. */
-export function signalGroups(
-  groups: readonly number[],
-  signal: NodeJS.Signals,
-): number[] {
+export function signalGroups(groups: readonly number[], signal: NodeJS.Signals): number[] {
   const done: number[] = [];
   for (const g of groups) {
     if (g <= 1) continue;
@@ -103,8 +96,7 @@ export class SessionApps {
 
   /** The group's leader exited; its group may still hold children. */
   exited(session: string, group: number): void {
-    if (liveGroups([group]).length === 0)
-      this.launched.get(session)?.delete(group);
+    if (liveGroups([group]).length === 0) this.launched.get(session)?.delete(group);
   }
 
   groups(session: string): number[] {

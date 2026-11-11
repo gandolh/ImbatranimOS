@@ -21,7 +21,7 @@ export interface Caller {
  * ordinary 401.
  */
 export class AuthenticationError extends Error {
-  override readonly name: string = 'AuthenticationError';
+  override readonly name: string = "AuthenticationError";
   readonly statusCode = 401;
 
   constructor(message: string, options?: { cause?: unknown }) {

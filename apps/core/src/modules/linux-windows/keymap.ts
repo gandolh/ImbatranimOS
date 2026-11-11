@@ -123,11 +123,11 @@ const KEYS: Record<string, number> = {
   F22: 192,
   F23: 193,
   F24: 194,
-}
+};
 
 /** The evdev code for a key, or undefined for one the table doesn't know. */
 export function evdevCode(code: string): number | undefined {
-  return KEYS[code]
+  return KEYS[code];
 }
 
 /** `MouseEvent.button` to Linux button codes (BTN_LEFT and on). */
@@ -137,8 +137,8 @@ const BUTTONS: Record<number, number> = {
   2: 0x111, // right
   3: 0x113, // back (BTN_SIDE)
   4: 0x114, // forward (BTN_EXTRA)
-}
+};
 
 export function evdevButton(button: number): number | undefined {
-  return BUTTONS[button]
+  return BUTTONS[button];
 }

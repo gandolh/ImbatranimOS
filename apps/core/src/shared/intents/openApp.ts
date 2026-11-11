@@ -1,21 +1,21 @@
-import { useWindowStore } from '../store/windowStore'
-import { recordRecentFile } from '../../lib/recentFiles'
-import { useIntentStore } from '../store/intentStore'
-import { APP_REGISTRY } from '../registry/registry'
-import { NON_DISABLEABLE } from '../registry/enabledApps'
-import { useAddonStore } from '../store/addonStore'
-import { isLinuxLauncher, launchLinuxApp } from '../../modules/linux-windows/launchers'
-import { focusIntoWindowSoon } from '../components/window/focusIntoWindow'
-import { ACTS_AS_USER } from '../../system/appInstance'
-import { grantFile } from '../../system/fileGrants'
-import type { SystemHttp } from '@imbatranim/ui'
+import { useWindowStore } from "../store/windowStore";
+import { recordRecentFile } from "../../lib/recentFiles";
+import { useIntentStore } from "../store/intentStore";
+import { APP_REGISTRY } from "../registry/registry";
+import { NON_DISABLEABLE } from "../registry/enabledApps";
+import { useAddonStore } from "../store/addonStore";
+import { isLinuxLauncher, launchLinuxApp } from "../../modules/linux-windows/launchers";
+import { focusIntoWindowSoon } from "../components/window/focusIntoWindow";
+import { ACTS_AS_USER } from "../../system/appInstance";
+import { grantFile } from "../../system/fileGrants";
+import type { SystemHttp } from "@imbatranim/ui";
 
 /**
  * The app that asked for an open: through its copy's `system.intents` (with
  * that copy's client), or through a notification action it wrote, which
  * outlives the copy and carries no client.
  */
-export type OpenRequester = { appId: string; http?: SystemHttp }
+export type OpenRequester = { appId: string; http?: SystemHttp };
 
 /**
  * Opens an app window with optional payload.
@@ -40,40 +40,38 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   // hidden app). Non-disableable core apps always open. Existing open windows
   // are unaffected — they render/close via the full registry elsewhere.
   if (useAddonStore.getState().isDisabled(appId) && !NON_DISABLEABLE.has(appId)) {
-    return ''
+    return "";
   }
 
-  const appConfig = APP_REGISTRY.find((app) => app.id === appId)
+  const appConfig = APP_REGISTRY.find((app) => app.id === appId);
   if (!appConfig) {
     // A stale id is a normal input, not a bug: notification history and recent
     // files outlive the add-on that raised them. Throwing broke the caller
     // mid-click; the protocol says refused is ''.
-    console.warn(`openApp: app "${appId}" is not in the registry`)
-    return ''
+    console.warn(`openApp: app "${appId}" is not in the registry`);
+    return "";
   }
 
   // A Linux app's Start entry starts the program; its windows open on their
   // own. Open with hands it the file the payload names.
   if (isLinuxLauncher(appId)) {
-    const p = payload as { openPath?: unknown; root?: unknown } | null | undefined
+    const p = payload as { openPath?: unknown; root?: unknown } | null | undefined;
     const file =
-      typeof p?.openPath === 'string' && typeof p.root === 'string'
-        ? { root: p.root, path: p.openPath }
-        : undefined
-    void launchLinuxApp(appId, undefined, file)
-    return ''
+      typeof p?.openPath === "string" && typeof p.root === "string" ? { root: p.root, path: p.openPath } : undefined;
+    void launchLinuxApp(appId, undefined, file);
+    return "";
   }
 
   // The OS records "file X opened with app Y" here, at the one choke point
   // every launcher funnels through. File Manager used to make this
   // call itself, per target app — but attributing a recent to another app is
   // exactly what a scoped capability must forbid, so the shell owns it.
-  const files = filesIn(payload)
-  const file = files.opened
+  const files = filesIn(payload);
+  const file = files.opened;
   // An open an app made is recorded with its own token, which records only
   // the app's own files, so one app opening another records nothing.
   if (file && (!by || (by.http && by.appId === appId))) {
-    recordRecentFile(file.root, file.path, appId, by?.http)
+    recordRecentFile(file.root, file.path, appId, by?.http);
   }
 
   // The OS opening a file with an app gives it that file, for that window
@@ -86,7 +84,7 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   const give = (windowId: string) => {
     // An app's word with no copy to hand on from (a notification action)
     // gives nothing: the app reopens its own recent itself if it is one.
-    if (ACTS_AS_USER.has(appId) || (by && !by.http)) return
+    if (ACTS_AS_USER.has(appId) || (by && !by.http)) return;
     for (const given of files.all) {
       void grantFile({ appId, instanceId: windowId }, given, {
         client: by?.http,
@@ -95,50 +93,45 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
         // folder beside the file, to one that declares it attaches there.
         withFolder: !by && appConfig.readsOpenedFolder === true,
         withAssets: !by && appConfig.attachesUnderAssets === true,
-      })
+      });
     }
-  }
+  };
 
-  const windowStore = useWindowStore.getState()
-  const intentStore = useIntentStore.getState()
+  const windowStore = useWindowStore.getState();
+  const intentStore = useIntentStore.getState();
 
   // Check if single-instance app is already open
   if (!appConfig.multiInstance) {
-    const existingWindow = windowStore.windows.find((w) => w.appId === appId)
+    const existingWindow = windowStore.windows.find((w) => w.appId === appId);
     if (existingWindow) {
       // Focus first (it switches to the window's workspace), then show: focus
       // alone never un-minimizes, so relaunching a minimized app delivered the
       // intent to a window nobody could see. The command palette's
       // order.
-      windowStore.focusWindow(existingWindow.id)
-      if (!existingWindow.isVisible) windowStore.showWindow(existingWindow.id)
-      give(existingWindow.id)
+      windowStore.focusWindow(existingWindow.id);
+      if (!existingWindow.isVisible) windowStore.showWindow(existingWindow.id);
+      give(existingWindow.id);
       if (payload !== undefined) {
-        intentStore.setIntent(existingWindow.id, payload)
+        intentStore.setIntent(existingWindow.id, payload);
       }
-      focusIntoWindowSoon(existingWindow.id)
-      return existingWindow.id
+      focusIntoWindowSoon(existingWindow.id);
+      return existingWindow.id;
     }
   }
 
   // Open new window
-  const windowId = windowStore.openWindow(
-    appId,
-    appConfig.name,
-    appConfig.defaultSize,
-    appConfig.minSize
-  )
+  const windowId = windowStore.openWindow(appId, appConfig.name, appConfig.defaultSize, appConfig.minSize);
 
-  give(windowId)
+  give(windowId);
   // Stash payload if provided
   if (payload !== undefined) {
-    intentStore.setIntent(windowId, payload)
+    intentStore.setIntent(windowId, payload);
   }
 
-  return windowId
+  return windowId;
 }
 
-type GivenFile = { root: string; path: string }
+type GivenFile = { root: string; path: string };
 
 /**
  * The files an open names: `{ root, openPath }`, the one file it opens, and a
@@ -146,15 +139,13 @@ type GivenFile = { root: string; path: string }
  * (Files' Compare, Git GUI's Compare with HEAD, whose left side is text).
  */
 function filesIn(payload: unknown): { opened: GivenFile | null; all: GivenFile[] } {
-  if (typeof payload !== 'object' || payload === null) return { opened: null, all: [] }
-  const p = payload as Record<string, unknown>
+  if (typeof payload !== "object" || payload === null) return { opened: null, all: [] };
+  const p = payload as Record<string, unknown>;
   const pair = (root: string, path: string): GivenFile | null =>
-    typeof p[root] === 'string' && typeof p[path] === 'string'
-      ? { root: p[root], path: p[path] }
-      : null
-  const opened = pair('root', 'openPath')
-  const all = [opened, pair('leftRoot', 'leftPath'), pair('rightRoot', 'rightPath')].filter(
-    (f): f is GivenFile => f !== null
-  )
-  return { opened, all }
+    typeof p[root] === "string" && typeof p[path] === "string" ? { root: p[root], path: p[path] } : null;
+  const opened = pair("root", "openPath");
+  const all = [opened, pair("leftRoot", "leftPath"), pair("rightRoot", "rightPath")].filter(
+    (f): f is GivenFile => f !== null,
+  );
+  return { opened, all };
 }

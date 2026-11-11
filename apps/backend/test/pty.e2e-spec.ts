@@ -6,6 +6,7 @@ import { WebSocket } from "ws";
 import { PtyGateway } from "../src/modules/pty/pty.gateway";
 import { LocalIdentityService } from "../src/modules/auth/ws-auth";
 import { UpgradeRoutes } from "../src/upgrade-routes";
+import { WaylandGateway } from "../src/modules/wayland/wayland.gateway";
 
 /**
  * End-to-end proof of the terminal gateway against a REAL http server and a
@@ -35,6 +36,7 @@ describe("PtyGateway (e2e)", () => {
         PtyGateway,
         UpgradeRoutes,
         { provide: LocalIdentityService, useValue: identityMock },
+        { provide: WaylandGateway, useValue: { x11Display: () => null } },
         {
           provide: ConfigService,
           useValue: {

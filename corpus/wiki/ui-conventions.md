@@ -12,7 +12,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 ## 1. The import rule
 
 1. Import **only** `@imbatranim/ui`, `lucide-react`, `react`, `@tanstack/react-query`, and your own declared deps. Since **the system-handle seam (2026-08-06)** the split is absolute
-   (`apps/add-ons/calculator/eslint.config.js:37-61`): `@imbatranim/core` is **type-only** — a value import from it is an eslint error, since values are what would couple an app
+   (the `imbatranimos/add-on-boundary` block of the root `eslint.config.mjs`; each add-on had its own config before 2026-11-11): `@imbatranim/core` is **type-only** — a value import from it is an eslint error, since values are what would couple an app
    bundle to the OS; in practice you import it once, for `AddonManifest`/`AppConfig`. Deep paths, sibling add-ons and `../../core/*` escapes are blocked too.
 2. Never re-implement anything on the SDK surface — **read `packages/ui/src/index.ts`**, don't trust a copy of the list: `cn`; the kit (`Button`, `Checkbox`, `Dialog`, `Input`,
    `ScrollArea`, `Select`, `Separator`, `Tooltip`, `ContextMenu`, `ConfirmDialog`/`useConfirm`, `PromptDialog`/`usePrompt`, `UnsavedChangesDialog`, `FileConflictDialog`/`useFileConflict`); pure hooks

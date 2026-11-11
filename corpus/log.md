@@ -6212,7 +6212,7 @@ Four briefs for the owner's calls of 2026-11-09 and 2026-11-10, written from a
 read of the code and measurements on a scratch copy of the TypeScript
 workspaces. [85](briefs/done/85-base-ui-to-1-9-0.md) bumps Base UI to 1.9.0,
 exact (the lockfile resolves 1.6.0 today);
-[86](briefs/todo/86-the-house-style-harness.md) adds the house-style harness
+[86](briefs/done/86-the-house-style-harness.md) adds the house-style harness
 (Prettier at 120 touches every web file, a NestJS carve-out, the typed rules,
 `check` and `check:fast`, `.claude/rules/`, a root `CLAUDE.md`);
 [87](briefs/todo/87-base-ui-by-the-conventions.md) audits the UI against the
@@ -6232,3 +6232,13 @@ Win7". No Tailwind brief (core is on Tailwind v4 already) and no server brief
 in the lockfile (utils 0.5.0), no source change; typecheck, lint and the ui
 and core tests pass. Not run: the build, `docker build`, the screenshots and
 the hand walk of the seven screens. Owner steps: push, then deploy.
+
+## [2026-11-11] done | Brief 86: the house style and the quality harness
+
+[Brief 86](briefs/done/86-the-house-style-harness.md) built in local commits (1.294.0 to 1.304.0): the vendored
+`house-style` 1.1.0 and its pins (`5699a9a`), the Prettier config (`6e90f1f`), the reformat (`645d06d`, 866 files) and its
+blame-ignore entry, one web tsconfig base with `noImplicitOverride`, the root ESLint config and its fixes, the gate
+(`check`, `check:fast`, knip, dependency-cruiser, `check-base-ui` warn-only), no-console, the root `CLAUDE.md` and the
+area rules. The NestJS backend is a carve-out. Measured on adoption: 93 `!` in source fixed, 34 promise findings, 37 type
+imports, one enum; knip accepts 6 dead core files and 160 unused exports; 57 import cycles warn. Owner steps:
+`git config blame.ignoreRevsFile .git-blame-ignore-revs`, push, then the deploy.

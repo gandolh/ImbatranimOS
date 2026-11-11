@@ -154,3 +154,6 @@ Two briefs from a research+grill session ("add a web navigator"). Both **todo**.
   node_modules); de-stale the `deps`/`proddeps` manifest lists (7-of-24 rot —
   the real "contained" blocker); host tooling = Node/npm via `npm install
   --ignore-scripts`. Prod path unchanged. Unblocks the proxied browser (2026-10-04).
+
+On 2026-11-04 the owner's grill turned the earlier todos into briefs 37-44
+and dropped the window-zoom check.

@@ -1,6 +1,6 @@
 ---
 summary: Dated snapshot (2026-11-06) of imbatranimOS, per area — identity is the machine's own single-owner sign-in (Ward dropped 2026-10-07), the desktop shell and its keyboard focus (fixed 2026-10-27/28), the add-ons and the system-handle seam, the Marketplace (URL installs, suites, kit apps) and the office apps moved to imbatranim-office (2026-10-28), the proxied Browser, the docs site; the two themes, Apricot by default and Classic (built 2026-11-03, not deployed); the Linux apps layer (briefs 01-06, built on its own branch and merged 2026-11-03, not deployed; detail in status-linux-apps-layer.md); 45-47 done 2026-11-06 (the phone's keyboard types into a Linux app, ready for test; Open with offers Linux apps; Linux apps follow the mode and accent, both ready for deploy); briefs 22-30 and 32 and 34-36 built 2026-11-03/04 on branch claude/tender-franklin-h8lc35 (PR 2, merged: the dev image, five fixes, startIn and on-demand servers for kit apps (kit 1.2.0), a turbo cap, four Linux apps follow-ups); 33 done 2026-11-06 (Linux windows sharp on HiDPI screens, ready for deploy; the scale capped at 2 the same day); 39 done 2026-11-06 (Linux apps' sound in the tab, the host as each session's sound server, ready for deploy); 40 done 2026-11-06 (a tray volume and mute over all sound, kit 1.3.0, ready for deploy); 43 done 2026-11-06 (Settings → Updates for Linux apps, the pin moved at runtime with Go back, ready for test); 31 done 2026-11-05 (X11 apps through Xwayland, which comes with the first app that speaks X11); the theme follow-ups 16-21 are done; briefs 37-44 written 2026-11-04 from the last open todos, 37, 38, 41, 42 and 44 done 2026-11-05 (production's own Compose profile; a crashed desktop layer hides itself; plain-text copy and paste with Linux apps; a session bus with notifications; the VPS cap's numbers and Linux apps first under it); what the owner owes and where the history lives.
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 # Status — 2026-11-03
@@ -13,6 +13,9 @@ briefs reset) are not pushed. The reset commit is version 1.67.0. Brief numberin
 restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 
 ## By area
+
+- **The house style and the gate** (2026-11-11, brief 86, local commits, not deployed). Prettier at 120, one root ESLint config, one web tsconfig base, `npm run check` and `check:fast`; the backend keeps decorators and TypeScript 5.9.
+  Warnings left: `!` in tests, `process.env` in the backend, 57 import cycles, `check-base-ui`. See [decisions-house-style.md](decisions-house-style.md).
 
 - **Identity** (2026-10-07). One sign-in, the machine's own, everywhere: a
   single owner claims the machine on first visit, gated by `SETUP_TOKEN` where
@@ -189,9 +192,6 @@ None open. The last, xterm's Shift+Insert (it pasted PRIMARY, which the host did
 The imbatranim-apps todos were promoted to briefs 63-76 on 2026-11-06 (their
 questions stay in each todo). Briefs 48 and 49 came from the last two Linux apps todos the same day.
 Briefs 77, 80 and 81 (2026-11-09, `6968428`, `7e79924` and `95b331d`, ready for deploy): a restore runs the data moves at once; set-aside data asks the owner at sign-in (download as `.tar.gz` or clean out); a lone `.gz`, `.xz` or `.bz2` unpacks beside itself and Extract to… starts in the archive's folder (kit 1.8.0). Brief 82 (2026-11-09, `a857f57`, ready for deploy): the sandboxed URL app path is retired; a version 1 `imbatranim.json` is refused at the check, and a leftover install lists as "No longer supported" with Uninstall only (game-engine `2de99ac6` drops Hollow's prebuilt copy). Brief 85 (2026-11-10, `dcdb648`, 1.293.0, ready for deploy): Base UI pinned at 1.9.0 in the kit and the desktop, one lockfile copy, no source change; the seven-screen walk is not done.
-
-On 2026-11-04 the owner's grill turned the earlier todos into briefs 37-44
-and dropped the window-zoom check.
 
 ## History
 

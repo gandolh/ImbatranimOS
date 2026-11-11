@@ -95,6 +95,10 @@ pivot-era and iso-era pages) holds the locked calls.
 
 ## Project invariants (load-bearing, checked when grilling briefs)
 
+The repo-wide hard rules, the commands and the places that mislead are in the root
+[CLAUDE.md](../CLAUDE.md), which Claude Code loads in every session; the list below is what
+a brief is checked against.
+
 - **The OS is real, not simulated**: terminal = real PTY, files = real FS.
   Anything that fakes the system is off-soul.
 - **The shell user is `imbatranim`, no sudo by default** — no brief may

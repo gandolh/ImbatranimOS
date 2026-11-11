@@ -209,3 +209,60 @@ Run `npm run version:bump -- --stage` before every `git commit`, never before `-
 - **imbatranim-apps vendors `packages/ui`** through `kit:sync` at a commit. The reformat rewrites every kit file, so its next sync shows a whole-file diff, and that repo (single quotes, Prettier of its own) takes the same house-style move in its own set. Hand the owner the reformat commit's hash: `kit:sync` should run at that commit or later, and that repo's `.prettierignore` must list its `vendor/` folder.
 - The kit's public props do not change here, so `SHARED_KIT_VERSION` stays at 1.
 - Brief 88 builds on the reformatted tree and the `check` gate.
+
+## Outcome (2026-11-11)
+
+Built in local commits on `main`, not pushed. In order: `5699a9a` vendor house-style 1.1.0 and pin its tools (1.294.0),
+`6e90f1f` the Prettier config and the format scripts, `645d06d` **`style: format with Prettier`** (the reformat, 866
+files, 1.296.0; the version bump rides in it), `9701873` the blame-ignore entry, `89c43bf` the tests that read source
+text, `06c077c` the terminal gateway's e2e stub, `adac528` the tsconfig base and `noImplicitOverride`, `3e73b1b` the ESLint
+config and its fixes, `341a73d` the gate, `418e861` no-console, `29a6713` the root `CLAUDE.md` and the area rules.
+
+**Reformat acceptance.** The esbuild bundle compare over 917 files (CSS through the `css` loader, JSON parsed) differs in
+5 files, all JSX text Prettier split with `{" "}` (`Browser.tsx`, `BackupSettings.tsx`, `MarketplaceSettings.tsx`,
+`StorageSettings.tsx`, `apps/docs` `Diagram.tsx`): the rendered text is the same. The two HTML files changed one CSS
+shorthand (`host.html`). The first reformat missed `apps/*/src/modules/marketplace/` because `.prettierignore` listed
+`marketplace/` unanchored; it was caught before anything was recorded and the commits rebuilt (anchored `/marketplace/`).
+Three tests parsed source text with single quotes (the appearance table, `index.css` imports and token selectors); they
+now match double quotes (`89c43bf`).
+
+**Checks.** typecheck 19/19, `npm run lint` 0 errors, `npx prettier --check .` and `house-style:sync -- --check` pass,
+`check:conventions` exits 0, `npm run build` (turbo build) 38 s, backend jest 74 suites / 1097 tests and e2e 20 / 223 pass,
+web vitest passes at `--concurrency=2`. **`npm run check` exited 1 in three full runs**, each time on vitest 5 s timeouts
+in the "a save over a file that changed on disk" tests (notepad once, code-editor twice) while the shared machine ran at
+a load average of 20-28; both files pass alone in under 4 s. Deliberate `enum`, `!`, `console.log`, `// TODO:` and
+`export default` each fail `npm run lint` (exit 1). Timings: `check:fast` with one file changed 27.6 s cold, 6.3 s warm;
+`npm run lint` 80-110 s (loaded machine); `check` 3-4 min until it failed.
+
+**ESLint, before and after** (house config on the first run, then the checked-in one). Before: `!` in source 93, in
+tests 288 (warning); `vitest/expect-expect` 67; `process.env` 46 source + 4 tests; type-import style 29 tests + 8
+side-effects; `no-console` 22 source + 12 tests; floating promises 18 + 3; misused promises 16; unnecessary assertion 31;
+`unbound-method` 15; better-tailwindcss 4; `no-useless-assignment` 3; `preserve-caught-error` 2; enum, default export,
+`no-explicit-any` 2, `valid-title`, `no-standalone-expect`, switch exhaustiveness, `no-warning-comments`
+(1 each; the latter was the word "Todo" in a comment). After: 0 errors; warnings are `!` in tests 288, backend
+`process.env` 46, and the old `exhaustive-deps` 1. Findings left and why: `n/no-process-env` warns in the backend (18
+files read the environment themselves); 20 web `console` calls carry a dated `eslint-disable-next-line` (no client
+logger); two classes (`custom-scrollbar`, `md-preview`) are plain CSS, so the Tailwind rule ignores them by name;
+`no-unnecessary-type-assertion` is off until `noUncheckedIndexedAccess` is on.
+
+**Checkers.** `check-base-ui` (warn-only): 16 findings (rule 3 x12, rule 5 x2, rule 9 x2). `check-structure` is not wired
+(NestJS): its dry run found 83 (rule 1 x4, rule 2 x1, rule 3 x45, rule 6 x2, rule 11 x31). knip: 0 errors after config;
+159 unused exports and 43 unused types as warnings; 6 dead core files, 3 undeclared-but-used dependencies and 3 unused
+dependencies are accepted in `knip.config.js`. dependency-cruiser: 57 cycles, `no-circular` warns.
+
+**Deviations.** The brief's one reformat commit plus its follow-up were redone once (above). `check-structure` stays
+unwired as the brief says. `.claude/rules/backend.md` is the file's name here (the skill says `server.md`). The brief's
+"fix the two files `format:check` reports today" is moot: the reformat covers `Desktop.test.tsx` and Markdown is ignored.
+The `engine-strict` line of the skill's `.npmrc` is left out; `.npmrc` has `save-exact=true` only. Installing the pins
+moved the backend's runtime `zod` from 4.4.3 to 4.6.7 (knip needs `^4.6.5`, and npm hoists one copy); its tests pass.
+The backend's jest now compiles with the root's TypeScript 6.0.3 while `nest build` and `tsc` use its own 5.9.3, and its
+tsconfig names `types`. Four small fixes outside the lint list: the pty e2e test gets its Wayland stub (it already failed
+before this brief), `HttpProxyMethod` is an `as const` object, `App` is a named export, and `pty-session`'s `any[]` is
+`unknown[]`. Hooks: the live session check waits for the plugin update.
+
+**Owner questions** (on the board): write the backend's TypeScript 6 / ESLint 10 brief now? Keep `.npmrc`'s
+`save-exact=true` (existing ranges stay for a later sweep)? Also: a client logger for the web `console` calls, and
+whether to clean up the dead core files and unused exports knip lists.
+
+**Hand-off.** The reformat commit is `645d06d0e01514bf11049c96993baa667c6da14d`; imbatranim-apps runs `kit:sync` at it or
+later and lists its own `vendor/` in `.prettierignore`. `SHARED_KIT_VERSION` stays 1.

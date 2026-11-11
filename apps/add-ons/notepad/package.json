@@ -29,7 +29,6 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
-    "prettier-plugin-tailwindcss": "^0.8.0",
     "@types/react-dom": "^19.2.3",
     "jsdom": "^27.4.0",
     "react-dom": "^19.2.5",

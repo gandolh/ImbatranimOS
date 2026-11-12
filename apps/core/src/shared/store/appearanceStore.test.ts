@@ -63,6 +63,7 @@ describe("the appearance store", () => {
       mode: "light",
       accents: { apricot: "apricot", classic: "crimson" },
     });
+    expect(useAppearanceStore.getState().modePreference).toBe("light");
     expect(setItem).not.toHaveBeenCalled();
   });
 
@@ -81,6 +82,7 @@ describe("the appearance store", () => {
         state: {
           theme: "apricot",
           mode: "light",
+          modePreference: "light",
           accents: { apricot: "apricot", classic: "cobalt" },
         },
         version: 1,
@@ -152,6 +154,99 @@ describe("the appearance store", () => {
     });
     expect(root.getAttribute("data-os-theme")).toBe("classic");
     expect(root.getAttribute("data-theme")).toBe("light");
+  });
+});
+
+/** A matchMedia whose dark answer can be flipped, with the listeners it was given. */
+function mockDevice(dark: boolean) {
+  const listeners = new Set<() => void>();
+  let isDark = dark;
+  const mql = {
+    get matches() {
+      return isDark;
+    },
+    addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+    removeEventListener: (_: string, fn: () => void) => listeners.delete(fn),
+  };
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => mql),
+  );
+  window.matchMedia = globalThis.matchMedia;
+  return {
+    set(next: boolean) {
+      isDark = next;
+      listeners.forEach((fn) => fn());
+    },
+  };
+}
+
+describe("the System mode", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    // @ts-expect-error jsdom has no matchMedia of its own
+    delete window.matchMedia;
+  });
+
+  it("paints light on a first visit, even on a dark device", async () => {
+    mockDevice(true);
+    const { useAppearanceStore, applyAppearance } = await load();
+    expect(useAppearanceStore.getState().modePreference).toBe("light");
+    applyAppearance(useAppearanceStore.getState());
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+  });
+
+  it("follows a dark device once System is chosen, and a change event flips it", async () => {
+    const device = mockDevice(true);
+    const { useAppearanceStore, applyAppearance, watchSystemMode } = await load();
+    const stop = watchSystemMode();
+
+    useAppearanceStore.getState().setModePreference("system");
+    expect(useAppearanceStore.getState().mode).toBe("dark");
+    applyAppearance(useAppearanceStore.getState());
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+
+    device.set(false);
+    expect(useAppearanceStore.getState().mode).toBe("light");
+    applyAppearance(useAppearanceStore.getState());
+    // data-theme is the painted mode, never "system".
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    expect(useAppearanceStore.getState().modePreference).toBe("system");
+
+    // An explicit choice stops following the device.
+    useAppearanceStore.getState().setModePreference("dark");
+    device.set(false);
+    expect(useAppearanceStore.getState().mode).toBe("dark");
+    stop();
+  });
+
+  it("keeps an old saved light or dark exactly as it was", async () => {
+    mockDevice(true);
+    for (const saved of ["light", "dark"] as const) {
+      localStorage.setItem(
+        APPEARANCE,
+        JSON.stringify({
+          state: { theme: "classic", mode: saved, accents: { apricot: "sky", classic: "signal" } },
+          version: 1,
+        }),
+      );
+      const { useAppearanceStore, setItem } = await load();
+      expect(useAppearanceStore.getState().mode).toBe(saved);
+      expect(useAppearanceStore.getState().modePreference).toBe(saved);
+      expect(setItem).not.toHaveBeenCalled();
+    }
+  });
+
+  it("remembers System across a reload and resolves it against the device then", async () => {
+    mockDevice(false);
+    const first = await load();
+    first.useAppearanceStore.getState().setModePreference("system");
+    expect(written(first.setItem, APPEARANCE).at(-1)).toMatchObject({ state: { modePreference: "system" } });
+
+    mockDevice(true);
+    const second = await load();
+    expect(second.useAppearanceStore.getState().modePreference).toBe("system");
+    expect(second.useAppearanceStore.getState().mode).toBe("dark");
   });
 });
 

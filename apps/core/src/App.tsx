@@ -5,7 +5,7 @@ import { useCurrentWallpaper } from "./shared/store/wallpaperStore";
 import { setMinSizeResolver, useWindowStore } from "./shared/store/windowStore";
 import { APP_REGISTRY } from "./shared/registry/registry";
 import { usePaletteStore } from "./shared/store/paletteStore";
-import { useAppearanceStore, applyAppearance } from "./shared/store/appearanceStore";
+import { useAppearanceStore, applyAppearance, watchSystemMode } from "./shared/store/appearanceStore";
 import { CommandPalette } from "./shared/components/CommandPalette";
 import { ToastHost } from "./shared/components/notifications";
 import { BackgroundServices } from "./shared/components/BackgroundServices";
@@ -33,6 +33,9 @@ export function App() {
   useEffect(() => {
     applyAppearance({ theme, mode, accents });
   }, [theme, mode, accents]);
+
+  // While System is chosen, the device's colour scheme sets the mode.
+  useEffect(() => watchSystemMode(), []);
 
   // Installed marketplace apps join the registry. A failure only
   // means they are missing from Start until the next load; Settings retries.

@@ -29,6 +29,7 @@ beforeEach(() => {
   useAppearanceStore.setState({
     theme: "apricot",
     mode: "light",
+    modePreference: "light",
     accents: { apricot: "sky", classic: "cobalt" },
   });
   useWallpaperStore.setState({ wallpapers: { apricot: "plain", classic: "grid" } });
@@ -135,5 +136,13 @@ describe("Appearance", () => {
     act(() => radios(group("Mode"))[1].click());
     expect(useAppearanceStore.getState().mode).toBe("dark");
     expect(checked(group("Mode"))).toEqual(["Dark"]);
+  });
+
+  it("offers Light, Dark and System, and System is chosen without painting 'system'", () => {
+    expect(radios(group("Mode")).map((r) => r.textContent)).toEqual(["Light", "Dark", "System"]);
+    act(() => radios(group("Mode"))[2].click());
+    expect(useAppearanceStore.getState().modePreference).toBe("system");
+    expect(checked(group("Mode"))).toEqual(["System"]);
+    expect(["light", "dark"]).toContain(useAppearanceStore.getState().mode);
   });
 });

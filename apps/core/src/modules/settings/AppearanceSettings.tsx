@@ -1,12 +1,12 @@
 import { useId, type CSSProperties, type ReactNode } from "react";
-import { Check, Image, Moon, Sun } from "lucide-react";
+import { Check, Image, Monitor, Moon, Sun } from "lucide-react";
 import { Radio, RadioGroup } from "@imbatranim/ui";
 import { cn } from "../../lib/cn";
 import {
   ACCENT_PRESETS,
   THEME_IDS,
   useAppearanceStore,
-  type Mode,
+  type ModePreference,
   type ThemeId,
 } from "../../shared/store/appearanceStore";
 import { useCurrentWallpaper, useWallpaperStore } from "../../shared/store/wallpaperStore";
@@ -14,9 +14,10 @@ import { WALLPAPERS, wallpaperById } from "../../shared/components/desktop/wallp
 
 const THEME_NAMES: Record<ThemeId, string> = { apricot: "Apricot", classic: "Classic" };
 
-const MODES: { id: Mode; name: string; icon: typeof Moon }[] = [
+const MODES: { id: ModePreference; name: string; icon: typeof Moon }[] = [
   { id: "light", name: "Light", icon: Sun },
   { id: "dark", name: "Dark", icon: Moon },
+  { id: "system", name: "System", icon: Monitor },
 ];
 
 const FOCUS_RING = "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset";
@@ -33,7 +34,8 @@ export function AppearanceSettings() {
   const mode = useAppearanceStore((s) => s.mode);
   const accent = useAppearanceStore((s) => s.accents[s.theme]);
   const setTheme = useAppearanceStore((s) => s.setTheme);
-  const setMode = useAppearanceStore((s) => s.setMode);
+  const modePreference = useAppearanceStore((s) => s.modePreference);
+  const setModePreference = useAppearanceStore((s) => s.setModePreference);
   const setAccent = useAppearanceStore((s) => s.setAccent);
   const wallpaper = useCurrentWallpaper();
   const setWallpaper = useWallpaperStore((s) => s.setWallpaper);
@@ -46,10 +48,10 @@ export function AppearanceSettings() {
         ))}
       </Group>
 
-      <Group label="Mode" value={mode} onValueChange={setMode} className="flex gap-3">
+      <Group label="Mode" value={modePreference} onValueChange={setModePreference} className="flex gap-3">
         {MODES.map((m) => {
           const Icon = m.icon;
-          const chosen = mode === m.id;
+          const chosen = modePreference === m.id;
           return (
             <Option
               key={m.id}

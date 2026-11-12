@@ -1,8 +1,8 @@
 /// <reference types="node" />
 import { readFileSync } from "fs";
 import { join } from "path";
-import { describe, expect, it } from "vitest";
-import { ACCENT_PRESETS, type Mode, type ThemeId } from "./shared/store/appearanceStore";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ACCENT_PRESETS, MODE_PREFERENCES, resolveMode, type Mode, type ThemeId } from "./shared/store/appearanceStore";
 
 /**
  * WCAG contrast over the theme values: the token blocks in index.css and the
@@ -58,6 +58,21 @@ const ACCENT_TEXT_SURFACES = [
 
 const MODES: Mode[] = ["light", "dark"];
 const AA = 4.5;
+
+describe("the modes the contrast checks cover", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("are every mode a preference can paint, System included", () => {
+    const painted = new Set<Mode>();
+    for (const preference of MODE_PREFERENCES) {
+      for (const dark of [false, true]) {
+        vi.stubGlobal("window", { matchMedia: () => ({ matches: dark }) });
+        painted.add(resolveMode(preference));
+      }
+    }
+    expect([...painted].sort()).toEqual([...MODES].sort());
+  });
+});
 
 describe("Apricot", () => {
   for (const mode of MODES) {

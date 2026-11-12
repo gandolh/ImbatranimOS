@@ -3,5 +3,90 @@
   "web": ["apps/core/src", "packages/ui/src", "apps/add-ons/*/src"],
   "server": ["apps/backend/src"],
   "shared": [],
-  "stylesheet": "index.css"
+  "stylesheet": "index.css",
+  "exceptions": [
+    {
+      "check": "base-ui",
+      "rule": 3,
+      "path": "packages/ui/src/components",
+      "reason": "The kit is the one ui folder: wrappers live here (Q59) and core's components/ui re-exports them. Add-ons and core import no Base UI, which is stricter than the skill (ui-conventions.md, rules 1 and 4)."
+    },
+    {
+      "check": "base-ui",
+      "rule": 5,
+      "path": "packages/ui/src/theme.css",
+      "reason": "The kit's token file, shared on purpose with marketplace kit apps; apps/core/src/index.css imports it and is the desktop's one stylesheet."
+    },
+    {
+      "check": "base-ui",
+      "rule": 5,
+      "path": "apps/add-ons/notepad/src/lib/highlight.css",
+      "reason": "Syntax colouring for the Markdown preview, loaded with Notepad's lazy chunk only so the desktop does not pay for it; every colour is a token."
+    },
+    {
+      "check": "base-ui",
+      "rule": 13,
+      "path": "apps/core/src/shared/components/notifications/ToastHost.tsx",
+      "reason": "A view of notificationStore, the notification centre (sticky errors, 6 s auto-dismiss, click-to-open, do-not-disturb); Base UI's Toast would duplicate the store. notify() stays the one way in."
+    },
+    {
+      "check": "base-ui",
+      "rule": 13,
+      "path": "apps/core/src/shared/components/taskbar/StartMenu.tsx",
+      "reason": "A launcher with a search field, a pinned grid and an A-Z list (decisions-themes.md, 2026-11-06), not a Base UI Menu."
+    },
+    {
+      "check": "base-ui",
+      "rule": 13,
+      "path": "apps/core/src/shared/components/CommandPalette.tsx",
+      "reason": "A key-driven overlay: the dialog is the kit's PaletteDialog on Base UI; the list inside is hand-built until the palette moves onto Autocomplete, a later choice."
+    },
+    {
+      "check": "base-ui",
+      "rule": 13,
+      "path": "apps/core/src/shared/components/switcher/AltTabSwitcher.tsx",
+      "reason": "A key-driven overlay held open by the Alt key; no Base UI part matches."
+    },
+    {
+      "check": "base-ui",
+      "rule": 13,
+      "path": "apps/add-ons/media-player/src/components/Timebar.tsx",
+      "reason": "A seek bar with a hover preview and a buffered range; Base UI's Slider has no equivalent."
+    },
+    {
+      "check": "base-ui",
+      "rule": 6,
+      "path": "apps/core/src/modules/marketplace/NativeAppHost.tsx",
+      "match": "bg-black",
+      "reason": "A native app's own surface, drawn by the app behind it: black is its background, not a design colour."
+    },
+    {
+      "check": "base-ui",
+      "rule": 6,
+      "path": "apps/core/src/modules/linux-windows/LinuxWindowBody.tsx",
+      "match": "bg-black",
+      "reason": "A Linux window's own surface, painted by the app behind it: black is its background, not a design colour."
+    },
+    {
+      "check": "base-ui",
+      "rule": 6,
+      "path": "apps/add-ons/browser/src/Browser.tsx",
+      "match": "bg-white",
+      "reason": "The page frame: a web page that sets no background of its own renders on white, whatever the theme."
+    },
+    {
+      "check": "base-ui",
+      "rule": 6,
+      "path": "apps/add-ons/paint/src/Paint.tsx",
+      "match": "bg-white",
+      "reason": "The drawing canvas is white paper in every theme (and the text box over it), as the saved image is."
+    },
+    {
+      "check": "base-ui",
+      "rule": 5,
+      "path": "apps",
+      "match": "style={{",
+      "reason": "The remaining inline styles (79 after brief 87 moved four static ones to classes) are window frames and desktop-layer geometry, swatch and preview colours from data, and runtime custom properties (scratch audit, brief 87); the few static ones are listed in the outcome note."
+    }
+  ]
 }

@@ -86,7 +86,7 @@ function NativeApp({ windowId, app }: { windowId: string; app: MarketplaceApp })
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
       {/* The app owns this node and everything in it. */}
-      <div ref={container} className="h-full w-full" style={{ contain: "strict" }} />
+      <div ref={container} className="h-full w-full contain-strict" />
       {status && (
         <div className="text-on-surface-variant bg-surface text-note pointer-events-none absolute inset-0 flex items-center justify-center">
           {status}

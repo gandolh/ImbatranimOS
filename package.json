@@ -1,6 +1,6 @@
 {
   "name": "imbatranimos",
-  "version": "1.313.0",
+  "version": "1.314.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "packageManager": "npm@11.19.1",
@@ -33,7 +33,7 @@
     "house-style:sync": "node vendor/house-style/bin/sync.mjs",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run check:conventions && npm test",
     "check:fast": "node scripts/check-fast.mjs",
-    "check:conventions": "knip && depcruise apps/core/src packages/ui/src apps/add-ons/*/src apps/backend/src && node vendor/house-style/bin/check-base-ui.mjs --warn-only"
+    "check:conventions": "knip && depcruise apps/core/src packages/ui/src apps/add-ons/*/src apps/backend/src && node vendor/house-style/bin/check-base-ui.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -140,8 +140,7 @@ export function Tray() {
     <div className="flex h-full items-center gap-1 pr-1">
       {load && (
         <span
-          className="text-on-surface-variant text-label hidden px-2 tabular-nums sm:inline"
-          style={{ whiteSpace: "nowrap" }}
+          className="text-on-surface-variant text-label hidden px-2 whitespace-nowrap tabular-nums sm:inline"
           title="CPU / RAM"
           data-tray-load=""
         >

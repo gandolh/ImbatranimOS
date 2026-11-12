@@ -73,7 +73,7 @@ export function WindowContainer() {
     // on every focus), so left in the root context it would climb past portaled
     // overlays and swallow dialogs/selects/tooltips. `isolation:isolate` confines
     // the whole window band to this wrapper; overlays sit in a higher band above it.
-    <div style={{ isolation: "isolate" }}>
+    <div className="isolate">
       {/*
         EVERY window is rendered, on every workspace — a window on an inactive
         workspace is hidden with `display:none`, exactly as a minimised one is,

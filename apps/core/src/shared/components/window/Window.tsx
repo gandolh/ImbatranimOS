@@ -143,8 +143,7 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
   return (
     <div
       {...bind()}
-      className={cn("absolute z-10", cursorMap[direction], positionClasses[direction], corner)}
-      style={{ touchAction: "none" }}
+      className={cn("absolute z-10 touch-none", cursorMap[direction], positionClasses[direction], corner)}
     />
   );
 }

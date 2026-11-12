@@ -1,6 +1,6 @@
 ---
 summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-11-03 for the two themes and their modes: the strong and soft accent, the five token radii, the shadow variables, the per-theme UI font, a check in Apricot light and Classic dark; refreshed 2026-10-21 for the shared kit (2026-10-21): a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for the async close guards themed confirm work (2026-08-07) (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for the work of 2026-08-05: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
-updated: 2026-11-03
+updated: 2026-11-12
 ---
 
 # ImbatranimOS UI conventions — the house style, as rules
@@ -50,6 +50,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
      border keeps the state visible.
 7. **Themes and modes are the same token names with other values**: four blocks in `index.css`, keyed on `[data-os-theme]` and `[data-theme]` (which keeps its name
    and means the mode). Tokens alone buy you all four. Never add a `dark:` variant or branch on the theme in component code; theme-only chrome uses `apricot:`.
+   Settings offers Light, Dark and System (brief 87, 2026-11-12): the store keeps a `modePreference` and the mode it paints; System follows `prefers-color-scheme`, and `data-theme` is only ever `light` or `dark`. A first visit is light.
 8. Forbidden: hex, Tailwind palette colours (`bg-red-500`, `text-slate-400`), gradients, and numeric `rounded-*`. **Corners are the six token radii** (2026-11-03):
    `rounded-window` (frames, dialogs), `rounded-menu` (Start, context menus, popups, toasts), `rounded-control` (buttons, inputs, tooltips), `rounded-item` (list
    rows, menu items, in a list padded by `px-(--k-list-inset)`), `rounded-tile` (desktop icons, widgets), `rounded-small` (checkboxes, swatches, key caps) — soft in Apricot, `0px` in Classic, where `index.css` also forces `border-radius: 0 !important`. In Apricot,
@@ -65,9 +66,10 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 
 11. `font-ui` follows the theme — Figtree in Apricot, Space Grotesk in Classic (`--k-font-ui`) — for chrome, labels, numbers; never name either family. `font-content`
     = Inter (user-authored prose) in both; `font-mono` for code panes (`MarkdownEditor.tsx:179`). A canvas reads `--font-ui` from `<html>` at draw time.
-12. Root is **13px** (`index.css:141`); the scale is explicit arbitrary sizes — `text-[11px]` labels/meta/status bars/toolbars/tabs · `text-[12px]` buttons/list rows/menu
-    items/dialog titles · `text-[13px]` body, inputs, checkbox labels · `text-[10px]`/`text-[9px]` shell chrome only (`taskbar/StartMenu.tsx:103,132`). Larger type only for a
-    real display value: `text-3xl` calculator readout (`calculator/src/BasicPad.tsx:106`), `text-[36px]` timer (`clock/src/tabs/Timer.tsx:36`), both with `tabular-nums`.
+12. The root keeps the browser's size and **`body` is 13px** (`index.css`); `--spacing` in the kit's `theme.css` is `0.203125rem` (13/16 of Tailwind's step), so every spacing utility keeps its pixels (`p-2` is 6.5px). The type scale is **named** in `@theme` (brief 87, 2026-11-12), and `text-[Npx]` is gone:
+    `text-label` 11px labels/meta/status bars/toolbars/tabs · `text-control` 12px buttons/list rows/menu items/dialog titles · `text-body` 13px body, inputs, checkbox labels · `text-tiny` 10px / `text-micro` 9px shell chrome only (`taskbar/StartMenu.tsx`).
+    Larger type only for a real display value: `text-headline` calculator readout (`calculator/src/BasicPad.tsx`), `text-display-lg` timer (`clock/src/tabs/Timer.tsx`), both with `tabular-nums`. A new size is a `--text-*` name in `theme.css` and in `cn()`'s list (`packages/ui/src/cn.ts`).
+    Sizes that read `rem` (`max-w-sm`, `min-w-[8rem]`) are written in pixels, since the root is no longer 13px.
 13. Weights: `font-medium` for controls, `font-semibold` for titles/labels, `font-bold` only in the taskbar brand (`taskbar/Taskbar.tsx:78`). Never `font-light`.
 14. The house field label is `font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase` (`ui/Input.tsx:15`, `ui/Select.tsx:30`,
     `modules/settings/Settings.tsx:66`).
@@ -153,16 +155,14 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 39. Lists and menus carry roles: `role="listbox"`/`option`/`aria-selected` (`CommandPalette.tsx:183,199-200`), `role="menu"`/`menuitem`/`aria-label`
     (`StartMenu.tsx:61-62,87`); virtualizer spacer rows get `aria-hidden` (`FileList.tsx:127,247`).
 40. Dialogs: use core `Dialog` so you inherit base-ui's focus trap, Escape, and backdrop dismissal (`ui/Dialog.tsx:25-37`), and `autoFocus` the first field
-    (`ui/PromptDialog.tsx:163`). Never portal your own modal.
+    (`ui/PromptDialog.tsx:163`). Never portal your own modal. **A dialog that holds a form sets `disablePointerDismissal`** (Q58, brief 87): it closes with Cancel, the X or Esc, never an outside tap
+    (`PromptDialog`, Calendar's `EventDialog`, the File Manager's dialogs); a confirm is the kit's `ConfirmDialog` on `AlertDialog`, which also ignores Esc while its action runs.
 41. Anything the mouse can do the keyboard must do — Enter opens, arrows move, Escape cancels (`file-manager/src/hooks/useListKeyboardNav.ts`). Never encode meaning in colour
     alone (§10). Keep the pairs: `text-on-primary` on `bg-primary`.
 
 ## 8. Anti-patterns in the code today — copy around these
 
-42. **`<Tooltip>` around a `<Button>` emits `<button>` inside `<button>`.** `ui/Tooltip.tsx:15` renders `BaseTooltip.Trigger` with no `render` prop, and base-ui defaults that
-    trigger to a `button` (`node_modules/@base-ui/react/tooltip/trigger/TooltipTrigger.js:220`). `file-manager/src/components/FileList.tsx:190-240` does it five times per row,
-    plus `FileManager.tsx:414` and `MarkdownEditor.tsx:116,131`. This is the source of the walkthrough's console errors — invalid HTML, and the inner button can swallow
-    clicks. **Until core's `Tooltip` forwards `render`, use `title=` on an icon-only `Button`.** Add no new `Tooltip`-around-`Button` sites.
+42. **`<Tooltip>` around a `<Button>` is fine now** (fixed, brief 87, 2026-11-12): `ui/Tooltip.tsx` forwards the trigger through `render`, so the child is the trigger and no `<button>` nests inside another. (Before, `BaseTooltip.Trigger` defaulted to a `button` and the walkthrough logged invalid-HTML errors.) A trigger around a component uses `render` everywhere.
 43. **There are no native dialogs — every dialog is the kit's** (2026-08-07). `useUnsavedGuard` returns the themed
     `UnsavedChangesDialog` (Save / Don't Save / Cancel — render the node, `packages/ui/src/hooks/systemHooks.tsx`);
     everything else asks with `useConfirm`/`usePrompt`. `window.confirm`/`alert`/`prompt` grep to zero under `apps/`
@@ -190,10 +190,10 @@ Rules 47 and 48 (the `desktopLayer` seam, and a way back for desktop objects) ar
 1. Does the add-on import **only** `@imbatranim/core` + `lucide-react` + its declared deps, with no deep path into core?
 2. Did I reuse every applicable core export (`Button`, `Input`, `Select`, `Checkbox`, `Dialog`, `ScrollArea`, `useConfirm`, `usePrompt`, `notify`, `useVirtualList`) instead of
    hand-rolling one?
-3. Are **all** colours semantic token classes — zero hex, zero Tailwind palette colours, zero gradients, zero `dark:` variants, no numeric `rounded-*`?
+3. Are **all** colours semantic token classes — zero hex, zero Tailwind palette colours, zero gradients, zero `dark:` variants, no numeric `rounded-*`, no literal `z-[N]` (the `--z-index-*` tokens)?
 4. Does the accent appear only via `primary`/`on-primary`/`primary-container`, so switching accent in Settings restyles it with no code change?
 5. Did I open it in **Apricot light** and **Classic dark** and confirm nothing is invisible, unreadable or clipped, and selection uses the soft fill?
-6. Is type inside the 11/12/13px scale, `font-ui` for chrome and `font-content` for user prose, at toolbar density (`px-2 py-1`, `gap-1`)?
+6. Is type a named size (`text-label`/`text-control`/`text-body`, no `text-[Npx]`), `font-ui` for chrome and `font-content` for user prose, at toolbar density (`px-2 py-1`, `gap-1`)?
 7. Is the root `flex h-full flex-col` with `min-h-0` on every flexed wrapper, and no `h-screen`/`100vh` anywhere?
 8. Does scrolling happen inside a `ScrollArea` in the body — never on the window itself — with `viewportRef` wired if the list is virtualized?
 9. At exactly `minSize`, is **every** control still visible and clickable without resizing, and does `defaultSize.height` fit a 720px-tall viewport minus the 44px taskbar?

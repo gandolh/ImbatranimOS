@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button, Checkbox, Dialog, cn, useSystem } from "@imbatranim/ui";
+import { Button, Checkbox, Dialog, Radio, RadioGroup, cn, useSystem } from "@imbatranim/ui";
 import { marketplaceGap, marketplaceIntent, marketplaceTarget } from "../lib/marketplaceOpeners";
 
 /**
@@ -82,27 +82,31 @@ export function OpenWithDialog({
           </p>
         )}
 
-        <div className="border-outline-variant rounded-control apricot:py-1 max-h-56 overflow-auto border px-(--k-list-inset)">
+        <RadioGroup
+          aria-label="Open with"
+          value={picked}
+          onValueChange={setPicked}
+          className="border-outline-variant rounded-control apricot:py-1 max-h-56 overflow-auto border px-(--k-list-inset)"
+        >
           {options.map((candidate) => (
-            <button
+            <Radio
               key={candidate.appId}
-              onClick={() => setPicked(candidate.appId)}
-              aria-pressed={picked === candidate.appId}
-              className={cn(
-                "focus-visible:ring-primary border-outline-variant/50 rounded-item apricot:border-transparent flex w-full items-center gap-2 border-b px-2 py-1.5 text-left text-[12px] outline-none last:border-b-0 focus-visible:ring-2 focus-visible:ring-inset",
-                picked === candidate.appId
-                  ? "bg-primary-container text-on-primary-container"
-                  : "hover:bg-surface-container-high",
-              )}
+              value={candidate.appId}
+              className={({ checked }) =>
+                cn(
+                  "focus-visible:ring-primary border-outline-variant/50 rounded-item apricot:border-transparent flex w-full items-center gap-2 border-b px-2 py-1.5 text-left text-[12px] last:border-b-0 focus-visible:ring-2 focus-visible:ring-inset",
+                  checked ? "bg-primary-container text-on-primary-container" : "hover:bg-surface-container-high",
+                )
+              }
             >
               {candidate.name}
               {candidate.linux && <span className="text-[10px] opacity-70">Linux app</span>}
               {claimants.some((c) => c.appId === candidate.appId) && showAll && (
                 <span className="ml-auto text-[10px] opacity-70">handles this type</span>
               )}
-            </button>
+            </Radio>
           ))}
-        </div>
+        </RadioGroup>
 
         {claimants.length > 0 && !showAll && (
           <button

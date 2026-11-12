@@ -33,6 +33,8 @@ import {
   useSaveHotkey,
   useSystem,
   useUnsavedGuard,
+  Radio,
+  RadioGroup,
 } from "@imbatranim/ui";
 import { floodFill } from "./lib/floodFill";
 import {
@@ -585,31 +587,40 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
 
       <div className="flex min-h-0 flex-1">
         {/* Tool rail */}
-        <div className="border-outline-variant bg-surface-container-low flex w-9 flex-none flex-col items-center gap-0.5 border-r py-1">
+        <RadioGroup<Tool>
+          aria-label="Tool"
+          value={tool}
+          onValueChange={(next) => {
+            setTool(next);
+            if (next !== "select") {
+              setSelection(null);
+              clearOverlay();
+            }
+          }}
+          className="border-outline-variant bg-surface-container-low flex w-9 flex-none flex-col items-center gap-0.5 border-r py-1"
+        >
           {TOOLS.map((t) => {
             const Icon = t.icon;
             return (
               <Tooltip key={t.id} content={t.label}>
-                <Button
-                  size="sm"
-                  variant={tool === t.id ? "selected" : "ghost"}
-                  className="h-7 w-7 p-0"
+                <Radio
+                  value={t.id}
                   aria-label={t.label}
-                  aria-pressed={tool === t.id}
-                  onClick={() => {
-                    setTool(t.id);
-                    if (t.id !== "select") {
-                      setSelection(null);
-                      clearOverlay();
-                    }
-                  }}
+                  nativeButton
+                  render={
+                    <Button
+                      size="sm"
+                      variant={tool === t.id ? "selected" : "ghost"}
+                      className="h-7 w-7 justify-center p-0"
+                    />
+                  }
                 >
                   <Icon size={14} />
-                </Button>
+                </Radio>
               </Tooltip>
             );
           })}
-        </div>
+        </RadioGroup>
 
         {/* Canvas viewport */}
         <div className="bg-surface-container relative min-h-0 flex-1 overflow-auto p-3">

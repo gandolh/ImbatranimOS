@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { cn } from "@imbatranim/ui";
+import { Tab, Tabs, TabsList, TabsPanel, cn } from "@imbatranim/ui";
 import { BasicPad } from "./BasicPad";
 import { ProgrammerPad } from "./ProgrammerPad";
 import { ScientificPad } from "./ScientificPad";
@@ -32,34 +32,45 @@ export function Calculator({ windowId }: { windowId: string }) {
   const session = useCalcSession();
 
   return (
-    <div className="bg-surface-container-lowest flex h-full flex-col select-none">
-      <div className="border-outline-variant bg-surface-container-low flex flex-none border-b">
+    <Tabs
+      value={mode}
+      onValueChange={(next) => setMode(next as Mode)}
+      className="bg-surface-container-lowest flex h-full flex-col select-none"
+    >
+      <TabsList className="border-outline-variant bg-surface-container-low flex flex-none border-b">
         {MODES.map((tab) => (
-          <button
+          <Tab
             key={tab.id}
-            onClick={() => setMode(tab.id)}
-            aria-pressed={mode === tab.id}
-            className={cn(
-              "focus-visible:ring-primary font-ui flex-1 border-b-2 px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
-              mode === tab.id
-                ? "border-primary text-on-surface"
-                : "text-on-surface-variant hover:text-on-surface border-transparent",
-            )}
+            value={tab.id}
+            className={({ active }) =>
+              cn(
+                "focus-visible:ring-primary font-ui flex-1 border-b-2 px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors focus-visible:ring-2 focus-visible:ring-inset",
+                active
+                  ? "border-primary text-on-surface"
+                  : "text-on-surface-variant hover:text-on-surface border-transparent",
+              )
+            }
           >
             {tab.label}
-          </button>
+          </Tab>
         ))}
-      </div>
+      </TabsList>
 
-      <div className="min-h-0 flex-1">
-        {mode === "basic" && <BasicPad windowId={windowId} session={session} />}
-        {mode === "scientific" && <ScientificPad windowId={windowId} session={session} />}
-        {mode === "programmer" && <ProgrammerPad windowId={windowId} />}
-        {/* Like Programmer, the converter takes neither the memory register nor
-            the tape: a conversion is a pair of numbers with units attached, and
-            half of it on the tape would record something never computed. */}
-        {mode === "converter" && <ConverterPad windowId={windowId} />}
-      </div>
-    </div>
+      <TabsPanel value="basic" className="min-h-0 flex-1">
+        <BasicPad windowId={windowId} session={session} />
+      </TabsPanel>
+      <TabsPanel value="scientific" className="min-h-0 flex-1">
+        <ScientificPad windowId={windowId} session={session} />
+      </TabsPanel>
+      <TabsPanel value="programmer" className="min-h-0 flex-1">
+        <ProgrammerPad windowId={windowId} />
+      </TabsPanel>
+      {/* Like Programmer, the converter takes neither the memory register nor
+          the tape: a conversion is a pair of numbers with units attached, and
+          half of it on the tape would record something never computed. */}
+      <TabsPanel value="converter" className="min-h-0 flex-1">
+        <ConverterPad windowId={windowId} />
+      </TabsPanel>
+    </Tabs>
   );
 }

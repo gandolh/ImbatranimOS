@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Popover } from "@imbatranim/ui";
+import { Popover, Toggle } from "@imbatranim/ui";
 import { Volume, Volume1, Volume2, VolumeX } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { useSoundStore } from "../../store/soundStore";
@@ -56,12 +56,11 @@ export function TrayVolume() {
       }
     >
       <div className="font-ui flex w-60 items-center gap-2 p-3">
-        <button
-          type="button"
+        <Toggle
           aria-label={muted ? "Unmute" : "Mute"}
-          aria-pressed={muted}
+          pressed={muted}
+          onPressedChange={setMuted}
           title={muted ? "Unmute" : "Mute"}
-          onClick={() => setMuted(!muted)}
           className={cn(
             "rounded-control flex h-7 w-7 shrink-0 items-center justify-center outline-none",
             "text-on-surface hover:bg-surface-container-high",
@@ -69,7 +68,7 @@ export function TrayVolume() {
           )}
         >
           <SpeakerIcon volume={volume} muted={muted} size={16} />
-        </button>
+        </Toggle>
         <input
           ref={slider}
           type="range"

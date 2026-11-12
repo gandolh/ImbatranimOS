@@ -1,7 +1,7 @@
 import { useState } from "react";
 import dayjs from "dayjs";
 import { Repeat } from "lucide-react";
-import { Button, Checkbox, Dialog, Input, Select, cn, useConfirm } from "@imbatranim/ui";
+import { Button, Checkbox, Dialog, Input, Radio, RadioGroup, Select, cn, useConfirm } from "@imbatranim/ui";
 import { COLOR_OPTIONS, COLOR_SWATCH } from "./eventStyle";
 import { RecurrenceFields } from "./RecurrenceFields";
 import { draftFromRule, ruleFromDraft, type RecurrenceDraft } from "./recurrenceDraft";
@@ -294,32 +294,37 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
             <span className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
               Colour
             </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
+            <RadioGroup<EventColor | "none">
+              aria-label="Colour"
+              value={form.color}
+              onValueChange={(color) => setForm((f) => ({ ...f, color }))}
+              className="flex items-center gap-1.5"
+            >
+              <Radio
+                value="none"
                 aria-label="Default colour"
-                aria-pressed={form.color === "none"}
-                onClick={() => setForm((f) => ({ ...f, color: "none" }))}
-                className={cn(
-                  "focus-visible:ring-primary rounded-small bg-primary h-5 w-5 border outline-none focus-visible:ring-2 focus-visible:ring-inset",
-                  form.color === "none" ? "border-on-surface" : "border-outline-variant",
-                )}
+                className={({ checked }) =>
+                  cn(
+                    "focus-visible:ring-primary rounded-small bg-primary h-5 w-5 border focus-visible:ring-2 focus-visible:ring-inset",
+                    checked ? "border-on-surface" : "border-outline-variant",
+                  )
+                }
               />
               {COLOR_OPTIONS.map((color) => (
-                <button
+                <Radio
                   key={color}
-                  type="button"
+                  value={color}
                   aria-label={color}
-                  aria-pressed={form.color === color}
-                  onClick={() => setForm((f) => ({ ...f, color }))}
-                  className={cn(
-                    "focus-visible:ring-primary rounded-small h-5 w-5 border outline-none focus-visible:ring-2 focus-visible:ring-inset",
-                    COLOR_SWATCH[color],
-                    form.color === color ? "border-on-surface" : "border-outline-variant",
-                  )}
+                  className={({ checked }) =>
+                    cn(
+                      "focus-visible:ring-primary rounded-small h-5 w-5 border focus-visible:ring-2 focus-visible:ring-inset",
+                      COLOR_SWATCH[color],
+                      checked ? "border-on-surface" : "border-outline-variant",
+                    )
+                  }
                 />
               ))}
-            </div>
+            </RadioGroup>
           </div>
 
           <label className="flex flex-col gap-1">
@@ -341,21 +346,27 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
                 <Repeat size={11} />
                 Apply to
               </span>
-              {SCOPE_OPTIONS.map((option) => (
-                <label key={option.value} className="flex items-start gap-2 text-[11px]">
-                  <input
-                    type="radio"
-                    name="edit-scope"
-                    checked={scope === option.value}
-                    onChange={() => setScope(option.value)}
-                    className="accent-primary focus-visible:outline-primary mt-0.5 focus-visible:outline-2 focus-visible:outline-offset-2"
-                  />
-                  <span>
-                    <span className="text-on-surface font-semibold">{option.label}</span>
-                    <span className="text-on-surface-variant ml-1">— {option.hint}</span>
-                  </span>
-                </label>
-              ))}
+              <RadioGroup aria-label="Apply to" value={scope} onValueChange={setScope} className="contents">
+                {SCOPE_OPTIONS.map((option) => (
+                  <label key={option.value} className="flex items-start gap-2 text-[11px]">
+                    <Radio
+                      value={option.value}
+                      className={({ checked }) =>
+                        cn(
+                          "focus-visible:ring-primary mt-0.5 size-3.5 shrink-0 rounded-full border focus-visible:ring-2 focus-visible:ring-offset-1",
+                          checked
+                            ? "border-primary bg-primary ring-surface-container-low ring-2 ring-inset"
+                            : "border-outline bg-surface-container-lowest",
+                        )
+                      }
+                    />
+                    <span>
+                      <span className="text-on-surface font-semibold">{option.label}</span>
+                      <span className="text-on-surface-variant ml-1">— {option.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </RadioGroup>
             </div>
           )}
 

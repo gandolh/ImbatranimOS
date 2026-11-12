@@ -16,7 +16,7 @@ import {
   Lock,
   PackageOpen,
 } from "lucide-react";
-import { Button, ConfirmDialog, useConfirm, usePrompt, useSystem, useTopWindowKeydown } from "@imbatranim/ui";
+import { Button, ConfirmDialog, Toggle, useConfirm, usePrompt, useSystem, useTopWindowKeydown } from "@imbatranim/ui";
 import { TrashDialog } from "./components/TrashDialog";
 import { PropertiesDialog } from "./components/PropertiesDialog";
 import { Input } from "@imbatranim/ui";
@@ -1039,16 +1039,14 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
                 : "Show hidden files (Ctrl+H)"
           }
         >
-          <Button
-            variant={view.showHidden ? "selected" : "ghost"}
-            size="sm"
-            className="h-5 w-5 p-0"
-            aria-pressed={view.showHidden}
+          <Toggle
+            pressed={view.showHidden}
+            onPressedChange={view.toggleHidden}
             aria-label="Show hidden files"
-            onClick={view.toggleHidden}
+            render={<Button variant={view.showHidden ? "selected" : "ghost"} size="sm" className="h-5 w-5 p-0" />}
           >
             {view.showHidden ? <Eye size={12} /> : <EyeOff size={12} />}
-          </Button>
+          </Toggle>
         </Tooltip>
 
         <Tooltip content={view.viewMode === "icons" ? "Details view" : "Icons view"}>
@@ -1064,18 +1062,16 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         </Tooltip>
 
         <Tooltip content={previewPane.open ? "Hide preview pane" : "Show preview pane"}>
-          <Button
-            variant={previewPane.open ? "selected" : "ghost"}
-            size="sm"
-            className="h-5 w-5 p-0"
+          <Toggle
+            pressed={previewPane.open}
+            onPressedChange={previewPane.toggle}
             // The other two toolbar toggles already name themselves; this one
             // was an unlabelled icon, which reads as "button" to a screen reader.
             aria-label="Show preview pane"
-            aria-pressed={previewPane.open}
-            onClick={previewPane.toggle}
+            render={<Button variant={previewPane.open ? "selected" : "ghost"} size="sm" className="h-5 w-5 p-0" />}
           >
             {previewPane.open ? <PanelRightClose size={12} /> : <PanelRight size={12} />}
-          </Button>
+          </Toggle>
         </Tooltip>
       </div>
 

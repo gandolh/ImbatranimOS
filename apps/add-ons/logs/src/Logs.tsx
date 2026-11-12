@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw, ScrollText, Search, X } from "lucide-react";
-import { Button, cn, useSystem, useVirtualList } from "@imbatranim/ui";
+import { Button, Toggle, ToggleGroup, cn, useSystem, useVirtualList } from "@imbatranim/ui";
 import { eventLabel, formatWhen, summarise, type LogEntry, type LogLevel } from "./lib/logFormat";
 import { errorMessage, fetchLogs } from "./lib/logsApi";
 import { APP_NAME } from "./appName";
@@ -115,35 +115,45 @@ export function Logs() {
           )}
         </div>
 
-        {LEVELS.map((l) => (
-          <button
-            key={l.id}
-            onClick={() => setLevel((current) => (current === l.id ? null : l.id))}
-            aria-pressed={level === l.id}
-            className={cn(
-              "focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
-              level === l.id
-                ? "bg-primary-container text-on-primary-container border-primary"
-                : "hover:bg-surface-container-high",
-            )}
-          >
-            {l.label}
-          </button>
-        ))}
+        {/* A level filter that can also be cleared (no level = everything), so a
+            ToggleGroup: a RadioGroup always has one chosen. */}
+        <ToggleGroup
+          aria-label="Level"
+          value={level ? [level] : []}
+          onValueChange={(next) => setLevel((next[0] as LogLevel | undefined) ?? null)}
+          className="contents"
+        >
+          {LEVELS.map((l) => (
+            <Toggle
+              key={l.id}
+              value={l.id}
+              className={({ pressed }) =>
+                cn(
+                  "focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-inset",
+                  pressed
+                    ? "bg-primary-container text-on-primary-container border-primary"
+                    : "hover:bg-surface-container-high",
+                )
+              }
+            >
+              {l.label}
+            </Toggle>
+          ))}
+        </ToggleGroup>
 
-        <button
-          onClick={() => setFollow((f) => !f)}
-          aria-pressed={follow}
+        <Toggle
+          pressed={follow}
+          onPressedChange={setFollow}
           title="Re-read the newest entries every few seconds"
           className={cn(
-            "focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
+            "focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-inset",
             follow
               ? "bg-primary-container text-on-primary-container border-primary"
               : "hover:bg-surface-container-high",
           )}
         >
           Follow
-        </button>
+        </Toggle>
         <Button variant="ghost" size="sm" aria-label="Refresh" onClick={() => void load(false)}>
           <RefreshCw size={12} className={cn(loading && "animate-spin")} />
         </Button>

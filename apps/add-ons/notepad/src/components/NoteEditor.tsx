@@ -14,6 +14,9 @@ import {
   useSaveHotkey,
   useSystem,
   useUnsavedGuard,
+  Radio,
+  RadioGroup,
+  Toggle,
 } from "@imbatranim/ui";
 import { useNoteFileQuery, useUpdateFileMutation } from "../queries/notepadQueries";
 import { useNotepadStore, type OpenDoc } from "../store/notepadStore";
@@ -624,60 +627,63 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
             {updateMutation.isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
             Save
           </Button>
-          <div className="border-outline-variant rounded-control flex items-center overflow-hidden border" role="group">
+          <RadioGroup<ViewMode>
+            aria-label="View"
+            value={mode}
+            onValueChange={setMode}
+            className="border-outline-variant rounded-control flex items-center overflow-hidden border"
+          >
             {VIEW_MODE_OPTIONS.filter((option) => markdown || option.mode !== "split").map((option) => (
               <Tooltip key={option.mode} content={option.label}>
-                <button
-                  type="button"
-                  onClick={() => setMode(option.mode)}
-                  aria-pressed={mode === option.mode}
+                <Radio
+                  value={option.mode}
                   aria-label={option.label}
-                  className={cn(
-                    "focus-visible:ring-primary flex items-center p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset",
-                    mode === option.mode
-                      ? "bg-primary-container text-on-primary-container"
-                      : "text-on-surface hover:bg-surface-container-high",
-                  )}
+                  className={({ checked }) =>
+                    cn(
+                      "focus-visible:ring-primary flex items-center p-1.5 focus-visible:ring-2 focus-visible:ring-inset",
+                      checked
+                        ? "bg-primary-container text-on-primary-container"
+                        : "text-on-surface hover:bg-surface-container-high",
+                    )
+                  }
                 >
                   <option.icon size={14} />
-                </button>
+                </Radio>
               </Tooltip>
             ))}
-          </div>
+          </RadioGroup>
           {markdown && (
             <Tooltip content={settings.outlineOpen ? "Hide outline" : "Show outline"}>
-              <button
-                type="button"
+              <Toggle
                 aria-label="Outline"
-                aria-pressed={settings.outlineOpen}
-                onClick={() => update({ outlineOpen: !settings.outlineOpen })}
+                pressed={settings.outlineOpen}
+                onPressedChange={(outlineOpen) => update({ outlineOpen })}
                 className={cn(
-                  "focus-visible:ring-primary rounded-control p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                  "focus-visible:ring-primary rounded-control p-1.5 focus-visible:ring-2 focus-visible:ring-inset",
                   settings.outlineOpen
                     ? "bg-primary-container text-on-primary-container"
                     : "text-on-surface hover:bg-surface-container-high",
                 )}
               >
                 <PanelLeft size={14} />
-              </button>
+              </Toggle>
             </Tooltip>
           )}
           {markdown && mode === "split" && (
             <Tooltip content={settings.syncScroll ? "Scroll sync is on" : "Scroll sync is off"}>
-              <button
-                type="button"
+              <Toggle
                 aria-label="Sync scrolling"
-                aria-pressed={settings.syncScroll}
-                onClick={() => update({ syncScroll: !settings.syncScroll })}
+                pressed={settings.syncScroll}
+                onPressedChange={(syncScroll) => update({ syncScroll })}
                 className={cn(
-                  "focus-visible:ring-primary rounded-control p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                  "focus-visible:ring-primary rounded-control p-1.5 focus-visible:ring-2 focus-visible:ring-inset",
                   settings.syncScroll
                     ? "bg-primary-container text-on-primary-container"
                     : "text-on-surface hover:bg-surface-container-high",
                 )}
               >
                 {settings.syncScroll ? <Link2 size={14} /> : <Unlink2 size={14} />}
-              </button>
+              </Toggle>
             </Tooltip>
           )}
         </div>
@@ -834,19 +840,19 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
         <span className="tabular-nums">{stats.words} words</span>
         <span className="tabular-nums">{stats.chars} chars</span>
         <div className="flex-1" />
-        <button
-          onClick={() => setWrap((w) => !w)}
-          aria-pressed={wrap}
+        <Toggle
+          pressed={wrap}
+          onPressedChange={setWrap}
           aria-label="Word wrap"
           title={wrap ? "Word wrap on" : "Word wrap off"}
           className={cn(
-            "focus-visible:ring-primary flex items-center gap-1 px-1 outline-none focus-visible:ring-2 focus-visible:ring-inset",
+            "focus-visible:ring-primary flex items-center gap-1 px-1 focus-visible:ring-2 focus-visible:ring-inset",
             wrap ? "text-on-surface" : "text-on-surface-variant",
           )}
         >
           <WrapText size={11} />
           wrap {wrap ? "on" : "off"}
-        </button>
+        </Toggle>
       </div>
 
       {unsavedDialog}

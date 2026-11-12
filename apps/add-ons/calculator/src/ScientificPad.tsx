@@ -1,5 +1,5 @@
 import { useCallback, useReducer, useState } from "react";
-import { Button, cn, useTopWindowKeydown } from "@imbatranim/ui";
+import { Button, Radio, RadioGroup, cn, useTopWindowKeydown } from "@imbatranim/ui";
 import {
   INITIAL_SCI_STATE,
   backspace,
@@ -239,22 +239,29 @@ export function ScientificPad({ windowId: _windowId, session }: { windowId: stri
 
       <div className="bg-surface-container-low flex flex-none flex-col gap-1 p-2">
         <div className="flex items-center gap-1">
-          {(["deg", "rad"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => setAngleMode(mode)}
-              aria-pressed={angleMode === mode}
-              className={cn(
-                "focus-visible:ring-primary font-ui border-outline-variant rounded-control h-6 flex-1 border text-[10px] font-semibold uppercase outline-none focus-visible:ring-2 focus-visible:ring-inset",
-                angleMode === mode
-                  ? "bg-primary-container text-on-primary-container border-primary"
-                  : "text-on-surface hover:bg-surface-container-high",
-              )}
-            >
-              {mode}
-            </button>
-          ))}
+          <RadioGroup<AngleMode>
+            aria-label="Angle mode"
+            value={angleMode}
+            onValueChange={setAngleMode}
+            className="contents"
+          >
+            {(["deg", "rad"] as const).map((mode) => (
+              <Radio
+                key={mode}
+                value={mode}
+                className={({ checked }) =>
+                  cn(
+                    "focus-visible:ring-primary font-ui border-outline-variant rounded-control flex h-6 flex-1 items-center justify-center border text-[10px] font-semibold uppercase focus-visible:ring-2 focus-visible:ring-inset",
+                    checked
+                      ? "bg-primary-container text-on-primary-container border-primary"
+                      : "text-on-surface hover:bg-surface-container-high",
+                  )
+                }
+              >
+                {mode}
+              </Radio>
+            ))}
+          </RadioGroup>
           <button
             type="button"
             onClick={() => dispatch({ type: "clear" })}

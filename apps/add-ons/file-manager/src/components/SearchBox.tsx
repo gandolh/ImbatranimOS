@@ -1,6 +1,6 @@
 import { Search, X, FileSearch, Loader2 } from "lucide-react";
 import { cn } from "@imbatranim/ui";
-import { Tooltip } from "@imbatranim/ui";
+import { Toggle, Tooltip } from "@imbatranim/ui";
 import { scopeLabel } from "../lib/searchPresentation";
 
 type SearchBoxProps = {
@@ -109,20 +109,19 @@ export function SearchBox({
             : "Also search inside file contents (runs on Enter)"
         }
       >
-        <button
-          type="button"
+        <Toggle
           aria-label="Search inside files"
-          aria-pressed={contentMode}
-          onClick={onToggleContentMode}
+          pressed={contentMode}
+          onPressedChange={onToggleContentMode}
           className={cn(
-            "focus-visible:ring-primary rounded-control flex h-[22px] w-[22px] shrink-0 items-center justify-center border outline-none focus-visible:ring-2 focus-visible:ring-inset",
+            "focus-visible:ring-primary rounded-control flex h-[22px] w-[22px] shrink-0 items-center justify-center border focus-visible:ring-2 focus-visible:ring-inset",
             contentMode
               ? "border-primary bg-primary-container text-on-primary-container"
               : "border-outline-variant text-on-surface-variant hover:text-on-surface",
           )}
         >
           <FileSearch size={12} />
-        </button>
+        </Toggle>
       </Tooltip>
     </div>
   );

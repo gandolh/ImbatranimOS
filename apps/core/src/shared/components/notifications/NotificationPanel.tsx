@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { BellOff, CheckCheck, Trash2, X } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { ScrollArea } from "../ui/ScrollArea";
+import { Toggle } from "@imbatranim/ui";
 import { openApp } from "../../intents/openApp";
 import { useNotificationStore, type NotificationItem } from "../../store/notificationStore";
 import { activateNotification } from "./activation";
@@ -78,9 +79,9 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
       <div className="border-outline-variant flex items-center justify-between border-b px-3 py-2">
         <span className="text-on-surface text-[12px] font-semibold">Notifications</span>
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setDnd(!dnd)}
-            aria-pressed={dnd}
+          <Toggle
+            pressed={dnd}
+            onPressedChange={setDnd}
             title={dnd ? "Do Not Disturb is on" : "Do Not Disturb is off"}
             className={cn(
               "rounded-control flex items-center gap-1 px-1.5 py-1 text-[10px] outline-none",
@@ -92,7 +93,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
           >
             <BellOff size={12} strokeWidth={2} />
             DND
-          </button>
+          </Toggle>
           <button
             onClick={markAllRead}
             title="Mark all read"

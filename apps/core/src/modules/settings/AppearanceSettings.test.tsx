@@ -62,9 +62,11 @@ function checked(g: HTMLElement): string[] {
     .map((r) => r.getAttribute("aria-label") ?? r.textContent ?? "");
 }
 
-function key(el: Element, k: string) {
-  act(() => {
-    el.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true }));
+/** An arrow key moves focus, and focus on a radio chooses it a tick later. */
+async function key(el: Element, k: string) {
+  await act(async () => {
+    el.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }));
+    await new Promise((r) => setTimeout(r, 20));
   });
 }
 
@@ -98,17 +100,16 @@ describe("Appearance", () => {
     }
   });
 
-  it("moves with the arrow keys without choosing, and chooses on click (Space/Enter)", () => {
+  it("moves and chooses with the arrow keys (the choice is kept on the device), and on click", async () => {
     const cards = radios(group("Theme"));
     act(() => cards[0].focus());
-    key(cards[0], "ArrowRight");
+    await key(cards[0], "ArrowRight");
     expect(document.activeElement).toBe(cards[1]);
-    expect(useAppearanceStore.getState().theme).toBe("apricot");
+    expect(useAppearanceStore.getState().theme).toBe("classic");
 
-    key(cards[1], "ArrowRight");
+    await key(cards[1], "ArrowLeft");
     expect(document.activeElement).toBe(cards[0]);
-    key(cards[0], "End");
-    expect(document.activeElement).toBe(cards[1]);
+    expect(useAppearanceStore.getState().theme).toBe("apricot");
 
     act(() => cards[1].click());
     expect(useAppearanceStore.getState().theme).toBe("classic");

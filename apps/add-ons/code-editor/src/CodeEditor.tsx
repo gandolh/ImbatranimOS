@@ -6,6 +6,9 @@ import {
   FileConflictError,
   Tooltip,
   UploadTooLargeError,
+  Tab as TabButton,
+  Tabs,
+  TabsList,
   cn,
   fileName,
   useConfirm,
@@ -812,44 +815,51 @@ export function CodeEditor({ windowId }: { windowId: string }) {
 
       {/* Tab strip — one entry per open file (each its own Monaco model). */}
       {hasTabs && (
-        <div className="border-outline-variant bg-surface-container-low flex items-stretch gap-px overflow-x-auto border-b">
-          {tabs.map((tab) => {
-            const isActive = tab.id === activeId;
-            const isDirty = dirtyIds.has(tab.id);
-            return (
-              <div
-                key={tab.id}
-                role="tab"
-                aria-selected={isActive}
-                onMouseDown={() => setActiveId(tab.id)}
-                className={cn(
-                  "font-ui group flex max-w-[200px] cursor-pointer items-center gap-1.5 px-2.5 py-1 text-[11px] whitespace-nowrap",
-                  isActive
-                    ? "bg-surface-container-lowest text-on-surface"
-                    : "text-on-surface-variant hover:bg-surface-container-high",
-                )}
-                title={tab.path ?? `${tab.name} — not saved yet`}
-              >
-                <span className="truncate">{tab.name}</span>
-                <button
-                  type="button"
-                  aria-label={`Close ${tab.name}`}
-                  onMouseDown={(e) => {
-                    e.stopPropagation();
-                    void closeTab(tab.id);
-                  }}
-                  className={cn(
-                    "focus-visible:ring-primary hover:bg-surface-container-highest flex h-4 w-4 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset",
-                    isDirty ? "text-on-surface" : "text-on-surface-variant",
-                  )}
+        <Tabs value={activeId} onValueChange={(next) => setActiveId(next as string)}>
+          <TabsList
+            activateOnFocus={false}
+            className="border-outline-variant bg-surface-container-low flex items-stretch gap-px overflow-x-auto border-b"
+          >
+            {tabs.map((tab) => {
+              const isDirty = dirtyIds.has(tab.id);
+              return (
+                <TabButton
+                  key={tab.id}
+                  value={tab.id}
+                  nativeButton={false}
+                  render={<div />}
+                  className={({ active }) =>
+                    cn(
+                      "font-ui group flex max-w-[200px] cursor-pointer items-center gap-1.5 px-2.5 py-1 text-[11px] whitespace-nowrap",
+                      active
+                        ? "bg-surface-container-lowest text-on-surface"
+                        : "text-on-surface-variant hover:bg-surface-container-high",
+                    )
+                  }
+                  title={tab.path ?? `${tab.name} — not saved yet`}
                 >
-                  {isDirty ? <span className="bg-on-surface-variant h-1.5 w-1.5 group-hover:hidden" /> : null}
-                  <X size={12} className={cn(isDirty && "hidden group-hover:block")} />
-                </button>
-              </div>
-            );
-          })}
-        </div>
+                  <span className="truncate">{tab.name}</span>
+                  <button
+                    type="button"
+                    aria-label={`Close ${tab.name}`}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void closeTab(tab.id);
+                    }}
+                    className={cn(
+                      "focus-visible:ring-primary hover:bg-surface-container-highest flex h-4 w-4 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                      isDirty ? "text-on-surface" : "text-on-surface-variant",
+                    )}
+                  >
+                    {isDirty ? <span className="bg-on-surface-variant h-1.5 w-1.5 group-hover:hidden" /> : null}
+                    <X size={12} className={cn(isDirty && "hidden group-hover:block")} />
+                  </button>
+                </TabButton>
+              );
+            })}
+          </TabsList>
+        </Tabs>
       )}
 
       {/* Editor surface — Monaco is always mounted so its instance is stable;

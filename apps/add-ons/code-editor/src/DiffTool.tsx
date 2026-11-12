@@ -11,6 +11,7 @@ import {
   useFileDialog,
   useSaveHotkey,
   useSystem,
+  Toggle,
   useUnsavedGuard,
 } from "@imbatranim/ui";
 import "./monacoSetup";
@@ -249,16 +250,14 @@ export function DiffTool({ windowId: _windowId }: { windowId: string }) {
           </Button>
         </Tooltip>
         <Tooltip content={wordWrap ? "Unwrap long lines" : "Wrap long lines"}>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 w-6 p-0"
+          <Toggle
+            pressed={wordWrap}
+            onPressedChange={setWordWrap}
             aria-label={wordWrap ? "Unwrap long lines" : "Wrap long lines"}
-            aria-pressed={wordWrap}
-            onClick={() => setWordWrap((v) => !v)}
+            render={<Button size="sm" variant="ghost" className="h-6 w-6 p-0" />}
           >
             <WrapText size={13} />
-          </Button>
+          </Toggle>
         </Tooltip>
         <Button size="sm" variant="primary" disabled={!dirty} onClick={() => void save()}>
           <Save size={12} />

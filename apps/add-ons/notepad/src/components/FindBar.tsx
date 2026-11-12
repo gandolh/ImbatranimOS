@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, CaseSensitive, Replace, X } from "lucide-react";
-import { Button, cn } from "@imbatranim/ui";
+import { Button, Toggle, cn } from "@imbatranim/ui";
 
 /**
  * Find (and optionally replace) over the textarea.
@@ -102,26 +102,22 @@ export function FindBar({
         >
           <ArrowDown size={11} />
         </Button>
-        <Button
-          variant={caseSensitive ? "selected" : "ghost"}
-          size="sm"
-          className="h-5 w-5 p-0"
+        <Toggle
+          pressed={caseSensitive}
+          onPressedChange={onToggleCase}
           aria-label="Match case"
-          aria-pressed={caseSensitive}
-          onClick={onToggleCase}
+          render={<Button variant={caseSensitive ? "selected" : "ghost"} size="sm" className="h-5 w-5 p-0" />}
         >
           <CaseSensitive size={12} />
-        </Button>
-        <Button
-          variant={showReplace ? "selected" : "ghost"}
-          size="sm"
-          className="h-5 w-5 p-0"
+        </Toggle>
+        <Toggle
+          pressed={showReplace}
+          onPressedChange={onToggleReplace}
           aria-label="Toggle replace"
-          aria-pressed={showReplace}
-          onClick={onToggleReplace}
+          render={<Button variant={showReplace ? "selected" : "ghost"} size="sm" className="h-5 w-5 p-0" />}
         >
           <Replace size={11} />
-        </Button>
+        </Toggle>
 
         <div className="flex-1" />
         <Button variant="ghost" size="sm" className="h-5 w-5 p-0" aria-label="Close find" onClick={onClose}>

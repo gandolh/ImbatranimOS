@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { ArrowLeft, Monitor, Palette, Plus, Search, Trash2, X } from "lucide-react";
-import { Button, ScrollArea, cn, useConfirm } from "@imbatranim/ui";
+import { Button, ScrollArea, Toggle, cn, useConfirm } from "@imbatranim/ui";
 import {
   useCreateStickyNoteMutation,
   useDeleteStickyNoteMutation,
@@ -122,16 +122,15 @@ function NoteEditor({ noteId, windowId }: { noteId: number; windowId: string }) 
           >
             Saved
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
+          <Toggle
             aria-label="Change colour"
-            aria-pressed={paletteOpen}
+            pressed={paletteOpen}
+            onPressedChange={setPaletteOpen}
             title="Change colour"
-            onClick={() => setPaletteOpen((open) => !open)}
+            render={<Button variant="ghost" size="sm" />}
           >
             <Palette size={12} strokeWidth={2} />
-          </Button>
+          </Toggle>
           {note && (
             <Button
               variant={note.onDesktop ? "default" : "ghost"}
@@ -326,13 +325,12 @@ function NoteRow({
         </span>
       </button>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onToggleDesktop}
-        aria-pressed={note.onDesktop}
+      <Toggle
+        pressed={note.onDesktop}
+        onPressedChange={onToggleDesktop}
         aria-label={note.onDesktop ? "Take off the desktop" : "Put on the desktop"}
         title={note.onDesktop ? "Take off the desktop" : "Put on the desktop"}
+        render={<Button variant="ghost" size="sm" />}
         className={cn(
           "shrink-0",
           note.onDesktop
@@ -341,7 +339,7 @@ function NoteRow({
         )}
       >
         <Monitor size={12} strokeWidth={2} />
-      </Button>
+      </Toggle>
       <Button
         variant="ghost"
         size="sm"

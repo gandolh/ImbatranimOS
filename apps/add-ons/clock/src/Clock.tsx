@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Clock4, Timer as TimerIcon, AlarmClock, Hourglass } from "lucide-react";
-import { cn, queryClient, useSystem } from "@imbatranim/ui";
+import { Tab as TabButton, Tabs, TabsList, TabsPanel, cn, queryClient, useSystem } from "@imbatranim/ui";
 import { ClockTab } from "./tabs/ClockTab";
 import { Stopwatch } from "./tabs/Stopwatch";
 import { Timer } from "./tabs/Timer";
@@ -91,24 +91,27 @@ export function Clock({ windowId: _windowId }: { windowId: string }) {
   };
 
   return (
-    <div className="bg-surface-container-lowest flex h-full flex-col select-none">
+    <Tabs
+      value={tab}
+      onValueChange={(next) => setTab(next as Tab)}
+      className="bg-surface-container-lowest flex h-full flex-col select-none"
+    >
       {/* Above the tabs: an unacknowledged alarm is visible from every tab. */}
       <RingingBanner />
 
       {/* Wraps rather than clips: with a badge on two of the four tabs the strip
           no longer fits the 300px minSize on one line, and a half-cut tab label
           is worse than a second row. */}
-      <div className="border-outline-variant bg-surface-container-low flex flex-wrap items-center gap-0.5 border-b px-1 py-1">
+      <TabsList className="border-outline-variant bg-surface-container-low flex flex-wrap items-center gap-0.5 border-b px-1 py-1">
         {tabs.map((t) => {
           const active = tab === t;
           const count = badge(t);
           return (
-            <button
+            <TabButton
               key={t}
-              type="button"
-              onClick={() => setTab(t)}
+              value={t}
               className={cn(
-                "focus-visible:ring-primary font-ui rounded-control flex items-center gap-1 border px-2 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                "focus-visible:ring-primary font-ui rounded-control flex items-center gap-1 border px-2 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors focus-visible:ring-2 focus-visible:ring-inset",
                 active
                   ? "border-primary bg-primary-container text-on-primary-container"
                   : "text-on-surface-variant hover:border-outline-variant hover:text-on-surface border-transparent",
@@ -126,17 +129,23 @@ export function Clock({ windowId: _windowId }: { windowId: string }) {
                   {count}
                 </span>
               )}
-            </button>
+            </TabButton>
           );
         })}
-      </div>
+      </TabsList>
 
-      <div className="flex-1 overflow-auto">
-        {tab === "clock" && <ClockTab />}
-        {tab === "stopwatch" && <Stopwatch />}
-        {tab === "timer" && <Timer />}
-        {tab === "alarms" && <Alarms />}
-      </div>
-    </div>
+      <TabsPanel value="clock" className="flex-1 overflow-auto">
+        <ClockTab />
+      </TabsPanel>
+      <TabsPanel value="stopwatch" className="flex-1 overflow-auto">
+        <Stopwatch />
+      </TabsPanel>
+      <TabsPanel value="timer" className="flex-1 overflow-auto">
+        <Timer />
+      </TabsPanel>
+      <TabsPanel value="alarms" className="flex-1 overflow-auto">
+        <Alarms />
+      </TabsPanel>
+    </Tabs>
   );
 }

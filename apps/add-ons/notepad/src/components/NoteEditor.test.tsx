@@ -193,7 +193,8 @@ describe("a save over a file that changed on disk", () => {
 });
 
 describe("the view a file opens in", () => {
-  const pressed = (label: string) => container.querySelector(`[aria-label="${label}"]`)?.getAttribute("aria-pressed");
+  // The view modes are a radio group, so the chosen one is aria-checked.
+  const pressed = (label: string) => container.querySelector(`[aria-label="${label}"]`)?.getAttribute("aria-checked");
 
   it("is split for a Markdown file, with the preview beside the editor", async () => {
     disk = { content: "# Title\n\ntext", version: "v1" };

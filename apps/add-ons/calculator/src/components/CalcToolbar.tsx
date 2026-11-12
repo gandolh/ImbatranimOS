@@ -1,5 +1,5 @@
 import { Check, Copy, ListOrdered } from "lucide-react";
-import { cn } from "@imbatranim/ui";
+import { Toggle, cn } from "@imbatranim/ui";
 
 /**
  * The compact row between the display and the keypad: memory keys, the tape toggle, and the
@@ -64,16 +64,15 @@ export function CalcToolbar({
         {memory === null ? "" : `M ${memory}`}
       </span>
 
-      <button
-        type="button"
+      <Toggle
         className={cn(key, tapeOpen && "bg-primary-container text-on-primary-container border-primary")}
-        onClick={onToggleTape}
-        aria-pressed={tapeOpen}
+        pressed={tapeOpen}
+        onPressedChange={onToggleTape}
         aria-label="Tape"
         title="Show recent calculations"
       >
         <ListOrdered size={11} />
-      </button>
+      </Toggle>
       <button
         type="button"
         className={key}

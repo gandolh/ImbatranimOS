@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GripHorizontal, Palette, Trash2, X } from "lucide-react";
-import { cn } from "@imbatranim/ui";
+import { Toggle, cn } from "@imbatranim/ui";
 import { COLOR_OPTIONS, COLOR_SWATCH, noteColorClass } from "./noteStyle";
 import { clampNote } from "./noteGeometry";
 import { usePointerDrag } from "./usePointerDrag";
@@ -126,19 +126,18 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
       >
         <GripHorizontal size={12} className="text-on-surface-variant shrink-0" />
         <span className="min-w-0 flex-1" />
-        <button
-          type="button"
+        <Toggle
           // The controls sit inside the drag handle, so each one stops the pointer
           // from starting a drag — otherwise clicking Delete would drag the note.
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => setPaletteOpen((open) => !open)}
+          pressed={paletteOpen}
+          onPressedChange={setPaletteOpen}
           aria-label="Change colour"
-          aria-pressed={paletteOpen}
           title="Change colour"
-          className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary shrink-0 p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
+          className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary shrink-0 p-0.5 focus-visible:ring-2 focus-visible:ring-inset"
         >
           <Palette size={11} />
-        </button>
+        </Toggle>
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}

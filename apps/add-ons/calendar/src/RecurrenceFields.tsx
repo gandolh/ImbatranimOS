@@ -1,4 +1,4 @@
-import { Input, Select, cn } from "@imbatranim/ui";
+import { Input, Select, Toggle, ToggleGroup, cn } from "@imbatranim/ui";
 import { WEEKDAY_LABELS } from "./dateUtils";
 import { describeRule } from "./recurrence";
 import { ruleFromDraft, type RecurrenceDraft } from "./recurrenceDraft";
@@ -71,33 +71,31 @@ export function RecurrenceFields({
               <span className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
                 On
               </span>
-              <div className="flex flex-wrap gap-1">
-                {WEEKDAY_LABELS.map((label, index) => {
-                  const on = draft.byWeekday.includes(index);
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      aria-pressed={on}
-                      aria-label={`Repeat on ${label}`}
-                      onClick={() =>
-                        onChange({
-                          ...draft,
-                          byWeekday: on ? draft.byWeekday.filter((d) => d !== index) : [...draft.byWeekday, index],
-                        })
-                      }
-                      className={cn(
-                        "focus-visible:ring-primary font-ui rounded-control h-6 w-7 border text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-inset",
-                        on
+              <ToggleGroup
+                multiple
+                aria-label="Repeat on"
+                value={draft.byWeekday.map(String)}
+                onValueChange={(next) => onChange({ ...draft, byWeekday: next.map(Number) })}
+                className="flex flex-wrap gap-1"
+              >
+                {WEEKDAY_LABELS.map((label, index) => (
+                  <Toggle
+                    key={label}
+                    value={String(index)}
+                    aria-label={`Repeat on ${label}`}
+                    className={({ pressed }) =>
+                      cn(
+                        "focus-visible:ring-primary font-ui rounded-control h-6 w-7 border text-[10px] font-semibold focus-visible:ring-2 focus-visible:ring-inset",
+                        pressed
                           ? "border-primary bg-primary-container text-on-primary-container"
                           : "border-outline-variant text-on-surface-variant hover:text-on-surface",
-                      )}
-                    >
-                      {label[0]}
-                    </button>
-                  );
-                })}
-              </div>
+                      )
+                    }
+                  >
+                    {label[0]}
+                  </Toggle>
+                ))}
+              </ToggleGroup>
               <p className="text-on-surface-variant text-[10px]">
                 {draft.byWeekday.length === 0 && "Nothing picked — repeats on the start day."}
               </p>

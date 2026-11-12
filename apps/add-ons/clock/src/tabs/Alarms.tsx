@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Trash2, Info, BellOff } from "lucide-react";
-import { Button, Checkbox, Input, cn } from "@imbatranim/ui";
+import { Button, Checkbox, Input, Toggle, cn } from "@imbatranim/ui";
 import { DAY_LETTERS, EVERY_DAY, NO_REPEAT, WEEKDAYS, describeDays, repeatsOn, toggleDay } from "../alarmSchedule";
 import { currentHHmm } from "../format";
 import {
@@ -41,14 +41,13 @@ function DayPicker({
         {DAY_LETTERS.map((letter, index) => {
           const on = repeatsOn(mask, index);
           return (
-            <button
+            <Toggle
               key={index}
-              type="button"
-              aria-pressed={on}
+              pressed={on}
               // The letters repeat (T/T, S/S), so the accessible name must say
               // which day it is rather than leaving a screen reader with "T".
               aria-label={`Repeat on ${["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index]}`}
-              onClick={() => onChange(toggleDay(mask, index))}
+              onPressedChange={() => onChange(toggleDay(mask, index))}
               className={cn(
                 "focus-visible:ring-primary font-ui rounded-control h-6 w-6 border text-[10px] font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
                 on
@@ -57,7 +56,7 @@ function DayPicker({
               )}
             >
               {letter}
-            </button>
+            </Toggle>
           );
         })}
         {showPresets && (

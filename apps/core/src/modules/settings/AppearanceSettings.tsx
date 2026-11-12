@@ -1,5 +1,6 @@
-import { useId, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useId, type CSSProperties, type ReactNode } from "react";
 import { Check, Image, Moon, Sun } from "lucide-react";
+import { Radio, RadioGroup } from "@imbatranim/ui";
 import { cn } from "../../lib/cn";
 import {
   ACCENT_PRESETS,
@@ -39,21 +40,20 @@ export function AppearanceSettings() {
 
   return (
     <>
-      <Group label="Theme" className="flex flex-wrap gap-4">
+      <Group label="Theme" value={theme} onValueChange={setTheme} className="flex flex-wrap gap-4">
         {THEME_IDS.map((id) => (
-          <ThemeCard key={id} id={id} chosen={theme === id} onChoose={() => setTheme(id)} />
+          <ThemeCard key={id} id={id} chosen={theme === id} />
         ))}
       </Group>
 
-      <Group label="Mode" className="flex gap-3">
+      <Group label="Mode" value={mode} onValueChange={setMode} className="flex gap-3">
         {MODES.map((m) => {
           const Icon = m.icon;
           const chosen = mode === m.id;
           return (
             <Option
               key={m.id}
-              chosen={chosen}
-              onChoose={() => setMode(m.id)}
+              value={m.id}
               className={cn(
                 "rounded-control flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 text-[12px] font-medium transition-colors",
                 FOCUS_RING,
@@ -69,14 +69,13 @@ export function AppearanceSettings() {
         })}
       </Group>
 
-      <Group label="Accent" className="flex flex-wrap gap-3">
+      <Group label="Accent" value={accent} onValueChange={setAccent} className="flex flex-wrap gap-3">
         {ACCENT_PRESETS[theme].map((preset) => {
           const chosen = accent === preset.id;
           return (
             <Option
               key={preset.id}
-              chosen={chosen}
-              onChoose={() => setAccent(preset.id)}
+              value={preset.id}
               title={preset.name}
               className={cn(
                 "group rounded-control flex items-center gap-2 border px-2.5 py-2 transition-colors",
@@ -98,14 +97,13 @@ export function AppearanceSettings() {
         })}
       </Group>
 
-      <Group label="Wallpaper" className="grid grid-cols-3 gap-4" last>
+      <Group label="Wallpaper" value={wallpaper} onValueChange={setWallpaper} className="grid grid-cols-3 gap-4" last>
         {WALLPAPERS[theme].map((wp) => {
           const chosen = wallpaper === wp.id;
           return (
             <Option
               key={wp.id}
-              chosen={chosen}
-              onChoose={() => setWallpaper(wp.id)}
+              value={wp.id}
               className={cn(
                 "group rounded-control relative overflow-hidden border transition-colors",
                 FOCUS_RING,
@@ -133,7 +131,7 @@ export function AppearanceSettings() {
  * theme's saved accent; the frame, ring and badge around it are the current
  * theme's.
  */
-function ThemeCard({ id, chosen, onChoose }: { id: ThemeId; chosen: boolean; onChoose: () => void }) {
+function ThemeCard({ id, chosen }: { id: ThemeId; chosen: boolean }) {
   const mode = useAppearanceStore((s) => s.mode);
   const accentId = useAppearanceStore((s) => s.accents[id]);
   const wallpaperId = useWallpaperStore((s) => s.wallpapers[id]);
@@ -149,8 +147,7 @@ function ThemeCard({ id, chosen, onChoose }: { id: ThemeId; chosen: boolean; onC
 
   return (
     <Option
-      chosen={chosen}
-      onChoose={onChoose}
+      value={id}
       aria-label={`${THEME_NAMES[id]} theme`}
       className={cn(
         "group flex w-36 flex-col gap-1.5 text-left",
@@ -229,34 +226,23 @@ function ChosenBadge() {
   );
 }
 
-/** A labelled radio group whose arrow keys move focus between its options. */
-function Group({
+/** A labelled radio group: Tab reaches the chosen option, and the arrow keys move and choose. */
+function Group<Value extends string>({
   label,
   className,
   last = false,
+  value,
+  onValueChange,
   children,
 }: {
   label: string;
   className: string;
   last?: boolean;
+  value: Value;
+  onValueChange: (value: Value) => void;
   children: ReactNode;
 }) {
   const labelId = useId();
-  const ref = useRef<HTMLDivElement>(null);
-
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
-    const options = [...(ref.current?.querySelectorAll<HTMLElement>('[role="radio"]') ?? [])];
-    const at = options.indexOf(document.activeElement as HTMLElement);
-    if (at < 0) return;
-    let next: number;
-    if (step !== undefined) next = (at + step + options.length) % options.length;
-    else if (e.key === "Home") next = 0;
-    else if (e.key === "End") next = options.length - 1;
-    else return;
-    e.preventDefault();
-    options[next].focus();
-  };
 
   return (
     <div className={last ? undefined : "mb-8"}>
@@ -266,42 +252,32 @@ function Group({
       >
         {label}
       </p>
-      <div ref={ref} role="radiogroup" aria-labelledby={labelId} onKeyDown={onKeyDown} className={className}>
+      <RadioGroup<Value> aria-labelledby={labelId} value={value} onValueChange={onValueChange} className={className}>
         {children}
-      </div>
+      </RadioGroup>
     </div>
   );
 }
 
 /**
- * One option of a Group. Only the chosen option is in the Tab order; Space and
- * Enter choose through the button's own click.
+ * One option of a Group. The caller draws the chosen look; the group owns which
+ * one is chosen.
  */
 function Option({
-  chosen,
-  onChoose,
+  value,
   className,
   children,
   ...rest
 }: {
-  chosen: boolean;
-  onChoose: () => void;
+  value: string;
   className: string;
   children: ReactNode;
   title?: string;
   "aria-label"?: string;
 }) {
   return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={chosen}
-      tabIndex={chosen ? 0 : -1}
-      onClick={onChoose}
-      className={cn("outline-none", className)}
-      {...rest}
-    >
+    <Radio value={value} className={className} {...rest}>
       {children}
-    </button>
+    </Radio>
   );
 }

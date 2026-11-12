@@ -15,7 +15,7 @@ import {
   Captions,
   CaptionsOff,
 } from "lucide-react";
-import { Button, Tooltip, cn } from "@imbatranim/ui";
+import { Button, Toggle, Tooltip, cn } from "@imbatranim/ui";
 import { formatTime } from "../lib/formatTime";
 import { Timebar } from "./Timebar";
 import { SKIP_SECONDS, PLAYBACK_RATES } from "../lib/transport";
@@ -178,16 +178,14 @@ export function TransportBar({
         </Tooltip>
 
         <Tooltip content={shuffle ? "Shuffle is on" : "Shuffle"}>
-          <Button
-            variant={shuffle ? "selected" : "ghost"}
-            size="sm"
-            className="ml-1 h-6 w-6 shrink-0 p-0"
+          <Toggle
+            pressed={shuffle}
+            onPressedChange={onToggleShuffle}
             aria-label="Shuffle"
-            aria-pressed={shuffle}
-            onClick={onToggleShuffle}
+            render={<Button variant={shuffle ? "selected" : "ghost"} size="sm" className="ml-1 h-6 w-6 shrink-0 p-0" />}
           >
             <Shuffle size={13} />
-          </Button>
+          </Toggle>
         </Tooltip>
         <Tooltip
           content={repeat === "off" ? "Repeat: off" : repeat === "all" ? "Repeat: whole queue" : "Repeat: this track"}
@@ -209,16 +207,16 @@ export function TransportBar({
 
         {subtitlesOn !== null && (
           <Tooltip content={subtitlesOn ? "Hide subtitles" : "Show subtitles"}>
-            <Button
-              variant={subtitlesOn ? "selected" : "ghost"}
-              size="sm"
-              className="h-6 w-6 shrink-0 p-0"
+            <Toggle
+              pressed={subtitlesOn}
+              onPressedChange={onToggleSubtitles}
               aria-label="Subtitles"
-              aria-pressed={subtitlesOn}
-              onClick={onToggleSubtitles}
+              render={
+                <Button variant={subtitlesOn ? "selected" : "ghost"} size="sm" className="h-6 w-6 shrink-0 p-0" />
+              }
             >
               {subtitlesOn ? <Captions size={13} /> : <CaptionsOff size={13} />}
-            </Button>
+            </Toggle>
           </Tooltip>
         )}
 
@@ -238,17 +236,15 @@ export function TransportBar({
         </select>
 
         <Tooltip content={muted ? "Unmute" : "Mute"}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 shrink-0 p-0"
+          <Toggle
+            pressed={muted}
+            onPressedChange={onToggleMute}
             aria-label={muted ? "Unmute" : "Mute"}
-            aria-pressed={muted}
-            onClick={onToggleMute}
             disabled={disabled}
+            render={<Button variant="ghost" size="sm" className="h-6 w-6 shrink-0 p-0" />}
           >
             <VolumeIcon volume={volume} muted={muted} />
-          </Button>
+          </Toggle>
         </Tooltip>
         <input
           type="range"

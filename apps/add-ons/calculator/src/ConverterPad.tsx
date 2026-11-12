@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ArrowLeftRight } from "lucide-react";
-import { cn } from "@imbatranim/ui";
+import { Radio, RadioGroup, cn } from "@imbatranim/ui";
 import { CATEGORIES, categoryById, convert, formatResult, type UnitId } from "./engine/units";
 
 /**
@@ -58,23 +58,29 @@ export function ConverterPad({ windowId: _windowId }: { windowId: string }) {
 
   return (
     <div className="flex h-full flex-col gap-2 p-2">
-      <div className="flex flex-wrap gap-1">
+      <RadioGroup
+        aria-label="Category"
+        value={categoryId}
+        onValueChange={pickCategory}
+        className="flex flex-wrap gap-1"
+      >
         {CATEGORIES.map((cat) => (
-          <button
+          <Radio
             key={cat.id}
-            onClick={() => pickCategory(cat.id)}
-            aria-pressed={cat.id === categoryId}
-            className={cn(
-              "focus-visible:ring-primary font-ui rounded-control border px-2 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
-              cat.id === categoryId
-                ? "border-primary bg-primary-container text-on-primary-container"
-                : "border-outline-variant text-on-surface hover:bg-surface-container",
-            )}
+            value={cat.id}
+            className={({ checked }) =>
+              cn(
+                "focus-visible:ring-primary font-ui rounded-control border px-2 py-0.5 text-[11px] focus-visible:ring-2 focus-visible:ring-inset",
+                checked
+                  ? "border-primary bg-primary-container text-on-primary-container"
+                  : "border-outline-variant text-on-surface hover:bg-surface-container",
+              )
+            }
           >
             {cat.label}
-          </button>
+          </Radio>
         ))}
-      </div>
+      </RadioGroup>
 
       <Side
         label="From"

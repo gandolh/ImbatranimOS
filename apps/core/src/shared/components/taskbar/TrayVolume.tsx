@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Popover } from "@base-ui/react/popover";
+import { Popover } from "@imbatranim/ui";
 import { Volume, Volume1, Volume2, VolumeX } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { useSoundStore } from "../../store/soundStore";
@@ -36,60 +36,56 @@ export function TrayVolume() {
   const label = muted ? "Volume: muted" : `Volume: ${percent}%`;
 
   return (
-    <Popover.Root>
-      <Popover.Trigger
-        aria-label={label}
-        title={label}
-        data-tray-volume=""
-        className={cn(
-          "flex h-full cursor-pointer items-center px-2.5 outline-none",
-          "text-on-surface hover:bg-surface-container-high",
-          "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
-        )}
-      >
-        <SpeakerIcon volume={volume} muted={muted} size={15} />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Positioner side="top" align="end" sideOffset={6} className="z-popover">
-          <Popover.Popup
-            initialFocus={slider}
-            aria-label="Volume"
-            className="border-outline-variant bg-surface-container-low rounded-menu overflow-hidden border shadow-(--k-shadow-tray)"
-          >
-            <div className="font-ui flex w-60 items-center gap-2 p-3">
-              <button
-                type="button"
-                aria-label={muted ? "Unmute" : "Mute"}
-                aria-pressed={muted}
-                title={muted ? "Unmute" : "Mute"}
-                onClick={() => setMuted(!muted)}
-                className={cn(
-                  "rounded-control flex h-7 w-7 shrink-0 items-center justify-center outline-none",
-                  "text-on-surface hover:bg-surface-container-high",
-                  "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
-                )}
-              >
-                <SpeakerIcon volume={volume} muted={muted} size={16} />
-              </button>
-              <input
-                ref={slider}
-                type="range"
-                aria-label="Volume"
-                aria-valuetext={muted ? `${percent}%, muted` : `${percent}%`}
-                min={0}
-                max={100}
-                step={1}
-                value={percent}
-                onChange={(e) => setVolume(Number(e.target.value) / 100)}
-                className={cn(RANGE_CLASSES, "min-w-0 flex-1", muted && "opacity-50")}
-              />
-              <span className="text-on-surface-variant w-8 shrink-0 text-right text-[11px] tabular-nums" aria-hidden>
-                {percent}
-              </span>
-            </div>
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
+    <Popover
+      initialFocus={slider}
+      label="Volume"
+      trigger={
+        <button
+          type="button"
+          aria-label={label}
+          title={label}
+          data-tray-volume=""
+          className={cn(
+            "flex h-full cursor-pointer items-center px-2.5 outline-none",
+            "text-on-surface hover:bg-surface-container-high",
+            "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
+          )}
+        >
+          <SpeakerIcon volume={volume} muted={muted} size={15} />
+        </button>
+      }
+    >
+      <div className="font-ui flex w-60 items-center gap-2 p-3">
+        <button
+          type="button"
+          aria-label={muted ? "Unmute" : "Mute"}
+          aria-pressed={muted}
+          title={muted ? "Unmute" : "Mute"}
+          onClick={() => setMuted(!muted)}
+          className={cn(
+            "rounded-control flex h-7 w-7 shrink-0 items-center justify-center outline-none",
+            "text-on-surface hover:bg-surface-container-high",
+            "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
+          )}
+        >
+          <SpeakerIcon volume={volume} muted={muted} size={16} />
+        </button>
+        <input
+          ref={slider}
+          type="range"
+          aria-label="Volume"
+          aria-valuetext={muted ? `${percent}%, muted` : `${percent}%`}
+          min={0}
+          max={100}
+          step={1}
+          value={percent}
+          onChange={(e) => setVolume(Number(e.target.value) / 100)}
+          className={cn(RANGE_CLASSES, "min-w-0 flex-1", muted && "opacity-50")}
+        />
+        <span className="text-on-surface-variant w-8 shrink-0 text-right text-[11px] tabular-nums" aria-hidden>
+          {percent}
+        </span>
+      </div>
+    </Popover>
   );
 }

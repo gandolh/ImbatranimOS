@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Popover } from "@base-ui/react/popover";
 import { Bell } from "lucide-react";
 import dayjs from "dayjs";
+import { Popover } from "@imbatranim/ui";
 import { cn } from "../../../lib/cn";
 import { api } from "../../../lib/axios";
 import { notify, useNotificationStore } from "../../store/notificationStore";
@@ -73,33 +73,33 @@ function NotificationBell() {
   const dnd = useNotificationStore((s) => s.dnd);
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger
-        aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
-        className={cn(
-          "relative flex h-full cursor-pointer items-center px-2.5 outline-none",
-          "text-on-surface hover:bg-surface-container-high",
-          "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
-        )}
-      >
-        <Bell size={15} strokeWidth={1.75} className={cn(dnd && "opacity-50")} />
-        {unread > 0 && (
-          <span
-            className="bg-primary text-on-primary absolute top-1.5 right-1 flex h-3.5 min-w-3.5 items-center justify-center px-0.5 text-[9px] leading-none font-semibold tabular-nums"
-            aria-hidden
-          >
-            {unread > 99 ? "99+" : unread}
-          </span>
-        )}
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Positioner side="top" align="end" sideOffset={6} className="z-popover">
-          <Popover.Popup className="border-outline-variant bg-surface-container-low rounded-menu overflow-hidden border shadow-(--k-shadow-tray)">
-            <NotificationPanel onClose={() => setOpen(false)} />
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+      trigger={
+        <button
+          type="button"
+          aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
+          className={cn(
+            "relative flex h-full cursor-pointer items-center px-2.5 outline-none",
+            "text-on-surface hover:bg-surface-container-high",
+            "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
+          )}
+        >
+          <Bell size={15} strokeWidth={1.75} className={cn(dnd && "opacity-50")} />
+          {unread > 0 && (
+            <span
+              className="bg-primary text-on-primary absolute top-1.5 right-1 flex h-3.5 min-w-3.5 items-center justify-center px-0.5 text-[9px] leading-none font-semibold tabular-nums"
+              aria-hidden
+            >
+              {unread > 99 ? "99+" : unread}
+            </span>
+          )}
+        </button>
+      }
+    >
+      <NotificationPanel onClose={() => setOpen(false)} />
+    </Popover>
   );
 }
 
@@ -156,25 +156,23 @@ export function Tray() {
 
       <div className="bg-outline-variant h-5 w-px" />
 
-      <Popover.Root>
-        <Popover.Trigger
-          className={cn(
-            "flex h-full cursor-pointer flex-col items-end justify-center px-3 leading-tight outline-none",
-            "text-on-surface hover:bg-surface-container-high",
-            "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
-          )}
-        >
-          <span className="text-[12px] font-semibold tabular-nums">{now.format("HH:mm")}</span>
-          <span className="text-on-surface-variant text-[10px] tabular-nums">{now.format("ddd, DD MMM")}</span>
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Positioner side="top" align="end" sideOffset={6} className="z-popover">
-            <Popover.Popup className="border-outline-variant bg-surface-container-low rounded-menu overflow-hidden border shadow-(--k-shadow-tray)">
-              <MiniCalendar />
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
-      </Popover.Root>
+      <Popover
+        trigger={
+          <button
+            type="button"
+            className={cn(
+              "flex h-full cursor-pointer flex-col items-end justify-center px-3 leading-tight outline-none",
+              "text-on-surface hover:bg-surface-container-high",
+              "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
+            )}
+          >
+            <span className="text-[12px] font-semibold tabular-nums">{now.format("HH:mm")}</span>
+            <span className="text-on-surface-variant text-[10px] tabular-nums">{now.format("ddd, DD MMM")}</span>
+          </button>
+        }
+      >
+        <MiniCalendar />
+      </Popover>
     </div>
   );
 }

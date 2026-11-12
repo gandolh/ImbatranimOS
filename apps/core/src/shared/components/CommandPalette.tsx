@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Dialog as BaseDialog } from "@base-ui/react/dialog";
+import { PaletteDialog } from "@imbatranim/ui";
 import { Search } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { searchAllSources, activateItem, type CommandItem } from "../commands/CommandSourcesRegistry";
@@ -116,112 +116,100 @@ export function CommandPalette({ open, onClose }: Props) {
   }, {});
 
   return (
-    <BaseDialog.Root
+    <PaletteDialog
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) onClose();
       }}
+      label="Command palette"
+      onKeyDown={handleKeyDown}
     >
-      <BaseDialog.Portal>
-        <BaseDialog.Backdrop className="bg-inverse-surface/20 z-palette-scrim fixed inset-0" />
-        <BaseDialog.Popup
+      {/* Search input row */}
+      <div className="border-outline-variant bg-surface-container-low flex items-center gap-2 border-b-2 px-3 py-2">
+        <Search size={14} className="text-on-surface-variant shrink-0" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search apps, files, bookmarks…"
           className={cn(
-            "z-palette fixed top-[20%] left-1/2 -translate-x-1/2",
-            "w-[600px] max-w-[calc(100vw-32px)]",
-            "border-outline bg-surface-container-lowest rounded-window overflow-hidden border-2",
-            "outline-none",
-            "font-ui",
+            "focus-visible:ring-primary flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-inset",
+            "text-on-surface font-ui text-[13px]",
+            "placeholder:text-on-surface-variant",
           )}
-          onKeyDown={handleKeyDown}
-        >
-          {/* Search input row */}
-          <div className="border-outline-variant bg-surface-container-low flex items-center gap-2 border-b-2 px-3 py-2">
-            <Search size={14} className="text-on-surface-variant shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search apps, files, bookmarks…"
-              className={cn(
-                "focus-visible:ring-primary flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-inset",
-                "text-on-surface font-ui text-[13px]",
-                "placeholder:text-on-surface-variant",
-              )}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <kbd className="rounded-small border-outline-variant bg-surface-container text-on-surface-variant font-ui border px-1 py-0.5 text-[11px]">
-              ESC
-            </kbd>
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <kbd className="rounded-small border-outline-variant bg-surface-container text-on-surface-variant font-ui border px-1 py-0.5 text-[11px]">
+          ESC
+        </kbd>
+      </div>
+
+      {/* Results */}
+      <div className="max-h-[360px] overflow-y-auto">
+        {loading && items.length === 0 && (
+          <div className="text-on-surface-variant font-ui px-3 py-4 text-center text-[12px]">Searching…</div>
+        )}
+
+        {!loading && items.length === 0 && (
+          <div className="text-on-surface-variant font-ui px-3 py-4 text-center text-[12px]">
+            {query ? "No results." : "Type to search."}
           </div>
+        )}
 
-          {/* Results */}
-          <div className="max-h-[360px] overflow-y-auto">
-            {loading && items.length === 0 && (
-              <div className="text-on-surface-variant font-ui px-3 py-4 text-center text-[12px]">Searching…</div>
-            )}
-
-            {!loading && items.length === 0 && (
-              <div className="text-on-surface-variant font-ui px-3 py-4 text-center text-[12px]">
-                {query ? "No results." : "Type to search."}
-              </div>
-            )}
-
-            {items.length > 0 && (
-              <ul ref={listRef} role="listbox" aria-label="Command palette results">
-                {Object.entries(grouped).map(([group, groupItems]) => {
-                  const groupStartIndex = items.indexOf(groupItems[0]);
-                  return (
-                    <li key={group} role="presentation">
-                      {/* Group header */}
-                      <div className="border-outline-variant bg-surface-container text-on-surface-variant font-ui border-b px-3 py-1 text-[10px] font-semibold tracking-widest uppercase">
-                        {group}
-                      </div>
-                      {/* Group items */}
-                      {groupItems.map((item, localIdx) => {
-                        const globalIdx = groupStartIndex + localIdx;
-                        const isSelected = globalIdx === selectedIndex;
-                        return (
-                          <div
-                            key={item.id}
-                            role="option"
-                            aria-selected={isSelected}
+        {items.length > 0 && (
+          <ul ref={listRef} role="listbox" aria-label="Command palette results">
+            {Object.entries(grouped).map(([group, groupItems]) => {
+              const groupStartIndex = items.indexOf(groupItems[0]);
+              return (
+                <li key={group} role="presentation">
+                  {/* Group header */}
+                  <div className="border-outline-variant bg-surface-container text-on-surface-variant font-ui border-b px-3 py-1 text-[10px] font-semibold tracking-widest uppercase">
+                    {group}
+                  </div>
+                  {/* Group items */}
+                  {groupItems.map((item, localIdx) => {
+                    const globalIdx = groupStartIndex + localIdx;
+                    const isSelected = globalIdx === selectedIndex;
+                    return (
+                      <div
+                        key={item.id}
+                        role="option"
+                        aria-selected={isSelected}
+                        className={cn(
+                          "rounded-item mx-(--k-list-inset) flex cursor-pointer flex-col gap-0.5 px-3 py-2",
+                          "border-outline-variant/40 apricot:border-transparent border-b",
+                          isSelected
+                            ? "bg-primary-container text-on-primary-container"
+                            : "text-on-surface hover:bg-surface-container-low",
+                        )}
+                        onMouseEnter={() => setSelectedIndex(globalIdx)}
+                        onClick={() => {
+                          activateItem(item);
+                          onClose();
+                        }}
+                      >
+                        <span className="font-ui text-[13px] leading-none font-medium">{item.label}</span>
+                        {item.subtitle && (
+                          <span
                             className={cn(
-                              "rounded-item mx-(--k-list-inset) flex cursor-pointer flex-col gap-0.5 px-3 py-2",
-                              "border-outline-variant/40 apricot:border-transparent border-b",
-                              isSelected
-                                ? "bg-primary-container text-on-primary-container"
-                                : "text-on-surface hover:bg-surface-container-low",
+                              "font-ui text-[11px] leading-none",
+                              isSelected ? "text-on-primary-container/70" : "text-on-surface-variant",
                             )}
-                            onMouseEnter={() => setSelectedIndex(globalIdx)}
-                            onClick={() => {
-                              activateItem(item);
-                              onClose();
-                            }}
                           >
-                            <span className="font-ui text-[13px] leading-none font-medium">{item.label}</span>
-                            {item.subtitle && (
-                              <span
-                                className={cn(
-                                  "font-ui text-[11px] leading-none",
-                                  isSelected ? "text-on-primary-container/70" : "text-on-surface-variant",
-                                )}
-                              >
-                                {item.subtitle}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        </BaseDialog.Popup>
-      </BaseDialog.Portal>
-    </BaseDialog.Root>
+                            {item.subtitle}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </PaletteDialog>
   );
 }

@@ -20,7 +20,9 @@ export { cn } from "./cn";
 // UI kit
 export { Button } from "./components/Button";
 export { Checkbox } from "./components/Checkbox";
-export { Dialog } from "./components/Dialog";
+export { Dialog, type DialogChangeDetails } from "./components/Dialog";
+export { PaletteDialog } from "./components/PaletteDialog";
+export { Popover } from "./components/Popover";
 export { Input } from "./components/Input";
 export { ScrollArea } from "./components/ScrollArea";
 export { Select } from "./components/Select";

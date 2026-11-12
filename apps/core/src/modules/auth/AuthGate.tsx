@@ -131,7 +131,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         {children}
       </div>
       {suspended && (
-        <div className="fixed inset-0 z-[9999]">
+        <div className="z-lock fixed inset-0">
           {authenticated ? (
             <ScreenCover
               onDismiss={() => {

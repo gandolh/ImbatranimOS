@@ -1357,7 +1357,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems} onClose={() => setMenu(null)} />}
 
       {/* New folder dialog */}
-      <Dialog open={showNewFolder} onOpenChange={setShowNewFolder} title="New Folder">
+      <Dialog open={showNewFolder} onOpenChange={setShowNewFolder} title="New Folder" disablePointerDismissal>
         <div className="flex flex-col gap-3">
           <Input
             label="Folder Name"

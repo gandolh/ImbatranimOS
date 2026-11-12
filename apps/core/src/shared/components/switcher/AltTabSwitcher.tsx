@@ -145,7 +145,7 @@ export function AltTabSwitcher() {
     <div
       data-testid="alt-tab-switcher"
       // Above every window AND the taskbar (z-9000) / its menu (10000).
-      className="fixed inset-0 z-[10001] flex items-center justify-center"
+      className="z-switcher fixed inset-0 flex items-center justify-center"
       aria-hidden
     >
       <div className="border-outline-variant bg-surface-container rounded-window flex max-w-[80vw] gap-2 overflow-x-auto border p-3 shadow-(--k-shadow-dialog)">

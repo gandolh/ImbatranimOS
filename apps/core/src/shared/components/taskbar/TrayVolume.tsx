@@ -50,7 +50,7 @@ export function TrayVolume() {
         <SpeakerIcon volume={volume} muted={muted} size={15} />
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Positioner side="top" align="end" sideOffset={6} className="z-[1000]">
+        <Popover.Positioner side="top" align="end" sideOffset={6} className="z-popover">
           <Popover.Popup
             initialFocus={slider}
             aria-label="Volume"

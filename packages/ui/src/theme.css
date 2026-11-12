@@ -74,6 +74,27 @@
   --radius-tile: var(--k-radius-tile);
   --radius-small: var(--k-radius-small);
 
+  /* Scrim behind a modal dialog (was bg-black/50) */
+  --color-scrim: #00000080;
+
+  /* Layers. The literal z-[N] values this replaces, in the same order. A
+     window's own z-index grows past these, so a popup's Positioner carries one
+     of them. select sits above dialog so a Select opens in front of the
+     Dialog that holds it. */
+  --z-index-palette-scrim: 900;
+  --z-index-palette: 901;
+  --z-index-popover: 1000;
+  --z-index-scrim: 1000;
+  --z-index-dialog: 1001;
+  --z-index-select: 1002;
+  --z-index-tooltip: 1100;
+  --z-index-toast: 8500;
+  --z-index-taskbar: 9000;
+  --z-index-start: 9001;
+  --z-index-lock: 9999;
+  --z-index-menu: 10000;
+  --z-index-switcher: 10001;
+
   /* Spacing */
   --spacing-half: 4px;
   --spacing-base: 8px;

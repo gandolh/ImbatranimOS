@@ -221,6 +221,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
         open={state !== null}
         onOpenChange={(next) => !next && onClose()}
         title={state?.mode === "edit" ? "Edit event" : "New event"}
+        disablePointerDismissal
         className="max-h-[80vh] w-[360px] overflow-y-auto"
       >
         <div className="flex flex-col gap-3">

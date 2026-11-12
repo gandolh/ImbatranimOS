@@ -123,10 +123,10 @@ export function CommandPalette({ open, onClose }: Props) {
       }}
     >
       <BaseDialog.Portal>
-        <BaseDialog.Backdrop className="bg-inverse-surface/20 fixed inset-0 z-[900]" />
+        <BaseDialog.Backdrop className="bg-inverse-surface/20 z-palette-scrim fixed inset-0" />
         <BaseDialog.Popup
           className={cn(
-            "fixed top-[20%] left-1/2 z-[901] -translate-x-1/2",
+            "z-palette fixed top-[20%] left-1/2 -translate-x-1/2",
             "w-[600px] max-w-[calc(100vw-32px)]",
             "border-outline bg-surface-container-lowest rounded-window overflow-hidden border-2",
             "outline-none",

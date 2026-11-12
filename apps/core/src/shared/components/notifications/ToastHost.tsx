@@ -148,7 +148,7 @@ export function ToastHost() {
   return (
     <div
       ref={stackRef}
-      className="pointer-events-none fixed right-3 z-[8500] flex flex-col gap-2"
+      className="z-toast pointer-events-none fixed right-3 flex flex-col gap-2"
       style={{ bottom: TASKBAR_HEIGHT + 12 }}
     >
       {items.map((item) => (

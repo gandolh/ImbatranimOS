@@ -65,7 +65,7 @@ export function ContextMenu({ x, y, items, onClose, label = "Context menu" }: Co
           align="start"
           sideOffset={2}
           // Above the taskbar (z-9000); same layer its old menu used.
-          className="z-[10000] outline-none"
+          className="z-menu outline-none"
         >
           <Menu.Popup
             aria-label={label}

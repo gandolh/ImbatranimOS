@@ -107,7 +107,7 @@ export function Taskbar() {
   return (
     <div
       data-testid="taskbar"
-      className="border-outline-variant bg-surface-container-low font-ui apricot:gap-1.5 apricot:px-2 apricot:py-1.5 fixed inset-x-0 bottom-0 z-[9000] flex items-stretch border-t"
+      className="border-outline-variant bg-surface-container-low font-ui apricot:gap-1.5 apricot:px-2 apricot:py-1.5 z-taskbar fixed inset-x-0 bottom-0 flex items-stretch border-t"
       style={{ height: TASKBAR_HEIGHT }}
     >
       {/* Start button */}

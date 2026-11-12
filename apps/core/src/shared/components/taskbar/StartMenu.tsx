@@ -201,7 +201,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       aria-label="Start menu"
       onKeyDown={handleMenuKeyDown}
       className={cn(
-        "absolute bottom-full left-0 z-[9001] mb-1 flex max-h-[calc(100vh-72px)] w-[320px] max-w-[calc(100vw-16px)] flex-col",
+        "z-start absolute bottom-full left-0 mb-1 flex max-h-[calc(100vh-72px)] w-[320px] max-w-[calc(100vw-16px)] flex-col",
         // Apricot's menu floats clear of the taskbar and the screen's edge.
         "apricot:left-2 apricot:mb-2 rounded-menu overflow-hidden",
         "border-outline-variant bg-surface-container-low border",

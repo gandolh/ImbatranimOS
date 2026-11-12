@@ -43,7 +43,7 @@ export function PromptDialog({
   const trimmed = value.trim();
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onCancel()} title={title}>
+    <Dialog open={open} onOpenChange={(next) => !next && onCancel()} title={title} disablePointerDismissal>
       {message && <p className="text-on-surface mb-4">{message}</p>}
       <Input
         autoFocus

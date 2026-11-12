@@ -27,7 +27,7 @@ export function Tooltip({ content, children, side = "top" }: TooltipProps) {
         {trigger}
         <BaseTooltip.Portal>
           {/* Above the window band and above dialogs (a tooltip can sit over a dialog). */}
-          <BaseTooltip.Positioner side={side} sideOffset={4} className="z-[1100]">
+          <BaseTooltip.Positioner side={side} sideOffset={4} className="z-tooltip">
             <BaseTooltip.Popup
               className={cn(
                 "border-outline-variant bg-inverse-surface rounded-control border px-2 py-1",

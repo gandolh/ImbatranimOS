@@ -57,7 +57,7 @@ export function Select({ label, placeholder = "Select…", options, className, .
         <BaseSelect.Portal>
           {/* z-index on the Positioner (the fixed element): overlays must clear the
               window band, whose zIndex grows unboundedly. */}
-          <BaseSelect.Positioner sideOffset={1} className="z-[1000]">
+          <BaseSelect.Positioner sideOffset={1} className="z-select">
             <BaseSelect.Popup
               className={cn(
                 "border-outline-variant bg-surface-container-lowest rounded-menu min-w-[8rem] border",

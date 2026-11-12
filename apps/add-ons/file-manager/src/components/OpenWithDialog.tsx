@@ -55,6 +55,7 @@ export function OpenWithDialog({
       }}
       title="Open with"
       description={fileName}
+      disablePointerDismissal
     >
       <div className="flex flex-col gap-2">
         {claimants.length === 0 && (

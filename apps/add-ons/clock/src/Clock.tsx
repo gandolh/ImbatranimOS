@@ -111,7 +111,7 @@ export function Clock({ windowId: _windowId }: { windowId: string }) {
               key={t}
               value={t}
               className={cn(
-                "focus-visible:ring-primary font-ui rounded-control flex items-center gap-1 border px-2 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors focus-visible:ring-2 focus-visible:ring-inset",
+                "focus-visible:ring-primary font-ui rounded-control text-label flex items-center gap-1 border px-2 py-1 font-semibold tracking-wider uppercase transition-colors focus-visible:ring-2 focus-visible:ring-inset",
                 active
                   ? "border-primary bg-primary-container text-on-primary-container"
                   : "text-on-surface-variant hover:border-outline-variant hover:text-on-surface border-transparent",
@@ -122,7 +122,7 @@ export function Clock({ windowId: _windowId }: { windowId: string }) {
               {count > 0 && (
                 <span
                   className={cn(
-                    "font-ui inline-flex h-3.5 min-w-3.5 items-center justify-center px-0.5 text-[9px] leading-none font-semibold tabular-nums",
+                    "font-ui text-micro inline-flex h-3.5 min-w-3.5 items-center justify-center px-0.5 leading-none font-semibold tabular-nums",
                     active ? "bg-on-primary-container text-primary-container" : "bg-primary text-on-primary",
                   )}
                 >

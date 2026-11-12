@@ -226,7 +226,7 @@ function BrowserFrame({ origin }: { origin: string }) {
           </Button>
         </Tooltip>
         <input
-          className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface focus:border-primary min-w-0 flex-1 border px-2 py-1 text-[12px] outline-none"
+          className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface focus:border-primary text-control min-w-0 flex-1 border px-2 py-1 outline-none"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           onFocus={(e) => e.target.select()}
@@ -250,7 +250,7 @@ function BrowserFrame({ origin }: { origin: string }) {
         </Tooltip>
       </form>
       {error && (
-        <p className="border-outline-variant bg-surface-container text-error font-ui border-b px-3 py-1.5 text-[12px]">
+        <p className="border-outline-variant bg-surface-container text-error font-ui text-control border-b px-3 py-1.5">
           {error}
         </p>
       )}
@@ -275,8 +275,8 @@ function Notice({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
       <Globe size={28} className="opacity-60" />
-      {title && <p className="font-ui text-on-surface text-[13px] font-semibold">{title}</p>}
-      <p className="font-content max-w-[420px] text-[12px]">{children}</p>
+      {title && <p className="font-ui text-on-surface text-body font-semibold">{title}</p>}
+      <p className="font-content text-control max-w-[420px]">{children}</p>
     </div>
   );
 }

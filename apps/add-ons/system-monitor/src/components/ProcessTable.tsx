@@ -16,7 +16,7 @@ const COLUMNS: { key: SortKey; label: string; align?: "right" }[] = [
 
 // Shared grid template so the header and every virtual row keep their columns
 // aligned (PID · Name · CPU% · MEM% · Kill). Replaces the old <table> layout.
-const GRID = "grid grid-cols-[4rem_1fr_5rem_5rem_3.5rem]";
+const GRID = "grid grid-cols-[52px_1fr_65px_65px_45.5px]";
 
 export function ProcessTable({
   processes,
@@ -119,7 +119,7 @@ export function ProcessTable({
   const virtualRows = virtualizer.getVirtualItems();
 
   return (
-    <div className="flex h-full flex-col font-mono text-[11px]">
+    <div className="text-label flex h-full flex-col font-mono">
       {/* Filter */}
       <div className="border-outline-variant bg-surface-container-low flex items-center gap-1.5 border-b px-2 py-1">
         <Search size={11} className="text-on-surface-variant shrink-0" />
@@ -128,9 +128,9 @@ export function ProcessTable({
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Filter by name or pid"
           aria-label="Filter processes"
-          className="font-ui text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+          className="font-ui text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary text-label min-w-0 flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-inset"
         />
-        <span className="font-ui text-on-surface-variant shrink-0 text-[10px] tabular-nums">
+        <span className="font-ui text-on-surface-variant text-tiny shrink-0 tabular-nums">
           {filter ? `${visible.length} / ${processes.length}` : `${processes.length}`}
         </span>
       </div>
@@ -173,7 +173,7 @@ export function ProcessTable({
                   <div className="px-2 py-0.5">{p.pid}</div>
                   <div className="min-w-0 truncate px-2 py-0.5" title={p.name}>
                     {p.name}
-                    {isSelf && <span className="text-on-surface-variant ml-1 text-[9px]">(this OS)</span>}
+                    {isSelf && <span className="text-on-surface-variant text-micro ml-1">(this OS)</span>}
                   </div>
                   {/* An em dash, not `0.0`: the first poll has no baseline, and a
                       confident zero for a busy process is a lie. */}

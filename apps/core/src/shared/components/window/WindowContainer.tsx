@@ -175,7 +175,7 @@ const WindowSlot = memo(function WindowSlot({
           <SystemProvider system={system}>
             <Suspense
               fallback={
-                <div className="text-on-surface-variant flex h-full items-center justify-center p-3 text-sm">
+                <div className="text-on-surface-variant text-note flex h-full items-center justify-center p-3">
                   Loading…
                 </div>
               }
@@ -189,7 +189,7 @@ const WindowSlot = memo(function WindowSlot({
           </SystemProvider>
         </AppErrorBoundary>
       ) : (
-        <div className="text-on-surface-variant p-3 text-sm">Unknown app: {appId}</div>
+        <div className="text-on-surface-variant text-note p-3">Unknown app: {appId}</div>
       )}
     </Window>
   );

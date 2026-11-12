@@ -187,7 +187,7 @@ export function ScientificPad({ windowId: _windowId, session }: { windowId: stri
 
   const key =
     "font-ui border-outline-variant text-on-surface hover:bg-surface-container-high " +
-    "rounded-control flex h-7 items-center justify-center border text-[11px] outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset";
+    "rounded-control flex h-7 items-center justify-center border text-label outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset";
 
   return (
     <div className="flex h-full flex-col">
@@ -195,7 +195,7 @@ export function ScientificPad({ windowId: _windowId, session }: { windowId: stri
       <div className="border-outline-variant bg-surface-container-lowest flex min-h-[36px] flex-1 flex-col items-end justify-end overflow-hidden border-b px-3 py-2">
         <span
           className={cn(
-            "font-ui w-full truncate text-right text-2xl font-medium tabular-nums",
+            "font-ui text-heading w-full truncate text-right font-medium tabular-nums",
             isError ? "text-error" : "text-on-surface",
           )}
           title={shown !== null && isRounded(shown) ? `Exactly ${copyValue}` : display}
@@ -203,7 +203,7 @@ export function ScientificPad({ windowId: _windowId, session }: { windowId: stri
           {display}
         </span>
         {shown !== null && isRounded(shown) && (
-          <span className="text-on-surface-variant font-ui text-[9px]">rounded · {copyValue}</span>
+          <span className="text-on-surface-variant font-ui text-micro">rounded · {copyValue}</span>
         )}
       </div>
 
@@ -251,7 +251,7 @@ export function ScientificPad({ windowId: _windowId, session }: { windowId: stri
                 value={mode}
                 className={({ checked }) =>
                   cn(
-                    "focus-visible:ring-primary font-ui border-outline-variant rounded-control flex h-6 flex-1 items-center justify-center border text-[10px] font-semibold uppercase focus-visible:ring-2 focus-visible:ring-inset",
+                    "focus-visible:ring-primary font-ui border-outline-variant rounded-control text-tiny flex h-6 flex-1 items-center justify-center border font-semibold uppercase focus-visible:ring-2 focus-visible:ring-inset",
                     checked
                       ? "bg-primary-container text-on-primary-container border-primary"
                       : "text-on-surface hover:bg-surface-container-high",
@@ -265,7 +265,7 @@ export function ScientificPad({ windowId: _windowId, session }: { windowId: stri
           <button
             type="button"
             onClick={() => dispatch({ type: "clear" })}
-            className="rounded-control font-ui border-outline-variant text-on-surface hover:bg-surface-container-high focus-visible:ring-primary h-6 flex-1 border text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-inset"
+            className="rounded-control font-ui border-outline-variant text-on-surface hover:bg-surface-container-high focus-visible:ring-primary text-tiny h-6 flex-1 border font-semibold outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             C
           </button>
@@ -274,7 +274,7 @@ export function ScientificPad({ windowId: _windowId, session }: { windowId: stri
             aria-label="Backspace"
             title="Backspace"
             onClick={() => dispatch({ type: "backspace" })}
-            className="rounded-control font-ui border-outline-variant text-on-surface hover:bg-surface-container-high focus-visible:ring-primary h-6 flex-1 border text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+            className="rounded-control font-ui border-outline-variant text-on-surface hover:bg-surface-container-high focus-visible:ring-primary text-label h-6 flex-1 border outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             ⌫
           </button>

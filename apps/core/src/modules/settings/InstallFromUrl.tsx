@@ -9,7 +9,7 @@ import { apiMessage, capabilityText, publisher, sourceLine, type Inspection } fr
 export function SourceBadge({ children, warn = false }: { children: string; warn?: boolean }) {
   return (
     <span
-      className={cn("ml-2 text-[9px] font-semibold tracking-widest uppercase", warn ? "text-error" : "text-primary")}
+      className={cn("text-micro ml-2 font-semibold tracking-widest uppercase", warn ? "text-error" : "text-primary")}
     >
       {children}
     </span>
@@ -18,7 +18,7 @@ export function SourceBadge({ children, warn = false }: { children: string; warn
 
 function Capabilities({ capabilities }: { capabilities: string[] }) {
   return (
-    <div className="mt-2 text-[11px]">
+    <div className="text-label mt-2">
       {capabilities.length === 0 ? (
         <p className="text-on-surface">It asks for nothing beyond its own window.</p>
       ) : (
@@ -78,18 +78,16 @@ export function ConsentCard({
   };
 
   const replaces = current && (
-    <p className="text-on-surface mt-2 text-[11px]">
+    <p className="text-on-surface text-label mt-2">
       {same ? "Already installed at this commit." : `Installed at ${current.commit.slice(0, 7)}. This replaces it.`}
     </p>
   );
   const apps = inspection.apps && inspection.apps.length > 1 && (
-    <p className="text-on-surface-variant mt-2 text-[11px]">
-      Its apps: {inspection.apps.map((a) => a.name).join(", ")}
-    </p>
+    <p className="text-on-surface-variant text-label mt-2">Its apps: {inspection.apps.map((a) => a.name).join(", ")}</p>
   );
   const footer = (primary: JSX.Element) => (
     <>
-      {error && <p className="text-error mt-2 text-[12px]">{error}</p>}
+      {error && <p className="text-error text-control mt-2">{error}</p>}
       <div className="mt-3 flex gap-1.5">
         {primary}
         <Button size="sm" variant="ghost" disabled={busy} onClick={cancel}>
@@ -105,11 +103,11 @@ export function ConsentCard({
         aria-label={`${manifest.name} is not verified`}
         className="rounded-control border-error bg-surface-container-low mt-3 border px-3 py-3"
       >
-        <p className="font-ui text-on-surface text-[13px] font-semibold">This app isn&apos;t verified</p>
-        <p className="text-on-surface-variant mt-1 text-[11px]">
+        <p className="font-ui text-on-surface text-body font-semibold">This app isn&apos;t verified</p>
+        <p className="text-on-surface-variant text-label mt-1">
           Nobody has reviewed {manifest.name} at this commit. Install it only if you trust where it comes from.
         </p>
-        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[11px]">
+        <dl className="text-label mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
           <dt className="text-on-surface-variant">App</dt>
           <dd className="text-on-surface min-w-0 truncate">{manifest.name}</dd>
           <dt className="text-on-surface-variant">Publisher</dt>
@@ -120,12 +118,12 @@ export function ConsentCard({
         <Capabilities capabilities={manifest.capabilities} />
         <p
           role="note"
-          className="border-error text-on-surface bg-surface-container-lowest mt-3 border-l-2 px-2.5 py-2 text-[11px]"
+          className="border-error text-on-surface bg-surface-container-lowest text-label mt-3 border-l-2 px-2.5 py-2"
         >
           A trusted app runs as you. It can do anything you can, the Terminal included.
         </p>
         {moreInfo && (
-          <div className="mt-2 text-[11px]">
+          <div className="text-label mt-2">
             {manifest.description && <p className="text-on-surface-variant">{manifest.description}</p>}
             {apps}
             <p className="text-on-surface-variant mt-2">{sourceLine(source)}</p>
@@ -158,20 +156,20 @@ export function ConsentCard({
           {createElement(marketplaceIcon(manifest.icon), { size: 15, strokeWidth: 1.75 })}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="font-ui text-on-surface block truncate text-[13px] font-medium">
+          <span className="font-ui text-on-surface text-body block truncate font-medium">
             {manifest.name}
             <SourceBadge>Verified</SourceBadge>
           </span>
-          <span className="text-on-surface-variant block truncate text-[11px]">{sourceLine(source)}</span>
+          <span className="text-on-surface-variant text-label block truncate">{sourceLine(source)}</span>
         </span>
       </div>
-      {manifest.description && <p className="text-on-surface-variant mt-2 text-[11px]">{manifest.description}</p>}
+      {manifest.description && <p className="text-on-surface-variant text-label mt-2">{manifest.description}</p>}
       {apps}
       {replaces}
       <Capabilities capabilities={manifest.capabilities} />
       <p
         role="note"
-        className="border-primary text-on-surface bg-surface-container-lowest mt-3 border-l-2 px-2.5 py-2 text-[11px]"
+        className="border-primary text-on-surface bg-surface-container-lowest text-label mt-3 border-l-2 px-2.5 py-2"
       >
         This commit is verified. It is built from source on this machine and runs like the other apps, as you.
       </p>
@@ -212,8 +210,8 @@ export function InstallFromUrl({ onInstalled }: { onInstalled: () => void }) {
 
   return (
     <section className="mb-6">
-      <h3 className="font-ui text-on-surface mb-1 text-[12px] font-semibold">Install from a URL</h3>
-      <p className="text-on-surface-variant mb-3 text-[12px]">
+      <h3 className="font-ui text-on-surface text-control mb-1 font-semibold">Install from a URL</h3>
+      <p className="text-on-surface-variant text-control mb-3">
         Paste a GitHub link to an app that ships an <code>imbatranim.json</code>. A verified app installs straight away;
         any other asks for your trust first.
       </p>
@@ -232,9 +230,9 @@ export function InstallFromUrl({ onInstalled }: { onInstalled: () => void }) {
           {checking ? "Checking…" : "Check"}
         </Button>
       </form>
-      {error && <p className="text-error mt-2 text-[12px]">{error}</p>}
+      {error && <p className="text-error text-control mt-2">{error}</p>}
       {done && (
-        <p className="text-on-surface mt-2 text-[12px]" role="status">
+        <p className="text-on-surface text-control mt-2" role="status">
           Installed.
         </p>
       )}

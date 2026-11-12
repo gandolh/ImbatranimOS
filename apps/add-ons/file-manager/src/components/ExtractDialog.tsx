@@ -66,7 +66,7 @@ export function ExtractDialog({
       description={`${request.what} from ${request.archiveName}`}
     >
       <div className="flex flex-col gap-3">
-        <div className="font-ui text-[12px]" data-testid="extract-dest">
+        <div className="font-ui text-control" data-testid="extract-dest">
           {dest === undefined && request.beside !== undefined ? (
             <>
               Beside it, as <span className="font-semibold">{request.beside}</span>.
@@ -86,7 +86,7 @@ export function ExtractDialog({
             </>
           )}
         </div>
-        {error && <div className="text-error font-ui text-[12px]">{error}</div>}
+        {error && <div className="text-error font-ui text-control">{error}</div>}
         <div className="flex justify-end gap-2">
           <Button variant="default" size="sm" onClick={() => void choose()}>
             Choose folder…

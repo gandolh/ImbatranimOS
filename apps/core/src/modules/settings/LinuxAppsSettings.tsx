@@ -156,10 +156,10 @@ export function LinuxAppsSettings() {
   const setKeyboardLayout = useLinuxAppsPrefs((p) => p.setKeyboardLayout);
 
   if (status.isLoading) {
-    return <p className="text-on-surface-variant text-[12px]">Loading…</p>;
+    return <p className="text-on-surface-variant text-control">Loading…</p>;
   }
   if (!status.data?.available) {
-    return <p className="text-on-surface-variant text-[12px]">Linux apps aren&apos;t available on this machine.</p>;
+    return <p className="text-on-surface-variant text-control">Linux apps aren&apos;t available on this machine.</p>;
   }
 
   const installedNames = new Set((installed.data ?? []).map((a) => a.attr));
@@ -167,19 +167,19 @@ export function LinuxAppsSettings() {
   return (
     <div className="space-y-6" data-linux-apps-pane="">
       {confirmDialog}
-      <p className="text-on-surface-variant text-[12px] leading-relaxed">
+      <p className="text-on-surface-variant text-control leading-relaxed">
         Programs for Linux, from the {status.data.release ?? "pinned"} release of Nix&apos;s packages. Installed
         programs appear in Start; command-line tools work in the Terminal.
       </p>
 
       {status.data.index === "mismatch" && (
-        <p className="border-error text-error rounded-control border px-3 py-2 text-[12px]">
+        <p className="border-error text-error rounded-control text-control border px-3 py-2">
           The package list doesn&apos;t match the release this machine installs from, so installing is off. Rebuild the
           image to fix it.
         </p>
       )}
       {status.data.index === "failed" && (
-        <p className="border-error text-error rounded-control border px-3 py-2 text-[12px]">
+        <p className="border-error text-error rounded-control text-control border px-3 py-2">
           The package list could not be read.
         </p>
       )}
@@ -200,31 +200,31 @@ export function LinuxAppsSettings() {
         {ready && term && (
           <ul className="border-outline-variant rounded-control apricot:divide-transparent apricot:py-1 mt-3 max-h-[320px] divide-y overflow-y-auto border px-(--k-list-inset)">
             {results.isFetching && !results.data && (
-              <li className="text-on-surface-variant rounded-item px-3 py-2 text-[12px]">Searching…</li>
+              <li className="text-on-surface-variant rounded-item text-control px-3 py-2">Searching…</li>
             )}
             {results.data?.length === 0 && (
-              <li className="text-on-surface-variant rounded-item px-3 py-2 text-[12px]">Nothing found.</li>
+              <li className="text-on-surface-variant rounded-item text-control px-3 py-2">Nothing found.</li>
             )}
             {results.data?.map((r) => (
               <li key={r.attr} className="rounded-item flex items-start gap-3 px-3 py-2" data-linux-result={r.attr}>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 text-[13px]">
+                  <div className="text-body flex items-center gap-2">
                     <span className="text-on-surface font-medium">{r.pname || r.attr}</span>
                     <span className="text-on-surface-variant">{r.version}</span>
                     {r.unfree && (
                       <span
-                        className="border-outline text-on-surface-variant rounded-small border px-1 text-[10px] uppercase"
+                        className="border-outline text-on-surface-variant rounded-small text-tiny border px-1 uppercase"
                         title="Its license isn't free software"
                       >
                         Unfree
                       </span>
                     )}
                   </div>
-                  <div className="text-on-surface-variant truncate text-[12px]">{r.description}</div>
-                  <div className="text-on-surface-variant font-mono text-[11px]">{r.attr}</div>
+                  <div className="text-on-surface-variant text-control truncate">{r.description}</div>
+                  <div className="text-on-surface-variant text-label font-mono">{r.attr}</div>
                 </div>
                 {installedNames.has(r.attr) ? (
-                  <span className="text-on-surface-variant pt-1 text-[12px]">Installed</span>
+                  <span className="text-on-surface-variant text-control pt-1">Installed</span>
                 ) : (
                   <Button
                     size="sm"
@@ -240,11 +240,11 @@ export function LinuxAppsSettings() {
         )}
       </div>
 
-      {error && <p className="text-error text-[12px]">{error}</p>}
+      {error && <p className="text-error text-control">{error}</p>}
 
       {/* The current or last job; an update's is shown under Updates. */}
       {running && UPDATE_ACTIONS.has(required(job.data, "the job").action) && (
-        <p className="text-on-surface-variant text-[12px]" data-linux-job="update">
+        <p className="text-on-surface-variant text-control" data-linux-job="update">
           {required(job.data, "the job").action === "check"
             ? "Checking for updates. Installs and removals wait a moment."
             : "Linux apps are being updated (see Updates below). Installs and removals wait until it finishes."}
@@ -252,12 +252,12 @@ export function LinuxAppsSettings() {
       )}
       {job.data && !UPDATE_ACTIONS.has(job.data.action) && (
         <div>
-          <p className="text-on-surface mb-2 text-[12px] font-medium" data-linux-job={job.data.state}>
+          <p className="text-on-surface text-control mb-2 font-medium" data-linux-job={job.data.state}>
             {jobTitle(job.data)}
           </p>
           <pre
             ref={logRef}
-            className="border-outline-variant bg-surface-container-lowest text-on-surface-variant rounded-control max-h-[180px] overflow-auto border p-2 font-mono text-[11px] whitespace-pre-wrap"
+            className="border-outline-variant bg-surface-container-lowest text-on-surface-variant rounded-control text-label max-h-[180px] overflow-auto border p-2 font-mono whitespace-pre-wrap"
           >
             {job.data.log}
           </pre>
@@ -266,12 +266,12 @@ export function LinuxAppsSettings() {
 
       {/* Installed */}
       <div>
-        <p className="text-on-surface-variant mb-2 text-[11px] font-semibold tracking-widest uppercase">Installed</p>
+        <p className="text-on-surface-variant text-label mb-2 font-semibold tracking-widest uppercase">Installed</p>
         {installed.data?.length ? (
           <ul className="border-outline-variant rounded-control apricot:divide-transparent apricot:py-1 divide-y border px-(--k-list-inset)">
             {installed.data.map((a) => (
               <li key={a.name} className="rounded-item flex items-center gap-3 px-3 py-2" data-linux-installed={a.name}>
-                <span className="text-on-surface flex-1 text-[13px]">
+                <span className="text-on-surface text-body flex-1">
                   {a.name} <span className="text-on-surface-variant">{a.version}</span>
                 </span>
                 <Button size="sm" disabled={running} onClick={() => void remove(a)}>
@@ -281,7 +281,7 @@ export function LinuxAppsSettings() {
             ))}
           </ul>
         ) : (
-          <p className="text-on-surface-variant text-[12px]">No Linux apps installed yet.</p>
+          <p className="text-on-surface-variant text-control">No Linux apps installed yet.</p>
         )}
       </div>
 
@@ -293,14 +293,14 @@ export function LinuxAppsSettings() {
           onValueChange={(id) => setKeyboardLayout(id as KeyboardLayoutId)}
           options={KEYBOARD_LAYOUTS.map((l) => ({ value: l.id, label: l.label }))}
         />
-        <p className="text-on-surface-variant mt-1 text-[11px]">
+        <p className="text-on-surface-variant text-label mt-1">
           What Linux apps type. Running apps switch at once; the desktop&apos;s own apps use your browser&apos;s layout.
         </p>
       </div>
 
       {/* Disk */}
       <div className="flex items-center gap-3">
-        <p className="text-on-surface flex-1 text-[12px]" data-linux-store="">
+        <p className="text-on-surface text-control flex-1" data-linux-store="">
           {store.data == null
             ? "Measuring what Linux apps take on disk…"
             : `Linux apps take ${formatBytes(store.data)} on disk.`}

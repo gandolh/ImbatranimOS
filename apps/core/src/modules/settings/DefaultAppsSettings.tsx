@@ -50,7 +50,7 @@ export function DefaultAppsSettings() {
 
   return (
     <div>
-      <p className="text-on-surface-variant mb-4 max-w-prose text-[12px]">
+      <p className="text-on-surface-variant text-control mb-4 max-w-prose">
         Which app opens which kind of file. Only apps that say they handle a type appear here — to open one file in
         something unusual, right-click it in Files and choose
         <span className="text-on-surface font-semibold"> Open with…</span>.
@@ -67,7 +67,7 @@ export function DefaultAppsSettings() {
             }}
             placeholder="Find a file type…"
             aria-label="Find a file type"
-            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary text-control min-w-0 flex-1 bg-transparent py-1 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
           {query !== "" && (
             <Button variant="ghost" size="sm" aria-label="Clear" onClick={() => setQuery("")}>
@@ -83,7 +83,7 @@ export function DefaultAppsSettings() {
 
       <div className="rounded-control border-outline-variant max-h-80 overflow-auto border">
         {rows.length === 0 ? (
-          <p className="text-on-surface-variant px-2 py-3 text-[12px]">Nothing matches “{query.trim()}”.</p>
+          <p className="text-on-surface-variant text-control px-2 py-3">Nothing matches “{query.trim()}”.</p>
         ) : (
           rows.map((row) => {
             const overridden = overrides[row.ext] !== undefined;
@@ -92,7 +92,7 @@ export function DefaultAppsSettings() {
                 key={row.ext}
                 className="border-outline-variant/50 flex items-center gap-2 border-b px-2 py-1.5 last:border-b-0"
               >
-                <span className="w-20 shrink-0 font-mono text-[12px]">.{row.ext}</span>
+                <span className="text-control w-20 shrink-0 font-mono">.{row.ext}</span>
                 <div className="min-w-0 flex-1">
                   <Select
                     value={row.current.appId}
@@ -110,7 +110,7 @@ export function DefaultAppsSettings() {
                   disabled={!overridden}
                   title={overridden ? "Back to the built-in default" : "This is the default"}
                   className={cn(
-                    "focus-visible:ring-primary shrink-0 text-[11px] underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                    "focus-visible:ring-primary text-label shrink-0 underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset",
                     overridden
                       ? "text-on-surface-variant hover:text-on-surface"
                       : "text-on-surface-variant/40 cursor-default no-underline",

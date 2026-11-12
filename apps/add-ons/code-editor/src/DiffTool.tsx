@@ -230,7 +230,7 @@ export function DiffTool({ windowId: _windowId }: { windowId: string }) {
           <FileDiff size={12} />
           <span className="min-w-0 truncate">{left ? (left.label ?? fileName(left.path)) : "Choose left file…"}</span>
         </Button>
-        <span className="font-ui text-on-surface-variant text-[11px]">vs</span>
+        <span className="font-ui text-on-surface-variant text-label">vs</span>
         <Button size="sm" variant="ghost" className="max-w-56" onClick={() => void pick("right")}>
           <FileDiff size={12} />
           <span className="min-w-0 truncate">
@@ -278,7 +278,7 @@ export function DiffTool({ windowId: _windowId }: { windowId: string }) {
             keepCurrentOriginalModel={false}
             keepCurrentModifiedModel={false}
             loading={
-              <div className="text-on-surface-variant font-ui flex items-center gap-2 text-[12px]">
+              <div className="text-on-surface-variant font-ui text-control flex items-center gap-2">
                 <Loader2 size={16} className="animate-spin" />
                 Loading diff…
               </div>
@@ -291,7 +291,7 @@ export function DiffTool({ windowId: _windowId }: { windowId: string }) {
             ) : (
               <>
                 <FileDiff size={40} strokeWidth={1} />
-                <p className="font-ui text-[12px]">
+                <p className="font-ui text-control">
                   Choose two files to compare — or select two in the File Manager and pick “Compare”.
                 </p>
                 <div className="flex gap-2">

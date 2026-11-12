@@ -199,7 +199,7 @@ export function DesktopNote({ note, bounds, onPatch, onDelete }: DesktopNoteProp
         placeholder="Write something…"
         spellCheck={false}
         aria-label="Note text"
-        className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-h-0 flex-1 resize-none bg-transparent p-1.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary text-control min-h-0 flex-1 resize-none bg-transparent p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
       />
 
       {/* Resize handle. A corner grip rather than CSS resize, so the new size can

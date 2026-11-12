@@ -806,8 +806,8 @@ export function CodeEditor({ windowId }: { windowId: string }) {
 
         <div className="flex-1" />
 
-        {error && <span className="text-error font-ui mr-2 max-w-[280px] truncate text-[11px]">{error}</span>}
-        <span className="font-ui text-on-surface-variant max-w-[220px] truncate text-[11px]">
+        {error && <span className="text-error font-ui text-label mr-2 max-w-[280px] truncate">{error}</span>}
+        <span className="font-ui text-on-surface-variant text-label max-w-[220px] truncate">
           {activeName}
           {activeDirty ? " •" : ""}
         </span>
@@ -830,7 +830,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
                   render={<div />}
                   className={({ active }) =>
                     cn(
-                      "font-ui group flex max-w-[200px] cursor-pointer items-center gap-1.5 px-2.5 py-1 text-[11px] whitespace-nowrap",
+                      "font-ui group text-label flex max-w-[200px] cursor-pointer items-center gap-1.5 px-2.5 py-1 whitespace-nowrap",
                       active
                         ? "bg-surface-container-lowest text-on-surface"
                         : "text-on-surface-variant hover:bg-surface-container-high",
@@ -871,7 +871,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
           onMount={handleMount}
           keepCurrentModel
           loading={
-            <div className="text-on-surface-variant font-ui flex items-center gap-2 text-[12px]">
+            <div className="text-on-surface-variant font-ui text-control flex items-center gap-2">
               <Loader2 size={16} className="animate-spin" />
               Loading editor…
             </div>
@@ -879,7 +879,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
         />
 
         {loading && (
-          <div className="bg-surface-container-lowest text-on-surface-variant font-ui absolute inset-0 flex items-center justify-center gap-2 text-[12px]">
+          <div className="bg-surface-container-lowest text-on-surface-variant font-ui text-control absolute inset-0 flex items-center justify-center gap-2">
             <Loader2 size={16} className="animate-spin" />
             Loading file…
           </div>
@@ -888,7 +888,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
         {!hasTabs && !loading && (
           <div className="bg-surface-container-lowest text-on-surface-variant absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
             <FileCode2 size={40} strokeWidth={1} />
-            <span className="font-ui text-[12px]">Nothing open</span>
+            <span className="font-ui text-control">Nothing open</span>
             <div className="flex items-center gap-1.5">
               <Button size="sm" variant="primary" onClick={pickFile}>
                 Open a file

@@ -573,7 +573,7 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
 
   if (isLoading) {
     return (
-      <div className="text-on-surface-variant flex h-full items-center justify-center gap-2 p-4 text-[12px]">
+      <div className="text-on-surface-variant text-control flex h-full items-center justify-center gap-2 p-4">
         <Loader2 size={14} className="animate-spin" /> Loading…
       </div>
     );
@@ -585,7 +585,7 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
   if (isError && !doc.isNew) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-4 text-center">
-        <span className="text-error font-content text-[12px]">Could not open this file.</span>
+        <span className="text-error font-content text-control">Could not open this file.</span>
         <Button variant="default" size="sm" onClick={onBack}>
           Back
         </Button>
@@ -605,13 +605,13 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
           >
             <ArrowLeft size={16} />
           </button>
-          <span className="truncate text-[12px] font-semibold" title={`${root}:/${path}`}>
+          <span className="text-control truncate font-semibold" title={`${root}:/${path}`}>
             {fileName(path, "note")}
             {dirty && " •"}
           </span>
           {/* The root is shown, always. It is the whole point of this brief: you can
               see which filesystem you are editing. */}
-          <span className="rounded-small border-outline-variant text-on-surface-variant shrink-0 border px-1 text-[9px] font-semibold tracking-wider uppercase">
+          <span className="rounded-small border-outline-variant text-on-surface-variant text-micro shrink-0 border px-1 font-semibold tracking-wider uppercase">
             {root}
           </span>
         </div>
@@ -726,7 +726,7 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
 
       {error && (
         <div className="border-outline-variant bg-surface-container-low border-b px-3 py-1">
-          <span className="font-ui text-error text-[11px]">{error}</span>
+          <span className="font-ui text-error text-label">{error}</span>
         </div>
       )}
 
@@ -757,7 +757,7 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
           <textarea
             ref={attachEditor}
             className={cn(
-              "focus-visible:ring-primary h-full w-full resize-none bg-transparent p-4 font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+              "focus-visible:ring-primary text-body h-full w-full resize-none bg-transparent p-4 font-mono outline-none focus-visible:ring-2 focus-visible:ring-inset",
               // `whitespace-pre` + horizontal scroll is what "wrap off" means for a
               // log file; without it a 4000-character line is unreadable either way.
               wrap ? "whitespace-pre-wrap" : "overflow-x-auto whitespace-pre",
@@ -832,7 +832,7 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
       </div>
 
       {/* Status bar — the house recipe: line/col, counts, and the wrap toggle. */}
-      <div className="border-outline-variant bg-surface-container-low text-on-surface-variant flex h-6 shrink-0 items-center gap-3 border-t px-3 font-mono text-[10px]">
+      <div className="border-outline-variant bg-surface-container-low text-on-surface-variant text-tiny flex h-6 shrink-0 items-center gap-3 border-t px-3 font-mono">
         <span className="tabular-nums">
           Ln {pos.line}, Col {pos.column}
         </span>

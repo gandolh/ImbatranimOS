@@ -42,12 +42,12 @@ export function AgendaView({ anchor, occurrences, onOpen, query }: AgendaViewPro
     return (
       <div className="text-on-surface-variant flex h-full flex-col items-center justify-center gap-1 px-6 text-center">
         <CalendarClock size={20} />
-        <p className="text-[12px]">
+        <p className="text-control">
           {query
             ? `Nothing matches “${query}” in this range.`
             : `Nothing scheduled from ${anchor.format("MMM D, YYYY")} onwards.`}
         </p>
-        {!query && <p className="text-[10px]">Switch to Month or Week to add something.</p>}
+        {!query && <p className="text-tiny">Switch to Month or Week to add something.</p>}
       </div>
     );
   }
@@ -62,16 +62,16 @@ export function AgendaView({ anchor, occurrences, onOpen, query }: AgendaViewPro
             <div className="border-outline-variant bg-surface-container-low sticky top-0 z-10 flex items-center gap-2 border-y px-3 py-1">
               <span
                 className={cn(
-                  "flex h-5 min-w-5 items-center justify-center px-1 text-[11px] font-semibold",
+                  "text-label flex h-5 min-w-5 items-center justify-center px-1 font-semibold",
                   isToday ? "bg-primary text-on-primary" : "text-on-surface",
                 )}
               >
                 {day.date()}
               </span>
-              <span className="text-on-surface-variant text-[11px] font-semibold tracking-wide uppercase">
+              <span className="text-on-surface-variant text-label font-semibold tracking-wide uppercase">
                 {day.format("ddd, MMMM YYYY")}
               </span>
-              {isToday && <span className="text-primary text-[10px] font-semibold">Today</span>}
+              {isToday && <span className="text-primary text-tiny font-semibold">Today</span>}
             </div>
 
             {dayOccurrences.map((occurrence) => {
@@ -86,15 +86,15 @@ export function AgendaView({ anchor, occurrences, onOpen, query }: AgendaViewPro
                 >
                   <span
                     className={cn(
-                      "mt-0.5 w-16 shrink-0 border-l-2 px-1 text-[10px] tabular-nums",
+                      "text-tiny mt-0.5 w-16 shrink-0 border-l-2 px-1 tabular-nums",
                       eventColorClass(event.color),
                     )}
                   >
                     {event.allDay ? "All day" : dayjs(occurrence.start).format("HH:mm")}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="text-on-surface block truncate text-[12px] font-semibold">{event.title}</span>
-                    <span className="text-on-surface-variant flex flex-wrap items-center gap-x-2 text-[10px]">
+                    <span className="text-on-surface text-control block truncate font-semibold">{event.title}</span>
+                    <span className="text-on-surface-variant text-tiny flex flex-wrap items-center gap-x-2">
                       {!event.allDay && (
                         <span>
                           until{" "}

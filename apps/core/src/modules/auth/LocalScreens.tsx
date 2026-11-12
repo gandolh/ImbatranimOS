@@ -89,7 +89,7 @@ export function LocalSetupScreen({ tokenRequired }: { tokenRequired: boolean }) 
             onChange={(e) => setToken(e.target.value)}
           />
         )}
-        <p className="font-content text-on-surface-variant text-[11px]">
+        <p className="font-content text-on-surface-variant text-label">
           Use at least {MIN_LENGTH} characters.
           {tokenRequired && " The setup token is the one whoever installed this machine was given."}
         </p>
@@ -194,7 +194,7 @@ export function LocalPasswordForm() {
       />
       {message &&
         (message.ok ? (
-          <p className="font-content text-on-surface-variant text-[11px]">{message.text}</p>
+          <p className="font-content text-on-surface-variant text-label">{message.text}</p>
         ) : (
           <FieldHint>{message.text}</FieldHint>
         ))}

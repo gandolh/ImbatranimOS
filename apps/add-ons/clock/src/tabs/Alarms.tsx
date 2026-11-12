@@ -49,7 +49,7 @@ function DayPicker({
               aria-label={`Repeat on ${["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index]}`}
               onPressedChange={() => onChange(toggleDay(mask, index))}
               className={cn(
-                "focus-visible:ring-primary font-ui rounded-control h-6 w-6 border text-[10px] font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                "focus-visible:ring-primary font-ui rounded-control text-tiny h-6 w-6 border font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
                 on
                   ? "border-primary bg-primary-container text-on-primary-container"
                   : "border-outline-variant text-on-surface-variant hover:text-on-surface",
@@ -67,7 +67,7 @@ function DayPicker({
                 type="button"
                 onClick={() => onChange(preset.mask)}
                 className={cn(
-                  "focus-visible:ring-primary rounded-control font-ui border px-1.5 py-0.5 text-[10px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                  "focus-visible:ring-primary rounded-control font-ui text-tiny border px-1.5 py-0.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
                   mask === preset.mask
                     ? "border-outline text-on-surface"
                     : "border-outline-variant text-on-surface-variant hover:text-on-surface",
@@ -79,7 +79,7 @@ function DayPicker({
           </div>
         )}
       </div>
-      <p className="font-ui text-on-surface-variant text-[10px]">
+      <p className="font-ui text-on-surface-variant text-tiny">
         {describeDays(mask)}
         {showPresets && mask === NO_REPEAT && " — rings at the next time it comes round, then turns itself off"}
       </p>
@@ -159,21 +159,21 @@ function AlarmRow({ alarm }: { alarm: Alarm }) {
         <div className="min-w-0">
           <p
             className={cn(
-              "font-mono text-[15px] tabular-nums",
+              "text-lead font-mono tabular-nums",
               alarm.enabled ? "text-on-surface" : "text-on-surface-variant line-through",
             )}
           >
             {alarm.time}
           </p>
-          {alarm.label && <p className="font-ui text-on-surface-variant truncate text-[11px]">{alarm.label}</p>}
+          {alarm.label && <p className="font-ui text-on-surface-variant text-label truncate">{alarm.label}</p>}
           <div className="mt-1">
             <DayPicker mask={alarm.days} onChange={(days) => patch.mutate({ id: alarm.id, patch: { days } })} />
           </div>
           {snoozedUntilHHmm !== null && (
-            <p className="font-ui text-primary mt-1 text-[10px]">Snoozed — rings again at {snoozedUntilHHmm}</p>
+            <p className="font-ui text-primary text-tiny mt-1">Snoozed — rings again at {snoozedUntilHHmm}</p>
           )}
           {!alarm.enabled && alarm.lastFiredAt !== null && alarm.days === NO_REPEAT && (
-            <p className="font-ui text-on-surface-variant mt-1 flex items-center gap-1 text-[10px]">
+            <p className="font-ui text-on-surface-variant text-tiny mt-1 flex items-center gap-1">
               <BellOff size={10} strokeWidth={2} />
               Already rang — tick it to arm it again
             </p>
@@ -199,13 +199,13 @@ export function Alarms() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-col gap-2 p-3">
-        <p className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">New alarm</p>
+        <p className="font-ui text-on-surface-variant text-label font-semibold tracking-wider uppercase">New alarm</p>
         <AddAlarmRow />
       </div>
 
       <div className="border-outline-variant bg-surface-container-low flex items-start gap-2 border-y px-3 py-2">
         <Info size={12} strokeWidth={2} className="text-on-surface-variant mt-0.5 shrink-0" />
-        <p className="font-ui text-on-surface-variant text-[11px]">
+        <p className="font-ui text-on-surface-variant text-label">
           Alarms fire while the desktop is open — this window can be closed. Closing the browser tab silences them. The
           alarms themselves are saved in your computer, so they are the same from any browser you open it in.
         </p>
@@ -213,15 +213,15 @@ export function Alarms() {
 
       <div className="flex-1 overflow-y-auto">
         {isError ? (
-          <p className="font-ui text-error flex h-full items-center justify-center px-4 text-center text-[12px]">
+          <p className="font-ui text-error text-control flex h-full items-center justify-center px-4 text-center">
             Could not load your alarms.
           </p>
         ) : isPending ? (
-          <p className="font-ui text-on-surface-variant flex h-full items-center justify-center text-[12px]">
+          <p className="font-ui text-on-surface-variant text-control flex h-full items-center justify-center">
             Loading…
           </p>
         ) : alarms.length === 0 ? (
-          <p className="font-ui text-on-surface-variant flex h-full items-center justify-center text-[12px]">
+          <p className="font-ui text-on-surface-variant text-control flex h-full items-center justify-center">
             No alarms set
           </p>
         ) : (

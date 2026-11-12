@@ -100,7 +100,9 @@ function KitApp({ windowId, app }: { windowId: string; app: MarketplaceApp }) {
   }, [app, entry]);
 
   if (!loaded) {
-    return <div className="text-on-surface-variant flex h-full items-center justify-center p-3 text-sm">Loading…</div>;
+    return (
+      <div className="text-on-surface-variant text-note flex h-full items-center justify-center p-3">Loading…</div>
+    );
   }
 
   const { App } = loaded;

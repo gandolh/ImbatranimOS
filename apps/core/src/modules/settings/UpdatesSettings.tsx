@@ -88,8 +88,8 @@ function OfferCard({
       <div className="flex items-start gap-3">
         <Download size={18} strokeWidth={1.75} className="text-primary mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="text-on-surface text-[13px] font-semibold">{title}</p>
-          <p className="text-on-surface-variant text-[12px]">
+          <p className="text-on-surface text-body font-semibold">{title}</p>
+          <p className="text-on-surface-variant text-control">
             {releaseName(offer.release)}, {buildName(offer)}
           </p>
         </div>
@@ -100,7 +100,7 @@ function OfferCard({
       {offer.changes.length > 0 ? (
         <ul className="mt-3 space-y-1 pl-[30px]">
           {offer.changes.map((c) => (
-            <li key={c.name} className="flex items-center gap-2 text-[12px]" data-linux-change={c.name}>
+            <li key={c.name} className="text-control flex items-center gap-2" data-linux-change={c.name}>
               <span className="text-on-surface font-medium">{c.name}</span>
               <span className="text-on-surface-variant tabular-nums">{c.from || "?"}</span>
               <ArrowRight size={12} className="text-on-surface-variant" aria-label="to" />
@@ -109,10 +109,10 @@ function OfferCard({
           ))}
         </ul>
       ) : (
-        <p className="text-on-surface-variant mt-3 pl-[30px] text-[12px]">No installed app changes version.</p>
+        <p className="text-on-surface-variant text-control mt-3 pl-[30px]">No installed app changes version.</p>
       )}
       {(offer.rebuilt > 0 || offer.missing.length > 0) && (
-        <p className="text-on-surface-variant mt-2 pl-[30px] text-[11px]">
+        <p className="text-on-surface-variant text-label mt-2 pl-[30px]">
           {offer.rebuilt > 0 &&
             `${offer.rebuilt} other app${offer.rebuilt === 1 ? "" : "s"} rebuilt with fixes at the same version. `}
           {offer.missing.length > 0 &&
@@ -204,11 +204,11 @@ export function UpdatesSettings() {
     if (ok) await start("/linux-apps/updates/go-back", { session: desktopSessionId() });
   };
 
-  if (updates.isLoading) return <p className="text-on-surface-variant text-[12px]">Loading…</p>;
+  if (updates.isLoading) return <p className="text-on-surface-variant text-control">Loading…</p>;
   const data = updates.data;
   if (!data?.available || !data.current) {
     return (
-      <p className="text-on-surface-variant text-[12px]">
+      <p className="text-on-surface-variant text-control">
         Linux apps aren&apos;t available on this machine, so there is nothing to update.
       </p>
     );
@@ -221,7 +221,7 @@ export function UpdatesSettings() {
   return (
     <div className="space-y-4" data-linux-updates="">
       {confirmDialog}
-      <p className="text-on-surface-variant text-[12px] leading-relaxed">
+      <p className="text-on-surface-variant text-control leading-relaxed">
         Updates for your Linux apps, from Nix&apos;s packages. Every installed app moves with the release. The desktop
         itself updates with a new image.
       </p>
@@ -236,7 +236,7 @@ export function UpdatesSettings() {
           <CircleCheck size={28} strokeWidth={1.5} className="text-primary shrink-0" />
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-on-surface text-[14px] font-semibold" data-linux-updates-state="">
+          <p className="text-on-surface text-subhead font-semibold" data-linux-updates-state="">
             {checking
               ? "Checking for updates…"
               : moving
@@ -247,11 +247,11 @@ export function UpdatesSettings() {
                     ? "You're up to date"
                     : "Check for updates to see what is new"}
           </p>
-          <p className="text-on-surface-variant text-[12px]" data-linux-current={current.snapshot}>
+          <p className="text-on-surface-variant text-control" data-linux-current={current.snapshot}>
             {releaseName(current.release)}, {buildName(current)}
             {current.fromImage ? ", as the image set it" : ""}
           </p>
-          <p className="text-on-surface-variant text-[11px]">{checkedText(data.checkedAt)}</p>
+          <p className="text-on-surface-variant text-label">{checkedText(data.checkedAt)}</p>
         </div>
         <Button disabled={running} onClick={() => void start("/linux-apps/updates/check", {})} className="shrink-0">
           Check for updates
@@ -277,12 +277,12 @@ export function UpdatesSettings() {
         />
       )}
 
-      {error && <p className="text-error text-[12px]">{error}</p>}
+      {error && <p className="text-error text-control">{error}</p>}
 
       {job.data && ours && (
         <div>
           <p
-            className={`mb-2 text-[12px] font-medium ${job.data.state === "failed" ? "text-error" : "text-on-surface"}`}
+            className={`text-control mb-2 font-medium ${job.data.state === "failed" ? "text-error" : "text-on-surface"}`}
             data-linux-update-job={job.data.state}
           >
             {jobTitle(job.data)}
@@ -290,7 +290,7 @@ export function UpdatesSettings() {
           {job.data.action !== "check" && (
             <pre
               ref={logRef}
-              className="border-outline-variant bg-surface-container-lowest text-on-surface-variant rounded-control max-h-[180px] overflow-auto border p-2 font-mono text-[11px] whitespace-pre-wrap"
+              className="border-outline-variant bg-surface-container-lowest text-on-surface-variant rounded-control text-label max-h-[180px] overflow-auto border p-2 font-mono whitespace-pre-wrap"
             >
               {job.data.log}
             </pre>
@@ -298,13 +298,13 @@ export function UpdatesSettings() {
         </div>
       )}
 
-      <p className="text-on-surface-variant text-[11px]">
+      <p className="text-on-surface-variant text-label">
         Linux apps that are open keep running their old build until you close and reopen them.
       </p>
 
       {data.previous && (
         <div className="flex items-center gap-3" data-linux-previous={data.previous.snapshot}>
-          <p className="text-on-surface flex-1 text-[12px]">
+          <p className="text-on-surface text-control flex-1">
             The release before, {releaseName(data.previous.release)}, {buildName(data.previous)}, is still on disk with
             its apps.
           </p>

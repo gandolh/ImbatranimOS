@@ -63,12 +63,12 @@ export function WeekView({ anchor, occurrences, onCreate, onOpen }: WeekViewProp
               key={day.valueOf()}
               className="border-outline-variant flex flex-col items-center gap-0.5 border-l py-1"
             >
-              <span className="text-on-surface-variant text-[10px] font-semibold tracking-wide uppercase">
+              <span className="text-on-surface-variant text-tiny font-semibold tracking-wide uppercase">
                 {day.format("ddd")}
               </span>
               <span
                 className={cn(
-                  "flex h-5 w-5 items-center justify-center text-[12px]",
+                  "text-control flex h-5 w-5 items-center justify-center",
                   isToday && "bg-primary text-on-primary font-semibold",
                 )}
               >
@@ -84,7 +84,7 @@ export function WeekView({ anchor, occurrences, onCreate, onOpen }: WeekViewProp
           className="border-outline-variant bg-surface-container-lowest grid shrink-0 border-b"
           style={{ gridTemplateColumns: gridColumns }}
         >
-          <div className="text-on-surface-variant flex items-start justify-end pt-1 pr-1 text-[9px] uppercase">
+          <div className="text-on-surface-variant text-micro flex items-start justify-end pt-1 pr-1 uppercase">
             All day
           </div>
           {/* One cell spanning all seven columns, with each banner absolutely
@@ -111,7 +111,7 @@ export function WeekView({ anchor, occurrences, onCreate, onOpen }: WeekViewProp
                     if (e.key === "Enter" || e.key === " ") onOpen(occurrence);
                   }}
                   className={cn(
-                    "focus-visible:ring-primary text-on-surface absolute truncate border-l-2 px-1 text-[10px] leading-[18px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                    "focus-visible:ring-primary text-on-surface text-tiny absolute truncate border-l-2 px-1 leading-[18px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
                     eventColorClass(occurrence.event.color),
                   )}
                   style={{
@@ -136,7 +136,7 @@ export function WeekView({ anchor, occurrences, onCreate, onOpen }: WeekViewProp
             {HOURS.map((hour) => (
               <div
                 key={hour}
-                className="border-outline-variant text-on-surface-variant border-b pr-1 text-right text-[10px]"
+                className="border-outline-variant text-on-surface-variant text-tiny border-b pr-1 text-right"
                 style={{ height: HOUR_HEIGHT }}
               >
                 {hour > 0 && formatHourLabel(hour)}
@@ -199,7 +199,7 @@ export function WeekView({ anchor, occurrences, onCreate, onOpen }: WeekViewProp
                         }
                       }}
                       className={cn(
-                        "focus-visible:ring-primary text-on-surface absolute inset-x-0.5 z-10 cursor-pointer overflow-hidden border-l-2 px-1 py-px text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                        "focus-visible:ring-primary text-on-surface text-tiny absolute inset-x-0.5 z-10 cursor-pointer overflow-hidden border-l-2 px-1 py-px outline-none focus-visible:ring-2 focus-visible:ring-inset",
                         eventColorClass(occurrence.event.color),
                       )}
                       style={{ top, height }}

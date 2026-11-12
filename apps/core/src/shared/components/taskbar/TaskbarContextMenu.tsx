@@ -42,7 +42,7 @@ export function TaskbarContextMenu({
       type: "custom",
       key: "title",
       children: (
-        <div className="border-outline-variant text-on-surface-variant truncate border-b px-2.5 py-1.5 text-[11px] font-semibold">
+        <div className="border-outline-variant text-on-surface-variant text-label truncate border-b px-2.5 py-1.5 font-semibold">
           {windowTitle}
         </div>
       ),
@@ -53,7 +53,7 @@ export function TaskbarContextMenu({
       key: "workspaces",
       children: (
         <>
-          <div className="text-on-surface-variant px-2.5 pt-1.5 text-[10px] font-semibold tracking-widest uppercase">
+          <div className="text-on-surface-variant text-tiny px-2.5 pt-1.5 font-semibold tracking-widest uppercase">
             Move to workspace
           </div>
           <div className="flex gap-1 px-2.5 py-1.5">
@@ -65,7 +65,7 @@ export function TaskbarContextMenu({
                 onClick={() => onMoveToWorkspace(id)}
                 aria-label={`Move to workspace ${id}`}
                 className={cn(
-                  "focus-visible:ring-primary rounded-control border-outline-variant flex h-[24px] flex-1 items-center justify-center border text-[11px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                  "focus-visible:ring-primary rounded-control border-outline-variant text-label flex h-[24px] flex-1 items-center justify-center border tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset",
                   id === currentWorkspace
                     ? "bg-surface-container-high text-on-surface-variant cursor-default"
                     : "hover:bg-primary-container hover:text-on-primary-container hover:border-primary",

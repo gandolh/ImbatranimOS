@@ -154,7 +154,7 @@ export function BasicPad({ windowId: _windowId, session }: { windowId: string; s
       <div className="border-outline-variant bg-surface-container-lowest flex min-h-[44px] flex-1 flex-col items-end justify-end overflow-hidden border-b px-3 py-2">
         <span
           className={cn(
-            "font-ui w-full truncate text-right text-3xl font-medium tabular-nums",
+            "font-ui text-headline w-full truncate text-right font-medium tabular-nums",
             isError ? "text-error" : "text-on-surface",
           )}
           title={shown !== null && isRounded(shown) ? `Exactly ${copyValue}` : display}
@@ -162,7 +162,7 @@ export function BasicPad({ windowId: _windowId, session }: { windowId: string; s
           {display}
         </span>
         {shown !== null && isRounded(shown) && (
-          <span className="text-on-surface-variant font-ui text-[9px]">rounded · {copyValue}</span>
+          <span className="text-on-surface-variant font-ui text-micro">rounded · {copyValue}</span>
         )}
       </div>
 

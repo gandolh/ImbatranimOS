@@ -12,7 +12,7 @@ export function Input({ label, className, id, ...props }: InputProps) {
       {label && (
         <label
           htmlFor={id}
-          className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase"
+          className="font-ui text-on-surface-variant text-label font-semibold tracking-wider uppercase"
         >
           {label}
         </label>
@@ -21,7 +21,7 @@ export function Input({ label, className, id, ...props }: InputProps) {
         id={id}
         className={cn(
           "border-outline-variant bg-surface-container-lowest rounded-control w-full border px-2.5 py-1.5",
-          "font-content text-on-surface text-[13px]",
+          "font-content text-on-surface text-body",
           "transition-colors outline-none",
           "placeholder:text-on-surface-variant",
           "data-[focused]:border-primary data-[focused]:ring-primary/40 data-[focused]:ring-2",

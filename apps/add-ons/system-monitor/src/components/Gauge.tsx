@@ -14,10 +14,10 @@ export function Gauge({ label, percent, detail }: GaugeProps) {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline justify-between">
-        <span className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
+        <span className="font-ui text-on-surface-variant text-label font-semibold tracking-wider uppercase">
           {label}
         </span>
-        <span className="text-on-surface font-mono text-[13px] font-semibold">{clamped.toFixed(1)}%</span>
+        <span className="text-on-surface text-body font-mono font-semibold">{clamped.toFixed(1)}%</span>
       </div>
       <div className="rounded-control border-outline-variant bg-surface-container-lowest h-3 w-full overflow-hidden border">
         <div
@@ -25,7 +25,7 @@ export function Gauge({ label, percent, detail }: GaugeProps) {
           style={{ width: `${clamped}%` }}
         />
       </div>
-      {detail && <span className="text-on-surface-variant font-mono text-[10px]">{detail}</span>}
+      {detail && <span className="text-on-surface-variant text-tiny font-mono">{detail}</span>}
     </div>
   );
 }

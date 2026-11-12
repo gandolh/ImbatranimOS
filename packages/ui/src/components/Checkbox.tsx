@@ -12,7 +12,7 @@ export function Checkbox({ label, labelClassName, className, id, ...props }: Che
   return (
     <label
       className={cn(
-        "font-content text-on-surface flex cursor-pointer items-center gap-2 text-[13px] select-none",
+        "font-content text-on-surface text-body flex cursor-pointer items-center gap-2 select-none",
         labelClassName,
       )}
     >

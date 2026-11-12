@@ -22,7 +22,7 @@ export function Tape({
 }) {
   return (
     <div className="border-outline-variant bg-surface-container-lowest flex max-h-24 flex-none flex-col border-b">
-      <div className="text-on-surface-variant font-ui flex items-center justify-between px-2 py-0.5 text-[9px] tracking-wider uppercase">
+      <div className="text-on-surface-variant font-ui text-micro flex items-center justify-between px-2 py-0.5 tracking-wider uppercase">
         <span>Tape</span>
         <button
           type="button"
@@ -37,7 +37,7 @@ export function Tape({
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         {entries.length === 0 ? (
-          <p className="text-on-surface-variant px-2 pb-1 text-[10px]">Results land here — click one to reuse it.</p>
+          <p className="text-on-surface-variant text-tiny px-2 pb-1">Results land here — click one to reuse it.</p>
         ) : (
           <ul>
             {entries.map((entry) => (
@@ -46,7 +46,7 @@ export function Tape({
                   type="button"
                   onClick={() => onReuse(entry.value, entry.result)}
                   title={`Reuse ${entry.value}`}
-                  className="font-ui hover:bg-surface-container-high focus-visible:ring-primary flex w-full items-baseline gap-2 px-2 py-0.5 text-left text-[10px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset"
+                  className="font-ui hover:bg-surface-container-high focus-visible:ring-primary text-tiny flex w-full items-baseline gap-2 px-2 py-0.5 text-left tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 >
                   <span className="text-on-surface-variant min-w-0 flex-1 truncate">{entry.expression}</span>
                   <span className="text-on-surface shrink-0 font-semibold">= {entry.result}</span>

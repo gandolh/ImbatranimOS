@@ -27,10 +27,10 @@ export function AboutPanel({ about }: { about: AboutInfo }) {
           key={label}
           className="rounded-control border-outline-variant bg-surface-container-low flex items-center justify-between border px-3 py-2"
         >
-          <span className="font-ui text-on-surface-variant text-[10px] font-semibold tracking-wider uppercase">
+          <span className="font-ui text-on-surface-variant text-tiny font-semibold tracking-wider uppercase">
             {label}
           </span>
-          <span className="text-on-surface font-mono text-[12px]">{value}</span>
+          <span className="text-on-surface text-control font-mono">{value}</span>
         </div>
       ))}
     </div>

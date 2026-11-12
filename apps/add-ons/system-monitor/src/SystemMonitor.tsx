@@ -76,7 +76,7 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`focus-visible:ring-primary font-ui rounded-control flex items-center gap-1.5 border px-3 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset ${
+              className={`focus-visible:ring-primary font-ui rounded-control text-label flex items-center gap-1.5 border px-3 py-1 font-semibold tracking-wider uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset ${
                 active
                   ? "border-primary bg-primary-container text-on-primary-container"
                   : "text-on-surface-variant hover:border-outline-variant hover:text-on-surface border-transparent"
@@ -89,7 +89,7 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
         })}
         <div className="flex-1" />
         {tab === "processes" && (
-          <span className="text-on-surface-variant pr-2 font-mono text-[10px]">{processes.length} procs</span>
+          <span className="text-on-surface-variant text-tiny pr-2 font-mono">{processes.length} procs</span>
         )}
       </div>
 
@@ -97,10 +97,10 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
         {tab === "overview" && (
           <div className="flex flex-col gap-5">
             {!stats && !statsQuery.isError && (
-              <p className="font-ui text-on-surface-variant text-[12px]">Loading live stats…</p>
+              <p className="font-ui text-on-surface-variant text-control">Loading live stats…</p>
             )}
             {statsQuery.isError && (
-              <p className="font-ui text-error text-[12px]">Failed to reach the system stats endpoint.</p>
+              <p className="font-ui text-error text-control">Failed to reach the system stats endpoint.</p>
             )}
             {stats && (
               <>
@@ -177,9 +177,9 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
         {tab === "processes" && (
           <>
             {processesQuery.isLoading && (
-              <p className="font-ui text-on-surface-variant text-[12px]">Loading processes…</p>
+              <p className="font-ui text-on-surface-variant text-control">Loading processes…</p>
             )}
-            {processesQuery.isError && <p className="font-ui text-error text-[12px]">Failed to load process list.</p>}
+            {processesQuery.isError && <p className="font-ui text-error text-control">Failed to load process list.</p>}
             {!processesQuery.isLoading && !processesQuery.isError && (
               <ProcessTable processes={processes} serverPid={aboutQuery.data?.serverPid} />
             )}
@@ -188,8 +188,8 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
 
         {tab === "about" && (
           <>
-            {aboutQuery.isLoading && <p className="font-ui text-on-surface-variant text-[12px]">Loading…</p>}
-            {aboutQuery.isError && <p className="font-ui text-error text-[12px]">Failed to load system identity.</p>}
+            {aboutQuery.isLoading && <p className="font-ui text-on-surface-variant text-control">Loading…</p>}
+            {aboutQuery.isError && <p className="font-ui text-error text-control">Failed to load system identity.</p>}
             {aboutQuery.data && <AboutPanel about={aboutQuery.data} />}
           </>
         )}
@@ -202,10 +202,8 @@ export function SystemMonitor({ windowId: _windowId }: { windowId: string }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-2">
-      <span className="font-ui text-on-surface-variant text-[10px] font-semibold tracking-wider uppercase">
-        {label}
-      </span>
-      <span className="text-on-surface font-mono text-[11px]">{value}</span>
+      <span className="font-ui text-on-surface-variant text-tiny font-semibold tracking-wider uppercase">{label}</span>
+      <span className="text-on-surface text-label font-mono">{value}</span>
     </div>
   );
 }

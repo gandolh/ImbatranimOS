@@ -116,7 +116,7 @@ function NoteEditor({ noteId, windowId }: { noteId: number; windowId: string }) 
         <div className="flex items-center gap-1">
           <span
             className={cn(
-              "font-ui text-on-surface-variant text-[11px] transition-opacity duration-300",
+              "font-ui text-on-surface-variant text-label transition-opacity duration-300",
               showSaved ? "opacity-100" : "opacity-0",
             )}
           >
@@ -157,7 +157,7 @@ function NoteEditor({ noteId, windowId }: { noteId: number; windowId: string }) 
       )}
 
       <textarea
-        className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary flex-1 resize-none bg-transparent p-3 text-[14px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary text-subhead flex-1 resize-none bg-transparent p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset"
         value={content}
         onChange={(e) => handleChange(e.target.value)}
         placeholder="Start typing…"
@@ -170,7 +170,7 @@ function NoteEditor({ noteId, windowId }: { noteId: number; windowId: string }) 
 function ColorRow({ value, onPick }: { value: NoteColor | null; onPick: (color: NoteColor | null) => void }) {
   return (
     <div className="border-outline-variant flex shrink-0 items-center gap-1.5 border-b px-2 py-1.5">
-      <span className="font-ui text-on-surface-variant text-[10px] tracking-wider uppercase">Colour</span>
+      <span className="font-ui text-on-surface-variant text-tiny tracking-wider uppercase">Colour</span>
       <button
         type="button"
         onClick={() => onPick(null)}
@@ -246,7 +246,7 @@ function NoteList({ windowId }: { windowId: string }) {
             }}
             placeholder="Search notes…"
             aria-label="Search notes"
-            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary text-control min-w-0 flex-1 bg-transparent py-1 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
           {query !== "" && (
             <Button variant="ghost" size="sm" aria-label="Clear search" onClick={() => setQuery("")}>
@@ -257,11 +257,11 @@ function NoteList({ windowId }: { windowId: string }) {
       </div>
 
       {isPending ? (
-        <div className="font-ui text-on-surface-variant flex flex-1 items-center justify-center text-[12px]">
+        <div className="font-ui text-on-surface-variant text-control flex flex-1 items-center justify-center">
           Loading…
         </div>
       ) : visible.length === 0 ? (
-        <div className="font-ui text-on-surface-variant flex flex-1 items-center justify-center px-6 text-center text-[12px]">
+        <div className="font-ui text-on-surface-variant text-control flex flex-1 items-center justify-center px-6 text-center">
           {needle === "" ? "No sticky notes yet" : `Nothing matches “${query.trim()}”`}
         </div>
       ) : (
@@ -278,7 +278,7 @@ function NoteList({ windowId }: { windowId: string }) {
         </ScrollArea>
       )}
 
-      <div className="border-outline-variant bg-surface-container-low text-on-surface-variant flex h-5 shrink-0 items-center gap-1 border-t px-2 text-[10px]">
+      <div className="border-outline-variant bg-surface-container-low text-on-surface-variant text-tiny flex h-5 shrink-0 items-center gap-1 border-t px-2">
         {all.length} note{all.length === 1 ? "" : "s"} · {placedCount} on the desktop
       </div>
       {confirmDialog}
@@ -317,8 +317,8 @@ function NoteRow({
           className={cn("h-6 w-1 shrink-0", note.color ? COLOR_SWATCH[note.color] : "bg-outline-variant")}
         />
         <span className="min-w-0 flex-1">
-          <span className="font-content text-on-surface block truncate text-[13px]">{notePreview(note.content)}</span>
-          <span className="font-ui text-on-surface-variant mt-0.5 block text-[11px]">
+          <span className="font-content text-on-surface text-body block truncate">{notePreview(note.content)}</span>
+          <span className="font-ui text-on-surface-variant text-label mt-0.5 block">
             {date}
             {note.onDesktop && " · on the desktop"}
           </span>

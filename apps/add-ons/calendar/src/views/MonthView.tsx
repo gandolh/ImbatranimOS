@@ -34,7 +34,7 @@ export function MonthView({ anchor, occurrences, onCreate, onOpen }: MonthViewPr
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
-            className="text-on-surface-variant py-1 text-center text-[11px] font-semibold tracking-wide uppercase"
+            className="text-on-surface-variant text-label py-1 text-center font-semibold tracking-wide uppercase"
           >
             {label}
           </div>
@@ -69,7 +69,7 @@ export function MonthView({ anchor, occurrences, onCreate, onOpen }: MonthViewPr
                 >
                   <span
                     className={cn(
-                      "flex h-5 w-5 shrink-0 items-center justify-center text-[11px]",
+                      "text-label flex h-5 w-5 shrink-0 items-center justify-center",
                       isToday && "bg-primary text-on-primary font-semibold",
                     )}
                   >
@@ -96,14 +96,14 @@ export function MonthView({ anchor, occurrences, onCreate, onOpen }: MonthViewPr
                           }
                         }}
                         className={cn(
-                          "focus-visible:ring-primary text-on-surface w-full truncate border-l-2 px-1 py-px text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                          "focus-visible:ring-primary text-on-surface text-tiny w-full truncate border-l-2 px-1 py-px outline-none focus-visible:ring-2 focus-visible:ring-inset",
                           eventColorClass(occurrence.event.color),
                         )}
                       >
                         {occurrenceLabel(occurrence, day)}
                       </span>
                     ))}
-                    {overflow > 0 && <span className="text-on-surface-variant px-1 text-[9px]">+{overflow} more</span>}
+                    {overflow > 0 && <span className="text-on-surface-variant text-micro px-1">+{overflow} more</span>}
                   </div>
                 </div>
               );

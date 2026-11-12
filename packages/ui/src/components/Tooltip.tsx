@@ -31,7 +31,7 @@ export function Tooltip({ content, children, side = "top" }: TooltipProps) {
             <BaseTooltip.Popup
               className={cn(
                 "border-outline-variant bg-inverse-surface rounded-control border px-2 py-1",
-                "font-ui text-inverse-on-surface text-[11px]",
+                "font-ui text-inverse-on-surface text-label",
                 "shadow-(--k-shadow-tooltip)",
               )}
             >

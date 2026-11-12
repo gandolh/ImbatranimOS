@@ -122,7 +122,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
                 onClose();
               }
             }}
-            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary w-full bg-transparent py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary text-control w-full bg-transparent py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
         </div>
 
@@ -130,7 +130,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
           type="button"
           onClick={() => pickAndRun(query)}
           title="Limit the search to a folder"
-          className="rounded-control border-outline-variant text-on-surface-variant hover:text-on-surface font-ui focus-visible:ring-primary flex shrink-0 items-center gap-1 border px-1.5 py-0.5 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+          className="rounded-control border-outline-variant text-on-surface-variant hover:text-on-surface font-ui focus-visible:ring-primary text-label flex shrink-0 items-center gap-1 border px-1.5 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <FolderOpen size={11} />
           in {scopeLabel}
@@ -149,7 +149,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
 
       {/* Summary + truncation honesty */}
       <div className="border-outline-variant flex items-center gap-2 border-b px-2 py-0.5">
-        <span className="font-ui text-on-surface-variant text-[11px]">
+        <span className="font-ui text-on-surface-variant text-label">
           {running
             ? "Searching…"
             : answered === null
@@ -157,7 +157,7 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
               : `${result.matchCount} match${result.matchCount === 1 ? "" : "es"} in ${result.groups.length} file${result.groups.length === 1 ? "" : "s"} for “${answered}”`}
         </span>
         {result.truncated && !running && (
-          <span className="font-ui text-tertiary flex items-center gap-1 text-[11px]">
+          <span className="font-ui text-tertiary text-label flex items-center gap-1">
             <AlertTriangle size={11} />
             Stopped early — narrow the search or pick a folder.
           </span>
@@ -166,9 +166,9 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
 
       {/* Results */}
       <div className="min-h-0 flex-1 overflow-auto">
-        {error && <div className="font-ui text-error px-2 py-2 text-[12px]">{error}</div>}
+        {error && <div className="font-ui text-error text-control px-2 py-2">{error}</div>}
         {!error && !running && answered !== null && result.groups.length === 0 && (
-          <div className="font-ui text-on-surface-variant px-2 py-2 text-[12px]">
+          <div className="font-ui text-on-surface-variant text-control px-2 py-2">
             No matches for “{answered}” in /{scope ?? ""}.
           </div>
         )}
@@ -179,9 +179,9 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
               onClick={() => onOpenAt(group.path, group.matches[0]?.line ?? 1)}
               className="hover:bg-surface-container focus-visible:ring-primary flex w-full items-center gap-2 px-2 py-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset"
             >
-              <span className="font-content text-on-surface truncate text-[12px] font-semibold">{group.name}</span>
-              {group.dir && <span className="font-ui text-on-surface-variant truncate text-[11px]">/{group.dir}</span>}
-              <span className="font-ui text-on-surface-variant ml-auto shrink-0 text-[11px]">
+              <span className="font-content text-on-surface text-control truncate font-semibold">{group.name}</span>
+              {group.dir && <span className="font-ui text-on-surface-variant text-label truncate">/{group.dir}</span>}
+              <span className="font-ui text-on-surface-variant text-label ml-auto shrink-0">
                 {group.nameOnly ? "filename match" : group.matches.length}
               </span>
             </button>
@@ -194,8 +194,8 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
                   "focus-visible:ring-primary hover:bg-surface-container flex w-full items-baseline gap-2 py-0.5 pr-2 pl-6 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset",
                 )}
               >
-                <span className="text-on-surface-variant w-10 shrink-0 text-right font-mono text-[11px]">{m.line}</span>
-                <span className="text-on-surface truncate font-mono text-[11px]">{m.text}</span>
+                <span className="text-on-surface-variant text-label w-10 shrink-0 text-right font-mono">{m.line}</span>
+                <span className="text-on-surface text-label truncate font-mono">{m.text}</span>
               </button>
             ))}
           </div>

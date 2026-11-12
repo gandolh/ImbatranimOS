@@ -55,7 +55,7 @@ export function RecurrenceFields({
                 onChange={(e) => onChange({ ...draft, interval: e.target.value })}
               />
             </div>
-            <span className="text-on-surface-variant pb-1.5 text-[11px]">
+            <span className="text-on-surface-variant text-label pb-1.5">
               {draft.freq === "daily"
                 ? "day(s)"
                 : draft.freq === "weekly"
@@ -68,7 +68,7 @@ export function RecurrenceFields({
 
           {draft.freq === "weekly" && (
             <div className="flex flex-col gap-1">
-              <span className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
+              <span className="font-ui text-on-surface-variant text-label font-semibold tracking-wider uppercase">
                 On
               </span>
               <ToggleGroup
@@ -85,7 +85,7 @@ export function RecurrenceFields({
                     aria-label={`Repeat on ${label}`}
                     className={({ pressed }) =>
                       cn(
-                        "focus-visible:ring-primary font-ui rounded-control h-6 w-7 border text-[10px] font-semibold focus-visible:ring-2 focus-visible:ring-inset",
+                        "focus-visible:ring-primary font-ui rounded-control text-tiny h-6 w-7 border font-semibold focus-visible:ring-2 focus-visible:ring-inset",
                         pressed
                           ? "border-primary bg-primary-container text-on-primary-container"
                           : "border-outline-variant text-on-surface-variant hover:text-on-surface",
@@ -96,7 +96,7 @@ export function RecurrenceFields({
                   </Toggle>
                 ))}
               </ToggleGroup>
-              <p className="text-on-surface-variant text-[10px]">
+              <p className="text-on-surface-variant text-tiny">
                 {draft.byWeekday.length === 0 && "Nothing picked — repeats on the start day."}
               </p>
             </div>
@@ -132,7 +132,7 @@ export function RecurrenceFields({
 
           {/* Says in words what the fields add up to — the one place a rule can be
               checked before saving it. */}
-          <p className="text-on-surface-variant text-[10px]">{describeRule(rule)}</p>
+          <p className="text-on-surface-variant text-tiny">{describeRule(rule)}</p>
         </>
       )}
     </div>

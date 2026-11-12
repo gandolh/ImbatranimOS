@@ -366,7 +366,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
     >
       {/* Win7-classic toolbar */}
       <div className="bg-surface-container-low border-outline-variant flex flex-wrap items-center gap-2 border-b px-3 py-2">
-        <span className="text-on-surface mr-1 text-[12px] font-bold tracking-tight">
+        <span className="text-on-surface text-control mr-1 font-bold tracking-tight">
           Snipping<span className="text-primary">Tool</span>
         </span>
 
@@ -421,7 +421,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
             title="Save to ~/Pictures/Screenshots"
             onClick={() => void onSave()}
             disabled={busy}
-            className={cn(tbBtn, "w-auto gap-1.5 px-2.5 text-[12px] font-semibold")}
+            className={cn(tbBtn, "text-control w-auto gap-1.5 px-2.5 font-semibold")}
           >
             <Save size={14} strokeWidth={1.75} /> Save
           </button>
@@ -431,7 +431,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
             disabled={busy || !canCopy}
             className={cn(
               tbBtn,
-              "w-auto gap-1.5 px-2.5 text-[12px] font-semibold",
+              "text-control w-auto gap-1.5 px-2.5 font-semibold",
               !canCopy && "cursor-not-allowed opacity-40",
             )}
           >
@@ -441,7 +441,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
             title="Edit in Paint"
             onClick={() => void onEditInPaint()}
             disabled={busy}
-            className={cn(tbBtn, "w-auto gap-1.5 px-2.5 text-[12px] font-semibold")}
+            className={cn(tbBtn, "text-control w-auto gap-1.5 px-2.5 font-semibold")}
           >
             <Palette size={14} strokeWidth={1.75} /> Edit in Paint
           </button>
@@ -449,7 +449,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
             title="Download to this device"
             onClick={() => void onDownload()}
             disabled={busy}
-            className={cn(tbBtn, "w-auto gap-1.5 px-2.5 text-[12px] font-semibold")}
+            className={cn(tbBtn, "text-control w-auto gap-1.5 px-2.5 font-semibold")}
           >
             <Download size={14} strokeWidth={1.75} /> Download
           </button>
@@ -468,7 +468,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
       </div>
 
       {notice && noticeOpen && (
-        <div className="border-outline-variant bg-surface-container text-on-surface flex shrink-0 items-start gap-2 border-b px-3 py-2 text-[11px]">
+        <div className="border-outline-variant bg-surface-container text-on-surface text-label flex shrink-0 items-start gap-2 border-b px-3 py-2">
           <AlertTriangle size={14} className="text-primary mt-px shrink-0" strokeWidth={1.75} />
           <span className="flex-1">{notice}</span>
           <button
@@ -538,7 +538,7 @@ export function AnnotationStage({ image, notice, onBack, onClose }: Props) {
         )}
 
         {status && (
-          <div className="rounded-control bg-surface-container-high border-outline-variant text-on-surface absolute bottom-4 left-1/2 -translate-x-1/2 border px-4 py-2 text-[12px] font-semibold">
+          <div className="rounded-control bg-surface-container-high border-outline-variant text-on-surface text-control absolute bottom-4 left-1/2 -translate-x-1/2 border px-4 py-2 font-semibold">
             {status}
           </div>
         )}

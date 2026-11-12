@@ -130,7 +130,7 @@ export function ProgrammerPad({ windowId: _windowId }: { windowId: string }) {
               key={b.id}
               onClick={() => dispatch({ type: "base", base: b.id })}
               className={cn(
-                "focus-visible:ring-primary font-ui rounded-control flex-1 border px-2 py-1 text-[11px] font-semibold tracking-wider uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                "focus-visible:ring-primary font-ui rounded-control text-label flex-1 border px-2 py-1 font-semibold tracking-wider uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
                 active
                   ? "border-primary bg-primary-container text-on-primary-container"
                   : "text-on-surface-variant hover:border-outline-variant hover:text-on-surface border-transparent",
@@ -145,7 +145,7 @@ export function ProgrammerPad({ windowId: _windowId }: { windowId: string }) {
       <div className="border-outline-variant bg-surface-container-lowest flex flex-1 items-end justify-end overflow-hidden border-b px-3 py-3">
         <span
           className={cn(
-            "font-ui truncate text-2xl font-medium tabular-nums",
+            "font-ui text-heading truncate font-medium tabular-nums",
             isError ? "text-error" : "text-on-surface",
           )}
           title={display}

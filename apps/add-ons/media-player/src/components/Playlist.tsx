@@ -29,7 +29,7 @@ export function Playlist({ tracks, activePath, durations, resume, root, onSelect
     <div className="border-outline-variant bg-surface-container-low flex h-full w-52 shrink-0 flex-col border-l">
       <div className="border-outline-variant flex items-center gap-1.5 border-b px-2 py-1.5">
         <ListMusic size={12} className="text-on-surface-variant shrink-0" />
-        <span className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wide uppercase">
+        <span className="font-ui text-on-surface-variant text-label font-semibold tracking-wide uppercase">
           Queue · {tracks.length}
         </span>
       </div>
@@ -44,7 +44,7 @@ export function Playlist({ tracks, activePath, durations, resume, root, onSelect
                   type="button"
                   onClick={() => onSelect(track.path)}
                   className={cn(
-                    "focus-visible:ring-primary font-ui border-outline-variant rounded-item apricot:border-transparent flex w-full cursor-pointer items-center gap-1.5 border-b px-2 py-1.5 text-left text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                    "focus-visible:ring-primary font-ui border-outline-variant rounded-item apricot:border-transparent text-label flex w-full cursor-pointer items-center gap-1.5 border-b px-2 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset",
                     active
                       ? "bg-primary-container text-on-primary-container"
                       : "text-on-surface hover:bg-surface-container-high",
@@ -58,7 +58,7 @@ export function Playlist({ tracks, activePath, durations, resume, root, onSelect
                     </Tooltip>
                   )}
                   {durations[track.path] > 0 && (
-                    <span className="shrink-0 text-[10px] tabular-nums opacity-70">
+                    <span className="text-tiny shrink-0 tabular-nums opacity-70">
                       {formatTime(durations[track.path])}
                     </span>
                   )}

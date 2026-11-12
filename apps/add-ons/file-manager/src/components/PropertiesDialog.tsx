@@ -30,10 +30,10 @@ function formatWhen(iso?: string): string {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="border-outline-variant flex items-baseline gap-3 border-b px-3 py-1.5 last:border-b-0">
-      <span className="font-ui text-on-surface-variant w-28 shrink-0 text-[11px] font-semibold tracking-wider uppercase">
+      <span className="font-ui text-on-surface-variant text-label w-28 shrink-0 font-semibold tracking-wider uppercase">
         {label}
       </span>
-      <span className="font-ui text-on-surface min-w-0 flex-1 text-[12px] break-all">{children}</span>
+      <span className="font-ui text-on-surface text-control min-w-0 flex-1 break-all">{children}</span>
     </div>
   );
 }
@@ -114,7 +114,7 @@ export function PropertiesDialog({
                 {size.files === 1 ? "" : "s"} in {size.directories} folder
                 {size.directories === 1 ? "" : "s"}
                 {size.truncated && (
-                  <span className="text-on-surface-variant block text-[11px]">
+                  <span className="text-on-surface-variant text-label block">
                     The walk hit its bound — the real total is larger.
                   </span>
                 )}

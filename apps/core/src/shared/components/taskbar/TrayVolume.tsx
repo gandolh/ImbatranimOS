@@ -72,7 +72,7 @@ export function TrayVolume() {
           onValueChange={(next) => setVolume(next / 100)}
           className={cn("flex-1", muted && "opacity-50")}
         />
-        <span className="text-on-surface-variant w-8 shrink-0 text-right text-[11px] tabular-nums" aria-hidden>
+        <span className="text-on-surface-variant text-label w-8 shrink-0 text-right tabular-nums" aria-hidden>
           {percent}
         </span>
       </div>

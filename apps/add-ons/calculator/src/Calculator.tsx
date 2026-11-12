@@ -44,7 +44,7 @@ export function Calculator({ windowId }: { windowId: string }) {
             value={tab.id}
             className={({ active }) =>
               cn(
-                "focus-visible:ring-primary font-ui flex-1 border-b-2 px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors focus-visible:ring-2 focus-visible:ring-inset",
+                "focus-visible:ring-primary font-ui text-label flex-1 border-b-2 px-2 py-1.5 font-semibold tracking-wider uppercase transition-colors focus-visible:ring-2 focus-visible:ring-inset",
                 active
                   ? "border-primary text-on-surface"
                   : "text-on-surface-variant hover:text-on-surface border-transparent",

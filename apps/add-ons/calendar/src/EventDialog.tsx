@@ -291,7 +291,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
           />
 
           <div className="flex flex-col gap-1">
-            <span className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
+            <span className="font-ui text-on-surface-variant text-label font-semibold tracking-wider uppercase">
               Colour
             </span>
             <RadioGroup<EventColor | "none">
@@ -328,7 +328,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
           </div>
 
           <label className="flex flex-col gap-1">
-            <span className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
+            <span className="font-ui text-on-surface-variant text-label font-semibold tracking-wider uppercase">
               Notes
             </span>
             <textarea
@@ -336,19 +336,19 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
               placeholder="Optional notes"
               rows={3}
-              className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface focus:border-primary focus:ring-primary/40 w-full resize-none border px-2.5 py-1.5 text-[13px] outline-none focus:ring-2"
+              className="rounded-control border-outline-variant bg-surface-container-lowest font-content text-on-surface focus:border-primary focus:ring-primary/40 text-body w-full resize-none border px-2.5 py-1.5 outline-none focus:ring-2"
             />
           </label>
 
           {askScope && (
             <div className="rounded-control border-outline-variant bg-surface-container-low flex flex-col gap-1.5 border p-2">
-              <span className="font-ui text-on-surface-variant flex items-center gap-1 text-[11px] font-semibold tracking-wider uppercase">
+              <span className="font-ui text-on-surface-variant text-label flex items-center gap-1 font-semibold tracking-wider uppercase">
                 <Repeat size={11} />
                 Apply to
               </span>
               <RadioGroup aria-label="Apply to" value={scope} onValueChange={setScope} className="contents">
                 {SCOPE_OPTIONS.map((option) => (
-                  <label key={option.value} className="flex items-start gap-2 text-[11px]">
+                  <label key={option.value} className="text-label flex items-start gap-2">
                     <Radio
                       value={option.value}
                       className={({ checked }) =>
@@ -370,7 +370,7 @@ export function EventDialog({ state, onClose, onCreate, onUpdate, onDelete }: Ev
             </div>
           )}
 
-          {error && <p className="text-error text-[11px]">{error}</p>}
+          {error && <p className="text-error text-label">{error}</p>}
 
           <div className="mt-1 flex items-center justify-between">
             <div>

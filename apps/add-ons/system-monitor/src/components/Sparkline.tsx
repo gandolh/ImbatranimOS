@@ -26,7 +26,7 @@ export function Sparkline({
     // Not enough samples yet. Said out loud rather than rendering an empty box,
     // which reads as a broken component.
     return (
-      <div className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface-variant flex h-[28px] items-center justify-center overflow-hidden border font-mono text-[9px]">
+      <div className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface-variant text-micro flex h-[28px] items-center justify-center overflow-hidden border font-mono">
         collecting…
       </div>
     );
@@ -65,7 +65,7 @@ export function Sparkline({
           vectorEffect="non-scaling-stroke"
         />
       </svg>
-      <span className="text-on-surface-variant absolute top-0.5 right-1 font-mono text-[8px]">
+      <span className="text-on-surface-variant text-nano absolute top-0.5 right-1 font-mono">
         peak {peak.toFixed(0)}%
       </span>
     </div>

@@ -21,7 +21,7 @@ export function Stopwatch() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-col items-center justify-center gap-4 px-4 py-8">
-        <span className="text-on-surface font-mono text-[36px] leading-none font-semibold tabular-nums">
+        <span className="text-on-surface text-display-lg font-mono leading-none font-semibold tabular-nums">
           {formatStopwatch(elapsed)}
         </span>
         <div className="flex items-center gap-2">
@@ -54,7 +54,7 @@ export function Stopwatch() {
 
       <div className="flex-1 overflow-y-auto">
         {stopwatch.laps.length === 0 ? (
-          <p className="font-ui text-on-surface-variant flex h-full items-center justify-center text-[12px]">
+          <p className="font-ui text-on-surface-variant text-control flex h-full items-center justify-center">
             No laps recorded
           </p>
         ) : (
@@ -65,8 +65,8 @@ export function Stopwatch() {
                 key={`${lapNumber}-${lapMs}`}
                 className="border-outline-variant flex items-center justify-between border-b px-3 py-1.5"
               >
-                <span className="font-ui text-on-surface-variant text-[11px]">Lap {lapNumber}</span>
-                <span className="text-on-surface font-mono text-[12px] tabular-nums">{formatStopwatch(lapMs)}</span>
+                <span className="font-ui text-on-surface-variant text-label">Lap {lapNumber}</span>
+                <span className="text-on-surface text-control font-mono tabular-nums">{formatStopwatch(lapMs)}</span>
               </div>
             );
           })

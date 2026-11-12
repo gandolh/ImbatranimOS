@@ -65,7 +65,7 @@ function TimerCard({ timer, now }: { timer: TimerEntry; now: number }) {
       <div className="flex items-center justify-between gap-2">
         <span
           className={cn(
-            "font-mono text-[32px] leading-none font-semibold tabular-nums",
+            "text-display font-mono leading-none font-semibold tabular-nums",
             finished ? "text-error" : "text-on-surface",
           )}
         >
@@ -151,7 +151,7 @@ export function Timer() {
     <div className="flex h-full flex-col">
       <div className="flex-1">
         {timers.length === 0 ? (
-          <p className="font-ui text-on-surface-variant flex h-full items-center justify-center text-[12px]">
+          <p className="font-ui text-on-surface-variant text-control flex h-full items-center justify-center">
             No timers — add one below
           </p>
         ) : (
@@ -160,7 +160,7 @@ export function Timer() {
       </div>
 
       <div className="border-outline-variant bg-surface-container-low flex items-center justify-between gap-2 border-t px-3 py-2">
-        <p className="font-ui text-on-surface-variant text-[10px]">
+        <p className="font-ui text-on-surface-variant text-tiny">
           Timers keep running while the desktop is open, even with this window closed.
         </p>
         <Button

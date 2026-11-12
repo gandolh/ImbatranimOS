@@ -25,7 +25,7 @@ export function RingingBanner() {
         <div key={entry.alarmId} className="flex items-center justify-between gap-2 px-3 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <AlarmClock size={14} strokeWidth={2} className="shrink-0" />
-            <p className="font-ui truncate text-[12px] font-semibold">
+            <p className="font-ui text-control truncate font-semibold">
               {entry.label ? `${entry.label} — ${entry.time}` : `Alarm · ${entry.time}`}
             </p>
           </div>

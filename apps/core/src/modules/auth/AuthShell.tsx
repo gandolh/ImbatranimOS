@@ -31,15 +31,15 @@ export function AuthShell({
 
         <div className="border-outline-variant bg-surface-container flex flex-col items-center gap-2 border-b px-6 py-6">
           <Logo size={44} className="text-on-surface" />
-          <div className="text-on-surface text-[17px] font-bold tracking-tight">
+          <div className="text-on-surface text-title font-bold tracking-tight">
             Imbatranim<span className="text-primary">OS</span>
           </div>
         </div>
 
         <div className="p-6">
           <header className="mb-5">
-            <h1 className="font-ui text-on-surface text-base font-bold tracking-tight">{title}</h1>
-            <p className="font-content text-on-surface-variant mt-1 text-[12px]">{subtitle}</p>
+            <h1 className="font-ui text-on-surface text-prose font-bold tracking-tight">{title}</h1>
+            <p className="font-content text-on-surface-variant text-control mt-1">{subtitle}</p>
           </header>
           {children}
         </div>
@@ -49,5 +49,5 @@ export function AuthShell({
 }
 
 export function FieldHint({ children }: { children: React.ReactNode }) {
-  return <p className="font-content text-error text-[11px]">{children}</p>;
+  return <p className="font-content text-error text-label">{children}</p>;
 }

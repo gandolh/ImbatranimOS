@@ -250,7 +250,7 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
           <Button variant="ghost" size="sm" onClick={goNext} aria-label="Next">
             <ChevronRight size={14} />
           </Button>
-          <span className="text-on-surface ml-1 text-[13px] font-semibold">{rangeTitle(anchor, view)}</span>
+          <span className="text-on-surface text-body ml-1 font-semibold">{rangeTitle(anchor, view)}</span>
         </div>
 
         <div className="flex items-center gap-1">
@@ -318,7 +318,7 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
                 type="button"
                 onClick={() => setView(mode)}
                 className={cn(
-                  "focus-visible:ring-primary border-outline-variant px-2.5 py-1 text-[11px] font-medium capitalize outline-none not-first:border-l focus-visible:ring-2 focus-visible:ring-inset",
+                  "focus-visible:ring-primary border-outline-variant text-label px-2.5 py-1 font-medium capitalize outline-none not-first:border-l focus-visible:ring-2 focus-visible:ring-inset",
                   view === mode
                     ? "bg-primary-container text-on-primary-container"
                     : "text-on-surface hover:bg-surface-container-high",
@@ -332,7 +332,7 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
       </div>
 
       {query.trim() !== "" && (
-        <div className="border-outline-variant bg-surface-container-low text-on-surface-variant flex shrink-0 items-center gap-1.5 border-b px-2 py-1 text-[10px]">
+        <div className="border-outline-variant bg-surface-container-low text-on-surface-variant text-tiny flex shrink-0 items-center gap-1.5 border-b px-2 py-1">
           <Search size={10} />
           {occurrences.length} match{occurrences.length === 1 ? "" : "es"} for “{query.trim()}”
           {view !== "agenda" && " in this range — the Agenda view searches further ahead"}
@@ -341,11 +341,11 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
 
       <div className="min-h-0 flex-1">
         {isError ? (
-          <p className="text-error flex h-full items-center justify-center px-6 text-center text-[12px]">
+          <p className="text-error text-control flex h-full items-center justify-center px-6 text-center">
             Could not load your calendar.
           </p>
         ) : isPending ? (
-          <p className="text-on-surface-variant flex h-full items-center justify-center text-[12px]">Loading…</p>
+          <p className="text-on-surface-variant text-control flex h-full items-center justify-center">Loading…</p>
         ) : view === "month" ? (
           <MonthView anchor={anchor} occurrences={occurrences} onCreate={handleCreate} onOpen={handleOpen} />
         ) : view === "week" ? (
@@ -355,7 +355,7 @@ export function Calendar({ windowId: _windowId }: { windowId: string }) {
         )}
       </div>
 
-      <div className="border-outline-variant bg-surface-container-low text-on-surface-variant flex h-6 shrink-0 items-center gap-1.5 border-t px-2 text-[10px]">
+      <div className="border-outline-variant bg-surface-container-low text-on-surface-variant text-tiny flex h-6 shrink-0 items-center gap-1.5 border-t px-2">
         <Info size={11} />
         Reminders fire while the desktop is open — this window can be closed. Events are saved in your computer.
       </div>

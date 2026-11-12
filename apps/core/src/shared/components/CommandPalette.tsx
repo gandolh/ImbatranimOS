@@ -135,13 +135,13 @@ export function CommandPalette({ open, onClose }: Props) {
           placeholder="Search apps, files, bookmarks…"
           className={cn(
             "focus-visible:ring-primary flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-inset",
-            "text-on-surface font-ui text-[13px]",
+            "text-on-surface font-ui text-body",
             "placeholder:text-on-surface-variant",
           )}
           autoComplete="off"
           spellCheck={false}
         />
-        <kbd className="rounded-small border-outline-variant bg-surface-container text-on-surface-variant font-ui border px-1 py-0.5 text-[11px]">
+        <kbd className="rounded-small border-outline-variant bg-surface-container text-on-surface-variant font-ui text-label border px-1 py-0.5">
           ESC
         </kbd>
       </div>
@@ -149,11 +149,11 @@ export function CommandPalette({ open, onClose }: Props) {
       {/* Results */}
       <div className="max-h-[360px] overflow-y-auto">
         {loading && items.length === 0 && (
-          <div className="text-on-surface-variant font-ui px-3 py-4 text-center text-[12px]">Searching…</div>
+          <div className="text-on-surface-variant font-ui text-control px-3 py-4 text-center">Searching…</div>
         )}
 
         {!loading && items.length === 0 && (
-          <div className="text-on-surface-variant font-ui px-3 py-4 text-center text-[12px]">
+          <div className="text-on-surface-variant font-ui text-control px-3 py-4 text-center">
             {query ? "No results." : "Type to search."}
           </div>
         )}
@@ -165,7 +165,7 @@ export function CommandPalette({ open, onClose }: Props) {
               return (
                 <li key={group} role="presentation">
                   {/* Group header */}
-                  <div className="border-outline-variant bg-surface-container text-on-surface-variant font-ui border-b px-3 py-1 text-[10px] font-semibold tracking-widest uppercase">
+                  <div className="border-outline-variant bg-surface-container text-on-surface-variant font-ui text-tiny border-b px-3 py-1 font-semibold tracking-widest uppercase">
                     {group}
                   </div>
                   {/* Group items */}
@@ -190,11 +190,11 @@ export function CommandPalette({ open, onClose }: Props) {
                           onClose();
                         }}
                       >
-                        <span className="font-ui text-[13px] leading-none font-medium">{item.label}</span>
+                        <span className="font-ui text-body leading-none font-medium">{item.label}</span>
                         {item.subtitle && (
                           <span
                             className={cn(
-                              "font-ui text-[11px] leading-none",
+                              "font-ui text-label leading-none",
                               isSelected ? "text-on-primary-container/70" : "text-on-surface-variant",
                             )}
                           >

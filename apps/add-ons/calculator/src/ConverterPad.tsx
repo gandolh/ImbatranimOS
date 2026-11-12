@@ -70,7 +70,7 @@ export function ConverterPad({ windowId: _windowId }: { windowId: string }) {
             value={cat.id}
             className={({ checked }) =>
               cn(
-                "focus-visible:ring-primary font-ui rounded-control border px-2 py-0.5 text-[11px] focus-visible:ring-2 focus-visible:ring-inset",
+                "focus-visible:ring-primary font-ui rounded-control text-label border px-2 py-0.5 focus-visible:ring-2 focus-visible:ring-inset",
                 checked
                   ? "border-primary bg-primary-container text-on-primary-container"
                   : "border-outline-variant text-on-surface hover:bg-surface-container",
@@ -118,7 +118,7 @@ export function ConverterPad({ windowId: _windowId }: { windowId: string }) {
         onUnit={setTo}
       />
 
-      {!valid && raw.trim() !== "" && <span className="font-ui text-error text-[11px]">That is not a number.</span>}
+      {!valid && raw.trim() !== "" && <span className="font-ui text-error text-label">That is not a number.</span>}
     </div>
   );
 }
@@ -141,23 +141,21 @@ function Side({
   const unitOptions = units.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.label}` }));
   return (
     <div className="flex flex-col gap-1">
-      <span className="font-ui text-on-surface-variant text-[10px] font-semibold tracking-wider uppercase">
-        {label}
-      </span>
+      <span className="font-ui text-on-surface-variant text-tiny font-semibold tracking-wider uppercase">{label}</span>
       <div className="flex items-stretch gap-1">
         <input
           value={value}
           inputMode="decimal"
           aria-label={`${label} value`}
           onChange={(e) => onValue(e.target.value)}
-          className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface focus-visible:ring-primary min-w-0 flex-1 border px-2 py-1 text-right font-mono text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+          className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface focus-visible:ring-primary text-lead min-w-0 flex-1 border px-2 py-1 text-right font-mono outline-none focus-visible:ring-2 focus-visible:ring-inset"
         />
         <Select
           value={unit}
           aria-label={`${label} unit`}
           options={unitOptions}
           onValueChange={(next) => onUnit(next as UnitId)}
-          className="font-ui text-on-surface h-full shrink-0 px-1 py-0 text-[11px]"
+          className="font-ui text-on-surface text-label h-full shrink-0 px-1 py-0"
         />
       </div>
     </div>

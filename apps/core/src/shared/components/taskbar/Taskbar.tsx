@@ -133,7 +133,7 @@ export function Taskbar() {
           )}
         />
         <Logo size={22} className="text-on-surface" />
-        <span className="text-on-surface text-[13px] font-bold tracking-tight">
+        <span className="text-on-surface text-body font-bold tracking-tight">
           Imbatranim<span className="text-primary">OS</span>
         </span>
       </button>
@@ -173,7 +173,7 @@ export function Taskbar() {
               title={win.title}
               className={cn(
                 "rounded-control relative flex h-[34px] max-w-[168px] min-w-[44px] shrink-0 items-center gap-2 px-2.5 outline-none",
-                "border border-transparent text-[12px]",
+                "text-control border border-transparent",
                 "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
                 isFocused
                   ? "border-outline-variant apricot:border-transparent bg-surface-container-high text-on-surface"

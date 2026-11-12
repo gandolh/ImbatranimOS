@@ -109,7 +109,7 @@ export function AboutMachine({ onVersion }: { onVersion?: (version: string) => v
   return (
     <div className="grid gap-2">
       {loading && (
-        <div className="rounded-control border-outline-variant bg-surface-container-low text-on-surface-variant flex items-center gap-2 border px-3 py-2.5 text-[12px]">
+        <div className="rounded-control border-outline-variant bg-surface-container-low text-on-surface-variant text-control flex items-center gap-2 border px-3 py-2.5">
           <Loader2 size={13} className="animate-spin" />
           Reading this machine…
         </div>
@@ -117,7 +117,7 @@ export function AboutMachine({ onVersion }: { onVersion?: (version: string) => v
 
       {error && !loading && (
         <div className="rounded-control border-outline-variant bg-surface-container-low flex items-center justify-between gap-3 border px-3 py-2.5">
-          <span className="text-error font-content text-[12px]">{error}</span>
+          <span className="text-error font-content text-control">{error}</span>
           <Button variant="default" size="sm" className="flex items-center gap-1" onClick={() => void retry()}>
             <RefreshCw size={11} />
             Retry
@@ -130,10 +130,10 @@ export function AboutMachine({ onVersion }: { onVersion?: (version: string) => v
           key={item.label}
           className="rounded-control border-outline-variant bg-surface-container-low flex items-center justify-between gap-3 border px-3 py-2.5"
         >
-          <span className="text-on-surface-variant text-[10px] font-semibold tracking-widest uppercase">
+          <span className="text-on-surface-variant text-tiny font-semibold tracking-widest uppercase">
             {item.label}
           </span>
-          <span className="font-ui text-on-surface truncate text-[13px] font-semibold">{item.value}</span>
+          <span className="font-ui text-on-surface text-body truncate font-semibold">{item.value}</span>
         </div>
       ))}
     </div>

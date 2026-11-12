@@ -76,7 +76,7 @@ export function FileList({
     return (
       <div className="text-on-surface-variant flex flex-col items-center justify-center gap-2 py-12">
         <Folder size={32} strokeWidth={1} />
-        <span className="font-ui text-[12px]">Empty folder</span>
+        <span className="font-ui text-control">Empty folder</span>
       </div>
     );
   }
@@ -85,7 +85,7 @@ export function FileList({
     // In Apricot the table separates its borders, so a row can be rounded: the
     // fill moves from the row onto its cells, with the outer cells rounded, and
     // the table is inset from the pane's edges. Classic keeps the collapsed table.
-    <table className="font-ui apricot:mx-(--k-list-inset) apricot:w-[calc(100%-2*var(--k-list-inset))] apricot:border-separate apricot:border-spacing-0 w-full border-collapse text-[12px]">
+    <table className="font-ui apricot:mx-(--k-list-inset) apricot:w-[calc(100%-2*var(--k-list-inset))] apricot:border-separate apricot:border-spacing-0 text-control w-full border-collapse">
       <thead>
         <tr className="border-outline-variant bg-surface-container-low text-on-surface-variant border-b">
           <th className="w-6 px-2 py-1 text-left font-medium" />
@@ -152,7 +152,7 @@ export function FileList({
                     }}
                     onBlur={onRenameCommit}
                     onClick={(e) => e.stopPropagation()}
-                    className="rounded-control border-primary bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary w-full border px-1 py-0 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+                    className="rounded-control border-primary bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary text-control w-full border px-1 py-0 outline-none focus-visible:ring-2 focus-visible:ring-inset"
                   />
                 ) : (
                   <span className="select-none">{entry.name}</span>

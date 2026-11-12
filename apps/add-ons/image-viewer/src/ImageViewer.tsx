@@ -420,7 +420,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
     return (
       <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 text-center">
         <ImageIcon size={40} strokeWidth={1} />
-        <span className="font-ui text-[12px]">Nothing open</span>
+        <span className="font-ui text-control">Nothing open</span>
         <Button size="sm" variant="primary" onClick={pickFile}>
           Open an image
         </Button>
@@ -448,7 +448,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
             <ChevronLeft size={13} />
           </Button>
         </Tooltip>
-        <span className="font-ui text-on-surface-variant min-w-[48px] text-center text-[11px] tabular-nums">
+        <span className="font-ui text-on-surface-variant text-label min-w-[48px] text-center tabular-nums">
           {siblings && siblings.length > 0 ? `${index + 1} / ${siblings.length}` : "— / —"}
         </span>
         <Tooltip content="Next image">
@@ -470,7 +470,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
             <ZoomOut size={13} />
           </Button>
         </Tooltip>
-        <span className="font-ui text-on-surface-variant min-w-[40px] text-center text-[11px] tabular-nums">
+        <span className="font-ui text-on-surface-variant text-label min-w-[40px] text-center tabular-nums">
           {zoomLabel}
         </span>
         <Tooltip content="Zoom in">
@@ -492,7 +492,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
           <Button
             variant={zoomMode === "manual" && zoom === 1 ? "selected" : "ghost"}
             size="sm"
-            className="font-ui h-5 px-1.5 text-[11px]"
+            className="font-ui text-label h-5 px-1.5"
             onClick={zoomActual}
           >
             100%
@@ -533,7 +533,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
                 </Button>
               </Tooltip>
             ) : (
-              <span className="font-ui text-on-surface-variant ml-1 max-w-[280px] truncate text-[11px]">
+              <span className="font-ui text-on-surface-variant text-label ml-1 max-w-[280px] truncate">
                 {cannotSaveWhy}
               </span>
             )}
@@ -555,7 +555,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
 
         <div className="flex-1" />
 
-        <span className="font-ui text-on-surface-variant mr-1 max-w-[160px] truncate text-[11px]">
+        <span className="font-ui text-on-surface-variant text-label mr-1 max-w-[160px] truncate">
           {fileName(currentPath ?? source.path, "image")}
         </span>
         <Tooltip content="Download">
@@ -572,7 +572,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
           Panning is the single mechanism. */}
       <div ref={attachScroll} className="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
         {loading && !error && (
-          <div className="text-on-surface-variant font-ui flex items-center gap-2 text-[12px]">
+          <div className="text-on-surface-variant font-ui text-control flex items-center gap-2">
             <Loader2 size={16} className="animate-spin" />
             Loading image…
           </div>
@@ -580,7 +580,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
         {error && (
           <div className="flex flex-col items-center gap-3 px-6 text-center">
             <ImageOff size={40} strokeWidth={1} className="text-on-surface-variant" />
-            <span className="text-error font-ui text-[12px]">{error}</span>
+            <span className="text-error font-ui text-control">{error}</span>
           </div>
         )}
         {currentRoot && currentPath && (

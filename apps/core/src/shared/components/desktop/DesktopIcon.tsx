@@ -115,7 +115,7 @@ export function DesktopIcon({
       <span
         className={cn(
           "font-ui rounded-item text-center leading-tight",
-          "w-full overflow-hidden px-1 py-0.5 text-[11px]",
+          "text-label w-full overflow-hidden px-1 py-0.5",
           "line-clamp-2 break-words",
           selected
             ? "bg-primary-container text-on-primary-container"

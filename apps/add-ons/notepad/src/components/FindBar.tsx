@@ -67,7 +67,7 @@ export function FindBar({
           placeholder="Find"
           aria-label="Find"
           className={cn(
-            "focus-visible:ring-primary rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface w-40 border px-1 py-0 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+            "focus-visible:ring-primary rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface text-label w-40 border px-1 py-0 outline-none focus-visible:ring-2 focus-visible:ring-inset",
             // The only signal that a search failed. Colour alone would not do it, so
             // the count beside it says "No results" in words too.
             noMatches && "border-error",
@@ -75,7 +75,7 @@ export function FindBar({
         />
         <span
           className={cn(
-            "font-ui min-w-[72px] text-[10px] tabular-nums",
+            "font-ui text-tiny min-w-[72px] tabular-nums",
             noMatches ? "text-error" : "text-on-surface-variant",
           )}
         >
@@ -142,12 +142,12 @@ export function FindBar({
             }}
             placeholder="Replace with"
             aria-label="Replace with"
-            className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface focus-visible:ring-primary w-40 border px-1 py-0 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+            className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface focus-visible:ring-primary text-label w-40 border px-1 py-0 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
           <Button
             variant="default"
             size="sm"
-            className="font-ui h-5 px-1.5 text-[10px]"
+            className="font-ui text-tiny h-5 px-1.5"
             disabled={matchCount === 0}
             onClick={onReplaceOne}
           >
@@ -156,7 +156,7 @@ export function FindBar({
           <Button
             variant="default"
             size="sm"
-            className="font-ui h-5 px-1.5 text-[10px]"
+            className="font-ui text-tiny h-5 px-1.5"
             disabled={matchCount === 0}
             onClick={onReplaceAll}
           >

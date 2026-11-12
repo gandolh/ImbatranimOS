@@ -79,16 +79,16 @@ export function Dialog({
         >
           {title && (
             <div className="border-outline-variant bg-surface-container-high flex items-center justify-between border-b px-3 py-1.5">
-              <BaseDialog.Title className="font-ui text-on-surface text-[13px] font-semibold">{title}</BaseDialog.Title>
+              <BaseDialog.Title className="font-ui text-on-surface text-body font-semibold">{title}</BaseDialog.Title>
               <BaseDialog.Close
                 aria-label="Close"
-                className="border-outline-variant bg-surface-container-low font-ui text-on-surface hover:bg-error hover:text-on-error rounded-control flex h-5 w-5 cursor-pointer items-center justify-center border text-[12px]"
+                className="border-outline-variant bg-surface-container-low font-ui text-on-surface hover:bg-error hover:text-on-error rounded-control text-control flex h-5 w-5 cursor-pointer items-center justify-center border"
               >
                 ×
               </BaseDialog.Close>
             </div>
           )}
-          <div ref={bodyRef} className="font-content text-on-surface p-3 text-[13px]">
+          <div ref={bodyRef} className="font-content text-on-surface text-body p-3">
             {description && (
               <BaseDialog.Description className="text-on-surface-variant mb-3">{description}</BaseDialog.Description>
             )}

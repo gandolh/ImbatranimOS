@@ -83,7 +83,7 @@ export function SearchBox({
             }
           }}
           className={cn(
-            "focus-visible:ring-primary font-content text-on-surface w-44 bg-transparent py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+            "focus-visible:ring-primary font-content text-on-surface text-control w-44 bg-transparent py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset",
             "placeholder:text-on-surface-variant",
             // Chrome draws its own clear affordance for type=search; we ship one
             // that matches the rest of the OS instead of showing both.

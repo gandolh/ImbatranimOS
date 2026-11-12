@@ -70,7 +70,7 @@ export function TrashDialog({ open, onOpenChange, root, currentPath, onRestored,
       <Dialog open={open} onOpenChange={onOpenChange} title="Trash">
         <div className="flex h-[320px] w-[520px] flex-col">
           <div className="border-outline-variant bg-surface-container-low flex flex-none items-center justify-between border-b px-2 py-1">
-            <span className="font-ui text-on-surface-variant text-[11px]">
+            <span className="font-ui text-on-surface-variant text-label">
               {entries.length} item{entries.length !== 1 ? "s" : ""}
             </span>
             <Button
@@ -86,11 +86,11 @@ export function TrashDialog({ open, onOpenChange, root, currentPath, onRestored,
           <div className="min-h-0 flex-1">
             <ScrollArea className="h-full w-full">
               {isLoading ? (
-                <div className="text-on-surface-variant font-ui p-4 text-center text-[12px]">Loading…</div>
+                <div className="text-on-surface-variant font-ui text-control p-4 text-center">Loading…</div>
               ) : entries.length === 0 ? (
                 <div className="text-on-surface-variant flex flex-col items-center justify-center gap-2 py-12">
                   <Trash2 size={32} strokeWidth={1} />
-                  <span className="font-ui text-[12px]">The Trash is empty</span>
+                  <span className="font-ui text-control">The Trash is empty</span>
                 </div>
               ) : (
                 entries.map((e) => (
@@ -104,8 +104,8 @@ export function TrashDialog({ open, onOpenChange, root, currentPath, onRestored,
                       <FileText size={12} strokeWidth={1.5} className="shrink-0" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="font-ui text-on-surface truncate text-[12px]">{e.name}</div>
-                      <div className="font-ui text-on-surface-variant truncate text-[11px]">
+                      <div className="font-ui text-on-surface text-control truncate">{e.name}</div>
+                      <div className="font-ui text-on-surface-variant text-label truncate">
                         {e.originalPath} · {formatWhen(e.deletedAt)}
                       </div>
                     </div>

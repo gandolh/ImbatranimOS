@@ -37,7 +37,7 @@ function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: str
       <div className="rounded-control border-outline-variant bg-surface-container text-primary flex h-9 w-9 items-center justify-center border">
         <Icon size={18} strokeWidth={1.75} />
       </div>
-      <h2 className="font-ui text-on-surface text-base font-semibold">{title}</h2>
+      <h2 className="font-ui text-on-surface text-prose font-semibold">{title}</h2>
     </div>
   );
 }
@@ -70,8 +70,8 @@ export function Settings() {
     <div className="bg-surface text-on-surface flex h-full flex-col select-none">
       <div className="custom-scrollbar flex-1 overflow-y-auto p-7">
         <header className="mb-8">
-          <h1 className="font-ui text-on-surface text-2xl font-bold tracking-tight">Settings</h1>
-          <p className="text-on-surface-variant mt-1 text-[13px]">Tune the look of ImbatranimOS.</p>
+          <h1 className="font-ui text-on-surface text-heading font-bold tracking-tight">Settings</h1>
+          <p className="text-on-surface-variant text-body mt-1">Tune the look of ImbatranimOS.</p>
         </header>
 
         {/* Appearance ─────────────────────────────────────────── */}
@@ -84,7 +84,7 @@ export function Settings() {
         {/* Apps ────────────────────────────────────────────────── */}
         <section className="mb-10">
           <SectionHeader icon={LayoutGrid} title="Apps" />
-          <p className="text-on-surface-variant mb-5 text-[12px]">
+          <p className="text-on-surface-variant text-control mb-5">
             Turn add-ons on or off. Disabled apps disappear from Start, search, and the desktop — their code never
             loads. Core apps stay on so you can't lock yourself out.
           </p>
@@ -102,11 +102,11 @@ export function Settings() {
                     <AppIcon size={15} strokeWidth={1.75} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="font-ui text-on-surface block truncate text-[13px] font-medium">{app.name}</span>
-                    <span className="text-on-surface-variant block truncate text-[11px]">{app.description}</span>
+                    <span className="font-ui text-on-surface text-body block truncate font-medium">{app.name}</span>
+                    <span className="text-on-surface-variant text-label block truncate">{app.description}</span>
                   </span>
                   {required && (
-                    <span className="text-on-surface-variant text-[9px] font-semibold tracking-widest uppercase">
+                    <span className="text-on-surface-variant text-micro font-semibold tracking-widest uppercase">
                       Required
                     </span>
                   )}
@@ -168,7 +168,7 @@ export function Settings() {
         {/* Keyboard ───────────────────────────────────────────── */}
         <section className="mb-10">
           <SectionHeader icon={Keyboard} title="Keyboard shortcuts" />
-          <p className="font-ui text-on-surface-variant mb-3 text-[11px]">
+          <p className="font-ui text-on-surface-variant text-label mb-3">
             Press <span className="text-on-surface font-semibold">?</span> anywhere on the desktop to open this list.
           </p>
           <ShortcutList />
@@ -189,12 +189,10 @@ export function Settings() {
       </div>
 
       <div className="border-outline-variant bg-surface-container-low flex items-center justify-between border-t px-7 py-3">
-        <span className="text-on-surface-variant text-[10px] font-semibold tracking-widest uppercase">
-          ImbatranimOS
-        </span>
+        <span className="text-on-surface-variant text-tiny font-semibold tracking-widest uppercase">ImbatranimOS</span>
         {/* Driven by IMAGE_VERSION, not a literal. This said "v0.1 · preview" while
             package.json was at 1.0.0 — the OS reporting a version it was not. */}
-        <span className="font-ui text-on-surface-variant text-[10px] tabular-nums">
+        <span className="font-ui text-on-surface-variant text-tiny tabular-nums">
           {imageVersion ? `v${imageVersion}` : "—"}
         </span>
       </div>

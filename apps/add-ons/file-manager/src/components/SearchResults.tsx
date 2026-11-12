@@ -102,17 +102,17 @@ export function SearchResults({
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       {/* Scope header — which folder these rows came from, always. */}
       <div className="border-outline-variant bg-surface-container flex items-center gap-2 border-b px-2 py-1">
-        <span className="font-ui text-on-surface text-[12px] font-semibold">Results in {scope}</span>
-        <span className="font-ui text-on-surface-variant text-[11px]">
+        <span className="font-ui text-on-surface text-control font-semibold">Results in {scope}</span>
+        <span className="font-ui text-on-surface-variant text-label">
           {searching && hits.length === 0 ? "Searching…" : stale ? "Searching…" : resultCountLabel(hits.length)}
         </span>
-        {contentMode && <span className="font-ui text-primary text-[11px]">inside file contents</span>}
+        {contentMode && <span className="font-ui text-primary text-label">inside file contents</span>}
       </div>
 
       {truncated && (
         <div className="border-outline-variant bg-surface-container-low flex items-center gap-2 border-b px-2 py-1">
           <AlertTriangle size={12} className="text-tertiary shrink-0" />
-          <span className="font-ui text-on-surface-variant text-[11px]">{truncationNote(hits.length)}</span>
+          <span className="font-ui text-on-surface-variant text-label">{truncationNote(hits.length)}</span>
         </div>
       )}
 
@@ -157,10 +157,10 @@ export function SearchResults({
                   )}
                 >
                   <span className="shrink-0">{getFileIcon({ ...hit, size: 0, modifiedAt: "" }, 14)}</span>
-                  <span className="font-content truncate text-[12px]">{hit.name}</span>
+                  <span className="font-content text-control truncate">{hit.name}</span>
                   <span
                     className={cn(
-                      "font-ui ml-auto shrink-0 truncate pl-2 text-[11px]",
+                      "font-ui text-label ml-auto shrink-0 truncate pl-2",
                       selected ? "text-on-primary-container/80" : "text-on-surface-variant",
                     )}
                   >
@@ -180,7 +180,7 @@ function Empty({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <div className="text-on-surface-variant flex flex-col items-center justify-center gap-2 py-12">
       {icon}
-      <span className="font-ui px-4 text-center text-[12px]">{label}</span>
+      <span className="font-ui text-control px-4 text-center">{label}</span>
     </div>
   );
 }

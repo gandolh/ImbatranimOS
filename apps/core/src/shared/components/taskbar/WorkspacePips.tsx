@@ -38,7 +38,7 @@ export function WorkspacePips() {
             }
             title={`Workspace ${id} (Ctrl+Alt+${id})`}
             className={cn(
-              "focus-visible:ring-primary rounded-control relative flex h-[22px] w-[22px] items-center justify-center border text-[10px] tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
+              "focus-visible:ring-primary rounded-control text-tiny relative flex h-[22px] w-[22px] items-center justify-center border tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
               active
                 ? "border-primary bg-primary-container text-on-primary-container"
                 : "border-outline-variant text-on-surface-variant hover:bg-surface-container-high",

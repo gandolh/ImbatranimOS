@@ -27,12 +27,12 @@ export function Outline({
 
   return (
     <div className="border-outline-variant bg-surface-container-low flex w-[168px] shrink-0 flex-col border-r">
-      <div className="border-outline-variant text-on-surface-variant font-ui flex items-center gap-1 border-b px-2 py-1 text-[10px] uppercase">
+      <div className="border-outline-variant text-on-surface-variant font-ui text-tiny flex items-center gap-1 border-b px-2 py-1 uppercase">
         <ListTree size={11} />
         Outline
       </div>
       {headings.length === 0 ? (
-        <p className="text-on-surface-variant font-ui p-2 text-[10px]">
+        <p className="text-on-surface-variant font-ui text-tiny p-2">
           No headings yet. Start a line with <span className="font-mono">#</span> and it will appear here.
         </p>
       ) : (
@@ -45,7 +45,7 @@ export function Outline({
                   onClick={() => onSelect(heading)}
                   title={heading.title}
                   className={cn(
-                    "focus-visible:ring-primary font-ui rounded-item block w-full truncate px-2 py-0.5 text-left text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                    "focus-visible:ring-primary font-ui rounded-item text-label block w-full truncate px-2 py-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset",
                     index === activeIndex
                       ? "bg-primary-container text-on-primary-container"
                       : "text-on-surface hover:bg-surface-container-high",

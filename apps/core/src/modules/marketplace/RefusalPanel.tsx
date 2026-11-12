@@ -21,8 +21,8 @@ export function RefusalPanel({ appName, reason }: { appName: string; reason: str
     >
       <Ban size={26} strokeWidth={1.75} className="text-on-surface-variant" />
       <div>
-        <p className="text-[13px] font-semibold">{`Can't open ${appName}`}</p>
-        <p className="text-on-surface-variant mt-1 max-w-sm text-[12px]">{reason}</p>
+        <p className="text-body font-semibold">{`Can't open ${appName}`}</p>
+        <p className="text-on-surface-variant text-control mt-1 max-w-[312px]">{reason}</p>
       </div>
       <Button
         variant="primary"

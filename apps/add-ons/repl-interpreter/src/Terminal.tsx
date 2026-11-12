@@ -343,7 +343,7 @@ export function Terminal(_props: { windowId: string }) {
           {statusLine && (
             <>
               <Plug size={11} className="text-on-surface-variant shrink-0" />
-              <span className="font-ui text-on-surface-variant min-w-0 flex-1 truncate text-[11px]">{statusLine}</span>
+              <span className="font-ui text-on-surface-variant text-label min-w-0 flex-1 truncate">{statusLine}</span>
               {status.kind === "closed" && status.canRetry && (
                 <Button
                   variant="primary"
@@ -381,7 +381,7 @@ export function Terminal(_props: { windowId: string }) {
                 }}
                 placeholder="Find in scrollback"
                 aria-label="Find in scrollback"
-                className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface focus-visible:ring-primary w-44 border px-1 py-0 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+                className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface focus-visible:ring-primary text-label w-44 border px-1 py-0 outline-none focus-visible:ring-2 focus-visible:ring-inset"
               />
               <Button
                 variant="ghost"

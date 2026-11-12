@@ -59,7 +59,7 @@ export function OpenWithDialog({
     >
       <div className="flex flex-col gap-2">
         {claimants.length === 0 && (
-          <p className="text-on-surface-variant text-[12px]">
+          <p className="text-on-surface-variant text-control">
             {/* An office file with Office not installed says where to get it
                 rather than steering it into the text editor. */}
             {target ? (
@@ -94,15 +94,15 @@ export function OpenWithDialog({
               value={candidate.appId}
               className={({ checked }) =>
                 cn(
-                  "focus-visible:ring-primary border-outline-variant/50 rounded-item apricot:border-transparent flex w-full items-center gap-2 border-b px-2 py-1.5 text-left text-[12px] last:border-b-0 focus-visible:ring-2 focus-visible:ring-inset",
+                  "focus-visible:ring-primary border-outline-variant/50 rounded-item apricot:border-transparent text-control flex w-full items-center gap-2 border-b px-2 py-1.5 text-left last:border-b-0 focus-visible:ring-2 focus-visible:ring-inset",
                   checked ? "bg-primary-container text-on-primary-container" : "hover:bg-surface-container-high",
                 )
               }
             >
               {candidate.name}
-              {candidate.linux && <span className="text-[10px] opacity-70">Linux app</span>}
+              {candidate.linux && <span className="text-tiny opacity-70">Linux app</span>}
               {claimants.some((c) => c.appId === candidate.appId) && showAll && (
-                <span className="ml-auto text-[10px] opacity-70">handles this type</span>
+                <span className="text-tiny ml-auto opacity-70">handles this type</span>
               )}
             </Radio>
           ))}
@@ -111,7 +111,7 @@ export function OpenWithDialog({
         {claimants.length > 0 && !showAll && (
           <button
             onClick={() => setShowAll(true)}
-            className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary self-start text-[11px] underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
+            className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary text-label self-start underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           >
             Show all apps
           </button>

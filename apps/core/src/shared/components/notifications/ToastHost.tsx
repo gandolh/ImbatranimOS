@@ -85,8 +85,8 @@ function Toast({ item }: { item: NotificationItem }) {
               : undefined
           }
         >
-          <div className="text-on-surface truncate text-[12px] font-semibold">{item.title}</div>
-          {item.body && <div className="text-on-surface-variant mt-0.5 text-[11px] break-words">{item.body}</div>}
+          <div className="text-on-surface text-control truncate font-semibold">{item.title}</div>
+          {item.body && <div className="text-on-surface-variant text-label mt-0.5 break-words">{item.body}</div>}
         </div>
 
         {item.actions && item.actions.length > 0 && (
@@ -99,7 +99,7 @@ function Toast({ item }: { item: NotificationItem }) {
                   activate(action.payload);
                 }}
                 className={cn(
-                  "rounded-control border-outline-variant text-on-surface hover:bg-primary hover:text-on-primary hover:border-primary border px-2 py-0.5 text-[11px] outline-none",
+                  "rounded-control border-outline-variant text-on-surface hover:bg-primary hover:text-on-primary hover:border-primary text-label border px-2 py-0.5 outline-none",
                   "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
                 )}
               >

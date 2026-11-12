@@ -92,7 +92,7 @@ export function TransportBar({
   return (
     <div className="border-outline-variant bg-surface-container-low flex shrink-0 flex-col gap-1.5 border-t px-2 py-1.5">
       <div className="flex items-center gap-2">
-        <span className="font-ui text-on-surface-variant w-9 shrink-0 text-right text-[10px] tabular-nums">
+        <span className="font-ui text-on-surface-variant text-tiny w-9 shrink-0 text-right tabular-nums">
           {formatTime(currentTime)}
         </span>
         <Timebar
@@ -102,7 +102,7 @@ export function TransportBar({
           disabled={disabled}
           onSeek={onSeek}
         />
-        <span className="font-ui text-on-surface-variant w-9 shrink-0 text-[10px] tabular-nums">
+        <span className="font-ui text-on-surface-variant text-tiny w-9 shrink-0 tabular-nums">
           {formatTime(duration)}
         </span>
       </div>
@@ -215,7 +215,7 @@ export function TransportBar({
         <Select
           aria-label="Playback speed"
           title="Playback speed"
-          className="text-on-surface-variant h-6 shrink-0 px-1 py-0 text-[11px] tabular-nums"
+          className="text-on-surface-variant text-label h-6 shrink-0 px-1 py-0 tabular-nums"
           options={RATE_OPTIONS}
           value={String(playbackRate)}
           disabled={disabled}

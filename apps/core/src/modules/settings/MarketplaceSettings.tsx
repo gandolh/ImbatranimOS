@@ -277,7 +277,7 @@ export function MarketplaceSettings({
   };
 
   if (!listing) {
-    return <p className="text-on-surface-variant text-[12px]">{error ?? "Loading the catalog…"}</p>;
+    return <p className="text-on-surface-variant text-control">{error ?? "Loading the catalog…"}</p>;
   }
 
   const retiredApps = listing.problems.filter((p) => p.appId && p.retired);
@@ -287,13 +287,13 @@ export function MarketplaceSettings({
   return (
     <div>
       <InstallFromUrl onInstalled={() => void refresh()} />
-      <p className="text-on-surface-variant mb-5 text-[12px]">
+      <p className="text-on-surface-variant text-control mb-5">
         Apps from other repositories, built on this machine from the exact commit the catalog names. An install
         downloads the source and runs its build, which can take minutes.
       </p>
-      {error && <p className="text-error mb-3 text-[12px]">{error}</p>}
+      {error && <p className="text-error text-control mb-3">{error}</p>}
       {listing.apps.length === 0 && (
-        <p className="text-on-surface-variant text-[12px]">
+        <p className="text-on-surface-variant text-control">
           The catalog is empty. Apps are added to it in the OS repository, under <code>marketplace/</code>.
         </p>
       )}
@@ -356,30 +356,30 @@ export function MarketplaceSettings({
                   <Icon size={15} strokeWidth={1.75} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="font-ui text-on-surface block truncate text-[13px] font-medium">
+                  <span className="font-ui text-on-surface text-body block truncate font-medium">
                     {row.name}
                     {nativeUrl && (
-                      <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
+                      <span className="text-on-surface-variant text-micro ml-2 font-semibold tracking-widest uppercase">
                         From a URL
                       </span>
                     )}
                     {badge && <SourceBadge warn={badge.warn}>{badge.label}</SourceBadge>}
                     {row.suite && (
-                      <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
+                      <span className="text-on-surface-variant text-micro ml-2 font-semibold tracking-widest uppercase">
                         {row.apps.length === 1 ? "1 app" : `${row.apps.length} apps`}
                       </span>
                     )}
                     {app.type === "service" && (
-                      <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
+                      <span className="text-on-surface-variant text-micro ml-2 font-semibold tracking-widest uppercase">
                         With server
                       </span>
                     )}
                   </span>
-                  <span className="text-on-surface-variant block truncate text-[11px]" title={state} aria-live="polite">
+                  <span className="text-on-surface-variant text-label block truncate" title={state} aria-live="polite">
                     {rowNote?.id === app.id ? rowNote.text : state}
                   </span>
                   {nativeUrl && (
-                    <span className="text-on-surface-variant/80 block truncate text-[10px]">
+                    <span className="text-on-surface-variant/80 text-tiny block truncate">
                       {sourceLine(required(app.source, "the source"))}
                     </span>
                   )}
@@ -421,7 +421,7 @@ export function MarketplaceSettings({
                 </div>
               </div>
               {moved === app.id && (
-                <p className="text-on-surface mt-2 text-[11px]" role="status">
+                <p className="text-on-surface text-label mt-2" role="status">
                   This URL now points to a different app. Install it from the field above if you want it.
                 </p>
               )}
@@ -443,9 +443,9 @@ export function MarketplaceSettings({
                     return (
                       <li key={a.id} className="flex min-h-7 min-w-0 items-center gap-2 py-0.5">
                         <AppIcon size={12} strokeWidth={1.75} className="text-on-surface-variant shrink-0" />
-                        <span className="font-ui text-on-surface shrink-0 text-[12px] font-medium">{a.name}</span>
+                        <span className="font-ui text-on-surface text-control shrink-0 font-medium">{a.name}</span>
                         <span
-                          className="text-on-surface-variant min-w-0 flex-1 truncate text-[11px]"
+                          className="text-on-surface-variant text-label min-w-0 flex-1 truncate"
                           role={clashing(a) ? "status" : undefined}
                         >
                           {clashing(a)
@@ -464,15 +464,15 @@ export function MarketplaceSettings({
               ) : (
                 <>
                   {clashing(app) && (
-                    <p className="text-on-surface mt-2 text-[11px]" role="status">
+                    <p className="text-on-surface text-label mt-2" role="status">
                       A built-in app already has the id <code>{app.id}</code>, so the built-in opens instead.
                     </p>
                   )}
-                  {app.description && <p className="text-on-surface-variant mt-2 text-[11px]">{app.description}</p>}
+                  {app.description && <p className="text-on-surface-variant text-label mt-2">{app.description}</p>}
                 </>
               )}
               {log?.id === row.descriptorId && (
-                <pre className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface custom-scrollbar mt-2 max-h-60 overflow-auto border p-2 text-[10px] whitespace-pre-wrap select-text">
+                <pre className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface custom-scrollbar text-tiny mt-2 max-h-60 overflow-auto border p-2 whitespace-pre-wrap select-text">
                   {log.text}
                 </pre>
               )}
@@ -492,18 +492,18 @@ export function MarketplaceSettings({
                   <Icon size={15} strokeWidth={1.75} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="font-ui text-on-surface block truncate text-[13px] font-medium">
+                  <span className="font-ui text-on-surface text-body block truncate font-medium">
                     {required(p.retired, "the retired app").name}
-                    <span className="text-on-surface-variant ml-2 text-[9px] font-semibold tracking-widest uppercase">
+                    <span className="text-on-surface-variant text-micro ml-2 font-semibold tracking-widest uppercase">
                       From a URL
                     </span>
                     <SourceBadge warn>No longer supported</SourceBadge>
                   </span>
-                  <span className="text-on-surface-variant block truncate text-[11px]">
+                  <span className="text-on-surface-variant text-label block truncate">
                     A prebuilt app, which this OS no longer runs. Uninstall it.
                   </span>
                   {p.retired?.source && (
-                    <span className="text-on-surface-variant/80 block truncate text-[10px]">
+                    <span className="text-on-surface-variant/80 text-tiny block truncate">
                       {sourceLine(p.retired.source)}
                     </span>
                   )}
@@ -520,10 +520,8 @@ export function MarketplaceSettings({
       </div>
       {brokenApps.length > 0 && (
         <div className="mt-4">
-          <p className="text-on-surface-variant mb-1 text-[11px] font-semibold">
-            Installed apps that could not be read
-          </p>
-          <ul className="grid gap-1 text-[11px]">
+          <p className="text-on-surface-variant text-label mb-1 font-semibold">Installed apps that could not be read</p>
+          <ul className="text-label grid gap-1">
             {brokenApps.map((p) => (
               <li key={p.file} className="text-on-surface-variant flex items-center gap-2">
                 <span className="min-w-0 flex-1">
@@ -539,10 +537,10 @@ export function MarketplaceSettings({
       )}
       {catalogProblems.length > 0 && (
         <div className="mt-4">
-          <p className="text-on-surface-variant mb-1 text-[11px] font-semibold">
+          <p className="text-on-surface-variant text-label mb-1 font-semibold">
             Catalog entries that could not be read
           </p>
-          <ul className="text-on-surface-variant list-disc pl-5 text-[11px]">
+          <ul className="text-on-surface-variant text-label list-disc pl-5">
             {catalogProblems.map((p) => (
               <li key={p.file}>
                 <code>{p.file}</code>: {p.problem}

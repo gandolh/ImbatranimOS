@@ -26,7 +26,7 @@ export function CaptureLauncher({
   busy: boolean;
 }) {
   const row =
-    "rounded-control flex w-full items-center gap-2 border px-2.5 py-2 text-left text-[12px] font-medium " +
+    "rounded-control flex w-full items-center gap-2 border px-2.5 py-2 text-left text-control font-medium " +
     "border-outline-variant text-on-surface hover:bg-surface-container-high " +
     "disabled:cursor-not-allowed disabled:opacity-50" +
     " outline-none focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset";
@@ -41,7 +41,7 @@ export function CaptureLauncher({
       >
         <Crop size={14} strokeWidth={1.75} />
         <span className="flex-1">Select a region</span>
-        <span className="text-on-surface-variant text-[10px]">drag · Esc to cancel</span>
+        <span className="text-on-surface-variant text-tiny">drag · Esc to cancel</span>
       </button>
 
       <button type="button" className={row} disabled={busy} onClick={() => onArm({ kind: "fullscreen" })}>
@@ -59,7 +59,7 @@ export function CaptureLauncher({
         >
           <Timer size={14} strokeWidth={1.75} />
           <span className="flex-1">Whole desktop after {seconds}s</span>
-          <span className="text-on-surface-variant text-[10px]">for menus &amp; hovers</span>
+          <span className="text-on-surface-variant text-tiny">for menus &amp; hovers</span>
         </button>
       ))}
 
@@ -72,7 +72,7 @@ export function CaptureLauncher({
         </span>
       </Button>
 
-      <p className="text-on-surface-variant mt-auto text-[10px] leading-relaxed">
+      <p className="text-on-surface-variant text-tiny mt-auto leading-relaxed">
         Captures are drawn from the desktop's own markup, not read off the screen, so
         <span className="text-on-surface"> canvas and video content may be missing</span>. You will be told when a
         capture contained any.

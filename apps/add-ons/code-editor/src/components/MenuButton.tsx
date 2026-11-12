@@ -59,7 +59,7 @@ export function MenuButton({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "rounded-control font-ui border border-transparent px-2 py-0.5 text-[12px]",
+          "rounded-control font-ui text-control border border-transparent px-2 py-0.5",
           "focus-visible:ring-primary outline-none focus-visible:ring-2",
           open
             ? "border-outline-variant bg-surface-container-high text-on-surface"
@@ -89,7 +89,7 @@ export function MenuButton({
                   item.onSelect();
                 }}
                 className={cn(
-                  "focus-visible:ring-primary font-ui flex w-full items-center gap-2 px-2.5 py-1 text-left text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                  "focus-visible:ring-primary font-ui text-control flex w-full items-center gap-2 px-2.5 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset",
                   item.disabled
                     ? "text-on-surface-variant/50 cursor-not-allowed"
                     : "text-on-surface hover:bg-surface-container",
@@ -98,7 +98,7 @@ export function MenuButton({
                 <span className="flex w-3.5 shrink-0 justify-center">{item.checked ? "✓" : (item.icon ?? null)}</span>
                 <span className="flex-1 truncate">{item.label}</span>
                 {item.hint && (
-                  <span className="text-on-surface-variant shrink-0 text-[11px] tabular-nums">{item.hint}</span>
+                  <span className="text-on-surface-variant text-label shrink-0 tabular-nums">{item.hint}</span>
                 )}
               </button>
             ),

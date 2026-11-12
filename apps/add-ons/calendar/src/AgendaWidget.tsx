@@ -30,22 +30,22 @@ export function AgendaWidget() {
       <button
         type="button"
         onClick={() => system.intents.openApp("calendar")}
-        className="font-ui text-on-surface-variant hover:text-on-surface focus-visible:ring-primary w-fit text-left text-[9px] font-semibold tracking-widest uppercase outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        className="font-ui text-on-surface-variant hover:text-on-surface focus-visible:ring-primary text-micro w-fit text-left font-semibold tracking-widest uppercase outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         Today
       </button>
       {today.length === 0 ? (
-        <div className="font-ui text-on-surface-variant flex flex-1 items-center justify-center text-[11px]">
+        <div className="font-ui text-on-surface-variant text-label flex flex-1 items-center justify-center">
           Nothing today
         </div>
       ) : (
         <ul className="mt-1 space-y-0.5 overflow-hidden">
           {today.map((o) => (
             <li key={`${o.event.id}:${o.start}`} className="flex items-baseline gap-1.5">
-              <span className="text-on-surface-variant font-mono text-[10px] tabular-nums">
+              <span className="text-on-surface-variant text-tiny font-mono tabular-nums">
                 {o.event.allDay ? "all day" : dayjs(o.start).format("HH:mm")}
               </span>
-              <span className="font-ui text-on-surface min-w-0 truncate text-[11px]">{o.event.title}</span>
+              <span className="font-ui text-on-surface text-label min-w-0 truncate">{o.event.title}</span>
             </li>
           ))}
         </ul>

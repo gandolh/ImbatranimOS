@@ -33,7 +33,7 @@ export function Select({
     <BaseSelect.Root {...props}>
       <div className="flex flex-col gap-1">
         {label && (
-          <BaseSelect.Label className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
+          <BaseSelect.Label className="font-ui text-on-surface-variant text-label font-semibold tracking-wider uppercase">
             {label}
           </BaseSelect.Label>
         )}
@@ -42,7 +42,7 @@ export function Select({
           title={title}
           className={cn(
             "border-outline-variant bg-surface-container-low rounded-control flex w-full items-center justify-between border px-2.5 py-1.5",
-            "font-ui text-on-surface text-[12px]",
+            "font-ui text-on-surface text-control",
             "hover:bg-surface-container-high cursor-pointer transition-colors outline-none",
             "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
             "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
@@ -74,7 +74,7 @@ export function Select({
           <BaseSelect.Positioner sideOffset={1} className="z-select">
             <BaseSelect.Popup
               className={cn(
-                "border-outline-variant bg-surface-container-lowest rounded-menu min-w-[8rem] border",
+                "border-outline-variant bg-surface-container-lowest rounded-menu min-w-[104px] border",
                 "shadow-(--k-shadow-popup)",
                 "px-(--k-list-inset) py-0.5 outline-none",
               )}
@@ -86,7 +86,7 @@ export function Select({
                     value={opt.value}
                     className={cn(
                       "rounded-item flex cursor-pointer items-center px-2 py-1",
-                      "font-ui text-on-surface text-[12px]",
+                      "font-ui text-on-surface text-control",
                       "outline-none",
                       "data-[highlighted]:bg-primary-container data-[highlighted]:text-on-primary-container",
                       "data-[selected]:bg-primary-container data-[selected]:text-on-primary-container",

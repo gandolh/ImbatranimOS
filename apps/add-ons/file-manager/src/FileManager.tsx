@@ -1109,7 +1109,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
       {archive && archiveListing && (
         <div className="border-outline-variant bg-surface-container-low flex flex-wrap items-center gap-2 border-b px-2 py-1">
           <Lock size={11} className="text-on-surface-variant shrink-0" aria-hidden />
-          <span className="font-ui text-on-surface-variant min-w-0 flex-1 text-[11px]">
+          <span className="font-ui text-on-surface-variant text-label min-w-0 flex-1">
             Read-only: inside {archive.name}. Extract to open or change files.
             {archiveListing.encrypted && " It is encrypted, so it cannot be extracted."}
             {archiveListing.truncated && " The list is cut short because the archive is very large."}
@@ -1144,7 +1144,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
 
       {job && (
         <div className="border-outline-variant bg-surface-container-low flex items-center gap-2 border-b px-2 py-1">
-          <span className="font-ui min-w-0 flex-1 truncate text-[11px]">{job.label}</span>
+          <span className="font-ui text-label min-w-0 flex-1 truncate">{job.label}</span>
           <div
             className="rounded-control border-outline-variant h-2 w-32 shrink-0 overflow-hidden border"
             role="progressbar"
@@ -1155,16 +1155,14 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
           >
             <div className="bg-primary h-full transition-all" style={{ width: `${job.percent}%` }} />
           </div>
-          <span className="font-ui text-on-surface-variant w-8 text-right text-[11px] tabular-nums">
-            {job.percent}%
-          </span>
+          <span className="font-ui text-on-surface-variant text-label w-8 text-right tabular-nums">{job.percent}%</span>
         </div>
       )}
 
       {/* Action error banner (batch delete / upload failures) */}
       {actionError && (
         <div className="border-outline-variant bg-surface-container-low flex items-center gap-2 border-b px-2 py-1">
-          <span className="font-ui text-error flex-1 text-[12px]">{actionError}</span>
+          <span className="font-ui text-error text-control flex-1">{actionError}</span>
           <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setActionError(null)}>
             <X size={11} />
           </Button>
@@ -1214,12 +1212,12 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
                 right-click or click below it reached nothing. */}
             <ScrollArea className="[container-type:size] h-full w-full" viewportRef={viewportRef}>
               {isLoading && (
-                <div className="text-on-surface-variant font-ui flex items-center justify-center py-12 text-[12px]">
+                <div className="text-on-surface-variant font-ui text-control flex items-center justify-center py-12">
                   Loading…
                 </div>
               )}
               {isError && (
-                <div className="text-error font-ui flex items-center justify-center py-12 text-[12px]">
+                <div className="text-error font-ui text-control flex items-center justify-center py-12">
                   {inArchive ? `Could not read ${archive.name}.` : "Failed to load directory."}
                 </div>
               )}
@@ -1238,7 +1236,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
                   {orderedEntries.length === 0 && hiddenCount > 0 ? (
                     <div className="text-on-surface-variant flex flex-col items-center justify-center gap-2 py-12">
                       <EyeOff size={32} strokeWidth={1} />
-                      <span className="font-ui text-[12px]">
+                      <span className="font-ui text-control">
                         {hiddenCount} hidden item{hiddenCount === 1 ? "" : "s"}, nothing else here
                       </span>
                       <Button variant="default" size="sm" onClick={view.toggleHidden}>
@@ -1331,7 +1329,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         {/* While results are showing, the status bar must count THEM. Reading
             "47 items" under three search hits is the kind of small lie that
             teaches users to stop reading the status bar at all. */}
-        <span className="font-ui text-on-surface-variant text-[11px]">
+        <span className="font-ui text-on-surface-variant text-label">
           {searchActive ? (
             <SearchStatus
               rootLabel={rootCfg.label}

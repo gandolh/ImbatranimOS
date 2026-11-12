@@ -268,9 +268,15 @@ body,
   background-color: var(--k-surface);
   color: var(--k-on-surface);
   font-family: var(--font-ui);
-  font-size: 13px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* The app's 13 px sits on body, so the root keeps the reader's own size and
+   rem utilities scale from it (--spacing in the kit's theme.css is 13/16 of
+   Tailwind's step). */
+body {
+  font-size: 13px;
 }
 
 /* Thin, on-brand scrollbars */

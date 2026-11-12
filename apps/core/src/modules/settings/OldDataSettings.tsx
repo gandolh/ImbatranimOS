@@ -41,12 +41,12 @@ export function OldDataSettings() {
 
   return (
     <div className="rounded-control border-outline-variant mt-3 flex flex-col gap-2 border p-3">
-      <p className="font-ui text-on-surface text-[12px]">
+      <p className="font-ui text-on-surface text-control">
         Older data is set aside for {oldDataApps(status)}: what the apps had before they moved into their own folders,
         which they no longer read.
       </p>
       {message && (
-        <p role="status" className="font-ui text-on-surface-variant text-[11px]">
+        <p role="status" className="font-ui text-on-surface-variant text-label">
           {message}
         </p>
       )}

@@ -55,7 +55,7 @@ export function AppearanceSettings() {
               key={m.id}
               value={m.id}
               className={cn(
-                "rounded-control flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 text-[12px] font-medium transition-colors",
+                "rounded-control text-control flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 font-medium transition-colors",
                 FOCUS_RING,
                 chosen
                   ? "border-primary bg-primary-container text-on-primary-container"
@@ -91,7 +91,7 @@ export function AppearanceSettings() {
               >
                 {chosen && <Check size={13} strokeWidth={3} />}
               </span>
-              <span className="text-on-surface pr-1 text-[12px] font-medium">{preset.name}</span>
+              <span className="text-on-surface text-control pr-1 font-medium">{preset.name}</span>
             </Option>
           );
         })}
@@ -114,7 +114,7 @@ export function AppearanceSettings() {
               {chosen && <ChosenBadge />}
               <div className="border-outline-variant bg-surface-container-low flex items-center gap-1.5 border-t px-2 py-1.5">
                 <Image size={12} strokeWidth={1.75} className="text-on-surface-variant" />
-                <span className="text-on-surface text-[11px] font-medium">{wp.name}</span>
+                <span className="text-on-surface text-label font-medium">{wp.name}</span>
               </div>
             </Option>
           );
@@ -213,7 +213,7 @@ function ThemeCard({ id, chosen }: { id: ThemeId; chosen: boolean }) {
         </span>
         {chosen && <ChosenBadge />}
       </span>
-      <span className="text-on-surface text-[12px] font-medium">{THEME_NAMES[id]}</span>
+      <span className="text-on-surface text-control font-medium">{THEME_NAMES[id]}</span>
     </Option>
   );
 }
@@ -248,7 +248,7 @@ function Group<Value extends string>({
     <div className={last ? undefined : "mb-8"}>
       <p
         id={labelId}
-        className="font-ui text-on-surface-variant mb-3 text-[11px] font-semibold tracking-widest uppercase"
+        className="font-ui text-on-surface-variant text-label mb-3 font-semibold tracking-widest uppercase"
       >
         {label}
       </p>

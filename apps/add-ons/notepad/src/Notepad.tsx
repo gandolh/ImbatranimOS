@@ -128,10 +128,10 @@ export function Notepad({ windowId }: { windowId: string }) {
   return (
     <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-3 text-center">
       <FileText size={40} strokeWidth={1} />
-      <span className="font-ui text-[12px]">Nothing open</span>
+      <span className="font-ui text-control">Nothing open</span>
 
       {checking && (
-        <span className="font-ui flex items-center gap-1 text-[11px]">
+        <span className="font-ui text-label flex items-center gap-1">
           <Loader2 size={11} className="animate-spin" /> checking the file…
         </span>
       )}
@@ -141,14 +141,14 @@ export function Notepad({ windowId }: { windowId: string }) {
       </Button>
 
       {legacyQuery.data === true && (
-        <span className="font-ui max-w-[300px] text-[10px]">
+        <span className="font-ui text-tiny max-w-[300px]">
           Your existing notes are under the <span className="font-semibold">Notes</span> location in the picker. New
           files belong in <span className="font-semibold">Home</span>, where every other app can see them.
         </span>
       )}
 
       <button
-        className="font-ui focus-visible:ring-primary text-[10px] underline outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        className="font-ui focus-visible:ring-primary text-tiny underline outline-none focus-visible:ring-2 focus-visible:ring-inset"
         onClick={() => handleOpenInNewWindow({ root: initialRoot ?? "home", path: "untitled.txt", isNew: true })}
       >
         or start a new file in a new window

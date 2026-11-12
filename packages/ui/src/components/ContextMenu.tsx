@@ -88,7 +88,7 @@ export function ContextMenu({ x, y, items, onClose, label = "Context menu" }: Co
               }
               const isCheckbox = item.checked !== undefined;
               const itemClass = cn(
-                "font-ui rounded-item flex w-full cursor-default items-center gap-2 px-3 py-1 text-left text-[12px] outline-none select-none",
+                "font-ui rounded-item flex w-full cursor-default items-center gap-2 px-3 py-1 text-left text-control outline-none select-none",
                 item.disabled
                   ? "text-on-surface-variant/50"
                   : item.danger

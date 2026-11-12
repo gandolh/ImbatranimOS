@@ -82,16 +82,16 @@ export function ConfirmDialog({
           )}
         >
           <div className="border-outline-variant bg-surface-container-high flex items-center justify-between border-b px-3 py-1.5">
-            <AlertDialog.Title className="font-ui text-on-surface text-[13px] font-semibold">{title}</AlertDialog.Title>
+            <AlertDialog.Title className="font-ui text-on-surface text-body font-semibold">{title}</AlertDialog.Title>
             <AlertDialog.Close
               aria-label="Close"
               disabled={pending}
-              className="border-outline-variant bg-surface-container-low font-ui text-on-surface hover:bg-error hover:text-on-error rounded-control flex h-5 w-5 cursor-pointer items-center justify-center border text-[12px]"
+              className="border-outline-variant bg-surface-container-low font-ui text-on-surface hover:bg-error hover:text-on-error rounded-control text-control flex h-5 w-5 cursor-pointer items-center justify-center border"
             >
               ×
             </AlertDialog.Close>
           </div>
-          <div className="font-content text-on-surface p-3 text-[13px]">
+          <div className="font-content text-on-surface text-body p-3">
             <AlertDialog.Description render={<div />} className="text-on-surface mb-4">
               {message}
             </AlertDialog.Description>

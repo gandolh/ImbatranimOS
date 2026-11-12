@@ -151,7 +151,7 @@ export function MediaPlayer({ windowId: _windowId }: { windowId: string }) {
     return (
       <div className="bg-surface-container-lowest text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 text-center">
         <PlayCircle size={40} strokeWidth={1} />
-        <span className="font-ui text-[12px]">Nothing open</span>
+        <span className="font-ui text-control">Nothing open</span>
         <Button size="sm" variant="primary" onClick={pickFile}>
           Open media
         </Button>
@@ -197,7 +197,7 @@ export function MediaPlayer({ windowId: _windowId }: { windowId: string }) {
           />
         ) : (
           <div className="text-on-surface-variant flex flex-1 items-center justify-center">
-            <span className="font-ui text-[12px]">Unsupported file type</span>
+            <span className="font-ui text-control">Unsupported file type</span>
           </div>
         )}
 

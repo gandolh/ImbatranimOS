@@ -39,7 +39,7 @@ export function Breadcrumb({ root: _root, rootLabel, path, onNavigate, right }: 
               <button
                 onClick={() => !isLast && onNavigate(seg.path)}
                 className={cn(
-                  "focus-visible:ring-primary font-ui truncate px-1 py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                  "focus-visible:ring-primary font-ui text-control truncate px-1 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset",
                   isLast
                     ? "text-on-surface cursor-default font-semibold"
                     : "text-on-surface-variant hover:text-primary hover:bg-surface-container cursor-pointer",

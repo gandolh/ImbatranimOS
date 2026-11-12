@@ -38,11 +38,9 @@ function Row({ item, onOpen }: { item: NotificationItem; onOpen: () => void }) {
           on both surfaces and neither delivered); severity stays in the stripe. */}
       <NotificationIcon appId={item.appId} level={item.level} size={15} className="mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="text-on-surface truncate text-[12px] font-semibold">{item.title}</div>
-        {item.body && <div className="text-on-surface-variant mt-0.5 text-[11px] break-words">{item.body}</div>}
-        <div className="text-on-surface-variant/80 mt-0.5 text-[10px] tabular-nums">
-          {formatRelative(item.timestamp)}
-        </div>
+        <div className="text-on-surface text-control truncate font-semibold">{item.title}</div>
+        {item.body && <div className="text-on-surface-variant text-label mt-0.5 break-words">{item.body}</div>}
+        <div className="text-on-surface-variant/80 text-tiny mt-0.5 tabular-nums">{formatRelative(item.timestamp)}</div>
       </div>
       <button
         onClick={(e) => {
@@ -77,14 +75,14 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
   return (
     <div className="font-ui flex flex-col" style={{ width: 320, maxHeight: 420 }}>
       <div className="border-outline-variant flex items-center justify-between border-b px-3 py-2">
-        <span className="text-on-surface text-[12px] font-semibold">Notifications</span>
+        <span className="text-on-surface text-control font-semibold">Notifications</span>
         <div className="flex items-center gap-1">
           <Toggle
             pressed={dnd}
             onPressedChange={setDnd}
             title={dnd ? "Do Not Disturb is on" : "Do Not Disturb is off"}
             className={cn(
-              "rounded-control flex items-center gap-1 px-1.5 py-1 text-[10px] outline-none",
+              "rounded-control text-tiny flex items-center gap-1 px-1.5 py-1 outline-none",
               "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
               dnd
                 ? "bg-primary-container text-on-primary-container"
@@ -112,7 +110,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="text-on-surface-variant px-3 py-8 text-center text-[11px]">No notifications</div>
+        <div className="text-on-surface-variant text-label px-3 py-8 text-center">No notifications</div>
       ) : (
         <ScrollArea className="min-h-0 flex-1">
           {notifications.map((item) => (

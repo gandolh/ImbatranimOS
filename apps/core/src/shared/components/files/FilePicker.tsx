@@ -240,7 +240,7 @@ export function FilePicker({
         >
           <ArrowUp size={11} />
         </Button>
-        <span className="font-ui text-on-surface-variant min-w-0 truncate text-[11px]">/{dir}</span>
+        <span className="font-ui text-on-surface-variant text-label min-w-0 truncate">/{dir}</span>
       </div>
 
       <div className="min-h-0 flex-1">
@@ -249,7 +249,7 @@ export function FilePicker({
             recent.length === 0 ? (
               <div className="text-on-surface-variant flex flex-col items-center justify-center gap-2 py-12">
                 <History size={32} strokeWidth={1} />
-                <span className="font-ui text-[12px]">Nothing opened recently</span>
+                <span className="font-ui text-control">Nothing opened recently</span>
               </div>
             ) : (
               recent.map((f) => (
@@ -264,23 +264,23 @@ export function FilePicker({
                   onClick={() => onPick({ root: f.root, path: f.path })}
                 >
                   <FileIcon size={12} strokeWidth={1.5} className="shrink-0" />
-                  <span className="font-ui text-on-surface min-w-0 flex-1 truncate text-[12px]">
+                  <span className="font-ui text-on-surface text-control min-w-0 flex-1 truncate">
                     {f.path.split("/").pop() ?? f.path}
                   </span>
-                  <span className="font-ui text-on-surface-variant min-w-0 shrink truncate text-[10px]">
+                  <span className="font-ui text-on-surface-variant text-tiny min-w-0 shrink truncate">
                     {ROOTS.find((r) => r.id === f.root)?.label ?? f.root}/{f.path}
                   </span>
                 </button>
               ))
             )
           ) : loading ? (
-            <div className="text-on-surface-variant font-ui p-4 text-center text-[12px]">Loading…</div>
+            <div className="text-on-surface-variant font-ui text-control p-4 text-center">Loading…</div>
           ) : error ? (
-            <div className="text-error font-ui p-4 text-center text-[12px]">{error}</div>
+            <div className="text-error font-ui text-control p-4 text-center">{error}</div>
           ) : visible.length === 0 ? (
             <div className="text-on-surface-variant flex flex-col items-center justify-center gap-2 py-12">
               <Folder size={32} strokeWidth={1} />
-              <span className="font-ui text-[12px]">Nothing here</span>
+              <span className="font-ui text-control">Nothing here</span>
             </div>
           ) : (
             visible.map((e) => (
@@ -309,7 +309,7 @@ export function FilePicker({
                 ) : (
                   <FileIcon size={12} strokeWidth={1.5} className="shrink-0" />
                 )}
-                <span className="font-ui text-on-surface min-w-0 flex-1 truncate text-[12px]">{e.name}</span>
+                <span className="font-ui text-on-surface text-control min-w-0 flex-1 truncate">{e.name}</span>
               </button>
             ))
           )}
@@ -320,13 +320,13 @@ export function FilePicker({
         {extensions && extensions.length > 0 && mode !== "directory" && (
           <Checkbox
             label="All files"
-            labelClassName="font-ui text-on-surface-variant gap-1 text-[11px]"
+            labelClassName="font-ui text-on-surface-variant gap-1 text-label"
             checked={showAll}
             onCheckedChange={setShowAll}
           />
         )}
         {mode === "directory" && (
-          <span className="font-ui text-on-surface-variant min-w-0 truncate text-[11px]">
+          <span className="font-ui text-on-surface-variant text-label min-w-0 truncate">
             {ROOTS.find((r) => r.id === root)?.label ?? root}/{dir}
           </span>
         )}
@@ -339,7 +339,7 @@ export function FilePicker({
         {mode === "save" && (
           <>
             <input
-              className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface focus-visible:ring-primary min-w-0 flex-1 border px-1.5 py-0.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+              className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface focus-visible:ring-primary text-control min-w-0 flex-1 border px-1.5 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset"
               value={name}
               placeholder="File name"
               aria-label="File name"

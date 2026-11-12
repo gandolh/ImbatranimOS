@@ -33,8 +33,8 @@ export function AppErrorFallback({
     <div className="bg-surface text-on-surface flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
       <AlertTriangle size={26} strokeWidth={1.75} className="text-error" />
       <div>
-        <p className="text-[13px] font-semibold">{appName} stopped working</p>
-        <p className="text-on-surface-variant mt-1 max-w-sm text-[12px]">
+        <p className="text-body font-semibold">{appName} stopped working</p>
+        <p className="text-on-surface-variant text-control mt-1 max-w-[312px]">
           The rest of the desktop is fine. Reload the app to start it again — anything it had not saved is gone.
         </p>
       </div>
@@ -52,12 +52,12 @@ export function AppErrorFallback({
 
       <button
         onClick={() => setShowDetails((v) => !v)}
-        className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary text-[11px] underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary text-label underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         {showDetails ? "Hide details" : "Show details"}
       </button>
       {showDetails && (
-        <pre className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface-variant max-h-32 w-full max-w-md overflow-auto border p-2 text-left font-mono text-[11px] whitespace-pre-wrap">
+        <pre className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface-variant text-label max-h-32 w-full max-w-[364px] overflow-auto border p-2 text-left font-mono whitespace-pre-wrap">
           {error.message || String(error)}
         </pre>
       )}

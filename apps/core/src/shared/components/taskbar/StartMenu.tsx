@@ -212,10 +212,10 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       <div className="border-outline-variant bg-surface-container flex items-center gap-2.5 border-b px-4 py-3">
         <Logo size={26} className="text-on-surface" />
         <div className="leading-tight">
-          <div className="text-on-surface text-[13px] font-bold tracking-tight">
+          <div className="text-on-surface text-body font-bold tracking-tight">
             Imbatranim<span className="text-primary">OS</span>
           </div>
-          <div className="text-on-surface-variant text-[10px]">Signed in</div>
+          <div className="text-on-surface-variant text-tiny">Signed in</div>
         </div>
       </div>
 
@@ -238,7 +238,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                 void openTopResult();
               }
             }}
-            className="text-on-surface placeholder:text-on-surface-variant min-w-0 flex-1 bg-transparent text-[12px] outline-none"
+            className="text-on-surface placeholder:text-on-surface-variant text-control min-w-0 flex-1 bg-transparent outline-none"
           />
         </label>
       </div>
@@ -247,7 +247,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
         {searching ? (
           <div role="group" aria-label="Search results">
             {results.for !== query ? null : results.items.length === 0 ? (
-              <div className="text-on-surface-variant px-4 py-3 text-[11px]">Nothing found</div>
+              <div className="text-on-surface-variant text-label px-4 py-3">Nothing found</div>
             ) : (
               results.items.map((item) => {
                 const app =
@@ -266,8 +266,8 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                       {Icon && <Icon size={15} strokeWidth={1.75} />}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[12px] font-medium">{item.label}</span>
-                      <span className="text-on-surface-variant group-hover:text-on-primary-container/80 block truncate text-[10px]">
+                      <span className="text-control block truncate font-medium">{item.label}</span>
+                      <span className="text-on-surface-variant group-hover:text-on-primary-container/80 text-tiny block truncate">
                         {item.subtitle ?? item.group}
                       </span>
                     </span>
@@ -280,7 +280,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
           <>
             {pinned.length > 0 && (
               <div role="group" aria-label="Pinned" className="px-2 pb-1">
-                <div className="text-on-surface-variant px-2 pt-1 pb-1 text-[9px] font-semibold tracking-widest uppercase">
+                <div className="text-on-surface-variant text-micro px-2 pt-1 pb-1 font-semibold tracking-widest uppercase">
                   Pinned
                 </div>
                 <div className="grid grid-cols-3 gap-1">
@@ -303,7 +303,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                         <span className="border-outline-variant bg-surface-container-lowest rounded-control flex h-8 w-8 items-center justify-center border group-hover:border-transparent group-hover:bg-white/15">
                           <Icon size={18} strokeWidth={1.75} />
                         </span>
-                        <span className="w-full truncate text-[11px] font-medium">{app.name}</span>
+                        <span className="text-label w-full truncate font-medium">{app.name}</span>
                       </button>
                     );
                   })}
@@ -314,7 +314,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
               <div key={letter} role="group" aria-label={letter}>
                 <div
                   aria-hidden
-                  className="text-on-surface-variant px-4 pt-1.5 pb-0.5 text-[9px] font-semibold tracking-widest uppercase"
+                  className="text-on-surface-variant text-micro px-4 pt-1.5 pb-0.5 font-semibold tracking-widest uppercase"
                 >
                   {letter}
                 </div>
@@ -338,8 +338,8 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                         <Icon size={16} strokeWidth={1.75} />
                       </span>
                       <span className="min-w-0">
-                        <span className="block truncate text-[12px] font-medium">{app.name}</span>
-                        <span className="text-on-surface-variant group-hover:text-on-primary-container/80 block truncate text-[10px]">
+                        <span className="text-control block truncate font-medium">{app.name}</span>
+                        <span className="text-on-surface-variant group-hover:text-on-primary-container/80 text-tiny block truncate">
                           {app.description}
                         </span>
                       </span>
@@ -356,7 +356,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       {!searching && recent.length > 0 && (
         <div className="border-outline-variant apricot:px-1.5 border-t py-1">
           <div className="flex items-center justify-between px-4 pt-1 pb-0.5">
-            <span className="text-on-surface-variant flex items-center gap-1.5 text-[9px] font-semibold tracking-widest uppercase">
+            <span className="text-on-surface-variant text-micro flex items-center gap-1.5 font-semibold tracking-widest uppercase">
               <History size={10} strokeWidth={2} />
               Recent
             </span>
@@ -393,8 +393,8 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                   <Icon size={13} strokeWidth={1.75} />
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-[11px]">{f.path.split("/").pop() ?? f.path}</span>
-                  <span className="text-on-surface-variant group-hover:text-on-primary-container/80 block truncate text-[9px]">
+                  <span className="text-label block truncate">{f.path.split("/").pop() ?? f.path}</span>
+                  <span className="text-on-surface-variant group-hover:text-on-primary-container/80 text-micro block truncate">
                     {f.path}
                   </span>
                 </span>
@@ -410,7 +410,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
           role="menuitem"
           data-start-nav
           onClick={handleLock}
-          className="text-on-surface hover:bg-surface-container-high focus-visible:ring-primary flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-[11px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset"
+          className="text-on-surface hover:bg-surface-container-high focus-visible:ring-primary text-label flex flex-1 items-center justify-center gap-2 px-4 py-2.5 font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <Lock size={14} strokeWidth={1.75} />
           {/* "Cover", not "Lock": uncovering does not re-prove the password,
@@ -423,13 +423,13 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
           role="menuitem"
           data-start-nav
           onClick={handleLogout}
-          className="text-on-surface hover:bg-error hover:text-on-error focus-visible:ring-primary flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-[11px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset"
+          className="text-on-surface hover:bg-error hover:text-on-error focus-visible:ring-primary text-label flex flex-1 items-center justify-center gap-2 px-4 py-2.5 font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset"
         >
           <LogOut size={14} strokeWidth={1.75} />
           Log off
         </button>
       </div>
-      <div className="border-outline-variant text-on-surface-variant flex items-center justify-between border-t px-4 py-1.5 text-[9px] tracking-widest uppercase">
+      <div className="border-outline-variant text-on-surface-variant text-micro flex items-center justify-between border-t px-4 py-1.5 tracking-widest uppercase">
         <span>ImbatranimOS</span>
         <Power size={11} strokeWidth={1.75} className="opacity-60" />
       </div>

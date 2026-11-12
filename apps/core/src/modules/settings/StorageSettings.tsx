@@ -103,8 +103,8 @@ export function StorageSettings() {
       {disk && (
         <div>
           <div className="mb-1 flex items-baseline justify-between">
-            <span className="font-ui text-on-surface-variant text-[11px]">{disk.path}</span>
-            <span className="font-ui text-on-surface text-[12px] tabular-nums">
+            <span className="font-ui text-on-surface-variant text-label">{disk.path}</span>
+            <span className="font-ui text-on-surface text-control tabular-nums">
               {formatBytes(disk.usedBytes)} of {formatBytes(disk.totalBytes)} used · {formatBytes(disk.freeBytes)} free
             </span>
           </div>
@@ -118,7 +118,7 @@ export function StorageSettings() {
       )}
 
       <div className="flex items-center gap-2">
-        <span className="font-ui text-on-surface-variant min-w-0 flex-1 truncate text-[11px]">/{dir}</span>
+        <span className="font-ui text-on-surface-variant text-label min-w-0 flex-1 truncate">/{dir}</span>
         {dir && (
           <Button
             size="sm"
@@ -143,9 +143,9 @@ export function StorageSettings() {
 
       <div className="rounded-control border-outline-variant border">
         {sorted === null ? (
-          <div className="text-on-surface-variant font-ui p-3 text-center text-[12px]">Measuring…</div>
+          <div className="text-on-surface-variant font-ui text-control p-3 text-center">Measuring…</div>
         ) : sorted.length === 0 ? (
-          <div className="text-on-surface-variant font-ui p-3 text-center text-[12px]">No folders here</div>
+          <div className="text-on-surface-variant font-ui text-control p-3 text-center">No folders here</div>
         ) : (
           sorted.map((r, i) => (
             <button
@@ -163,8 +163,8 @@ export function StorageSettings() {
               ) : (
                 <ChevronRight size={12} strokeWidth={1.5} className="shrink-0" />
               )}
-              <span className="font-ui text-on-surface min-w-0 flex-1 truncate text-[12px]">{r.name}</span>
-              <span className="font-ui text-on-surface-variant shrink-0 text-[11px] tabular-nums">
+              <span className="font-ui text-on-surface text-control min-w-0 flex-1 truncate">{r.name}</span>
+              <span className="font-ui text-on-surface-variant text-label shrink-0 tabular-nums">
                 {r.size === null ? "…" : `${formatBytes(r.size.bytes)}${r.size.truncated ? "+" : ""}`}
               </span>
             </button>
@@ -172,7 +172,7 @@ export function StorageSettings() {
         )}
       </div>
 
-      <p className="font-ui text-on-surface-variant text-[11px]">
+      <p className="font-ui text-on-surface-variant text-label">
         A <span className="text-on-surface font-semibold">+</span> means the walk hit its bound and the real total is
         larger. Deleted files still count until the Trash is emptied.
       </p>

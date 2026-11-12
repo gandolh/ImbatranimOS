@@ -17,7 +17,7 @@ type FolderTreeProps = {
  */
 export function FolderTree({ root, rootLabel, currentPath, onNavigate }: FolderTreeProps) {
   return (
-    <div className="font-ui flex h-full flex-col gap-0.5 px-(--k-list-inset) py-1 text-[12px]">
+    <div className="font-ui text-control flex h-full flex-col gap-0.5 px-(--k-list-inset) py-1">
       <button
         onClick={() => onNavigate("")}
         className={cn(

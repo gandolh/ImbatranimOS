@@ -65,13 +65,13 @@ export function FileGrid({
     return (
       <div className="text-on-surface-variant flex flex-col items-center justify-center gap-2 py-12">
         <Folder size={32} strokeWidth={1} />
-        <span className="font-ui text-[12px]">Empty folder</span>
+        <span className="font-ui text-control">Empty folder</span>
       </div>
     );
   }
 
   return (
-    <div className="font-ui p-1 text-[12px]">
+    <div className="font-ui text-control p-1">
       {paddingTop > 0 && <div aria-hidden style={{ height: paddingTop }} />}
       {virtualRows.map((vr) => {
         const first = vr.index * columns;
@@ -122,7 +122,7 @@ export function FileGrid({
                       }}
                       onBlur={onRenameCommit}
                       onClick={(e) => e.stopPropagation()}
-                      className="rounded-control border-primary bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary w-full border px-1 py-0 text-center text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+                      className="rounded-control border-primary bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary text-label w-full border px-1 py-0 text-center outline-none focus-visible:ring-2 focus-visible:ring-inset"
                     />
                   ) : (
                     // Two lines then ellipsis: a long filename must not change the

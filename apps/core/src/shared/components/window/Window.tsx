@@ -338,7 +338,7 @@ export const Window = React.memo(function Window({
               <span
                 className={cn("rounded-control h-2.5 w-2.5 shrink-0", isFocused ? "bg-primary" : "bg-outline-variant")}
               />
-              <span className="truncate text-[12px] leading-none font-semibold tracking-tight">{instance.title}</span>
+              <span className="text-control truncate leading-none font-semibold tracking-tight">{instance.title}</span>
             </span>
 
             {/* Right: window controls */}

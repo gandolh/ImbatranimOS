@@ -172,7 +172,7 @@ export function AltTabSwitcher() {
               )}
               <span
                 className={cn(
-                  "font-ui w-full truncate text-center text-[11px]",
+                  "font-ui text-label w-full truncate text-center",
                   selected ? "text-on-surface font-semibold" : "text-on-surface-variant",
                 )}
               >

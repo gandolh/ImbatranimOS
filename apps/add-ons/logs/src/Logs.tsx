@@ -94,7 +94,7 @@ export function Logs() {
     <div className="bg-surface text-on-surface flex h-full flex-col">
       <div className="border-outline-variant bg-surface-container-low flex flex-wrap items-center gap-1.5 border-b px-2 py-1.5">
         <ScrollText size={14} strokeWidth={1.75} className="text-primary shrink-0" />
-        <span className="text-[12px] font-bold tracking-tight">{APP_NAME}</span>
+        <span className="text-control font-bold tracking-tight">{APP_NAME}</span>
 
         <div className="rounded-control border-outline-variant bg-surface-container-lowest flex min-w-[140px] flex-1 items-center gap-1 border px-1.5">
           <Search size={11} className="text-on-surface-variant shrink-0" />
@@ -106,7 +106,7 @@ export function Logs() {
             }}
             placeholder="Filter the log…"
             aria-label="Filter the log"
-            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary min-w-0 flex-1 bg-transparent py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+            className="font-content text-on-surface placeholder:text-on-surface-variant focus-visible:ring-primary text-control min-w-0 flex-1 bg-transparent py-1 outline-none focus-visible:ring-2 focus-visible:ring-inset"
           />
           {query !== "" && (
             <Button variant="ghost" size="sm" aria-label="Clear filter" onClick={() => setQuery("")}>
@@ -129,7 +129,7 @@ export function Logs() {
               value={l.id}
               className={({ pressed }) =>
                 cn(
-                  "focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-inset",
+                  "focus-visible:ring-primary border-outline-variant rounded-control text-label border px-2 py-1 transition-colors focus-visible:ring-2 focus-visible:ring-inset",
                   pressed
                     ? "bg-primary-container text-on-primary-container border-primary"
                     : "hover:bg-surface-container-high",
@@ -146,7 +146,7 @@ export function Logs() {
           onPressedChange={setFollow}
           title="Re-read the newest entries every few seconds"
           className={cn(
-            "focus-visible:ring-primary border-outline-variant rounded-control border px-2 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-inset",
+            "focus-visible:ring-primary border-outline-variant rounded-control text-label border px-2 py-1 transition-colors focus-visible:ring-2 focus-visible:ring-inset",
             follow
               ? "bg-primary-container text-on-primary-container border-primary"
               : "hover:bg-surface-container-high",
@@ -160,7 +160,7 @@ export function Logs() {
       </div>
 
       {error && (
-        <div className="bg-error-container text-on-error-container flex items-start gap-1.5 px-2 py-1 text-[11px]">
+        <div className="bg-error-container text-on-error-container text-label flex items-start gap-1.5 px-2 py-1">
           <AlertTriangle size={12} className="mt-px shrink-0" />
           <span>{error}</span>
         </div>
@@ -168,7 +168,7 @@ export function Logs() {
 
       <div ref={scrollRef} className="custom-scrollbar min-h-0 flex-1 overflow-auto">
         {entries.length === 0 ? (
-          <div className="text-on-surface-variant px-3 py-4 text-[12px]">
+          <div className="text-on-surface-variant text-control px-3 py-4">
             {loading
               ? "Reading the log…"
               : query || level
@@ -204,7 +204,7 @@ export function Logs() {
         )}
       </div>
 
-      <div className="border-outline-variant text-on-surface-variant font-ui flex items-center gap-3 border-t px-2 py-1 text-[10px]">
+      <div className="border-outline-variant text-on-surface-variant font-ui text-tiny flex items-center gap-3 border-t px-2 py-1">
         <span>{entries.length} entries</span>
         {counts.warn > 0 && <span>{counts.warn} warnings</span>}
         {counts.error > 0 && <span className="text-error">{counts.error} errors</span>}
@@ -222,7 +222,7 @@ function Row({ entry, open, onToggle }: { entry: LogEntry; open: boolean; onTogg
       <button
         onClick={onToggle}
         aria-expanded={open}
-        className="hover:bg-surface-container-low focus-visible:ring-primary flex w-full items-center gap-2 px-2 py-1 text-left text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        className="hover:bg-surface-container-low focus-visible:ring-primary text-label flex w-full items-center gap-2 px-2 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         {open ? (
           <ChevronDown size={11} className="text-on-surface-variant shrink-0" />
@@ -245,16 +245,16 @@ function Row({ entry, open, onToggle }: { entry: LogEntry; open: boolean; onTogg
         <span className="min-w-0 flex-1 truncate">{summarise(entry)}</span>
         {entry.source === "client" && (
           <span
-            className="text-on-surface-variant shrink-0 text-[10px]"
+            className="text-on-surface-variant text-tiny shrink-0"
             title="Reported by the browser, not observed by the server"
           >
             browser
           </span>
         )}
-        <span className="text-on-surface-variant shrink-0 text-[10px] tabular-nums">{when.relative}</span>
+        <span className="text-on-surface-variant text-tiny shrink-0 tabular-nums">{when.relative}</span>
       </button>
       {open && (
-        <pre className="bg-surface-container-lowest text-on-surface-variant overflow-auto px-3 py-1.5 font-mono text-[11px] whitespace-pre-wrap">
+        <pre className="bg-surface-container-lowest text-on-surface-variant text-label overflow-auto px-3 py-1.5 font-mono whitespace-pre-wrap">
           {JSON.stringify(entry, null, 2)}
         </pre>
       )}

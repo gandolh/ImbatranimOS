@@ -565,7 +565,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
           className="rounded-small border-outline-variant focus-visible:outline-primary h-6 w-7 cursor-pointer border bg-transparent p-0.5 focus-visible:outline-2 focus-visible:outline-offset-2"
         />
         <div className="flex-1" />
-        <label className="font-ui text-on-surface-variant flex items-center gap-1 text-[11px]">
+        <label className="font-ui text-on-surface-variant text-label flex items-center gap-1">
           <Checkbox checked={fillShapes} onCheckedChange={(v) => setFillShapes(v === true)} />
           Fill shapes
         </label>
@@ -658,7 +658,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
                 }}
                 onBlur={commitText}
                 placeholder="Type, Enter commits"
-                className="border-primary font-ui focus-visible:ring-primary absolute border bg-white/90 px-1 text-[12px] text-black outline-none focus-visible:ring-2 focus-visible:ring-inset"
+                className="border-primary font-ui focus-visible:ring-primary text-control absolute border bg-white/90 px-1 text-black outline-none focus-visible:ring-2 focus-visible:ring-inset"
                 style={{ left: textAt.x * zoom, top: textAt.y * zoom, minWidth: 120 }}
               />
             )}
@@ -667,7 +667,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
       </div>
 
       {/* Status bar */}
-      <div className="border-outline-variant bg-surface-container-low text-on-surface-variant flex h-5 flex-none items-center gap-2 border-t px-2 text-[10px]">
+      <div className="border-outline-variant bg-surface-container-low text-on-surface-variant text-tiny flex h-5 flex-none items-center gap-2 border-t px-2">
         <span>
           {dims.width}×{dims.height}
           {doc ? ` · ${fileName(doc.path)}` : " · untitled"}

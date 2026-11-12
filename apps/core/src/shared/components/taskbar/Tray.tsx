@@ -30,8 +30,8 @@ function MiniCalendar() {
 
   return (
     <div className="font-ui p-3" style={{ minWidth: 208 }}>
-      <div className="text-on-surface mb-2 text-center text-[12px] font-semibold">{today.format("MMMM YYYY")}</div>
-      <table className="w-full border-collapse text-[11px]">
+      <div className="text-on-surface text-control mb-2 text-center font-semibold">{today.format("MMMM YYYY")}</div>
+      <table className="text-label w-full border-collapse">
         <thead>
           <tr>
             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
@@ -89,7 +89,7 @@ function NotificationBell() {
           <Bell size={15} strokeWidth={1.75} className={cn(dnd && "opacity-50")} />
           {unread > 0 && (
             <span
-              className="bg-primary text-on-primary absolute top-1.5 right-1 flex h-3.5 min-w-3.5 items-center justify-center px-0.5 text-[9px] leading-none font-semibold tabular-nums"
+              className="bg-primary text-on-primary text-micro absolute top-1.5 right-1 flex h-3.5 min-w-3.5 items-center justify-center px-0.5 leading-none font-semibold tabular-nums"
               aria-hidden
             >
               {unread > 99 ? "99+" : unread}
@@ -140,7 +140,7 @@ export function Tray() {
     <div className="flex h-full items-center gap-1 pr-1">
       {load && (
         <span
-          className="text-on-surface-variant hidden px-2 text-[11px] tabular-nums sm:inline"
+          className="text-on-surface-variant text-label hidden px-2 tabular-nums sm:inline"
           style={{ whiteSpace: "nowrap" }}
           title="CPU / RAM"
           data-tray-load=""
@@ -166,8 +166,8 @@ export function Tray() {
               "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
             )}
           >
-            <span className="text-[12px] font-semibold tabular-nums">{now.format("HH:mm")}</span>
-            <span className="text-on-surface-variant text-[10px] tabular-nums">{now.format("ddd, DD MMM")}</span>
+            <span className="text-control font-semibold tabular-nums">{now.format("HH:mm")}</span>
+            <span className="text-on-surface-variant text-tiny tabular-nums">{now.format("ddd, DD MMM")}</span>
           </button>
         }
       >

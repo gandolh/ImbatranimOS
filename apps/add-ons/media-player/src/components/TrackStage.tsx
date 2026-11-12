@@ -453,7 +453,7 @@ export function TrackStage({
             <audio ref={setMediaRef} src={src} preload="metadata" hidden />
             <div className="text-on-surface-variant flex flex-col items-center gap-2 px-6 text-center">
               <Music size={48} strokeWidth={1} />
-              <span className="font-ui text-on-surface max-w-[280px] truncate text-[12px]">
+              <span className="font-ui text-on-surface text-control max-w-[280px] truncate">
                 {fileName(path, "audio")}
               </span>
             </div>
@@ -462,11 +462,11 @@ export function TrackStage({
 
         {resumedFrom !== null && (
           <div className="rounded-control border-outline-variant bg-surface-container-low absolute top-2 left-1/2 flex -translate-x-1/2 items-center gap-2 border px-2 py-1">
-            <span className="font-ui text-on-surface-variant text-[11px]">Resumed at {formatTime(resumedFrom)}</span>
+            <span className="font-ui text-on-surface-variant text-label">Resumed at {formatTime(resumedFrom)}</span>
             <button
               type="button"
               onClick={startOver}
-              className="font-ui text-primary focus-visible:ring-primary flex items-center gap-1 text-[11px] underline outline-none focus-visible:ring-2 focus-visible:ring-inset"
+              className="font-ui text-primary focus-visible:ring-primary text-label flex items-center gap-1 underline outline-none focus-visible:ring-2 focus-visible:ring-inset"
             >
               <RotateCcw size={11} />
               Start over
@@ -477,10 +477,8 @@ export function TrackStage({
         {errorMsg && (
           <div className="bg-surface-dim/95 absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
             <AlertTriangle size={32} className="text-error" strokeWidth={1.5} />
-            <span className="font-ui text-error text-[12px]">{errorMsg}</span>
-            {errorHint && (
-              <span className="font-ui text-on-surface-variant max-w-[380px] text-[11px]">{errorHint}</span>
-            )}
+            <span className="font-ui text-error text-control">{errorMsg}</span>
+            {errorHint && <span className="font-ui text-on-surface-variant text-label max-w-[380px]">{errorHint}</span>}
             <Button variant="default" size="sm" className="flex items-center gap-1" onClick={triggerDownload}>
               <Download size={12} />
               Download instead

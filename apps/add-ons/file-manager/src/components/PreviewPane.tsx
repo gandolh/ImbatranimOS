@@ -36,12 +36,12 @@ function MetadataCard({ entry, note }: { entry: FsEntry; note?: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-4 py-10 text-center">
       <div className="text-on-surface-variant">{kindIcon(entry)}</div>
-      <div className="font-content text-on-surface w-full text-[13px] font-medium break-all">{entry.name}</div>
-      <div className="font-ui text-on-surface-variant flex flex-col gap-0.5 text-[11px]">
+      <div className="font-content text-on-surface text-body w-full font-medium break-all">{entry.name}</div>
+      <div className="font-ui text-on-surface-variant text-label flex flex-col gap-0.5">
         <span>{entry.type === "directory" ? "Folder" : formatSize(entry.size)}</span>
         <span>Modified {dayjs(entry.modifiedAt).format("MMM D, YYYY h:mm A")}</span>
       </div>
-      {note && <div className="font-ui text-on-surface-variant text-[11px] italic">{note}</div>}
+      {note && <div className="font-ui text-on-surface-variant text-label italic">{note}</div>}
     </div>
   );
 }
@@ -50,7 +50,7 @@ function EmptyState({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <div className="text-on-surface-variant flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
       {icon}
-      <span className="font-ui text-[12px]">{label}</span>
+      <span className="font-ui text-control">{label}</span>
     </div>
   );
 }
@@ -97,7 +97,7 @@ function SinglePreview({ root, entry }: SinglePreviewProps) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-4">
         <FileAudio size={40} strokeWidth={1} className="text-on-surface-variant" />
-        <span className="font-content text-on-surface w-full text-center text-[13px] font-medium break-all">
+        <span className="font-content text-on-surface text-body w-full text-center font-medium break-all">
           {entry.name}
         </span>
         <audio key={entry.path} controls src={src} className="w-full" onError={() => setMediaFailed(true)} />
@@ -141,7 +141,7 @@ function TextPreview({ root, entry }: SinglePreviewProps) {
     return <MetadataCard entry={entry} />;
   }
   return (
-    <pre className="text-on-surface h-full overflow-auto p-2 font-mono text-[11px] leading-snug break-words whitespace-pre-wrap">
+    <pre className="text-on-surface text-label h-full overflow-auto p-2 font-mono leading-snug break-words whitespace-pre-wrap">
       {query.data.content}
     </pre>
   );
@@ -165,7 +165,7 @@ export function PreviewPane({ root, selectedEntries, className }: PreviewPanePro
       {debounced.length > 1 && (
         <div className="flex h-full flex-col items-center justify-center gap-3 px-4 py-10 text-center">
           <Files size={40} strokeWidth={1} className="text-on-surface-variant" />
-          <span className="font-ui text-on-surface-variant text-[12px]">{debounced.length} items selected</span>
+          <span className="font-ui text-on-surface-variant text-control">{debounced.length} items selected</span>
         </div>
       )}
     </div>

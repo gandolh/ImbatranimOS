@@ -42,13 +42,13 @@ function WorldClockRow({ id, label, timeZone, now }: { id: number; label: string
   return (
     <div className="border-outline-variant group flex items-center justify-between border-b px-3 py-2">
       <div className="min-w-0">
-        <p className="font-ui text-on-surface truncate text-[12px] font-semibold">{label}</p>
-        <p className="font-ui text-on-surface-variant text-[10px]">
+        <p className="font-ui text-on-surface text-control truncate font-semibold">{label}</p>
+        <p className="font-ui text-on-surface-variant text-tiny">
           {formatDateInZone(date, timeZone)} · {formatUtcOffset(date, timeZone)}
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-on-surface font-mono text-[15px] tabular-nums">{formatTimeInZone(date, timeZone)}</span>
+        <span className="text-on-surface text-lead font-mono tabular-nums">{formatTimeInZone(date, timeZone)}</span>
         <button
           type="button"
           onClick={() => remove.mutate(id)}
@@ -73,18 +73,18 @@ export function ClockTab() {
     <div className="flex h-full flex-col">
       {/* Big local clock — the same instant the tray clock shows. */}
       <div className="border-outline-variant flex flex-col items-center justify-center gap-1 border-b px-4 py-6">
-        <span className="text-on-surface font-mono text-[40px] leading-none font-semibold tabular-nums">
+        <span className="text-on-surface text-display-xl font-mono leading-none font-semibold tabular-nums">
           {formatTimeInZone(localDate, LOCAL_TIME_ZONE)}
         </span>
-        <span className="font-ui text-on-surface-variant text-[12px]">
+        <span className="font-ui text-on-surface-variant text-control">
           {formatDateInZone(localDate, LOCAL_TIME_ZONE)}
         </span>
-        <span className="font-ui text-on-surface-variant text-[10px] tracking-wide uppercase">{LOCAL_TIME_ZONE}</span>
+        <span className="font-ui text-on-surface-variant text-tiny tracking-wide uppercase">{LOCAL_TIME_ZONE}</span>
       </div>
 
       {/* World clocks */}
       <div className="flex flex-col gap-2 p-3">
-        <p className="font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase">
+        <p className="font-ui text-on-surface-variant text-label font-semibold tracking-wider uppercase">
           World clocks
         </p>
         <AddWorldClockRow />
@@ -92,11 +92,11 @@ export function ClockTab() {
 
       <div className={cn("flex-1", empty && "flex items-center justify-center")}>
         {isError ? (
-          <p className="font-ui text-error text-[12px]">Could not load your world clocks.</p>
+          <p className="font-ui text-error text-control">Could not load your world clocks.</p>
         ) : isPending ? (
-          <p className="font-ui text-on-surface-variant text-[12px]">Loading…</p>
+          <p className="font-ui text-on-surface-variant text-control">Loading…</p>
         ) : empty ? (
-          <p className="font-ui text-on-surface-variant text-[12px]">No world clocks added yet</p>
+          <p className="font-ui text-on-surface-variant text-control">No world clocks added yet</p>
         ) : (
           worldClocks.map((w) => <WorldClockRow key={w.id} id={w.id} label={w.label} timeZone={w.timeZone} now={now} />)
         )}

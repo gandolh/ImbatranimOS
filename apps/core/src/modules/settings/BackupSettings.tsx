@@ -154,16 +154,16 @@ export function BackupSettings() {
     <div className="space-y-8">
       {/* Back up ───────────────────────────────────────────── */}
       <div>
-        <p className="font-ui text-on-surface-variant mb-3 text-[11px] font-semibold tracking-widest uppercase">
+        <p className="font-ui text-on-surface-variant text-label mb-3 font-semibold tracking-widest uppercase">
           Back up
         </p>
-        <p className="text-on-surface-variant mb-4 max-w-prose text-[12px]">
+        <p className="text-on-surface-variant text-control mb-4 max-w-prose">
           Everything that makes this machine yours — your files, notes, settings and app data — in one{" "}
           <span className="font-mono">.tar.gz</span> you can download and keep. No host shell required.
         </p>
 
         {info && (
-          <dl className="rounded-control border-outline-variant bg-surface-container-lowest mb-4 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 border p-3 text-[12px]">
+          <dl className="rounded-control border-outline-variant bg-surface-container-lowest text-control mb-4 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 border p-3">
             <dt className="text-on-surface-variant">Home directory</dt>
             <dd className="tabular-nums">
               {formatBytes(info.homeBytes)}
@@ -176,7 +176,7 @@ export function BackupSettings() {
               <span className="text-on-surface-variant">snapshotted, not copied while open</span>
             </dd>
             <dt className="text-on-surface-variant">Left out</dt>
-            <dd className="font-mono text-[11px]">{info.excluded.join(", ")}</dd>
+            <dd className="text-label font-mono">{info.excluded.join(", ")}</dd>
           </dl>
         )}
 
@@ -188,10 +188,10 @@ export function BackupSettings() {
 
       {/* Restore ───────────────────────────────────────────── */}
       <div>
-        <p className="font-ui text-on-surface-variant mb-3 text-[11px] font-semibold tracking-widest uppercase">
+        <p className="font-ui text-on-surface-variant text-label mb-3 font-semibold tracking-widest uppercase">
           Restore
         </p>
-        <p className="text-on-surface-variant mb-4 max-w-prose text-[12px]">
+        <p className="text-on-surface-variant text-control mb-4 max-w-prose">
           Replaces the folders the backup contains. Anything you have created since is left alone. The desktop reloads
           afterwards to pick up the restored settings; you stay signed in.
         </p>
@@ -213,7 +213,7 @@ export function BackupSettings() {
         </Button>
 
         {error && (
-          <div className="bg-error-container text-on-error-container mt-4 flex items-start gap-2 p-2 text-[12px]">
+          <div className="bg-error-container text-on-error-container text-control mt-4 flex items-start gap-2 p-2">
             <AlertTriangle size={14} className="mt-px shrink-0" />
             <span>{error}</span>
           </div>
@@ -221,22 +221,22 @@ export function BackupSettings() {
 
         {preview && (
           <div className="rounded-control border-outline-variant mt-4 border p-3">
-            <p className="text-[12px] font-semibold">
+            <p className="text-control font-semibold">
               Backup from {new Date(preview.manifest.createdAt).toLocaleString()}
             </p>
-            <p className="text-on-surface-variant mt-0.5 text-[11px]">
+            <p className="text-on-surface-variant text-label mt-0.5">
               ImbatranimOS {preview.manifest.imageVersion} · {preview.fileCount} files ·{" "}
               {formatBytes(preview.totalBytes)} once extracted
             </p>
 
-            <p className="font-ui text-on-surface-variant mt-3 mb-1.5 text-[10px] font-semibold tracking-widest uppercase">
+            <p className="font-ui text-on-surface-variant text-tiny mt-3 mb-1.5 font-semibold tracking-widest uppercase">
               These will be replaced
             </p>
-            <ul className="max-h-40 overflow-auto text-[12px]">
+            <ul className="text-control max-h-40 overflow-auto">
               {preview.entries.map((entry) => (
                 <li key={entry.name} className="flex items-center gap-2 py-0.5">
                   <span className="font-mono">{entry.name}</span>
-                  <span className="text-on-surface-variant text-[11px]">
+                  <span className="text-on-surface-variant text-label">
                     {entry.replacesExisting ? "replaces what is there now" : "new"}
                   </span>
                 </li>
@@ -244,7 +244,7 @@ export function BackupSettings() {
             </ul>
 
             {!preview.fits && (
-              <div className="bg-error-container text-on-error-container mt-3 flex items-start gap-2 p-2 text-[12px]">
+              <div className="bg-error-container text-on-error-container text-control mt-3 flex items-start gap-2 p-2">
                 <AlertTriangle size={14} className="mt-px shrink-0" />
                 <span>
                   This backup needs {formatBytes(preview.totalBytes)} but only {formatBytes(preview.freeBytes)} is free.
@@ -254,7 +254,7 @@ export function BackupSettings() {
             )}
 
             <div className="border-outline-variant mt-3 border-t pt-3">
-              <label htmlFor="restore-confirm" className="text-on-surface-variant mb-1.5 block text-[12px]">
+              <label htmlFor="restore-confirm" className="text-on-surface-variant text-control mb-1.5 block">
                 Type <span className="text-on-surface font-mono">{CONFIRM_WORD}</span> to replace your home directory.
               </label>
               <div className="flex items-center gap-2">

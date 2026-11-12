@@ -11,14 +11,14 @@ export function ShortcutList() {
   const mac = isMac();
 
   if (groups.length === 0) {
-    return <div className="text-on-surface-variant font-ui py-8 text-center text-[12px]">No shortcuts registered</div>;
+    return <div className="text-on-surface-variant font-ui text-control py-8 text-center">No shortcuts registered</div>;
   }
 
   return (
     <div className="flex flex-col gap-4">
       {groups.map(([scope, list]) => (
         <section key={scope}>
-          <h3 className="font-ui text-on-surface-variant mb-1.5 text-[11px] font-semibold tracking-wider uppercase">
+          <h3 className="font-ui text-on-surface-variant text-label mb-1.5 font-semibold tracking-wider uppercase">
             {scope}
           </h3>
           <div className="rounded-control border-outline-variant border">
@@ -30,10 +30,10 @@ export function ShortcutList() {
                 }`}
               >
                 <div className="min-w-0">
-                  <div className="font-ui text-on-surface text-[12px]">{s.description}</div>
-                  {s.note && <div className="font-ui text-on-surface-variant mt-0.5 text-[11px]">{s.note}</div>}
+                  <div className="font-ui text-on-surface text-control">{s.description}</div>
+                  {s.note && <div className="font-ui text-on-surface-variant text-label mt-0.5">{s.note}</div>}
                 </div>
-                <kbd className="rounded-small font-ui text-on-surface-variant bg-surface-container-low border-outline-variant shrink-0 border px-1.5 py-0.5 text-[11px] tabular-nums">
+                <kbd className="rounded-small font-ui text-on-surface-variant bg-surface-container-low border-outline-variant text-label shrink-0 border px-1.5 py-0.5 tabular-nums">
                   {formatKeys(s.keys, mac)}
                 </kbd>
               </div>

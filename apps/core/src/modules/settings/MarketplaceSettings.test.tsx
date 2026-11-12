@@ -438,7 +438,9 @@ describe("MarketplaceSettings: a descriptor with several apps", () => {
     expect(del).toHaveBeenLastCalledWith("/marketplace/apps/office");
 
     await act(async () => buttons("Uninstall")[0].click());
-    const box = document.querySelector<HTMLElement>('[role="dialog"] [role="checkbox"]');
+    const box = document.querySelector<HTMLElement>(
+      '[role="dialog"] [role="checkbox"], [role="alertdialog"] [role="checkbox"]',
+    );
     expect(box).not.toBeNull();
     expect(box!.getAttribute("aria-checked")).toBe("false");
     await act(async () => box!.click());
@@ -448,7 +450,11 @@ describe("MarketplaceSettings: a descriptor with several apps", () => {
 
     // A new prompt starts unticked.
     await act(async () => buttons("Uninstall")[0].click());
-    expect(document.querySelector('[role="dialog"] [role="checkbox"]')!.getAttribute("aria-checked")).toBe("false");
+    expect(
+      document
+        .querySelector('[role="dialog"] [role="checkbox"], [role="alertdialog"] [role="checkbox"]')!
+        .getAttribute("aria-checked"),
+    ).toBe("false");
     await act(async () => dialogButton("Uninstall")!.click());
     await settle();
     expect(del).toHaveBeenLastCalledWith("/marketplace/apps/office");

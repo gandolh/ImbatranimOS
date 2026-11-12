@@ -1,6 +1,7 @@
+import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { cn } from "../cn";
 import { Button } from "./Button";
-import { Dialog } from "./Dialog";
 
 export type ConfirmOptions = {
   title: string;
@@ -17,15 +18,24 @@ export type ConfirmOptions = {
 
 type ConfirmDialogProps = ConfirmOptions & {
   open: boolean;
-  onConfirm: () => void;
+  /**
+   * Return a promise and the dialog stays open, ignoring Esc, the X and the
+   * Cancel button, until it settles: the action is running.
+   */
+  onConfirm: () => void | Promise<unknown>;
   onCancel: () => void;
+  /** The confirm button's label while the action runs. */
+  pendingLabel?: string;
 };
 
 /**
- * A themed confirm dialog built on core's {@link Dialog}. Controlled: the parent
- * owns `open` and is notified via `onConfirm` / `onCancel`. Dismissing (backdrop,
- * Escape, close button) counts as a cancel. Prefer the {@link useConfirm} hook
- * for the common imperative `await confirm(...)` flow.
+ * A themed confirm dialog on Base UI's AlertDialog. Controlled: the parent owns
+ * `open` and is notified via `onConfirm` / `onCancel`. Dismissing (Escape, the
+ * close button) counts as a cancel; an outside press does nothing, as an alert
+ * should not vanish by accident. Cancel has the focus. While an async
+ * `onConfirm` runs it cannot be dismissed and the button shows `pendingLabel`.
+ * Prefer the {@link useConfirm} hook for the common imperative
+ * `await confirm(...)` flow.
  */
 export function ConfirmDialog({
   open,
@@ -33,22 +43,70 @@ export function ConfirmDialog({
   message,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
+  pendingLabel = "Working…",
   destructive = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const [pending, setPending] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  const run = () => {
+    if (pending) return;
+    const result = onConfirm();
+    if (result && typeof (result as Promise<unknown>).then === "function") {
+      setPending(true);
+      void (result as Promise<unknown>).then(
+        () => setPending(false),
+        () => setPending(false),
+      );
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onCancel()} title={title}>
-      <p className="text-on-surface mb-4">{message}</p>
-      <div className="flex justify-end gap-2">
-        <Button variant="default" size="sm" onClick={onCancel}>
-          {cancelLabel}
-        </Button>
-        <Button variant={destructive ? "destructive" : "primary"} size="sm" onClick={onConfirm}>
-          {confirmLabel}
-        </Button>
-      </div>
-    </Dialog>
+    <AlertDialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && !pending) onCancel();
+      }}
+    >
+      <AlertDialog.Portal>
+        <AlertDialog.Backdrop className="bg-scrim z-scrim fixed inset-0" />
+        <AlertDialog.Popup
+          initialFocus={cancelRef}
+          className={cn(
+            "z-dialog fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+            "border-outline-variant bg-surface-container-lowest rounded-window min-w-[320px] overflow-hidden border",
+            "shadow-(--k-shadow-dialog)",
+            "outline-none",
+          )}
+        >
+          <div className="border-outline-variant bg-surface-container-high flex items-center justify-between border-b px-3 py-1.5">
+            <AlertDialog.Title className="font-ui text-on-surface text-[13px] font-semibold">{title}</AlertDialog.Title>
+            <AlertDialog.Close
+              aria-label="Close"
+              disabled={pending}
+              className="border-outline-variant bg-surface-container-low font-ui text-on-surface hover:bg-error hover:text-on-error rounded-control flex h-5 w-5 cursor-pointer items-center justify-center border text-[12px]"
+            >
+              ×
+            </AlertDialog.Close>
+          </div>
+          <div className="font-content text-on-surface p-3 text-[13px]">
+            <AlertDialog.Description render={<div />} className="text-on-surface mb-4">
+              {message}
+            </AlertDialog.Description>
+            <div className="flex justify-end gap-2">
+              <Button ref={cancelRef} variant="default" size="sm" disabled={pending} onClick={onCancel}>
+                {cancelLabel}
+              </Button>
+              <Button variant={destructive ? "destructive" : "primary"} size="sm" disabled={pending} onClick={run}>
+                {pending ? pendingLabel : confirmLabel}
+              </Button>
+            </div>
+          </div>
+        </AlertDialog.Popup>
+      </AlertDialog.Portal>
+    </AlertDialog.Root>
   );
 }
 

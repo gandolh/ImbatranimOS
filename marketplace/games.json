@@ -5,7 +5,7 @@
   "description": "Minesweeper and Solitaire, the two classic desktop games.",
   "source": {
     "repo": "https://github.com/gandolh/imbatranim-apps",
-    "ref": "647580ffdc43852aa42ed3ba7cd1ace1f1822669"
+    "ref": "e47904875bc9fff22bcae2426ac17bb31db1140d"
   },
   "type": "static",
   "runtime": "native",

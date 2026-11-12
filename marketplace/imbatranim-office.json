@@ -5,7 +5,7 @@
   "description": "Office apps built and installed together.",
   "source": {
     "repo": "https://github.com/gandolh/imbatranim-office",
-    "ref": "8a42180d5335d6068c6eca811048f1eb6a804b5c"
+    "ref": "e47904875bc9fff22bcae2426ac17bb31db1140d"
   },
   "type": "service",
   "runtime": "native",
@@ -16,7 +16,7 @@
     "output": "dist/os"
   },
   "server": {
-    "command": ["node", "server/src/index.ts"],
+    "command": ["node", "server/src/server.ts"],
     "portEnv": "PORT",
     "health": "/health"
   },

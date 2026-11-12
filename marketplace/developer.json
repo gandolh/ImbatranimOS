@@ -5,7 +5,7 @@
   "description": "Git GUI and the REST API Client: stage, commit and browse a repository's history, and compose and send HTTP requests.",
   "source": {
     "repo": "https://github.com/gandolh/imbatranim-apps",
-    "ref": "4ef5f5af466eb8657b8271023681772ff9d8c4fb"
+    "ref": "e47904875bc9fff22bcae2426ac17bb31db1140d"
   },
   "type": "static",
   "runtime": "native",

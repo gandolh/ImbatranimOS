@@ -5,7 +5,7 @@
   "description": "Todo and Bookmarks, the organisers: tasks with due dates and lists, and links in folders.",
   "source": {
     "repo": "https://github.com/gandolh/imbatranim-apps",
-    "ref": "a5f3d0e8f627565528a0dd82e58ad9acf087d66b"
+    "ref": "e47904875bc9fff22bcae2426ac17bb31db1140d"
   },
   "type": "static",
   "runtime": "native",

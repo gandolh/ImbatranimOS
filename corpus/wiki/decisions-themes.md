@@ -54,6 +54,13 @@ Rejected: dark by default, as today; following the device's setting.
 **Why**: pastels read softer on light, and the owner picked light for other
 apps too.
 
+*Revisited 2026-11-12 (brief 87, the owner's call of 2026-11-10, Q18)*: the
+mode is now a Light / Dark / System choice, and the default stays light.
+Following the device's setting is offered as a third choice and kept on the
+machine, never the default, so the rejection above stands for the default
+only. `data-theme` is still only ever `light` or `dark`, and a saved light or
+dark loads exactly as it was.
+
 ## No glass
 _2026-11-02_ — Apricot is flat: no `backdrop-filter` blur on the taskbar,
 Start menu or title bars.

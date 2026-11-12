@@ -6215,7 +6215,7 @@ exact (the lockfile resolves 1.6.0 today);
 [86](briefs/done/86-the-house-style-harness.md) adds the house-style harness
 (Prettier at 120 touches every web file, a NestJS carve-out, the typed rules,
 `check` and `check:fast`, `.claude/rules/`, a root `CLAUDE.md`);
-[87](briefs/todo/87-base-ui-by-the-conventions.md) audits the UI against the
+[87](briefs/done/87-base-ui-by-the-conventions.md) audits the UI against the
 skill's rules and reconciles them with [wiki/ui-conventions.md](wiki/ui-conventions.md)
 (rule 42 is stale, rule 7 beats a `dark:` variant, rule 40 yields for form
 dialogs), moves the 13 px root onto `body` with `--spacing` set so nothing
@@ -6242,3 +6242,8 @@ blame-ignore entry, one web tsconfig base with `noImplicitOverride`, the root ES
 area rules. The NestJS backend is a carve-out. Measured on adoption: 93 `!` in source fixed, 34 promise findings, 37 type
 imports, one enum; knip accepts 6 dead core files and 160 unused exports; 57 import cycles warn. Owner steps:
 `git config blame.ignoreRevsFile .git-blame-ignore-revs`, push, then the deploy.
+
+## [2026-11-12] done | Brief 87: Base UI by the conventions
+
+[Brief 87](briefs/done/87-base-ui-by-the-conventions.md) built in eight local commits (1.307.0 to 1.314.0): the z scale and a conforming `Dialog`, `ConfirmDialog` on `AlertDialog`, the kit `Popover` (core imports no Base UI), choice sets on `RadioGroup`, `ToggleGroup`, `Toggle` and `Tabs`, `Slider` and the kit `Select`, the 13 px on `body` with `--spacing` and a named type scale, the Light / Dark / System choice, and `check-base-ui` strict with its exceptions on record. Before and after screenshots show no change beyond the System radio, the confirm's focus and 1 to 2 px in Open with. The decisions-themes page has a revisit note (System offered, light still the default). Owner steps: push, deploy the server phase, then `kit:sync` in imbatranim-apps.
+

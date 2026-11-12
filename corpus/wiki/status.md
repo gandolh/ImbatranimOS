@@ -15,7 +15,7 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 ## By area
 
 - **The house style and the gate** (2026-11-11, brief 86, local commits, not deployed). Prettier at 120, one root ESLint config, one web tsconfig base, `npm run check` and `check:fast`; the backend keeps decorators and TypeScript 5.9.
-  Warnings left: `!` in tests, `process.env` in the backend, 57 import cycles, `check-base-ui`. See [decisions-house-style.md](decisions-house-style.md).
+  Warnings left: `!` in tests, `process.env` in the backend, 57 import cycles. Brief 87 (2026-11-12, local commits): core imports no Base UI, the kit grew six components, `body` is 13 px on a 16 px root, Light / Dark / System, `check-base-ui` strict at 0. See [decisions-house-style.md](decisions-house-style.md).
 
 - **Identity** (2026-10-07). One sign-in, the machine's own, everywhere: a
   single owner claims the machine on first visit, gated by `SETUP_TOKEN` where

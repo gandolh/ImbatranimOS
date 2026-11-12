@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ArrowLeftRight } from "lucide-react";
-import { Radio, RadioGroup, cn } from "@imbatranim/ui";
+import { Radio, RadioGroup, Select, cn } from "@imbatranim/ui";
 import { CATEGORIES, categoryById, convert, formatResult, type UnitId } from "./engine/units";
 
 /**
@@ -138,6 +138,7 @@ function Side({
   onValue: (value: string) => void;
   onUnit: (unit: UnitId) => void;
 }) {
+  const unitOptions = units.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.label}` }));
   return (
     <div className="flex flex-col gap-1">
       <span className="font-ui text-on-surface-variant text-[10px] font-semibold tracking-wider uppercase">
@@ -151,18 +152,13 @@ function Side({
           onChange={(e) => onValue(e.target.value)}
           className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface focus-visible:ring-primary min-w-0 flex-1 border px-2 py-1 text-right font-mono text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
         />
-        <select
+        <Select
           value={unit}
           aria-label={`${label} unit`}
-          onChange={(e) => onUnit(e.target.value)}
-          className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface focus-visible:ring-primary shrink-0 border px-1 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-inset"
-        >
-          {units.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.symbol} — {u.label}
-            </option>
-          ))}
-        </select>
+          options={unitOptions}
+          onValueChange={(next) => onUnit(next as UnitId)}
+          className="font-ui text-on-surface h-full shrink-0 px-1 py-0 text-[11px]"
+        />
       </div>
     </div>
   );

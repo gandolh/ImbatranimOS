@@ -1,16 +1,8 @@
 import { useRef } from "react";
-import { Popover, Toggle } from "@imbatranim/ui";
+import { Popover, Slider, Toggle } from "@imbatranim/ui";
 import { Volume, Volume1, Volume2, VolumeX } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { useSoundStore } from "../../store/soundStore";
-
-// The media player's slider: a native range with the browser's chrome
-// stripped, square, in the accent.
-const RANGE_CLASSES =
-  "h-1 cursor-pointer appearance-none bg-surface-container-high accent-primary " +
-  "[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-primary " +
-  "[&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary " +
-  "focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2";
 
 /** A speaker that says muted, silent, or roughly how loud. */
 function SpeakerIcon({ volume, muted, size }: { volume: number; muted: boolean; size: number }) {
@@ -69,17 +61,16 @@ export function TrayVolume() {
         >
           <SpeakerIcon volume={volume} muted={muted} size={16} />
         </Toggle>
-        <input
-          ref={slider}
-          type="range"
+        <Slider
+          inputRef={slider}
           aria-label="Volume"
-          aria-valuetext={muted ? `${percent}%, muted` : `${percent}%`}
+          getAriaValueText={() => (muted ? `${percent}%, muted` : `${percent}%`)}
           min={0}
           max={100}
           step={1}
           value={percent}
-          onChange={(e) => setVolume(Number(e.target.value) / 100)}
-          className={cn(RANGE_CLASSES, "min-w-0 flex-1", muted && "opacity-50")}
+          onValueChange={(next) => setVolume(next / 100)}
+          className={cn("flex-1", muted && "opacity-50")}
         />
         <span className="text-on-surface-variant w-8 shrink-0 text-right text-[11px] tabular-nums" aria-hidden>
           {percent}

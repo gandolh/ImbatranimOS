@@ -15,7 +15,7 @@ import {
   Captions,
   CaptionsOff,
 } from "lucide-react";
-import { Button, Toggle, Tooltip, cn } from "@imbatranim/ui";
+import { Button, Select, Slider, Toggle, Tooltip } from "@imbatranim/ui";
 import { formatTime } from "../lib/formatTime";
 import { Timebar } from "./Timebar";
 import { SKIP_SECONDS, PLAYBACK_RATES } from "../lib/transport";
@@ -53,15 +53,7 @@ type TransportBarProps = {
   onToggleSubtitles: () => void;
 };
 
-// Native range inputs, stripped of the browser's default (rounded) chrome and
-// re-skinned flat/square to match the OS's Win7-classic, no-rounded-corners
-// look — using the token accent color rather than a hardcoded one.
-const RANGE_CLASSES =
-  "h-1 cursor-pointer appearance-none bg-surface-container-high accent-primary " +
-  "[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-primary " +
-  "[&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary " +
-  "disabled:cursor-not-allowed disabled:opacity-50 " +
-  "focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2";
+const RATE_OPTIONS = PLAYBACK_RATES.map((r) => ({ value: String(r), label: `${r}×` }));
 
 function VolumeIcon({ volume, muted }: { volume: number; muted: boolean }) {
   if (muted || volume === 0) return <VolumeX size={14} />;
@@ -220,20 +212,15 @@ export function TransportBar({
           </Tooltip>
         )}
 
-        <select
+        <Select
           aria-label="Playback speed"
           title="Playback speed"
-          className="rounded-control border-outline-variant bg-surface-container-lowest font-ui text-on-surface-variant focus-visible:ring-primary h-6 shrink-0 border px-1 text-[11px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-inset"
-          value={playbackRate}
+          className="text-on-surface-variant h-6 shrink-0 px-1 py-0 text-[11px] tabular-nums"
+          options={RATE_OPTIONS}
+          value={String(playbackRate)}
           disabled={disabled}
-          onChange={(e) => onRateChange(Number(e.target.value))}
-        >
-          {PLAYBACK_RATES.map((r) => (
-            <option key={r} value={r}>
-              {r}×
-            </option>
-          ))}
-        </select>
+          onValueChange={(next) => onRateChange(Number(next))}
+        />
 
         <Tooltip content={muted ? "Unmute" : "Mute"}>
           <Toggle
@@ -246,16 +233,15 @@ export function TransportBar({
             <VolumeIcon volume={volume} muted={muted} />
           </Toggle>
         </Tooltip>
-        <input
-          type="range"
+        <Slider
           aria-label="Volume"
-          className={cn(RANGE_CLASSES, "w-16 flex-none")}
+          className="w-16 flex-none"
           min={0}
           max={1}
           step={0.01}
           value={muted ? 0 : volume}
           disabled={disabled}
-          onChange={(e) => onVolumeChange(Number(e.target.value))}
+          onValueChange={onVolumeChange}
         />
 
         {onFullscreen && (

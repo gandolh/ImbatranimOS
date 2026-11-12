@@ -3,6 +3,7 @@ import { ArrowUp, File as FileIcon, Folder, HardDrive, History } from "lucide-re
 import { api } from "../../../lib/axios";
 import { useRecentFilesQuery } from "../../../lib/recentFiles";
 import { Button } from "../ui/Button";
+import { Checkbox } from "../ui/Checkbox";
 import { ScrollArea } from "../ui/ScrollArea";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { cn } from "../../../lib/cn";
@@ -317,15 +318,12 @@ export function FilePicker({
 
       <div className="border-outline-variant bg-surface-container-low flex flex-none items-center gap-2 border-t px-2 py-1">
         {extensions && extensions.length > 0 && mode !== "directory" && (
-          <label className="font-ui text-on-surface-variant flex items-center gap-1 text-[11px]">
-            <input
-              className="focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2"
-              type="checkbox"
-              checked={showAll}
-              onChange={(ev) => setShowAll(ev.target.checked)}
-            />
-            All files
-          </label>
+          <Checkbox
+            label="All files"
+            labelClassName="font-ui text-on-surface-variant gap-1 text-[11px]"
+            checked={showAll}
+            onCheckedChange={setShowAll}
+          />
         )}
         {mode === "directory" && (
           <span className="font-ui text-on-surface-variant min-w-0 truncate text-[11px]">

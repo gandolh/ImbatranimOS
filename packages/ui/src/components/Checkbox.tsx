@@ -4,11 +4,18 @@ import { cn } from "../cn";
 
 type CheckboxProps = ComponentProps<typeof BaseCheckbox.Root> & {
   label?: string;
+  /** Classes for the wrapping label, to change its text size, colour or gap. */
+  labelClassName?: string;
 };
 
-export function Checkbox({ label, className, id, ...props }: CheckboxProps) {
+export function Checkbox({ label, labelClassName, className, id, ...props }: CheckboxProps) {
   return (
-    <label className="font-content text-on-surface flex cursor-pointer items-center gap-2 text-[13px] select-none">
+    <label
+      className={cn(
+        "font-content text-on-surface flex cursor-pointer items-center gap-2 text-[13px] select-none",
+        labelClassName,
+      )}
+    >
       <BaseCheckbox.Root
         id={id}
         className={cn(

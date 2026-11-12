@@ -14,9 +14,21 @@ type SelectProps = Omit<SelectRootProps, "className"> & {
   placeholder?: string;
   options: SelectOption[];
   className?: string;
+  /** The trigger's accessible name, when there is no visible `label`. */
+  "aria-label"?: string;
+  /** The trigger's tooltip text. */
+  title?: string;
 };
 
-export function Select({ label, placeholder = "Select…", options, className, ...props }: SelectProps) {
+export function Select({
+  label,
+  placeholder = "Select…",
+  options,
+  className,
+  "aria-label": ariaLabel,
+  title,
+  ...props
+}: SelectProps) {
   return (
     <BaseSelect.Root {...props}>
       <div className="flex flex-col gap-1">
@@ -26,6 +38,8 @@ export function Select({ label, placeholder = "Select…", options, className, .
           </BaseSelect.Label>
         )}
         <BaseSelect.Trigger
+          aria-label={ariaLabel}
+          title={title}
           className={cn(
             "border-outline-variant bg-surface-container-low rounded-control flex w-full items-center justify-between border px-2.5 py-1.5",
             "font-ui text-on-surface text-[12px]",

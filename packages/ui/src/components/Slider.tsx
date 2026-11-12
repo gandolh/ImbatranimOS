@@ -49,7 +49,7 @@ export function Slider({
       max={max}
       step={step}
       disabled={disabled}
-      className={cn("min-w-0", className)}
+      className={cn("min-w-0 data-disabled:opacity-50", className)}
     >
       <BaseSlider.Control className="flex w-full cursor-pointer touch-none items-center py-1.5 select-none data-disabled:cursor-not-allowed">
         <BaseSlider.Track className="bg-surface-container-high h-1 w-full select-none">

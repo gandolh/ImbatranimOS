@@ -38,12 +38,13 @@ export function TrayVolume() {
           title={label}
           data-tray-volume=""
           className={cn(
-            "flex h-full cursor-pointer items-center px-2.5 outline-none",
-            "text-on-surface hover:bg-surface-container-high",
+            "rounded-control flex h-full cursor-pointer items-center justify-center px-2.5 outline-none",
+            "apricot:w-[32px] apricot:px-0 max-[600px]:w-[48px] max-[600px]:px-0 max-[380px]:w-[44px]",
+            "text-on-surface-variant hover:bg-surface-container-high",
             "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
           )}
         >
-          <SpeakerIcon volume={volume} muted={muted} size={15} />
+          <SpeakerIcon volume={volume} muted={muted} size={18} />
         </button>
       }
     >

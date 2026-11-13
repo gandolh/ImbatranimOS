@@ -260,13 +260,26 @@ describe("Start's search", () => {
 });
 
 describe("Start's size", () => {
-  it("fits the space above the taskbar and scrolls its list inside", () => {
+  it("is two panes as tall as the screen allows above the taskbar, each scrolling inside", () => {
     const menu = container.querySelector<HTMLElement>('[role="menu"][aria-label="Start menu"]')!;
-    expect(menu.className).toContain("max-h-[calc(100vh-72px)]");
-    expect(menu.className).toContain("w-[320px]");
+    expect(menu.className).toContain("w-[704px]");
+    expect(menu.className).toContain("h-[min(740px,calc(100svh-60px))]");
     expect(menu.className).toContain("max-w-[calc(100vw-16px)]");
-    const list = container.querySelector<HTMLElement>('[role="group"][aria-label="Pinned"]')!.parentElement!;
+    const side = container.querySelector<HTMLElement>('[role="group"][aria-label="Pinned"]')!.parentElement!;
+    expect(side.className).toContain("overflow-y-auto");
+    expect(side.className).toContain("min-h-0");
+    const list = container.querySelector<HTMLElement>('[role="group"][aria-label="F"]')!.parentElement!;
     expect(list.className).toContain("overflow-y-auto");
-    expect(list.className).toContain("min-h-0");
+  });
+
+  it("becomes one scrolling sheet above the taskbar on a phone", () => {
+    const menu = container.querySelector<HTMLElement>('[role="menu"][aria-label="Start menu"]')!;
+    expect(menu.className).toContain("max-[600px]:inset-x-0");
+    expect(menu.className).toContain("max-[600px]:bottom-[56px]");
+    const body = container.querySelector<HTMLElement>('[role="group"][aria-label="Pinned"]')!.parentElement!
+      .parentElement!;
+    expect(body.className).toContain("max-[600px]:overflow-y-auto");
+    const list = container.querySelector<HTMLElement>('[role="group"][aria-label="F"]')!.parentElement!;
+    expect(list.className).toContain("max-[600px]:overflow-visible");
   });
 });

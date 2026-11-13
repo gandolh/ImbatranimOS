@@ -81,12 +81,14 @@ function NotificationBell() {
           type="button"
           aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
           className={cn(
-            "relative flex h-full cursor-pointer items-center px-2.5 outline-none",
-            "text-on-surface hover:bg-surface-container-high",
+            "relative",
+            "rounded-control flex h-full cursor-pointer items-center justify-center px-2.5 outline-none",
+            "apricot:w-[32px] apricot:px-0 max-[600px]:w-[48px] max-[600px]:px-0 max-[380px]:w-[44px]",
+            "text-on-surface-variant hover:bg-surface-container-high",
             "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
           )}
         >
-          <Bell size={15} strokeWidth={1.75} className={cn(dnd && "opacity-50")} />
+          <Bell size={18} strokeWidth={1.75} className={cn(dnd && "opacity-50")} />
           {unread > 0 && (
             <span
               className="bg-primary text-on-primary text-micro absolute top-1.5 right-1 flex h-3.5 min-w-3.5 items-center justify-center px-0.5 leading-none font-semibold tabular-nums"
@@ -137,10 +139,10 @@ export function Tray() {
   }, [diskPercent]);
 
   return (
-    <div className="flex h-full items-center gap-1 pr-1">
+    <div className="flex h-full items-center gap-1 pr-1 max-[600px]:gap-0 max-[600px]:pr-0">
       {load && (
         <span
-          className="text-on-surface-variant text-label hidden px-2 whitespace-nowrap tabular-nums sm:inline"
+          className="text-on-surface-variant text-label hidden px-2 whitespace-nowrap tabular-nums min-[601px]:inline"
           title="CPU / RAM"
           data-tray-load=""
         >
@@ -148,25 +150,30 @@ export function Tray() {
         </span>
       )}
 
-      <div className="bg-outline-variant h-5 w-px" />
+      <div className="bg-outline-variant h-[20px] w-px max-[600px]:hidden" />
 
       <TrayVolume />
       <NotificationBell />
 
-      <div className="bg-outline-variant h-5 w-px" />
+      <div className="bg-outline-variant h-[20px] w-px max-[600px]:hidden" />
 
       <Popover
         trigger={
           <button
             type="button"
             className={cn(
-              "flex h-full cursor-pointer flex-col items-end justify-center px-3 leading-tight outline-none",
+              "rounded-control flex h-full shrink-0 cursor-pointer flex-col items-end justify-center px-3 outline-none",
+              "apricot:pr-[4px] apricot:pl-[6px] max-[600px]:px-[4px]",
               "text-on-surface hover:bg-surface-container-high",
               "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
             )}
           >
-            <span className="text-control font-semibold tabular-nums">{now.format("HH:mm")}</span>
-            <span className="text-on-surface-variant text-tiny tabular-nums">{now.format("ddd, DD MMM")}</span>
+            <span className="text-control max-[600px]:text-subhead font-semibold tabular-nums">
+              {now.format("HH:mm")}
+            </span>
+            <span className="text-on-surface-variant text-label whitespace-nowrap tabular-nums">
+              {now.format("ddd, DD MMM")}
+            </span>
           </button>
         }
       >

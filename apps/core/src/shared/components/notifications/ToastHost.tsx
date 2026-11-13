@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "../../../lib/cn";
-import { TASKBAR_HEIGHT } from "../../store/windowStore";
 import { openApp } from "../../intents/openApp";
 import { useNotificationStore, type NotificationItem } from "../../store/notificationStore";
 import { activateNotification } from "./activation";
@@ -148,8 +147,8 @@ export function ToastHost() {
   return (
     <div
       ref={stackRef}
-      className="z-toast pointer-events-none fixed right-3 flex flex-col gap-2"
-      style={{ bottom: TASKBAR_HEIGHT + 12 }}
+      // 12 px above the taskbar (44 px, 56 on a phone).
+      className="z-toast pointer-events-none fixed right-3 bottom-[56px] flex flex-col gap-2 max-[600px]:bottom-[68px]"
     >
       {items.map((item) => (
         <Toast key={item.id} item={item} />

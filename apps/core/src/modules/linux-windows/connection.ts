@@ -1,6 +1,6 @@
 import { desktopSessionId, renewDesktopSessionId } from "@imbatranim/ui";
 import {
-  TASKBAR_HEIGHT,
+  taskbarHeight,
   dropLinuxPlaces,
   keepLinuxPlaces,
   takeLinuxPlace,
@@ -98,7 +98,7 @@ type Viewport = { width: number; height: number; ratio: number };
 function viewport(): Viewport {
   return {
     width: Math.max(1, window.innerWidth),
-    height: Math.max(1, window.innerHeight - TASKBAR_HEIGHT),
+    height: Math.max(1, window.innerHeight - taskbarHeight()),
     ratio: window.devicePixelRatio || 1,
   };
 }

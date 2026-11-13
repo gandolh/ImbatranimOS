@@ -1,7 +1,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DesktopIcon } from "./DesktopIcon";
 import { useEnabledApps } from "../../registry/enabledApps";
-import { TASKBAR_HEIGHT } from "../../store/windowStore";
+import { taskbarHeight } from "../../store/windowStore";
 import { useDesktopStore } from "../../store/desktopStore";
 import { openApp } from "../../intents/openApp";
 import { clampToDesktop, layoutIcons } from "./layoutIcons";
@@ -62,7 +62,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
   // One measured size for icons and widgets alike, falling back to
   // the window before the first measurement lands.
   const boundsWidth = desktopSize.width || window.innerWidth;
-  const boundsHeight = desktopSize.height || window.innerHeight - TASKBAR_HEIGHT;
+  const boundsHeight = desktopSize.height || window.innerHeight - taskbarHeight();
   const bounds = useMemo(() => ({ width: boundsWidth, height: boundsHeight }), [boundsWidth, boundsHeight]);
 
   // Auto-place every non-pinned icon, and re-place on desktop-size or roster
@@ -199,8 +199,9 @@ export function Desktop({ wallpaper }: DesktopProps) {
   return (
     <div
       ref={sizeRef}
-      className="absolute top-0 right-0 left-0 w-full overflow-hidden"
-      style={{ ...paper.background, bottom: TASKBAR_HEIGHT }}
+      // Ends at the taskbar: 44 px, 56 on a phone.
+      className="absolute top-0 right-0 bottom-[44px] left-0 w-full overflow-hidden max-[600px]:bottom-[56px]"
+      style={paper.background}
       onContextMenu={(e) => {
         // Windows are DOM children of this container, so an app that calls
         // preventDefault without stopPropagation (the Terminal's paste,

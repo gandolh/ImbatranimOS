@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { TASKBAR_HEIGHT, TITLEBAR_MIN_VISIBLE, useWindowStore } from "../../shared/store/windowStore";
+import { taskbarHeight, TITLEBAR_MIN_VISIBLE, useWindowStore } from "../../shared/store/windowStore";
 import { isPasteKey, linuxKeys } from "./clipboard";
 import { isDesktopShortcut } from "./desktopKeys";
 import { linuxWindowChrome } from "./kind";
@@ -254,7 +254,7 @@ function runGrab(windowId: string, grab: Grab, px: number, py: number): void {
   const my = py - grab.y;
   if (grab.kind === "move") {
     const x = Math.max(0, Math.min(grab.posX + mx, window.innerWidth - win.size.width));
-    const y = Math.max(0, Math.min(grab.posY + my, window.innerHeight - TASKBAR_HEIGHT - TITLEBAR_MIN_VISIBLE));
+    const y = Math.max(0, Math.min(grab.posY + my, window.innerHeight - taskbarHeight() - TITLEBAR_MIN_VISIBLE));
     store.updatePosition(windowId, { x, y });
     return;
   }
@@ -267,7 +267,7 @@ function runGrab(windowId: string, grab: Grab, px: number, py: number): void {
     width = Math.max(minW, Math.min(window.innerWidth - grab.posX, grab.width + mx));
   }
   if (grab.edges.includes("s")) {
-    height = Math.max(minH, Math.min(window.innerHeight - TASKBAR_HEIGHT - grab.posY, grab.height + my));
+    height = Math.max(minH, Math.min(window.innerHeight - taskbarHeight() - grab.posY, grab.height + my));
   }
   if (grab.edges.includes("w")) {
     const d = Math.min(mx, grab.width - minW);

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { isPhoneWidth } from "../../lib/phone";
 import { isShellSuspended } from "../../modules/auth/store/authStore";
 import { v4 as uuidv4 } from "uuid";
 import { useIntentStore } from "./intentStore";
@@ -80,6 +81,13 @@ type PreMaximizeState = {
 // kept (=0) for the handful of call sites that still import it.
 export const TOPBAR_HEIGHT = 0;
 export const TASKBAR_HEIGHT = 44;
+/** The taskbar on a phone (under 600 px): 48 px targets in a 56 px bar (2026-11-13). */
+export const PHONE_TASKBAR_HEIGHT = 56;
+
+/** The taskbar's height at a viewport width: 56 on a phone, 44 elsewhere. */
+export function taskbarHeight(width: number = window.innerWidth): number {
+  return isPhoneWidth(width) ? PHONE_TASKBAR_HEIGHT : TASKBAR_HEIGHT;
+}
 
 // The minimum sliver of a window that must stay on screen so its title bar can
 // be grabbed — the same constant the drag clamp uses (windows deliberately have
@@ -125,7 +133,7 @@ export function clampToDesktop(
   viewport: { width: number; height: number },
 ): { width: number; height: number } {
   const availW = viewport.width;
-  const availH = viewport.height - TASKBAR_HEIGHT;
+  const availH = viewport.height - taskbarHeight(viewport.width);
   return {
     width: Math.max(minSize.width, Math.min(defaultSize.width, availW)),
     height: Math.max(minSize.height, Math.min(defaultSize.height, availH)),
@@ -304,7 +312,7 @@ export function computeSnapGeometry(region: SnapRegion): {
   size: { width: number; height: number };
 } {
   const W = window.innerWidth;
-  const H = window.innerHeight - TASKBAR_HEIGHT;
+  const H = window.innerHeight - taskbarHeight();
   const halfW = Math.floor(W / 2);
   const halfH = Math.floor(H / 2);
   const top = 0;
@@ -433,7 +441,7 @@ export function detectSnapRegion(pointerX: number, pointerY: number): SnapRegion
   const nearLeft = pointerX <= EDGE_THRESHOLD;
   const nearRight = pointerX >= W - EDGE_THRESHOLD;
   const nearTop = pointerY <= EDGE_THRESHOLD;
-  const nearBottom = pointerY >= H - TASKBAR_HEIGHT - EDGE_THRESHOLD;
+  const nearBottom = pointerY >= H - taskbarHeight() - EDGE_THRESHOLD;
 
   if (nearTop && nearLeft) return "tl";
   if (nearTop && nearRight) return "tr";
@@ -567,7 +575,7 @@ function fallbackFloatingGeometry(currentSize: { width: number; height: number }
   size: { width: number; height: number };
 } {
   const availW = window.innerWidth;
-  const availH = window.innerHeight - TASKBAR_HEIGHT;
+  const availH = window.innerHeight - taskbarHeight();
   const width = Math.max(360, Math.min(currentSize.width, Math.round(availW * 0.75)));
   const height = Math.max(240, Math.min(currentSize.height, Math.round(availH * 0.75)));
   const x = Math.max(0, Math.floor((availW - width) / 2));
@@ -589,7 +597,7 @@ function clampPosition(
   // horizontally when it fits (x pins to 0 when the window is wider than the
   // viewport), and vertically at least the title-bar row above the taskbar.
   const maxX = Math.max(0, window.innerWidth - size.width);
-  const maxY = Math.max(0, window.innerHeight - TASKBAR_HEIGHT - TITLEBAR_MIN_VISIBLE);
+  const maxY = Math.max(0, window.innerHeight - taskbarHeight() - TITLEBAR_MIN_VISIBLE);
   return {
     x: Math.min(Math.max(0, position.x), maxX),
     y: Math.min(Math.max(0, position.y), maxY),
@@ -621,14 +629,14 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       height: window.innerHeight,
     });
 
-    const maxY = window.innerHeight - TASKBAR_HEIGHT - size.height;
+    const maxY = window.innerHeight - taskbarHeight() - size.height;
 
     if (initialPosition) {
       x = Math.max(0, Math.min(initialPosition.x, window.innerWidth - size.width));
       y = Math.max(0, Math.min(initialPosition.y, maxY));
     } else {
       const centerX = Math.floor((window.innerWidth - size.width) / 2);
-      const centerY = Math.floor((window.innerHeight - TASKBAR_HEIGHT - size.height) / 2);
+      const centerY = Math.floor((window.innerHeight - taskbarHeight() - size.height) / 2);
 
       const offsetX = Math.floor(Math.random() * (CASCADE_JITTER_PX * 2 + 1)) - CASCADE_JITTER_PX;
       const offsetY = Math.floor(Math.random() * (CASCADE_JITTER_PX * 2 + 1)) - CASCADE_JITTER_PX;
@@ -776,7 +784,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
                 position: { x: 0, y: 0 },
                 size: {
                   width: window.innerWidth,
-                  height: window.innerHeight - TASKBAR_HEIGHT,
+                  height: window.innerHeight - taskbarHeight(),
                 },
               }
             : w,
@@ -980,7 +988,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
         if (w.isMaximized) {
           const size = {
             width: window.innerWidth,
-            height: window.innerHeight - TASKBAR_HEIGHT,
+            height: window.innerHeight - taskbarHeight(),
           };
           if (w.size.width === size.width && w.size.height === size.height) return w;
           changed = true;

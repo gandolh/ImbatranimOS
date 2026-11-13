@@ -8,7 +8,7 @@ import {
   useWindowStore,
   type SnapRegion,
   detectSnapRegion,
-  TASKBAR_HEIGHT,
+  taskbarHeight,
   TITLEBAR_MIN_VISIBLE,
   topVisibleWindowId,
 } from "../../store/windowStore";
@@ -82,7 +82,7 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
       if (!start) return;
 
       const maxW = window.innerWidth - start.posX;
-      const maxH = window.innerHeight - TASKBAR_HEIGHT - start.posY;
+      const maxH = window.innerHeight - taskbarHeight() - start.posY;
 
       let newW = start.width;
       let newH = start.height;
@@ -192,7 +192,7 @@ export const Window = React.memo(function Window({
 
       // Move window
       const newX = Math.max(0, Math.min(startPos.x + mx, window.innerWidth - instance.size.width));
-      const newY = Math.max(0, Math.min(startPos.y + my, window.innerHeight - TASKBAR_HEIGHT - TITLEBAR_MIN_VISIBLE));
+      const newY = Math.max(0, Math.min(startPos.y + my, window.innerHeight - taskbarHeight() - TITLEBAR_MIN_VISIBLE));
       updatePosition(instance.id, { x: newX, y: newY });
 
       // Detect snap region from pointer position

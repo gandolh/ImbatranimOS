@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ContextMenu } from "@imbatranim/ui";
-import { motion } from "framer-motion";
-import { History, Lock, LogOut, Power, Search, Trash2 } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { History, Lock, LogOut, Search, Trash2 } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { useEnabledApps } from "../../registry/enabledApps";
 import type { AppConfig } from "../../registry/registry";
@@ -28,10 +28,28 @@ function letterOf(name: string): string {
   return /[A-Z]/.test(c) ? c : "#";
 }
 
+/**
+ * An entry: a soft fill on hover and a 2 px strong ring on keyboard focus
+ * (2026-11-13), so the focused entry shows at 3:1 on every pane.
+ */
 const entryClass = cn(
   "group rounded-item text-left outline-none",
-  "hover:bg-primary-container hover:text-on-primary-container",
-  "focus-visible:bg-primary-container focus-visible:text-on-primary-container",
+  "hover:bg-surface-container-high",
+  "focus-visible:ring-primary focus-visible:bg-surface-container-high focus-visible:ring-2 focus-visible:ring-inset",
+);
+
+/** A list row's tile: the glyph in the strong accent on a raised square. */
+const ROW_TILE =
+  "rounded-item bg-surface-bright text-primary flex h-[28px] w-[28px] shrink-0 items-center justify-center shadow-(--k-shadow-tile)";
+
+/** A group's label: sentence case, 11 px at weight 600 (12 on a touch screen). */
+const GROUP_LABEL = "text-on-surface-variant text-label font-semibold";
+
+/** A session button in the foot band: bordered at 3:1, sized to its words. */
+const ACT = cn(
+  "rounded-control bg-surface-container-lowest border-outline text-on-surface text-control flex h-[34px] shrink-0 items-center gap-2 border px-[12px] font-semibold whitespace-nowrap outline-none",
+  "hover:bg-surface-container-high focus-visible:ring-primary focus-visible:ring-2",
+  "max-[600px]:h-[48px] max-[600px]:text-subhead",
 );
 
 type StartMenuProps = {
@@ -42,6 +60,7 @@ type StartMenuProps = {
 
 export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const still = useReducedMotion() === true;
   const lock = useAuthStore((s) => s.lock);
   const resetToLoggedOut = useAuthStore((s) => s.resetToLoggedOut);
   const enabledApps = useEnabledApps();
@@ -191,38 +210,67 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
     void localSignOut().finally(() => window.location.reload());
   }
 
+  const recentRows = recent.flatMap((f) => {
+    const app = enabledApps.find((a) => a.id === f.appId);
+    if (!app) return [];
+    const Icon = app.icon;
+    return [
+      <button
+        key={`${f.root}:${f.path}`}
+        role="menuitem"
+        data-start-nav
+        data-start-recent=""
+        onClick={() => {
+          openApp(f.appId, { openPath: f.path, root: f.root });
+          onClose();
+        }}
+        className={cn(
+          entryClass,
+          "border-outline-variant flex w-full flex-[1_0_48px] items-center gap-2 rounded-none border-b px-[8px] last:border-b-0",
+          "max-[600px]:min-h-[44px] max-[600px]:flex-none max-[600px]:px-[4px]",
+        )}
+      >
+        <span className={ROW_TILE}>
+          <Icon size={16} strokeWidth={1.75} />
+        </span>
+        {/* The path beside the name where both fit on a phone, under it where
+            not; neither is ever cut. */}
+        <span className="flex min-w-0 flex-1 flex-col max-[600px]:flex-row max-[600px]:flex-wrap max-[600px]:items-baseline max-[600px]:justify-between max-[600px]:gap-x-3">
+          <span className="text-on-surface text-control max-[600px]:text-subhead font-semibold break-words">
+            {f.path.split("/").pop() ?? f.path}
+          </span>
+          <span className="text-on-surface-variant text-label break-all max-[600px]:text-right">{f.path}</span>
+        </span>
+      </button>,
+    ];
+  });
+
   return (
     <motion.div
       ref={menuRef}
-      initial={{ opacity: 0, y: 8 }}
+      initial={still ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.12, ease: "easeOut" }}
+      transition={{ duration: still ? 0 : 0.12, ease: "easeOut" }}
       role="menu"
       aria-label="Start menu"
       onKeyDown={handleMenuKeyDown}
       className={cn(
-        "z-start absolute bottom-full left-0 mb-1 flex max-h-[calc(100vh-72px)] w-[320px] max-w-[calc(100vw-16px)] flex-col",
-        // Apricot's menu floats clear of the taskbar and the screen's edge.
-        "apricot:left-2 apricot:mb-2 rounded-menu overflow-hidden",
-        "border-outline-variant bg-surface-container-low border",
-        "shadow-(--k-shadow-menu)",
+        // Two panes, 704 px wide, as tall as the screen allows above the
+        // taskbar (2026-11-13); a full-screen sheet above it on a phone.
+        "z-start fixed bottom-[52px] left-2 flex h-[min(740px,calc(100svh-60px))] w-[704px] max-w-[calc(100vw-16px)] flex-col",
+        "rounded-menu border-outline-variant bg-surface-container-low overflow-hidden border shadow-(--k-shadow-menu)",
+        "max-[600px]:inset-x-0 max-[600px]:top-[10px] max-[600px]:bottom-[56px] max-[600px]:h-auto max-[600px]:w-auto max-[600px]:max-w-none",
+        "max-[600px]:rounded-t-[18px] max-[600px]:rounded-b-none max-[600px]:border-x-0 max-[600px]:border-b-0",
       )}
     >
-      {/* Brand header */}
-      <div className="border-outline-variant bg-surface-container flex items-center gap-2.5 border-b px-4 py-3">
-        <Logo size={26} className="text-on-surface" />
-        <div className="leading-tight">
-          <div className="text-on-surface text-body font-bold tracking-tight">
-            Imbatranim<span className="text-primary">OS</span>
-          </div>
-          <div className="text-on-surface-variant text-tiny">Signed in</div>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="px-3 pt-2.5 pb-1.5">
-        <label className="border-outline-variant bg-surface-container-lowest rounded-control focus-within:ring-primary flex items-center gap-2 border px-2.5 py-1.5 focus-within:ring-2">
-          <Search size={13} strokeWidth={1.75} className="text-on-surface-variant shrink-0" />
+      {/* Search, on top: every way of finding things starts here. */}
+      <div className="border-outline-variant bg-surface-container-low shrink-0 border-b px-[16px] py-[8px] max-[600px]:px-[12px]">
+        <label className="text-on-surface-variant relative block h-[40px] max-[600px]:h-[48px]">
+          <Search
+            size={18}
+            strokeWidth={1.75}
+            className="pointer-events-none absolute top-1/2 left-[12px] -translate-y-1/2 max-[600px]:left-[14px]"
+          />
           <input
             ref={searchRef}
             data-start-nav
@@ -238,52 +286,57 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                 void openTopResult();
               }
             }}
-            className="text-on-surface placeholder:text-on-surface-variant text-control min-w-0 flex-1 bg-transparent outline-none"
+            className={cn(
+              "rounded-control border-outline bg-surface-container-lowest text-on-surface text-body placeholder:text-on-surface-variant block h-full w-full border pr-[12px] pl-[40px] outline-none",
+              "focus:ring-primary focus:border-primary focus:ring-2",
+              "pointer-coarse:text-index max-[600px]:pl-[44px]",
+            )}
           />
         </label>
       </div>
 
-      <div className="apricot:px-1.5 flex min-h-0 flex-1 flex-col overflow-y-auto py-1">
-        {searching ? (
-          <div role="group" aria-label="Search results">
-            {results.for !== query ? null : results.items.length === 0 ? (
-              <div className="text-on-surface-variant text-label px-4 py-3">Nothing found</div>
-            ) : (
-              results.items.map((item) => {
-                const app =
-                  item.group === "Apps" ? enabledApps.find((a) => a.id === item.id.replace(/^app:/, "")) : undefined;
-                const Icon = app?.icon;
-                return (
-                  <button
-                    key={item.id}
-                    role="menuitem"
-                    data-start-nav
-                    data-start-result={item.id}
-                    onClick={() => openResult(item)}
-                    className={cn(entryClass, "flex w-full items-center gap-3 px-4 py-1.5")}
-                  >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center">
-                      {Icon && <Icon size={15} strokeWidth={1.75} />}
+      {searching ? (
+        <div role="group" aria-label="Search results" className="min-h-0 flex-1 overflow-y-auto px-[8px] py-[8px]">
+          {results.for !== query ? null : results.items.length === 0 ? (
+            <div className="flex flex-col items-start gap-1 px-[16px] py-[28px]">
+              <b className="text-on-surface text-body font-semibold">Nothing found</b>
+            </div>
+          ) : (
+            results.items.map((item) => {
+              const app =
+                item.group === "Apps" ? enabledApps.find((a) => a.id === item.id.replace(/^app:/, "")) : undefined;
+              const Icon = app?.icon;
+              return (
+                <button
+                  key={item.id}
+                  role="menuitem"
+                  data-start-nav
+                  data-start-result={item.id}
+                  onClick={() => openResult(item)}
+                  className={cn(entryClass, "flex w-full items-start gap-2 p-[8px]")}
+                >
+                  <span className={ROW_TILE}>{Icon && <Icon size={16} strokeWidth={1.75} />}</span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-on-surface text-control font-semibold">{item.label}</span>
+                    <span className="text-on-surface-variant text-label break-words">
+                      {item.subtitle ?? item.group}
                     </span>
-                    <span className="min-w-0">
-                      <span className="text-control block truncate font-medium">{item.label}</span>
-                      <span className="text-on-surface-variant group-hover:text-on-primary-container/80 text-tiny block truncate">
-                        {item.subtitle ?? item.group}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        ) : (
-          <>
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      ) : (
+        <div className="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)] max-[600px]:flex max-[600px]:flex-col max-[600px]:overflow-y-auto">
+          {/* Pinned and Recent, on the panel's own surface. First in the
+              document, so the keyboard and a phone's sheet reach them first;
+              the right-hand column at desktop widths. */}
+          <div className="bg-surface-container-low col-start-2 row-start-1 flex min-h-0 flex-col overflow-y-auto px-[20px] py-[16px] max-[600px]:flex-none max-[600px]:overflow-visible max-[600px]:px-[16px] max-[600px]:pt-[12px] max-[600px]:pb-[8px]">
             {pinned.length > 0 && (
-              <div role="group" aria-label="Pinned" className="px-2 pb-1">
-                <div className="text-on-surface-variant text-micro px-2 pt-1 pb-1 font-semibold tracking-widest uppercase">
-                  Pinned
-                </div>
-                <div className="grid grid-cols-3 gap-1">
+              <div role="group" aria-label="Pinned">
+                <h2 className={GROUP_LABEL}>Pinned</h2>
+                <div className="mt-[12px] mb-[20px] grid grid-cols-3 gap-x-1 gap-y-2 max-[600px]:mt-[4px] max-[600px]:mb-[8px]">
                   {pinned.map((app) => {
                     const Icon = app.icon;
                     return (
@@ -298,140 +351,138 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                           onClose();
                         }}
                         onContextMenu={(e) => openEntryMenu(e, app.id)}
-                        className={cn(entryClass, "flex flex-col items-center gap-1 px-1 py-2 text-center")}
+                        className={cn(
+                          entryClass,
+                          "rounded-control flex flex-col items-center gap-2 px-1 py-[4px] text-center max-[600px]:gap-1",
+                        )}
                       >
-                        <span className="border-outline-variant bg-surface-container-lowest rounded-control flex h-8 w-8 items-center justify-center border group-hover:border-transparent group-hover:bg-white/15">
-                          <Icon size={18} strokeWidth={1.75} />
+                        <span className="rounded-tile bg-surface-bright text-primary flex h-[52px] w-[52px] items-center justify-center shadow-(--k-shadow-tile) max-[600px]:h-[48px] max-[600px]:w-[48px]">
+                          <Icon size={22} strokeWidth={1.75} />
                         </span>
-                        <span className="text-label w-full truncate font-medium">{app.name}</span>
+                        <span className="text-on-surface text-control w-full break-words">{app.name}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
             )}
-            {atoz.map(({ letter, apps }) => (
-              <div key={letter} role="group" aria-label={letter}>
-                <div
-                  aria-hidden
-                  className="text-on-surface-variant text-micro px-4 pt-1.5 pb-0.5 font-semibold tracking-widest uppercase"
-                >
-                  {letter}
-                </div>
-                {apps.map((app) => {
-                  const Icon = app.icon;
-                  return (
-                    <button
-                      key={app.id}
-                      role="menuitem"
-                      data-start-nav
-                      data-start-entry={app.id}
-                      data-start-list=""
-                      onClick={() => {
-                        onOpenApp(app.id);
-                        onClose();
-                      }}
-                      onContextMenu={(e) => openEntryMenu(e, app.id)}
-                      className={cn(entryClass, "flex w-full items-center gap-3 px-4 py-1.5")}
-                    >
-                      <span className="border-outline-variant bg-surface-container-lowest rounded-control flex h-7 w-7 shrink-0 items-center justify-center border group-hover:border-transparent group-hover:bg-white/15">
-                        <Icon size={16} strokeWidth={1.75} />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="text-control block truncate font-medium">{app.name}</span>
-                        <span className="text-on-surface-variant group-hover:text-on-primary-container/80 text-tiny block truncate">
-                          {app.description}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </>
-        )}
-      </div>
 
-      {/* Recent files — hidden entirely while the list is empty */}
-      {!searching && recent.length > 0 && (
-        <div className="border-outline-variant apricot:px-1.5 border-t py-1">
-          <div className="flex items-center justify-between px-4 pt-1 pb-0.5">
-            <span className="text-on-surface-variant text-micro flex items-center gap-1.5 font-semibold tracking-widest uppercase">
-              <History size={10} strokeWidth={2} />
-              Recent
-            </span>
-            <button
-              type="button"
-              aria-label="Clear recent files"
-              title="Clear recent files"
-              onClick={() => void clearRecentFiles()}
-              className="text-on-surface-variant hover:text-on-surface focus-visible:ring-primary outline-none focus-visible:ring-2 focus-visible:ring-inset"
-            >
-              <Trash2 size={11} strokeWidth={1.75} />
-            </button>
-          </div>
-          {recent.map((f) => {
-            const app = enabledApps.find((a) => a.id === f.appId);
-            if (!app) return null;
-            const Icon = app.icon;
-            return (
-              <button
-                key={`${f.root}:${f.path}`}
-                role="menuitem"
-                data-start-nav
-                onClick={() => {
-                  openApp(f.appId, { openPath: f.path, root: f.root });
-                  onClose();
-                }}
-                className={cn(
-                  "group rounded-item flex w-full items-center gap-3 px-4 py-1 text-left outline-none",
-                  "hover:bg-primary-container hover:text-on-primary-container",
-                  "focus-visible:bg-primary-container focus-visible:text-on-primary-container",
-                )}
-              >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                  <Icon size={13} strokeWidth={1.75} />
-                </span>
-                <span className="min-w-0">
-                  <span className="text-label block truncate">{f.path.split("/").pop() ?? f.path}</span>
-                  <span className="text-on-surface-variant group-hover:text-on-primary-container/80 text-micro block truncate">
-                    {f.path}
+            {/* Recent files: hidden entirely while the list is empty. Its rows
+                share the rest of the pane's height, so no band is left empty. */}
+            {recentRows.length > 0 && (
+              <div role="group" aria-label="Recent" className="flex flex-[1_0_auto] flex-col max-[600px]:flex-none">
+                <div className="mb-[4px] flex min-h-[32px] items-center justify-between max-[600px]:min-h-[36px]">
+                  <span className={cn(GROUP_LABEL, "flex items-center gap-2")}>
+                    <History size={14} strokeWidth={1.75} />
+                    Recent
                   </span>
-                </span>
-              </button>
-            );
-          })}
+                  <button
+                    type="button"
+                    aria-label="Clear recent files"
+                    title="Clear recent files"
+                    onClick={() => void clearRecentFiles()}
+                    className="rounded-control text-on-surface-variant hover:bg-surface-container-high focus-visible:ring-primary -mr-[8px] flex h-[32px] w-[32px] items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset max-[600px]:h-[48px] max-[600px]:w-[48px]"
+                  >
+                    <Trash2 size={16} strokeWidth={1.75} />
+                  </button>
+                </div>
+                <div className="border-outline-variant flex flex-[1_0_auto] flex-col border-t max-[600px]:flex-none">
+                  {recentRows}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Every app A to Z, on the tinted pane, with whole descriptions. The
+              letter heads stick while their group scrolls; the list fades at
+              its foot and keeps its scrollbar, so it shows that it goes on. */}
+          <div className="border-outline-variant bg-surface-container relative col-start-1 row-start-1 flex min-h-0 border-r max-[600px]:flex-none max-[600px]:border-t max-[600px]:border-r-0">
+            <div
+              className={cn(
+                "min-w-0 flex-1 overflow-y-auto pb-[4px]",
+                "[mask-image:linear-gradient(to_bottom,black_calc(100%-30px),transparent)]",
+                "max-[600px]:overflow-visible max-[600px]:[mask-image:none] max-[600px]:pb-[12px]",
+              )}
+            >
+              {atoz.map(({ letter, apps }) => (
+                <section key={letter} role="group" aria-label={letter}>
+                  <h3
+                    aria-hidden
+                    className="font-display text-index text-primary bg-surface-container sticky top-0 pt-[4px] pr-[16px] pl-[24px] font-bold max-[600px]:pt-[8px]"
+                  >
+                    {letter}
+                  </h3>
+                  {apps.map((app) => {
+                    const Icon = app.icon;
+                    return (
+                      <button
+                        key={app.id}
+                        role="menuitem"
+                        data-start-nav
+                        data-start-entry={app.id}
+                        data-start-list=""
+                        onClick={() => {
+                          onOpenApp(app.id);
+                          onClose();
+                        }}
+                        onContextMenu={(e) => openEntryMenu(e, app.id)}
+                        className={cn(
+                          entryClass,
+                          "mx-[8px] flex w-[calc(100%-16px)] items-start gap-2 p-[8px] max-[600px]:min-h-[48px]",
+                        )}
+                      >
+                        <span className={cn(ROW_TILE, "mt-px")}>
+                          <Icon size={16} strokeWidth={1.75} />
+                        </span>
+                        <span className="flex min-w-0 flex-col">
+                          <span className="text-on-surface text-control max-[600px]:text-subhead font-semibold">
+                            {app.name}
+                          </span>
+                          <span className="text-on-surface-variant text-label break-words">{app.description}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </section>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Session actions */}
-      <div className="border-outline-variant bg-surface-container flex items-stretch border-t">
-        <button
-          role="menuitem"
-          data-start-nav
-          onClick={handleLock}
-          className="text-on-surface hover:bg-surface-container-high focus-visible:ring-primary text-label flex flex-1 items-center justify-center gap-2 px-4 py-2.5 font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset"
-        >
-          <Lock size={14} strokeWidth={1.75} />
+      {/* The foot band: the account, then the two session buttons. */}
+      <div className="border-outline-variant bg-surface-container flex h-[52px] shrink-0 items-center gap-2 border-t px-[16px] max-[600px]:h-auto max-[600px]:px-[12px] max-[600px]:pt-[8px] max-[600px]:pb-[12px]">
+        <div role="group" aria-label="ImbatranimOS, signed in" className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="rounded-tile border-outline-variant bg-surface-container-lowest flex h-[32px] w-[32px] shrink-0 items-center justify-center border">
+            <Logo size={18} className="text-on-surface" />
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="font-display text-on-surface text-lead font-bold max-[600px]:hidden">
+              Imbatranim<span className="text-primary">OS</span>
+            </span>
+            <span className="text-on-surface-variant text-label">Signed in</span>
+          </span>
+        </div>
+        <button role="menuitem" data-start-nav onClick={handleLock} className={ACT}>
+          <Lock size={16} strokeWidth={1.75} className="text-on-surface-variant" />
           {/* "Cover", not "Lock": uncovering does not re-prove the password,
               so this hides the screen without protecting it. Calling it Lock
               would be a claim the app cannot honour (see `SessionScreens.tsx`). */}
           Cover screen
         </button>
-        <div className="bg-outline-variant w-px" />
         <button
           role="menuitem"
           data-start-nav
           onClick={handleLogout}
-          className="text-on-surface hover:bg-error hover:text-on-error focus-visible:ring-primary text-label flex flex-1 items-center justify-center gap-2 px-4 py-2.5 font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset"
+          className={cn(ACT, "group/off hover:bg-error-container hover:text-on-error-container hover:border-error")}
         >
-          <LogOut size={14} strokeWidth={1.75} />
+          <LogOut
+            size={16}
+            strokeWidth={1.75}
+            className="text-on-surface-variant group-hover/off:text-on-error-container"
+          />
           Log off
         </button>
-      </div>
-      <div className="border-outline-variant text-on-surface-variant text-micro flex items-center justify-between border-t px-4 py-1.5 tracking-widest uppercase">
-        <span>ImbatranimOS</span>
-        <Power size={11} strokeWidth={1.75} className="opacity-60" />
       </div>
       {entryMenu && (
         <ContextMenu

@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useShallow } from "zustand/shallow";
 import { Search } from "lucide-react";
 import { cn } from "../../../lib/cn";
-import { TASKBAR_HEIGHT, topVisibleWindowId, useWindowStore, type WorkspaceId } from "../../store/windowStore";
+import { topVisibleWindowId, useWindowStore, type WorkspaceId } from "../../store/windowStore";
 import { usePaletteStore } from "../../store/paletteStore";
 import { APP_REGISTRY } from "../../registry/registry";
 import { openApp } from "../../intents/openApp";
@@ -107,8 +107,12 @@ export function Taskbar() {
   return (
     <div
       data-testid="taskbar"
-      className="border-outline-variant bg-surface-container-low font-ui apricot:gap-1.5 apricot:px-2 apricot:py-1.5 z-taskbar fixed inset-x-0 bottom-0 flex items-stretch border-t"
-      style={{ height: TASKBAR_HEIGHT }}
+      className={cn(
+        "border-outline-variant bg-surface-container-low font-ui z-taskbar fixed inset-x-0 bottom-0 flex h-[44px] items-stretch border-t",
+        "apricot:gap-1 apricot:py-[6px] apricot:pr-[12px] apricot:pl-[8px]",
+        // A phone: 48 px targets in a 56 px bar, the clock always in view.
+        "max-[600px]:h-[56px] max-[600px]:gap-0 max-[600px]:py-[4px] max-[600px]:pr-[8px] max-[600px]:pl-[4px]",
+      )}
     >
       {/* Start button */}
       <button
@@ -118,23 +122,32 @@ export function Taskbar() {
         aria-expanded={startOpen}
         aria-label="Start"
         className={cn(
-          "group rounded-control relative flex items-center gap-2 px-4 outline-none",
-          "border-outline-variant apricot:border-r-0 border-r",
+          "group rounded-control relative flex shrink-0 items-center gap-2 px-4 outline-none",
+          "border-outline-variant apricot:h-[32px] apricot:border-r-0 apricot:pr-[12px] apricot:pl-[8px] border-r",
           "hover:bg-surface-container-high",
           "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
-          startOpen && "bg-surface-container-high",
+          "max-[600px]:h-[48px] max-[600px]:w-[48px] max-[600px]:justify-center max-[600px]:border-r-0 max-[600px]:px-0 max-[380px]:w-[44px]",
+          startOpen && "bg-primary-container text-on-primary-container apricot:border apricot:border-primary",
         )}
       >
         {/* accent edge when open */}
         <span
           className={cn(
-            "bg-primary apricot:hidden absolute inset-x-0 top-0 h-[2px] transition-opacity",
+            "bg-primary apricot:hidden absolute inset-x-0 top-0 h-[2px] transition-opacity motion-reduce:transition-none",
             startOpen ? "opacity-100" : "opacity-0",
           )}
         />
-        <Logo size={22} className="text-on-surface" />
-        <span className="text-on-surface text-body font-bold tracking-tight">
-          Imbatranim<span className="text-primary">OS</span>
+        <Logo
+          size={22}
+          className={cn(startOpen ? "text-on-primary-container" : "text-on-surface apricot:text-primary", "shrink-0")}
+        />
+        <span
+          className={cn(
+            "font-display text-lead font-bold max-[600px]:hidden",
+            startOpen ? "text-on-primary-container" : "text-on-surface",
+          )}
+        >
+          Imbatranim<span className={startOpen ? "text-on-primary-container" : "text-primary"}>OS</span>
         </span>
       </button>
 
@@ -146,17 +159,18 @@ export function Taskbar() {
         aria-label="Search"
         title="Search (Ctrl+K)"
         className={cn(
-          "group rounded-control relative flex items-center gap-2 px-3 outline-none",
-          "border-outline-variant apricot:border-r-0 apricot:bg-surface-container border-r",
+          "group rounded-control relative flex shrink-0 items-center justify-center gap-2 px-3 outline-none",
+          "border-outline-variant apricot:h-[32px] apricot:w-[32px] apricot:border-r-0 apricot:px-0 border-r",
           "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high",
           "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
+          "max-[600px]:h-[48px] max-[600px]:w-[48px] max-[600px]:border-r-0 max-[600px]:px-0 max-[380px]:w-[44px]",
         )}
       >
-        <Search size={16} strokeWidth={1.75} className="shrink-0" />
+        <Search size={18} strokeWidth={1.75} className="shrink-0 max-[600px]:size-[20px]" />
       </button>
 
-      {/* Running-window buttons */}
-      <div className="apricot:px-0 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">
+      {/* Running-window buttons; on a phone each is its icon over the current underline. */}
+      <div className="apricot:px-0 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5 max-[600px]:gap-0 max-[600px]:px-0">
         {visibleWindows.map((win) => {
           const app = APP_REGISTRY.find((a) => a.id === win.appId);
           const Icon = app?.icon;
@@ -171,28 +185,37 @@ export function Taskbar() {
                 setMenu({ id: win.id, x: e.clientX, y: e.clientY });
               }}
               title={win.title}
+              aria-label={win.title}
               className={cn(
                 "rounded-control relative flex h-[34px] max-w-[168px] min-w-[44px] shrink-0 items-center gap-2 px-2.5 outline-none",
                 "text-control border border-transparent",
+                "apricot:h-[32px] apricot:pr-[12px] apricot:pl-[8px] apricot:font-semibold",
                 "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
+                "max-[600px]:h-[48px] max-[600px]:w-[48px] max-[600px]:min-w-0 max-[600px]:justify-center max-[600px]:px-0 max-[380px]:w-[44px]",
                 isFocused
-                  ? "border-outline-variant apricot:border-transparent bg-surface-container-high text-on-surface"
+                  ? "border-outline-variant apricot:border-transparent bg-surface-container-high apricot:bg-surface-container text-on-surface"
                   : minimized
                     ? "text-on-surface-variant hover:bg-surface-container"
                     : "text-on-surface hover:bg-surface-container",
               )}
             >
-              {/* focus indicator — an accent bar along the bottom; in Apricot a
-                  short centred dot */}
+              {/* The current task's underline, in the strong accent. */}
               <span
                 className={cn(
-                  "bg-primary absolute inset-x-0 bottom-0 h-[2px] transition-opacity",
-                  "apricot:inset-x-auto apricot:left-1/2 apricot:bottom-[3px] apricot:h-[3px] apricot:w-3.5 apricot:-translate-x-1/2 apricot:rounded-control",
+                  "bg-primary absolute inset-x-0 bottom-0 h-[2px] transition-opacity motion-reduce:transition-none",
+                  "apricot:inset-x-[12px] apricot:bottom-[2px] apricot:rounded-small",
+                  "max-[600px]:inset-x-[14px] max-[600px]:bottom-[4px]",
                   isFocused ? "opacity-100" : "opacity-0",
                 )}
               />
-              {Icon && <Icon size={15} strokeWidth={1.75} className={cn("shrink-0", minimized && "opacity-60")} />}
-              <span className={cn("truncate", minimized && "opacity-60")}>{win.title}</span>
+              {Icon && (
+                <Icon
+                  size={16}
+                  strokeWidth={1.75}
+                  className={cn("apricot:text-primary shrink-0 max-[600px]:size-[20px]", minimized && "opacity-60")}
+                />
+              )}
+              <span className={cn("truncate max-[600px]:hidden", minimized && "opacity-60")}>{win.title}</span>
             </button>
           );
         })}
@@ -201,7 +224,7 @@ export function Taskbar() {
       <WorkspacePips />
 
       {/* System tray */}
-      <div className="border-outline-variant apricot:border-l-0 flex items-stretch border-l">
+      <div className="border-outline-variant apricot:border-l-0 flex shrink-0 items-stretch border-l max-[600px]:border-l-0">
         <Tray />
       </div>
 

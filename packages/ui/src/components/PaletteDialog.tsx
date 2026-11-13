@@ -46,7 +46,7 @@ export function PaletteDialog({
           className={cn(
             "z-palette fixed top-[20%] left-1/2 -translate-x-1/2",
             "w-[600px] max-w-[calc(100vw-32px)]",
-            "border-outline bg-surface-container-lowest rounded-window overflow-hidden border-2",
+            "border-outline bg-surface-container-low rounded-window overflow-hidden border-2",
             "font-ui outline-none",
             className,
           )}

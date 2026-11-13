@@ -82,7 +82,7 @@ type PreMaximizeState = {
 export const TOPBAR_HEIGHT = 0;
 export const TASKBAR_HEIGHT = 44;
 /** The taskbar on a phone (under 600 px): 48 px targets in a 56 px bar (2026-11-13). */
-export const PHONE_TASKBAR_HEIGHT = 56;
+const PHONE_TASKBAR_HEIGHT = 56;
 
 /** The taskbar's height at a viewport width: 56 on a phone, 44 elsewhere. */
 export function taskbarHeight(width: number = window.innerWidth): number {
@@ -535,9 +535,9 @@ export type OpenWindowOptions = {
 };
 
 /** The viewport width under which a window that asks to fill does so (2026-11-13). */
-export const FILL_BELOW_WIDTH = 1280;
+const FILL_BELOW_WIDTH = 1280;
 /** The desktop left showing around a filling window. */
-export const FILL_MARGIN = 8;
+const FILL_MARGIN = 8;
 
 /**
  * Where a new window goes when the screen decides rather than the app

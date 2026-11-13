@@ -75,7 +75,7 @@ export function ContextMenu({ x, y, items, onClose, label = "Context menu" }: Co
               e.stopPropagation();
             }}
             className={cn(
-              "border-outline-variant bg-surface-container-lowest rounded-menu min-w-40 border px-(--k-list-inset) py-1",
+              "border-outline-variant bg-surface-container-low rounded-menu min-w-40 border px-(--k-list-inset) py-1",
               "shadow-(--k-shadow-popup) outline-none",
             )}
           >

@@ -5,7 +5,7 @@
  * `max-[600px]:`; type follows the pointer instead (`pointer-coarse:` and the
  * coarse-pointer block in index.css).
  */
-export const PHONE_MAX_WIDTH = 600;
+const PHONE_MAX_WIDTH = 600;
 
 export function isPhoneWidth(width: number): boolean {
   return width < PHONE_MAX_WIDTH;

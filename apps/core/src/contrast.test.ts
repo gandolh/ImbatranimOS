@@ -154,9 +154,12 @@ describe("every theme and mode", () => {
           ).toBeGreaterThanOrEqual(AA);
         });
 
-        it("draws a control's edge at 3:1 on the foot band and on a field", () => {
-          // Start's foot band and every band are surface-container; a field is
-          // surface-container-lowest; a window body is surface-container-low.
+        it("draws a control's edge at 3:1 on the foot band, a field, a checkbox and a window", () => {
+          // Start's foot band and every band are surface-container; a field,
+          // and the kit Checkbox's empty box, are surface-container-lowest; a
+          // window or dialog body is surface-container-low. The Checkbox draws
+          // its box in outline, which in Classic dark was outline-variant at
+          // 1.3:1 (2026-11-12).
           for (const s of ["surface-container", "surface-container-lowest", "surface-container-low"]) {
             expect(contrast(k.outline, k[s]), `outline on ${s}`).toBeGreaterThanOrEqual(EDGE);
           }

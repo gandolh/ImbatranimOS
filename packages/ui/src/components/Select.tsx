@@ -33,7 +33,7 @@ export function Select({
     <BaseSelect.Root {...props}>
       <div className="flex flex-col gap-1">
         {label && (
-          <BaseSelect.Label className="font-ui text-on-surface-variant text-label font-semibold tracking-wider uppercase">
+          <BaseSelect.Label className="font-ui text-on-surface-variant text-label font-semibold">
             {label}
           </BaseSelect.Label>
         )}
@@ -74,7 +74,7 @@ export function Select({
           <BaseSelect.Positioner sideOffset={1} className="z-select">
             <BaseSelect.Popup
               className={cn(
-                "border-outline-variant bg-surface-container-lowest rounded-menu min-w-[104px] border",
+                "border-outline-variant bg-surface-container-low rounded-menu min-w-[104px] border",
                 "shadow-(--k-shadow-popup)",
                 "px-(--k-list-inset) py-0.5 outline-none",
               )}

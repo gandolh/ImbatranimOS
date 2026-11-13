@@ -10,17 +10,14 @@ export function Input({ label, className, id, ...props }: InputProps) {
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label
-          htmlFor={id}
-          className="font-ui text-on-surface-variant text-label font-semibold tracking-wider uppercase"
-        >
+        <label htmlFor={id} className="font-ui text-on-surface-variant text-label font-semibold">
           {label}
         </label>
       )}
       <BaseInput
         id={id}
         className={cn(
-          "border-outline-variant bg-surface-container-lowest rounded-control w-full border px-2.5 py-1.5",
+          "border-outline bg-surface-container-lowest rounded-control w-full border px-2.5 py-1.5",
           "font-content text-on-surface text-body",
           "transition-colors outline-none",
           "placeholder:text-on-surface-variant",

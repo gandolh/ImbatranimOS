@@ -19,7 +19,7 @@ export function Checkbox({ label, labelClassName, className, id, ...props }: Che
       <BaseCheckbox.Root
         id={id}
         className={cn(
-          "border-outline-variant bg-surface-container-lowest flex h-4 w-4 shrink-0 items-center justify-center border",
+          "border-outline bg-surface-container-lowest flex h-4 w-4 shrink-0 items-center justify-center border",
           "rounded-small",
           "transition-colors outline-none",
           "focus-visible:ring-primary focus-visible:ring-offset-surface focus-visible:ring-2 focus-visible:ring-offset-1",

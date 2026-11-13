@@ -71,18 +71,18 @@ export function Dialog({
           }
           className={cn(
             "z-dialog fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-            "border-outline-variant bg-surface-container-lowest rounded-window min-w-[320px] overflow-hidden border",
+            "border-outline-variant bg-surface-container-low rounded-window min-w-[320px] overflow-hidden border",
             "shadow-(--k-shadow-dialog)",
             "outline-none",
             className,
           )}
         >
           {title && (
-            <div className="border-outline-variant bg-surface-container-high flex items-center justify-between border-b px-3 py-1.5">
+            <div className="border-outline-variant bg-surface-container flex items-center justify-between border-b py-[6px] pr-[6px] pl-[12px]">
               <BaseDialog.Title className="font-ui text-on-surface text-body font-semibold">{title}</BaseDialog.Title>
               <BaseDialog.Close
                 aria-label="Close"
-                className="border-outline-variant bg-surface-container-low font-ui text-on-surface hover:bg-error hover:text-on-error rounded-control text-control flex h-5 w-5 cursor-pointer items-center justify-center border"
+                className="font-ui text-on-surface-variant hover:bg-error-container hover:text-on-error-container rounded-item text-body focus-visible:ring-primary flex h-[24px] w-[24px] cursor-pointer items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset"
               >
                 ×
               </BaseDialog.Close>

@@ -45,7 +45,7 @@ export function Popover({
             initialFocus={initialFocus}
             aria-label={label}
             className={cn(
-              "border-outline-variant bg-surface-container-low rounded-menu overflow-hidden border shadow-(--k-shadow-tray)",
+              "border-outline-variant bg-surface-container-low rounded-menu overflow-hidden border shadow-(--k-shadow-menu)",
               "outline-none",
               className,
             )}

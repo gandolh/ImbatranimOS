@@ -4,6 +4,7 @@ import * as ReactDom from "react-dom";
 import * as ReactDomClient from "react-dom/client";
 import type * as KitNamespace from "@imbatranim/ui";
 import {
+  BottomSheet,
   Button,
   Checkbox,
   ConfirmDialog,
@@ -77,6 +78,7 @@ import {
  * or a name here the kit no longer has, fails the typecheck.
  */
 const KIT: { [K in keyof typeof KitNamespace]: (typeof KitNamespace)[K] } = {
+  BottomSheet,
   Button,
   Checkbox,
   ConfirmDialog,

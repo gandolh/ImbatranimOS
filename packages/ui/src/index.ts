@@ -19,6 +19,7 @@ export { cn } from "./cn";
 
 // UI kit
 export { Button } from "./components/Button";
+export { BottomSheet } from "./components/BottomSheet";
 export { Checkbox } from "./components/Checkbox";
 export { Dialog, type DialogChangeDetails } from "./components/Dialog";
 export { PaletteDialog } from "./components/PaletteDialog";

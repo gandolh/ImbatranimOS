@@ -22,12 +22,17 @@ const variantClasses: Record<Variant, string> = {
   primary:
     "bg-primary border-primary text-on-primary " +
     "hover:brightness-110 active:brightness-95 " +
+    // Disabled, an action is a quiet filled band, never a faded accent with
+    // white on it (2026-11-13).
+    "disabled:bg-surface-container-high disabled:border-outline-variant disabled:text-on-surface-variant disabled:opacity-100 disabled:brightness-100 " +
     "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
   selected:
     "bg-primary-container border-primary text-on-primary-container " +
     "hover:brightness-110 active:brightness-95 " +
     "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
   ghost: "bg-transparent border-transparent text-on-surface hover:bg-surface-container hover:border-outline-variant",
+  // On the error fill, on-error: white in light, a dark ink on dark's lighter
+  // red, where white was 2.7:1 (2026-11-13).
   destructive:
     "bg-transparent border-error text-error " +
     "hover:bg-error hover:text-on-error active:brightness-95 " +

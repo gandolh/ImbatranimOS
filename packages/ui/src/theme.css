@@ -33,6 +33,10 @@
   --color-background: var(--k-surface);
   --color-on-background: var(--k-on-surface);
   --color-surface-variant: var(--k-surface-container-high);
+  /* The ground under an app's page, slide or sheet: surface-container in
+     light and surface-container-lowest in dark, so the panels around it read
+     one step up in both modes (2026-11-13, for imbatranim-apps). */
+  --color-desk: var(--k-desk);
 
   /* Accent — the single parameterized identity color */
   --color-surface-tint: var(--accent);
@@ -55,13 +59,16 @@
 
   /* Error stays a restrained functional red (usability > purity) */
   --color-error: var(--k-error);
-  --color-on-error: #ffffff;
+  --color-on-error: var(--k-on-error);
   --color-error-container: var(--k-error-container);
   --color-on-error-container: var(--k-on-error-container);
 
   /* Fonts — the UI font follows the theme (Figtree in Apricot, Space Grotesk
-     in Classic, set per token block in index.css); Inter is the content font */
+     in Classic, set per token block in index.css); Inter is the content font.
+     The display face (Solway 700 in Apricot, Space Grotesk in Classic) is for
+     the wordmark, Start's letter heads and page titles. */
   --font-ui: var(--k-font-ui);
+  --font-display: var(--k-font-display);
   --font-content: "Inter", ui-sans-serif, system-ui, sans-serif;
 
   /* Corners — per theme (index.css): Apricot's soft radii, 0 in Classic.
@@ -95,19 +102,28 @@
   --z-index-menu: 10000;
   --z-index-switcher: 10001;
 
-  /* Type scale. Every size is the pixel value the app already drew, so the
-     names replace text-[Npx] with no visible change. No line height is
-     attached (rows inherit theirs), except for the four that replaced
-     Tailwind's text-sm, -base, -2xl and -3xl, which carried one. */
+  /* Type scale. The sizes the shell draws carry their line height
+     (2026-11-13): label 11/15, control 12/16, body 13/18, lead 15/18, index
+     16/20 (Start's letter heads), title 17/22, headline 24/30 (page titles).
+     A coarse pointer raises label, control and body one step (index.css).
+     nano, micro and tiny stay for the kit apps that use them; the shell draws
+     nothing under 11 px. */
   --text-nano: 8px;
   --text-micro: 9px;
   --text-tiny: 10px;
   --text-label: 11px;
+  --text-label--line-height: 15px;
   --text-control: 12px;
+  --text-control--line-height: 16px;
   --text-body: 13px;
+  --text-body--line-height: 18px;
   --text-subhead: 14px;
   --text-lead: 15px;
+  --text-lead--line-height: 18px;
+  --text-index: 16px;
+  --text-index--line-height: 20px;
   --text-title: 17px;
+  --text-title--line-height: 22px;
   --text-display-sm: 26px;
   --text-display: 32px;
   --text-display-lg: 36px;
@@ -118,8 +134,8 @@
   --text-prose--line-height: 1.5;
   --text-heading: 19.5px;
   --text-heading--line-height: calc(2 / 1.5);
-  --text-headline: 24.375px;
-  --text-headline--line-height: 1.2;
+  --text-headline: 24px;
+  --text-headline--line-height: 30px;
 
   /* Spacing. The root is the browser's 16 px and the app's 13 px sits on
      body, so one step is 13/16 of Tailwind's 0.25rem: p-2 stays 6.5 px. */
@@ -131,4 +147,22 @@
   --spacing-double: 16px;
   --spacing-window-padding: 12px;
   --spacing-container-gap: 8px;
+
+  /* imbatranim-apps' geometry (2026-11-13): the side panels' widths
+     (w-navigator, max-w-navigator-max and so on) and the bars' heights
+     (h-appbar, min-h-target). One value in both modes. */
+  --container-navigator: 132px;
+  --container-navigator-max: 220px;
+  --container-inspector: 272px;
+  --container-inspector-strip: 48px;
+  --container-annotate: 232px;
+  --container-pdf-strip: 56px;
+  --container-popover: 264px;
+  --container-pdf-navigator: 200px;
+  --spacing-appbar: 40px;
+  --spacing-appbar-phone: 48px;
+  --spacing-statusbar: 32px;
+  --spacing-statusbar-phone: 48px;
+  --spacing-bottombar: 56px;
+  --spacing-target: 44px;
 }

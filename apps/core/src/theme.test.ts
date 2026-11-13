@@ -35,6 +35,9 @@ const BEFORE: [string, string][] = [
   ["--color-background", "var(--k-surface)"],
   ["--color-on-background", "var(--k-on-surface)"],
   ["--color-surface-variant", "var(--k-surface-container-high)"],
+  // Added 2026-11-13 for imbatranim-apps: the desk under a page, slide or
+  // sheet, one step below the panels in both modes.
+  ["--color-desk", "var(--k-desk)"],
   ["--color-surface-tint", "var(--accent)"],
   ["--color-primary", "var(--accent)"],
   ["--color-on-primary", "var(--accent-on)"],
@@ -54,12 +57,17 @@ const BEFORE: [string, string][] = [
   ["--color-tertiary-container", "var(--k-surface-container-high)"],
   ["--color-on-tertiary-container", "var(--k-on-surface)"],
   ["--color-error", "var(--k-error)"],
-  ["--color-on-error", "#ffffff"],
+  // 2026-11-13: on-error follows the mode (white on the light red, a dark ink
+  // on the dark one, where white was 2.7:1); it was a literal white.
+  ["--color-on-error", "var(--k-on-error)"],
   ["--color-error-container", "var(--k-error-container)"],
   ["--color-on-error-container", "var(--k-on-error-container)"],
   // Since 2026-11-03 the UI font follows the theme: index.css sets --k-font-ui
   // per token block, Figtree in Apricot and Space Grotesk in Classic.
   ["--font-ui", "var(--k-font-ui)"],
+  // Added 2026-11-13: the display face, Solway in Apricot and Space Grotesk in
+  // Classic, for the wordmark, Start's letter heads and page titles.
+  ["--font-display", "var(--k-font-display)"],
   ["--font-content", '"Inter", ui-sans-serif, system-ui, sans-serif'],
   // The corner radii (2026-11-03): per theme, 0px in Classic.
   ["--radius-window", "var(--k-radius-window)"],
@@ -91,12 +99,21 @@ const BEFORE: [string, string][] = [
   ["--text-nano", "8px"],
   ["--text-micro", "9px"],
   ["--text-tiny", "10px"],
+  // 2026-11-13: the sizes the shell draws carry their line height, and index
+  // (16/20) is new, for Start's letter heads.
   ["--text-label", "11px"],
+  ["--text-label--line-height", "15px"],
   ["--text-control", "12px"],
+  ["--text-control--line-height", "16px"],
   ["--text-body", "13px"],
+  ["--text-body--line-height", "18px"],
   ["--text-subhead", "14px"],
   ["--text-lead", "15px"],
+  ["--text-lead--line-height", "18px"],
+  ["--text-index", "16px"],
+  ["--text-index--line-height", "20px"],
   ["--text-title", "17px"],
+  ["--text-title--line-height", "22px"],
   ["--text-display-sm", "26px"],
   ["--text-display", "32px"],
   ["--text-display-lg", "36px"],
@@ -107,14 +124,30 @@ const BEFORE: [string, string][] = [
   ["--text-prose--line-height", "1.5"],
   ["--text-heading", "19.5px"],
   ["--text-heading--line-height", "calc(2 / 1.5)"],
-  ["--text-headline", "24.375px"],
-  ["--text-headline--line-height", "1.2"],
+  // 2026-11-13: page titles at 24/30 (was 24.375 px at 1.2).
+  ["--text-headline", "24px"],
+  ["--text-headline--line-height", "30px"],
   ["--spacing", "0.203125rem"],
   ["--spacing-half", "4px"],
   ["--spacing-base", "8px"],
   ["--spacing-double", "16px"],
   ["--spacing-window-padding", "12px"],
   ["--spacing-container-gap", "8px"],
+  // Added 2026-11-13: imbatranim-apps' panel widths and bar heights.
+  ["--container-navigator", "132px"],
+  ["--container-navigator-max", "220px"],
+  ["--container-inspector", "272px"],
+  ["--container-inspector-strip", "48px"],
+  ["--container-annotate", "232px"],
+  ["--container-pdf-strip", "56px"],
+  ["--container-popover", "264px"],
+  ["--container-pdf-navigator", "200px"],
+  ["--spacing-appbar", "40px"],
+  ["--spacing-appbar-phone", "48px"],
+  ["--spacing-statusbar", "32px"],
+  ["--spacing-statusbar-phone", "48px"],
+  ["--spacing-bottombar", "56px"],
+  ["--spacing-target", "44px"],
 ];
 
 const SRC = __dirname;

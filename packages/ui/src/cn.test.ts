@@ -5,13 +5,18 @@ import { describe, expect, it } from "vitest";
 import { cn } from "./cn";
 
 const THEME = readFileSync(join(__dirname, "theme.css"), "utf8");
-const SCALE = [...THEME.matchAll(/--text-([a-z-]+?):\s*[\d.]+px;/g)].map((m) => m[1]);
+// The sizes, not their `--line-height` companions.
+const SCALE = [...THEME.matchAll(/--text-([a-z-]+?):\s*[\d.]+px;/g)]
+  .map((m) => m[1])
+  .filter((name) => !name.endsWith("--line-height"));
 
 describe("cn and the type scale", () => {
   it("finds the named sizes in theme.css", () => {
     expect(SCALE).toContain("label");
     expect(SCALE).toContain("control");
     expect(SCALE).toContain("body");
+    expect(SCALE).toContain("index");
+    expect(SCALE).not.toContain("label--line-height");
   });
 
   it.each(SCALE)("keeps text-%s next to a text colour", (name) => {

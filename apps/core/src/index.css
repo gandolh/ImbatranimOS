@@ -12,9 +12,12 @@
  * air-gapped (the diskless kiosk, LAN deploys), where a Google Fonts @import
  * stalls and renders in fallback fonts — and it leaked every visitor's IP to
  * Google. Self-hosting lets the CSP's font-src/style-src drop to 'self'.
- * One file per family covers all weights (each is variable on the wght axis).
+ * One file per family covers all weights (each is variable on the wght axis),
+ * except Solway, which ships its one weight, 700.
  * Figtree is Apricot's UI font, Space Grotesk Classic's; Inter is the content
- * font in both. Sources and versions: assets/fonts/README.md.
+ * font in both. Solway is Apricot's display face (the wordmark, Start's letter
+ * heads, page titles); Classic's display face is its UI font, Space Grotesk
+ * (2026-11-13). Sources and versions: assets/fonts/README.md.
  */
 @font-face {
   font-family: "Figtree";
@@ -36,6 +39,13 @@
   font-weight: 400 600;
   font-display: swap;
   src: url("./assets/fonts/inter-latin-var.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Solway";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./assets/fonts/solway-latin-700.woff2") format("woff2");
 }
 
 /*
@@ -72,25 +82,27 @@
   --k-surface-bright: #fffdf9;
   --k-surface-container-lowest: #fffdf9;
   --k-surface-container-low: #fdf7f0;
-  --k-surface-container: #f6ebdf;
+  --k-surface-container: #f4e6d7;
   --k-surface-container-high: #f0e1d2;
   --k-surface-container-highest: #e9d6c3;
-  --k-on-surface: #3a2a20;
-  --k-on-surface-variant: #735949; /* the canvas's #7a5f4e, deepened to clear 4.5:1 on highest */
-  --k-inverse-surface: #3a2a20;
+  --k-on-surface: #33241b;
+  --k-on-surface-variant: #6b5141; /* the canvas's #7a5f4e, deepened to clear 4.5:1 on highest */
+  --k-inverse-surface: #33241b;
   --k-inverse-on-surface: #fbf3ea;
-  --k-outline: #c4a58c;
-  --k-outline-variant: #ead8c6;
+  --k-outline: #9a7a64; /* a control's edge: 3:1 on the foot band and on a field */
+  --k-outline-variant: #e0c8b2;
   --k-error: #ba1a1a;
+  --k-on-error: #ffffff;
   --k-error-container: #ffdad6;
-  --k-on-error-container: #93000a;
+  --k-on-error-container: #410002;
   --k-font-ui: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --k-font-display: "Solway", Georgia, serif;
   --k-shadow-window: 0 10px 28px rgba(140, 84, 48, 0.14);
   --k-shadow-window-focused: 0 18px 44px rgba(140, 84, 48, 0.2), 0 2px 8px rgba(140, 84, 48, 0.1);
-  --k-shadow-menu: 0 18px 48px rgba(140, 84, 48, 0.24);
+  --k-shadow-menu: 0 18px 48px rgba(94, 55, 37, 0.24), 0 3px 10px rgba(94, 55, 37, 0.14);
   --k-shadow-popup: 0 18px 48px rgba(140, 84, 48, 0.24);
   --k-shadow-dialog: 0 18px 44px rgba(140, 84, 48, 0.2), 0 2px 8px rgba(140, 84, 48, 0.1);
-  --k-shadow-tile: 0 4px 12px rgba(140, 84, 48, 0.16);
+  --k-shadow-tile: 0 1px 2px rgba(94, 55, 37, 0.16), 0 3px 8px rgba(94, 55, 37, 0.12);
   --k-shadow-toast: 0 18px 48px rgba(140, 84, 48, 0.24);
   --k-shadow-tooltip: 0 10px 28px rgba(140, 84, 48, 0.14);
   --k-shadow-tray: 0 18px 48px rgba(140, 84, 48, 0.24);
@@ -106,36 +118,41 @@
   --k-wall-hill-3: #d98d73;
   --k-wall-star: #ffffff;
   --k-wall-star-opacity: 0;
+  /* The ground under an app's page, slide or sheet (imbatranim-apps): one step
+     below the panels around it, in both modes. */
+  --k-desk: var(--k-surface-container);
 
   color-scheme: light;
 }
 
 /* ── Apricot, dark ───────────────────────────────────────────────────────────── */
 [data-os-theme="apricot"][data-theme="dark"] {
-  --k-surface: #1f1916;
+  --k-surface: #1c1613;
   --k-surface-dim: #181310;
-  --k-surface-bright: #2e2622;
-  --k-surface-container-lowest: #231d1a;
-  --k-surface-container-low: #27201c;
-  --k-surface-container: #2c2420;
-  --k-surface-container-high: #352b26;
-  --k-surface-container-highest: #3e332d;
+  --k-surface-bright: #43362f;
+  --k-surface-container-lowest: #201a17;
+  --k-surface-container-low: #29211c;
+  --k-surface-container: #322822;
+  --k-surface-container-high: #3c302a;
+  --k-surface-container-highest: #473932;
   --k-on-surface: #f6eadf;
-  --k-on-surface-variant: #c6b09f;
+  --k-on-surface-variant: #cdb6a5;
   --k-inverse-surface: #f6eadf;
-  --k-inverse-on-surface: #231d1a;
-  --k-outline: #6e5c50;
-  --k-outline-variant: #3f352f;
-  --k-error: #ff7171; /* Classic's #ff6b6b, lifted to clear 4.5:1 on highest */
-  --k-error-container: #3a1516;
-  --k-on-error-container: #ffb4ab;
+  --k-inverse-on-surface: #1c1613;
+  --k-outline: #937a69;
+  --k-outline-variant: #54443a;
+  --k-error: #ff8a80; /* Classic's #ff6b6b, lifted to clear 4.5:1 on highest */
+  --k-on-error: #2b0d0d; /* white on the dark error is 2.7:1 */
+  --k-error-container: #5c1a1a;
+  --k-on-error-container: #ffdad6;
   --k-font-ui: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --k-font-display: "Solway", Georgia, serif;
   --k-shadow-window: 0 10px 28px rgba(0, 0, 0, 0.4);
   --k-shadow-window-focused: 0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
-  --k-shadow-menu: 0 18px 48px rgba(0, 0, 0, 0.6);
+  --k-shadow-menu: 0 18px 48px rgba(0, 0, 0, 0.55), 0 3px 10px rgba(0, 0, 0, 0.4);
   --k-shadow-popup: 0 18px 48px rgba(0, 0, 0, 0.6);
   --k-shadow-dialog: 0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
-  --k-shadow-tile: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --k-shadow-tile: 0 1px 2px rgba(0, 0, 0, 0.5), 0 3px 8px rgba(0, 0, 0, 0.35);
   --k-shadow-toast: 0 18px 48px rgba(0, 0, 0, 0.6);
   --k-shadow-tooltip: 0 10px 28px rgba(0, 0, 0, 0.4);
   --k-shadow-tray: 0 18px 48px rgba(0, 0, 0, 0.6);
@@ -151,6 +168,7 @@
   --k-wall-hill-3: #3a252c;
   --k-wall-star: #f7e6d6;
   --k-wall-star-opacity: 0.9;
+  --k-desk: var(--k-surface-container-lowest);
 
   color-scheme: dark;
 }
@@ -169,12 +187,15 @@
   --k-on-surface-variant: #a4a4aa;
   --k-inverse-surface: #f2f2ef;
   --k-inverse-on-surface: #17171a;
-  --k-outline: #55555c;
+  --k-outline: #6c6c74;
   --k-outline-variant: #2e2e33;
   --k-error: #ff6b6b;
+  --k-on-error: #2b0d0d; /* white on #ff6b6b is under 3:1 */
   --k-error-container: #3a1516;
   --k-on-error-container: #ffb4ab;
   --k-font-ui: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --k-font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --k-desk: var(--k-surface-container-lowest);
 
   color-scheme: dark;
 }
@@ -193,12 +214,15 @@
   --k-on-surface-variant: #57575d;
   --k-inverse-surface: #16161a;
   --k-inverse-on-surface: #f3f3f1;
-  --k-outline: #9a9a9f;
+  --k-outline: #86868b;
   --k-outline-variant: #d1d1cc;
   --k-error: #ba1a1a;
+  --k-on-error: #ffffff;
   --k-error-container: #ffdad6;
   --k-on-error-container: #93000a;
   --k-font-ui: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --k-font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --k-desk: var(--k-surface-container);
 
   color-scheme: light;
 }
@@ -210,7 +234,7 @@
 [data-os-theme="apricot"] {
   --k-radius-window: 12px;
   --k-radius-menu: 14px;
-  --k-radius-control: 8px;
+  --k-radius-control: 10px;
   --k-radius-item: 8px;
   --k-radius-tile: 12px;
   --k-radius-small: 4px;
@@ -277,6 +301,21 @@ body,
    Tailwind's step). */
 body {
   font-size: 13px;
+}
+
+/* A phone or another coarse pointer: label, control and body type one step up
+   (2026-11-13). Here and not in the kit's theme.css, which holds one @theme
+   block; these override its variables, so every text-label, text-control and
+   text-body follows. */
+@media (pointer: coarse) {
+  :root {
+    --text-label: 12px;
+    --text-label--line-height: 16px;
+    --text-control: 14px;
+    --text-control--line-height: 20px;
+    --text-body: 14px;
+    --text-body--line-height: 20px;
+  }
 }
 
 /* Thin, on-brand scrollbars */

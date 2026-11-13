@@ -39,18 +39,33 @@ function classic(id: string, name: string, hex: string): AccentPreset {
 const APRICOT_ON = "#33241b";
 
 /**
+ * Apricot dark's soft pair per preset (2026-11-13): a deep container of the
+ * hue with a light tint of it as the text, so a selected thing in dark is a
+ * deep fill edged by the strong accent, the pastel, rather than a pastel slab.
+ * Soft text on soft is 7.96 to 9.32:1. Kept apart from the presets below
+ * because their call shape is mirrored by the backend's appearance spec.
+ */
+const APRICOT_DARK_SOFT: Record<string, Pick<AccentColours, "soft" | "softOn">> = {
+  apricot: { soft: "#5e3725", softOn: "#ffdcc7" },
+  rose: { soft: "#5c2a38", softOn: "#ffd9e2" },
+  butter: { soft: "#4f4019", softOn: "#f8e6b5" },
+  sage: { soft: "#2f4430", softOn: "#d6ead2" },
+  sky: { soft: "#23394f", softOn: "#d5e6f7" },
+};
+
+/**
  * Apricot's accents are pastels, which only pass with dark text on them. In
  * light mode `strong` is a deep shade of the same hue with white on it, so
- * every text, ring and border use of `primary` stays readable on cream; in
- * dark mode the pastel itself reads on the dark surfaces.
+ * every text, ring and border use of `primary` stays readable on cream, and
+ * `soft` is the pastel; in dark mode the pastel itself is `strong` and reads
+ * on the dark surfaces, and `soft` is the deep container above.
  */
 function apricot(id: string, name: string, pastel: string, deep: string): AccentPreset {
-  const soft = { soft: pastel, softOn: APRICOT_ON };
   return {
     id,
     name,
-    light: { strong: deep, strongOn: "#ffffff", ...soft },
-    dark: { strong: pastel, strongOn: APRICOT_ON, ...soft },
+    light: { strong: deep, strongOn: "#ffffff", soft: pastel, softOn: APRICOT_ON },
+    dark: { strong: pastel, strongOn: APRICOT_ON, ...(APRICOT_DARK_SOFT[id] ?? { soft: pastel, softOn: APRICOT_ON }) },
   };
 }
 

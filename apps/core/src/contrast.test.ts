@@ -13,14 +13,22 @@ import { ACCENT_PRESETS, MODE_PREFERENCES, resolveMode, type Mode, type ThemeId 
 
 const indexCss = readFileSync(join(__dirname, "index.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
 
-/** The `--k-*` declarations of the block whose selector list names `theme` and `mode`. */
+/**
+ * The `--k-*` colours of the block whose selector list names `theme` and
+ * `mode`. A token set to another one (`--k-desk: var(--k-surface-container)`)
+ * resolves to that one's colour in the same block.
+ */
 function tokens(theme: ThemeId, mode: Mode): Record<string, string> {
   const selector = `[data-os-theme="${theme}"][data-theme="${mode}"]`;
   const block = [...indexCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find(([, sel]) =>
     sel.split(",").some((s) => s.trim() === selector),
   );
   if (!block) throw new Error(`no token block for ${selector}`);
-  return Object.fromEntries([...block[2].matchAll(/--k-([a-z-]+)\s*:\s*(#[0-9a-f]{6})\s*;/g)].map((m) => [m[1], m[2]]));
+  const hex = Object.fromEntries(
+    [...block[2].matchAll(/--k-([a-z-]+)\s*:\s*(#[0-9a-f]{6})\s*;/g)].map((m) => [m[1], m[2]]),
+  );
+  const aliases = [...block[2].matchAll(/--k-([a-z-]+)\s*:\s*var\(--k-([a-z-]+)\)\s*;/g)].map((m) => [m[1], hex[m[2]]]);
+  return { ...hex, ...Object.fromEntries(aliases.filter(([, v]) => v !== undefined)) };
 }
 
 function luminance(hex: string): number {
@@ -118,6 +126,69 @@ describe("Classic", () => {
         expect(contrast(a.strongOn, a.strong)).toBeGreaterThanOrEqual(AA);
         expect(a.soft).toBe(a.strong);
         expect(a.softOn).toBe(a.strongOn);
+      });
+    }
+  }
+});
+
+/**
+ * The pairs the 2026-11-13 redesign added, in all four combinations: the error
+ * pairs, a control's edge where controls sit, the selected state (the soft
+ * pair, edged by the strong accent) for every preset, and imbatranim-apps'
+ * desk against the panels around it. Large text and edges need 3:1.
+ */
+const EDGE = 3;
+const THEMES: ThemeId[] = ["apricot", "classic"];
+
+describe("every theme and mode", () => {
+  for (const theme of THEMES) {
+    for (const mode of MODES) {
+      describe(`${theme} ${mode}`, () => {
+        const k = tokens(theme, mode);
+
+        it("reads text on the error fill and on the error container", () => {
+          expect(contrast(k["on-error"], k.error), "on-error on error").toBeGreaterThanOrEqual(AA);
+          expect(
+            contrast(k["on-error-container"], k["error-container"]),
+            "on-error-container on error-container",
+          ).toBeGreaterThanOrEqual(AA);
+        });
+
+        it("draws a control's edge at 3:1 on the foot band and on a field", () => {
+          // Start's foot band and every band are surface-container; a field is
+          // surface-container-lowest; a window body is surface-container-low.
+          for (const s of ["surface-container", "surface-container-lowest", "surface-container-low"]) {
+            expect(contrast(k.outline, k[s]), `outline on ${s}`).toBeGreaterThanOrEqual(EDGE);
+          }
+        });
+
+        for (const preset of ACCENT_PRESETS[theme]) {
+          it(`${preset.name}: a selected thing reads, and its edge shows on the panels`, () => {
+            const a = preset[mode];
+            expect(contrast(a.softOn, a.soft), "softOn on soft").toBeGreaterThanOrEqual(AA);
+            // The chosen chip's edge is the strong accent: deep in light, the
+            // pastel in dark. Start and every window are surface-container-low;
+            // an unselected Mode or Accent option is surface-container. Classic
+            // keeps its values: in dark, crimson and cobalt reach 2.9:1 on
+            // surface-container (the gap noted above), so it is held on the
+            // body only.
+            const panels =
+              theme === "classic" && mode === "dark"
+                ? ["surface-container-low"]
+                : ["surface-container-low", "surface-container"];
+            for (const s of panels) {
+              expect(contrast(a.strong, k[s]), `edge on ${s}`).toBeGreaterThanOrEqual(EDGE);
+            }
+          });
+        }
+
+        it("sets the apps' desk one step below their panels, with text that reads on it", () => {
+          expect(k.desk, "the desk token").toMatch(/^#/);
+          expect(k.desk).toBe(mode === "light" ? k["surface-container"] : k["surface-container-lowest"]);
+          expect(luminance(k.desk)).toBeLessThan(luminance(k["surface-container-low"]));
+          expect(contrast(k["on-surface"], k.desk), "on-surface on desk").toBeGreaterThanOrEqual(AA);
+          expect(contrast(k["on-surface-variant"], k.desk), "on-surface-variant on desk").toBeGreaterThanOrEqual(AA);
+        });
       });
     }
   }

@@ -18,6 +18,7 @@ const twMerge = extendTailwindMerge({
         "body",
         "subhead",
         "lead",
+        "index",
         "title",
         "display-sm",
         "display",

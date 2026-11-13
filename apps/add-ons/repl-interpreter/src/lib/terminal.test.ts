@@ -183,7 +183,7 @@ describe("buildXtermTheme", () => {
     };
     const dark = buildXtermTheme("dark", resolve);
     // Classic's dark surface and Apricot's dusk one (2026-11-03).
-    const pages = ["#0d0d0e", "#1f1916"];
+    const pages = ["#0d0d0e", "#1c1613"];
     // `black`/`brightBlack` are conventionally near-background (they are what
     // dimmed text uses) so they are excluded — a terminal palette where ANSI black
     // is readable on black is not a terminal palette.

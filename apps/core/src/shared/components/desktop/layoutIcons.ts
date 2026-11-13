@@ -1,7 +1,15 @@
-export const ICON_WIDTH = 64;
-export const ICON_HEIGHT = 80;
-export const GRID_GAP = 16;
-export const PADDING = 16;
+import { isPhoneWidth } from "../../../lib/phone";
+
+/**
+ * One desktop icon's cell (2026-11-13): an 80 px column holding a 40 px tile
+ * 8 px from the top and a label of up to two lines under it. Rows are 96 px
+ * apart, 88 on a phone, where the label is a 16 px line.
+ */
+export const ICON_WIDTH = 80;
+export const ICON_HEIGHT = 84;
+export const GRID_GAP = 12;
+export const PHONE_GRID_GAP = 4;
+export const PADDING = 8;
 
 export type Point = { x: number; y: number };
 
@@ -13,6 +21,9 @@ export type Point = { x: number; y: number };
  * `viewportHeight - 44` tall and is `overflow-hidden`, so on a 577px-tall
  * viewport rows six through eight were simply gone — and with them the only way
  * to launch those apps.
+ *
+ * On a phone (under 600 px) the columns stop at the screen's width and the
+ * rows run on past the measured height; the desktop scrolls down to them.
  *
  * Two further rules matter:
  *
@@ -29,10 +40,16 @@ export function layoutIcons(
   pinned: Record<string, Point>,
   viewport: { width: number; height: number },
 ): Record<string, Point> {
-  const stride = ICON_HEIGHT + GRID_GAP;
-  const colStride = ICON_WIDTH + GRID_GAP;
+  const phone = isPhoneWidth(viewport.width);
+  const stride = ICON_HEIGHT + (phone ? PHONE_GRID_GAP : GRID_GAP);
+  const colStride = ICON_WIDTH;
   const usableHeight = Math.max(0, viewport.height - PADDING * 2);
-  const rows = Math.max(1, Math.floor((usableHeight + GRID_GAP) / stride));
+  const fit = Math.max(1, Math.floor(usableHeight / stride));
+  // On a phone the columns stop at the screen's width: what does not fit goes
+  // on in rows below, and the desktop scrolls down to them, never sideways
+  // and never under the taskbar. Elsewhere a new column starts on the right.
+  const columns = Math.max(1, Math.floor((viewport.width - PADDING * 2) / colStride));
+  const rows = phone ? Math.max(fit, Math.ceil(appIds.length / columns)) : fit;
 
   // Cells a user-placed icon covers, so auto placement skips them. A pinned
   // icon sits wherever it was dropped, usually between grid cells, so it can

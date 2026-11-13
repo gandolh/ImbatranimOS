@@ -4,6 +4,7 @@ import {
   ICON_HEIGHT,
   ICON_WIDTH,
   PADDING,
+  PHONE_GRID_GAP,
   clampToDesktop,
   layoutIcons,
   overlaps,
@@ -148,6 +149,45 @@ describe("layoutIcons", () => {
     });
   });
 });
+
+describe("layoutIcons on a phone", () => {
+  it("fits the 32 icons in four columns of eight rows at 390 and 360", () => {
+    for (const viewport of [
+      { width: 390, height: 844 - 56 },
+      { width: 360, height: 800 - 56 },
+    ]) {
+      const out = layoutIcons(ids(32), {}, viewport);
+      expect(new Set(Object.values(out).map((p) => p.x)).size).toBe(4);
+      expect(new Set(Object.values(out).map((p) => p.y)).size).toBe(8);
+      assertInside(out, viewport);
+    }
+  });
+
+  it("packs the rows 88 px apart", () => {
+    const out = layoutIcons(ids(2), {}, { width: 390, height: 788 });
+    expect(out["app-1"].y - out["app-0"].y).toBe(ICON_HEIGHT + PHONE_GRID_GAP);
+    expect(ICON_HEIGHT + PHONE_GRID_GAP).toBe(88);
+  });
+
+  it("runs on in rows below a short screen instead of a column past its edge", () => {
+    const viewport = { width: 360, height: 500 };
+    const out = layoutIcons(ids(32), {}, viewport);
+    for (const p of Object.values(out)) expect(p.x + ICON_WIDTH).toBeLessThanOrEqual(viewport.width);
+    expect(Math.max(...Object.values(out).map((p) => p.y))).toBeGreaterThan(viewport.height);
+    expect(overlappingPairs(out)).toEqual([]);
+  });
+});
+
+/** Pairs of icons whose footprints intersect. */
+function overlappingPairs(out: Record<string, Point>): string[] {
+  const entries = Object.entries(out);
+  return entries.flatMap(([a, pa], i) =>
+    entries
+      .slice(i + 1)
+      .filter(([, pb]) => overlaps(pa, pb))
+      .map(([b]) => `${a}+${b}`),
+  );
+}
 
 /** Every icon's whole footprint lies inside the desktop. */
 function assertInside(out: Record<string, Point>, viewport: { width: number; height: number }) {

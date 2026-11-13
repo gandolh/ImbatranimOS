@@ -227,7 +227,9 @@ export function Desktop({ wallpaper }: DesktopProps) {
           widget, note or window) rubber-band-selects. */}
       <div
         ref={iconLayerRef}
-        className="absolute inset-0 p-4"
+        // On a phone the icons that do not fit run on in rows below and this
+        // layer scrolls down to them (layoutIcons.ts).
+        className="absolute inset-0 max-[600px]:overflow-y-auto"
         onPointerDown={onLayerPointerDown}
         onPointerMove={onLayerPointerMove}
         onPointerUp={endMarquee}

@@ -70,8 +70,8 @@ export function DesktopIcon({
       animate={{ x: position.x, y: position.y }}
       whileDrag={{ scale: 1.05, zIndex: 10 }}
       className={cn(
-        "absolute top-0 left-0 flex w-[64px] cursor-default flex-col items-center gap-1 select-none",
-        "focus-visible:ring-primary outline-none focus-visible:ring-2",
+        "pt-base gap-half absolute top-0 left-0 flex w-[80px] cursor-default flex-col items-center select-none",
+        "rounded-item focus-visible:ring-primary outline-none focus-visible:ring-2",
       )}
       role="button"
       aria-label={app.name}
@@ -98,31 +98,41 @@ export function DesktopIcon({
         }
       }}
     >
-      {/* Icon box */}
+      {/* The tile: raised, resting on the wallpaper (2026-11-13). Apricot draws
+          the glyph in the strong accent on the brightest surface. */}
       <div
         className={cn(
-          "rounded-tile flex h-12 w-12 items-center justify-center border transition-colors",
+          "rounded-tile flex h-[40px] w-[40px] shrink-0 items-center justify-center border",
           selected
             ? "border-primary bg-primary-container text-on-primary-container"
-            : // Apricot puts each icon on a light tile, drawn in the strong accent.
-              "border-outline-variant bg-surface-container-low/80 text-on-surface apricot:border-transparent apricot:bg-surface-container-lowest apricot:text-primary apricot:shadow-(--k-shadow-tile) backdrop-blur-sm",
+            : "border-outline-variant bg-surface-container-low text-on-surface apricot:border-transparent apricot:bg-surface-bright apricot:text-primary apricot:shadow-(--k-shadow-tile)",
         )}
       >
-        <Icon size={22} strokeWidth={1.5} className="text-current" />
+        <Icon size={20} strokeWidth={1.75} className="text-current" />
       </div>
 
-      {/* Label */}
-      <span
-        className={cn(
-          "font-ui rounded-item text-center leading-tight",
-          "text-label w-full overflow-hidden px-1 py-0.5",
-          "line-clamp-2 break-words",
-          selected
-            ? "bg-primary-container text-on-primary-container"
-            : "text-on-surface [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]",
+      {/* The label: one line where it fits, two at most. Under a night sky
+          (the dusk wallpaper's stars) it sits on a soft chip, so a pale label
+          never lands on the pale moon; the chip follows the stars' opacity,
+          which is 0 by day. */}
+      <span className="relative max-w-[76px]">
+        {!selected && (
+          <span
+            aria-hidden
+            className="bg-surface-container-low absolute inset-0 rounded-[6px]"
+            style={{ opacity: "calc(var(--k-wall-star-opacity, 0) * 0.91)" }}
+          />
         )}
-      >
-        {app.name}
+        <span
+          className={cn(
+            "font-ui text-label relative line-clamp-2 block rounded-[6px] px-[6px] py-[2px] text-center break-words",
+            selected
+              ? "bg-primary-container text-on-primary-container"
+              : "text-on-surface [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]",
+          )}
+        >
+          {app.name}
+        </span>
       </span>
     </motion.div>
   );

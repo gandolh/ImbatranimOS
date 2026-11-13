@@ -4,6 +4,7 @@ import {
   computeSnapGeometry,
   loadLayout,
   nextSnapState,
+  openingPlace,
   setMinSizeResolver,
   TASKBAR_HEIGHT,
   TITLEBAR_MIN_VISIBLE,
@@ -456,5 +457,38 @@ describe("Linux apps' windows and the saved layout", () => {
     s.openWindow("linux:foot", "foot", DEFAULT, MIN);
     useWindowStore.getState().persistLayout();
     expect(loadLayout().map((w) => w.appId)).toEqual(["notes"]);
+  });
+});
+
+describe("where a new window opens (2026-11-13)", () => {
+  const min = { width: 400, height: 300 };
+
+  it("opens every window maximized above the taskbar on a phone", () => {
+    expect(openingPlace({ width: 390, height: 844 }, min)).toEqual({
+      maximized: true,
+      position: { x: 0, y: 0 },
+      size: { width: 390, height: 844 - 56 },
+    });
+    expect(openingPlace({ width: 360, height: 800 }, min, { fill: true })?.maximized).toBe(true);
+  });
+
+  it("fills the desktop less 8 px below 1280 for a window that asks to", () => {
+    expect(openingPlace({ width: 1024, height: 768 }, min, { fill: true })).toEqual({
+      maximized: false,
+      position: { x: 8, y: 8 },
+      size: { width: 1024 - 16, height: 768 - 44 - 16 },
+    });
+  });
+
+  it("leaves other windows, and every window from 1280 up, to the default place", () => {
+    expect(openingPlace({ width: 1024, height: 768 }, min)).toBeNull();
+    expect(openingPlace({ width: 1280, height: 800 }, min, { fill: true })).toBeNull();
+  });
+
+  it("never fills below the window's minimum size", () => {
+    expect(openingPlace({ width: 700, height: 360 }, { width: 800, height: 400 }, { fill: true })?.size).toEqual({
+      width: 800,
+      height: 400,
+    });
   });
 });

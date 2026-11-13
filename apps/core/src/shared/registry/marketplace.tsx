@@ -383,6 +383,11 @@ function toAppConfig(app: MarketplaceApp): AppConfig {
     ...(service && service.entryPath === app.installed?.entryPath ? { background: service.Service } : {}),
     defaultSize: { width: app.window.defaultSize.w, height: app.window.defaultSize.h },
     minSize: { width: app.window.minSize.w, height: app.window.minSize.h },
+    // The catalog's kit apps (imbatranim-apps' Docs, Sheets, Slides, PDF and
+    // the rest) open filling the desktop below 1280 px (2026-11-13). The
+    // descriptor's window schema has no key for it yet, so a kit app is the
+    // request.
+    ...(isKitApp(app) ? { fillsDesktop: true } : {}),
   };
 }
 

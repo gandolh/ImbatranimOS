@@ -1,9 +1,10 @@
 import React, { useRef, useCallback, useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { useDrag } from "@use-gesture/react";
 import { Minus, Square, X, Copy } from "lucide-react";
 import { cn } from "../../../lib/cn";
+import { APP_REGISTRY } from "../../registry/registry";
 import {
   useWindowStore,
   type SnapRegion,
@@ -158,6 +159,7 @@ export const Window = React.memo(function Window({
   fadeOnly = false,
 }: WindowProps) {
   const instance = useWindowStore((s) => s.windows.find((w) => w.id === windowId));
+  const still = useReducedMotion() === true;
   const closeWindow = useWindowStore((s) => s.closeWindow);
   const hideWindow = useWindowStore((s) => s.hideWindow);
   const maximizeWindow = useWindowStore((s) => s.maximizeWindow);
@@ -263,6 +265,7 @@ export const Window = React.memo(function Window({
   useEffect(() => () => forgetWindowFocus(windowId), [windowId]);
 
   if (!instance) return null;
+  const AppIcon = APP_REGISTRY.find((a) => a.id === instance.appId)?.icon;
 
   return (
     <>
@@ -272,10 +275,14 @@ export const Window = React.memo(function Window({
       <AnimatePresence>
         <motion.div
           key={instance.id}
-          initial={{ opacity: 0, scale: fadeOnly ? 1 : 0.95 }}
+          initial={still ? false : { opacity: 0, scale: fadeOnly ? 1 : 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: fadeOnly ? 1 : 0.95, transition: { duration: 0.1 } }}
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          exit={
+            still
+              ? { opacity: 0, transition: { duration: 0 } }
+              : { opacity: 0, scale: fadeOnly ? 1 : 0.95, transition: { duration: 0.1 } }
+          }
+          transition={still ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
           style={{
             position: "fixed",
             left: instance.position.x,
@@ -327,17 +334,32 @@ export const Window = React.memo(function Window({
             }}
             className={cn(
               "flex h-[30px] shrink-0 items-center justify-between border-b pr-1 pl-3",
+              // Apricot's title band is 40 px (2026-11-13); a phone's is 48.
+              "apricot:h-[40px] max-[600px]:h-[48px]",
               isFocused
-                ? "bg-surface-container-high border-outline-variant text-on-surface"
-                : "bg-surface-container border-outline-variant text-on-surface-variant",
+                ? "bg-surface-container-high apricot:bg-surface-container border-outline-variant text-on-surface"
+                : "bg-surface-container apricot:bg-surface-container-low border-outline-variant text-on-surface-variant",
             )}
           >
-            {/* Left: accent tick + title */}
+            {/* Left: the app's glyph in Apricot (an accent tick in Classic) + title */}
             <span className="flex min-w-0 items-center gap-2 pr-2 select-none">
               <span
-                className={cn("rounded-control h-2.5 w-2.5 shrink-0", isFocused ? "bg-primary" : "bg-outline-variant")}
+                className={cn(
+                  "rounded-control apricot:hidden h-2.5 w-2.5 shrink-0",
+                  isFocused ? "bg-primary" : "bg-outline-variant",
+                )}
               />
-              <span className="text-control truncate leading-none font-semibold tracking-tight">{instance.title}</span>
+              {AppIcon && (
+                <AppIcon
+                  size={14}
+                  strokeWidth={1.75}
+                  className={cn(
+                    "apricot:block hidden shrink-0",
+                    isFocused ? "text-primary" : "text-on-surface-variant",
+                  )}
+                />
+              )}
+              <span className="text-control truncate font-semibold">{instance.title}</span>
             </span>
 
             {/* Right: window controls */}
@@ -351,7 +373,12 @@ export const Window = React.memo(function Window({
               <TitleBarButton onClick={handleHide} title="Minimize">
                 <Minus size={13} strokeWidth={2} />
               </TitleBarButton>
-              <TitleBarButton onClick={handleMaximizeToggle} title={instance.isMaximized ? "Restore" : "Maximize"}>
+              <TitleBarButton
+                onClick={handleMaximizeToggle}
+                title={instance.isMaximized ? "Restore" : "Maximize"}
+                // A phone's window is always maximized above the taskbar.
+                className="max-[600px]:hidden"
+              >
                 {instance.isMaximized ? <Copy size={12} strokeWidth={2} /> : <Square size={11} strokeWidth={2} />}
               </TitleBarButton>
               <TitleBarButton onClick={handleClose} title="Close" isClose>
@@ -367,7 +394,8 @@ export const Window = React.memo(function Window({
             data-window-content=""
             tabIndex={-1}
             onFocus={handleContentFocus}
-            className="bg-surface-container-lowest text-on-surface min-h-0 flex-1 overflow-auto outline-none"
+            // Every floating layer's body is surface-container-low (2026-11-13).
+            className="bg-surface-container-low text-on-surface min-h-0 flex-1 overflow-auto outline-none"
           >
             {children}
           </div>
@@ -381,20 +409,25 @@ type TitleBarButtonProps = {
   onClick: (e: React.MouseEvent) => void;
   title: string;
   isClose?: boolean;
+  className?: string;
   children: React.ReactNode;
 };
 
-function TitleBarButton({ onClick, title, isClose = false, children }: TitleBarButtonProps) {
+function TitleBarButton({ onClick, title, isClose = false, className, children }: TitleBarButtonProps) {
   return (
     <button
       onClick={onClick}
       title={title}
       className={cn(
         "rounded-control flex h-7 w-7 items-center justify-center",
+        "apricot:rounded-item apricot:h-[28px] apricot:w-[32px] max-[600px]:h-[48px] max-[600px]:w-[48px]",
         "cursor-pointer border-none text-current outline-none",
-        "transition-colors duration-75",
-        isClose ? "hover:bg-error hover:text-on-error" : "hover:bg-surface-container-highest",
+        "transition-colors duration-75 motion-reduce:transition-none",
+        isClose
+          ? "hover:bg-error-container hover:text-on-error-container"
+          : "hover:bg-surface-container-highest apricot:hover:bg-surface-container-high",
         "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
+        className,
       )}
     >
       {children}

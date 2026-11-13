@@ -39,6 +39,13 @@ export type AppConfig = {
   defaultSize: { width: number; height: number };
   minSize: { width: number; height: number };
   /**
+   * Below 1280 px the window opens filling the desktop less 8 px around,
+   * instead of at `defaultSize` (2026-11-13). The catalog's kit apps (Docs,
+   * Sheets, Slides, PDF and the rest of imbatranim-apps) have it; on a phone
+   * every window opens maximized whatever this says.
+   */
+  fillsDesktop?: boolean;
+  /**
    * Lowercase file extensions this app can open — the `.desktop` `MimeType=`
    * analogue.
    *

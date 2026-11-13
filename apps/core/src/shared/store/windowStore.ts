@@ -477,6 +477,7 @@ type WindowStore = {
     defaultSize: { width: number; height: number },
     minSize: { width: number; height: number },
     initialPosition?: { x: number; y: number },
+    options?: OpenWindowOptions,
   ) => string;
   closeWindow: (id: string) => void;
   /** Live-update a window's title bar / taskbar label (e.g. filename + dirty •). */
@@ -522,6 +523,49 @@ type WindowStore = {
    */
   adoptLinuxWindow: (id: string, key: LinuxWindowKey, place?: PersistedWindow | null) => void;
 };
+
+/** How a new window asks to be placed. */
+export type OpenWindowOptions = {
+  /**
+   * Below {@link FILL_BELOW_WIDTH} px, open filling the desktop less
+   * {@link FILL_MARGIN} px on every side instead of at the default size: the
+   * catalog's kit apps (Docs, Sheets, Slides, PDF and the rest) ask for it.
+   */
+  fill?: boolean;
+};
+
+/** The viewport width under which a window that asks to fill does so (2026-11-13). */
+export const FILL_BELOW_WIDTH = 1280;
+/** The desktop left showing around a filling window. */
+export const FILL_MARGIN = 8;
+
+/**
+ * Where a new window goes when the screen decides rather than the app
+ * (2026-11-13): on a phone (under 600 px) every window opens maximized above
+ * the taskbar; below 1280 px a window that asks to fill opens over the desktop
+ * less 8 px around. Null leaves it to the default size and placement.
+ */
+export function openingPlace(
+  viewport: { width: number; height: number },
+  minSize: { width: number; height: number },
+  options?: OpenWindowOptions,
+): { maximized: boolean; position: { x: number; y: number }; size: { width: number; height: number } } | null {
+  const desktopHeight = viewport.height - taskbarHeight(viewport.width);
+  if (isPhoneWidth(viewport.width)) {
+    return { maximized: true, position: { x: 0, y: 0 }, size: { width: viewport.width, height: desktopHeight } };
+  }
+  if (options?.fill && viewport.width < FILL_BELOW_WIDTH) {
+    return {
+      maximized: false,
+      position: { x: FILL_MARGIN, y: FILL_MARGIN },
+      size: {
+        width: Math.max(minSize.width, viewport.width - FILL_MARGIN * 2),
+        height: Math.max(minSize.height, desktopHeight - FILL_MARGIN * 2),
+      },
+    };
+  }
+  return null;
+}
 
 /**
  * The id of the top-most *visible* window, or null when none is visible.
@@ -614,7 +658,7 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   showDesktopStash: {},
   nextZIndex: 1,
 
-  openWindow: (appId, title, defaultSize, minSize, initialPosition) => {
+  openWindow: (appId, title, defaultSize, minSize, initialPosition, options) => {
     const id = uuidv4();
     const { nextZIndex } = get();
 
@@ -645,6 +689,10 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       y = Math.max(0, Math.min(centerY + offsetY, maxY));
     }
 
+    // A phone, or a window that fills the desktop below 1280 px. The
+    // floating place computed above is kept as the one Restore goes back to.
+    const place = openingPlace({ width: window.innerWidth, height: window.innerHeight }, minSize, options);
+
     const instance: WindowInstance = {
       id,
       appId,
@@ -652,15 +700,18 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       // A new window belongs to the desktop you are looking at.
       workspaceId: get().activeWorkspace,
       isVisible: true,
-      isMaximized: false,
-      position: { x, y },
-      size,
+      isMaximized: place?.maximized ?? false,
+      position: place?.position ?? { x, y },
+      size: place?.size ?? size,
       zIndex: nextZIndex,
     };
 
     set((state) => ({
       windows: [...state.windows, instance],
       nextZIndex: state.nextZIndex + 1,
+      ...(place?.maximized
+        ? { preMaximizeStates: { ...state.preMaximizeStates, [id]: { position: { x, y }, size } } }
+        : {}),
     }));
 
     return id;

@@ -121,7 +121,9 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   }
 
   // Open new window
-  const windowId = windowStore.openWindow(appId, appConfig.name, appConfig.defaultSize, appConfig.minSize);
+  const windowId = windowStore.openWindow(appId, appConfig.name, appConfig.defaultSize, appConfig.minSize, undefined, {
+    fill: appConfig.fillsDesktop,
+  });
 
   give(windowId);
   // Stash payload if provided

@@ -63,6 +63,6 @@ export const appsSource: CommandSource = {
       }
     }
 
-    openWindow(app.id, app.name, app.defaultSize, app.minSize);
+    openWindow(app.id, app.name, app.defaultSize, app.minSize, undefined, { fill: app.fillsDesktop });
   },
 };

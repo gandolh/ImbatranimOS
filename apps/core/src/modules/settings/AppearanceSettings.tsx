@@ -5,6 +5,7 @@ import { cn } from "../../lib/cn";
 import {
   ACCENT_PRESETS,
   THEME_IDS,
+  accentSwatch,
   useAppearanceStore,
   type ModePreference,
   type ThemeId,
@@ -20,7 +21,24 @@ const MODES: { id: ModePreference; name: string; icon: typeof Moon }[] = [
   { id: "system", name: "System", icon: Monitor },
 ];
 
-const FOCUS_RING = "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset";
+const FOCUS_RING =
+  "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low outline-none";
+
+/** An unchosen Mode or Accent option: on surface-container, bordered at 3:1 (2026-11-13). */
+const OPTION = "border-outline bg-surface-container text-on-surface hover:bg-surface-container-high";
+
+/**
+ * A card's edge, drawn in an overlay above its preview so the preview never
+ * hides it; the chosen card's is a 2 px ring in the strong accent.
+ */
+function cardEdge(chosen: boolean): string {
+  return cn(
+    "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:ring-inset",
+    chosen
+      ? "after:ring-primary after:ring-2"
+      : "after:ring-outline-variant after:ring-1 group-hover:after:ring-outline",
+  );
+}
 
 /**
  * Settings → Appearance: Theme, Mode, Accent, Wallpaper, top to bottom
@@ -31,7 +49,6 @@ const FOCUS_RING = "focus-visible:ring-primary focus-visible:ring-2 focus-visibl
  */
 export function AppearanceSettings() {
   const theme = useAppearanceStore((s) => s.theme);
-  const mode = useAppearanceStore((s) => s.mode);
   const accent = useAppearanceStore((s) => s.accents[s.theme]);
   const setTheme = useAppearanceStore((s) => s.setTheme);
   const modePreference = useAppearanceStore((s) => s.modePreference);
@@ -42,13 +59,18 @@ export function AppearanceSettings() {
 
   return (
     <>
-      <Group label="Theme" value={theme} onValueChange={setTheme} className="flex flex-wrap gap-4">
+      <Group label="Theme" value={theme} onValueChange={setTheme} className="gap-double flex flex-wrap">
         {THEME_IDS.map((id) => (
           <ThemeCard key={id} id={id} chosen={theme === id} />
         ))}
       </Group>
 
-      <Group label="Mode" value={modePreference} onValueChange={setModePreference} className="flex gap-3">
+      <Group
+        label="Mode"
+        value={modePreference}
+        onValueChange={setModePreference}
+        className="gap-window-padding flex max-[600px]:gap-2"
+      >
         {MODES.map((m) => {
           const Icon = m.icon;
           const chosen = modePreference === m.id;
@@ -57,11 +79,10 @@ export function AppearanceSettings() {
               key={m.id}
               value={m.id}
               className={cn(
-                "rounded-control text-control flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 font-medium transition-colors",
+                "rounded-control text-control flex h-[40px] flex-1 items-center justify-center gap-2 border px-[12px] font-semibold",
+                "max-[600px]:h-[48px] max-[600px]:gap-1 max-[600px]:px-[8px]",
                 FOCUS_RING,
-                chosen
-                  ? "border-primary bg-primary-container text-on-primary-container"
-                  : "border-outline-variant bg-surface-container-low text-on-surface hover:bg-surface-container-high",
+                chosen ? "border-primary bg-primary-container text-on-primary-container" : OPTION,
               )}
             >
               <Icon size={15} strokeWidth={1.75} />
@@ -71,7 +92,7 @@ export function AppearanceSettings() {
         })}
       </Group>
 
-      <Group label="Accent" value={accent} onValueChange={setAccent} className="flex flex-wrap gap-3">
+      <Group label="Accent" value={accent} onValueChange={setAccent} className="flex flex-wrap gap-2">
         {ACCENT_PRESETS[theme].map((preset) => {
           const chosen = accent === preset.id;
           return (
@@ -80,26 +101,30 @@ export function AppearanceSettings() {
               value={preset.id}
               title={preset.name}
               className={cn(
-                "group rounded-control flex items-center gap-2 border px-2.5 py-2 transition-colors",
+                "group rounded-control flex h-[40px] items-center gap-2 border pr-[12px] pl-[8px] max-[600px]:h-[48px]",
                 FOCUS_RING,
-                chosen
-                  ? "border-primary bg-surface-container-high"
-                  : "border-outline-variant bg-surface-container-low hover:bg-surface-container",
+                chosen ? "border-primary bg-surface-container-high ring-primary ring-1 ring-inset" : OPTION,
               )}
             >
               <span
-                className="rounded-control flex h-6 w-6 items-center justify-center"
-                style={{ backgroundColor: preset[mode].soft, color: preset[mode].softOn }}
+                className="rounded-item flex h-[24px] w-[24px] items-center justify-center"
+                style={{ backgroundColor: accentSwatch(preset).fill, color: accentSwatch(preset).on }}
               >
                 {chosen && <Check size={13} strokeWidth={3} />}
               </span>
-              <span className="text-on-surface text-control pr-1 font-medium">{preset.name}</span>
+              <span className="text-on-surface text-control font-semibold">{preset.name}</span>
             </Option>
           );
         })}
       </Group>
 
-      <Group label="Wallpaper" value={wallpaper} onValueChange={setWallpaper} className="grid grid-cols-3 gap-4" last>
+      <Group
+        label="Wallpaper"
+        value={wallpaper}
+        onValueChange={setWallpaper}
+        className="gap-double grid grid-cols-3 max-[600px]:gap-2"
+        last
+      >
         {WALLPAPERS[theme].map((wp) => {
           const chosen = wallpaper === wp.id;
           return (
@@ -107,16 +132,16 @@ export function AppearanceSettings() {
               key={wp.id}
               value={wp.id}
               className={cn(
-                "group rounded-control relative overflow-hidden border transition-colors",
+                "group rounded-control bg-surface-container relative flex flex-col overflow-hidden",
+                cardEdge(chosen),
                 FOCUS_RING,
-                chosen ? "border-primary" : "border-outline-variant hover:border-outline",
               )}
             >
-              <div className="aspect-[16/10] w-full" style={wp.preview} />
+              <div className="aspect-[16/7] w-full" style={wp.preview} />
               {chosen && <ChosenBadge />}
-              <div className="border-outline-variant bg-surface-container-low flex items-center gap-1.5 border-t px-2 py-1.5">
-                <Image size={12} strokeWidth={1.75} className="text-on-surface-variant" />
-                <span className="text-on-surface text-label font-medium">{wp.name}</span>
+              <div className="border-outline-variant bg-surface-container gap-half flex items-center border-t px-[12px] py-[8px] max-[600px]:px-[4px]">
+                <Image size={14} strokeWidth={1.75} className="text-on-surface-variant shrink-0 max-[600px]:hidden" />
+                <span className="text-on-surface text-control font-semibold">{wp.name}</span>
               </div>
             </Option>
           );
@@ -152,16 +177,11 @@ function ThemeCard({ id, chosen }: { id: ThemeId; chosen: boolean }) {
       value={id}
       aria-label={`${THEME_NAMES[id]} theme`}
       className={cn(
-        "group flex w-36 flex-col gap-1.5 text-left",
-        "focus-visible:ring-primary focus-visible:ring-offset-surface rounded-control focus-visible:ring-2 focus-visible:ring-offset-2",
+        "group gap-base flex w-[140px] flex-col text-left max-[600px]:w-[calc(50%-8px)]",
+        "focus-visible:ring-primary focus-visible:ring-offset-surface-container-low rounded-control outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
       )}
     >
-      <span
-        className={cn(
-          "rounded-control relative block aspect-[132/80] w-full overflow-hidden border transition-colors",
-          chosen ? "border-primary" : "border-outline-variant group-hover:border-outline",
-        )}
-      >
+      <span className={cn("rounded-control relative block aspect-[132/80] w-full overflow-hidden", cardEdge(chosen))}>
         <span data-os-theme={id} data-theme={mode} className="absolute inset-0" style={scope}>
           <span
             className="absolute overflow-hidden"
@@ -215,14 +235,14 @@ function ThemeCard({ id, chosen }: { id: ThemeId; chosen: boolean }) {
         </span>
         {chosen && <ChosenBadge />}
       </span>
-      <span className="text-on-surface text-control font-medium">{THEME_NAMES[id]}</span>
+      <span className="text-on-surface text-control font-semibold">{THEME_NAMES[id]}</span>
     </Option>
   );
 }
 
 function ChosenBadge() {
   return (
-    <span className="bg-primary-container text-on-primary-container rounded-control absolute top-2 right-2 flex h-5 w-5 items-center justify-center">
+    <span className="bg-primary-container text-on-primary-container rounded-item border-primary absolute top-[6px] right-[6px] flex h-[20px] w-[20px] items-center justify-center border">
       <Check size={12} strokeWidth={3} />
     </span>
   );
@@ -247,11 +267,8 @@ function Group<Value extends string>({
   const labelId = useId();
 
   return (
-    <div className={last ? undefined : "mb-8"}>
-      <p
-        id={labelId}
-        className="font-ui text-on-surface-variant text-label mb-3 font-semibold tracking-widest uppercase"
-      >
+    <div className={last ? undefined : "mb-double"}>
+      <p id={labelId} className="font-ui text-on-surface-variant text-label mb-base font-semibold">
         {label}
       </p>
       <RadioGroup<Value> aria-labelledby={labelId} value={value} onValueChange={onValueChange} className={className}>

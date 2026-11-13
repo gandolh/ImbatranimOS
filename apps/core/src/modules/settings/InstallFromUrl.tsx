@@ -7,13 +7,7 @@ import { apiMessage, capabilityText, publisher, sourceLine, type Inspection } fr
 
 /** A small all-caps label beside a name: Verified, Not verified. */
 export function SourceBadge({ children, warn = false }: { children: string; warn?: boolean }) {
-  return (
-    <span
-      className={cn("text-micro ml-2 font-semibold tracking-widest uppercase", warn ? "text-error" : "text-primary")}
-    >
-      {children}
-    </span>
-  );
+  return <span className={cn("text-label ml-2 font-semibold", warn ? "text-error" : "text-primary")}>{children}</span>;
 }
 
 function Capabilities({ capabilities }: { capabilities: string[] }) {

@@ -60,6 +60,8 @@ export async function openFromStart(page: Page, name: string): Promise<Locator> 
   await page.keyboard.press("Enter");
   const win = page.locator(`[data-window-id]`).filter({ hasText: name }).last();
   await expect(win).toBeVisible();
+  // A lazy app shows "Loading…" until its code arrives.
+  await expect(win.getByText("Loading…")).toHaveCount(0, { timeout: 15_000 });
   return win;
 }
 

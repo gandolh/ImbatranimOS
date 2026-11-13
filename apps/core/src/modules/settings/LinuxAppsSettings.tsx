@@ -213,7 +213,7 @@ export function LinuxAppsSettings() {
                     <span className="text-on-surface-variant">{r.version}</span>
                     {r.unfree && (
                       <span
-                        className="border-outline text-on-surface-variant rounded-small text-tiny border px-1 uppercase"
+                        className="border-outline text-on-surface-variant rounded-small text-label border px-1"
                         title="Its license isn't free software"
                       >
                         Unfree
@@ -266,7 +266,7 @@ export function LinuxAppsSettings() {
 
       {/* Installed */}
       <div>
-        <p className="text-on-surface-variant text-label mb-2 font-semibold tracking-widest uppercase">Installed</p>
+        <p className="text-on-surface-variant text-label mb-2 font-semibold">Installed</p>
         {installed.data?.length ? (
           <ul className="border-outline-variant rounded-control apricot:divide-transparent apricot:py-1 divide-y border px-(--k-list-inset)">
             {installed.data.map((a) => (

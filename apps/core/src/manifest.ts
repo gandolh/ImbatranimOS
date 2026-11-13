@@ -36,7 +36,9 @@ const settings: AddonManifest = {
   icon: SettingsIcon,
   component: lazy(() => import("./modules/settings/Settings").then((m) => ({ default: m.Settings }))),
   multiInstance: false,
-  defaultSize: { width: 440, height: 500 },
+  // Tall enough that Theme, Mode, Accent and Wallpaper show whole with Apps
+  // peeking under them (2026-11-13); the window store clamps it to the screen.
+  defaultSize: { width: 680, height: 724 },
   minSize: { width: 360, height: 400 },
 };
 

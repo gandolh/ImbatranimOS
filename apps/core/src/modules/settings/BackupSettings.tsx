@@ -154,9 +154,7 @@ export function BackupSettings() {
     <div className="space-y-8">
       {/* Back up ───────────────────────────────────────────── */}
       <div>
-        <p className="font-ui text-on-surface-variant text-label mb-3 font-semibold tracking-widest uppercase">
-          Back up
-        </p>
+        <p className="font-ui text-on-surface-variant text-label mb-3 font-semibold">Back up</p>
         <p className="text-on-surface-variant text-control mb-4 max-w-prose">
           Everything that makes this machine yours — your files, notes, settings and app data — in one{" "}
           <span className="font-mono">.tar.gz</span> you can download and keep. No host shell required.
@@ -188,9 +186,7 @@ export function BackupSettings() {
 
       {/* Restore ───────────────────────────────────────────── */}
       <div>
-        <p className="font-ui text-on-surface-variant text-label mb-3 font-semibold tracking-widest uppercase">
-          Restore
-        </p>
+        <p className="font-ui text-on-surface-variant text-label mb-3 font-semibold">Restore</p>
         <p className="text-on-surface-variant text-control mb-4 max-w-prose">
           Replaces the folders the backup contains. Anything you have created since is left alone. The desktop reloads
           afterwards to pick up the restored settings; you stay signed in.
@@ -229,7 +225,7 @@ export function BackupSettings() {
               {formatBytes(preview.totalBytes)} once extracted
             </p>
 
-            <p className="font-ui text-on-surface-variant text-tiny mt-3 mb-1.5 font-semibold tracking-widest uppercase">
+            <p className="font-ui text-on-surface-variant text-label mt-3 mb-1.5 font-semibold">
               These will be replaced
             </p>
             <ul className="text-control max-h-40 overflow-auto">

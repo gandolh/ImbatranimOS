@@ -33,11 +33,11 @@ import { useRegistryVersion } from "../../shared/registry/marketplace";
 
 function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: string }) {
   return (
-    <div className="mb-5 flex items-center gap-3">
-      <div className="rounded-control border-outline-variant bg-surface-container text-primary flex h-9 w-9 items-center justify-center border">
+    <div className="gap-window-padding mt-double mb-window-padding max-[600px]:mb-double flex items-center max-[600px]:mt-[20px]">
+      <div className="rounded-control border-outline-variant bg-surface-container text-primary flex h-[36px] w-[36px] shrink-0 items-center justify-center border">
         <Icon size={18} strokeWidth={1.75} />
       </div>
-      <h2 className="font-ui text-on-surface text-prose font-semibold">{title}</h2>
+      <h2 className="font-ui text-on-surface text-lead font-semibold">{title}</h2>
     </div>
   );
 }
@@ -67,22 +67,25 @@ export function Settings() {
   );
 
   return (
-    <div className="bg-surface text-on-surface flex h-full flex-col select-none">
-      <div className="custom-scrollbar flex-1 overflow-y-auto p-7">
-        <header className="mb-8">
-          <h1 className="font-ui text-on-surface text-heading font-bold tracking-tight">Settings</h1>
-          <p className="text-on-surface-variant text-body mt-1">Tune the look of ImbatranimOS.</p>
+    // The window's body, surface-container-low like every floating layer
+    // (2026-11-13). One scrolling page of sections, fading at its foot so the
+    // next section shows it is there.
+    <div className="bg-surface-container-low text-on-surface flex h-full flex-col select-none">
+      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_calc(100%-34px),transparent)] px-[28px] pt-[24px] pb-[34px] max-[600px]:px-[16px] max-[600px]:pt-[16px]">
+        <header>
+          <h1 className="font-display text-on-surface text-headline font-bold">Settings</h1>
+          <p className="font-content text-on-surface-variant text-body mt-0.5">Tune the look of ImbatranimOS.</p>
         </header>
 
         {/* Appearance ─────────────────────────────────────────── */}
-        <section className="mb-10">
+        <section className="mb-double">
           <SectionHeader icon={Palette} title="Appearance" />
 
           <AppearanceSettings />
         </section>
 
         {/* Apps ────────────────────────────────────────────────── */}
-        <section className="mb-10">
+        <section className="mb-double">
           <SectionHeader icon={LayoutGrid} title="Apps" />
           <p className="text-on-surface-variant text-control mb-5">
             Turn add-ons on or off. Disabled apps disappear from Start, search, and the desktop — their code never
@@ -105,11 +108,7 @@ export function Settings() {
                     <span className="font-ui text-on-surface text-body block truncate font-medium">{app.name}</span>
                     <span className="text-on-surface-variant text-label block truncate">{app.description}</span>
                   </span>
-                  {required && (
-                    <span className="text-on-surface-variant text-micro font-semibold tracking-widest uppercase">
-                      Required
-                    </span>
-                  )}
+                  {required && <span className="text-on-surface-variant text-label font-semibold">Required</span>}
                   <Checkbox
                     aria-label={`Enable ${app.name}`}
                     checked={enabled}
@@ -123,50 +122,50 @@ export function Settings() {
         </section>
 
         {/* Marketplace ──────────────────────────────────────────── */}
-        <section className="mb-10">
+        <section className="mb-double">
           <SectionHeader icon={Store} title="Marketplace" />
           <MarketplaceSettings focusRow={focusRow} />
         </section>
 
         {/* Linux apps ─────────────────────────────────────────── */}
-        <section className="mb-10">
+        <section className="mb-double">
           <SectionHeader icon={Boxes} title="Linux apps" />
           <LinuxAppsSettings />
         </section>
 
         {/* Updates (for Linux apps) ──────────────────────────── */}
-        <section className="mb-10">
+        <section className="mb-double">
           <SectionHeader icon={RefreshCw} title="Updates" />
           <UpdatesSettings />
         </section>
 
         {/* Storage ────────────────────────────────────────────── */}
-        <section className="mb-10">
+        <section className="mb-double">
           <SectionHeader icon={HardDrive} title="Storage" />
           <StorageSettings />
           <OldDataSettings />
         </section>
 
         {/* Default apps ───────────────────────────────────────── */}
-        <section className="mb-10">
+        <section className="mb-double">
           <SectionHeader icon={FileCog} title="Default apps" />
           <DefaultAppsSettings />
         </section>
 
         {/* Startup ────────────────────────────────────────────── */}
-        <section className="mb-10">
+        <section className="mb-double">
           <SectionHeader icon={Power} title="Startup" />
           <StartupSettings />
         </section>
 
         {/* Backup ─────────────────────────────────────────────── */}
-        <section className="mb-10">
+        <section className="mb-double">
           <SectionHeader icon={DatabaseBackup} title="Backup" />
           <BackupSettings />
         </section>
 
         {/* Keyboard ───────────────────────────────────────────── */}
-        <section className="mb-10">
+        <section className="mb-double">
           <SectionHeader icon={Keyboard} title="Keyboard shortcuts" />
           <p className="font-ui text-on-surface-variant text-label mb-3">
             Press <span className="text-on-surface font-semibold">?</span> anywhere on the desktop to open this list.
@@ -188,11 +187,13 @@ export function Settings() {
         </section>
       </div>
 
-      <div className="border-outline-variant bg-surface-container-low flex items-center justify-between border-t px-7 py-3">
-        <span className="text-on-surface-variant text-tiny font-semibold tracking-widest uppercase">ImbatranimOS</span>
+      <div className="border-outline-variant bg-surface-container flex h-[36px] shrink-0 items-center justify-between border-t px-[12px] max-[600px]:hidden">
+        <span className="font-display text-on-surface text-body font-bold">
+          Imbatranim<span className="text-primary">OS</span>
+        </span>
         {/* Driven by IMAGE_VERSION, not a literal. This said "v0.1 · preview" while
             package.json was at 1.0.0 — the OS reporting a version it was not. */}
-        <span className="font-ui text-on-surface-variant text-tiny tabular-nums">
+        <span className="font-ui text-on-surface-variant text-label tabular-nums">
           {imageVersion ? `v${imageVersion}` : "—"}
         </span>
       </div>

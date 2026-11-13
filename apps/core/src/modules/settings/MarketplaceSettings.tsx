@@ -359,27 +359,23 @@ export function MarketplaceSettings({
                   <span className="font-ui text-on-surface text-body block truncate font-medium">
                     {row.name}
                     {nativeUrl && (
-                      <span className="text-on-surface-variant text-micro ml-2 font-semibold tracking-widest uppercase">
-                        From a URL
-                      </span>
+                      <span className="text-on-surface-variant text-label ml-2 font-semibold">From a URL</span>
                     )}
                     {badge && <SourceBadge warn={badge.warn}>{badge.label}</SourceBadge>}
                     {row.suite && (
-                      <span className="text-on-surface-variant text-micro ml-2 font-semibold tracking-widest uppercase">
+                      <span className="text-on-surface-variant text-label ml-2 font-semibold">
                         {row.apps.length === 1 ? "1 app" : `${row.apps.length} apps`}
                       </span>
                     )}
                     {app.type === "service" && (
-                      <span className="text-on-surface-variant text-micro ml-2 font-semibold tracking-widest uppercase">
-                        With server
-                      </span>
+                      <span className="text-on-surface-variant text-label ml-2 font-semibold">With server</span>
                     )}
                   </span>
                   <span className="text-on-surface-variant text-label block truncate" title={state} aria-live="polite">
                     {rowNote?.id === app.id ? rowNote.text : state}
                   </span>
                   {nativeUrl && (
-                    <span className="text-on-surface-variant/80 text-tiny block truncate">
+                    <span className="text-on-surface-variant text-label block truncate">
                       {sourceLine(required(app.source, "the source"))}
                     </span>
                   )}
@@ -472,7 +468,7 @@ export function MarketplaceSettings({
                 </>
               )}
               {log?.id === row.descriptorId && (
-                <pre className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface custom-scrollbar text-tiny mt-2 max-h-60 overflow-auto border p-2 whitespace-pre-wrap select-text">
+                <pre className="rounded-control border-outline-variant bg-surface-container-lowest text-on-surface custom-scrollbar text-label mt-2 max-h-60 overflow-auto border p-2 whitespace-pre-wrap select-text">
                   {log.text}
                 </pre>
               )}
@@ -494,16 +490,14 @@ export function MarketplaceSettings({
                 <span className="min-w-0 flex-1">
                   <span className="font-ui text-on-surface text-body block truncate font-medium">
                     {required(p.retired, "the retired app").name}
-                    <span className="text-on-surface-variant text-micro ml-2 font-semibold tracking-widest uppercase">
-                      From a URL
-                    </span>
+                    <span className="text-on-surface-variant text-label ml-2 font-semibold">From a URL</span>
                     <SourceBadge warn>No longer supported</SourceBadge>
                   </span>
                   <span className="text-on-surface-variant text-label block truncate">
                     A prebuilt app, which this OS no longer runs. Uninstall it.
                   </span>
                   {p.retired?.source && (
-                    <span className="text-on-surface-variant/80 text-tiny block truncate">
+                    <span className="text-on-surface-variant text-label block truncate">
                       {sourceLine(p.retired.source)}
                     </span>
                   )}

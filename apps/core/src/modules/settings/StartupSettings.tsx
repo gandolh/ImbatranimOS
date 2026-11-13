@@ -125,7 +125,7 @@ export function StartupSettings() {
                     {app.name}
                   </span>
                   {off && (
-                    <span className="text-on-surface-variant text-tiny block">
+                    <span className="text-on-surface-variant text-label block">
                       Turned off in Apps — skipped at startup, kept here so re-enabling restores it
                     </span>
                   )}
@@ -171,9 +171,7 @@ export function StartupSettings() {
 
       {available.length > 0 && (
         <div className="mt-5">
-          <p className="font-ui text-on-surface-variant text-label mb-2 font-semibold tracking-widest uppercase">
-            Add an app
-          </p>
+          <p className="font-ui text-on-surface-variant text-label mb-2 font-semibold">Add an app</p>
           <div className="rounded-control border-outline-variant max-h-56 overflow-auto border">
             {available.map((app) => (
               <div

@@ -80,6 +80,16 @@ function apricot(id: string, name: string, pastel: string, deep: string): Accent
  * to `high` and under white text. The canvas's #a84f25 itself reaches only
  * 4.3:1 on `high`, hence #a04b23. contrast.test.ts holds them to it.
  */
+/**
+ * The colour that stands for a preset in a picker (2026-11-13): Apricot's
+ * pastel in both modes, which is light mode's soft and dark mode's strong;
+ * Classic's one fill. Dark mode's soft is a deep container, which would make
+ * the swatches look disabled.
+ */
+export function accentSwatch(preset: AccentPreset): { fill: string; on: string } {
+  return { fill: preset.light.soft, on: preset.light.softOn };
+}
+
 export const ACCENT_PRESETS: Record<ThemeId, AccentPreset[]> = {
   apricot: [
     apricot("apricot", "Apricot", "#f2a97e", "#a04b23"),

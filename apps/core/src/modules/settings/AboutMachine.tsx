@@ -130,9 +130,7 @@ export function AboutMachine({ onVersion }: { onVersion?: (version: string) => v
           key={item.label}
           className="rounded-control border-outline-variant bg-surface-container-low flex items-center justify-between gap-3 border px-3 py-2.5"
         >
-          <span className="text-on-surface-variant text-tiny font-semibold tracking-widest uppercase">
-            {item.label}
-          </span>
+          <span className="text-on-surface-variant text-label font-semibold">{item.label}</span>
           <span className="font-ui text-on-surface text-body truncate font-semibold">{item.value}</span>
         </div>
       ))}

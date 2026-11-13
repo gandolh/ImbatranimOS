@@ -13,6 +13,11 @@ import { useAuthStore } from "./store/authStore";
 /** Matches the backend's `MIN_PASSWORD_LENGTH`. The backend is what enforces it. */
 const MIN_LENGTH = 10;
 
+/** The sign-in card's one action: a full-width band, 44 px, 48 on a phone. */
+const SUBMIT = "text-body h-[44px] w-full justify-center font-semibold max-[600px]:h-[48px]";
+/** The card's fields: 44 px, 48 and 16 px type on a phone so it does not zoom on focus. */
+const FIELD = "h-[44px] max-[600px]:h-[48px] pointer-coarse:text-index";
+
 export function LocalSetupScreen({ tokenRequired }: { tokenRequired: boolean }) {
   const refresh = useAuthStore((s) => s.refresh);
   const [username, setUsername] = useState("");
@@ -55,11 +60,12 @@ export function LocalSetupScreen({ tokenRequired }: { tokenRequired: boolean }) 
       title="Set up this machine"
       subtitle="Choose the name and password you will sign in with. There is one owner per machine."
     >
-      <form className="flex flex-col gap-3" onSubmit={(e) => void submit(e)}>
+      <form className="gap-double flex flex-col" onSubmit={(e) => void submit(e)}>
         <Input
           id="owner-name"
           label="Your name"
           autoComplete="username"
+          className={FIELD}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
@@ -69,6 +75,7 @@ export function LocalSetupScreen({ tokenRequired }: { tokenRequired: boolean }) 
           type="password"
           autoComplete="new-password"
           value={password}
+          className={FIELD}
           onChange={(e) => setPassword(e.target.value)}
         />
         <Input
@@ -77,6 +84,7 @@ export function LocalSetupScreen({ tokenRequired }: { tokenRequired: boolean }) 
           type="password"
           autoComplete="new-password"
           value={confirm}
+          className={FIELD}
           onChange={(e) => setConfirm(e.target.value)}
         />
         {tokenRequired && (
@@ -85,6 +93,7 @@ export function LocalSetupScreen({ tokenRequired }: { tokenRequired: boolean }) 
             label="Setup token"
             type="password"
             autoComplete="off"
+            className={FIELD}
             value={token}
             onChange={(e) => setToken(e.target.value)}
           />
@@ -96,7 +105,7 @@ export function LocalSetupScreen({ tokenRequired }: { tokenRequired: boolean }) 
         {tooShort && <FieldHint>Password must be at least {MIN_LENGTH} characters.</FieldHint>}
         {mismatch && <FieldHint>Passwords do not match.</FieldHint>}
         {error && <FieldHint>{error}</FieldHint>}
-        <Button type="submit" variant="primary" disabled={!canSubmit} className="justify-center py-2">
+        <Button type="submit" variant="primary" disabled={!canSubmit} className={SUBMIT}>
           {busy ? "Setting up…" : "Set up and sign in"}
         </Button>
       </form>
@@ -128,18 +137,19 @@ export function LocalSignInScreen() {
 
   return (
     <AuthShell title="Sign in" subtitle="Enter this machine's password.">
-      <form className="flex flex-col gap-3" onSubmit={(e) => void submit(e)}>
+      <form className="gap-double flex flex-col" onSubmit={(e) => void submit(e)}>
         <Input
           id="password"
           label="Password"
           type="password"
           autoComplete="current-password"
           autoFocus
+          className={FIELD}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
         {error && <FieldHint>{error}</FieldHint>}
-        <Button type="submit" variant="primary" disabled={busy || !password} className="justify-center py-2">
+        <Button type="submit" variant="primary" disabled={busy || !password} className={SUBMIT}>
           {busy ? "Signing in…" : "Sign in"}
         </Button>
       </form>

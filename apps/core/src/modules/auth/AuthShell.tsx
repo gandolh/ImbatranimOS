@@ -4,7 +4,6 @@ import { Logo } from "../../shared/components/brand/Logo";
  * The full-screen panel every pre-desktop state renders inside: the session
  * cover, and the setup and sign-in screens in `LocalScreens.tsx`.
  */
-// Branded ImbatranimOS lock/setup surface — B&W with the single accent.
 export function AuthShell({
   title,
   subtitle,
@@ -16,30 +15,31 @@ export function AuthShell({
 }) {
   return (
     <div
-      className="bg-surface relative flex h-screen w-screen items-center justify-center"
+      // A warm ground with the dotted grid and a lit centre, the card one step
+      // lighter than it (2026-11-13). On a phone the card sits 96 px from the
+      // top, clear of the keyboard.
+      className="bg-surface-dim relative flex h-screen w-screen items-center justify-center overflow-y-auto max-[600px]:items-start max-[600px]:pt-[96px]"
       style={{
-        backgroundImage: "radial-gradient(var(--k-outline-variant) 1px, transparent 1px)",
-        backgroundSize: "24px 24px",
+        backgroundImage:
+          "radial-gradient(circle at 50% 46%, var(--k-surface-container-lowest), transparent 62%), radial-gradient(var(--k-outline-variant) 1px, transparent 1px)",
+        backgroundSize: "100% 100%, 24px 24px",
       }}
     >
-      {/* subtle vignette so the card reads as a lit panel */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.35)_100%)]" />
-
-      <div className="border-outline-variant bg-surface-container-low rounded-window relative w-[360px] overflow-hidden border shadow-(--k-shadow-card)">
+      <div className="border-outline-variant bg-surface-container-low rounded-window relative w-[400px] max-w-[calc(100vw-32px)] overflow-hidden border shadow-(--k-shadow-card)">
         {/* accent top edge */}
         <div className="bg-primary h-[3px] w-full" />
 
-        <div className="border-outline-variant bg-surface-container flex flex-col items-center gap-2 border-b px-6 py-6">
+        <div className="border-outline-variant bg-surface-container gap-base flex flex-col items-center border-b p-[24px]">
           <Logo size={44} className="text-on-surface" />
-          <div className="text-on-surface text-title font-bold tracking-tight">
+          <div className="font-display text-on-surface text-headline font-bold">
             Imbatranim<span className="text-primary">OS</span>
           </div>
         </div>
 
-        <div className="p-6">
-          <header className="mb-5">
-            <h1 className="font-ui text-on-surface text-prose font-bold tracking-tight">{title}</h1>
-            <p className="font-content text-on-surface-variant text-control mt-1">{subtitle}</p>
+        <div className="gap-double flex flex-col p-[24px]">
+          <header>
+            <h1 className="font-display text-on-surface text-headline font-bold">{title}</h1>
+            <p className="font-content text-on-surface-variant text-body mt-0.5">{subtitle}</p>
           </header>
           {children}
         </div>
@@ -49,5 +49,5 @@ export function AuthShell({
 }
 
 export function FieldHint({ children }: { children: React.ReactNode }) {
-  return <p className="font-content text-error text-label">{children}</p>;
+  return <p className="font-content text-error text-control">{children}</p>;
 }

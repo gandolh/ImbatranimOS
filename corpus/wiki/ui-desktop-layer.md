@@ -1,6 +1,6 @@
 ---
-summary: Rules 47 and 48 of the house UI style, split out of ui-conventions.md on 2026-11-03 with their numbers kept — an app paints outside its window only through `desktopLayer` (mounted always, pointer-events opt-in, above the icons and below every window), and a desktop object is clamped on commit, can leave the desktop without being deleted, and persists once on release; also the Start menu's layout (search, pins, A-Z list) and the command sources it shares with the palette (added 2026-11-06).
-updated: 2026-11-06
+summary: Rules 47 and 48 of the house UI style, split out of ui-conventions.md on 2026-11-03 with their numbers kept — an app paints outside its window only through `desktopLayer` (mounted always, pointer-events opt-in, above the icons and below every window), and a desktop object is clamped on commit, can leave the desktop without being deleted, and persists once on release; also the Start menu's layout and the command sources it shares with the palette (added 2026-11-06; rewritten 2026-11-13 for brief 88's two-pane Start and phone sheet), and the desktop icons' grid and the phone taskbar (2026-11-13).
+updated: 2026-11-13
 ---
 
 # UI conventions: painting on the desktop
@@ -25,14 +25,46 @@ first rule below. The sticky-notes work (2026-08-05) is the worked example.
     is kept)" vs. "delete". Persist a drag or resize **once on release**, never per pointer move, and use `setPointerCapture` so a fast gesture off the element does not drop
     (`sticky-notes/src/usePointerDrag.ts`).
 
-## Start's layout and shared sources (2026-11-06)
+## Start's layout and shared sources (2026-11-13)
 
-Brief 72. Start is a search box, a Pinned grid (three columns), an A-Z list
-with letter headings, then Recent; it is 320px wide, at most the viewport
-less 16px. Pins live in the `imbatranimos:start-pins` dotfile; the defaults
-are Files, Terminal, Browser, Code Editor, Notepad and Settings. Start and the
-command palette read the same core sources (`shared/commands/coreSources.ts`),
-so a search finds the same things in both. Right-click, or Android's
-long-press, opens Open, Pin or Unpin and the Linux actions. Focus lands on
-the first entry on a coarse pointer, on the search box otherwise. Known
-smell: `role=menu` holds a searchbox.
+Brief 72 gave Start a search box, a Pinned grid, an A-Z list and Recent;
+brief 88 (2026-11-13, the owner's approval on the estate redesign board,
+[decisions-themes.md](decisions-themes.md)) changed its size and arrangement:
+
+- **Desktop widths:** 704 px wide, as tall as the screen allows above the
+  taskbar (`min(740px, 100svh - 60px)`, so it fits 1366x768), covering the
+  desktop icons while open. A search band on top keeps the strong ring. The
+  A-Z list sits on a tinted left pane (`surface-container`, 320 px) with
+  sticky Solway letter heads (`font-display text-index`), whole descriptions
+  and a fade at its foot (a `mask-image`, no glass). Pinned (six raised tiles,
+  three columns) and Recent (six two-line rows sharing the height) sit on the
+  right. The foot band holds the account (hourglass, wordmark, `Signed in`)
+  and Cover screen and Log off, bordered at 3:1; Log off hovers to
+  `error-container`.
+- **A phone (under 600 px):** a full-screen sheet above the taskbar with 18 px
+  top corners that scrolls as one: search, Pinned, Recent (the path beside the
+  name where both fit), then the A-Z list; the foot band stays in one row.
+- **Order:** the document runs search, Pinned, Recent, the A-Z list, the foot
+  band, which is the arrow keys' order and the phone's reading order; on a
+  desktop CSS puts the list on the left. Entries take a 2 px ring on keyboard
+  focus. Focus lands on the first entry on a coarse pointer, on the search box
+  otherwise.
+
+Pins live in the `imbatranimos:start-pins` dotfile; the defaults are Files,
+Terminal, Browser, Code Editor, Notepad and Settings. Start and the command
+palette read the same core sources (`shared/commands/coreSources.ts`), so a
+search finds the same things in both; a search replaces both panes with its
+results. Right-click, or Android's long-press, opens Open, Pin or Unpin and
+the Linux actions. Known smell: `role=menu` holds a searchbox.
+
+## The desktop icons and the phone taskbar (2026-11-13)
+
+Icons keep today's order and grid: an 80 px column, rows 96 px apart, a 40 px
+resting tile and a label of up to two lines (`layoutIcons.ts`). Under the
+dusk wallpaper's night sky each label sits on a chip that follows
+`--k-wall-star-opacity`, so only Apricot dark draws it. On a phone rows are
+88 px apart and counted from the measured height, columns stop at the
+screen's width and the rest run on below, where the icon layer scrolls; no
+label sits under the taskbar. The phone taskbar is 56 px with 48 px targets:
+icons only, the clock always in view, and the four workspace pips folded into
+one button (the number over four dots) that opens them as a menu.

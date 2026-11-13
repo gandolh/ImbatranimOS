@@ -1,6 +1,6 @@
 ---
-summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-11-03 for the two themes and their modes: the strong and soft accent, the five token radii, the shadow variables, the per-theme UI font, a check in Apricot light and Classic dark; refreshed 2026-10-21 for the shared kit (2026-10-21): a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for the async close guards themed confirm work (2026-08-07) (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for the work of 2026-08-05: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
-updated: 2026-11-12
+summary: The house UI style as enforceable rules, derived from the code 2026-07-31 (refreshed 2026-11-13 for brief 88's redesign: the type scale with line heights and a coarse-pointer step, nothing under 11 px in the shell, sentence-case labels, the display face, the desk token, the phone rule under 600 px, floating bodies on surface-container-low; refreshed 2026-11-03 for the two themes and their modes: the strong and soft accent, the five token radii, the shadow variables, the per-theme UI font, a check in Apricot light and Classic dark; refreshed 2026-10-21 for the shared kit (2026-10-21): a marketplace kit app follows every rule as an add-on does, and the tokens now live in packages/ui/src/theme.css; refreshed 2026-08-23 for the brief-48 seam: §1's import rule is now @imbatranim/ui + the injected `system` handle, `@imbatranim/core` is type-only; and 2026-08-07 for the async close guards themed confirm work (2026-08-07) (rule 43: no native dialogs — the themed UnsavedChangesDialog + async close guards; rule 27: the promoted kit ContextMenu) and 2026-08-05 for the work of 2026-08-05: sticky-notes citations, the desktop-layer contract, the Select-label fix, the secondary token aliases) — import rule and core export surface, the real token/accent names, type + density scale, in-window layout (incl. the unclamped-defaultSize trap), the one canonical answer for confirm/prompt/toast/empty/loading/context-menu/hotkey/save-spine, icon sizing, the accessibility floor, the anti-patterns to copy around, and a 14-item pre-flight checklist.
+updated: 2026-11-13
 ---
 
 # ImbatranimOS UI conventions — the house style, as rules
@@ -34,14 +34,14 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
    (tooltips); borders `outline-variant` (default hairline) and `outline` (stronger); accent `primary` + `on-primary`, `primary-container` + `on-primary-container`; `error`,
    `on-error`, `error-container`, `on-error-container`; and `secondary` / `on-secondary` / `secondary-container` / `on-secondary-container`, which are **aliases** of
    on-surface-variant / surface / surface-container-high / on-surface (`theme.css`) — real classes, but prefer the surface names, because `text-secondary` reads like a
-   second accent and there isn't one. As utilities: `bg-surface-container-low`, `text-on-surface-variant`, `border-outline-variant`, `bg-primary text-on-primary`.
+   second accent and there isn't one. As utilities: `bg-surface-container-low`, `text-on-surface-variant`, `border-outline-variant`, `bg-primary text-on-primary`. Since 2026-11-13 also `desk` (`--k-desk`: the ground under an app's page, `surface-container` in light, `-lowest` in dark), `on-error` per mode, and imbatranim-apps' `--container-*`/`--spacing-*` widths and bar heights.
 6. **The accent is a runtime CSS var, never a literal.** `applyAppearance()` (`appearanceStore.ts`) stamps it on `<html>`, and `theme.css` maps `primary` to it. So
    `bg-primary` tracks the user's accent choice; a hex does not. Each theme has its own presets (`ACCENT_PRESETS`): Classic's four (crimson default), Apricot's five
    pastels (Apricot default), and the accent is saved per theme.
 
    **Strong and soft** (2026-11-03). Each accent has two pairs, both stamped by `applyAppearance()`: strong `primary` / `on-primary` (`--accent`) and soft
    `primary-container` / `on-primary-container` (`--accent-soft`). In Classic the two are the same colour. In Apricot light, strong is a deep shade with white on it and
-   soft is the pastel with dark text, which fails as text or a border on cream. So:
+   soft is the pastel with dark text, which fails as text or a border on cream; in Apricot dark (2026-11-13) soft is a deep container with pastel text and strong is the pastel. So:
    - **A selected, current or chosen state is soft**: `bg-primary-container text-on-primary-container`. Examples: the selected file row (`FileList.tsx`), the
      highlighted Start menu or context-menu item, the chosen option of a segmented control, a toggle or tab that is on (`<Button variant="selected">`).
    - **An action or an indicator is strong**: a primary action (`<Button variant="primary">` for Install, Save, OK), a progress fill (`bg-primary`,
@@ -57,24 +57,23 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
    bordered boxes and cards inside windows take `rounded-control` too; edge-to-edge panels stay square. A maximised or snapped window drops `rounded-window`. Theme-only styling uses the `apricot:` variant.
 9. **Shadows only on floating layers**, and only the shadow variables (`index.css`), as `shadow-(--k-shadow-…)`: `window` / `window-focused` (frames), `menu` (Start),
    `popup` (context menus, Select), `dialog` (dialogs, Alt+Tab), `tile` (desktop icons, Apricot only). Classic keeps the old recipes as their values; Apricot's
-   are warm-tinted. Also `toast`, `tooltip`, `tray` (the tray's popovers) and `card` (the sign-in card), 2026-11-03. In-window content is flat (no shadow) —
+   are warm-tinted. Also `toast`, `tooltip`, `tray` and `card` (the sign-in card), 2026-11-03; the kit's `Popover` and `BottomSheet` take `menu` (2026-11-13). Every floating layer's body (Start, windows, Settings, the kit's dialogs and menus) is `surface-container-low`. In-window content is flat (no shadow) —
    separation is a 1px `border-outline-variant` plus a surface-container step, with the corners of rule 8.
 10. Never invent a colour to mean a state. Levels are told apart by **icon shape**; only `error` gets colour (`notifications/levelStyle.ts:11-18`). Success is `text-primary`,
     not green.
 
 ## 3. Typography and spacing
 
-11. `font-ui` follows the theme — Figtree in Apricot, Space Grotesk in Classic (`--k-font-ui`) — for chrome, labels, numbers; never name either family. `font-content`
+11. `font-ui` follows the theme — Figtree in Apricot, Space Grotesk in Classic (`--k-font-ui`) — for chrome, labels, numbers; never name either family. `font-display` (Solway 700 in Apricot, Space Grotesk in Classic) is for the wordmark, Start's letter heads and page titles only. `font-content`
     = Inter (user-authored prose) in both; `font-mono` for code panes (`MarkdownEditor.tsx:179`). A canvas reads `--font-ui` from `<html>` at draw time.
 12. The root keeps the browser's size and **`body` is 13px** (`index.css`); `--spacing` in the kit's `theme.css` is `0.203125rem` (13/16 of Tailwind's step), so every spacing utility keeps its pixels (`p-2` is 6.5px). The type scale is **named** in `@theme` (brief 87, 2026-11-12), and `text-[Npx]` is gone:
-    `text-label` 11px labels/meta/status bars/toolbars/tabs · `text-control` 12px buttons/list rows/menu items/dialog titles · `text-body` 13px body, inputs, checkbox labels · `text-tiny` 10px / `text-micro` 9px shell chrome only (`taskbar/StartMenu.tsx`).
+    `text-label` 11/15 labels/meta/status bars/tabs · `text-control` 12/16 buttons/list rows/menu items · `text-body` 13/18 body, inputs · `text-lead` 15/18 section heads, the wordmark · `text-index` 16/20 Start's letter heads · `text-headline` 24/30 page titles (2026-11-13). A coarse pointer raises label, control and body to 12/16, 14/20, 14/20 (`index.css`), and a phone's field takes `pointer-coarse:text-index` so it does not zoom. **Nothing in the shell is under 11 px** (12 on a coarse pointer); `text-nano`/`-micro`/`-tiny` stay only for kit apps. The phone layout is a viewport under 600 px: `max-[600px]:` in classes, `isPhoneWidth()` (`lib/phone.ts`) in code.
     Larger type only for a real display value: `text-headline` calculator readout (`calculator/src/BasicPad.tsx`), `text-display-lg` timer (`clock/src/tabs/Timer.tsx`), both with `tabular-nums`. A new size is a `--text-*` name in `theme.css` and in `cn()`'s list (`packages/ui/src/cn.ts`).
     Sizes that read `rem` (`max-w-sm`, `min-w-[8rem]`) are written in pixels, since the root is no longer 13px.
-13. Weights: `font-medium` for controls, `font-semibold` for titles/labels, `font-bold` only in the taskbar brand (`taskbar/Taskbar.tsx:78`). Never `font-light`.
-14. The house field label is `font-ui text-on-surface-variant text-[11px] font-semibold tracking-wider uppercase` (`ui/Input.tsx:15`, `ui/Select.tsx:30`,
-    `modules/settings/Settings.tsx:66`).
+13. Weights: `font-medium` for controls, `font-semibold` for titles/labels, `font-bold` only with `font-display` (the wordmark, letter heads, page titles). Never `font-light`.
+14. The house field and group label is sentence case, untracked: `font-ui text-on-surface-variant text-label font-semibold` (`ui/Input.tsx`, `ui/Select.tsx`, Settings' `Group`; 2026-11-13, was tracked capitals). Fields are edged in `outline` (3:1).
 15. **Compact density.** Toolbar `px-2 py-1` + `gap-1` (`FileManager.tsx:325`); status bar `px-2 py-0.5` (:524); list row `px-2 py-1` (`FileList.tsx:163`); menu item `px-3 py-1` (`ContextMenu.tsx:65`); dialog body `p-3` (`ui/Dialog.tsx:48`); icon-only button `className="h-5 w-5 p-0"` (`FileManager.tsx:398`). Gaps are `gap-0.5/1/2/3`;
-    `mb-3`/`mb-4` inside dialogs. `p-6`+ belongs to Settings-style full pages (`Settings.tsx:83`), not to an app toolbar.
+    `mb-3`/`mb-4` inside dialogs. `p-6`+ belongs to Settings-style full pages (`Settings.tsx:83`), not to an app toolbar. Exception (2026-11-13, the apps board): imbatranim-apps' toolbar controls are 32 px on a desktop and 44 px on a phone (`h-appbar`, `min-h-target`).
 
 ## 4. Layout inside a window
 
@@ -92,7 +91,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
     `code-editor` 680 and `norpdf` 720 are already too tall; (b) `minSize` must be **honest** — the measured smallest height at which every control is still reachable, not a
     round number, and you must test at exactly `minSize`; (c) never put a control in a `flex-none` block _below_ an unbounded `flex-1` block, because the primary action must
     survive first — Calculator's keypad is `flex-none` under a `flex-1` display (`BasicPad.tsx:103,115`), which is why `0 . =` vanishes; (d) never rely on window-level
-    scrolling to reach a button.
+    scrolling to reach a button. Where a window opens (2026-11-13, `openingPlace`): on a phone every window opens maximized above the taskbar (44 px, 56 on a phone: `taskbarHeight()`), and below 1280 px an app whose `AppConfig.fillsDesktop` is set (the catalog's kit apps) fills the desktop less 8 px.
 
 ## 5. Interaction patterns — the one canonical answer each
 
@@ -178,8 +177,8 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
     **The Terminal's `bg-[#0d0d0e]` is fixed** (2026-08-04): its xterm theme now comes from `--k-surface`/`--k-on-surface`/`--accent` and is
     re-applied on theme or accent change. Note that a light terminal needs its own **ANSI 16** palette too — xterm's dark-tuned defaults are
     unreadable on a near-white surface, so `repl-interpreter/src/lib/xtermTheme.ts` carries one per mode, contrast-tested. Dead radius classes: `code-editor/src/CodeEditor.tsx:345,350`,
-    `norpdf/src/editor/AnnotateToolbar.tsx:109,157`. `TASKBAR_HEIGHT = 44` is declared twice (`windowStore.ts:27`, `taskbar/Taskbar.tsx:11`) and is not exported to add-ons —
-    do not add a third copy; size with `h-full`.
+    `norpdf/src/editor/AnnotateToolbar.tsx:109,157`. the taskbar's height is `taskbarHeight()` in `windowStore.ts` (44, or 56 on a phone) and is not exported to add-ons —
+    do not add a copy; size with `h-full`.
 
 ## 9. Painting on the desktop
 

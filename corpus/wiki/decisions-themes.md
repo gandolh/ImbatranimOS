@@ -1,6 +1,6 @@
 ---
-summary: Two themes ship. Apricot (cream and peach, pastel accents, rounded corners, Figtree) is the default, and Classic (today's black and white with crimson) stays selectable in Settings. Light is the default mode, there is no glass, and a machine with saved settings moves to Apricot light once on upgrade. Settled with the owner 2026-11-02 in the grill on brief 07, revisiting the locked identity; the layout is unchanged. On 2026-11-03 Apricot's rounding was extended to list rows and in-window boxes, and selection keeps a deep border while today stays strong.
-updated: 2026-11-03
+summary: Two themes ship. Apricot (cream and peach, pastel accents, rounded corners, Figtree) is the default, and Classic (today's black and white with crimson) stays selectable in Settings. Light is the default mode, there is no glass, and a machine with saved settings moves to Apricot light once on upgrade. Settled with the owner 2026-11-02 in the grill on brief 07, revisiting the locked identity; the layout is unchanged. On 2026-11-03 Apricot's rounding was extended to list rows and in-window boxes, and selection keeps a deep border while today stays strong. Revisited 2026-11-13 (brief 88, the estate redesign board): Start becomes a two-pane 704 px menu and a phone sheet, Solway joins as Apricot's display face, and dark selection is a deep container with a pastel edge.
+updated: 2026-11-13
 ---
 
 # Decisions: themes (2026-11-02)
@@ -20,6 +20,21 @@ dark-first with zero radius ([ui-conventions.md](ui-conventions.md)). The
 Windows-7-classic layout is not revisited: the taskbar, Start button and menu,
 tray and desktop icons stay where they are, and every way of finding things
 stays the same.
+
+*Revisited 2026-11-13 (brief 88; the owner approved direction "Start, opened
+wide" on the estate redesign board, with every question standing as
+proposed)*: the Start menu is reopened for its size and arrangement only. At
+desktop widths it is a 704 px two-pane menu (the A-Z list on a tinted left
+pane, Pinned and Recent on the right, a search band on top, the account and
+session in a foot band) that covers the desktop icons while open; on a phone
+(under 600 px) it is a full-screen sheet above the taskbar that scrolls as
+one. The Start button and its bottom-left anchor, the search, pins, A-Z list
+and Recent stay, and so do the taskbar, tray and desktop icons. The phone
+taskbar is 56 px with 48 px targets and folds the workspace pips into one
+button. Rejected: direction A, "Apricot, settled", a compact one-column Start
+that leaves the icons in view. **Why**: the open list wins, nine apps with
+whole descriptions beside Pinned and Recent at 1280 against three cut ones,
+and the clock stays on the phone's taskbar.
 
 ## Apricot is the default theme; Classic stays as a theme
 _2026-11-02_ — The desktop ships two themes. Apricot is the default: cream and
@@ -78,6 +93,13 @@ Grotesk reads technical.
 - *Consequence*: one more bundled font file, and text widths shift a little in
   every app.
 
+*Revisited 2026-11-13 (brief 88)*: Figtree stays the UI font, and Solway 700
+joins as Apricot's display face (`--font-display`) for the wordmark, Start's
+A-Z letter heads and page titles; Classic's display face is Space Grotesk. One
+latin woff2, vendored from `@fontsource/solway` 5.3.0
+(`assets/fonts/README.md`); the CSP stays `'self'`. **Why**: a slab for names
+gives the shell a voice of its own without a second UI font.
+
 ## A machine with saved settings switches to Apricot light once
 _2026-11-02_ — On the first start after the update, a machine whose saved
 appearance predates themes moves to Apricot light, with Apricot's default
@@ -116,6 +138,14 @@ Rejected: borderless pastel chips as on the canvas; a pastel today.
 chosen chip is hard to spot. A strong today keeps the current day apart from
 the date the owner selected.
 
+*Revisited 2026-11-13 (brief 88)*: in dark mode the soft fill is no longer the
+pastel but a deep container of each preset's hue with a light tint of it as
+text (`appearanceStore.ts`, 7.96 to 9.32:1); the edge stays the strong accent,
+which in dark is the pastel. Light is unchanged. Settings' accent swatches show
+each preset's pastel in both modes. **Why**: pastel slabs on the dark surfaces
+were the loudest thing on the screen; a deep fill with a pastel edge reads as
+chosen and stays calm.
+
 
 ## Start's contents follow current desktops, not Windows 7
 _2026-11-06_ — This revisits "every way of finding things stays the same"
@@ -127,7 +157,9 @@ are not stuck with win7 style". Start becomes:
 - one A-Z list of every app, built in, installed or Linux, with no folders.
 
 This is how Windows 11, ChromeOS and GNOME do it. The taskbar, the Start
-button, the tray and desktop icons stay where they are.
+button, the tray and desktop icons stay where they are. Revisited 2026-11-13:
+Start's arrangement and size changed again, see the note under the
+introduction above.
 
 Rejected:
 - folders per install group, expanded in place;

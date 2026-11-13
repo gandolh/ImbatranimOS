@@ -16,6 +16,7 @@ test.beforeEach(() => {
   const info = test.info();
   test.skip(!SHOTS_DIR, "SHOTS_DIR names the folder");
   test.skip(info.project.name === "laptop-1366", "the board drew 1280 and the phones");
+  test.skip(info.project.name === "phone-360" && test.info().title.startsWith("the undrawn"), "once per width");
 });
 
 async function shoot(page: Page, name: string, width: number) {
@@ -61,3 +62,84 @@ for (const [look, value] of Object.entries(LOOKS)) {
     await closeWindows(page);
   });
 }
+
+/**
+ * The screens the board never drew, once per width in Apricot light: they take
+ * the new tokens and the direction's patterns. Named `undrawn-<what>-<width>.png`.
+ */
+test("the undrawn screens, light", async ({ page, request }, info) => {
+  const width = info.project.use.viewport?.width ?? 0;
+  const phone = width < 600;
+  await setLook(request, LOOKS.light);
+  await openDesktop(page);
+  const taskbar = page.getByTestId("taskbar");
+
+  // The desktop's context menu, from an empty spot of the wallpaper.
+  const box = page.viewportSize() ?? { width, height: 800 };
+  await page.mouse.click(box.width - 30, box.height / 2, { button: "right" });
+  await expect(page.getByRole("menu").last()).toBeVisible();
+  await shoot(page, "undrawn-desktop-menu", width);
+  await page.keyboard.press("Escape");
+
+  // The tray: the volume, the notification panel and the clock's calendar.
+  await taskbar
+    .getByRole("button", { name: /^(Volume|Mute|Unmute|Sound)/ })
+    .first()
+    .click();
+  await shoot(page, "undrawn-tray-volume", width);
+  await page.keyboard.press("Escape");
+  await taskbar.getByRole("button", { name: /^Notifications/ }).click();
+  await shoot(page, "undrawn-notification-panel", width);
+  await page.keyboard.press("Escape");
+  await taskbar.getByRole("button", { name: /\d{2}:\d{2}/ }).click();
+  await shoot(page, "undrawn-tray-calendar", width);
+  await page.keyboard.press("Escape");
+
+  // A toast, raised through the desktop's own notification store.
+  await page.evaluate(async () => {
+    const path = "/src/shared/store/notificationStore.ts";
+    const store = (await import(/* @vite-ignore */ path)) as {
+      notify: (n: { title: string; body: string; level: "info" }) => void;
+    };
+    store.notify({ title: "Screenshot check", body: "A toast for the redesign's screenshots.", level: "info" });
+  });
+  const toast = page.getByRole("status").filter({ hasText: "Screenshot check" });
+  await expect(toast).toBeVisible();
+  await shoot(page, "undrawn-toast", width);
+  await toast.getByRole("button", { name: "Dismiss notification" }).click();
+
+  // The command palette and the shortcuts overlay.
+  await taskbar.getByRole("button", { name: "Search", exact: true }).click();
+  await shoot(page, "undrawn-palette", width);
+  await page.keyboard.press("Escape");
+  if (!phone) {
+    await page.keyboard.press("F1");
+    await expect(page.getByRole("dialog", { name: "Keyboard shortcuts" })).toBeVisible();
+    await shoot(page, "undrawn-shortcuts", width);
+    await page.keyboard.press("Escape");
+  }
+
+  // A window's taskbar menu, and the window frame with an app in it.
+  await openFromStart(page, "Calculator");
+  await shoot(page, "undrawn-window", width);
+  await taskbar.getByRole("button", { name: "Calculator" }).click({ button: "right" });
+  await shoot(page, "undrawn-taskbar-menu", width);
+  await page.keyboard.press("Escape");
+  await closeWindows(page);
+
+  // The cover screen, and back.
+  const menu = await openStart(page);
+  await menu.getByRole("menuitem", { name: "Cover screen" }).click();
+  await expect(page.getByRole("button", { name: "Uncover" })).toBeVisible();
+  await shoot(page, "undrawn-cover", width);
+  await page.getByRole("button", { name: "Uncover" }).click();
+
+  // Settings' other panels, a screen at a time.
+  const settings = await openFromStart(page, "Settings");
+  const scroller = settings.locator(".custom-scrollbar").first();
+  for (let i = 1; i <= 6; i++) {
+    await scroller.evaluate((el, n) => el.scrollTo({ top: n * el.clientHeight * 0.9 }), i);
+    await shoot(page, `undrawn-settings-${i}`, width);
+  }
+  await closeWindows(page);
+});

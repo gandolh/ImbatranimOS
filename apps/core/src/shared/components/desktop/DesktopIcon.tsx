@@ -105,7 +105,10 @@ export function DesktopIcon({
           "rounded-tile flex h-[40px] w-[40px] shrink-0 items-center justify-center border",
           selected
             ? "border-primary bg-primary-container text-on-primary-container"
-            : "border-outline-variant bg-surface-container-low text-on-surface apricot:border-transparent apricot:bg-surface-bright apricot:text-primary apricot:shadow-(--k-shadow-tile)",
+            : // Apricot's look is the base and Classic's the scoped one: a kit
+              // app's stylesheet, loaded after the desktop's, defines the same
+              // utilities and would otherwise undo an `apricot:` override.
+              "bg-surface-bright text-primary [[data-os-theme=classic]_&]:border-outline-variant [[data-os-theme=classic]_&]:bg-surface-container-low [[data-os-theme=classic]_&]:text-on-surface border-transparent shadow-(--k-shadow-tile) [[data-os-theme=classic]_&]:shadow-none",
         )}
       >
         <Icon size={20} strokeWidth={1.75} className="text-current" />

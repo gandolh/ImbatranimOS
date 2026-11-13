@@ -336,7 +336,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
             {pinned.length > 0 && (
               <div role="group" aria-label="Pinned">
                 <h2 className={GROUP_LABEL}>Pinned</h2>
-                <div className="mt-[12px] mb-[20px] grid grid-cols-3 gap-x-1 gap-y-2 max-[600px]:mt-[4px] max-[600px]:mb-[8px]">
+                <div className="mt-[12px] mb-[20px] grid grid-cols-3 gap-x-1 gap-y-2 max-[600px]:mt-[4px] max-[600px]:mb-[8px] max-[600px]:gap-y-[2px]">
                   {pinned.map((app) => {
                     const Icon = app.icon;
                     return (
@@ -359,7 +359,9 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                         <span className="rounded-tile bg-surface-bright text-primary flex h-[52px] w-[52px] items-center justify-center shadow-(--k-shadow-tile) max-[600px]:h-[48px] max-[600px]:w-[48px]">
                           <Icon size={22} strokeWidth={1.75} />
                         </span>
-                        <span className="text-on-surface text-control w-full break-words">{app.name}</span>
+                        <span className="text-on-surface text-control pointer-coarse:text-label w-full break-words">
+                          {app.name}
+                        </span>
                       </button>
                     );
                   })}

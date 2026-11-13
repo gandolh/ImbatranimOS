@@ -18,9 +18,7 @@ export function ShortcutList() {
     <div className="flex flex-col gap-4">
       {groups.map(([scope, list]) => (
         <section key={scope}>
-          <h3 className="font-ui text-on-surface-variant text-label mb-1.5 font-semibold tracking-wider uppercase">
-            {scope}
-          </h3>
+          <h3 className="font-ui text-on-surface-variant text-label mb-1.5 font-semibold">{scope}</h3>
           <div className="rounded-control border-outline-variant border">
             {list.map((s, i) => (
               <div

@@ -39,7 +39,7 @@ export function DesktopContextMenu({
       type: "custom",
       key: "header",
       children: (
-        <div className="text-on-surface-variant text-micro flex items-center gap-1.5 px-3 pt-1 pb-1.5 font-semibold tracking-widest uppercase">
+        <div className="text-on-surface-variant text-label flex items-center gap-1.5 px-3 pt-1 pb-1.5 font-semibold">
           <LayoutGrid size={10} />
           Widgets
         </div>

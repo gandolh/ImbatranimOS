@@ -53,9 +53,7 @@ export function TaskbarContextMenu({
       key: "workspaces",
       children: (
         <>
-          <div className="text-on-surface-variant text-tiny px-2.5 pt-1.5 font-semibold tracking-widest uppercase">
-            Move to workspace
-          </div>
+          <div className="text-on-surface-variant text-label px-2.5 pt-1.5 font-semibold">Move to workspace</div>
           <div className="flex gap-1 px-2.5 py-1.5">
             {WORKSPACE_IDS.map((id: WorkspaceId) => (
               <button

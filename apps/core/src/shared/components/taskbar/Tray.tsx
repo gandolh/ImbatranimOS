@@ -91,7 +91,7 @@ function NotificationBell() {
           <Bell size={18} strokeWidth={1.75} className={cn(dnd && "opacity-50")} />
           {unread > 0 && (
             <span
-              className="bg-primary text-on-primary text-micro absolute top-1.5 right-1 flex h-3.5 min-w-3.5 items-center justify-center px-0.5 leading-none font-semibold tabular-nums"
+              className="bg-primary text-on-primary text-label rounded-small absolute top-0 right-0 flex h-[15px] min-w-[15px] items-center justify-center px-0.5 leading-none font-semibold tabular-nums"
               aria-hidden
             >
               {unread > 99 ? "99+" : unread}

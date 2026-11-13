@@ -40,7 +40,7 @@ function Row({ item, onOpen }: { item: NotificationItem; onOpen: () => void }) {
       <div className="min-w-0 flex-1">
         <div className="text-on-surface text-control truncate font-semibold">{item.title}</div>
         {item.body && <div className="text-on-surface-variant text-label mt-0.5 break-words">{item.body}</div>}
-        <div className="text-on-surface-variant/80 text-tiny mt-0.5 tabular-nums">{formatRelative(item.timestamp)}</div>
+        <div className="text-on-surface-variant text-label mt-0.5 tabular-nums">{formatRelative(item.timestamp)}</div>
       </div>
       <button
         onClick={(e) => {
@@ -82,7 +82,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
             onPressedChange={setDnd}
             title={dnd ? "Do Not Disturb is on" : "Do Not Disturb is off"}
             className={cn(
-              "rounded-control text-tiny flex items-center gap-1 px-1.5 py-1 outline-none",
+              "rounded-control text-label flex items-center gap-1 px-1.5 py-1 outline-none",
               "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
               dnd
                 ? "bg-primary-container text-on-primary-container"

@@ -267,7 +267,7 @@ export function FilePicker({
                   <span className="font-ui text-on-surface text-control min-w-0 flex-1 truncate">
                     {f.path.split("/").pop() ?? f.path}
                   </span>
-                  <span className="font-ui text-on-surface-variant text-tiny min-w-0 shrink truncate">
+                  <span className="font-ui text-on-surface-variant text-label min-w-0 shrink truncate">
                     {ROOTS.find((r) => r.id === f.root)?.label ?? f.root}/{f.path}
                   </span>
                 </button>

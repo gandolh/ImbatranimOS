@@ -165,7 +165,7 @@ export function CommandPalette({ open, onClose }: Props) {
               return (
                 <li key={group} role="presentation">
                   {/* Group header */}
-                  <div className="border-outline-variant bg-surface-container text-on-surface-variant font-ui text-tiny border-b px-3 py-1 font-semibold tracking-widest uppercase">
+                  <div className="border-outline-variant bg-surface-container text-on-surface-variant font-ui text-label border-b px-3 py-1 font-semibold">
                     {group}
                   </div>
                   {/* Group items */}

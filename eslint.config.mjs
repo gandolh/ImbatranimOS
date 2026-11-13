@@ -14,6 +14,10 @@ export default [
     scripts: ["scripts"],
     // Jest's specs (`*.spec.ts`, and everything under apps/backend/test) are tests too.
     tests: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}", "apps/backend/test/**"],
+    // The desktop's browser checks, run by hand against the dev container.
+    playwright: ["apps/core/e2e/**", "apps/core/playwright.config.ts"],
+    // Playwright loads its global setup and teardown as default exports.
+    defaultExports: ["apps/core/e2e/global*.ts"],
     // The calculator tests wrap `expect` in `near`, and the e2e specs assert through supertest's `.expect()`.
     assertFunctionNames: ["expect", "expectTypeOf", "near", "**.expect", "checkCommit"],
     // The database service reports a failed migration on the console before the app has a logger to report it to.

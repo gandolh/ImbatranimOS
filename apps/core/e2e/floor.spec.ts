@@ -1,11 +1,13 @@
 import { expect, test, type Locator } from "@playwright/test";
 import {
+  LOOKS,
   closeWindows,
   focusRing,
   openDesktop,
   openFromStart,
   openStart,
   outsideViewport,
+  setLook,
   startButton,
   startMenu,
 } from "./desktop";
@@ -18,6 +20,18 @@ import {
  */
 
 const isPhone = (name: string) => name.startsWith("phone");
+
+/**
+ * The look to check in (light, dark, classic-light or classic-dark): set
+ * OS_E2E_LOOK, or leave it out to check the account's own appearance.
+ */
+const LOOK = process.env.OS_E2E_LOOK;
+test.beforeEach(async ({ request }) => {
+  if (!LOOK) return;
+  const look = LOOKS[LOOK];
+  if (!look) throw new Error(`OS_E2E_LOOK is one of ${Object.keys(LOOKS).join(", ")}`);
+  await setLook(request, look);
+});
 
 test.describe("on a desktop", () => {
   test.beforeEach(() => {

@@ -29,18 +29,20 @@ function letterOf(name: string): string {
 }
 
 /**
- * An entry: a soft fill on hover and a 2 px strong ring on keyboard focus
- * (2026-11-13), so the focused entry shows at 3:1 on every pane.
+ * An entry: a soft fill on hover and a 2 px ring on keyboard focus
+ * (2026-11-13), so the focused entry shows at 3:1 on every pane: the strong
+ * accent in Apricot, the text colour in Classic, whose crimson is under 3:1 on
+ * its dark panes.
  */
 const entryClass = cn(
   "group rounded-item text-left outline-none",
   "hover:bg-surface-container-high",
-  "focus-visible:ring-primary focus-visible:bg-surface-container-high focus-visible:ring-2 focus-visible:ring-inset",
+  "focus-visible:ring-on-surface apricot:focus-visible:ring-primary focus-visible:bg-surface-container-high focus-visible:ring-2 focus-visible:ring-inset",
 );
 
-/** A list row's tile: the glyph in the strong accent on a raised square. */
+/** A list row's tile: the glyph on a raised square, in the strong accent in Apricot. */
 const ROW_TILE =
-  "rounded-item bg-surface-bright text-primary flex h-[28px] w-[28px] shrink-0 items-center justify-center shadow-(--k-shadow-tile)";
+  "rounded-item bg-surface-bright text-on-surface apricot:text-primary flex h-[28px] w-[28px] shrink-0 items-center justify-center shadow-(--k-shadow-tile)";
 
 /** A group's label: sentence case, 11 px at weight 600 (12 on a touch screen). */
 const GROUP_LABEL = "text-on-surface-variant text-label font-semibold";
@@ -257,9 +259,11 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       className={cn(
         // Two panes, 704 px wide, as tall as the screen allows above the
         // taskbar (2026-11-13); a full-screen sheet above it on a phone.
-        "z-start fixed bottom-[52px] left-2 flex h-[min(740px,calc(100svh-60px))] w-[704px] max-w-[calc(100vw-16px)] flex-col",
+        // Apricot's floats 8 px clear of the bar and the edge; Classic's sits on them.
+        "z-start apricot:bottom-[52px] apricot:left-2 fixed bottom-[44px] left-0 flex h-[min(740px,calc(100svh-60px))] w-[704px] max-w-[calc(100vw-16px)] flex-col",
         "rounded-menu border-outline-variant bg-surface-container-low overflow-hidden border shadow-(--k-shadow-menu)",
         "max-[600px]:inset-x-0 max-[600px]:top-[10px] max-[600px]:bottom-[56px] max-[600px]:h-auto max-[600px]:w-auto max-[600px]:max-w-none",
+        "max-[600px]:apricot:inset-x-0 max-[600px]:apricot:bottom-[56px]",
         "max-[600px]:rounded-t-[18px] max-[600px]:rounded-b-none max-[600px]:border-x-0 max-[600px]:border-b-0",
       )}
     >
@@ -356,7 +360,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                           "rounded-control flex flex-col items-center gap-2 px-1 py-[4px] text-center max-[600px]:gap-1",
                         )}
                       >
-                        <span className="rounded-tile bg-surface-bright text-primary flex h-[52px] w-[52px] items-center justify-center shadow-(--k-shadow-tile) max-[600px]:h-[48px] max-[600px]:w-[48px]">
+                        <span className="rounded-tile bg-surface-bright text-on-surface apricot:text-primary flex h-[52px] w-[52px] items-center justify-center shadow-(--k-shadow-tile) max-[600px]:h-[48px] max-[600px]:w-[48px]">
                           <Icon size={22} strokeWidth={1.75} />
                         </span>
                         <span className="text-on-surface text-control pointer-coarse:text-label w-full break-words">
@@ -410,7 +414,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                 <section key={letter} role="group" aria-label={letter}>
                   <h3
                     aria-hidden
-                    className="font-display text-index text-primary bg-surface-container sticky top-0 pt-[4px] pr-[16px] pl-[24px] font-bold max-[600px]:pt-[8px]"
+                    className="font-display text-index text-on-surface-variant apricot:text-primary bg-surface-container sticky top-0 pt-[4px] pr-[16px] pl-[24px] font-bold max-[600px]:pt-[8px]"
                   >
                     {letter}
                   </h3>

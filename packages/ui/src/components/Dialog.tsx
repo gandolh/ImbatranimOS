@@ -82,7 +82,7 @@ export function Dialog({
               <BaseDialog.Title className="font-ui text-on-surface text-body font-semibold">{title}</BaseDialog.Title>
               <BaseDialog.Close
                 aria-label="Close"
-                className="font-ui text-on-surface-variant hover:bg-error-container hover:text-on-error-container rounded-item text-body focus-visible:ring-primary flex h-[24px] w-[24px] cursor-pointer items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset"
+                className="font-ui text-on-surface-variant hover:bg-error-container hover:text-on-error-container rounded-item text-body focus-visible:ring-primary focus-visible:bg-surface-container-lowest flex h-[24px] w-[24px] cursor-pointer items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset"
               >
                 ×
               </BaseDialog.Close>

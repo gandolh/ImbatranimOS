@@ -6220,7 +6220,7 @@ skill's rules and reconciles them with [wiki/ui-conventions.md](wiki/ui-conventi
 (rule 42 is stale, rule 7 beats a `dark:` variant, rule 40 yields for form
 dialogs), moves the 13 px root onto `body` with `--spacing` set so nothing
 moves, and adds the System mode to the light and dark choice;
-[88](briefs/todo/88-a-redesign-with-hallmark-on-the-estate-board.md) is the
+[88](briefs/done/88-a-redesign-with-hallmark-on-the-estate-board.md) is the
 redesign, on the estate board, inside the locked skeleton and "best UX, not
 Win7". No Tailwind brief (core is on Tailwind v4 already) and no server brief
 (the backend is NestJS, not Fastify).
@@ -6265,3 +6265,19 @@ becomes a two-pane menu at desktop widths and a full-screen sheet on a phone
 inherit the new values now and the kit's source changes at their next
 `kit:sync`, and direction B is built rather than the runner-up, "Apricot,
 settled". Brief 88's build starts from this approval.
+
+## [2026-11-13] done | Brief 88: the redesign, "Start, opened wide"
+
+[Brief 88](briefs/done/88-a-redesign-with-hallmark-on-the-estate-board.md)
+built in local commits 1.317.0 to 1.332.0: the approved token set and Solway
+as Apricot's display face, then sign-in, the desktop icons, Start (two panes
+at 704 px, a sheet on a phone) and the phone taskbar, the window frame
+(phone windows maximized, the catalog's kit apps filled below 1280), the
+undrawn shell layers, Settings, and the kit (a bottom sheet, sentence-case
+labels, low floating bodies). Playwright 1.63.0 runs the Floor checks against
+the dev container; `npm run check` passes. decisions-themes.md carries three
+revisit notes; ui-conventions.md and ui-desktop-layer.md follow what shipped.
+The todo `the-kit-checkbox-border-is-faint-in-classic-dark` is closed by the
+kit commit (the Checkbox draws its box in outline, 3:1 in all four looks) and
+removed. Owner steps: the server phase of the `imbatranim-os` deploy, then
+`kit:sync` in imbatranim-apps.

@@ -16,7 +16,7 @@ test.beforeEach(() => {
   const info = test.info();
   test.skip(!SHOTS_DIR, "SHOTS_DIR names the folder");
   test.skip(info.project.name === "laptop-1366", "the board drew 1280 and the phones");
-  test.skip(info.project.name === "phone-360" && test.info().title.startsWith("the undrawn"), "once per width");
+  test.skip(info.project.name === "phone-360" && /^the (undrawn|built-in)/.test(test.info().title), "once per width");
 });
 
 async function shoot(page: Page, name: string, width: number) {
@@ -142,4 +142,36 @@ test("the undrawn screens, light", async ({ page, request }, info) => {
     await shoot(page, `undrawn-settings-${i}`, width);
   }
   await closeWindows(page);
+});
+
+/** The 15 built-in apps take the tokens only: each opened once per width, nothing clicked inside. */
+const BUILT_IN = [
+  "Browser",
+  "Calculator",
+  "Calendar",
+  "Clock",
+  "Code Editor",
+  "File Manager",
+  "Image Viewer",
+  "System Log",
+  "Media Player",
+  "Notepad",
+  "Paint",
+  "Terminal",
+  "Snipping Tool",
+  "Sticky Notes",
+  "System Monitor",
+];
+
+test("the built-in apps, light", async ({ page, request }, info) => {
+  test.setTimeout(240_000);
+  const width = info.project.use.viewport?.width ?? 0;
+  await setLook(request, LOOKS.light);
+  await openDesktop(page);
+  for (const name of BUILT_IN) {
+    await openFromStart(page, name);
+    await page.waitForTimeout(1200);
+    await shoot(page, `app-${name.toLowerCase().replace(/ /g, "-")}`, width);
+    await closeWindows(page);
+  }
 });

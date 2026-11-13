@@ -6247,3 +6247,11 @@ imports, one enum; knip accepts 6 dead core files and 160 unused exports; 57 imp
 
 [Brief 87](briefs/done/87-base-ui-by-the-conventions.md) built in eight local commits (1.307.0 to 1.314.0): the z scale and a conforming `Dialog`, `ConfirmDialog` on `AlertDialog`, the kit `Popover` (core imports no Base UI), choice sets on `RadioGroup`, `ToggleGroup`, `Toggle` and `Tabs`, `Slider` and the kit `Select`, the 13 px on `body` with `--spacing` and a named type scale, the Light / Dark / System choice, and `check-base-ui` strict with its exceptions on record. Before and after screenshots show no change beyond the System radio, the confirm's focus and 1 to 2 px in Open with. The decisions-themes page has a revisit note (System offered, light still the default). Owner steps: push, deploy the server phase, then `kit:sync` in imbatranim-apps.
 
+
+## [2026-11-13] todo | Brief 89: video in a Linux window goes as a video stream
+
+Filed from the owner's grill on the self-hosted tools research in vps-deploy
+(the RustDesk idea): measure H.264 and VP8 against today's JPEG path under
+the production cap, and ship a WebCodecs-decoded stream for video regions
+only if it halves the bytes at no more CPU. Board ticket imbatranimOS-89,
+To Do. Not committed.

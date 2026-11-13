@@ -274,12 +274,12 @@ describe("Start's size", () => {
 
   it("becomes one scrolling sheet above the taskbar on a phone", () => {
     const menu = container.querySelector<HTMLElement>('[role="menu"][aria-label="Start menu"]')!;
-    expect(menu.className).toContain("max-[600px]:inset-x-0");
-    expect(menu.className).toContain("max-[600px]:bottom-[56px]");
+    expect(menu.className).toContain("phone:inset-x-0");
+    expect(menu.className).toContain("phone:bottom-[56px]");
     const body = container.querySelector<HTMLElement>('[role="group"][aria-label="Pinned"]')!.parentElement!
       .parentElement!;
-    expect(body.className).toContain("max-[600px]:overflow-y-auto");
+    expect(body.className).toContain("phone:overflow-y-auto");
     const list = container.querySelector<HTMLElement>('[role="group"][aria-label="F"]')!.parentElement!;
-    expect(list.className).toContain("max-[600px]:overflow-visible");
+    expect(list.className).toContain("phone:overflow-visible");
   });
 });

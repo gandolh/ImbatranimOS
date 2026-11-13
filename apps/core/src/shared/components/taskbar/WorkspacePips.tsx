@@ -34,7 +34,7 @@ export function WorkspacePips() {
   return (
     <>
       <div
-        className="border-outline-variant apricot:border-l-0 flex shrink-0 items-center gap-1 border-l px-2 max-[600px]:hidden"
+        className="border-outline-variant apricot:border-l-0 phone:hidden flex shrink-0 items-center gap-1 border-l px-2"
         role="group"
         aria-label="Workspaces"
       >
@@ -72,7 +72,7 @@ export function WorkspacePips() {
           const r = e.currentTarget.getBoundingClientRect();
           setMenuAt({ x: r.left, y: r.top });
         }}
-        className="focus-visible:ring-primary relative mx-[2px] hidden h-[48px] w-[48px] shrink-0 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset max-[600px]:flex max-[380px]:w-[44px]"
+        className="focus-visible:ring-primary phone:flex relative mx-[2px] hidden h-[48px] w-[48px] shrink-0 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset max-[380px]:w-[44px]"
       >
         <span aria-hidden className="border-primary bg-primary-container rounded-control absolute inset-[7px] border" />
         <span className="text-on-primary-container text-subhead relative -mt-[4px] font-semibold tabular-nums">

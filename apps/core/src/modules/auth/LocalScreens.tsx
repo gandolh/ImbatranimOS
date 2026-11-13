@@ -14,9 +14,9 @@ import { useAuthStore } from "./store/authStore";
 const MIN_LENGTH = 10;
 
 /** The sign-in card's one action: a full-width band, 44 px, 48 on a phone. */
-const SUBMIT = "text-body h-[44px] w-full justify-center font-semibold max-[600px]:h-[48px]";
+const SUBMIT = "text-body h-[44px] w-full justify-center font-semibold phone:h-[48px]";
 /** The card's fields: 44 px, 48 and 16 px type on a phone so it does not zoom on focus. */
-const FIELD = "h-[44px] max-[600px]:h-[48px] pointer-coarse:text-index";
+const FIELD = "h-[44px] phone:h-[48px] pointer-coarse:text-index";
 
 export function LocalSetupScreen({ tokenRequired }: { tokenRequired: boolean }) {
   const refresh = useAuthStore((s) => s.refresh);

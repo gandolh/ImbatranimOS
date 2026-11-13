@@ -51,7 +51,7 @@ const GROUP_LABEL = "text-on-surface-variant text-label font-semibold";
 const ACT = cn(
   "rounded-control bg-surface-container-lowest border-outline text-on-surface text-control flex h-[34px] shrink-0 items-center gap-2 border px-[12px] font-semibold whitespace-nowrap outline-none",
   "hover:bg-surface-container-high focus-visible:ring-primary focus-visible:ring-2",
-  "max-[600px]:h-[48px] max-[600px]:text-subhead",
+  "phone:h-[48px] phone:text-subhead",
 );
 
 type StartMenuProps = {
@@ -229,7 +229,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
         className={cn(
           entryClass,
           "border-outline-variant flex w-full flex-[1_0_48px] items-center gap-2 rounded-none border-b px-[8px] last:border-b-0",
-          "max-[600px]:min-h-[44px] max-[600px]:flex-none max-[600px]:px-[4px]",
+          "phone:min-h-[44px] phone:flex-none phone:px-[4px]",
         )}
       >
         <span className={ROW_TILE}>
@@ -237,11 +237,11 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
         </span>
         {/* The path beside the name where both fit on a phone, under it where
             not; neither is ever cut. */}
-        <span className="flex min-w-0 flex-1 flex-col max-[600px]:flex-row max-[600px]:flex-wrap max-[600px]:items-baseline max-[600px]:justify-between max-[600px]:gap-x-3">
-          <span className="text-on-surface text-control max-[600px]:text-subhead font-semibold break-words">
+        <span className="phone:flex-row phone:flex-wrap phone:items-baseline phone:justify-between phone:gap-x-3 flex min-w-0 flex-1 flex-col">
+          <span className="text-on-surface text-control phone:text-subhead font-semibold break-words">
             {f.path.split("/").pop() ?? f.path}
           </span>
-          <span className="text-on-surface-variant text-label break-all max-[600px]:text-right">{f.path}</span>
+          <span className="text-on-surface-variant text-label phone:text-right break-all">{f.path}</span>
         </span>
       </button>,
     ];
@@ -262,18 +262,18 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
         // Apricot's floats 8 px clear of the bar and the edge; Classic's sits on them.
         "z-start apricot:bottom-[52px] apricot:left-2 fixed bottom-[44px] left-0 flex h-[min(740px,calc(100svh-60px))] w-[704px] max-w-[calc(100vw-16px)] flex-col",
         "rounded-menu border-outline-variant bg-surface-container-low overflow-hidden border shadow-(--k-shadow-menu)",
-        "max-[600px]:inset-x-0 max-[600px]:top-[10px] max-[600px]:bottom-[56px] max-[600px]:h-auto max-[600px]:w-auto max-[600px]:max-w-none",
-        "max-[600px]:apricot:inset-x-0 max-[600px]:apricot:bottom-[56px]",
-        "max-[600px]:rounded-t-[18px] max-[600px]:rounded-b-none max-[600px]:border-x-0 max-[600px]:border-b-0",
+        "phone:inset-x-0 phone:top-[10px] phone:bottom-[56px] phone:h-auto phone:w-auto phone:max-w-none",
+        "phone:apricot:inset-x-0 phone:apricot:bottom-[56px]",
+        "phone:rounded-t-[18px] phone:rounded-b-none phone:border-x-0 phone:border-b-0",
       )}
     >
       {/* Search, on top: every way of finding things starts here. */}
-      <div className="border-outline-variant bg-surface-container-low shrink-0 border-b px-[16px] py-[8px] max-[600px]:px-[12px]">
-        <label className="text-on-surface-variant relative block h-[40px] max-[600px]:h-[48px]">
+      <div className="border-outline-variant bg-surface-container-low phone:px-[12px] shrink-0 border-b px-[16px] py-[8px]">
+        <label className="text-on-surface-variant phone:h-[48px] relative block h-[40px]">
           <Search
             size={18}
             strokeWidth={1.75}
-            className="pointer-events-none absolute top-1/2 left-[12px] -translate-y-1/2 max-[600px]:left-[14px]"
+            className="phone:left-[14px] pointer-events-none absolute top-1/2 left-[12px] -translate-y-1/2"
           />
           <input
             ref={searchRef}
@@ -293,7 +293,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
             className={cn(
               "rounded-control border-outline bg-surface-container-lowest text-on-surface text-body placeholder:text-on-surface-variant block h-full w-full border pr-[12px] pl-[40px] outline-none",
               "focus:ring-primary focus:border-primary focus:ring-2",
-              "pointer-coarse:text-index max-[600px]:pl-[44px]",
+              "pointer-coarse:text-index phone:pl-[44px]",
             )}
           />
         </label>
@@ -332,15 +332,15 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
           )}
         </div>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)] max-[600px]:flex max-[600px]:flex-col max-[600px]:overflow-y-auto">
+        <div className="phone:flex phone:flex-col phone:overflow-y-auto grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]">
           {/* Pinned and Recent, on the panel's own surface. First in the
               document, so the keyboard and a phone's sheet reach them first;
               the right-hand column at desktop widths. */}
-          <div className="bg-surface-container-low col-start-2 row-start-1 flex min-h-0 flex-col overflow-y-auto px-[20px] py-[16px] max-[600px]:flex-none max-[600px]:overflow-visible max-[600px]:px-[16px] max-[600px]:pt-[12px] max-[600px]:pb-[8px]">
+          <div className="bg-surface-container-low phone:flex-none phone:overflow-visible phone:px-[16px] phone:pt-[12px] phone:pb-[8px] col-start-2 row-start-1 flex min-h-0 flex-col overflow-y-auto px-[20px] py-[16px]">
             {pinned.length > 0 && (
               <div role="group" aria-label="Pinned">
                 <h2 className={GROUP_LABEL}>Pinned</h2>
-                <div className="mt-[12px] mb-[20px] grid grid-cols-3 gap-x-1 gap-y-2 max-[600px]:mt-[4px] max-[600px]:mb-[8px] max-[600px]:gap-y-[2px]">
+                <div className="phone:mt-[4px] phone:mb-[8px] phone:gap-y-[2px] mt-[12px] mb-[20px] grid grid-cols-3 gap-x-1 gap-y-2">
                   {pinned.map((app) => {
                     const Icon = app.icon;
                     return (
@@ -357,10 +357,10 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                         onContextMenu={(e) => openEntryMenu(e, app.id)}
                         className={cn(
                           entryClass,
-                          "rounded-control flex flex-col items-center gap-2 px-1 py-[4px] text-center max-[600px]:gap-1",
+                          "rounded-control phone:gap-1 flex flex-col items-center gap-2 px-1 py-[4px] text-center",
                         )}
                       >
-                        <span className="rounded-tile bg-surface-bright text-on-surface apricot:text-primary flex h-[52px] w-[52px] items-center justify-center shadow-(--k-shadow-tile) max-[600px]:h-[48px] max-[600px]:w-[48px]">
+                        <span className="rounded-tile bg-surface-bright text-on-surface apricot:text-primary phone:h-[48px] phone:w-[48px] flex h-[52px] w-[52px] items-center justify-center shadow-(--k-shadow-tile)">
                           <Icon size={22} strokeWidth={1.75} />
                         </span>
                         <span className="text-on-surface text-control pointer-coarse:text-label w-full break-words">
@@ -376,8 +376,8 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
             {/* Recent files: hidden entirely while the list is empty. Its rows
                 share the rest of the pane's height, so no band is left empty. */}
             {recentRows.length > 0 && (
-              <div role="group" aria-label="Recent" className="flex flex-[1_0_auto] flex-col max-[600px]:flex-none">
-                <div className="mb-[4px] flex min-h-[32px] items-center justify-between max-[600px]:min-h-[36px]">
+              <div role="group" aria-label="Recent" className="phone:flex-none flex flex-[1_0_auto] flex-col">
+                <div className="phone:min-h-[36px] mb-[4px] flex min-h-[32px] items-center justify-between">
                   <span className={cn(GROUP_LABEL, "flex items-center gap-2")}>
                     <History size={14} strokeWidth={1.75} />
                     Recent
@@ -387,12 +387,12 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                     aria-label="Clear recent files"
                     title="Clear recent files"
                     onClick={() => void clearRecentFiles()}
-                    className="rounded-control text-on-surface-variant hover:bg-surface-container-high focus-visible:ring-primary -mr-[8px] flex h-[32px] w-[32px] items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset max-[600px]:h-[48px] max-[600px]:w-[48px]"
+                    className="rounded-control text-on-surface-variant hover:bg-surface-container-high focus-visible:ring-primary phone:h-[48px] phone:w-[48px] -mr-[8px] flex h-[32px] w-[32px] items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-inset"
                   >
                     <Trash2 size={16} strokeWidth={1.75} />
                   </button>
                 </div>
-                <div className="border-outline-variant flex flex-[1_0_auto] flex-col border-t max-[600px]:flex-none">
+                <div className="border-outline-variant phone:flex-none flex flex-[1_0_auto] flex-col border-t">
                   {recentRows}
                 </div>
               </div>
@@ -402,19 +402,19 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
           {/* Every app A to Z, on the tinted pane, with whole descriptions. The
               letter heads stick while their group scrolls; the list fades at
               its foot and keeps its scrollbar, so it shows that it goes on. */}
-          <div className="border-outline-variant bg-surface-container relative col-start-1 row-start-1 flex min-h-0 border-r max-[600px]:flex-none max-[600px]:border-t max-[600px]:border-r-0">
+          <div className="border-outline-variant bg-surface-container phone:flex-none phone:border-t phone:border-r-0 relative col-start-1 row-start-1 flex min-h-0 border-r">
             <div
               className={cn(
                 "min-w-0 flex-1 overflow-y-auto pb-[4px]",
                 "[mask-image:linear-gradient(to_bottom,black_calc(100%-30px),transparent)]",
-                "max-[600px]:overflow-visible max-[600px]:[mask-image:none] max-[600px]:pb-[12px]",
+                "phone:overflow-visible phone:[mask-image:none] phone:pb-[12px]",
               )}
             >
               {atoz.map(({ letter, apps }) => (
                 <section key={letter} role="group" aria-label={letter}>
                   <h3
                     aria-hidden
-                    className="font-display text-index text-on-surface-variant apricot:text-primary bg-surface-container sticky top-0 pt-[4px] pr-[16px] pl-[24px] font-bold max-[600px]:pt-[8px]"
+                    className="font-display text-index text-on-surface-variant apricot:text-primary bg-surface-container phone:pt-[8px] sticky top-0 pt-[4px] pr-[16px] pl-[24px] font-bold"
                   >
                     {letter}
                   </h3>
@@ -434,14 +434,14 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
                         onContextMenu={(e) => openEntryMenu(e, app.id)}
                         className={cn(
                           entryClass,
-                          "mx-[8px] flex w-[calc(100%-16px)] items-start gap-2 p-[8px] max-[600px]:min-h-[48px]",
+                          "phone:min-h-[48px] mx-[8px] flex w-[calc(100%-16px)] items-start gap-2 p-[8px]",
                         )}
                       >
                         <span className={cn(ROW_TILE, "mt-px")}>
                           <Icon size={16} strokeWidth={1.75} />
                         </span>
                         <span className="flex min-w-0 flex-col">
-                          <span className="text-on-surface text-control max-[600px]:text-subhead font-semibold">
+                          <span className="text-on-surface text-control phone:text-subhead font-semibold">
                             {app.name}
                           </span>
                           <span className="text-on-surface-variant text-label break-words">{app.description}</span>
@@ -457,13 +457,13 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
       )}
 
       {/* The foot band: the account, then the two session buttons. */}
-      <div className="border-outline-variant bg-surface-container flex h-[52px] shrink-0 items-center gap-2 border-t px-[16px] max-[600px]:h-auto max-[600px]:px-[12px] max-[600px]:pt-[8px] max-[600px]:pb-[12px]">
+      <div className="border-outline-variant bg-surface-container phone:h-auto phone:px-[12px] phone:pt-[8px] phone:pb-[12px] flex h-[52px] shrink-0 items-center gap-2 border-t px-[16px]">
         <div role="group" aria-label="ImbatranimOS, signed in" className="flex min-w-0 flex-1 items-center gap-2">
           <span className="rounded-tile border-outline-variant bg-surface-container-lowest flex h-[32px] w-[32px] shrink-0 items-center justify-center border">
             <Logo size={18} className="text-on-surface" />
           </span>
           <span className="flex min-w-0 flex-col">
-            <span className="font-display text-on-surface text-lead font-bold max-[600px]:hidden">
+            <span className="font-display text-on-surface text-lead phone:hidden font-bold">
               Imbatranim<span className="text-primary">OS</span>
             </span>
             <span className="text-on-surface-variant text-label">Signed in</span>

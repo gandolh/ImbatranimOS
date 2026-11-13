@@ -148,7 +148,7 @@ export function ToastHost() {
     <div
       ref={stackRef}
       // 12 px above the taskbar (44 px, 56 on a phone).
-      className="z-toast pointer-events-none fixed right-3 bottom-[56px] flex flex-col gap-2 max-[600px]:bottom-[68px]"
+      className="z-toast phone:bottom-[68px] pointer-events-none fixed right-3 bottom-[56px] flex flex-col gap-2"
     >
       {items.map((item) => (
         <Toast key={item.id} item={item} />

@@ -5,6 +5,7 @@ import { useDrag } from "@use-gesture/react";
 import { Minus, Square, X, Copy } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { APP_REGISTRY } from "../../registry/registry";
+import { useRegistryVersion } from "../../registry/marketplace";
 import {
   useWindowStore,
   type SnapRegion,
@@ -160,6 +161,9 @@ export const Window = React.memo(function Window({
 }: WindowProps) {
   const instance = useWindowStore((s) => s.windows.find((w) => w.id === windowId));
   const still = useReducedMotion() === true;
+  // The title band's glyph comes from the registry, which a Marketplace sync
+  // fills after the window may have opened.
+  useRegistryVersion();
   const closeWindow = useWindowStore((s) => s.closeWindow);
   const hideWindow = useWindowStore((s) => s.hideWindow);
   const maximizeWindow = useWindowStore((s) => s.maximizeWindow);
@@ -335,7 +339,7 @@ export const Window = React.memo(function Window({
             className={cn(
               "flex h-[30px] shrink-0 items-center justify-between border-b pr-1 pl-3",
               // Apricot's title band is 40 px (2026-11-13); a phone's is 48.
-              "apricot:h-[40px] max-[600px]:h-[48px]",
+              "apricot:h-[40px] phone:h-[48px]",
               isFocused
                 ? "bg-surface-container-high apricot:bg-surface-container border-outline-variant text-on-surface"
                 : "bg-surface-container apricot:bg-surface-container-low border-outline-variant text-on-surface-variant",
@@ -377,7 +381,7 @@ export const Window = React.memo(function Window({
                 onClick={handleMaximizeToggle}
                 title={instance.isMaximized ? "Restore" : "Maximize"}
                 // A phone's window is always maximized above the taskbar.
-                className="max-[600px]:hidden"
+                className="phone:hidden"
               >
                 {instance.isMaximized ? <Copy size={12} strokeWidth={2} /> : <Square size={11} strokeWidth={2} />}
               </TitleBarButton>
@@ -420,7 +424,7 @@ function TitleBarButton({ onClick, title, isClose = false, className, children }
       title={title}
       className={cn(
         "rounded-control flex h-7 w-7 items-center justify-center",
-        "apricot:rounded-item apricot:h-[28px] apricot:w-[32px] max-[600px]:h-[48px] max-[600px]:w-[48px]",
+        "apricot:rounded-item apricot:h-[28px] apricot:w-[32px] phone:h-[48px] phone:w-[48px]",
         "cursor-pointer border-none text-current outline-none",
         "transition-colors duration-75 motion-reduce:transition-none",
         isClose

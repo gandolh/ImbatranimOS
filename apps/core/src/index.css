@@ -277,6 +277,20 @@
  */
 @custom-variant apricot (&:where([data-os-theme='apricot'], [data-os-theme='apricot'] *));
 
+/*
+ * `phone:` styles a part on a phone, a viewport under 600 px (2026-11-13,
+ * lib/phone.ts). `:root` raises the rule a step: a kit app's stylesheet loads
+ * after this one with utilities of the same names, and its `.flex` or `.grid`
+ * must never undo the desktop's phone layout while the app is open.
+ */
+@custom-variant phone {
+  @media (width < 600px) {
+    :root & {
+      @slot;
+    }
+  }
+}
+
 * {
   box-sizing: border-box;
 }

@@ -18,7 +18,7 @@ export function AuthShell({
       // A warm ground with the dotted grid and a lit centre, the card one step
       // lighter than it (2026-11-13). On a phone the card sits 96 px from the
       // top, clear of the keyboard.
-      className="bg-surface-dim relative flex h-screen w-screen items-center justify-center overflow-y-auto max-[600px]:items-start max-[600px]:pt-[96px]"
+      className="bg-surface-dim phone:items-start phone:pt-[96px] relative flex h-screen w-screen items-center justify-center overflow-y-auto"
       style={{
         backgroundImage:
           "radial-gradient(circle at 50% 46%, var(--k-surface-container-lowest), transparent 62%), radial-gradient(var(--k-outline-variant) 1px, transparent 1px)",

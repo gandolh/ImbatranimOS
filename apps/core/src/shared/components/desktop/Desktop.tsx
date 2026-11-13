@@ -200,7 +200,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
     <div
       ref={sizeRef}
       // Ends at the taskbar: 44 px, 56 on a phone.
-      className="absolute top-0 right-0 bottom-[44px] left-0 w-full overflow-hidden max-[600px]:bottom-[56px]"
+      className="phone:bottom-[56px] absolute top-0 right-0 bottom-[44px] left-0 w-full overflow-hidden"
       style={paper.background}
       onContextMenu={(e) => {
         // Windows are DOM children of this container, so an app that calls
@@ -230,7 +230,7 @@ export function Desktop({ wallpaper }: DesktopProps) {
         ref={iconLayerRef}
         // On a phone the icons that do not fit run on in rows below and this
         // layer scrolls down to them (layoutIcons.ts).
-        className="absolute inset-0 max-[600px]:overflow-y-auto"
+        className="phone:overflow-y-auto absolute inset-0"
         onPointerDown={onLayerPointerDown}
         onPointerMove={onLayerPointerMove}
         onPointerUp={endMarquee}

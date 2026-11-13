@@ -111,7 +111,7 @@ export function Taskbar() {
         "border-outline-variant bg-surface-container-low font-ui z-taskbar fixed inset-x-0 bottom-0 flex h-[44px] items-stretch border-t",
         "apricot:gap-1 apricot:py-[6px] apricot:pr-[12px] apricot:pl-[8px]",
         // A phone: 48 px targets in a 56 px bar, the clock always in view.
-        "max-[600px]:h-[56px] max-[600px]:gap-0 max-[600px]:py-[4px] max-[600px]:pr-[8px] max-[600px]:pl-[4px]",
+        "phone:h-[56px] phone:gap-0 phone:py-[4px] phone:pr-[8px] phone:pl-[4px]",
       )}
     >
       {/* Start button */}
@@ -126,7 +126,7 @@ export function Taskbar() {
           "border-outline-variant apricot:h-[32px] apricot:border-r-0 apricot:pr-[12px] apricot:pl-[8px] border-r",
           "hover:bg-surface-container-high",
           "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
-          "max-[600px]:h-[48px] max-[600px]:w-[48px] max-[600px]:justify-center max-[600px]:border-r-0 max-[600px]:px-0 max-[380px]:w-[44px]",
+          "phone:h-[48px] phone:w-[48px] phone:justify-center phone:border-r-0 phone:px-0 max-[380px]:w-[44px]",
           startOpen && "bg-primary-container text-on-primary-container apricot:border apricot:border-primary",
         )}
       >
@@ -143,7 +143,7 @@ export function Taskbar() {
         />
         <span
           className={cn(
-            "font-display text-lead font-bold max-[600px]:hidden",
+            "font-display text-lead phone:hidden font-bold",
             startOpen ? "text-on-primary-container" : "text-on-surface",
           )}
         >
@@ -163,14 +163,14 @@ export function Taskbar() {
           "border-outline-variant apricot:h-[32px] apricot:w-[32px] apricot:border-r-0 apricot:px-0 border-r",
           "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high",
           "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
-          "max-[600px]:h-[48px] max-[600px]:w-[48px] max-[600px]:border-r-0 max-[600px]:px-0 max-[380px]:w-[44px]",
+          "phone:h-[48px] phone:w-[48px] phone:border-r-0 phone:px-0 max-[380px]:w-[44px]",
         )}
       >
-        <Search size={18} strokeWidth={1.75} className="shrink-0 max-[600px]:size-[20px]" />
+        <Search size={18} strokeWidth={1.75} className="phone:size-[20px] shrink-0" />
       </button>
 
       {/* Running-window buttons; on a phone each is its icon over the current underline. */}
-      <div className="apricot:px-0 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5 max-[600px]:gap-0 max-[600px]:px-0">
+      <div className="apricot:px-0 phone:gap-0 phone:px-0 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">
         {visibleWindows.map((win) => {
           const app = APP_REGISTRY.find((a) => a.id === win.appId);
           const Icon = app?.icon;
@@ -191,7 +191,7 @@ export function Taskbar() {
                 "text-control border border-transparent",
                 "apricot:h-[32px] apricot:pr-[12px] apricot:pl-[8px] apricot:font-semibold",
                 "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
-                "max-[600px]:h-[48px] max-[600px]:w-[48px] max-[600px]:min-w-0 max-[600px]:justify-center max-[600px]:px-0 max-[380px]:w-[44px]",
+                "phone:h-[48px] phone:w-[48px] phone:min-w-0 phone:justify-center phone:px-0 max-[380px]:w-[44px]",
                 isFocused
                   ? "border-outline-variant apricot:border-transparent bg-surface-container-high apricot:bg-surface-container text-on-surface"
                   : minimized
@@ -204,7 +204,7 @@ export function Taskbar() {
                 className={cn(
                   "bg-primary absolute inset-x-0 bottom-0 h-[2px] transition-opacity motion-reduce:transition-none",
                   "apricot:inset-x-[12px] apricot:bottom-[2px] apricot:rounded-small",
-                  "max-[600px]:inset-x-[14px] max-[600px]:bottom-[4px]",
+                  "phone:inset-x-[14px] phone:bottom-[4px]",
                   isFocused ? "opacity-100" : "opacity-0",
                 )}
               />
@@ -212,10 +212,10 @@ export function Taskbar() {
                 <Icon
                   size={16}
                   strokeWidth={1.75}
-                  className={cn("apricot:text-primary shrink-0 max-[600px]:size-[20px]", minimized && "opacity-60")}
+                  className={cn("apricot:text-primary phone:size-[20px] shrink-0", minimized && "opacity-60")}
                 />
               )}
-              <span className={cn("truncate max-[600px]:hidden", minimized && "opacity-60")}>{win.title}</span>
+              <span className={cn("phone:hidden truncate", minimized && "opacity-60")}>{win.title}</span>
             </button>
           );
         })}
@@ -224,7 +224,7 @@ export function Taskbar() {
       <WorkspacePips />
 
       {/* System tray */}
-      <div className="border-outline-variant apricot:border-l-0 flex shrink-0 items-stretch border-l max-[600px]:border-l-0">
+      <div className="border-outline-variant apricot:border-l-0 phone:border-l-0 flex shrink-0 items-stretch border-l">
         <Tray />
       </div>
 

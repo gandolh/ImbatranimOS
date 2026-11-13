@@ -33,7 +33,7 @@ import { useRegistryVersion } from "../../shared/registry/marketplace";
 
 function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: string }) {
   return (
-    <div className="gap-window-padding mt-double mb-window-padding max-[600px]:mb-double flex items-center max-[600px]:mt-[20px]">
+    <div className="gap-window-padding mt-double mb-window-padding phone:mb-double phone:mt-[20px] flex items-center">
       <div className="rounded-control border-outline-variant bg-surface-container text-primary flex h-[36px] w-[36px] shrink-0 items-center justify-center border">
         <Icon size={18} strokeWidth={1.75} />
       </div>
@@ -71,7 +71,7 @@ export function Settings() {
     // (2026-11-13). One scrolling page of sections, fading at its foot so the
     // next section shows it is there.
     <div className="bg-surface-container-low text-on-surface flex h-full flex-col select-none">
-      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_calc(100%-34px),transparent)] px-[28px] pt-[24px] pb-[34px] max-[600px]:px-[16px] max-[600px]:pt-[16px]">
+      <div className="custom-scrollbar phone:px-[16px] phone:pt-[16px] min-h-0 flex-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_calc(100%-34px),transparent)] px-[28px] pt-[24px] pb-[34px]">
         <header>
           <h1 className="font-display text-on-surface text-headline font-bold">Settings</h1>
           <p className="font-content text-on-surface-variant text-body mt-0.5">Tune the look of ImbatranimOS.</p>
@@ -187,7 +187,7 @@ export function Settings() {
         </section>
       </div>
 
-      <div className="border-outline-variant bg-surface-container flex h-[36px] shrink-0 items-center justify-between border-t px-[12px] max-[600px]:hidden">
+      <div className="border-outline-variant bg-surface-container phone:hidden flex h-[36px] shrink-0 items-center justify-between border-t px-[12px]">
         <span className="font-display text-on-surface text-body font-bold">
           Imbatranim<span className="text-primary">OS</span>
         </span>

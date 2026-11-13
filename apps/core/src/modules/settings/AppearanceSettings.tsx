@@ -69,7 +69,7 @@ export function AppearanceSettings() {
         label="Mode"
         value={modePreference}
         onValueChange={setModePreference}
-        className="gap-window-padding flex max-[600px]:gap-2"
+        className="gap-window-padding phone:gap-2 flex"
       >
         {MODES.map((m) => {
           const Icon = m.icon;
@@ -80,7 +80,7 @@ export function AppearanceSettings() {
               value={m.id}
               className={cn(
                 "rounded-control text-control flex h-[40px] flex-1 items-center justify-center gap-2 border px-[12px] font-semibold",
-                "max-[600px]:h-[48px] max-[600px]:gap-1 max-[600px]:px-[8px]",
+                "phone:h-[48px] phone:gap-1 phone:px-[8px]",
                 FOCUS_RING,
                 chosen ? "border-primary bg-primary-container text-on-primary-container" : OPTION,
               )}
@@ -101,7 +101,7 @@ export function AppearanceSettings() {
               value={preset.id}
               title={preset.name}
               className={cn(
-                "group rounded-control flex h-[40px] items-center gap-2 border pr-[12px] pl-[8px] max-[600px]:h-[48px]",
+                "group rounded-control phone:h-[48px] flex h-[40px] items-center gap-2 border pr-[12px] pl-[8px]",
                 FOCUS_RING,
                 chosen ? "border-primary bg-surface-container-high ring-primary ring-1 ring-inset" : OPTION,
               )}
@@ -122,7 +122,7 @@ export function AppearanceSettings() {
         label="Wallpaper"
         value={wallpaper}
         onValueChange={setWallpaper}
-        className="gap-double grid grid-cols-3 max-[600px]:gap-2"
+        className="gap-double phone:gap-2 grid grid-cols-3"
         last
       >
         {WALLPAPERS[theme].map((wp) => {
@@ -139,8 +139,8 @@ export function AppearanceSettings() {
             >
               <div className="aspect-[16/7] w-full" style={wp.preview} />
               {chosen && <ChosenBadge />}
-              <div className="border-outline-variant bg-surface-container gap-half flex items-center border-t px-[12px] py-[8px] max-[600px]:px-[4px]">
-                <Image size={14} strokeWidth={1.75} className="text-on-surface-variant shrink-0 max-[600px]:hidden" />
+              <div className="border-outline-variant bg-surface-container gap-half phone:px-[4px] flex items-center border-t px-[12px] py-[8px]">
+                <Image size={14} strokeWidth={1.75} className="text-on-surface-variant phone:hidden shrink-0" />
                 <span className="text-on-surface text-control font-semibold">{wp.name}</span>
               </div>
             </Option>
@@ -177,7 +177,7 @@ function ThemeCard({ id, chosen }: { id: ThemeId; chosen: boolean }) {
       value={id}
       aria-label={`${THEME_NAMES[id]} theme`}
       className={cn(
-        "group gap-base flex w-[140px] flex-col text-left max-[600px]:w-[calc(50%-8px)]",
+        "group gap-base phone:w-[calc(50%-8px)] flex w-[140px] flex-col text-left",
         "focus-visible:ring-primary focus-visible:ring-offset-surface-container-low rounded-control outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
       )}
     >

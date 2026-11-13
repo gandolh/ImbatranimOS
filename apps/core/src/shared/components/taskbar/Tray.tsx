@@ -83,7 +83,7 @@ function NotificationBell() {
           className={cn(
             "relative",
             "rounded-control flex h-full cursor-pointer items-center justify-center px-2.5 outline-none",
-            "apricot:w-[32px] apricot:px-0 max-[600px]:w-[48px] max-[600px]:px-0 max-[380px]:w-[44px]",
+            "apricot:w-[32px] apricot:px-0 phone:w-[48px] phone:px-0 max-[380px]:w-[44px]",
             "text-on-surface-variant hover:bg-surface-container-high",
             "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
           )}
@@ -139,10 +139,10 @@ export function Tray() {
   }, [diskPercent]);
 
   return (
-    <div className="flex h-full items-center gap-1 pr-1 max-[600px]:gap-0 max-[600px]:pr-0">
+    <div className="phone:gap-0 phone:pr-0 flex h-full items-center gap-1 pr-1">
       {load && (
         <span
-          className="text-on-surface-variant text-label hidden px-2 whitespace-nowrap tabular-nums min-[601px]:inline"
+          className="text-on-surface-variant text-label phone:hidden inline px-2 whitespace-nowrap tabular-nums"
           title="CPU / RAM"
           data-tray-load=""
         >
@@ -150,12 +150,12 @@ export function Tray() {
         </span>
       )}
 
-      <div className="bg-outline-variant h-[20px] w-px max-[600px]:hidden" />
+      <div className="bg-outline-variant phone:hidden h-[20px] w-px" />
 
       <TrayVolume />
       <NotificationBell />
 
-      <div className="bg-outline-variant h-[20px] w-px max-[600px]:hidden" />
+      <div className="bg-outline-variant phone:hidden h-[20px] w-px" />
 
       <Popover
         trigger={
@@ -163,14 +163,12 @@ export function Tray() {
             type="button"
             className={cn(
               "rounded-control flex h-full shrink-0 cursor-pointer flex-col items-end justify-center px-3 outline-none",
-              "apricot:pr-[4px] apricot:pl-[6px] max-[600px]:px-[4px]",
+              "apricot:pr-[4px] apricot:pl-[6px] phone:px-[4px]",
               "text-on-surface hover:bg-surface-container-high",
               "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
             )}
           >
-            <span className="text-control max-[600px]:text-subhead font-semibold tabular-nums">
-              {now.format("HH:mm")}
-            </span>
+            <span className="text-control phone:text-subhead font-semibold tabular-nums">{now.format("HH:mm")}</span>
             <span className="text-on-surface-variant text-label whitespace-nowrap tabular-nums">
               {now.format("ddd, DD MMM")}
             </span>

@@ -6255,3 +6255,13 @@ Filed from the owner's grill on the self-hosted tools research in vps-deploy
 the production cap, and ship a WebCodecs-decoded stream for video regions
 only if it halves the bytes at no more CPU. Board ticket imbatranimOS-89,
 To Do. Not committed.
+
+## [2026-11-13] approved | Brief 88: the redesign direction "Start, opened wide"
+
+The owner approved the redesign direction "Start, opened wide" on the estate
+redesign board, with every question on the board standing as proposed: Start
+becomes a two-pane menu at desktop widths and a full-screen sheet on a phone
+(the locked Start reopened for its size and arrangement only), the kit apps
+inherit the new values now and the kit's source changes at their next
+`kit:sync`, and direction B is built rather than the runner-up, "Apricot,
+settled". Brief 88's build starts from this approval.

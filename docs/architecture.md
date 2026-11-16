@@ -1,6 +1,6 @@
 # Architecture
 
-One Docker container is the computer and the browser is its screen. Inside the container, a NestJS server (`apps/backend`) serves the built React desktop and the API on one port. The desktop (`apps/core`) draws the windows, the Start menu and the taskbar. Each app is its own package under `apps/add-ons/`, and talks to the machine through a `system` handle the desktop gives it. The server sends data (shell bytes, file listings, numbers from `/proc`), never pixels.
+One Docker container is the computer and the browser is its screen. Inside the container, a NestJS server (`apps/backend`) serves the built React desktop and the API on one port. The desktop (`apps/core`) draws the windows, the Start menu and the taskbar. Each app is its own package under `apps/add-ons/`, and talks to the machine through a `system` handle the desktop gives it. The server sends data (shell bytes, file listings, numbers from `/proc`), not pixels. The one exception is a Linux app: the Wayland host (`apps/wayland-host`, in Rust) draws its windows, and they reach the tab as images over the signed-in WebSocket.
 
 ```mermaid
 flowchart LR
@@ -15,7 +15,9 @@ flowchart LR
     proc["procfs<br/>CPU, memory, processes"]
     home[("home folder<br/>Docker volume + SQLite")]
     proxy["Browser proxy origin<br/>port 8081"]
+    wl["Wayland host<br/>Linux apps from Nix"]
     nest --> pty
+    nest --> wl
     nest --> proc
     nest --> home
   end

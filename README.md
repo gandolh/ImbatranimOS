@@ -1,12 +1,12 @@
 # ImbatranimOS
 
-A small Linux computer whose screen is a browser tab. One Docker container runs Alpine Linux with a real shell, real files and real processes, and you use it through a Windows 7-style desktop in any browser. It is for anyone with Docker who wants a personal machine they can open from anywhere.
+A small Linux computer whose screen is a browser tab. One Docker container runs Alpine Linux with a real shell, real files and real processes, and you use it through a Windows-style desktop in any browser, on a computer or a phone. It is for anyone with Docker who wants a personal machine they can open from anywhere.
 
 <p align="center">
-  <img src="docs/images/desktop.gif" width="100%" alt="The ImbatranimOS desktop in its default theme, Apricot, over a sunset-hills wallpaper: Start opens a Terminal that runs whoami, which prints imbatranim, and ls, which lists the home folder; then File Manager and System Monitor open and each window is dragged into place">
+  <img src="docs/images/desktop.gif" width="100%" alt="The ImbatranimOS desktop in its default theme, Apricot, over a sunset-hills wallpaper: Start opens wide, with every app from A to Z on the left and pinned apps and recent files on the right; a Terminal opens and runs whoami, which prints imbatranim, and ls, which lists the home folder; then File Manager and System Monitor open from their desktop icons and each window is dragged into place">
 </p>
 
-**Status:** v1, declared on 2026-10-07; a personal project in daily use, still changing. The owner's machine runs on the production site at `/imbatranim-os/`, but it has one owner, so all you will see there is the sign-in screen. Run your own with the three commands below.
+**Status:** v1, declared on 2026-10-07; a personal project in daily use, still changing. The images show `main` on 2026-11-16, after the redesign of 2026-11-13. The project wiki records that redesign, the two themes and the Linux apps as built but not deployed yet. The owner's machine runs on the production site at `/imbatranim-os/`, but it has one owner, so all you will see there is the sign-in screen. Run your own with the three commands below.
 
 The name is a joke: *îmbătrânim* is Romanian for "we're getting old".
 
@@ -15,22 +15,31 @@ The name is a joke: *îmbătrânim* is Romanian for "we're getting old".
 - Gives you a real shell in the Terminal app: a PTY on the container, running as the unprivileged `imbatranim` user.
 - Opens the container's actual home folder in Files. It lives in a Docker volume, so it survives rebuilds, and Settings → Backup downloads it as one archive.
 - Shows the container's real CPU, memory, disk and processes in System Monitor.
-- Comes with about 20 apps: Notepad, a Monaco code editor, a diff tool, Paint and more. The Browser app fetches pages from the machine, not from the browser you are sitting at. Docs, Sheets, Slides, a PDF reader and a 2D CAD app come with Office, Minesweeper and Solitaire with Games, Todo and Bookmarks with Accessories, and Git and a REST client with Developer, from the Marketplace.
-- Installs more apps from the reviewed catalog in [`marketplace/`](marketplace/README.md), or from any GitHub repository once the app is verified or you trust it.
+- Comes with 16 apps besides Settings: Notepad, a Monaco code editor, a diff tool, Paint and more. The Browser app fetches pages from the machine, not from the browser you are sitting at.
+- Installs more from the reviewed catalog in [`marketplace/`](marketplace/README.md): Docs, Sheets, Slides, a PDF reader and a 2D CAD app come with Office, Minesweeper and Solitaire with Games, Todo and Bookmarks with Accessories, and Git and a REST client with Developer. Any GitHub repository can install an app too, once the app is verified or you trust it.
+- Runs Linux desktop programs such as Firefox in ordinary windows. You install them with Nix from Settings → Linux apps, without sudo; a Wayland host in the container draws them and the tab shows the pixels.
+- Fits a phone: below 600 px wide the taskbar is 56 px tall with 48 px touch targets, windows open maximized and Start becomes a full-screen sheet.
 
 Web desktops such as daedalOS run entirely in the tab and keep their files in browser storage. Here the tab only draws the screen; the files, the shell and the processes belong to a Linux machine you own. It has one owner and no other accounts, no sudo, and no two-factor sign-in.
 
 ## Screenshots
 
-| Terminal: a shell inside the container | Files: the home folder on the volume |
+| Terminal: a shell inside the machine | Files: the home folder |
 |---|---|
-| ![Terminal window: whoami prints imbatranim, os-release names Alpine Linux, sudo is not found, and ps lists a few processes, all owned by imbatranim](docs/images/terminal.webp) | ![File Manager on the home folder showing Projects, Sample folder and notes.txt, with notes.txt selected and its text in the preview pane](docs/images/files.webp) |
+| ![Terminal window: whoami prints imbatranim, pwd prints /home/imbatranim, ls and cat notes.txt show the demo files, and ps lists only the shell and ps itself, both owned by imbatranim](docs/images/terminal.webp) | ![File Manager on the home folder showing Projects, Sample folder and notes.txt, with notes.txt selected and its text in the preview pane](docs/images/files.webp) |
 | **System Monitor: live numbers from the machine** | **Marketplace: the catalog, and installs from a URL** |
-| ![System Monitor overview: CPU, memory, swap and disk bars with live graphs, plus uptime and network totals](docs/images/system-monitor.webp) | ![Settings, Marketplace section: a field for a GitHub URL, then the catalog: Hollow, installed, and Office with its five apps Docs, CAD, Slides, Sheets and PDF and an Install button](docs/images/marketplace.webp) |
+| ![System Monitor overview: CPU, memory, swap and disk bars with live graphs, plus uptime, load and network totals](docs/images/system-monitor.webp) | ![Settings, Marketplace section: a field for a GitHub URL, then the catalog: Accessories, Developer and Games with two apps each, and Hollow, each with an Install button](docs/images/marketplace.webp) |
+
+On a phone, the desktop and Start:
+
+<p align="center">
+  <img src="docs/images/phone-desktop.webp" width="260" alt="The desktop on a phone: app icons in a three-column grid over the sunset-hills wallpaper, above a taskbar with Start, search, the workspace button, volume, notifications and the clock">
+  <img src="docs/images/phone-start.webp" width="260" alt="Start as a full-screen sheet on a phone: a search field, six pinned apps, three recent files, the start of the A to Z list, and Cover screen and Log off at the bottom">
+</p>
 
 ## How it works
 
-A NestJS server inside the container serves the React desktop and the API on one port. The desktop (`apps/core`) draws the windows, the Start menu and the taskbar; each app is its own package under `apps/add-ons/` and reaches the machine through a `system` handle the desktop gives it. The Terminal streams a node-pty shell over an authenticated WebSocket, Files and System Monitor call the REST API, and every route outside sign-in needs the owner's session. The server sends data, never pixels. More in [docs/architecture.md](docs/architecture.md).
+A NestJS server inside the container serves the React desktop and the API on one port. The desktop (`apps/core`) draws the windows, the Start menu and the taskbar; each app is its own package under `apps/add-ons/` and reaches the machine through a `system` handle the desktop gives it. The Terminal streams a node-pty shell over an authenticated WebSocket, Files and System Monitor call the REST API, and every route outside sign-in needs the owner's session. The server sends data, not pixels; the one exception is a Linux app's window, which the Wayland host (`apps/wayland-host`) draws and the backend relays to the tab as images. More in [docs/architecture.md](docs/architecture.md).
 
 ## Run it locally
 
@@ -52,12 +61,13 @@ For development, the tests and the dev container's sign-in, see [docs/getting-st
 |---|---|
 | `apps/core` | The desktop: shell, window manager, sign-in, Settings |
 | `apps/add-ons/` | One package per app: Terminal, Files, Notepad and the rest |
-| `apps/backend` | The NestJS API: shell, files, system stats, backup, marketplace |
+| `apps/backend` | The NestJS API: shell, files, system stats, backup, marketplace, Linux apps |
+| `apps/wayland-host` | The Wayland host in Rust that shows Linux apps' windows in the tab |
 | `apps/docs` | The documentation site, built from `corpus/` and the code |
 | `packages/` | `@imbatranim/ui`, the kit apps are built with |
 | `infrastructure/` | Dockerfile, compose file, Caddy example, HTTPS and sign-in notes |
 | `marketplace/` | The catalog of installable apps |
-| `iso/` | The older kiosk ISO build; a server ISO is planned |
+| `iso/` | The older kiosk ISO build; a server ISO is deferred |
 | `corpus/` | The project wiki: decisions, status, work specs |
 
 ## Docs

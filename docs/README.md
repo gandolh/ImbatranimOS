@@ -4,11 +4,11 @@ Start with the [main README](../README.md). This folder holds what it links to.
 
 | File | What it covers |
 |---|---|
-| [getting-started.md](getting-started.md) | Running it with Docker, the first visit, putting it on the internet, developing, the scripts |
+| [getting-started.md](getting-started.md) | Running it with Docker, the first visit, putting it on the internet, developing, the scripts and the browser checks |
 | [architecture.md](architecture.md) | The container, the desktop and the apps, and how opening the Terminal flows through them |
 | [adding-an-app.md](adding-an-app.md) | The add-on contract and the four steps to add an app to the desktop |
 | [backup.md](backup.md) | Where your data lives, backing it up and restoring it, and what to do about a lost password |
-| [images/](images/shots.md) | The screenshots and GIF used in the README, and how each was made |
+| [images/](images/shots.md) | The GIF and screenshots used in the README, desktop and phone, and how each was made |
 
 Going deeper:
 

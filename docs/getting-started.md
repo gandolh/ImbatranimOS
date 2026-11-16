@@ -71,17 +71,22 @@ The host needs Node only for the editor, eslint and tsc. `npm run install:toolin
 
 ### Scripts
 
-All run from the repo root through Turborepo.
+All run from the repo root; `build`, `typecheck`, `test` and `docs` go through Turborepo.
 
 | Command | What it does |
 |---|---|
+| `npm run check` | The gate before every hand-back: typecheck, lint, format check, conventions, then the tests |
+| `npm run check:fast` | Typechecks the workspaces you changed, then lints the changed files; no tests |
 | `npm run build` | Builds the backend and the desktop (cached; a second run is instant) |
-| `npm run lint` | Lints every package |
+| `npm run lint` | ESLint over the repo, with the house config in the root `eslint.config.mjs` |
 | `npm run typecheck` | Typechecks every package |
+| `npm run check:conventions` | knip, dependency-cruiser over the source folders, and the house check on Base UI imports |
 | `npm test` | Every package's unit tests, plus the backend's end-to-end suite, at most half as many at once as the machine has cores (`--concurrency=50%`): under load, more failed tests on fixed timeouts that pass alone. For one run without the cap, call turbo yourself: `npx turbo test test:e2e --concurrency=100%` (turbo refuses the flag twice, so `npm test -- --concurrency=…` won't do) |
-| `npm run format:check` | Prettier check across the packages |
+| `npm run format` | Prettier writes every file it covers (Markdown stays out); `format:check` only checks |
 | `npm run docs` | Builds the documentation site in `apps/docs` (corpus pages plus the generated API reference) |
 | `npm run version:bump -- --stage` | Bumps the minor version; the project runs it before each commit |
+
+The browser checks are Playwright, run by hand against the dev container on <http://localhost:5173>: `OS_E2E_PASSWORD=<the dev owner's password> npm run e2e -w @imbatranim/core`. They cover the focus ring, reduced motion, the type size, the theme switch and the phone widths; `npm run check` never runs them. The password is the one in [infrastructure/README.md](../infrastructure/README.md#the-dev-containers-sign-in).
 
 To add an app to the desktop, see [adding-an-app.md](adding-an-app.md).
 

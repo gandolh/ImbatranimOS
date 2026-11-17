@@ -33,6 +33,13 @@ rustix = { version = "1.0.7", default-features = false, features = ["std", "proc
 pulseaudio = "0.3.2"
 opus = "0.4.0"
 
+# Video regions as VP8 (src/video.rs): libvpx through a small C shim, built
+# here against Alpine's libvpx-dev and linked to its libvpx at run time. VP8
+# is royalty-free built from source; the numbers that earned the dependency
+# are in corpus/wiki/research-video-in-linux-windows.md.
+[build-dependencies]
+cc = "1.1"
+
 # smithay 0.7.0 with one fix in its X11 window manager: a paste over 64 KiB
 # (sent in chunks, X11's INCR) also reaches an app that asks from a child
 # window, as xterm does. Upstream doesn't have it yet; vendor/README.md says

@@ -14,7 +14,7 @@ pub const KIND_AUDIO: u8 = 3;
 /// Refuse anything larger: a full 4K frame deflated is far below this.
 pub const MAX_MESSAGE: usize = 64 * 1024 * 1024;
 
-pub const PROTOCOL_VERSION: u32 = 9;
+pub const PROTOCOL_VERSION: u32 = 10;
 
 /// The most text a text-input message carries, in UTF-8 bytes: text-input-v3
 /// caps surrounding text there, under the Wayland message size.
@@ -25,6 +25,10 @@ pub const ENC_DEFLATE_RGBA: u8 = 1;
 pub const ENC_WEBP_LOSSLESS: u8 = 2;
 /// A JPEG: a large region that changes on most frames (a video), sent lossy.
 pub const ENC_JPEG: u8 = 3;
+/// The same region as one frame of the window's VP8 stream, for a tab that
+/// said on connect it decodes VP8: a keyframe when the stream starts, else a
+/// delta from the stream's last frame.
+pub const ENC_VP8: u8 = 4;
 
 /// Backend to host.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -39,6 +43,9 @@ pub enum Inbound {
         height: u32,
         #[serde(default = "one")]
         ratio: f64,
+        /// The video codecs the tab decodes (`vp8`); none means JPEG.
+        #[serde(default)]
+        codecs: Vec<String>,
     },
     /// The tab went away: disconnect its clients and remove its socket.
     SessionClose { session: String },
@@ -114,8 +121,16 @@ pub enum Inbound {
     /// change.
     PressOutside { session: String },
     /// A tab took the session back after a reload: announce every window
-    /// again and send each one whole.
-    Resync { session: String },
+    /// again and send each one whole. `codecs` as in `SessionOpen`, for the
+    /// tab that took it.
+    Resync {
+        session: String,
+        #[serde(default)]
+        codecs: Vec<String>,
+    },
+    /// The tab lost the toplevel's video decoder: start its stream again
+    /// from a keyframe.
+    Keyframe { session: String, toplevel: u32 },
     /// The backend froze (or woke) the session's apps under the cover
     /// screen: no frames and no frame callbacks meanwhile, everything
     /// redrawn after.
@@ -704,6 +719,9 @@ mod tests {
             r#"{"type":"keyboard_layout","session":"abcdefghijklmnop","layout":"ro"}"#,
             r#"{"type":"clipboard","session":"abcdefghijklmnop","text":"pasted ș\n"}"#,
             r#"{"type":"output","session":"abcdefghijklmnop","width":800,"height":600,"ratio":2.5}"#,
+            r#"{"type":"session_open","session":"abcdefghijklmnop","width":800,"height":600,"ratio":1,"codecs":["vp8"]}"#,
+            r#"{"type":"resync","session":"abcdefghijklmnop","codecs":["vp8"]}"#,
+            r#"{"type":"keyframe","session":"abcdefghijklmnop","toplevel":5}"#,
         ] {
             push_message(&mut bytes, KIND_JSON, json.as_bytes());
         }
@@ -730,6 +748,9 @@ mod tests {
             d.next_inbound(),
             Ok(Some(Inbound::Output { session: "abcdefghijklmnop".into(), width: 800, height: 600, ratio: 2.5 }))
         );
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::SessionOpen { codecs, .. })) if codecs == ["vp8"]));
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Resync { codecs, .. })) if codecs == ["vp8"]));
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Keyframe { toplevel: 5, .. }))));
     }
 
     #[test]
@@ -787,8 +808,9 @@ mod tests {
                 session: "abcdefghijklmnop".into(),
                 width: 1280,
                 height: 720,
-                // Left out: a scale-1 screen.
+                // Left out: a scale-1 screen, and a tab that decodes no video.
                 ratio: 1.0,
+                codecs: vec![],
             }))
         );
         assert_eq!(

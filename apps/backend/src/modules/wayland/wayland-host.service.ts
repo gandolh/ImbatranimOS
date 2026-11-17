@@ -14,7 +14,16 @@ import {
   ProtocolError,
   type HostInbound,
   type HostOutbound,
+  type VideoCodec,
 } from "./wayland.protocol";
+
+/** A tab's output: its viewport, devicePixelRatio and the video codecs it decodes. */
+export interface SessionOutput {
+  width: number;
+  height: number;
+  ratio: number;
+  codecs: VideoCodec[];
+}
 
 /** What one desktop session hears from the host. */
 export interface SessionListener {
@@ -63,11 +72,12 @@ export class WaylandHostService implements OnModuleDestroy {
    * Ask the host for a session's display, starting the host if needed.
    * Returns a reason when Linux apps can't run here at all.
    */
-  open(session: string, width: number, height: number, ratio: number, listener: SessionListener): string | null {
+  open(session: string, output: SessionOutput, listener: SessionListener): string | null {
     const failure = this.ensureStarted();
     if (failure) return failure;
     this.sessions.set(session, listener);
-    this.send({ type: "session_open", session, width, height, ratio });
+    const { width, height, ratio, codecs } = output;
+    this.send({ type: "session_open", session, width, height, ratio, codecs });
     return null;
   }
 

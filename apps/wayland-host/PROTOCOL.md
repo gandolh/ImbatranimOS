@@ -40,7 +40,7 @@ Messages over 64 MiB are refused, and a malformed one ends the connection.
 
 | `type` | Fields | Meaning |
 |---|---|---|
-| `session_open` | `session`, `width`, `height`, `ratio` | A tab wants Linux apps. Listen on `$XDG_RUNTIME_DIR/wayland-<session>` with one output of the tab's viewport size, its scale the ceiling of `ratio`, the tab's `devicePixelRatio` (see "Scale"). |
+| `session_open` | `session`, `width`, `height`, `ratio`, `codecs` | A tab wants Linux apps. Listen on `$XDG_RUNTIME_DIR/wayland-<session>` with one output of the tab's viewport size, its scale the ceiling of `ratio`, the tab's `devicePixelRatio` (see "Scale"). `codecs` lists the video codecs the tab decodes: `["vp8"]` or `[]` (left out, `[]`); see "Frames". |
 | `session_close` | `session` | The tab went away. Disconnect the session's clients and remove its socket. |
 | `output` | `session`, `width`, `height`, `ratio` | The tab's viewport or its `devicePixelRatio` changed. |
 | `frame_ack` | `session`, `toplevel` | The toplevel's last frame went to the tab and the socket has room: it may send another. |
@@ -60,7 +60,8 @@ refused on both sides.
 | `position` | `session`, `toplevel`, `x`, `y` | Where the toplevel's window geometry starts on the output (the tab's viewport), after the OS window moved or resized. Popups are kept on the output from it. |
 | `press_outside` | `session` | The owner pressed outside every Linux window. The keyboard leaves the session's apps, which close the menus they track themselves, and popups holding a grab get `popup_done`. The next press in a Linux window or the next `focus` gives the keyboard back. |
 
-| `resync` | `session` | A tab took the session back after a reload: announce every mapped window again (toplevels, then popups), the cursor and the clients, and send each window whole. |
+| `resync` | `session`, `codecs` | A tab took the session back after a reload: announce every mapped window again (toplevels, then popups), the cursor and the clients, and send each window whole. `codecs` as in `session_open`, for the tab that took it; every video stream starts again from a keyframe. |
+| `keyframe` | `session`, `toplevel` | The tab lost the window's video decoder (it failed, or the browser took it back): the window's video stream starts again, and its region is sent at once, from a keyframe. |
 | `freeze` | `session`, `frozen` | The backend froze the session's apps (SIGSTOP) under the cover screen, or woke them: meanwhile no frames go and no frame callbacks are answered; after, every window is sent whole. |
 | `visibility` | `session`, `visible` | The tab was hidden or shown: a hidden session gets no frames and its apps no frame callbacks, so well-behaved apps stop drawing; shown again, every window is sent whole. |
 | `toplevel_visible` | `session`, `toplevel`, `visible` | The same for one toplevel and its popups: its OS window was minimized, or moved to another workspace, or shown again. |
@@ -363,7 +364,7 @@ Each rectangle:
 | Field | Size | |
 |---|---|---|
 | x, y, w, h | 4 × u32 | in image pixels |
-| encoding | u8 | 1 deflate (zlib) RGBA, 2 lossless WebP, 3 JPEG (lossy) |
+| encoding | u8 | 1 deflate (zlib) RGBA, 2 lossless WebP, 3 JPEG (lossy), 4 VP8 (lossy, a frame of the window's video stream) |
 | length | u32 | |
 | data | length | |
 
@@ -380,6 +381,20 @@ eight ticks (about a quarter of a second) it is sent once more, lossless, so
 a paused video ends up sharp. A window that isn't playing anything is sent
 lossless exactly as before. The constants are in `pixels.rs`.
 
+For a tab whose `codecs` holds `vp8`, that region goes as VP8 (encoding 4)
+instead: each frame of it is one frame of the window's video stream, a whole
+VP8 frame as libvpx writes it, which the tab decodes with WebCodecs'
+`VideoDecoder` and draws at the rectangle. The stream's rectangle is the
+region rounded down to an even width and height; an odd last row or column
+goes lossless. A stream starts with a keyframe (bit 0 of the frame tag
+clear), and starts again, from a keyframe, when the region moves or is
+resized, after it settles, after a `resync`, and on `keyframe`; in between
+every frame is a delta from the last. Its bitrate is 0.2 bits per pixel per
+frame at the frame rate the window gets, scaled down while the window's
+acks come back slowly (50 ms or more) and back up while they are quick
+(under 20 ms). The settle frame stays lossless WebP. A tab that says no codec
+gets JPEG as above. The constants are in `video.rs`.
+
 ## Flow control
 
 A toplevel has at most one frame in flight. The host sends a toplevel's frame
@@ -391,7 +406,7 @@ gets the latest picture rather than a queue, and the app draws less often.
 
 ## `/api/wayland`
 
-`GET /api/wayland?session=<id>&width=<w>&height=<h>&ratio=<r>`, upgraded, with the
+`GET /api/wayland?session=<id>&width=<w>&height=<h>&ratio=<r>[&codecs=vp8]`, upgraded, with the
 Terminal's checks (the session cookie, Origin, and a 30 s sweep that closes
 the socket when the sign-in ends). One socket per session id.
 
@@ -409,7 +424,7 @@ Tab to server, JSON text: `{"type":"viewport","width","height","ratio"}`
 when the ratio changes: another screen, a page zoom), the
 input messages above (`focus` to `press_outside`), `visibility`,
 `toplevel_visible`, `keyboard_layout` (sent on connect and on every
-change), `clipboard` and `text_edit`, without `session`; the backend checks
+change), `clipboard`, `text_edit` and `keyframe`, without `session`; the backend checks
 each field and adds the session. A message is at most 2 MiB, room for a paste's 1 MiB
 of text. The host's `clipboard` reaches the tab as `{"type":"clipboard","text"}`
 and the tab writes it to the clipboard.

@@ -1,10 +1,13 @@
 //! A window's pixels: the RGBA copy the host keeps of each toplevel, the
-//! damage waiting to be sent, the two lossless encodings, and the lossy one a
-//! region that keeps changing (a video) is sent in.
+//! damage waiting to be sent, the two lossless encodings, and the lossy ones a
+//! region that keeps changing (a video) is sent in: a VP8 stream when the tab
+//! can decode it, else a JPEG per frame.
 
 use std::io::Write;
+use std::time::Duration;
 
-use crate::protocol::{EncodedRect, Rect, ENC_DEFLATE_RGBA, ENC_JPEG, ENC_WEBP_LOSSLESS};
+use crate::protocol::{EncodedRect, Rect, ENC_DEFLATE_RGBA, ENC_JPEG, ENC_VP8, ENC_WEBP_LOSSLESS};
+use crate::video::{Link, Vp8Stream};
 
 /// `wl_shm` formats the host reads. Both are little-endian 32-bit words, so
 /// the bytes in memory are B, G, R, A (or B, G, R, unused).
@@ -18,6 +21,14 @@ pub enum ShmFormat {
 pub enum Encoding {
     Deflate,
     Webp,
+}
+
+/// How a region that goes lossy is sent: as its own JPEG each frame, or as
+/// a frame of the window's VP8 stream, for a tab that said it decodes VP8.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Lossy {
+    Jpeg,
+    Vp8,
 }
 
 impl Encoding {
@@ -193,6 +204,13 @@ pub struct Canvas {
     hot: Option<Hot>,
     /// The next frame goes all lossless: a lossy region settled.
     settle: bool,
+    /// The lossy region's VP8 stream while it plays, for a tab that decodes
+    /// VP8. Dropped when the region settles, moves or is resized, so the next
+    /// one starts with a keyframe.
+    stream: Option<Vp8Stream>,
+    /// The tab's link, from this window's acks: it scales the stream's
+    /// bitrate.
+    link: Link,
 }
 
 impl Canvas {
@@ -217,6 +235,7 @@ impl Canvas {
         }];
         self.hot = None;
         self.settle = false;
+        self.stream = None;
     }
 
     /// One tick of the host's frame clock went by. A region sent lossy that
@@ -229,7 +248,24 @@ impl Canvas {
             let rect = hot.rect;
             self.hot = None;
             self.settle = true;
+            self.stream = None;
             self.add_damage(rect);
+        }
+    }
+
+    /// The window's last frame took `delay` to be acked.
+    pub fn on_ack(&mut self, delay: Duration) {
+        self.link.on_ack(delay);
+    }
+
+    /// Start the video stream again: its next frame is a keyframe. For a tab
+    /// that has a new decoder (a reload, or it lost the old one); a region
+    /// already sent lossy is damaged, so the tab gets it at once.
+    pub fn restart_video(&mut self) {
+        if self.stream.take().is_some() {
+            if let Some(hot) = self.hot.filter(|h| h.lossy_sent) {
+                self.add_damage(hot.rect);
+            }
         }
     }
 
@@ -303,10 +339,10 @@ impl Canvas {
 
     /// Redraw the damaged rectangles from `layers`, bottom to top, then take
     /// the damage and encode each rectangle of it. With WebP, the part of a
-    /// rectangle inside a region that keeps changing goes lossy (JPEG), and
-    /// the rest of it lossless; a window that isn't playing anything is
-    /// lossless, byte for byte, as before.
-    pub fn take_frame(&mut self, layers: &[Layer], encoding: Encoding) -> Vec<EncodedRect> {
+    /// rectangle inside a region that keeps changing goes lossy (a frame of
+    /// the VP8 stream, or a JPEG), and the rest of it lossless; a window that
+    /// isn't playing anything is lossless, byte for byte, as before.
+    pub fn take_frame(&mut self, layers: &[Layer], encoding: Encoding, how: Lossy) -> Vec<EncodedRect> {
         let rects = std::mem::take(&mut self.damage);
         for r in &rects {
             self.compose(*r, layers);
@@ -316,6 +352,11 @@ impl Canvas {
         } else {
             None
         };
+        if how == Lossy::Vp8 {
+            if let Some(frame) = lossy.and_then(|h| self.take_video_frame(&rects, h, encoding)) {
+                return frame;
+            }
+        }
         let mut out = Vec::with_capacity(rects.len());
         for rect in rects {
             let inside = lossy.and_then(|h| intersect(rect, h)).filter(|r| self.opaque(*r));
@@ -333,6 +374,46 @@ impl Canvas {
             }
         }
         out
+    }
+
+    /// The frame with the lossy region `hot` as one frame of the window's VP8
+    /// stream, and the rest of the damage lossless. The stream covers the
+    /// region rounded down to an even size (chroma comes in 2×2 blocks); an
+    /// odd last row or column goes lossless. None when this frame doesn't
+    /// touch the region, the region isn't opaque, or libvpx failed: the frame
+    /// goes as JPEG then, and a failed stream starts again with a keyframe.
+    fn take_video_frame(&mut self, rects: &[Rect], hot: Rect, encoding: Encoding) -> Option<Vec<EncodedRect>> {
+        let video = Rect { w: hot.w & !1, h: hot.h & !1, ..hot };
+        if !rects.iter().any(|r| intersect(*r, video).is_some()) || !self.opaque(video) {
+            return None;
+        }
+        if self.stream.as_ref().map(|s| s.rect()) != Some(video) {
+            self.stream = Vp8Stream::new(video, self.link.factor());
+        }
+        let factor = self.link.factor();
+        let width = self.width as usize;
+        let data = match self.stream.as_mut()?.encode(&self.rgba, width, factor) {
+            Some(data) => data,
+            None => {
+                self.stream = None;
+                return None;
+            }
+        };
+        let mut out = vec![EncodedRect { rect: video, encoding: ENC_VP8, data }];
+        for r in rects {
+            match intersect(*r, video) {
+                Some(inside) => {
+                    for rest in subtract(*r, inside) {
+                        out.push(self.encode_lossless(rest, encoding));
+                    }
+                }
+                None => out.push(self.encode_lossless(*r, encoding)),
+            }
+        }
+        if let Some(hot) = self.hot.as_mut() {
+            hot.lossy_sent = true;
+        }
+        Some(out)
     }
 
     fn encode_lossless(&self, rect: Rect, encoding: Encoding) -> EncodedRect {
@@ -654,10 +735,7 @@ mod tests {
         assert_eq!(rects, Some(vec![Rect { x: 0, y: 0, w: 4, h: 3 }]));
         let mut c = Canvas::default();
         c.resize(4, 3);
-        let frame = c.take_frame(
-            &[Layer::at(0, 0, &img)],
-            Encoding::Deflate,
-        );
+        let frame = c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Deflate, Lossy::Jpeg);
         assert_eq!(frame.len(), 1);
         assert_eq!(frame[0].rect, Rect { x: 0, y: 0, w: 4, h: 3 });
         let mut raw = Vec::new();
@@ -681,10 +759,7 @@ mod tests {
         );
         assert_eq!(rects, Some(vec![Rect { x: 1, y: 1, w: 2, h: 1 }]));
         c.damage(1, 1, 2, 1);
-        let frame = c.take_frame(
-            &[Layer::at(0, 0, &img)],
-            Encoding::Webp,
-        );
+        let frame = c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Webp, Lossy::Jpeg);
         assert_eq!(frame[0].rect, Rect { x: 1, y: 1, w: 2, h: 1 });
         assert_eq!(&frame[0].data[0..4], b"RIFF");
     }
@@ -708,10 +783,7 @@ mod tests {
 
         let pool = bgra_pool(64, 64, 256, |_, _| [0, 0, 0, 255]);
         let (img, mut c) = one_layer(&pool, 64, 64, 256);
-        c.take_frame(
-            &[Layer::at(0, 0, &img)],
-            Encoding::Deflate,
-        );
+        c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Deflate, Lossy::Jpeg);
         // A rectangle inside an earlier one adds nothing.
         c.damage(0, 0, 10, 10);
         c.damage(2, 2, 2, 2);
@@ -731,10 +803,7 @@ mod tests {
             }
         );
         // Damage that starts outside the window is cut to it.
-        c.take_frame(
-            &[Layer::at(0, 0, &img)],
-            Encoding::Deflate,
-        );
+        c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Deflate, Lossy::Jpeg);
         c.damage(-10, 60, 20, 20);
         assert_eq!(
             c.damage,
@@ -766,7 +835,7 @@ mod tests {
             Layer::at(3, 3, &red),
             Layer::at(0, 0, &veil),
         ];
-        let frame = c.take_frame(&layers, Encoding::Deflate);
+        let frame = c.take_frame(&layers, Encoding::Deflate, Lossy::Jpeg);
         let mut raw = Vec::new();
         flate2::read::ZlibDecoder::new(&frame[0].data[..])
             .read_to_end(&mut raw)
@@ -787,7 +856,7 @@ mod tests {
         img.copy_from_shm(&checker, 0, 2, 2, 8, ShmFormat::Argb8888, &[]).unwrap();
         let mut c = Canvas::default();
         c.resize(4, 4);
-        let frame = c.take_frame(&[Layer { x: 0, y: 0, width: 4, height: 4, image: &img }], Encoding::Deflate);
+        let frame = c.take_frame(&[Layer { x: 0, y: 0, width: 4, height: 4, image: &img }], Encoding::Deflate, Lossy::Jpeg);
         let mut raw = Vec::new();
         flate2::read::ZlibDecoder::new(&frame[0].data[..]).read_to_end(&mut raw).unwrap();
         let red = |x: usize, y: usize| raw[(y * 4 + x) * 4] == 255;
@@ -859,7 +928,7 @@ mod tests {
         let pool = bgra_pool(640, 480, 640 * 4, |x, y| [(x * 7) as u8, (y * 3) as u8, (x ^ y) as u8, alpha]);
         let (img, mut c) = one_layer(&pool, 640, 480, 640 * 4);
         c.tick();
-        let first = c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Webp);
+        let first = c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Webp, Lossy::Jpeg);
         assert!(first.iter().all(|r| r.encoding == ENC_WEBP_LOSSLESS));
         (img, c)
     }
@@ -869,11 +938,24 @@ mod tests {
 
     /// One tick of the clock with `damage` drawn, as the session runs it.
     fn frame(c: &mut Canvas, img: &SurfaceImage, damage: &[Rect]) -> Vec<EncodedRect> {
+        frame_as(c, img, damage, Lossy::Jpeg)
+    }
+
+    fn frame_as(c: &mut Canvas, img: &SurfaceImage, damage: &[Rect], how: Lossy) -> Vec<EncodedRect> {
         c.tick();
         for r in damage {
             c.damage(r.x as i32, r.y as i32, r.w, r.h);
         }
-        c.take_frame(&[Layer::at(0, 0, img)], Encoding::Webp)
+        c.take_frame(&[Layer::at(0, 0, img)], Encoding::Webp, how)
+    }
+
+    /// A frame for a tab that decodes VP8.
+    fn vp8_frame(c: &mut Canvas, img: &SurfaceImage, damage: &[Rect]) -> Vec<EncodedRect> {
+        frame_as(c, img, damage, Lossy::Vp8)
+    }
+
+    fn keyframe(r: &EncodedRect) -> bool {
+        r.encoding == ENC_VP8 && crate::video::is_keyframe(&r.data)
     }
 
     fn encodings(frame: &[EncodedRect]) -> Vec<u8> {
@@ -965,9 +1047,111 @@ mod tests {
         for _ in 0..10 {
             c.tick();
             c.damage(VIDEO.x as i32, VIDEO.y as i32, VIDEO.w, VIDEO.h);
-            let f = c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Deflate);
+            let f = c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Deflate, Lossy::Jpeg);
             assert!(f.iter().all(|r| r.encoding == ENC_DEFLATE_RGBA));
         }
+    }
+
+    #[test]
+    fn a_video_region_goes_as_a_vp8_stream_for_a_tab_that_decodes_it() {
+        let (img, mut c) = video_window(255);
+        let sent: Vec<Vec<u8>> = (0..5).map(|_| encodings(&vp8_frame(&mut c, &img, &[VIDEO]))).collect();
+        assert_eq!(sent, vec![vec![ENC_WEBP_LOSSLESS]; 5], "lossless until it has changed in six of eight");
+        let first = vp8_frame(&mut c, &img, &[VIDEO]);
+        assert_eq!(encodings(&first), [ENC_VP8]);
+        assert_eq!(first[0].rect, VIDEO);
+        assert!(keyframe(&first[0]), "a stream starts with a keyframe");
+        for _ in 0..4 {
+            let next = vp8_frame(&mut c, &img, &[VIDEO]);
+            assert_eq!(encodings(&next), [ENC_VP8]);
+            assert!(!keyframe(&next[0]), "then deltas");
+        }
+    }
+
+    #[test]
+    fn text_beside_a_vp8_video_stays_lossless() {
+        let (img, mut c) = video_window(255);
+        for _ in 0..6 {
+            vp8_frame(&mut c, &img, &[VIDEO]);
+        }
+        let merged = Rect { x: 0, y: 40, w: 640, h: 330 };
+        let f = vp8_frame(&mut c, &img, &[merged]);
+        assert_eq!(f[0].encoding, ENC_VP8);
+        assert_eq!(f[0].rect, VIDEO);
+        let rest: u64 = f[1..].iter().map(|r| {
+            assert_eq!(r.encoding, ENC_WEBP_LOSSLESS);
+            assert!(intersect(r.rect, VIDEO).is_none());
+            area(r.rect)
+        }).sum();
+        assert_eq!(rest + area(VIDEO), area(merged));
+    }
+
+    #[test]
+    fn a_paused_vp8_video_ends_sharp_and_plays_again_from_a_keyframe() {
+        let (img, mut c) = video_window(255);
+        for _ in 0..8 {
+            vp8_frame(&mut c, &img, &[VIDEO]);
+        }
+        for _ in 0..LOSSY_SETTLE_TICKS - 1 {
+            assert!(vp8_frame(&mut c, &img, &[]).is_empty());
+        }
+        let sharp = vp8_frame(&mut c, &img, &[]);
+        assert_eq!(encodings(&sharp), [ENC_WEBP_LOSSLESS]);
+        assert_eq!(sharp[0].data, webp_lossless(&c.extract(VIDEO), VIDEO.w, VIDEO.h));
+        let again: Vec<EncodedRect> = (0..6).flat_map(|_| vp8_frame(&mut c, &img, &[VIDEO])).collect();
+        let video: Vec<&EncodedRect> = again.iter().filter(|r| r.encoding == ENC_VP8).collect();
+        assert!(!video.is_empty());
+        assert!(keyframe(video[0]), "the new play starts with a keyframe");
+    }
+
+    #[test]
+    fn a_moved_or_resized_vp8_region_restarts_with_a_keyframe() {
+        let (img, mut c) = video_window(255);
+        for _ in 0..7 {
+            vp8_frame(&mut c, &img, &[VIDEO]);
+        }
+        let moved = Rect { x: 100, y: 80, ..VIDEO };
+        let f = vp8_frame(&mut c, &img, &[moved]);
+        let video = f.iter().find(|r| r.encoding == ENC_VP8).expect("still video");
+        assert_eq!(video.rect, moved);
+        assert!(keyframe(video));
+        assert!(!keyframe(&vp8_frame(&mut c, &img, &[moved])[0]));
+        let grown = Rect { w: 520, h: 300, ..moved };
+        let f = vp8_frame(&mut c, &img, &[grown]);
+        assert_eq!(f[0].rect, grown);
+        assert!(keyframe(&f[0]));
+    }
+
+    #[test]
+    fn an_odd_sized_vp8_region_sends_its_last_row_and_column_lossless() {
+        let (img, mut c) = video_window(255);
+        let odd = Rect { w: 481, h: 271, ..VIDEO };
+        let f: Vec<EncodedRect> = (0..7).map(|_| vp8_frame(&mut c, &img, &[odd])).last().unwrap();
+        assert_eq!(f[0].rect, VIDEO, "rounded down to an even size");
+        assert_eq!(f[0].encoding, ENC_VP8);
+        let rest: u64 = f[1..].iter().map(|r| area(r.rect)).sum();
+        assert_eq!(rest + area(VIDEO), area(odd));
+        assert!(f[1..].iter().all(|r| r.encoding == ENC_WEBP_LOSSLESS));
+    }
+
+    #[test]
+    fn a_restarted_vp8_stream_resends_its_region_from_a_keyframe() {
+        let (img, mut c) = video_window(255);
+        for _ in 0..8 {
+            vp8_frame(&mut c, &img, &[VIDEO]);
+        }
+        // The tab's decoder went away: the region comes again, whole, at once.
+        c.restart_video();
+        let f = vp8_frame(&mut c, &img, &[]);
+        assert_eq!(f[0].rect, VIDEO);
+        assert!(keyframe(&f[0]));
+    }
+
+    #[test]
+    fn a_tab_without_vp8_still_gets_jpeg() {
+        let (img, mut c) = video_window(255);
+        let f: Vec<EncodedRect> = (0..7).map(|_| frame(&mut c, &img, &[VIDEO])).last().unwrap();
+        assert_eq!(encodings(&f), [ENC_JPEG]);
     }
 
     #[test]

@@ -21,7 +21,7 @@ export const WS_KIND_AUDIO = 3;
 /** Refuse anything larger, as the host does. */
 export const MAX_MESSAGE = 64 * 1024 * 1024;
 
-export const PROTOCOL_VERSION = 9;
+export const PROTOCOL_VERSION = 10;
 
 /**
  * A desktop session id: random, per tab, and part of a socket's file name
@@ -33,6 +33,13 @@ export function isValidSessionId(id: unknown): id is string {
   return typeof id === "string" && SESSION_ID.test(id);
 }
 
+/**
+ * The video codecs a tab may say it decodes, for a window's video region
+ * (the host's `ENC_VP8`). Anything else in the tab's list is dropped.
+ */
+export const VIDEO_CODECS = ["vp8"] as const;
+export type VideoCodec = (typeof VIDEO_CODECS)[number];
+
 /** Backend → host. */
 export type HostInbound =
   | {
@@ -42,6 +49,8 @@ export type HostInbound =
       height: number;
       /** The tab's devicePixelRatio; the output's scale is its ceiling. */
       ratio: number;
+      /** The video codecs the tab decodes (`VIDEO_CODECS`); none means JPEG. */
+      codecs: VideoCodec[];
     }
   | { type: "session_close"; session: string }
   | {
@@ -96,7 +105,8 @@ export type HostInbound =
       y: number;
     }
   | { type: "press_outside"; session: string }
-  | { type: "resync"; session: string }
+  | { type: "resync"; session: string; codecs: VideoCodec[] }
+  | { type: "keyframe"; session: string; toplevel: number }
   | { type: "freeze"; session: string; frozen: boolean }
   | { type: "visibility"; session: string; visible: boolean }
   | { type: "keyboard_layout"; session: string; layout: "us" | "ro" }

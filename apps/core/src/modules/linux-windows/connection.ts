@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from "../auth/store/authStore";
 import { useLinuxAppsPrefs } from "./keyboardLayout";
 import { LINUX_APP_PREFIX, linuxWindowChrome } from "./kind";
-import { paintFrame, parseFrame } from "./frames";
+import { decodableVideoCodecs, paintFrame, parseFrame, VideoStreams } from "./frames";
 import { linuxClipboard } from "./clipboard";
 import { cursorCss, type LinuxCursorImage } from "./cursor";
 import { linuxSound } from "./sound";
@@ -103,10 +103,16 @@ function viewport(): Viewport {
   };
 }
 
-/** As the Terminal's socket URL: beside the API, ws or wss to match. */
-export function buildWaylandUrl(session: string, size: Viewport): string {
+/**
+ * As the Terminal's socket URL: beside the API, ws or wss to match. The query
+ * carries the video codecs the tab decodes; without them a playing video's
+ * region comes as JPEG.
+ */
+export function buildWaylandUrl(session: string, size: Viewport, codecs: readonly string[] = []): string {
   const query =
-    `?session=${encodeURIComponent(session)}&width=${size.width}&height=${size.height}` + `&ratio=${size.ratio}`;
+    `?session=${encodeURIComponent(session)}&width=${size.width}&height=${size.height}` +
+    `&ratio=${size.ratio}` +
+    (codecs.length > 0 ? `&codecs=${codecs.join(",")}` : "");
   const base = import.meta.env.VITE_API_URL as string | undefined;
   if (base) {
     const u = new URL(base, window.location.href);
@@ -150,6 +156,8 @@ export class LinuxWindowsConnection {
   private viewportTimer: ReturnType<typeof setTimeout> | null = null;
   /** One paint at a time per toplevel, so frames land in order. */
   private painting = new Map<number, Promise<void>>();
+  /** Each window's VP8 decoder; a lost one asks the host for a keyframe. */
+  private readonly videos = new VideoStreams((toplevel) => this.send({ type: "keyframe", toplevel }));
   private unsubscribeWindows: (() => void) | null = null;
   /** The toplevel the host was last told has keyboard focus. */
   private focused: number | null = null;
@@ -279,9 +287,16 @@ export class LinuxWindowsConnection {
 
   private connect(): void {
     if (this.stopped) return;
+    // Without WebCodecs there is nothing to ask: connect at once, for JPEG.
+    if (typeof VideoDecoder === "undefined") this.open([]);
+    else void decodableVideoCodecs().then((codecs) => this.open(codecs));
+  }
+
+  private open(codecs: string[]): void {
+    if (this.stopped || this.ws) return;
     this.session = desktopSessionId();
     this.resuming = false;
-    const ws = new WebSocket(buildWaylandUrl(this.session, viewport()));
+    const ws = new WebSocket(buildWaylandUrl(this.session, viewport(), codecs));
     ws.binaryType = "arraybuffer";
     this.ws = ws;
     ws.onopen = () => {
@@ -373,7 +388,7 @@ export class LinuxWindowsConnection {
       const scale = (popup ?? toplevel)?.scale ?? 1;
       const canvas = canvasFor(frame.toplevel);
       const prev = this.painting.get(frame.toplevel) ?? Promise.resolve();
-      const next = prev.then(() => paintFrame(canvas, frame, scale)).catch(() => undefined);
+      const next = prev.then(() => paintFrame(canvas, frame, scale, this.videos)).catch(() => undefined);
       this.painting.set(frame.toplevel, next);
       return;
     }
@@ -476,6 +491,7 @@ export class LinuxWindowsConnection {
     if (!t) return;
     useLinuxWindowsStore.getState().remove(t.windowId);
     this.painting.delete(toplevel);
+    this.videos.drop(toplevel);
     dropCanvas(toplevel);
     const windows = useWindowStore.getState();
     windows.unregisterCloseGuard(t.windowId);
@@ -499,6 +515,7 @@ export class LinuxWindowsConnection {
   private popupGone(popup: number): void {
     useLinuxWindowsStore.getState().removePopup(popup);
     this.painting.delete(popup);
+    this.videos.drop(popup);
     dropCanvas(popup);
   }
 
@@ -541,6 +558,7 @@ export class LinuxWindowsConnection {
     keepLinuxPlaces(useWindowStore.getState().windows.filter((w) => ids.has(w.id)));
     useLinuxWindowsStore.getState().clear();
     this.painting.clear();
+    this.videos.dropAll();
     this.focused = null;
     this.shown.clear();
     dropAllCanvases();

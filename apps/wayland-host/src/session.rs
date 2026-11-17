@@ -78,7 +78,8 @@ use crate::clipboard::{
 };
 use crate::cursor::{Cursor, Shown};
 use crate::pixels::{
-    clip_signed, map_rect, output_scale, surface_size, window_scale, Canvas, Encoding, Layer, ShmFormat, SurfaceImage,
+    clip_signed, map_rect, output_scale, surface_size, window_scale, Canvas, Encoding, Layer, Lossy, ShmFormat,
+    SurfaceImage,
 };
 use crate::protocol::{encode_frame_body, Decorations, Geometry, Outbound, PopupInfo, Rect, ToplevelInfo};
 use crate::xwayland::XwaylandConfig;
@@ -176,6 +177,9 @@ struct Window {
     mapped: bool,
     /// A frame was sent and the backend hasn't acked it yet.
     in_flight: bool,
+    /// When the frame in flight went out: its ack's delay tells the canvas
+    /// how the tab's link is doing.
+    sent_at: Option<Instant>,
     /// `xdg_surface.set_window_geometry`, if the app set one.
     geometry: Option<Geometry>,
     /// The surfaces last composed, bottom to top, with their offsets and
@@ -208,6 +212,7 @@ impl Window {
             canvas: Canvas::default(),
             mapped: false,
             in_flight: false,
+            sent_at: None,
             geometry: None,
             layout: Vec::new(),
             shown: true,
@@ -502,6 +507,8 @@ pub struct SessionState {
     frozen: bool,
     /// The tab is showing; a hidden one gets no frames.
     visible: bool,
+    /// The tab decodes VP8: video regions go as a stream, not JPEG.
+    vp8: bool,
     /// What the session's apps last asked the cursor to be, and whether it
     /// (or the cursor surface's image) changed since the tab heard.
     cursor_status: CursorImageStatus,
@@ -596,6 +603,7 @@ impl SessionState {
             announced_pids: None,
             frozen: false,
             visible: true,
+            vp8: false,
             cursor_status: CursorImageStatus::default_named(),
             cursor_changed: false,
             cursor: Shown::default(),
@@ -701,6 +709,7 @@ impl SessionState {
     pub fn take_frames(&mut self, encoding: Encoding) -> Vec<Vec<u8>> {
         let mut out = Vec::new();
         let quiet: Vec<bool> = (0..self.windows.len()).map(|i| !self.is_live(i)).collect();
+        let lossy = if self.vp8 { Lossy::Vp8 } else { Lossy::Jpeg };
         let images = &self.images;
         for (i, w) in self.windows.iter_mut().enumerate() {
             // A region sent lossy that has gone still gets its lossless frame.
@@ -724,9 +733,10 @@ impl SessionState {
                     })
                 })
                 .collect();
-            let rects = w.canvas.take_frame(&layers, encoding);
+            let rects = w.canvas.take_frame(&layers, encoding, lossy);
             out.push(encode_frame_body(w.id, w.canvas.width, w.canvas.height, &rects));
             w.in_flight = true;
+            w.sent_at = Some(Instant::now());
         }
         out
     }
@@ -739,8 +749,31 @@ impl SessionState {
             return;
         };
         w.in_flight = false;
+        if let Some(sent) = w.sent_at.take() {
+            w.canvas.on_ack(sent.elapsed());
+        }
         let root = w.root.clone();
         self.fire_callbacks(|s| root_of(s) == root);
+    }
+
+    /// The video codecs the tab decodes, from its connect. A change starts
+    /// every window's stream again (the tab that just connected has new
+    /// decoders, or none).
+    pub fn set_video_codecs(&mut self, codecs: &[String]) {
+        let vp8 = codecs.iter().any(|c| c == "vp8");
+        if vp8 != self.vp8 {
+            self.vp8 = vp8;
+            for w in self.windows.iter_mut() {
+                w.canvas.restart_video();
+            }
+        }
+    }
+
+    /// The tab lost a window's video decoder: its stream starts again.
+    pub fn keyframe(&mut self, id: u32) {
+        if let Some(w) = self.windows.iter_mut().find(|w| w.id == id) {
+            w.canvas.restart_video();
+        }
     }
 
     /// Answer frame callbacks for every surface whose window isn't waiting
@@ -837,7 +870,10 @@ impl SessionState {
         }
         for w in self.windows.iter_mut() {
             w.in_flight = false;
+            w.sent_at = None;
             w.shown = true;
+            // The reloaded tab has new decoders: streams start from keyframes.
+            w.canvas.restart_video();
             w.canvas.damage_all();
         }
         self.visible = true;

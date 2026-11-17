@@ -9,7 +9,7 @@ import type { Caller } from "../identity/identity.types";
 import { UpgradeRoutes } from "../../upgrade-routes";
 import { WaylandGateway } from "./wayland.gateway";
 import { SessionApps } from "./session-apps";
-import { WaylandHostService, type SessionListener } from "./wayland-host.service";
+import { WaylandHostService, type SessionListener, type SessionOutput } from "./wayland-host.service";
 import type { HostInbound } from "./wayland.protocol";
 
 const SESSION = "abcdefghijklmnop";
@@ -27,18 +27,13 @@ const SHAPE = {
 class FakeHost {
   listeners = new Map<string, SessionListener>();
   sent: HostInbound[] = [];
-  opened: {
-    session: string;
-    width: number;
-    height: number;
-    ratio: number;
-  }[] = [];
+  opened: ({ session: string } & SessionOutput)[] = [];
   closed: string[] = [];
   unavailable: string | null = null;
 
-  open(session: string, width: number, height: number, ratio: number, listener: SessionListener) {
+  open(session: string, output: SessionOutput, listener: SessionListener) {
     if (this.unavailable) return this.unavailable;
-    this.opened.push({ session, width, height, ratio });
+    this.opened.push({ session, ...output });
     this.listeners.set(session, listener);
     return null;
   }
@@ -133,7 +128,8 @@ describe("WaylandGateway", () => {
   });
 
   it("opens the session's display at the tab's viewport and relays its windows", async () => {
-    const c = open(`session=${SESSION}&width=1280&height=720&ratio=2`);
+    // The codecs the tab decodes: the known ones, each once.
+    const c = open(`session=${SESSION}&width=1280&height=720&ratio=2&codecs=vp8,av1,vp8`);
     await c.opened;
     await until(() => host.opened.length === 1);
     expect(host.opened[0]).toEqual({
@@ -141,6 +137,7 @@ describe("WaylandGateway", () => {
       width: 1280,
       height: 720,
       ratio: 2,
+      codecs: ["vp8"],
     });
 
     const l = host.listeners.get(SESSION)!;
@@ -277,6 +274,8 @@ describe("WaylandGateway", () => {
       height: 800,
       ratio: 1,
     });
+    // A reloaded tab that said no codecs gets JPEG for its video.
+    expect(host.sent).toContainEqual({ type: "resync", session: SESSION, codecs: [] });
     // The reloaded tab is told the session resumed, then gets its windows.
     host.listeners.get(SESSION)!.message({ type: "toplevel_destroyed", session: SESSION, toplevel: 9 });
     await until(() => again.messages.length > 1);

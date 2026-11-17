@@ -8,7 +8,7 @@ import { LocalIdentityService } from "../auth/ws-auth";
 import { authorizeUpgrade } from "../pty/pty-upgrade";
 import { UpgradeRoutes } from "../../upgrade-routes";
 import { WaylandHostService } from "./wayland-host.service";
-import { clampRatio, clampSize, toHostMessage } from "./wayland-input";
+import { clampRatio, clampSize, parseCodecs, toHostMessage } from "./wayland-input";
 import { clientGroups, liveGroups, SessionApps, signalGroups } from "./session-apps";
 import {
   AUDIO_DROP_ABOVE,
@@ -26,13 +26,24 @@ import {
   WAYLAND_TAKEOVER_WAIT_MS,
   WAYLAND_REVOKE_SWEEP_MS,
 } from "./wayland.constants";
-import { frameToplevel, isValidSessionId, WS_KIND_AUDIO, WS_KIND_FRAME, type HostOutbound } from "./wayland.protocol";
+import {
+  frameToplevel,
+  isValidSessionId,
+  WS_KIND_AUDIO,
+  WS_KIND_FRAME,
+  type HostOutbound,
+  type VideoCodec,
+} from "./wayland.protocol";
 
-/** The tab's viewport in CSS pixels and its devicePixelRatio, from the upgrade's query. */
+/**
+ * The tab's viewport in CSS pixels, its devicePixelRatio and the video codecs
+ * it decodes, from the upgrade's query.
+ */
 interface TabOutput {
   width: number;
   height: number;
   ratio: number;
+  codecs: VideoCodec[];
 }
 
 interface LiveSession {
@@ -166,6 +177,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       width: clampSize(params.get("width")),
       height: clampSize(params.get("height")),
       ratio: clampRatio(params.get("ratio")),
+      codecs: parseCodecs(params.get("codecs")),
     };
 
     void (async () => {
@@ -212,8 +224,9 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
       // Told first, so the tab knows the windows that follow are the ones it
       // had (it puts them back where they were) and not new ones.
       this.safeSend(existing, JSON.stringify({ type: "session", resumed: true }));
-      this.host.send({ type: "output", session: id, ...output });
-      this.host.send({ type: "resync", session: id });
+      const { width, height, ratio, codecs } = output;
+      this.host.send({ type: "output", session: id, width, height, ratio });
+      this.host.send({ type: "resync", session: id, codecs });
       return;
     }
     if (this.ending.has(id)) {
@@ -237,8 +250,7 @@ export class WaylandGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.live.set(id, s);
     this.attach(s, ws);
 
-    const { width, height, ratio } = output;
-    const failure = this.host.open(id, width, height, ratio, {
+    const failure = this.host.open(id, output, {
       message: (m) => this.onHostMessage(s, m),
       frame: (body) => this.onFrame(s, body),
       audio: (body) => this.onAudio(s, body),

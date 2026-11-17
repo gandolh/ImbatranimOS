@@ -1,4 +1,4 @@
-import { clampRatio, toHostMessage } from "./wayland-input";
+import { clampRatio, parseCodecs, toHostMessage } from "./wayland-input";
 import { MAX_CLIPBOARD_BYTES, MAX_RATIO, MAX_TEXT_INPUT_BYTES } from "./wayland.constants";
 
 const S = "abcdefghijklmnop";
@@ -21,6 +21,20 @@ describe("checking the tab's Linux window input", () => {
         wheel: true,
       }),
     ).toMatchObject({ type: "pointer_axis", session: S, v120y: 120 });
+  });
+
+  it("passes a keyframe request for a toplevel, and nothing malformed", () => {
+    expect(toHostMessage(S, { type: "keyframe", toplevel: 4 })).toEqual({ type: "keyframe", session: S, toplevel: 4 });
+    expect(toHostMessage(S, { type: "keyframe", toplevel: -1 })).toBeNull();
+    expect(toHostMessage(S, { type: "keyframe" })).toBeNull();
+  });
+
+  it("keeps only the video codecs the host knows, each once", () => {
+    expect(parseCodecs("vp8")).toEqual(["vp8"]);
+    expect(parseCodecs("h264,vp8,vp8")).toEqual(["vp8"]);
+    expect(parseCodecs("")).toEqual([]);
+    expect(parseCodecs(null)).toEqual([]);
+    expect(parseCodecs("vp8,".repeat(40))).toEqual([]);
   });
 
   it("drops anything out of range or of the wrong type", () => {

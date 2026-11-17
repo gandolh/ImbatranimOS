@@ -80,12 +80,16 @@ RUN VITE_BASE=$VITE_BASE VITE_API_URL=$VITE_API_URL npx turbo build
 # libxkbcommon is linked dynamically, so musl's static default is turned off
 # and the runtime stages install the library instead. libopus, for Linux
 # apps' sound, is built here from the source its crate bundles (cmake, make)
-# and linked in, so the runtime stages need nothing for it.
+# and linked in, so the runtime stages need nothing for it. libvpx, the VP8
+# encoder for a playing video's region, is linked dynamically too: its
+# headers here (libvpx-dev, through the host's C shim in csrc/), the library
+# in the runtime stages.
 # ---------------------------------------------------------------------------
 FROM rust:1.97-alpine AS wayland-host
-RUN apk add --no-cache musl-dev libxkbcommon-dev pkgconf cmake make
+RUN apk add --no-cache musl-dev libxkbcommon-dev pkgconf cmake make libvpx-dev
 WORKDIR /src
-COPY apps/wayland-host/Cargo.toml apps/wayland-host/Cargo.lock ./
+COPY apps/wayland-host/Cargo.toml apps/wayland-host/Cargo.lock apps/wayland-host/build.rs ./
+COPY apps/wayland-host/csrc ./csrc
 COPY apps/wayland-host/src ./src
 COPY apps/wayland-host/vendor ./vendor
 ENV RUSTFLAGS="-C target-feature=-crt-static"
@@ -150,12 +154,13 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.336.0"
+      org.opencontainers.image.version="1.337.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
 # in the shipped image while working in development on a glibc host.
 # libxkbcommon: the Wayland host links it for the keymap it sends Linux apps.
+# libvpx: the Wayland host's VP8 encoder, for a video playing in a Linux app.
 # tini: PID 1 (below), so the processes an app leaves behind when its parent
 # dies are reaped instead of piling up as zombies under node.
 # dbus: each tab's Linux session runs its own session bus (about 0.7 MB;
@@ -164,7 +169,7 @@ LABEL org.opencontainers.image.title="ImbatranimOS" \
 # shared-mime-info: the file-type list (/usr/share/mime/globs2, about 2 MB)
 # that Open with reads to match files to installed Linux apps, when the Nix
 # profile carries none of its own; LibreOffice's install doesn't bring one.
-RUN apk add --no-cache git libxkbcommon tini dbus shared-mime-info \
+RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info \
     && rm -f /usr/libexec/dbus-daemon-launch-helper
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
@@ -214,7 +219,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.336.0
+    IMAGE_VERSION=1.337.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -239,11 +244,11 @@ CMD ["node", "apps/backend/dist/main"]
 FROM deps AS dev
 # git, as in the prod stage: the Git app runs it, and so does a marketplace
 # install. The deps stage has only the native-addon toolchain. libxkbcommon
-# for the Wayland host. foot (with a font) and gtk3-demo are Linux apps to
+# and libvpx for the Wayland host. foot (with a font) and gtk3-demo are Linux apps to
 # test the host with, in the dev image only: foot asks for the OS title bar,
 # gtk3-demo draws its own.
 # dbus and shared-mime-info: as in the prod stage.
-RUN apk add --no-cache git libxkbcommon tini dbus shared-mime-info foot font-dejavu gtk+3.0-demo \
+RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info foot font-dejavu gtk+3.0-demo \
     && rm -f /usr/libexec/dbus-daemon-launch-helper
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim

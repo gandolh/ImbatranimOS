@@ -49,6 +49,9 @@ describe("WaylandHostService", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  /** A tab's output at a ratio of 1, decoding no video. */
+  const out = (width: number, height: number) => ({ width, height, ratio: 1, codecs: [] });
+
   const service = (bin: string) =>
     new WaylandHostService({
       get: (k: string) => (k === "WAYLAND_HOST_BIN" ? bin : "webp"),
@@ -81,8 +84,8 @@ describe("WaylandHostService", () => {
     const svc = service(bin);
     const a = listener();
     const b = listener();
-    expect(svc.open("sessionAAAAAAAAAAAA", 640, 480, 1, a.l)).toBeNull();
-    expect(svc.open("sessionBBBBBBBBBBBB", 800, 600, 1, b.l)).toBeNull();
+    expect(svc.open("sessionAAAAAAAAAAAA", out(640, 480), a.l)).toBeNull();
+    expect(svc.open("sessionBBBBBBBBBBBB", out(800, 600), b.l)).toBeNull();
     await until(() => a.frames.length === 1 && b.frames.length === 1);
     expect(a.messages.map((m) => m.type)).toEqual(["session_ready", "toplevel_created"]);
     expect(a.messages[1]).toMatchObject({ width: 640, height: 480 });
@@ -104,13 +107,13 @@ describe("WaylandHostService", () => {
   it("reports a missing binary to the session instead of throwing", async () => {
     const svc = service(join(dir, "no-such-host"));
     const a = listener();
-    expect(svc.open("sessionAAAAAAAAAAAA", 640, 480, 1, a.l)).toBeNull();
+    expect(svc.open("sessionAAAAAAAAAAAA", out(640, 480), a.l)).toBeNull();
     await until(() => a.gone() !== null);
     expect(a.gone()).toMatch(/cannot start/);
   });
 
   it("is unavailable without XDG_RUNTIME_DIR", () => {
     delete process.env.XDG_RUNTIME_DIR;
-    expect(service("x").open("sessionAAAAAAAAAAAA", 1, 1, 1, listener().l)).toMatch(/XDG_RUNTIME_DIR/);
+    expect(service("x").open("sessionAAAAAAAAAAAA", out(1, 1), listener().l)).toMatch(/XDG_RUNTIME_DIR/);
   });
 });

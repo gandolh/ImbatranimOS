@@ -17,6 +17,7 @@ mod protocol;
 mod session;
 mod sound;
 mod stubs;
+mod video;
 mod xwayland;
 
 use std::cell::{Cell, RefCell};
@@ -168,7 +169,10 @@ impl Host {
 
     fn handle(&mut self, msg: Inbound) {
         match msg {
-            Inbound::SessionOpen { session, width, height, ratio } => self.open(session, width, height, ratio),
+            Inbound::SessionOpen { session, width, height, ratio, codecs } => {
+                self.open(session.clone(), width, height, ratio);
+                self.with(&session, |s| s.set_video_codecs(&codecs));
+            }
             Inbound::SessionClose { session } => self.close(&session),
             Inbound::Output { session, width, height, ratio } => {
                 self.with(&session, |s| s.set_output(width, height, ratio))
@@ -192,7 +196,11 @@ impl Host {
             Inbound::Close { session, toplevel } => self.with(&session, |s| s.close(toplevel)),
             Inbound::Position { session, toplevel, x, y } => self.with(&session, |s| s.position(toplevel, x, y)),
             Inbound::PressOutside { session } => self.with(&session, |s| s.press_outside()),
-            Inbound::Resync { session } => self.with(&session, |s| s.resync()),
+            Inbound::Resync { session, codecs } => self.with(&session, |s| {
+                s.set_video_codecs(&codecs);
+                s.resync();
+            }),
+            Inbound::Keyframe { session, toplevel } => self.with(&session, |s| s.keyframe(toplevel)),
             Inbound::Freeze { session, frozen } => {
                 if let Some(s) = self.sessions.get(&session) {
                     let mut s = s.borrow_mut();

@@ -1,7 +1,7 @@
 /**
  * A Linux window's frame, as the `/api/wayland` socket carries it: a kind
  * byte (2), then the toplevel, the window's size and its changed rectangles,
- * each lossless. The layout is described once in
+ * lossless except a playing video's region. The layout is described once in
  * `apps/wayland-host/PROTOCOL.md`.
  */
 
@@ -10,6 +10,8 @@ export const ENC_DEFLATE_RGBA = 1;
 export const ENC_WEBP_LOSSLESS = 2;
 /** A large region that changes on most frames (a video), sent lossy. */
 export const ENC_JPEG = 3;
+/** The same region as one frame of the window's VP8 stream (see `VideoStreams`). */
+export const ENC_VP8 = 4;
 
 export type FrameRect = {
   x: number;
@@ -82,6 +84,152 @@ export async function decodeRect(rect: FrameRect): Promise<ImageData | ImageBitm
   return null;
 }
 
+/** The decoder settings a tab checks before it says it decodes VP8. */
+const VP8_CONFIG: VideoDecoderConfig = { codec: "vp8", optimizeForLatency: true };
+
+/**
+ * The video codecs this tab decodes, as the socket's query names them: VP8
+ * where WebCodecs has it, else none, and the host sends a video's region as
+ * JPEG.
+ */
+export async function decodableVideoCodecs(): Promise<string[]> {
+  if (typeof VideoDecoder === "undefined") return [];
+  try {
+    const { supported } = await VideoDecoder.isConfigSupported(VP8_CONFIG);
+    return supported ? ["vp8"] : [];
+  } catch {
+    return [];
+  }
+}
+
+/** A frame not out of the decoder by then is lost, and the stream with it. */
+const DECODE_TIMEOUT_MS = 1000;
+
+/** WebCodecs wants a timestamp per chunk; the frames are drawn as they come. */
+const FRAME_US = 33_333;
+
+type Waiter = (frame: VideoFrame | null) => void;
+
+type Stream = {
+  decoder: VideoDecoder;
+  width: number;
+  height: number;
+  /** Frames sent to the decoder and not out yet, oldest first. */
+  waiting: Waiter[];
+  timestamp: number;
+};
+
+/** A VP8 frame is a keyframe when bit 0 of its frame tag is clear. */
+export function isVp8Keyframe(data: Uint8Array): boolean {
+  return data.length > 0 && ((data[0] ?? 1) & 1) === 0;
+}
+
+/**
+ * Each window's VP8 decoder, for the frames of its video region. A stream
+ * starts with a keyframe, and the host sends one whenever the region moves
+ * or is resized. A decoder that fails, or that the browser takes back, asks
+ * the host for a keyframe through `requestKeyframe` and draws nothing until
+ * it comes.
+ */
+export class VideoStreams {
+  private readonly streams = new Map<number, Stream>();
+  /** Windows that asked for a keyframe and haven't had one yet. */
+  private readonly asked = new Set<number>();
+
+  private readonly requestKeyframe: (toplevel: number) => void;
+
+  constructor(requestKeyframe: (toplevel: number) => void) {
+    this.requestKeyframe = requestKeyframe;
+  }
+
+  /** Decode one VP8 rectangle of `toplevel`'s frame: its picture, or null. */
+  decode(toplevel: number, rect: FrameRect): Promise<VideoFrame | null> {
+    const key = isVp8Keyframe(rect.data);
+    let s = this.streams.get(toplevel);
+    if (key) {
+      this.asked.delete(toplevel);
+      if (!s || s.decoder.state !== "configured" || s.width !== rect.w || s.height !== rect.h) {
+        if (s) this.close(toplevel, s);
+        s = this.open(toplevel, rect.w, rect.h);
+      }
+    }
+    if (!s || s.decoder.state !== "configured") {
+      // A delta with no picture to apply it to.
+      if (!key) this.ask(toplevel);
+      return Promise.resolve(null);
+    }
+    const stream = s;
+    return new Promise<VideoFrame | null>((resolve) => {
+      const timer = setTimeout(() => this.fail(toplevel), DECODE_TIMEOUT_MS);
+      stream.waiting.push((frame) => {
+        clearTimeout(timer);
+        resolve(frame);
+      });
+      try {
+        stream.timestamp += FRAME_US;
+        stream.decoder.decode(
+          new EncodedVideoChunk({ type: key ? "key" : "delta", timestamp: stream.timestamp, data: rect.data }),
+        );
+      } catch {
+        this.fail(toplevel);
+      }
+    });
+  }
+
+  /** The window is gone: its decoder too. */
+  drop(toplevel: number): void {
+    const s = this.streams.get(toplevel);
+    if (s) this.close(toplevel, s);
+    this.asked.delete(toplevel);
+  }
+
+  dropAll(): void {
+    for (const [toplevel, s] of [...this.streams]) this.close(toplevel, s);
+    this.asked.clear();
+  }
+
+  private open(toplevel: number, width: number, height: number): Stream | undefined {
+    if (typeof VideoDecoder === "undefined") return undefined;
+    const waiting: Waiter[] = [];
+    const decoder = new VideoDecoder({
+      output: (frame) => {
+        const waiter = waiting.shift();
+        if (waiter) waiter(frame);
+        else frame.close();
+      },
+      error: () => this.fail(toplevel),
+    });
+    try {
+      decoder.configure({ ...VP8_CONFIG, codedWidth: width, codedHeight: height });
+    } catch {
+      decoder.close();
+      return undefined;
+    }
+    const s: Stream = { decoder, width, height, waiting, timestamp: 0 };
+    this.streams.set(toplevel, s);
+    return s;
+  }
+
+  /** The decoder broke or stalled: drop it and ask for a keyframe. */
+  private fail(toplevel: number): void {
+    const s = this.streams.get(toplevel);
+    if (s) this.close(toplevel, s);
+    this.ask(toplevel);
+  }
+
+  private close(toplevel: number, s: Stream): void {
+    if (this.streams.get(toplevel) === s) this.streams.delete(toplevel);
+    for (const waiter of s.waiting.splice(0)) waiter(null);
+    if (s.decoder.state !== "closed") s.decoder.close();
+  }
+
+  private ask(toplevel: number): void {
+    if (this.asked.has(toplevel)) return;
+    this.asked.add(toplevel);
+    this.requestKeyframe(toplevel);
+  }
+}
+
 /**
  * Draw a frame onto a window's canvas. The canvas holds the frame's pixels
  * and is laid out at `scale` of them to a CSS pixel: a window an app drew for
@@ -89,8 +237,17 @@ export async function decodeRect(rect: FrameRect): Promise<ImageData | ImageBitm
  * pixel on a screen whose devicePixelRatio is 2. A new size clears it, and the
  * host sends the whole window after a resize.
  */
-export async function paintFrame(canvas: HTMLCanvasElement, frame: Frame, scale = 1): Promise<void> {
-  const decoded = await Promise.all(frame.rects.map(decodeRect));
+export async function paintFrame(
+  canvas: HTMLCanvasElement,
+  frame: Frame,
+  scale = 1,
+  videos?: VideoStreams,
+): Promise<void> {
+  const decoded: (ImageData | ImageBitmap | VideoFrame | null)[] = await Promise.all(
+    frame.rects.map((rect) =>
+      rect.encoding === ENC_VP8 ? (videos?.decode(frame.toplevel, rect) ?? Promise.resolve(null)) : decodeRect(rect),
+    ),
+  );
   if (canvas.width !== frame.width) canvas.width = frame.width;
   if (canvas.height !== frame.height) canvas.height = frame.height;
   // Always set, so the CSS size changes with the pixels, never a frame apart.
@@ -100,7 +257,10 @@ export async function paintFrame(canvas: HTMLCanvasElement, frame: Frame, scale 
   if (canvas.style.width !== cssWidth) canvas.style.width = cssWidth;
   if (canvas.style.height !== cssHeight) canvas.style.height = cssHeight;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  if (!ctx) {
+    for (const image of decoded) if (image && "close" in image) image.close();
+    return;
+  }
   frame.rects.forEach((rect, i) => {
     const image = decoded[i];
     if (!image) return;

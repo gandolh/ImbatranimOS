@@ -407,6 +407,7 @@ dependencies = [
 name = "imbatranim-wayland-host"
 version = "0.1.0"
 dependencies = [
+ "cc",
  "flate2",
  "image-webp",
  "jpeg-encoder",

@@ -1,5 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
-import { decodeRect, paintFrame, parseFrame, ENC_JPEG, ENC_WEBP_LOSSLESS } from "./frames";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  decodableVideoCodecs,
+  decodeRect,
+  paintFrame,
+  parseFrame,
+  VideoStreams,
+  ENC_JPEG,
+  ENC_VP8,
+  ENC_WEBP_LOSSLESS,
+} from "./frames";
 
 /** A frame as the socket carries it: kind 2, then the body PROTOCOL.md lays out. */
 function frameBytes(rects: { x: number; y: number; w: number; h: number; data: number[] }[]) {
@@ -95,5 +104,129 @@ describe("paintFrame", () => {
     const c = fakeCanvas();
     await paintFrame(c, { toplevel: 1, width: 300, height: 200, rects: [] }, 0);
     expect([c.style.width, c.style.height]).toEqual(["300px", "200px"]);
+  });
+});
+
+/** WebCodecs' VideoDecoder as far as VideoStreams uses it: each chunk comes out as a frame. */
+class FakeDecoder {
+  static made: FakeDecoder[] = [];
+  static supported = true;
+  static isConfigSupported = vi.fn(async () => ({ supported: FakeDecoder.supported }));
+  state: "unconfigured" | "configured" | "closed" = "unconfigured";
+  config: { codedWidth?: number; codedHeight?: number } = {};
+  chunks: { type: string }[] = [];
+  readonly init: { output: (frame: unknown) => void; error: (e: unknown) => void };
+  constructor(init: { output: (frame: unknown) => void; error: (e: unknown) => void }) {
+    this.init = init;
+    FakeDecoder.made.push(this);
+  }
+  configure(config: { codedWidth?: number; codedHeight?: number }) {
+    this.config = config;
+    this.state = "configured";
+  }
+  decode(chunk: { type: string }) {
+    this.chunks.push(chunk);
+    queueMicrotask(() => this.init.output({ chunk, close: vi.fn() }));
+  }
+  close() {
+    this.state = "closed";
+  }
+}
+
+/** A VP8 rectangle: a keyframe's frame tag has bit 0 clear. */
+const vp8 = (key: boolean, w = 640, h = 360) => ({
+  x: 10,
+  y: 20,
+  w,
+  h,
+  encoding: ENC_VP8,
+  data: new Uint8Array([key ? 0x10 : 0x11, 0, 0]),
+});
+
+describe("VP8 video regions", () => {
+  beforeEach(() => {
+    FakeDecoder.made = [];
+    FakeDecoder.supported = true;
+    vi.stubGlobal("VideoDecoder", FakeDecoder);
+    vi.stubGlobal(
+      "EncodedVideoChunk",
+      class {
+        constructor(init: object) {
+          Object.assign(this, init);
+        }
+      },
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("says VP8 only where WebCodecs decodes it", async () => {
+    expect(await decodableVideoCodecs()).toEqual(["vp8"]);
+    FakeDecoder.supported = false;
+    expect(await decodableVideoCodecs()).toEqual([]);
+    FakeDecoder.isConfigSupported.mockRejectedValueOnce(new Error("no"));
+    expect(await decodableVideoCodecs()).toEqual([]);
+    vi.stubGlobal("VideoDecoder", undefined);
+    expect(await decodableVideoCodecs()).toEqual([]);
+  });
+
+  it("decodes a stream from its keyframe, then its deltas", async () => {
+    const ask = vi.fn();
+    const videos = new VideoStreams(ask);
+    expect(await videos.decode(1, vp8(true))).not.toBeNull();
+    expect(await videos.decode(1, vp8(false))).not.toBeNull();
+    expect(FakeDecoder.made).toHaveLength(1);
+    expect(FakeDecoder.made[0]?.config).toMatchObject({ codec: "vp8", codedWidth: 640, codedHeight: 360 });
+    expect(FakeDecoder.made[0]?.chunks.map((c) => c.type)).toEqual(["key", "delta"]);
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("asks once for a keyframe when a delta has nothing to apply to", async () => {
+    const ask = vi.fn();
+    const videos = new VideoStreams(ask);
+    expect(await videos.decode(3, vp8(false))).toBeNull();
+    expect(await videos.decode(3, vp8(false))).toBeNull();
+    expect(ask).toHaveBeenCalledTimes(1);
+    expect(ask).toHaveBeenCalledWith(3);
+    // The keyframe comes: decoding goes on, and a later loss asks again.
+    expect(await videos.decode(3, vp8(true))).not.toBeNull();
+    FakeDecoder.made[0]?.init.error(new Error("reclaimed"));
+    expect(await videos.decode(3, vp8(false))).toBeNull();
+    expect(ask).toHaveBeenCalledTimes(2);
+  });
+
+  it("starts a new decoder for a keyframe of another size, and closes the old one", async () => {
+    const videos = new VideoStreams(vi.fn());
+    await videos.decode(1, vp8(true));
+    await videos.decode(1, vp8(true, 800, 450));
+    expect(FakeDecoder.made.map((d) => d.state)).toEqual(["closed", "configured"]);
+    expect(FakeDecoder.made[1]?.config).toMatchObject({ codedWidth: 800, codedHeight: 450 });
+    videos.drop(1);
+    expect(FakeDecoder.made[1]?.state).toBe("closed");
+  });
+
+  it("draws the decoded picture where its rectangle is, then lets it go", async () => {
+    // Node has no ImageData; paintFrame tells pictures from raw pixels by it.
+    vi.stubGlobal("ImageData", class {});
+    const drawn: unknown[][] = [];
+    const ctx = {
+      clearRect: vi.fn(),
+      drawImage: (...a: unknown[]) => drawn.push(a),
+      putImageData: vi.fn(),
+    };
+    const canvas = {
+      width: 0,
+      height: 0,
+      style: { width: "", height: "" },
+      getContext: () => ctx,
+    } as unknown as HTMLCanvasElement;
+    const videos = new VideoStreams(vi.fn());
+    await paintFrame(canvas, { toplevel: 2, width: 1280, height: 720, rects: [vp8(true)] }, 1, videos);
+    expect(drawn).toHaveLength(1);
+    const [picture, x, y] = drawn[0] ?? [];
+    expect([x, y]).toEqual([10, 20]);
+    expect((picture as { close: () => void }).close).toHaveBeenCalled();
+    // A tab without a decoder for it draws nothing there.
+    await paintFrame(canvas, { toplevel: 2, width: 1280, height: 720, rects: [vp8(false)] });
+    expect(drawn).toHaveLength(1);
   });
 });

@@ -1,4 +1,4 @@
-import type { HostInbound, TextEditMessage } from "./wayland.protocol";
+import { VIDEO_CODECS, type HostInbound, type TextEditMessage, type VideoCodec } from "./wayland.protocol";
 import { MAX_CLIPBOARD_BYTES, MAX_RATIO, MAX_TEXT_INPUT_BYTES, MAX_VIEWPORT } from "./wayland.constants";
 
 /**
@@ -42,6 +42,16 @@ export function clampRatio(v: unknown): number {
   const n = v === null || v === "" ? NaN : Number(v);
   if (!Number.isFinite(n) || n <= 0) return 1;
   return Math.min(n, MAX_RATIO);
+}
+
+/**
+ * The tab's video codecs, from its comma-separated `codecs` query: the known
+ * ones, each once. Missing or unknown, none: the host sends JPEG.
+ */
+export function parseCodecs(v: unknown): VideoCodec[] {
+  if (typeof v !== "string" || v.length > 64) return [];
+  const wanted = new Set(v.split(","));
+  return VIDEO_CODECS.filter((c) => wanted.has(c));
 }
 
 /** A high surrogate with no low one after it, or a low one with no high before. */
@@ -173,6 +183,9 @@ export function toHostMessage(session: string, m: Record<string, unknown>): Host
     case "close":
       if (!isU32(m.toplevel)) return null;
       return { type: "close", session, toplevel: m.toplevel };
+    case "keyframe":
+      if (!isU32(m.toplevel)) return null;
+      return { type: "keyframe", session, toplevel: m.toplevel };
     case "position":
       if (
         !isU32(m.toplevel) ||

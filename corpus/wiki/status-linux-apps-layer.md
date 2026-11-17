@@ -1,6 +1,6 @@
 ---
-summary: The first Linux apps layer (briefs 01-06) as built, 2026-11-03 - Nix in the image with Firefox, the Wayland host, input and title bars, popups, the Linux apps pane, lifecycle and sleep - moved unchanged out of status.md to keep it under its line cap. Branch, sizes and what each brief proved.
-updated: 2026-11-06
+summary: The first Linux apps layer (briefs 01-06) as built, 2026-11-03 - Nix in the image with Firefox, the Wayland host, input and title bars, popups, the Linux apps pane, lifecycle and sleep - moved unchanged out of status.md to keep it under its line cap. Branch, sizes and what each brief proved. Later: 89 (2026-11-17), a playing video as VP8.
+updated: 2026-11-17
 ---
 
 > Moved here unchanged from [status.md](status.md) on 2026-11-06.
@@ -38,3 +38,13 @@ notification runs its `default` action (`ActionInvoked`, then `NotificationClose
 2) and raises the app's window when exactly one matches; the toast's × still
 doesn't signal the app. Calls in
 [decisions-linux-apps-input-files-look.md](decisions-linux-apps-input-files-look.md).
+
+## Later: video as a video stream (2026-11-17)
+
+89 (ready for deploy): a video playing in a Linux window goes as VP8 (libvpx in
+the host through a C shim, WebCodecs' `VideoDecoder` in the tab) for a tab that
+says on connect it decodes VP8, and as JPEG for any other; text beside it stays
+lossless and a paused video still ends sharp. Measured at 46% of JPEG's bytes a
+second for 75% of its host CPU under one CPU
+([research-video-in-linux-windows.md](research-video-in-linux-windows.md)).
+Android Chrome is the owner's to try.

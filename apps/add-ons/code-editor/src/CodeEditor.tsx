@@ -799,7 +799,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
             onClick={() => void handleSave()}
             disabled={saving || loading || !activeDirty}
           >
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+            {saving ? <Loader2 size={12} className="motion-safe:animate-spin" /> : <Save size={12} />}
             Save
           </Button>
         </Tooltip>
@@ -872,7 +872,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
           keepCurrentModel
           loading={
             <div className="text-on-surface-variant font-ui text-control flex items-center gap-2">
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={16} className="motion-safe:animate-spin" />
               Loading editor…
             </div>
           }
@@ -880,7 +880,7 @@ export function CodeEditor({ windowId }: { windowId: string }) {
 
         {loading && (
           <div className="bg-surface-container-lowest text-on-surface-variant font-ui text-control absolute inset-0 flex items-center justify-center gap-2">
-            <Loader2 size={16} className="animate-spin" />
+            <Loader2 size={16} className="motion-safe:animate-spin" />
             Loading file…
           </div>
         )}

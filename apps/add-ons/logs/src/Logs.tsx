@@ -154,8 +154,14 @@ export function Logs() {
         >
           Follow
         </Toggle>
-        <Button variant="ghost" size="sm" aria-label="Refresh" onClick={() => void load(false)}>
-          <RefreshCw size={12} className={cn(loading && "animate-spin")} />
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={loading ? "Refreshing" : "Refresh"}
+          aria-busy={loading}
+          onClick={() => void load(false)}
+        >
+          <RefreshCw size={12} className={cn(loading && "text-primary motion-safe:animate-spin")} />
         </Button>
       </div>
 

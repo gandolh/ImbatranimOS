@@ -56,7 +56,7 @@ export const DateGrid = memo(function DateGrid({
   if (groups === null) {
     return (
       <div className="text-on-surface-variant font-ui text-control flex flex-1 items-center justify-center gap-2">
-        <Loader2 size={16} className="animate-spin" />
+        <Loader2 size={16} className="motion-safe:animate-spin" />
         Loading folder…
       </div>
     );

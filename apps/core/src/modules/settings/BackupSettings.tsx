@@ -179,7 +179,11 @@ export function BackupSettings() {
         )}
 
         <Button variant="primary" onClick={download} disabled={!info || downloading}>
-          {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} strokeWidth={1.75} />}
+          {downloading ? (
+            <Loader2 size={14} className="motion-safe:animate-spin" />
+          ) : (
+            <Download size={14} strokeWidth={1.75} />
+          )}
           Download backup
         </Button>
       </div>
@@ -204,7 +208,11 @@ export function BackupSettings() {
           }}
         />
         <Button variant="default" onClick={() => fileRef.current?.click()} disabled={uploading || applying}>
-          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} strokeWidth={1.75} />}
+          {uploading ? (
+            <Loader2 size={14} className="motion-safe:animate-spin" />
+          ) : (
+            <Upload size={14} strokeWidth={1.75} />
+          )}
           Choose a backup file…
         </Button>
 
@@ -268,7 +276,7 @@ export function BackupSettings() {
                   disabled={confirmText !== CONFIRM_WORD || !preview.fits || applying}
                 >
                   {applying ? (
-                    <Loader2 size={14} className="animate-spin" />
+                    <Loader2 size={14} className="motion-safe:animate-spin" />
                   ) : (
                     <RotateCcw size={14} strokeWidth={1.75} />
                   )}

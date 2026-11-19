@@ -132,7 +132,7 @@ export function Notepad({ windowId }: { windowId: string }) {
 
       {checking && (
         <span className="font-ui text-label flex items-center gap-1">
-          <Loader2 size={11} className="animate-spin" /> checking the file…
+          <Loader2 size={11} className="motion-safe:animate-spin" /> checking the file…
         </span>
       )}
 

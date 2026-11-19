@@ -229,7 +229,7 @@ export function UpdatesSettings() {
       {/* The machine's state, Windows Update style. */}
       <div className="rounded-control border-outline-variant bg-surface-container-low flex items-center gap-4 border p-4">
         {running && ours ? (
-          <RefreshCw size={28} strokeWidth={1.5} className="text-primary shrink-0 animate-spin" />
+          <RefreshCw size={28} strokeWidth={1.5} className="text-primary shrink-0 motion-safe:animate-spin" />
         ) : offers ? (
           <Download size={28} strokeWidth={1.5} className="text-primary shrink-0" />
         ) : (

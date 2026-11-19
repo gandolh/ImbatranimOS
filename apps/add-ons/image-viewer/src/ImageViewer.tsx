@@ -615,7 +615,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
                       disabled={saving}
                       onClick={() => void saveRotation()}
                     >
-                      {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                      {saving ? <Loader2 size={11} className="motion-safe:animate-spin" /> : <Save size={11} />}
                       Save
                     </Button>
                   </Tooltip>
@@ -682,7 +682,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
       >
         {loading && !error && (
           <div className="text-on-surface-variant font-ui text-control flex items-center gap-2">
-            <Loader2 size={16} className="animate-spin" />
+            <Loader2 size={16} className="motion-safe:animate-spin" />
             Loading image…
           </div>
         )}

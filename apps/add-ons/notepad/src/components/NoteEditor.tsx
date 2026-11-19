@@ -574,7 +574,7 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
   if (isLoading) {
     return (
       <div className="text-on-surface-variant text-control flex h-full items-center justify-center gap-2 p-4">
-        <Loader2 size={14} className="animate-spin" /> Loading…
+        <Loader2 size={14} className="motion-safe:animate-spin" /> Loading…
       </div>
     );
   }
@@ -624,7 +624,7 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
             disabled={!dirty || updateMutation.isPending}
             onClick={() => void save()}
           >
-            {updateMutation.isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+            {updateMutation.isPending ? <Loader2 size={11} className="motion-safe:animate-spin" /> : <Save size={11} />}
             Save
           </Button>
           <RadioGroup<ViewMode>

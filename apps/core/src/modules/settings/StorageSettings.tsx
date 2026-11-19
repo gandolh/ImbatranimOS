@@ -133,11 +133,12 @@ export function StorageSettings() {
           size="sm"
           variant="ghost"
           className="h-5 w-5 p-0"
-          aria-label="Recalculate"
-          title="Recalculate"
+          aria-label={loading ? "Recalculating" : "Recalculate"}
+          title={loading ? "Recalculating…" : "Recalculate"}
+          aria-busy={loading}
           onClick={() => setNonce((n) => n + 1)}
         >
-          <RefreshCw size={11} className={cn(loading && "animate-spin")} />
+          <RefreshCw size={11} className={cn(loading && "text-primary motion-safe:animate-spin")} />
         </Button>
       </div>
 

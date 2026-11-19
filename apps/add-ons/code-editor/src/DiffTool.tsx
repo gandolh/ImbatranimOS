@@ -279,7 +279,7 @@ export function DiffTool({ windowId: _windowId }: { windowId: string }) {
             keepCurrentModifiedModel={false}
             loading={
               <div className="text-on-surface-variant font-ui text-control flex items-center gap-2">
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={16} className="motion-safe:animate-spin" />
                 Loading diff…
               </div>
             }
@@ -287,7 +287,7 @@ export function DiffTool({ windowId: _windowId }: { windowId: string }) {
         ) : (
           <div className="text-on-surface-variant flex h-full flex-col items-center justify-center gap-3">
             {loading ? (
-              <Loader2 size={24} className="animate-spin" />
+              <Loader2 size={24} className="motion-safe:animate-spin" />
             ) : (
               <>
                 <FileDiff size={40} strokeWidth={1} />

@@ -115,7 +115,7 @@ export function FormatToolbar({
             "hover:bg-surface-container-high disabled:opacity-40",
           )}
         >
-          <ImageIcon size={13} className={imageBusy ? "animate-pulse" : undefined} />
+          <ImageIcon size={13} className={imageBusy ? "motion-safe:animate-pulse" : undefined} />
         </button>
       </Tooltip>
     </div>

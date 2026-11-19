@@ -99,7 +99,12 @@ export function SearchPanel({ root, onOpenAt, onClose, onPickScope, inputRef }: 
       <div className="border-outline-variant flex items-center gap-2 border-b px-2 py-1">
         <div className="rounded-control border-outline-variant bg-surface-container-lowest flex flex-1 items-center gap-1 border px-1.5">
           {running ? (
-            <Loader2 size={12} className="text-primary shrink-0 animate-spin" />
+            <Loader2
+              size={12}
+              aria-label="Searching"
+              role="img"
+              className="text-primary shrink-0 motion-safe:animate-spin"
+            />
           ) : (
             <Search size={12} className="text-on-surface-variant shrink-0" />
           )}

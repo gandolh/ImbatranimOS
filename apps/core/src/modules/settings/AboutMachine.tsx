@@ -110,7 +110,7 @@ export function AboutMachine({ onVersion }: { onVersion?: (version: string) => v
     <div className="grid gap-2">
       {loading && (
         <div className="rounded-control border-outline-variant bg-surface-container-low text-on-surface-variant text-control flex items-center gap-2 border px-3 py-2.5">
-          <Loader2 size={13} className="animate-spin" />
+          <Loader2 size={13} className="motion-safe:animate-spin" />
           Reading this machine…
         </div>
       )}

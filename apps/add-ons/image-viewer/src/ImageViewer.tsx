@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Image as ImageIcon,
   ImageOff,
@@ -13,9 +13,12 @@ import {
   Loader2,
   Save,
   Copy,
+  Calendar,
 } from "lucide-react";
 import {
   Button,
+  Radio,
+  RadioGroup,
   Tooltip,
   cn,
   fileName,
@@ -28,10 +31,12 @@ import {
   useSystem,
   useUnsavedGuard,
 } from "@imbatranim/ui";
+import { DateGrid } from "./DateGrid";
 import { listDir } from "./api/listDir";
 import type { FsEntry } from "./api/types";
 import { isImagePath, parentDir, clamp } from "./lib/imagePath";
 import { canPan, clampPan, NO_PAN, renderedSize, type Offset } from "./lib/pan";
+import { useFolderDates } from "./lib/useFolderDates";
 import { canSaveInPlace, copyName, encodeMime, noSaveReason, rotatedCanvasSize } from "./lib/encode";
 
 const MIN_ZOOM = 0.1;
@@ -40,6 +45,7 @@ const ZOOM_STEP = 0.25;
 
 type ZoomMode = "fit" | "manual";
 type Size = { width: number; height: number };
+type View = "single" | "date";
 
 export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
   const system = useSystem();
@@ -61,7 +67,17 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
   // yet (or the listing failed) — prev/next stay disabled and the opened file
   // is still shown on its own via `source`.
   const [siblings, setSiblings] = useState<FsEntry[] | null>(null);
-  const [index, setIndex] = useState(0);
+  // The photo on screen, by path (null = the one the window was opened with).
+  // A path, not a position, so the step list can change order under it.
+  const [cur, setCur] = useState<string | null>(null);
+  // Single image or the By date grid. A device-only choice, not saved. Opened
+  // on a file the window starts on the single image, as before.
+  const [view, setView] = useState<View>("single");
+  // Next and previous follow name order, as opened from Files; opening a photo
+  // from the grid switches them to date order.
+  const [order, setOrder] = useState<"name" | "date">("name");
+  // The dates are read the first time the grid is shown, never otherwise.
+  const [datesWanted, setDatesWanted] = useState(false);
 
   const [rotation, setRotation] = useState(0); // degrees, always a multiple of 90
   const [zoomMode, setZoomMode] = useState<ZoomMode>("fit");
@@ -100,8 +116,18 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
     from: Offset;
   } | null>(null);
 
-  const currentPath = siblings && siblings.length > 0 ? (siblings[index]?.path ?? null) : (source?.path ?? null);
   const currentRoot = source?.root ?? null;
+  const dates = useFolderDates(system, currentRoot, siblings, datesWanted);
+  const dateList = useMemo(() => dates.groups.flatMap((g) => g.items.map((i) => i.entry)), [dates.groups]);
+  // The step list: name order, or the grid's date order once a photo was
+  // opened from the grid (the grouping it showed, so the order never jumps).
+  const stepList = useMemo(
+    () => (siblings && siblings.length > 0 ? (order === "date" ? dateList : siblings) : []),
+    [siblings, order, dateList],
+  );
+  const found = stepList.findIndex((e) => e.path === (cur ?? source?.path));
+  const index = found >= 0 ? found : 0;
+  const currentPath = stepList.length > 0 ? (stepList[index]?.path ?? null) : (source?.path ?? null);
 
   // Resolve the folder's image siblings once, from the path we were opened
   // with. Not re-run on navigation — `index` alone drives prev/next.
@@ -116,17 +142,14 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
           .filter((e) => e.type === "file" && isImagePath(e.name))
           .sort((a, b) => a.name.localeCompare(b.name));
         if (cancelled) return;
-        const i = images.findIndex((e) => e.path === source.path);
-        if (i >= 0) {
+        if (images.some((e) => e.path === source.path)) {
           setSiblings(images);
-          setIndex(i);
         } else {
           // The opened file is not among the folder's images (deleted, renamed, or
           // not itself an image). Show the opened path alone — falling back through
           // `currentPath` to `source.path` — rather than silently displaying
           // `images[0]` while the counter claims "1 / N" (L6).
           setSiblings([]);
-          setIndex(0);
         }
       } catch (err) {
         // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
@@ -179,14 +202,31 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
     });
   }, [rotation, savedRotation, confirm]);
 
-  const goPrev = useCallback(async () => {
-    if (!(await confirmDiscard())) return;
-    setIndex((i) => (siblings && siblings.length > 0 ? (i - 1 + siblings.length) % siblings.length : i));
-  }, [siblings, confirmDiscard]);
-  const goNext = useCallback(async () => {
-    if (!(await confirmDiscard())) return;
-    setIndex((i) => (siblings && siblings.length > 0 ? (i + 1) % siblings.length : i));
-  }, [siblings, confirmDiscard]);
+  const step = useCallback(
+    async (by: 1 | -1) => {
+      if (stepList.length === 0 || !(await confirmDiscard())) return;
+      const next = stepList[(index + by + stepList.length) % stepList.length];
+      if (next) setCur(next.path);
+    },
+    [stepList, index, confirmDiscard],
+  );
+  const goPrev = useCallback(() => step(-1), [step]);
+  const goNext = useCallback(() => step(1), [step]);
+
+  const showView = (next: View) => {
+    if (next === "date") setDatesWanted(true);
+    setView(next);
+  };
+  // A photo opened from the grid: the viewer shows it and steps in date order.
+  const openFromGrid = useCallback(
+    async (path: string) => {
+      if (path !== currentPath && !(await confirmDiscard())) return;
+      setOrder("date");
+      setCur(path);
+      setView("single");
+    },
+    [currentPath, confirmDiscard],
+  );
 
   // Rotation flips which natural axis maps to width vs. height, so "fit"
   // fits the rotated bounding box, not the raw pixel one.
@@ -380,6 +420,8 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    // The grid has its own keys; the view switch keeps its arrow keys too.
+    if (view === "date" || (e.target as HTMLElement).closest('[role="radiogroup"]')) return;
     switch (e.key) {
       case "ArrowLeft":
         e.preventDefault();
@@ -437,132 +479,171 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
     >
       {/* Toolbar */}
       <div className="border-outline-variant bg-surface-container-low flex items-center gap-1 border-b px-2 py-1">
-        <Tooltip content="Previous image">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-5 w-5 p-0"
-            onClick={() => void goPrev()}
-            disabled={!hasSiblingNav}
-          >
-            <ChevronLeft size={13} />
-          </Button>
-        </Tooltip>
-        <span className="font-ui text-on-surface-variant text-label min-w-[48px] text-center tabular-nums">
-          {siblings && siblings.length > 0 ? `${index + 1} / ${siblings.length}` : "— / —"}
-        </span>
-        <Tooltip content="Next image">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-5 w-5 p-0"
-            onClick={() => void goNext()}
-            disabled={!hasSiblingNav}
-          >
-            <ChevronRight size={13} />
-          </Button>
-        </Tooltip>
+        <RadioGroup<View>
+          aria-label="View"
+          value={view}
+          onValueChange={showView}
+          className="border-outline-variant flex items-center overflow-hidden rounded-sm border"
+        >
+          {(
+            [
+              ["single", "Single", ImageIcon],
+              ["date", "By date", Calendar],
+            ] as const
+          ).map(([value, label, Icon]) => (
+            <Radio
+              key={value}
+              value={value}
+              aria-label={label}
+              className={({ checked }) =>
+                cn(
+                  "font-ui text-label flex h-5 items-center gap-1 px-1.5",
+                  checked ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-high",
+                )
+              }
+            >
+              <Icon size={11} aria-hidden />
+              {label}
+            </Radio>
+          ))}
+        </RadioGroup>
 
         <div className="bg-outline-variant mx-1 h-4 w-px" />
 
-        <Tooltip content="Zoom out">
-          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={zoomOut}>
-            <ZoomOut size={13} />
-          </Button>
-        </Tooltip>
-        <span className="font-ui text-on-surface-variant text-label min-w-[40px] text-center tabular-nums">
-          {zoomLabel}
-        </span>
-        <Tooltip content="Zoom in">
-          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={zoomIn}>
-            <ZoomIn size={13} />
-          </Button>
-        </Tooltip>
-        <Tooltip content="Fit to window">
-          <Button
-            variant={zoomMode === "fit" ? "selected" : "ghost"}
-            size="sm"
-            className="h-5 w-5 p-0"
-            onClick={fitToWindow}
-          >
-            <Maximize size={13} />
-          </Button>
-        </Tooltip>
-        <Tooltip content="Actual size (100%)">
-          <Button
-            variant={zoomMode === "manual" && zoom === 1 ? "selected" : "ghost"}
-            size="sm"
-            className="font-ui text-label h-5 px-1.5"
-            onClick={zoomActual}
-          >
-            100%
-          </Button>
-        </Tooltip>
-
-        <div className="bg-outline-variant mx-1 h-4 w-px" />
-
-        <Tooltip content="Rotate left">
-          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={rotateLeft}>
-            <RotateCcw size={13} />
-          </Button>
-        </Tooltip>
-        <Tooltip content="Rotate right">
-          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={rotateRight}>
-            <RotateCw size={13} />
-          </Button>
-        </Tooltip>
-
-        {dirty && (
+        {view === "single" && (
           <>
-            {/* When the format cannot take a rotation, there is no Save button at
+            <Tooltip content="Previous image">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 w-5 p-0"
+                onClick={() => void goPrev()}
+                disabled={!hasSiblingNav}
+              >
+                <ChevronLeft size={13} />
+              </Button>
+            </Tooltip>
+            <span className="font-ui text-on-surface-variant text-label min-w-[48px] text-center tabular-nums">
+              {siblings && siblings.length > 0 ? `${index + 1} / ${siblings.length}` : "— / —"}
+            </span>
+            <Tooltip content="Next image">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 w-5 p-0"
+                onClick={() => void goNext()}
+                disabled={!hasSiblingNav}
+              >
+                <ChevronRight size={13} />
+              </Button>
+            </Tooltip>
+
+            <div className="bg-outline-variant mx-1 h-4 w-px" />
+
+            <Tooltip content="Zoom out">
+              <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={zoomOut}>
+                <ZoomOut size={13} />
+              </Button>
+            </Tooltip>
+            <span className="font-ui text-on-surface-variant text-label min-w-[40px] text-center tabular-nums">
+              {zoomLabel}
+            </span>
+            <Tooltip content="Zoom in">
+              <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={zoomIn}>
+                <ZoomIn size={13} />
+              </Button>
+            </Tooltip>
+            <Tooltip content="Fit to window">
+              <Button
+                variant={zoomMode === "fit" ? "selected" : "ghost"}
+                size="sm"
+                className="h-5 w-5 p-0"
+                onClick={fitToWindow}
+              >
+                <Maximize size={13} />
+              </Button>
+            </Tooltip>
+            <Tooltip content="Actual size (100%)">
+              <Button
+                variant={zoomMode === "manual" && zoom === 1 ? "selected" : "ghost"}
+                size="sm"
+                className="font-ui text-label h-5 px-1.5"
+                onClick={zoomActual}
+              >
+                100%
+              </Button>
+            </Tooltip>
+
+            <div className="bg-outline-variant mx-1 h-4 w-px" />
+
+            <Tooltip content="Rotate left">
+              <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={rotateLeft}>
+                <RotateCcw size={13} />
+              </Button>
+            </Tooltip>
+            <Tooltip content="Rotate right">
+              <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={rotateRight}>
+                <RotateCw size={13} />
+              </Button>
+            </Tooltip>
+
+            {dirty && (
+              <>
+                {/* When the format cannot take a rotation, there is no Save button at
                 all rather than a greyed one: a Tooltip on a disabled trigger never
                 opens, so the reason would have been unreachable — measured. The
                 reason goes inline instead, where it is always readable. */}
-            {savable ? (
-              <Tooltip content="Save the rotation to the file (Ctrl+S)">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="ml-1 flex h-5 items-center gap-1 px-1.5"
-                  aria-label="Save rotation"
-                  disabled={saving}
-                  onClick={() => void saveRotation()}
-                >
-                  {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
-                  Save
-                </Button>
-              </Tooltip>
-            ) : (
-              <span className="font-ui text-on-surface-variant text-label ml-1 max-w-[280px] truncate">
-                {cannotSaveWhy}
-              </span>
+                {savable ? (
+                  <Tooltip content="Save the rotation to the file (Ctrl+S)">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="ml-1 flex h-5 items-center gap-1 px-1.5"
+                      aria-label="Save rotation"
+                      disabled={saving}
+                      onClick={() => void saveRotation()}
+                    >
+                      {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                      Save
+                    </Button>
+                  </Tooltip>
+                ) : (
+                  <span className="font-ui text-on-surface-variant text-label ml-1 max-w-[280px] truncate">
+                    {cannotSaveWhy}
+                  </span>
+                )}
+                <Tooltip content="Save a rotated copy as PNG">
+                  <Button
+                    variant={savable ? "default" : "primary"}
+                    size="sm"
+                    className="flex h-5 items-center gap-1 px-1.5"
+                    aria-label="Save a rotated copy"
+                    disabled={saving}
+                    onClick={() => void saveCopy()}
+                  >
+                    <Copy size={11} />
+                    Copy
+                  </Button>
+                </Tooltip>
+              </>
             )}
-            <Tooltip content="Save a rotated copy as PNG">
-              <Button
-                variant={savable ? "default" : "primary"}
-                size="sm"
-                className="flex h-5 items-center gap-1 px-1.5"
-                aria-label="Save a rotated copy"
-                disabled={saving}
-                onClick={() => void saveCopy()}
-              >
-                <Copy size={11} />
-                Copy
-              </Button>
-            </Tooltip>
           </>
         )}
 
         <div className="flex-1" />
 
-        <span className="font-ui text-on-surface-variant text-label mr-1 max-w-[160px] truncate">
-          {fileName(currentPath ?? source.path, "image")}
-        </span>
-        <Tooltip content="Download">
-          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={triggerDownload}>
-            <Download size={13} />
-          </Button>
-        </Tooltip>
+        {view === "single" && (
+          <>
+            <span className="font-ui text-on-surface-variant text-label mr-1 max-w-[160px] truncate">
+              {fileName(currentPath ?? source.path, "image")}
+            </span>
+            <Tooltip content="Download">
+              <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={triggerDownload}>
+                <Download size={13} />
+              </Button>
+            </Tooltip>
+          </>
+        )}
       </div>
 
       {/* Image surface.
@@ -570,7 +651,21 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
           explicitly it genuinely overflows when zoomed, and native scrollbars
           plus dragging would be two competing ways to move the same picture.
           Panning is the single mechanism. */}
-      <div ref={attachScroll} className="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
+      {view === "date" && (
+        <DateGrid
+          groups={siblings === null ? null : dates.groups}
+          currentPath={currentPath}
+          urlFor={(path) => (currentRoot ? system.fs.downloadUrl(currentRoot, path) : "")}
+          reading={dates.reading}
+          done={dates.done}
+          total={dates.total}
+          onOpen={(path) => void openFromGrid(path)}
+        />
+      )}
+      <div
+        ref={attachScroll}
+        className={cn("flex min-h-0 flex-1 items-center justify-center overflow-hidden", view === "date" && "hidden")}
+      >
         {loading && !error && (
           <div className="text-on-surface-variant font-ui text-control flex items-center gap-2">
             <Loader2 size={16} className="animate-spin" />

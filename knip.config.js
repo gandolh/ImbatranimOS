@@ -33,6 +33,7 @@ export default {
     "apps/add-ons/file-manager": { vitest: true, ignoreBinaries: ["vitest"], ignoreDependencies: ["react-dom"] },
     "apps/add-ons/notepad": { vitest: true, ignoreBinaries: ["vitest"], ignoreDependencies: ["highlight.js"] },
     "apps/add-ons/snipping-tool": { vitest: true, ignoreBinaries: ["vitest"], ignoreDependencies: ["react-dom"] },
+    "apps/add-ons/image-viewer": { vitest: true, ignoreBinaries: ["vitest"], ignoreDependencies: ["react-dom"] },
     "packages/ui": { ignoreDependencies: ["lucide-react"] },
     "apps/backend": {
       // The e2e specs run from jest's own config, the proxy's page and worker are files the server hands out, and

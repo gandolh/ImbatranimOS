@@ -6317,3 +6317,7 @@ service and green 20 of 20 after, reading the file's bytes; slow-decompressor
 wrappers had given 900 of 900. The todo
 `archive-extract-reports-zero-bytes-under-load` is deleted. Owner step:
 `node cli.ts imbatranim-os server`.
+
+## [2026-11-19] done | Brief 90: Image Viewer groups a folder's photos by date
+
+Built in three parts: the logic (`9740ad8`, 1.346.0), the view (`4f46428`, 1.347.0) and the walk with two fixes (`abd3549`, 1.350.0). A By date toggle in the toolbar shows the folder's photos as a grid in local-day groups, newest first, with counts; dates come from Exif (Range reads on the existing file route, 64 KB at most a photo, six at a time) or the modified time. Opened from the grid, next and previous follow date order; from Files, name order. The dev-container walk (40 generated images) gave groups of 13, 2, 10, 8 and 7, 38 one-request reads, six at once at most. The walk found a toolbar that overflowed at 390 wide (it wraps now) and lost keyboard focus after a grid open (restored). Thumbnails are the full files; a thumbnail endpoint is a later todo. The todo `image-viewer-groups-photos-by-date` is deleted. Ready for deploy; owner step: `node cli.ts imbatranim-os server`.

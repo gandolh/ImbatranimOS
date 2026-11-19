@@ -131,3 +131,17 @@ Part 1 ends with a note on the ticket (`brief-board comment`) and in its
 report: steps done, the next step, files touched, each check's state, and
 anything learned that part 2 needs (the reader's API, the grouping's types,
 the Range helper's name).
+
+## Outcome (2026-11-19)
+
+Built in three parts, by three builders in turn (the brief's trial of a split build): part 1 the logic (`9740ad8`, 1.346.0: the Range read, the Exif date reader, the grouping, six at a time), part 2 the view (`4f46428`, 1.347.0: the By date toggle, the grid, the progress line, keyboard use), part 3 the walk and the fixes (`abd3549`, 1.350.0). Each part ended on a commit, a green `npm run check` and a hand-off note on the ticket.
+
+**The walk** (dev container, a generated folder of 40 images: 37 JPEGs with Exif over four days in two years, one JPEG without Exif, two PNGs). The grid made five day groups, newest first: 17 Nov (13), 12 Nov (2), 9 Nov (10), 21 Jun 2025 (8), 3 Feb 2025 (7). The year shows only on the older two. The PNGs and the EXIF-less JPEG sit under their modified day. The dates cost 38 range reads, one request each (`bytes=0-16383`, answered 206, no photo needed a second), at most six running at once (a counting `fetch` wrapper, with a 300 ms delay added to make the overlap visible). The progress line ("Reading dates… N of 38") showed once and the grid regrouped once; the empty state ("No images in this folder") showed once. Opened from Files, next and previous keep name order (5, 6, 5); opened from the grid, they follow date order (IMG_0001, then the screenshot JPEG, then the PNG, and back). Tab reaches the grid on one tile, the arrows move it, Enter opens.
+
+**Fixed in part 3**, each from the walk: at 390 wide the toolbar overflowed and squeezed the toggle ("gle"); it wraps now (`phone:flex-wrap`, the toggle `shrink-0`, the file name hidden on a phone, where the window title has it). After Enter on a tile, focus fell to the page and the arrow keys did nothing until a click; the viewer takes focus back. The toolbar's divider no longer trails the toggle in the grid. A test each.
+
+**Shots** (in the builder's scratch, not the repo): 1280x800 light and 390x844 dark, Apricot and Classic, grid and single view, plus the progress line and the empty state at 1280. Every one read: nothing clipped, no overflow at 390.
+
+**Known limits.** Thumbnails are the full files, loaded lazily: the walk's 10 KB images are no test of a large folder. A thumbnail endpoint is a later todo if a large folder proves slow. Grouping the grid after the dates are in remounts the tiles, so each image is fetched a second time (from the browser's cache in the walk).
+
+**Owner step.** `node cli.ts imbatranim-os server` from vps-deploy (the container serves the web client). Then, in Files, open a photo from a folder of mixed photos and press By date.

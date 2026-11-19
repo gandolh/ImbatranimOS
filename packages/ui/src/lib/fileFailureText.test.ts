@@ -93,6 +93,14 @@ describe("reportFileRefusal", () => {
     const system = fakeSystem();
     reportFileRefusal(system, "This is not a PDF.", { name: "x.bin" });
     expect(system.seen[0].level).toBe("warning");
-    expect(system.seen[0].body).toBe("x.bin — This is not a PDF.");
+    expect(system.seen[0].body).toBe("x.bin: This is not a PDF.");
+  });
+
+  it("names the file with a colon, never a dash, in both reports", () => {
+    const system = fakeSystem();
+    reportFileRefusal(system, "This is not a PDF.", { name: "x.bin" });
+    reportFileFailure(system, "open", http(404), { noun: "document", name: "report.docx" });
+    expect(system.seen[1].body).toBe("report.docx: This document no longer exists.");
+    for (const { body } of system.seen) expect(body).not.toMatch(/[–—]/);
   });
 });

@@ -17,7 +17,8 @@ type ScrollAreaProps = {
 export function ScrollArea({ children, className, orientation = "vertical", viewportRef }: ScrollAreaProps) {
   return (
     <BaseScrollArea.Root className={cn("overflow-hidden", className)}>
-      <BaseScrollArea.Viewport ref={viewportRef} className="h-full w-full">
+      {/* The viewport takes Tab when its content overflows. */}
+      <BaseScrollArea.Viewport ref={viewportRef} className="peer h-full w-full outline-none">
         <BaseScrollArea.Content>{children}</BaseScrollArea.Content>
       </BaseScrollArea.Viewport>
 
@@ -40,6 +41,17 @@ export function ScrollArea({ children, className, orientation = "vertical", view
       )}
 
       {orientation === "both" && <BaseScrollArea.Corner className="bg-surface-container" />}
+
+      {/*
+        The viewport's focus ring, on a layer of its own above the content and
+        the scrollbars (2026-11-19). An inset ring on the viewport itself paints
+        under its rows, so a row or a header with a fill hides it, and a ring
+        outside the root is clipped by whatever panel holds it.
+      */}
+      <span
+        aria-hidden
+        className="peer-focus-visible:ring-primary pointer-events-none absolute inset-0 rounded-[inherit] peer-focus-visible:ring-2 peer-focus-visible:ring-inset"
+      />
     </BaseScrollArea.Root>
   );
 }

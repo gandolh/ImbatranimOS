@@ -19,9 +19,11 @@ export function Input({ label, className, id, ...props }: InputProps) {
         className={cn(
           "border-outline bg-surface-container-lowest rounded-control w-full border px-2.5 py-1.5",
           "font-content text-on-surface text-body",
-          "transition-colors outline-none",
+          "outline-none motion-safe:transition-colors",
           "placeholder:text-on-surface-variant",
-          "data-[focused]:border-primary data-[focused]:ring-primary/40 data-[focused]:ring-2",
+          // Its own focus, with or without a Field around it: `data-focused`
+          // comes only from a Field, so a bare Input drew no ring (2026-11-19).
+          "focus-visible:border-primary focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
           "data-[invalid]:border-error",
           "disabled:cursor-not-allowed disabled:opacity-50",
           className,

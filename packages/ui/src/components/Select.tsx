@@ -43,7 +43,7 @@ export function Select({
           className={cn(
             "border-outline-variant bg-surface-container-low rounded-control flex w-full items-center justify-between border px-2.5 py-1.5",
             "font-ui text-on-surface text-control",
-            "hover:bg-surface-container-high cursor-pointer transition-colors outline-none",
+            "hover:bg-surface-container-high cursor-pointer outline-none motion-safe:transition-colors",
             "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
             "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
             className,

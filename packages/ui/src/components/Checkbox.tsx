@@ -21,7 +21,7 @@ export function Checkbox({ label, labelClassName, className, id, ...props }: Che
         className={cn(
           "border-outline bg-surface-container-lowest flex h-4 w-4 shrink-0 items-center justify-center border",
           "rounded-small",
-          "transition-colors outline-none",
+          "outline-none motion-safe:transition-colors",
           "focus-visible:ring-primary focus-visible:ring-offset-surface focus-visible:ring-2 focus-visible:ring-offset-1",
           "data-[checked]:border-primary data-[checked]:bg-primary-container",
           "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",

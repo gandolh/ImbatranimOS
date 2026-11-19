@@ -30,7 +30,9 @@ const variantClasses: Record<Variant, string> = {
     "bg-primary-container border-primary text-on-primary-container " +
     "hover:brightness-110 active:brightness-95 " +
     "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
-  ghost: "bg-transparent border-transparent text-on-surface hover:bg-surface-container hover:border-outline-variant",
+  ghost:
+    "bg-transparent border-transparent text-on-surface hover:bg-surface-container hover:border-outline-variant " +
+    "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
   // On the error fill, on-error: white in light, a dark ink on dark's lighter
   // red, where white was 2.7:1 (2026-11-13).
   destructive:

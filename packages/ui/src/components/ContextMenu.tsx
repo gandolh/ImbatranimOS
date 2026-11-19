@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Menu } from "@base-ui/react/menu";
 import { Check } from "lucide-react";
 import { cn } from "../cn";
@@ -37,7 +37,7 @@ type ContextMenuProps = {
  * Arrow/Home/End, Enter activates, Escape closes and restores focus) and
  * floating-ui collision handling — edge clamping stops being hand-maintained
  * arithmetic. Portals to body above the taskbar; closes on outside press,
- * Escape, or any scroll (a cursor-anchored menu whose anchor scrolled away
+ * Escape, or a scroll outside the popup (a cursor-anchored menu whose anchor scrolled away
  * must not float detached).
  *
  * Callers keep the imperative shape: `{menu && <ContextMenu x y items onClose/>}`.
@@ -52,8 +52,15 @@ export function ContextMenu({ x, y, items, onClose, label = "Context menu" }: Co
     [x, y],
   );
 
+  const popupRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
-    const onScroll = () => onClose();
+    // The popup scrolls inside itself on a short screen; only a scroll outside
+    // it means the anchor moved away.
+    const onScroll = (e: Event) => {
+      if (e.target instanceof Node && popupRef.current?.contains(e.target)) return;
+      onClose();
+    };
     window.addEventListener("scroll", onScroll, true);
     return () => window.removeEventListener("scroll", onScroll, true);
   }, [onClose]);
@@ -70,6 +77,7 @@ export function ContextMenu({ x, y, items, onClose, label = "Context menu" }: Co
           className="z-menu outline-none"
         >
           <Menu.Popup
+            ref={popupRef}
             aria-label={label}
             // Right-click on the open menu is swallowed, never re-opened.
             onContextMenu={(e) => {

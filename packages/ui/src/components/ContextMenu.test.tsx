@@ -149,4 +149,18 @@ describe("ContextMenu (kit)", () => {
     act(() => rows[1].click());
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("a scroll inside the popup keeps it open; a scroll elsewhere closes it", () => {
+    const onClose = vi.fn();
+    render([{ label: "A", onSelect: () => {} }], onClose);
+    const popup = document.querySelector('[role="menu"]') as HTMLElement;
+    act(() => {
+      popup.dispatchEvent(new Event("scroll"));
+    });
+    expect(onClose).not.toHaveBeenCalled();
+    act(() => {
+      document.body.dispatchEvent(new Event("scroll"));
+    });
+    expect(onClose).toHaveBeenCalled();
+  });
 });

@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 describe("TaskbarContextMenu workspace buttons", () => {
-  it("are 24 px on a desktop and a 44 px target on a phone", () => {
+  it("are 24 px on a desktop and a 44 by 44 px target on a phone", () => {
     act(() =>
       root.render(
         <TaskbarContextMenu
@@ -42,6 +42,7 @@ describe("TaskbarContextMenu workspace buttons", () => {
     for (const b of buttons) {
       expect(b.className).toContain("h-[24px]");
       expect(b.className).toContain("phone:h-target");
+      expect(b.className).toContain("phone:min-w-target");
     }
   });
 });

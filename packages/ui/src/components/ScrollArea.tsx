@@ -19,7 +19,14 @@ export function ScrollArea({ children, className, orientation = "vertical", view
     <BaseScrollArea.Root className={cn("overflow-hidden", className)}>
       {/* The viewport takes Tab when its content overflows. */}
       <BaseScrollArea.Viewport ref={viewportRef} className="peer h-full w-full outline-none">
-        <BaseScrollArea.Content>{children}</BaseScrollArea.Content>
+        {/*
+          Base UI's content carries an inline min-width: fit-content, so a vertical list grew to
+          its widest row, a row's truncate never applied and Tab onto a long row scrolled the
+          viewport sideways. A vertical-only area resets it; the others keep it to scroll sideways.
+        */}
+        <BaseScrollArea.Content className={orientation === "vertical" ? "min-w-0!" : undefined}>
+          {children}
+        </BaseScrollArea.Content>
       </BaseScrollArea.Viewport>
 
       {(orientation === "vertical" || orientation === "both") && (

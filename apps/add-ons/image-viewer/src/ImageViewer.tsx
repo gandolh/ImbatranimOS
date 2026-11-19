@@ -74,8 +74,8 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
   // on a file the window starts on the single image, as before.
   const [view, setView] = useState<View>("single");
   // Next and previous follow name order, as opened from Files; opening a photo
-  // from the grid switches them to date order.
-  const [order, setOrder] = useState<"name" | "date">("name");
+  // from the grid switches them to the order the grid showed at that moment.
+  const [dateOrder, setDateOrder] = useState<FsEntry[] | null>(null);
   // The dates are read the first time the grid is shown, never otherwise.
   const [datesWanted, setDatesWanted] = useState(false);
 
@@ -119,11 +119,11 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
   const currentRoot = source?.root ?? null;
   const dates = useFolderDates(system, currentRoot, siblings, datesWanted);
   const dateList = useMemo(() => dates.groups.flatMap((g) => g.items.map((i) => i.entry)), [dates.groups]);
-  // The step list: name order, or the grid's date order once a photo was
-  // opened from the grid (the grouping it showed, so the order never jumps).
+  // The step list: name order, or the grid's order when a photo was opened
+  // from it (kept as shown, so a regroup after the open moves no step).
   const stepList = useMemo(
-    () => (siblings && siblings.length > 0 ? (order === "date" ? dateList : siblings) : []),
-    [siblings, order, dateList],
+    () => (siblings && siblings.length > 0 ? (dateOrder ?? siblings) : []),
+    [siblings, dateOrder],
   );
   const found = stepList.findIndex((e) => e.path === (cur ?? source?.path));
   const index = found >= 0 ? found : 0;
@@ -221,13 +221,13 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
   const openFromGrid = useCallback(
     async (path: string) => {
       if (path !== currentPath && !(await confirmDiscard())) return;
-      setOrder("date");
+      setDateOrder(dateList);
       setCur(path);
       setView("single");
       // The tile that held focus leaves the tree; keep the keys working.
       focusRef.current?.focus();
     },
-    [currentPath, confirmDiscard],
+    [currentPath, confirmDiscard, dateList],
   );
 
   // Rotation flips which natural axis maps to width vs. height, so "fit"

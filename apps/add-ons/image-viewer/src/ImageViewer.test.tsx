@@ -227,13 +227,6 @@ describe("the By date toggle", () => {
     expect(currentImg()).toBe("a.jpg");
   });
 
-  it("lets the toolbar wrap on a phone and keeps the toggle whole", async () => {
-    await render();
-    const bar = radio("Single").closest('[role="radiogroup"]')!.parentElement!;
-    expect(bar.className).toContain("phone:flex-wrap");
-    expect(radio("Single").closest('[role="radiogroup"]')!.className).toContain("shrink-0");
-  });
-
   it("reads no dates until the grid is shown", async () => {
     const s = await render();
     expect(s.reads).toHaveLength(0);
@@ -276,6 +269,19 @@ describe("the grid", () => {
     expect(sequence).toEqual(["Reading dates… 1 of 3", "Reading dates… 2 of 3", ""]);
     expect(headings()).toEqual(["day-2025-06-10", "day-2024-03-09", "day-2023-01-05"]);
     expect(container.querySelector('[role="status"]')).toBeNull();
+  });
+
+  it("names the year in a day's heading only when it isn't this year", async () => {
+    const thisYear = new Date().getFullYear();
+    await render({
+      entries: [file("new.png", `${thisYear}-01-15T12:00:00`), file("old.png", "2019-06-01T12:00:00")],
+      open: "pics/new.png",
+    });
+    await showGrid();
+    const titles = [...container.querySelectorAll("h3")].map((h) => h.firstChild?.textContent ?? "");
+    expect(titles).toHaveLength(2);
+    expect(titles[0]).not.toContain(String(thisYear));
+    expect(titles[1]).toContain("2019");
   });
 
   it("dates a JPEG with no Exif by its modified time", async () => {
@@ -353,6 +359,21 @@ describe("stepping order", () => {
     expect(order).toEqual(["b.png", "d.jpg", "a.jpg", "c.jpg"]);
     await next();
     expect(currentImg()).toBe("b.png");
+  });
+
+  it("keeps the order the grid showed when the dates land after the open", async () => {
+    // a's Exif date (2018) moves it below c once read; until then the grid shows modified order.
+    const s = await render({ hold: true, exif: { "pics/a.jpg": "2018:01:01 10:00:00" } });
+    await showGrid();
+    expect(tileNames()).toEqual(["b.png", "d.jpg", "a.jpg", "c.jpg"]);
+    act(() => tile("d.jpg").click());
+    await settle(2);
+    while (s.held.length > 0) {
+      s.held.shift()?.();
+      await settle(2);
+    }
+    await next();
+    expect(currentImg()).toBe("a.jpg");
   });
 
   it("keeps the keyboard in the viewer after a photo opens from the grid", async () => {

@@ -6296,6 +6296,24 @@ tab whose decoder fails three times in ten seconds reconnects without codecs
 and gets JPEG, and the connect URL has tests. Deviations: no 1 GiB memory cap
 in the measurement, H.264 measured offline only, the backend's wayland module
 and the Dockerfile changed for the codec list and libvpx. New todo
-[archive-extract-reports-zero-bytes-under-load](todos/archive-extract-reports-zero-bytes-under-load.md).
+`archive-extract-reports-zero-bytes-under-load` (closed by brief 93).
 Owner steps: `node cli.ts imbatranim-os server`, then Android Chrome on the
 box.
+
+## [2026-11-19] incident | Brief 93: an archive extract counted 0 bytes on a busy server
+
+[Brief 93](briefs/done/93-an-archive-extract-counts-its-bytes-every-time.md),
+ready for deploy. Symptom: under parallel test load, a lone `.xz` or `.bz2`
+extract answered `totalBytes: 0` (seen 2026-11-17 and 2026-11-19); the file
+it placed was empty too, so it was the service, not the test. Cause: the
+service awaited closing the archive's descriptor between starting `xzcat` or
+`bzcat` and reading its stdout, and Node drains an unread child stdout to
+nowhere once the child exits; a small file's decompressor finished first.
+The format peek shared it (a `.xz` holding a tar could read as a lone file).
+Fix `2e3b4bf` (1.348.0, local): the output has a reader before anything is
+awaited. The loop, kept as `archive.busy-server.spec.ts`: it holds libuv's
+thread pool from each spawn until that child closes, red 20 of 20 on the old
+service and green 20 of 20 after, reading the file's bytes; slow-decompressor
+wrappers had given 900 of 900. The todo
+`archive-extract-reports-zero-bytes-under-load` is deleted. Owner step:
+`node cli.ts imbatranim-os server`.

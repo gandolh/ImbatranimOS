@@ -107,10 +107,14 @@ describe("paintFrame", () => {
   });
 });
 
-/** WebCodecs' VideoDecoder as far as VideoStreams uses it: each chunk comes out as a frame. */
+/**
+ * WebCodecs' VideoDecoder as far as VideoStreams uses it: each chunk comes out
+ * as a frame, unless `mode` breaks it the ways a real one breaks.
+ */
 class FakeDecoder {
   static made: FakeDecoder[] = [];
   static supported = true;
+  static mode: "works" | "errors" | "throws" | "stalls" | "refuses" = "works";
   static isConfigSupported = vi.fn(async () => ({ supported: FakeDecoder.supported }));
   state: "unconfigured" | "configured" | "closed" = "unconfigured";
   config: { codedWidth?: number; codedHeight?: number } = {};
@@ -121,12 +125,24 @@ class FakeDecoder {
     FakeDecoder.made.push(this);
   }
   configure(config: { codedWidth?: number; codedHeight?: number }) {
+    if (FakeDecoder.mode === "refuses") throw new Error("NotSupportedError");
     this.config = config;
     this.state = "configured";
   }
   decode(chunk: { type: string }) {
     this.chunks.push(chunk);
-    queueMicrotask(() => this.init.output({ chunk, close: vi.fn() }));
+    const mode = FakeDecoder.mode;
+    if (mode === "throws") throw new Error("EncodingError");
+    if (mode === "stalls") return;
+    queueMicrotask(() => {
+      if (mode === "works") {
+        this.init.output({ chunk, close: vi.fn() });
+        return;
+      }
+      // A decoder that fails closes itself, then says why.
+      this.state = "closed";
+      this.init.error(new Error("EncodingError"));
+    });
   }
   close() {
     this.state = "closed";
@@ -147,6 +163,7 @@ describe("VP8 video regions", () => {
   beforeEach(() => {
     FakeDecoder.made = [];
     FakeDecoder.supported = true;
+    FakeDecoder.mode = "works";
     vi.stubGlobal("VideoDecoder", FakeDecoder);
     vi.stubGlobal(
       "EncodedVideoChunk",
@@ -157,7 +174,10 @@ describe("VP8 video regions", () => {
       },
     );
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it("says VP8 only where WebCodecs decodes it", async () => {
     expect(await decodableVideoCodecs()).toEqual(["vp8"]);
@@ -171,7 +191,7 @@ describe("VP8 video regions", () => {
 
   it("decodes a stream from its keyframe, then its deltas", async () => {
     const ask = vi.fn();
-    const videos = new VideoStreams(ask);
+    const videos = new VideoStreams(ask, vi.fn());
     expect(await videos.decode(1, vp8(true))).not.toBeNull();
     expect(await videos.decode(1, vp8(false))).not.toBeNull();
     expect(FakeDecoder.made).toHaveLength(1);
@@ -184,13 +204,13 @@ describe("VP8 video regions", () => {
     const colorSpace = { primaries: "bt709", transfer: "iec61966-2-1", matrix: "smpte170m", fullRange: false };
     await decodableVideoCodecs();
     expect(FakeDecoder.isConfigSupported).toHaveBeenLastCalledWith(expect.objectContaining({ colorSpace }));
-    await new VideoStreams(vi.fn()).decode(1, vp8(true));
+    await new VideoStreams(vi.fn(), vi.fn()).decode(1, vp8(true));
     expect(FakeDecoder.made[0]?.config).toMatchObject({ codec: "vp8", colorSpace });
   });
 
   it("asks once for a keyframe when a delta has nothing to apply to", async () => {
     const ask = vi.fn();
-    const videos = new VideoStreams(ask);
+    const videos = new VideoStreams(ask, vi.fn());
     expect(await videos.decode(3, vp8(false))).toBeNull();
     expect(await videos.decode(3, vp8(false))).toBeNull();
     expect(ask).toHaveBeenCalledTimes(1);
@@ -203,7 +223,7 @@ describe("VP8 video regions", () => {
   });
 
   it("starts a new decoder for a keyframe of another size, and closes the old one", async () => {
-    const videos = new VideoStreams(vi.fn());
+    const videos = new VideoStreams(vi.fn(), vi.fn());
     await videos.decode(1, vp8(true));
     await videos.decode(1, vp8(true, 800, 450));
     expect(FakeDecoder.made.map((d) => d.state)).toEqual(["closed", "configured"]);
@@ -227,7 +247,7 @@ describe("VP8 video regions", () => {
       style: { width: "", height: "" },
       getContext: () => ctx,
     } as unknown as HTMLCanvasElement;
-    const videos = new VideoStreams(vi.fn());
+    const videos = new VideoStreams(vi.fn(), vi.fn());
     await paintFrame(canvas, { toplevel: 2, width: 1280, height: 720, rects: [vp8(true)] }, 1, videos);
     expect(drawn).toHaveLength(1);
     const [picture, x, y] = drawn[0] ?? [];
@@ -236,5 +256,75 @@ describe("VP8 video regions", () => {
     // A tab without a decoder for it draws nothing there.
     await paintFrame(canvas, { toplevel: 2, width: 1280, height: 720, rects: [vp8(false)] });
     expect(drawn).toHaveLength(1);
+  });
+
+  describe("when the decoders keep failing", () => {
+    it.each(["errors", "throws", "refuses"] as const)(
+      "gives VP8 up at the third failure when the decoder %s",
+      async (mode) => {
+        FakeDecoder.mode = mode;
+        const ask = vi.fn();
+        const fallBack = vi.fn();
+        const videos = new VideoStreams(ask, fallBack);
+        // Two failures: each asks for a keyframe, and the tab tries again.
+        expect(await videos.decode(1, vp8(true))).toBeNull();
+        expect(await videos.decode(1, vp8(true))).toBeNull();
+        expect(ask).toHaveBeenCalledTimes(2);
+        expect(fallBack).not.toHaveBeenCalled();
+        // The third: no keyframe asked, VP8 given up, once.
+        expect(await videos.decode(1, vp8(true))).toBeNull();
+        expect(ask).toHaveBeenCalledTimes(2);
+        expect(fallBack).toHaveBeenCalledTimes(1);
+        // From then on nothing is decoded, opened or asked for, in any window.
+        const made = FakeDecoder.made.length;
+        expect(await videos.decode(1, vp8(true))).toBeNull();
+        expect(await videos.decode(2, vp8(false))).toBeNull();
+        expect(FakeDecoder.made).toHaveLength(made);
+        expect(ask).toHaveBeenCalledTimes(2);
+        expect(fallBack).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it("gives a stalled decoder up after three timeouts, even on a slow link", async () => {
+      vi.useFakeTimers();
+      FakeDecoder.mode = "stalls";
+      const ask = vi.fn();
+      const fallBack = vi.fn();
+      const videos = new VideoStreams(ask, fallBack);
+      for (let i = 0; i < 3; i++) {
+        const picture = videos.decode(1, vp8(true));
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(await picture).toBeNull();
+        // The keyframe it asked for takes two seconds to come.
+        await vi.advanceTimersByTimeAsync(2000);
+      }
+      expect(ask).toHaveBeenCalledTimes(2);
+      expect(fallBack).toHaveBeenCalledTimes(1);
+    });
+
+    it("counts the failures of all the tab's windows together", async () => {
+      FakeDecoder.mode = "errors";
+      const fallBack = vi.fn();
+      const videos = new VideoStreams(vi.fn(), fallBack);
+      for (const toplevel of [1, 2, 3]) await videos.decode(toplevel, vp8(true));
+      expect(fallBack).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps VP8 through failures spread out, as a browser taking decoders back makes", async () => {
+      vi.useFakeTimers();
+      FakeDecoder.mode = "errors";
+      const ask = vi.fn();
+      const fallBack = vi.fn();
+      const videos = new VideoStreams(ask, fallBack);
+      for (let i = 0; i < 5; i++) {
+        expect(await videos.decode(1, vp8(true))).toBeNull();
+        await vi.advanceTimersByTimeAsync(6000);
+      }
+      expect(ask).toHaveBeenCalledTimes(5);
+      expect(fallBack).not.toHaveBeenCalled();
+      // A decoder that works again draws again.
+      FakeDecoder.mode = "works";
+      expect(await videos.decode(1, vp8(true))).not.toBeNull();
+    });
   });
 });

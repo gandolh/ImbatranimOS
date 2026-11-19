@@ -156,8 +156,16 @@ export class LinuxWindowsConnection {
   private viewportTimer: ReturnType<typeof setTimeout> | null = null;
   /** One paint at a time per toplevel, so frames land in order. */
   private painting = new Map<number, Promise<void>>();
-  /** Each window's VP8 decoder; a lost one asks the host for a keyframe. */
-  private readonly videos = new VideoStreams((toplevel) => this.send({ type: "keyframe", toplevel }));
+  /**
+   * Each window's VP8 decoder; a lost one asks the host for a keyframe, and
+   * decoders that keep failing switch the tab to JPEG.
+   */
+  private readonly videos = new VideoStreams(
+    (toplevel) => this.send({ type: "keyframe", toplevel }),
+    () => this.fallBackToJpeg(),
+  );
+  /** This tab's VP8 decoding kept failing: it connects without it from now on. */
+  private videoOff = false;
   private unsubscribeWindows: (() => void) | null = null;
   /** The toplevel the host was last told has keyboard focus. */
   private focused: number | null = null;
@@ -287,8 +295,9 @@ export class LinuxWindowsConnection {
 
   private connect(): void {
     if (this.stopped) return;
-    // Without WebCodecs there is nothing to ask: connect at once, for JPEG.
-    if (typeof VideoDecoder === "undefined") this.open([]);
+    // Without WebCodecs, or once its decoder has failed, there is nothing to
+    // ask: connect at once, for JPEG.
+    if (this.videoOff || typeof VideoDecoder === "undefined") this.open([]);
     else void decodableVideoCodecs().then((codecs) => this.open(codecs));
   }
 
@@ -296,7 +305,7 @@ export class LinuxWindowsConnection {
     if (this.stopped || this.ws) return;
     this.session = desktopSessionId();
     this.resuming = false;
-    const ws = new WebSocket(buildWaylandUrl(this.session, viewport(), codecs));
+    const ws = new WebSocket(buildWaylandUrl(this.session, viewport(), this.videoOff ? [] : codecs));
     ws.binaryType = "arraybuffer";
     this.ws = ws;
     ws.onopen = () => {
@@ -316,6 +325,26 @@ export class LinuxWindowsConnection {
       this.closeAllWindows();
       this.scheduleReconnect(ev.code);
     };
+  }
+
+  /**
+   * The tab said it decodes VP8, and its decoders keep failing (a phone's,
+   * most likely): connect again without it. The backend takes the session
+   * back as after a reload, the windows go back where they were, and the
+   * host, told the tab has no codecs, sends their video regions as JPEG for
+   * as long as the page lasts.
+   */
+  private fallBackToJpeg(): void {
+    if (this.videoOff) return;
+    this.videoOff = true;
+    const ws = this.ws;
+    // Not connected: the next connect goes without VP8.
+    if (!ws || this.stopped) return;
+    this.ws = null;
+    ws.close(1000, "video-fallback");
+    linuxSound.reset();
+    this.closeAllWindows();
+    this.open([]);
   }
 
   private scheduleReconnect(code: number): void {

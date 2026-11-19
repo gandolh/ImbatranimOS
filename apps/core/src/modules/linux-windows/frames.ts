@@ -120,6 +120,19 @@ export async function decodableVideoCodecs(): Promise<string[]> {
 /** A frame not out of the decoder by then is lost, and the stream with it. */
 const DECODE_TIMEOUT_MS = 1000;
 
+/**
+ * A tab whose decoders fail this often in this long gives VP8 up, and its
+ * video regions come as JPEG (a phone that says it decodes VP8 and doesn't).
+ * One failure is normal: the browser takes a decoder back from a hidden
+ * tab, and the next keyframe brings the picture back. Three in ten seconds
+ * means the keyframes don't decode either. A decoder that throws fails
+ * again within a keyframe's round trip, so it gives up in well under a
+ * second; one that stalls fails once a DECODE_TIMEOUT_MS plus that round
+ * trip, so three still fit in the window on a link a few seconds slow.
+ */
+const GIVE_UP_FAILURES = 3;
+const GIVE_UP_WITHIN_MS = 10_000;
+
 /** WebCodecs wants a timestamp per chunk; the frames are drawn as they come. */
 const FRAME_US = 33_333;
 
@@ -144,21 +157,29 @@ export function isVp8Keyframe(data: Uint8Array): boolean {
  * starts with a keyframe, and the host sends one whenever the region moves
  * or is resized. A decoder that fails, or that the browser takes back, asks
  * the host for a keyframe through `requestKeyframe` and draws nothing until
- * it comes.
+ * it comes. When they fail too often (GIVE_UP_FAILURES), the tab gives VP8
+ * up: `fallBack` is called once, to have the host send JPEG instead.
  */
 export class VideoStreams {
   private readonly streams = new Map<number, Stream>();
   /** Windows that asked for a keyframe and haven't had one yet. */
   private readonly asked = new Set<number>();
+  /** When the tab's decoders failed lately, oldest first. */
+  private failures: number[] = [];
+  private gaveUp = false;
 
   private readonly requestKeyframe: (toplevel: number) => void;
+  private readonly fallBack: () => void;
 
-  constructor(requestKeyframe: (toplevel: number) => void) {
+  constructor(requestKeyframe: (toplevel: number) => void, fallBack: () => void) {
     this.requestKeyframe = requestKeyframe;
+    this.fallBack = fallBack;
   }
 
   /** Decode one VP8 rectangle of `toplevel`'s frame: its picture, or null. */
   decode(toplevel: number, rect: FrameRect): Promise<VideoFrame | null> {
+    // Given up: the region comes as JPEG once the host hears of it.
+    if (this.gaveUp) return Promise.resolve(null);
     const key = isVp8Keyframe(rect.data);
     let s = this.streams.get(toplevel);
     if (key) {
@@ -166,6 +187,11 @@ export class VideoStreams {
       if (!s || s.decoder.state !== "configured" || s.width !== rect.w || s.height !== rect.h) {
         if (s) this.close(toplevel, s);
         s = this.open(toplevel, rect.w, rect.h);
+        if (!s) {
+          // The browser wouldn't start a decoder for it: as good as broken.
+          this.fail(toplevel);
+          return Promise.resolve(null);
+        }
       }
     }
     if (!s || s.decoder.state !== "configured") {
@@ -225,11 +251,24 @@ export class VideoStreams {
     return s;
   }
 
-  /** The decoder broke or stalled: drop it and ask for a keyframe. */
+  /**
+   * The decoder broke, stalled or wouldn't start: drop it and ask for a
+   * keyframe. The GIVE_UP_FAILURES-th failure in GIVE_UP_WITHIN_MS, on any
+   * of the tab's windows, gives VP8 up instead.
+   */
   private fail(toplevel: number): void {
     const s = this.streams.get(toplevel);
     if (s) this.close(toplevel, s);
-    this.ask(toplevel);
+    if (this.gaveUp) return;
+    const now = Date.now();
+    this.failures = [...this.failures.filter((t) => now - t < GIVE_UP_WITHIN_MS), now];
+    if (this.failures.length < GIVE_UP_FAILURES) {
+      this.ask(toplevel);
+      return;
+    }
+    this.gaveUp = true;
+    this.dropAll();
+    this.fallBack();
   }
 
   private close(toplevel: number, s: Stream): void {

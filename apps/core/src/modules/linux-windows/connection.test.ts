@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LinuxWindowsConnection } from "./connection";
+import { buildWaylandUrl, LinuxWindowsConnection } from "./connection";
 import { useLinuxWindowsStore } from "./linuxWindowsStore";
 import { useWindowStore } from "../../shared/store/windowStore";
 
@@ -115,6 +115,38 @@ afterEach(() => {
   connection?.stop();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
+
+describe("the socket's URL", () => {
+  const size = { width: 1280, height: 720, ratio: 1.5 };
+
+  it("sits beside the page's API, and names no codecs for a tab that decodes none", () => {
+    vi.stubEnv("VITE_API_URL", "");
+    const query = "?session=s%2Fone&width=1280&height=720&ratio=1.5";
+    expect(buildWaylandUrl("s/one", size)).toBe(`ws://${window.location.host}/api/wayland${query}`);
+    expect(buildWaylandUrl("s/one", size, [])).toBe(`ws://${window.location.host}/api/wayland${query}`);
+  });
+
+  it("names the codecs the tab decodes, comma-separated, last", () => {
+    vi.stubEnv("VITE_API_URL", "");
+    const url = new URL(buildWaylandUrl("abc", size, ["vp8"]));
+    expect(url.searchParams.get("codecs")).toBe("vp8");
+    expect(url.search).toBe("?session=abc&width=1280&height=720&ratio=1.5&codecs=vp8");
+    expect(new URL(buildWaylandUrl("abc", size, ["vp8", "vp9"])).searchParams.get("codecs")).toBe("vp8,vp9");
+  });
+
+  it("follows an API on another host, wss for https, with or without codecs", () => {
+    vi.stubEnv("VITE_API_URL", "https://api.example.test/base/");
+    expect(buildWaylandUrl("abc", size)).toBe(
+      "wss://api.example.test/base/wayland?session=abc&width=1280&height=720&ratio=1.5",
+    );
+    expect(buildWaylandUrl("abc", size, ["vp8"])).toBe(
+      "wss://api.example.test/base/wayland?session=abc&width=1280&height=720&ratio=1.5&codecs=vp8",
+    );
+    vi.stubEnv("VITE_API_URL", "http://api.example.test");
+    expect(buildWaylandUrl("abc", size, ["vp8"])).toMatch(/^ws:\/\/api\.example\.test\/wayland\?/);
+  });
 });
 
 describe("a tab whose VP8 decoder keeps failing", () => {

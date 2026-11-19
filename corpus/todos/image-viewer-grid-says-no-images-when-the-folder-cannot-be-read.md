@@ -1,11 +1,13 @@
 ---
 title: The Image Viewer's grid says "No images" when the folder can't be read
 created: 2026-11-19
-status: open
+status: promoted
 tags: [bug, image-viewer]
 ---
 
 # The Image Viewer's grid says "No images" when the folder can't be read
+
+Promoted 2026-11-19 to [brief 95](../briefs/todo/95-the-image-viewer-says-when-a-folder-cant-be-read.md).
 
 Found by the brief-auditor's check of [brief 90](../briefs/done/90-image-viewer-groups-a-folders-photos-by-date.md).
 

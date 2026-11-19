@@ -1,6 +1,6 @@
 ---
-summary: The first Linux apps layer (briefs 01-06) as built, 2026-11-03 - Nix in the image with Firefox, the Wayland host, input and title bars, popups, the Linux apps pane, lifecycle and sleep - moved unchanged out of status.md to keep it under its line cap. Branch, sizes and what each brief proved. Later: 89 (2026-11-17), a playing video as VP8.
-updated: 2026-11-17
+summary: The first Linux apps layer (briefs 01-06) as built, 2026-11-03 - Nix in the image with Firefox, the Wayland host, input and title bars, popups, the Linux apps pane, lifecycle and sleep - moved unchanged out of status.md to keep it under its line cap. Branch, sizes and what each brief proved. Later: 89 (2026-11-17, fixed 2026-11-19), a playing video as VP8, JPEG when the tab can't decode it.
+updated: 2026-11-19
 ---
 
 > Moved here unchanged from [status.md](status.md) on 2026-11-06.
@@ -47,4 +47,7 @@ says on connect it decodes VP8, and as JPEG for any other; text beside it stays
 lossless and a paused video still ends sharp. Measured at 46% of JPEG's bytes a
 second for 75% of its host CPU under one CPU
 ([research-video-in-linux-windows.md](research-video-in-linux-windows.md)).
-Android Chrome is the owner's to try.
+A fix round on 2026-11-19: the tab's decoder config names the host's colour
+space (BT.601 matrix, limited range), so VP8 keeps the lossless frame's colours
+in Chrome, and a tab whose decoder fails three times in ten seconds reconnects
+without codecs and gets JPEG. Android Chrome is the owner's to try.

@@ -64,7 +64,7 @@ restarted at 01 on 2026-11-02 (see [log.md](../log.md), "Briefs reset").
 01-06, the Linux apps layer, are done and merged into `main` on 2026-11-03
 (PR 1, `0cba6ab`): Nix in the image with Firefox, the Wayland host, input,
 popups, the Linux apps pane, lifecycle and sleep. What each proved, with
-sizes, and 89 (2026-11-17, video as VP8): [status-linux-apps-layer.md](status-linux-apps-layer.md).
+sizes, and 89 (2026-11-17, fixed 2026-11-19, video as VP8, ready for deploy): [status-linux-apps-layer.md](status-linux-apps-layer.md).
 
 45-47 (2026-11-06, one wave on `main`): 45 (`30a16e7`, 1.175.0, ready for
 test) the phone's keyboard types into a Linux app, the host speaking

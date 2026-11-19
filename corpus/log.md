@@ -6281,3 +6281,21 @@ The todo `the-kit-checkbox-border-is-faint-in-classic-dark` is closed by the
 kit commit (the Checkbox draws its box in outline, 3:1 in all four looks) and
 removed. Owner steps: the server phase of the `imbatranim-os` deploy, then
 `kit:sync` in imbatranim-apps.
+
+## [2026-11-19] done | Brief 89: video in a Linux window goes as VP8
+
+[Brief 89](briefs/done/89-video-in-a-linux-window-goes-as-a-video-stream.md)
+built 2026-11-17 (`8cfc82d`, `dc44f38`, pushed by the owner): a playing
+video's region goes as VP8 for a tab that decodes it, 46% of JPEG's bytes a
+second for 75% of its host CPU under one CPU, measured in
+[research-video-in-linux-windows.md](wiki/research-video-in-linux-windows.md).
+A fix round after review, 2026-11-19, 1.340.0 to 1.343.0 (local): the tab's
+decoder config names the host's colour space (BT.601 matrix, limited range;
+Chrome had guessed BT.709, and VP8's bars now land within 3 of lossless), a
+tab whose decoder fails three times in ten seconds reconnects without codecs
+and gets JPEG, and the connect URL has tests. Deviations: no 1 GiB memory cap
+in the measurement, H.264 measured offline only, the backend's wayland module
+and the Dockerfile changed for the codec list and libvpx. New todo
+[archive-extract-reports-zero-bytes-under-load](todos/archive-extract-reports-zero-bytes-under-load.md).
+Owner steps: `node cli.ts imbatranim-os server`, then Android Chrome on the
+box.

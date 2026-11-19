@@ -84,8 +84,23 @@ export async function decodeRect(rect: FrameRect): Promise<ImageData | ImageBitm
   return null;
 }
 
+/**
+ * The colours of the host's VP8: an app's sRGB pixels, turned into YUV with
+ * the BT.601 matrix in the limited range (`video.rs`). VP8 can't carry that
+ * in its frames, and a browser left to guess may pick BT.709, as Chrome does,
+ * which darkens greens by a sixth. WebCodecs lets a decoder's config override
+ * what the frames say, so the tab names the matrix and the range, and sRGB's
+ * own primaries and transfer, so the browser converts nothing else.
+ */
+const VP8_COLOR_SPACE: VideoColorSpaceInit = {
+  primaries: "bt709",
+  transfer: "iec61966-2-1",
+  matrix: "smpte170m",
+  fullRange: false,
+};
+
 /** The decoder settings a tab checks before it says it decodes VP8. */
-const VP8_CONFIG: VideoDecoderConfig = { codec: "vp8", optimizeForLatency: true };
+const VP8_CONFIG: VideoDecoderConfig = { codec: "vp8", optimizeForLatency: true, colorSpace: VP8_COLOR_SPACE };
 
 /**
  * The video codecs this tab decodes, as the socket's query names them: VP8

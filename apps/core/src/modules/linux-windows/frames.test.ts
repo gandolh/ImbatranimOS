@@ -180,6 +180,14 @@ describe("VP8 video regions", () => {
     expect(ask).not.toHaveBeenCalled();
   });
 
+  it("tells the decoder the host's colours: BT.601's matrix, limited range, sRGB otherwise", async () => {
+    const colorSpace = { primaries: "bt709", transfer: "iec61966-2-1", matrix: "smpte170m", fullRange: false };
+    await decodableVideoCodecs();
+    expect(FakeDecoder.isConfigSupported).toHaveBeenLastCalledWith(expect.objectContaining({ colorSpace }));
+    await new VideoStreams(vi.fn()).decode(1, vp8(true));
+    expect(FakeDecoder.made[0]?.config).toMatchObject({ codec: "vp8", colorSpace });
+  });
+
   it("asks once for a keyframe when a delta has nothing to apply to", async () => {
     const ask = vi.fn();
     const videos = new VideoStreams(ask);

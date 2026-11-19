@@ -30,3 +30,11 @@ Base UI's `ScrollArea.Content` carries an inline `min-width: fit-content`. The k
 
 - [ ] The tests pass; `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy`, owner step `node cli.ts imbatranim-os server`; the outcome note names the kit commit for imbatranim-apps brief 19 (which then drops brief 18's wrapper and keeps its spec).
+
+## Outcome (2026-11-19)
+
+Built in `a2e7636` (1.376.0), the last kit commit: imbatranim-apps brief 19 syncs to it and drops brief 18's wrapper. The kit `ScrollArea` gives `BaseScrollArea.Content` the important utility `min-w-0!` when `orientation` is `vertical`; an inline style prop does not work (Base UI's own `style` wins), and a plain class loses to the inline `fit-content`. `horizontal` and `both` are untouched. The new `ScrollArea.test.tsx` failed on the old code (the vertical content had no `min-w-0!` class and `fit-content`) and passes now.
+
+Use check: all ten OS uses (notification panel, search results, file picker, File Manager listing and tree, Trash dialog, week view, sticky notes, playlist, outline, Markdown preview) stay at the default orientation; none depends on sideways scroll through the content's width. A wide child of a vertical area still overflows the content and the viewport still scrolls, so the File Manager's fixed-width table in a narrow pane scrolls as before. No use needed an explicit orientation.
+
+Walk in the dev container, Apricot light, at 1280 and 390: the File Manager's folder tree with a 100-character folder name. Old code: tree viewport `scrollWidth` 644 against `clientWidth` 168. New code: 168 and 168, `scrollLeft` 0 after Tab and Shift+Tab, the row ends in an ellipsis (shots in `scratch-os-97/shots/`).

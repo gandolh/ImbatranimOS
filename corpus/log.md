@@ -6346,3 +6346,7 @@ Part 1 `61eaf7e` (1.368.0): every spinner in core and the add-ons is motion-safe
 ## [2026-11-19] fix | Brief 96 follow-up: the shared kit stays at version 1
 
 Brief 96 bumped `SHARED_KIT_VERSION` to 2 because the controller's brief said a new public prop bumps it. `sharedKit.ts` says otherwise: only an incompatible change bumps it, and the desktop refuses every kit app built against another version, so the bump would have stopped every installed kit app until imbatranim-apps rebuilt. `closeOnClick` is optional and defaults to the old behaviour, so the kit stays at 1. `.claude/rules/web.md` now says the same as `sharedKit.ts`. Brief 96's outcome note still says 2; this entry corrects it.
+
+## [2026-11-19] done | Brief 97: a vertical scroll area never grows wider than its column
+
+`a2e7636` (1.376.0): the kit `ScrollArea` gives its content `min-w-0!` when `orientation` is vertical (the default), so Base UI's inline `min-width: fit-content` no longer lets a list grow to its widest row; `horizontal` and `both` keep it. No public prop changed, the shared kit stays at 1. imbatranim-apps brief 19 syncs to `a2e7636`.

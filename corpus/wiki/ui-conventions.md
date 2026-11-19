@@ -85,7 +85,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 19. **Scroll containment**: `ScrollArea` goes inside the flexed body, never around the whole app — `<ScrollArea className="h-full w-full" viewportRef={ref}>`
     (`FileManager.tsx:460`). Virtualizing? pass `viewportRef` and feed it to `useVirtualList({ getScrollElement: () => viewportRef.current })` (`FileManager.tsx:292,306-311`);
     never query base-ui's internal DOM. Prefer `ScrollArea` to raw `overflow-y-auto` — 17 add-on files still use the raw version and get the browser scrollbar instead of the
-    themed one.
+    themed one. A vertical `ScrollArea` (the default) gives its content `min-w-0!` (2026-11-19) so a row's `truncate` applies; `horizontal` and `both` keep Base UI's `fit-content`.
 20. **Content must survive a short window.** `apps/core/src/shared/store/windowStore.ts:211` sets `size` from `defaultSize` **verbatim, with no viewport clamp**, and the
     taskbar eats 44px (`windowStore.ts:27`, `taskbar/Taskbar.tsx:11`). Therefore: (a) `defaultSize.height` must fit a 720px-tall viewport with room to spare — ≤620 is safe,
     `code-editor` 680 and `norpdf` 720 are already too tall; (b) `minSize` must be **honest** — the measured smallest height at which every control is still reachable, not a

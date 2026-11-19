@@ -274,8 +274,16 @@
  * `apricot:` styles a part only under Apricot: the floating Start menu, the
  * padded taskbar and its current-task dot, the borderless focused window, the
  * desktop's icon tiles. Classic keeps the plain classes, so it can't change.
+ * `:root` raises the rule a step, as for `phone:`: `:where()` adds no
+ * specificity, and a kit app's stylesheet loads after this one with utilities of
+ * the same names, so its `.flex` or `.p-2` must never undo an Apricot style
+ * while the app is open.
  */
-@custom-variant apricot (&:where([data-os-theme='apricot'], [data-os-theme='apricot'] *));
+@custom-variant apricot {
+  :root &:where([data-os-theme="apricot"], [data-os-theme="apricot"] *) {
+    @slot;
+  }
+}
 
 /*
  * `phone:` styles a part on a phone, a viewport under 600 px (2026-11-13,

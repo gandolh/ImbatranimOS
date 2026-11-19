@@ -31,3 +31,11 @@ Brief 91 made the kit's transitions motion-safe, held the File Manager's busy sp
 
 - [ ] The tests pass; `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy`, owner step `node cli.ts imbatranim-os server`; the outcome note names the kit commit imbatranim-apps should sync to and the new `SHARED_KIT_VERSION`.
+
+## Outcome (2026-11-19)
+
+Built in two parts, a trial of splitting a brief across two runs. **Part 1** (`61eaf7e`, 1.368.0): every `animate-spin` and `animate-pulse` in core and the add-ons is `motion-safe:`; icon-only refresh buttons take the accent while busy, with a busy name; `apps/core/src/motion.test.ts` covers core and every add-on. **Part 2** (`09d9a72`, `2622989`, 1.370.0 and 1.371.0): the kit `ContextMenu` popup has `max-h-(--available-height)` and scrolls inside, and a scroll inside the popup no longer closes the menu (the old any-scroll close shut a scrolling popup the moment it moved; the walk found it); menu rows take `closeOnClick` (default true); the taskbar's Move to workspace buttons are 44 by 44 px under 600 px (`phone:`), 24 px at 1280; the kit `Input`'s error mark, red border and end padding follow both `aria-invalid` and a Base UI Field's `data-invalid` (CSS `peer` variants, the mark always rendered and hidden until a signal sets it). There is one kit menu popup, `ContextMenu`; no separate `Menu` component exists.
+
+**`SHARED_KIT_VERSION` is 2** (the brief asked for the bump). The desktop refuses a kit app built for another version, so every installed kit app built against 1 shows "Needs an update" until it is rebuilt against kit 2. **imbatranim-apps syncs the kit to `2622989`** and rebuilds; brief 18's guard in CAD's More menu goes once it uses `closeOnClick: false`. Tests that hard-coded kit 1 now read the constant.
+
+Walked in the dev container at 390 by 640 in Classic dark and Apricot light (`scratch-os96/shots/`): a 7-row File Manager row menu opened near the top is capped at 323 px (scrollHeight 337), scrolls to Delete and stays open; the desktop menu (4 rows, 215 px) fits; the workspace buttons measure 44 by 44. Left on Apricot light. Owner step: `node cli.ts imbatranim-os server`.

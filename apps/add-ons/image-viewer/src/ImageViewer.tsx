@@ -224,6 +224,8 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
       setOrder("date");
       setCur(path);
       setView("single");
+      // The tile that held focus leaves the tree; keep the keys working.
+      focusRef.current?.focus();
     },
     [currentPath, confirmDiscard],
   );
@@ -478,12 +480,12 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
       className="bg-surface-container-lowest flex h-full flex-col outline-none"
     >
       {/* Toolbar */}
-      <div className="border-outline-variant bg-surface-container-low flex items-center gap-1 border-b px-2 py-1">
+      <div className="border-outline-variant bg-surface-container-low phone:flex-wrap flex items-center gap-1 border-b px-2 py-1">
         <RadioGroup<View>
           aria-label="View"
           value={view}
           onValueChange={showView}
-          className="border-outline-variant flex items-center overflow-hidden rounded-sm border"
+          className="border-outline-variant flex shrink-0 items-center overflow-hidden rounded-sm border"
         >
           {(
             [
@@ -508,10 +510,9 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
           ))}
         </RadioGroup>
 
-        <div className="bg-outline-variant mx-1 h-4 w-px" />
-
         {view === "single" && (
           <>
+            <div className="bg-outline-variant mx-1 h-4 w-px" />
             <Tooltip content="Previous image">
               <Button
                 variant="ghost"
@@ -634,7 +635,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
 
         {view === "single" && (
           <>
-            <span className="font-ui text-on-surface-variant text-label mr-1 max-w-[160px] truncate">
+            <span className="font-ui text-on-surface-variant text-label phone:hidden mr-1 max-w-[160px] truncate">
               {fileName(currentPath ?? source.path, "image")}
             </span>
             <Tooltip content="Download">

@@ -227,6 +227,13 @@ describe("the By date toggle", () => {
     expect(currentImg()).toBe("a.jpg");
   });
 
+  it("lets the toolbar wrap on a phone and keeps the toggle whole", async () => {
+    await render();
+    const bar = radio("Single").closest('[role="radiogroup"]')!.parentElement!;
+    expect(bar.className).toContain("phone:flex-wrap");
+    expect(radio("Single").closest('[role="radiogroup"]')!.className).toContain("shrink-0");
+  });
+
   it("reads no dates until the grid is shown", async () => {
     const s = await render();
     expect(s.reads).toHaveLength(0);
@@ -346,6 +353,15 @@ describe("stepping order", () => {
     expect(order).toEqual(["b.png", "d.jpg", "a.jpg", "c.jpg"]);
     await next();
     expect(currentImg()).toBe("b.png");
+  });
+
+  it("keeps the keyboard in the viewer after a photo opens from the grid", async () => {
+    await render();
+    await showGrid();
+    act(() => tile("b.png").focus());
+    act(() => tile("b.png").click());
+    await settle(2);
+    expect(document.activeElement).toBe(container.firstElementChild);
   });
 
   it("keeps name order when opened from Files", async () => {

@@ -51,3 +51,7 @@ meant to override, say which and fix that place, not the variant.
       the walk's four shots per look.
 - [ ] `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy`, owner step `node cli.ts imbatranim-os server`.
+
+## Outcome (2026-11-19)
+
+Built in `52cfed5` (1.353.0, local). The `apricot:` variant is now a block variant with `:root` in front of its `:where()`, one step more specific, like `phone:`. `apps/core/src/apricotVariant.test.ts` compiles the variant from `index.css` and checks that `apricot:p-4` outranks a plain `p-2`. No shell style needed a fix: the `apricot:` and `phone:` pairs on one element keep their order (`phone:` is defined later). Walked in the dev container with Docs as the kit app: the taskbar, desktop tiles and window frame hold before and after it opens, Apricot light and dark at 1280 and 390 (shots in the builder's scratch, not the repo). Not done: the imbatranim-apps brief 11 screenshots were not reviewed (not in this repo), and Start's open state was not captured. `npm run check` exit 0. Owner step: `node cli.ts imbatranim-os server`.

@@ -706,6 +706,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const entries = inArchive ? archiveEntries : (dirQuery.data ?? []);
   const isLoading = inArchive ? archiveQuery.isLoading : dirQuery.isLoading;
   const isError = inArchive ? archiveQuery.isError : dirQuery.isError;
+  const isFetching = inArchive ? archiveQuery.isFetching : dirQuery.isFetching;
 
   // Filter, then sort, ONCE — and pass the result down. FileList used to re-sort
   // internally with its own call, which happened to agree only because both used
@@ -1018,16 +1019,18 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
 
         <div className="flex-1" />
 
+        {/* Busy, the icon turns the accent and spins; under reduced motion it
+            holds still, and the accent and its label say it is busy. */}
         <Button
           variant="ghost"
           size="sm"
           className="h-5 w-5 p-0"
+          aria-label={isFetching ? "Refreshing" : "Refresh"}
+          title={isFetching ? "Refreshing…" : "Refresh"}
+          aria-busy={isFetching}
           onClick={() => void (inArchive ? archiveQuery.refetch() : dirQuery.refetch())}
         >
-          <RefreshCw
-            size={12}
-            className={cn((inArchive ? archiveQuery.isFetching : dirQuery.isFetching) && "animate-spin")}
-          />
+          <RefreshCw size={12} className={cn(isFetching && "text-primary motion-safe:animate-spin")} />
         </Button>
 
         <Tooltip

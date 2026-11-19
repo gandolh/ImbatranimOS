@@ -51,7 +51,14 @@ export function SearchBox({
         )}
       >
         {searching ? (
-          <Loader2 size={12} className="text-primary shrink-0 animate-spin" />
+          // Spins only where motion is welcome; still, it is the busy glyph in
+          // the accent, named for a screen reader.
+          <Loader2
+            size={12}
+            role="img"
+            aria-label="Searching"
+            className="text-primary shrink-0 motion-safe:animate-spin"
+          />
         ) : (
           <Search size={12} className="text-on-surface-variant shrink-0" />
         )}

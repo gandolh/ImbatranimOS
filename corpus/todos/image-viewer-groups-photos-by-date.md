@@ -1,11 +1,13 @@
 ---
 title: Image Viewer groups a folder's photos by date
 created: 2026-11-13
-status: open
+status: promoted
 tags: [later, image-viewer]
 ---
 
 # Image Viewer groups a folder's photos by date
+
+Promoted 2026-11-19 to [brief 90](../briefs/todo/90-image-viewer-groups-a-folders-photos-by-date.md).
 
 The owner asked for this on 2026-11-13, grilling the self-hosted tools
 research in vps-deploy (its `self-hosted-tools-adopt-or-borrow.md`, the

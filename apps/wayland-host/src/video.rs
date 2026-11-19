@@ -194,9 +194,11 @@ impl Link {
     }
 }
 
-/// `rect` of opaque RGBA rows (`stride` pixels each) as I420 in `out`: BT.601
-/// limited range, what a VP8 decoder assumes, each chroma sample the average
-/// of its 2×2 pixels. The rectangle's width and height are even.
+/// `rect` of opaque RGBA rows (`stride` pixels each) as I420 in `out`: the
+/// BT.601 matrix, limited range, each chroma sample the average of its 2×2
+/// pixels. The rectangle's width and height are even. VP8 frames can't say
+/// which matrix they use, and Chrome guesses BT.709 for them, so the tab's
+/// decoder config names this one (`frames.ts`): keep the two in step.
 pub fn rgba_to_i420(rgba: &[u8], stride: usize, rect: Rect, out: &mut [u8]) {
     let (w, h) = (rect.w as usize, rect.h as usize);
     let (y_plane, chroma) = out.split_at_mut(w * h);

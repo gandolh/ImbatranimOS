@@ -60,7 +60,7 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
    are warm-tinted. Also `toast`, `tooltip`, `tray` and `card` (the sign-in card), 2026-11-03; the kit's `Popover` and `BottomSheet` take `menu` (2026-11-13). Every floating layer's body (Start, windows, Settings, the kit's dialogs and menus) is `surface-container-low`. In-window content is flat (no shadow) —
    separation is a 1px `border-outline-variant` plus a surface-container step, with the corners of rule 8.
 10. Never invent a colour to mean a state. Levels are told apart by **icon shape**; only `error` gets colour (`notifications/levelStyle.ts:11-18`). Success is `text-primary`,
-    not green.
+    not green. An **error shows by shape too** (2026-11-19): an invalid kit field draws a circle-alert mark at its inline end, `aria-hidden`, besides the red border, since an accent near the error red (Crimson in Classic dark) makes the focus ring and the error border look alike. The kit `Input` does it for `aria-invalid`; a new invalid-capable field copies it.
 
 ## 3. Typography and spacing
 

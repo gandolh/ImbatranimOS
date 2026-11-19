@@ -31,3 +31,7 @@ The kit's `Input` (`packages/ui/src/components/Input.tsx`) marks invalid only wi
 
 - [ ] The tests pass; `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy`, owner step `node cli.ts imbatranim-os server`; the outcome note names the kit commit imbatranim-apps should sync to.
+
+## Outcome (2026-11-19)
+
+`57781e5` (1.366.0): the kit `Input` draws a circle-alert mark (lucide, `aria-hidden`) at its inline end while `aria-invalid` is set, with end padding only then. `Input` was the only invalid-capable field in the kit (`Select` has no invalid state, and there is no textarea or number field). The mark follows the `aria-invalid` prop; a field whose invalidity comes only from a Base UI `Field` passes `aria-invalid` too (nothing in the OS does today). No public prop change, `SHARED_KIT_VERSION` stays 1. imbatranim-apps should sync the kit to `57781e5`. Walked in the dev container on a throwaway page (removed after): the invalid and the focused field side by side in Classic dark with Crimson and in Apricot light, at 1280 and 390; the mark tells them apart.

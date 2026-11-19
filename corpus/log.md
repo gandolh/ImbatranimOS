@@ -6334,3 +6334,7 @@ Built in three parts: the logic (`9740ad8`, 1.346.0), the view (`4f46428`, 1.347
 
 `18c3168` (1.363.0): a failed folder listing is its own state; the By date grid says "Couldn't read this folder" with Retry instead of "No images in this folder". The todo `image-viewer-grid-says-no-images-when-the-folder-cannot-be-read` is deleted.
 
+
+## [2026-11-19] done | Brief 94: an invalid kit field shows an error mark
+
+`57781e5` (1.366.0): the kit `Input` shows a circle-alert mark while `aria-invalid`, so an error no longer differs from focus by colour alone. The ui-conventions rule 10 says it. imbatranim-apps syncs the kit to `57781e5`.

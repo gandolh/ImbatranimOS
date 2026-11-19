@@ -146,7 +146,9 @@ export function CaptureOverlay({ onSelect, onCancel }: Props) {
             padding: "2px 6px",
             fontSize: 11,
             fontWeight: 600,
-            color: "#fff",
+            // The accent's own ink: white in light, a dark ink on dark's
+            // lighter accents, where white is about 3.4:1 (2026-11-19).
+            color: "var(--accent-on, #fff)",
             background: "var(--accent, #c0263a)",
             fontVariantNumeric: "tabular-nums",
           }}

@@ -1213,7 +1213,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
                 the scroll content around the listing has no definite height,
                 so in a short folder the listing ended under its last row, and a
                 right-click or click below it reached nothing. */}
-            <ScrollArea className="[container-type:size] h-full w-full" viewportRef={viewportRef}>
+            <ScrollArea className="[container-type:size] h-full w-full" orientation="both" viewportRef={viewportRef}>
               {isLoading && (
                 <div className="text-on-surface-variant font-ui text-control flex items-center justify-center py-12">
                   Loading…

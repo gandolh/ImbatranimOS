@@ -29,3 +29,9 @@ When listing the folder fails, the viewer sets its siblings to an empty list (`a
 
 - [ ] The tests pass; `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy`, owner step `node cli.ts imbatranim-os server`.
+
+## Outcome (2026-11-19)
+
+`18c3168` (1.363.0, ready for deploy): the viewer keeps a failed listing as its own state (`listFailed`, set in the sibling effect's catch) apart from an empty folder. The By date grid shows "Couldn't read this folder" with a kit `Button` Retry, which clears the failure, resets the siblings to loading and lists again. An empty or missing-file folder is unchanged, and so is the single view. The new test (a `/files` call that rejects once, then Retry) fails on the old code ("No images in this folder" shown). No container walk; the tests carry it.
+
+**Owner step.** `node cli.ts imbatranim-os server` from vps-deploy.

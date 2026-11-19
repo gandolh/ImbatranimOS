@@ -67,6 +67,14 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
   // yet (or the listing failed) — prev/next stay disabled and the opened file
   // is still shown on its own via `source`.
   const [siblings, setSiblings] = useState<FsEntry[] | null>(null);
+  // A failed listing is its own state, not an empty folder: the grid offers Retry.
+  const [listFailed, setListFailed] = useState(false);
+  const [listTry, setListTry] = useState(0);
+  const retryList = useCallback(() => {
+    setListFailed(false);
+    setSiblings(null);
+    setListTry((n) => n + 1);
+  }, []);
   // The photo on screen, by path (null = the one the window was opened with).
   // A path, not a position, so the step list can change order under it.
   const [cur, setCur] = useState<string | null>(null);
@@ -154,13 +162,16 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
       } catch (err) {
         // eslint-disable-next-line no-console -- no client logger yet (2026-11-11)
         console.error("[image-viewer] failed to list folder", err);
-        if (!cancelled) setSiblings([]);
+        if (!cancelled) {
+          setSiblings([]);
+          setListFailed(true);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [source, system]);
+  }, [source, system, listTry]);
 
   // Loading a new image resets zoom/rotate and the loaded-natural-size cache.
   // Deliberately NOT a `useEffect` (which would set state synchronously inside
@@ -655,6 +666,8 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
       {view === "date" && (
         <DateGrid
           groups={siblings === null ? null : dates.groups}
+          failed={listFailed}
+          onRetry={retryList}
           currentPath={currentPath}
           urlFor={(path) => (currentRoot ? system.fs.downloadUrl(currentRoot, path) : "")}
           reading={dates.reading}

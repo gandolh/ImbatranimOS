@@ -88,15 +88,19 @@ const EXIF: Record<string, string> = {
 };
 
 type Reads = { path: string; range: string }[];
-type Opts = { entries?: FsEntry[]; hold?: boolean; open?: string; exif?: Record<string, string> };
+type Opts = { entries?: FsEntry[]; hold?: boolean; open?: string; exif?: Record<string, string>; listFails?: number };
 
 function setup(opts: Opts = {}) {
   const entries = opts.entries ?? FOLDER;
   const reads: Reads = [];
   const held: (() => void)[] = [];
   let inFlight = 0;
+  let listCalls = 0;
   let maxInFlight = 0;
   const get = vi.fn(async (url: string, config?: { params?: { path: string }; headers?: Record<string, string> }) => {
+    if (url === "/files") {
+      if (listCalls++ < (opts.listFails ?? 0)) throw new Error("boom");
+    }
     if (url === "/files") return { data: entries, status: 200, headers: {} };
     const path = config?.params?.path ?? "";
     reads.push({ path, range: config?.headers?.Range ?? "" });
@@ -313,6 +317,29 @@ describe("the grid", () => {
     await showGrid();
     expect(container.textContent).toContain("No images in this folder");
     expect(container.querySelector("[data-tile]")).toBeNull();
+  });
+
+  it("says the folder couldn't be read when the listing fails, and Retry lists again", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const s = await render({ listFails: 1 });
+    await showGrid();
+    expect(container.textContent).toContain("Couldn't read this folder");
+    expect(container.textContent).not.toContain("No images in this folder");
+    const retry = [...container.querySelectorAll("button")].find((b) => b.textContent === "Retry");
+    expect(retry).toBeTruthy();
+    await act(async () => {
+      retry?.click();
+    });
+    await settle();
+    expect(s.system.http.get).toHaveBeenCalledWith("/files", expect.anything());
+    expect(container.textContent).not.toContain("Couldn't read this folder");
+    expect(container.querySelector("[data-tile]")).not.toBeNull();
+  });
+
+  it("keeps an empty folder's message when the listing worked", async () => {
+    await render({ entries: [], open: "pics/gone.jpg" });
+    await showGrid();
+    expect(container.textContent).not.toContain("Couldn't read this folder");
   });
 
   it("has one tab stop, moves it with the arrow keys and opens with Enter", async () => {

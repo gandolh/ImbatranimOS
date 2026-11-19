@@ -1,12 +1,15 @@
 import { memo, useMemo, useRef, useState } from "react";
 import { ImageOff, Loader2 } from "lucide-react";
-import { cn } from "@imbatranim/ui";
+import { Button, cn } from "@imbatranim/ui";
 import type { DayGroup } from "./lib/groupByDay";
 import { verticalTarget } from "./lib/gridNav";
 
 type Props = {
   /** Null while the folder is still being listed. */
   groups: DayGroup[] | null;
+  /** The folder couldn't be listed: say so, with Retry, instead of "No images". */
+  failed: boolean;
+  onRetry: () => void;
   /** The photo the viewer is on: the grid starts with it as the tab stop. */
   currentPath: string | null;
   urlFor: (path: string) => string;
@@ -31,7 +34,17 @@ function headingFor(day: Date, now: Date): string {
  * arrow keys move it, Enter opens the photo. The thumbnails are the files
  * themselves, loaded lazily and sized by CSS.
  */
-export const DateGrid = memo(function DateGrid({ groups, currentPath, urlFor, reading, done, total, onOpen }: Props) {
+export const DateGrid = memo(function DateGrid({
+  groups,
+  failed,
+  onRetry,
+  currentPath,
+  urlFor,
+  reading,
+  done,
+  total,
+  onOpen,
+}: Props) {
   const flat = useMemo(() => (groups ?? []).flatMap((g) => g.items.map((i) => i.entry)), [groups]);
   const [picked, setPicked] = useState<string | null>(null);
   const activePath = picked ?? currentPath;
@@ -45,6 +58,18 @@ export const DateGrid = memo(function DateGrid({ groups, currentPath, urlFor, re
       <div className="text-on-surface-variant font-ui text-control flex flex-1 items-center justify-center gap-2">
         <Loader2 size={16} className="animate-spin" />
         Loading folder…
+      </div>
+    );
+  }
+  if (failed) {
+    return (
+      <div
+        role="alert"
+        className="text-on-surface-variant font-ui text-control flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center"
+      >
+        <ImageOff size={40} strokeWidth={1} />
+        Couldn't read this folder
+        <Button onClick={onRetry}>Retry</Button>
       </div>
     );
   }

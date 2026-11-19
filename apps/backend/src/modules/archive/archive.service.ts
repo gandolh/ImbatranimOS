@@ -11,7 +11,7 @@ import {
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { unzip, zip, type Unzipped, type AsyncZippable } from "fflate";
-import { execFile, spawn, type ChildProcess } from "child_process";
+import { execFile, spawn } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs/promises";
 import { constants as fsConstants, createReadStream, type Stats } from "fs";
@@ -1212,41 +1212,46 @@ export class ArchiveService {
     }
 
     const command = this.decompressorCommand(kind);
+    const unavailable = () =>
+      new InternalServerErrorException(`Can't unpack ${kind} files here: ${command} is not available`);
     const input = await fs.open(archiveAbs, "r");
-    let child: ChildProcess;
-    // Listened for before anything awaits: a child that can't start says so
-    // on the next tick, and an 'error' nobody hears would crash the process.
-    let startError: Error | null = null;
-    let exited: Promise<number | null>;
+    // Closed only once the child is done: closing is an await, and nothing is
+    // awaited before the child's output has a reader. The child has its own
+    // copy of the descriptor.
     try {
-      child = spawn(command, [], {
+      const child = spawn(command, [], {
         stdio: [input.fd, "pipe", "pipe"],
         env: childEnv(),
       });
+      // Listened for before anything awaits: a child that can't start says so
+      // on the next tick, and an 'error' nobody hears would crash the process.
+      let startError: Error | null = null;
       child.on("error", (err) => {
         startError = err;
       });
-      exited = new Promise<number | null>((resolve) => child.on("close", (code) => resolve(code)));
+      const exited = new Promise<number | null>((resolve) => child.on("close", (code) => resolve(code)));
+      required(child.stderr, "the unpack process's stderr").resume();
+
+      try {
+        // Read from the start, before any await. Node drains a child's unread
+        // stdout to nowhere once the child exits, and a small file's
+        // decompressor exits in a millisecond: on a busy server an await here
+        // let it finish first, and the extract counted 0 bytes into an empty
+        // file, with no error.
+        await pipeline(required(child.stdout, "the unpack process's stdout"), through, sink, { signal });
+      } catch (err) {
+        child.kill("SIGKILL");
+        await exited;
+        if (startError) throw unavailable();
+        if (signal.aborted) late();
+        throw err;
+      }
+      const code = await exited;
+      if (startError) throw unavailable();
+      if (code !== 0) throw damaged();
     } finally {
-      // The child has its own copy of the descriptor by now.
       await input.close();
     }
-    required(child.stderr, "the unpack process's stderr").resume();
-    const unavailable = () =>
-      new InternalServerErrorException(`Can't unpack ${kind} files here: ${command} is not available`);
-
-    try {
-      await pipeline(required(child.stdout, "the unpack process's stdout"), through, sink, { signal });
-    } catch (err) {
-      child.kill("SIGKILL");
-      await exited;
-      if (startError) throw unavailable();
-      if (signal.aborted) late();
-      throw err;
-    }
-    const code = await exited;
-    if (startError) throw unavailable();
-    if (code !== 0) throw damaged();
   }
 
   /** The program that decompresses `kind` to stdout. A seam for the tests. */

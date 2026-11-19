@@ -87,8 +87,12 @@ export function ContextMenu({ x, y, items, onClose, label = "Context menu" }: Co
                 return <div key={item.key}>{item.children}</div>;
               }
               const isCheckbox = item.checked !== undefined;
+              // Compact on a desktop; a 44 px row under 600 px, a finger's
+              // target (2026-11-19). min-height, so no utility of a kit app's
+              // stylesheet competes with it.
               const itemClass = cn(
                 "font-ui rounded-item flex w-full cursor-default items-center gap-2 px-3 py-1 text-left text-control outline-none select-none",
+                "max-[600px]:min-h-target",
                 item.disabled
                   ? "text-on-surface-variant/50"
                   : item.danger

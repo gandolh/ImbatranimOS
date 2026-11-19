@@ -97,6 +97,24 @@ describe("ContextMenu (kit)", () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
+  it("every row is a 44 px target under 600 px and compact above it", () => {
+    render([
+      { label: "Open", onSelect: () => {} },
+      { label: "Paste", onSelect: () => {}, disabled: true },
+      { label: "Clock widget", onSelect: () => {}, checked: true },
+      { label: "Delete", onSelect: () => {}, danger: true },
+    ]);
+    const rows = document.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"]');
+    expect(rows).toHaveLength(4);
+    for (const row of rows) {
+      const classes = (row.getAttribute("class") ?? "").split(/\s+/);
+      // `target` is 44 px in the kit's theme.css; the desktop's row keeps its padding.
+      expect(classes).toContain("max-[600px]:min-h-target");
+      expect(classes).toContain("py-1");
+      expect(classes.filter((c) => /^(h|min-h)-/.test(c))).toEqual([]);
+    }
+  });
+
   it("any scroll closes the menu", () => {
     const onClose = vi.fn();
     render([{ label: "Open", onSelect: () => {} }], onClose);

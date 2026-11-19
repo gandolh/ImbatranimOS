@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { SHARED_KIT_VERSION } from "@imbatranim/ui";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -465,10 +466,12 @@ describe("MarketplaceSettings: a descriptor with several apps", () => {
       officeApp("office-docs", "Docs", true, { sharedKit: 99 }),
       officeApp("office-sheets", "Sheets", true, { sharedKit: 99 }),
     ]);
-    expect(container.textContent).toContain("Needs an update: built for shared kit 99, this desktop has 1");
+    expect(container.textContent).toContain(
+      `Needs an update: built for shared kit 99, this desktop has ${SHARED_KIT_VERSION}`,
+    );
     act(() => root.unmount());
     root = createRoot(container);
-    await renderSuite(suite(true).map((a) => ({ ...a, sharedKit: 1 })));
+    await renderSuite(suite(true).map((a) => ({ ...a, sharedKit: SHARED_KIT_VERSION })));
     expect(container.textContent).not.toContain("Needs an update");
     expect(container.textContent).toContain("Installed · aaaaaaa");
   });
@@ -476,10 +479,12 @@ describe("MarketplaceSettings: a descriptor with several apps", () => {
   it("offers Rebuild at the same ref when the catalog now names this desktop’s kit", async () => {
     post.mockResolvedValue({ data: { state: "queued" } });
     await renderSuite([
-      officeApp("office-docs", "Docs", true, { sharedKit: 99, catalogSharedKit: 1 }),
-      officeApp("office-sheets", "Sheets", true, { sharedKit: 99, catalogSharedKit: 1 }),
+      officeApp("office-docs", "Docs", true, { sharedKit: 99, catalogSharedKit: SHARED_KIT_VERSION }),
+      officeApp("office-sheets", "Sheets", true, { sharedKit: 99, catalogSharedKit: SHARED_KIT_VERSION }),
     ]);
-    expect(container.textContent).toContain("Built for shared kit 99; a rebuild for kit 1 is available");
+    expect(container.textContent).toContain(
+      `Built for shared kit 99; a rebuild for kit ${SHARED_KIT_VERSION} is available`,
+    );
     expect(container.textContent).not.toContain("Needs an update");
     expect(buttons("Rebuild")).toHaveLength(1);
     expect(buttons("Update")).toHaveLength(0);
@@ -495,7 +500,9 @@ describe("MarketplaceSettings: a descriptor with several apps", () => {
         officeApp("office-docs", "Docs", true, { sharedKit: 99, catalogSharedKit }),
         officeApp("office-sheets", "Sheets", true, { sharedKit: 99, catalogSharedKit }),
       ]);
-      expect(container.textContent).toContain("Needs an update: built for shared kit 99, this desktop has 1");
+      expect(container.textContent).toContain(
+        `Needs an update: built for shared kit 99, this desktop has ${SHARED_KIT_VERSION}`,
+      );
       for (const label of ["Rebuild", "Update", "Reinstall", "Install"]) {
         expect(buttons(label)).toHaveLength(0);
       }
@@ -505,7 +512,7 @@ describe("MarketplaceSettings: a descriptor with several apps", () => {
   });
 
   it("still says Update for a new ref and Reinstall for a missing build, not Rebuild", async () => {
-    const mismatched = { sharedKit: 99, catalogSharedKit: 1 };
+    const mismatched = { sharedKit: 99, catalogSharedKit: SHARED_KIT_VERSION };
     await renderSuite([
       officeApp("office-docs", "Docs", true, { ...mismatched, ref: NEW }),
       officeApp("office-sheets", "Sheets", true, { ...mismatched, ref: NEW }),

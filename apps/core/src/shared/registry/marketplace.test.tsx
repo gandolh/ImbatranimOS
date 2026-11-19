@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 /// <reference types="node" />
+import { SHARED_KIT_VERSION } from "@imbatranim/ui";
 import { act, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { readdirSync, readFileSync } from "fs";
@@ -383,7 +384,7 @@ describe("kit apps in the registry", () => {
     const legacy: Partial<MarketplaceApp> = app("orbits", {});
     delete legacy.sharedKit;
     syncMarketplaceApps([
-      suiteApp("office-docs", { sharedKit: 1 }),
+      suiteApp("office-docs", { sharedKit: SHARED_KIT_VERSION }),
       app("hollow", {}, { sharedKit: null }),
       legacy as MarketplaceApp,
     ]);
@@ -414,9 +415,9 @@ describe("kit apps in the registry", () => {
   });
 
   it("takes an app built against a shared kit for a kit app, and no other", () => {
-    expect(isKitApp({ ...urlApp("x-0123456789ab"), sharedKit: 1 })).toBe(true);
+    expect(isKitApp({ ...urlApp("x-0123456789ab"), sharedKit: SHARED_KIT_VERSION })).toBe(true);
     expect(isKitApp(urlApp("x-0123456789ab"))).toBe(false);
-    expect(isKitApp(suiteApp("office-docs", { sharedKit: 1 }))).toBe(true);
+    expect(isKitApp(suiteApp("office-docs", { sharedKit: SHARED_KIT_VERSION }))).toBe(true);
     expect(isKitApp(suiteApp("office-docs", { sharedKit: null }))).toBe(false);
   });
 
@@ -425,7 +426,10 @@ describe("kit apps in the registry", () => {
       [...document.head.querySelectorAll('link[rel="modulepreload"]')].map((l) => l.getAttribute("href"));
     // The windows earlier tests opened left theirs: jsdom never loads a link.
     document.head.querySelectorAll("link").forEach((l) => l.remove());
-    syncMarketplaceApps([suiteApp("office-docs", { sharedKit: 1 }), app("hollow", {}, { sharedKit: null })]);
+    syncMarketplaceApps([
+      suiteApp("office-docs", { sharedKit: SHARED_KIT_VERSION }),
+      app("hollow", {}, { sharedKit: null }),
+    ]);
     // Listed and in the registry, but no window yet: nothing fetched.
     expect(preloads()).toEqual([]);
     expect(await hostOf("hollow")).toBe("native");
@@ -455,11 +459,14 @@ describe("kit apps in the registry", () => {
     link("office@b1", "/api/marketplace/apps/office/b/b1/kit.css");
     link("office@b0", "/api/marketplace/apps/office/b/b0/kit.css");
     link("gone@b1", "/api/marketplace/apps/gone/b/b1/kit.css");
-    syncMarketplaceApps([suiteApp("office-docs", { sharedKit: 1 }), suiteApp("office-sheets", { sharedKit: 1 })]);
+    syncMarketplaceApps([
+      suiteApp("office-docs", { sharedKit: SHARED_KIT_VERSION }),
+      suiteApp("office-sheets", { sharedKit: SHARED_KIT_VERSION }),
+    ]);
     expect(kitBuildKey(suiteApp("office-docs"))).toBe("office@b1");
     expect(links()).toEqual(["office@b1"]);
     // Uninstalled: the listing has it, not installed.
-    syncMarketplaceApps([app("office-docs", null, { descriptorId: "office", sharedKit: 1 })]);
+    syncMarketplaceApps([app("office-docs", null, { descriptorId: "office", sharedKit: SHARED_KIT_VERSION })]);
     expect(links()).toEqual([]);
   });
 });

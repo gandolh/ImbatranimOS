@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SystemProvider } from "@imbatranim/ui";
+import { SHARED_KIT_VERSION, SystemProvider } from "@imbatranim/ui";
 import { createSystemHandle } from "../../system/createSystemHandle";
 import { AppErrorBoundary } from "../../shared/components/window/AppErrorBoundary";
 import { resetCrashToastHistory } from "../../shared/components/window/crashToastGuard";
@@ -69,7 +69,7 @@ function app(overrides: Partial<MarketplaceApp> = {}): MarketplaceApp {
     multiInstance: true,
     opens: [],
     minSystemVersion: 2,
-    sharedKit: 1,
+    sharedKit: SHARED_KIT_VERSION,
     ref: "a".repeat(40),
     runtime: "native",
     installed: {
@@ -257,7 +257,7 @@ describe("KitAppHost", () => {
     await settle();
     expect(fallback()).toBeNull();
     expect(container.querySelector('[data-kit-app="kit-notes"]')).not.toBeNull();
-    expect(seen().version).toBe(1);
+    expect(seen().version).toBe(SHARED_KIT_VERSION);
     expect(seen().windowIds).toEqual(["w1"]);
     expect(seen().host).toEqual({
       appId: "kit-notes",
@@ -304,7 +304,7 @@ describe("KitAppHost", () => {
     await act(async () => {
       await importKitModule(apiUrl("notes/app.mjs").href);
     });
-    expect(seen().version).toBe(1);
+    expect(seen().version).toBe(SHARED_KIT_VERSION);
     render([app(), "w1"]);
     await settle();
     expect(container.querySelector('[data-kit-app="kit-notes"]')).not.toBeNull();
@@ -340,8 +340,7 @@ describe("KitAppHost", () => {
     await settle();
     expect(refusal()).toMatchObject({
       heading: "Can't open Kit Notes",
-      sentence:
-        "Kit Notes was built for shared kit 99, and this desktop has shared kit 1. It needs an update built for kit 1.",
+      sentence: `Kit Notes was built for shared kit 99, and this desktop has shared kit ${SHARED_KIT_VERSION}. It needs an update built for kit ${SHARED_KIT_VERSION}.`,
       button: "Open Settings",
     });
     expect(fallback()).toBeNull();

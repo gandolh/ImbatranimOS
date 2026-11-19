@@ -13,6 +13,8 @@ export type ContextMenuItem =
       disabled?: boolean;
       /** Present = render as a menuitemcheckbox with this state. */
       checked?: boolean;
+      /** False keeps the menu open after the row is chosen (a row that opens another list). Default true. */
+      closeOnClick?: boolean;
     }
   | { type: "separator" }
   /** Escape hatch for one-off rows (the taskbar's workspace grid). */
@@ -76,6 +78,8 @@ export function ContextMenu({ x, y, items, onClose, label = "Context menu" }: Co
             }}
             className={cn(
               "border-outline-variant bg-surface-container-low rounded-menu min-w-40 border px-(--k-list-inset) py-1",
+              // Taller than the space left: scroll inside, rows keep their size.
+              "max-h-(--available-height) overflow-y-auto",
               "shadow-(--k-shadow-popup) outline-none",
             )}
           >
@@ -105,6 +109,7 @@ export function ContextMenu({ x, y, items, onClose, label = "Context menu" }: Co
                     key={i}
                     checked={item.checked}
                     disabled={item.disabled}
+                    closeOnClick={item.closeOnClick}
                     onClick={() => !item.disabled && item.onSelect()}
                     className={itemClass}
                   >
@@ -119,6 +124,7 @@ export function ContextMenu({ x, y, items, onClose, label = "Context menu" }: Co
                 <Menu.Item
                   key={i}
                   disabled={item.disabled}
+                  closeOnClick={item.closeOnClick}
                   onClick={() => !item.disabled && item.onSelect()}
                   className={itemClass}
                 >

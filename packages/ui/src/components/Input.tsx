@@ -8,7 +8,6 @@ type InputProps = ComponentProps<typeof BaseInput> & {
 };
 
 export function Input({ label, className, id, ...props }: InputProps) {
-  const invalid = props["aria-invalid"] === true || props["aria-invalid"] === "true";
   return (
     <div className="flex flex-col gap-1">
       {label && (
@@ -27,21 +26,21 @@ export function Input({ label, className, id, ...props }: InputProps) {
             // Its own focus, with or without a Field around it: `data-focused`
             // comes only from a Field, so a bare Input drew no ring (2026-11-19).
             "focus-visible:border-primary focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
-            "data-[invalid]:border-error aria-invalid:border-error",
-            // Room for the error mark, only while invalid.
-            invalid && "pe-8",
+            // Two signals say invalid: `aria-invalid` from the caller, and
+            // `data-invalid` from a Base UI Field. Border, room for the mark
+            // and the mark itself follow both.
+            "peer data-[invalid]:border-error aria-invalid:border-error",
+            "aria-invalid:pe-8 data-[invalid]:pe-8",
             "disabled:cursor-not-allowed disabled:opacity-50",
             className,
           )}
           {...props}
         />
-        {invalid && (
-          <CircleAlert
-            aria-hidden="true"
-            data-error-mark=""
-            className="text-error pointer-events-none absolute end-2.5 top-1/2 size-4 -translate-y-1/2"
-          />
-        )}
+        <CircleAlert
+          aria-hidden="true"
+          data-error-mark=""
+          className="text-error pointer-events-none absolute end-2.5 top-1/2 hidden size-4 -translate-y-1/2 peer-aria-invalid:block peer-data-[invalid]:block"
+        />
       </div>
     </div>
   );

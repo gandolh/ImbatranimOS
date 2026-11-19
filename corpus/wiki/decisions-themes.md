@@ -1,6 +1,6 @@
 ---
-summary: Two themes ship. Apricot (cream and peach, pastel accents, rounded corners, Figtree) is the default, and Classic (today's black and white with crimson) stays selectable in Settings. Light is the default mode, there is no glass, and a machine with saved settings moves to Apricot light once on upgrade. Settled with the owner 2026-11-02 in the grill on brief 07, revisiting the locked identity; the layout is unchanged. On 2026-11-03 Apricot's rounding was extended to list rows and in-window boxes, and selection keeps a deep border while today stays strong. Revisited 2026-11-13 (brief 88, the estate redesign board): Start becomes a two-pane 704 px menu and a phone sheet, Solway joins as Apricot's display face, and dark selection is a deep container with a pastel edge.
-updated: 2026-11-13
+summary: Two themes ship. Apricot (cream and peach, pastel accents, rounded corners, Figtree) is the default, and Classic (today's black and white with crimson) stays selectable in Settings. Light is the default mode, there is no glass, and a machine with saved settings moves to Apricot light once on upgrade. Settled with the owner 2026-11-02 in the grill on brief 07, revisiting the locked identity; the layout is unchanged. On 2026-11-03 Apricot's rounding was extended to list rows and in-window boxes, and selection keeps a deep border while today stays strong. Revisited 2026-11-13 (brief 88, the estate redesign board): Start becomes a two-pane 704 px menu and a phone sheet, Solway joins as Apricot's display face, and dark selection is a deep container with a pastel edge. Revisited 2026-11-19 (brief 91): Classic's accents are lifted in dark only, keeping their hue, to read as text and as a ring.
+updated: 2026-11-19
 ---
 
 # Decisions: themes (2026-11-02)
@@ -61,6 +61,20 @@ Lavender would have doubled that again.
 - *Consequence*: the zero-radius rule (`* { border-radius: 0 !important }` in
   `apps/core/src/index.css`) becomes Classic's only, and
   [ui-conventions.md](ui-conventions.md) changes with the build.
+
+*Revisited 2026-11-19 (brief 91, the owner's call)*: Classic dark's accents are
+lifted, so Classic is no longer "kept whole" in dark. Each of the four keeps its
+hue and, in dark only, is lifted until it reads at 4.5:1 as text and 3:1 as a
+ring on every dark surface up to `surface-container-high`: crimson `#c0263a`
+becomes `#e06474`, cobalt `#588ae7`, emerald `#14a154`, signal `#e96036`.
+Classic stays one fill in every slot, a value per mode; white on a lifted fill
+is about 3.4:1, so it takes Classic's ink `#16161a` (about 5.3:1), as dark's
+error red takes a dark ink. Light keeps its fills with white on them.
+Rejected: keeping the gap (crimson was 2.67:1 as a ring on a selected row, 3.3:1
+as text); and, as a technical call, lifting only the strong accent while the
+crimson fill stays for selected things, which would split Classic's one fill.
+**Why**: text and focus rings must read in all four looks; the error red was
+already lifted the same way.
 
 ## Light is the default mode
 _2026-11-02_ — A new machine starts in light. Dark stays one click away in

@@ -1,11 +1,13 @@
 ---
 title: A kit app's stylesheet can undo the shell's apricot styles
 created: 2026-11-13
-status: open
+status: promoted
 tags: [bug, theme, kit]
 ---
 
 # A kit app's stylesheet can undo the shell's apricot styles
+
+Promoted 2026-11-19 to [brief 92](../briefs/todo/92-the-shells-apricot-styles-win-over-a-kit-apps-stylesheet.md).
 
 Brief 88's builder found this while shooting the redesign. A kit app's
 stylesheet stays in the page once its window has opened, and it loads after

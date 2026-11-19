@@ -1,11 +1,13 @@
 ---
 title: Kit controls that miss a focus ring or move under reduced motion
 created: 2026-11-15
-status: open
+status: promoted
 tags: [bug, kit, a11y]
 ---
 
 # Kit controls that miss a focus ring or move under reduced motion
+
+Promoted 2026-11-19 to [brief 91](../briefs/todo/91-kit-controls-show-focus-hold-still-and-read-in-classic-dark.md).
 
 imbatranim-apps' brief 11 walked every app screen with Tab in the four
 looks and sampled motion under `prefers-reduced-motion: reduce`, against

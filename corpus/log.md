@@ -6341,7 +6341,7 @@ Built in three parts: the logic (`9740ad8`, 1.346.0), the view (`4f46428`, 1.347
 
 ## [2026-11-19] done | Brief 96: the rest of the shell holds still and fits a phone
 
-Part 1 `61eaf7e` (1.368.0): every spinner in core and the add-ons is motion-safe, `motion.test.ts` holds them to it. Part 2 `09d9a72` and `2622989` (1.370.0, 1.371.0): kit menu popups scroll inside the space left and stay open while they scroll, menu rows take `closeOnClick`, the taskbar's workspace buttons are 44 by 44 px under 600 px, the `Input` error cue follows `aria-invalid` and a Field's `data-invalid`. `SHARED_KIT_VERSION` is 2: kit apps built against 1 need a rebuild; imbatranim-apps syncs the kit to `2622989`. Walked at 390 by 640 in both looks.
+Part 1 `61eaf7e` (1.368.0): every spinner in core and the add-ons is motion-safe, `motion.test.ts` holds them to it. Part 2 `09d9a72` and `2622989` (1.370.0, 1.371.0): kit menu popups scroll inside the space left and stay open while they scroll, menu rows take `closeOnClick`, the taskbar's workspace buttons are 44 by 44 px under 600 px, the `Input` error cue follows `aria-invalid` and a Field's `data-invalid`. `SHARED_KIT_VERSION` stays 1 (the build bumped it to 2; the controller reverted that in `215c91b`, an added optional prop is compatible); imbatranim-apps syncs the kit to `215c91b`. Walked at 390 by 640 in both looks.
 
 ## [2026-11-19] fix | Brief 96 follow-up: the shared kit stays at version 1
 

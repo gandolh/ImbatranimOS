@@ -13,7 +13,10 @@ export type ContextMenuItem =
       disabled?: boolean;
       /** Present = render as a menuitemcheckbox with this state. */
       checked?: boolean;
-      /** False keeps the menu open after the row is chosen (a row that opens another list). Default true. */
+      /**
+       * False keeps the menu open after the row is chosen (a row that opens another list). A plain row closes by
+       * default; a row with `checked` stays open unless this is true (Base UI's checkbox row default).
+       */
       closeOnClick?: boolean;
     }
   | { type: "separator" }

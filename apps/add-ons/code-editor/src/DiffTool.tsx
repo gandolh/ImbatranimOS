@@ -287,7 +287,10 @@ export function DiffTool({ windowId: _windowId }: { windowId: string }) {
         ) : (
           <div className="text-on-surface-variant flex h-full flex-col items-center justify-center gap-3">
             {loading ? (
-              <Loader2 size={24} className="motion-safe:animate-spin" />
+              <>
+                <Loader2 size={24} className="motion-safe:animate-spin" aria-hidden />
+                <p className="font-ui text-control">Loading files…</p>
+              </>
             ) : (
               <>
                 <FileDiff size={40} strokeWidth={1} />

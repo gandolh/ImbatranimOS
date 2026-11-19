@@ -108,8 +108,8 @@ Derived by reading the code, 2026-07-31. Identity is **locked**: Win7-classic la
 24. **Destructive action** → `variant="destructive"` (`ui/Button.tsx:24-27`) **and** `destructive: true` on the confirm. Both, always.
 25. **Empty state** → centred column, one big thin glyph, one 12px line — `<div className="text-on-surface-variant flex flex-col items-center justify-center gap-2 py-12"><Folder size={32} strokeWidth={1} /><span className="font-ui text-[12px]">Empty folder</span></div>` (`file-manager/src/components/FileList.tsx:105-112`; 40/1
     variant at `docs/src/Docs.tsx:146`). Say what is empty; do not apologise.
-26. **Loading** → centred `text-on-surface-variant font-ui text-[12px]` "Loading…", plus `<Loader2 size={16} className="animate-spin" />` when the wait can exceed ~1s
-    (`MarkdownEditor.tsx:165-167`; text-only at `FileManager.tsx:462`). An in-place refresh spins the existing icon instead: `<RefreshCw className={cn(isFetching && 'animate-spin')} />` (`FileManager.tsx:411`). No skeleton shimmers.
+26. **Loading** → centred `text-on-surface-variant font-ui text-[12px]` "Loading…", plus `<Loader2 size={16} className="motion-safe:animate-spin" />` when the wait can exceed ~1s
+    (`MarkdownEditor.tsx:165-167`; text-only at `FileManager.tsx:462`). An in-place refresh spins the existing icon instead: `<RefreshCw className={cn(isFetching && 'motion-safe:animate-spin')} />` (`FileManager.tsx:411`). No skeleton shimmers.
 27. **Context menu** → **never hand-roll one** (the context-menu kit (2026-08-07) promoted the third copy). `onContextMenu={e => { e.preventDefault(); setMenu({x: e.clientX, y: e.clientY}) }}` —
     raw VIEWPORT coords — then `{menu && <ContextMenu x={menu.x} y={menu.y} items={items} onClose={…} label="…"/>}` from `@imbatranim/ui`. Items are data:
     `{label, icon?, onSelect, danger?, disabled?, checked?}`, `{type:'separator'}`, `{type:'custom', key, children}` for a one-off row (`file-manager/src/lib/buildMenuItems.tsx`

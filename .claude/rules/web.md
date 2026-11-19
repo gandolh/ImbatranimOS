@@ -18,8 +18,9 @@ paths:
 - No native dialogs: `useConfirm()` and `usePrompt()` from the kit.
 - Check a change in two combinations: Apricot light and Classic dark.
 - The root font size is 13 px, so `rem` is not 16 px here.
-- The kit's public props are a contract with imbatranim-apps, which vendors `packages/ui`. A change to them bumps
-  `SHARED_KIT_VERSION`.
+- The kit's public props are a contract with imbatranim-apps, which vendors `packages/ui`. An incompatible change to
+  them (a prop removed, renamed or changed in meaning: `packages/ui/src/sharedKit.ts`) bumps `SHARED_KIT_VERSION`; an
+  added optional prop or export does not, since the desktop refuses every kit app built against another version.
 - No `!` in source: narrow with a guard, or take the value through `required()` (a small helper in the workspace's
   `lib/`) where a missing value is a bug. Tests may use `!`.
 - No `console` in source. The desktop has no client logger yet, so a diagnostic carries a dated

@@ -25,7 +25,7 @@ import type { SystemHandle } from "./system";
  * Declared inline on purpose: an outside repo's snapshot of this directory
  * reads the value from this line.
  */
-export const SHARED_KIT_VERSION = 2;
+export const SHARED_KIT_VERSION = 1;
 
 /** The specifiers the desktop shares, the keys of `__imbatranimShared.modules`. */
 export const SHARED_KIT_MODULES = [

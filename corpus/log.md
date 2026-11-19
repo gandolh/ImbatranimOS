@@ -6342,3 +6342,7 @@ Built in three parts: the logic (`9740ad8`, 1.346.0), the view (`4f46428`, 1.347
 ## [2026-11-19] done | Brief 96: the rest of the shell holds still and fits a phone
 
 Part 1 `61eaf7e` (1.368.0): every spinner in core and the add-ons is motion-safe, `motion.test.ts` holds them to it. Part 2 `09d9a72` and `2622989` (1.370.0, 1.371.0): kit menu popups scroll inside the space left and stay open while they scroll, menu rows take `closeOnClick`, the taskbar's workspace buttons are 44 by 44 px under 600 px, the `Input` error cue follows `aria-invalid` and a Field's `data-invalid`. `SHARED_KIT_VERSION` is 2: kit apps built against 1 need a rebuild; imbatranim-apps syncs the kit to `2622989`. Walked at 390 by 640 in both looks.
+
+## [2026-11-19] fix | Brief 96 follow-up: the shared kit stays at version 1
+
+Brief 96 bumped `SHARED_KIT_VERSION` to 2 because the controller's brief said a new public prop bumps it. `sharedKit.ts` says otherwise: only an incompatible change bumps it, and the desktop refuses every kit app built against another version, so the bump would have stopped every installed kit app until imbatranim-apps rebuilt. `closeOnClick` is optional and defaults to the old behaviour, so the kit stays at 1. `.claude/rules/web.md` now says the same as `sharedKit.ts`. Brief 96's outcome note still says 2; this entry corrects it.

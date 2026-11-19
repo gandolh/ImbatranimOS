@@ -42,7 +42,7 @@ describe("the shared kit global", () => {
   it("names its version and the five modules", () => {
     const shared = installSharedKit();
     expect(shared.version).toBe(SHARED_KIT_VERSION);
-    expect(SHARED_KIT_VERSION).toBe(2);
+    expect(SHARED_KIT_VERSION).toBe(1);
     expect(Object.keys(shared.modules)).toEqual([...SHARED_KIT_MODULES]);
   });
 

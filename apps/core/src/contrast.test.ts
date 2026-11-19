@@ -116,18 +116,50 @@ describe("Apricot", () => {
   }
 });
 
+/** The hue of a colour, in degrees. */
+function hue(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  if (d === 0) return 0;
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return (h * 60 + 360) % 360;
+}
+
+/** A ring or an edge needs 3:1 against what is around it. */
+const RING = 3;
+
 describe("Classic", () => {
-  // Crimson as text on the dark surfaces is about 3.3:1, a known gap left as
-  // it was; only white on each fill is held here.
-  for (const mode of MODES) {
-    for (const preset of ACCENT_PRESETS.classic) {
-      it(`${mode}: white on ${preset.name}`, () => {
-        const a = preset[mode];
-        expect(contrast(a.strongOn, a.strong)).toBeGreaterThanOrEqual(AA);
-        expect(a.soft).toBe(a.strong);
-        expect(a.softOn).toBe(a.strongOn);
-      });
-    }
+  // One fill in every slot, a value per mode. Light keeps the fills with white
+  // on them; dark lifts each hue to read as text and as a ring on every dark
+  // surface up to surface-container-high (2026-11-19: crimson was 2.67:1 on
+  // high, cobalt 2.9:1 on surface-container).
+  const dark = tokens("classic", "dark");
+
+  for (const preset of ACCENT_PRESETS.classic) {
+    it(`light: white on ${preset.name}`, () => {
+      const a = preset.light;
+      expect(a.strongOn).toBe("#ffffff");
+      expect(contrast(a.strongOn, a.strong)).toBeGreaterThanOrEqual(AA);
+      expect(a.soft).toBe(a.strong);
+      expect(a.softOn).toBe(a.strongOn);
+    });
+
+    it(`dark: ${preset.name} reads as text and as a ring on every surface up to high`, () => {
+      const a = preset.dark;
+      for (const s of ACCENT_TEXT_SURFACES) {
+        expect(contrast(a.strong, dark[s]), `as text on ${s}`).toBeGreaterThanOrEqual(AA);
+        expect(contrast(a.strong, dark[s]), `as a ring on ${s}`).toBeGreaterThanOrEqual(RING);
+      }
+      expect(contrast(a.strongOn, a.strong), "its ink on the fill").toBeGreaterThanOrEqual(AA);
+      expect(a.soft).toBe(a.strong);
+      expect(a.softOn).toBe(a.strongOn);
+    });
+
+    it(`dark: ${preset.name} keeps its hue`, () => {
+      const turn = Math.abs(hue(preset.dark.strong) - hue(preset.light.strong));
+      expect(Math.min(turn, 360 - turn)).toBeLessThanOrEqual(3);
+    });
   }
 });
 
@@ -170,16 +202,10 @@ describe("every theme and mode", () => {
             const a = preset[mode];
             expect(contrast(a.softOn, a.soft), "softOn on soft").toBeGreaterThanOrEqual(AA);
             // The chosen chip's edge is the strong accent: deep in light, the
-            // pastel in dark. Start and every window are surface-container-low;
-            // an unselected Mode or Accent option is surface-container. Classic
-            // keeps its values: in dark, crimson and cobalt reach 2.9:1 on
-            // surface-container (the gap noted above), so it is held on the
-            // body only.
-            const panels =
-              theme === "classic" && mode === "dark"
-                ? ["surface-container-low"]
-                : ["surface-container-low", "surface-container"];
-            for (const s of panels) {
+            // pastel in dark (Apricot) or the lifted fill (Classic). Start and
+            // every window are surface-container-low; an unselected Mode or
+            // Accent option is surface-container.
+            for (const s of ["surface-container-low", "surface-container"]) {
               expect(contrast(a.strong, k[s]), `edge on ${s}`).toBeGreaterThanOrEqual(EDGE);
             }
           });

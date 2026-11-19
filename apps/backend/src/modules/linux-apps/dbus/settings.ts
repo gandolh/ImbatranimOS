@@ -38,10 +38,10 @@ export const STRONG: Record<ThemeId, Record<string, [string, string]>> = {
     sky: ["#376891", "#a7c7e7"],
   },
   classic: {
-    crimson: ["#c0263a", "#c0263a"],
-    cobalt: ["#1f5fd6", "#1f5fd6"],
-    emerald: ["#0f7a40", "#0f7a40"],
-    signal: ["#d24317", "#d24317"],
+    crimson: ["#c0263a", "#e06474"],
+    cobalt: ["#1f5fd6", "#588ae7"],
+    emerald: ["#0f7a40", "#14a154"],
+    signal: ["#d24317", "#e96036"],
   },
 };
 

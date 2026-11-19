@@ -30,10 +30,23 @@ export type AccentPreset = {
   dark: AccentColours;
 };
 
-/** Classic's accents are one fill with white on it, in every slot and both modes. */
-function classic(id: string, name: string, hex: string): AccentPreset {
-  const colours = { strong: hex, strongOn: "#ffffff", soft: hex, softOn: "#ffffff" };
-  return { id, name, light: colours, dark: colours };
+/** Classic's ink, its light mode's text: the text on a lifted dark fill. */
+const CLASSIC_DARK_ON = "#16161a";
+
+/**
+ * Classic's accents are one fill in every slot, a value per mode. In light the
+ * fill takes white on it. In dark it is the same hue lifted (2026-11-19), so it
+ * reads at 4.5:1 as text and at 3:1 as a ring on every dark surface up to
+ * `surface-container-high`; white on a lifted fill is about 3.4:1, so it takes
+ * Classic's ink instead, as dark's error red does.
+ */
+function classic(id: string, name: string, light: string, dark: string): AccentPreset {
+  return {
+    id,
+    name,
+    light: { strong: light, strongOn: "#ffffff", soft: light, softOn: "#ffffff" },
+    dark: { strong: dark, strongOn: CLASSIC_DARK_ON, soft: dark, softOn: CLASSIC_DARK_ON },
+  };
 }
 
 const APRICOT_ON = "#33241b";
@@ -72,8 +85,11 @@ function apricot(id: string, name: string, pastel: string, deep: string): Accent
 /**
  * Each theme's accents.
  *
- * Classic: white on each fill clears 4.5:1 —
+ * Classic light: white on each fill clears 4.5:1:
  *   crimson #c0263a ~5.9  ·  cobalt #1f5fd6 ~5.7  ·  emerald #0f7a40 ~5.4  ·  signal #d24317 ~4.6
+ * Classic dark, each hue lifted until it reads as text on `high` (it was 2.7 to
+ * 3.4:1 there), with the ink on it at ~5.3:1:
+ *   crimson #e06474 ~4.66  ·  cobalt #588ae7 ~4.63  ·  emerald #14a154 ~4.66  ·  signal #e96036 ~4.62
  * Apricot: the pastels from the 2026-11-02 canvas. The deep shades keep each
  * pastel's hue, take the canvas's own deep apricot (#a84f25) as the model, and
  * are as light as they can be while clearing 4.5:1 as text on every surface up
@@ -99,10 +115,10 @@ export const ACCENT_PRESETS: Record<ThemeId, AccentPreset[]> = {
     apricot("sky", "Sky", "#a7c7e7", "#376891"),
   ],
   classic: [
-    classic("crimson", "Crimson", "#c0263a"),
-    classic("cobalt", "Cobalt", "#1f5fd6"),
-    classic("emerald", "Emerald", "#0f7a40"),
-    classic("signal", "Signal Orange", "#d24317"),
+    classic("crimson", "Crimson", "#c0263a", "#e06474"),
+    classic("cobalt", "Cobalt", "#1f5fd6", "#588ae7"),
+    classic("emerald", "Emerald", "#0f7a40", "#14a154"),
+    classic("signal", "Signal Orange", "#d24317", "#e96036"),
   ],
 };
 

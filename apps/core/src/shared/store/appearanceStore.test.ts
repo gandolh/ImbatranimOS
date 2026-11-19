@@ -145,7 +145,8 @@ describe("the appearance store", () => {
     });
     expect(root.getAttribute("data-os-theme")).toBe("classic");
     expect(root.getAttribute("data-theme")).toBe("dark");
-    expect(root.style.getPropertyValue("--accent")).toBe("#1f5fd6");
+    // Classic dark's cobalt is lifted to read on the dark surfaces (2026-11-19).
+    expect(root.style.getPropertyValue("--accent")).toBe("#588ae7");
 
     applyAppearance({
       theme: "classic",
@@ -154,6 +155,7 @@ describe("the appearance store", () => {
     });
     expect(root.getAttribute("data-os-theme")).toBe("classic");
     expect(root.getAttribute("data-theme")).toBe("light");
+    expect(root.style.getPropertyValue("--accent")).toBe("#1f5fd6");
   });
 });
 

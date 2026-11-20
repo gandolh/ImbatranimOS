@@ -27,6 +27,9 @@ image and changing every Terminal's shell.
 already stops everything the session started, so nothing is left behind.
 - *Consequence*: `docs/architecture.md` says so where the Terminal is
   described.
+- *Revisited 2026-11-20*: bash becomes the Terminal's shell and background
+  jobs follow the usual Unix hang-up; a reload no longer hangs up the shell
+  ([decisions-terminal.md](decisions-terminal.md)).
 
 ## Changes and launches come only from the tab that holds the session
 _2026-11-03_ — In the Linux apps pane, installing, removing and Free space,

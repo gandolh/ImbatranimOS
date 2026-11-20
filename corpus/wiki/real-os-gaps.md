@@ -102,7 +102,7 @@ Where the illusion breaks first, for a new user:
   audience that has the Terminal. If any deserves a GUI it is a System Monitor
   tab (2026-08-04), not an app.
 - **Session reattach / tmux-style detach** — the ephemeral-session work (2026-08-06) defers it explicitly; a
-  server-side session store is the shape of the killed daemon.
+  server-side session store is the shape of the killed daemon. Revisited 2026-11-20: a 30 s grace in the existing backend, briefs 102-103 ([decisions-terminal.md](decisions-terminal.md)).
 - **A task manager that kills hung desktop apps** — windows are not processes.
   Per-window error boundaries's error boundaries are the honest version.
 - **Timezone / locale settings** — the browser already formats in the user's real

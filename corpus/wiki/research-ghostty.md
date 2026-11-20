@@ -1,5 +1,5 @@
 ---
-summary: Read 2026-11-20, Ghostty 1.4.0 (2026-10-27) and its source at d69f9ed, for ideas the OS can use. Terminal changes worth briefs (paste safety, title and finished-command toasts from shell marks, a link handler, and a shell that outlives a reload, which revisits the 2026-08-06 reattach deferral), three to measure first (WebGL renderer, adaptive PTY batching, encoding off the Wayland host's event loop), a host debug overlay to borrow, taskbar progress for the owner's taste, ghostty-web watched and not adopted, and three habits for every repo. Nothing measured yet; every number is Ghostty's.
+summary: Read 2026-11-20, Ghostty 1.4.0 (2026-10-27) and its source at d69f9ed, for ideas the OS can use. Terminal changes worth briefs (paste safety, title and finished-command toasts from shell marks, a link handler, and a shell that outlives a reload, which revisits the 2026-08-06 reattach deferral), three to measure first (WebGL renderer, adaptive PTY batching, encoding off the Wayland host's event loop), a host debug overlay to borrow, taskbar progress for the owner's taste, ghostty-web watched and not adopted, and three habits for every repo. Nothing measured yet; every number is Ghostty's. Promoted the same day to briefs 98-116.
 updated: 2026-11-20
 ---
 
@@ -31,8 +31,8 @@ compressed when idle), and its core is now a library, libghostty-vt.
 | 10 | Fuzz the host's inbound decoder | `apps/wayland-host/src/protocol.rs` | low, skip for now | small |
 | 11 | ghostty-web in place of xterm.js | Terminal add-on | watch | none now |
 
-As briefs, each starts with a fixed, replayable workload under the 1-CPU cap.
-By payoff for effort: 1, 5, 3, then 2 (owner's call), 6, 7, 8, 9; 4 is taste.
+Promoted 2026-11-20 to briefs 98-116, in the run order and with the two
+revisits in [decisions-terminal.md](decisions-terminal.md); 10 and 11 are not.
 
 ## Terminal
 

@@ -132,7 +132,7 @@ the Wayland host as each session's PulseAudio-protocol server, sent as Opus
 (`d3da0e7`, ready for deploy) a tray volume and mute, `system.sound` (kit
 1.3.0); 43 (`da8ae12`, ready for test) Settings → Updates moves the pin and
 every Linux app together, with Go back; the live Update is the owner's walk.
-The server ISO is deferred by the owner (2026-10-04).
+The server ISO is deferred by the owner (2026-10-04). Briefs 98-116 (filed 2026-11-20 from [research-ghostty.md](research-ghostty.md)) are open, in the run order of [decisions-terminal.md](decisions-terminal.md): safe pastes and links, hidden windows that stop polling, a Terminal that survives a reload, bash and shell marks, taskbar progress and attention, and measured work on the renderer, PTY batching and the Wayland host.
 
 ## Owed by the owner
 
@@ -187,7 +187,7 @@ The server ISO is deferred by the owner (2026-10-04).
 
 ## Open todos
 
-None open. The last, xterm's Shift+Insert (it pasted PRIMARY, which the host didn't bridge), became [brief 84](../briefs/done/84-linux-apps-share-the-primary-selection.md)
+None open; two blocked since 2026-11-20 (ghostty-web once libghostty tags 1.0, grapheme clusters once xterm's addon is stable, in `todos/blocked/`). The last open one, xterm's Shift+Insert (it pasted PRIMARY, which the host didn't bridge), became [brief 84](../briefs/done/84-linux-apps-share-the-primary-selection.md)
 (2026-11-09, `5a9211c`, ready for deploy): Linux apps share PRIMARY and a desktop copy fills it; highlights never reach the desktop clipboard. The two URL-app todos are closed.
 The imbatranim-apps todos were promoted to briefs 63-76 on 2026-11-06 (their
 questions stay in each todo). Briefs 48 and 49 came from the last two Linux apps todos the same day.

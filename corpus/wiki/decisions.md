@@ -86,7 +86,7 @@ client-rendered desktop; single-container/build-from-source/no-sudo/first-party 
   (`system.http` = lone escape hatch, per-app restrictable later).
 - **Session vs dotfile split:** session = ephemeral per-tab in-memory window layout
   (fixes the shared-`localStorage` stomp bug); user config (wallpaper, accent, icon
-  positions, pinned taskbar) = durable `$HOME` dotfiles, shared; tmux reattach = future.
+  positions, pinned taskbar) = durable `$HOME` dotfiles, shared; tmux reattach = future (revisited 2026-11-20: a Terminal's shell outlives a close it didn't mean for 30 s, [decisions-terminal.md](decisions-terminal.md)).
 - **Isolation = per-window error boundaries now (2026-08-06)** (first-party threat
   = buggy, not malicious); hard sandboxing = the transport swap, gated on
   third-party apps. **Kill-list (NOT built):** runtime package manager

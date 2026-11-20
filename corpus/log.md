@@ -6350,3 +6350,7 @@ Brief 96 bumped `SHARED_KIT_VERSION` to 2 because the controller's brief said a 
 ## [2026-11-19] done | Brief 97: a vertical scroll area never grows wider than its column
 
 `a2e7636` (1.376.0): the kit `ScrollArea` gives its content `min-w-0!` when `orientation` is vertical (the default), so Base UI's inline `min-width: fit-content` no longer lets a list grow to its widest row; `horizontal` and `both` keep it. No public prop changed, the shared kit stays at 1. imbatranim-apps brief 19 syncs to `a2e7636`.
+
+## [2026-11-20] research | What Ghostty can teach the OS
+
+[research-ghostty.md](wiki/research-ghostty.md), read only (Ghostty 1.4.0 and its source at `d69f9ed`, ghostty-web at `835eb27`); nothing installed or measured, Docker was down. Adopt: safe pastes (right-click and middle-click paste skip xterm's bracketing, nothing strips ESC), title and finished-command toasts from OSC 133/7 emitted by an ash `$ENV` script, an OSC 8 link handler. A pty that outlives a reload for 30 s with a headless xterm replaying the screen would revisit the 2026-08-06 reattach deferral, so it is the owner's call. Measure first: the WebGL renderer, batching PTY output only when it floods, encoding off the Wayland host's event loop. Borrow: a host debug overlay. Fuzzing the host is low value (its inbound side is serde JSON from our backend). Logs' follow mode polls while minimized. Taskbar progress (OSC 9;4) waits on the owner's taste. ghostty-web is watched, not adopted. No briefs or todos filed; the owner picks.

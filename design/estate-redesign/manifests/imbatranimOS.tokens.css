@@ -1,0 +1,190 @@
+/*
+ * imbatranimOS, direction B "Start, opened wide": the token set, in the OS's own names and mechanism.
+ * Three drop-ins, each marked with the file it replaces a part of:
+ *   1. apps/core/src/index.css : the Apricot light and dark --k-* blocks, the Apricot shape block, Classic's
+ *      outline and on-error lines, the accent default, and the Solway @font-face.
+ *   2. packages/ui/src/theme.css : the @theme static lines below (on-error, display font, type scale).
+ *   3. apps/core/src/shared/store/appearanceStore.ts : the dark `soft` / `softOn` values per Apricot preset
+ *      (the table at the end), because the accent pairs are stamped from there, not from CSS.
+ * Token NAMES are unchanged except the four additions marked "new". Values that moved are marked with the old one.
+ */
+
+/* ── 1a. index.css: the first-paint accent (Apricot light's; unchanged) ───────────────────────── */
+:root {
+  --accent: #a04b23;
+  --accent-on: #ffffff;
+  --accent-soft: #f2a97e;
+  --accent-soft-on: #33241b;
+}
+
+/* ── 1b. index.css: Solway, the display face (new; one vendored latin woff2, weight 700) ──────── */
+@font-face {
+  font-family: "Solway";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./assets/fonts/solway-latin-700.woff2") format("woff2");
+}
+
+/* ── 1c. index.css: Apricot, light ────────────────────────────────────────────────────────────── */
+[data-os-theme="apricot"][data-theme="light"] {
+  --k-surface: #fbf3ea;
+  --k-surface-dim: #e9d6c4;
+  --k-surface-bright: #fffdf9;
+  --k-surface-container-lowest: #fffdf9;
+  --k-surface-container-low: #fdf7f0;
+  --k-surface-container: #f4e6d7; /* was #f6ebdf: the A-Z pane steps 1.15 off the panel */
+  --k-surface-container-high: #f0e1d2;
+  --k-surface-container-highest: #e9d6c3;
+  --k-on-surface: #33241b; /* was #3a2a20 */
+  --k-on-surface-variant: #6b5141; /* was #735949 */
+  --k-inverse-surface: #33241b; /* was #3a2a20, follows on-surface */
+  --k-inverse-on-surface: #fbf3ea;
+  --k-outline: #9a7a64; /* was #c4a58c: control edges reach 3:1 (3.21 on the foot band, 3.87 on a field) */
+  --k-outline-variant: #e0c8b2; /* was #ead8c6: hairlines reach 1.31 to 1.51 */
+  --k-error: #ba1a1a;
+  --k-on-error: #ffffff; /* new: was hard-coded in the kit's theme.css */
+  --k-error-container: #ffdad6;
+  --k-on-error-container: #410002; /* was #93000a: Log off hovers to this pair (13.3:1) */
+  --k-font-ui: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --k-font-display: "Solway", Georgia, serif; /* new */
+  --k-shadow-window: 0 10px 28px rgba(140, 84, 48, 0.14);
+  --k-shadow-window-focused: 0 18px 44px rgba(140, 84, 48, 0.2), 0 2px 8px rgba(140, 84, 48, 0.1);
+  --k-shadow-menu: 0 18px 48px rgba(94, 55, 37, 0.24), 0 3px 10px rgba(94, 55, 37, 0.14); /* Start: two layers */
+  --k-shadow-popup: 0 18px 48px rgba(140, 84, 48, 0.24);
+  --k-shadow-dialog: 0 18px 44px rgba(140, 84, 48, 0.2), 0 2px 8px rgba(140, 84, 48, 0.1);
+  --k-shadow-tile: 0 1px 2px rgba(94, 55, 37, 0.16), 0 3px 8px rgba(94, 55, 37, 0.12); /* was 0 4px 12px .16: the tile rests, it does not float */
+  --k-shadow-toast: 0 18px 48px rgba(140, 84, 48, 0.24);
+  --k-shadow-tooltip: 0 10px 28px rgba(140, 84, 48, 0.14);
+  --k-shadow-tray: 0 18px 48px rgba(140, 84, 48, 0.24);
+  --k-shadow-card: 0 18px 44px rgba(140, 84, 48, 0.2), 0 2px 8px rgba(140, 84, 48, 0.1);
+  /* wallpaper (SunsetHills): unchanged */
+  --k-wall-sky-1: #fde9d8;
+  --k-wall-sky-2: #fbd5bd;
+  --k-wall-sky-3: #f6bfa3;
+  --k-wall-sun: #fff4e6;
+  --k-wall-cloud: #fff8f1;
+  --k-wall-hill-1: #f0b794;
+  --k-wall-hill-2: #e7a183;
+  --k-wall-hill-3: #d98d73;
+  --k-wall-star: #ffffff;
+  --k-wall-star-opacity: 0;
+}
+
+/* ── 1d. index.css: Apricot, dark (lighter surfaces raise; selection is a deep container with a pastel edge) ── */
+[data-os-theme="apricot"][data-theme="dark"] {
+  --k-surface: #1c1613; /* was #1f1916 */
+  --k-surface-dim: #181310;
+  --k-surface-bright: #43362f; /* was #2e2622 */
+  --k-surface-container-lowest: #201a17; /* was #231d1a */
+  --k-surface-container-low: #29211c; /* was #27201c */
+  --k-surface-container: #322822; /* was #2c2420 */
+  --k-surface-container-high: #3c302a; /* was #352b26 */
+  --k-surface-container-highest: #473932; /* was #3e332d */
+  --k-on-surface: #f6eadf;
+  --k-on-surface-variant: #cdb6a5; /* was #c6b09f */
+  --k-inverse-surface: #f6eadf;
+  --k-inverse-on-surface: #1c1613; /* was #231d1a */
+  --k-outline: #937a69; /* was #6e5c50 */
+  --k-outline-variant: #54443a; /* was #3f352f */
+  --k-error: #ff8a80; /* was #ff7171 */
+  --k-on-error: #2b0d0d; /* new: 7.9:1 on the dark error; white was 2.7 */
+  --k-error-container: #5c1a1a; /* was #3a1516 */
+  --k-on-error-container: #ffdad6; /* was #ffb4ab */
+  --k-font-ui: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --k-font-display: "Solway", Georgia, serif; /* new */
+  --k-shadow-window: 0 10px 28px rgba(0, 0, 0, 0.4);
+  --k-shadow-window-focused: 0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --k-shadow-menu: 0 18px 48px rgba(0, 0, 0, 0.55), 0 3px 10px rgba(0, 0, 0, 0.4);
+  --k-shadow-popup: 0 18px 48px rgba(0, 0, 0, 0.6);
+  --k-shadow-dialog: 0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --k-shadow-tile: 0 1px 2px rgba(0, 0, 0, 0.5), 0 3px 8px rgba(0, 0, 0, 0.35);
+  --k-shadow-toast: 0 18px 48px rgba(0, 0, 0, 0.6);
+  --k-shadow-tooltip: 0 10px 28px rgba(0, 0, 0, 0.4);
+  --k-shadow-tray: 0 18px 48px rgba(0, 0, 0, 0.6);
+  --k-shadow-card: 0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --k-wall-sky-1: #241c29;
+  --k-wall-sky-2: #382634;
+  --k-wall-sky-3: #4d2f38;
+  --k-wall-sun: #f7d9bf;
+  --k-wall-cloud: #4a3644;
+  --k-wall-hill-1: #5b3a3e;
+  --k-wall-hill-2: #4a3036;
+  --k-wall-hill-3: #3a252c;
+  --k-wall-star: #f7e6d6;
+  --k-wall-star-opacity: 0.9;
+}
+
+/* ── 1e. index.css: Apricot's shapes (the control radius moves 8 to 10; the other five are unchanged) ── */
+:root,
+[data-os-theme="apricot"] {
+  --k-radius-window: 12px;
+  --k-radius-menu: 14px;
+  --k-radius-control: 10px; /* was 8px */
+  --k-radius-item: 8px;
+  --k-radius-tile: 12px;
+  --k-radius-small: 4px;
+  --k-list-inset: 6px;
+}
+
+/* ── 1f. index.css: Classic keeps its values; only these lines change ─────────────────────────── */
+[data-os-theme="classic"][data-theme="light"] {
+  --k-outline: #86868b; /* was #9a9a9f: 3:1 on its controls */
+  --k-on-error: #ffffff; /* new */
+  --k-font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; /* new */
+}
+[data-os-theme="classic"][data-theme="dark"] {
+  --k-outline: #6c6c74; /* was #55555c */
+  --k-on-error: #2b0d0d; /* new: white on #ff6b6b is under 3:1 */
+  --k-font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; /* new */
+}
+
+/* ── 2. packages/ui/src/theme.css: the @theme static lines that change or arrive ─────────────── */
+@theme static {
+  --color-on-error: var(--k-on-error); /* was #ffffff */
+  --font-display: var(--k-font-display); /* new: Solway in Apricot, Space Grotesk in Classic */
+
+  /* Type scale with line heights (the shell stops using text-nano, text-micro and text-tiny) */
+  --text-label: 11px;
+  --text-label--line-height: 15px;
+  --text-control: 12px;
+  --text-control--line-height: 16px;
+  --text-body: 13px;
+  --text-body--line-height: 18px;
+  --text-lead: 15px; /* the wordmark, Solway 700, 15/18 */
+  --text-lead--line-height: 18px;
+  --text-index: 16px; /* new: the A-Z letter heads, Solway 700, 16/20 */
+  --text-index--line-height: 20px;
+  --text-title: 17px; /* unchanged, now with a line height */
+  --text-title--line-height: 22px;
+  --text-headline: 24px; /* page titles, Solway 700, 24/30; was 24.375px at 1.2 */
+  --text-headline--line-height: 30px;
+}
+
+/* Phone and other coarse pointers: one step up, inputs 16 px so a phone does not zoom on focus */
+@media (pointer: coarse) {
+  :root {
+    --text-label: 12px;
+    --text-label--line-height: 16px;
+    --text-control: 14px;
+    --text-control--line-height: 20px;
+    --text-body: 14px;
+    --text-body--line-height: 20px;
+  }
+}
+
+/*
+ * ── 3. appearanceStore.ts: the dark soft pair per Apricot preset ───────────────────────────────
+ * Light is unchanged (soft = the pastel, softOn = #33241b, strong = the deep shade, strongOn = #ffffff).
+ * Dark: strong stays the pastel with #33241b on it; soft becomes a deep container and softOn its pastel text.
+ * The chosen edge is --accent in both modes (strong): deep in light, pastel in dark.
+ *
+ *   preset    dark soft   dark softOn   (light strong / dark strong)
+ *   apricot   #5e3725     #ffdcc7       #a04b23 / #f2a97e
+ *   rose      #5c2a38     #ffd9e2       #b23656 / #eea6b5
+ *   butter    #4f4019     #f8e6b5       #7f5f1b / #f3d27a
+ *   sage      #2f4430     #d6ead2       #4e6c48 / #a9c9a4
+ *   sky       #23394f     #d5e6f7       #376891 / #a7c7e7
+ *
+ * Pre-checked: soft text on soft 7.96 to 9.32 in dark; the pastel edge on the dark Start panel 8.09 to 10.77.
+ */

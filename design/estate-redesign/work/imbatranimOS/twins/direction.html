@@ -1,0 +1,450 @@
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><title>dir</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Inter:wght@400;500&amp;family=Solway:wght@700&amp;display=swap"><style>
+/* Hallmark · shape: app screen · genre: dashboard-tool · theme: brand · redesign: full
+ * paper: oklch(96% 0.014 70) · accent: oklch(46% 0.12 45) · display: Solway · body: Figtree
+ * nav: a bottom taskbar with Start at the left and a 704 px two-pane Start, a full-screen Start sheet on a phone · signature: the open list, every app named and explained in one tall pane beside Pinned and Recent · states: no match, empty Recent, loading, sign-in error
+ * axes: warm apricot paper/one humanist sans with a slab display for names/the accent as one raised tile · posture: restrained · modes: light+dark · contrast: pass · v2.0.0 */
+/* Hallmark · waive 39b · the 96 px button.dicon and the 84 px button.pin are a desktop icon cell and a pinned tile: a 40 px tile, a two-line label and its gap in an 80 x 96 grid cell, the OS's own desktop grid · the cell is a hit target, not a control drawn 96 px tall */
+/* Hallmark · waive 72 · div.lw bottom is the scrolling A-Z list's own box: its last row runs under a fade to show that it scrolls · ruling 2, the pane must show it scrolls */
+/* Hallmark · waive 80 · div.os is the OS desktop wallpaper, drawn as three token-coloured hills · it is the product's own SunsetHills drawing, not decoration added to a page */
+/* Hallmark · dismissed 49 · the Start rows are one button each with a name and a full description, wrapped on purpose · the owner's rule: descriptions are never cut, so no nowrap */
+/* Hallmark · dismissed F23 · the board twin of a fixed 1280 or 390 frame · no link preview is ever made from it */
+/* Hallmark · dismissed F24 · the Start panel is a floating layer: an edge for its definition on the desktop and a shadow for its lift, both on purpose (floating layers read as floating) */
+/* Hallmark · dismissed 41 · on every dark surface the root already sets the text colour through --k-on-surface */
+[data-theme="light"]{color-scheme:light;--k-surface:#fbf3ea;--k-surface-dim:#e9d6c4;--k-surface-bright:#fffdf9;--k-surface-container-lowest:#fffdf9;--k-surface-container-low:#fdf7f0;--k-surface-container:#f4e6d7;--k-surface-container-high:#f0e1d2;--k-surface-container-highest:#e9d6c3;--k-on-surface:#33241b;--k-on-surface-variant:#6b5141;--k-inverse-surface:#33241b;--k-inverse-on-surface:#fbf3ea;--k-outline:#9a7a64;--k-outline-variant:#e0c8b2;--k-error:#ba1a1a;--k-on-error:#ffffff;--k-error-container:#ffdad6;--k-on-error-container:#410002;--accent:#a04b23;--accent-on:#ffffff;--accent-soft:#f2a97e;--accent-soft-on:#33241b;--accent-soft-edge:#a04b23;--k-wall-sky-1:#fde9d8;--k-wall-sky-2:#fbd5bd;--k-wall-sky-3:#f6bfa3;--k-wall-sun:#fff4e6;--k-wall-cloud:#fff8f1;--k-wall-hill-1:#f0b794;--k-wall-hill-2:#e7a183;--k-wall-hill-3:#d98d73;--k-wall-star:#ffffff;--k-wall-star-opacity:0;--k-shadow-window:0 10px 28px rgba(140, 84, 48, 0.14);--k-shadow-window-focused:0 18px 44px rgba(140, 84, 48, 0.2), 0 2px 8px rgba(140, 84, 48, 0.1);--k-shadow-menu:0 18px 48px rgba(94, 55, 37, 0.24), 0 3px 10px rgba(94, 55, 37, 0.14);--k-shadow-tile:0 1px 2px rgba(94, 55, 37, 0.16), 0 3px 8px rgba(94, 55, 37, 0.12);--k-shadow-card:0 18px 44px rgba(140, 84, 48, 0.2), 0 2px 8px rgba(140, 84, 48, 0.1);--k-shadow-toast:0 18px 48px rgba(140, 84, 48, 0.24);--k-label-shadow:rgba(255, 248, 241, 0.7);--k-font-ui:Figtree,ui-sans-serif,system-ui,sans-serif;--k-font-display:Solway,Georgia,serif;--font-content:Inter,ui-sans-serif,system-ui,sans-serif;--k-radius-window:12px;--k-radius-menu:14px;--k-radius-control:10px;--k-radius-item:8px;--k-radius-tile:12px;--k-radius-small:4px;--accent-apricot-soft:#f2a97e;--accent-apricot-soft-on:#33241b;--accent-rose-soft:#eea6b5;--accent-rose-soft-on:#33241b;--accent-butter-soft:#f3d27a;--accent-butter-soft-on:#33241b;--accent-sage-soft:#a9c9a4;--accent-sage-soft-on:#33241b;--accent-sky-soft:#a7c7e7;--accent-sky-soft-on:#33241b;--classic-surface:#f3f3f1;--classic-surface-container-lowest:#ffffff;--classic-surface-container-low:#f8f8f6;--classic-surface-container-high:#e7e7e3;--classic-outline-variant:#d1d1cc;--classic-accent:#c0263a;--classic-accent-soft:#c0263a}
+[data-theme="dark"]{color-scheme:dark;--k-surface:#1c1613;--k-surface-dim:#181310;--k-surface-bright:#43362f;--k-surface-container-lowest:#201a17;--k-surface-container-low:#29211c;--k-surface-container:#322822;--k-surface-container-high:#3c302a;--k-surface-container-highest:#473932;--k-on-surface:#f6eadf;--k-on-surface-variant:#cdb6a5;--k-inverse-surface:#f6eadf;--k-inverse-on-surface:#1c1613;--k-outline:#937a69;--k-outline-variant:#54443a;--k-error:#ff8a80;--k-on-error:#2b0d0d;--k-error-container:#5c1a1a;--k-on-error-container:#ffdad6;--accent:#f2a97e;--accent-on:#33241b;--accent-soft:#5e3725;--accent-soft-on:#ffdcc7;--accent-soft-edge:#f2a97e;--k-wall-sky-1:#241c29;--k-wall-sky-2:#382634;--k-wall-sky-3:#4d2f38;--k-wall-sun:#f7d9bf;--k-wall-cloud:#4a3644;--k-wall-hill-1:#5b3a3e;--k-wall-hill-2:#4a3036;--k-wall-hill-3:#3a252c;--k-wall-star:#f7e6d6;--k-wall-star-opacity:0.9;--k-shadow-window:0 10px 28px rgba(0, 0, 0, 0.4);--k-shadow-window-focused:0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);--k-shadow-menu:0 18px 48px rgba(0, 0, 0, 0.55), 0 3px 10px rgba(0, 0, 0, 0.4);--k-shadow-tile:0 1px 2px rgba(0, 0, 0, 0.5), 0 3px 8px rgba(0, 0, 0, 0.35);--k-shadow-card:0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);--k-shadow-toast:0 18px 48px rgba(0, 0, 0, 0.6);--k-label-shadow:rgba(28, 22, 19, 0.7);--k-font-ui:Figtree,ui-sans-serif,system-ui,sans-serif;--k-font-display:Solway,Georgia,serif;--font-content:Inter,ui-sans-serif,system-ui,sans-serif;--k-radius-window:12px;--k-radius-menu:14px;--k-radius-control:10px;--k-radius-item:8px;--k-radius-tile:12px;--k-radius-small:4px;--accent-apricot-soft:#f2a97e;--accent-apricot-soft-on:#33241b;--accent-rose-soft:#eea6b5;--accent-rose-soft-on:#33241b;--accent-butter-soft:#f3d27a;--accent-butter-soft-on:#33241b;--accent-sage-soft:#a9c9a4;--accent-sage-soft-on:#33241b;--accent-sky-soft:#a7c7e7;--accent-sky-soft-on:#33241b;--classic-surface:#0d0d0e;--classic-surface-container-lowest:#141416;--classic-surface-container-low:#171719;--classic-surface-container-high:#232327;--classic-outline-variant:#2e2e33;--classic-accent:#c0263a;--classic-accent-soft:#c0263a}
+html,body{margin:0;overflow-x:clip}
+*{box-sizing:border-box}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:left}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{text-wrap:balance}
+abbr{text-decoration:none}
+.root{container:page/inline-size;font-family:var(--k-font-ui);font-size:13px;line-height:18px;color:var(--k-on-surface);background:var(--k-surface)}
+.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.os{position:relative;width:100%;height:800px;overflow:hidden;background:linear-gradient(180deg,var(--k-wall-sky-1),var(--k-wall-sky-2) 55%,var(--k-wall-sky-3))}
+.sun{position:absolute;left:84%;top:25%;width:150px;height:150px;transform:translate(-50%,-50%);border-radius:50%;background:var(--k-wall-sun);box-shadow:0 0 0 76px color-mix(in srgb,var(--k-wall-sun) 28%,transparent)}
+.cloud{position:absolute;height:22px;border-radius:22px;background:var(--k-wall-cloud);opacity:.85}
+.cloud::before{content:"";position:absolute;left:28%;top:-16px;width:46%;height:32px;border-radius:50%;background:inherit}
+.stars{position:absolute;inset:0;opacity:var(--k-wall-star-opacity)}
+.stars i{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--k-wall-star)}
+.hills{position:absolute;left:0;right:0;bottom:0;width:100%;height:46%}
+.hills path:nth-child(1){fill:var(--k-wall-hill-1)}.hills path:nth-child(2){fill:var(--k-wall-hill-2)}.hills path:nth-child(3){fill:var(--k-wall-hill-3)}
+.hide-desk .desktop{visibility:hidden}
+.desktop{position:absolute;inset:0 0 44px 0;padding:8px;display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,96px);grid-auto-columns:80px;justify-content:start}
+.dicon{display:flex;flex-direction:column;align-items:center;gap:4px;width:80px;padding-top:8px;text-align:center;border-radius:var(--k-radius-item)}
+.dicon .lbl{font-size:11px;line-height:15px;color:var(--k-on-surface);text-shadow:0 1px 2px var(--k-label-shadow);max-width:76px}
+.dicon:hover .tile{background:var(--k-surface-container-lowest)}
+[data-theme="dark"] .dicon .lbl{padding:0 4px;border-radius:var(--k-radius-small);background:color-mix(in srgb,var(--k-surface-container-low) 82%,transparent);text-shadow:none}
+.tile{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:var(--k-radius-tile);background:var(--k-surface-bright);color:var(--accent);box-shadow:var(--k-shadow-tile)}
+.tile .i{width:20px;height:20px}
+.tile.sm{width:28px;height:28px;border-radius:var(--k-radius-item)}
+.tile.sm .i{width:16px;height:16px}
+.bar>*{flex-shrink:0}
+.bar>.grow{flex-shrink:1;min-width:0}
+.bar{position:absolute;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:4px;padding:0 12px 0 8px;background:var(--k-surface-container-low);border-top:1px solid var(--k-outline-variant)}
+.startbtn{display:flex;align-items:center;gap:8px;height:32px;padding:0 12px 0 8px;border-radius:var(--k-radius-control);color:var(--k-on-surface)}
+.startbtn:hover{background:var(--k-surface-container-high)}
+.startbtn[aria-expanded=true]{background:var(--accent-soft);color:var(--accent-soft-on);box-shadow:inset 0 0 0 1px var(--accent-soft-edge)}
+.startbtn .i{color:var(--accent)}
+.startbtn[aria-expanded=true] .i{color:var(--accent-soft-on)}
+.wm{font-family:var(--k-font-display);font-weight:700;font-size:15px;line-height:18px;letter-spacing:0}
+.wm b{font-weight:700;color:var(--accent)}
+.startbtn[aria-expanded=true] .wm b{color:var(--accent-soft-on)}
+.sbtn{display:grid;place-items:center;width:32px;height:32px;border-radius:var(--k-radius-control);color:var(--k-on-surface-variant)}
+.sbtn:hover{background:var(--k-surface-container-high)}
+.task{position:relative;display:flex;align-items:center;gap:8px;height:32px;padding:0 12px 0 8px;border-radius:var(--k-radius-control);background:var(--k-surface-container);color:var(--k-on-surface);font-size:12px;line-height:16px;font-weight:600}
+.task .i{width:16px;height:16px;color:var(--accent)}
+.tl{display:inline}
+.task::after{content:"";position:absolute;left:12px;right:12px;bottom:2px;height:2px;border-radius:2px;background:var(--accent)}
+.startbtn:active,.sbtn:active,.tray:active,.pips button:active,.row:active,.pin:active,.act:active,.opt:active,.acc:active,.wb:active,.clear:active{background:var(--k-surface-container-highest)}
+.dicon:active .tile{background:var(--k-surface-container-high)}
+.btn:active{background:color-mix(in srgb,var(--accent) 72%,var(--k-on-surface))}
+.grow{flex:1}
+.pips{display:flex;gap:4px}
+.pips button{display:grid;place-items:center;width:24px;height:24px;border-radius:var(--k-radius-item);font-size:11px;line-height:15px;font-weight:600;color:var(--k-on-surface-variant);box-shadow:inset 0 0 0 1px var(--k-outline);font-variant-numeric:tabular-nums}
+.pips button:hover{background:var(--k-surface-container-high)}
+.pips button[aria-current=true],.ws1{background:var(--accent-soft);color:var(--accent-soft-on);box-shadow:inset 0 0 0 1px var(--accent-soft-edge)}
+.ws1{display:none}
+.read{display:flex;gap:12px;padding:0 4px;font-size:11px;line-height:15px;color:var(--k-on-surface-variant);font-variant-numeric:tabular-nums}
+.read b{font-weight:600;color:var(--k-on-surface)}
+.sep{width:1px;height:20px;background:var(--k-outline-variant)}
+.tray{display:grid;place-items:center;width:32px;height:32px;border-radius:var(--k-radius-control);color:var(--k-on-surface-variant)}
+.tray:hover{background:var(--k-surface-container-high)}
+.clock{display:flex;flex-direction:column;align-items:flex-end;text-align:right;font-variant-numeric:tabular-nums;padding-left:2px}
+.clock b{font-size:12px;line-height:16px;font-weight:600}
+.clock span{font-size:11px;line-height:15px;color:var(--k-on-surface-variant)}
+.start{position:absolute;left:8px;top:max(8px,calc(100% - 792px));bottom:52px;width:704px;display:flex;flex-direction:column;overflow:hidden;border-radius:var(--k-radius-menu);background:var(--k-surface-container-low);border:1px solid var(--k-outline-variant);box-shadow:var(--k-shadow-menu)}
+.head{flex:none;height:56px;padding:8px 16px;background:var(--k-surface-container-low);border-bottom:1px solid var(--k-outline-variant)}
+.field{position:relative;display:block;height:40px;color:var(--k-on-surface-variant)}
+.field .i{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none}
+.field input{display:block;width:100%;height:100%;padding:0 12px 0 40px;border:0;border-radius:var(--k-radius-control);background:var(--k-surface-container-lowest);box-shadow:inset 0 0 0 1px var(--k-outline);font:inherit;font-size:13px;line-height:18px;color:var(--k-on-surface)}
+.field input::placeholder{color:var(--k-on-surface-variant);opacity:1}
+.head .field input{outline:2px solid var(--accent);outline-offset:0}
+.body{flex:1;min-height:0;display:grid;grid-template-columns:320px 1fr}
+.lw{position:relative;grid-column:1;grid-row:1;min-height:0;display:flex;background:var(--k-surface-container);border-right:1px solid var(--k-outline-variant)}
+.list{flex:1;min-width:0;overflow-y:auto;scrollbar-width:none;padding-bottom:4px}
+.list::-webkit-scrollbar{display:none}
+.fade{position:absolute;left:0;right:0;bottom:0;height:30px;background:linear-gradient(to bottom,transparent,var(--k-surface-container) 90%);pointer-events:none}
+.thumb{position:absolute;z-index:3;right:3px;top:8px;width:4px;height:58%;border-radius:2px;background:var(--k-outline);opacity:.8}
+.side{grid-column:2;grid-row:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding:16px 20px;background:var(--k-surface-container-low)}
+.grp{display:block}
+.let{position:sticky;top:-1px;z-index:1;margin:0;padding:4px 16px 0 24px;background:var(--k-surface-container);font-family:var(--k-font-display);font-weight:700;font-size:16px;line-height:20px;color:var(--accent)}
+.row{display:flex;align-items:flex-start;gap:8px;width:calc(100% - 16px);margin:0 8px;padding:8px;border-radius:var(--k-radius-item)}
+.row:hover{background:var(--k-surface-container-high)}
+.row .tile{margin-top:1px}
+.rt{display:flex;flex-direction:column;min-width:0}
+.rn{font-size:12px;line-height:16px;font-weight:600;color:var(--k-on-surface)}
+.rd{font-size:11px;line-height:15px;color:var(--k-on-surface-variant)}
+.lab{font-size:11px;line-height:15px;font-weight:600;color:var(--k-on-surface-variant)}
+.pins{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 4px;margin:12px 0 20px}
+.pin{display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0;border-radius:var(--k-radius-control)}
+.pin:hover{background:var(--k-surface-container-high)}
+.pin .tile{width:52px;height:52px;border-radius:var(--k-radius-tile)}
+.pin .tile .i{width:22px;height:22px}
+.pn{font-size:12px;line-height:16px;color:var(--k-on-surface)}
+.rechead{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;min-height:32px}
+.rechead .l{display:flex;align-items:center;gap:8px;color:var(--k-on-surface-variant)}
+.rechead .i{width:14px;height:14px}
+.clear{display:grid;place-items:center;width:32px;height:32px;margin-right:-8px;border-radius:var(--k-radius-control);color:var(--k-on-surface-variant)}
+.clear:hover{background:var(--k-surface-container-high)}
+.recs{flex:1 0 auto;display:flex;flex-direction:column;border-top:1px solid var(--k-outline-variant)}
+.rec{flex:1 0 48px;width:100%;margin:0;padding:0 8px;align-items:center;border-radius:0;border-bottom:1px solid var(--k-outline-variant)}
+.rec:last-child{border-bottom:0}
+.rec .tile{margin:0}
+.rec:hover{background:var(--k-surface-container-high)}
+.rp{display:none}
+.foot{flex:none;height:52px;display:flex;align-items:center;gap:8px;padding:0 16px;background:var(--k-surface-container);border-top:1px solid var(--k-outline-variant)}
+.who{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.who .tile{width:32px;height:32px;box-shadow:inset 0 0 0 1px var(--k-outline-variant);background:var(--k-surface-container-lowest)}
+.who .t{display:flex;flex-direction:column}
+.who .t small{font-size:11px;line-height:15px;color:var(--k-on-surface-variant)}
+.act{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:var(--k-radius-control);background:var(--k-surface-container-lowest);box-shadow:inset 0 0 0 1px var(--k-outline);font-size:12px;line-height:16px;font-weight:600;color:var(--k-on-surface);white-space:nowrap}
+.act .i{width:16px;height:16px;color:var(--k-on-surface-variant)}
+.act:hover{background:var(--k-surface-container-high)}
+.act.danger:hover{background:var(--k-error-container);color:var(--k-on-error-container);box-shadow:inset 0 0 0 1px var(--k-error)}
+.act.danger:hover .i{color:var(--k-on-error-container)}
+.mark{position:absolute;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-on);font-size:12px;line-height:16px;font-weight:600}
+.lead{position:absolute;height:1px;background:var(--accent)}
+.none{padding:28px 16px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.none b{font-size:13px;line-height:18px;font-weight:600}
+.none span{color:var(--k-on-surface-variant);font-size:12px;line-height:16px}
+/* settings window */
+.win{position:absolute;left:424px;top:20px;width:680px;height:min(724px,calc(100% - 76px));display:flex;flex-direction:column;overflow:hidden;border-radius:var(--k-radius-window);background:var(--k-surface-container-low);border:1px solid var(--k-outline-variant);box-shadow:var(--k-shadow-window-focused)}
+.tb{flex:none;height:40px;display:flex;align-items:center;gap:8px;padding:0 4px 0 12px;background:var(--k-surface-container);border-bottom:1px solid var(--k-outline-variant);font-size:12px;line-height:16px;font-weight:600}
+.tb .i{width:14px;height:14px;color:var(--accent)}
+.tb .ttl{flex:1}
+.wb{display:grid;place-items:center;width:32px;height:28px;border-radius:var(--k-radius-item);color:var(--k-on-surface-variant)}
+.wb:hover{background:var(--k-surface-container-high)}
+.wb.close:hover{background:var(--k-error-container);color:var(--k-on-error-container)}
+.wb .i{width:14px;height:14px}
+.wbody{position:relative;flex:1;min-height:0;overflow:hidden;padding:24px 28px 0}
+.wscroll{position:absolute;right:3px;top:12px;width:4px;height:36%;border-radius:2px;background:var(--k-outline);opacity:.8}
+.wfade{position:absolute;left:0;right:0;bottom:0;height:34px;background:linear-gradient(to bottom,transparent,var(--k-surface-container-low) 85%);pointer-events:none}
+.ptitle{font-family:var(--k-font-display);font-weight:700;font-size:24px;line-height:30px;color:var(--k-on-surface)}
+.sub{font-family:var(--font-content);font-size:13px;line-height:18px;color:var(--k-on-surface-variant);margin-top:2px}
+.sh{display:flex;align-items:center;gap:12px;margin:16px 0 12px}
+.sh.next{margin:0}
+.sh .tile{width:36px;height:36px;border-radius:var(--k-radius-control);box-shadow:inset 0 0 0 1px var(--k-outline-variant);background:var(--k-surface-container)}
+.sh h2{font-size:15px;line-height:20px;font-weight:600;color:var(--k-on-surface)}
+.grpl{margin:0 0 8px;font-size:11px;line-height:15px;font-weight:600;color:var(--k-on-surface-variant)}
+.g{margin-bottom:16px}
+.themes{display:flex;gap:16px;flex-wrap:wrap}
+.thm{display:flex;flex-direction:column;gap:8px;width:140px;border-radius:var(--k-radius-control);font-size:12px;line-height:16px;font-weight:600;color:var(--k-on-surface)}
+.thm .pv{position:relative;display:block;aspect-ratio:132/80;border-radius:var(--k-radius-control);overflow:hidden}
+.pvs{position:absolute;inset:0;background:linear-gradient(180deg,var(--k-wall-sky-1),var(--k-wall-sky-2) 60%,var(--k-wall-sky-3))}
+.pvs::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34%;background:var(--k-wall-hill-2);clip-path:polygon(0 40%,35% 10%,70% 55%,100% 20%,100% 100%,0 100%)}
+.pvc{position:absolute;inset:0;background-color:var(--k-surface);background-image:radial-gradient(var(--k-outline-variant) 1px,transparent 1px);background-size:8px 8px}
+.pvw{position:absolute;left:18%;top:14%;width:58%;height:58%;background:var(--k-surface-container-lowest);border:1px solid var(--k-outline-variant);border-radius:5px;overflow:hidden}
+.pvw i{display:block}
+.pvw .a{height:22%;background:var(--k-surface-container-high);border-bottom:1px solid var(--k-outline-variant)}
+.pvw .b{width:45%;height:6px;margin:8px 4px 4px;background:var(--accent-soft);border-radius:2px}
+.pvw .c{width:66%;height:4px;margin:0 4px;background:var(--k-outline-variant);border-radius:2px}
+.pvbar{position:absolute;left:0;right:0;bottom:0;height:14%;background:var(--k-surface-container-low);border-top:1px solid var(--k-outline-variant)}
+.pv-classic{--k-surface:var(--classic-surface);--k-surface-container-lowest:var(--classic-surface-container-lowest);--k-surface-container-low:var(--classic-surface-container-low);--k-surface-container-high:var(--classic-surface-container-high);--k-outline-variant:var(--classic-outline-variant);--accent:var(--classic-accent);--accent-soft:var(--classic-accent-soft)}
+.pv-classic .pvw{border-radius:0}.pv-classic .pvbar{background:var(--k-surface-container-low)}
+.badge{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:20px;height:20px;border-radius:var(--k-radius-item);background:var(--accent-soft);color:var(--accent-soft-on);box-shadow:inset 0 0 0 1px var(--accent-soft-edge)}
+.badge .i{width:12px;height:12px;stroke-width:3}
+.modes{display:flex;gap:12px}
+.opt{display:flex;flex:1;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 12px;border-radius:var(--k-radius-control);background:var(--k-surface-container);box-shadow:inset 0 0 0 1px var(--k-outline);font-size:12px;line-height:16px;font-weight:600;color:var(--k-on-surface)}
+.opt:hover{background:var(--k-surface-container-high)}
+.opt .i{width:15px;height:15px}
+.opt.on,.opt.on:hover{background:var(--accent-soft);color:var(--accent-soft-on);box-shadow:inset 0 0 0 1px var(--accent-soft-edge)}
+.accs{display:flex;flex-wrap:wrap;gap:8px}
+.acc{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px 0 8px;border-radius:var(--k-radius-control);background:var(--k-surface-container);box-shadow:inset 0 0 0 1px var(--k-outline);font-size:12px;line-height:16px;font-weight:600;color:var(--k-on-surface)}
+.acc:hover{background:var(--k-surface-container-high)}
+.acc.on{background:var(--k-surface-container-high);box-shadow:inset 0 0 0 2px var(--accent-soft-edge)}
+.sw{display:grid;place-items:center;width:24px;height:24px;border-radius:var(--k-radius-item)}
+.sw .i{width:13px;height:13px;stroke-width:3}
+.sw-apricot{background:var(--accent-apricot-soft);color:var(--accent-apricot-soft-on)}
+.sw-rose{background:var(--accent-rose-soft);color:var(--accent-rose-soft-on)}
+.sw-butter{background:var(--accent-butter-soft);color:var(--accent-butter-soft-on)}
+.sw-sage{background:var(--accent-sage-soft);color:var(--accent-sage-soft-on)}
+.sw-sky{background:var(--accent-sky-soft);color:var(--accent-sky-soft-on)}
+.walls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.wall{position:relative;display:flex;flex-direction:column;border-radius:var(--k-radius-control);background:var(--k-surface-container);overflow:hidden}
+.thm .pv::after,.wall::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px var(--k-outline-variant);pointer-events:none}
+.thm.on .pv::after,.wall.on::after{box-shadow:inset 0 0 0 2px var(--accent-soft-edge)}
+.wall .pv{position:relative;display:block;aspect-ratio:16/7}
+.wall .cap{display:flex;align-items:center;gap:4px;padding:8px 12px;font-size:12px;line-height:16px;font-weight:600;color:var(--k-on-surface);border-top:1px solid var(--k-outline-variant);background:var(--k-surface-container)}
+.wall .cap .i{width:14px;height:14px;color:var(--k-on-surface-variant)}
+.pvplain{position:absolute;inset:0;background:var(--k-surface)}
+.pvdots{position:absolute;inset:0;background-color:var(--k-surface);background-image:radial-gradient(var(--k-outline-variant) 1px,transparent 1px);background-size:10px 10px}
+.wfoot{flex:none;height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--k-surface-container);border-top:1px solid var(--k-outline-variant);font-size:11px;line-height:15px;color:var(--k-on-surface-variant)}
+.wfoot .wm{font-size:13px}
+/* sign-in */
+[data-theme="light"] .auth{background-color:var(--k-surface-container-high)}
+.auth{position:absolute;inset:0;display:grid;place-items:center;background-color:var(--k-surface);background-image:radial-gradient(circle at 50% 46%,var(--k-surface-container-lowest),transparent 62%),radial-gradient(var(--k-outline-variant) 1px,transparent 1px);background-size:100% 100%,24px 24px}
+.card{color:var(--k-on-surface);width:400px;overflow:hidden;border-radius:var(--k-radius-window);background:var(--k-surface-container-low);border:1px solid var(--k-outline-variant);box-shadow:var(--k-shadow-card)}
+.card .acbar{height:3px;background:var(--accent)}
+.card .ch{color:var(--k-on-surface);display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px;background:var(--k-surface-container);border-bottom:1px solid var(--k-outline-variant)}
+.card .ch .i{width:44px;height:44px;color:var(--k-on-surface)}
+.card .ch .wm{font-size:22px;line-height:28px}
+.card .cb{display:flex;flex-direction:column;gap:16px;padding:24px}
+.fl{display:flex;flex-direction:column;gap:8px}
+.fl label{font-size:12px;line-height:16px;font-weight:600;color:var(--k-on-surface-variant)}
+.in{height:44px;width:100%;padding:0 12px;border:0;border-radius:var(--k-radius-control);background:var(--k-surface-container-lowest);box-shadow:inset 0 0 0 1px var(--k-outline);font:inherit;font-size:13px;line-height:18px;color:var(--k-on-surface)}
+.in.foc{outline:2px solid var(--accent);outline-offset:0}
+.in[aria-invalid=true]{box-shadow:inset 0 0 0 1px var(--k-error)}
+.hint{display:flex;gap:4px;align-items:center;font-family:var(--font-content);font-size:12px;line-height:16px;color:var(--k-error)}
+.hint .i{width:14px;height:14px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:44px;width:100%;border-radius:var(--k-radius-control);background:var(--accent);color:var(--accent-on);font-size:13px;line-height:18px;font-weight:600;text-align:center}
+.btn:hover{background:color-mix(in srgb,var(--accent) 88%,var(--k-on-surface))}
+.btn[aria-disabled=true]{background:var(--k-surface-container-high);color:var(--k-on-surface-variant);box-shadow:inset 0 0 0 1px var(--k-outline-variant);cursor:default}
+.btn[aria-disabled=true]:hover{background:var(--k-surface-container-high)}
+@container page (max-width:1180px){
+.mark,.lead{display:none}
+}
+@container page (max-width:1100px){
+.win{left:max(8px,calc(50% - 340px));width:min(680px,calc(100% - 16px))}
+}
+@container page (max-width:600px){
+.os{height:844px}
+.desktop{inset:0 0 56px 0;grid-template-rows:repeat(auto-fill,88px);overflow:auto}
+.bar{height:56px;padding:0 8px 0 4px;gap:0}
+.startbtn{width:48px;height:48px;padding:0;justify-content:center;border-radius:12px}
+.startbtn .wm,.pips,.read,.sep{display:none}
+.startbtn .i{width:22px;height:22px}
+.sbtn,.tray{width:48px;height:48px}
+.sbtn .i,.tray .i{width:20px;height:20px}
+.task{width:48px;height:48px;padding:0;justify-content:center;gap:0}
+.task .tl{display:none}
+.task::after{left:14px;right:14px;bottom:4px}
+.ws1{display:grid;place-items:center;position:relative;width:48px;height:48px;margin:0 2px;background:none;box-shadow:none;font-size:14px;line-height:20px;font-weight:600;text-align:center}
+.ws1::before{content:"";position:absolute;inset:7px;border-radius:10px;background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-soft-edge)}
+.ws1>span:first-child{position:relative;margin-top:-4px}
+.ws1>.wsd{position:absolute;left:0;right:0;bottom:15px;display:flex;justify-content:center;gap:4px}
+.wsd i{display:block;width:4px;height:4px;border-radius:50%;background:var(--k-outline)}
+.wsd i.on{background:var(--accent)}
+.clock{padding:0 4px}
+.clock b{font-size:14px;line-height:18px}
+.clock span{font-size:12px;line-height:16px}
+.start{left:0;right:0;top:10px;bottom:56px;width:auto;height:auto;border-radius:18px 18px 0 0;border-width:1px 0 0}
+.head{height:68px;padding:8px 12px}
+.field{height:48px}
+.field .i{left:14px}
+.field input{padding:0 12px 0 44px;border-radius:12px;font-size:16px;line-height:24px}
+.body{display:flex;flex-direction:column;overflow-y:auto;background:var(--k-surface-container-low)}
+.lw{flex:none;order:2;border-right:0;border-top:1px solid var(--k-outline-variant)}
+.list{overflow:visible;padding-bottom:12px}
+.fade,.thumb{display:none}
+.side{order:1;flex:none;padding:12px 16px 8px}
+.lab{font-size:12px;line-height:16px}
+.pins{margin:4px 0 8px;gap:2px 4px}
+.pin{padding:4px 0;gap:4px}
+.pin .tile{width:48px;height:48px}
+.pn{font-size:12px}
+.rechead{margin-bottom:2px;min-height:36px}
+.clear{width:48px;height:48px;margin:-8px -12px -8px 0}
+.row{padding:8px;min-height:48px}
+.recs{flex:none}
+.rec{flex:none;min-height:44px;padding:0 4px}
+.rec .rt{flex-direction:row;align-items:baseline;justify-content:space-between;flex:1;gap:12px}
+.rec .rd{text-align:right;overflow-wrap:anywhere}
+.rn{font-size:14px;line-height:20px}
+.rd{font-size:12px;line-height:16px}
+.let{font-size:16px;padding:8px 16px 0 24px}
+.foot{height:auto;flex-wrap:nowrap;gap:8px;padding:8px 12px 12px}
+.who{flex:none}
+.who .wm{display:none}
+.who .t small{font-size:12px;line-height:16px}
+.act{flex:none;justify-content:center;height:48px;border-radius:12px;font-size:14px;line-height:20px;padding:0 12px}
+.act .i{width:18px;height:18px}
+.dicon .lbl{font-size:12px;line-height:16px}
+.hide-desk-sm .desktop{visibility:hidden}
+.row.cue{display:none}
+.win{left:0;right:0;top:0;bottom:56px;width:auto;height:auto;border-radius:0;border-width:0 0 1px}
+.tb{height:48px;padding:0 4px 0 12px}
+.wb{width:48px;height:48px}
+.wb.max{display:none}
+.wbody{padding:16px 16px 0}
+.ptitle{font-size:24px}
+.sh{margin:20px 0 16px}
+.thm{width:calc(50% - 8px)}
+.grpl{font-size:12px;line-height:16px}
+.modes{gap:8px}
+.opt{height:48px;padding:0 8px;gap:4px}
+.acc{height:48px}
+.walls{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.wall .cap{padding:8px 4px;gap:4px}
+.wall .cap .i{display:none}
+.wfoot{display:none}
+.auth{align-items:start;padding-top:96px}
+.card{width:calc(100% - 32px)}
+.in,.btn{height:48px}
+.in{font-size:16px;line-height:24px}
+}
+@container page (max-width:380px){
+.sbtn,.tray,.ws1{width:44px}
+.startbtn,.task{width:44px}
+.clock{padding:0 4px 0 2px}
+}
+.os{height:100svh;min-height:600px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.dir{display:flex;flex-direction:column;gap:56px;padding:64px;background:var(--k-surface);color:var(--k-on-surface);font-family:var(--k-font-ui);font-size:13px;line-height:18px}
+.dh{font-family:var(--k-font-display);font-weight:700;font-size:48px;line-height:56px}
+.lead2{font-size:20px;line-height:28px;color:var(--k-on-surface-variant);max-width:62ch;margin-top:8px}
+.blk{display:flex;flex-direction:column;gap:24px;padding-top:32px;border-top:1px solid var(--k-outline-variant)}
+.h2{font-size:20px;line-height:28px;font-weight:600}
+.h3{font-size:14px;line-height:20px;font-weight:600;margin:0}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px;align-items:start}
+.two.eq{gap:24px}
+.col{display:flex;flex-direction:column;gap:20px}
+.pal{width:100%;border-collapse:collapse}
+.pal th,.pal td{padding:6px 10px;border-bottom:1px solid var(--k-outline-variant);text-align:left;vertical-align:middle}
+.pal thead th{font-size:12px;line-height:16px;font-weight:600;color:var(--k-on-surface-variant)}
+.pal th[scope=row]{font-weight:400}
+.pal td[data-theme="light"],.pal td[data-theme="dark"]{background:var(--k-surface);color:var(--k-on-surface)}
+.mono{display:block;font-size:12px;line-height:16px;font-weight:600}
+.note{display:block;font-size:11px;line-height:15px}
+.muted{color:var(--k-on-surface-variant)}
+.sc{display:flex;align-items:center;gap:10px}
+.dsw{display:block;width:40px;height:26px;border-radius:6px;box-shadow:inset 0 0 0 1px var(--k-outline);flex:none}
+.num{font-variant-numeric:tabular-nums;font-size:12px;line-height:16px}
+.spec{display:flex;flex-direction:column;gap:2px;padding-bottom:10px;border-bottom:1px solid var(--k-outline-variant)}
+.panel{display:flex;flex-direction:column;gap:20px;padding:24px;border-radius:var(--k-radius-window);background:var(--k-surface);color:var(--k-on-surface)}
+.strip{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.lst{width:300px;display:flex;flex-direction:column;background:var(--k-surface-container);border-radius:var(--k-radius-control);padding:6px 0}
+.mnu{display:flex;flex-direction:column;width:180px;padding:6px;border-radius:var(--k-radius-menu);background:var(--k-surface-container-low);border:1px solid var(--k-outline-variant);box-shadow:var(--k-shadow-menu)}
+.mi{display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;border-radius:var(--k-radius-item);font-size:12px;line-height:16px;font-weight:500}
+.mi:hover{background:var(--k-surface-container-high)}
+.mi .i{width:16px;height:16px;color:var(--accent)}
+.mi .gap{width:16px}
+.toast{display:flex;align-items:center;gap:10px;align-self:flex-start;padding:10px 16px;border-radius:var(--k-radius-control);background:var(--k-surface-bright);border:1px solid var(--k-outline-variant);box-shadow:var(--k-shadow-toast);font-size:12px;line-height:16px;font-weight:600}
+.toast .i{color:var(--accent);width:16px;height:16px}
+.st{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding-bottom:16px;border-bottom:1px solid var(--k-outline-variant)}
+.mini{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:var(--k-radius-control);background:var(--k-surface-container-low);box-shadow:inset 0 0 0 1px var(--k-outline-variant)}
+.tr{display:flex;gap:12px}
+.sk{display:flex;gap:10px;align-items:center;width:320px}
+.skc{display:flex;flex-direction:column;gap:6px;flex:1}
+.skel{display:block;border-radius:var(--k-radius-small);background:var(--k-surface-container-high)}
+.dic{display:flex;flex-direction:column;align-items:center;gap:6px;width:80px;padding:8px 0}
+.dic .lbl{font-size:11px;line-height:15px}
+.sp{display:flex;flex-direction:column;align-items:center;gap:6px}
+.spb{display:block;background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-soft-edge)}
+.rd2{display:block;width:56px;height:40px;box-shadow:inset 0 0 0 1.5px var(--k-outline)}
+.el{display:flex;align-items:center;gap:16px;padding:20px;border-radius:var(--k-radius-window);background:var(--k-surface);flex-wrap:wrap}
+.eb{display:block;width:40px;height:40px;border-radius:var(--k-radius-tile);background:var(--k-surface-bright)}
+.ct{width:100%;border-collapse:collapse;font-size:12px;line-height:16px}
+.ct th{text-align:left;color:var(--k-on-surface-variant);padding:6px;border-bottom:1px solid var(--k-outline-variant)}
+.ct td{padding:5px 6px;border-bottom:1px solid var(--k-outline-variant)}
+.ct td.num{text-align:right}
+</style></head><body><div class="root" data-theme="light" style="width:1440px"><div class="dir">
+<header class="hd"><h1 class="dh">Start, opened wide</h1><p class="lead2">The same taskbar and desktop, and a Start that is as large as its job: every app named and explained in one tall pane, with Pinned and Recent beside it.</p></header>
+<section class="blk"><h2 class="h2">Colour by role, in the app's own token names</h2>
+<div class="two"><table class="pal"><thead><tr><th scope="col">Token</th><th scope="col">Light</th><th scope="col">Dark</th></tr></thead><tbody><tr><th scope="row"><span class="mono">--k-surface</span><span class="muted note">sign-in ground, the page</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface)"></span><span class="num">#fbf3ea</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface)"></span><span class="num">#1c1613</span></span></td></tr><tr><th scope="row"><span class="mono">--k-surface-dim</span><span class="muted note">recessed</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-dim)"></span><span class="num">#e9d6c4</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-dim)"></span><span class="num">#181310</span></span></td></tr><tr><th scope="row"><span class="mono">--k-surface-bright</span><span class="muted note">raised tile</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-bright)"></span><span class="num">#fffdf9</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-bright)"></span><span class="num">#43362f</span></span></td></tr><tr><th scope="row"><span class="mono">--k-surface-container-lowest</span><span class="muted note">search field, button fill</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-container-lowest)"></span><span class="num">#fffdf9</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-container-lowest)"></span><span class="num">#201a17</span></span></td></tr><tr><th scope="row"><span class="mono">--k-surface-container-low</span><span class="muted note">Start panel, window body, taskbar</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-container-low)"></span><span class="num">#fdf7f0</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-container-low)"></span><span class="num">#29211c</span></span></td></tr><tr><th scope="row"><span class="mono">--k-surface-container</span><span class="muted note">A-Z pane, head, foot, title band</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-container)"></span><span class="num">#f4e6d7</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-container)"></span><span class="num">#322822</span></span></td></tr><tr><th scope="row"><span class="mono">--k-surface-container-high</span><span class="muted note">hover, chosen accent</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-container-high)"></span><span class="num">#f0e1d2</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-container-high)"></span><span class="num">#3c302a</span></span></td></tr><tr><th scope="row"><span class="mono">--k-surface-container-highest</span><span class="muted note">deepest band</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-container-highest)"></span><span class="num">#e9d6c3</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-surface-container-highest)"></span><span class="num">#473932</span></span></td></tr><tr><th scope="row"><span class="mono">--k-on-surface</span><span class="muted note">text</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-on-surface)"></span><span class="num">#33241b</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-on-surface)"></span><span class="num">#f6eadf</span></span></td></tr><tr><th scope="row"><span class="mono">--k-on-surface-variant</span><span class="muted note">descriptions, paths, labels</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-on-surface-variant)"></span><span class="num">#6b5141</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-on-surface-variant)"></span><span class="num">#cdb6a5</span></span></td></tr><tr><th scope="row"><span class="mono">--k-outline</span><span class="muted note">control edges, 3:1</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-outline)"></span><span class="num">#9a7a64</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-outline)"></span><span class="num">#937a69</span></span></td></tr><tr><th scope="row"><span class="mono">--k-outline-variant</span><span class="muted note">hairlines</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-outline-variant)"></span><span class="num">#e0c8b2</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-outline-variant)"></span><span class="num">#54443a</span></span></td></tr><tr><th scope="row"><span class="mono">--accent</span><span class="muted note">strong: text, rings, primary</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--accent)"></span><span class="num">#a04b23</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--accent)"></span><span class="num">#f2a97e</span></span></td></tr><tr><th scope="row"><span class="mono">--accent-on</span><span class="muted note">on strong</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--accent-on)"></span><span class="num">#ffffff</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--accent-on)"></span><span class="num">#33241b</span></span></td></tr><tr><th scope="row"><span class="mono">--accent-soft</span><span class="muted note">soft: chosen, current</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--accent-soft)"></span><span class="num">#f2a97e</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--accent-soft)"></span><span class="num">#5e3725</span></span></td></tr><tr><th scope="row"><span class="mono">--accent-soft-on</span><span class="muted note">on soft</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--accent-soft-on)"></span><span class="num">#33241b</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--accent-soft-on)"></span><span class="num">#ffdcc7</span></span></td></tr><tr><th scope="row"><span class="mono">--accent-soft-edge</span><span class="muted note">chosen edge, equals --accent</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--accent-soft-edge)"></span><span class="num">#a04b23</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--accent-soft-edge)"></span><span class="num">#f2a97e</span></span></td></tr><tr><th scope="row"><span class="mono">--k-error</span><span class="muted note">error text, field edge</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-error)"></span><span class="num">#ba1a1a</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-error)"></span><span class="num">#ff8a80</span></span></td></tr><tr><th scope="row"><span class="mono">--k-on-error</span><span class="muted note">on error, per mode (new)</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-on-error)"></span><span class="num">#ffffff</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-on-error)"></span><span class="num">#2b0d0d</span></span></td></tr><tr><th scope="row"><span class="mono">--k-error-container</span><span class="muted note">Log off hover</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-error-container)"></span><span class="num">#ffdad6</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-error-container)"></span><span class="num">#5c1a1a</span></span></td></tr><tr><th scope="row"><span class="mono">--k-on-error-container</span><span class="muted note">on error container</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-on-error-container)"></span><span class="num">#410002</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-on-error-container)"></span><span class="num">#ffdad6</span></span></td></tr><tr><th scope="row"><span class="mono">--k-wall-sky-1</span><span class="muted note">wallpaper sky, top</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-sky-1)"></span><span class="num">#fde9d8</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-sky-1)"></span><span class="num">#241c29</span></span></td></tr><tr><th scope="row"><span class="mono">--k-wall-sky-2</span><span class="muted note">sky, mid</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-sky-2)"></span><span class="num">#fbd5bd</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-sky-2)"></span><span class="num">#382634</span></span></td></tr><tr><th scope="row"><span class="mono">--k-wall-sky-3</span><span class="muted note">sky, low</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-sky-3)"></span><span class="num">#f6bfa3</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-sky-3)"></span><span class="num">#4d2f38</span></span></td></tr><tr><th scope="row"><span class="mono">--k-wall-sun</span><span class="muted note">sun or moon</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-sun)"></span><span class="num">#fff4e6</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-sun)"></span><span class="num">#f7d9bf</span></span></td></tr><tr><th scope="row"><span class="mono">--k-wall-cloud</span><span class="muted note">cloud</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-cloud)"></span><span class="num">#fff8f1</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-cloud)"></span><span class="num">#4a3644</span></span></td></tr><tr><th scope="row"><span class="mono">--k-wall-hill-1</span><span class="muted note">hill, far</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-hill-1)"></span><span class="num">#f0b794</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-hill-1)"></span><span class="num">#5b3a3e</span></span></td></tr><tr><th scope="row"><span class="mono">--k-wall-hill-2</span><span class="muted note">hill, mid</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-hill-2)"></span><span class="num">#e7a183</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-hill-2)"></span><span class="num">#4a3036</span></span></td></tr><tr><th scope="row"><span class="mono">--k-wall-hill-3</span><span class="muted note">hill, near</span></th><td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-hill-3)"></span><span class="num">#d98d73</span></span></td><td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--k-wall-hill-3)"></span><span class="num">#3a252c</span></span></td></tr></tbody></table>
+<div class="col"><h3 class="h3">The five accent presets</h3><table class="pal"><thead><tr><th scope="col">Preset</th><th scope="col">Light: strong, soft</th><th scope="col">Dark: strong, soft</th></tr></thead><tbody><tr><th scope="row"><span class="mono">--accent-apricot-soft</span></th>
+<td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--accent-apricot-soft)"></span><span class="num">#a04b23 / #f2a97e</span></span></td>
+<td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--accent-apricot-soft)"></span><span class="num">#f2a97e / #5e3725</span></span></td></tr><tr><th scope="row"><span class="mono">--accent-rose-soft</span></th>
+<td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--accent-rose-soft)"></span><span class="num">#b23656 / #eea6b5</span></span></td>
+<td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--accent-rose-soft)"></span><span class="num">#eea6b5 / #5c2a38</span></span></td></tr><tr><th scope="row"><span class="mono">--accent-butter-soft</span></th>
+<td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--accent-butter-soft)"></span><span class="num">#7f5f1b / #f3d27a</span></span></td>
+<td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--accent-butter-soft)"></span><span class="num">#f3d27a / #4f4019</span></span></td></tr><tr><th scope="row"><span class="mono">--accent-sage-soft</span></th>
+<td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--accent-sage-soft)"></span><span class="num">#4e6c48 / #a9c9a4</span></span></td>
+<td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--accent-sage-soft)"></span><span class="num">#a9c9a4 / #2f4430</span></span></td></tr><tr><th scope="row"><span class="mono">--accent-sky-soft</span></th>
+<td data-theme="light" class=""><span class="sc"><span class="dsw" style="background:var(--accent-sky-soft)"></span><span class="num">#376891 / #a7c7e7</span></span></td>
+<td data-theme="dark" class=""><span class="sc"><span class="dsw" style="background:var(--accent-sky-soft)"></span><span class="num">#a7c7e7 / #23394f</span></span></td></tr></tbody></table>
+<h3 class="h3">Type</h3>
+<div class="spec"><span class="wm" style="font-size:24px;line-height:30px">Settings</span><span class="muted note">Solway 700, 24/30: page titles; 22/28 for the sign-in wordmark</span></div>
+<div class="spec"><span class="wm">Imbatranim<b>OS</b></span><span class="muted note">Solway 700, 15/18: the wordmark in the taskbar and the foot band</span></div>
+<div class="spec"><span class="wm" style="color:var(--accent);font-size:16px;line-height:20px">B C D F</span><span class="muted note">Solway 700, 16/20 in the accent: the A-Z letter heads</span></div>
+<div class="spec"><span style="font-size:13px;line-height:18px">Search apps and files</span><span class="muted note">Figtree 400, 13/18: body, the search field, the clock at 600</span></div>
+<div class="spec"><span style="font-size:12px;line-height:16px;font-weight:600">Calculator, Cover screen</span><span class="muted note">Figtree 600, 12/16: rows, buttons, tasks; 14/20 on a phone</span></div>
+<div class="spec"><span style="font-size:11px;line-height:15px">walk/big/big.txt, Thu, 12 Nov</span><span class="muted note">Figtree 400, 11/15: descriptions, paths, the date, icon labels; 12/16 on a phone; section labels at 600, sentence case, untracked</span></div>
+<div class="spec"><span style="font-family:var(--font-content);font-size:13px;line-height:18px">Enter this machine’s password.</span><span class="muted note">Inter 400, 13/18: content face for subtitles and hints</span></div>
+</div></div></section>
+<section class="blk"><h2 class="h2">Space, shape, depth</h2><div class="two">
+<div class="col"><h3 class="h3">Space</h3><div class="strip" style="align-items:flex-end;gap:12px"><div class="sp"><span class="spb" style="width:4px;height:4px"></span><span class="muted note num">4</span></div><div class="sp"><span class="spb" style="width:8px;height:8px"></span><span class="muted note num">8</span></div><div class="sp"><span class="spb" style="width:12px;height:12px"></span><span class="muted note num">12</span></div><div class="sp"><span class="spb" style="width:16px;height:16px"></span><span class="muted note num">16</span></div><div class="sp"><span class="spb" style="width:20px;height:20px"></span><span class="muted note num">20</span></div><div class="sp"><span class="spb" style="width:24px;height:24px"></span><span class="muted note num">24</span></div><div class="sp"><span class="spb" style="width:32px;height:32px"></span><span class="muted note num">32</span></div><div class="sp"><span class="spb" style="width:40px;height:40px"></span><span class="muted note num">40</span></div><div class="sp"><span class="spb" style="width:48px;height:48px"></span><span class="muted note num">48</span></div></div>
+<h3 class="h3">Radii, the six tokens</h3><div class="strip" style="gap:16px"><div class="sp"><span class="rd2" style="border-radius:var(--k-radius-window)"></span><span class="muted note">window 12</span></div><div class="sp"><span class="rd2" style="border-radius:var(--k-radius-menu)"></span><span class="muted note">menu 14</span></div><div class="sp"><span class="rd2" style="border-radius:var(--k-radius-control)"></span><span class="muted note">control 10</span></div><div class="sp"><span class="rd2" style="border-radius:var(--k-radius-item)"></span><span class="muted note">item 8</span></div><div class="sp"><span class="rd2" style="border-radius:var(--k-radius-tile)"></span><span class="muted note">tile 12</span></div><div class="sp"><span class="rd2" style="border-radius:var(--k-radius-small)"></span><span class="muted note">small 4</span></div></div></div>
+<div class="col"><h3 class="h3">Elevation: floating layers and the tile only</h3><div class="strip" style="gap:16px">
+<div data-theme="light" class=" el"><span class="eb" style="box-shadow:var(--k-shadow-tile)"></span><span class="eb" style="box-shadow:var(--k-shadow-menu);width:88px"></span><span class="eb" style="box-shadow:var(--k-shadow-window-focused);width:88px"></span><span class="muted note">Light: tile, menu, window</span></div>
+<div data-theme="dark" class=" el"><span class="eb" style="box-shadow:var(--k-shadow-tile)"></span><span class="eb" style="box-shadow:var(--k-shadow-menu);width:88px"></span><span class="eb" style="box-shadow:var(--k-shadow-window-focused);width:88px"></span><span class="muted note">Dark: lighter surfaces, deeper shadow</span></div></div></div></div></section>
+<section class="blk"><h2 class="h2">Components, both themes</h2><div class="two eq"><div data-theme="light" class=" panel">
+<h3 class="h3">Light</h3>
+<div class="strip">
+<button class="startbtn" type="button" aria-expanded="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg><span class="wm">Imbatranim<b>OS</b></span></button>
+<button class="startbtn" type="button" aria-expanded="true"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg><span class="wm">Imbatranim<b>OS</b></span></button>
+<span class="pips"><button type="button" aria-current="true" aria-label="Workspace 1">1</button><button type="button" aria-label="Workspace 2">2</button></span>
+<button class="task" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</button>
+</div>
+<div class="strip">
+<button class="act" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Cover screen</button>
+<button class="act" type="button" style="background:var(--k-surface-container-high)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Hover</button>
+<button class="act" type="button" style="outline:2px solid var(--accent);outline-offset:2px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Focus</button>
+<button class="act danger" type="button" style="background:var(--k-error-container);color:var(--k-on-error-container);box-shadow:inset 0 0 0 1px var(--k-error)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>Log off, hovered</span></button>
+</div>
+<div class="strip">
+<button class="btn" type="button" style="width:116px">Sign in</button>
+<button class="btn" type="button" style="width:116px;background:color-mix(in srgb,var(--accent) 88%,var(--k-on-surface))">Hover</button>
+<button class="btn" type="button" style="width:116px;outline:2px solid var(--accent);outline-offset:2px">Focus</button>
+<button class="btn" type="button" aria-disabled="true" style="width:116px">Disabled</button>
+</div>
+<div class="fl" style="max-width:360px"><label for="pw-theme-light">Password</label><input class="in" id="pw-theme-light" type="password" aria-invalid="true" aria-describedby="pw-theme-light-e"><p class="hint" id="pw-theme-light-e"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>That did not work. Try again.</p></div>
+<div class="strip" style="align-items:flex-start;gap:16px">
+<div class="lst"><button class="row" type="button"><span class="tile sm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M16 14v.01M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01M16 18h.01"/></svg></span><span class="rt"><span class="rn">Calculator</span><span class="rd">Arithmetic, a scientific mode, and a programmer mode with bases + bitwise ops</span></span></button><button class="row rec" type="button" style="border:0"><span class="tile sm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></span><span class="rt"><span class="rn">big.txt</span><span class="rd">walk/big/big.txt</span></span></button></div>
+<div class="mnu" role="menu" aria-label="Workspaces"><button class="mi" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>Workspace 1</button><button class="mi" role="menuitem" type="button"><span class="gap"></span>Workspace 2</button><button class="mi" role="menuitem" type="button"><span class="gap"></span>Workspace 3</button><button class="mi" role="menuitem" type="button"><span class="gap"></span>Workspace 4</button></div>
+</div>
+<div class="toast" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>Recent files cleared.</div>
+</div><div data-theme="dark" class=" panel">
+<h3 class="h3">Dark</h3>
+<div class="strip">
+<button class="startbtn" type="button" aria-expanded="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg><span class="wm">Imbatranim<b>OS</b></span></button>
+<button class="startbtn" type="button" aria-expanded="true"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg><span class="wm">Imbatranim<b>OS</b></span></button>
+<span class="pips"><button type="button" aria-current="true" aria-label="Workspace 1">1</button><button type="button" aria-label="Workspace 2">2</button></span>
+<button class="task" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</button>
+</div>
+<div class="strip">
+<button class="act" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Cover screen</button>
+<button class="act" type="button" style="background:var(--k-surface-container-high)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Hover</button>
+<button class="act" type="button" style="outline:2px solid var(--accent);outline-offset:2px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Focus</button>
+<button class="act danger" type="button" style="background:var(--k-error-container);color:var(--k-on-error-container);box-shadow:inset 0 0 0 1px var(--k-error)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>Log off, hovered</span></button>
+</div>
+<div class="strip">
+<button class="btn" type="button" style="width:116px">Sign in</button>
+<button class="btn" type="button" style="width:116px;background:color-mix(in srgb,var(--accent) 88%,var(--k-on-surface))">Hover</button>
+<button class="btn" type="button" style="width:116px;outline:2px solid var(--accent);outline-offset:2px">Focus</button>
+<button class="btn" type="button" aria-disabled="true" style="width:116px">Disabled</button>
+</div>
+<div class="fl" style="max-width:360px"><label for="pw-theme-dark">Password</label><input class="in" id="pw-theme-dark" type="password" aria-invalid="true" aria-describedby="pw-theme-dark-e"><p class="hint" id="pw-theme-dark-e"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>That did not work. Try again.</p></div>
+<div class="strip" style="align-items:flex-start;gap:16px">
+<div class="lst"><button class="row" type="button"><span class="tile sm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M16 14v.01M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01M16 18h.01"/></svg></span><span class="rt"><span class="rn">Calculator</span><span class="rd">Arithmetic, a scientific mode, and a programmer mode with bases + bitwise ops</span></span></button><button class="row rec" type="button" style="border:0"><span class="tile sm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></span><span class="rt"><span class="rn">big.txt</span><span class="rd">walk/big/big.txt</span></span></button></div>
+<div class="mnu" role="menu" aria-label="Workspaces"><button class="mi" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>Workspace 1</button><button class="mi" role="menuitem" type="button"><span class="gap"></span>Workspace 2</button><button class="mi" role="menuitem" type="button"><span class="gap"></span>Workspace 3</button><button class="mi" role="menuitem" type="button"><span class="gap"></span>Workspace 4</button></div>
+</div>
+<div class="toast" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>Recent files cleared.</div>
+</div></div></section>
+<section class="blk"><h2 class="h2">States, by screen</h2><div class="two eq"><div data-theme="light" class=" panel">
+<div class="st"><h3 class="h3">Start: nothing found</h3><label class="field" style="max-width:360px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.3-4.3"/></svg><input type="search" value="zzq" aria-label="Search apps and files"></label><div class="none"><b>Nothing found</b><span>Nothing matches this search.</span></div></div>
+<div class="st"><h3 class="h3">Start: Recent is empty, the block is hidden</h3><div class="mini"><span class="lab">Pinned</span><span class="tr"><span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg></span><span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m7 11 2-2-2-2M11 13h4"/></svg></span><span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/></svg></span></span></div></div>
+<div class="st"><h3 class="h3">Start: the app list while it loads</h3><div class="sk" aria-hidden="true"><span class="skel" style="width:28px;height:28px"></span><span class="skc"><span class="skel" style="width:50%;height:11px"></span><span class="skel" style="width:80%;height:9px"></span></span></div><div class="sk" aria-hidden="true"><span class="skel" style="width:28px;height:28px"></span><span class="skc"><span class="skel" style="width:40%;height:11px"></span><span class="skel" style="width:70%;height:9px"></span></span></div></div>
+<div class="st"><h3 class="h3">Desktop: an icon at rest, hovered, focused, selected</h3><div class="strip" style="gap:8px"><span class="dic"><span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M16 14v.01M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01M16 18h.01"/></svg></span><span class="lbl">Calculator</span></span><span class="dic"><span class="tile" style="background:var(--k-surface-container-lowest)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M16 14v.01M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01M16 18h.01"/></svg></span><span class="lbl">Hover</span></span><span class="dic" style="outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--k-radius-item)"><span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M16 14v.01M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01M16 18h.01"/></svg></span><span class="lbl">Focus</span></span><span class="dic"><span class="tile" style="background:var(--accent-soft);color:var(--accent-soft-on);box-shadow:inset 0 0 0 1px var(--accent-soft-edge)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M16 14v.01M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01M16 18h.01"/></svg></span><span class="lbl">Selected</span></span></div></div>
+<div class="st"><h3 class="h3">Settings: a section loading, and failing</h3><div class="sk" aria-hidden="true"><span class="skc" style="flex:1"><span class="skel" style="width:30%;height:11px"></span><span class="skel" style="width:100%;height:40px"></span></span></div><p class="hint"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Could not load this section.</p><button class="act" type="button">Try again</button></div>
+<div class="st"><h3 class="h3">Sign-in: signing in, then the error</h3><button class="btn" type="button" aria-disabled="true" style="max-width:240px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Signing in…</button><p class="hint"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>That did not work. Try again.</p></div>
+</div><div data-theme="dark" class=" panel">
+<div class="st"><h3 class="h3">Start: nothing found</h3><label class="field" style="max-width:360px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.3-4.3"/></svg><input type="search" value="zzq" aria-label="Search apps and files"></label><div class="none"><b>Nothing found</b><span>Nothing matches this search.</span></div></div>
+<div class="st"><h3 class="h3">Start: Recent is empty, the block is hidden</h3><div class="mini"><span class="lab">Pinned</span><span class="tr"><span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg></span><span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m7 11 2-2-2-2M11 13h4"/></svg></span><span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/></svg></span></span></div></div>
+<div class="st"><h3 class="h3">Start: the app list while it loads</h3><div class="sk" aria-hidden="true"><span class="skel" style="width:28px;height:28px"></span><span class="skc"><span class="skel" style="width:50%;height:11px"></span><span class="skel" style="width:80%;height:9px"></span></span></div><div class="sk" aria-hidden="true"><span class="skel" style="width:28px;height:28px"></span><span class="skc"><span class="skel" style="width:40%;height:11px"></span><span class="skel" style="width:70%;height:9px"></span></span></div></div>
+<div class="st"><h3 class="h3">Desktop: an icon at rest, hovered, focused, selected</h3><div class="strip" style="gap:8px"><span class="dic"><span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M16 14v.01M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01M16 18h.01"/></svg></span><span class="lbl">Calculator</span></span><span class="dic"><span class="tile" style="background:var(--k-surface-container-lowest)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M16 14v.01M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01M16 18h.01"/></svg></span><span class="lbl">Hover</span></span><span class="dic" style="outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--k-radius-item)"><span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M16 14v.01M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01M16 18h.01"/></svg></span><span class="lbl">Focus</span></span><span class="dic"><span class="tile" style="background:var(--accent-soft);color:var(--accent-soft-on);box-shadow:inset 0 0 0 1px var(--accent-soft-edge)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M16 14v.01M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01M16 18h.01"/></svg></span><span class="lbl">Selected</span></span></div></div>
+<div class="st"><h3 class="h3">Settings: a section loading, and failing</h3><div class="sk" aria-hidden="true"><span class="skc" style="flex:1"><span class="skel" style="width:30%;height:11px"></span><span class="skel" style="width:100%;height:40px"></span></span></div><p class="hint"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Could not load this section.</p><button class="act" type="button">Try again</button></div>
+<div class="st"><h3 class="h3">Sign-in: signing in, then the error</h3><button class="btn" type="button" aria-disabled="true" style="max-width:240px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Signing in…</button><p class="hint"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>That did not work. Try again.</p></div>
+</div></div></section>
+<section class="blk"><h2 class="h2">Contrast, every pair, WCAG 2.2</h2><div class="two"><table class="ct"><thead><tr><th scope="col">Pair</th><th scope="col">Light</th><th scope="col">Dark</th><th scope="col">Needs</th></tr></thead><tbody><tr><td>on-surface on surface-container-low (Start body)</td><td class="num">14.01</td><td class="num">13.36</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface on surface-container (A-Z pane, foot)</td><td class="num">12.17</td><td class="num">12.14</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface on surface-container-low (window body)</td><td class="num">14.01</td><td class="num">13.36</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface-variant on surface-container (descriptions)</td><td class="num">5.96</td><td class="num">7.41</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface-variant on surface-container-low (paths, labels)</td><td class="num">6.86</td><td class="num">8.15</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface-variant on surface-container (window caption)</td><td class="num">5.96</td><td class="num">7.41</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface-variant on surface-container-highest</td><td class="num">5.17</td><td class="num">5.70</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface-variant on surface-container-lowest (placeholder)</td><td class="num">7.18</td><td class="num">8.87</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface on surface-container-lowest (input text)</td><td class="num">14.67</td><td class="num">14.53</td><td class="num muted">4.5 text</td></tr><tr><td>accent on surface-container (letter heads)</td><td class="num">4.86</td><td class="num">7.35</td><td class="num muted">4.5 text</td></tr><tr><td>accent on surface-container-low (glyphs, links)</td><td class="num">5.60</td><td class="num">8.09</td><td class="num muted">4.5 text</td></tr><tr><td>accent on surface-bright (glyph on a tile)</td><td class="num">5.86</td><td class="num">5.95</td><td class="num muted">4.5 text</td></tr><tr><td>accent-on on accent (primary button)</td><td class="num">5.96</td><td class="num">7.63</td><td class="num muted">4.5 text</td></tr><tr><td>accent-soft-on on accent-soft (Start pill, current pip, chosen)</td><td class="num">7.63</td><td class="num">7.96</td><td class="num muted">4.5 text</td></tr><tr><td>on-error-container on error-container (Log off hover)</td><td class="num">13.26</td><td class="num">10.05</td><td class="num muted">4.5 text</td></tr><tr><td>on-error on error (destructive button)</td><td class="num">6.46</td><td class="num">7.89</td><td class="num muted">4.5 text</td></tr><tr><td>error on surface-container-highest (field error)</td><td class="num">4.58</td><td class="num">4.84</td><td class="num muted">4.5 text</td></tr><tr><td>error on surface-container-low (sign-in error)</td><td class="num">6.07</td><td class="num">6.92</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface on wallpaper hill-1 (desktop label)</td><td class="num">8.45</td><td class="num">8.38</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface on wallpaper sky-2 (desktop label)</td><td class="num">10.90</td><td class="num">11.88</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface on wallpaper hill-3 (taskbar-adjacent label)</td><td class="num">5.68</td><td class="num">11.99</td><td class="num muted">4.5 text</td></tr><tr><td>on-surface on a desktop label (light: on the sky; dark: the chip over the moon)</td><td class="num">10.90</td><td class="num">8.21</td><td class="num muted">4.5 text</td></tr><tr><td>outline on surface-container-lowest (search, input edge)</td><td class="num">3.87</td><td class="num">4.28</td><td class="num muted">3 UI</td></tr><tr><td>outline on surface-container (foot buttons)</td><td class="num">3.21</td><td class="num">3.58</td><td class="num muted">3 UI</td></tr><tr><td>outline on surface-container-high (control on a high band)</td><td class="num">3.07</td><td class="num">3.17</td><td class="num muted">3 UI</td></tr><tr><td>outline on surface-container (Settings option edge)</td><td class="num">3.21</td><td class="num">3.58</td><td class="num muted">3 UI</td></tr><tr><td>accent-soft-edge on surface-container-low (selected edge)</td><td class="num">5.60</td><td class="num">8.09</td><td class="num muted">3 UI</td></tr><tr><td>accent-soft-edge on surface-container (selected edge in Settings)</td><td class="num">4.86</td><td class="num">7.35</td><td class="num muted">3 UI</td></tr><tr><td>accent (focus ring) on surface-container-low</td><td class="num">5.60</td><td class="num">8.09</td><td class="num muted">3 UI</td></tr><tr><td>accent (focus ring) on surface-container</td><td class="num">4.86</td><td class="num">7.35</td><td class="num muted">3 UI</td></tr><tr><td>accent (focus ring) on wallpaper sky-2</td><td class="num">4.36</td><td class="num">7.19</td><td class="num muted">3 UI</td></tr><tr><td>on-surface-variant on surface-container-low (icon)</td><td class="num">6.86</td><td class="num">8.15</td><td class="num muted">3 UI</td></tr><tr><td>surface-container on surface-container-low (A-Z pane on panel)</td><td class="num">1.15</td><td class="num">1.10</td><td class="num muted">plus a hairline</td></tr><tr><td>outline-variant on surface-container-low (hairline on panel)</td><td class="num">1.51</td><td class="num">1.70</td><td class="num muted">edge needs 1.3</td></tr><tr><td>outline-variant on surface-container (hairline on pane)</td><td class="num">1.31</td><td class="num">1.55</td><td class="num muted">edge, pane edge</td></tr><tr><td>surface-container-low on wallpaper sky-2 (Start on the wall)</td><td class="num">1.29</td><td class="num">1.13</td><td class="num muted">edge + shadow-menu</td></tr></tbody></table><table class="ct"><thead><tr><th scope="col">Pair</th><th scope="col">Light</th><th scope="col">Dark</th><th scope="col">Needs</th></tr></thead><tbody><tr><td>outline-variant on wallpaper sky-2 (Start edge)</td><td class="num">1.17</td><td class="num">1.52</td><td class="num muted">edge</td></tr><tr><td>surface-container-low on wallpaper hill-3 (taskbar on the wall)</td><td class="num">2.46</td><td class="num">1.11</td><td class="num muted">top hairline</td></tr><tr><td>outline-variant on wallpaper hill-3 (Start edge near the bar)</td><td class="num">1.63</td><td class="num">1.53</td><td class="num muted">edge</td></tr><tr><td>surface-bright on wallpaper sky-2 (desktop tile)</td><td class="num">1.35</td><td class="num">1.21</td><td class="num muted">plus shadow-tile</td></tr><tr><td>surface-bright on surface-container (row tile on pane)</td><td class="num">1.21</td><td class="num">1.24</td><td class="num muted">plus shadow-tile</td></tr><tr><td>surface-bright on surface-container-low (pin tile on panel)</td><td class="num">1.05</td><td class="num">1.36</td><td class="num muted">plus shadow-tile</td></tr><tr><td>surface-container-low on surface (dark sign-in card on its ground)</td><td class="num">1.03</td><td class="num">1.13</td><td class="num muted">edge 1 px + shadow-card</td></tr><tr><td>surface-container on surface-container-low (option fill on the window)</td><td class="num">1.15</td><td class="num">1.10</td><td class="num muted">plus the 3:1 outline</td></tr><tr><td>accent swatch (preset pastel, lowest of five) on surface-container</td><td class="num">1.20</td><td class="num">7.35</td><td class="num muted">a fill; the chip edge carries the 3:1</td></tr><tr><td>surface-container-lowest on surface-container (foot button fill)</td><td class="num">1.21</td><td class="num">1.20</td><td class="num muted">plus the 3:1 outline</td></tr><tr><td>surface-container-low on wallpaper hill-2 (Settings window on the wall)</td><td class="num">2.01</td><td class="num">1.33</td><td class="num muted">edge + shadow-window</td></tr><tr><td>surface-container-low on wallpaper sky-2 (Settings window on the wall)</td><td class="num">1.29</td><td class="num">1.13</td><td class="num muted">edge + shadow-window</td></tr><tr><td>outline-variant on wallpaper hill-2 (window edge)</td><td class="num">1.33</td><td class="num">1.28</td><td class="num muted">edge</td></tr><tr><td>surface-container-low on its sign-in ground (light: container-high, dark: surface)</td><td class="num">1.20</td><td class="num">1.13</td><td class="num muted">edge 1 px + shadow-card</td></tr><tr><td>outline-variant on its sign-in ground (light: container-high, dark: surface)</td><td class="num">1.25</td><td class="num">1.93</td><td class="num muted">edge</td></tr><tr><td>Apricot: white on strong (light) / ink on pastel strong (dark)</td><td class="num">5.96</td><td class="num">7.63</td><td class="num muted">4.5 text</td></tr><tr><td>Apricot: strong on surface-container-high (text, ring)</td><td class="num">4.65</td><td class="num">6.52</td><td class="num muted">4.5 text</td></tr><tr><td>Apricot: soft-on on soft (chosen)</td><td class="num">7.63</td><td class="num">7.96</td><td class="num muted">4.5 text</td></tr><tr><td>Apricot: edge on surface-container-low (UI 3)</td><td class="num">5.60</td><td class="num">8.09</td><td class="num muted">3 UI</td></tr><tr><td>Rose: white on strong (light) / ink on pastel strong (dark)</td><td class="num">5.91</td><td class="num">7.63</td><td class="num muted">4.5 text</td></tr><tr><td>Rose: strong on surface-container-high (text, ring)</td><td class="num">4.61</td><td class="num">6.53</td><td class="num muted">4.5 text</td></tr><tr><td>Rose: soft-on on soft (chosen)</td><td class="num">7.63</td><td class="num">8.83</td><td class="num muted">4.5 text</td></tr><tr><td>Rose: edge on surface-container-low (UI 3)</td><td class="num">5.55</td><td class="num">8.10</td><td class="num muted">3 UI</td></tr><tr><td>Butter: white on strong (light) / ink on pastel strong (dark)</td><td class="num">5.91</td><td class="num">10.16</td><td class="num muted">4.5 text</td></tr><tr><td>Butter: strong on surface-container-high (text, ring)</td><td class="num">4.61</td><td class="num">8.68</td><td class="num muted">4.5 text</td></tr><tr><td>Butter: soft-on on soft (chosen)</td><td class="num">10.16</td><td class="num">8.16</td><td class="num muted">4.5 text</td></tr><tr><td>Butter: edge on surface-container-low (UI 3)</td><td class="num">5.55</td><td class="num">10.77</td><td class="num muted">3 UI</td></tr><tr><td>Sage: white on strong (light) / ink on pastel strong (dark)</td><td class="num">5.89</td><td class="num">8.22</td><td class="num muted">4.5 text</td></tr><tr><td>Sage: strong on surface-container-high (text, ring)</td><td class="num">4.61</td><td class="num">7.02</td><td class="num muted">4.5 text</td></tr><tr><td>Sage: soft-on on soft (chosen)</td><td class="num">8.22</td><td class="num">8.32</td><td class="num muted">4.5 text</td></tr><tr><td>Sage: edge on surface-container-low (UI 3)</td><td class="num">5.54</td><td class="num">8.71</td><td class="num muted">3 UI</td></tr><tr><td>Sky: white on strong (light) / ink on pastel strong (dark)</td><td class="num">5.91</td><td class="num">8.49</td><td class="num muted">4.5 text</td></tr><tr><td>Sky: strong on surface-container-high (text, ring)</td><td class="num">4.62</td><td class="num">7.26</td><td class="num muted">4.5 text</td></tr><tr><td>Sky: soft-on on soft (chosen)</td><td class="num">8.49</td><td class="num">9.32</td><td class="num muted">4.5 text</td></tr><tr><td>Sky: edge on surface-container-low (UI 3)</td><td class="num">5.56</td><td class="num">9.01</td><td class="num muted">3 UI</td></tr></tbody></table></div></section>
+</div></div></body></html>

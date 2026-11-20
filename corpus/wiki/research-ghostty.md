@@ -200,5 +200,5 @@ renderers are GPU work, and the macOS 1 KiB pty cap doesn't apply on Linux.
   `testsrc2` clip was the fixed half; a recorded real session is the other.
 - **Safe defaults for untrusted output.** Ghostty turns off what output could
   abuse (window resize, screen checksums), previews a clipboard read before
-  allowing it, and caps clipboard writes at 64 MiB. The checklist suits Postern,
-  Satchel and newspapper; I haven't checked them against it.
+  allowing it, and caps clipboard writes at 64 MiB. Checked 2026-11-20: Postern
+  and newspapper keep only web (and mailto) links, Satchel renders none.

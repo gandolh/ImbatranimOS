@@ -13,9 +13,11 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md), ite
   look right after that. What can go wrong: a program that set modes long ago
   (the alternate screen, mouse tracking, application cursor keys) whose
   setting fell out of the ring, and scrollback older than the ring.
-- VS Code's persistent terminals keep a headless xterm beside each pty and
-  send its serialized state on reconnect. Here that is `@xterm/headless` 6.0.0
-  and `@xterm/addon-serialize` 0.14.0, the same project as the tab's xterm.
+- xterm.js publishes `@xterm/headless` 6.0.0 (a terminal with no renderer, for
+  servers) and `@xterm/addon-serialize` 0.14.0 (turns a terminal's state back
+  into the sequences that rebuild it), the same project as the tab's xterm.
+  Running one beside each pty and sending its serialized state on reattach
+  restores the exact screen.
   libghostty-vt has snapshots too, but no 1.0 yet.
 - The cost is on the hot path: the backend would parse every byte of every
   Terminal a second time, on one CPU.

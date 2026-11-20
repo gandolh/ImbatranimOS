@@ -23,7 +23,9 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md), ite
   GHSA-4hwh-wx3w-3fqg, GHSA-v8cw-fg4j-jcc4). Its rule lives in one place,
   `ghostty@d69f9ed:src/input/paste.zig`, and copies xterm (the X11 terminal).
 - The shell is BusyBox sh today, bash after brief 104. Whether BusyBox sh asks
-  for bracketed paste is unchecked; the rule below works either way.
+  for bracketed paste is unchecked; the rule below works either way. If it
+  doesn't, every multi-line paste asks first until 104 lands; say which in
+  the outcome.
 
 ## Decisions
 

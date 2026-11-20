@@ -30,7 +30,8 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md), ite
    iTerm2 use). Linux apps' own terminals and scripts never run it.
 2. It appends to `PROMPT_COMMAND` (bash 5.1+ array form) and `PS0`, never
    replaces a user's: `D;$?` then `A` at each prompt, `B` at the end of `PS1`
-   inside `\[ \]`, `C` from `PS0`, OSC 7 with the path percent-encoded
+   inside `\[ \]` (added again from `PROMPT_COMMAND` when missing, since a
+   user's `~/.bashrc` may set its own `PS1`), `C` from `PS0`, OSC 7 with the path percent-encoded
    (every byte outside unreserved URL characters), and an OSC 2 title of the
    directory with `~` for home, as Debian's default bashrc does for xterm.
 3. **The Terminal keeps a shell state per window**: `prompt`, `input`,

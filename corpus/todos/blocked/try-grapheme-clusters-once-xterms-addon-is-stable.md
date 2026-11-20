@@ -2,7 +2,7 @@
 title: Try grapheme clusters in the Terminal once xterm's addon is stable
 created: 2026-11-20
 status: open
-blocked-by: @xterm/addon-unicode-graphemes drops its experimental warning
+blocked-by: xterm's unicode-graphemes addon drops its experimental warning
 tags: [terminal, later]
 ---
 

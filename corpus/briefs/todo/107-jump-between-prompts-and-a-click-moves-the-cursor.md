@@ -21,7 +21,9 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md), ite
 
 1. **Ctrl+Shift+Up and Ctrl+Shift+Down** scroll to the previous and next
    prompt marker (`term.scrollToLine`), registered with `system.shortcuts` so
-   the shortcuts list shows them. Readline doesn't use them.
+   the shortcuts list shows them. Check `system.shortcuts` for a clash first
+   (on 2026-11-20 core's window hotkeys used `mod+alt+shift+up`, not these).
+   Readline doesn't bind them.
 2. **A click or a tap on the current input line moves the cursor** there by
    sending Left or Right arrow sequences, one per character between the cursor
    and the click (a wide CJK character is one character, two cells), in the

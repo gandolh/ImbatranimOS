@@ -35,12 +35,19 @@ From decisions-terminal.md, plus technical calls by convention:
    `system.window.savedState(): string | null`, stored with the window's
    persisted layout (per tab, at most 512 characters). It is the shape of
    macOS state restoration and Android's saved instance state, and other apps
-   can use it later. Both members are optional additions, so
-   `SHARED_KIT_VERSION` stays 1 (as with brief 96's `closeOnClick`).
-2. **The tab says when it means to close.** Before the Terminal's unmount
-   closes the socket, it sends `{"type":"close"}`. A socket that closes
-   without it (a reload, a drop, a backgrounded phone tab) detaches its pty
-   for 30 s instead of killing it.
+   can use it later. Both members are optional additions, not a breaking
+   change: neither `SHARED_KIT_VERSION` (as with brief 96's `closeOnClick`)
+   nor `PROTOCOL_VERSION` ("bump on any breaking change", `system.ts`) moves,
+   and a caller checks the member exists.
+2. **The tab says when it means to close.** When the window's close goes
+   ahead (through `system.window.onCloseRequest`, after any question brief 106
+   adds), the Terminal sends `{"type":"close"}` before the socket closes. Not
+   from React's unmount: that also runs when a per-window error boundary
+   resets. The idle cover and sign-out keep the desktop mounted (`AuthGate.tsx`
+   hides it with `visibility: hidden`), so they close nothing. A socket that
+   closes without the frame (a reload, a drop, a backgrounded phone tab, a
+   close path that skips the guard) detaches its pty for 30 s instead of
+   killing it.
 3. **Reattach.** The PTY URL carries `resume=<token>`. The gateway looks the
    pty up by the desktop session id, the token and the signed-in session, and
    attaches the new socket. Unknown or expired: a new shell, and the tab

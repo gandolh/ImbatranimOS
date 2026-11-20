@@ -13,7 +13,8 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md), ite
   2 error, 3 indeterminate, 4 paused. A killed program never clears it, so
   Ghostty resets the state after about 15 s without an update
   (`website/docs/vt/osc/conemu.mdx`). xterm.js has an addon for it,
-  `@xterm/addon-progress` (0.2.0).
+  `@xterm/addon-progress` (0.2.0, no peer dependencies declared on
+  2026-11-20; check it loads on xterm 6 before relying on it).
 - Windows 7 drew progress across the taskbar button and flashed the button
   of a window that wanted attention; Windows 11, GNOME (urgent windows) and
   macOS (a bouncing Dock icon) all keep some form of it. The OS keeps the
@@ -31,8 +32,9 @@ The look is a built default, asked on the end move.
 
 1. **The kit**: `system.window.setProgress({ state, value? })` with the five
    states above (`"none" | "normal" | "error" | "indeterminate" | "paused"`,
-   `value` 0-100), and `system.window.requestAttention()`. Optional members:
-   `SHARED_KIT_VERSION` stays 1.
+   `value` 0-100), and `system.window.requestAttention()`. Optional members,
+   not a breaking change: neither `SHARED_KIT_VERSION` nor `PROTOCOL_VERSION`
+   moves, and a caller checks the member exists.
 2. **Progress on the button**: a 3 px bar along the button's bottom edge,
    inside it, above the focus underline: the accent for normal, the error
    token for error, `on-surface-variant` for paused (the theme has no warning

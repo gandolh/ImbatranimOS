@@ -34,8 +34,9 @@ scrollback, and a dependency); libghostty-vt snapshots (its C API broke
 compatibility several times in 2026 and has no 1.0); no grace, as today.
 **Why**: a reload or a dropped phone connection kills the running command
 with no warning, while Linux apps already survive the same thing for 30 s.
-VS Code's persistent terminals do the same with a pty host and a headless
-xterm, so the shape is proven.
+VS Code's persistent terminal sessions also survive a window reload, so the
+behaviour is what people already expect from a terminal in a browser-shaped
+app.
 
 ## Bash is the Terminal's shell
 

@@ -6385,3 +6385,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-22] done | Brief 101: benchmark workloads and the measuring recipe
 
 `0ec623e` (1.391.0): `scripts/bench/` generates the Terminal's inputs from fixed seeds (byte for byte, sums on the page), records sessions as asciicast v2 and replays them, and runs any workload two warmups and ten runs with a lock. [how-we-measure.md](wiki/how-we-measure.md) has the rules ("write the bar first", "measured, not built" is a valid end), the sums and the first baseline: a 50 MB `cat` through the Terminal, median 2,733 ms uncapped and 2,434 ms with the backend on one CPU, on the host (Docker was down).
+
+## [2026-11-22] done | Brief 102: a Terminal's shell outlives a close it didn't mean
+
+`ecc59ea` (1.393.0): a socket that ends without the window's `close` frame leaves its pty detached for 30 s, still read into a ring of its last 256 KiB; the window comes back with `resume=<token>`, the token kept across a reload through the kit's new optional `system.window.saveState` / `savedState` (kit commit for imbatranim-apps' next sync: `ecc59ea`). A shell another live socket holds refuses with 4409 after a ping, and the duplicated tab starts its own. The ring is kept all along so a reload shows its screen, and the tab mutes xterm's answers to the replayed queries. Walked on the host: reload, a real drop, a duplicated tab and a close.

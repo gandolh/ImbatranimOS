@@ -1,6 +1,6 @@
 ---
 summary: Web-OS era stack — Alpine + NestJS container, one authed port, React/Vite desktop split into @imbatranim/core + add-on packages (npm workspaces + turbo), PTY/FS/monitor apps, volume-backed home.
-updated: 2026-11-02
+updated: 2026-11-22
 ---
 
 # Architecture
@@ -29,7 +29,10 @@ display.
 - **Terminal** — xterm.js ↔ node-pty over an authenticated WS at
   `/api/pty` (backend `pty` module; session check on upgrade,
   backpressure, revocation sweep). The fork's HTTP `repl` module is
-  deleted — absorbed.
+  deleted — absorbed. Since 2026-11-22 a shell outlives a socket that
+  closes without the window's `close` frame for 30 s, and the window
+  comes back to it with the token it keeps across a reload
+  (`system.window.saveState`; [decisions-terminal.md](decisions-terminal.md)).
 - **Files** — explorer over the real home dir (`files` module, `home`
   root via FILES_ROOT; traversal/symlink jail with tests; upload capped
   via FILES_MAX_UPLOAD_BYTES, over-cap → 413).

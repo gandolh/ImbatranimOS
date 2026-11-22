@@ -6380,3 +6380,8 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-22] done | Brief 100: hidden windows stop polling
 
 `7954a15` (1.389.0): Logs' follow and Settings' job polls (Updates, Marketplace, Linux apps' index and job) pause while their window is hidden and read once at once when it shows, through `useWindowVisible` and `useRefetchOnShow`. The rule is ui-conventions item 32, with the background services that keep running named. Walked: no `/api/logs` request in 30 s minimized, one on show.
+
+
+## [2026-11-22] done | Brief 101: benchmark workloads and the measuring recipe
+
+`0ec623e` (1.391.0): `scripts/bench/` generates the Terminal's inputs from fixed seeds (byte for byte, sums on the page), records sessions as asciicast v2 and replays them, and runs any workload two warmups and ten runs with a lock. [how-we-measure.md](wiki/how-we-measure.md) has the rules ("write the bar first", "measured, not built" is a valid end), the sums and the first baseline: a 50 MB `cat` through the Terminal, median 2,733 ms uncapped and 2,434 ms with the backend on one CPU, on the host (Docker was down).

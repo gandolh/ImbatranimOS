@@ -69,3 +69,29 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md)
   cap it ran under.
 - [ ] `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `done` (nothing to deploy).
+
+## Outcome (2026-11-22)
+
+Built in `0ec623e` (1.391.0); the recipe is [how-we-measure.md](../../wiki/how-we-measure.md).
+`scripts/bench/`: `generate.mjs` (mulberry32 from fixed seeds; whole lines up to each size), `record.mjs`
+(node-pty, taken from the backend workspace that owns it, so the root gains no dependency; `--keys` types
+into a program such as an editor), `replay.mjs`, `run.mjs` (two warmups, ten runs, nearest-rank median and
+p95, the machine with cgroup v2's `cpu.max` and `memory.max`, a lock file that refuses a second run while the
+first lives), `workloads/terminal-cat.mjs` (Playwright from the desktop workspace), a README, and
+`generate.test.mjs` (`node --test`, as the scripts' other test runs). knip's root entry gains the two
+folders.
+
+**Acceptance.** The inputs regenerate byte for byte: two full runs printed the same three sums (on the
+recipe page); the test checks it on every input at 256 KiB. The five recordings replay (6.8 MB, 14.7 MB,
+15 KB, 249 KB and 1.7 KB of output). The lock refused a second run. **The baseline**, 50 MB `cat` through
+the Terminal, ten runs: median 2,733 ms (p95 3,100 ms) uncapped, and 2,434 ms (p95 2,734 ms) with the
+backend pinned to one CPU.
+
+**Not as the brief asked:** Docker's daemon is down in this session, so the five sessions were recorded,
+and the baseline taken, on the host (4 vCPU Xeon at 2.1 GHz, 15.7 GiB), with the backend and the desktop
+running directly and Alpine's BusyBox ash as the shell. Production's full cap (one CPU and 1 GiB on the
+container) couldn't be set; `taskset` stood in for the CPU half. The recipe page says how to set the cap in
+the dev container and leaves that row and the container's recording sums to fill.
+
+`npm run check` exit 0; `bash corpus/lint.sh` OK. Nothing to deploy.
+

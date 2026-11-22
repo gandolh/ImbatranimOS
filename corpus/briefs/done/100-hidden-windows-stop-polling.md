@@ -57,3 +57,25 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md)
   show.
 - [ ] `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy`, owner step `node cli.ts imbatranim-os server`.
+
+## Outcome (2026-11-22)
+
+Built in `7954a15` (1.389.0). Each listed poll is gated on the kit's `useWindowVisible()`: Logs' follow interval
+doesn't start while the window is hidden and reads once when it shows again; Settings' job polls (Updates'
+job, Marketplace's listing while an install runs, Linux apps' index while it builds and its job) return
+`false` from `refetchInterval` while hidden, and `apps/core/src/modules/settings/refetchOnShow.ts`
+(`useRefetchOnShow`) refetches once at once when the window shows with the poll on. The rule is item 32 of
+[ui-conventions.md](../../wiki/ui-conventions.md), with the exceptions named (to stay under the page's cap,
+one blank line under §9's heading went).
+
+Tests: `hiddenPolls.test.tsx` (four polls) and `Logs.test.tsx`, each hidden for 10 s of fake time (no
+request) and shown again (one request at once). On the code before this brief they failed (the Updates job
+poll made 10 requests while hidden, Logs 3). The existing Updates and Marketplace tests now render inside a
+`SystemProvider`, since the panes read the window's visibility. Logs gained jsdom and react-dom as dev
+dependencies, at the versions the lockfile already resolves.
+
+**Walk** (on the host, Docker's daemon is down): System Log following made 2 `/api/logs` requests in 7 s,
+none in 30 s minimized, and one within a second of being shown again.
+
+`npm run check` exit 0; `bash corpus/lint.sh` OK. Owner step: `node cli.ts imbatranim-os server`.
+

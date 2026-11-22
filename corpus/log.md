@@ -6409,3 +6409,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-22] done | Brief 107: jump between prompts; a click moves the cursor in the prompt
 
 `068942d` (1.402.0): Ctrl+Shift+Up and Down scroll to the previous and next prompt (bound in xterm's key handler so only the focused Terminal takes them, listed through `system.shortcuts.document`). A click or tap on the command being typed sends one arrow per character to it, in the program's cursor-key mode (`lib/promptCursor.ts`), only while the shell waits for typing, with no mouse tracking and no drag. Walked at 1280 and 390 (touch), vim keeping its own clicks.
+
+## [2026-11-22] done | Brief 108: a Terminal opens in a folder
+
+`e2297e2` (1.404.0): the PTY URL takes a checked start folder (an absolute `cwd`, or a Files `root` and `path` resolved through the Files jail; anything else starts in home). Files offers Open in Terminal on folders and the background menu; Ctrl+Shift+N, and Alt+Shift+N since browsers keep Ctrl+Shift+N for a private window, open a new Terminal in the shell's folder. Walked on the host: Files' item and `pwd`, and a new window after `cd /tmp`.

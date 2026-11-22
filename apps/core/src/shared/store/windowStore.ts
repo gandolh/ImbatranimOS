@@ -55,6 +55,9 @@ export function nextWorkspace(current: WorkspaceId, delta: number): WorkspaceId 
  */
 export type LinuxWindowKey = { session: string; toplevel: number };
 
+/** The most an app keeps with its window across a reload (`system.window.saveState`), in characters. */
+export const WINDOW_STATE_MAX = 512;
+
 export type WindowInstance = {
   id: string;
   appId: string;
@@ -69,6 +72,8 @@ export type WindowInstance = {
   size: { width: number; height: number };
   zIndex: number;
   snapState?: SnapRegion;
+  /** What the app keeps across a reload (`system.window.saveState`): at most {@link WINDOW_STATE_MAX} characters. */
+  savedState?: string;
 };
 
 type PreMaximizeState = {
@@ -165,6 +170,8 @@ export type PersistedWindow = {
   snapState?: SnapRegion;
   /** A Linux window's key: its place is kept, the window is never reopened. */
   linux?: LinuxWindowKey;
+  /** What the app kept with the window, handed back to it after the reload. */
+  savedState?: string;
 };
 
 /**
@@ -239,6 +246,7 @@ function persisted(w: WindowInstance): PersistedWindow {
     zIndex: w.zIndex,
     snapState: w.snapState,
     ...(w.linux ? { linux: w.linux } : {}),
+    ...(w.savedState !== undefined ? { savedState: w.savedState } : {}),
   };
 }
 
@@ -482,6 +490,11 @@ type WindowStore = {
   closeWindow: (id: string) => void;
   /** Live-update a window's title bar / taskbar label (e.g. filename + dirty •). */
   updateTitle: (id: string, title: string) => void;
+  /**
+   * Keep `value` with the window across a reload, or forget it (null). Refuses a value over
+   * {@link WINDOW_STATE_MAX} characters, keeping what was there; returns whether it was kept.
+   */
+  setWindowState: (id: string, value: string | null) => boolean;
   /** Register a veto consulted by closeWindow; returns true to allow the close. */
   registerCloseGuard: (id: string, guard: () => boolean | Promise<boolean>) => void;
   unregisterCloseGuard: (id: string) => void;
@@ -788,6 +801,21 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     set((state) => ({
       windows: state.windows.map((w) => (w.id === id ? { ...w, title } : w)),
     }));
+  },
+
+  setWindowState: (id, value) => {
+    if (value !== null && value.length > WINDOW_STATE_MAX) return false;
+    set((state) => ({
+      windows: state.windows.map((w) => {
+        if (w.id !== id) return w;
+        if (value === null) {
+          const { savedState: _dropped, ...rest } = w;
+          return rest;
+        }
+        return { ...w, savedState: value };
+      }),
+    }));
+    return true;
   },
 
   registerCloseGuard: (id, guard) => {
@@ -1166,6 +1194,9 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       // A layout written before workspaces has no workspace; clamp defaults it to
       // 1 rather than leaving `undefined`, which would filter to nowhere.
       workspaceId: clampWorkspace(p.workspaceId),
+      ...(typeof p.savedState === "string" && p.savedState.length <= WINDOW_STATE_MAX
+        ? { savedState: p.savedState }
+        : {}),
     }));
 
     set({

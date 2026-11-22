@@ -125,6 +125,39 @@ describe("window scoping", () => {
     expect(system.window.isFocused()).toBe(false);
     expect(system.window.isVisible()).toBe(false);
     expect(() => system.window.onCloseRequest(() => true)()).not.toThrow();
+    expect(() => system.window.saveState?.("x")).not.toThrow();
+    expect(system.window.savedState?.()).toBeNull();
+  });
+
+  it("saveState keeps a value with the OWN window, through a reload of the layout", () => {
+    const mine = openTestWindow("repl-interpreter");
+    const theirs = openTestWindow("notepad");
+    const system = createSystemHandle("repl-interpreter", mine);
+    expect(system.window.savedState?.()).toBeNull();
+
+    system.window.saveState?.("shell-token-1");
+    expect(system.window.savedState?.()).toBe("shell-token-1");
+    expect(createSystemHandle("notepad", theirs).window.savedState?.()).toBeNull();
+
+    // A reload: the layout is written, the windows go, and they come back with new ids.
+    useWindowStore.getState().persistLayout();
+    useWindowStore.setState({ windows: [] });
+    useWindowStore.getState().restoreLayout();
+    const back = useWindowStore.getState().windows.find((w) => w.appId === "repl-interpreter");
+    expect(back?.id).not.toBe(mine);
+    expect(createSystemHandle("repl-interpreter", back?.id ?? null).window.savedState?.()).toBe("shell-token-1");
+  });
+
+  it("saveState(null) forgets, and a value over 512 characters is refused", () => {
+    const id = openTestWindow("repl-interpreter");
+    const system = createSystemHandle("repl-interpreter", id);
+    system.window.saveState?.("kept");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    system.window.saveState?.("x".repeat(513));
+    warn.mockRestore();
+    expect(system.window.savedState?.()).toBe("kept");
+    system.window.saveState?.(null);
+    expect(system.window.savedState?.()).toBeNull();
   });
 });
 

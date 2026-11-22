@@ -12,11 +12,16 @@ import { desktopSessionId } from "@imbatranim/ui";
  *
  * `cols`/`rows` are passed as a query hint so the pty spawns at the right
  * geometry before the first resize frame arrives.
+ *
+ * `shell` names the window's shell: `shell=<token>` starts it, `resume=<token>`
+ * comes back to it after a reload or a drop (the gateway keeps a shell whose
+ * socket ended without the window closing for 30 s).
  */
-export function buildPtyUrl(cols: number, rows: number): string {
+export function buildPtyUrl(cols: number, rows: number, shell?: { token: string; resume: boolean }): string {
   // The desktop session (this tab) goes along so the shell's WAYLAND_DISPLAY
   // names this tab's socket: a Linux app started here opens its windows here.
-  const query = `?cols=${cols}&rows=${rows}&session=${encodeURIComponent(desktopSessionId())}`;
+  const named = shell ? `&${shell.resume ? "resume" : "shell"}=${encodeURIComponent(shell.token)}` : "";
+  const query = `?cols=${cols}&rows=${rows}&session=${encodeURIComponent(desktopSessionId())}${named}`;
   const base = import.meta.env.VITE_API_URL as string | undefined;
 
   if (base) {

@@ -32,15 +32,18 @@ flowchart LR
 3. Start → Terminal. The desktop opens a window and mounts the Terminal app, handing it the `system` handle.
 4. The app opens a WebSocket to `/api/pty`. The server checks the session on the upgrade and starts a shell with node-pty, as the `imbatranim` user.
 5. Keystrokes go up the socket and the shell's output comes back; xterm.js draws it.
-6. Files and System Monitor work the same way over REST (`/api/files`, `/api/system`), and every API route needs the session except `GET /api/identity`, setup, sign-in, sign-out and the health check.
+6. The window keeps a token that names its shell, and keeps it across a reload. If the socket closes without the window closing (a reload, a dropped connection, a phone tab put away), the server keeps the shell running for 30 seconds, and the window that comes back within that time gets the same shell, its recent output and its running command. Closing the window tells the server first, and the shell ends at once. A duplicated tab gets a shell of its own.
+7. Files and System Monitor work the same way over REST (`/api/files`, `/api/system`), and every API route needs the session except `GET /api/identity`, setup, sign-in, sign-out and the health check.
 
 ### Linux apps started from the Terminal
 
 A Linux app you start in the Terminal shows its windows in the tab whose
 Terminal started it. One running in the foreground (`foot`, without `&`)
-ends with its shell, when you close the Terminal window, close the tab or
-reload it, as on any Linux desktop when a terminal closes (a program that
-ignores the hang-up, as foot does, keeps running). The Terminal's
+ends with its shell: at once when you close the Terminal window, and 30
+seconds after you close the tab, as on any Linux desktop when a terminal
+closes (a program that ignores the hang-up, as foot does, keeps running). A
+reload is not a close: the window comes back to the same shell within 30
+seconds, the app still running. The Terminal's
 shell (BusyBox `sh`) does not stop its background jobs when it ends, so an
 app started with `&`, like one started with `setsid` or `nohup`, keeps
 running as long as the tab's desktop session: a reload finds it again within

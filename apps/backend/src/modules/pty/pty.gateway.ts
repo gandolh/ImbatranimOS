@@ -11,16 +11,21 @@ import { LocalIdentityService } from "../auth/ws-auth";
 import { PtySession } from "./pty-session";
 import { isPtyUpgrade, authorizeUpgrade } from "./pty-upgrade";
 import {
+  CLOSE_SHELL_ATTACHED,
   DEFAULT_COLS,
   DEFAULT_ROWS,
+  DETACH_MS,
+  isShellToken,
   MAX_COLS,
   MAX_ROWS,
   MAX_SESSIONS,
   PTY_PATH,
+  RESUME_PROBE_MS,
   resolveHome,
   resolveShell,
   terminalEnv,
 } from "./pty.constants";
+import type { Caller } from "../auth/ws-auth";
 import { childEnv } from "../../child-env";
 import { UpgradeRoutes } from "../../upgrade-routes";
 import { raiseOomScore } from "../linux-apps/oom";
@@ -42,7 +47,15 @@ interface LiveSession {
    * a session the REST guard refuses.
    */
   cookie: string | undefined;
+  /**
+   * The sign-in, the desktop session (tab) and the window's shell token, when the tab named its shell: the
+   * key a reload or a reconnect finds it by. Null for a socket that named none: its shell ends with it.
+   */
+  key: string | null;
 }
+
+/** The dim line a tab gets when the shell it came back for had already ended. */
+const PREVIOUS_ENDED = "\x1b[2m[the previous shell had ended; this is a new one]\x1b[0m\r\n";
 
 /**
  * Terminal WebSocket gateway. Attaches a raw `ws` server to Nest's underlying
@@ -50,13 +63,23 @@ interface LiveSession {
  * main.ts required. Every upgrade is authenticated through the shared
  * `LocalIdentityService`, the same check the REST guard uses, before a pty is
  * spawned as the current process user.
+ *
+ * A Terminal window names its shell with a token it keeps across a reload:
+ * `shell=<token>` for a new window, `resume=<token>` coming back. A socket that
+ * ends without the tab's `close` frame leaves its shell detached for
+ * {@link DETACH_MS}, and a `resume` from the same sign-in and tab within that
+ * gets it back. A shell another live socket holds refuses with
+ * {@link CLOSE_SHELL_ATTACHED}: a duplicated tab starts its own.
  */
 @Injectable()
 export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(PtyGateway.name);
   private wss: WebSocketServer | null = null;
   private httpServer: HttpServer | null = null;
+  /** Every shell, attached or detached: what the cap counts and the revocation sweep checks. */
   private readonly live = new Set<LiveSession>();
+  /** The shells a tab named, by {@link LiveSession.key}. */
+  private readonly byKey = new Map<string, LiveSession>();
   private revokeTimer: NodeJS.Timeout | null = null;
   private upgradeHandler: ((req: IncomingMessage, socket: Duplex, head: Buffer) => void) | null = null;
 
@@ -128,8 +151,9 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
         // Cap concurrent shells so a client can't exhaust PIDs/memory by
         // opening sockets in a loop. Reject the handshake before spawning
-        // anything.
-        if (this.live.size >= MAX_SESSIONS) {
+        // anything. Detached shells count; coming back to one adds none.
+        const named = shellKey(record, req.url);
+        if (!(named && this.byKey.has(named.key)) && this.live.size >= MAX_SESSIONS) {
           this.logger.warn(`Terminal session cap reached (${MAX_SESSIONS})`);
           socket.write("HTTP/1.1 503 Service Unavailable\r\n\r\n");
           socket.destroy();
@@ -138,7 +162,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
 
         socket.off("error", onSocketError);
         required(this.wss, "the relay server").handleUpgrade(req, socket, head, (ws) => {
-          this.onConnection(ws, req);
+          this.onConnection(ws, req, record);
         });
       })();
     };
@@ -148,9 +172,20 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.logger.log(`Terminal WS listening on ${PTY_PATH}`);
   }
 
-  private onConnection(ws: WebSocket, req: IncomingMessage): void {
+  private onConnection(ws: WebSocket, req: IncomingMessage, caller: Caller): void {
     const { cols, rows } = parseGeometry(req.url);
-    const desktopSession = parseDesktopSession(req.url);
+    const desktopSession = queryParam(req.url, "session");
+    const named = shellKey(caller, req.url);
+    const existing = named ? this.byKey.get(named.key) : undefined;
+    if (existing) {
+      this.resume(existing, ws, cols, rows);
+      return;
+    }
+    if (this.live.size >= MAX_SESSIONS) {
+      // Another upgrade filled the last place while this one was in its handshake.
+      ws.close(1013, "session-cap");
+      return;
+    }
     let ptyProcess: pty.IPty;
     try {
       ptyProcess = pty.spawn(resolveShell(), [], {
@@ -174,13 +209,60 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
       return;
     }
 
-    const entry: LiveSession = {
-      session: new PtySession(ptyProcess, ws),
-      cookie: req.headers.cookie,
-    };
+    if (named?.resuming) {
+      try {
+        ws.send(PREVIOUS_ENDED);
+      } catch {
+        /* noop */
+      }
+    }
+    const key = named?.key ?? null;
+    const session: PtySession = new PtySession(ptyProcess, ws, {
+      // A shell nobody can come back to ends with its socket, as it always has.
+      detachMs: key ? DETACH_MS : 0,
+      onDispose: () => this.forget(session),
+    });
+    const entry: LiveSession = { session, cookie: req.headers.cookie, key };
     this.live.add(entry);
-    ws.on("close", () => this.live.delete(entry));
+    if (key) this.byKey.set(key, entry);
     this.logger.log(`Terminal opened (${this.live.size} live)`);
+  }
+
+  /**
+   * A tab comes back for its shell. Detached: it attaches. Held by a socket that still answers: that is another
+   * tab, refused with {@link CLOSE_SHELL_ATTACHED}. Held by one that doesn't: a half-open connection the tab left
+   * behind, dropped, and the shell attaches.
+   */
+  private resume(entry: LiveSession, ws: WebSocket, cols: number, rows: number): void {
+    const attach = (): void => {
+      if (ws.readyState !== ws.OPEN) return;
+      if (!entry.session.attach(ws)) {
+        // It ended while the probe ran: the tab starts afresh.
+        ws.close(CLOSE_SHELL_ATTACHED, "shell-attached");
+        return;
+      }
+      entry.session.resize(cols, rows);
+      this.logger.log(`Terminal reattached (${this.live.size} live)`);
+    };
+    if (!entry.session.attached) {
+      attach();
+      return;
+    }
+    void entry.session.probe(RESUME_PROBE_MS).then((held) => {
+      if (held) {
+        ws.close(CLOSE_SHELL_ATTACHED, "shell-attached");
+        return;
+      }
+      attach();
+    });
+  }
+
+  private forget(session: PtySession): void {
+    for (const entry of this.live) {
+      if (entry.session !== session) continue;
+      this.live.delete(entry);
+      if (entry.key && this.byKey.get(entry.key) === entry) this.byKey.delete(entry.key);
+    }
   }
 
   /**
@@ -199,8 +281,9 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         this.config.get("FRONTEND_URL"),
       );
       if (!still) {
+        // Detached shells too: a signed-out session's shell is not waiting for anyone.
         entry.session.dispose(4401, "session-revoked");
-        this.live.delete(entry);
+        this.forget(entry.session);
       }
     }
   }
@@ -210,16 +293,31 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     if (this.upgradeHandler && this.httpServer) {
       this.httpServer.off("upgrade", this.upgradeHandler);
     }
-    for (const entry of this.live) entry.session.dispose(1001, "shutdown");
+    for (const entry of [...this.live]) entry.session.dispose(1001, "shutdown");
     this.live.clear();
+    this.byKey.clear();
     this.wss?.close();
   }
 }
 
-/** The desktop session (tab) id the Terminal sends, if any. */
-function parseDesktopSession(url: string | undefined): string | null {
+/** One query parameter of the upgrade URL, if present. */
+function queryParam(url: string | undefined, name: string): string | null {
   const q = url?.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
-  return q ? new URLSearchParams(q).get("session") : null;
+  return q ? new URLSearchParams(q).get(name) : null;
+}
+
+/**
+ * The key a named shell is kept by: the sign-in, the desktop session (tab) and the window's token, so a
+ * shell is found only by the tab and sign-in it was started in. `resuming` when the tab came back for it
+ * (`resume=`), rather than starting it (`shell=`). Null when the tab named no shell.
+ */
+function shellKey(caller: Caller, url: string | undefined): { key: string; resuming: boolean } | null {
+  const desktopSession = queryParam(url, "session") ?? "";
+  const resume = queryParam(url, "resume");
+  if (isShellToken(resume)) return { key: `${caller.sid}:${desktopSession}:${resume}`, resuming: true };
+  const fresh = queryParam(url, "shell");
+  if (isShellToken(fresh)) return { key: `${caller.sid}:${desktopSession}:${fresh}`, resuming: false };
+  return null;
 }
 
 /** Read optional `cols`/`rows` from the upgrade URL query string. */

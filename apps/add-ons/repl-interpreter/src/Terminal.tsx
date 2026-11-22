@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Terminal as XTerm, type IBufferRange } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
@@ -7,7 +7,7 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
 import { ChevronDown, ChevronUp, Plug, RotateCw, Search, X } from "lucide-react";
 import { Button, useConfirm, useSystem, useSystemAppearance } from "@imbatranim/ui";
-import { usePtyConnection } from "./hooks/usePtyConnection";
+import { usePtyConnection, type ShellTokenKeep } from "./hooks/usePtyConnection";
 import { safePaste } from "./lib/paste";
 import { linkAction } from "./lib/links";
 import { buildXtermTheme, documentVarResolver } from "./lib/xtermTheme";
@@ -113,7 +113,28 @@ export function Terminal(_props: { windowId: string }) {
   // The hook sends its own initial resize on every (re)connect, so there is no
   // `onOpen` callback to thread back in — which also removes the cycle an earlier
   // draft had, where `onOpen` needed the `sendResize` produced by the same call.
-  const { status, sendInput, sendResize, reconnect } = usePtyConnection({ getTerm, generation });
+  //
+  // The window keeps its shell's token, so a reload comes back to the same shell.
+  // Read through `system.window` at connect time; both members are optional.
+  const keep = useMemo<ShellTokenKeep>(
+    () => ({
+      saved: () => system.window.savedState?.() ?? null,
+      save: (token) => system.window.saveState?.(token),
+    }),
+    [system],
+  );
+  const { status, sendInput, sendResize, sendClose, reconnect } = usePtyConnection({ getTerm, generation, keep });
+
+  // Closing the window ends the shell at once. Every other end of the socket (a
+  // reload, a drop) leaves the shell waiting 30 s for this window to come back.
+  useEffect(
+    () =>
+      system.window.onCloseRequest(() => {
+        sendClose();
+        return true;
+      }),
+    [system, sendClose],
+  );
 
   const attachHost = useCallback((host: HTMLDivElement | null) => {
     hostRef.current = host;

@@ -39,6 +39,36 @@ export const BACKPRESSURE_LOW_WATER = 256 * 1024; // drained below → resume
 export const BACKPRESSURE_POLL_MS = 50;
 
 /**
+ * How long a shell whose socket closed without the tab's `close` frame waits for the tab to come back: a
+ * reload, a dropped network, a backgrounded phone tab. After it the shell is hung up as a closed window's
+ * is (decisions-terminal.md, 2026-11-20).
+ */
+export const DETACH_MS = 30_000;
+
+/**
+ * What a shell keeps of its latest output, attached or not: the last 256 KiB. A detached shell is read into it,
+ * so a busy command doesn't stall on a full pty, and a tab that comes back gets its recent screen from it.
+ */
+export const RING_BYTES = 256 * 1024;
+
+/** The close code a second tab gets for a shell another tab's socket still holds. */
+export const CLOSE_SHELL_ATTACHED = 4409;
+
+/**
+ * How long a tab coming back waits for the socket the server still holds to answer a ping. No pong means that
+ * socket is half-open (the tab is the one coming back), so the shell is handed over.
+ */
+export const RESUME_PROBE_MS = 2_000;
+
+/**
+ * Names the shell a Terminal window keeps across a reload: the tab makes one (a UUID) and the window keeps
+ * it. Anything else names no shell, and that socket's shell ends with it as before.
+ */
+export function isShellToken(value: string | null): value is string {
+  return value !== null && /^[A-Za-z0-9_-]{8,64}$/.test(value);
+}
+
+/**
  * The login shell to spawn, as the CURRENT process user (in the container
  * that's `imbatranim`; locally it's the dev user). We never hardcode a
  * username — node-pty inherits the process uid/gid. Falls back to `/bin/sh`

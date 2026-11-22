@@ -16,7 +16,9 @@
  * | 1000 | `closed`          | generic dispose                          |
  * | 1001 | `shutdown`        | backend shutting down / restarting       |
  * | 1011 | `spawn-failed`    | the shell could not be spawned           |
+ * | 1013 | `session-cap`     | the cap filled during the handshake      |
  * | 4401 | `session-revoked` | the session was logged out or expired    |
+ * | 4409 | `shell-attached`  | another tab's live socket holds the shell |
  *
  * ## The 1006 problem
  *
@@ -64,10 +66,18 @@ export type CloseVerdict = {
    * because the user may have just fixed the cause.
    */
   allowManualRetry: boolean;
+  /**
+   * Set when the shell this window named is another tab's (a duplicated tab copies the window's token):
+   * the window drops its token and starts a shell of its own, at once.
+   */
+  newShell?: true;
 };
 
 /** WebSocket close code the gateway uses for a revoked session. */
 export const CLOSE_SESSION_REVOKED = 4401;
+
+/** WebSocket close code for a shell another tab's live socket holds. */
+export const CLOSE_SHELL_ATTACHED = 4409;
 
 export function classifyClose(code: number, reason: string, everOpened: boolean): CloseVerdict {
   // The session is gone. Retrying cannot succeed and would hammer the upgrade
@@ -79,6 +89,19 @@ export function classifyClose(code: number, reason: string, everOpened: boolean)
       message: "Session ended — sign in again to open a new shell.",
       checkAuth: false,
       allowManualRetry: false,
+    };
+  }
+
+  // A duplicated tab came back for a shell the first tab still shows. Not a
+  // fault: this window gets a shell of its own.
+  if (code === CLOSE_SHELL_ATTACHED) {
+    return {
+      retry: true,
+      terminal: false,
+      message: "This shell is open in another tab; starting a new one.",
+      checkAuth: false,
+      allowManualRetry: true,
+      newShell: true,
     };
   }
 

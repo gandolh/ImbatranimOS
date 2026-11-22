@@ -88,8 +88,15 @@ vi.mock("@xterm/addon-web-links", () => ({
   },
 }));
 const sendInput = vi.fn();
+const sendClose = vi.fn();
 vi.mock("./hooks/usePtyConnection", () => ({
-  usePtyConnection: () => ({ status: { kind: "open" }, sendInput, sendResize: () => {}, reconnect: () => {} }),
+  usePtyConnection: () => ({
+    status: { kind: "open" },
+    sendInput,
+    sendResize: () => {},
+    sendClose,
+    reconnect: () => {},
+  }),
 }));
 
 const { Terminal } = await import("./Terminal");
@@ -99,10 +106,22 @@ let root: Root;
 let clipboard = "";
 
 const notify = vi.fn();
+/** The close guard the Terminal gave its window. */
+let closeGuard: (() => boolean | Promise<boolean>) | null = null;
 function makeSystem(): SystemHandle {
   return {
     windowId: "w1",
     notify,
+    window: {
+      onCloseRequest: (guard: () => boolean | Promise<boolean>) => {
+        closeGuard = guard;
+        return () => {
+          closeGuard = null;
+        };
+      },
+      savedState: () => null,
+      saveState: () => undefined,
+    },
     appearance: { get: () => ({ theme: "light", accent: "blue" }), subscribe: () => () => undefined },
     on: () => () => undefined,
   } as unknown as SystemHandle;
@@ -112,6 +131,7 @@ const settle = () => act(async () => new Promise((r) => setTimeout(r, 0)));
 
 beforeEach(async () => {
   sendInput.mockClear();
+  sendClose.mockClear();
   notify.mockClear();
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
@@ -163,6 +183,15 @@ function button(label: string): HTMLButtonElement {
   if (!found) throw new Error(`button "${label}" not found`);
   return found;
 }
+
+describe("closing the Terminal's window", () => {
+  it("tells the shell first, then lets the window close", async () => {
+    expect(closeGuard).not.toBeNull();
+    expect(sendClose).not.toHaveBeenCalled();
+    expect(await closeGuard?.()).toBe(true);
+    expect(sendClose).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("pasting into the Terminal", () => {
   it("never sends a right-click paste straight to the shell; a multi-line one asks first", async () => {

@@ -286,6 +286,14 @@ export interface SystemWindow {
    * proxies the call and awaits its settlement, pure data either way.
    */
   onCloseRequest(guard: () => boolean | Promise<boolean>): () => void;
+  /**
+   * Keep a short value with this window across a reload of the tab, or forget it (null): what the app needs to
+   * pick up where it was, as the Terminal keeps the token of its shell. Per tab, at most 512 characters; a longer
+   * value is refused and the old one kept. Optional (added 2026-11-22): check it exists before calling.
+   */
+  saveState?(value: string | null): void;
+  /** What {@link saveState} kept for this window, after a reload too; null when nothing is kept. */
+  savedState?(): string | null;
 }
 
 // ── Intents ───────────────────────────────────────────────────────────────────

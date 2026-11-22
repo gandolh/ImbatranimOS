@@ -29,14 +29,28 @@ class FakeXTerm {
   linkHandler: LinkHandler | null = null;
   /** One line of output, where an OSC 8 link's text sits. */
   line = "see docs here";
+  /** Text by buffer line, for the rows a click reads; `line` stands in where none is set. */
+  lines = new Map<number, string>();
   buffer = {
     active: {
-      getLine: () => ({
-        translateToString: (_trim: boolean, from = 0, to?: number) => this.line.slice(from, to),
-      }),
+      type: "normal",
+      cursorX: 0,
+      cursorY: 0,
+      baseY: 0,
+      viewportY: 0,
+      getLine: (y: number) => {
+        const text = this.lines.get(y) ?? this.line;
+        return {
+          isWrapped: false,
+          translateToString: (_trim: boolean, from = 0, to?: number) => text.slice(from, to),
+          getCell: (x: number) => ({ getChars: () => text[x] ?? "", getWidth: () => 1 }),
+        };
+      },
     },
   };
-  modes = { bracketedPasteMode: false };
+  modes = { bracketedPasteMode: false, mouseTrackingMode: "none", applicationCursorKeysMode: false };
+  keyHandler: ((e: KeyboardEvent) => boolean) | null = null;
+  scrolledTo: number | null = null;
   pasted: string[] = [];
   options: Record<string, unknown> = {};
   unicode = { activeVersion: "6" };
@@ -52,13 +66,18 @@ class FakeXTerm {
     },
   };
   titleListener: ((title: string) => void) | null = null;
-  markers: { line: number; isDisposed: boolean }[] = [];
+  markers: { line: number; isDisposed: boolean; dispose(): void }[] = [];
   constructor(options: { linkHandler?: LinkHandler }) {
     FakeXTerm.last = this;
     this.linkHandler = options.linkHandler ?? null;
   }
   loadAddon() {}
   open(host: HTMLElement) {
+    // The grid, 10 px a cell: what a click's position is measured against.
+    const screen = document.createElement("div");
+    screen.className = "xterm-screen";
+    screen.getBoundingClientRect = () => ({ left: 0, top: 0, width: 800, height: 240 }) as DOMRect;
+    host.appendChild(screen);
     // xterm's helper textarea, where the browser delivers a keyboard paste.
     this.textarea = document.createElement("textarea");
     this.textarea.addEventListener("paste", (e) =>
@@ -74,7 +93,13 @@ class FakeXTerm {
     return { dispose: () => (this.titleListener = null) };
   }
   registerMarker() {
-    const marker = { line: this.markers.length, isDisposed: false };
+    const marker = {
+      line: this.buffer.active.baseY + this.buffer.active.cursorY,
+      isDisposed: false,
+      dispose() {
+        this.isDisposed = true;
+      },
+    };
     this.markers.push(marker);
     return marker;
   }
@@ -82,7 +107,18 @@ class FakeXTerm {
   emitOsc(code: number, payload: string) {
     return this.osc.get(code)?.(payload);
   }
-  attachCustomKeyEventHandler() {}
+  attachCustomKeyEventHandler(handler: (e: KeyboardEvent) => boolean) {
+    this.keyHandler = handler;
+  }
+  hasSelection() {
+    return false;
+  }
+  scrollToLine(line: number) {
+    this.scrolledTo = line;
+  }
+  scrollToBottom() {
+    this.scrolledTo = -1;
+  }
   paste(data: string) {
     this.pasted.push(data);
   }
@@ -130,6 +166,7 @@ let clipboard = "";
 
 const notify = vi.fn();
 const setTitle = vi.fn();
+const documented = vi.fn((_docs: { id: string; keys: string }[]) => () => undefined);
 /** The close guard the Terminal gave its window. */
 let closeGuard: (() => boolean | Promise<boolean>) | null = null;
 let focused = false;
@@ -149,6 +186,7 @@ function makeSystem(): SystemHandle {
       saveState: () => undefined,
       setTitle,
     },
+    shortcuts: { document: documented },
     appearance: { get: () => ({ theme: "light", accent: "blue" }), subscribe: () => () => undefined },
     on: () => () => undefined,
   } as unknown as SystemHandle;
@@ -228,7 +266,8 @@ describe("the shell's marks and titles", () => {
       t.emitOsc(133, "A");
     });
     expect(shown()).toMatchObject({ shellPhase: "prompt", shellExit: "2" });
-    expect(t.markers).toHaveLength(2);
+    // One at each of the two prompts, and one where typing started.
+    expect(t.markers).toHaveLength(3);
   });
 
   it("gives the window the title the shell or a program sets, cleaned", () => {
@@ -236,6 +275,77 @@ describe("the shell's marks and titles", () => {
     expect(setTitle).toHaveBeenLastCalledWith("vim notes.txt");
     act(() => term().titleListener?.(""));
     expect(setTitle).toHaveBeenLastCalledWith("Terminal");
+  });
+});
+
+describe("jumping between prompts", () => {
+  it("scrolls to the previous and next prompt on Ctrl+Shift+Up and Down, listed as shortcuts", () => {
+    const t = term();
+    for (const line of [0, 30, 60]) {
+      t.buffer.active.cursorY = line;
+      act(() => {
+        t.emitOsc(133, "A");
+      });
+    }
+    t.buffer.active.viewportY = 45;
+    const key = (k: string) => t.keyHandler?.(new KeyboardEvent("keydown", { key: k, ctrlKey: true, shiftKey: true }));
+    expect(key("ArrowUp")).toBe(false);
+    expect(t.scrolledTo).toBe(30);
+    key("ArrowDown");
+    expect(t.scrolledTo).toBe(60);
+    t.buffer.active.viewportY = 70;
+    key("ArrowDown");
+    expect(t.scrolledTo).toBe(-1);
+    expect(documented.mock.calls.at(-1)?.[0].map((d) => d.keys)).toEqual(["ctrl+shift+up", "ctrl+shift+down"]);
+  });
+});
+
+describe("a click in the command being typed", () => {
+  /** "$ echo hi" on line 0, typing from column 2, the cursor at its end. */
+  const typing = () => {
+    const t = term();
+    t.lines.set(0, "$ echo hi");
+    act(() => {
+      t.emitOsc(133, "A");
+    });
+    t.buffer.active.cursorX = 2;
+    act(() => {
+      t.emitOsc(133, "B");
+    });
+    t.buffer.active.cursorX = 9;
+    return t;
+  };
+  const click = (x: number, y: number, moveTo = { x, y }) =>
+    act(() => {
+      pane().dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: x, clientY: y, button: 0 }));
+      pane().dispatchEvent(new MouseEvent("pointerup", { bubbles: true, clientX: moveTo.x, clientY: moveTo.y }));
+    });
+
+  it("moves the cursor there with arrow keys", () => {
+    typing();
+    click(45, 5);
+    expect(sendInput).toHaveBeenCalledWith("\x1b[D".repeat(5));
+  });
+
+  it("sends the application cursor keys when the program set that mode", () => {
+    const t = typing();
+    t.modes.applicationCursorKeysMode = true;
+    click(45, 5);
+    expect(sendInput).toHaveBeenCalledWith("\x1bOD".repeat(5));
+  });
+
+  it("does nothing on a drag, under mouse tracking, on the prompt, or while a command runs", () => {
+    const t = typing();
+    click(45, 5, { x: 85, y: 5 });
+    click(5, 5);
+    t.modes.mouseTrackingMode = "vt200";
+    click(45, 5);
+    t.modes.mouseTrackingMode = "none";
+    act(() => {
+      t.emitOsc(133, "C");
+    });
+    click(45, 5);
+    expect(sendInput).not.toHaveBeenCalled();
   });
 });
 

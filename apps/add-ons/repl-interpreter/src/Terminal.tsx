@@ -12,6 +12,7 @@ import { safePaste } from "./lib/paste";
 import { linkAction } from "./lib/links";
 import { applyMark, cwdFromOsc7, INITIAL_SHELL_STATE, windowTitle, type ShellState } from "./lib/shellState";
 import { finishedToast, loadNotifyLong } from "./lib/commandNotify";
+import { arrowKeys, arrowsTo, type Cell } from "./lib/promptCursor";
 import { buildXtermTheme, documentVarResolver } from "./lib/xtermTheme";
 import {
   DEFAULT_FONT_SIZE,
@@ -102,6 +103,10 @@ export function Terminal(_props: { windowId: string }) {
    */
   const shellRef = useRef<ShellState>(INITIAL_SHELL_STATE);
   const promptMarksRef = useRef<IMarker[]>([]);
+  /** Where typing starts in the current command: a marker on the B mark's row, and its column. */
+  const inputStartRef = useRef<{ marker: IMarker; col: number } | null>(null);
+  /** Where the pointer went down, to tell a click from a drag that selects. */
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
   /** The title this window last took from its shell: where a finished command ran, for its toast. */
   const titleRef = useRef("Terminal");
 
@@ -243,6 +248,11 @@ export function Terminal(_props: { windowId: string }) {
           windowId: system.windowId,
         });
         if (toast) system.notify(toast);
+      }
+      if (payload === "B") {
+        inputStartRef.current?.marker.dispose();
+        const marker = instance.registerMarker(0);
+        inputStartRef.current = marker ? { marker, col: instance.buffer.active.cursorX } : null;
       }
       if (payload === "A") {
         const marker = instance.registerMarker(0);
@@ -486,6 +496,20 @@ export function Terminal(_props: { windowId: string }) {
   }, [system]);
 
   /**
+   * Scrolls to the previous (-1) or next (1) prompt, from the markers the
+   * shell's A marks left. Past the last prompt, down goes to the bottom.
+   */
+  const jumpToPrompt = useCallback((direction: -1 | 1) => {
+    const instance = termRef.current;
+    if (!instance) return;
+    const top = instance.buffer.active.viewportY;
+    const lines = promptMarksRef.current.filter((m) => !m.isDisposed).map((m) => m.line);
+    const target = direction < 0 ? lines.filter((l) => l < top).at(-1) : lines.find((l) => l > top);
+    if (target !== undefined) instance.scrollToLine(target);
+    else if (direction > 0) instance.scrollToBottom();
+  }, []);
+
+  /**
    * Terminal-wide key handling, registered with xterm rather than on the DOM.
    *
    * `attachCustomKeyEventHandler` returning false stops xterm from also treating
@@ -501,6 +525,12 @@ export function Terminal(_props: { windowId: string }) {
     if (!instance) return;
     instance.attachCustomKeyEventHandler((e) => {
       if (e.type !== "keydown") return true;
+      // Ctrl+Shift+Up and Down: the previous and next prompt (readline binds neither).
+      if (e.ctrlKey && e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        e.preventDefault();
+        jumpToPrompt(e.key === "ArrowUp" ? -1 : 1);
+        return false;
+      }
       const mod = e.ctrlKey || e.metaKey;
       if (mod && e.shiftKey) {
         const key = e.key.toLowerCase();
@@ -554,7 +584,28 @@ export function Terminal(_props: { windowId: string }) {
       }
       return true;
     });
-  }, [generation, paste, copy, zoom, searchOpen]);
+  }, [generation, paste, copy, zoom, searchOpen, jumpToPrompt]);
+
+  // The jump keys are bound in xterm's own key handler above, so only the
+  // focused Terminal takes them; the shortcuts list shows them from here.
+  useEffect(
+    () =>
+      system.shortcuts.document([
+        {
+          id: "terminal.prompt-previous",
+          keys: "ctrl+shift+up",
+          description: "Terminal: jump to the previous prompt",
+          scope: "Editing",
+        },
+        {
+          id: "terminal.prompt-next",
+          keys: "ctrl+shift+down",
+          description: "Terminal: jump to the next prompt",
+          scope: "Editing",
+        },
+      ]),
+    [system],
+  );
 
   const findNext = useCallback((value: string) => {
     if (!value) return;
@@ -564,6 +615,52 @@ export function Terminal(_props: { windowId: string }) {
     if (!value) return;
     searchRef.current?.findPrevious(value, { decorations: undefined });
   }, []);
+
+  // ── A click in the command being typed moves the cursor there ─────────────
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    pointerDownRef.current = e.button === 0 ? { x: e.clientX, y: e.clientY } : null;
+  }, []);
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      const down = pointerDownRef.current;
+      pointerDownRef.current = null;
+      const instance = termRef.current;
+      const start = inputStartRef.current;
+      const screen = hostRef.current?.querySelector(".xterm-screen");
+      // Only a click (a drag still selects), while the shell waits for typing,
+      // with no program reading the mouse, on the normal screen.
+      if (!down || !instance || !start || start.marker.isDisposed || !screen) return;
+      if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 4 || instance.hasSelection()) return;
+      if (shellRef.current.phase !== "input" || instance.modes.mouseTrackingMode !== "none") return;
+      const buf = instance.buffer.active;
+      if (buf.type !== "normal") return;
+
+      const box = screen.getBoundingClientRect();
+      const col = Math.floor(((e.clientX - box.left) / box.width) * instance.cols);
+      const row = Math.floor(((e.clientY - box.top) / box.height) * instance.rows);
+      if (col < 0 || row < 0 || col >= instance.cols || row >= instance.rows) return;
+
+      // The command's rows: the one typing starts on and those wrapped from it.
+      const first = start.marker.line;
+      const rows: Cell[][] = [];
+      for (let y = first; ; y++) {
+        const line = buf.getLine(y);
+        if (!line || (y > first && !line.isWrapped)) break;
+        const cells: Cell[] = [];
+        for (let x = 0; x < instance.cols; x++) {
+          const cell = line.getCell(x);
+          cells.push({ chars: cell?.getChars() ?? "", width: cell?.getWidth() ?? 1 });
+        }
+        rows.push(cells);
+      }
+      const n = arrowsTo(
+        { rows, startCol: start.col, cursor: { row: buf.baseY + buf.cursorY - first, col: buf.cursorX } },
+        { row: buf.viewportY + row - first, col },
+      );
+      if (n) sendInput(arrowKeys(n, instance.modes.applicationCursorKeysMode));
+    },
+    [sendInput],
+  );
 
   // ── Middle-click paste, and a right-click that pastes too ─────────────────
   // The X11 convention, and the one thing users try first in a browser terminal.
@@ -674,6 +771,8 @@ export function Terminal(_props: { windowId: string }) {
         ref={paneRef}
         className="relative min-h-0 flex-1 p-1"
         onAuxClick={onAuxClick}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
         onContextMenu={(e) => {
           // Right-click pastes, the way most browser terminals behave. Preventing
           // the native menu is the point: its Paste item cannot reach the pty.

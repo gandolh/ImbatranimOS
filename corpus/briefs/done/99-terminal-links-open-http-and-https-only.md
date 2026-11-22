@@ -60,3 +60,29 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md), ite
 - [ ] Only http and https targets open; the native `confirm()` is gone.
 - [ ] `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy`, owner step `node cli.ts imbatranim-os server`.
+
+## Outcome (2026-11-22)
+
+Built in `dde199e` (1.387.0). `src/lib/links.ts`: `webLinkTarget` (parsed with `new URL`, http and https only) and
+`linkAction`, the decision table (refuse; open; ask on a screen with no hover when an OSC 8 link's text isn't
+its address, naming the host). The Terminal sets xterm's `linkHandler` (`allowNonHttpProtocols: true`, so a
+refused scheme reaches the handler and says why instead of doing nothing), and routes the web-links addon's
+callback through the same `openLink`. A refusal is a toast, "The Terminal opens only web links"; an open is a
+new tab with `noopener,noreferrer`; the native `confirm()` is gone. Tests: `links.test.ts` (7: `https://x`,
+`HTTP://X`, `file:///etc/passwd`, `javascript:alert(1)`, `vscode://x`, a malformed URL, the table) and six
+component cases in `Terminal.test.tsx`.
+
+**Deviation:** the hover target is not the kit's `Tooltip` component but an element in its tokens
+(`bg-inverse-surface`, `text-inverse-on-surface`, `rounded-control`, the tooltip shadow) placed at the
+pointer: the kit's `Tooltip` wraps a trigger element, and an OSC 8 link is a range of cells. Moving the kit to
+a pointer-anchored tooltip would be a kit brief.
+
+**Walk** (on the host, Docker's daemon is down; BusyBox `printf` with `\033`): at 1280 in Apricot light,
+hovering an OSC 8 link to `https://example.com` showed the URL at the pointer and a click opened a new tab;
+`file:///etc/passwd` and `javascript:alert(1)` links showed the toast and opened nothing. **At 390 the phone
+case could not be walked:** in headless Chromium's touch emulation xterm 6 never hovers or activates an OSC 8
+link from a tap (a mouse hover in the same phone context does). The tap question is covered by the component
+test; checking it on a real phone is the owner's.
+
+`npm run check` exit 0; `bash corpus/lint.sh` OK. Owner step: `node cli.ts imbatranim-os server`.
+

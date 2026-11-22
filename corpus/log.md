@@ -6370,3 +6370,8 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-22] done | Brief 98: pastes into the Terminal are made safe
 
 `6e66eac` (1.385.0): every paste into the Terminal (keyboard, right-click, middle-click, a text drop) goes through `lib/paste.ts`. Text with a bracket's end marker, or a line break while the shell hasn't asked for bracketed paste, asks first in the kit's confirm dialog; then xterm's control bytes become spaces and xterm's own `paste()` brackets it. BusyBox sh (Alpine 1.37) never asks for bracketed paste, so every multi-line paste asks until bash (104). Walked on the host, not in Docker (the daemon was down): the four cases and the keyboard paste hold.
+
+
+## [2026-11-22] done | Brief 99: Terminal links open http and https only
+
+`dde199e` (1.387.0): OSC 8 links get a `linkHandler` and plain URLs go through the same rule in `lib/links.ts`: http and https open in a new tab, anything else shows a toast. A hovered OSC 8 link shows its target at the pointer (in the kit tooltip's tokens, not its component, which can't anchor at a pointer). The native `confirm()` is gone. The phone's tap question is tested but not walked: headless touch emulation never activates an xterm OSC 8 link.

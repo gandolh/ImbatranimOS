@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Terminal as XTerm } from "@xterm/xterm";
+import { Terminal as XTerm, type IBufferRange } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
@@ -9,6 +9,7 @@ import { ChevronDown, ChevronUp, Plug, RotateCw, Search, X } from "lucide-react"
 import { Button, useConfirm, useSystem, useSystemAppearance } from "@imbatranim/ui";
 import { usePtyConnection } from "./hooks/usePtyConnection";
 import { safePaste } from "./lib/paste";
+import { linkAction } from "./lib/links";
 import { buildXtermTheme, documentVarResolver } from "./lib/xtermTheme";
 import {
   DEFAULT_FONT_SIZE,
@@ -18,6 +19,20 @@ import {
   MIN_FONT_SIZE,
   MAX_FONT_SIZE,
 } from "./lib/fontSize";
+
+/** The cells a link covers, as text: an OSC 8 link's visible words. `range` is 1-based, as xterm gives it. */
+function textInRange(term: XTerm, range: IBufferRange): string {
+  const buffer = term.buffer.active;
+  let text = "";
+  for (let y = range.start.y; y <= range.end.y; y++) {
+    const line = buffer.getLine(y - 1);
+    if (!line) continue;
+    const from = y === range.start.y ? range.start.x - 1 : 0;
+    const to = y === range.end.y ? range.end.x : undefined;
+    text += line.translateToString(true, from, to);
+  }
+  return text;
+}
 
 /** Cap scrollback so a long-running flood can't grow xterm's buffer unbounded. */
 const SCROLLBACK = 5000;
@@ -69,6 +84,16 @@ export function Terminal(_props: { windowId: string }) {
 
   const system = useSystem();
 
+  /**
+   * Opens a link the output carries, by `lib/links.ts`'s rule: http and https
+   * open in a new tab, anything else is refused with a toast. Held in a ref so
+   * the handlers given to xterm at construction always call the current one.
+   */
+  const openLinkRef = useRef<(uri: string, shownText?: string) => void>(() => undefined);
+  /** An OSC 8 link's target, shown at the pointer while it is hovered. */
+  const [linkTip, setLinkTip] = useState<{ url: string; left: number; top: number } | null>(null);
+  const paneRef = useRef<HTMLDivElement | null>(null);
+
   // Subscribed, not read once at mount: changing the theme or accent in Settings
   // has to restyle an already-open terminal, which the old read-at-mount accent
   // could not do.
@@ -109,6 +134,23 @@ export function Terminal(_props: { windowId: string }) {
         document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark",
         documentVarResolver(),
       ),
+      /**
+       * OSC 8 hyperlinks, where a program names the target and the text can say
+       * anything. Without a handler xterm asks with the native `confirm()` and
+       * then sets `location.href` to any scheme. Every scheme reaches `activate`
+       * here (`allowNonHttpProtocols`) so a refused one says why instead of
+       * doing nothing; the target shows at the pointer before the click.
+       */
+      linkHandler: {
+        allowNonHttpProtocols: true,
+        activate: (_event, uri, range) => openLinkRef.current(uri, textInRange(instance, range)),
+        hover: (event, uri) => {
+          const pane = paneRef.current?.getBoundingClientRect();
+          if (!pane) return;
+          setLinkTip({ url: uri, left: event.clientX - pane.left + 12, top: event.clientY - pane.top + 16 });
+        },
+        leave: () => setLinkTip(null),
+      },
     });
     const fit = new FitAddon();
     instance.loadAddon(fit);
@@ -130,14 +172,8 @@ export function Terminal(_props: { windowId: string }) {
      */
     instance.loadAddon(new Unicode11Addon());
     instance.unicode.activeVersion = "11";
-    // Makes URLs in output clickable. The first callback arg is the MouseEvent.
-    instance.loadAddon(
-      new WebLinksAddon((_, uri) => {
-        // Explicit noopener/noreferrer: output can contain any URL, including one a
-        // remote command printed, and a terminal must not hand it a window handle.
-        window.open(uri, "_blank", "noopener,noreferrer");
-      }),
-    );
+    // Makes plain URLs in output clickable, through the same rule as OSC 8 links.
+    instance.loadAddon(new WebLinksAddon((_, uri) => openLinkRef.current(uri)));
     instance.open(host);
 
     // Fit before the socket opens so the pty spawns at the right geometry.
@@ -293,6 +329,42 @@ export function Terminal(_props: { windowId: string }) {
       host.removeEventListener("drop", onDrop, { capture: true });
     };
   }, [generation, pasteText]);
+
+  /**
+   * The link rule in action. Explicit noopener/noreferrer: output can contain
+   * any URL, including one a remote command printed, and a terminal must not
+   * hand it a window handle. On a screen with no hover the target wasn't shown
+   * before the tap, so an OSC 8 link whose text isn't its address asks first.
+   */
+  const openLink = useCallback(
+    async (uri: string, shownText?: string) => {
+      const canHover = window.matchMedia?.("(hover: hover)").matches ?? true;
+      const action = linkAction(uri, shownText === undefined ? { canHover } : { shownText, canHover });
+      if (action.kind === "refuse") {
+        system.notify({ title: "The Terminal opens only web links", level: "warning" });
+        return;
+      }
+      if (action.kind === "ask") {
+        const ok = await confirm({
+          title: `Open a link to ${action.host}?`,
+          message: (
+            <>
+              The link&apos;s text is not its address. It goes to{" "}
+              <span className="font-mono break-all">{action.href}</span>.
+            </>
+          ),
+          confirmLabel: "Open",
+          cancelLabel: "Cancel",
+        });
+        if (!ok) return;
+      }
+      window.open(action.href, "_blank", "noopener,noreferrer");
+    },
+    [confirm, system],
+  );
+  useEffect(() => {
+    openLinkRef.current = (uri, shownText) => void openLink(uri, shownText);
+  }, [openLink]);
 
   const copy = useCallback(async () => {
     const selection = termRef.current?.getSelection();
@@ -494,7 +566,8 @@ export function Terminal(_props: { windowId: string }) {
       {/* The surface token, not a literal — this is the line ui-conventions §8/§46
           flagged, and it is what makes the Terminal follow the theme. */}
       <div
-        className="min-h-0 flex-1 p-1"
+        ref={paneRef}
+        className="relative min-h-0 flex-1 p-1"
         onAuxClick={onAuxClick}
         onContextMenu={(e) => {
           // Right-click pastes, the way most browser terminals behave. Preventing
@@ -504,6 +577,17 @@ export function Terminal(_props: { windowId: string }) {
         }}
       >
         <div ref={attachHost} className="h-full w-full" />
+        {/* The kit tooltip's look, placed at the pointer: the kit's Tooltip wraps a
+            trigger element, and an OSC 8 link is a range of cells, not an element. */}
+        {linkTip && (
+          <div
+            role="tooltip"
+            className="border-outline-variant bg-inverse-surface rounded-control font-ui text-inverse-on-surface text-label z-tooltip pointer-events-none absolute max-w-80 border px-2 py-1 break-all shadow-(--k-shadow-tooltip)"
+            style={{ left: linkTip.left, top: linkTip.top }}
+          >
+            {linkTip.url}
+          </div>
+        )}
       </div>
 
       {/* Font-size range is enforced in `fontSize.ts`; surfaced here only so the

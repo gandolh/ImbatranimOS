@@ -6405,3 +6405,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-22] done | Brief 106: a long command's end is a toast; closing asks only while one runs
 
 `f5fecb8` (1.400.0): a command of 10 s or more that ends while its Terminal isn't focused gives one toast ("Command finished", or "Command failed, exit N", with the duration and where it ran) with a Show that brings that window back; `openApp` now brings back an app's own open window when the payload names it (`{ showWindow }`), so a multi-instance app's toast reaches its window. The switch is a command-palette result (the Terminal's first command source), on by default. Closing asks while a command runs and goes straight through at a prompt. The threshold and wording are the owner's question on the end move.
+
+## [2026-11-22] done | Brief 107: jump between prompts; a click moves the cursor in the prompt
+
+`068942d` (1.402.0): Ctrl+Shift+Up and Down scroll to the previous and next prompt (bound in xterm's key handler so only the focused Terminal takes them, listed through `system.shortcuts.document`). A click or tap on the command being typed sends one arrow per character to it, in the program's cursor-key mode (`lib/promptCursor.ts`), only while the shell waits for typing, with no mouse tracking and no drag. Walked at 1280 and 390 (touch), vim keeping its own clicks.

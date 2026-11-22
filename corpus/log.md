@@ -6401,3 +6401,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-22] done | Brief 105: the shell marks its prompts and the window takes titles
 
 `debff7d` (1.398.0): `/etc/bash/imbatranim-shell-integration.sh` runs where the gateway sets `TERM_PROGRAM=imbatranim` and prints OSC 133 marks (A, B, C, D with the exit code), an OSC 7 cwd percent-encoded byte by byte (a directory named with ESC and BEL arrives as text) and an OSC 2 title; it adds to `PROMPT_COMMAND` and PS0 without replacing a user's. The Terminal keeps a shell state per window (`lib/shellState.ts`, tested on a recorded bash session), a marker at each prompt, and gives titles to the window and the taskbar. Walked with Alpine's bash on the host: exits, cwd, running, and vim's title on the taskbar.
+
+## [2026-11-22] done | Brief 106: a long command's end is a toast; closing asks only while one runs
+
+`f5fecb8` (1.400.0): a command of 10 s or more that ends while its Terminal isn't focused gives one toast ("Command finished", or "Command failed, exit N", with the duration and where it ran) with a Show that brings that window back; `openApp` now brings back an app's own open window when the payload names it (`{ showWindow }`), so a multi-instance app's toast reaches its window. The switch is a command-palette result (the Terminal's first command source), on by default. Closing asks while a command runs and goes straight through at a prompt. The threshold and wording are the owner's question on the end move.

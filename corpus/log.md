@@ -6397,3 +6397,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-22] done | Brief 104: bash is the Terminal's shell
 
 `826c2f1` (1.396.0): an app started from a Terminal with a bare `&` now ends when that window closes. Both image stages add bash (2.1 MB installed with readline and ncurses, from Alpine 3.24's index; bash-completion's 1.06 MB stays out of its 1 MB budget) and make it `imbatranim`'s login shell; `/etc/bash/imbatranim-prompt.sh` gives a plain prompt to a home with no `~/.bashrc`. Verified with Alpine's own bash through musl's loader under node-pty (Docker was down, a chroot refused): `/etc/bash/bashrc` is the system rc, bracketed paste is on, a bare `&` job dies with the window and survives a reload, `nohup` survives both.
+
+## [2026-11-22] done | Brief 105: the shell marks its prompts and the window takes titles
+
+`debff7d` (1.398.0): `/etc/bash/imbatranim-shell-integration.sh` runs where the gateway sets `TERM_PROGRAM=imbatranim` and prints OSC 133 marks (A, B, C, D with the exit code), an OSC 7 cwd percent-encoded byte by byte (a directory named with ESC and BEL arrives as text) and an OSC 2 title; it adds to `PROMPT_COMMAND` and PS0 without replacing a user's. The Terminal keeps a shell state per window (`lib/shellState.ts`, tested on a recorded bash session), a marker at each prompt, and gives titles to the window and the taskbar. Walked with Alpine's bash on the host: exits, cwd, running, and vim's title on the taskbar.

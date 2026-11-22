@@ -101,6 +101,19 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   const windowStore = useWindowStore.getState();
   const intentStore = useIntentStore.getState();
 
+  // A payload that names one of this app's open windows brings that window
+  // back instead of opening another: a multi-instance app's toast action (the
+  // Terminal's Show on a finished command). Only the app's own windows: a
+  // toast's action is stamped with the app that raised it.
+  const named = shownWindow(payload);
+  const back = named ? windowStore.windows.find((w) => w.id === named && w.appId === appId) : undefined;
+  if (back) {
+    windowStore.focusWindow(back.id);
+    if (!back.isVisible) windowStore.showWindow(back.id);
+    focusIntoWindowSoon(back.id);
+    return back.id;
+  }
+
   // Check if single-instance app is already open
   if (!appConfig.multiInstance) {
     const existingWindow = windowStore.windows.find((w) => w.appId === appId);
@@ -132,6 +145,13 @@ export function openApp(appId: string, payload?: unknown, by?: OpenRequester): s
   }
 
   return windowId;
+}
+
+/** The window a payload's `showWindow` names, if it names one. */
+function shownWindow(payload: unknown): string | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const id = (payload as { showWindow?: unknown }).showWindow;
+  return typeof id === "string" && id !== "" ? id : null;
 }
 
 type GivenFile = { root: string; path: string };

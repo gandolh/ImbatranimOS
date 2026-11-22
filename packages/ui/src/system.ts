@@ -371,7 +371,9 @@ export type SystemNotifyAction = {
   /**
    * Delivered verbatim as the `openApp` payload; must be JSON-safe. A file it
    * names is not given: the window reopens it with `fs.reopenRecent` when it
-   * is one of the app's recent files.
+   * is one of the app's recent files. `{ showWindow: <a window id> }` naming one
+   * of the app's open windows brings that window back instead of opening
+   * another (since 2026-11-22; a multi-instance app's "Show").
    */
   payload: unknown;
 };

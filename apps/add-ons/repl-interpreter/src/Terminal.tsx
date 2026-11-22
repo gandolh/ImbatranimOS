@@ -11,6 +11,7 @@ import { usePtyConnection, type ShellTokenKeep } from "./hooks/usePtyConnection"
 import { safePaste } from "./lib/paste";
 import { linkAction } from "./lib/links";
 import { applyMark, cwdFromOsc7, INITIAL_SHELL_STATE, windowTitle, type ShellState } from "./lib/shellState";
+import { finishedToast, loadNotifyLong } from "./lib/commandNotify";
 import { buildXtermTheme, documentVarResolver } from "./lib/xtermTheme";
 import {
   DEFAULT_FONT_SIZE,
@@ -101,6 +102,8 @@ export function Terminal(_props: { windowId: string }) {
    */
   const shellRef = useRef<ShellState>(INITIAL_SHELL_STATE);
   const promptMarksRef = useRef<IMarker[]>([]);
+  /** The title this window last took from its shell: where a finished command ran, for its toast. */
+  const titleRef = useRef("Terminal");
 
   // Subscribed, not read once at mount: changing the theme or accent in Settings
   // has to restyle an already-open terminal, which the old read-at-mount accent
@@ -132,17 +135,6 @@ export function Terminal(_props: { windowId: string }) {
     [system],
   );
   const { status, sendInput, sendResize, sendClose, reconnect } = usePtyConnection({ getTerm, generation, keep });
-
-  // Closing the window ends the shell at once. Every other end of the socket (a
-  // reload, a drop) leaves the shell waiting 30 s for this window to come back.
-  useEffect(
-    () =>
-      system.window.onCloseRequest(() => {
-        sendClose();
-        return true;
-      }),
-    [system, sendClose],
-  );
 
   const attachHost = useCallback((host: HTMLDivElement | null) => {
     hostRef.current = host;
@@ -236,7 +228,22 @@ export function Terminal(_props: { windowId: string }) {
       pane.dataset.shellCwd = state.cwd ?? "";
     };
     const marks = instance.parser.registerOscHandler(133, (payload) => {
-      shellRef.current = applyMark(shellRef.current, payload, Date.now());
+      const before = shellRef.current;
+      const now = Date.now();
+      shellRef.current = applyMark(before, payload, now);
+      // A command ended: a long one, in a window that isn't focused, says so in a toast.
+      if (before.phase === "running" && shellRef.current.phase === "prompt" && before.startedAt !== null) {
+        const toast = finishedToast({
+          startedAt: before.startedAt,
+          endedAt: now,
+          exit: shellRef.current.lastExit,
+          title: titleRef.current,
+          focused: system.window.isFocused(),
+          enabled: loadNotifyLong(),
+          windowId: system.windowId,
+        });
+        if (toast) system.notify(toast);
+      }
       if (payload === "A") {
         const marker = instance.registerMarker(0);
         // A marker trimmed off the scrollback is disposed; drop those as new ones come.
@@ -256,13 +263,16 @@ export function Terminal(_props: { windowId: string }) {
       marks.dispose();
       cwd.dispose();
     };
-  }, [generation]);
+  }, [generation, system]);
 
   // ── Titles (OSC 0 and 2) → the window and the taskbar ─────────────────────
   useEffect(() => {
     const instance = termRef.current;
     if (!instance) return;
-    const sub = instance.onTitleChange((title) => system.window.setTitle(windowTitle(title)));
+    const sub = instance.onTitleChange((title) => {
+      titleRef.current = windowTitle(title);
+      system.window.setTitle(titleRef.current);
+    });
     return () => sub.dispose();
   }, [generation, system]);
 
@@ -312,6 +322,29 @@ export function Terminal(_props: { windowId: string }) {
   // ── Clipboard ─────────────────────────────────────────────────────────────
 
   const { confirm, confirmDialog } = useConfirm();
+
+  // Closing the window ends the shell at once, after a question while a
+  // command runs (at a prompt, or with no shell marks, it closes straight
+  // away). Every other end of the socket (a reload, a drop) leaves the shell
+  // waiting 30 s for this window to come back.
+  useEffect(
+    () =>
+      system.window.onCloseRequest(async () => {
+        if (shellRef.current.phase === "running") {
+          const ok = await confirm({
+            title: "Close the Terminal anyway?",
+            message: "A command is still running.",
+            confirmLabel: "Close",
+            cancelLabel: "Cancel",
+            destructive: true,
+          });
+          if (!ok) return false;
+        }
+        sendClose();
+        return true;
+      }),
+    [system, sendClose, confirm],
+  );
 
   /**
    * Every paste lands here: the keyboard's paste event, the right-click and

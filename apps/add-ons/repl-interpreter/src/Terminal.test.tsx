@@ -132,11 +132,13 @@ const notify = vi.fn();
 const setTitle = vi.fn();
 /** The close guard the Terminal gave its window. */
 let closeGuard: (() => boolean | Promise<boolean>) | null = null;
+let focused = false;
 function makeSystem(): SystemHandle {
   return {
     windowId: "w1",
     notify,
     window: {
+      isFocused: () => focused,
       onCloseRequest: (guard: () => boolean | Promise<boolean>) => {
         closeGuard = guard;
         return () => {
@@ -238,11 +240,96 @@ describe("the shell's marks and titles", () => {
 });
 
 describe("closing the Terminal's window", () => {
-  it("tells the shell first, then lets the window close", async () => {
+  it("at a prompt, tells the shell and closes at once", async () => {
+    act(() => {
+      term().emitOsc(133, "A");
+    });
     expect(closeGuard).not.toBeNull();
     expect(sendClose).not.toHaveBeenCalled();
     expect(await closeGuard?.()).toBe(true);
     expect(sendClose).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+  });
+
+  it("with no shell marks, closes at once as before", async () => {
+    expect(await closeGuard?.()).toBe(true);
+  });
+
+  it("asks while a command runs, and keeps the window open on Cancel", async () => {
+    act(() => {
+      term().emitOsc(133, "A");
+      term().emitOsc(133, "C");
+    });
+    let answer: boolean | undefined;
+    await act(async () => {
+      void Promise.resolve(closeGuard?.()).then((v) => (answer = v));
+    });
+    await settle();
+    expect(document.body.textContent).toContain("A command is still running.");
+    await act(async () => button("Cancel").click());
+    await settle();
+    expect(answer).toBe(false);
+    expect(sendClose).not.toHaveBeenCalled();
+
+    await act(async () => {
+      void Promise.resolve(closeGuard?.()).then((v) => (answer = v));
+    });
+    await settle();
+    await act(async () => button("Close").click());
+    await settle();
+    expect(answer).toBe(true);
+    expect(sendClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a long command's end", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    focused = false;
+  });
+
+  const run = (seconds: number, end = "D;0") => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(0);
+    act(() => {
+      term().emitOsc(133, "A");
+      term().emitOsc(133, "C");
+    });
+    vi.setSystemTime(seconds * 1000);
+    act(() => {
+      term().emitOsc(133, end);
+    });
+  };
+
+  it("gives one toast after 11 s unfocused, with a Show for this window", () => {
+    act(() => term().titleListener?.("~/projects/x"));
+    run(11);
+    expect(notify).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith({
+      title: "Command finished",
+      body: "11 s in ~/projects/x",
+      level: "info",
+      actions: [{ label: "Show", payload: { showWindow: "w1" } }],
+    });
+  });
+
+  it("gives nothing after 9 s, or when the window is focused", () => {
+    run(9);
+    focused = true;
+    run(11);
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("says a failed command's code", () => {
+    run(11, "D;2");
+    expect(notify).toHaveBeenCalledWith(expect.objectContaining({ title: "Command failed, exit 2", level: "warning" }));
+  });
+
+  it("gives nothing with the switch off", () => {
+    localStorage.setItem("imbatranim:terminal:notify-long-commands", "off");
+    run(11);
+    localStorage.clear();
+    expect(notify).not.toHaveBeenCalled();
   });
 });
 

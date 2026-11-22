@@ -76,3 +76,34 @@ the ticket.
   failure and pass after.
 - [ ] `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy`, owner step `node cli.ts imbatranim-os server`.
+
+## Outcome (2026-11-22)
+
+Built in `6e66eac` (1.385.0). `apps/add-ons/repl-interpreter/src/lib/paste.ts` holds the rule: `isSafePaste`
+(Ghostty's cases), `stripPaste` (xterm's sixteen bytes become spaces; tab, `\n` and `\r` stay),
+`previewPaste` (the first six lines, ESC as `^[`, CR as `␍`, other control bytes in caret notation) and
+`safePaste`, which asks through a function the Terminal fills with the kit's `useConfirm()` (Paste and
+Cancel, Cancel focused), then calls `term.paste()`. The Terminal routes every path through it: a
+capture-phase `paste` listener on the host takes the keyboard paste before xterm's textarea (one paste
+still arrives once), the right-click and middle-click paste read the clipboard into it, and a text drop
+(not a file drop) goes the same way. The parameter is called `ask`: the house rule checker reads a call
+named `confirm(` as the native dialog.
+
+**BusyBox sh does not ask for bracketed paste.** Alpine's `busybox-static` 1.37.0-r20 (the image's
+BusyBox line), run in a PTY, never prints `ESC[?2004h`; bash does. So until brief 104 every multi-line
+paste asks first.
+
+Tests: `paste.test.ts` (14) and a component test, `Terminal.test.tsx` (4, jsdom, xterm and the socket
+faked). On the code before this brief its right-click case failed with `sendInput` called once with the
+raw text; after, all pass.
+
+**The walk ran outside Docker:** the daemon isn't running in this session, so the backend and the desktop
+ran on the host (Vite with `VITE_API_URL=/api`, the backend with `SHELL` set to that BusyBox as `sh`), at
+1280 in Apricot light. Right-click paste of `echo one` + newline + `echo two` asked, and Cancel pasted
+nothing. A clipboard holding `\x1b[201~` asked, showing `echo safe^[[201~echo boom`. `echo a\x03b`
+arrived as `echo a b`. A plain line went straight in. Ctrl+Shift+V of one line arrived once; of two lines
+it asked. The dev-container walk at 1280 is the owner's, with the deploy.
+
+`npm run check` exit 0; `bash corpus/lint.sh` OK. brief-board isn't installed in this session, so the
+`ready_for_deploy` move is the owner's. Owner step: `node cli.ts imbatranim-os server`.
+

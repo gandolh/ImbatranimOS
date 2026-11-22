@@ -6366,3 +6366,7 @@ From [research-ghostty.md](wiki/research-ghostty.md): 98 safe pastes, 99 Termina
 ## [2026-11-20] maintenance | The redesign's board page copied into the repo
 
 The estate redesign board is a private canvas, so `design/estate-redesign/` now holds a copy of this app's page on it and the build behind it: the directions, the judges' and the controller's rulings, the critique, the token hand-off, the board's notes, the owner's decisions, the proposed screens (as HTML with renders, or as the board's own artboard sources), and today's shots from before the redesign. It is the design record of brief 88, which built it; its README says what each file is. Prettier and the Docker build skip the folder.
+
+## [2026-11-22] done | Brief 98: pastes into the Terminal are made safe
+
+`6e66eac` (1.385.0): every paste into the Terminal (keyboard, right-click, middle-click, a text drop) goes through `lib/paste.ts`. Text with a bracket's end marker, or a line break while the shell hasn't asked for bracketed paste, asks first in the kit's confirm dialog; then xterm's control bytes become spaces and xterm's own `paste()` brackets it. BusyBox sh (Alpine 1.37) never asks for bracketed paste, so every multi-line paste asks until bash (104). Walked on the host, not in Docker (the daemon was down): the four cases and the keyboard paste hold.

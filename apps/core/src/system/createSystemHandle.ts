@@ -97,6 +97,8 @@ function windowlessWindow(appId: string): SystemWindow {
     },
     saveState: () => warn("saveState"),
     savedState: () => null,
+    setProgress: () => warn("setProgress"),
+    requestAttention: () => warn("requestAttention"),
   };
 }
 
@@ -126,6 +128,14 @@ function windowFor(windowId: string): SystemWindow {
       }
     },
     savedState: () => store().windows.find((w) => w.id === windowId)?.savedState ?? null,
+    setProgress: (progress) =>
+      store().setWindowProgress(
+        windowId,
+        progress.state === "none"
+          ? null
+          : { state: progress.state, ...(progress.value === undefined ? {} : { value: progress.value }) },
+      ),
+    requestAttention: () => store().requestAttention(windowId),
   };
 }
 

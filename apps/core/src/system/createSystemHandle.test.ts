@@ -148,6 +148,23 @@ describe("window scoping", () => {
     expect(createSystemHandle("repl-interpreter", back?.id ?? null).window.savedState?.()).toBe("shell-token-1");
   });
 
+  it("setProgress and requestAttention reach the OWN window's taskbar button", () => {
+    const mine = openTestWindow("repl-interpreter");
+    const theirs = openTestWindow("notepad");
+    const system = createSystemHandle("repl-interpreter", mine);
+    const get = (id: string) => useWindowStore.getState().windows.find((w) => w.id === id);
+
+    system.window.setProgress?.({ state: "paused", value: 70 });
+    expect(get(mine)?.progress).toEqual({ state: "paused", value: 70 });
+    expect(get(theirs)?.progress).toBeUndefined();
+    system.window.setProgress?.({ state: "none" });
+    expect(get(mine)?.progress).toBeUndefined();
+
+    system.window.requestAttention?.();
+    expect(get(mine)?.attention).toBe(true);
+    expect(get(theirs)?.attention).toBeFalsy();
+  });
+
   it("saveState(null) forgets, and a value over 512 characters is refused", () => {
     const id = openTestWindow("repl-interpreter");
     const system = createSystemHandle("repl-interpreter", id);

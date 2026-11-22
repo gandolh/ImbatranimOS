@@ -88,6 +88,11 @@ class FakeXTerm {
   onData() {
     return { dispose() {} };
   }
+  bellListener: (() => void) | null = null;
+  onBell(listener: () => void) {
+    this.bellListener = listener;
+    return { dispose: () => (this.bellListener = null) };
+  }
   onTitleChange(listener: (title: string) => void) {
     this.titleListener = listener;
     return { dispose: () => (this.titleListener = null) };
@@ -165,6 +170,8 @@ let clipboard = "";
 
 const notify = vi.fn();
 const setTitle = vi.fn();
+const setProgress = vi.fn();
+const requestAttention = vi.fn();
 const documented = vi.fn((_docs: { id: string; keys: string }[]) => () => undefined);
 /** The close guard the Terminal gave its window. */
 let closeGuard: (() => boolean | Promise<boolean>) | null = null;
@@ -186,6 +193,8 @@ function makeSystem(): SystemHandle {
       savedState: () => null,
       saveState: () => undefined,
       setTitle,
+      setProgress,
+      requestAttention,
     },
     shortcuts: { document: documented },
     appearance: { get: () => ({ theme: "light", accent: "blue" }), subscribe: () => () => undefined },
@@ -200,6 +209,8 @@ beforeEach(async () => {
   sendClose.mockClear();
   openApp.mockClear();
   setTitle.mockClear();
+  setProgress.mockClear();
+  requestAttention.mockClear();
   notify.mockClear();
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
@@ -277,6 +288,44 @@ describe("the shell's marks and titles", () => {
     expect(setTitle).toHaveBeenLastCalledWith("vim notes.txt");
     act(() => term().titleListener?.(""));
     expect(setTitle).toHaveBeenLastCalledWith("Terminal");
+  });
+});
+
+describe("progress and the bell", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    focused = false;
+  });
+
+  it("puts a program's progress on the taskbar button, and takes it off at the next prompt", () => {
+    const t = term();
+    act(() => {
+      t.emitOsc(9, "4;1;40");
+    });
+    expect(setProgress).toHaveBeenLastCalledWith({ state: "normal", value: 40 });
+    act(() => {
+      t.emitOsc(133, "A");
+    });
+    expect(setProgress).toHaveBeenLastCalledWith({ state: "none" });
+  });
+
+  it("takes it off after 15 s with no update", () => {
+    vi.useFakeTimers();
+    act(() => {
+      term().emitOsc(9, "4;3");
+    });
+    act(() => {
+      vi.advanceTimersByTime(15_000);
+    });
+    expect(setProgress).toHaveBeenLastCalledWith({ state: "none" });
+  });
+
+  it("asks for attention on a bell while the window isn't focused, and not while it is", () => {
+    act(() => term().bellListener?.());
+    expect(requestAttention).toHaveBeenCalledTimes(1);
+    focused = true;
+    act(() => term().bellListener?.());
+    expect(requestAttention).toHaveBeenCalledTimes(1);
   });
 });
 

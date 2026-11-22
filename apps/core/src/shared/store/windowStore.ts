@@ -74,6 +74,16 @@ export type WindowInstance = {
   snapState?: SnapRegion;
   /** What the app keeps across a reload (`system.window.saveState`): at most {@link WINDOW_STATE_MAX} characters. */
   savedState?: string;
+  /** A task's progress on the taskbar button (`system.window.setProgress`); not kept across a reload. */
+  progress?: WindowProgress;
+  /** The window asked for attention and hasn't been focused since (`system.window.requestAttention`). */
+  attention?: boolean;
+};
+
+/** A taskbar button's progress: the kit's `SystemProgress`, its value clamped to 0-100. */
+export type WindowProgress = {
+  state: "normal" | "error" | "indeterminate" | "paused";
+  value?: number;
 };
 
 type PreMaximizeState = {
@@ -495,6 +505,10 @@ type WindowStore = {
    * {@link WINDOW_STATE_MAX} characters, keeping what was there; returns whether it was kept.
    */
   setWindowState: (id: string, value: string | null) => boolean;
+  /** Show `progress` on the window's taskbar button; null (or state `none`) takes it off. */
+  setWindowProgress: (id: string, progress: WindowProgress | null) => void;
+  /** Mark the window as wanting attention, unless it is the focused one. */
+  requestAttention: (id: string) => void;
   /** Register a veto consulted by closeWindow; returns true to allow the close. */
   registerCloseGuard: (id: string, guard: () => boolean | Promise<boolean>) => void;
   unregisterCloseGuard: (id: string) => void;
@@ -803,6 +817,28 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     }));
   },
 
+  setWindowProgress: (id, progress) => {
+    set((state) => ({
+      windows: state.windows.map((w) => {
+        if (w.id !== id) return w;
+        if (!progress) {
+          const { progress: _gone, ...rest } = w;
+          return rest;
+        }
+        const value =
+          progress.value === undefined || !Number.isFinite(progress.value)
+            ? undefined
+            : Math.min(100, Math.max(0, Math.round(progress.value)));
+        return { ...w, progress: value === undefined ? { state: progress.state } : { state: progress.state, value } };
+      }),
+    }));
+  },
+
+  requestAttention: (id) => {
+    if (topVisibleWindowId() === id) return;
+    set((state) => ({ windows: state.windows.map((w) => (w.id === id ? { ...w, attention: true } : w)) }));
+  },
+
   setWindowState: (id, value) => {
     if (value !== null && value.length > WINDOW_STATE_MAX) return false;
     set((state) => ({
@@ -930,7 +966,8 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
         target && target.workspaceId !== state.activeWorkspace ? target.workspaceId : state.activeWorkspace;
       if (activeWorkspace !== state.activeWorkspace) saveActiveWorkspace(activeWorkspace);
       return {
-        windows: state.windows.map((w) => (w.id === id ? { ...w, zIndex: nextZIndex } : w)),
+        // Focusing a window answers its request for attention.
+        windows: state.windows.map((w) => (w.id === id ? { ...w, zIndex: nextZIndex, attention: false } : w)),
         nextZIndex: state.nextZIndex + 1,
         activeWorkspace,
       };
@@ -1208,3 +1245,14 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     });
   },
 }));
+
+/**
+ * A window that became the focused one by any path (another window closed, a restore) has had the owner's
+ * attention: its request is answered. Cheap on every change: one lookup, a write only when a flag is set.
+ */
+useWindowStore.subscribe((state) => {
+  const top = topVisibleWindowId();
+  if (top === null) return;
+  if (!state.windows.some((w) => w.id === top && w.attention)) return;
+  useWindowStore.setState({ windows: state.windows.map((w) => (w.id === top ? { ...w, attention: false } : w)) });
+});

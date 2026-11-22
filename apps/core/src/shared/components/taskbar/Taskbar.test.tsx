@@ -116,3 +116,57 @@ describe("Taskbar activation", () => {
     expect(focusIntoWindowSoon).not.toHaveBeenCalled();
   });
 });
+
+describe("a task button's progress and request for attention", () => {
+  const button = (id: string) => container.querySelector<HTMLButtonElement>(`button[title="Window ${id}"]`);
+  const bar = (id: string) => button(id)?.querySelector<HTMLElement>("[data-testid=task-progress] > span") ?? null;
+
+  it("draws each progress state as its bar, and none for none", () => {
+    const set = (state: "normal" | "error" | "indeterminate" | "paused" | null, value?: number) =>
+      act(() => useWindowStore.getState().setWindowProgress("a", state ? { state, value } : null));
+
+    set("normal", 40);
+    expect(bar("a")?.className).toContain("bg-primary");
+    expect(bar("a")?.style.width).toBe("40%");
+    expect(button("a")?.getAttribute("aria-label")).toBe("Window a, 40% done");
+
+    set("error", 40);
+    expect(bar("a")?.className).toContain("bg-error");
+    set("paused", 70);
+    expect(bar("a")?.className).toContain("bg-on-surface-variant");
+    expect(bar("a")?.style.width).toBe("70%");
+    set("indeterminate");
+    expect(bar("a")?.className).toContain("animate-[task-sweep");
+    expect(bar("a")?.className).toContain("motion-reduce:bg-[repeating-linear-gradient");
+
+    set(null);
+    expect(bar("a")).toBeNull();
+  });
+
+  it("clamps a value to 0-100", () => {
+    act(() => useWindowStore.getState().setWindowProgress("a", { state: "normal", value: 140 }));
+    expect(bar("a")?.style.width).toBe("100%");
+  });
+
+  it("fills a window's button when it asks for attention, until it is focused", () => {
+    act(() => useWindowStore.getState().requestAttention("a"));
+    expect(button("a")?.hasAttribute("data-attention")).toBe(true);
+    expect(button("a")?.className).toContain("bg-primary-container");
+    expect(button("a")?.getAttribute("aria-label")).toBe("Window a, wants attention");
+
+    click("Window a, wants attention");
+    expect(useWindowStore.getState().windows.find((w) => w.id === "a")?.attention).toBe(false);
+    expect(button("a")?.hasAttribute("data-attention")).toBe(false);
+  });
+
+  it("ignores the focused window's request", () => {
+    act(() => useWindowStore.getState().requestAttention("b"));
+    expect(useWindowStore.getState().windows.find((w) => w.id === "b")?.attention).toBeFalsy();
+  });
+
+  it("answers the request of a window that comes on top any other way", () => {
+    act(() => useWindowStore.getState().requestAttention("a"));
+    act(() => useWindowStore.getState().hideWindow("b"));
+    expect(useWindowStore.getState().windows.find((w) => w.id === "a")?.attention).toBe(false);
+  });
+});

@@ -14,6 +14,7 @@ import { linkAction } from "./lib/links";
 import { applyMark, cwdFromOsc7, INITIAL_SHELL_STATE, windowTitle, type ShellState } from "./lib/shellState";
 import { finishedToast, loadNotifyLong } from "./lib/commandNotify";
 import { arrowKeys, arrowsTo, type Cell } from "./lib/promptCursor";
+import { progressReporter } from "./lib/progress";
 import { buildXtermTheme, documentVarResolver } from "./lib/xtermTheme";
 import {
   DEFAULT_FONT_SIZE,
@@ -242,7 +243,12 @@ export function Terminal(_props: { windowId: string }) {
       pane.dataset.shellExit = state.lastExit === null ? "" : String(state.lastExit);
       pane.dataset.shellCwd = state.cwd ?? "";
     };
+    // A program's progress (OSC 9;4) on the taskbar button, off after 15 s with
+    // no update or at the next prompt.
+    const progress = progressReporter((p) => system.window.setProgress?.(p));
+    const progressOsc = instance.parser.registerOscHandler(9, (payload) => progress.report(payload));
     const marks = instance.parser.registerOscHandler(133, (payload) => {
+      if (payload === "A") progress.clear();
       const before = shellRef.current;
       const now = Date.now();
       shellRef.current = applyMark(before, payload, now);
@@ -279,9 +285,16 @@ export function Terminal(_props: { windowId: string }) {
       show();
       return true;
     });
+    // A bell while the window isn't the focused one asks for attention, silently.
+    const bell = instance.onBell(() => {
+      if (!system.window.isFocused()) system.window.requestAttention?.();
+    });
     return () => {
       marks.dispose();
       cwd.dispose();
+      progressOsc.dispose();
+      progress.dispose();
+      bell.dispose();
     };
   }, [generation, system]);
 

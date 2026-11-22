@@ -41,17 +41,22 @@ export function Taskbar() {
     useShallow((s) =>
       s.windows.map(
         (w) =>
-          `${w.id}${SEP}${w.appId}${SEP}${w.isVisible ? 1 : 0}${SEP}${w.isMaximized ? 1 : 0}${SEP}${w.workspaceId}${SEP}${w.title}`,
+          `${w.id}${SEP}${w.appId}${SEP}${w.isVisible ? 1 : 0}${SEP}${w.isMaximized ? 1 : 0}${SEP}${w.workspaceId}${SEP}${w.progress?.state ?? ""}${SEP}${w.progress?.value ?? ""}${SEP}${w.attention ? 1 : 0}${SEP}${w.title}`,
       ),
     ),
   ).map((k) => {
-    const [id, appId, isVisible, isMaximized, workspaceId, ...titleParts] = k.split(SEP);
+    const [id, appId, isVisible, isMaximized, workspaceId, progressState, progressValue, attention, ...titleParts] =
+      k.split(SEP);
     return {
       id,
       appId,
       isVisible: isVisible === "1",
       isMaximized: isMaximized === "1",
       workspaceId: Number(workspaceId) as WorkspaceId,
+      progress: progressState
+        ? { state: progressState, value: progressValue ? Number(progressValue) : undefined }
+        : null,
+      attention: attention === "1",
       title: titleParts.join(SEP),
     };
   });
@@ -176,6 +181,7 @@ export function Taskbar() {
           const Icon = app?.icon;
           const isFocused = win.id === focusedId;
           const minimized = !win.isVisible;
+          const wantsAttention = win.attention && !isFocused;
           return (
             <button
               key={win.id}
@@ -185,20 +191,25 @@ export function Taskbar() {
                 setMenu({ id: win.id, x: e.clientX, y: e.clientY });
               }}
               title={win.title}
-              aria-label={win.title}
+              aria-label={taskLabel(win.title, win.progress, wantsAttention)}
+              data-progress={win.progress?.state}
+              data-attention={wantsAttention ? "" : undefined}
               className={cn(
                 "rounded-control relative flex h-[34px] max-w-[168px] min-w-[44px] shrink-0 items-center gap-2 px-2.5 outline-none",
                 "text-control border border-transparent",
                 "apricot:h-[32px] apricot:pr-[12px] apricot:pl-[8px] apricot:font-semibold",
                 "focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-inset",
                 "phone:h-[48px] phone:w-[48px] phone:min-w-0 phone:justify-center phone:px-0 max-[380px]:w-[44px]",
-                isFocused
-                  ? "border-outline-variant apricot:border-transparent bg-surface-container-high apricot:bg-surface-container text-on-surface"
-                  : minimized
-                    ? "text-on-surface-variant hover:bg-surface-container"
-                    : "text-on-surface hover:bg-surface-container",
+                wantsAttention
+                  ? "bg-primary-container text-on-primary-container motion-safe:animate-[task-attention_700ms_ease-in-out_2]"
+                  : isFocused
+                    ? "border-outline-variant apricot:border-transparent bg-surface-container-high apricot:bg-surface-container text-on-surface"
+                    : minimized
+                      ? "text-on-surface-variant hover:bg-surface-container"
+                      : "text-on-surface hover:bg-surface-container",
               )}
             >
+              {win.progress && <TaskProgress state={win.progress.state} value={win.progress.value} />}
               {/* The current task's underline, in the strong accent. */}
               <span
                 className={cn(
@@ -266,5 +277,48 @@ export function Taskbar() {
         />
       )}
     </div>
+  );
+}
+
+/** What a task button says to a screen reader: its title, then its progress and a request for attention. */
+function taskLabel(title: string, progress: { state: string; value?: number } | null, attention: boolean): string {
+  const parts = [title];
+  if (progress?.state === "normal") parts.push(progress.value === undefined ? "working" : `${progress.value}% done`);
+  if (progress?.state === "error") parts.push("failed");
+  if (progress?.state === "paused")
+    parts.push(progress.value === undefined ? "paused" : `paused at ${progress.value}%`);
+  if (progress?.state === "indeterminate") parts.push("working");
+  if (attention) parts.push("wants attention");
+  return parts.join(", ");
+}
+
+/**
+ * A task's progress along the bottom of its button, above the current-task underline: the accent for a task
+ * going well, the error token for a failed one, on-surface-variant for a paused one, and for one with no
+ * known end a segment that sweeps across (a still striped bar under reduced motion).
+ */
+function TaskProgress({ state, value }: { state: string; value?: number | undefined }) {
+  const fill = state === "error" ? "bg-error" : state === "paused" ? "bg-on-surface-variant" : "bg-primary";
+  return (
+    <span
+      aria-hidden
+      data-testid="task-progress"
+      className={cn(
+        "bg-surface-container-highest pointer-events-none absolute h-[3px] overflow-hidden rounded-full",
+        "apricot:inset-x-[12px] apricot:bottom-[5px] phone:inset-x-[10px] phone:bottom-[7px] inset-x-[4px] bottom-[3px]",
+      )}
+    >
+      {state === "indeterminate" ? (
+        <span
+          className={cn(
+            "bg-primary absolute inset-y-0 left-0 w-1/3 rounded-full",
+            "motion-safe:animate-[task-sweep_1.4s_ease-in-out_infinite]",
+            "motion-reduce:w-full motion-reduce:bg-[repeating-linear-gradient(90deg,var(--color-primary)_0_4px,transparent_4px_8px)]",
+          )}
+        />
+      ) : (
+        <span className={cn("absolute inset-y-0 left-0 rounded-full", fill)} style={{ width: `${value ?? 100}%` }} />
+      )}
+    </span>
   );
 }

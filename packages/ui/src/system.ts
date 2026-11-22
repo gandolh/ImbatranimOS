@@ -294,7 +294,24 @@ export interface SystemWindow {
   saveState?(value: string | null): void;
   /** What {@link saveState} kept for this window, after a reload too; null when nothing is kept. */
   savedState?(): string | null;
+  /**
+   * Show a task's progress on this window's taskbar button: a bar for `normal`, `error` and `paused` (at
+   * `value`, 0 to 100), a moving one for `indeterminate`, none for `none`. Optional (added 2026-11-22): check
+   * it exists before calling.
+   */
+  setProgress?(progress: SystemProgress): void;
+  /**
+   * Ask for the owner's attention: the taskbar button fills and pulses until the window is focused. A focused
+   * window's request is ignored. Optional (added 2026-11-22): check it exists before calling.
+   */
+  requestAttention?(): void;
 }
+
+/** A taskbar button's progress state: ConEmu's OSC 9;4 states, by name. */
+export type SystemProgressState = "none" | "normal" | "error" | "indeterminate" | "paused";
+
+/** What {@link SystemWindow.setProgress} shows: a state, and for a bar its value from 0 to 100. */
+export type SystemProgress = { state: SystemProgressState; value?: number };
 
 // ── Intents ───────────────────────────────────────────────────────────────────
 

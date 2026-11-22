@@ -6,8 +6,9 @@ import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
 import { ChevronDown, ChevronUp, Plug, RotateCw, Search, X } from "lucide-react";
-import { Button, useSystem, useSystemAppearance } from "@imbatranim/ui";
+import { Button, useConfirm, useSystem, useSystemAppearance } from "@imbatranim/ui";
 import { usePtyConnection } from "./hooks/usePtyConnection";
+import { safePaste } from "./lib/paste";
 import { buildXtermTheme, documentVarResolver } from "./lib/xtermTheme";
 import {
   DEFAULT_FONT_SIZE,
@@ -202,6 +203,39 @@ export function Terminal(_props: { windowId: string }) {
 
   // ── Clipboard ─────────────────────────────────────────────────────────────
 
+  const { confirm, confirmDialog } = useConfirm();
+
+  /**
+   * Every paste lands here: the keyboard's paste event, the right-click and
+   * middle-click paste, a text drop. Text that could run a command as it
+   * arrives asks first, control bytes become spaces, and xterm's own `paste()`
+   * converts newlines and brackets the text when the shell asked for it
+   * (`lib/paste.ts`). Never `sendInput`: that skips all three.
+   */
+  const pasteText = useCallback(
+    async (text: string) => {
+      const instance = termRef.current;
+      if (!instance) return;
+      await safePaste(instance, text, (preview) =>
+        confirm({
+          title: "Paste into the terminal?",
+          message: (
+            <>
+              <span>This text has a line break or a control sequence, so it may run a command as it arrives.</span>
+              <pre className="rounded-control bg-surface-container-lowest text-on-surface text-label mt-2 max-h-40 overflow-auto p-2 font-mono whitespace-pre-wrap">
+                {preview}
+              </pre>
+            </>
+          ),
+          confirmLabel: "Paste",
+          cancelLabel: "Cancel",
+        }),
+      );
+      instance.focus();
+    },
+    [confirm],
+  );
+
   /**
    * Paste through the async Clipboard API.
    *
@@ -210,17 +244,55 @@ export function Terminal(_props: { windowId: string }) {
    * nothing with no explanation is indistinguishable from a broken terminal.
    */
   const paste = useCallback(async () => {
+    let text: string;
     try {
-      const text = await navigator.clipboard.readText();
-      if (text) sendInput(text);
+      text = await navigator.clipboard.readText();
     } catch {
       system.notify({
         title: "Paste blocked",
         body: "The browser would not grant clipboard access. Use the keyboard shortcut for your platform, or allow clipboard permission for this site.",
         level: "warning",
       });
+      return;
     }
-  }, [sendInput, system]);
+    await pasteText(text);
+  }, [pasteText, system]);
+
+  /**
+   * The keyboard paste, taken before xterm sees it. The browser delivers it as a
+   * `paste` event on xterm's helper textarea, and xterm writes that text to the
+   * pty as it is. Listening in the capture phase on the host, and stopping the
+   * event there, lets the text go through `pasteText` instead, and once. A text
+   * dropped on the terminal goes the same way; a file drop is left alone.
+   */
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const onPaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      void pasteText(e.clipboardData?.getData("text/plain") ?? "");
+    };
+    const isTextDrag = (e: DragEvent) =>
+      !!e.dataTransfer && e.dataTransfer.types.includes("text/plain") && !e.dataTransfer.types.includes("Files");
+    const onDragOver = (e: DragEvent) => {
+      if (isTextDrag(e)) e.preventDefault();
+    };
+    const onDrop = (e: DragEvent) => {
+      if (!isTextDrag(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      void pasteText(e.dataTransfer?.getData("text/plain") ?? "");
+    };
+    host.addEventListener("paste", onPaste, { capture: true });
+    host.addEventListener("dragover", onDragOver);
+    host.addEventListener("drop", onDrop, { capture: true });
+    return () => {
+      host.removeEventListener("paste", onPaste, { capture: true });
+      host.removeEventListener("dragover", onDragOver);
+      host.removeEventListener("drop", onDrop, { capture: true });
+    };
+  }, [generation, pasteText]);
 
   const copy = useCallback(async () => {
     const selection = termRef.current?.getSelection();
@@ -258,11 +330,12 @@ export function Terminal(_props: { windowId: string }) {
         // NOTE: 'v' is deliberately NOT handled here.
         //
         // Measured: a Ctrl+Shift+V keystroke produces one keydown AND one native
-        // `paste` event on xterm's helper textarea, and xterm already writes that
-        // event's text to the pty. Handling the keydown as well made every paste
-        // arrive TWICE ("echo PASTED_OKecho PASTED_OK"). Returning false from this
-        // handler does not help — the native paste event is a separate event, not
-        // xterm's key processing.
+        // `paste` event on xterm's helper textarea. Handling the keydown as well
+        // made every paste arrive TWICE ("echo PASTED_OKecho PASTED_OK").
+        // Returning false from this handler does not help — the native paste
+        // event is a separate event, not xterm's key processing. That event is
+        // caught in the capture phase on the host instead (above), and goes
+        // through `pasteText`.
         //
         // Letting the browser own keyboard paste is also strictly better: it works
         // for whatever gesture the platform maps to paste (Cmd+V on macOS), and it
@@ -438,6 +511,7 @@ export function Terminal(_props: { windowId: string }) {
       <span className="sr-only">
         Font size {fontSize} of {MIN_FONT_SIZE}–{MAX_FONT_SIZE}, default {DEFAULT_FONT_SIZE}
       </span>
+      {confirmDialog}
     </div>
   );
 }

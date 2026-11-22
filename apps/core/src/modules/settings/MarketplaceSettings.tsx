@@ -1,7 +1,8 @@
 import { required } from "../../shared/lib/required";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Checkbox, SHARED_KIT_VERSION, cn, useConfirm } from "@imbatranim/ui";
+import { Button, Checkbox, SHARED_KIT_VERSION, cn, useConfirm, useWindowVisible } from "@imbatranim/ui";
+import { useRefetchOnShow } from "./refetchOnShow";
 import { api } from "../../lib/axios";
 import { openApp } from "../../shared/intents/openApp";
 import { useWindowStore } from "../../shared/store/windowStore";
@@ -78,6 +79,11 @@ function rowsOf(apps: MarketplaceApp[]): Row[] {
  * apps under the heading, each with its own Open. Enabling and disabling an
  * app stays per app, in Settings → Apps.
  */
+/** Whether an install or removal is still going, so the listing polls. */
+function hasRunningJob(listing: Awaited<ReturnType<typeof loadMarketplace>> | undefined): boolean {
+  return !!listing?.apps.some((a) => a.job && a.job.state !== "failed");
+}
+
 export function MarketplaceSettings({
   focusRow = null,
 }: {
@@ -85,12 +91,15 @@ export function MarketplaceSettings({
   focusRow?: { id: string; n: number } | null;
 } = {}) {
   const queryClient = useQueryClient();
+  // The job poll feeds only this window, so it stops while the window is hidden.
+  const visible = useWindowVisible();
   const query = useQuery({
     queryKey: ["marketplace"],
     // Also syncs the desktop's registry, so a finished install shows in Start.
     queryFn: loadMarketplace,
-    refetchInterval: (q) => (q.state.data?.apps.some((a) => a.job && a.job.state !== "failed") ? 2000 : false),
+    refetchInterval: (q) => (visible && hasRunningJob(q.state.data) ? 2000 : false),
   });
+  useRefetchOnShow(visible, hasRunningJob(query.data), query.refetch);
   const listing = query.data ?? null;
   const [actionError, setActionError] = useState<string | null>(null);
   const error = actionError ?? (query.error ? errorMessage(query.error) : null);

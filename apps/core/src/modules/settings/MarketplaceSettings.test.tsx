@@ -3,6 +3,7 @@ import { SHARED_KIT_VERSION } from "@imbatranim/ui";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SystemProvider, type SystemHandle } from "@imbatranim/ui";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { get, post, del } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), del: vi.fn() }));
@@ -12,6 +13,14 @@ import { syncMarketplaceApps, type MarketplaceApp } from "../../shared/registry/
 import { MarketplaceSettings } from "./MarketplaceSettings";
 import type { Inspection } from "./urlApps";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+/** The Settings window's handle: always visible here (the hidden case is in hiddenPolls.test.tsx). */
+const system = {
+  windowId: "settings",
+  window: { isVisible: () => true },
+  on: () => () => undefined,
+  notify: vi.fn(),
+} as unknown as SystemHandle;
 
 /**
  * "Check for update" on an app installed from a URL and trusted by the owner. The stored
@@ -103,9 +112,11 @@ async function render(focusRow: { id: string; n: number } | null = null) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   await act(async () => {
     root.render(
-      <QueryClientProvider client={client}>
-        <MarketplaceSettings focusRow={focusRow} />
-      </QueryClientProvider>,
+      <SystemProvider system={system}>
+        <QueryClientProvider client={client}>
+          <MarketplaceSettings focusRow={focusRow} />
+        </QueryClientProvider>
+      </SystemProvider>,
     );
   });
   await act(async () => {
@@ -343,9 +354,11 @@ describe("MarketplaceSettings: a descriptor with several apps", () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     await act(async () => {
       root.render(
-        <QueryClientProvider client={client}>
-          <MarketplaceSettings />
-        </QueryClientProvider>,
+        <SystemProvider system={system}>
+          <QueryClientProvider client={client}>
+            <MarketplaceSettings />
+          </QueryClientProvider>
+        </SystemProvider>,
       );
     });
     await act(async () => {

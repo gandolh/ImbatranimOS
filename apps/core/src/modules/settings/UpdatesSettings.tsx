@@ -2,7 +2,8 @@ import { required } from "../../shared/lib/required";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CircleCheck, Download, RefreshCw } from "lucide-react";
-import { Button, desktopSessionId, useConfirm } from "@imbatranim/ui";
+import { Button, desktopSessionId, useConfirm, useWindowVisible } from "@imbatranim/ui";
+import { useRefetchOnShow } from "./refetchOnShow";
 import { api } from "../../lib/axios";
 import { reloadLinuxLaunchers } from "../linux-windows/launchers";
 import { UPDATE_ACTIONS, buildName, releaseName, type PinView } from "./updates";
@@ -139,13 +140,16 @@ export function UpdatesSettings() {
     queryKey: ["linux-apps", "updates"],
     queryFn: async () => (await api.get<Updates>("/linux-apps/updates")).data,
   });
+  // The job poll feeds only this window, so it stops while the window is hidden.
+  const visible = useWindowVisible();
   const job = useQuery({
     queryKey: ["linux-apps", "job"],
     queryFn: async () => (await api.get<{ job: Job | null }>("/linux-apps/job")).data.job,
     enabled: !!updates.data?.available,
-    refetchInterval: (q) => (q.state.data?.state === "running" ? 1000 : false),
+    refetchInterval: (q) => (visible && q.state.data?.state === "running" ? 1000 : false),
   });
   const running = job.data?.state === "running";
+  useRefetchOnShow(visible, running, job.refetch);
   const ours = !!job.data && UPDATE_ACTIONS.has(job.data.action);
 
   // When one of ours ends: the offers change, and after a move so do the

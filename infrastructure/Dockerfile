@@ -154,7 +154,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.395.0"
+      org.opencontainers.image.version="1.396.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -169,10 +169,17 @@ LABEL org.opencontainers.image.title="ImbatranimOS" \
 # shared-mime-info: the file-type list (/usr/share/mime/globs2, about 2 MB)
 # that Open with reads to match files to installed Linux apps, when the Nix
 # profile carries none of its own; LibreOffice's install doesn't bring one.
-RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info \
+# bash: the Terminal's shell and the user's login shell (2026-11-20,
+# decisions-terminal.md): readline asks for bracketed paste, PS0 runs as a
+# command starts, and closing a window hangs up its jobs the usual Unix way.
+# With readline and ncurses it is about 2.1 MB installed. bash-completion
+# (1.06 MB) stays out: the budget for it was 1 MB.
+RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info bash \
     && rm -f /usr/libexec/dbus-daemon-launch-helper
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
-    addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
+    addgroup -g 1000 imbatranim && adduser -D -s /bin/bash -u 1000 -G imbatranim imbatranim
+# The prompt for a home with no ~/.bashrc; Alpine's /etc/bash/bashrc sources it.
+COPY infrastructure/bash/imbatranim-prompt.sh /etc/bash/imbatranim-prompt.sh
 # Linux apps come from Nix, run single-user as imbatranim. Every piece of Nix
 # state lives in /nix (its own volume), never in the home folder: a home link
 # into /nix would make every backup fail its restore, which refuses links that
@@ -219,7 +226,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.395.0
+    IMAGE_VERSION=1.396.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -247,11 +254,12 @@ FROM deps AS dev
 # and libvpx for the Wayland host. foot (with a font) and gtk3-demo are Linux apps to
 # test the host with, in the dev image only: foot asks for the OS title bar,
 # gtk3-demo draws its own.
-# dbus and shared-mime-info: as in the prod stage.
-RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info foot font-dejavu gtk+3.0-demo \
+# dbus, shared-mime-info and bash (with its prompt file): as in the prod stage.
+RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info bash foot font-dejavu gtk+3.0-demo \
     && rm -f /usr/libexec/dbus-daemon-launch-helper
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
-    addgroup -g 1000 imbatranim && adduser -D -u 1000 -G imbatranim imbatranim
+    addgroup -g 1000 imbatranim && adduser -D -s /bin/bash -u 1000 -G imbatranim imbatranim
+COPY infrastructure/bash/imbatranim-prompt.sh /etc/bash/imbatranim-prompt.sh
 # Linux apps under Nix, as in the prod stage (the reasons are there).
 ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
     NIX_CACHE_HOME=/nix/var/imbatranim/cache \

@@ -44,10 +44,11 @@ seconds after you close the tab, as on any Linux desktop when a terminal
 closes (a program that ignores the hang-up, as foot does, keeps running). A
 reload is not a close: the window comes back to the same shell within 30
 seconds, the app still running. The Terminal's
-shell (BusyBox `sh`) does not stop its background jobs when it ends, so an
-app started with `&`, like one started with `setsid` or `nohup`, keeps
-running as long as the tab's desktop session: a reload finds it again within
-about 30 seconds, and closing the tab ends it 30 seconds later. An app
+shell is bash, which hangs up its background jobs when it ends: an app
+started with a bare `&` ends with the shell too. One started with `nohup`,
+`disown` or `setsid` keeps running as long as the tab's desktop session: a
+reload finds it again within about 30 seconds, and closing the tab ends it
+30 seconds later. An app
 started from Start lives that long too. While the cover screen is up, the
 tab's Linux apps are paused, and they carry on when you uncover the desktop.
 

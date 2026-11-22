@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Terminal as XTerm, type IBufferRange } from "@xterm/xterm";
+import { Terminal as XTerm, type IBufferRange, type IMarker } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
@@ -10,6 +10,7 @@ import { Button, useConfirm, useSystem, useSystemAppearance } from "@imbatranim/
 import { usePtyConnection, type ShellTokenKeep } from "./hooks/usePtyConnection";
 import { safePaste } from "./lib/paste";
 import { linkAction } from "./lib/links";
+import { applyMark, cwdFromOsc7, INITIAL_SHELL_STATE, windowTitle, type ShellState } from "./lib/shellState";
 import { buildXtermTheme, documentVarResolver } from "./lib/xtermTheme";
 import {
   DEFAULT_FONT_SIZE,
@@ -93,6 +94,13 @@ export function Terminal(_props: { windowId: string }) {
   /** An OSC 8 link's target, shown at the pointer while it is hovered. */
   const [linkTip, setLinkTip] = useState<{ url: string; left: number; top: number } | null>(null);
   const paneRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * What this window knows of its shell, from the marks the image's bash integration prints (`lib/shellState.ts`),
+   * and an xterm marker at each prompt's start. Refs, not state: nothing renders from them yet, and the pane's
+   * `data-shell-*` attributes show them for a look in the inspector.
+   */
+  const shellRef = useRef<ShellState>(INITIAL_SHELL_STATE);
+  const promptMarksRef = useRef<IMarker[]>([]);
 
   // Subscribed, not read once at mount: changing the theme or accent in Settings
   // has to restyle an already-open terminal, which the old read-at-mount accent
@@ -214,6 +222,49 @@ export function Terminal(_props: { windowId: string }) {
       instance.dispose();
     };
   }, []);
+
+  // ── The shell's marks (OSC 133) and working directory (OSC 7) ─────────────
+  useEffect(() => {
+    const instance = termRef.current;
+    if (!instance) return;
+    const show = () => {
+      const pane = paneRef.current;
+      if (!pane) return;
+      const state = shellRef.current;
+      pane.dataset.shellPhase = state.phase;
+      pane.dataset.shellExit = state.lastExit === null ? "" : String(state.lastExit);
+      pane.dataset.shellCwd = state.cwd ?? "";
+    };
+    const marks = instance.parser.registerOscHandler(133, (payload) => {
+      shellRef.current = applyMark(shellRef.current, payload, Date.now());
+      if (payload === "A") {
+        const marker = instance.registerMarker(0);
+        // A marker trimmed off the scrollback is disposed; drop those as new ones come.
+        promptMarksRef.current = promptMarksRef.current.filter((m) => !m.isDisposed);
+        if (marker) promptMarksRef.current.push(marker);
+      }
+      show();
+      return true;
+    });
+    const cwd = instance.parser.registerOscHandler(7, (payload) => {
+      const path = cwdFromOsc7(payload);
+      if (path !== null) shellRef.current = { ...shellRef.current, cwd: path };
+      show();
+      return true;
+    });
+    return () => {
+      marks.dispose();
+      cwd.dispose();
+    };
+  }, [generation]);
+
+  // ── Titles (OSC 0 and 2) → the window and the taskbar ─────────────────────
+  useEffect(() => {
+    const instance = termRef.current;
+    if (!instance) return;
+    const sub = instance.onTitleChange((title) => system.window.setTitle(windowTitle(title)));
+    return () => sub.dispose();
+  }, [generation, system]);
 
   // ── Input → socket ────────────────────────────────────────────────────────
   useEffect(() => {

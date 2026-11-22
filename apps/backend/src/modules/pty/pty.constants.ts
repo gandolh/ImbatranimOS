@@ -51,6 +51,9 @@ export const DETACH_MS = 30_000;
  */
 export const RING_BYTES = 256 * 1024;
 
+/** What the Terminal calls itself in `TERM_PROGRAM`, which the image's bash integration checks. */
+export const TERM_PROGRAM = "imbatranim";
+
 /** The close code a second tab gets for a shell another tab's socket still holds. */
 export const CLOSE_SHELL_ATTACHED = 4409;
 
@@ -108,13 +111,21 @@ export function resolveHome(env: NodeJS.ProcessEnv = process.env): string {
  * (`LOCALE_ARCHIVE`, `FONTCONFIG_FILE`, `XDG_DATA_DIRS`, `XDG_RUNTIME_DIR`)
  * come from the image's environment and pass through `base` unchanged.
  * Outside the container `NIX_STATE_HOME` is unset and nothing is added.
+ *
+ * `TERM_PROGRAM=imbatranim` (and `TERM_PROGRAM_VERSION`, the OS's version, when known) names the terminal,
+ * as Ghostty, VS Code and iTerm2 name theirs: the image's bash integration runs only where it is set, so a
+ * Linux app's own terminal and scripts never run it.
  */
 export function terminalEnv(
   base: NodeJS.ProcessEnv,
   desktopSession?: string | null,
   x11Display?: number | null,
+  version?: string,
 ): NodeJS.ProcessEnv {
   const env = { ...base };
+  env.TERM_PROGRAM = TERM_PROGRAM;
+  if (version && version !== "unknown") env.TERM_PROGRAM_VERSION = version;
+  else delete env.TERM_PROGRAM_VERSION;
   const runtimeDir = env.XDG_RUNTIME_DIR?.trim();
   delete env.DISPLAY;
   if (desktopSession && isValidSessionId(desktopSession)) {

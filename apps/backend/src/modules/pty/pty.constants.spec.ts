@@ -22,7 +22,7 @@ describe("terminalEnv", () => {
   });
 
   it("adds nothing outside the container, where NIX_STATE_HOME is unset", () => {
-    expect(terminalEnv({ PATH: "/usr/bin" })).toEqual({ PATH: "/usr/bin" });
+    expect(terminalEnv({ PATH: "/usr/bin" })).toEqual({ PATH: "/usr/bin", TERM_PROGRAM: "imbatranim" });
   });
 
   it("names the tab's Wayland socket for a valid desktop session id", () => {
@@ -63,5 +63,12 @@ describe("terminalEnv", () => {
     const none = terminalEnv({ ...base, PULSE_SERVER: "unix:/x" });
     expect(none.PULSE_SERVER).toBeUndefined();
     expect(none.PULSE_COOKIE).toBeUndefined();
+  });
+
+  it("names the terminal for the bash integration, with the OS's version when it is known", () => {
+    const env = terminalEnv({ TERM_PROGRAM: "vscode", TERM_PROGRAM_VERSION: "1.0" }, null, null, "1.397.0");
+    expect(env.TERM_PROGRAM).toBe("imbatranim");
+    expect(env.TERM_PROGRAM_VERSION).toBe("1.397.0");
+    expect(terminalEnv({ TERM_PROGRAM_VERSION: "1.0" }, null, null, "unknown").TERM_PROGRAM_VERSION).toBeUndefined();
   });
 });

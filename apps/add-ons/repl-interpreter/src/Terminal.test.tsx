@@ -43,6 +43,16 @@ class FakeXTerm {
   cols = 80;
   rows = 24;
   textarea: HTMLTextAreaElement | null = null;
+  /** The OSC handlers the app registered, by number. */
+  osc = new Map<number, (payload: string) => boolean>();
+  parser = {
+    registerOscHandler: (code: number, handler: (payload: string) => boolean) => {
+      this.osc.set(code, handler);
+      return { dispose: () => this.osc.delete(code) };
+    },
+  };
+  titleListener: ((title: string) => void) | null = null;
+  markers: { line: number; isDisposed: boolean }[] = [];
   constructor(options: { linkHandler?: LinkHandler }) {
     FakeXTerm.last = this;
     this.linkHandler = options.linkHandler ?? null;
@@ -58,6 +68,19 @@ class FakeXTerm {
   }
   onData() {
     return { dispose() {} };
+  }
+  onTitleChange(listener: (title: string) => void) {
+    this.titleListener = listener;
+    return { dispose: () => (this.titleListener = null) };
+  }
+  registerMarker() {
+    const marker = { line: this.markers.length, isDisposed: false };
+    this.markers.push(marker);
+    return marker;
+  }
+  /** What the shell prints, as far as the app's handlers see it. */
+  emitOsc(code: number, payload: string) {
+    return this.osc.get(code)?.(payload);
   }
   attachCustomKeyEventHandler() {}
   paste(data: string) {
@@ -106,6 +129,7 @@ let root: Root;
 let clipboard = "";
 
 const notify = vi.fn();
+const setTitle = vi.fn();
 /** The close guard the Terminal gave its window. */
 let closeGuard: (() => boolean | Promise<boolean>) | null = null;
 function makeSystem(): SystemHandle {
@@ -121,6 +145,7 @@ function makeSystem(): SystemHandle {
       },
       savedState: () => null,
       saveState: () => undefined,
+      setTitle,
     },
     appearance: { get: () => ({ theme: "light", accent: "blue" }), subscribe: () => () => undefined },
     on: () => () => undefined,
@@ -132,6 +157,7 @@ const settle = () => act(async () => new Promise((r) => setTimeout(r, 0)));
 beforeEach(async () => {
   sendInput.mockClear();
   sendClose.mockClear();
+  setTitle.mockClear();
   notify.mockClear();
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
@@ -183,6 +209,33 @@ function button(label: string): HTMLButtonElement {
   if (!found) throw new Error(`button "${label}" not found`);
   return found;
 }
+
+describe("the shell's marks and titles", () => {
+  it("follows the shell through a command, and keeps a marker at each prompt", () => {
+    const t = term();
+    const shown = () => ({ ...pane().dataset });
+    act(() => {
+      t.emitOsc(133, "A");
+      t.emitOsc(7, "file://vm/home/imbatranim/a%0Ab");
+      t.emitOsc(133, "B");
+      t.emitOsc(133, "C");
+    });
+    expect(shown()).toMatchObject({ shellPhase: "running", shellCwd: "/home/imbatranim/a\nb" });
+    act(() => {
+      t.emitOsc(133, "D;2");
+      t.emitOsc(133, "A");
+    });
+    expect(shown()).toMatchObject({ shellPhase: "prompt", shellExit: "2" });
+    expect(t.markers).toHaveLength(2);
+  });
+
+  it("gives the window the title the shell or a program sets, cleaned", () => {
+    act(() => term().titleListener?.("vim\x07 notes.txt"));
+    expect(setTitle).toHaveBeenLastCalledWith("vim notes.txt");
+    act(() => term().titleListener?.(""));
+    expect(setTitle).toHaveBeenLastCalledWith("Terminal");
+  });
+});
 
 describe("closing the Terminal's window", () => {
   it("tells the shell first, then lets the window close", async () => {

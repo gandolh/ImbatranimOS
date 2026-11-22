@@ -154,7 +154,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.397.0"
+      org.opencontainers.image.version="1.398.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -178,8 +178,10 @@ RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info bash \
     && rm -f /usr/libexec/dbus-daemon-launch-helper
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -s /bin/bash -u 1000 -G imbatranim imbatranim
-# The prompt for a home with no ~/.bashrc; Alpine's /etc/bash/bashrc sources it.
-COPY infrastructure/bash/imbatranim-prompt.sh /etc/bash/imbatranim-prompt.sh
+# The prompt for a home with no ~/.bashrc, and the Terminal's shell integration
+# (prompt marks, the working directory, the title); Alpine's /etc/bash/bashrc
+# sources both.
+COPY infrastructure/bash/ /etc/bash/
 # Linux apps come from Nix, run single-user as imbatranim. Every piece of Nix
 # state lives in /nix (its own volume), never in the home folder: a home link
 # into /nix would make every backup fail its restore, which refuses links that
@@ -226,7 +228,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.397.0
+    IMAGE_VERSION=1.398.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -259,7 +261,7 @@ RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info bash f
     && rm -f /usr/libexec/dbus-daemon-launch-helper
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -s /bin/bash -u 1000 -G imbatranim imbatranim
-COPY infrastructure/bash/imbatranim-prompt.sh /etc/bash/imbatranim-prompt.sh
+COPY infrastructure/bash/ /etc/bash/
 # Linux apps under Nix, as in the prod stage (the reasons are there).
 ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
     NIX_CACHE_HOME=/nix/var/imbatranim/cache \

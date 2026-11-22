@@ -29,6 +29,7 @@ import type { Caller } from "../auth/ws-auth";
 import { childEnv } from "../../child-env";
 import { UpgradeRoutes } from "../../upgrade-routes";
 import { raiseOomScore } from "../linux-apps/oom";
+import { osVersion } from "../../lib/os-version";
 import { WaylandGateway } from "../wayland/wayland.gateway";
 
 /**
@@ -82,6 +83,8 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly byKey = new Map<string, LiveSession>();
   private revokeTimer: NodeJS.Timeout | null = null;
   private upgradeHandler: ((req: IncomingMessage, socket: Duplex, head: Buffer) => void) | null = null;
+  /** The OS's version, for the shell's `TERM_PROGRAM_VERSION`; read once. */
+  private readonly version = osVersion();
 
   constructor(
     private readonly adapterHost: HttpAdapterHost,
@@ -193,7 +196,12 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         cols,
         rows,
         cwd: resolveHome(),
-        env: terminalEnv(childEnv(), desktopSession, desktopSession ? this.wayland.x11Display(desktopSession) : null),
+        env: terminalEnv(
+          childEnv(),
+          desktopSession,
+          desktopSession ? this.wayland.x11Display(desktopSession) : null,
+          this.version,
+        ),
       });
       // What the shell starts (Linux apps among it) goes before the
       // backend when memory runs out.

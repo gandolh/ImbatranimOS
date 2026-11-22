@@ -23,6 +23,7 @@ import {
   RESUME_PROBE_MS,
   resolveHome,
   resolveShell,
+  startDirectory,
   terminalEnv,
 } from "./pty.constants";
 import type { Caller } from "../auth/ws-auth";
@@ -31,6 +32,7 @@ import { UpgradeRoutes } from "../../upgrade-routes";
 import { raiseOomScore } from "../linux-apps/oom";
 import { osVersion } from "../../lib/os-version";
 import { WaylandGateway } from "../wayland/wayland.gateway";
+import { FilesService } from "../files/files.service";
 
 /**
  * How often to re-check that each live terminal's session is still valid, so
@@ -92,6 +94,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     private readonly config: ConfigService<Env, true>,
     private readonly upgrades: UpgradeRoutes,
     private readonly wayland: WaylandGateway,
+    private readonly files: FilesService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -163,9 +166,11 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
           return;
         }
 
+        const cwd = await this.startDir(req.url);
+        if (socket.destroyed) return;
         socket.off("error", onSocketError);
         required(this.wss, "the relay server").handleUpgrade(req, socket, head, (ws) => {
-          this.onConnection(ws, req, record);
+          this.onConnection(ws, req, record, cwd);
         });
       })();
     };
@@ -175,7 +180,24 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
     this.logger.log(`Terminal WS listening on ${PTY_PATH}`);
   }
 
-  private onConnection(ws: WebSocket, req: IncomingMessage, caller: Caller): void {
+  /**
+   * Where a new shell starts: `cwd=<absolute path>` (a Terminal opening another where it is), or
+   * `root=<a Files root>&path=<a path in it>` (Files' Open in Terminal), resolved through the same jail the
+   * Files API uses. Anything that doesn't name an enterable folder starts in the home folder.
+   */
+  private async startDir(url: string | undefined): Promise<string> {
+    const home = resolveHome();
+    const root = queryParam(url, "root");
+    if (root === null) return startDirectory(queryParam(url, "cwd"), home);
+    try {
+      const { abs } = await this.files.resolveSafe(root, queryParam(url, "path") ?? "");
+      return await startDirectory(abs, home);
+    } catch {
+      return home;
+    }
+  }
+
+  private onConnection(ws: WebSocket, req: IncomingMessage, caller: Caller, cwd: string): void {
     const { cols, rows } = parseGeometry(req.url);
     const desktopSession = queryParam(req.url, "session");
     const named = shellKey(caller, req.url);
@@ -195,7 +217,7 @@ export class PtyGateway implements OnApplicationBootstrap, OnModuleDestroy {
         name: "xterm-256color",
         cols,
         rows,
-        cwd: resolveHome(),
+        cwd,
         env: terminalEnv(
           childEnv(),
           desktopSession,

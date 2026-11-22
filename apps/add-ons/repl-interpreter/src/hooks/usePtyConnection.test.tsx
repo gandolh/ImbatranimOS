@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { usePtyConnection, type ShellTokenKeep } from "./usePtyConnection";
+import { startFolderFrom, type StartFolder } from "../ptyUrl";
 
 /**
  * The hook against a fake WebSocket: which shell each socket names, what a window keeps across a reload, and
@@ -57,9 +58,17 @@ const fakeTerm = {
 
 type Api = ReturnType<typeof usePtyConnection>;
 const exposed: { api: Api | null } = { api: null };
-function Probe({ keep, expose }: { keep?: ShellTokenKeep; expose: (api: Api) => void }) {
+function Probe({
+  keep,
+  start,
+  expose,
+}: {
+  keep?: ShellTokenKeep;
+  start?: StartFolder | null;
+  expose: (api: Api) => void;
+}) {
   const getTerm = useCallback(() => fakeTerm, []);
-  const api = usePtyConnection({ getTerm, generation: 1, keep });
+  const api = usePtyConnection({ getTerm, generation: 1, keep, start });
   useEffect(() => expose(api));
   return null;
 }
@@ -80,11 +89,12 @@ function windowState(initial: string | null = null) {
 
 let container: HTMLDivElement;
 let root: Root;
-const mount = (keep?: ShellTokenKeep) => {
+const mount = (keep?: ShellTokenKeep, start?: StartFolder | null) => {
   act(() => {
     root.render(
       <Probe
         keep={keep}
+        start={start}
         expose={(api) => {
           exposed.api = api;
         }}
@@ -162,6 +172,33 @@ describe("the shell a Terminal window names", () => {
       vi.advanceTimersByTime(1000);
     });
     expect(last().param("resume")).toBe(token);
+  });
+});
+
+describe("the folder a shell starts in", () => {
+  it("goes in the URL when the window starts its shell, and not when it comes back to one", () => {
+    mount(windowState(), { cwd: "/tmp/x y" });
+    expect(last().param("cwd")).toBe("/tmp/x y");
+    act(() => last().open());
+    act(() => last().end(1006));
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(last().param("cwd")).toBeNull();
+  });
+
+  it("names a Files root and a path in it", () => {
+    mount(windowState(), { root: "home", path: "projects/x" });
+    expect(last().param("root")).toBe("home");
+    expect(last().param("path")).toBe("projects/x");
+  });
+
+  it("reads a launch payload's folder, and nothing else", () => {
+    expect(startFolderFrom({ cwd: "/tmp" })).toEqual({ cwd: "/tmp" });
+    expect(startFolderFrom({ root: "home", path: "a" })).toEqual({ root: "home", path: "a" });
+    expect(startFolderFrom({ cwd: "relative" })).toBeNull();
+    expect(startFolderFrom("cwd")).toBeNull();
+    expect(startFolderFrom(undefined)).toBeNull();
   });
 });
 

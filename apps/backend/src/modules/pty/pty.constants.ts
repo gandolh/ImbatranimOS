@@ -1,4 +1,7 @@
 import { homedir, userInfo } from "os";
+import { constants as fsConstants } from "fs";
+import { access, stat } from "fs/promises";
+import { isAbsolute } from "path";
 import { isValidSessionId } from "../wayland/wayland.protocol";
 import { sessionBusAddress } from "../linux-apps/session-bus.paths";
 import { soundServerEnv } from "../linux-apps/sound-server.paths";
@@ -92,6 +95,23 @@ export function resolveShell(env: NodeJS.ProcessEnv = process.env): string {
 /** Home directory to start the shell in, with a safe fallback. */
 export function resolveHome(env: NodeJS.ProcessEnv = process.env): string {
   return env.HOME?.trim() || homedir() || process.cwd();
+}
+
+/**
+ * The folder a new shell starts in: `requested` when it is an absolute path with no control characters that
+ * names a directory the shell user can enter, else `home`. The shell runs as that user anyway, so this
+ * catches mistakes (a file, a typo, a stale folder), not access.
+ */
+export async function startDirectory(requested: string | null | undefined, home: string): Promise<string> {
+  // eslint-disable-next-line no-control-regex -- control characters are what is refused
+  if (!requested || !isAbsolute(requested) || /[\u0000-\u001f\u007f]/.test(requested)) return home;
+  try {
+    if (!(await stat(requested)).isDirectory()) return home;
+    await access(requested, fsConstants.X_OK);
+    return requested;
+  } catch {
+    return home;
+  }
 }
 
 /**

@@ -148,14 +148,13 @@ vi.mock("@xterm/addon-web-links", () => ({
 }));
 const sendInput = vi.fn();
 const sendClose = vi.fn();
+/** What the Terminal last gave the connection hook. */
+let hookArgs: { start?: unknown } = {};
 vi.mock("./hooks/usePtyConnection", () => ({
-  usePtyConnection: () => ({
-    status: { kind: "open" },
-    sendInput,
-    sendResize: () => {},
-    sendClose,
-    reconnect: () => {},
-  }),
+  usePtyConnection: (args: { start?: unknown }) => {
+    hookArgs = args;
+    return { status: { kind: "open" }, sendInput, sendResize: () => {}, sendClose, reconnect: () => {} };
+  },
 }));
 
 const { Terminal } = await import("./Terminal");
@@ -170,10 +169,12 @@ const documented = vi.fn((_docs: { id: string; keys: string }[]) => () => undefi
 /** The close guard the Terminal gave its window. */
 let closeGuard: (() => boolean | Promise<boolean>) | null = null;
 let focused = false;
+const openApp = vi.fn((_appId: string, _payload?: unknown) => "w2");
 function makeSystem(): SystemHandle {
   return {
     windowId: "w1",
     notify,
+    intents: { consume: () => undefined, openApp },
     window: {
       isFocused: () => focused,
       onCloseRequest: (guard: () => boolean | Promise<boolean>) => {
@@ -197,6 +198,7 @@ const settle = () => act(async () => new Promise((r) => setTimeout(r, 0)));
 beforeEach(async () => {
   sendInput.mockClear();
   sendClose.mockClear();
+  openApp.mockClear();
   setTitle.mockClear();
   notify.mockClear();
   Object.defineProperty(navigator, "clipboard", {
@@ -278,6 +280,31 @@ describe("the shell's marks and titles", () => {
   });
 });
 
+describe("opening in a folder", () => {
+  it("names no folder for its shell when the launch named none", () => {
+    expect(hookArgs.start).toBeNull();
+  });
+
+  it("opens a new Terminal in the shell's folder on Ctrl+Shift+N and Alt+Shift+N", () => {
+    const t = term();
+    act(() => {
+      t.emitOsc(7, "file://vm/tmp/build%20dir");
+    });
+    const press = (init: KeyboardEventInit) =>
+      t.keyHandler?.(new KeyboardEvent("keydown", { key: "N", shiftKey: true, ...init }));
+    expect(press({ ctrlKey: true })).toBe(false);
+    expect(openApp).toHaveBeenLastCalledWith("terminal", { cwd: "/tmp/build dir" });
+    press({ altKey: true });
+    expect(openApp).toHaveBeenCalledTimes(2);
+    expect(documented.mock.calls.at(-1)?.[0].map((d) => d.keys)).toContain("ctrl+shift+n");
+  });
+
+  it("opens one in home when the shell reports no folder", () => {
+    term().keyHandler?.(new KeyboardEvent("keydown", { key: "N", shiftKey: true, ctrlKey: true }));
+    expect(openApp).toHaveBeenLastCalledWith("terminal", undefined);
+  });
+});
+
 describe("jumping between prompts", () => {
   it("scrolls to the previous and next prompt on Ctrl+Shift+Up and Down, listed as shortcuts", () => {
     const t = term();
@@ -296,7 +323,9 @@ describe("jumping between prompts", () => {
     t.buffer.active.viewportY = 70;
     key("ArrowDown");
     expect(t.scrolledTo).toBe(-1);
-    expect(documented.mock.calls.at(-1)?.[0].map((d) => d.keys)).toEqual(["ctrl+shift+up", "ctrl+shift+down"]);
+    expect(documented.mock.calls.at(-1)?.[0].map((d) => d.keys)).toEqual(
+      expect.arrayContaining(["ctrl+shift+up", "ctrl+shift+down"]),
+    );
   });
 });
 

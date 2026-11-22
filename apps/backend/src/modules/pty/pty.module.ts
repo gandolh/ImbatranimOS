@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { WaylandModule } from "../wayland/wayland.module";
+import { FilesModule } from "../files/files.module";
 import { PtyGateway } from "./pty.gateway";
 
 /**
@@ -9,8 +10,9 @@ import { PtyGateway } from "./pty.gateway";
  * handler wired up in {@link PtyGateway}.
  */
 @Module({
-  // A shell gets the X display of its tab's desktop session.
-  imports: [WaylandModule],
+  // A shell gets the X display of its tab's desktop session, and may start in a
+  // folder Files names (its roots and jail).
+  imports: [WaylandModule, FilesModule],
   providers: [PtyGateway],
 })
 export class PtyModule {}

@@ -8,6 +8,7 @@ import "@xterm/xterm/css/xterm.css";
 import { ChevronDown, ChevronUp, Plug, RotateCw, Search, X } from "lucide-react";
 import { Button, useConfirm, useSystem, useSystemAppearance } from "@imbatranim/ui";
 import { usePtyConnection, type ShellTokenKeep } from "./hooks/usePtyConnection";
+import { startFolderFrom } from "./ptyUrl";
 import { safePaste } from "./lib/paste";
 import { linkAction } from "./lib/links";
 import { applyMark, cwdFromOsc7, INITIAL_SHELL_STATE, windowTitle, type ShellState } from "./lib/shellState";
@@ -139,7 +140,16 @@ export function Terminal(_props: { windowId: string }) {
     }),
     [system],
   );
-  const { status, sendInput, sendResize, sendClose, reconnect } = usePtyConnection({ getTerm, generation, keep });
+  // The folder the launch named (Files' Open in Terminal, or another Terminal's
+  // New window). Read once: the payload is the launch's, and a reload comes
+  // back to the shell, which is wherever it went since.
+  const [start] = useState(() => startFolderFrom(system.intents.consume()));
+  const { status, sendInput, sendResize, sendClose, reconnect } = usePtyConnection({
+    getTerm,
+    generation,
+    keep,
+    start,
+  });
 
   const attachHost = useCallback((host: HTMLDivElement | null) => {
     hostRef.current = host;
@@ -496,6 +506,16 @@ export function Terminal(_props: { windowId: string }) {
   }, [system]);
 
   /**
+   * Opens another Terminal in this one's folder: the shell's (from OSC 7), else
+   * the folder this window was opened in, else the home folder.
+   */
+  const openHere = useCallback(() => {
+    const cwd = shellRef.current.cwd;
+    const folder = cwd ? { cwd } : start;
+    system.intents.openApp("terminal", folder ?? undefined);
+  }, [system, start]);
+
+  /**
    * Scrolls to the previous (-1) or next (1) prompt, from the markers the
    * shell's A marks left. Past the last prompt, down goes to the bottom.
    */
@@ -525,6 +545,13 @@ export function Terminal(_props: { windowId: string }) {
     if (!instance) return;
     instance.attachCustomKeyEventHandler((e) => {
       if (e.type !== "keydown") return true;
+      // Ctrl+Shift+N (and Alt+Shift+N, which a browser tab lets through): a new
+      // Terminal in this one's folder.
+      if (e.shiftKey && e.key.toLowerCase() === "n" && ((e.ctrlKey && !e.altKey) || (e.altKey && !e.ctrlKey))) {
+        e.preventDefault();
+        openHere();
+        return false;
+      }
       // Ctrl+Shift+Up and Down: the previous and next prompt (readline binds neither).
       if (e.ctrlKey && e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
         e.preventDefault();
@@ -584,7 +611,7 @@ export function Terminal(_props: { windowId: string }) {
       }
       return true;
     });
-  }, [generation, paste, copy, zoom, searchOpen, jumpToPrompt]);
+  }, [generation, paste, copy, zoom, searchOpen, jumpToPrompt, openHere]);
 
   // The jump keys are bound in xterm's own key handler above, so only the
   // focused Terminal takes them; the shortcuts list shows them from here.
@@ -601,6 +628,19 @@ export function Terminal(_props: { windowId: string }) {
           id: "terminal.prompt-next",
           keys: "ctrl+shift+down",
           description: "Terminal: jump to the next prompt",
+          scope: "Editing",
+        },
+        {
+          id: "terminal.new-here",
+          keys: "ctrl+shift+n",
+          description: "Terminal: a new Terminal in this one's folder",
+          scope: "Editing",
+          note: "In a browser tab Chrome and Edge keep it for a private window; Alt+Shift+N works there",
+        },
+        {
+          id: "terminal.new-here-alt",
+          keys: "alt+shift+n",
+          description: "Terminal: a new Terminal in this one's folder",
           scope: "Editing",
         },
       ]),

@@ -10,6 +10,10 @@ import { CLOSE_SHELL_ATTACHED, MAX_SESSIONS } from "./pty.constants";
 import { LocalIdentityService } from "../auth/ws-auth";
 import type { Caller } from "../identity/identity.types";
 import { UpgradeRoutes } from "../../upgrade-routes";
+import { FilesService } from "../files/files.service";
+import { mkdtempSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
 /**
  * The raw `'upgrade'` handler, against a real HTTP server.
@@ -58,6 +62,7 @@ describe("PtyGateway upgrade handler", () => {
       providers: [
         PtyGateway,
         UpgradeRoutes,
+        FilesService,
         { provide: LocalIdentityService, useValue: identityMock },
         { provide: WaylandGateway, useValue: { x11Display: () => null } },
         {
@@ -186,6 +191,7 @@ describe("PtyGateway revocation sweep", () => {
       providers: [
         PtyGateway,
         UpgradeRoutes,
+        FilesService,
         { provide: LocalIdentityService, useValue: identityMock },
         { provide: WaylandGateway, useValue: { x11Display: () => null } },
         {
@@ -359,6 +365,27 @@ describe("PtyGateway revocation sweep", () => {
     const again = await shell("imb_session=A", `?session=tab1&resume=${T}-0`);
     expect(await closeCode(again, 300)).toBe("open");
   }, 30_000);
+
+  it("(k) starts a shell in the folder the URL names, and in home for one that isn't a folder", async () => {
+    live.add("imb_session=A");
+    const dir = mkdtempSync(join(tmpdir(), "pty-cwd-"));
+    try {
+      const inDir = await shell("imb_session=A", `?cwd=${encodeURIComponent(dir)}`);
+      await pidOf(inDir, "P", received(inDir));
+      inDir.send(JSON.stringify({ type: "input", data: "echo WHERE=$(pwd)\r" }));
+      await new Promise((r) => setTimeout(r, 500));
+      expect(received(inDir).text).toContain(`WHERE=${dir}`);
+
+      const bad = await shell("imb_session=A", `?cwd=${encodeURIComponent("relative/path")}`);
+      await pidOf(bad, "P", received(bad));
+      bad.send(JSON.stringify({ type: "input", data: "echo WHERE=$(pwd)\r" }));
+      await new Promise((r) => setTimeout(r, 500));
+      expect(received(bad).text).not.toContain(`WHERE=${dir}`);
+      expect(received(bad).text).toMatch(/WHERE=\//);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 20_000);
 
   it("(d) closes with 1011 when the shell cannot be spawned", async () => {
     live.add("imb_session=A");

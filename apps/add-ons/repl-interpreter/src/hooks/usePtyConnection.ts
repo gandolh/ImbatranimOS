@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Terminal as XTerm } from "@xterm/xterm";
-import { buildPtyUrl } from "../ptyUrl";
+import { buildPtyUrl, type StartFolder } from "../ptyUrl";
 import { classifyClose, MAX_RETRIES, retryDelay } from "../lib/closeReason";
 
 export type PtyStatus =
@@ -35,6 +35,8 @@ type UsePtyConnectionArgs = {
    * the token lasts as long as this mount.
    */
   keep?: ShellTokenKeep;
+  /** Where the window's shell starts, when it starts one (not when it comes back to one). */
+  start?: StartFolder | null;
 };
 
 /** The window's saved state, as the hook uses it: the token of its shell. */
@@ -91,7 +93,7 @@ const REPLAY = "\x1bc";
  * into a ref. A recursive local function inside one effect is the shape this
  * actually is, and it needs neither.
  */
-export function usePtyConnection({ getTerm, generation, keep }: UsePtyConnectionArgs) {
+export function usePtyConnection({ getTerm, generation, keep, start }: UsePtyConnectionArgs) {
   const [status, setStatus] = useState<PtyStatus>({ kind: "connecting" });
 
   /**
@@ -181,7 +183,7 @@ export function usePtyConnection({ getTerm, generation, keep }: UsePtyConnection
       setStatus({ kind: "connecting" });
       let everOpened = false;
 
-      const ws = new WebSocket(buildPtyUrl(term.cols, term.rows, { token, resume }));
+      const ws = new WebSocket(buildPtyUrl(term.cols, term.rows, { token, resume }, resume ? null : start));
       socket = ws;
 
       ws.onopen = () => {

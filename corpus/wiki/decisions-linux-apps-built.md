@@ -1,6 +1,6 @@
 ---
 summary: Linux apps calls made with the owner once the layer was built (grilled 2026-11-03) — a Terminal's background jobs live with the session (revising 2026-10-23's hang-up rule, since BusyBox sh passes no SIGHUP to jobs), installs, removals and launches only from the tab that holds the session, no window zoom while a Linux window is open (Chromium's renderer crashed beside one), and no CJK font in the image. Grilled again 2026-11-04: a tray volume over all sound (reversing the 2026-07-31 rejection), Linux apps on the VPS in a capped container, and the zoom beside Linux windows stays off for good. 2026-11-05: the session bus is Alpine's dbus, and the backend speaks D-Bus with a client of its own; Xwayland, for X11 apps, isn't in the image but comes with the first app that speaks X11. 2026-11-06: the Wayland host is each session's sound server, speaking PulseAudio's protocol itself, since PulseAudio or PipeWire would add about 250 MB to the image. Also 2026-11-06: Settings → Updates moves the nixpkgs pin at runtime in the user flake registry on the /nix volume, keeps two pins, goes back by rolling the profile back, and an image whose pin is at least as new wins.
-updated: 2026-11-06
+updated: 2026-11-22
 ---
 
 # Decisions: Linux apps, after the build (2026-11-03)
@@ -29,7 +29,10 @@ already stops everything the session started, so nothing is left behind.
   described.
 - *Revisited 2026-11-20*: bash becomes the Terminal's shell and background
   jobs follow the usual Unix hang-up; a reload no longer hangs up the shell
-  ([decisions-terminal.md](decisions-terminal.md)).
+  ([decisions-terminal.md](decisions-terminal.md)). Built 2026-11-22: an app
+  started with a bare `&` ends when its Terminal window closes; `nohup`,
+  `disown` and `setsid` keep it for the session, and `docs/architecture.md`
+  says so.
 
 ## Changes and launches come only from the tab that holds the session
 _2026-11-03_ — In the Linux apps pane, installing, removing and Free space,

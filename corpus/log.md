@@ -6393,3 +6393,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-22] done | Brief 103: an exact screen on reattach, measured, not built
 
 [research-reattach-screen.md](wiki/research-reattach-screen.md): a headless xterm beside each pty (a throwaway patch, `@xterm/headless` 6.0.0 with `@xterm/addon-serialize` 0.14.0) restores the one screen the 256 KiB ring gets wrong (`less` quit after its alternate-screen switch fell out of the ring), but costs 265% more backend CPU per `cat` (bar 10%) and 9.7 MB more RSS per Terminal (bar 8 MB); drain time grew only 6-8%. The ring stays. Measured on the host with the backend pinned to one CPU (Docker was down).
+
+## [2026-11-22] done | Brief 104: bash is the Terminal's shell
+
+`826c2f1` (1.396.0): an app started from a Terminal with a bare `&` now ends when that window closes. Both image stages add bash (2.1 MB installed with readline and ncurses, from Alpine 3.24's index; bash-completion's 1.06 MB stays out of its 1 MB budget) and make it `imbatranim`'s login shell; `/etc/bash/imbatranim-prompt.sh` gives a plain prompt to a home with no `~/.bashrc`. Verified with Alpine's own bash through musl's loader under node-pty (Docker was down, a chroot refused): `/etc/bash/bashrc` is the system rc, bracketed paste is on, a bare `&` job dies with the window and survives a reload, `nohup` survives both.

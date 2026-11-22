@@ -70,3 +70,39 @@ From decisions-terminal.md:
 - [ ] End move `ready_for_deploy`, owner step `node cli.ts imbatranim-os server`.
   The end move's message starts with the visible change: an app started from
   a Terminal with a bare `&` now ends when that window closes.
+
+## Outcome (2026-11-22)
+
+**An app started from a Terminal with a bare `&` now ends when that window closes.** Built in `826c2f1`
+(1.396.0): both image stages `apk add bash`, `adduser -s /bin/bash` gives `imbatranim` bash as its login
+shell, and `resolveShell()` is unchanged (no `SHELL` is set anywhere in the image or compose, so it reads
+the user's shell). `infrastructure/bash/imbatranim-prompt.sh` is copied to `/etc/bash/`: it sets
+`PS1='\u@\h:\w\$ '` only when `$HOME/.bashrc` doesn't exist. No backend change, so no pty spec changed.
+
+**Verified on Alpine's own bash**, not in the dev container: Docker's daemon is down in this session and a
+chroot was refused, so Alpine 3.24's packages were unpacked into the scratchpad and its bash (5.3.9) run
+through musl's loader as the backend's `SHELL`, under node-pty, with Alpine's `/etc/bash/bashrc` and the
+prompt file put in the host's `/etc/bash` for the walk and removed after.
+
+- Which rc file: the binary names `/etc/bash/bashrc` (Alpine's `SYS_BASHRC`), read by an interactive
+  non-login shell, which is what the gateway spawns; it sources every `/etc/bash/*.sh`, so the prompt file
+  sits there.
+- `bind -v | grep bracketed` says `set enable-bracketed-paste on`; a two-line right-click paste went in
+  without brief 98's question and unrun.
+- `sleep 600 &` and `nohup sleep 601 &` both survived a reload; closing the window ended `sleep 600` and
+  left the `nohup` one running.
+- A fresh home's prompt was `root@vm:~#` (the walk ran as root; in the image it reads `imbatranim@…:~$`);
+  a home with `PS1='mine> '` in its own `~/.bashrc` kept `mine>`.
+
+**Size:** from Alpine 3.24's package index, bash brings bash, readline, libncursesw and
+ncurses-terminfo-base to the prod stage, 2,122,416 bytes installed, and 2,019,399 bytes to the dev stage
+(foot already brings ncurses' terminfo there). `bash-completion` is 1,060,956 bytes installed, over decision
+4's 1 MB, so it isn't added. The image's own before and after (`docker image ls`) is the owner's, with the
+rebuild; node:24.22.1-alpine's Alpine may be a minor release from 3.24.
+
+**Not walked:** the Linux apps from bash (`firefox &` closing with its window, `nohup firefox &` staying):
+there's no Wayland host or Nix on the host. The dev-container rebuild and that walk are the owner's.
+
+`npm run check` exit 0; `bash corpus/lint.sh` OK. brief-board isn't installed in this session, so the
+`ready_for_deploy` move is the owner's; its message starts: "An app started from a Terminal with a bare `&`
+now ends when that window closes." Owner step: `node cli.ts imbatranim-os server` (the image rebuilds).

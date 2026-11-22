@@ -6389,3 +6389,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-22] done | Brief 102: a Terminal's shell outlives a close it didn't mean
 
 `ecc59ea` (1.393.0): a socket that ends without the window's `close` frame leaves its pty detached for 30 s, still read into a ring of its last 256 KiB; the window comes back with `resume=<token>`, the token kept across a reload through the kit's new optional `system.window.saveState` / `savedState` (kit commit for imbatranim-apps' next sync: `ecc59ea`). A shell another live socket holds refuses with 4409 after a ping, and the duplicated tab starts its own. The ring is kept all along so a reload shows its screen, and the tab mutes xterm's answers to the replayed queries. Walked on the host: reload, a real drop, a duplicated tab and a close.
+
+## [2026-11-22] done | Brief 103: an exact screen on reattach, measured, not built
+
+[research-reattach-screen.md](wiki/research-reattach-screen.md): a headless xterm beside each pty (a throwaway patch, `@xterm/headless` 6.0.0 with `@xterm/addon-serialize` 0.14.0) restores the one screen the 256 KiB ring gets wrong (`less` quit after its alternate-screen switch fell out of the ring), but costs 265% more backend CPU per `cat` (bar 10%) and 9.7 MB more RSS per Terminal (bar 8 MB); drain time grew only 6-8%. The ring stays. Measured on the host with the backend pinned to one CPU (Docker was down).

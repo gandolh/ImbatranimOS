@@ -63,3 +63,26 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md), ite
 - [ ] `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy` if built (owner step
   `node cli.ts imbatranim-os server`), else `done`.
+
+## Outcome (2026-11-22)
+
+**Measured, not built**; the method and the tables are on
+[research-reattach-screen.md](../../wiki/research-reattach-screen.md). No code: the experiment was a
+throwaway patch on brief 102's session (`@xterm/headless` 6.0.0 and `@xterm/addon-serialize` 0.14.0 from a
+scratch folder, scrollback 5,000), reverted after the runs, and `apps/backend/package.json` is unchanged.
+
+**Decision 3, both halves.** The ring gets one screen wrong: `less` paged 400 times (its alternate-screen
+switch falls out of 256 KiB), quit after a reload, leaves 26 of 27 rows different from a window that never
+reloaded. Every other screen (the five recordings at half, `vim -O`, `less`, `top`, and that `less` before
+quitting) came back exact, 0 rows and 0 pixels; the headless restore got the `less` quit right but put the
+cursor in another cell on `top`'s last row. **The cost fails the bar:** drain time +8.1% (50 MB plain, median
+2,034 to 2,199 ms) and +6.3% (20 MB SGR), inside 10%; backend CPU per `cat` +265% (365 to 1,334 ms) and
++229% (218 to 717 ms), against 10%; RSS per Terminal with 8,000 lines in, 1.6-1.7 MB to 11.3-11.5 MB,
++9.7 MB against 8 MB. The ring stays.
+
+**Under which cap:** the host, not the dev container (Docker's daemon was down), with the backend pinned to
+one CPU (`taskset -c 0`) and no memory cap: the pinned row of how-we-measure.md. htop isn't installed on the
+host; `top -d 100` stood in. The page names what would reopen it: libghostty-vt at 1.0, or a mode tracker
+that replays only the mode switches before the ring (not filed).
+
+`npm run check` exit 0 (no code changed since brief 102's run); `bash corpus/lint.sh` OK. End move `done`.

@@ -6421,3 +6421,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Brief 110: a Linux app asks for attention
 
 `ca0564e` (1.408.0): the Wayland host turns an xdg-activation request for a mapped toplevel, and an X11 urgency hint turning on, into `request` with `attention`; the tab marks the window's taskbar button (brief 109's state) and nothing is raised. `hello` stays at 10, since an older tab ignores the action. An end-to-end test drives the built host with a hand-written client; walked on the host with foot's `bell.urgent`.
+
+## [2026-11-23] done | Brief 111: terminal programs learn the light or dark mode
+
+`5db01db` (1.410.0): the Terminal answers the dark and light mode detection sequences xterm.js lacks (`CSI ? 2031 h/l`, `CSI ? 996 n`, DECRQM 2031, off on RIS) and reports a change of the desktop's mode once while a program has reports on, through xterm's CSI hooks so every other mode in a sequence stays xterm's. Walked with `cat -v` across a flip in Settings.

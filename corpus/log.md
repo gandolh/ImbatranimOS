@@ -6465,3 +6465,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 5: building the OS
 
 [research-performance-sweep.md](wiki/research-performance-sweep.md): `0ec4571` (1.432.0) gives `proddeps` the normalised manifests, keeps the host's sources out of the builder and adds BuildKit cache mounts for npm, turbo and cargo; built for real in Docker here, a version-only commit rebuilds in 2 s instead of 24 s and a host change in 67 s instead of 147 s. `d71533f` (1.431.0) keeps brotli 11 for the first page load and uses 9 for the rest, halving the desktop's `vite build`. Marketplace installs were already lean.
+
+## [2026-11-23] done | Performance sweep, round 6: the backend's memory
+
+[research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `6de2482` (1.434.0) starts the backend with `--max-semi-space-size=2`; it settles at 118 MiB instead of 159 after 18,000 requests, with the same CPU per request, per Terminal flood and per Linux window frame. The sweep's page is split into a hub and one page per five rounds.

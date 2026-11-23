@@ -6441,3 +6441,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Brief 115: the Wayland host encodes off its event loop, measured, not built
 
 [research-host-encoder-thread.md](wiki/research-host-encoder-thread.md): with a 720p clip playing in mpv beside it, foot's keystroke-to-frame p95 rose 17 to 19 ms (VP8) and 24 to 33 ms (JPEG), past the 16 ms that called for an encoder thread. A control with the clip decoded and not shown moved nothing, and the tab made no long tasks. The thread wasn't built: one in-order encoder on one CPU would queue foot's frame behind the clip's and can take at most one 8 to 10 ms encode off the wait, under the half the keep-bar asks. A judgment call left for the owner.
+
+## [2026-11-23] done | Brief 116: a debug overlay for Linux windows
+
+`4d58ba2` (1.417.0): Settings → Linux apps → "Show stream stats" (off by default, per machine) draws, over each visible Linux window, the last half second's rectangles outlined by encoding and a panel with the last second's fps, kB/s, encoding shares and decode time, all from frames the tab already parses; off, the frame path only reads the switch. Walked with foot and mpv in Apricot light and Classic dark. Briefs 98-116 are all closed.

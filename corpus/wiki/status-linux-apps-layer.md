@@ -56,3 +56,5 @@ hint turning on) marks its window's taskbar button until the window is focused; 
 Brief 115 (2026-11-23) measured typing beside a playing video: foot's p95 rises 17 to 33 ms, from the video's
 frames on the one CPU; an encoder thread wasn't built, since one queue on one CPU can't close half of it
 ([research-host-encoder-thread.md](research-host-encoder-thread.md)).
+Since brief 116 (2026-11-23), Settings → Linux apps → "Show stream stats" draws each frame's rectangles by
+encoding and the last second's fps, kB/s, shares and decode time over every Linux window.

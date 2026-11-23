@@ -6445,3 +6445,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Brief 116: a debug overlay for Linux windows
 
 `4d58ba2` (1.417.0): Settings → Linux apps → "Show stream stats" (off by default, per machine) draws, over each visible Linux window, the last half second's rectangles outlined by encoding and a panel with the last second's fps, kB/s, encoding shares and decode time, all from frames the tab already parses; off, the frame path only reads the switch. Walked with foot and mpv in Apricot light and Classic dark. Briefs 98-116 are all closed.
+
+## [2026-11-23] done | Performance sweep, round 1: the first page load and how it is sent
+
+[research-performance-sweep.md](wiki/research-performance-sweep.md): `6c3d972` (1.419.0) gives the kit `sideEffects`, `155afd0` (1.420.0) loads framer-motion's features after the first paint, and `a8c5985` (1.421.0) sends precompressed brotli and gzip copies with a year's cache for hashed assets. The first page load fell from 1,077 to 913 KiB of scripts and stylesheet, a cold load's assets from 1,184 to 372 KiB on the wire, and a warm reload's from 34 revalidations to none. Four more rounds are scheduled on the same branch.

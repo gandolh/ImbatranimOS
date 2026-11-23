@@ -1,5 +1,5 @@
 ---
-summary: The 2026-11-23 performance sweep, fifteen rounds on one branch and one PR, each researched and measured before and after. Round 1 cut the first page load from 1,077 to 913 KiB of scripts and stylesheet (the kit's sideEffects, framer-motion's features loaded lazily) and the wire from 1,184 to 372 KiB cold and 34 revalidations to none warm (precompressed brotli and gzip, a year's cache for hashed assets). Round 2 cut what the tab does at rest: bars scale instead of resizing (System Monitor 1.94% to 0.89% of a core) and the Terminal's cursor stops blinking 10 s after the last keystroke (2.29% to 0.24%). Round 3 measured the Wayland host with real foot and weston-terminal windows: the encoder stays, and the host now sends only damaged pixels that changed (slow terminal output 640 to 330 ms of host CPU). Round 4 sends a scroll in a Linux window as a move of the tab's own pixels (encoding 5): wheeling through foot's scrollback 1,166 to 131 KiB and lossless instead of VP8. How each number is taken, and what was looked at and left.
+summary: The 2026-11-23 performance sweep, fifteen rounds on one branch and one PR, each researched and measured before and after. Round 1 cut the first page load from 1,077 to 913 KiB of scripts and stylesheet (the kit's sideEffects, framer-motion's features loaded lazily) and the wire from 1,184 to 372 KiB cold and 34 revalidations to none warm (precompressed brotli and gzip, a year's cache for hashed assets). Round 2 cut what the tab does at rest: bars scale instead of resizing (System Monitor 1.94% to 0.89% of a core) and the Terminal's cursor stops blinking 10 s after the last keystroke (2.29% to 0.24%). Round 3 measured the Wayland host with real foot and weston-terminal windows: the encoder stays, and the host now sends only damaged pixels that changed (slow terminal output 640 to 330 ms of host CPU). Round 4 sends a scroll in a Linux window as a move of the tab's own pixels (encoding 5): wheeling through foot's scrollback 1,166 to 131 KiB and lossless instead of VP8. Round 5 made the image rebuild only what a commit changed (a version bump 24 to 2 s, a host change 147 to 67 s) and kept brotli 11 for the first page load only. How each number is taken, and what was looked at and left.
 updated: 2026-11-23
 ---
 
@@ -153,3 +153,39 @@ do the same.
 
 The picture after the wheel workload is pixel-identical between the two builds; the host's tests simulate the tab
 applying each frame and compare its picture with the host's.
+
+## Round 5 (2026-11-23): building the OS
+
+**Method.** The image's stages built for real in this container: a Docker daemon with the overlay2 driver
+(vfs filled the disk at 57 GB), the base images from mirror.gcr.io (Docker Hub refused anonymous pulls), the
+agent proxy and its CA added to each stage of a throwaway copy of the Dockerfile (never the committed one), and a
+last stage that needs `builder`, `proddeps` and `wayland-host`. Each variant starts from a clean `git archive`,
+builds cold, then rebuilds after three kinds of commit: the version bump alone (every commit has one), a change
+to the host's source, and a change to an add-on. Four cores; a one-CPU build server takes longer, in proportion.
+
+| Rebuild of the builder, proddeps and host stages after | Before | After |
+|---|---:|---:|
+| the version bump alone (every commit has one) | 24 s: the production `npm ci` (18.9 s) and the whole turbo build (23.2 s) | 2 s |
+| a change to the host's source | 147 s: cargo from scratch (146 s), and the turbo build again (27.5 s) | 67 s: cargo's incremental build alone |
+| a change to an add-on | 20 s | 19 s (the desktop must rebuild) |
+| cold | 170 s | 157 s |
+
+- **`proddeps` takes the normalised manifests.** It copied the real `package.json` and `package-lock.json`, whose
+  version every commit bumps, so every build reran the production `npm ci` and node-pty's compile. `deps` already
+  took the `manifests` stage's copies; now both do.
+- **The builder leaves the host's sources out** (`COPY --exclude=wayland-host`, relative to the source: the
+  pattern written from the context's root excluded nothing): a change to the host rebuilt the desktop and the
+  backend too.
+- **Cache mounts.** npm's download cache in `deps` and `proddeps`; turbo's cache in the builder (a workspace whose
+  inputs didn't change is restored); cargo's registry and `target` in the host's stage (a change to the host's
+  source recompiles the host, not its 300-odd dependencies; the binary is copied out to `/out`).
+- **Brotli 11 only for the first page load,** 9 for the rest: the desktop's `vite build` from about 20 s to 10 s
+  wall and 40 s to 13 s of CPU on four cores, the first page load's brotli byte for byte the same.
+
+**Looked at and left in round 5:**
+
+- **Marketplace installs** (imbatranim-apps' groups) already fetch the pinned commit alone (`--depth 1`), install
+  one workspace, keep npm's cache between installs, and turn audit and fund off.
+- **The type check in the image's build** (`tsc -b`, about 10 s of the desktop's 26 s): redundant with
+  `npm run check` before a commit, but it is the image's last gate; the owner's call.
+- **The host's release profile** (thin LTO, one codegen unit) costs compile time and pays it back at run time.

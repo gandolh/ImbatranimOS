@@ -6461,3 +6461,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 4: a scroll moves the tab's pixels
 
 [research-performance-sweep.md](wiki/research-performance-sweep.md): `4fd7f71` (1.428.0) adds encoding 5, a copy of pixels the tab already has, which the host sends for a scroll found by row hashes and checked byte for byte, to tabs that name `copy` in `codecs`. Wheeling through foot's scrollback went from 1,166 KiB of VP8 to 131 KiB lossless and from 380 to 230 ms of host CPU; slow scrolling output from 863 to 139 KiB.
+
+## [2026-11-23] done | Performance sweep, round 5: building the OS
+
+[research-performance-sweep.md](wiki/research-performance-sweep.md): `0ec4571` (1.432.0) gives `proddeps` the normalised manifests, keeps the host's sources out of the builder and adds BuildKit cache mounts for npm, turbo and cargo; built for real in Docker here, a version-only commit rebuilds in 2 s instead of 24 s and a host change in 67 s instead of 147 s. `d71533f` (1.431.0) keeps brotli 11 for the first page load and uses 9 for the rest, halving the desktop's `vite build`. Marketplace installs were already lean.

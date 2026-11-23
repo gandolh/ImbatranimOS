@@ -288,6 +288,12 @@ impl Canvas {
         !self.damage.is_empty()
     }
 
+    /// A region went out lossy and is counting the quiet ticks before it is
+    /// sent once more, lossless ([`Self::tick`]).
+    pub fn settling(&self) -> bool {
+        self.hot.is_some_and(|h| h.lossy_sent)
+    }
+
     /// The root surface's size. A new size clears the canvas and damages it
     /// all; the same size does nothing.
     pub fn resize(&mut self, width: u32, height: u32) {

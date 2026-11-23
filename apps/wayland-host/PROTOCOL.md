@@ -418,7 +418,9 @@ constants are in `pixels.rs`.
 ## Flow control
 
 A toplevel has at most one frame in flight. The host sends a toplevel's frame
-at most every 33 ms, only when it has damage and no frame in flight, and
+at most every 33 ms, only when it has damage and no frame in flight (damage
+after a rest of 33 ms or more goes at once; with nothing to send, answer or
+settle, the host's clock stops and it sleeps), and
 holds the toplevel's `wl_surface.frame` callbacks while one is. The backend
 sends `frame_ack` once the WebSocket's buffered amount is below 512 KiB.
 Damage that arrives meanwhile is folded into the next frame, so a slow link

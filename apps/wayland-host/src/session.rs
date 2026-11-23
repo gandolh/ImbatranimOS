@@ -784,6 +784,35 @@ impl SessionState {
         }
     }
 
+    /// Whether the host's frame clock has anything to do here: a client gone
+    /// to drop, a frame callback it could answer now, a window with a frame
+    /// to send, or a region sent lossy still counting its quiet ticks. While
+    /// none has, the clock stops (`ensure_frame_clock` in main.rs); a
+    /// request from an app or a message from the tab starts it again.
+    pub fn wants_tick(&self) -> bool {
+        if self.clients.iter().any(|(_, c)| c.gone.load(Ordering::Relaxed)) {
+            return true;
+        }
+        if self.windows.iter().any(|w| w.canvas.settling()) {
+            return true;
+        }
+        if self.frozen || !self.visible {
+            return false;
+        }
+        let sends = (0..self.windows.len()).any(|i| {
+            let w = &self.windows[i];
+            w.mapped && !w.in_flight && w.canvas.has_damage() && self.is_live(i)
+        });
+        sends || self.pending_callbacks.iter().any(|s| s.is_alive() && !self.held(s))
+    }
+
+    /// A surface whose window is waiting on an ack or isn't showing: its
+    /// frame callbacks wait.
+    fn held(&self, surface: &WlSurface) -> bool {
+        let root = root_of(surface);
+        (0..self.windows.len()).any(|i| self.windows[i].root == root && (self.windows[i].in_flight || !self.is_live(i)))
+    }
+
     /// Answer frame callbacks for every surface whose window isn't waiting
     /// on an ack. Holding them while a frame is in flight is what slows an
     /// app down when the tab's connection can't keep up.

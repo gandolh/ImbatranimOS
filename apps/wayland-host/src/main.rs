@@ -156,6 +156,13 @@ struct Host {
     signal: LoopSignal,
     /// The sound mix's timer, while some session plays sound.
     sound_clock: Option<RegistrationToken>,
+    /// The frame clock's timer, while some session has something for it to
+    /// do (`SessionState::wants_tick`); idle, the host sleeps.
+    frame_clock: Option<RegistrationToken>,
+    /// When the frame clock last ticked, so a clock started again never ticks
+    /// sooner than [`TICK`] after the last: a window still gets at most one
+    /// frame every 33 ms.
+    last_tick: Instant,
 }
 
 fn log(msg: &str) {
@@ -458,7 +465,15 @@ impl Host {
         }
     }
 
+    /// The frame clock has work: a session's (see `SessionState::wants_tick`),
+    /// or output the control socket didn't take, which a tick's round of
+    /// events writes again.
+    fn wants_tick(&self) -> bool {
+        !self.out.is_empty() || self.sessions.values().any(|s| s.borrow().state.wants_tick())
+    }
+
     fn tick(&mut self) {
+        self.last_tick = Instant::now();
         let mut frames = Vec::new();
         for (id, session) in &self.sessions {
             let mut s = session.borrow_mut();
@@ -497,7 +512,31 @@ impl Host {
             self.read_clipboard(id, reader);
         }
         self.ensure_sound_clock();
+        self.ensure_frame_clock();
         self.flush_control();
+    }
+
+    /// Start the frame clock when a session has something for it: a frame
+    /// to send, frame callbacks to answer, a lossy region settling or a
+    /// client to drop. It stops itself once none has, so an idle host
+    /// doesn't wake 30 times a second. Started after a rest of at least a
+    /// tick, it ticks at once: the first frame after idle (a keystroke's
+    /// echo) doesn't wait for the clock's next turn.
+    fn ensure_frame_clock(&mut self) {
+        if self.frame_clock.is_some() || !self.wants_tick() {
+            return;
+        }
+        let wait = TICK.saturating_sub(self.last_tick.elapsed());
+        let token = self.handle.insert_source(Timer::from_duration(wait), |_, _, host: &mut Host| {
+            host.tick();
+            if host.wants_tick() {
+                TimeoutAction::ToDuration(TICK)
+            } else {
+                host.frame_clock = None;
+                TimeoutAction::Drop
+            }
+        });
+        self.frame_clock = token.ok();
     }
 
     /// Read the text an app copied from the pipe it writes into, on the event
@@ -666,8 +705,13 @@ fn main() {
         handle: event_loop.handle(),
         signal: event_loop.get_signal(),
         sound_clock: None,
+        frame_clock: None,
+        last_tick: Instant::now(),
     };
     host.send(&Outbound::Hello { version: PROTOCOL_VERSION });
+    // Written now: until the backend speaks, no round of events runs to write it.
+    host.flush_control();
+    host.ensure_frame_clock();
 
     event_loop
         .handle()
@@ -676,14 +720,6 @@ fn main() {
             Ok(PostAction::Continue)
         })
         .expect("watch the control socket");
-    event_loop
-        .handle()
-        .insert_source(Timer::from_duration(TICK), |_, _, host: &mut Host| {
-            host.tick();
-            TimeoutAction::ToDuration(TICK)
-        })
-        .expect("frame timer");
-
     event_loop
         .run(None, &mut host, |host| host.after_dispatch())
         .expect("event loop");

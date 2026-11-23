@@ -37,3 +37,4 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 6 | The backend's young generation capped at 2 MiB semi-spaces: 159 to 118 MiB after load, same CPU | [2](research-performance-sweep-2.md) |
 | 7 | A dragged window moves with CSS translate: 60 moves of a File Manager window 351 to 114 ms of main thread; @use-gesture gone | [2](research-performance-sweep-2.md) |
 | 8 | The Wayland host's frame clock runs only while there is work: idle host CPU to zero, foot's keystroke to frame 20 to 5 ms | [2](research-performance-sweep-2.md) |
+| 9 | Notepad loads its Markdown preview and highlighter only for Markdown: its chunk 366 to 42 KB | [2](research-performance-sweep-2.md) |

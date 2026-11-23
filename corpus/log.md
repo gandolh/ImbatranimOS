@@ -6477,3 +6477,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 8: the Wayland host at rest
 
 [research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `67fd511` (1.438.0) runs the host's frame clock only while a session has a frame to send, a callback to answer, a region settling or a client to drop, and ticks at once after a rest. Idle host CPU went from 40-50 ms every 20 s to none, and foot's keystroke-to-frame median from 20.4 to 5.0 ms (p95 37 to 6-8 ms), with the same frames and bytes under load.
+
+## [2026-11-23] done | Performance sweep, round 9: what an app downloads when it opens
+
+[research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `120e519` (1.440.0) makes Notepad's highlighter import really dynamic (a value import from its module had pulled it into Notepad's chunk) and lazy-loads the Markdown preview; Notepad's chunk went from 366 KB to 42 KB, the rest fetched only for Markdown. Sign-in's API calls and the shell's lazy-able surfaces were measured and left.

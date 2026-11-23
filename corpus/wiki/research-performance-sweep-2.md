@@ -1,5 +1,5 @@
 ---
-summary: Rounds 6-10 of the 2026-11-23 performance sweep in full. Round 6 caps the backend's young generation (--max-semi-space-size=2 in the image's CMD), 159 to 118 MiB after 18,000 requests with the same CPU. Round 7 moves a dragged window with CSS translate (a File Manager drag 351 to 114 ms of main thread) and drops @use-gesture. Round 8 stops the Wayland host's frame clock while it has nothing to do (idle host CPU to zero) and sends the first frame after a rest at once (foot's keystroke to frame 20 to 5 ms).
+summary: Rounds 6-10 of the 2026-11-23 performance sweep in full. Round 6 caps the backend's young generation (--max-semi-space-size=2 in the image's CMD), 159 to 118 MiB after 18,000 requests with the same CPU. Round 7 moves a dragged window with CSS translate (a File Manager drag 351 to 114 ms of main thread) and drops @use-gesture. Round 8 stops the Wayland host's frame clock while it has nothing to do (idle host CPU to zero) and sends the first frame after a rest at once (foot's keystroke to frame 20 to 5 ms). Round 9 loads Notepad's Markdown preview and highlighter only for Markdown (Notepad's chunk 366 to 42 KB).
 updated: 2026-11-23
 ---
 
@@ -93,3 +93,20 @@ could rest. And a keystroke's echo, committed between ticks, waited for the next
 **Looked at and left in round 8:** starting the host and the session bus only when a Linux app opens. A Terminal's
 shell gets `WAYLAND_DISPLAY` at once, and an app started there must find the socket; at 10 MiB and no CPU at
 rest, the session isn't worth that.
+
+## Round 9 (2026-11-23): what an app downloads when it opens
+
+**Where.** At sign-in the desktop makes 15 API requests (about 10 KB), so that was left. The first page load's shell
+surfaces that open later (Start, the palette, the panels, the Linux window body) are about 51 KiB of its own code,
+perhaps 10 to 15 ms of a 474 ms boot under a 4x CPU throttle: too little for a round. The apps' own chunks were the
+gap: Vite warned of an ineffective dynamic import in Notepad.
+
+- **Notepad's chunk was 366 KB (114 KB gzipped)**, three quarters of it the Markdown preview's: highlight.js
+  (156 KiB), which the preview meant to import on demand but whose module it also imported a value from
+  (`hasFencedCode`), and react-markdown with remark-gfm (about 100 KiB), for a preview a text file never shows.
+  `hasFencedCode` moved to `lib/fences.ts` and the preview is `React.lazy`: Notepad's chunk is 42 KB (14.5 KB
+  gzipped), the preview 158 KB and the highlighter 167 KB, each fetched when first needed. Walked from Files: a
+  `.txt` note fetches Notepad alone, a `.md` one the preview and the highlighter, and draws highlighted code.
+
+**Looked at and left in round 9:** the Terminal's search add-on (31 KiB of a 414 KB chunk that is cached after the
+first Terminal); File Manager's chunk, which is its own code; the 5,000-line scrollback, a feature.

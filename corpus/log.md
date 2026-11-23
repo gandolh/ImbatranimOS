@@ -6489,3 +6489,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 11: Files on a large folder
 
 [research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `b47df42` (1.444.0) lists a folder with synchronous stats in batches of 256 instead of one `fs/promises.lstat` each (20,000 entries: 630 to 165 ms, backend CPU 870 to 170 ms, the same bytes), and `bbed211` (1.445.0) does the same for a folder's size (820 to 70 ms). The Linux window frame path was profiled end to end and found lean.
+
+## [2026-11-23] done | Performance sweep, round 12: a Terminal's output
+
+[research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `9132f9b` (1.447.0) joins a Terminal's output that follows a send within 5 ms into the next WebSocket frame, the first chunk after a quiet spell still going at once. A 25 MB `cat` went from 19,854 frames to 249 and 2.7 to 2.1 s, the tab's main thread 2.1 to 1.7 s, and Caddy's CPU through TLS 100 to 30 ms; keystroke echo is unchanged. Firefox's process settings were looked at and left unmeasured.

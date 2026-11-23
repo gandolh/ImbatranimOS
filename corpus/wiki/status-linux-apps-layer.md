@@ -53,3 +53,6 @@ in Chrome, and a tab whose decoder fails three times in ten seconds reconnects
 without codecs and gets JPEG. Android Chrome is the owner's to try.
 On 2026-11-23 (brief 110) an app that asks for attention (an xdg-activation request, or an X11 urgency
 hint turning on) marks its window's taskbar button until the window is focused; the host raises nothing.
+Brief 115 (2026-11-23) measured typing beside a playing video: foot's p95 rises 17 to 33 ms, from the video's
+frames on the one CPU; an encoder thread wasn't built, since one queue on one CPU can't close half of it
+([research-host-encoder-thread.md](research-host-encoder-thread.md)).

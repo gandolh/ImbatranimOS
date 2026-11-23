@@ -64,3 +64,24 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md), ite
   the host changed.
 - [ ] End move `ready_for_deploy` if kept (owner step
   `node cli.ts imbatranim-os server`), else `done`.
+
+## Outcome (2026-11-23)
+
+**Measured, not built**; the method and the table are on
+[research-host-encoder-thread.md](../../wiki/research-host-encoder-thread.md). No code changed.
+
+**Decision 2 fired:** with brief 89's clip playing in a second window, foot's keystroke-to-frame p95 rose 17 to
+19 ms on VP8 (52 ms against 33 to 35 alone) and 24 to 33 ms on JPEG, past 16 ms. **The build was not done, a
+judgment call the owner can overturn:** a control (the clip decoded by mpv with no window) moved foot's p95 by
+under 1 ms, and the tab made no long tasks, so the gap is the clip's frames (mpv's shared-memory output, the
+host's 8.4 to 10.4 ms encode per frame, the backend's relay) on one CPU. The thread the brief drew keeps each
+window's frames in order on one encoder, so foot's frame would queue behind the clip's, and one CPU gives the
+thread no capacity: the most it takes off foot's wait is about one encode, under half of the JPEG gap and at
+the edge of half the VP8 one before foot's own queueing. Decision 3 needs half or more. The page names what
+could: a typed-into window encoded ahead of a video one, which needs its own brief and bar.
+
+**Not as the brief said:** the host machine, not the dev container (Docker's daemon was down), with
+everything the backend runs pinned to one CPU; mpv 0.37 (`--vo=wlshm`) for the clip, since Firefox from Nix
+wasn't available; the clip remade with ffmpeg 6.1.1 (another sha256 than brief 89's).
+
+`bash corpus/lint.sh` OK; nothing outside the corpus changed. End move `done`.

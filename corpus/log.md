@@ -6437,3 +6437,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Brief 114: PTY output batched only when it floods, measured, not built
 
 [research-pty-batching.md](wiki/research-pty-batching.md): gathering the PTY's output into frames of up to 64 KiB or 4 ms cut frames about 15 times, but drain time rose 7% and 12% and backend CPU 32% and 22% (joining strings costs more than the frames saved; Linux's node-pty already reads 4 KiB at a time). The bar wanted a 15% drop; the rule and its specs were reverted.
+
+## [2026-11-23] done | Brief 115: the Wayland host encodes off its event loop, measured, not built
+
+[research-host-encoder-thread.md](wiki/research-host-encoder-thread.md): with a 720p clip playing in mpv beside it, foot's keystroke-to-frame p95 rose 17 to 19 ms (VP8) and 24 to 33 ms (JPEG), past the 16 ms that called for an encoder thread. A control with the clip decoded and not shown moved nothing, and the tab made no long tasks. The thread wasn't built: one in-order encoder on one CPU would queue foot's frame behind the clip's and can take at most one 8 to 10 ms encode off the wait, under the half the keep-bar asks. A judgment call left for the owner.

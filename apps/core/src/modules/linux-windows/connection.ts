@@ -11,6 +11,7 @@ import { useAuthStore } from "../auth/store/authStore";
 import { useLinuxAppsPrefs } from "./keyboardLayout";
 import { LINUX_APP_PREFIX, linuxWindowChrome } from "./kind";
 import { decodableVideoCodecs, paintFrame, parseFrame, VideoStreams } from "./frames";
+import { streamStats, useStreamStatsSwitch } from "./streamStats";
 import { linuxClipboard } from "./clipboard";
 import { cursorCss, type LinuxCursorImage } from "./cursor";
 import { linuxSound } from "./sound";
@@ -417,7 +418,19 @@ export class LinuxWindowsConnection {
       const scale = (popup ?? toplevel)?.scale ?? 1;
       const canvas = canvasFor(frame.toplevel);
       const prev = this.painting.get(frame.toplevel) ?? Promise.resolve();
-      const next = prev.then(() => paintFrame(canvas, frame, scale, this.videos)).catch(() => undefined);
+      // Stream stats are measured only while their switch is on.
+      const measure = useStreamStatsSwitch.getState().on;
+      const next = prev
+        .then(async () => {
+          const start = measure ? performance.now() : 0;
+          try {
+            await paintFrame(canvas, frame, scale, this.videos);
+          } finally {
+            // A frame that came counts, painted or not.
+            if (measure) streamStats.record(frame, performance.now() - start, performance.now());
+          }
+        })
+        .catch(() => undefined);
       this.painting.set(frame.toplevel, next);
       return;
     }
@@ -521,6 +534,7 @@ export class LinuxWindowsConnection {
     useLinuxWindowsStore.getState().remove(t.windowId);
     this.painting.delete(toplevel);
     this.videos.drop(toplevel);
+    streamStats.drop(toplevel);
     dropCanvas(toplevel);
     const windows = useWindowStore.getState();
     windows.unregisterCloseGuard(t.windowId);

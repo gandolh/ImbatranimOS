@@ -11,6 +11,7 @@ vi.mock("../linux-windows/launchers", () => ({ reloadLinuxLaunchers: vi.fn() }))
 
 import { syncMarketplaceApps } from "../../shared/registry/marketplace";
 import { LinuxAppsSettings } from "./LinuxAppsSettings";
+import { useStreamStatsSwitch } from "../linux-windows/streamStats";
 import { MarketplaceSettings } from "./MarketplaceSettings";
 import { UpdatesSettings } from "./UpdatesSettings";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -169,5 +170,28 @@ describe("polls stop while their window is hidden", () => {
     );
     await render(<LinuxAppsSettings />);
     expect(await pollCounts("/linux-apps/job", 1000)).toEqual(PAUSED);
+  });
+});
+
+describe("Settings → Linux apps: Show stream stats", () => {
+  it("turns the overlay's switch on and off", async () => {
+    get.mockImplementation((path: string) =>
+      Promise.resolve({
+        data:
+          path === "/linux-apps"
+            ? { available: true, index: "ready" }
+            : path === "/linux-apps/store"
+              ? { bytes: 0 }
+              : [],
+      }),
+    );
+    useStreamStatsSwitch.setState({ on: false });
+    await render(<LinuxAppsSettings />);
+    const box = () => container.querySelector("[data-linux-stream-stats] [role=checkbox]");
+    expect(box()?.getAttribute("aria-checked")).toBe("false");
+    await act(async () => box()?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(useStreamStatsSwitch.getState().on).toBe(true);
+    await act(async () => box()?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(useStreamStatsSwitch.getState().on).toBe(false);
   });
 });

@@ -6,6 +6,7 @@ import { linuxWindowChrome } from "./kind";
 import { evdevCode } from "./keymap";
 import { HiddenTextInput } from "./hiddenTextInput";
 import { canvasFor, sendToLinuxApps, useLinuxWindowsStore } from "./linuxWindowsStore";
+import { StreamStatsOverlay } from "./StreamStatsOverlay";
 import { attachPointer } from "./pointerInput";
 
 /** A resize sends at most one configure this often while the edge is dragged. */
@@ -41,6 +42,8 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
   const cursor = useLinuxWindowsStore((s) => s.cursor);
   const request = useLinuxWindowsStore((s) => s.request);
   const isMaximized = useWindowStore((s) => s.windows.find((w) => w.id === windowId)?.isMaximized ?? false);
+  const isVisible = useWindowStore((s) => s.windows.find((w) => w.id === windowId)?.isVisible ?? false);
+  const scale = useLinuxWindowsStore((s) => s.byWindow[windowId]?.scale ?? 1);
   const holder = useRef<HTMLDivElement>(null);
   const pointer = useRef({ down: false, x: 0, y: 0, grab: null as Grab | null });
   const sent = useRef({ width: 0, height: 0, maximized: false });
@@ -241,7 +244,11 @@ export function LinuxWindowBody({ windowId }: { windowId: string }) {
       data-linux-window=""
       data-linux-toplevel-id={toplevel}
       aria-label="Linux app window"
-    />
+    >
+      {toplevel !== undefined && (
+        <StreamStatsOverlay toplevel={toplevel} visible={isVisible} scale={scale} offset={{ x: gx, y: gy }} />
+      )}
+    </div>
   );
 }
 

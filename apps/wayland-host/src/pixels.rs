@@ -45,6 +45,12 @@ impl Encoding {
 /// past a handful, the per-rectangle overhead costs more than it saves.
 const MAX_RECTS: usize = 16;
 
+/// Changed rows at most this many rows apart are sent as one band: a line of
+/// text spans a dozen rows with a few still ones between lines, and the still
+/// background between near changes costs less to encode than another
+/// rectangle's header and setup.
+const BAND_GAP: u32 = 8;
+
 // When a region goes lossy (the WebP path only; deflate stays as it is).
 //
 // A video playing in a window sends the same large rectangle on almost every
@@ -119,8 +125,9 @@ impl SurfaceImage {
     }
 
     /// Copy `damage` (buffer pixels; empty means all of it) out of a client's
-    /// shm buffer. Returns what changed, in surface pixels: all of it when
-    /// the size changed. None when the buffer can't be read.
+    /// shm buffer. Returns the parts of the damage whose pixels changed
+    /// ([`Self::copy_changed`]), none when nothing did, and all of it when the
+    /// size changed. None when the buffer can't be read.
     #[allow(clippy::too_many_arguments)]
     pub fn copy_from_shm(
         &mut self,
@@ -158,16 +165,77 @@ impl SurfaceImage {
         } else {
             damage.iter().filter_map(|r| clip(*r, width, height)).collect()
         };
-        for r in &rects {
-            for row in r.y..r.y + r.h {
-                let src_start = offset + row as usize * stride + r.x as usize * 4;
-                let src = &pool[src_start..src_start + r.w as usize * 4];
-                let dst_start = (row as usize * width as usize + r.x as usize) * 4;
-                let dst = &mut self.rgba[dst_start..dst_start + r.w as usize * 4];
-                convert_row(src, dst, format);
+        if resized {
+            for r in &rects {
+                for row in r.y..r.y + r.h {
+                    let src_start = offset + row as usize * stride + r.x as usize * 4;
+                    let src = &pool[src_start..src_start + r.w as usize * 4];
+                    let dst_start = (row as usize * width as usize + r.x as usize) * 4;
+                    convert_row(src, &mut self.rgba[dst_start..dst_start + r.w as usize * 4], format);
+                }
             }
+            return Some(rects);
         }
-        Some(rects)
+        let mut changed = Vec::new();
+        let mut row_px = Vec::new();
+        for r in &rects {
+            self.copy_changed(pool, offset, stride, format, *r, &mut row_px, &mut changed);
+        }
+        Some(changed)
+    }
+
+    /// Copy one damaged rectangle and return, in `out`, only the parts whose
+    /// pixels differ from the copy kept here: bands of rows that changed, each
+    /// as wide as its rows' changes. Apps damage more than they change (foot
+    /// and weston-terminal damage the whole window on each scroll, a line of
+    /// new text or not), and every damaged pixel costs an encode, so comparing
+    /// first, as TigerVNC's ComparingUpdateTracker does, is the cheaper side:
+    /// the row is converted and read once either way. Changed rows closer than
+    /// [`BAND_GAP`] rows join one band, so a scrolled page is one rectangle,
+    /// not one per line of text.
+    #[allow(clippy::too_many_arguments)]
+    fn copy_changed(
+        &mut self,
+        pool: &[u8],
+        offset: usize,
+        stride: usize,
+        format: ShmFormat,
+        r: Rect,
+        row_px: &mut Vec<u8>,
+        out: &mut Vec<Rect>,
+    ) {
+        let width = self.width as usize;
+        let span = r.w as usize * 4;
+        row_px.resize(span, 0);
+        // The band being gathered: first row, last changed row, x range.
+        let mut band: Option<(u32, u32, u32, u32)> = None;
+        let close = |b: (u32, u32, u32, u32), out: &mut Vec<Rect>| {
+            out.push(Rect { x: r.x + b.2, y: b.0, w: b.3 - b.2 + 1, h: b.1 - b.0 + 1 });
+        };
+        for row in r.y..r.y + r.h {
+            let src_start = offset + row as usize * stride + r.x as usize * 4;
+            convert_row(&pool[src_start..src_start + span], row_px, format);
+            let dst_start = (row as usize * width + r.x as usize) * 4;
+            let dst = &mut self.rgba[dst_start..dst_start + span];
+            let Some(first) = row_px.chunks_exact(4).zip(dst.chunks_exact(4)).position(|(a, b)| a != b) else {
+                continue;
+            };
+            let last = row_px.chunks_exact(4).zip(dst.chunks_exact(4)).rposition(|(a, b)| a != b).unwrap_or(first);
+            dst.copy_from_slice(row_px);
+            let (first, last) = (first as u32, last as u32);
+            band = match band {
+                Some((y0, y1, x0, x1)) if row - y1 <= BAND_GAP => Some((y0, row, x0.min(first), x1.max(last))),
+                other => {
+                    if let Some(b) = other {
+                        close(b, out);
+                    }
+                    Some((row, row, first, last))
+                }
+            };
+        }
+        if let Some(b) = band {
+            close(b, out);
+        }
     }
 }
 
@@ -748,6 +816,11 @@ mod tests {
         assert_eq!(&raw[o..o + 4], &[9, 1, 2, 255]);
         assert!(!c.has_damage());
 
+        // The app redraws (1, 1) and (2, 1) and damages them.
+        let pool = bgra_pool(4, 3, 20, |x, y| {
+            let red = if y == 1 && (1..=2).contains(&x) { 7 } else { 9 };
+            [x as u8, y as u8, red, 255]
+        });
         let rects = img.copy_from_shm(
             &pool,
             0,
@@ -762,6 +835,56 @@ mod tests {
         let frame = c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Webp, Lossy::Jpeg);
         assert_eq!(frame[0].rect, Rect { x: 1, y: 1, w: 2, h: 1 });
         assert_eq!(&frame[0].data[0..4], b"RIFF");
+    }
+
+    #[test]
+    fn damage_shrinks_to_the_pixels_that_changed() {
+        // A 40×64 window; the app damages all of it on every commit.
+        let base = |x: u32, y: u32| [(x * 3) as u8, (y * 5) as u8, 40, 255];
+        let pool = bgra_pool(40, 64, 160, base);
+        let mut img = SurfaceImage::default();
+        img.copy_from_shm(&pool, 0, 40, 64, 160, ShmFormat::Argb8888, &[]).unwrap();
+        let all = [Rect { x: 0, y: 0, w: 40, h: 64 }];
+
+        // Nothing changed: nothing to send.
+        assert_eq!(img.copy_from_shm(&pool, 0, 40, 64, 160, ShmFormat::Argb8888, &all), Some(vec![]));
+
+        // A change in rows 10-12, columns 5-20: that band and no more, and the copy now holds it.
+        let edited = bgra_pool(40, 64, 160, |x, y| {
+            if (10..=12).contains(&y) && (5..=20).contains(&x) { [1, 2, 3, 255] } else { base(x, y) }
+        });
+        assert_eq!(
+            img.copy_from_shm(&edited, 0, 40, 64, 160, ShmFormat::Argb8888, &all),
+            Some(vec![Rect { x: 5, y: 10, w: 16, h: 3 }])
+        );
+        assert_eq!(&img.rgba()[(11 * 40 + 6) * 4..(11 * 40 + 6) * 4 + 4], &[3, 2, 1, 255]);
+
+        // Two changes BAND_GAP rows apart join one band; farther apart they are two.
+        let two = |gap: u32| {
+            bgra_pool(40, 64, 160, move |x, y| {
+                if (y == 2 && x == 3) || (y == 2 + gap && x == 30) { [9, 9, 9, 255] } else { base(x, y) }
+            })
+        };
+        let mut near = SurfaceImage::default();
+        near.copy_from_shm(&pool, 0, 40, 64, 160, ShmFormat::Argb8888, &[]).unwrap();
+        assert_eq!(
+            near.copy_from_shm(&two(BAND_GAP), 0, 40, 64, 160, ShmFormat::Argb8888, &all),
+            Some(vec![Rect { x: 3, y: 2, w: 28, h: BAND_GAP + 1 }])
+        );
+        let mut far = SurfaceImage::default();
+        far.copy_from_shm(&pool, 0, 40, 64, 160, ShmFormat::Argb8888, &[]).unwrap();
+        assert_eq!(
+            far.copy_from_shm(&two(BAND_GAP + 1), 0, 40, 64, 160, ShmFormat::Argb8888, &all),
+            Some(vec![Rect { x: 3, y: 2, w: 1, h: 1 }, Rect { x: 30, y: 3 + BAND_GAP, w: 1, h: 1 }])
+        );
+
+        // Only the damaged part is read: a change outside the damage stays unseen.
+        let mut img = SurfaceImage::default();
+        img.copy_from_shm(&pool, 0, 40, 64, 160, ShmFormat::Argb8888, &[]).unwrap();
+        assert_eq!(
+            img.copy_from_shm(&edited, 0, 40, 64, 160, ShmFormat::Argb8888, &[Rect { x: 0, y: 30, w: 40, h: 10 }]),
+            Some(vec![])
+        );
     }
 
     #[test]

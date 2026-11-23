@@ -1227,13 +1227,15 @@ export class FilesService {
           await walk(full, depth + 1);
           if (truncated) return;
         } else if (d.isFile()) {
-          try {
-            bytes += (await fs.lstat(full)).size;
+          // Synchronously, as a listing does (see STAT_BATCH): one awaited lstat per file
+          // was a trip through the thread pool each, one after another.
+          const stat = lstatSync(full, { throwIfNoEntry: false }); // undefined: vanished mid-walk
+          if (stat) {
+            bytes += stat.size;
             files++;
-          } catch {
-            /* vanished mid-walk */
           }
         }
+        if (entries % STAT_BATCH === 0) await nextTurn();
       }
     };
 

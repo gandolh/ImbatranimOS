@@ -6481,3 +6481,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 9: what an app downloads when it opens
 
 [research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `120e519` (1.440.0) makes Notepad's highlighter import really dynamic (a value import from its module had pulled it into Notepad's chunk) and lazy-loads the Markdown preview; Notepad's chunk went from 366 KB to 42 KB, the rest fetched only for Markdown. Sign-in's API calls and the shell's lazy-able surfaces were measured and left.
+
+## [2026-11-23] done | Performance sweep, round 10: the image's node_modules
+
+[research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `e579c7f` (1.442.0) has `proddeps` delete type declarations, TypeScript sources, source maps, Markdown and `.github` from the production tree: 10,045 files and 49.1 MB to 5,237 and 25.6 MB, the layer 57.5 to 30.2 MB. The backend started on the pruned tree in a container and answered every route asked.

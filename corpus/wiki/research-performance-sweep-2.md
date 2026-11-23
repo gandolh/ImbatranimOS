@@ -1,5 +1,5 @@
 ---
-summary: Rounds 6-10 of the 2026-11-23 performance sweep in full. Round 6 caps the backend's young generation (--max-semi-space-size=2 in the image's CMD), 159 to 118 MiB after 18,000 requests with the same CPU. Round 7 moves a dragged window with CSS translate (a File Manager drag 351 to 114 ms of main thread) and drops @use-gesture. Round 8 stops the Wayland host's frame clock while it has nothing to do (idle host CPU to zero) and sends the first frame after a rest at once (foot's keystroke to frame 20 to 5 ms). Round 9 loads Notepad's Markdown preview and highlighter only for Markdown (Notepad's chunk 366 to 42 KB).
+summary: Rounds 6-10 of the 2026-11-23 performance sweep in full. Round 6 caps the backend's young generation (--max-semi-space-size=2 in the image's CMD), 159 to 118 MiB after 18,000 requests with the same CPU. Round 7 moves a dragged window with CSS translate (a File Manager drag 351 to 114 ms of main thread) and drops @use-gesture. Round 8 stops the Wayland host's frame clock while it has nothing to do (idle host CPU to zero) and sends the first frame after a rest at once (foot's keystroke to frame 20 to 5 ms). Round 9 loads Notepad's Markdown preview and highlighter only for Markdown (Notepad's chunk 366 to 42 KB). Round 10 prunes what no runtime reads from the image's node_modules (its layer 57 to 30 MB).
 updated: 2026-11-23
 ---
 
@@ -110,3 +110,27 @@ gap: Vite warned of an ineffective dynamic import in Notepad.
 
 **Looked at and left in round 9:** the Terminal's search add-on (31 KiB of a 414 KB chunk that is cached after the
 first Terminal); File Manager's chunk, which is its own code; the 5,000-line scrollback, a feature.
+
+## Round 10 (2026-11-23): the image's node_modules
+
+**Method.** The `proddeps` stage built in Docker here, measured by its files' bytes and a tar of the tree (what a
+layer weighs), not `du`, whose 4 KiB blocks make thousands of small files look larger. Then a test stage on top of
+it with the backend from the `builder` stage: started in a container and asked `/health`, the first-run setup,
+sign-in, `/api/system/stats` and `/api/prefs`.
+
+| The production node_modules | Before | After |
+|---|---:|---:|
+| Files | 10,045 | 5,237 |
+| Bytes | 49.1 MB | 25.6 MB |
+| As a layer (tar) | 57.5 MB | 30.2 MB |
+
+- **`proddeps` deletes what no runtime reads:** type declarations, the TypeScript sources packages ship beside
+  their JavaScript (no `main` or `exports` names one to run), source maps (the backend runs without
+  `--enable-source-maps`), Markdown and `.github`. Licences stay; directories named `test` stay, since a package
+  could keep runtime code in one. The backend on the pruned tree answered every route asked, with no error logged.
+- **The WebSockets don't compress**: `ws` servers default to no per-message deflate, so frames already compressed
+  (WebP, VP8) aren't deflated again.
+
+**Looked at and left in round 10:** the backend loads 1,487 modules, 5.3 MiB of source, at start. 534 KiB of it is
+libphonenumber-js, which class-validator's index loads for a phone-number decorator no DTO uses, and 987 KiB is zod;
+leaving either means deep imports into class-validator or moving every DTO to one validator, a refactor of its own.

@@ -51,6 +51,14 @@ export default [
       "no-restricted-imports": [
         "error",
         {
+          paths: [
+            {
+              name: "framer-motion",
+              importNames: ["motion"],
+              message:
+                "Use `m`: framer-motion's features load after the first paint (LazyMotion in src/main.tsx), and `motion` would put the whole library back in the eager bundle.",
+            },
+          ],
           patterns: [
             {
               group: ["@imbatranim/*", "!@imbatranim/ui"],

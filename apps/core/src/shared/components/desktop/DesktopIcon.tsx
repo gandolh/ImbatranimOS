@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { cn } from "../../../lib/cn";
 import type { AppConfig } from "../../registry/registry";
 import { ICON_HEIGHT, ICON_WIDTH, clampToDesktop } from "./layoutIcons";
@@ -54,7 +54,7 @@ export function DesktopIcon({
   );
 
   return (
-    <motion.div
+    <m.div
       drag
       dragConstraints={dragConstraints}
       dragMomentum={false}
@@ -137,6 +137,6 @@ export function DesktopIcon({
           {app.name}
         </span>
       </span>
-    </motion.div>
+    </m.div>
   );
 }

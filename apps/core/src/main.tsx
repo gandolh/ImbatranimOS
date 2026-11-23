@@ -6,6 +6,7 @@ import "./system/network";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { LazyMotion } from "framer-motion";
 import { queryClient } from "./lib/queryClient";
 import "./index.css";
 import { App } from "./App.tsx";
@@ -16,12 +17,20 @@ import { useAppearanceStore, applyAppearance } from "./shared/store/appearanceSt
 // persisted theme, mode and accent, before React mounts.
 applyAppearance(useAppearanceStore.getState());
 
+// The desktop animates with framer-motion's `m` components, whose features
+// load here after the first paint, not in the first page load
+// (`lib/motionFeatures.ts`). `strict` makes a full `motion.*` component throw,
+// since one would bring the whole library back into the eager bundle.
+const motionFeatures = () => import("./lib/motionFeatures").then((mod) => mod.domMax);
+
 createRoot(required(document.getElementById("root"), "the root element")).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AuthGate>
-        <App />
-      </AuthGate>
+      <LazyMotion features={motionFeatures} strict>
+        <AuthGate>
+          <App />
+        </AuthGate>
+      </LazyMotion>
     </QueryClientProvider>
   </StrictMode>,
 );

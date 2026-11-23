@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useEffect, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { m, AnimatePresence, useReducedMotion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { useDrag } from "@use-gesture/react";
 import { Minus, Square, X, Copy } from "lucide-react";
@@ -277,7 +277,7 @@ export const Window = React.memo(function Window({
       {snapPreview && createPortal(<SnapOverlay region={snapPreview} />, document.body)}
 
       <AnimatePresence>
-        <motion.div
+        <m.div
           key={instance.id}
           initial={still ? false : { opacity: 0, scale: fadeOnly ? 1 : 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -403,7 +403,7 @@ export const Window = React.memo(function Window({
           >
             {children}
           </div>
-        </motion.div>
+        </m.div>
       </AnimatePresence>
     </>
   );

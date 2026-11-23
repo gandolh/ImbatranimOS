@@ -63,3 +63,22 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md), ite
 - [ ] End move `ready_for_deploy` if built (owner step
   `node cli.ts imbatranim-os server`, `--question` on Android Chrome), else
   `done`.
+
+## Outcome (2026-11-23)
+
+**Measured, not built**; the method and the table are on
+[research-webgl-renderer.md](../../wiki/research-webgl-renderer.md). No code: the WebGL Terminal was a
+throwaway patch (the addon's module copied from its npm tarball, behind a `localStorage` flag), reverted after
+the runs; `package.json` is unchanged.
+
+**Against the bar** (headless Chromium, so WebGL on SwiftShader, no GPU; backend pinned to one CPU): drain time
+rose from 1,934 to 16,638 ms (50 MB plain) and from 1,823 to 10,135 ms (20 MB SGR), **fails**; main-thread long
+tasks went from 0 ms on both to 832 and 7,668 ms a run, **fails**; keystroke-to-echo p95 fell from 34 ms to 5 to
+13 ms, passes; four Terminals took about 215 MB of browser RSS against about 115 MB, **fails**.
+
+**Not as the brief said:** the host machine, not the dev container (Docker's daemon was down), and the drain
+workload is a scratch copy of `terminal-cat.mjs` that reads its end marker from xterm's buffer (the committed
+one reads DOM rows, which a canvas renderer doesn't have). The page names what would reopen it: the same
+method in a browser with a GPU, which is also the Android Chrome question.
+
+`npm run check` exit 0 (no code changed); `bash corpus/lint.sh` OK. End move `done`.

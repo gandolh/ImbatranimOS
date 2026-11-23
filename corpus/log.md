@@ -6429,3 +6429,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Brief 112: the Wayland host gets its own agent rules
 
 `3af582f` (1.412.0): `.claude/rules/wayland-host.md` (scoped to `apps/wayland-host/**`): read-first pages, build and test in the builder image, the one dev container, the trade-off priorities in order with a source for each, the protocol's four places, measuring first, and the traps already paid for. Whether a fresh session lists it is the owner's check.
+
+## [2026-11-23] done | Brief 113: xterm's WebGL renderer, measured, not built
+
+[research-webgl-renderer.md](wiki/research-webgl-renderer.md): in headless Chromium, where WebGL runs on SwiftShader, the WebGL renderer drained a 50 MB `cat` in 16.6 s against the DOM renderer's 1.9 s, made 0.8 to 7.7 s of long tasks where DOM made none, and four Terminals took about 100 MB more; only keystroke echo improved. Three of the bar's four conditions fail. A GPU-backed browser (the owner's Android Chrome question) is what would reopen it.

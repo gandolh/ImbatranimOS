@@ -23,16 +23,20 @@ import { MarketplaceModule } from "./modules/marketplace/marketplace.module";
 import { WaylandModule } from "./modules/wayland/wayland.module";
 import { LinuxAppsModule } from "./modules/linux-apps/linux-apps.module";
 import { UpgradeRoutesModule } from "./upgrade-routes";
+import { staticHeadersFor } from "./static-assets";
 
 // Prod image only: serve the built frontend from STATIC_ROOT on the API
 // port, with the SPA index.html fallback. API + health are excluded so
 // they keep their own handlers. In dev STATIC_ROOT is unset and Vite
 // serves the frontend, so this contributes nothing.
+// A hashed asset is cached for a year and index.html is checked on each load
+// (static-assets.ts); main.ts sends the build's compressed copies ahead of this.
 const staticModules: DynamicModule[] = process.env.STATIC_ROOT
   ? [
       ServeStaticModule.forRoot({
         rootPath: process.env.STATIC_ROOT,
         exclude: ["/api/{*path}", "/health"],
+        serveStaticOptions: { setHeaders: staticHeadersFor(process.env.STATIC_ROOT) },
       }),
     ]
   : [];

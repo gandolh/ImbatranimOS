@@ -168,7 +168,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.433.0"
+      org.opencontainers.image.version="1.434.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -242,7 +242,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.433.0
+    IMAGE_VERSION=1.434.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -257,7 +257,13 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
 # tini is PID 1: it reaps orphans (a Linux app started from a Terminal
 # outlives the shell that would have waited for it) and passes signals on.
 ENTRYPOINT ["/sbin/tini", "--", "/entrypoint.sh"]
-CMD ["node", "apps/backend/dist/main"]
+# A young generation of 2 MiB semi-spaces (V8's default here grows to tens of
+# MiB under load and keeps them): after 18,000 requests the backend held
+# 118 MiB instead of 159, with the same CPU per request, per Terminal flood
+# and per Linux window frame (measured 2026-11-23). On the command line, not
+# in NODE_OPTIONS: a Terminal's shell inherits the backend's environment, and
+# the owner's own Node programs keep V8's defaults.
+CMD ["node", "--max-semi-space-size=2", "apps/backend/dist/main"]
 
 # ---------------------------------------------------------------------------
 # dev — contained development: `turbo dev` = Nest watch + Vite HMR

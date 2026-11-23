@@ -6366,3 +6366,82 @@ From [research-ghostty.md](wiki/research-ghostty.md): 98 safe pastes, 99 Termina
 ## [2026-11-20] maintenance | The redesign's board page copied into the repo
 
 The estate redesign board is a private canvas, so `design/estate-redesign/` now holds a copy of this app's page on it and the build behind it: the directions, the judges' and the controller's rulings, the critique, the token hand-off, the board's notes, the owner's decisions, the proposed screens (as HTML with renders, or as the board's own artboard sources), and today's shots from before the redesign. It is the design record of brief 88, which built it; its README says what each file is. Prettier and the Docker build skip the folder.
+
+## [2026-11-22] done | Brief 98: pastes into the Terminal are made safe
+
+`6e66eac` (1.385.0): every paste into the Terminal (keyboard, right-click, middle-click, a text drop) goes through `lib/paste.ts`. Text with a bracket's end marker, or a line break while the shell hasn't asked for bracketed paste, asks first in the kit's confirm dialog; then xterm's control bytes become spaces and xterm's own `paste()` brackets it. BusyBox sh (Alpine 1.37) never asks for bracketed paste, so every multi-line paste asks until bash (104). Walked on the host, not in Docker (the daemon was down): the four cases and the keyboard paste hold.
+
+
+## [2026-11-22] done | Brief 99: Terminal links open http and https only
+
+`dde199e` (1.387.0): OSC 8 links get a `linkHandler` and plain URLs go through the same rule in `lib/links.ts`: http and https open in a new tab, anything else shows a toast. A hovered OSC 8 link shows its target at the pointer (in the kit tooltip's tokens, not its component, which can't anchor at a pointer). The native `confirm()` is gone. The phone's tap question is tested but not walked: headless touch emulation never activates an xterm OSC 8 link.
+
+
+## [2026-11-22] done | Brief 100: hidden windows stop polling
+
+`7954a15` (1.389.0): Logs' follow and Settings' job polls (Updates, Marketplace, Linux apps' index and job) pause while their window is hidden and read once at once when it shows, through `useWindowVisible` and `useRefetchOnShow`. The rule is ui-conventions item 32, with the background services that keep running named. Walked: no `/api/logs` request in 30 s minimized, one on show.
+
+
+## [2026-11-22] done | Brief 101: benchmark workloads and the measuring recipe
+
+`0ec623e` (1.391.0): `scripts/bench/` generates the Terminal's inputs from fixed seeds (byte for byte, sums on the page), records sessions as asciicast v2 and replays them, and runs any workload two warmups and ten runs with a lock. [how-we-measure.md](wiki/how-we-measure.md) has the rules ("write the bar first", "measured, not built" is a valid end), the sums and the first baseline: a 50 MB `cat` through the Terminal, median 2,733 ms uncapped and 2,434 ms with the backend on one CPU, on the host (Docker was down).
+
+## [2026-11-22] done | Brief 102: a Terminal's shell outlives a close it didn't mean
+
+`ecc59ea` (1.393.0): a socket that ends without the window's `close` frame leaves its pty detached for 30 s, still read into a ring of its last 256 KiB; the window comes back with `resume=<token>`, the token kept across a reload through the kit's new optional `system.window.saveState` / `savedState` (kit commit for imbatranim-apps' next sync: `ecc59ea`). A shell another live socket holds refuses with 4409 after a ping, and the duplicated tab starts its own. The ring is kept all along so a reload shows its screen, and the tab mutes xterm's answers to the replayed queries. Walked on the host: reload, a real drop, a duplicated tab and a close.
+
+## [2026-11-22] done | Brief 103: an exact screen on reattach, measured, not built
+
+[research-reattach-screen.md](wiki/research-reattach-screen.md): a headless xterm beside each pty (a throwaway patch, `@xterm/headless` 6.0.0 with `@xterm/addon-serialize` 0.14.0) restores the one screen the 256 KiB ring gets wrong (`less` quit after its alternate-screen switch fell out of the ring), but costs 265% more backend CPU per `cat` (bar 10%) and 9.7 MB more RSS per Terminal (bar 8 MB); drain time grew only 6-8%. The ring stays. Measured on the host with the backend pinned to one CPU (Docker was down).
+
+## [2026-11-22] done | Brief 104: bash is the Terminal's shell
+
+`826c2f1` (1.396.0): an app started from a Terminal with a bare `&` now ends when that window closes. Both image stages add bash (2.1 MB installed with readline and ncurses, from Alpine 3.24's index; bash-completion's 1.06 MB stays out of its 1 MB budget) and make it `imbatranim`'s login shell; `/etc/bash/imbatranim-prompt.sh` gives a plain prompt to a home with no `~/.bashrc`. Verified with Alpine's own bash through musl's loader under node-pty (Docker was down, a chroot refused): `/etc/bash/bashrc` is the system rc, bracketed paste is on, a bare `&` job dies with the window and survives a reload, `nohup` survives both.
+
+## [2026-11-22] done | Brief 105: the shell marks its prompts and the window takes titles
+
+`debff7d` (1.398.0): `/etc/bash/imbatranim-shell-integration.sh` runs where the gateway sets `TERM_PROGRAM=imbatranim` and prints OSC 133 marks (A, B, C, D with the exit code), an OSC 7 cwd percent-encoded byte by byte (a directory named with ESC and BEL arrives as text) and an OSC 2 title; it adds to `PROMPT_COMMAND` and PS0 without replacing a user's. The Terminal keeps a shell state per window (`lib/shellState.ts`, tested on a recorded bash session), a marker at each prompt, and gives titles to the window and the taskbar. Walked with Alpine's bash on the host: exits, cwd, running, and vim's title on the taskbar.
+
+## [2026-11-22] done | Brief 106: a long command's end is a toast; closing asks only while one runs
+
+`f5fecb8` (1.400.0): a command of 10 s or more that ends while its Terminal isn't focused gives one toast ("Command finished", or "Command failed, exit N", with the duration and where it ran) with a Show that brings that window back; `openApp` now brings back an app's own open window when the payload names it (`{ showWindow }`), so a multi-instance app's toast reaches its window. The switch is a command-palette result (the Terminal's first command source), on by default. Closing asks while a command runs and goes straight through at a prompt. The threshold and wording are the owner's question on the end move.
+
+## [2026-11-22] done | Brief 107: jump between prompts; a click moves the cursor in the prompt
+
+`068942d` (1.402.0): Ctrl+Shift+Up and Down scroll to the previous and next prompt (bound in xterm's key handler so only the focused Terminal takes them, listed through `system.shortcuts.document`). A click or tap on the command being typed sends one arrow per character to it, in the program's cursor-key mode (`lib/promptCursor.ts`), only while the shell waits for typing, with no mouse tracking and no drag. Walked at 1280 and 390 (touch), vim keeping its own clicks.
+
+## [2026-11-22] done | Brief 108: a Terminal opens in a folder
+
+`e2297e2` (1.404.0): the PTY URL takes a checked start folder (an absolute `cwd`, or a Files `root` and `path` resolved through the Files jail; anything else starts in home). Files offers Open in Terminal on folders and the background menu; Ctrl+Shift+N, and Alt+Shift+N since browsers keep Ctrl+Shift+N for a private window, open a new Terminal in the shell's folder. Walked on the host: Files' item and `pwd`, and a new window after `cd /tmp`.
+
+## [2026-11-23] done | Brief 109: taskbar buttons show progress and ask for attention
+
+`196a6f1` (1.406.0): the kit gains optional `system.window.setProgress` and `requestAttention` (kit commit for imbatranim-apps' next sync: `196a6f1`). The taskbar draws a 3 px bar per state (accent, error, paused, a sweep for indeterminate, still under reduced motion) and fills and pulses a button that asks for attention until its window is focused. The Terminal reads OSC 9;4 itself (no addon), clears it after 15 s or at the next prompt, and a bell in an unfocused window asks for attention. Walked in Apricot light and Classic dark at 1280 and 390; the look is the owner's question.
+
+## [2026-11-23] done | Brief 110: a Linux app asks for attention
+
+`ca0564e` (1.408.0): the Wayland host turns an xdg-activation request for a mapped toplevel, and an X11 urgency hint turning on, into `request` with `attention`; the tab marks the window's taskbar button (brief 109's state) and nothing is raised. `hello` stays at 10, since an older tab ignores the action. An end-to-end test drives the built host with a hand-written client; walked on the host with foot's `bell.urgent`.
+
+## [2026-11-23] done | Brief 111: terminal programs learn the light or dark mode
+
+`5db01db` (1.410.0): the Terminal answers the dark and light mode detection sequences xterm.js lacks (`CSI ? 2031 h/l`, `CSI ? 996 n`, DECRQM 2031, off on RIS) and reports a change of the desktop's mode once while a program has reports on, through xterm's CSI hooks so every other mode in a sequence stays xterm's. Walked with `cat -v` across a flip in Settings.
+
+## [2026-11-23] done | Brief 112: the Wayland host gets its own agent rules
+
+`3af582f` (1.412.0): `.claude/rules/wayland-host.md` (scoped to `apps/wayland-host/**`): read-first pages, build and test in the builder image, the one dev container, the trade-off priorities in order with a source for each, the protocol's four places, measuring first, and the traps already paid for. Whether a fresh session lists it is the owner's check.
+
+## [2026-11-23] done | Brief 113: xterm's WebGL renderer, measured, not built
+
+[research-webgl-renderer.md](wiki/research-webgl-renderer.md): in headless Chromium, where WebGL runs on SwiftShader, the WebGL renderer drained a 50 MB `cat` in 16.6 s against the DOM renderer's 1.9 s, made 0.8 to 7.7 s of long tasks where DOM made none, and four Terminals took about 100 MB more; only keystroke echo improved. Three of the bar's four conditions fail. A GPU-backed browser (the owner's Android Chrome question) is what would reopen it.
+
+## [2026-11-23] done | Brief 114: PTY output batched only when it floods, measured, not built
+
+[research-pty-batching.md](wiki/research-pty-batching.md): gathering the PTY's output into frames of up to 64 KiB or 4 ms cut frames about 15 times, but drain time rose 7% and 12% and backend CPU 32% and 22% (joining strings costs more than the frames saved; Linux's node-pty already reads 4 KiB at a time). The bar wanted a 15% drop; the rule and its specs were reverted.
+
+## [2026-11-23] done | Brief 115: the Wayland host encodes off its event loop, measured, not built
+
+[research-host-encoder-thread.md](wiki/research-host-encoder-thread.md): with a 720p clip playing in mpv beside it, foot's keystroke-to-frame p95 rose 17 to 19 ms (VP8) and 24 to 33 ms (JPEG), past the 16 ms that called for an encoder thread. A control with the clip decoded and not shown moved nothing, and the tab made no long tasks. The thread wasn't built: one in-order encoder on one CPU would queue foot's frame behind the clip's and can take at most one 8 to 10 ms encode off the wait, under the half the keep-bar asks. A judgment call left for the owner.
+
+## [2026-11-23] done | Brief 116: a debug overlay for Linux windows
+
+`4d58ba2` (1.417.0): Settings → Linux apps → "Show stream stats" (off by default, per machine) draws, over each visible Linux window, the last half second's rectangles outlined by encoding and a panel with the last second's fps, kB/s, encoding shares and decode time, all from frames the tab already parses; off, the frame path only reads the switch. Walked with foot and mpv in Apricot light and Classic dark. Briefs 98-116 are all closed.

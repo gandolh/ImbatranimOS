@@ -657,6 +657,9 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         onEditInPaint: (entry) => {
           system.intents.openApp("paint", { openPath: entry.path, root });
         },
+        onOpenInTerminal: (entry) => {
+          system.intents.openApp("terminal", { root, path: entry?.path ?? path });
+        },
         onCompare: (() => {
           // Exactly two files selected, the clicked entry one of them — the
           // only state where "Compare" can mean something.

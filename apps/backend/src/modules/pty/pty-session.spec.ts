@@ -39,17 +39,21 @@ function makeFakePty() {
 
 function makeFakeSocket() {
   const handlers: Record<string, ((...a: unknown[]) => void)[]> = {};
-  const socket: Omit<SocketLike, "send" | "close"> & {
+  const socket: Omit<SocketLike, "send" | "close" | "ping" | "terminate"> & {
     bufferedAmount: number;
     readyState: number;
     send: jest.Mock;
     close: jest.Mock;
+    ping: jest.Mock;
+    terminate: jest.Mock;
     emit(event: string, ...args: unknown[]): void;
   } = {
     bufferedAmount: 0,
     readyState: WS_OPEN,
     send: jest.fn(),
     close: jest.fn(),
+    ping: jest.fn(),
+    terminate: jest.fn(),
     on(event, cb) {
       (handlers[event] ??= []).push(cb);
     },
@@ -103,8 +107,16 @@ describe("PtySession", () => {
     expect(pty.resize).not.toHaveBeenCalled();
   });
 
-  it("kills the pty when the socket closes (window closed)", () => {
+  it("kills the pty when the tab says the window closed, then its socket closes", () => {
     new PtySession(pty, socket);
+    socket.emit("message", JSON.stringify({ type: "close" }));
+    expect(pty.kill).not.toHaveBeenCalled();
+    socket.emit("close");
+    expect(pty.kill).toHaveBeenCalledTimes(1);
+  });
+
+  it("kills the pty with its socket when no tab can come back to it", () => {
+    new PtySession(pty, socket, { detachMs: 0 });
     socket.emit("close");
     expect(pty.kill).toHaveBeenCalledTimes(1);
   });
@@ -118,6 +130,7 @@ describe("PtySession", () => {
 
   it("reaps the pty exactly once even across multiple teardowns", () => {
     const s = new PtySession(pty, socket);
+    socket.emit("message", JSON.stringify({ type: "close" }));
     socket.emit("close");
     s.dispose();
     pty.emitExit(0);
@@ -168,6 +181,132 @@ describe("PtySession", () => {
       socket.bufferedAmount = 50;
       pty.emitData("ok");
       expect(pty.pause).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("a socket that ends without the close frame", () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it("keeps the pty for 30 s, then hangs it up", () => {
+      const onDispose = jest.fn();
+      const s = new PtySession(pty, socket, { onDispose });
+      socket.emit("close");
+      expect(pty.kill).not.toHaveBeenCalled();
+      expect(s.attached).toBe(false);
+      jest.advanceTimersByTime(29_999);
+      expect(pty.kill).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(1);
+      expect(pty.kill).toHaveBeenCalledTimes(1);
+      expect(onDispose).toHaveBeenCalledTimes(1);
+    });
+
+    it("detaches on a socket error too", () => {
+      new PtySession(pty, socket);
+      socket.emit("error", new Error("reset"));
+      expect(pty.kill).not.toHaveBeenCalled();
+    });
+
+    it("gives a new socket the same pty: a reset, the latest output, then live output", () => {
+      const s = new PtySession(pty, socket);
+      pty.emitData("before, ");
+      socket.emit("close");
+      pty.emitData("while ");
+      pty.emitData("away");
+      const next = makeFakeSocket();
+      expect(s.attach(next)).toBe(true);
+      expect(next.send).toHaveBeenCalledWith("\x1bcbefore, while away");
+      pty.emitData("live");
+      expect(next.send).toHaveBeenLastCalledWith("live");
+      next.emit("message", JSON.stringify({ type: "input", data: "q" }));
+      expect(pty.write).toHaveBeenCalledWith("q");
+      jest.advanceTimersByTime(60_000);
+      expect(pty.kill).not.toHaveBeenCalled();
+    });
+
+    it("keeps only the newest output past the ring's size", () => {
+      const s = new PtySession(pty, socket, { ringBytes: 8 });
+      socket.emit("close");
+      pty.emitData("abcdef");
+      pty.emitData("ghijkl");
+      const next = makeFakeSocket();
+      s.attach(next);
+      expect(next.send).toHaveBeenCalledWith("\x1bcefghijkl");
+    });
+
+    it("starts the kept output at a line where the cut falls inside one", () => {
+      const s = new PtySession(pty, socket, { ringBytes: 8 });
+      socket.emit("close");
+      pty.emitData("ab\ncd\nefgh");
+      pty.emitData("ij");
+      const next = makeFakeSocket();
+      s.attach(next);
+      expect(next.send).toHaveBeenCalledWith("\x1bcefghij");
+    });
+
+    it("resumes a paused pty, so a busy command keeps running while detached", () => {
+      new PtySession(pty, socket, { highWater: 100, lowWater: 10 });
+      socket.bufferedAmount = 200;
+      pty.emitData("flood");
+      expect(pty.pause).toHaveBeenCalledTimes(1);
+      socket.emit("close");
+      expect(pty.resume).toHaveBeenCalledTimes(1);
+    });
+
+    it("refuses a second socket while one is attached", () => {
+      const s = new PtySession(pty, socket);
+      expect(s.attach(makeFakeSocket())).toBe(false);
+    });
+
+    it("ignores the old socket's late events once a new one is attached", () => {
+      const s = new PtySession(pty, socket);
+      socket.emit("close");
+      s.attach(makeFakeSocket());
+      socket.emit("message", JSON.stringify({ type: "input", data: "stale" }));
+      socket.emit("close");
+      expect(pty.write).not.toHaveBeenCalled();
+      expect(s.attached).toBe(true);
+    });
+
+    it("ends at once when the pty exits while detached", () => {
+      const onDispose = jest.fn();
+      const s = new PtySession(pty, socket, { onDispose });
+      socket.emit("close");
+      pty.emitExit(0);
+      expect(s.isDisposed).toBe(true);
+      expect(onDispose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("probe", () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it("answers true while the peer pongs", async () => {
+      const s = new PtySession(pty, socket);
+      const held = s.probe(2_000);
+      expect(socket.ping).toHaveBeenCalledTimes(1);
+      socket.emit("pong");
+      await expect(held).resolves.toBe(true);
+      expect(socket.terminate).not.toHaveBeenCalled();
+    });
+
+    it("answers false at once when the socket ends while it waits", async () => {
+      const s = new PtySession(pty, socket);
+      const held = s.probe(2_000);
+      socket.emit("close");
+      await expect(held).resolves.toBe(false);
+      expect(s.attach(makeFakeSocket())).toBe(true);
+    });
+
+    it("drops a socket that doesn't answer and detaches the pty", async () => {
+      const s = new PtySession(pty, socket);
+      const held = s.probe(2_000);
+      jest.advanceTimersByTime(2_000);
+      await expect(held).resolves.toBe(false);
+      expect(socket.terminate).toHaveBeenCalledTimes(1);
+      expect(pty.kill).not.toHaveBeenCalled();
+      expect(s.attach(makeFakeSocket())).toBe(true);
     });
   });
 });

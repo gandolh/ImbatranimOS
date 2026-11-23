@@ -101,6 +101,8 @@ export type {
   SystemSound,
   SystemSoundState,
   SystemWindow,
+  SystemProgress,
+  SystemProgressState,
   UploadOptions,
   VersionedBytes,
 } from "./system";

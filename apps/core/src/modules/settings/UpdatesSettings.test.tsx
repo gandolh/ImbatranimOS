@@ -2,6 +2,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SystemProvider, type SystemHandle } from "@imbatranim/ui";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { get, post } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
@@ -10,6 +11,14 @@ vi.mock("../linux-windows/launchers", () => ({ reloadLinuxLaunchers: vi.fn() }))
 
 import { UpdatesSettings } from "./UpdatesSettings";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+/** The Settings window's handle: always visible here (the hidden case is in hiddenPolls.test.tsx). */
+const system = {
+  windowId: "settings",
+  window: { isVisible: () => true },
+  on: () => () => undefined,
+  notify: vi.fn(),
+} as unknown as SystemHandle;
 
 const A = {
   release: "nixos-26.05",
@@ -54,9 +63,11 @@ async function render() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   await act(async () => {
     root.render(
-      <QueryClientProvider client={client}>
-        <UpdatesSettings />
-      </QueryClientProvider>,
+      <SystemProvider system={system}>
+        <QueryClientProvider client={client}>
+          <UpdatesSettings />
+        </QueryClientProvider>
+      </SystemProvider>,
     );
   });
   await act(async () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { classifyClose, retryDelay, MAX_RETRIES, CLOSE_SESSION_REVOKED } from "./closeReason";
+import { classifyClose, retryDelay, MAX_RETRIES, CLOSE_SESSION_REVOKED, CLOSE_SHELL_ATTACHED } from "./closeReason";
 import { buildXtermTheme, type VarResolver } from "./xtermTheme";
 import {
   clampFontSize,
@@ -62,6 +62,12 @@ describe("classifyClose", () => {
 
   it("treats a revoked session as terminal even if it never opened", () => {
     expect(classifyClose(CLOSE_SESSION_REVOKED, "session-revoked", false).retry).toBe(false);
+  });
+
+  it("starts a shell of its own when another tab holds the one this window named", () => {
+    const v = classifyClose(CLOSE_SHELL_ATTACHED, "shell-attached", true);
+    expect(v.newShell).toBe(true);
+    expect(v.terminal).toBe(false);
   });
 
   it("does not retry a plain code-1000 close", () => {

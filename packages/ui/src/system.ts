@@ -286,7 +286,32 @@ export interface SystemWindow {
    * proxies the call and awaits its settlement, pure data either way.
    */
   onCloseRequest(guard: () => boolean | Promise<boolean>): () => void;
+  /**
+   * Keep a short value with this window across a reload of the tab, or forget it (null): what the app needs to
+   * pick up where it was, as the Terminal keeps the token of its shell. Per tab, at most 512 characters; a longer
+   * value is refused and the old one kept. Optional (added 2026-11-22): check it exists before calling.
+   */
+  saveState?(value: string | null): void;
+  /** What {@link saveState} kept for this window, after a reload too; null when nothing is kept. */
+  savedState?(): string | null;
+  /**
+   * Show a task's progress on this window's taskbar button: a bar for `normal`, `error` and `paused` (at
+   * `value`, 0 to 100), a moving one for `indeterminate`, none for `none`. Optional (added 2026-11-22): check
+   * it exists before calling.
+   */
+  setProgress?(progress: SystemProgress): void;
+  /**
+   * Ask for the owner's attention: the taskbar button fills and pulses until the window is focused. A focused
+   * window's request is ignored. Optional (added 2026-11-22): check it exists before calling.
+   */
+  requestAttention?(): void;
 }
+
+/** A taskbar button's progress state: ConEmu's OSC 9;4 states, by name. */
+export type SystemProgressState = "none" | "normal" | "error" | "indeterminate" | "paused";
+
+/** What {@link SystemWindow.setProgress} shows: a state, and for a bar its value from 0 to 100. */
+export type SystemProgress = { state: SystemProgressState; value?: number };
 
 // ── Intents ───────────────────────────────────────────────────────────────────
 
@@ -363,7 +388,9 @@ export type SystemNotifyAction = {
   /**
    * Delivered verbatim as the `openApp` payload; must be JSON-safe. A file it
    * names is not given: the window reopens it with `fs.reopenRecent` when it
-   * is one of the app's recent files.
+   * is one of the app's recent files. `{ showWindow: <a window id> }` naming one
+   * of the app's open windows brings that window back instead of opening
+   * another (since 2026-11-22; a multi-instance app's "Show").
    */
   payload: unknown;
 };

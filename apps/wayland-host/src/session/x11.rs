@@ -591,6 +591,16 @@ impl XwmHandler for SessionState {
             return;
         }
         let Some(i) = self.x11_toplevel(&window) else { return };
+        if property == WmWindowProperty::Hints {
+            // The urgency hint turning on asks for attention, as an activation
+            // request does; it staying on, or turning off, asks nothing.
+            let urgent = window.hints().is_some_and(|h| h.urgent);
+            let was = std::mem::replace(&mut self.windows[i].urgent, urgent);
+            if urgent && !was {
+                self.attention_at(i);
+            }
+            return;
+        }
         let Role::Toplevel { title, app_id: id, decorations: d, min, max, .. } = &mut self.windows[i].role else {
             return;
         };

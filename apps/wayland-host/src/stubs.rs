@@ -25,9 +25,10 @@ pub struct Stubs {
 impl Stubs {
     pub fn new(dh: &DisplayHandle) -> Stubs {
         Stubs {
-            // Apps ask to raise a window (a link opened from another app).
-            // Tokens are handed out; activation requests are ignored, since
-            // only the owner raises windows.
+            // Apps ask to raise a window (a link opened from another app, a
+            // bell). Tokens are handed out; a request raises nothing, since
+            // only the owner raises windows: the tab is told the window wants
+            // attention, and its taskbar button says so.
             activation: XdgActivationState::new::<SessionState>(dh),
             // Scaling of a buffer: a viewport's destination is the surface's
             // size (an app drawing at the fractional scale's preferred scale
@@ -48,8 +49,9 @@ impl XdgActivationHandler for SessionState {
         &mut self,
         _token: XdgActivationToken,
         _token_data: XdgActivationTokenData,
-        _surface: WlSurface,
+        surface: WlSurface,
     ) {
+        self.ask_for_attention(&surface);
     }
 }
 

@@ -37,6 +37,12 @@ opus = "0.4.0"
 # here against Alpine's libvpx-dev and linked to its libvpx at run time. VP8
 # is royalty-free built from source; the numbers that earned the dependency
 # are in corpus/wiki/research-video-in-linux-windows.md.
+# The end-to-end tests' hand-written Wayland client passes a buffer's fd
+# (SCM_RIGHTS) and makes it with memfd: the same rustix as above, two more
+# features, tests only.
+[dev-dependencies]
+rustix = { version = "1.0.7", default-features = false, features = ["std", "net", "fs"] }
+
 [build-dependencies]
 cc = "1.1"
 

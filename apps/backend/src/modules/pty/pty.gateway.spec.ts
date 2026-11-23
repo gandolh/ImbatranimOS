@@ -6,10 +6,14 @@ import { WebSocket } from "ws";
 import * as pty from "node-pty";
 import { PtyGateway } from "./pty.gateway";
 import { WaylandGateway } from "../wayland/wayland.gateway";
-import { MAX_SESSIONS } from "./pty.constants";
+import { CLOSE_SHELL_ATTACHED, MAX_SESSIONS } from "./pty.constants";
 import { LocalIdentityService } from "../auth/ws-auth";
 import type { Caller } from "../identity/identity.types";
 import { UpgradeRoutes } from "../../upgrade-routes";
+import { FilesService } from "../files/files.service";
+import { mkdtempSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
 /**
  * The raw `'upgrade'` handler, against a real HTTP server.
@@ -58,6 +62,7 @@ describe("PtyGateway upgrade handler", () => {
       providers: [
         PtyGateway,
         UpgradeRoutes,
+        FilesService,
         { provide: LocalIdentityService, useValue: identityMock },
         { provide: WaylandGateway, useValue: { x11Display: () => null } },
         {
@@ -186,6 +191,7 @@ describe("PtyGateway revocation sweep", () => {
       providers: [
         PtyGateway,
         UpgradeRoutes,
+        FilesService,
         { provide: LocalIdentityService, useValue: identityMock },
         { provide: WaylandGateway, useValue: { x11Display: () => null } },
         {
@@ -204,14 +210,25 @@ describe("PtyGateway revocation sweep", () => {
 
   afterEach(async () => {
     for (const ws of open.splice(0)) ws.terminate();
+    texts.clear();
     await app.close();
   });
 
-  /** Open a shell with `cookie`; resolves once the socket is open. */
-  const shell = (cookie: string) =>
+  /** What each socket has received, from its first frame: a frame can arrive with the handshake. */
+  const texts = new Map<WebSocket, { text: string }>();
+
+  /** Open a shell with `cookie` (and `query`, a shell token's); resolves once the socket is open. */
+  const shell = (cookie: string, query = "") =>
     new Promise<WebSocket>((resolve, reject) => {
-      const ws = new WebSocket(url, { headers: { cookie } });
+      const ws = new WebSocket(`${url}${query}`, { headers: { cookie } });
       open.push(ws);
+      const got = { text: "" };
+      texts.set(ws, got);
+      ws.on("message", (data) => {
+        // This server only sends text frames.
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+        got.text += data.toString();
+      });
       ws.on("open", () => resolve(ws));
       ws.on("unexpected-response", (_req, res) => reject(new Error(`refused ${res.statusCode}`)));
       ws.on("error", reject);
@@ -251,6 +268,124 @@ describe("PtyGateway revocation sweep", () => {
     for (let i = 0; i < MAX_SESSIONS; i++) await shell("imb_session=A");
     await expect(shell("imb_session=A")).rejects.toThrow("refused 503");
   }, 30_000);
+
+  /** Everything the socket has received. */
+  const received = (ws: WebSocket) => texts.get(ws) ?? { text: "" };
+
+  /** Runs `echo <label>=$$` in the shell and resolves with the shell's pid. */
+  const pidOf = (ws: WebSocket, label: string, got: { text: string }) =>
+    new Promise<number>((resolve, reject) => {
+      const pattern = new RegExp(`${label}=(\\d+)`);
+      const timer = setTimeout(() => reject(new Error(`no ${label}; got: ${got.text}`)), 8000);
+      const check = () => {
+        const m = pattern.exec(got.text);
+        if (!m) return;
+        clearTimeout(timer);
+        ws.off("message", check);
+        resolve(Number(m[1]));
+      };
+      ws.on("message", check);
+      ws.send(JSON.stringify({ type: "input", data: `echo ${label}=$$\r` }));
+    });
+
+  /** Closes the socket from the tab's side, as a reload or a drop does, and waits for the server to see it. */
+  const drop = async (ws: WebSocket) => {
+    const closed = closeCode(ws);
+    ws.close();
+    await closed;
+    await new Promise((r) => setTimeout(r, 50));
+  };
+
+  const T = "token-for-window-1";
+
+  it("(e) gives a tab that comes back with its token the same shell", async () => {
+    live.add("imb_session=A");
+    const first = await shell("imb_session=A", `?session=tab1&shell=${T}`);
+    const pid = await pidOf(first, "FIRST", received(first));
+    await drop(first);
+
+    const again = await shell("imb_session=A", `?session=tab1&resume=${T}`);
+    const got = received(again);
+    expect(await pidOf(again, "AGAIN", got)).toBe(pid);
+    expect(got.text.startsWith("\x1bc")).toBe(true);
+    expect(got.text).not.toContain("previous shell");
+  }, 20_000);
+
+  it("(f) refuses a second socket for a shell a live socket holds with 4409", async () => {
+    live.add("imb_session=A");
+    await shell("imb_session=A", `?session=tab1&shell=${T}`);
+    const copy = await shell("imb_session=A", `?session=tab1&resume=${T}`);
+    expect(await closeCode(copy, 4000)).toBe(CLOSE_SHELL_ATTACHED);
+  }, 10_000);
+
+  it("(g) ends the shell at once when the tab says its window closed", async () => {
+    live.add("imb_session=A");
+    const first = await shell("imb_session=A", `?session=tab1&shell=${T}`);
+    const pid = await pidOf(first, "FIRST", received(first));
+    first.send(JSON.stringify({ type: "close" }));
+    await drop(first);
+
+    const again = await shell("imb_session=A", `?session=tab1&resume=${T}`);
+    const got = received(again);
+    expect(await pidOf(again, "AGAIN", got)).not.toBe(pid);
+    expect(got.text).toContain("previous shell had ended");
+  }, 20_000);
+
+  it("(h) finds a shell only from the tab it was started in", async () => {
+    live.add("imb_session=A");
+    const first = await shell("imb_session=A", `?session=tab1&shell=${T}`);
+    const pid = await pidOf(first, "FIRST", received(first));
+    await drop(first);
+
+    const other = await shell("imb_session=A", `?session=tab2&resume=${T}`);
+    expect(await pidOf(other, "OTHER", received(other))).not.toBe(pid);
+  }, 20_000);
+
+  it("(i) ends a detached shell whose session was revoked", async () => {
+    live.add("imb_session=A");
+    const first = await shell("imb_session=A", `?session=tab1&shell=${T}`);
+    const pid = await pidOf(first, "FIRST", received(first));
+    await drop(first);
+
+    live.clear();
+    await sweep();
+    live.add("imb_session=A");
+    const again = await shell("imb_session=A", `?session=tab1&resume=${T}`);
+    const got = received(again);
+    expect(await pidOf(again, "AGAIN", got)).not.toBe(pid);
+    expect(got.text).toContain("previous shell had ended");
+  }, 20_000);
+
+  it("(j) counts detached shells toward MAX_SESSIONS, and lets a tab come back to one", async () => {
+    live.add("imb_session=A");
+    for (let i = 0; i < MAX_SESSIONS; i++) {
+      await drop(await shell("imb_session=A", `?session=tab1&shell=${T}-${i}`));
+    }
+    await expect(shell("imb_session=A", "?session=tab1&shell=one-too-many")).rejects.toThrow("refused 503");
+    const again = await shell("imb_session=A", `?session=tab1&resume=${T}-0`);
+    expect(await closeCode(again, 300)).toBe("open");
+  }, 30_000);
+
+  it("(k) starts a shell in the folder the URL names, and in home for one that isn't a folder", async () => {
+    live.add("imb_session=A");
+    const dir = mkdtempSync(join(tmpdir(), "pty-cwd-"));
+    try {
+      const inDir = await shell("imb_session=A", `?cwd=${encodeURIComponent(dir)}`);
+      await pidOf(inDir, "P", received(inDir));
+      inDir.send(JSON.stringify({ type: "input", data: "echo WHERE=$(pwd)\r" }));
+      await new Promise((r) => setTimeout(r, 500));
+      expect(received(inDir).text).toContain(`WHERE=${dir}`);
+
+      const bad = await shell("imb_session=A", `?cwd=${encodeURIComponent("relative/path")}`);
+      await pidOf(bad, "P", received(bad));
+      bad.send(JSON.stringify({ type: "input", data: "echo WHERE=$(pwd)\r" }));
+      await new Promise((r) => setTimeout(r, 500));
+      expect(received(bad).text).not.toContain(`WHERE=${dir}`);
+      expect(received(bad).text).toMatch(/WHERE=\//);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 20_000);
 
   it("(d) closes with 1011 when the shell cannot be spawned", async () => {
     live.add("imb_session=A");

@@ -1,4 +1,7 @@
-import { terminalEnv } from "./pty.constants";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { startDirectory, terminalEnv } from "./pty.constants";
 
 describe("terminalEnv", () => {
   it("puts the user's Nix profile first on PATH and leaves the input alone", () => {
@@ -22,7 +25,7 @@ describe("terminalEnv", () => {
   });
 
   it("adds nothing outside the container, where NIX_STATE_HOME is unset", () => {
-    expect(terminalEnv({ PATH: "/usr/bin" })).toEqual({ PATH: "/usr/bin" });
+    expect(terminalEnv({ PATH: "/usr/bin" })).toEqual({ PATH: "/usr/bin", TERM_PROGRAM: "imbatranim" });
   });
 
   it("names the tab's Wayland socket for a valid desktop session id", () => {
@@ -63,5 +66,33 @@ describe("terminalEnv", () => {
     const none = terminalEnv({ ...base, PULSE_SERVER: "unix:/x" });
     expect(none.PULSE_SERVER).toBeUndefined();
     expect(none.PULSE_COOKIE).toBeUndefined();
+  });
+
+  it("names the terminal for the bash integration, with the OS's version when it is known", () => {
+    const env = terminalEnv({ TERM_PROGRAM: "vscode", TERM_PROGRAM_VERSION: "1.0" }, null, null, "1.397.0");
+    expect(env.TERM_PROGRAM).toBe("imbatranim");
+    expect(env.TERM_PROGRAM_VERSION).toBe("1.397.0");
+    expect(terminalEnv({ TERM_PROGRAM_VERSION: "1.0" }, null, null, "unknown").TERM_PROGRAM_VERSION).toBeUndefined();
+  });
+});
+
+describe("startDirectory", () => {
+  let dir: string;
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), "start-dir-"));
+    writeFileSync(join(dir, "a-file"), "");
+  });
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("uses a folder the user can enter", async () => {
+    await expect(startDirectory(dir, "/home/x")).resolves.toBe(dir);
+  });
+
+  it("falls back to home for a relative path, a file, a missing path and a path with a newline", async () => {
+    await expect(startDirectory("relative/dir", "/home/x")).resolves.toBe("/home/x");
+    await expect(startDirectory(join(dir, "a-file"), "/home/x")).resolves.toBe("/home/x");
+    await expect(startDirectory(join(dir, "missing"), "/home/x")).resolves.toBe("/home/x");
+    await expect(startDirectory(`${dir}\nrm -rf ~`, "/home/x")).resolves.toBe("/home/x");
+    await expect(startDirectory(null, "/home/x")).resolves.toBe("/home/x");
   });
 });

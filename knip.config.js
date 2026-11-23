@@ -21,7 +21,7 @@ export default {
   ignoreUnresolved: ["vite/client"],
   ignoreBinaries: ["codegraph"],
   workspaces: {
-    ".": { entry: ["scripts/*.{js,mjs,ts}"] },
+    ".": { entry: ["scripts/*.{js,mjs,ts}", "scripts/bench/*.mjs", "scripts/bench/workloads/*.mjs"] },
     "apps/core": {
       // Declared before anything uses them (2026-11-11); the kit declares its own copies. A clean-up removes them.
       ignoreDependencies: ["@tanstack/react-virtual", "clsx", "tailwind-merge"],

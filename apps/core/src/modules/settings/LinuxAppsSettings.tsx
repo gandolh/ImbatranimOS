@@ -1,11 +1,13 @@
 import { required } from "../../shared/lib/required";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Input, Select, desktopSessionId, useConfirm } from "@imbatranim/ui";
+import { Button, Checkbox, Input, Select, desktopSessionId, useConfirm, useWindowVisible } from "@imbatranim/ui";
+import { useRefetchOnShow } from "./refetchOnShow";
 import { KEYBOARD_LAYOUTS, useLinuxAppsPrefs, type KeyboardLayoutId } from "../linux-windows/keyboardLayout";
 import { api } from "../../lib/axios";
 import { reloadLinuxLaunchers } from "../linux-windows/launchers";
 import { UPDATE_ACTIONS } from "./updates";
+import { useStreamStatsSwitch } from "../linux-windows/streamStats";
 
 type Status = {
   available: boolean;
@@ -68,12 +70,15 @@ export function LinuxAppsSettings() {
     return () => clearTimeout(t);
   }, [query]);
 
+  // The index and job polls feed only this window, so they stop while the window is hidden.
+  const visible = useWindowVisible();
   const status = useQuery({
     queryKey: ["linux-apps", "status"],
     queryFn: async () => (await api.get<Status>("/linux-apps")).data,
-    refetchInterval: (q) => (q.state.data?.index === "building" ? 2000 : false),
+    refetchInterval: (q) => (visible && q.state.data?.index === "building" ? 2000 : false),
   });
   const ready = status.data?.index === "ready";
+  useRefetchOnShow(visible, status.data?.index === "building", status.refetch);
 
   const results = useQuery({
     queryKey: ["linux-apps", "search", term],
@@ -91,9 +96,10 @@ export function LinuxAppsSettings() {
     queryKey: ["linux-apps", "job"],
     queryFn: async () => (await api.get<{ job: Job | null }>("/linux-apps/job")).data.job,
     enabled: !!status.data?.available,
-    refetchInterval: (q) => (q.state.data?.state === "running" ? 1000 : false),
+    refetchInterval: (q) => (visible && q.state.data?.state === "running" ? 1000 : false),
   });
   const running = job.data?.state === "running";
+  useRefetchOnShow(visible, running, job.refetch);
 
   const store = useQuery({
     queryKey: ["linux-apps", "store"],
@@ -153,6 +159,8 @@ export function LinuxAppsSettings() {
   };
 
   const keyboardLayout = useLinuxAppsPrefs((p) => p.keyboardLayout);
+  const streamStatsOn = useStreamStatsSwitch((s) => s.on);
+  const setStreamStatsOn = useStreamStatsSwitch((s) => s.setOn);
   const setKeyboardLayout = useLinuxAppsPrefs((p) => p.setKeyboardLayout);
 
   if (status.isLoading) {
@@ -295,6 +303,19 @@ export function LinuxAppsSettings() {
         />
         <p className="text-on-surface-variant text-label mt-1">
           What Linux apps type. Running apps switch at once; the desktop&apos;s own apps use your browser&apos;s layout.
+        </p>
+      </div>
+
+      {/* Stream stats */}
+      <div data-linux-stream-stats="">
+        <Checkbox
+          label="Show stream stats"
+          checked={streamStatsOn}
+          onCheckedChange={(checked) => setStreamStatsOn(checked === true)}
+        />
+        <p className="text-on-surface-variant text-label mt-1">
+          Over each Linux window: the rectangles each frame brought, coloured by how they were encoded, and the frames,
+          kilobytes and decode time of the last second. On this computer only.
         </p>
       </div>
 

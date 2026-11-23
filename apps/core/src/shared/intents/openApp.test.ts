@@ -48,6 +48,26 @@ describe("openApp on an open single-instance app", () => {
   });
 });
 
+describe("openApp with a payload that names a window", () => {
+  it("brings back that window of a multi-instance app instead of opening another", () => {
+    const first = openApp("terminal");
+    const second = openApp("terminal");
+    useWindowStore.getState().hideWindow(first);
+
+    expect(openApp("terminal", { showWindow: first }, { appId: "terminal" })).toBe(first);
+    expect(useWindowStore.getState().windows.filter((w) => w.appId === "terminal")).toHaveLength(2);
+    expect(win(first).isVisible).toBe(true);
+    expect(win(first).zIndex).toBeGreaterThan(win(second).zIndex);
+  });
+
+  it("never reaches another app's window", () => {
+    const notes = openApp("notepad");
+    const opened = openApp("terminal", { showWindow: notes }, { appId: "terminal" });
+    expect(opened).not.toBe(notes);
+    expect(win(opened).appId).toBe("terminal");
+  });
+});
+
 describe("openApp refusals return an empty id", () => {
   it("an id the registry no longer has", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);

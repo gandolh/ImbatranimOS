@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Terminal as XTerm } from "@xterm/xterm";
-import { buildPtyUrl } from "../ptyUrl";
+import { buildPtyUrl, type StartFolder } from "../ptyUrl";
 import { classifyClose, MAX_RETRIES, retryDelay } from "../lib/closeReason";
 
 export type PtyStatus =
@@ -29,7 +29,29 @@ type UsePtyConnectionArgs = {
    * effect's only dependency.
    */
   generation: number;
+  /**
+   * Where the window keeps its shell's token across a reload: `system.window`'s
+   * `savedState` and `saveState`. Absent (an older desktop, a windowless mount),
+   * the token lasts as long as this mount.
+   */
+  keep?: ShellTokenKeep;
+  /** Where the window's shell starts, when it starts one (not when it comes back to one). */
+  start?: StartFolder | null;
 };
+
+/** The window's saved state, as the hook uses it: the token of its shell. */
+export type ShellTokenKeep = {
+  saved(): string | null;
+  save(token: string | null): void;
+};
+
+/** A new name for this window's shell. */
+function newToken(): string {
+  return crypto.randomUUID();
+}
+
+/** How the server's first frame after a reattach starts: a full reset (RIS), then the replayed output. */
+const REPLAY = "\x1bc";
 
 /**
  * Owns the PTY socket: connect, stream, classify a close, reconnect with backoff,
@@ -39,17 +61,24 @@ type UsePtyConnectionArgs = {
  * and had no room for retry logic — the reason a dropped socket used to kill the
  * window permanently.
  *
- * ## Reconnecting gives you a NEW shell
+ * ## Reconnecting gives you the SAME shell, while it waits
  *
- * This is not session reattach; `wiki/os-layering.md` explicitly parks that, because
- * it needs server-side session state. The pty is reaped when its socket closes, so a
- * reconnect spawns a fresh shell in the home directory. The UI says so on every
- * manual reconnect, because a user who assumes this is tmux will also assume their
- * background job survived.
+ * The window names its shell with a token it keeps across a reload (`keep`). The
+ * first socket starts the shell (`shell=<token>`); every later one, a reconnect
+ * after a drop or the first socket after a reload, comes back to it
+ * (`resume=<token>`). A socket that ends without the window closing leaves the
+ * shell detached on the server for 30 s, still running, so a reload or a short drop
+ * finds it there: the server resets the screen, replays its last 256 KiB of output
+ * and resizes the pty, so a full-screen program redraws. After 30 s, or once the
+ * shell exited, the server starts a new one and says so in a dim line.
  *
- * What IS kept is the **scrollback** — it is the user's history, and losing it was
- * the actual pain in the brief. xterm's buffer belongs to the `XTerm` instance, and
- * this hook only ever touches the socket.
+ * Closing the window is the one end the server must hear about: {@link sendClose}
+ * sends `{"type":"close"}` from the window's close guard, and the shell ends at
+ * once. React's unmount is not the signal, since a per-window error boundary's reset
+ * unmounts too, and the remount comes back to the same shell.
+ *
+ * A duplicated tab copies the window's token. The server refuses a shell another
+ * live socket holds with 4409, and this window takes a token of its own.
  *
  * ## Everything lives in one effect, deliberately
  *
@@ -64,7 +93,7 @@ type UsePtyConnectionArgs = {
  * into a ref. A recursive local function inside one effect is the shape this
  * actually is, and it needs neither.
  */
-export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) {
+export function usePtyConnection({ getTerm, generation, keep, start }: UsePtyConnectionArgs) {
   const [status, setStatus] = useState<PtyStatus>({ kind: "connecting" });
 
   /**
@@ -76,6 +105,7 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
   const apiRef = useRef<{
     sendInput: (data: string) => void;
     sendResize: (cols: number, rows: number) => void;
+    sendClose: () => void;
     reconnect: () => void;
   } | null>(null);
 
@@ -88,6 +118,17 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
     let attempt = 0;
     /** Frames typed before the socket is open, flushed on connect. */
     let pending: string[] = [];
+    /** The window's shell, and whether the next socket comes back to it rather than starting it. */
+    const kept = keep?.saved() ?? null;
+    let token = kept ?? newToken();
+    let resume = kept !== null;
+    if (kept === null) keep?.save(token);
+    /**
+     * True while the replay is being written. The replayed output holds the queries the shell sent (a
+     * cursor-position request in each prompt), and xterm answers them as it writes. Those answers were given
+     * when the output first came; sent again they would reach the running program as typing.
+     */
+    let replaying = false;
 
     const write = (data: string | Uint8Array) => getTerm()?.write(data);
     /** Dim status line inside the terminal, so it scrolls with the history. */
@@ -142,12 +183,14 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
       setStatus({ kind: "connecting" });
       let everOpened = false;
 
-      const ws = new WebSocket(buildPtyUrl(term.cols, term.rows));
+      const ws = new WebSocket(buildPtyUrl(term.cols, term.rows, { token, resume }, resume ? null : start));
       socket = ws;
 
       ws.onopen = () => {
         everOpened = true;
         attempt = 0;
+        // The shell exists now; every later socket of this window comes back to it.
+        resume = true;
         setStatus({ kind: "open" });
         for (const frame of pending) ws.send(frame);
         pending = [];
@@ -158,14 +201,36 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
         if (live) sendResize(live.cols, live.rows);
       };
 
+      let first = true;
       ws.onmessage = (ev) => {
-        write(typeof ev.data === "string" ? ev.data : new Uint8Array(ev.data as ArrayBuffer));
+        const data = typeof ev.data === "string" ? ev.data : new Uint8Array(ev.data as ArrayBuffer);
+        const replay = first && typeof data === "string" && data.startsWith(REPLAY);
+        first = false;
+        if (!replay) {
+          write(data);
+          return;
+        }
+        const live = getTerm();
+        if (!live) return;
+        replaying = true;
+        live.write(data, () => {
+          replaying = false;
+        });
       };
 
       ws.onclose = (ev) => {
         if (disposed) return;
         socket = null;
         const verdict = classifyClose(ev.code, ev.reason ?? "", everOpened);
+
+        if (verdict.newShell) {
+          token = newToken();
+          resume = false;
+          keep?.save(token);
+          writeStatus(verdict.message);
+          connect();
+          return;
+        }
 
         if (!verdict.retry) {
           writeStatus(verdict.message);
@@ -225,13 +290,22 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
       } catch {
         /* already gone */
       }
-      writeStatus("reconnecting — this starts a NEW shell");
+      // The server says when this is a new shell: the old one had ended.
+      writeStatus("reconnecting…");
       connect();
     };
 
+    /** The window is closing: the shell ends with it rather than waiting for a reload. */
+    const sendClose = () => {
+      if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "close" }));
+    };
+
     apiRef.current = {
-      sendInput: (data) => sendFrame(JSON.stringify({ type: "input", data })),
+      sendInput: (data) => {
+        if (!replaying) sendFrame(JSON.stringify({ type: "input", data }));
+      },
       sendResize,
+      sendClose,
       reconnect,
     };
     connect();
@@ -243,7 +317,9 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
       timer = null;
       const ws = socket;
       socket = null;
-      // Closing the socket is what makes the server reap the pty.
+      // Without the close frame the server keeps the shell for 30 s: a closing
+      // window sent it already (`sendClose`), and an error boundary's remount comes
+      // back to the shell.
       try {
         ws?.close();
       } catch {
@@ -261,6 +337,7 @@ export function usePtyConnection({ getTerm, generation }: UsePtyConnectionArgs) 
   const sendInput = useCallback((data: string) => apiRef.current?.sendInput(data), []);
   const sendResize = useCallback((cols: number, rows: number) => apiRef.current?.sendResize(cols, rows), []);
   const reconnect = useCallback(() => apiRef.current?.reconnect(), []);
+  const sendClose = useCallback(() => apiRef.current?.sendClose(), []);
 
-  return { status, sendInput, sendResize, reconnect };
+  return { status, sendInput, sendResize, sendClose, reconnect };
 }

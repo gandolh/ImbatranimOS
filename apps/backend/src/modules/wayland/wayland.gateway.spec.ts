@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import type { AddressInfo, Server } from "net";
 import { WebSocket, type RawData } from "ws";
 import { PtyGateway } from "../pty/pty.gateway";
+import { FilesService } from "../files/files.service";
 import { LocalIdentityService } from "../auth/ws-auth";
 import type { Caller } from "../identity/identity.types";
 import { UpgradeRoutes } from "../../upgrade-routes";
@@ -57,6 +58,7 @@ describe("WaylandGateway", () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         PtyGateway,
+        FilesService,
         WaylandGateway,
         UpgradeRoutes,
         { provide: WaylandHostService, useValue: host },

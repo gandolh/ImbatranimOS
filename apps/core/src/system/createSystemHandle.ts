@@ -21,7 +21,7 @@ import { notify } from "../shared/store/notificationStore";
 import { accentColours, useAppearanceStore } from "../shared/store/appearanceStore";
 import { useSoundStore } from "../shared/store/soundStore";
 import { useIntentStore } from "../shared/store/intentStore";
-import { isTopWindow, useWindowStore } from "../shared/store/windowStore";
+import { isTopWindow, useWindowStore, WINDOW_STATE_MAX } from "../shared/store/windowStore";
 import { openApp } from "../shared/intents/openApp";
 import { APP_REGISTRY } from "../shared/registry/registry";
 import { focusIntoWindowSoon } from "../shared/components/window/focusIntoWindow";
@@ -95,6 +95,10 @@ function windowlessWindow(appId: string): SystemWindow {
       warn("onCloseRequest");
       return () => undefined;
     },
+    saveState: () => warn("saveState"),
+    savedState: () => null,
+    setProgress: () => warn("setProgress"),
+    requestAttention: () => warn("requestAttention"),
   };
 }
 
@@ -116,6 +120,22 @@ function windowFor(windowId: string): SystemWindow {
       store().registerCloseGuard(windowId, guard);
       return () => store().unregisterCloseGuard(windowId);
     },
+    saveState: (value) => {
+      if (store().setWindowState(windowId, value)) return;
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console -- no client logger yet (2026-11-22)
+        console.warn(`[system] window.saveState() refused: over ${WINDOW_STATE_MAX} characters`);
+      }
+    },
+    savedState: () => store().windows.find((w) => w.id === windowId)?.savedState ?? null,
+    setProgress: (progress) =>
+      store().setWindowProgress(
+        windowId,
+        progress.state === "none"
+          ? null
+          : { state: progress.state, ...(progress.value === undefined ? {} : { value: progress.value }) },
+      ),
+    requestAttention: () => store().requestAttention(windowId),
   };
 }
 

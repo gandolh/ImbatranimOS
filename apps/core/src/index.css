@@ -358,3 +358,25 @@ body {
   background: var(--k-outline);
   background-clip: padding-box;
 }
+
+/* Taskbar buttons (2026-11-22): a task with no known end sweeps a segment across its progress bar, and a
+   window that asks for attention pulses its button twice. Both run only where motion is welcome
+   (motion-safe in Taskbar.tsx). */
+@keyframes task-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes task-attention {
+  0%,
+  100% {
+    filter: none;
+  }
+  50% {
+    filter: brightness(1.12) saturate(1.2);
+  }
+}

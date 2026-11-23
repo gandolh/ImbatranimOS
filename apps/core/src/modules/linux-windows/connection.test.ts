@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildWaylandUrl, LinuxWindowsConnection } from "./connection";
 import { useLinuxWindowsStore } from "./linuxWindowsStore";
 import { useWindowStore } from "../../shared/store/windowStore";
+import { streamStats, useStreamStatsSwitch } from "./streamStats";
 
 /** The tab's side of `/api/wayland`; the test speaks the backend's. */
 class FakeSocket {
@@ -185,5 +186,69 @@ describe("a tab whose VP8 decoder keeps failing", () => {
     vi.useRealTimers();
     expect(FakeSocket.all).toHaveLength(3);
     expect(new URL(FakeSocket.all[2]!.url).searchParams.has("codecs")).toBe(false);
+  });
+});
+
+describe("a Linux app that asks for attention", () => {
+  it("marks its window's taskbar button and raises nothing, until the window is focused", async () => {
+    connection = new LinuxWindowsConnection();
+    connection.start();
+    await vi.waitFor(() => expect(FakeSocket.all).toHaveLength(1));
+    const socket = FakeSocket.all[0]!;
+    socket.onopen?.();
+    socket.say({ type: "session", resumed: false });
+    socket.say(created(5));
+    socket.say(created(6));
+    const [first, second] = linuxWindows();
+    const top = () => [...useWindowStore.getState().windows].sort((a, b) => b.zIndex - a.zIndex)[0]?.id;
+    expect(top()).toBe(second!.id);
+
+    socket.say({ type: "request", toplevel: 5, action: "attention" });
+    const state = () => useWindowStore.getState().windows.find((w) => w.id === first!.id);
+    expect(state()?.attention).toBe(true);
+    expect(top()).toBe(second!.id);
+
+    useWindowStore.getState().focusWindow(first!.id);
+    expect(state()?.attention).toBe(false);
+  });
+});
+
+describe("stream stats on the frame path", () => {
+  const frameOf = (toplevel: number): ArrayBuffer => {
+    const data = new Uint8Array([1, 2, 3, 4]);
+    const head = new DataView(new ArrayBuffer(15 + 21));
+    head.setUint8(0, 2);
+    head.setUint32(1, toplevel, true);
+    head.setUint32(5, 640, true);
+    head.setUint32(9, 480, true);
+    head.setUint16(13, 1, true);
+    head.setUint32(15 + 8, 1, true);
+    head.setUint32(15 + 12, 1, true);
+    head.setUint8(15 + 16, 2);
+    head.setUint32(15 + 17, data.byteLength, true);
+    const out = new Uint8Array(15 + 21 + data.byteLength);
+    out.set(new Uint8Array(head.buffer));
+    out.set(data, 36);
+    return out.buffer;
+  };
+
+  it("records nothing while the switch is off, and each painted frame while it is on", async () => {
+    streamStats.clear();
+    useStreamStatsSwitch.setState({ on: false });
+    connection = new LinuxWindowsConnection();
+    connection.start();
+    await vi.waitFor(() => expect(FakeSocket.all).toHaveLength(1));
+    const socket = FakeSocket.all[0]!;
+    socket.onopen?.();
+    socket.say({ type: "session", resumed: false });
+    socket.say(created(5));
+    socket.onmessage?.({ data: frameOf(5) });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(streamStats.size).toBe(0);
+
+    useStreamStatsSwitch.setState({ on: true });
+    socket.onmessage?.({ data: frameOf(5) });
+    await vi.waitFor(() => expect(streamStats.summary(5, performance.now()).fps).toBe(1));
+    useStreamStatsSwitch.getState().setOn(false);
   });
 });

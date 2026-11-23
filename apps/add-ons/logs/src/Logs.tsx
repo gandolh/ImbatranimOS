@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw, ScrollText, Search, X } from "lucide-react";
-import { Button, Toggle, ToggleGroup, cn, useSystem, useVirtualList } from "@imbatranim/ui";
+import { Button, Toggle, ToggleGroup, cn, useSystem, useVirtualList, useWindowVisible } from "@imbatranim/ui";
 import { eventLabel, formatWhen, summarise, type LogEntry, type LogLevel } from "./lib/logFormat";
 import { errorMessage, fetchLogs } from "./lib/logsApi";
 import { APP_NAME } from "./appName";
@@ -72,11 +72,24 @@ export function Logs() {
     return () => window.clearTimeout(id);
   }, [load]);
 
+  // Follow feeds only this window, so it stops while the window is hidden (minimized or on another
+  // workspace, where it stays mounted and the browser keeps timers running), and reads once at once when
+  // the window shows again.
+  const visible = useWindowVisible();
+  const hiddenWhileFollowing = useRef(false);
   useEffect(() => {
     if (!follow) return;
+    if (!visible) {
+      hiddenWhileFollowing.current = true;
+      return;
+    }
+    if (hiddenWhileFollowing.current) {
+      hiddenWhileFollowing.current = false;
+      void load(true);
+    }
     const id = window.setInterval(() => void load(true), FOLLOW_MS);
     return () => window.clearInterval(id);
-  }, [follow, load]);
+  }, [follow, visible, load]);
 
   const rows = useVirtualList({
     count: entries.length,

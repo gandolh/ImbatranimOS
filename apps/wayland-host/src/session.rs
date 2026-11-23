@@ -187,6 +187,8 @@ struct Window {
     layout: Vec<Placed>,
     /// Its OS window is showing (not minimized). A popup follows its toplevel.
     shown: bool,
+    /// An X11 window's urgency hint, as last read: only its turning on asks for attention.
+    urgent: bool,
 }
 
 #[derive(Clone, PartialEq)]
@@ -216,6 +218,7 @@ impl Window {
             geometry: None,
             layout: Vec::new(),
             shown: true,
+            urgent: false,
         }
     }
 
@@ -1045,6 +1048,24 @@ impl SessionState {
             return;
         };
         self.request_at(i, action, edges);
+    }
+
+    /// An app asked for a window to be raised (xdg-activation, or an X11
+    /// window's urgency hint turning on). Only the owner raises windows, so the
+    /// tab is told the window wants attention and nothing is raised or focused.
+    /// A surface that belongs to no mapped toplevel asks for nothing.
+    pub fn ask_for_attention(&mut self, surface: &WlSurface) {
+        let Some(i) = self.index_of_root(&root_of(surface)) else {
+            return;
+        };
+        self.attention_at(i);
+    }
+
+    pub(crate) fn attention_at(&mut self, i: usize) {
+        let w = &self.windows[i];
+        if w.mapped && matches!(w.role, Role::Toplevel { .. }) {
+            self.request_at(i, "attention", None);
+        }
     }
 
     /// Pass a toplevel's request (move, resize, maximize...) to the window

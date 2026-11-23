@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { SquareTerminal } from "lucide-react";
 import type { AddonManifest } from "@imbatranim/core";
+import { notifySwitchSource } from "./lib/commandNotify";
 
 export const manifest: AddonManifest = {
   id: "terminal",
@@ -12,4 +13,5 @@ export const manifest: AddonManifest = {
   multiInstance: true,
   defaultSize: { width: 700, height: 460 },
   minSize: { width: 400, height: 240 },
+  commandSources: [notifySwitchSource],
 };

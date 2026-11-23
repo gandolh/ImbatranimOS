@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import type { AddressInfo, Server } from "net";
 import { WebSocket } from "ws";
 import { PtyGateway } from "../src/modules/pty/pty.gateway";
+import { FilesService } from "../src/modules/files/files.service";
 import { LocalIdentityService } from "../src/modules/auth/ws-auth";
 import { UpgradeRoutes } from "../src/upgrade-routes";
 import { WaylandGateway } from "../src/modules/wayland/wayland.gateway";
@@ -34,6 +35,7 @@ describe("PtyGateway (e2e)", () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         PtyGateway,
+        FilesService,
         UpgradeRoutes,
         { provide: LocalIdentityService, useValue: identityMock },
         { provide: WaylandGateway, useValue: { x11Display: () => null } },

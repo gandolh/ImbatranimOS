@@ -1,9 +1,8 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException, Optional } from "@nestjs/common";
 import * as os from "os";
-import * as fs from "fs";
 import * as fsp from "fs/promises";
-import * as path from "path";
 import { LogService } from "../logs/log.service";
+import { osVersion } from "../../lib/os-version";
 import { bytesPerSecond, parseNetDev, toSwapStats, type NetTotals, type SwapStats } from "./proc-net";
 
 export type CpuStats = {
@@ -451,21 +450,8 @@ export class SystemService {
       arch: os.arch(),
       uptimeSeconds: Math.round(os.uptime()),
       serverPid: process.pid,
-      imageVersion: this.getImageVersion(),
+      imageVersion: osVersion(),
     });
-  }
-
-  private getImageVersion(): string {
-    if (process.env.IMAGE_VERSION) return process.env.IMAGE_VERSION;
-    try {
-      const pkgPath = path.join(process.cwd(), "package.json");
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")) as {
-        version?: string;
-      };
-      return pkg.version ?? "unknown";
-    } catch {
-      return "unknown";
-    }
   }
 
   async killProcess(pid: number, signal: NodeJS.Signals = "SIGTERM"): Promise<{ pid: number; signaled: boolean }> {

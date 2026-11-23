@@ -11,6 +11,7 @@ import { useAuthStore } from "../auth/store/authStore";
 import { useLinuxAppsPrefs } from "./keyboardLayout";
 import { LINUX_APP_PREFIX, linuxWindowChrome } from "./kind";
 import { decodableVideoCodecs, paintFrame, parseFrame, VideoStreams } from "./frames";
+import { streamStats, useStreamStatsSwitch } from "./streamStats";
 import { linuxClipboard } from "./clipboard";
 import { cursorCss, type LinuxCursorImage } from "./cursor";
 import { linuxSound } from "./sound";
@@ -417,7 +418,19 @@ export class LinuxWindowsConnection {
       const scale = (popup ?? toplevel)?.scale ?? 1;
       const canvas = canvasFor(frame.toplevel);
       const prev = this.painting.get(frame.toplevel) ?? Promise.resolve();
-      const next = prev.then(() => paintFrame(canvas, frame, scale, this.videos)).catch(() => undefined);
+      // Stream stats are measured only while their switch is on.
+      const measure = useStreamStatsSwitch.getState().on;
+      const next = prev
+        .then(async () => {
+          const start = measure ? performance.now() : 0;
+          try {
+            await paintFrame(canvas, frame, scale, this.videos);
+          } finally {
+            // A frame that came counts, painted or not.
+            if (measure) streamStats.record(frame, performance.now() - start, performance.now());
+          }
+        })
+        .catch(() => undefined);
       this.painting.set(frame.toplevel, next);
       return;
     }
@@ -521,6 +534,7 @@ export class LinuxWindowsConnection {
     useLinuxWindowsStore.getState().remove(t.windowId);
     this.painting.delete(toplevel);
     this.videos.drop(toplevel);
+    streamStats.drop(toplevel);
     dropCanvas(toplevel);
     const windows = useWindowStore.getState();
     windows.unregisterCloseGuard(t.windowId);
@@ -552,7 +566,10 @@ export class LinuxWindowsConnection {
    * The app asked the window manager for something. Maximize, restore and
    * minimize map to its own actions (it has no fullscreen, so fullscreen
    * maximizes); a move or resize from the app's own title bar or edge is
-   * started by the window body, which knows where the pointer is.
+   * started by the window body, which knows where the pointer is. Attention
+   * (an activation request, or an X11 urgency hint) marks the taskbar
+   * button, which clears when the window is focused; only the owner raises
+   * windows, so nothing is raised.
    */
   private request(toplevel: number, action: string, edges?: string): void {
     const t = windowForToplevel(toplevel);
@@ -571,6 +588,9 @@ export class LinuxWindowsConnection {
         break;
       case "minimize":
         windows.hideWindow(t.windowId);
+        break;
+      case "attention":
+        windows.requestAttention(t.windowId);
         break;
       case "move":
       case "resize":

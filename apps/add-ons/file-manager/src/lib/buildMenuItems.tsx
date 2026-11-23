@@ -18,6 +18,7 @@ import {
   Package,
   FilePlus,
   Info,
+  SquareTerminal,
 } from "lucide-react";
 import type { ContextMenuItem } from "@imbatranim/ui";
 import type { FsEntry } from "../types";
@@ -74,6 +75,8 @@ export type BuildMenuItemsCtx = {
   onCompare: (() => void) | null;
   /** Open a bitmap in Paint — an Edit verb beside the viewer's Open. */
   onEditInPaint: (entry: FsEntry) => void;
+  /** Open a Terminal in this folder, or in the folder on show (null: the background menu). */
+  onOpenInTerminal: (entry: FsEntry | null) => void;
 };
 
 /** Bitmaps Paint can edit — the viewer keeps the double-click. */
@@ -111,7 +114,13 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
     onCompress,
     inArchive = false,
     onExtractAll,
+    onOpenInTerminal,
   } = ctx;
+  const openInTerminal = (target: FsEntry | null): ContextMenuItem => ({
+    label: "Open in Terminal",
+    icon: <SquareTerminal size={13} />,
+    onSelect: () => onOpenInTerminal(target),
+  });
 
   if (inArchive) {
     const extractAll: ContextMenuItem = {
@@ -188,6 +197,7 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
         disabled: !hasClipboard,
         onSelect: onPaste,
       },
+      openInTerminal(null),
       { type: "separator" },
       {
         label: "Refresh",
@@ -206,6 +216,7 @@ export function buildMenuItems(ctx: BuildMenuItemsCtx): ContextMenuItem[] {
       // somewhere, and when it genuinely cannot, `onOpen` shows the chooser
       // rather than nothing happening.
     },
+    ...(entry.type === "directory" ? [openInTerminal(entry)] : []),
     ...(entry.type === "file"
       ? [
           {

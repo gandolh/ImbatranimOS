@@ -6469,3 +6469,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 6: the backend's memory
 
 [research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `6de2482` (1.434.0) starts the backend with `--max-semi-space-size=2`; it settles at 118 MiB instead of 159 after 18,000 requests, with the same CPU per request, per Terminal flood and per Linux window frame. The sweep's page is split into a hub and one page per five rounds.
+
+## [2026-11-23] done | Performance sweep, round 7: dragging a window
+
+[research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `af0e9cf` (1.436.0) moves a dragged window with CSS `translate` and writes its position once, on release; 60 moves of a File Manager window went from 351 to 114 ms of main thread, with no layouts or React commits. The title bar and resize handles use plain pointer events and @use-gesture is gone from the first page load. `npm run check` passed whole this round, the marketplace e2e test included.

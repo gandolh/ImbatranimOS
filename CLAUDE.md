@@ -8,6 +8,9 @@ A real Linux desktop in the browser: a React desktop (`apps/core`), a UI kit (`p
 
 - `npm run dev`: the dev container through Docker Compose (`scripts/dev.mjs`).
 - `npm run check`: typecheck, lint, format check, conventions, tests. Run it before every hand-back.
+- `npm run check` keeps going after a failing step and prints one line per step, then the end of each failure. The whole
+  output stays in `node_modules/.cache/check/last.log`, so read that log rather than running the gate again. While you
+  work, `npm run check:fast` and any test file you touched are enough; run the full gate once, after your last change.
 - `npm run check:fast`: the typecheck of the changed workspaces, then ESLint on the changed files. The Stop hook runs
   it.
 - One test: `npx vitest run <file>` in a web workspace, `npx jest <file>` in `apps/backend`.

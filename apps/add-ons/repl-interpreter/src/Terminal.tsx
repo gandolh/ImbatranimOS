@@ -10,6 +10,7 @@ import { Button, useConfirm, useSystem, useSystemAppearance } from "@imbatranim/
 import { usePtyConnection, type ShellTokenKeep } from "./hooks/usePtyConnection";
 import { startFolderFrom } from "./ptyUrl";
 import { safePaste } from "./lib/paste";
+import { blinkWhileActive } from "./lib/cursorBlink";
 import { linkAction } from "./lib/links";
 import { applyMark, cwdFromOsc7, INITIAL_SHELL_STATE, windowTitle, type ShellState } from "./lib/shellState";
 import { finishedToast, loadNotifyLong } from "./lib/commandNotify";
@@ -320,6 +321,14 @@ export function Terminal(_props: { windowId: string }) {
     const sub = instance.onData(sendInput);
     return () => sub.dispose();
   }, [generation, sendInput]);
+
+  // ── The cursor blinks for 10 s after typing or focus, then holds still ────
+  useEffect(() => {
+    const instance = termRef.current;
+    if (!instance) return;
+    const blink = blinkWhileActive(instance);
+    return () => blink.dispose();
+  }, [generation]);
 
   // ── Resize → fit → SIGWINCH ───────────────────────────────────────────────
   useEffect(() => {

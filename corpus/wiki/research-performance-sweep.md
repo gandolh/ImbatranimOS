@@ -1,11 +1,11 @@
 ---
-summary: The 2026-11-23 performance sweep, five rounds on one branch and one PR, each measured before and after. Round 1 cut the first page load from 1,077 to 913 KiB of scripts and stylesheet (the kit's sideEffects, framer-motion's features loaded lazily) and the wire from 1,184 to 372 KiB cold and 34 revalidations to none warm (precompressed brotli and gzip, a year's cache for hashed assets). How each number is taken, and what was looked at and left.
+summary: The 2026-11-23 performance sweep, fifteen rounds on one branch and one PR, each researched and measured before and after. Round 1 cut the first page load from 1,077 to 913 KiB of scripts and stylesheet (the kit's sideEffects, framer-motion's features loaded lazily) and the wire from 1,184 to 372 KiB cold and 34 revalidations to none warm (precompressed brotli and gzip, a year's cache for hashed assets). Round 2 cut what the tab does at rest: bars scale instead of resizing (System Monitor 1.94% to 0.89% of a core) and the Terminal's cursor stops blinking 10 s after the last keystroke (2.29% to 0.24%). How each number is taken, and what was looked at and left.
 updated: 2026-11-23
 ---
 
 # The performance sweep (2026-11-23)
 
-The owner asked for five rounds of performance work: the same features on fewer resources. Each round lands
+The owner asked for rounds of performance work (five, then fifteen, each with research): the same features on fewer resources, including the Wayland host, the builds and the OS's own flows. Each round lands
 on the branch `claude/busy-hopper-78yv97` and its one PR, measures before and after the same way, and records
 here what it changed and what it looked at and left, so the next round starts where this one stopped.
 
@@ -60,3 +60,35 @@ here what it changed and what it looked at and left, so the next round starts wh
   while a window or the widget polls. Nothing to cut there.
 - **A marketplace e2e test** ("runs a service app's server behind the session") times out at 60 s in this
   container on `main` too; it is the environment, not the sweep.
+
+## Round 2 (2026-11-23): what the tab does at rest
+
+**Method.** `idle.mjs`: sign in, open the apps named, wait 10 s, then read Chromium's `Performance.getMetrics`
+across 30 or 60 s with nothing touched: main-thread task time, layouts, style recalculations. React commits come
+from a stand-in `__REACT_DEVTOOLS_GLOBAL_HOOK__` that counts `onCommitFiberRoot`, and `document.getAnimations()`
+lists what is still running. The backend's CPU is from `/proc/<pid>/stat` over the same window.
+
+| At rest | Before | After |
+|---|---:|---:|
+| Empty desktop, 60 s | 0.12% of a core, 11 commits, 3 requests | (unchanged) |
+| System Monitor, 30 s | 1.94%, 345 layouts, 362 style recalcs | 0.89%, about 22 and 118 |
+| Terminal, focused, 30 s | 2.29%, 1,801 style recalcs | 0.24%, none |
+
+- **Bars scale instead of resizing.** The System Monitor's gauges, the stats widget and Files' job bar
+  transitioned `width` for 300 ms after each poll, a layout every frame. `scaleX` from the left edge runs on
+  the compositor (web.dev's "stick to compositor-only properties").
+- **The cursor stops blinking 10 s after the last keystroke.** xterm's DOM renderer blinks with an endless
+  CSS animation of `background-color`, which can't be composited, so a focused Terminal restyled every frame.
+  GTK's `gtk-cursor-blink-timeout` (GNOME's default 10 s, reset by each interaction, for CPU power management)
+  is the rule; VS Code hit the same cost (about 13% CPU, microsoft/vscode#22900). `lib/cursorBlink.ts`.
+
+**Looked at and left in round 2:**
+
+- **Caching prepared SQLite statements.** Every authenticated request prepares two (the session and the
+  owner); cached they cost 3.5 µs instead of 13.5 µs, under 2% of a request's 0.6 ms. Not worth 84 call sites.
+- **`os.cpus()` in `/system/stats`**: 0.06 ms; the whole collection is about 0.13 ms. The endpoint's 2 ms of CPU
+  is the request path and the thread pool's file reads, not the collection.
+- **The request path itself**: `/health` costs 0.28 ms of CPU and an authenticated `GET /api/prefs` 0.60 ms
+  (Express and Nest). A Fastify adapter would cut it but touches every middleware, upload and upgrade.
+- **The Clock's one-second tick** (34 commits in 30 s) is the seconds it shows; Files, Notepad, Calendar,
+  Media Player and Code Editor sit at 0.12% to 0.22% at rest.

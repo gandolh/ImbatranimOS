@@ -6449,3 +6449,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 1: the first page load and how it is sent
 
 [research-performance-sweep.md](wiki/research-performance-sweep.md): `6c3d972` (1.419.0) gives the kit `sideEffects`, `155afd0` (1.420.0) loads framer-motion's features after the first paint, and `a8c5985` (1.421.0) sends precompressed brotli and gzip copies with a year's cache for hashed assets. The first page load fell from 1,077 to 913 KiB of scripts and stylesheet, a cold load's assets from 1,184 to 372 KiB on the wire, and a warm reload's from 34 revalidations to none. Four more rounds are scheduled on the same branch.
+
+## [2026-11-23] done | Performance sweep, round 2: what the tab does at rest
+
+[research-performance-sweep.md](wiki/research-performance-sweep.md): `d4aea56` (1.423.0) scales progress bars instead of resizing them (System Monitor at rest 1.94% to 0.89% of a core), `81fdbef` (1.424.0) stops a Terminal's cursor blinking 10 s after the last keystroke, GTK's rule (2.29% to 0.24%). Statement caching and `os.cpus()` were measured and left. The owner raised the sweep to fifteen rounds, with the Wayland host, the builds and the OS's own flows in scope.

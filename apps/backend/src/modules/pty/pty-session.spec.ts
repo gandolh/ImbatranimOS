@@ -145,6 +145,49 @@ describe("PtySession", () => {
     expect(socket.send).not.toHaveBeenCalled();
   });
 
+  describe("output that keeps coming", () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it("sends the first chunk at once and joins what follows within the window into one frame", () => {
+      new PtySession(pty, socket, { joinMs: 5 });
+      pty.emitData("a");
+      expect(socket.send).toHaveBeenCalledWith("a");
+      pty.emitData("b");
+      pty.emitData("c");
+      expect(socket.send).toHaveBeenCalledTimes(1);
+      jest.advanceTimersByTime(5);
+      expect(socket.send).toHaveBeenLastCalledWith("bc");
+      pty.emitData("d");
+      jest.advanceTimersByTime(5);
+      expect(socket.send.mock.calls).toEqual([["a"], ["bc"], ["d"]]);
+    });
+
+    it("sends the next chunk at once after a window with no output", () => {
+      new PtySession(pty, socket, { joinMs: 5 });
+      pty.emitData("a");
+      jest.advanceTimersByTime(5);
+      pty.emitData("b");
+      expect(socket.send.mock.calls).toEqual([["a"], ["b"]]);
+    });
+
+    it("sends what is waiting before the exit notice", () => {
+      new PtySession(pty, socket, { joinMs: 5 });
+      pty.emitData("a");
+      pty.emitData("last line");
+      pty.emitExit(0);
+      expect(socket.send).toHaveBeenNthCalledWith(2, "last line");
+      expect(socket.send).toHaveBeenNthCalledWith(3, expect.stringContaining("process exited"));
+    });
+
+    it("sends every chunk on its own with a window of zero", () => {
+      new PtySession(pty, socket, { joinMs: 0 });
+      pty.emitData("a");
+      pty.emitData("b");
+      expect(socket.send.mock.calls).toEqual([["a"], ["b"]]);
+    });
+  });
+
   describe("backpressure", () => {
     it("pauses the pty when the send buffer is congested and resumes on drain", () => {
       let drainFn: (() => void) | null = null;

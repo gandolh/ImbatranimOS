@@ -18,10 +18,10 @@
 # `npm ci` layer's cache key on every commit, so each build reinstalled every
 # dependency and recompiled the native addons. This stage reruns on every
 # commit, but it only copies files and runs one small script, and its output
-# changes only when a dependency does: `deps` copies that output, and BuildKit
-# keys the copy on its content. The real files return in the stages that build
-# the code (builder, dev); the prod image takes its own (proddeps, and the
-# package.json it serves the version from).
+# changes only when a dependency does: `deps` and `proddeps` copy that output,
+# and BuildKit keys the copy on its content. The real files return in the
+# stages that build the code (builder, dev), and the prod image takes the
+# package.json it serves the version from.
 FROM node:24.22.1-alpine AS manifests
 WORKDIR /m
 COPY package.json package-lock.json ./
@@ -51,9 +51,11 @@ FROM node:24.22.1-alpine AS deps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
 # The normalised manifests (above): one root lockfile, one npm ci, reused
-# until a dependency changes.
+# until a dependency changes. npm's download cache is a BuildKit cache mount:
+# when a dependency does change, only the packages that changed are fetched
+# again, not all two thousand.
 COPY --from=manifests /m/ ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci
 
 # ---------------------------------------------------------------------------
 # builder — compile backend (nest) and the desktop (core vite build, which
@@ -62,7 +64,9 @@ RUN npm ci
 FROM deps AS builder
 # The real manifests over the normalised ones, and turbo's config.
 COPY package.json package-lock.json turbo.json ./
-COPY apps ./apps
+# Not the Wayland host: its own stage builds it, and its sources here made a
+# change to it rebuild the desktop and the backend too.
+COPY --exclude=apps/wayland-host apps ./apps
 COPY packages ./packages
 # Sub-path build args. Default to root / same-origin (the standalone container
 # reached at its own port). A Caddy sub-path deploy passes
@@ -72,7 +76,12 @@ COPY packages ./packages
 # ignores VITE_* — it serves whatever static files the build emitted.
 ARG VITE_BASE=/
 ARG VITE_API_URL=/api
-RUN VITE_BASE=$VITE_BASE VITE_API_URL=$VITE_API_URL npx turbo build
+# turbo's cache is a BuildKit cache mount, kept between builds: a workspace
+# whose inputs (and VITE_* above) didn't change has its dist restored instead
+# of rebuilt, so a change to the backend alone skips the desktop's build and
+# the other way round.
+RUN --mount=type=cache,target=/app/.turbo/cache,sharing=locked \
+    VITE_BASE=$VITE_BASE VITE_API_URL=$VITE_API_URL npx turbo build
 
 # ---------------------------------------------------------------------------
 # wayland-host — the Wayland host Linux apps connect to (Rust, smithay).
@@ -93,7 +102,15 @@ COPY apps/wayland-host/csrc ./csrc
 COPY apps/wayland-host/src ./src
 COPY apps/wayland-host/vendor ./vendor
 ENV RUSTFLAGS="-C target-feature=-crt-static"
-RUN cargo build --release --locked
+# Cargo's registry and its target directory are BuildKit cache mounts, kept
+# between builds: a change to the host's own source recompiles the host, not
+# smithay, libopus and the other dependencies again (78 s to 35 s on four
+# cores, 2026-11-23). The binary is copied out of the mount, which isn't part
+# of the layer.
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/src/target,id=imbatranim-wayland-host-target,sharing=locked \
+    cargo build --release --locked \
+ && mkdir -p /out && cp target/release/imbatranim-wayland-host /out/
 
 # ---------------------------------------------------------------------------
 # proddeps — production-only node_modules (native modules compiled here)
@@ -101,16 +118,13 @@ RUN cargo build --release --locked
 FROM node:24.22.1-alpine AS proddeps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
-COPY package.json package-lock.json ./
-COPY apps/backend/package.json ./apps/backend/
-COPY apps/core/package.json ./apps/core/
-# All add-on manifests (see the deps stage) so the workspace tree resolves.
-COPY --parents apps/add-ons/*/package.json ./
-# Shared workspace packages' manifests too (see the deps stage rationale).
-COPY --parents packages/*/package.json ./
+# The normalised manifests, as `deps` takes them (every workspace's, so the
+# tree resolves). With the real ones the version every commit bumps made this
+# layer rerun on every build: the production install and node-pty's compile.
+COPY --from=manifests /m/ ./
 # Backend runtime deps only — the desktop is prebuilt to static files, so
 # none of its packages (react etc.) may reach the prod image.
-RUN npm ci --omit=dev --workspace=backend
+RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci --omit=dev --workspace=backend
 # Strip native build intermediates now that the .node binaries are compiled:
 # object files, gyp obj.target dirs, and the C sources for node-pty +
 # better-sqlite3 (~60MB). Hoisting puts everything in /app/node_modules.
@@ -154,7 +168,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.429.0"
+      org.opencontainers.image.version="1.430.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -209,7 +223,7 @@ COPY --chown=imbatranim:imbatranim --from=proddeps /app/node_modules ./node_modu
 COPY --chown=imbatranim:imbatranim --from=proddeps /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/core/dist ./public
-COPY --from=wayland-host /src/target/release/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
+COPY --from=wayland-host /out/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
 COPY --chown=imbatranim:imbatranim package.json ./
 COPY --chown=imbatranim:imbatranim apps/backend/package.json ./apps/backend/
 # The marketplace catalog: what may be installed. Root-owned on
@@ -228,7 +242,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.429.0
+    IMAGE_VERSION=1.430.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -275,7 +289,7 @@ ENV LOCALE_ARCHIVE=$NIX_STATE_HOME/profiles/imbatranim-base/lib/locale/locale-ar
 COPY infrastructure/nix /tmp/nix-setup
 RUN sh /tmp/nix-setup/setup-image.sh && rm -rf /tmp/nix-setup
 WORKDIR /app
-COPY --from=wayland-host /src/target/release/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
+COPY --from=wayland-host /out/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
 COPY infrastructure/entrypoint.sh /entrypoint.sh
 # The runtime writes four places under /app, and gets only those, made here:
 # turbo's cache (.turbo), Nest's output (dist, which it deletes and recreates,

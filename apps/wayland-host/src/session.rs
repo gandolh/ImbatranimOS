@@ -512,6 +512,8 @@ pub struct SessionState {
     visible: bool,
     /// The tab decodes VP8: video regions go as a stream, not JPEG.
     vp8: bool,
+    /// The tab draws `ENC_COPY`: a scroll goes as a move of its own pixels.
+    copy: bool,
     /// What the session's apps last asked the cursor to be, and whether it
     /// (or the cursor surface's image) changed since the tab heard.
     cursor_status: CursorImageStatus,
@@ -607,6 +609,7 @@ impl SessionState {
             frozen: false,
             visible: true,
             vp8: false,
+            copy: false,
             cursor_status: CursorImageStatus::default_named(),
             cursor_changed: false,
             cursor: Shown::default(),
@@ -736,6 +739,7 @@ impl SessionState {
                     })
                 })
                 .collect();
+            w.canvas.copies = self.copy;
             let rects = w.canvas.take_frame(&layers, encoding, lossy);
             out.push(encode_frame_body(w.id, w.canvas.width, w.canvas.height, &rects));
             w.in_flight = true;
@@ -759,10 +763,11 @@ impl SessionState {
         self.fire_callbacks(|s| root_of(s) == root);
     }
 
-    /// The video codecs the tab decodes, from its connect. A change starts
-    /// every window's stream again (the tab that just connected has new
-    /// decoders, or none).
-    pub fn set_video_codecs(&mut self, codecs: &[String]) {
+    /// The optional encodings the tab draws, from its connect: `vp8` and
+    /// `copy`. A change of VP8 starts every window's stream again (the tab
+    /// that just connected has new decoders, or none).
+    pub fn set_codecs(&mut self, codecs: &[String]) {
+        self.copy = codecs.iter().any(|c| c == "copy");
         let vp8 = codecs.iter().any(|c| c == "vp8");
         if vp8 != self.vp8 {
             self.vp8 = vp8;
@@ -877,7 +882,7 @@ impl SessionState {
             w.shown = true;
             // The reloaded tab has new decoders: streams start from keyframes.
             w.canvas.restart_video();
-            w.canvas.damage_all();
+            w.canvas.send_whole();
         }
         self.visible = true;
         let cursor = self.cursor.current().clone();
@@ -889,7 +894,7 @@ impl SessionState {
     /// Everything is drawn again when the session comes back to life.
     fn redraw_all(&mut self) {
         for w in self.windows.iter_mut() {
-            w.canvas.damage_all();
+            w.canvas.send_whole();
         }
     }
 
@@ -943,7 +948,7 @@ impl SessionState {
             for j in 0..self.windows.len() {
                 let own = j == i || matches!(self.windows[j].role, Role::Popup { parent, .. } if parent == toplevel);
                 if own {
-                    self.windows[j].canvas.damage_all();
+                    self.windows[j].canvas.send_whole();
                 }
             }
         }

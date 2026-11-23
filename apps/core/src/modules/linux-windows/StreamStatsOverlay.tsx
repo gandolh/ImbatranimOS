@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { cn } from "@imbatranim/ui";
-import { ENC_DEFLATE_RGBA, ENC_JPEG, ENC_VP8, ENC_WEBP_LOSSLESS } from "./frames";
+import { ENC_COPY, ENC_DEFLATE_RGBA, ENC_JPEG, ENC_VP8, ENC_WEBP_LOSSLESS } from "./frames";
 import { ENCODING_NAMES, streamStats, useStreamStatsSwitch } from "./streamStats";
 
 /** One colour per encoding, from the theme's tokens. */
@@ -9,14 +9,16 @@ const OUTLINE: Record<number, string> = {
   [ENC_WEBP_LOSSLESS]: "border-primary",
   [ENC_JPEG]: "border-error",
   [ENC_VP8]: "border-secondary",
+  [ENC_COPY]: "border-outline",
 };
 const SWATCH: Record<number, string> = {
   [ENC_DEFLATE_RGBA]: "bg-tertiary",
   [ENC_WEBP_LOSSLESS]: "bg-primary",
   [ENC_JPEG]: "bg-error",
   [ENC_VP8]: "bg-secondary",
+  [ENC_COPY]: "bg-outline",
 };
-const LEGEND = [ENC_WEBP_LOSSLESS, ENC_VP8, ENC_JPEG, ENC_DEFLATE_RGBA];
+const LEGEND = [ENC_WEBP_LOSSLESS, ENC_VP8, ENC_JPEG, ENC_DEFLATE_RGBA, ENC_COPY];
 
 /** How often the overlay redraws while it shows. */
 const REDRAW_MS = 250;

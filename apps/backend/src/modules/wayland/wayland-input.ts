@@ -1,4 +1,4 @@
-import { VIDEO_CODECS, type HostInbound, type TextEditMessage, type VideoCodec } from "./wayland.protocol";
+import { TAB_CODECS, type HostInbound, type TextEditMessage, type TabCodec } from "./wayland.protocol";
 import { MAX_CLIPBOARD_BYTES, MAX_RATIO, MAX_TEXT_INPUT_BYTES, MAX_VIEWPORT } from "./wayland.constants";
 
 /**
@@ -45,13 +45,14 @@ export function clampRatio(v: unknown): number {
 }
 
 /**
- * The tab's video codecs, from its comma-separated `codecs` query: the known
- * ones, each once. Missing or unknown, none: the host sends JPEG.
+ * The optional encodings the tab draws, from its comma-separated `codecs`
+ * query: the known ones, each once. Missing or unknown, none: the host sends
+ * video as JPEG and a scroll as new pixels.
  */
-export function parseCodecs(v: unknown): VideoCodec[] {
+export function parseCodecs(v: unknown): TabCodec[] {
   if (typeof v !== "string" || v.length > 64) return [];
   const wanted = new Set(v.split(","));
-  return VIDEO_CODECS.filter((c) => wanted.has(c));
+  return TAB_CODECS.filter((c) => wanted.has(c));
 }
 
 /** A high surrogate with no low one after it, or a low one with no high before. */

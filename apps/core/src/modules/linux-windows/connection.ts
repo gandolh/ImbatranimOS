@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from "../auth/store/authStore";
 import { useLinuxAppsPrefs } from "./keyboardLayout";
 import { LINUX_APP_PREFIX, linuxWindowChrome } from "./kind";
-import { decodableVideoCodecs, paintFrame, parseFrame, VideoStreams } from "./frames";
+import { decodableVideoCodecs, OPTIONAL_ENCODINGS, paintFrame, parseFrame, VideoStreams } from "./frames";
 import { streamStats, useStreamStatsSwitch } from "./streamStats";
 import { linuxClipboard } from "./clipboard";
 import { cursorCss, type LinuxCursorImage } from "./cursor";
@@ -306,7 +306,9 @@ export class LinuxWindowsConnection {
     if (this.stopped || this.ws) return;
     this.session = desktopSessionId();
     this.resuming = false;
-    const ws = new WebSocket(buildWaylandUrl(this.session, viewport(), this.videoOff ? [] : codecs));
+    const ws = new WebSocket(
+      buildWaylandUrl(this.session, viewport(), [...(this.videoOff ? [] : codecs), ...OPTIONAL_ENCODINGS]),
+    );
     ws.binaryType = "arraybuffer";
     this.ws = ws;
     ws.onopen = () => {

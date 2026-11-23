@@ -6,7 +6,7 @@
 use std::io::Write;
 use std::time::Duration;
 
-use crate::protocol::{EncodedRect, Rect, ENC_DEFLATE_RGBA, ENC_JPEG, ENC_VP8, ENC_WEBP_LOSSLESS};
+use crate::protocol::{EncodedRect, Rect, ENC_COPY, ENC_DEFLATE_RGBA, ENC_JPEG, ENC_VP8, ENC_WEBP_LOSSLESS};
 use crate::video::{Link, Vp8Stream};
 
 /// `wl_shm` formats the host reads. Both are little-endian 32-bit words, so
@@ -50,6 +50,20 @@ const MAX_RECTS: usize = 16;
 /// background between near changes costs less to encode than another
 /// rectangle's header and setup.
 const BAND_GAP: u32 = 8;
+
+// Scrolling. Apps redraw a scrolled window whole (foot and weston-terminal
+// damage all of it on each scroll), and every row of it changes, but nearly
+// every row is one the tab already shows, some rows up or down. The host
+// finds that shift and sends the tab a copy of its own pixels and only the
+// rows that are new, as xpra's scroll encoding does.
+
+/// A rectangle this many rows tall or taller is checked for a scroll.
+const SCROLL_MIN_ROWS: u32 = 48;
+/// A moved block shorter than this isn't worth the copy.
+const SCROLL_MIN_RUN: u32 = 16;
+/// Changed rows that point to the same shift before it is tried: a couple
+/// of matches could be chance (two identical lines of text).
+const SCROLL_MIN_VOTES: u32 = 3;
 
 // When a region goes lossy (the WebP path only; deflate stays as it is).
 //
@@ -207,35 +221,18 @@ impl SurfaceImage {
         let width = self.width as usize;
         let span = r.w as usize * 4;
         row_px.resize(span, 0);
-        // The band being gathered: first row, last changed row, x range.
-        let mut band: Option<(u32, u32, u32, u32)> = None;
-        let close = |b: (u32, u32, u32, u32), out: &mut Vec<Rect>| {
-            out.push(Rect { x: r.x + b.2, y: b.0, w: b.3 - b.2 + 1, h: b.1 - b.0 + 1 });
-        };
+        let mut bands = Bands::new(r.x);
         for row in r.y..r.y + r.h {
             let src_start = offset + row as usize * stride + r.x as usize * 4;
             convert_row(&pool[src_start..src_start + span], row_px, format);
             let dst_start = (row as usize * width + r.x as usize) * 4;
             let dst = &mut self.rgba[dst_start..dst_start + span];
-            let Some(first) = row_px.chunks_exact(4).zip(dst.chunks_exact(4)).position(|(a, b)| a != b) else {
-                continue;
-            };
-            let last = row_px.chunks_exact(4).zip(dst.chunks_exact(4)).rposition(|(a, b)| a != b).unwrap_or(first);
-            dst.copy_from_slice(row_px);
-            let (first, last) = (first as u32, last as u32);
-            band = match band {
-                Some((y0, y1, x0, x1)) if row - y1 <= BAND_GAP => Some((y0, row, x0.min(first), x1.max(last))),
-                other => {
-                    if let Some(b) = other {
-                        close(b, out);
-                    }
-                    Some((row, row, first, last))
-                }
-            };
+            if let Some((first, last)) = changed_span(row_px, dst) {
+                dst.copy_from_slice(row_px);
+                bands.push(row, first, last);
+            }
         }
-        if let Some(b) = band {
-            close(b, out);
-        }
+        out.extend(bands.finish());
     }
 }
 
@@ -279,6 +276,11 @@ pub struct Canvas {
     /// The tab's link, from this window's acks: it scales the stream's
     /// bitrate.
     link: Link,
+    /// The tab draws `ENC_COPY`: a scroll may go as a move of its pixels.
+    pub copies: bool,
+    /// The next frame goes whole and moves nothing: the tab may not hold
+    /// this window's pixels (a new size, a reload, a session back to life).
+    whole: bool,
 }
 
 impl Canvas {
@@ -304,6 +306,7 @@ impl Canvas {
         self.hot = None;
         self.settle = false;
         self.stream = None;
+        self.whole = true;
     }
 
     /// One tick of the host's frame clock went by. A region sent lossy that
@@ -375,6 +378,14 @@ impl Canvas {
         })
     }
 
+    /// Send the whole window in the next frame, and move nothing in it: the
+    /// tab may not hold this window's pixels (it reloaded, or the window was
+    /// asleep or hidden). A layout change, where it does, is `damage_all`.
+    pub fn send_whole(&mut self) {
+        self.whole = true;
+        self.damage_all();
+    }
+
     pub fn damage_all(&mut self) {
         if self.width > 0 && self.height > 0 {
             self.damage = vec![Rect {
@@ -411,9 +422,28 @@ impl Canvas {
     /// the VP8 stream, or a JPEG), and the rest of it lossless; a window that
     /// isn't playing anything is lossless, byte for byte, as before.
     pub fn take_frame(&mut self, layers: &[Layer], encoding: Encoding, how: Lossy) -> Vec<EncodedRect> {
-        let rects = std::mem::take(&mut self.damage);
+        let mut rects = std::mem::take(&mut self.damage);
+        let whole = std::mem::take(&mut self.whole);
+        // A scroll is looked for only where the tab holds exactly these
+        // pixels: not after a reload or a new size, and not while part of the
+        // window went lossy.
+        let lossy_shown = self.stream.is_some() || self.hot.is_some_and(|h| h.lossy_sent);
+        let before = if self.copies && !whole && !lossy_shown { self.scroll_candidate(&rects) } else { None };
         for r in &rects {
             self.compose(*r, layers);
+        }
+        let mut out = Vec::with_capacity(rects.len() + 1);
+        if let Some((r, old)) = before {
+            if let Some((copies, fresh)) = self.find_scroll(r, &old) {
+                for (dest, src_y) in copies {
+                    let mut data = Vec::with_capacity(8);
+                    data.extend_from_slice(&dest.x.to_le_bytes());
+                    data.extend_from_slice(&src_y.to_le_bytes());
+                    out.push(EncodedRect { rect: dest, encoding: ENC_COPY, data });
+                }
+                rects.retain(|x| *x != r);
+                rects.extend(fresh);
+            }
         }
         let lossy = if encoding == Encoding::Webp && !std::mem::take(&mut self.settle) {
             self.observe(&rects)
@@ -422,10 +452,10 @@ impl Canvas {
         };
         if how == Lossy::Vp8 {
             if let Some(frame) = lossy.and_then(|h| self.take_video_frame(&rects, h, encoding)) {
-                return frame;
+                out.extend(frame);
+                return out;
             }
         }
-        let mut out = Vec::with_capacity(rects.len());
         for rect in rects {
             let inside = lossy.and_then(|h| intersect(rect, h)).filter(|r| self.opaque(*r));
             match inside {
@@ -482,6 +512,102 @@ impl Canvas {
             hot.lossy_sent = true;
         }
         Some(out)
+    }
+
+    /// The largest damaged rectangle tall enough to be a scroll, with the
+    /// pixels the tab shows there now, taken before the frame is composed.
+    fn scroll_candidate(&self, rects: &[Rect]) -> Option<(Rect, Vec<u8>)> {
+        let r = rects.iter().copied().filter(|r| r.h >= SCROLL_MIN_ROWS).max_by_key(|r| area(*r))?;
+        Some((r, self.extract(r)))
+    }
+
+    /// Whether the pixels in `r` (composed now) are its pixels in `old`
+    /// moved up or down: the runs of rows that equal the old row the same
+    /// distance away, each at least [`SCROLL_MIN_RUN`] rows (a marker drawn
+    /// over a scrolled page, foot's scrollback position, splits it in two).
+    /// Returns each run as where it goes and the row it comes from, in an
+    /// order where none reads rows an earlier one wrote, and the bands of `r`
+    /// outside the runs that still changed. A row hash finds the distance;
+    /// every row of a run is then compared byte for byte, so a hash collision
+    /// can't move a wrong row.
+    fn find_scroll(&self, r: Rect, old: &[u8]) -> Option<(Vec<(Rect, u32)>, Vec<Rect>)> {
+        let span = r.w as usize * 4;
+        let h = r.h as usize;
+        let width = self.width as usize;
+        let new_row = |i: usize| {
+            let start = ((r.y as usize + i) * width + r.x as usize) * 4;
+            &self.rgba[start..start + span]
+        };
+        let old_row = |i: usize| &old[i * span..(i + 1) * span];
+        let old_hash: Vec<u64> = (0..h).map(|i| row_hash(old_row(i))).collect();
+        let new_hash: Vec<u64> = (0..h).map(|i| row_hash(new_row(i))).collect();
+        // Where each old row was, for rows that appear once: a blank line, or
+        // one repeated, would vote for every distance.
+        let mut seen: std::collections::HashMap<u64, Option<usize>> = std::collections::HashMap::with_capacity(h);
+        for (i, &hash) in old_hash.iter().enumerate() {
+            seen.entry(hash).and_modify(|at| *at = None).or_insert(Some(i));
+        }
+        let mut votes: std::collections::HashMap<isize, u32> = std::collections::HashMap::new();
+        for i in 0..h {
+            if new_hash[i] == old_hash[i] {
+                continue;
+            }
+            if let Some(Some(j)) = seen.get(&new_hash[i]) {
+                *votes.entry(*j as isize - i as isize).or_default() += 1;
+            }
+        }
+        let (dy, n) = votes.into_iter().max_by_key(|&(dy, n)| (n, -dy.abs()))?;
+        if n < SCROLL_MIN_VOTES {
+            return None;
+        }
+        let moved = |i: usize| {
+            let j = i as isize + dy;
+            j >= 0 && (j as usize) < h && new_hash[i] == old_hash[j as usize] && new_row(i) == old_row(j as usize)
+        };
+        let mut runs: Vec<(usize, usize)> = Vec::new();
+        let mut start = None;
+        for i in 0..=h {
+            match (i < h && moved(i), start) {
+                (true, None) => start = Some(i),
+                (false, Some(s)) => {
+                    if (i - s) as u32 >= SCROLL_MIN_RUN {
+                        runs.push((s, i));
+                    }
+                    start = None;
+                }
+                _ => {}
+            }
+        }
+        if runs.is_empty() {
+            return None;
+        }
+        // Outside the runs the tab keeps what it has: only rows that differ go.
+        let mut bands = Bands::new(r.x);
+        let mut in_run = runs.iter().peekable();
+        for i in 0..h {
+            while in_run.peek().is_some_and(|&&(_, b)| b <= i) {
+                in_run.next();
+            }
+            if in_run.peek().is_some_and(|&&(a, _)| a <= i) {
+                continue;
+            }
+            if let Some((first, last)) = changed_span(new_row(i), old_row(i)) {
+                bands.push(r.y + i as u32, first, last);
+            }
+        }
+        // Content that moved up reads from below: top run first, so no run
+        // reads rows a run above it already wrote. Down, the other way.
+        if dy < 0 {
+            runs.reverse();
+        }
+        let copies = runs
+            .into_iter()
+            .map(|(a, b)| {
+                let dest = Rect { x: r.x, y: r.y + a as u32, w: r.w, h: (b - a) as u32 };
+                (dest, (r.y as isize + a as isize + dy) as u32)
+            })
+            .collect();
+        Some((copies, bands.finish()))
     }
 
     fn encode_lossless(&self, rect: Rect, encoding: Encoding) -> EncodedRect {
@@ -561,6 +687,67 @@ impl Canvas {
         }
         out
     }
+}
+
+/// The first and last pixel (by index) where two rows of RGBA differ, or
+/// None when they are the same.
+fn changed_span(a: &[u8], b: &[u8]) -> Option<(u32, u32)> {
+    let first = a.chunks_exact(4).zip(b.chunks_exact(4)).position(|(p, q)| p != q)?;
+    let last = a.chunks_exact(4).zip(b.chunks_exact(4)).rposition(|(p, q)| p != q).unwrap_or(first);
+    Some((first as u32, last as u32))
+}
+
+/// Changed rows, gathered into bands: rows at most [`BAND_GAP`] apart join one,
+/// as wide as its rows' changes. Rows come in increasing order.
+struct Bands {
+    x: u32,
+    /// The band being gathered: first row, last changed row, x range.
+    open: Option<(u32, u32, u32, u32)>,
+    out: Vec<Rect>,
+}
+
+impl Bands {
+    /// Bands of a rectangle whose left edge is at `x`; spans are from there.
+    fn new(x: u32) -> Bands {
+        Bands { x, open: None, out: Vec::new() }
+    }
+
+    fn push(&mut self, row: u32, first: u32, last: u32) {
+        self.open = match self.open {
+            Some((y0, y1, x0, x1)) if row - y1 <= BAND_GAP => Some((y0, row, x0.min(first), x1.max(last))),
+            other => {
+                self.close(other);
+                Some((row, row, first, last))
+            }
+        };
+    }
+
+    fn close(&mut self, band: Option<(u32, u32, u32, u32)>) {
+        if let Some((y0, y1, x0, x1)) = band {
+            self.out.push(Rect { x: self.x + x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 });
+        }
+    }
+
+    fn finish(mut self) -> Vec<Rect> {
+        let open = self.open.take();
+        self.close(open);
+        self.out
+    }
+}
+
+/// A row's hash, to find where it went: a multiply-rotate over 8-byte words
+/// (FxHash's step). Only a hint; a row it matches is compared byte for byte.
+fn row_hash(px: &[u8]) -> u64 {
+    let mut h: u64 = px.len() as u64;
+    let mut words = px.chunks_exact(8);
+    for w in &mut words {
+        let v = u64::from_le_bytes(w.try_into().expect("8 bytes"));
+        h = (h.rotate_left(5) ^ v).wrapping_mul(0x51_7c_c1_b7_27_22_0a_95);
+    }
+    for &b in words.remainder() {
+        h = (h.rotate_left(5) ^ b as u64).wrapping_mul(0x51_7c_c1_b7_27_22_0a_95);
+    }
+    h
 }
 
 /// `src` over `dst`, both premultiplied RGBA rows of the same length.
@@ -885,6 +1072,161 @@ mod tests {
             img.copy_from_shm(&edited, 0, 40, 64, 160, ShmFormat::Argb8888, &[Rect { x: 0, y: 30, w: 40, h: 10 }]),
             Some(vec![])
         );
+    }
+
+    /// What the tab does with a frame (Deflate and copies only): each
+    /// rectangle onto its picture `tab`, a window `width` wide, in order. A
+    /// copy reads the picture as it was before it, as a canvas drawn onto
+    /// itself does.
+    fn apply(frame: &[EncodedRect], tab: &mut [u8], width: u32) {
+        let w = width as usize;
+        for r in frame {
+            let (x, y, rw, rh) = (r.rect.x as usize, r.rect.y as usize, r.rect.w as usize, r.rect.h as usize);
+            let px: Vec<u8> = match r.encoding {
+                ENC_COPY => {
+                    let sx = u32::from_le_bytes(r.data[0..4].try_into().unwrap()) as usize;
+                    let sy = u32::from_le_bytes(r.data[4..8].try_into().unwrap()) as usize;
+                    let at = |row: usize| ((sy + row) * w + sx) * 4;
+                    (0..rh).flat_map(|row| tab[at(row)..at(row) + rw * 4].to_vec()).collect()
+                }
+                ENC_DEFLATE_RGBA => {
+                    let mut raw = Vec::new();
+                    flate2::read::ZlibDecoder::new(&r.data[..]).read_to_end(&mut raw).unwrap();
+                    raw
+                }
+                e => panic!("encoding {e} in a deflate test"),
+            };
+            for row in 0..rh {
+                tab[((y + row) * w + x) * 4..((y + row) * w + x + rw) * 4]
+                    .copy_from_slice(&px[row * rw * 4..(row + 1) * rw * 4]);
+            }
+        }
+    }
+
+    /// A page of distinct rows, `top` rows down it, as an app draws it.
+    fn page(w: u32, h: u32, top: u32) -> Vec<u8> {
+        bgra_pool(w, h, w as usize * 4, move |x, y| [(y + top) as u8, ((y + top) >> 8) as u8, x as u8, 255])
+    }
+
+    /// The app redraws `pool` and damages all of it; one frame goes.
+    fn redraw(c: &mut Canvas, img: &mut SurfaceImage, pool: &[u8], w: u32, h: u32) -> Vec<EncodedRect> {
+        let all = [Rect { x: 0, y: 0, w, h }];
+        for r in img.copy_from_shm(pool, 0, w, h, w as usize * 4, ShmFormat::Argb8888, &all).unwrap() {
+            c.damage(r.x as i32, r.y as i32, r.w, r.h);
+        }
+        c.take_frame(&[Layer::at(0, 0, img)], Encoding::Deflate, Lossy::Jpeg)
+    }
+
+    #[test]
+    fn a_scroll_goes_as_a_move_of_the_tabs_pixels_and_the_new_rows() {
+        let (w, h) = (32, 100);
+        let mut img = SurfaceImage::default();
+        img.copy_from_shm(&page(w, h, 0), 0, w, h, w as usize * 4, ShmFormat::Argb8888, &[]).unwrap();
+        let mut c = Canvas::default();
+        c.resize(w, h);
+        c.copies = true;
+        let mut tab = vec![0u8; (w * h * 4) as usize];
+        // The first frame after a new size goes whole: the tab has nothing to move.
+        let first = c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Deflate, Lossy::Jpeg);
+        assert!(first.iter().all(|r| r.encoding == ENC_DEFLATE_RGBA));
+        apply(&first, &mut tab, w);
+
+        // Scrolled 6 rows down the page: rows move up, 6 new ones at the bottom.
+        let frame = redraw(&mut c, &mut img, &page(w, h, 6), w, h);
+        assert_eq!(frame[0].encoding, ENC_COPY);
+        assert_eq!(frame[0].rect, Rect { x: 0, y: 0, w, h: h - 6 });
+        assert_eq!(frame[0].data, [0, 0, 0, 0, 6, 0, 0, 0]);
+        let sent: u32 = frame[1..].iter().map(|r| r.rect.w * r.rect.h).sum();
+        assert_eq!(sent, w * 6);
+        apply(&frame, &mut tab, w);
+        assert_eq!(tab, c.rgba);
+
+        // Back up 6: the move goes down, the new rows are at the top.
+        let frame = redraw(&mut c, &mut img, &page(w, h, 0), w, h);
+        assert_eq!(frame[0].encoding, ENC_COPY);
+        assert_eq!(frame[0].rect, Rect { x: 0, y: 6, w, h: h - 6 });
+        assert_eq!(frame[0].data, [0, 0, 0, 0, 0, 0, 0, 0]);
+        apply(&frame, &mut tab, w);
+        assert_eq!(tab, c.rgba);
+    }
+
+    #[test]
+    fn a_marker_over_a_scrolled_page_splits_the_move_in_two() {
+        let (w, h) = (32, 120);
+        // A page `top` rows down, with a 6-row marker at rows `at..at + 6`.
+        let marked = |top: u32, at: u32| {
+            bgra_pool(w, h, w as usize * 4, move |x, y| {
+                if (at..at + 6).contains(&y) && x > 24 {
+                    [255, 255, 255, 255]
+                } else {
+                    [(y + top) as u8, ((y + top) >> 8) as u8, x as u8, 255]
+                }
+            })
+        };
+        let mut img = SurfaceImage::default();
+        img.copy_from_shm(&marked(0, 20), 0, w, h, w as usize * 4, ShmFormat::Argb8888, &[]).unwrap();
+        let mut c = Canvas::default();
+        c.resize(w, h);
+        c.copies = true;
+        let mut tab = vec![0u8; (w * h * 4) as usize];
+        apply(&c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Deflate, Lossy::Jpeg), &mut tab, w);
+        for (top, at) in [(9, 50), (18, 70), (6, 40), (0, 30)] {
+            let frame = redraw(&mut c, &mut img, &marked(top, at), w, h);
+            let copies = frame.iter().filter(|r| r.encoding == ENC_COPY).count();
+            assert!(copies >= 2, "top {top}: {copies} copies");
+            apply(&frame, &mut tab, w);
+            assert_eq!(tab, c.rgba, "top {top}");
+        }
+    }
+
+    #[test]
+    fn nothing_moves_for_a_tab_that_cant_or_after_a_redraw_of_everything() {
+        let (w, h) = (32, 100);
+        let mut img = SurfaceImage::default();
+        img.copy_from_shm(&page(w, h, 0), 0, w, h, w as usize * 4, ShmFormat::Argb8888, &[]).unwrap();
+        let mut c = Canvas::default();
+        c.resize(w, h);
+        c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Deflate, Lossy::Jpeg);
+        // A tab that didn't say `copy`.
+        let frame = redraw(&mut c, &mut img, &page(w, h, 6), w, h);
+        assert!(frame.iter().all(|r| r.encoding != ENC_COPY));
+        // One that did, after the session sent everything again (a reload).
+        c.copies = true;
+        c.send_whole();
+        let frame = redraw(&mut c, &mut img, &page(w, h, 12), w, h);
+        assert!(frame.iter().all(|r| r.encoding != ENC_COPY));
+        // The frame after that may move again.
+        let frame = redraw(&mut c, &mut img, &page(w, h, 18), w, h);
+        assert_eq!(frame[0].encoding, ENC_COPY);
+        // A window drawn again for a new layout (foot's scrollback marker, a
+        // subsurface, moving as it scrolls) still holds its pixels in the tab.
+        c.damage_all();
+        let frame = redraw(&mut c, &mut img, &page(w, h, 24), w, h);
+        assert_eq!(frame[0].encoding, ENC_COPY);
+    }
+
+    #[test]
+    fn rows_that_look_alike_or_change_in_place_are_not_moved() {
+        let (w, h) = (32, 100);
+        // Bands of one colour: every row repeats, so no row says where it went.
+        let stripes = |top: u32| bgra_pool(w, h, w as usize * 4, move |_, y| [((y + top) / 20 * 40) as u8, 0, 0, 255]);
+        let mut img = SurfaceImage::default();
+        img.copy_from_shm(&stripes(0), 0, w, h, w as usize * 4, ShmFormat::Argb8888, &[]).unwrap();
+        let mut c = Canvas::default();
+        c.resize(w, h);
+        c.copies = true;
+        let mut tab = vec![0u8; (w * h * 4) as usize];
+        apply(&c.take_frame(&[Layer::at(0, 0, &img)], Encoding::Deflate, Lossy::Jpeg), &mut tab, w);
+        let frame = redraw(&mut c, &mut img, &stripes(7), w, h);
+        assert!(frame.iter().all(|r| r.encoding != ENC_COPY));
+        apply(&frame, &mut tab, w);
+        assert_eq!(tab, c.rgba);
+        // A page redrawn with new content at the same place: nothing to move.
+        let other = bgra_pool(w, h, w as usize * 4, |x, y| [x as u8, y as u8, 200, 255]);
+        let frame = redraw(&mut c, &mut img, &other, w, h);
+        assert!(frame.iter().all(|r| r.encoding != ENC_COPY));
+        apply(&frame, &mut tab, w);
+        assert_eq!(tab, c.rgba);
     }
 
     #[test]

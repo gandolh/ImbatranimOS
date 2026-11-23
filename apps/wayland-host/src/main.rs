@@ -171,7 +171,7 @@ impl Host {
         match msg {
             Inbound::SessionOpen { session, width, height, ratio, codecs } => {
                 self.open(session.clone(), width, height, ratio);
-                self.with(&session, |s| s.set_video_codecs(&codecs));
+                self.with(&session, |s| s.set_codecs(&codecs));
             }
             Inbound::SessionClose { session } => self.close(&session),
             Inbound::Output { session, width, height, ratio } => {
@@ -197,7 +197,7 @@ impl Host {
             Inbound::Position { session, toplevel, x, y } => self.with(&session, |s| s.position(toplevel, x, y)),
             Inbound::PressOutside { session } => self.with(&session, |s| s.press_outside()),
             Inbound::Resync { session, codecs } => self.with(&session, |s| {
-                s.set_video_codecs(&codecs);
+                s.set_codecs(&codecs);
                 s.resync();
             }),
             Inbound::Keyframe { session, toplevel } => self.with(&session, |s| s.keyframe(toplevel)),

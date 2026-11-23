@@ -34,11 +34,13 @@ export function isValidSessionId(id: unknown): id is string {
 }
 
 /**
- * The video codecs a tab may say it decodes, for a window's video region
- * (the host's `ENC_VP8`). Anything else in the tab's list is dropped.
+ * The optional encodings a tab may say it draws: `vp8`, a window's video
+ * region as a stream (the host's `ENC_VP8`), and `copy`, a scroll as a move of
+ * pixels the tab already has (`ENC_COPY`). Anything else in the tab's list is
+ * dropped.
  */
-export const VIDEO_CODECS = ["vp8"] as const;
-export type VideoCodec = (typeof VIDEO_CODECS)[number];
+export const TAB_CODECS = ["vp8", "copy"] as const;
+export type TabCodec = (typeof TAB_CODECS)[number];
 
 /** Backend → host. */
 export type HostInbound =
@@ -49,8 +51,8 @@ export type HostInbound =
       height: number;
       /** The tab's devicePixelRatio; the output's scale is its ceiling. */
       ratio: number;
-      /** The video codecs the tab decodes (`VIDEO_CODECS`); none means JPEG. */
-      codecs: VideoCodec[];
+      /** The optional encodings the tab draws (`TAB_CODECS`); without `vp8`, video goes as JPEG. */
+      codecs: TabCodec[];
     }
   | { type: "session_close"; session: string }
   | {
@@ -105,7 +107,7 @@ export type HostInbound =
       y: number;
     }
   | { type: "press_outside"; session: string }
-  | { type: "resync"; session: string; codecs: VideoCodec[] }
+  | { type: "resync"; session: string; codecs: TabCodec[] }
   | { type: "keyframe"; session: string; toplevel: number }
   | { type: "freeze"; session: string; frozen: boolean }
   | { type: "visibility"; session: string; visible: boolean }

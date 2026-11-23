@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { ENC_DEFLATE_RGBA, ENC_JPEG, ENC_VP8, ENC_WEBP_LOSSLESS, type Frame } from "./frames";
+import { ENC_COPY, ENC_DEFLATE_RGBA, ENC_JPEG, ENC_VP8, ENC_WEBP_LOSSLESS, type Frame } from "./frames";
 
 /**
  * "Show stream stats" (Settings → Linux apps): each Linux window shows which rectangles of its frames came and
@@ -39,6 +39,7 @@ export const ENCODING_NAMES: Record<number, string> = {
   [ENC_WEBP_LOSSLESS]: "WebP",
   [ENC_JPEG]: "JPEG",
   [ENC_VP8]: "VP8",
+  [ENC_COPY]: "Moved",
 };
 
 /** How long a rectangle's outline shows, and the span the numbers cover. */

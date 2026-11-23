@@ -88,6 +88,14 @@ describe("the Wayland host control protocol", () => {
     });
   });
 
+  it("decodes the host's attention request fixture", () => {
+    const [d] = new Decoder().push(fixture("request-attention.bin"));
+    expect(d).toEqual({
+      kind: "json",
+      message: { type: "request", session: "abcdefghijklmnop", toplevel: 7, action: "attention" },
+    });
+  });
+
   it("decodes the host's clipboard fixture", () => {
     const [d] = new Decoder().push(fixture("clipboard.bin"));
     expect(d).toEqual({

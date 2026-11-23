@@ -552,7 +552,10 @@ export class LinuxWindowsConnection {
    * The app asked the window manager for something. Maximize, restore and
    * minimize map to its own actions (it has no fullscreen, so fullscreen
    * maximizes); a move or resize from the app's own title bar or edge is
-   * started by the window body, which knows where the pointer is.
+   * started by the window body, which knows where the pointer is. Attention
+   * (an activation request, or an X11 urgency hint) marks the taskbar
+   * button, which clears when the window is focused; only the owner raises
+   * windows, so nothing is raised.
    */
   private request(toplevel: number, action: string, edges?: string): void {
     const t = windowForToplevel(toplevel);
@@ -571,6 +574,9 @@ export class LinuxWindowsConnection {
         break;
       case "minimize":
         windows.hideWindow(t.windowId);
+        break;
+      case "attention":
+        windows.requestAttention(t.windowId);
         break;
       case "move":
       case "resize":

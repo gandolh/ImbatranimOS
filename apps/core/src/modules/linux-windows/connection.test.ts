@@ -187,3 +187,27 @@ describe("a tab whose VP8 decoder keeps failing", () => {
     expect(new URL(FakeSocket.all[2]!.url).searchParams.has("codecs")).toBe(false);
   });
 });
+
+describe("a Linux app that asks for attention", () => {
+  it("marks its window's taskbar button and raises nothing, until the window is focused", async () => {
+    connection = new LinuxWindowsConnection();
+    connection.start();
+    await vi.waitFor(() => expect(FakeSocket.all).toHaveLength(1));
+    const socket = FakeSocket.all[0]!;
+    socket.onopen?.();
+    socket.say({ type: "session", resumed: false });
+    socket.say(created(5));
+    socket.say(created(6));
+    const [first, second] = linuxWindows();
+    const top = () => [...useWindowStore.getState().windows].sort((a, b) => b.zIndex - a.zIndex)[0]?.id;
+    expect(top()).toBe(second!.id);
+
+    socket.say({ type: "request", toplevel: 5, action: "attention" });
+    const state = () => useWindowStore.getState().windows.find((w) => w.id === first!.id);
+    expect(state()?.attention).toBe(true);
+    expect(top()).toBe(second!.id);
+
+    useWindowStore.getState().focusWindow(first!.id);
+    expect(state()?.attention).toBe(false);
+  });
+});

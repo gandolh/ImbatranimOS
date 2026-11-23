@@ -146,7 +146,11 @@ and only when it changed (a new name, image or hotspot), keeps it for
 sets its own again.
 `request` passes an app's `xdg_toplevel` requests to the window manager:
 `move`, `resize` (with `edges`: `n`, `s`, `e`, `w`, `ne`, `nw`, `se`, `sw`),
-`maximize`, `unmaximize`, `minimize`, `fullscreen` and `unfullscreen`.
+`maximize`, `unmaximize`, `minimize`, `fullscreen` and `unfullscreen`. Its
+`attention` (since 2026-11-23) is an `xdg_activation_v1` activation of a
+mapped toplevel's surface: the host raises and focuses nothing (only the
+owner does), and the tab marks the window's taskbar button. A tab that knows
+no `attention` ignores it, so `hello`'s version didn't move.
 
 ### Text input
 
@@ -264,7 +268,8 @@ apps place their menus in screen coordinates; `configure` resizes it there
 and sets its maximized state; `close` sends `WM_DELETE_WINDOW` (or destroys
 a window that doesn't take it); `focus` gives it the X input focus and
 raises it. Its move, resize, maximize, minimize and fullscreen requests
-(`_NET_WM_MOVERESIZE` and `_NET_WM_STATE`) come as `request`.
+(`_NET_WM_MOVERESIZE` and `_NET_WM_STATE`) come as `request`, and its
+`WM_HINTS` urgency turning on as `request` with `attention`.
 
 An override-redirect window (a menu, a tooltip) becomes a popup of the X11
 window it is transient for, else of the X11 window with the keyboard, else

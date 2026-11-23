@@ -386,7 +386,8 @@ pub enum Outbound {
     /// The app asked the window manager for something: `move` and `resize`
     /// (with `edges`) start the OS window's own drag; `maximize`,
     /// `unmaximize`, `minimize`, `fullscreen` and `unfullscreen` map to its
-    /// actions.
+    /// actions; `attention` (an activation request, or an X11 urgency hint
+    /// turning on) marks its taskbar button and raises nothing.
     Request {
         session: String,
         toplevel: u32,
@@ -588,6 +589,15 @@ mod tests {
         let mut body = 513u32.to_le_bytes().to_vec();
         body.extend_from_slice(&[0xfc, 0xff, 0xfe]);
         encode_audio("abcdefghijklmnop", &body)
+    }
+
+    fn sample_attention() -> Vec<u8> {
+        encode_json(&Outbound::Request {
+            session: "abcdefghijklmnop".into(),
+            toplevel: 7,
+            action: "attention".into(),
+            edges: None,
+        })
     }
 
     fn sample_clipboard() -> Vec<u8> {
@@ -847,6 +857,7 @@ mod tests {
             ("audio.bin", sample_audio()),
             ("text-input.bin", sample_text_input()),
             ("cursor-image.bin", sample_cursor_image()),
+            ("request-attention.bin", sample_attention()),
         ];
         for (name, bytes) in cases {
             let path = fixtures_dir().join(name);

@@ -24,6 +24,8 @@ type LinkHandler = {
   allowNonHttpProtocols?: boolean;
 };
 
+type CsiHandler = (params: (number | number[])[]) => boolean;
+
 class FakeXTerm {
   static last: FakeXTerm | null = null;
   linkHandler: LinkHandler | null = null;
@@ -64,7 +66,19 @@ class FakeXTerm {
       this.osc.set(code, handler);
       return { dispose: () => this.osc.delete(code) };
     },
+    registerCsiHandler: (id: { prefix?: string; intermediates?: string; final: string }, handler: CsiHandler) => {
+      const key = `${id.prefix ?? ""}${id.intermediates ?? ""}${id.final}`;
+      this.csi.set(key, handler);
+      return { dispose: () => this.csi.delete(key) };
+    },
+    registerEscHandler: () => ({ dispose: () => undefined }),
   };
+  /** The CSI handlers the app registered, by prefix, intermediates and final. */
+  csi = new Map<string, CsiHandler>();
+  /** What a program sends, as far as the app's CSI handlers see it. */
+  emitCsi(key: string, params: number[]) {
+    return this.csi.get(key)?.(params);
+  }
   titleListener: ((title: string) => void) | null = null;
   markers: { line: number; isDisposed: boolean; dispose(): void }[] = [];
   constructor(options: { linkHandler?: LinkHandler }) {
@@ -326,6 +340,15 @@ describe("progress and the bell", () => {
     focused = true;
     act(() => term().bellListener?.());
     expect(requestAttention).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("dark and light mode reports", () => {
+  it("answers a program's query through the pty, in the desktop's mode", () => {
+    act(() => {
+      term().emitCsi("?n", [996]);
+    });
+    expect(sendInput).toHaveBeenCalledWith("\x1b[?997;2n");
   });
 });
 

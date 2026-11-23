@@ -15,6 +15,7 @@ import { applyMark, cwdFromOsc7, INITIAL_SHELL_STATE, windowTitle, type ShellSta
 import { finishedToast, loadNotifyLong } from "./lib/commandNotify";
 import { arrowKeys, arrowsTo, type Cell } from "./lib/promptCursor";
 import { progressReporter } from "./lib/progress";
+import { colorSchemeReports, type ColorMode, type ColorSchemeReports } from "./lib/colorSchemeReports";
 import { buildXtermTheme, documentVarResolver } from "./lib/xtermTheme";
 import {
   DEFAULT_FONT_SIZE,
@@ -109,6 +110,9 @@ export function Terminal(_props: { windowId: string }) {
   const inputStartRef = useRef<{ marker: IMarker; col: number } | null>(null);
   /** Where the pointer went down, to tell a click from a drag that selects. */
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+  /** The dark and light mode reports a program can turn on, and the mode they report. */
+  const colorReportsRef = useRef<ColorSchemeReports | null>(null);
+  const colorModeRef = useRef<ColorMode>("dark");
   /** The title this window last took from its shell: where a finished command ran, for its toast. */
   const titleRef = useRef("Terminal");
 
@@ -334,10 +338,29 @@ export function Terminal(_props: { windowId: string }) {
     // Read AFTER the appearance store has pushed `data-theme` and `--accent` onto
     // the root. `applyAppearance` runs in an effect in App.tsx, and effects run
     // parent-first, so by the time this child effect fires the vars are current.
-    instance.options.theme = buildXtermTheme(theme === "light" ? "light" : "dark", documentVarResolver());
+    const mode: ColorMode = theme === "light" ? "light" : "dark";
+    instance.options.theme = buildXtermTheme(mode, documentVarResolver());
+    // A program that turned on dark and light reports hears a mode change, once;
+    // an accent change is no mode change.
+    if (colorModeRef.current !== mode) {
+      colorModeRef.current = mode;
+      colorReportsRef.current?.modeChanged();
+    }
     // `accent` is in the deps because it changes `--accent`, which the resolver
     // reads — the value itself is not referenced here.
   }, [generation, theme, accent]);
+
+  // ── Dark and light mode reports (CSI ? 2031 h, CSI ? 996 n) ──────────────
+  useEffect(() => {
+    const instance = termRef.current;
+    if (!instance) return;
+    const reports = colorSchemeReports(instance, () => colorModeRef.current, sendInput);
+    colorReportsRef.current = reports;
+    return () => {
+      colorReportsRef.current = null;
+      reports.dispose();
+    };
+  }, [generation, sendInput]);
 
   // ── Font size ─────────────────────────────────────────────────────────────
   useEffect(() => {

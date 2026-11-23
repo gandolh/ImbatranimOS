@@ -39,3 +39,4 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 8 | The Wayland host's frame clock runs only while there is work: idle host CPU to zero, foot's keystroke to frame 20 to 5 ms | [2](research-performance-sweep-2.md) |
 | 9 | Notepad loads its Markdown preview and highlighter only for Markdown: its chunk 366 to 42 KB | [2](research-performance-sweep-2.md) |
 | 10 | The image's node_modules without declarations, sources, maps and docs: 49 to 26 MB, its layer 57 to 30 MB | [2](research-performance-sweep-2.md) |
+| 11 | Files on a large folder: synchronous stats in batches, a 20,000-entry listing 630 to 165 ms and its size 820 to 70 ms; the Linux frame path measured lean | [3](research-performance-sweep-3.md) |

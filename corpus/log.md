@@ -6485,3 +6485,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 10: the image's node_modules
 
 [research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `e579c7f` (1.442.0) has `proddeps` delete type declarations, TypeScript sources, source maps, Markdown and `.github` from the production tree: 10,045 files and 49.1 MB to 5,237 and 25.6 MB, the layer 57.5 to 30.2 MB. The backend started on the pruned tree in a container and answered every route asked.
+
+## [2026-11-23] done | Performance sweep, round 11: Files on a large folder
+
+[research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `b47df42` (1.444.0) lists a folder with synchronous stats in batches of 256 instead of one `fs/promises.lstat` each (20,000 entries: 630 to 165 ms, backend CPU 870 to 170 ms, the same bytes), and `bbed211` (1.445.0) does the same for a folder's size (820 to 70 ms). The Linux window frame path was profiled end to end and found lean.

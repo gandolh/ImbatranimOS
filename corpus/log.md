@@ -6413,3 +6413,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-22] done | Brief 108: a Terminal opens in a folder
 
 `e2297e2` (1.404.0): the PTY URL takes a checked start folder (an absolute `cwd`, or a Files `root` and `path` resolved through the Files jail; anything else starts in home). Files offers Open in Terminal on folders and the background menu; Ctrl+Shift+N, and Alt+Shift+N since browsers keep Ctrl+Shift+N for a private window, open a new Terminal in the shell's folder. Walked on the host: Files' item and `pwd`, and a new window after `cd /tmp`.
+
+## [2026-11-23] done | Brief 109: taskbar buttons show progress and ask for attention
+
+`196a6f1` (1.406.0): the kit gains optional `system.window.setProgress` and `requestAttention` (kit commit for imbatranim-apps' next sync: `196a6f1`). The taskbar draws a 3 px bar per state (accent, error, paused, a sweep for indeterminate, still under reduced motion) and fills and pulses a button that asks for attention until its window is focused. The Terminal reads OSC 9;4 itself (no addon), clears it after 15 s or at the next prompt, and a bell in an unfocused window asks for attention. Walked in Apricot light and Classic dark at 1280 and 390; the look is the owner's question.

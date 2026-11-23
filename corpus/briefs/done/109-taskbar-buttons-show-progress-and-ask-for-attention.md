@@ -74,3 +74,46 @@ The look is a built default, asked on the end move.
 - [ ] End move `ready_for_deploy`, owner step `node cli.ts imbatranim-os server`,
   with `--question` on the look; the outcome note names the kit commit for
   imbatranim-apps' next kit sync.
+
+## Outcome (2026-11-23)
+
+Built in `196a6f1` (1.406.0). **Kit commit for imbatranim-apps' next kit sync: `196a6f1`** (`system.window.setProgress`
+and `requestAttention`, both optional, with the `SystemProgress` and `SystemProgressState` types exported;
+`SHARED_KIT_VERSION` and `PROTOCOL_VERSION` don't move).
+
+- **The store** keeps `progress` (value clamped to 0-100, `none` takes it off) and `attention` on the window,
+  neither across a reload. `requestAttention` ignores the focused window; `focusWindow` answers it, and a
+  store subscription answers it for a window that comes on top any other way (another closed, a restore).
+- **The taskbar** draws the bar as built defaults: 3 px inside the button above the current-task underline
+  (offset per theme and for the phone's 48 px button), `bg-primary`, `bg-error`, `bg-on-surface-variant`
+  for paused, a third-width segment sweeping across for indeterminate (`task-sweep`, motion-safe; a still
+  striped bar under reduced motion). Attention fills the button with `primary-container` and pulses it twice
+  (`task-attention`, motion-safe). The keyframes are the desktop's first, in `apps/core/src/index.css`. The
+  button's accessible name says the state ("~, 40% done", "failed", "paused at 70%", "working", "wants
+  attention").
+- **The Terminal**: `lib/progress.ts` reads `OSC 9;4` and passes it to `setProgress`, off after 15 s with no
+  update and at the next prompt's A mark; another OSC 9 (an iTerm2 notification) is left alone. `term.onBell`
+  asks for attention while the window isn't focused. No sound.
+
+**Not as the brief said:** no `@xterm/addon-progress`. The addon registers the same OSC 9 handler; one OSC
+with two numbers doesn't earn a dependency ("lightweight is identity"), and the hand-made reader is tested
+on its own. The ui-conventions page was at its 200-line cap, so the two taskbar states went onto item 29's
+line rather than a new item.
+
+**Tests:** the taskbar draws each state as its bar and none for none, clamps the value, fills and clears
+attention on focus, ignores a focused window's request, and answers a request when the window comes on top
+another way; the handle reaches only its own window; `progress.test.ts` reads the five states and the 15 s
+reset with fake time; the Terminal sets and clears progress and asks for attention on a bell only when not
+focused.
+
+**The walk ran outside Docker** (the daemon is down), with Alpine's bash and the integration, the theme set
+through `/api/prefs`: Apricot light and Classic dark, at 1280 and at 390 (Pixel 7). Each of
+`printf '\e]9;4;1;40\e\\'`, `;2;40`, `;3`, `;4;70` and `;0` (each followed by `sleep 3`, since the next
+prompt clears the bar) drew its bar and label, and the prompt took it off. `sleep 3; printf '\a'` with
+Calculator on top (on the phone, the Terminal minimised) filled the button; a click on it cleared it. In
+Classic dark the error red sits close to that theme's accent; that is for the look question. The
+dev-container walk is the owner's, with the deploy.
+
+`npm run check` exit 0; `bash corpus/lint.sh` OK. brief-board isn't installed in this session, so the
+`ready_for_deploy` move is the owner's, with `--question` on the look. Owner step:
+`node cli.ts imbatranim-os server`.

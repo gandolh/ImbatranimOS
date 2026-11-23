@@ -201,7 +201,8 @@ describe("the view a file opens in", () => {
     await mount("README.md");
     expect(pressed("Split view")).toBe("true");
     expect(textarea()).not.toBeNull();
-    expect(container.querySelector(".md-preview h1")?.textContent).toBe("Title");
+    // The preview's code loads when it first shows.
+    await vi.waitFor(() => expect(container.querySelector(".md-preview h1")?.textContent).toBe("Title"));
     expect(container.querySelector('[aria-label="Sync scrolling"]')).not.toBeNull();
   });
 
@@ -219,7 +220,7 @@ describe("the view a file opens in", () => {
     await act(async () => {
       container.querySelector<HTMLButtonElement>('[aria-label="Preview as Markdown"]')!.click();
     });
-    expect(container.querySelector(".md-preview h1")?.textContent).toBe("Heading");
+    await vi.waitFor(() => expect(container.querySelector(".md-preview h1")?.textContent).toBe("Heading"));
   });
 
   it("lists the headings in the outline rail", async () => {

@@ -78,8 +78,3 @@ export const HIGHLIGHT_PLUGINS: RehypePlugins = [
     },
   ],
 ];
-
-/** Does this document contain a fenced code block worth loading the highlighter for? */
-export function hasFencedCode(text: string): boolean {
-  return /^ {0,3}(```|~~~)/m.test(text);
-}

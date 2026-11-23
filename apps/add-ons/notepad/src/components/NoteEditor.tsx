@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Link2, Loader2, PanelLeft, Save, Unlink2, WrapText } from "lucide-react";
 import {
   Button,
@@ -22,7 +22,6 @@ import { useNoteFileQuery, useUpdateFileMutation } from "../queries/notepadQueri
 import { useNotepadStore, type OpenDoc } from "../store/notepadStore";
 import { FindBar } from "./FindBar";
 import { FormatToolbar } from "./FormatToolbar";
-import { MarkdownPreview } from "./MarkdownPreview";
 import { Outline } from "./Outline";
 import { SplitDivider } from "./SplitDivider";
 import { useLineTops } from "../hooks/useLineTops";
@@ -52,6 +51,13 @@ import {
   replaceRange,
   textStats,
 } from "../lib/findReplace";
+
+/**
+ * The Markdown preview and everything it draws with (react-markdown, remark-gfm and
+ * their parsers, about 100 KiB) load when a preview first shows, not with Notepad: a
+ * plain text file opens in edit mode and never needs them.
+ */
+const MarkdownPreview = lazy(() => import("./MarkdownPreview").then((m) => ({ default: m.MarkdownPreview })));
 
 type FsEntry = { name: string; path: string; type: "file" | "directory" };
 
@@ -818,14 +824,16 @@ export function NoteEditor({ windowId, doc, onBack }: { windowId: string; doc: O
         {showPreview && (
           <div className="min-h-0 min-w-0" style={{ flex: `${showEditor ? 1 - settings.splitRatio : 1} 1 0%` }}>
             <ScrollArea className="h-full" viewportRef={attachPreview}>
-              <MarkdownPreview
-                text={content}
-                root={root}
-                docDir={docDir}
-                headings={headings}
-                onToggleTaskLine={toggleTaskLine}
-                onOpenRelative={openRelative}
-              />
+              <Suspense fallback={null}>
+                <MarkdownPreview
+                  text={content}
+                  root={root}
+                  docDir={docDir}
+                  headings={headings}
+                  onToggleTaskLine={toggleTaskLine}
+                  onOpenRelative={openRelative}
+                />
+              </Suspense>
             </ScrollArea>
           </div>
         )}

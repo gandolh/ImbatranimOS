@@ -136,6 +136,12 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci --omit=dev --work
 # prebuilds, so it always compiles and always left its makefiles. A build/
 # without its binary fails the build here rather than at run time.
 # Also drop:
+#   - what no runtime reads, 23 of the tree's 49 MB and 4,800 of its 10,000
+#     files, the layer 57 to 30 MB (2026-11-23): type
+#     declarations and the TypeScript sources packages ship beside their
+#     JavaScript (no package's main or exports names one to run), source maps
+#     (the backend runs without --enable-source-maps), Markdown and .github.
+#     Licences stay.
 #   - typescript: backend's devDep leaks in via the workspace tree (~23MB) even
 #     with --omit=dev; the runtime never needs the compiler. rm -rf is a no-op
 #     when it is absent, so this is self-guarding.
@@ -161,6 +167,9 @@ RUN cd node_modules \
         esac; \
       done; \
     done \
+ && find . -type f \( -name '*.ts' -o -name '*.mts' -o -name '*.cts' -o -name '*.map' \
+      -o -name '*.md' -o -name '*.markdown' \) -delete \
+ && find . -type d -name .github -prune -exec rm -rf {} + \
  && mkdir -p /app/apps/backend/node_modules
 
 # ---------------------------------------------------------------------------
@@ -168,7 +177,7 @@ RUN cd node_modules \
 # ---------------------------------------------------------------------------
 FROM node:24.22.1-alpine AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.441.0"
+      org.opencontainers.image.version="1.442.0"
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -242,7 +251,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.441.0
+    IMAGE_VERSION=1.442.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).

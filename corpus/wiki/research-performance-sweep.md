@@ -1,5 +1,5 @@
 ---
-summary: The 2026-11-23 performance sweep, fifteen rounds on one branch and one PR, each researched and measured before and after. Round 1 cut the first page load from 1,077 to 913 KiB of scripts and stylesheet (the kit's sideEffects, framer-motion's features loaded lazily) and the wire from 1,184 to 372 KiB cold and 34 revalidations to none warm (precompressed brotli and gzip, a year's cache for hashed assets). Round 2 cut what the tab does at rest: bars scale instead of resizing (System Monitor 1.94% to 0.89% of a core) and the Terminal's cursor stops blinking 10 s after the last keystroke (2.29% to 0.24%). How each number is taken, and what was looked at and left.
+summary: The 2026-11-23 performance sweep, fifteen rounds on one branch and one PR, each researched and measured before and after. Round 1 cut the first page load from 1,077 to 913 KiB of scripts and stylesheet (the kit's sideEffects, framer-motion's features loaded lazily) and the wire from 1,184 to 372 KiB cold and 34 revalidations to none warm (precompressed brotli and gzip, a year's cache for hashed assets). Round 2 cut what the tab does at rest: bars scale instead of resizing (System Monitor 1.94% to 0.89% of a core) and the Terminal's cursor stops blinking 10 s after the last keystroke (2.29% to 0.24%). Round 3 measured the Wayland host with real foot and weston-terminal windows: the encoder stays, and the host now sends only damaged pixels that changed (slow terminal output 640 to 330 ms of host CPU). How each number is taken, and what was looked at and left.
 updated: 2026-11-23
 ---
 
@@ -92,3 +92,36 @@ lists what is still running. The backend's CPU is from `/proc/<pid>/stat` over t
   (Express and Nest). A Fastify adapter would cut it but touches every middleware, upload and upgrade.
 - **The Clock's one-second tick** (34 commits in 30 s) is the seconds it shows; Files, Notepad, Calendar,
   Media Player and Code Editor sit at 0.12% to 0.22% at rest.
+
+## Round 3 (2026-11-23): the Wayland host's frames
+
+**Method.** The host built on this machine (glibc, Ubuntu 24.04's libxkbcommon and libvpx; no Docker daemon, so
+not the Alpine builder image), started by the backend from `WAYLAND_HOST_BIN`, with foot, weston-terminal and
+Xwayland from Ubuntu. `linuxapp.mjs` opens the OS Terminal in headless Chromium, starts the app with `&` so it
+opens as a Linux window, maximises it, runs the workload, and reads the host's CPU from `/proc`, and the frames
+and bytes the tab received from CDP's `Network.webSocketFrameReceived`. A throwaway build logged, per commit,
+the damaged pixels, the per-row span of pixels that changed, and the changed full-width rows that already
+existed in the previous frame (what scroll detection could move instead of encoding).
+
+**The encoder stays.** On real 1280 by 800 frames (a Terminal of `ls -l`, File Manager, the desktop with Start
+open), the host's pure-Rust lossless WebP (`image-webp` 0.2.4) took about 5 ms and 250 KiB for a full
+terminal frame. PNG at its fastest (`png` 0.18, fdeflate) was twice as fast at twice the bytes; libwebp's
+lossless at method 0 was 3 to 7 times slower for 35 to 60% fewer bytes. On one CPU neither beats it.
+
+**What apps damage.** foot and weston-terminal damage the whole window on every scroll. Wheeling 30 notches
+through foot's scrollback damaged 26.9 Mpx, whose changed rows spanned 2.28 Mpx (8%), and only 0.12 Mpx
+(0.4%) of those rows were not already somewhere in the previous frame. Typing damages only the cell.
+
+| Host CPU / bytes to the tab, median of 3 | Before | After |
+|---|---:|---:|
+| foot, a short line every 50 ms for 6 s | 640 ms / 1,439 KiB | 330 ms / 876 KiB |
+| weston-terminal, the same | 80 ms / 37 KiB | 40 ms / 7 KiB |
+| foot, typing a line | 40 ms / 9 KiB | (unchanged) |
+| foot, wheel through the scrollback | 350 ms / 1,161 KiB | (unchanged) |
+
+- **Only changed pixels go.** Each damaged row is converted into a scratch row and compared with the host's
+  copy; the frame carries bands of changed rows (rows up to 8 apart join), each as wide as its changes. TigerVNC's
+  ComparingUpdateTracker, done where the row is read anyway. A commit that changed nothing sends no frame.
+
+**Looked at and left in round 3:** the encoder (above). An X11 app (`xterm` through Xwayland) didn't open a
+window here, so X11 went unmeasured.

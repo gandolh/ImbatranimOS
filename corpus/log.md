@@ -6453,3 +6453,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 2: what the tab does at rest
 
 [research-performance-sweep.md](wiki/research-performance-sweep.md): `d4aea56` (1.423.0) scales progress bars instead of resizing them (System Monitor at rest 1.94% to 0.89% of a core), `81fdbef` (1.424.0) stops a Terminal's cursor blinking 10 s after the last keystroke, GTK's rule (2.29% to 0.24%). Statement caching and `os.cpus()` were measured and left. The owner raised the sweep to fifteen rounds, with the Wayland host, the builds and the OS's own flows in scope.
+
+## [2026-11-23] done | Performance sweep, round 3: the Wayland host's frames
+
+[research-performance-sweep.md](wiki/research-performance-sweep.md): `8c9e15c` (1.426.0) has the host compare each damaged row with its copy and send only bands that changed (foot's slow output 640 to 330 ms of host CPU, weston-terminal's 37 to 7 KiB). The encoder was benchmarked on real frames against PNG and libwebp and stays. Built and walked on this machine's glibc toolchain with foot and weston-terminal; the Alpine builder image's `cargo test` is the owner's to run.

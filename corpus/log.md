@@ -6473,3 +6473,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 7: dragging a window
 
 [research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `af0e9cf` (1.436.0) moves a dragged window with CSS `translate` and writes its position once, on release; 60 moves of a File Manager window went from 351 to 114 ms of main thread, with no layouts or React commits. The title bar and resize handles use plain pointer events and @use-gesture is gone from the first page load. `npm run check` passed whole this round, the marketplace e2e test included.
+
+## [2026-11-23] done | Performance sweep, round 8: the Wayland host at rest
+
+[research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `67fd511` (1.438.0) runs the host's frame clock only while a session has a frame to send, a callback to answer, a region settling or a client to drop, and ticks at once after a rest. Idle host CPU went from 40-50 ms every 20 s to none, and foot's keystroke-to-frame median from 20.4 to 5.0 ms (p95 37 to 6-8 ms), with the same frames and bytes under load.

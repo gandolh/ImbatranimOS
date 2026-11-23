@@ -1,5 +1,5 @@
 ---
-summary: Rounds 6-10 of the 2026-11-23 performance sweep in full. Round 6 caps the backend's young generation (--max-semi-space-size=2 in the image's CMD), 159 to 118 MiB after 18,000 requests with the same CPU. Round 7 moves a dragged window with CSS translate (a File Manager drag 351 to 114 ms of main thread) and drops @use-gesture.
+summary: Rounds 6-10 of the 2026-11-23 performance sweep in full. Round 6 caps the backend's young generation (--max-semi-space-size=2 in the image's CMD), 159 to 118 MiB after 18,000 requests with the same CPU. Round 7 moves a dragged window with CSS translate (a File Manager drag 351 to 114 ms of main thread) and drops @use-gesture. Round 8 stops the Wayland host's frame clock while it has nothing to do (idle host CPU to zero) and sends the first frame after a rest at once (foot's keystroke to frame 20 to 5 ms).
 updated: 2026-11-23
 ---
 
@@ -67,3 +67,29 @@ a scratch directory and served the same way.
 **Looked at and left in round 7:** resizing still writes the size every move, which lays the app out each time;
 that is what resizing is. A press 4 px inside a window's bottom-right corner resized nothing on the old build or
 the new one.
+
+## Round 8 (2026-11-23): the Wayland host at rest
+
+**What a signed-in tab costs before any Linux app.** One tab opens its Linux windows socket at sign-in, and the
+backend starts the session's share of the host: a socket, a session bus (`dbus-daemon`, 4.2 MiB) and a sound
+server inside the host, which is 6 MiB resident in all. Small; but the host's frame clock ticked every 33 ms
+whatever it had to do: 40 to 50 ms of CPU every 20 s with nothing on screen, 30 wakeups a second on a vCPU that
+could rest. And a keystroke's echo, committed between ticks, waited for the next one.
+
+- **The clock runs only while there is work** (`SessionState::wants_tick`: a frame to send from a live window, a
+  callback it could answer, a lossy region counting its quiet ticks, a client gone to drop; or output the control
+  socket didn't take), the way the sound clock already did. Started after a rest of a tick or more it ticks at
+  once, otherwise after the rest of the 33 ms, so a window still gets at most one frame every 33 ms.
+- **A trap the end-to-end tests caught:** `hello`, sent before the loop, was only ever written by the first tick's
+  round of events; now it is written at start. The same reliance covered a socket that refused output, so unsent
+  output keeps the clock running.
+
+| foot in a real tab, this machine's glibc build | Before | After |
+|---|---:|---:|
+| Host CPU over 20 s idle, empty desktop / foot open | 40-50 ms / 50 ms | 0 / 0 |
+| Keystroke to frame (40 keys): median / p95 | 20.4 / 37 ms | 5.0 / 6-8 ms |
+| Wheel, slow output, typing, weston-terminal | | the same frames and bytes; typing's host CPU 30 to 20 ms |
+
+**Looked at and left in round 8:** starting the host and the session bus only when a Linux app opens. A Terminal's
+shell gets `WAYLAND_DISPLAY` at once, and an app started there must find the socket; at 10 MiB and no CPU at
+rest, the session isn't worth that.

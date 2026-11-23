@@ -36,3 +36,4 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 5 | The image rebuilds only what a commit changed (a version bump 24 to 2 s, a host change 147 to 67 s); brotli 11 for the first load only | [1](research-performance-sweep-1.md) |
 | 6 | The backend's young generation capped at 2 MiB semi-spaces: 159 to 118 MiB after load, same CPU | [2](research-performance-sweep-2.md) |
 | 7 | A dragged window moves with CSS translate: 60 moves of a File Manager window 351 to 114 ms of main thread; @use-gesture gone | [2](research-performance-sweep-2.md) |
+| 8 | The Wayland host's frame clock runs only while there is work: idle host CPU to zero, foot's keystroke to frame 20 to 5 ms | [2](research-performance-sweep-2.md) |

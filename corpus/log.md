@@ -6425,3 +6425,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Brief 111: terminal programs learn the light or dark mode
 
 `5db01db` (1.410.0): the Terminal answers the dark and light mode detection sequences xterm.js lacks (`CSI ? 2031 h/l`, `CSI ? 996 n`, DECRQM 2031, off on RIS) and reports a change of the desktop's mode once while a program has reports on, through xterm's CSI hooks so every other mode in a sequence stays xterm's. Walked with `cat -v` across a flip in Settings.
+
+## [2026-11-23] done | Brief 112: the Wayland host gets its own agent rules
+
+`3af582f` (1.412.0): `.claude/rules/wayland-host.md` (scoped to `apps/wayland-host/**`): read-first pages, build and test in the builder image, the one dev container, the trade-off priorities in order with a source for each, the protocol's four places, measuring first, and the traps already paid for. Whether a fresh session lists it is the owner's check.

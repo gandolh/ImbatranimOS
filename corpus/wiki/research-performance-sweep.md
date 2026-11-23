@@ -1,5 +1,5 @@
 ---
-summary: The 2026-11-23 performance sweep, fifteen rounds on one branch and one PR, each researched and measured before and after. Round 1 cut the first page load from 1,077 to 913 KiB of scripts and stylesheet (the kit's sideEffects, framer-motion's features loaded lazily) and the wire from 1,184 to 372 KiB cold and 34 revalidations to none warm (precompressed brotli and gzip, a year's cache for hashed assets). Round 2 cut what the tab does at rest: bars scale instead of resizing (System Monitor 1.94% to 0.89% of a core) and the Terminal's cursor stops blinking 10 s after the last keystroke (2.29% to 0.24%). Round 3 measured the Wayland host with real foot and weston-terminal windows: the encoder stays, and the host now sends only damaged pixels that changed (slow terminal output 640 to 330 ms of host CPU). How each number is taken, and what was looked at and left.
+summary: The 2026-11-23 performance sweep, fifteen rounds on one branch and one PR, each researched and measured before and after. Round 1 cut the first page load from 1,077 to 913 KiB of scripts and stylesheet (the kit's sideEffects, framer-motion's features loaded lazily) and the wire from 1,184 to 372 KiB cold and 34 revalidations to none warm (precompressed brotli and gzip, a year's cache for hashed assets). Round 2 cut what the tab does at rest: bars scale instead of resizing (System Monitor 1.94% to 0.89% of a core) and the Terminal's cursor stops blinking 10 s after the last keystroke (2.29% to 0.24%). Round 3 measured the Wayland host with real foot and weston-terminal windows: the encoder stays, and the host now sends only damaged pixels that changed (slow terminal output 640 to 330 ms of host CPU). Round 4 sends a scroll in a Linux window as a move of the tab's own pixels (encoding 5): wheeling through foot's scrollback 1,166 to 131 KiB and lossless instead of VP8. How each number is taken, and what was looked at and left.
 updated: 2026-11-23
 ---
 
@@ -125,3 +125,31 @@ through foot's scrollback damaged 26.9 Mpx, whose changed rows spanned 2.28 Mpx 
 
 **Looked at and left in round 3:** the encoder (above). An X11 app (`xterm` through Xwayland) didn't open a
 window here, so X11 went unmeasured.
+
+## Round 4 (2026-11-23): a scroll moves the tab's pixels
+
+The owner's idea of a thin host with the browser drawing, in the form the earlier research left open
+([research-remote-ui-rendering.md](research-remote-ui-rendering.md) ruled out describing the UI): the tab already
+holds a window's pixels, so a scroll can be an instruction to move them. xpra's scroll encoding and VNC's CopyRect
+do the same.
+
+- **Protocol.** Encoding 5, a copy: the rectangle is the destination, 8 bytes of data the source. The tab draws
+  its own canvas onto itself (the HTML standard reads the source first, so they may overlap), clipped, with
+  `copy` compositing so nothing blends. A tab asks for it with `copy` in `codecs`, now the optional encodings it
+  draws (the backend's `TAB_CODECS`); an older tab never gets one, so `hello` stays at 10.
+- **The host.** In the largest damaged rectangle at least 48 rows tall, hashes of the old and new rows vote for a
+  distance; every row of a run is compared byte for byte, and each run of 16 rows or more goes as a copy, in an
+  order where none reads what an earlier one wrote. Only the rows outside the runs that changed go as pixels,
+  and only they feed the lossy tracker. No copy after a new size, a resync, a wake or a window shown again.
+- **A trap found on the way.** foot draws its scrollback marker as a subsurface, so each wheel step changes the
+  window's layout, and the layout path redrew everything and (in the first cut) turned copies off: the scroll then
+  went as VP8. `send_whole` is now separate from `damage_all`, and a marker splitting a page gives two copies.
+
+| Median of 3 | Round 3 | Round 4 |
+|---|---:|---:|
+| foot, 30 wheel notches: host CPU / bytes / tab main thread | 380 ms / 1,166 KiB (all VP8) / 328 ms | 230 ms / 131 KiB (lossless) / 305 ms |
+| foot, a line every 50 ms for 6 s | 350 ms / 863 KiB (part VP8) / 433 ms | 240 ms / 139 KiB / 368 ms |
+| typing, weston-terminal | (unchanged) | |
+
+The picture after the wheel workload is pixel-identical between the two builds; the host's tests simulate the tab
+applying each frame and compare its picture with the host's.

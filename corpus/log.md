@@ -6457,3 +6457,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 3: the Wayland host's frames
 
 [research-performance-sweep.md](wiki/research-performance-sweep.md): `8c9e15c` (1.426.0) has the host compare each damaged row with its copy and send only bands that changed (foot's slow output 640 to 330 ms of host CPU, weston-terminal's 37 to 7 KiB). The encoder was benchmarked on real frames against PNG and libwebp and stays. Built and walked on this machine's glibc toolchain with foot and weston-terminal; the Alpine builder image's `cargo test` is the owner's to run.
+
+## [2026-11-23] done | Performance sweep, round 4: a scroll moves the tab's pixels
+
+[research-performance-sweep.md](wiki/research-performance-sweep.md): `4fd7f71` (1.428.0) adds encoding 5, a copy of pixels the tab already has, which the host sends for a scroll found by row hashes and checked byte for byte, to tabs that name `copy` in `codecs`. Wheeling through foot's scrollback went from 1,166 KiB of VP8 to 131 KiB lossless and from 380 to 230 ms of host CPU; slow scrolling output from 863 to 139 KiB.

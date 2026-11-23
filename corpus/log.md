@@ -6433,3 +6433,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Brief 113: xterm's WebGL renderer, measured, not built
 
 [research-webgl-renderer.md](wiki/research-webgl-renderer.md): in headless Chromium, where WebGL runs on SwiftShader, the WebGL renderer drained a 50 MB `cat` in 16.6 s against the DOM renderer's 1.9 s, made 0.8 to 7.7 s of long tasks where DOM made none, and four Terminals took about 100 MB more; only keystroke echo improved. Three of the bar's four conditions fail. A GPU-backed browser (the owner's Android Chrome question) is what would reopen it.
+
+## [2026-11-23] done | Brief 114: PTY output batched only when it floods, measured, not built
+
+[research-pty-batching.md](wiki/research-pty-batching.md): gathering the PTY's output into frames of up to 64 KiB or 4 ms cut frames about 15 times, but drain time rose 7% and 12% and backend CPU 32% and 22% (joining strings costs more than the frames saved; Linux's node-pty already reads 4 KiB at a time). The bar wanted a 15% drop; the rule and its specs were reverted.

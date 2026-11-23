@@ -56,3 +56,21 @@ Filed 2026-11-20 from [research-ghostty.md](../../wiki/research-ghostty.md), ite
 - [ ] `npm run check` exit 0; `bash corpus/lint.sh` OK.
 - [ ] End move `ready_for_deploy` if built (owner step
   `node cli.ts imbatranim-os server`), else `done`.
+
+## Outcome (2026-11-23)
+
+**Measured, not built, and reverted**; both sets of numbers and the method are on
+[research-pty-batching.md](../../wiki/research-pty-batching.md). The rule (under 1 KiB with nothing gathered goes
+at once; otherwise up to 64 KiB or 4 ms) was built behind three constants with fake-timer specs (an echo at
+once, a flood in 64 KiB frames within 4 ms, gathered output before the exit notice), measured, and reverted
+with its specs, since the code it tested isn't kept.
+
+**Against the bar** (backend pinned to one CPU): the 50 MB `cat` went from 6,503 frames a second of 4 KiB to
+433 of 58 KiB, but drain rose 7% (1,917 to 2,053 ms) and backend CPU 32% (407 to 538 ms a run); `yes | head -c
+50M` went from 2,511 frames a second to 234, drain +12%, backend CPU +22%. The bar wanted a 15% drop in either:
+**fails**. Keystroke p95 moved 1.4 ms, the right way.
+
+**Not as the brief said:** the host machine, not the dev container (Docker's daemon was down), with a scratch
+workload that reads xterm's buffer and counts the socket's frames (brief 101's workload counts neither).
+
+`npm run check` exit 0 (no code changed); `bash corpus/lint.sh` OK. End move `done`.

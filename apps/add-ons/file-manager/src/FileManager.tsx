@@ -1159,7 +1159,11 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            <div className="bg-primary h-full transition-all" style={{ width: `${job.percent}%` }} />
+            {/* Scaled rather than sized: the transition runs on the compositor, not in layout. */}
+            <div
+              className="bg-primary h-full w-full origin-left transition-transform motion-reduce:transition-none"
+              style={{ transform: `scaleX(${Math.min(100, Math.max(0, job.percent)) / 100})` }}
+            />
           </div>
           <span className="font-ui text-on-surface-variant text-label w-8 text-right tabular-nums">{job.percent}%</span>
         </div>

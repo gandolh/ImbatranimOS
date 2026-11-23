@@ -62,7 +62,11 @@ export function StatsWidget() {
         </span>
       </div>
       <div className="rounded-control border-outline-variant bg-surface-container-lowest h-2 overflow-hidden border">
-        <div className="bg-primary h-full transition-[width]" style={{ width: `${Math.min(100, memPercent ?? 0)}%` }} />
+        {/* Scaled rather than sized, so the transition never lays the desktop out (see Gauge). */}
+        <div
+          className="bg-primary h-full w-full origin-left transition-transform motion-reduce:transition-none"
+          style={{ transform: `scaleX(${Math.min(100, Math.max(0, memPercent ?? 0)) / 100})` }}
+        />
       </div>
     </div>
   );

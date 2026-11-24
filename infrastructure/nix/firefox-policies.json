@@ -1,0 +1,8 @@
+{
+  "policies": {
+    "Preferences": {
+      "dom.ipc.processPrelaunch.enabled": { "Value": false, "Status": "default" },
+      "browser.newtab.preload": { "Value": false, "Status": "default" }
+    }
+  }
+}

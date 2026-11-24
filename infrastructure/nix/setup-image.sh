@@ -1,7 +1,8 @@
 #!/bin/sh
 # The image-build half of Linux apps under Nix: Nix itself, its config, the
-# pinned registry, fontconfig for Nix apps, /nix owned by imbatranim and
-# holding the base profile, and the pinned snapshot's package index.
+# pinned registry, fontconfig for Nix apps, Firefox's policies, /nix owned by
+# imbatranim and holding the base profile, and the pinned snapshot's package
+# index.
 #
 # Runs as root during `docker build`, in the runtime-base stage (dev builds on it), after the
 # imbatranim user exists and after the stage's ENV names the Nix paths
@@ -67,6 +68,12 @@ EOF
 chmod 0644 "$FONTCONFIG_FILE"
 
 install -m 0644 "$here/profile.sh" /etc/profile.d/nix-apps.sh
+
+# Firefox, installed per user from Nix, reads its enterprise policies here. Two preferences stop it starting a
+# spare content process and a hidden new-tab page before they are needed: one window 519 to 439 MiB PSS
+# (2026-11-24). "default" leaves both changeable in about:config. Any policy makes Firefox's settings say the
+# browser is managed by an organization; the owner accepted that (2026-11-24).
+install -D -m 0644 "$here/firefox-policies.json" /etc/firefox/policies/policies.json
 
 # /nix belongs to imbatranim: single-user Nix writes the store and its
 # database as that user. Docker copies this tree, with its owner, into the

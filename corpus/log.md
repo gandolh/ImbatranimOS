@@ -6445,3 +6445,11 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Brief 116: a debug overlay for Linux windows
 
 `4d58ba2` (1.417.0): Settings → Linux apps → "Show stream stats" (off by default, per machine) draws, over each visible Linux window, the last half second's rectangles outlined by encoding and a panel with the last second's fps, kB/s, encoding shares and decode time, all from frames the tab already parses; off, the frame path only reads the switch. Walked with foot and mpv in Apricot light and Classic dark. Briefs 98-116 are all closed.
+
+## [2026-11-24] todo | Brief 117 from the infra review of 2026-11-24
+
+Filed from the estate's infra review. The `wayland-host` stage's `cargo build` gets cache mounts for the registry
+and the target folder, so a change under `apps/wayland-host` no longer rebuilds the crate graph from nothing on the
+box's 2 vCPUs or in the dev container; it stays only if a rebuild is at least 3 times faster, measured on the
+laptop. The floating `# syntax=docker/dockerfile:1-labs` line is pinned to an exact version. The node base was
+already pinned. Ships with `node cli.ts imbatranim-os server`.

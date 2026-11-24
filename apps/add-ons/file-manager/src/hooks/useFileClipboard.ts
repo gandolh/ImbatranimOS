@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import type { FsEntry } from "../types";
-import type { useCopyEntryMutation, useMoveEntryMutation } from "../queries/filesQueries";
+import type { useCopyEntriesMutation, useMoveEntriesMutation } from "../queries/filesQueries";
 import { isNoOpPaste, pasteFailureMessage, pasteMoves } from "../lib/pasteBatch";
 
 export type ClipboardContents = {
@@ -10,8 +10,8 @@ export type ClipboardContents = {
 
 type UseFileClipboardArgs = {
   path: string;
-  copyMutation: ReturnType<typeof useCopyEntryMutation>;
-  moveMutation: ReturnType<typeof useMoveEntryMutation>;
+  copyMutation: ReturnType<typeof useCopyEntriesMutation>;
+  moveMutation: ReturnType<typeof useMoveEntriesMutation>;
   /** Surface a failed paste — the same reporter the rest of the app uses. */
   onError: (message: string) => void;
 };
@@ -52,7 +52,7 @@ export function useFileClipboard({ path, copyMutation, moveMutation, onError }: 
     }
 
     const mutate = clipboard.mode === "copy" ? copyMutation : moveMutation;
-    const results = await Promise.allSettled(real.map((m) => mutate.mutateAsync({ from: m.from, to: m.to })));
+    const results = await mutate.mutateAsync(real.map((m) => ({ from: m.from, to: m.to })));
     const failed = real.filter((_, i) => results[i].status === "rejected");
 
     if (clipboard.mode === "cut") {

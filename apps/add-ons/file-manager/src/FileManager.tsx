@@ -71,9 +71,12 @@ import {
   useCreateDirectoryMutation,
   useDeleteEntryMutation,
   useMoveEntryMutation,
-  useCopyEntryMutation,
   useWriteContentMutation,
   useUploadFileMutation,
+  useUploadFilesMutation,
+  useDeleteEntriesMutation,
+  useCopyEntriesMutation,
+  useMoveEntriesMutation,
 } from "./queries/filesQueries";
 
 type MenuState = {
@@ -252,16 +255,25 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const { confirm, confirmDialog } = useConfirm();
   const deleteMutation = useDeleteEntryMutation(root, path);
   const moveMutation = useMoveEntryMutation(root, path);
-  const copyMutation = useCopyEntryMutation(root, path);
   const uploadMutation = useUploadFileMutation(root, path);
+  const uploadManyMutation = useUploadFilesMutation(root, path);
+  const deleteManyMutation = useDeleteEntriesMutation(root, path);
+  const copyManyMutation = useCopyEntriesMutation(root, path);
+  const moveManyMutation = useMoveEntriesMutation(root, path);
 
   const selection = useFileSelection();
   const { selected, setSelected } = selection;
-  const clipboard = useFileClipboard({ path, copyMutation, moveMutation, onError: failAction });
+  const clipboard = useFileClipboard({
+    path,
+    copyMutation: copyManyMutation,
+    moveMutation: moveManyMutation,
+    onError: failAction,
+  });
   const deleteFlow = useDeleteFlow({
     selected,
     setSelected,
     deleteMutation,
+    deleteManyMutation,
     onError: failAction,
     // Only the home root has a Trash; notes is a separate tree.
     trashEnabled: root === "home",
@@ -570,11 +582,8 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
         if (toUpload.length === 0) return;
       }
     }
-    const results = await Promise.allSettled(
-      toUpload.map((file) => {
-        const filePath = path ? `${path}/${file.name}` : file.name;
-        return uploadMutation.mutateAsync({ path: filePath, file });
-      }),
+    const results = await uploadManyMutation.mutateAsync(
+      toUpload.map((file) => ({ path: path ? `${path}/${file.name}` : file.name, file })),
     );
     const failed = toUpload.filter((_, i) => results[i].status === "rejected");
     if (failed.length > 0) {

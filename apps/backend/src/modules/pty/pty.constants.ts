@@ -42,14 +42,6 @@ export const BACKPRESSURE_LOW_WATER = 256 * 1024; // drained below → resume
 export const BACKPRESSURE_POLL_MS = 50;
 
 /**
- * How long a shell's output is joined before it goes out, once output is already flowing: what arrives within
- * this of the last send goes in one frame. The first chunk after a quiet spell goes at once, so an echoed
- * keystroke never waits. A pty hands over a few KiB per read, so without this a 25 MB `cat` was about 20,000
- * WebSocket frames; joined it is about 300 (VS Code joins its terminals' output for 5 ms too).
- */
-export const OUTPUT_JOIN_MS = 5;
-
-/**
  * How long a shell whose socket closed without the tab's `close` frame waits for the tab to come back: a
  * reload, a dropped network, a backgrounded phone tab. After it the shell is hung up as a closed window's
  * is (decisions-terminal.md, 2026-11-20).

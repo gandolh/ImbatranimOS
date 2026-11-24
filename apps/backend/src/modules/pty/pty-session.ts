@@ -3,7 +3,6 @@ import {
   BACKPRESSURE_LOW_WATER,
   BACKPRESSURE_POLL_MS,
   DETACH_MS,
-  OUTPUT_JOIN_MS,
   RING_BYTES,
   MAX_COLS,
   MAX_ROWS,
@@ -73,8 +72,6 @@ export interface PtySessionOptions {
   detachMs?: number;
   /** How much of the latest output the session keeps for a reattach, in characters. */
   ringBytes?: number;
-  /** How long output that follows a send is joined before the next one; zero or less sends every chunk. */
-  joinMs?: number;
   setTimeoutFn?: (fn: () => void, ms: number) => TimeoutHandle;
   clearTimeoutFn?: (handle: TimeoutHandle) => void;
   /** Called once when the session ends, whatever ended it. */
@@ -92,8 +89,6 @@ export interface PtySessionOptions {
  *  - a socket that ends WITHOUT the `close` frame (a reload, a dropped network) → the pty is detached: it keeps
  *    running and being read, and after {@link DETACH_MS} with no reattach it is killed. {@link attach} gives it a
  *    new socket: a reset, the last {@link RING_BYTES} of output (kept all along), then live
- *  - output that follows a send within {@link OUTPUT_JOIN_MS} is joined into the next frame; the first chunk
- *    after a quiet spell (an echoed keystroke) goes at once
  *  - backpressure: a stdout flood pauses the pty until the send buffer drains (only while attached; a detached
  *    pty is read into the ring, so a busy command never stalls on a full pty)
  *
@@ -109,7 +104,6 @@ export class PtySession {
 
   private readonly detachMs: number;
   private readonly ringBytes: number;
-  private readonly joinMs: number;
   private readonly setTimeoutFn: (fn: () => void, ms: number) => TimeoutHandle;
   private readonly clearTimeoutFn: (handle: TimeoutHandle) => void;
   private readonly onDispose: (() => void) | undefined;
@@ -126,9 +120,6 @@ export class PtySession {
   /** The latest output, oldest first, at most `ringBytes` characters in all: what a reattaching tab is sent. */
   private ring: string[] = [];
   private ringSize = 0;
-  /** Output waiting for {@link joinTimer}; the timer is set while output is flowing. */
-  private joining: string[] = [];
-  private joinTimer: TimeoutHandle | null = null;
   /** Settles the pending {@link probe}: true on the socket's pong, false once the socket is gone. */
   private settleProbe: ((held: boolean) => void) | null = null;
 
@@ -144,7 +135,6 @@ export class PtySession {
     this.clearIntervalFn = opts.clearIntervalFn ?? ((h) => clearInterval(h));
     this.detachMs = opts.detachMs ?? DETACH_MS;
     this.ringBytes = opts.ringBytes ?? RING_BYTES;
-    this.joinMs = opts.joinMs ?? OUTPUT_JOIN_MS;
     this.setTimeoutFn = opts.setTimeoutFn ?? ((fn, ms) => setTimeout(fn, ms));
     this.clearTimeoutFn = opts.clearTimeoutFn ?? ((h) => clearTimeout(h));
     this.onDispose = opts.onDispose;
@@ -252,8 +242,6 @@ export class PtySession {
     this.socket = null;
     this.settleProbe?.(false);
     this.clearDrainTimer();
-    // What was waiting is in the ring already; a tab that comes back gets it there.
-    this.stopJoining();
     if (this.paused) {
       this.paused = false;
       try {
@@ -271,40 +259,8 @@ export class PtySession {
     if (this.disposed) return;
     this.keep(data);
     if (this.socket === null) return;
-    if (this.joinTimer !== null) {
-      this.joining.push(data);
-      return;
-    }
-    this.send(data);
-  }
-
-  /** Sends output, and holds what follows for {@link joinMs} so it goes out in one frame. */
-  private send(data: string): void {
     this.safeSend(data);
     this.applyBackpressure();
-    if (this.joinMs > 0) this.joinTimer = this.setTimeoutFn(() => this.sendJoined(), this.joinMs);
-  }
-
-  /** Sends what arrived since the last send; with nothing waiting, the output has stopped and the next goes at once. */
-  private sendJoined(): void {
-    this.joinTimer = null;
-    if (this.joining.length === 0 || this.disposed || this.socket === null) {
-      this.joining = [];
-      return;
-    }
-    const data = this.joining.join("");
-    this.joining = [];
-    this.send(data);
-  }
-
-  /** Sends what is waiting now (before the exit notice), or drops it with `send` false. */
-  private stopJoining(send = false): void {
-    if (this.joinTimer !== null) {
-      this.clearTimeoutFn(this.joinTimer);
-      this.joinTimer = null;
-    }
-    if (send && this.joining.length > 0) this.safeSend(this.joining.join(""));
-    this.joining = [];
   }
 
   /**
@@ -331,7 +287,6 @@ export class PtySession {
 
   private onPtyExit(e: { exitCode: number; signal?: number }): void {
     if (this.disposed) return;
-    this.stopJoining(true);
     this.safeSend(`\r\n[process exited (code ${e.exitCode})]\r\n`);
     // Close the socket cleanly; dispose() reaps timers/listeners. The pty is
     // already gone, so kill() is a harmless no-op guarded by try/catch.
@@ -436,7 +391,6 @@ export class PtySession {
     this.disposed = true;
 
     this.clearDrainTimer();
-    this.stopJoining(true);
     this.settleProbe?.(false);
     if (this.detachTimer !== null) {
       this.clearTimeoutFn(this.detachTimer);

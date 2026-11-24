@@ -57,6 +57,8 @@ mkdirSync('dist', { recursive: true });
 writeFileSync('dist/demo.mjs', 'export function mount(el) { el.textContent = "demo"; }\\nexport function unmount() {}\\n');
 writeFileSync('dist/env.json', JSON.stringify(process.env));
 writeFileSync('secret.txt', 'source, not output');
+mkdirSync('node_modules/dep', { recursive: true });
+writeFileSync('node_modules/dep/index.js', 'a build-time dependency');
 symlinkSync('/etc/hostname', 'dist/link.txt');
 console.log('built');
 `,
@@ -295,6 +297,10 @@ describe("the marketplace (e2e)", () => {
       .get(`/api/${demo.installed!.entryPath}`.replace(demo.installed!.buildId, "other"))
       .set("Cookie", cookie)
       .expect(404);
+    // A static app keeps what it serves, not what built it.
+    const build = join(appsDir, `demo@${demo.installed!.buildId}`, "games", "demo");
+    expect(existsSync(join(build, "dist", "demo.mjs"))).toBe(true);
+    expect(existsSync(join(build, "node_modules"))).toBe(false);
   }, 30_000);
 
   it("gives a build none of the backend environment, and its own HOME", async () => {

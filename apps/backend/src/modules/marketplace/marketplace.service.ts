@@ -865,6 +865,18 @@ export class MarketplaceService implements OnModuleInit {
       return;
     }
 
+    // ── a static app keeps only what it serves ──
+    // Its dependencies were for the build: nothing reads them once the output
+    // is there, and every install, update and rebuild fetches into a new
+    // directory. Accessories' build left 132 MB of node_modules beside a
+    // 144 KB output. An app with a server runs from this directory and keeps
+    // them.
+    if (!d.server) {
+      const removed = await removeDependencies(dir, required(realOutput, "the built output"));
+      if (removed > 0)
+        log.push(`Removed the build's dependencies (${removed} node_modules folder${removed === 1 ? "" : "s"})`);
+    }
+
     // ── switch to the new build ──
     // A running server belongs to the old build: stop it before its
     // directory goes.
@@ -1182,6 +1194,37 @@ export async function directorySize(dir: string, within: string, cap = MAX_SERVE
     }
   }
   return total;
+}
+
+/**
+ * Removes every `node_modules` folder in a finished build's directory `dir`, and returns how many. `output` (a real
+ * path) is never touched: the walk does not enter it, and keeps any folder on the way to it. Symlinks are not
+ * followed, `.git` is not entered, and a folder that cannot be removed is left.
+ */
+export async function removeDependencies(dir: string, output: string): Promise<number> {
+  let removed = 0;
+  const stack = [await fs.realpath(dir)];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (current === undefined) break;
+    const entries = await fs.readdir(current, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      // A Dirent is the entry itself: a symlink to a folder is not a directory here.
+      if (!entry.isDirectory() || entry.name === ".git") continue;
+      const path = join(current, entry.name);
+      if (path === output) continue;
+      if (entry.name === "node_modules" && !isInside(path, output)) {
+        const ok = await fs.rm(path, { recursive: true, force: true }).then(
+          () => true,
+          () => false,
+        );
+        if (ok) removed++;
+      } else {
+        stack.push(path);
+      }
+    }
+  }
+  return removed;
 }
 
 export { isAppId, recordedBuild, type RecordedApp } from "./recorded-build";

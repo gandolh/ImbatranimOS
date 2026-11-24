@@ -10,16 +10,17 @@ import {
   RequestTimeoutException,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { unzip, zip, type Unzipped, type AsyncZippable } from "fflate";
+import { unzip, type Unzipped } from "fflate";
 import { execFile, spawn } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs/promises";
 import { constants as fsConstants, createReadStream, type Stats } from "fs";
 import { Transform, Writable } from "stream";
 import { pipeline } from "stream/promises";
-import { createGunzip } from "zlib";
+import { crc32, createGunzip, deflateRaw } from "zlib";
 import { basename, dirname, join, posix, relative, sep } from "path";
 import { randomUUID } from "crypto";
+import { DEFLATE_LEVEL, ZipWriter } from "./zip-writer";
 import { FilesService } from "../files/files.service";
 import { childEnv } from "../../child-env";
 import type {
@@ -53,6 +54,11 @@ const TAR_MAX_BUFFER = Number(process.env.ARCHIVE_TAR_MAX_BUFFER) || 32 * 1024 *
  * inflated bytes — a lying header can't slip past the total-bytes cap because it
  * is re-checked against actually-inflated bytes.
  */
+/** Files up to this size are deflated in memory, several at once; larger ones stream through on their own. */
+const ZIP_SMALL_FILE_BYTES = 2 * 1024 * 1024;
+/** How many small files are deflated ahead of the one being written. */
+const ZIP_DEFLATE_AHEAD = 4;
+const deflateRawAsync = promisify(deflateRaw);
 const MAX_ENTRIES = () => Number(process.env.ARCHIVE_MAX_ENTRIES) || 10_000;
 const MAX_TOTAL_BYTES = () => Number(process.env.ARCHIVE_MAX_TOTAL_BYTES) || 512 * 1024 * 1024;
 const MAX_ENTRY_BYTES = () => Number(process.env.ARCHIVE_MAX_ENTRY_BYTES) || 512 * 1024 * 1024;
@@ -1314,22 +1320,21 @@ export class ArchiveService {
   }
 
   private async compressZip(sources: { abs: string; rel: string }[], destAbs: string): Promise<CompressResult> {
-    const tree: AsyncZippable = {};
+    // First the list, with the caps checked, so a refused selection writes nothing; then each file is streamed
+    // into the archive, so memory holds a chunk at a time, not the selection and the archive both.
+    const files: { abs: string; name: string; mtime: Date; size: number }[] = [];
     let bytes = 0;
-    let entries = 0;
 
     const addFile = async (abs: string, name: string): Promise<void> => {
       const st = await fs.stat(abs);
       bytes += st.size;
-      entries++;
-      if (entries > MAX_ENTRIES()) {
+      files.push({ abs, name, mtime: st.mtime, size: st.size });
+      if (files.length > MAX_ENTRIES()) {
         throw new PayloadTooLargeException(`Too many files to compress (max ${MAX_ENTRIES()})`);
       }
       if (bytes > MAX_TOTAL_BYTES()) {
         throw new PayloadTooLargeException(`Selection is too large to compress (max ${MAX_TOTAL_BYTES()} bytes)`);
       }
-      const buf = await fs.readFile(abs);
-      tree[name] = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
     };
 
     const addDir = async (abs: string, prefix: string): Promise<void> => {
@@ -1352,16 +1357,42 @@ export class ArchiveService {
       else await addFile(s.abs, name);
     }
 
-    // Async `zip` (not `zipSync`): deflating a large selection runs chunked off
-    // the main thread instead of blocking all HTTP + PTY for seconds.
-    const zipped = await new Promise<Uint8Array>((resolve, reject) => {
-      zip(tree, (err, out) => {
-        if (err) reject(err instanceof Error ? err : new Error(err));
-        else resolve(out);
-      });
-    });
-    await fs.writeFile(destAbs, zipped);
-    return { dest: relative(dirname(destAbs), destAbs), entries, bytes };
+    const writer = new ZipWriter(destAbs);
+    try {
+      // Small files are deflated a few at a time in zlib's thread pool and written in order; a large one is
+      // streamed through alone, so memory holds at most a few small files' worth.
+      type File = (typeof files)[number];
+      const ahead = new Map<number, Promise<{ crc: number; size: number; deflated: Buffer }>>();
+      const prepare = async (f: File) => {
+        const raw = await fs.readFile(f.abs);
+        return { crc: crc32(raw), size: raw.length, deflated: await deflateRawAsync(raw, { level: DEFLATE_LEVEL }) };
+      };
+      let next = 0;
+      for (const [i, f] of files.entries()) {
+        for (; next < files.length && next < i + ZIP_DEFLATE_AHEAD; next++) {
+          const file = files[next];
+          if (!file || file.size > ZIP_SMALL_FILE_BYTES) continue;
+          const prepared = prepare(file);
+          // Awaited in its turn; marked handled now, so a failure while another is written ends nothing.
+          prepared.catch(() => undefined);
+          ahead.set(next, prepared);
+        }
+        const ready = ahead.get(i);
+        ahead.delete(i);
+        if (ready) {
+          const r = await ready;
+          await writer.addDeflated(f.name, f.mtime, r.crc, r.size, r.deflated);
+        } else {
+          await writer.addFile(f.name, f.abs, f.mtime);
+        }
+      }
+      await writer.finish();
+    } catch (err) {
+      writer.abort();
+      await fs.rm(destAbs, { force: true });
+      throw err;
+    }
+    return { dest: relative(dirname(destAbs), destAbs), entries: files.length, bytes };
   }
 
   private async compressTarGz(

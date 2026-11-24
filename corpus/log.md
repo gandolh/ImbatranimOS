@@ -6493,3 +6493,8 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-23] done | Performance sweep, round 12: a Terminal's output
 
 [research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `9132f9b` (1.447.0) joins a Terminal's output that follows a send within 5 ms into the next WebSocket frame, the first chunk after a quiet spell still going at once. A 25 MB `cat` went from 19,854 frames to 249 and 2.7 to 2.1 s, the tab's main thread 2.1 to 1.7 s, and Caddy's CPU through TLS 100 to 30 ms; keystroke echo is unchanged. Firefox's process settings were looked at and left unmeasured.
+
+## [2026-11-24] done | Performance sweep, round 13: focus between windows
+
+[research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `fa845fb` (1.449.0) schedules the layout write from a store subscription instead of selecting `windows` in `App`, and keeps a window's app as the same element while its frame changes. With six windows a taskbar click rendered 194 components and now 88; script 10.0 to 5.6 ms, main thread 38.4 to 31.2 ms (164.6 to 136.2 at 4× CPU). Leaks, the Wayland host's memory (6-10 MiB), SQLite's syncs and the backend's synchronous calls were looked at and found lean.
+

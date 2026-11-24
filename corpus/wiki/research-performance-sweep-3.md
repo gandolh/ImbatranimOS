@@ -1,6 +1,6 @@
 ---
-summary: Rounds 11-15 of the 2026-11-23 performance sweep in full. Round 11 found the Linux window relay and the tab's frame drawing already lean (measured, left), and made Files fast on large folders - a 20,000-entry listing 630 to 165 ms and a folder's size 820 to 70 ms - by stating entries synchronously in batches instead of one promise each. Round 12 joins a Terminal's flowing output into one WebSocket frame per 5 ms - a 25 MB cat 19,854 frames to 249, 2.7 to 2.1 s - with keystroke echo unchanged.
-updated: 2026-11-23
+summary: Rounds 11-15 of the 2026-11-23 performance sweep in full. Round 11 found the Linux window relay and the tab's frame drawing already lean (measured, left), and made Files fast on large folders - a 20,000-entry listing 630 to 165 ms and a folder's size 820 to 70 ms - by stating entries synchronously in batches instead of one promise each. Round 12 joins a Terminal's flowing output into one WebSocket frame per 5 ms - a 25 MB cat 19,854 frames to 249, 2.7 to 2.1 s - with keystroke echo unchanged. Round 13 found no leak when apps open and close and stopped a focus change re-rendering the whole desktop - 194 to 88 components a click, script 10.0 to 5.6 ms.
+updated: 2026-11-24
 ---
 
 # The performance sweep, rounds 11-15
@@ -72,3 +72,41 @@ not the sends.
   and `dom.ipc.processCount.webIsolated` (4 by default) caps its content processes per site
   ([bug 1727158](https://bugzilla.mozilla.org/show_bug.cgi?id=1727158)). Reports on what lowering it saves disagree,
   and Firefox's download was refused here, so nothing was measured and nothing shipped.
+
+## Round 13 (2026-11-24): what the desktop does when focus moves, and what was already lean
+
+**Looked for first, and found lean:**
+
+- **Leaks in the tab.** Each app opened and closed six times (Terminal, File Manager and Paint twenty), with a forced
+  garbage collection before each reading: no DOM nodes, listeners or documents left behind by any app. A heap
+  snapshot diff over ten Terminal cycles: 1.4 MiB of the growth is V8's optimized code, which it flushes, and the
+  rest is the browser's own timing entries.
+- **The Wayland host's memory.** 6.0 MiB RSS for a session with no window, 10.2 MiB with foot open and scrolled,
+  6.3 MiB after foot closes. A smithay core with the tab drawing is already the light shape a compositor can take.
+- **SQLite's syncs.** better-sqlite3 is built with `SQLITE_DEFAULT_WAL_SYNCHRONOUS=1`, so the WAL database already
+  runs at `synchronous=NORMAL`: 200 sticky-note saves made 3 `fsync` calls (`strace -c`). Nothing to change.
+- **Synchronous calls in the backend's request paths.** One-time reads at start, and `/proc` reads, only.
+- **The Code Editor.** Opening it fetches 922 KiB (Monaco's `editor.api`, 592 KiB, and its contributions, 278 KiB)
+  for 341 ms of main thread. Inline completions are 240 KiB of the contributions (raw) and nothing in the OS
+  provides any, but leaving them out means keeping a hand-made list of Monaco's contributions through every Monaco
+  upgrade, so they stay.
+
+**Focus between windows.** With six windows open, a click on a taskbar button cost 38 ms of main thread and rendered
+194 components. Most were the desktop's: `App` selected the whole `windows` array only to schedule its debounced
+layout write, so every focus change, open and close re-rendered everything under it, the 16 desktop icons and their
+framer-motion wrappers (which measure themselves) included.
+
+- **The layout write is scheduled from a store subscription,** with the same 500 ms debounce and the same first
+  write on mount. A move, a reload and the windows coming back were checked on the new build.
+- **A window's app stays the same element while only its frame changes,** so the two windows whose focus flips no
+  longer re-render their apps.
+
+| Six windows, a taskbar click, median of 3 | Before | After |
+|---|---:|---:|
+| Components rendered | 194 | 88 |
+| Script / layouts | 10.0 ms / 3.9 | 5.6 ms / 2.9 |
+| Main thread | 38.4 ms | 31.2 ms |
+| Main thread at 4× CPU | 164.6 ms | 136.2 ms |
+
+The rest of a click's main thread is the browser painting the two windows whose border and shadow change (about
+20 ms in headless Chromium's software raster); no window uses a backdrop blur.

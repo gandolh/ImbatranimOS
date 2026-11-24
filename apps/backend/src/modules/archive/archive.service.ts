@@ -664,19 +664,20 @@ export class ArchiveService {
       // worker has settled before the staging folder goes.
       const wanted = names.filter((name) => !only || only.has(name));
       let next = 0;
-      let failure: Error | null = null;
+      const failures: Error[] = [];
       const worker = async (): Promise<void> => {
-        while (failure === null && next < wanted.length) {
+        while (failures.length === 0 && next < wanted.length) {
           const name = wanted[next++] as string;
           try {
             await extractOne(name);
           } catch (err) {
-            failure ??= err instanceof Error ? err : new BadRequestException("Corrupt or unreadable zip archive");
+            failures.push(err instanceof Error ? err : new BadRequestException("Corrupt or unreadable zip archive"));
           }
         }
       };
       await Promise.all(Array.from({ length: ZIP_EXTRACT_AT_ONCE }, worker));
-      if (failure !== null) throw failure;
+      const [failure] = failures;
+      if (failure) throw failure;
       await this.mergeTree(stagingAbs, destAbs);
       return { dest: destVirtual, entries: fileCount, totalBytes: actualTotal };
     } finally {

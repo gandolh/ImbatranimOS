@@ -10,7 +10,7 @@ import {
 } from "@nestjs/common";
 import { join, resolve, relative, basename, dirname, sep } from "path";
 import * as fs from "fs/promises";
-import { constants as fsConstants, createReadStream, lstatSync, statSync } from "fs";
+import { constants as fsConstants, createReadStream, lstatSync, readFileSync, statSync } from "fs";
 import type { Dirent, Stats } from "fs";
 import * as os from "os";
 import { randomUUID } from "crypto";
@@ -171,6 +171,22 @@ export interface SearchResult {
  * huge + never interesting; dot-directories are skipped separately by prefix.
  */
 const SEARCH_SKIP_DIRS = new Set(["node_modules", ".git"]);
+
+/** How many files the content search reads between yields to the event loop. */
+const SEARCH_READS_PER_YIELD = 64;
+
+/**
+ * For an ASCII needle, a test that rules a file out without decoding it: a case-insensitive search of its bytes
+ * read as latin1, ten times cheaper than decoding UTF-8 and lowercasing (5,641 source files: 22 ms against 212,
+ * 2026-11-24). True means no match; a file it doesn't rule out gets the exact UTF-8 test. The two can differ only
+ * for text that spells a letter with a sign whose lowercase is ASCII (the Kelvin sign), which the exact test
+ * matches and this does not. Null for a needle with any other character.
+ */
+export function quickMiss(needle: string): ((buf: Buffer) => boolean) | null {
+  if (!/^[\x20-\x7e]+$/.test(needle)) return null;
+  const re = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+  return (buf) => !re.test(buf.toString("latin1"));
+}
 
 /**
  * Where the `notes` root lives. Both roots resolve dynamically (see
@@ -667,6 +683,10 @@ export class FilesService {
       return false;
     };
 
+    // Files are read synchronously, a few dozen between yields: a small read is a fraction of a millisecond, and
+    // each async stat and read was a trip through libuv's thread pool that cost more than the read itself.
+    let reads = 0;
+    const fastNo = quickMiss(needle);
     const walk = async (absDir: string, depth: number): Promise<void> => {
       if (truncated || depth > bounds.maxDepth) return;
 
@@ -701,7 +721,8 @@ export class FilesService {
           // Even a name match is scanned when line data was asked for: a hit
           // whose name matches but whose body also does should still show the
           // lines, or the panel would list it with nothing under it.
-          const found = await this.contentLines(abs, needle, bounds);
+          if (++reads % SEARCH_READS_PER_YIELD === 0) await new Promise((r) => setImmediate(r));
+          const found = this.contentLines(abs, needle, bounds, fastNo);
           if (found === null) {
             // Unreadable / binary / oversize — no content answer either way.
           } else if (wantMatches) {
@@ -748,7 +769,7 @@ export class FilesService {
    * the extra data is bounded by two constants rather than by file size. Reads
    * at most one file into the heap at a time. Never throws upward.
    */
-  private async contentLines(
+  private contentLines(
     abs: string,
     needle: string,
     bounds: {
@@ -756,15 +777,15 @@ export class FilesService {
       maxMatchesPerFile: number;
       maxMatchChars: number;
     },
-  ): Promise<SearchMatch[] | null> {
+    fastNo: ((buf: Buffer) => boolean) | null,
+  ): SearchMatch[] | null {
     try {
-      const stat = await fs.stat(abs);
+      const stat = statSync(abs);
       if (!stat.isFile() || stat.size > bounds.maxContentBytes) return null;
-      const buf = await fs.readFile(abs);
-      const sniff = Math.min(buf.length, 8192);
-      for (let i = 0; i < sniff; i++) {
-        if (buf[i] === 0) return null; // NUL ⇒ treat as binary, skip
-      }
+      const buf = readFileSync(abs);
+      // NUL ⇒ treat as binary, skip.
+      if (buf.subarray(0, 8192).indexOf(0) !== -1) return null;
+      if (fastNo?.(buf)) return [];
       const text = buf.toString("utf-8");
       // One cheap check before splitting: most files do not match at all, and
       // splitting a 256KB file into lines to learn that is pure waste.

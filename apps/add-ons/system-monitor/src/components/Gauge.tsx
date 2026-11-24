@@ -20,9 +20,11 @@ export function Gauge({ label, percent, detail }: GaugeProps) {
         <span className="text-on-surface text-body font-mono font-semibold">{clamped.toFixed(1)}%</span>
       </div>
       <div className="rounded-control border-outline-variant bg-surface-container-lowest h-3 w-full overflow-hidden border">
+        {/* Scaled, not sized: a transform transitions on the compositor, where a width
+            transition laid the window out again on every frame of each poll's 300 ms. */}
         <div
-          className={`h-full ${barColor} transition-[width] duration-300 ease-out`}
-          style={{ width: `${clamped}%` }}
+          className={`h-full w-full origin-left ${barColor} transition-transform duration-300 ease-out motion-reduce:transition-none`}
+          style={{ transform: `scaleX(${clamped / 100})` }}
         />
       </div>
       {detail && <span className="text-on-surface-variant text-tiny font-mono">{detail}</span>}

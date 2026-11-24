@@ -4,7 +4,8 @@ import Markdown, { defaultUrlTransform, type Components, type ExtraProps, type U
 import remarkGfm from "remark-gfm";
 import { cn, useSystem } from "@imbatranim/ui";
 import { resolveRelative } from "../lib/assetPaths";
-import { hasFencedCode, type RehypePlugins } from "../lib/highlight";
+import { hasFencedCode } from "../lib/fences";
+import type { RehypePlugins } from "../lib/highlight";
 import type { Heading } from "../lib/outline";
 
 /**

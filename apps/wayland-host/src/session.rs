@@ -512,6 +512,8 @@ pub struct SessionState {
     visible: bool,
     /// The tab decodes VP8: video regions go as a stream, not JPEG.
     vp8: bool,
+    /// The tab draws `ENC_COPY`: a scroll goes as a move of its own pixels.
+    copy: bool,
     /// What the session's apps last asked the cursor to be, and whether it
     /// (or the cursor surface's image) changed since the tab heard.
     cursor_status: CursorImageStatus,
@@ -607,6 +609,7 @@ impl SessionState {
             frozen: false,
             visible: true,
             vp8: false,
+            copy: false,
             cursor_status: CursorImageStatus::default_named(),
             cursor_changed: false,
             cursor: Shown::default(),
@@ -736,6 +739,7 @@ impl SessionState {
                     })
                 })
                 .collect();
+            w.canvas.copies = self.copy;
             let rects = w.canvas.take_frame(&layers, encoding, lossy);
             out.push(encode_frame_body(w.id, w.canvas.width, w.canvas.height, &rects));
             w.in_flight = true;
@@ -759,10 +763,11 @@ impl SessionState {
         self.fire_callbacks(|s| root_of(s) == root);
     }
 
-    /// The video codecs the tab decodes, from its connect. A change starts
-    /// every window's stream again (the tab that just connected has new
-    /// decoders, or none).
-    pub fn set_video_codecs(&mut self, codecs: &[String]) {
+    /// The optional encodings the tab draws, from its connect: `vp8` and
+    /// `copy`. A change of VP8 starts every window's stream again (the tab
+    /// that just connected has new decoders, or none).
+    pub fn set_codecs(&mut self, codecs: &[String]) {
+        self.copy = codecs.iter().any(|c| c == "copy");
         let vp8 = codecs.iter().any(|c| c == "vp8");
         if vp8 != self.vp8 {
             self.vp8 = vp8;
@@ -777,6 +782,35 @@ impl SessionState {
         if let Some(w) = self.windows.iter_mut().find(|w| w.id == id) {
             w.canvas.restart_video();
         }
+    }
+
+    /// Whether the host's frame clock has anything to do here: a client gone
+    /// to drop, a frame callback it could answer now, a window with a frame
+    /// to send, or a region sent lossy still counting its quiet ticks. While
+    /// none has, the clock stops (`ensure_frame_clock` in main.rs); a
+    /// request from an app or a message from the tab starts it again.
+    pub fn wants_tick(&self) -> bool {
+        if self.clients.iter().any(|(_, c)| c.gone.load(Ordering::Relaxed)) {
+            return true;
+        }
+        if self.windows.iter().any(|w| w.canvas.settling()) {
+            return true;
+        }
+        if self.frozen || !self.visible {
+            return false;
+        }
+        let sends = (0..self.windows.len()).any(|i| {
+            let w = &self.windows[i];
+            w.mapped && !w.in_flight && w.canvas.has_damage() && self.is_live(i)
+        });
+        sends || self.pending_callbacks.iter().any(|s| s.is_alive() && !self.held(s))
+    }
+
+    /// A surface whose window is waiting on an ack or isn't showing: its
+    /// frame callbacks wait.
+    fn held(&self, surface: &WlSurface) -> bool {
+        let root = root_of(surface);
+        (0..self.windows.len()).any(|i| self.windows[i].root == root && (self.windows[i].in_flight || !self.is_live(i)))
     }
 
     /// Answer frame callbacks for every surface whose window isn't waiting
@@ -877,7 +911,7 @@ impl SessionState {
             w.shown = true;
             // The reloaded tab has new decoders: streams start from keyframes.
             w.canvas.restart_video();
-            w.canvas.damage_all();
+            w.canvas.send_whole();
         }
         self.visible = true;
         let cursor = self.cursor.current().clone();
@@ -889,7 +923,7 @@ impl SessionState {
     /// Everything is drawn again when the session comes back to life.
     fn redraw_all(&mut self) {
         for w in self.windows.iter_mut() {
-            w.canvas.damage_all();
+            w.canvas.send_whole();
         }
     }
 
@@ -943,7 +977,7 @@ impl SessionState {
             for j in 0..self.windows.len() {
                 let own = j == i || matches!(self.windows[j].role, Role::Popup { parent, .. } if parent == toplevel);
                 if own {
-                    self.windows[j].canvas.damage_all();
+                    self.windows[j].canvas.send_whole();
                 }
             }
         }

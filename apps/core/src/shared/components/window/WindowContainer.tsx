@@ -144,6 +144,25 @@ const WindowSlot = memo(function WindowSlot({
   const minSize = app?.minSize ?? { width: 240, height: 180 };
   const appName = app?.name ?? appId;
 
+  // The app, kept as the same element while only the frame changes. Focus moving to or from this window
+  // re-renders the slot for `isFocused`; with a fresh element here, the whole app re-rendered with it, about
+  // 260 components a window. The same element lets React skip the app, which reads what it needs itself.
+  const body = useMemo(
+    () => (
+      <WindowBody
+        windowId={windowId}
+        appId={appId}
+        appName={appName}
+        AppComponent={AppComponent}
+        system={system}
+        remountKey={remountKey}
+        reload={reload}
+        close={close}
+      />
+    ),
+    [windowId, appId, appName, AppComponent, system, remountKey, reload, close],
+  );
+
   return (
     <Window
       windowId={windowId}
@@ -153,6 +172,33 @@ const WindowSlot = memo(function WindowSlot({
       frameOnly={frameOnly}
       fadeOnly={linuxOpen || isLinuxWindow(appId)}
     >
+      {body}
+    </Window>
+  );
+});
+
+/** What a window shows inside its frame: a Linux app's picture, or the add-on behind its error boundary. */
+function WindowBody({
+  windowId,
+  appId,
+  appName,
+  AppComponent,
+  system,
+  remountKey,
+  reload,
+  close,
+}: {
+  windowId: string;
+  appId: string;
+  appName: string;
+  AppComponent: AppConfig["component"] | undefined;
+  system: ReturnType<typeof createSystemHandle>;
+  remountKey: number;
+  reload: () => void;
+  close: () => void;
+}) {
+  return (
+    <>
       {isLinuxWindow(appId) ? (
         // A Linux app's window: no add-on and no system handle, just its picture.
         <LinuxWindowBody windowId={windowId} />
@@ -191,9 +237,9 @@ const WindowSlot = memo(function WindowSlot({
       ) : (
         <div className="text-on-surface-variant text-note p-3">Unknown app: {appId}</div>
       )}
-    </Window>
+    </>
   );
-});
+}
 
 /** A new window takes the keyboard once its app is on screen. */
 function FirstFocus({ windowId }: { windowId: string }) {

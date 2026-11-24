@@ -1,5 +1,9 @@
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig, loadEnv, type ProxyOptions } from "vite";
+import { promisify } from "node:util";
+import { brotliCompress, constants, gzip } from "node:zlib";
+import { defineConfig, loadEnv, type Plugin, type ProxyOptions, type Rolldown } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import type { ISOLATION_HEADERS } from "../backend/src/security-headers.ts";
@@ -25,6 +29,83 @@ function devProxy(base: string, backendPort: string) {
   return proxy;
 }
 
+const brotli = promisify(brotliCompress);
+const gzipped = promisify(gzip);
+
+/** What compresses: scripts, styles, SVG, JSON, WebAssembly and the one TrueType font. woff2 is already compressed. */
+const COMPRESSIBLE = /\.(?:js|mjs|css|svg|json|wasm|ttf)$/;
+/** Below this a compressed copy saves less than its own request headers. */
+const MIN_BYTES = 1024;
+
+/**
+ * Brotli's best quality, for what every visit downloads; one step lower
+ * costs a fourteenth of the time for about 9% more bytes (2026-11-23: all
+ * 15.9 MiB took 24.4 s at 11 and 1.7 s at 9 on one core), which suits the
+ * chunks of apps opened later. A one-CPU build server pays the difference.
+ */
+const BROTLI_FIRST_LOAD = constants.BROTLI_MAX_QUALITY;
+const BROTLI_LATER = 9;
+
+/**
+ * What the built `index.html` loads before any app opens: the entry chunks,
+ * every chunk they import statically, and those chunks' stylesheets.
+ */
+function firstLoad(bundle: Rolldown.OutputBundle): Set<string> {
+  const names = new Set<string>();
+  const visit = (fileName: string) => {
+    if (names.has(fileName)) return;
+    names.add(fileName);
+    const file = bundle[fileName];
+    if (file?.type !== "chunk") return;
+    file.imports.forEach(visit);
+    file.viteMetadata?.importedCss.forEach((css) => names.add(css));
+  };
+  for (const file of Object.values(bundle)) if (file.type === "chunk" && file.isEntry) visit(file.fileName);
+  return names;
+}
+
+/**
+ * A `.br` and a `.gz` beside each compressible file under `assets/`, made once
+ * here so the backend never compresses per request
+ * (`apps/backend/src/static-assets.ts` sends them). A copy that saves less
+ * than a tenth is not written. On 2026-11-23's build: 15.9 MiB of such files
+ * became 3.1 MiB as brotli and 4.0 MiB as gzip.
+ */
+function precompress(): Plugin {
+  return {
+    name: "imbatranim:precompress",
+    apply: "build",
+    async writeBundle(options, bundle) {
+      const dir = options.dir ?? "dist";
+      const eager = firstLoad(bundle);
+      const jobs = Object.values(bundle).flatMap((file) => {
+        if (!file.fileName.startsWith("assets/") || !COMPRESSIBLE.test(file.fileName)) return [];
+        const source = file.type === "chunk" ? file.code : file.source;
+        const bytes = typeof source === "string" ? Buffer.from(source, "utf8") : Buffer.from(source);
+        if (bytes.length < MIN_BYTES) return [];
+        const path = join(dir, file.fileName);
+        const write = async (suffix: string, made: Promise<Buffer>) => {
+          const out = await made;
+          if (out.length < bytes.length * 0.9) await writeFile(path + suffix, out);
+        };
+        return [
+          write(
+            ".br",
+            brotli(bytes, {
+              params: {
+                [constants.BROTLI_PARAM_QUALITY]: eager.has(file.fileName) ? BROTLI_FIRST_LOAD : BROTLI_LATER,
+                [constants.BROTLI_PARAM_SIZE_HINT]: bytes.length,
+              },
+            }),
+          ),
+          write(".gz", gzipped(bytes, { level: constants.Z_BEST_COMPRESSION })),
+        ];
+      });
+      await Promise.all(jobs);
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   // Sub-path base for a Caddy sub-path deploy (/imbatranim-os/). The vps-deploy
   // container build passes VITE_BASE (paired with VITE_API_URL) so assets, REST
@@ -37,7 +118,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     base,
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), precompress()],
     server: {
       proxy: devProxy(base, backendPort),
       // In dev this server, not the backend, serves the desktop's page and

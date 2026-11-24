@@ -6446,6 +6446,54 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 `4d58ba2` (1.417.0): Settings → Linux apps → "Show stream stats" (off by default, per machine) draws, over each visible Linux window, the last half second's rectangles outlined by encoding and a panel with the last second's fps, kB/s, encoding shares and decode time, all from frames the tab already parses; off, the frame path only reads the switch. Walked with foot and mpv in Apricot light and Classic dark. Briefs 98-116 are all closed.
 
+## [2026-11-23] done | Performance sweep, round 1: the first page load and how it is sent
+
+[research-performance-sweep.md](wiki/research-performance-sweep.md): `6c3d972` (1.419.0) gives the kit `sideEffects`, `155afd0` (1.420.0) loads framer-motion's features after the first paint, and `a8c5985` (1.421.0) sends precompressed brotli and gzip copies with a year's cache for hashed assets. The first page load fell from 1,077 to 913 KiB of scripts and stylesheet, a cold load's assets from 1,184 to 372 KiB on the wire, and a warm reload's from 34 revalidations to none. Four more rounds are scheduled on the same branch.
+
+## [2026-11-23] done | Performance sweep, round 2: what the tab does at rest
+
+[research-performance-sweep.md](wiki/research-performance-sweep.md): `d4aea56` (1.423.0) scales progress bars instead of resizing them (System Monitor at rest 1.94% to 0.89% of a core), `81fdbef` (1.424.0) stops a Terminal's cursor blinking 10 s after the last keystroke, GTK's rule (2.29% to 0.24%). Statement caching and `os.cpus()` were measured and left. The owner raised the sweep to fifteen rounds, with the Wayland host, the builds and the OS's own flows in scope.
+
+## [2026-11-23] done | Performance sweep, round 3: the Wayland host's frames
+
+[research-performance-sweep.md](wiki/research-performance-sweep.md): `8c9e15c` (1.426.0) has the host compare each damaged row with its copy and send only bands that changed (foot's slow output 640 to 330 ms of host CPU, weston-terminal's 37 to 7 KiB). The encoder was benchmarked on real frames against PNG and libwebp and stays. Built and walked on this machine's glibc toolchain with foot and weston-terminal; the Alpine builder image's `cargo test` is the owner's to run.
+
+## [2026-11-23] done | Performance sweep, round 4: a scroll moves the tab's pixels
+
+[research-performance-sweep.md](wiki/research-performance-sweep.md): `4fd7f71` (1.428.0) adds encoding 5, a copy of pixels the tab already has, which the host sends for a scroll found by row hashes and checked byte for byte, to tabs that name `copy` in `codecs`. Wheeling through foot's scrollback went from 1,166 KiB of VP8 to 131 KiB lossless and from 380 to 230 ms of host CPU; slow scrolling output from 863 to 139 KiB.
+
+## [2026-11-23] done | Performance sweep, round 5: building the OS
+
+[research-performance-sweep.md](wiki/research-performance-sweep.md): `0ec4571` (1.432.0) gives `proddeps` the normalised manifests, keeps the host's sources out of the builder and adds BuildKit cache mounts for npm, turbo and cargo; built for real in Docker here, a version-only commit rebuilds in 2 s instead of 24 s and a host change in 67 s instead of 147 s. `d71533f` (1.431.0) keeps brotli 11 for the first page load and uses 9 for the rest, halving the desktop's `vite build`. Marketplace installs were already lean.
+
+## [2026-11-23] done | Performance sweep, round 6: the backend's memory
+
+[research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `6de2482` (1.434.0) starts the backend with `--max-semi-space-size=2`; it settles at 118 MiB instead of 159 after 18,000 requests, with the same CPU per request, per Terminal flood and per Linux window frame. The sweep's page is split into a hub and one page per five rounds.
+
+## [2026-11-23] done | Performance sweep, round 7: dragging a window
+
+[research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `af0e9cf` (1.436.0) moves a dragged window with CSS `translate` and writes its position once, on release; 60 moves of a File Manager window went from 351 to 114 ms of main thread, with no layouts or React commits. The title bar and resize handles use plain pointer events and @use-gesture is gone from the first page load. `npm run check` passed whole this round, the marketplace e2e test included.
+
+## [2026-11-23] done | Performance sweep, round 8: the Wayland host at rest
+
+[research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `67fd511` (1.438.0) runs the host's frame clock only while a session has a frame to send, a callback to answer, a region settling or a client to drop, and ticks at once after a rest. Idle host CPU went from 40-50 ms every 20 s to none, and foot's keystroke-to-frame median from 20.4 to 5.0 ms (p95 37 to 6-8 ms), with the same frames and bytes under load.
+
+## [2026-11-23] done | Performance sweep, round 9: what an app downloads when it opens
+
+[research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `120e519` (1.440.0) makes Notepad's highlighter import really dynamic (a value import from its module had pulled it into Notepad's chunk) and lazy-loads the Markdown preview; Notepad's chunk went from 366 KB to 42 KB, the rest fetched only for Markdown. Sign-in's API calls and the shell's lazy-able surfaces were measured and left.
+
+## [2026-11-23] done | Performance sweep, round 10: the image's node_modules
+
+[research-performance-sweep-2.md](wiki/research-performance-sweep-2.md): `e579c7f` (1.442.0) has `proddeps` delete type declarations, TypeScript sources, source maps, Markdown and `.github` from the production tree: 10,045 files and 49.1 MB to 5,237 and 25.6 MB, the layer 57.5 to 30.2 MB. The backend started on the pruned tree in a container and answered every route asked.
+
+## [2026-11-23] done | Performance sweep, round 11: Files on a large folder
+
+[research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `b47df42` (1.444.0) lists a folder with synchronous stats in batches of 256 instead of one `fs/promises.lstat` each (20,000 entries: 630 to 165 ms, backend CPU 870 to 170 ms, the same bytes), and `bbed211` (1.445.0) does the same for a folder's size (820 to 70 ms). The Linux window frame path was profiled end to end and found lean.
+
+## [2026-11-23] done | Performance sweep, round 12: a Terminal's output
+
+[research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `9132f9b` (1.447.0) joins a Terminal's output that follows a send within 5 ms into the next WebSocket frame, the first chunk after a quiet spell still going at once. A 25 MB `cat` went from 19,854 frames to 249 and 2.7 to 2.1 s, the tab's main thread 2.1 to 1.7 s, and Caddy's CPU through TLS 100 to 30 ms; keystroke echo is unchanged. Firefox's process settings were looked at and left unmeasured.
+
 ## [2026-11-24] todo | Brief 117 from the infra review of 2026-11-24
 
 Filed from the estate's infra review. The `wayland-host` stage's `cargo build` gets cache mounts for the registry
@@ -6453,3 +6501,76 @@ and the target folder, so a change under `apps/wayland-host` no longer rebuilds 
 box's 2 vCPUs or in the dev container; it stays only if a rebuild is at least 3 times faster, measured on the
 laptop. The floating `# syntax=docker/dockerfile:1-labs` line is pinned to an exact version. The node base was
 already pinned. Ships with `node cli.ts imbatranim-os server`.
+
+## [2026-11-24] done | Performance sweep, round 13: focus between windows
+
+[research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `fa845fb` (1.449.0) schedules the layout write from a store subscription instead of selecting `windows` in `App`, and keeps a window's app as the same element while its frame changes. With six windows a taskbar click rendered 194 components and now 88; script 10.0 to 5.6 ms, main thread 38.4 to 31.2 ms (164.6 to 136.2 at 4× CPU). Leaks, the Wayland host's memory (6-10 MiB), SQLite's syncs and the backend's synchronous calls were looked at and found lean.
+
+## [2026-11-24] done | Performance sweep, round 14: a large folder in the File Manager
+
+[research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `52cd18d` (1.451.0) memoises the File Manager's filter, sort and selected entries (`useOrderedEntries`) and makes each row a memoised `FileRow`, since the virtualizer re-renders the window on every scroll frame. Scrolling a 20,000-file folder went from 108 to 51 ms of main thread a wheel step (2,981 to 830 components), and opening it from about 290 to 210 ms. The Start menu was measured and left.
+
+## [2026-11-24] done | Performance sweep, round 15: what an installed app keeps, and the sweep closed
+
+[research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `bb946c2` (1.453.0) has a static Marketplace app's build delete its `node_modules` once its output passes the checks; an app with a server keeps them. Accessories installed through the backend: its build directory 140 MB to 8.0 MB, Todo runs. The sweep's fifteen rounds and what they leave for later are on [research-performance-sweep.md](wiki/research-performance-sweep.md).
+
+## [2026-11-24] done | Performance sweep, round 16: deploys and infrastructure researched; round 12 reverted
+
+[research-deploy-infrastructure.md](wiki/research-deploy-infrastructure.md) ranks what deploys and infrastructure could do better for ImbatranimOS and imbatranim-apps, after the owner's answers (the VPS builds from git, local tags only, source builds for Marketplace apps, build the winners). Brief 118 (verified prebuilt app output) is filed. Round 12's PTY join, measured again with the backend pinned to one CPU as brief 114 did, cost the backend 31% more on a 50 MB `cat` and was reverted (`992b178`); [research-pty-batching.md](wiki/research-pty-batching.md) has both rules' numbers. Pages: [research-performance-sweep-4.md](wiki/research-performance-sweep-4.md).
+
+## [2026-11-24] done | Performance sweep, round 17: a deploy builds the slow parts once
+
+[research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): `4217d0b` (1.457.0) splits the Dockerfile's slow parts into stages named by build arguments and adds `infrastructure/image.sh`, which keeps them as local images tagged by a content hash. A code-only deploy after the build cache was pruned went from 181 to 28 s with no Rust image needed, a cold one from 207 to 187 s; the image holds the same files and boots.
+
+## [2026-11-24] done | Performance sweep, round 18: Marketplace builds at a lower priority, measured and left
+
+[research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): nice 10 for Marketplace steps lowered the desktop's API p95 during an install by a third but not the Terminal echo's, and made installs 8% longer; the bar wanted both down 30%. Reverted, no commit.
+
+## [2026-11-24] done | Performance sweep, round 19: a service app keeps only what its server runs on
+
+[research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): `e72f3e1` (1.459.0) adds `server.install` to descriptors, run after the build to replace its dependencies; imbatranim-office's names `npm ci --omit=dev --workspace=server`, and its build directory went from 964 to 86 MB with the server answering. Found on the way: Office's build peaks at 1.96 GB and is OOM-killed under the production cap of 1 GiB, whatever the OS sets; ranked in [research-deploy-infrastructure.md](wiki/research-deploy-infrastructure.md) and added to brief 118.
+
+## [2026-11-24] done | Performance sweep, round 20: the dev image after a dependency change
+
+[research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): `5317467` (1.460.0) builds the dev image on `runtime-base` and copies `deps`' tree in last, so a dependency change no longer redoes Alpine's packages and Nix in it: a rebuild 85 to 48 s, the same `node_modules`, the container answering.
+
+
+## [2026-11-24] done | Performance sweep, round 21: a lazy kit tooltip, measured and filed
+
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): a `Tooltip` that mounts Base UI only on a pointer or a focus made a wheel step in a 20,000-file folder 45.6 to 32.6 ms of main thread and the heap's growth opening it 32% smaller, but opening the folder only 7% faster against a bar of 15%. Not built; brief 119 holds it.
+
+## [2026-11-24] done | Performance sweep, round 22: Settings mounts a section when it scrolls near
+
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): `24262d9` (1.462.0) adds `DeferredSection`, so Settings' sections below the fold mount their content within 600 px of the view. Opening Settings 288 to 61 ms of main thread, script 105 to 22 ms, the backend's CPU about 560 ms to under 10; every section shows the same content when scrolled to.
+
+## [2026-11-24] done | Performance sweep, round 23: the boot's icon drag and the package index, measured and left
+
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): removing the icons' framer-motion drag changed the boot at 4× CPU by nothing beyond noise, and building the Nix package index in a worker left the API's p95 where it was (2-4 ms) while slowing later searches. Neither built.
+
+## [2026-11-24] done | Performance sweep, round 24: Firefox's spare processes, measured and filed
+
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): turning off Firefox's prelaunched content process and preloaded new-tab page through `/etc/firefox/policies/policies.json` took one window from 13 processes and 519 MiB PSS to 9 and 439 MiB. A policy makes Firefox say it is managed, so brief 120 leaves the call to the owner.
+
+## [2026-11-24] done | Performance sweep, round 25: npm's cache for Marketplace builds has a cap
+
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): `b8b7a5c` (1.464.0) empties `~/.imbatranim/apps/.cache/npm` before a build once it holds more than 256 MB. Between two imbatranim-apps pins the catalog's installs needed about 180 MB and an update with dependency changes added 16 MB that `npm cache verify` keeps; an install with the cache emptied took no longer here (22.1 and 20.8 s against 23.1 and 21.5 s warm).
+
+## [2026-11-24] done | Performance sweep, round 26: the gate side by side; a WebSocket proxy that dropped greetings
+
+[research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): `140b560` (1.466.0) runs typecheck, lint, the format check and the conventions side by side and ESLint with `--concurrency=auto`, then the tests: the whole gate with turbo forced 179 and 174 s to 134 and 116 s. `7c8479e` (1.465.0) fixes why the marketplace e2e test hung in about half the gates: the proxy to a service app's WebSocket listened for the upstream's messages only after upgrading the client, and a first frame that came in the same read as the 101 was lost. The upstream is now paused until the pipe listens, and a fixture route sends a frame that way.
+
+## [2026-11-24] done | Performance sweep, round 27: the Image Viewer's date grid shows the photos' own previews
+
+[research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): `b525680` (1.467.0) takes each JPEG's Exif preview from the bytes the date read already has and shows it, turned like the photo, instead of the whole file. 32 photos: 93.6 to 4.1 MiB transferred, every tile on screen drawn 703 to 281 ms, the renderer about 830 to 380 MiB.
+
+## [2026-11-24] done | Performance sweep, rounds 28-29: validators and Vitest's pools, measured and left
+
+[research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): an ETag on file downloads would save nothing in a session, since the tab reuses a photo it holds (stepping back and a second window fetch nothing). Vitest's `vmThreads` pool halves the desktop's test run (25 to 12 s) but trips on realm differences and peaks at 1.8 GB. Neither built.
+
+## [2026-11-24] done | Performance sweep, round 30: the closing check, and the sweep closed
+
+[research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): today's desktop on a fresh home against round 1's numbers: the first page load 912.9 to 894.9 KiB raw, the cold wire 369.6 KiB (372 after round 1), the walk clean, the empty desktop at rest 0.11% of a core. The full gate passed in 101 s. The thirty rounds and what they leave for later are on [research-performance-sweep.md](wiki/research-performance-sweep.md); briefs 118-120 hold the owner's calls.
+
+## [2026-11-24] done | Performance sweep: main merged, the sweep's briefs renumbered 118-120
+
+`main` filed brief 117 (the Wayland host's Rust build keeps its cache) while the sweep's branch held a brief 117 of its own, never on `main`. The branch's three are renumbered before the merge: 118 (Marketplace apps from verified prebuilt output), 119 (a kit tooltip that mounts when first asked for), 120 (Firefox starts fewer processes ahead of need), with every reference on the sweep's pages and in its log entries. For brief 117: since round 5 the branch's `wayland-host` stage already builds with a cache mount on cargo's registry and one on the target folder (`id=imbatranim-wayland-host-target`), and copies the binary to `/out`; round 17 makes the host's binary a local base that a deploy rebuilds only when its sources change. Round 5 measured a host change at 147 to 67 s for the whole image. Still open in the brief: an `id` for the registry mount, the pinned syntax line, and its own 3x measurement.

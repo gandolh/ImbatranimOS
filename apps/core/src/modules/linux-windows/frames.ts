@@ -12,6 +12,19 @@ export const ENC_WEBP_LOSSLESS = 2;
 export const ENC_JPEG = 3;
 /** The same region as one frame of the window's VP8 stream (see `VideoStreams`). */
 export const ENC_VP8 = 4;
+/**
+ * Pixels the canvas already has, moved (a scroll): the rectangle is where they
+ * go, the data where they come from, `x` and `y` as two little-endian u32s.
+ * Sent only to a tab whose `codecs` holds `copy` (`OPTIONAL_ENCODINGS`).
+ */
+export const ENC_COPY = 5;
+
+/**
+ * The encodings every tab draws beyond the base ones, whatever its codecs:
+ * `copy`. The video codecs (`decodableVideoCodecs`) join them in the socket's
+ * `codecs` query.
+ */
+export const OPTIONAL_ENCODINGS = ["copy"] as const;
 
 export type FrameRect = {
   x: number;
@@ -316,6 +329,10 @@ export async function paintFrame(
     return;
   }
   frame.rects.forEach((rect, i) => {
+    if (rect.encoding === ENC_COPY) {
+      moveWithin(canvas, ctx, rect);
+      return;
+    }
     const image = decoded[i];
     if (!image) return;
     if (image instanceof ImageData) {
@@ -327,4 +344,26 @@ export async function paintFrame(
       image.close();
     }
   });
+}
+
+/**
+ * A copy rectangle: the canvas's own pixels at the source, drawn at the
+ * rectangle. A canvas drawn onto itself is copied before it is drawn (the HTML
+ * standard's `drawImage`), so the source and the rectangle may overlap, as a
+ * scroll's do. Replace, don't blend, as for any rectangle: the `copy`
+ * operation, clipped to the rectangle, since unclipped it would clear the rest
+ * of the canvas.
+ */
+function moveWithin(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rect: FrameRect): void {
+  if (rect.data.byteLength < 8 || rect.w === 0 || rect.h === 0) return;
+  const view = new DataView(rect.data.buffer, rect.data.byteOffset, 8);
+  const sx = view.getUint32(0, true);
+  const sy = view.getUint32(4, true);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(rect.x, rect.y, rect.w, rect.h);
+  ctx.clip();
+  ctx.globalCompositeOperation = "copy";
+  ctx.drawImage(canvas, sx, sy, rect.w, rect.h, rect.x, rect.y, rect.w, rect.h);
+  ctx.restore();
 }

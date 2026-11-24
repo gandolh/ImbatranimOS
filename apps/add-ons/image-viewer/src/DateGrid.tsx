@@ -4,6 +4,9 @@ import { Button, cn } from "@imbatranim/ui";
 import type { DayGroup } from "./lib/groupByDay";
 import { verticalTarget } from "./lib/gridNav";
 
+/** A tile's image: the photo's embedded preview, turned the way the photo is, or the file itself. */
+export type TileSource = { src: string; transform?: string | undefined };
+
 type Props = {
   /** Null while the folder is still being listed. */
   groups: DayGroup[] | null;
@@ -12,7 +15,8 @@ type Props = {
   onRetry: () => void;
   /** The photo the viewer is on: the grid starts with it as the tab stop. */
   currentPath: string | null;
-  urlFor: (path: string) => string;
+  /** What a tile shows, or null while it waits (its photo's embedded preview may be on the way). */
+  sourceFor: (path: string) => TileSource | null;
   reading: boolean;
   done: number;
   total: number;
@@ -31,15 +35,16 @@ function headingFor(day: Date, now: Date): string {
 
 /**
  * A folder's photos by day, newest first. One tab stop (the active tile); the
- * arrow keys move it, Enter opens the photo. The thumbnails are the files
- * themselves, loaded lazily and sized by CSS.
+ * arrow keys move it, Enter opens the photo. A tile shows the photo's embedded
+ * Exif preview when it has a usable one, else the file itself, loaded lazily and
+ * sized by CSS.
  */
 export const DateGrid = memo(function DateGrid({
   groups,
   failed,
   onRetry,
   currentPath,
-  urlFor,
+  sourceFor,
   reading,
   done,
   total,
@@ -161,6 +166,7 @@ export const DateGrid = memo(function DateGrid({
             <div className="grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-1.5">
               {group.items.map(({ entry }) => {
                 const i = flatIndex++;
+                const source = sourceFor(entry.path);
                 return (
                   <button
                     key={entry.path}
@@ -174,14 +180,17 @@ export const DateGrid = memo(function DateGrid({
                       "bg-surface-container-low focus-visible:outline-primary aspect-square cursor-pointer overflow-hidden rounded-sm p-0 outline-offset-2 focus-visible:outline-2",
                     )}
                   >
-                    <img
-                      src={urlFor(entry.path)}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      draggable={false}
-                      className="h-full w-full object-cover"
-                    />
+                    {source && (
+                      <img
+                        src={source.src}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                        className="h-full w-full object-cover"
+                        style={source.transform ? { transform: source.transform } : undefined}
+                      />
+                    )}
                   </button>
                 );
               })}

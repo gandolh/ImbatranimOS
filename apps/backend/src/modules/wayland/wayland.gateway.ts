@@ -32,18 +32,18 @@ import {
   WS_KIND_AUDIO,
   WS_KIND_FRAME,
   type HostOutbound,
-  type VideoCodec,
+  type TabCodec,
 } from "./wayland.protocol";
 
 /**
- * The tab's viewport in CSS pixels, its devicePixelRatio and the video codecs
- * it decodes, from the upgrade's query.
+ * The tab's viewport in CSS pixels, its devicePixelRatio and the optional encodings
+ * it draws, from the upgrade's query.
  */
 interface TabOutput {
   width: number;
   height: number;
   ratio: number;
-  codecs: VideoCodec[];
+  codecs: TabCodec[];
 }
 
 interface LiveSession {

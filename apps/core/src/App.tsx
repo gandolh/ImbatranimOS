@@ -144,7 +144,6 @@ export function App() {
   // SWARM:S4 layout restore boot ──────────────────────────────────────────────
   const restoreLayout = useWindowStore((s) => s.restoreLayout);
   const persistLayout = useWindowStore((s) => s.persistLayout);
-  const windows = useWindowStore((s) => s.windows);
 
   // Restore this tab's layout, then open the startup set — in that
   // order, and in one effect, because the second decision depends on the first.
@@ -194,19 +193,30 @@ export function App() {
   // JSON.stringify + localStorage.setItem per frame and jank the drag. Debounce
   // to at most one write per 500ms (trailing). Serialization is unchanged —
   // persistLayout() still writes the exact same schema.
+  //
+  // A store subscription, not a `windows` selector: selected here, every focus change, open and close
+  // re-rendered the whole desktop under App (its 16 icons and their framer-motion wrappers measuring
+  // themselves), about 160 components a click, to schedule a write.
   const persistTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    if (persistTimer.current !== undefined) clearTimeout(persistTimer.current);
-    persistTimer.current = setTimeout(() => {
-      persistTimer.current = undefined;
-      persistLayout();
-    }, 500);
+    const schedule = () => {
+      if (persistTimer.current !== undefined) clearTimeout(persistTimer.current);
+      persistTimer.current = setTimeout(() => {
+        persistTimer.current = undefined;
+        persistLayout();
+      }, 500);
+    };
+    schedule();
+    const unsubscribe = useWindowStore.subscribe((state, prev) => {
+      if (state.windows !== prev.windows) schedule();
+    });
 
     return () => {
+      unsubscribe();
       if (persistTimer.current !== undefined) clearTimeout(persistTimer.current);
     };
-  }, [windows]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Flush any pending debounced write when the tab is hidden or unloaded so the
   // final drag/resize position is never lost. Registered once for the app's life.

@@ -30,6 +30,7 @@ import { MarketplaceSettings } from "./MarketplaceSettings";
 import { LinuxAppsSettings } from "./LinuxAppsSettings";
 import { UpdatesSettings } from "./UpdatesSettings";
 import { useRegistryVersion } from "../../shared/registry/marketplace";
+import { DeferredSection } from "./DeferredSection";
 
 function SectionHeader({ icon: Icon, title }: { icon: typeof Monitor; title: string }) {
   return (
@@ -71,7 +72,10 @@ export function Settings() {
     // (2026-11-13). One scrolling page of sections, fading at its foot so the
     // next section shows it is there.
     <div className="bg-surface-container-low text-on-surface flex h-full flex-col select-none">
-      <div className="custom-scrollbar phone:px-[16px] phone:pt-[16px] min-h-0 flex-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_calc(100%-34px),transparent)] px-[28px] pt-[24px] pb-[34px]">
+      <div
+        data-settings-page=""
+        className="custom-scrollbar phone:px-[16px] phone:pt-[16px] min-h-0 flex-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_calc(100%-34px),transparent)] px-[28px] pt-[24px] pb-[34px]"
+      >
         <header>
           <h1 className="font-display text-on-surface text-headline font-bold">Settings</h1>
           <p className="font-content text-on-surface-variant text-body mt-0.5">Tune the look of ImbatranimOS.</p>
@@ -124,44 +128,58 @@ export function Settings() {
         {/* Marketplace ──────────────────────────────────────────── */}
         <section className="mb-double">
           <SectionHeader icon={Store} title="Marketplace" />
-          <MarketplaceSettings focusRow={focusRow} />
+          <DeferredSection now={focusRow !== null}>
+            <MarketplaceSettings focusRow={focusRow} />
+          </DeferredSection>
         </section>
 
         {/* Linux apps ─────────────────────────────────────────── */}
         <section className="mb-double">
           <SectionHeader icon={Boxes} title="Linux apps" />
-          <LinuxAppsSettings />
+          <DeferredSection>
+            <LinuxAppsSettings />
+          </DeferredSection>
         </section>
 
         {/* Updates (for Linux apps) ──────────────────────────── */}
         <section className="mb-double">
           <SectionHeader icon={RefreshCw} title="Updates" />
-          <UpdatesSettings />
+          <DeferredSection>
+            <UpdatesSettings />
+          </DeferredSection>
         </section>
 
         {/* Storage ────────────────────────────────────────────── */}
         <section className="mb-double">
           <SectionHeader icon={HardDrive} title="Storage" />
-          <StorageSettings />
-          <OldDataSettings />
+          <DeferredSection>
+            <StorageSettings />
+            <OldDataSettings />
+          </DeferredSection>
         </section>
 
         {/* Default apps ───────────────────────────────────────── */}
         <section className="mb-double">
           <SectionHeader icon={FileCog} title="Default apps" />
-          <DefaultAppsSettings />
+          <DeferredSection minHeight={360}>
+            <DefaultAppsSettings />
+          </DeferredSection>
         </section>
 
         {/* Startup ────────────────────────────────────────────── */}
         <section className="mb-double">
           <SectionHeader icon={Power} title="Startup" />
-          <StartupSettings />
+          <DeferredSection>
+            <StartupSettings />
+          </DeferredSection>
         </section>
 
         {/* Backup ─────────────────────────────────────────────── */}
         <section className="mb-double">
           <SectionHeader icon={DatabaseBackup} title="Backup" />
-          <BackupSettings />
+          <DeferredSection>
+            <BackupSettings />
+          </DeferredSection>
         </section>
 
         {/* Keyboard ───────────────────────────────────────────── */}
@@ -170,7 +188,9 @@ export function Settings() {
           <p className="font-ui text-on-surface-variant text-label mb-3">
             Press <span className="text-on-surface font-semibold">?</span> anywhere on the desktop to open this list.
           </p>
-          <ShortcutList />
+          <DeferredSection>
+            <ShortcutList />
+          </DeferredSection>
         </section>
 
         {/* Security ───────────────────────────────────────────── */}

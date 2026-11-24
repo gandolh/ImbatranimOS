@@ -37,6 +37,11 @@ import { isVerified, loadVerified, verifiedEntry, type VerifiedList } from "./ve
 const FETCH_TIMEOUT_MS = 5 * 60_000;
 /** How long `build.install` and `build.command` may each take. */
 const BUILD_TIMEOUT_MS = 15 * 60_000;
+/**
+ * npm's cache for builds is emptied before a build once it holds more than this. The whole catalog's installs need
+ * about 180 MB of it (2026-11-24), so this is about one and a half sets.
+ */
+const NPM_CACHE_CAP_BYTES = 256 * 1024 * 1024;
 /** The most a build may leave in the directory it serves from. */
 export const MAX_SERVED_BYTES = 256 * 1024 * 1024;
 
@@ -774,6 +779,8 @@ export class MarketplaceService implements OnModuleInit {
     };
 
     await this.prepareDirs();
+    const emptied = await trimNpmCache(join(this.appsDir(), ".cache", "npm"));
+    if (emptied > 0) log.push(`Emptied npm's cache (over ${NPM_CACHE_CAP_BYTES / 1024 / 1024} MB)`);
     log.push(
       `Installing ${target.d?.name ?? id} from ${repo} at ${commit}` +
         (url ? ` (${url.trust.by === "verified" ? "verified" : "trusted by you"})` : ""),
@@ -863,6 +870,23 @@ export class MarketplaceService implements OnModuleInit {
         `The build output is ${Math.round(servedBytes / 1048576)} MB; the most an app may serve is ${MAX_SERVED_BYTES / 1048576} MB`,
       );
       return;
+    }
+
+    // ── an app keeps only what it serves and runs ──
+    // Its dependencies were for the build: nothing reads them once the output
+    // is there, and every install, update and rebuild fetches into a new
+    // directory. Accessories' build left 132 MB of node_modules beside a
+    // 144 KB output. An app with a server runs from this directory: it keeps
+    // the build's dependencies, unless it names an install of its own for
+    // the server, which replaces them (imbatranim-office: 924 to 46 MB).
+    if (!d.server) {
+      const removed = await removeDependencies(dir, required(realOutput, "the built output"));
+      if (removed > 0)
+        log.push(`Removed the build's dependencies (${removed} node_modules folder${removed === 1 ? "" : "s"})`);
+    } else if (d.server.install) {
+      if (!(await step("Installing the server's dependencies", d.server.install, root, env, BUILD_TIMEOUT_MS))) {
+        return;
+      }
     }
 
     // ── switch to the new build ──
@@ -1182,6 +1206,51 @@ export async function directorySize(dir: string, within: string, cap = MAX_SERVE
     }
   }
   return total;
+}
+
+/**
+ * Empties npm's cache `cache` when it holds more than `cap` bytes, and returns the bytes counted (0 when it was kept).
+ * npm never removes a package it fetched, and `npm cache verify` keeps whatever its index names, which is every
+ * version ever fetched, so each update of an app adds the versions it changed for good. The next install fetches what
+ * it needs again. Builds run one at a time, and nothing else uses this cache.
+ */
+export async function trimNpmCache(cache: string, cap = NPM_CACHE_CAP_BYTES): Promise<number> {
+  const size = await directorySize(cache, cache, cap).catch(() => 0);
+  if (size <= cap) return 0;
+  await fs.rm(cache, { recursive: true, force: true });
+  await fs.mkdir(cache, { recursive: true, mode: 0o700 });
+  return size;
+}
+
+/**
+ * Removes every `node_modules` folder in a finished build's directory `dir`, and returns how many. `output` (a real
+ * path) is never touched: the walk does not enter it, and keeps any folder on the way to it. Symlinks are not
+ * followed, `.git` is not entered, and a folder that cannot be removed is left.
+ */
+export async function removeDependencies(dir: string, output: string): Promise<number> {
+  let removed = 0;
+  const stack = [await fs.realpath(dir)];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (current === undefined) break;
+    const entries = await fs.readdir(current, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      // A Dirent is the entry itself: a symlink to a folder is not a directory here.
+      if (!entry.isDirectory() || entry.name === ".git") continue;
+      const path = join(current, entry.name);
+      if (path === output) continue;
+      if (entry.name === "node_modules" && !isInside(path, output)) {
+        const ok = await fs.rm(path, { recursive: true, force: true }).then(
+          () => true,
+          () => false,
+        );
+        if (ok) removed++;
+      } else {
+        stack.push(path);
+      }
+    }
+  }
+  return removed;
 }
 
 export { isAppId, recordedBuild, type RecordedApp } from "./recorded-build";

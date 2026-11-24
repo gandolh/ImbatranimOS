@@ -1,4 +1,5 @@
 import { MAX_RANGE_BYTES } from "../api/readRange";
+import { findExifThumbnail, type ExifThumbnail } from "./exifThumbnail";
 
 /** What the first `bytes.length` bytes of a file say about its capture date. */
 export type ExifParse =
@@ -147,30 +148,39 @@ export function parseExifDateString(text: string): Date | null {
 /** Reads `length` bytes of the file from `start`; the shape {@link readRange} has once bound to a file. */
 export type ReadWindow = (start: number, length: number) => Promise<Uint8Array>;
 
+/** What a photo's first bytes say: its capture date and its embedded preview, each null when it has none. */
+export type ExifRead = { date: Date | null; thumbnail: ExifThumbnail | null };
+
+const NOTHING_READ: ExifRead = { date: null, thumbnail: null };
+
 /**
- * A photo's capture date, or null. Reads the first {@link FIRST_READ_BYTES},
- * then, only while the Exif block lies further, more: each read reaches the
- * byte count the parse asked for, or twice the bytes held, whichever is
- * further, and never past {@link MAX_RANGE_BYTES} in all (so at most three
- * requests). A read that fails is null, so one unreadable photo falls back to
- * its modified time.
+ * A photo's capture date and embedded preview. Reads the first {@link FIRST_READ_BYTES}, then, only while the Exif
+ * block lies further, more: each read reaches the byte count the parse asked for, or twice the bytes held,
+ * whichever is further, and never past {@link MAX_RANGE_BYTES} in all (so at most three requests). The preview
+ * lies inside the Exif block, so it needs no read of its own. A read that fails gives neither, so one unreadable
+ * photo falls back to its modified time and its file.
  */
-export async function readExifDate(read: ReadWindow): Promise<Date | null> {
+export async function readExif(read: ReadWindow): Promise<ExifRead> {
   try {
     let bytes = await read(0, FIRST_READ_BYTES);
     let parsed = parseExifDate(bytes);
     while (parsed.kind === "need-more" && bytes.length >= FIRST_READ_BYTES && bytes.length < MAX_RANGE_BYTES) {
       const target = Math.min(MAX_RANGE_BYTES, Math.max(parsed.end, bytes.length * 2));
       const more = await read(bytes.length, target - bytes.length);
-      if (more.length === 0) return null;
+      if (more.length === 0) return NOTHING_READ;
       const joined = new Uint8Array(bytes.length + more.length);
       joined.set(bytes, 0);
       joined.set(more, bytes.length);
       bytes = joined;
       parsed = parseExifDate(bytes);
     }
-    return parsed.kind === "date" ? parsed.date : null;
+    return { date: parsed.kind === "date" ? parsed.date : null, thumbnail: findExifThumbnail(bytes) };
   } catch {
-    return null;
+    return NOTHING_READ;
   }
+}
+
+/** A photo's capture date, or null: {@link readExif}'s date. */
+export async function readExifDate(read: ReadWindow): Promise<Date | null> {
+  return (await readExif(read)).date;
 }

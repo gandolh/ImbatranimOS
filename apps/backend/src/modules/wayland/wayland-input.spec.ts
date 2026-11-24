@@ -29,9 +29,11 @@ describe("checking the tab's Linux window input", () => {
     expect(toHostMessage(S, { type: "keyframe" })).toBeNull();
   });
 
-  it("keeps only the video codecs the host knows, each once", () => {
+  it("keeps only the optional encodings the host knows, each once", () => {
     expect(parseCodecs("vp8")).toEqual(["vp8"]);
     expect(parseCodecs("h264,vp8,vp8")).toEqual(["vp8"]);
+    expect(parseCodecs("copy,vp8")).toEqual(["vp8", "copy"]);
+    expect(parseCodecs("copy")).toEqual(["copy"]);
     expect(parseCodecs("")).toEqual([]);
     expect(parseCodecs(null)).toEqual([]);
     expect(parseCodecs("vp8,".repeat(40))).toEqual([]);

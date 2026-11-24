@@ -137,6 +137,12 @@ names and `HOST=127.0.0.1`. The window waits until `GET <health>` answers
 (30 seconds at most). The server is stopped once no window holds it and no
 socket is open, and is restarted if it crashes, up to five times in two minutes.
 
+`server.install` (optional) is an install for what the server needs at run time,
+like `["npm", "ci", "--omit=dev", "--workspace=server"]`. It runs after the build
+has passed its checks and replaces the build's dependencies: the server runs
+from the build's directory, so without it everything the build installed stays
+on disk. A static app needs none: its dependencies are removed after the build.
+
 The app reaches its server only through the desktop:
 
 - `host.server.ws` + a path, for WebSockets, and

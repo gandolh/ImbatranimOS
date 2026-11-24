@@ -24,6 +24,43 @@ The first visit sets the owner's name and password (no default password ever
 exists), and every visit after that asks for it. Set `SETUP_TOKEN` to make the
 first claim also need a token only you know (see Identity below).
 
+## Deploying: build with `infrastructure/image.sh`
+
+On a server that deploys from git, build with the script, then start as usual:
+
+```bash
+infrastructure/image.sh
+```
+
+```bash
+docker compose -f infrastructure/docker-compose.yml up -d imbatranimos
+```
+
+The script builds the image's slow parts once each, as local images tagged by
+the hash of what they are made from: `imbatranim-runtime-base` (Alpine's
+packages and Nix), `imbatranim-wayland-host-bin` (the host's binary),
+`imbatranim-deps` (the build's `node_modules`) and `imbatranim-proddeps-bin`
+(production's). A deploy that changes only the code reuses all four and builds
+the code alone; one that changes the host, a dependency or the Nix pin rebuilds
+that part. No registry is involved: the tags stay on the machine.
+
+Why it matters: BuildKit removes cache mounts unused for 48 hours, and any prune
+removes the rest of the build cache, so with plain `docker compose build` a
+deploy after a quiet week compiled the Rust host and downloaded every package
+again. Measured 2026-11-24 on four cores: a code-only deploy after the build
+cache was pruned took 181 s with `docker compose build` and 28 s with the
+script, which also needs no Rust toolchain for it.
+
+- `--dry-run` prints which parts it would build and the tags.
+- After a build it keeps each part's newest two tags (the current one and the
+  one before, for a rollback) and removes the untagged images earlier builds of
+  `imbatranimos:1.0` left.
+- Clean up with `docker image prune -a --filter label!=imbatranim.base`, not a
+  bare `docker image prune -a` or `docker system prune -a`: no container uses
+  the bases, so those remove them and the next deploy is cold again.
+- `docker compose build` alone still works: the build arguments default to the
+  Dockerfile's own stages, so it builds everything, as before.
+
 ## Developing (contained)
 
 `npm run dev` runs **`docker compose … --profile dev watch`** through

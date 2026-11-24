@@ -1,6 +1,6 @@
 ---
-summary: Brief 114's measurement (2026-11-23). Batching the Terminal's PTY output into frames of up to 64 KiB or 4 ms (Ghostty's read-thread rule) cut WebSocket frames about 15 times, but drain time rose 7% and 12% and backend CPU 32% and 22%, so the bar (a 15% drop in either) fails. Linux's node-pty already reads 4 KiB at a time. Measured, not built.
-updated: 2026-11-23
+summary: Brief 114's measurement (2026-11-23), and a second rule measured the same way on 2026-11-24. Batching the Terminal's PTY output into frames of up to 64 KiB or 4 ms (Ghostty's read-thread rule) cut WebSocket frames about 15 times, but drain time rose 7% and 12% and backend CPU 32% and 22%, so the bar (a 15% drop in either) fails. Linux's node-pty already reads 4 KiB at a time. Measured, not built.
+updated: 2026-11-24
 ---
 
 # Batching PTY output: measured
@@ -53,3 +53,23 @@ is slow either way (12 s for 50 MB): its cost is in the shell's pipe and the pty
   buffers) could keep the frame savings without the CPU. Not filed; it needs its own bar.
 - The tab's side: 15 times fewer `message` events could matter to a slow phone's main thread, which this page
   didn't measure.
+
+## A second rule, measured the same way (2026-11-24)
+
+The performance sweep's round 12 shipped another rule on 2026-11-23 without this page: the first chunk after a quiet
+spell goes at once, and what follows within 5 ms of a send is joined into the next frame (no size cap). Its numbers
+were taken with the backend unpinned: a 25 MB `cat` went from 19,854 frames to 249 and 2.70 to 2.06 s.
+Measured again the way this page does, with the backend pinned to one CPU (`taskset -c 0`, as the production cap
+has it), bash as the shell, two passes of five runs after a warmup:
+
+| | One frame per read | 5 ms join | Change |
+|---|---:|---:|---:|
+| 50 MB `cat`: backend CPU a run | 1,100 and 1,190 ms | 1,580 and 1,410 ms | +31% |
+| 50 MB `cat`: drain | 4,400 and 4,584 ms | 4,849 and 4,485 ms | +4% |
+| `yes \| head -c 50M`: backend CPU a run | 4,790 and 4,860 ms | 5,100 and 4,170 ms | −4% |
+| `yes \| head -c 50M`: drain | 11,633 and 13,233 ms | 11,637 and 11,559 ms | −7% |
+| Keystroke to echo, median | 9.8 and 9.0 ms | 9.6 and 9.2 ms | none |
+
+It fails the same bar, so it was reverted (`992b178`) and the call above stands. Unpinned, the backend had spare
+cores and the join looked free; under one CPU it isn't.
+

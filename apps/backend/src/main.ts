@@ -5,6 +5,7 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import { json } from "express";
 import { AppModule } from "./app.module";
 import { securityHeadersFor } from "./security-headers";
+import { precompressedAssets } from "./static-assets";
 import { browserProxyOriginOf, ignoredEnvNotice, type Env } from "./config/env.schema";
 import { DbService } from "./db/db.service";
 
@@ -29,6 +30,10 @@ async function bootstrap() {
       }),
     ),
   );
+  // The built desktop's compressed copies, ahead of the static server
+  // (app.module.ts), which sends the rest. Prod image only, as that one is.
+  const staticRoot = config.get("STATIC_ROOT", { infer: true });
+  if (staticRoot) app.use(precompressedAssets(staticRoot));
   // Raise Express's 100 KB default JSON body cap. Registered here (before
   // listen/init) so it runs ahead of Nest's built-in body parser and sets
   // req._body first, which makes the built-in 100 KB parser skip. Without this,

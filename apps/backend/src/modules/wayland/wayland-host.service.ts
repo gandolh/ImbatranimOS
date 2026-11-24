@@ -14,15 +14,15 @@ import {
   ProtocolError,
   type HostInbound,
   type HostOutbound,
-  type VideoCodec,
+  type TabCodec,
 } from "./wayland.protocol";
 
-/** A tab's output: its viewport, devicePixelRatio and the video codecs it decodes. */
+/** A tab's output: its viewport, devicePixelRatio and the optional encodings it draws. */
 export interface SessionOutput {
   width: number;
   height: number;
   ratio: number;
-  codecs: VideoCodec[];
+  codecs: TabCodec[];
 }
 
 /** What one desktop session hears from the host. */

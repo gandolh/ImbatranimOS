@@ -40,7 +40,7 @@ Messages over 64 MiB are refused, and a malformed one ends the connection.
 
 | `type` | Fields | Meaning |
 |---|---|---|
-| `session_open` | `session`, `width`, `height`, `ratio`, `codecs` | A tab wants Linux apps. Listen on `$XDG_RUNTIME_DIR/wayland-<session>` with one output of the tab's viewport size, its scale the ceiling of `ratio`, the tab's `devicePixelRatio` (see "Scale"). `codecs` lists the video codecs the tab decodes: `["vp8"]` or `[]` (left out, `[]`); see "Frames". |
+| `session_open` | `session`, `width`, `height`, `ratio`, `codecs` | A tab wants Linux apps. Listen on `$XDG_RUNTIME_DIR/wayland-<session>` with one output of the tab's viewport size, its scale the ceiling of `ratio`, the tab's `devicePixelRatio` (see "Scale"). `codecs` lists the optional encodings the tab draws: `vp8` (a video region as a stream) and `copy` (a scroll as a move of its own pixels), any of them or none (left out, `[]`); see "The body of a frame". |
 | `session_close` | `session` | The tab went away. Disconnect the session's clients and remove its socket. |
 | `output` | `session`, `width`, `height`, `ratio` | The tab's viewport or its `devicePixelRatio` changed. |
 | `frame_ack` | `session`, `toplevel` | The toplevel's last frame went to the tab and the socket has room: it may send another. |
@@ -75,7 +75,7 @@ share one space within a session.
 
 | `type` | Fields |
 |---|---|
-| `hello` | `version` (9) |
+| `hello` | `version` (10) |
 | `session_ready` | `session`, `display` (the socket name, `wayland-<session>`), `x11_display` (the X display number reserved for the session's X11 apps, or `null`) |
 | `session_failed` | `session`, `reason` |
 | `toplevel_created`, `toplevel_updated` | `session`, `toplevel`, `title`, `app_id`, `width`, `height`, `scale`, `geometry`, `decorations`, `min_width`, `min_height`, `max_width`, `max_height` |
@@ -369,7 +369,7 @@ Each rectangle:
 | Field | Size | |
 |---|---|---|
 | x, y, w, h | 4 × u32 | in image pixels |
-| encoding | u8 | 1 deflate (zlib) RGBA, 2 lossless WebP, 3 JPEG (lossy), 4 VP8 (lossy, a frame of the window's video stream) |
+| encoding | u8 | 1 deflate (zlib) RGBA, 2 lossless WebP, 3 JPEG (lossy), 4 VP8 (lossy, a frame of the window's video stream), 5 copy (pixels the tab already has, moved) |
 | length | u32 | |
 | data | length | |
 
@@ -400,10 +400,27 @@ acks come back slowly (50 ms or more) and back up while they are quick
 (under 20 ms). The settle frame stays lossless WebP. A tab that says no codec
 gets JPEG as above. The constants are in `video.rs`.
 
+A copy (encoding 5) goes only to a tab whose `codecs` holds `copy`. Its
+data is 8 bytes, the source's `x` and `y` (u32 each); the tab draws the
+`w × h` pixels it has there at the rectangle, replacing what was there, as a
+canvas drawn onto itself does (the source is read before anything is
+written, so the two may overlap). A copy reads the window as it was before
+the frame, and comes before the frame's other rectangles. The host sends one
+for a scroll: apps redraw a scrolled window whole, but most of its rows are
+rows the tab already shows, some rows up or down. In the largest damaged
+rectangle at least 48 rows tall, row hashes find the distance, every row of
+the moved block is compared byte for byte, and a block of at least 24 rows
+goes as a copy, with only the rows outside it that changed sent as pixels.
+No copy follows a new size, a `resync`, `freeze` or `visibility` (the frame
+after one goes whole), or while part of the window has gone lossy. The
+constants are in `pixels.rs`.
+
 ## Flow control
 
 A toplevel has at most one frame in flight. The host sends a toplevel's frame
-at most every 33 ms, only when it has damage and no frame in flight, and
+at most every 33 ms, only when it has damage and no frame in flight (damage
+after a rest of 33 ms or more goes at once; with nothing to send, answer or
+settle, the host's clock stops and it sleeps), and
 holds the toplevel's `wl_surface.frame` callbacks while one is. The backend
 sends `frame_ack` once the WebSocket's buffered amount is below 512 KiB.
 Damage that arrives meanwhile is folded into the next frame, so a slow link
@@ -411,7 +428,7 @@ gets the latest picture rather than a queue, and the app draws less often.
 
 ## `/api/wayland`
 
-`GET /api/wayland?session=<id>&width=<w>&height=<h>&ratio=<r>[&codecs=vp8]`, upgraded, with the
+`GET /api/wayland?session=<id>&width=<w>&height=<h>&ratio=<r>[&codecs=vp8,copy]`, upgraded, with the
 Terminal's checks (the session cookie, Origin, and a 30 s sweep that closes
 the socket when the sign-in ends). One socket per session id.
 

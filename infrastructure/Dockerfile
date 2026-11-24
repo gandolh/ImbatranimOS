@@ -11,6 +11,23 @@
 # ships without a compiler.
 
 # ---------------------------------------------------------------------------
+# Prebuilt bases (2026-11-24). The four slow parts of a build are stages of
+# their own: the runtime base (Alpine packages and Nix), the Wayland host,
+# and the build and production node_modules. Each argument below names the
+# stage to use; left alone, they name the stages in this file and a build
+# runs everything, as `docker compose build` always has.
+# infrastructure/image.sh builds each part once as a local image tagged by the
+# hash of its inputs, and passes those tags here, so a deploy that changes
+# only the code builds only the code. Tagged images are not build cache:
+# BuildKit's garbage collection (which drops cache mounts unused for 48
+# hours) and `docker builder prune` leave them alone.
+# ---------------------------------------------------------------------------
+ARG RUNTIME_BASE=runtime-base
+ARG WAYLAND_HOST=wayland-host-bin
+ARG BUILD_DEPS=deps
+ARG PROD_DEPS=proddeps-bin
+
+# ---------------------------------------------------------------------------
 # manifests — the workspace manifests with the product version taken out
 # ---------------------------------------------------------------------------
 # Every commit bumps the version in package.json and package-lock.json
@@ -18,10 +35,10 @@
 # `npm ci` layer's cache key on every commit, so each build reinstalled every
 # dependency and recompiled the native addons. This stage reruns on every
 # commit, but it only copies files and runs one small script, and its output
-# changes only when a dependency does: `deps` copies that output, and BuildKit
-# keys the copy on its content. The real files return in the stages that build
-# the code (builder, dev); the prod image takes its own (proddeps, and the
-# package.json it serves the version from).
+# changes only when a dependency does: `deps` and `proddeps` copy that output,
+# and BuildKit keys the copy on its content. The real files return in the
+# stages that build the code (builder, dev), and the prod image takes the
+# package.json it serves the version from.
 FROM node:24.22.1-alpine AS manifests
 WORKDIR /m
 COPY package.json package-lock.json ./
@@ -51,18 +68,22 @@ FROM node:24.22.1-alpine AS deps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
 # The normalised manifests (above): one root lockfile, one npm ci, reused
-# until a dependency changes.
+# until a dependency changes. npm's download cache is a BuildKit cache mount:
+# when a dependency does change, only the packages that changed are fetched
+# again, not all two thousand.
 COPY --from=manifests /m/ ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci
 
 # ---------------------------------------------------------------------------
 # builder — compile backend (nest) and the desktop (core vite build, which
 # bundles the add-on packages via workspace resolution)
 # ---------------------------------------------------------------------------
-FROM deps AS builder
+FROM ${BUILD_DEPS} AS builder
 # The real manifests over the normalised ones, and turbo's config.
 COPY package.json package-lock.json turbo.json ./
-COPY apps ./apps
+# Not the Wayland host: its own stage builds it, and its sources here made a
+# change to it rebuild the desktop and the backend too.
+COPY --exclude=wayland-host apps ./apps
 COPY packages ./packages
 # Sub-path build args. Default to root / same-origin (the standalone container
 # reached at its own port). A Caddy sub-path deploy passes
@@ -72,7 +93,12 @@ COPY packages ./packages
 # ignores VITE_* — it serves whatever static files the build emitted.
 ARG VITE_BASE=/
 ARG VITE_API_URL=/api
-RUN VITE_BASE=$VITE_BASE VITE_API_URL=$VITE_API_URL npx turbo build
+# turbo's cache is a BuildKit cache mount, kept between builds: a workspace
+# whose inputs (and VITE_* above) didn't change has its dist restored instead
+# of rebuilt, so a change to the backend alone skips the desktop's build and
+# the other way round.
+RUN --mount=type=cache,target=/app/.turbo/cache,sharing=locked \
+    VITE_BASE=$VITE_BASE VITE_API_URL=$VITE_API_URL npx turbo build
 
 # ---------------------------------------------------------------------------
 # wayland-host — the Wayland host Linux apps connect to (Rust, smithay).
@@ -93,7 +119,15 @@ COPY apps/wayland-host/csrc ./csrc
 COPY apps/wayland-host/src ./src
 COPY apps/wayland-host/vendor ./vendor
 ENV RUSTFLAGS="-C target-feature=-crt-static"
-RUN cargo build --release --locked
+# Cargo's registry and its target directory are BuildKit cache mounts, kept
+# between builds: a change to the host's own source recompiles the host, not
+# smithay, libopus and the other dependencies again (78 s to 35 s on four
+# cores, 2026-11-23). The binary is copied out of the mount, which isn't part
+# of the layer.
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/src/target,id=imbatranim-wayland-host-target,sharing=locked \
+    cargo build --release --locked \
+ && mkdir -p /out && cp target/release/imbatranim-wayland-host /out/
 
 # ---------------------------------------------------------------------------
 # proddeps — production-only node_modules (native modules compiled here)
@@ -101,16 +135,13 @@ RUN cargo build --release --locked
 FROM node:24.22.1-alpine AS proddeps
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
-COPY package.json package-lock.json ./
-COPY apps/backend/package.json ./apps/backend/
-COPY apps/core/package.json ./apps/core/
-# All add-on manifests (see the deps stage) so the workspace tree resolves.
-COPY --parents apps/add-ons/*/package.json ./
-# Shared workspace packages' manifests too (see the deps stage rationale).
-COPY --parents packages/*/package.json ./
+# The normalised manifests, as `deps` takes them (every workspace's, so the
+# tree resolves). With the real ones the version every commit bumps made this
+# layer rerun on every build: the production install and node-pty's compile.
+COPY --from=manifests /m/ ./
 # Backend runtime deps only — the desktop is prebuilt to static files, so
 # none of its packages (react etc.) may reach the prod image.
-RUN npm ci --omit=dev --workspace=backend
+RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci --omit=dev --workspace=backend
 # Strip native build intermediates now that the .node binaries are compiled:
 # object files, gyp obj.target dirs, and the C sources for node-pty +
 # better-sqlite3 (~60MB). Hoisting puts everything in /app/node_modules.
@@ -122,6 +153,12 @@ RUN npm ci --omit=dev --workspace=backend
 # prebuilds, so it always compiles and always left its makefiles. A build/
 # without its binary fails the build here rather than at run time.
 # Also drop:
+#   - what no runtime reads, 23 of the tree's 49 MB and 4,800 of its 10,000
+#     files, the layer 57 to 30 MB (2026-11-23): type
+#     declarations and the TypeScript sources packages ship beside their
+#     JavaScript (no package's main or exports names one to run), source maps
+#     (the backend runs without --enable-source-maps), Markdown and .github.
+#     Licences stay.
 #   - typescript: backend's devDep leaks in via the workspace tree (~23MB) even
 #     with --omit=dev; the runtime never needs the compiler. rm -rf is a no-op
 #     when it is absent, so this is self-guarding.
@@ -147,14 +184,17 @@ RUN cd node_modules \
         esac; \
       done; \
     done \
+ && find . -type f \( -name '*.ts' -o -name '*.mts' -o -name '*.cts' -o -name '*.map' \
+      -o -name '*.md' -o -name '*.markdown' \) -delete \
+ && find . -type d -name .github -prune -exec rm -rf {} + \
  && mkdir -p /app/apps/backend/node_modules
 
 # ---------------------------------------------------------------------------
-# prod — slim runtime: no compiler, runs as the unprivileged imbatranim user
+# runtime-base — what the running OS needs besides its own code: Alpine's
+# packages, the imbatranim user, the shell's files and Nix with its base
+# profile. It changes when those do, not with the code (see Prebuilt bases).
 # ---------------------------------------------------------------------------
-FROM node:24.22.1-alpine AS prod
-LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.421.0"
+FROM node:24.22.1-alpine AS runtime-base
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -186,7 +226,7 @@ COPY infrastructure/bash/ /etc/bash/
 # state lives in /nix (its own volume), never in the home folder: a home link
 # into /nix would make every backup fail its restore, which refuses links that
 # point outside the home. The paths are read by setup-image.sh, the
-# entrypoint, the Terminal and Nix itself. The dev stage repeats this block.
+# entrypoint, the Terminal and Nix itself. The dev stage builds on this one.
 ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
     NIX_CACHE_HOME=/nix/var/imbatranim/cache \
     NIX_CONFIG_HOME=/nix/var/imbatranim/config \
@@ -198,6 +238,28 @@ ENV LOCALE_ARCHIVE=$NIX_STATE_HOME/profiles/imbatranim-base/lib/locale/locale-ar
     XDG_DATA_DIRS=$NIX_STATE_HOME/profile/share:$NIX_STATE_HOME/profiles/imbatranim-base/share:/usr/local/share:/usr/share
 COPY infrastructure/nix /tmp/nix-setup
 RUN sh /tmp/nix-setup/setup-image.sh && rm -rf /tmp/nix-setup
+
+# What prod takes from the host's and proddeps' stages, alone: kept as a base,
+# an image of just these files holds neither the Rust toolchain (1 GB) nor the
+# compilers proddeps builds node-pty with.
+FROM scratch AS wayland-host-bin
+COPY --from=wayland-host /out/imbatranim-wayland-host /out/imbatranim-wayland-host
+FROM scratch AS proddeps-bin
+COPY --from=proddeps /app/node_modules /app/node_modules
+COPY --from=proddeps /app/apps/backend/node_modules /app/apps/backend/node_modules
+
+# The prebuilt parts, by the names the arguments at the top give: the stages
+# above, or local images infrastructure/image.sh made. COPY --from takes no
+# arguments, so each gets a stage name here.
+FROM ${WAYLAND_HOST} AS wayland-host-out
+FROM ${PROD_DEPS} AS proddeps-out
+
+# ---------------------------------------------------------------------------
+# prod — slim runtime: no compiler, runs as the unprivileged imbatranim user
+# ---------------------------------------------------------------------------
+FROM ${RUNTIME_BASE} AS prod
+LABEL org.opencontainers.image.title="ImbatranimOS" \
+      org.opencontainers.image.version="1.470.0"
 WORKDIR /app
 # Hoisted runtime deps + any backend-nested overrides (may be empty).
 # --chown sets ownership as the files land, so there is no second `chown -R`
@@ -205,11 +267,11 @@ WORKDIR /app
 # application code at runtime, so it does not strictly need the runtime user's
 # ownership — but writing it as imbatranim here is free (single layer) and keeps
 # the tree tidy.
-COPY --chown=imbatranim:imbatranim --from=proddeps /app/node_modules ./node_modules
-COPY --chown=imbatranim:imbatranim --from=proddeps /app/apps/backend/node_modules ./apps/backend/node_modules
+COPY --chown=imbatranim:imbatranim --from=proddeps-out /app/node_modules ./node_modules
+COPY --chown=imbatranim:imbatranim --from=proddeps-out /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/core/dist ./public
-COPY --from=wayland-host /src/target/release/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
+COPY --from=wayland-host-out /out/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
 COPY --chown=imbatranim:imbatranim package.json ./
 COPY --chown=imbatranim:imbatranim apps/backend/package.json ./apps/backend/
 # The marketplace catalog: what may be installed. Root-owned on
@@ -228,7 +290,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.421.0
+    IMAGE_VERSION=1.470.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -243,39 +305,32 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
 # tini is PID 1: it reaps orphans (a Linux app started from a Terminal
 # outlives the shell that would have waited for it) and passes signals on.
 ENTRYPOINT ["/sbin/tini", "--", "/entrypoint.sh"]
-CMD ["node", "apps/backend/dist/main"]
+# A young generation of 2 MiB semi-spaces (V8's default here grows to tens of
+# MiB under load and keeps them): after 18,000 requests the backend held
+# 118 MiB instead of 159, with the same CPU per request, per Terminal flood
+# and per Linux window frame (measured 2026-11-23). On the command line, not
+# in NODE_OPTIONS: a Terminal's shell inherits the backend's environment, and
+# the owner's own Node programs keep V8's defaults.
+CMD ["node", "--max-semi-space-size=2", "apps/backend/dist/main"]
 
 # ---------------------------------------------------------------------------
 # dev — contained development: `turbo dev` = Nest watch + Vite HMR
 # (docker compose dev profile SYNCS source changes into this image's own FS
 # via `develop.watch` — no bind mounts, no anonymous-volume list)
 # ---------------------------------------------------------------------------
-FROM deps AS dev
-# git, as in the prod stage: the Git app runs it, and so does a marketplace
-# install. The deps stage has only the native-addon toolchain. libxkbcommon
-# and libvpx for the Wayland host. foot (with a font) and gtk3-demo are Linux apps to
-# test the host with, in the dev image only: foot asks for the OS title bar,
-# gtk3-demo draws its own.
-# dbus, shared-mime-info and bash (with its prompt file): as in the prod stage.
-RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info bash foot font-dejavu gtk+3.0-demo \
-    && rm -f /usr/libexec/dbus-daemon-launch-helper
-RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
-    addgroup -g 1000 imbatranim && adduser -D -s /bin/bash -u 1000 -G imbatranim imbatranim
-COPY infrastructure/bash/ /etc/bash/
-# Linux apps under Nix, as in the prod stage (the reasons are there).
-ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
-    NIX_CACHE_HOME=/nix/var/imbatranim/cache \
-    NIX_CONFIG_HOME=/nix/var/imbatranim/config \
-    NIX_DATA_HOME=/nix/var/imbatranim/data \
-    XDG_RUNTIME_DIR=/run/user/1000 \
-    FONTCONFIG_FILE=/etc/fonts/nix-apps.conf \
-    NIXPKGS_ALLOW_UNFREE=1
-ENV LOCALE_ARCHIVE=$NIX_STATE_HOME/profiles/imbatranim-base/lib/locale/locale-archive \
-    XDG_DATA_DIRS=$NIX_STATE_HOME/profile/share:$NIX_STATE_HOME/profiles/imbatranim-base/share:/usr/local/share:/usr/share
-COPY infrastructure/nix /tmp/nix-setup
-RUN sh /tmp/nix-setup/setup-image.sh && rm -rf /tmp/nix-setup
+FROM runtime-base AS dev
+# The runtime base (Alpine's packages, the user, the shell's files and Nix,
+# shared with the production image) and what development adds: the
+# native-addon toolchain, and foot (with a font) and gtk3-demo, Linux apps to
+# test the host with: foot asks for the OS title bar, gtk3-demo draws its own.
+RUN apk add --no-cache python3 make g++ foot font-dejavu gtk+3.0-demo
 WORKDIR /app
-COPY --from=wayland-host /src/target/release/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
+# Every dependency, from deps, after everything slow above. It was the other
+# way round (this stage built on deps), so a changed lockfile reinstalled
+# Alpine's packages and Nix here too: a dependency change rebuilt the dev
+# image in 85 s (2026-11-24).
+COPY --from=deps /app ./
+COPY --from=wayland-host /out/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
 COPY infrastructure/entrypoint.sh /entrypoint.sh
 # The runtime writes four places under /app, and gets only those, made here:
 # turbo's cache (.turbo), Nest's output (dist, which it deletes and recreates,

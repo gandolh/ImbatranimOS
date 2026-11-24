@@ -1,7 +1,6 @@
-import React, { useRef, useCallback, useEffect, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import React, { useRef, useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { m, AnimatePresence, useReducedMotion } from "framer-motion";
 import { createPortal } from "react-dom";
-import { useDrag } from "@use-gesture/react";
 import { Minus, Square, X, Copy } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { APP_REGISTRY } from "../../registry/registry";
@@ -18,6 +17,9 @@ import { SnapOverlay } from "./SnapOverlay";
 import { forgetWindowFocus, rememberWindowFocus } from "./focusIntoWindow";
 
 type ResizeDirection = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
+/** How far a press on the title bar moves before it is a drag, in CSS pixels (use-gesture's tap filter). */
+const DRAG_THRESHOLD = 3;
 
 type WindowProps = {
   windowId: string;
@@ -53,68 +55,77 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
   const updatePosition = useWindowStore((s) => s.updatePosition);
   const updateSize = useWindowStore((s) => s.updateSize);
 
-  const startRef = useRef<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    posX: number;
-    posY: number;
-  } | null>(null);
+  // Plain pointer events, as the title bar's drag: a press here follows the
+  // pointer on the window until it lets go.
+  const cleanup = useRef<(() => void) | null>(null);
+  useEffect(() => () => cleanup.current?.(), []);
 
-  const bind = useDrag(
-    ({ first, movement: [mx, my], event }) => {
-      event.stopPropagation();
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation();
+      if (e.button !== 0) return;
+      const pointerId = e.pointerId;
+      const pointer = { x: e.clientX, y: e.clientY };
+      let start: { width: number; height: number; posX: number; posY: number } | null = null;
 
-      const win = useWindowStore.getState().windows.find((w) => w.id === instanceId);
-      if (!win) return;
+      const move = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        const mx = ev.clientX - pointer.x;
+        const my = ev.clientY - pointer.y;
+        if (!start) {
+          if (Math.hypot(mx, my) < DRAG_THRESHOLD) return;
+          const win = useWindowStore.getState().windows.find((w) => w.id === instanceId);
+          if (!win) return;
+          start = { width: win.size.width, height: win.size.height, posX: win.position.x, posY: win.position.y };
+        }
 
-      if (first) {
-        startRef.current = {
-          x: 0,
-          y: 0,
-          width: win.size.width,
-          height: win.size.height,
-          posX: win.position.x,
-          posY: win.position.y,
-        };
-      }
+        const maxW = window.innerWidth - start.posX;
+        const maxH = window.innerHeight - taskbarHeight() - start.posY;
 
-      const start = startRef.current;
-      if (!start) return;
+        let newW = start.width;
+        let newH = start.height;
+        let newX = start.posX;
+        let newY = start.posY;
 
-      const maxW = window.innerWidth - start.posX;
-      const maxH = window.innerHeight - taskbarHeight() - start.posY;
+        if (direction.includes("e")) {
+          newW = Math.max(minSize.width, Math.min(maxW, start.width + mx));
+        }
+        if (direction.includes("s")) {
+          newH = Math.max(minSize.height, Math.min(maxH, start.height + my));
+        }
+        if (direction.includes("w")) {
+          const delta = Math.min(mx, start.width - minSize.width);
+          newW = start.width - delta;
+          newX = start.posX + delta;
+        }
+        if (direction.includes("n")) {
+          const minY = 0;
+          const maxDelta = start.posY - minY;
+          const delta = Math.min(my, start.height - minSize.height);
+          const clampedDelta = Math.max(delta, -maxDelta);
+          newH = start.height - clampedDelta;
+          newY = start.posY + clampedDelta;
+        }
 
-      let newW = start.width;
-      let newH = start.height;
-      let newX = start.posX;
-      let newY = start.posY;
-
-      if (direction.includes("e")) {
-        newW = Math.max(minSize.width, Math.min(maxW, start.width + mx));
-      }
-      if (direction.includes("s")) {
-        newH = Math.max(minSize.height, Math.min(maxH, start.height + my));
-      }
-      if (direction.includes("w")) {
-        const delta = Math.min(mx, start.width - minSize.width);
-        newW = start.width - delta;
-        newX = start.posX + delta;
-      }
-      if (direction.includes("n")) {
-        const minY = 0;
-        const maxDelta = start.posY - minY;
-        const delta = Math.min(my, start.height - minSize.height);
-        const clampedDelta = Math.max(delta, -maxDelta);
-        newH = start.height - clampedDelta;
-        newY = start.posY + clampedDelta;
-      }
-
-      updateSize(instanceId, { width: newW, height: newH });
-      updatePosition(instanceId, { x: newX, y: newY });
+        updateSize(instanceId, { width: newW, height: newH });
+        updatePosition(instanceId, { x: newX, y: newY });
+      };
+      const end = (ev: PointerEvent) => {
+        if (ev.pointerId === pointerId) stop();
+      };
+      const stop = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", end);
+        window.removeEventListener("pointercancel", end);
+        cleanup.current = null;
+      };
+      cleanup.current?.();
+      cleanup.current = stop;
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", end);
+      window.addEventListener("pointercancel", end);
     },
-    { filterTaps: true },
+    [direction, instanceId, minSize.width, minSize.height, updatePosition, updateSize],
   );
 
   const cursorMap: Record<ResizeDirection, string> = {
@@ -144,7 +155,7 @@ function ResizeHandle({ direction, instanceId, minSize }: ResizeHandleProps) {
 
   return (
     <div
-      {...bind()}
+      onPointerDown={onPointerDown}
       className={cn("absolute z-10 touch-none", cursorMap[direction], positionClasses[direction], corner)}
     />
   );
@@ -173,48 +184,101 @@ export const Window = React.memo(function Window({
   const snapWindow = useWindowStore((s) => s.snapWindow);
   const unsnap = useWindowStore((s) => s.unsnap);
 
-  const dragStartWindowPos = useRef<{ x: number; y: number } | null>(null);
   const [snapPreview, setSnapPreview] = useState<SnapRegion | null>(null);
 
-  const titleBarBind = useDrag(
-    ({ first, last, movement: [mx, my], xy: [px, py], event }) => {
-      event.stopPropagation();
+  // Dragging by the title bar. While the pointer moves, the frame is shifted
+  // with the CSS `translate` property, on the compositor: no store update, no
+  // render and no layout per move (each move was a React commit and two
+  // layouts, about 4.5 ms of main thread for a File Manager window). The
+  // position is written once, when the pointer lets go, and the shift comes
+  // off in the same frame (the layout effect below). `translate`, not
+  // `transform`: framer-motion owns the frame's `transform` for its scale.
+  const frameRef = useRef<HTMLDivElement>(null);
+  const dragCleanup = useRef<(() => void) | null>(null);
+  const settling = useRef(false);
+  useEffect(() => () => dragCleanup.current?.(), []);
 
-      if (!instance) return;
-      if (instance.isMaximized) return;
+  const onTitleBarPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation();
+      if (e.button !== 0 || !instance || instance.isMaximized) return;
+      const id = instance.id;
+      const pointerId = e.pointerId;
+      const start = { x: e.clientX, y: e.clientY };
+      let origin: { x: number; y: number } | null = null;
+      let size = instance.size;
+      let at = { x: 0, y: 0 };
+      let region: SnapRegion | null = null;
 
-      if (first) {
-        dragStartWindowPos.current = { x: instance.position.x, y: instance.position.y };
-        focusWindow(instance.id);
-
-        // If currently snapped, unsnap and start dragging from restored position
-        if (instance.snapState) {
-          unsnap(instance.id);
+      const move = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        const mx = ev.clientX - start.x;
+        const my = ev.clientY - start.y;
+        if (!origin) {
+          // A press that hasn't moved past this is a click, not a drag.
+          if (Math.hypot(mx, my) < DRAG_THRESHOLD) return;
+          const now = useWindowStore.getState().windows.find((w) => w.id === id);
+          if (!now) return;
+          origin = { ...now.position };
+          focusWindow(id);
+          if (now.snapState) {
+            // Back to its size before the snap, where it is now, under the pointer.
+            unsnap(id);
+            updatePosition(id, origin);
+            size = useWindowStore.getState().windows.find((w) => w.id === id)?.size ?? size;
+          }
         }
-      }
-
-      const startPos = dragStartWindowPos.current;
-      if (!startPos) return;
-
-      // Move window
-      const newX = Math.max(0, Math.min(startPos.x + mx, window.innerWidth - instance.size.width));
-      const newY = Math.max(0, Math.min(startPos.y + my, window.innerHeight - taskbarHeight() - TITLEBAR_MIN_VISIBLE));
-      updatePosition(instance.id, { x: newX, y: newY });
-
-      // Detect snap region from pointer position
-      const detected = detectSnapRegion(px, py);
-      setSnapPreview(detected);
-
-      if (last) {
+        at = {
+          x: Math.max(0, Math.min(origin.x + mx, window.innerWidth - size.width)),
+          y: Math.max(0, Math.min(origin.y + my, window.innerHeight - taskbarHeight() - TITLEBAR_MIN_VISIBLE)),
+        };
+        const el = frameRef.current;
+        if (el) el.style.translate = `${at.x - origin.x}px ${at.y - origin.y}px`;
+        const detected = detectSnapRegion(ev.clientX, ev.clientY);
+        if (detected !== region) {
+          region = detected;
+          setSnapPreview(detected);
+        }
+      };
+      const end = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        stop();
+        if (!origin) return;
         setSnapPreview(null);
-        if (detected) {
-          snapWindow(instance.id, detected);
+        settling.current = true;
+        if (region) snapWindow(id, region);
+        else updatePosition(id, at);
+        // Nothing moved in the store: no render will come to take the shift off.
+        const after = useWindowStore.getState().windows.find((w) => w.id === id);
+        if (!region && after && after.position.x === origin.x && after.position.y === origin.y) {
+          settling.current = false;
+          if (frameRef.current) frameRef.current.style.translate = "";
         }
-        dragStartWindowPos.current = null;
-      }
+      };
+      const stop = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", end);
+        window.removeEventListener("pointercancel", end);
+        dragCleanup.current = null;
+      };
+      dragCleanup.current?.();
+      dragCleanup.current = stop;
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", end);
+      window.addEventListener("pointercancel", end);
     },
-    { filterTaps: true },
+    [instance, focusWindow, unsnap, updatePosition, snapWindow],
   );
+
+  // The drag's end moved the window in the store; once React has drawn it
+  // there, before the frame is painted, the shift that showed it comes off.
+  const pos = instance?.position;
+  const size = instance?.size;
+  useLayoutEffect(() => {
+    if (!settling.current) return;
+    settling.current = false;
+    if (frameRef.current) frameRef.current.style.translate = "";
+  }, [pos?.x, pos?.y, size?.width, size?.height]);
 
   // A click anywhere in a window raises it, unless the click itself brought
   // another window to the front: an Open button that opened or
@@ -277,8 +341,9 @@ export const Window = React.memo(function Window({
       {snapPreview && createPortal(<SnapOverlay region={snapPreview} />, document.body)}
 
       <AnimatePresence>
-        <motion.div
+        <m.div
           key={instance.id}
+          ref={frameRef}
           initial={still ? false : { opacity: 0, scale: fadeOnly ? 1 : 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={
@@ -329,7 +394,7 @@ export const Window = React.memo(function Window({
           {/* Title bar — double-click toggles maximize/restore,
               the reflex every desktop user carries. */}
           <div
-            {...titleBarBind()}
+            onPointerDown={onTitleBarPointerDown}
             onDoubleClick={handleMaximizeToggle}
             style={{
               touchAction: "none",
@@ -403,7 +468,7 @@ export const Window = React.memo(function Window({
           >
             {children}
           </div>
-        </motion.div>
+        </m.div>
       </AnimatePresence>
     </>
   );

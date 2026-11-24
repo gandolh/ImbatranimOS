@@ -156,7 +156,8 @@ describe("a tab whose VP8 decoder keeps failing", () => {
     connection.start();
     await vi.waitFor(() => expect(FakeSocket.all).toHaveLength(1));
     const first = FakeSocket.all[0]!;
-    expect(new URL(first.url).searchParams.get("codecs")).toBe("vp8");
+    // VP8, and moves of the canvas's own pixels, which every tab draws.
+    expect(new URL(first.url).searchParams.get("codecs")).toBe("vp8,copy");
     first.onopen?.();
     first.say({ type: "session", resumed: false });
     first.say(created(5));
@@ -171,7 +172,7 @@ describe("a tab whose VP8 decoder keeps failing", () => {
     ]);
     expect(first.closed).toBe(true);
     const second = FakeSocket.all[1]!;
-    expect(new URL(second.url).searchParams.has("codecs")).toBe(false);
+    expect(new URL(second.url).searchParams.get("codecs")).toBe("copy");
 
     // The backend takes the session back, and the window goes where it was.
     second.onopen?.();
@@ -185,7 +186,7 @@ describe("a tab whose VP8 decoder keeps failing", () => {
     vi.advanceTimersByTime(1000);
     vi.useRealTimers();
     expect(FakeSocket.all).toHaveLength(3);
-    expect(new URL(FakeSocket.all[2]!.url).searchParams.has("codecs")).toBe(false);
+    expect(new URL(FakeSocket.all[2]!.url).searchParams.get("codecs")).toBe("copy");
   });
 });
 

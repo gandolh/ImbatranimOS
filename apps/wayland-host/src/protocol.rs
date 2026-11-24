@@ -29,6 +29,10 @@ pub const ENC_JPEG: u8 = 3;
 /// said on connect it decodes VP8: a keyframe when the stream starts, else a
 /// delta from the stream's last frame.
 pub const ENC_VP8: u8 = 4;
+/// Pixels the tab already has, moved: the rectangle is where they go, the
+/// data where they come from (`x`, `y` as two u32), in the window's image
+/// before this frame. Only for a tab whose `codecs` holds `copy`.
+pub const ENC_COPY: u8 = 5;
 
 /// Backend to host.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -729,7 +733,7 @@ mod tests {
             r#"{"type":"keyboard_layout","session":"abcdefghijklmnop","layout":"ro"}"#,
             r#"{"type":"clipboard","session":"abcdefghijklmnop","text":"pasted ș\n"}"#,
             r#"{"type":"output","session":"abcdefghijklmnop","width":800,"height":600,"ratio":2.5}"#,
-            r#"{"type":"session_open","session":"abcdefghijklmnop","width":800,"height":600,"ratio":1,"codecs":["vp8"]}"#,
+            r#"{"type":"session_open","session":"abcdefghijklmnop","width":800,"height":600,"ratio":1,"codecs":["vp8","copy"]}"#,
             r#"{"type":"resync","session":"abcdefghijklmnop","codecs":["vp8"]}"#,
             r#"{"type":"keyframe","session":"abcdefghijklmnop","toplevel":5}"#,
         ] {
@@ -758,7 +762,7 @@ mod tests {
             d.next_inbound(),
             Ok(Some(Inbound::Output { session: "abcdefghijklmnop".into(), width: 800, height: 600, ratio: 2.5 }))
         );
-        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::SessionOpen { codecs, .. })) if codecs == ["vp8"]));
+        assert!(matches!(d.next_inbound(), Ok(Some(Inbound::SessionOpen { codecs, .. })) if codecs == ["vp8", "copy"]));
         assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Resync { codecs, .. })) if codecs == ["vp8"]));
         assert!(matches!(d.next_inbound(), Ok(Some(Inbound::Keyframe { toplevel: 5, .. }))));
     }

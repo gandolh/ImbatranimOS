@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ContextMenu } from "@imbatranim/ui";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { History, Lock, LogOut, Search, Trash2 } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { useEnabledApps } from "../../registry/enabledApps";
@@ -248,7 +248,7 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
   });
 
   return (
-    <motion.div
+    <m.div
       ref={menuRef}
       initial={still ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -518,6 +518,6 @@ export function StartMenu({ onClose, onOpenApp, anchorRef }: StartMenuProps) {
           ]}
         />
       )}
-    </motion.div>
+    </m.div>
   );
 }

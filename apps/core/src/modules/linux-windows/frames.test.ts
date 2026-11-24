@@ -3,6 +3,7 @@ import {
   decodableVideoCodecs,
   decodeRect,
   paintFrame,
+  ENC_COPY,
   parseFrame,
   VideoStreams,
   ENC_JPEG,
@@ -256,6 +257,45 @@ describe("VP8 video regions", () => {
     // A tab without a decoder for it draws nothing there.
     await paintFrame(canvas, { toplevel: 2, width: 1280, height: 720, rects: [vp8(false)] });
     expect(drawn).toHaveLength(1);
+  });
+
+  it("moves the canvas's own pixels for a copy rectangle, clipped to it, replacing what was there", async () => {
+    const calls: unknown[][] = [];
+    const ctx = {
+      globalCompositeOperation: "source-over",
+      save: () => calls.push(["save"]),
+      restore: () => calls.push(["restore", ctx.globalCompositeOperation]),
+      beginPath: () => calls.push(["beginPath"]),
+      rect: (...a: unknown[]) => calls.push(["rect", ...a]),
+      clip: () => calls.push(["clip"]),
+      clearRect: vi.fn(),
+      putImageData: vi.fn(),
+      drawImage: (...a: unknown[]) => calls.push(["drawImage", ctx.globalCompositeOperation, ...a]),
+    };
+    const canvas = {
+      width: 640,
+      height: 480,
+      style: { width: "", height: "" },
+      getContext: () => ctx,
+    } as unknown as HTMLCanvasElement;
+    // From (0, 36), 640×400, to (0, 0): a scroll of 36 rows.
+    const from = new Uint8Array(8);
+    new DataView(from.buffer).setUint32(0, 0, true);
+    new DataView(from.buffer).setUint32(4, 36, true);
+    const copy = { x: 0, y: 0, w: 640, h: 400, encoding: ENC_COPY, data: from };
+    await paintFrame(canvas, { toplevel: 3, width: 640, height: 480, rects: [copy] });
+    expect(calls).toEqual([
+      ["save"],
+      ["beginPath"],
+      ["rect", 0, 0, 640, 400],
+      ["clip"],
+      ["drawImage", "copy", canvas, 0, 36, 640, 400, 0, 0, 640, 400],
+      ["restore", "copy"],
+    ]);
+    // A copy without its source draws nothing.
+    calls.length = 0;
+    await paintFrame(canvas, { toplevel: 3, width: 640, height: 480, rects: [{ ...copy, data: new Uint8Array(4) }] });
+    expect(calls).toEqual([]);
   });
 
   describe("when the decoders keep failing", () => {

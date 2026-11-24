@@ -44,15 +44,15 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 13 | A focus change no longer re-renders the desktop: 194 to 88 components a click, script 10.0 to 5.6 ms; no leaks found, the host 6-10 MiB, SQLite already at NORMAL | [3](research-performance-sweep-3.md) |
 | 14 | Scrolling a 20,000-file folder: the sort and the rows memoised, 108 to 51 ms a wheel step | [3](research-performance-sweep-3.md) |
 | 15 | A static Marketplace app keeps what it serves: Accessories' build directory 140 to 8 MB | [3](research-performance-sweep-3.md) |
-| 16 | Deploys and infrastructure researched and ranked ([research-deploy-infrastructure.md](research-deploy-infrastructure.md)), brief 117 written, round 12 reverted after a pinned re-measure | [4](research-performance-sweep-4.md) |
+| 16 | Deploys and infrastructure researched and ranked ([research-deploy-infrastructure.md](research-deploy-infrastructure.md)), brief 118 written, round 12 reverted after a pinned re-measure | [4](research-performance-sweep-4.md) |
 | 17 | A deploy builds the image's slow parts once, as local tagged bases (`infrastructure/image.sh`): a code-only deploy after a pruned cache 181 to 28 s | [4](research-performance-sweep-4.md) |
 | 18 | Marketplace builds at a lower CPU priority: measured, not built (the desktop already stays responsive) | [4](research-performance-sweep-4.md) |
 | 19 | A service app keeps only what its server runs on (`server.install`): imbatranim-office 964 to 86 MB; its build found not to fit the 1 GiB cap | [4](research-performance-sweep-4.md) |
 | 20 | The dev image builds on the runtime base: a rebuild after a dependency change 85 to 48 s | [4](research-performance-sweep-4.md) |
-| 21 | A lazy kit `Tooltip`: a wheel step in a 20,000-file folder 45.6 to 32.6 ms, opening it only −7%; measured, filed as brief 118 | [5](research-performance-sweep-5.md) |
+| 21 | A lazy kit `Tooltip`: a wheel step in a 20,000-file folder 45.6 to 32.6 ms, opening it only −7%; measured, filed as brief 119 | [5](research-performance-sweep-5.md) |
 | 22 | Settings mounts a section's content when it scrolls near: opening it 288 to 61 ms of main thread, the backend's CPU about 560 to under 10 ms | [5](research-performance-sweep-5.md) |
 | 23 | The boot's icon drag and a worker for the Nix package index: measured, not built (no gain; no stall to remove) | [5](research-performance-sweep-5.md) |
-| 24 | Firefox's spare processes off: PSS 519 to 439 MiB; measured, filed as brief 119 (a policy file shows a "managed" notice) | [5](research-performance-sweep-5.md) |
+| 24 | Firefox's spare processes off: PSS 519 to 439 MiB; measured, filed as brief 120 (a policy file shows a "managed" notice) | [5](research-performance-sweep-5.md) |
 | 25 | npm's cache for Marketplace builds emptied past 256 MB: each update with new dependencies had added up to 16 MB for good | [5](research-performance-sweep-5.md) |
 | 26 | The gate runs its static steps side by side, ESLint on threads: 176 to 125 s; the e2e test that hung in half the gates was a WebSocket proxy dropping a server's first frame, fixed | [6](research-performance-sweep-6.md) |
 | 27 | The Image Viewer's date grid shows each photo's Exif preview: 93.6 to 4.1 MiB, tiles 703 to 281 ms, the renderer about 830 to 380 MiB | [6](research-performance-sweep-6.md) |
@@ -73,14 +73,14 @@ The questions the owner put, answered by what was measured:
   first.
 - **Building imbatranim-apps.** On the box a suite installs in about 5 s with a warm npm cache, and now keeps 8 MB
   rather than 140 (round 15); a service app keeps only its server's install (round 19) and npm's cache is capped
-  (round 25). imbatranim-office's build does not fit the 1 GiB cap (round 19): brief 117 or a leaner build there.
+  (round 25). imbatranim-office's build does not fit the 1 GiB cap (round 19): brief 118 or a leaner build there.
 - **Building the OS.** The image's slow parts are local tagged bases (round 17) and the prod stage, Nix included, was
   built and booted here; the ISO (`iso/`) was not.
 - **The owner's steps:** vps-deploy runs `infrastructure/image.sh` instead of `docker compose build` (never with
   `--pull`), and any prune there takes `--filter label!=imbatranim.base`
-  ([research-deploy-infrastructure.md](research-deploy-infrastructure.md)); the calls in briefs 117 (prebuilt app
-  output), 118 (a lazy kit tooltip) and 119 (Firefox's spare processes).
+  ([research-deploy-infrastructure.md](research-deploy-infrastructure.md)); the calls in briefs 118 (prebuilt app
+  output), 119 (a lazy kit tooltip) and 120 (Firefox's spare processes).
 - **Left, with numbers, for whoever comes next:** Monaco's inline completions (240 KiB a Code Editor open, round 13),
-  moving the File Manager's virtualizer into its list (round 14), a lazy kit `Tooltip` (brief 118, round 21),
-  Firefox's spare processes (brief 119, round 24), and Vitest's `vmThreads` pool for the desktop's tests (round 29). The
+  moving the File Manager's virtualizer into its list (round 14), a lazy kit `Tooltip` (brief 119, round 21),
+  Firefox's spare processes (brief 120, round 24), and Vitest's `vmThreads` pool for the desktop's tests (round 29). The
   gate itself runs its static steps side by side since round 26.

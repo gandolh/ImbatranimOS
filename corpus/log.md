@@ -6494,6 +6494,14 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 [research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `9132f9b` (1.447.0) joins a Terminal's output that follows a send within 5 ms into the next WebSocket frame, the first chunk after a quiet spell still going at once. A 25 MB `cat` went from 19,854 frames to 249 and 2.7 to 2.1 s, the tab's main thread 2.1 to 1.7 s, and Caddy's CPU through TLS 100 to 30 ms; keystroke echo is unchanged. Firefox's process settings were looked at and left unmeasured.
 
+## [2026-11-24] todo | Brief 117 from the infra review of 2026-11-24
+
+Filed from the estate's infra review. The `wayland-host` stage's `cargo build` gets cache mounts for the registry
+and the target folder, so a change under `apps/wayland-host` no longer rebuilds the crate graph from nothing on the
+box's 2 vCPUs or in the dev container; it stays only if a rebuild is at least 3 times faster, measured on the
+laptop. The floating `# syntax=docker/dockerfile:1-labs` line is pinned to an exact version. The node base was
+already pinned. Ships with `node cli.ts imbatranim-os server`.
+
 ## [2026-11-24] done | Performance sweep, round 13: focus between windows
 
 [research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `fa845fb` (1.449.0) schedules the layout write from a store subscription instead of selecting `windows` in `App`, and keeps a window's app as the same element while its frame changes. With six windows a taskbar click rendered 194 components and now 88; script 10.0 to 5.6 ms, main thread 38.4 to 31.2 ms (164.6 to 136.2 at 4× CPU). Leaks, the Wayland host's memory (6-10 MiB), SQLite's syncs and the backend's synchronous calls were looked at and found lean.
@@ -6508,7 +6516,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 ## [2026-11-24] done | Performance sweep, round 16: deploys and infrastructure researched; round 12 reverted
 
-[research-deploy-infrastructure.md](wiki/research-deploy-infrastructure.md) ranks what deploys and infrastructure could do better for ImbatranimOS and imbatranim-apps, after the owner's answers (the VPS builds from git, local tags only, source builds for Marketplace apps, build the winners). Brief 117 (verified prebuilt app output) is filed. Round 12's PTY join, measured again with the backend pinned to one CPU as brief 114 did, cost the backend 31% more on a 50 MB `cat` and was reverted (`992b178`); [research-pty-batching.md](wiki/research-pty-batching.md) has both rules' numbers. Pages: [research-performance-sweep-4.md](wiki/research-performance-sweep-4.md).
+[research-deploy-infrastructure.md](wiki/research-deploy-infrastructure.md) ranks what deploys and infrastructure could do better for ImbatranimOS and imbatranim-apps, after the owner's answers (the VPS builds from git, local tags only, source builds for Marketplace apps, build the winners). Brief 118 (verified prebuilt app output) is filed. Round 12's PTY join, measured again with the backend pinned to one CPU as brief 114 did, cost the backend 31% more on a 50 MB `cat` and was reverted (`992b178`); [research-pty-batching.md](wiki/research-pty-batching.md) has both rules' numbers. Pages: [research-performance-sweep-4.md](wiki/research-performance-sweep-4.md).
 
 ## [2026-11-24] done | Performance sweep, round 17: a deploy builds the slow parts once
 
@@ -6520,7 +6528,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 ## [2026-11-24] done | Performance sweep, round 19: a service app keeps only what its server runs on
 
-[research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): `e72f3e1` (1.459.0) adds `server.install` to descriptors, run after the build to replace its dependencies; imbatranim-office's names `npm ci --omit=dev --workspace=server`, and its build directory went from 964 to 86 MB with the server answering. Found on the way: Office's build peaks at 1.96 GB and is OOM-killed under the production cap of 1 GiB, whatever the OS sets; ranked in [research-deploy-infrastructure.md](wiki/research-deploy-infrastructure.md) and added to brief 117.
+[research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): `e72f3e1` (1.459.0) adds `server.install` to descriptors, run after the build to replace its dependencies; imbatranim-office's names `npm ci --omit=dev --workspace=server`, and its build directory went from 964 to 86 MB with the server answering. Found on the way: Office's build peaks at 1.96 GB and is OOM-killed under the production cap of 1 GiB, whatever the OS sets; ranked in [research-deploy-infrastructure.md](wiki/research-deploy-infrastructure.md) and added to brief 118.
 
 ## [2026-11-24] done | Performance sweep, round 20: the dev image after a dependency change
 
@@ -6529,7 +6537,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 ## [2026-11-24] done | Performance sweep, round 21: a lazy kit tooltip, measured and filed
 
-[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): a `Tooltip` that mounts Base UI only on a pointer or a focus made a wheel step in a 20,000-file folder 45.6 to 32.6 ms of main thread and the heap's growth opening it 32% smaller, but opening the folder only 7% faster against a bar of 15%. Not built; brief 118 holds it.
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): a `Tooltip` that mounts Base UI only on a pointer or a focus made a wheel step in a 20,000-file folder 45.6 to 32.6 ms of main thread and the heap's growth opening it 32% smaller, but opening the folder only 7% faster against a bar of 15%. Not built; brief 119 holds it.
 
 ## [2026-11-24] done | Performance sweep, round 22: Settings mounts a section when it scrolls near
 
@@ -6541,7 +6549,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 ## [2026-11-24] done | Performance sweep, round 24: Firefox's spare processes, measured and filed
 
-[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): turning off Firefox's prelaunched content process and preloaded new-tab page through `/etc/firefox/policies/policies.json` took one window from 13 processes and 519 MiB PSS to 9 and 439 MiB. A policy makes Firefox say it is managed, so brief 119 leaves the call to the owner.
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): turning off Firefox's prelaunched content process and preloaded new-tab page through `/etc/firefox/policies/policies.json` took one window from 13 processes and 519 MiB PSS to 9 and 439 MiB. A policy makes Firefox say it is managed, so brief 120 leaves the call to the owner.
 
 ## [2026-11-24] done | Performance sweep, round 25: npm's cache for Marketplace builds has a cap
 
@@ -6561,4 +6569,8 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 ## [2026-11-24] done | Performance sweep, round 30: the closing check, and the sweep closed
 
-[research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): today's desktop on a fresh home against round 1's numbers: the first page load 912.9 to 894.9 KiB raw, the cold wire 369.6 KiB (372 after round 1), the walk clean, the empty desktop at rest 0.11% of a core. The full gate passed in 101 s. The thirty rounds and what they leave for later are on [research-performance-sweep.md](wiki/research-performance-sweep.md); briefs 117-119 hold the owner's calls.
+[research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): today's desktop on a fresh home against round 1's numbers: the first page load 912.9 to 894.9 KiB raw, the cold wire 369.6 KiB (372 after round 1), the walk clean, the empty desktop at rest 0.11% of a core. The full gate passed in 101 s. The thirty rounds and what they leave for later are on [research-performance-sweep.md](wiki/research-performance-sweep.md); briefs 118-120 hold the owner's calls.
+
+## [2026-11-24] done | Performance sweep: main merged, the sweep's briefs renumbered 118-120
+
+`main` filed brief 117 (the Wayland host's Rust build keeps its cache) while the sweep's branch held a brief 117 of its own, never on `main`. The branch's three are renumbered before the merge: 118 (Marketplace apps from verified prebuilt output), 119 (a kit tooltip that mounts when first asked for), 120 (Firefox starts fewer processes ahead of need), with every reference on the sweep's pages and in its log entries. For brief 117: since round 5 the branch's `wayland-host` stage already builds with a cache mount on cargo's registry and one on the target folder (`id=imbatranim-wayland-host-target`), and copies the binary to `/out`; round 17 makes the host's binary a local base that a deploy rebuilds only when its sources change. Round 5 measured a host change at 147 to 67 s for the whole image. Still open in the brief: an `id` for the registry mount, the pinned syntax line, and its own 3x measurement.

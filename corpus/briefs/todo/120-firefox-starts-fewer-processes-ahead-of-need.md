@@ -1,6 +1,6 @@
-# Brief 119: Firefox starts fewer processes ahead of need
+# Brief 120: Firefox starts fewer processes ahead of need
 
-**Depends on:** nothing. **Runs after:** 118.
+**Depends on:** nothing. **Runs after:** 119.
 
 **Before you start:** run `brief-board guide` ([CLAUDE.md](../../CLAUDE.md)).
 

@@ -1,5 +1,5 @@
 ---
-summary: Rounds 21-25 of the performance sweep in full. Round 21 measured a lazy kit Tooltip (a wheel step in a 20,000-file folder 45.6 to 32.6 ms) and filed it as brief 118, since opening the folder missed its bar. Round 22 had Settings mount a section's content when it scrolls near (opening it 288 to 61 ms of main thread, the backend's CPU about 560 to under 10 ms). Round 23 measured the desktop icon's drag at boot and a worker for the Nix package index and left both. Round 24 measured Firefox's spare processes (PSS 519 to 439 MiB) and filed brief 119 for the owner. Round 25 capped npm's cache for Marketplace builds at 256 MB (an update with new dependencies added up to 16 MB for good, which `npm cache verify` keeps).
+summary: Rounds 21-25 of the performance sweep in full. Round 21 measured a lazy kit Tooltip (a wheel step in a 20,000-file folder 45.6 to 32.6 ms) and filed it as brief 119, since opening the folder missed its bar. Round 22 had Settings mount a section's content when it scrolls near (opening it 288 to 61 ms of main thread, the backend's CPU about 560 to under 10 ms). Round 23 measured the desktop icon's drag at boot and a worker for the Nix package index and left both. Round 24 measured Firefox's spare processes (PSS 519 to 439 MiB) and filed brief 120 for the owner. Round 25 capped npm's cache for Marketplace builds at 256 MB (an update with new dependencies added up to 16 MB for good, which `npm cache verify` keeps).
 updated: 2026-11-24
 ---
 
@@ -27,7 +27,7 @@ tooltip replaced by its child alone, set what there was to win.
 
 The lazy version rendered the child alone until a mouse `pointerenter` or a focus, then mounted Base UI's tooltip,
 controlled. In a real tab it behaved as today. Opening the folder missed the bar (the rows' own work dominates it),
-so it was not built; [brief 118](../briefs/todo/118-a-kit-tooltip-that-mounts-when-first-asked-for.md) holds the
+so it was not built; [brief 119](../briefs/todo/119-a-kit-tooltip-that-mounts-when-first-asked-for.md) holds the
 design, the numbers and a bar on scrolling and heap, with the kit apps in imbatranim-apps to check first.
 
 ## Round 22 (2026-11-24): Settings mounts a section when it scrolls near
@@ -91,7 +91,7 @@ The main process holds 287 MiB of the default's PSS, the tabs 74, 44, 28 and thr
 Firefox starting a spare content process and a hidden new-tab page ahead of need. Nix's Firefox reads
 `/etc/firefox/policies/policies.json`, which is how they were set; but any active policy makes Firefox's settings say
 the browser is managed by an organization, and no bar was written before this measurement. Both make it the owner's
-call: [brief 119](../briefs/todo/119-firefox-starts-fewer-processes-ahead-of-need.md).
+call: [brief 120](../briefs/todo/120-firefox-starts-fewer-processes-ahead-of-need.md).
 
 ## Round 25 (2026-11-24): npm's cache for Marketplace builds has a cap
 

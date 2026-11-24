@@ -1,5 +1,5 @@
 ---
-summary: The 2026-11-24 deploy and infrastructure research for ImbatranimOS and imbatranim-apps, ranked. The VPS builds the image from git and keeps images only as local tags (owner, 2026-11-24). BuildKit drops cache mounts unused for 48 hours, so an occasional deploy rebuilt the Rust host, every npm download and the desktop; local base images tagged by content hash survive that. Also ranked: what each deploy leaves on disk, imbatranim-office's build not fitting the 1 GiB cap, service apps' dependencies, the dev image, npm's ever-growing cache, digests, and verified prebuilt app output (brief 117).
+summary: The 2026-11-24 deploy and infrastructure research for ImbatranimOS and imbatranim-apps, ranked. The VPS builds the image from git and keeps images only as local tags (owner, 2026-11-24). BuildKit drops cache mounts unused for 48 hours, so an occasional deploy rebuilt the Rust host, every npm download and the desktop; local base images tagged by content hash survive that. Also ranked: what each deploy leaves on disk, imbatranim-office's build not fitting the 1 GiB cap, service apps' dependencies, the dev image, npm's ever-growing cache, digests, and verified prebuilt app output (brief 118).
 updated: 2026-11-24
 ---
 
@@ -11,7 +11,7 @@ could spare each deploy its installs. The owner's answers to the questions this 
 
 - **The VPS builds from git**: vps-deploy checks the repository out there and builds the image with Docker.
 - **No registry**: images live only as local tags on the VPS ("build-from-source distribution", corpus/CLAUDE.md).
-- **Marketplace apps keep building from source** on the box; verified prebuilt output is a backlog brief (117).
+- **Marketplace apps keep building from source** on the box; verified prebuilt output is a backlog brief (118).
 - **Build the winners** as rounds of the performance sweep, measured.
 
 vps-deploy itself was outside this pass (the owner reviews it next); where its commands matter, the assumption is
@@ -82,7 +82,7 @@ layers, but 1.5 GB "reclaimable" by `docker system df`).
 3. **imbatranim-office can't install under the production cap.** Its build peaks at 1.96 GB resident; in a
    `node:24.22.1-alpine` container with 1 GiB and no swap it is OOM-killed within seconds, with V8's heap capped,
    one Rayon thread and one libuv thread too: the memory is native, in the bundler. The OS can't fix it from
-   outside. Two ways out: imbatranim-office's build uses less (one Vite build per app, in turn), or brief 117's
+   outside. Two ways out: imbatranim-office's build uses less (one Vite build per app, in turn), or brief 118's
    verified prebuilt output (33 MB for the suite). Owner's call.
 4. **A service app keeps only what its server runs on** (built in round 19). A descriptor's `server.install`
    replaces the build's dependencies: imbatranim-office's build directory 964 MB to 86 MB, its server answering.
@@ -94,7 +94,7 @@ layers, but 1.5 GB "reclaimable" by `docker system df`).
    needs about 180 MB; an update with dependency changes adds up to 16 MB).
 7. **BuildKit's garbage collection on the VPS.** `builder.gc` in `daemon.json` can keep cache mounts longer; with
    the bases tagged, little depends on it. An owner choice, not a repository change.
-8. **Verified prebuilt app output** instead of building on the box: brief 117, at the owner's call to keep source
+8. **Verified prebuilt app output** instead of building on the box: brief 118, at the owner's call to keep source
    builds for now; item 3 is its strongest case.
 
 **Measured and left:**
@@ -104,7 +104,7 @@ layers, but 1.5 GB "reclaimable" by `docker system df`).
   Terminal echo's, and made installs 8% longer. The kernel already favours the mostly idle desktop.
 - **The build context**: 10.6 MB, sent in 0.3 to 0.4 s. Not worth a rule.
 - **Firefox's memory under the cap** (round 24). With its spare content process and hidden new-tab page off, one
-  window's PSS fell from 519 to 439 MiB; set through a policy file, which makes Firefox say it is managed. Brief 119.
+  window's PSS fell from 519 to 439 MiB; set through a policy file, which makes Firefox say it is managed. Brief 120.
 - **Pinning base images by digest**: steadier cache keys, but each Alpine or Node security rebuild would need a
   commit. With the bases tagged locally, a tag is resolved only when its part rebuilds.
 - **A shared clone for the three suites at one imbatranim-apps commit**: each install is about 5 s and 8 MB once

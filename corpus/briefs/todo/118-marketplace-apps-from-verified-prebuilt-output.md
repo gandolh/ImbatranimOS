@@ -1,6 +1,6 @@
-# Brief 117: Marketplace apps from verified prebuilt output
+# Brief 118: Marketplace apps from verified prebuilt output
 
-**Depends on:** nothing. **Runs after:** 116.
+**Depends on:** nothing. **Runs after:** 117.
 
 **Before you start:** run `brief-board guide` ([CLAUDE.md](../../CLAUDE.md)).
 

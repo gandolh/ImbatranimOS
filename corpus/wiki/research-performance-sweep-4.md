@@ -1,5 +1,5 @@
 ---
-summary: Rounds 16-20 of the performance sweep in full. Round 16 researched and ranked deploys and infrastructure (research-deploy-infrastructure.md), wrote brief 117, and reverted round 12's PTY join after measuring it pinned to one CPU. Round 17 made a deploy build the image's slow parts once, as local tagged bases (infrastructure/image.sh): a code-only deploy after a pruned build cache 181 to 28 s. Round 18 measured Marketplace builds at a lower CPU priority and left it. Round 19 gave a service app its server's own install (imbatranim-office 964 to 86 MB) and found its build can't fit the 1 GiB cap; round 20 rebased the dev image on the runtime base (a dependency change 85 to 48 s).
+summary: Rounds 16-20 of the performance sweep in full. Round 16 researched and ranked deploys and infrastructure (research-deploy-infrastructure.md), wrote brief 118, and reverted round 12's PTY join after measuring it pinned to one CPU. Round 17 made a deploy build the image's slow parts once, as local tagged bases (infrastructure/image.sh): a code-only deploy after a pruned build cache 181 to 28 s. Round 18 measured Marketplace builds at a lower CPU priority and left it. Round 19 gave a service app its server's own install (imbatranim-office 964 to 86 MB) and found its build can't fit the 1 GiB cap; round 20 rebased the dev image on the runtime base (a dependency change 85 to 48 s).
 updated: 2026-11-24
 ---
 
@@ -17,7 +17,7 @@ tags (no registry), Marketplace apps keep building from source on the box, and t
 that ranks first: BuildKit drops cache mounts unused for 48 hours, so round 5's cache mounts helped only deploys a
 day or two apart, and any prune made the next deploy cold.
 
-**Brief 117** holds the alternative the owner deferred: verified prebuilt app output, with its digest in
+**Brief 118** holds the alternative the owner deferred: verified prebuilt app output, with its digest in
 `verified.json`.
 
 **Round 12 reverted.** Brief 114 had measured PTY batching on 2026-11-23 and closed it as measured, not built;
@@ -98,7 +98,7 @@ install fails; the whole marketplace e2e passed, the service-app test included.
 **Found on the way: Office can't install under the production cap.** In a `node:24.22.1-alpine` container with
 1 GiB and no swap, its `npm ci` passes and its `npm run build:os` is OOM-killed (exit 137), with V8's heap capped at
 384 or 512 MB, one Rayon thread and one libuv thread too. The memory is the bundler's own. It goes to the owner
-with the research ranking (item 3) and brief 117.
+with the research ranking (item 3) and brief 118.
 
 ## Round 20 (2026-11-24): the dev image after a dependency change
 

@@ -1,6 +1,6 @@
-# Brief 118: A kit tooltip that mounts when first asked for
+# Brief 119: A kit tooltip that mounts when first asked for
 
-**Depends on:** nothing. **Runs after:** 117.
+**Depends on:** nothing. **Runs after:** 118.
 
 **Before you start:** run `brief-board guide` ([CLAUDE.md](../../CLAUDE.md)).
 

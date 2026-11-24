@@ -58,6 +58,7 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 27 | The Image Viewer's date grid shows each photo's Exif preview: 93.6 to 4.1 MiB, tiles 703 to 281 ms, the renderer about 830 to 380 MiB | [6](research-performance-sweep-6.md) |
 | 28 | Validators on file downloads: measured, not built (the tab already reuses a photo it holds) | [6](research-performance-sweep-6.md) |
 | 29 | Vitest's vmThreads pool for the desktop's tests: 25 to 12 s, measured, not built (realm differences, 1.8 GB) | [6](research-performance-sweep-6.md) |
+| 30 | The closing check: the first load 913 to 895 KiB since round 1, the wire 372 to 370 KiB, the desktop at rest 0.11% of a core; no regression | [6](research-performance-sweep-6.md) |
 
 ## What the sweep leaves for later
 
@@ -71,8 +72,14 @@ The questions the owner put, answered by what was measured:
   the desktop's main thread (about 0.3 ms a frame in software, round 11). Not built: measure it with a GPU browser
   first.
 - **Building imbatranim-apps.** On the box a suite installs in about 5 s with a warm npm cache, and now keeps 8 MB
-  rather than 140 (round 15). In this repository the image rebuilds only what a commit changed (round 5).
-- **Building the OS.** The ISO (`iso/`) and the prod stage (Nix) were not built here; the Docker stages were (round 5).
+  rather than 140 (round 15); a service app keeps only its server's install (round 19) and npm's cache is capped
+  (round 25). imbatranim-office's build does not fit the 1 GiB cap (round 19): brief 117 or a leaner build there.
+- **Building the OS.** The image's slow parts are local tagged bases (round 17) and the prod stage, Nix included, was
+  built and booted here; the ISO (`iso/`) was not.
+- **The owner's steps:** vps-deploy runs `infrastructure/image.sh` instead of `docker compose build` (never with
+  `--pull`), and any prune there takes `--filter label!=imbatranim.base`
+  ([research-deploy-infrastructure.md](research-deploy-infrastructure.md)); the calls in briefs 117 (prebuilt app
+  output), 118 (a lazy kit tooltip) and 119 (Firefox's spare processes).
 - **Left, with numbers, for whoever comes next:** Monaco's inline completions (240 KiB a Code Editor open, round 13),
   moving the File Manager's virtualizer into its list (round 14), a lazy kit `Tooltip` (brief 118, round 21),
   Firefox's spare processes (brief 119, round 24), and Vitest's `vmThreads` pool for the desktop's tests (round 29). The

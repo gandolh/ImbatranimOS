@@ -6558,3 +6558,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-24] done | Performance sweep, rounds 28-29: validators and Vitest's pools, measured and left
 
 [research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): an ETag on file downloads would save nothing in a session, since the tab reuses a photo it holds (stepping back and a second window fetch nothing). Vitest's `vmThreads` pool halves the desktop's test run (25 to 12 s) but trips on realm differences and peaks at 1.8 GB. Neither built.
+
+## [2026-11-24] done | Performance sweep, round 30: the closing check, and the sweep closed
+
+[research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): today's desktop on a fresh home against round 1's numbers: the first page load 912.9 to 894.9 KiB raw, the cold wire 369.6 KiB (372 after round 1), the walk clean, the empty desktop at rest 0.11% of a core. The full gate passed in 101 s. The thirty rounds and what they leave for later are on [research-performance-sweep.md](wiki/research-performance-sweep.md); briefs 117-119 hold the owner's calls.

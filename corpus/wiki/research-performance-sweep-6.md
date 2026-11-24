@@ -1,5 +1,5 @@
 ---
-summary: Rounds 26-30 of the performance sweep in full. Round 26 ran the gate's static steps side by side with ESLint on threads (the whole gate 176 to 125 s) and found why the marketplace e2e test hung in half the gates, a real bug in the proxy to a service app's WebSocket (a server's first frame, arriving with its 101, was dropped). Round 27 had the Image Viewer's date grid show each photo's own Exif preview (93.6 to 4.1 MiB, tiles 703 to 281 ms). Rounds 28 and 29 measured validators on file downloads and Vitest's vmThreads pool and left both.
+summary: Rounds 26-30 of the performance sweep in full. Round 26 ran the gate's static steps side by side with ESLint on threads (the whole gate 176 to 125 s) and found why the marketplace e2e test hung in half the gates, a real bug in the proxy to a service app's WebSocket (a server's first frame, arriving with its 101, was dropped). Round 27 had the Image Viewer's date grid show each photo's own Exif preview (93.6 to 4.1 MiB, tiles 703 to 281 ms). Rounds 28 and 29 measured validators on file downloads and Vitest's vmThreads pool and left both. Round 30 checked today's desktop against round 1's numbers and found no regression (the first load 913 to 895 KiB).
 updated: 2026-11-24
 ---
 
@@ -98,3 +98,22 @@ each start (its routes) and next to nothing per request, and Linux apps' output 
 `vmThreads` runs each file in a VM context of one process, so values cross realms: the failure is an
 `instanceof ArrayBuffer` that is right in a browser's one realm. Vitest documents that pool's realm differences and
 its memory growth; for a gate that must be trusted, 14 s is not worth them. Left.
+
+## Round 30 (2026-11-24): the closing check against round 1
+
+**The bar:** the sweep closes clean only if the first page load is within 2% of round 1's result (913 KiB raw), the
+cold wire within 5% of 372 KiB, the walk (Start, Calculator, an icon drag) logs no error, and the empty desktop at
+rest stays at round 2's 0.12% of a core. The bar file was written in the same step as the first size reading, not
+before it.
+
+| | After round 1 or 2 | Today (round 27's build, a fresh home) |
+|---|---:|---:|
+| First page load, raw / gzip | 912.9 / 288.3 KiB | 894.9 / 282.4 KiB |
+| Cold wire, taskbar shown | 372 KiB | 369.6 KiB (twice), 44 requests |
+| Warm reload | nothing fetched | nothing fetched |
+| The walk | no error | no error |
+| Empty desktop at rest, 60 s | 0.12% of a core, 11 commits, 3 requests | 0.11%, 11 commits, 3 requests |
+
+A home used through the sweep loaded 418.9 KiB with three 404s: its restored windows, Bookmarks among them (a
+Marketplace app installed in round 15) asking for data files it had not written, which it reads as "nothing saved".
+The full gate passed in 101 s.

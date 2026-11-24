@@ -865,16 +865,21 @@ export class MarketplaceService implements OnModuleInit {
       return;
     }
 
-    // ── a static app keeps only what it serves ──
+    // ── an app keeps only what it serves and runs ──
     // Its dependencies were for the build: nothing reads them once the output
     // is there, and every install, update and rebuild fetches into a new
     // directory. Accessories' build left 132 MB of node_modules beside a
-    // 144 KB output. An app with a server runs from this directory and keeps
-    // them.
+    // 144 KB output. An app with a server runs from this directory: it keeps
+    // the build's dependencies, unless it names an install of its own for
+    // the server, which replaces them (imbatranim-office: 924 to 46 MB).
     if (!d.server) {
       const removed = await removeDependencies(dir, required(realOutput, "the built output"));
       if (removed > 0)
         log.push(`Removed the build's dependencies (${removed} node_modules folder${removed === 1 ? "" : "s"})`);
+    } else if (d.server.install) {
+      if (!(await step("Installing the server's dependencies", d.server.install, root, env, BUILD_TIMEOUT_MS))) {
+        return;
+      }
     }
 
     // ── switch to the new build ──

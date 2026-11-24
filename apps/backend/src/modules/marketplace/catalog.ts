@@ -129,6 +129,13 @@ const capabilitiesSchema = z.array(z.enum(CAPABILITIES)).max(CAPABILITIES.length
 
 const serverSchema = z.object({
   command: argv,
+  /**
+   * What the server needs at run time, installed over the build's dependencies once the build passes its
+   * checks: the server runs from the build's directory, so whatever `node_modules` the build left stays on
+   * disk. imbatranim-office's whole install is 924 MB; its server's production dependencies are 46 MB
+   * (`npm ci --omit=dev --workspace=server`, measured 2026-11-24). Without it, the build's are kept.
+   */
+  install: argv.optional(),
   portEnv: z.string().regex(/^[A-Z][A-Z0-9_]{0,40}$/),
   health: z
     .string()

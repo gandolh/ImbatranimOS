@@ -17,6 +17,7 @@
   },
   "server": {
     "command": ["node", "server/src/server.ts"],
+    "install": ["npm", "ci", "--omit=dev", "--workspace=server"],
     "portEnv": "PORT",
     "health": "/health"
   },

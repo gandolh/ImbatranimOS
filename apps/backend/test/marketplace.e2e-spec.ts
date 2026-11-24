@@ -172,6 +172,28 @@ describe("the marketplace (e2e)", () => {
         },
       }),
     );
+    // A service whose server installs only what it runs: its install replaces the build's dependencies.
+    write(
+      descriptor("lean", repoUrl, ref, {
+        type: "service",
+        server: {
+          command: ["node", "server.mjs"],
+          install: [
+            "node",
+            "-e",
+            "const fs = require('fs'); fs.rmSync('node_modules', { recursive: true }); fs.mkdirSync('node_modules/runtime', { recursive: true });",
+          ],
+          portEnv: "PORT",
+          health: "/health",
+        },
+      }),
+    );
+    write(
+      descriptor("lame", repoUrl, ref, {
+        type: "service",
+        server: { command: ["node", "server.mjs"], install: ["node", "-e", "process.exit(4)"], portEnv: "PORT" },
+      }),
+    );
     write(
       descriptor("broken", repoUrl, ref, {
         build: {
@@ -265,7 +287,7 @@ describe("the marketplace (e2e)", () => {
   it("lists the catalog and reports the descriptors it refused", async () => {
     const res = await http.get("/api/marketplace").set("Cookie", cookie).expect(200);
     const ids = ((res.body as { apps: unknown }).apps as { id: string }[]).map((a) => a.id).sort();
-    expect(ids).toEqual(["broken", "demo", "elsewhere", "sim"]);
+    expect(ids).toEqual(["broken", "demo", "elsewhere", "lame", "lean", "sim"]);
     const refused = ((res.body as { problems: unknown }).problems as { file: string }[]).map((p) => p.file).sort();
     expect(refused).toEqual(["shell.json", "tagged.json"]);
   });
@@ -301,6 +323,19 @@ describe("the marketplace (e2e)", () => {
     const build = join(appsDir, `demo@${demo.installed!.buildId}`, "games", "demo");
     expect(existsSync(join(build, "dist", "demo.mjs"))).toBe(true);
     expect(existsSync(join(build, "node_modules"))).toBe(false);
+  }, 30_000);
+
+  it("gives a service app its server's own install in place of the build's dependencies", async () => {
+    const lean = await installAndWait("lean");
+    expect(lean.installed?.missing).toBe(false);
+    const build = join(appsDir, `lean@${lean.installed!.buildId}`, "games", "demo");
+    expect(existsSync(join(build, "dist", "demo.mjs"))).toBe(true);
+    expect(existsSync(join(build, "node_modules", "dep"))).toBe(false);
+    expect(existsSync(join(build, "node_modules", "runtime"))).toBe(true);
+
+    const lame = await installAndWait("lame");
+    expect(lame.installed).toBeNull();
+    expect(lame.job?.reason).toMatch(/^Installing the server's dependencies/);
   }, 30_000);
 
   it("gives a build none of the backend environment, and its own HOME", async () => {

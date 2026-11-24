@@ -3,7 +3,7 @@
 # pinned registry, fontconfig for Nix apps, /nix owned by imbatranim and
 # holding the base profile, and the pinned snapshot's package index.
 #
-# Runs as root during `docker build`, in the prod and dev stages, after the
+# Runs as root during `docker build`, in the runtime-base and dev stages, after the
 # imbatranim user exists and after the stage's ENV names the Nix paths
 # (NIX_STATE_HOME, NIX_CACHE_HOME, FONTCONFIG_FILE, XDG_RUNTIME_DIR). It needs
 # the network: releases.nixos.org, github.com (the pinned nixpkgs source) and

@@ -1,6 +1,6 @@
 {
   "name": "imbatranimos",
-  "version": "1.456.0",
+  "version": "1.457.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "packageManager": "npm@11.19.1",
@@ -30,6 +30,7 @@
     "codegraph:sync": "codegraph sync",
     "version:bump": "node scripts/bump-version.mjs",
     "verified:sync": "node scripts/verified-sync.mjs",
+    "image": "sh infrastructure/image.sh",
     "house-style:sync": "node vendor/house-style/bin/sync.mjs",
     "check": "node scripts/check.mjs typecheck lint format:check check:conventions test",
     "check:fast": "node scripts/check-fast.mjs",

@@ -11,6 +11,23 @@
 # ships without a compiler.
 
 # ---------------------------------------------------------------------------
+# Prebuilt bases (2026-11-24). The four slow parts of a build are stages of
+# their own: the runtime base (Alpine packages and Nix), the Wayland host,
+# and the build and production node_modules. Each argument below names the
+# stage to use; left alone, they name the stages in this file and a build
+# runs everything, as `docker compose build` always has.
+# infrastructure/image.sh builds each part once as a local image tagged by the
+# hash of its inputs, and passes those tags here, so a deploy that changes
+# only the code builds only the code. Tagged images are not build cache:
+# BuildKit's garbage collection (which drops cache mounts unused for 48
+# hours) and `docker builder prune` leave them alone.
+# ---------------------------------------------------------------------------
+ARG RUNTIME_BASE=runtime-base
+ARG WAYLAND_HOST=wayland-host-bin
+ARG BUILD_DEPS=deps
+ARG PROD_DEPS=proddeps-bin
+
+# ---------------------------------------------------------------------------
 # manifests — the workspace manifests with the product version taken out
 # ---------------------------------------------------------------------------
 # Every commit bumps the version in package.json and package-lock.json
@@ -61,7 +78,7 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci
 # builder — compile backend (nest) and the desktop (core vite build, which
 # bundles the add-on packages via workspace resolution)
 # ---------------------------------------------------------------------------
-FROM deps AS builder
+FROM ${BUILD_DEPS} AS builder
 # The real manifests over the normalised ones, and turbo's config.
 COPY package.json package-lock.json turbo.json ./
 # Not the Wayland host: its own stage builds it, and its sources here made a
@@ -173,11 +190,11 @@ RUN cd node_modules \
  && mkdir -p /app/apps/backend/node_modules
 
 # ---------------------------------------------------------------------------
-# prod — slim runtime: no compiler, runs as the unprivileged imbatranim user
+# runtime-base — what the running OS needs besides its own code: Alpine's
+# packages, the imbatranim user, the shell's files and Nix with its base
+# profile. It changes when those do, not with the code (see Prebuilt bases).
 # ---------------------------------------------------------------------------
-FROM node:24.22.1-alpine AS prod
-LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.456.0"
+FROM node:24.22.1-alpine AS runtime-base
 # git is a RUNTIME dependency, not a build one: the Git app's backend spawns
 # `git` (modules/git/git.service.ts). node:alpine does not ship it, and this
 # stage previously installed nothing, so the Git app failed on every operation
@@ -221,6 +238,28 @@ ENV LOCALE_ARCHIVE=$NIX_STATE_HOME/profiles/imbatranim-base/lib/locale/locale-ar
     XDG_DATA_DIRS=$NIX_STATE_HOME/profile/share:$NIX_STATE_HOME/profiles/imbatranim-base/share:/usr/local/share:/usr/share
 COPY infrastructure/nix /tmp/nix-setup
 RUN sh /tmp/nix-setup/setup-image.sh && rm -rf /tmp/nix-setup
+
+# What prod takes from the host's and proddeps' stages, alone: kept as a base,
+# an image of just these files holds neither the Rust toolchain (1 GB) nor the
+# compilers proddeps builds node-pty with.
+FROM scratch AS wayland-host-bin
+COPY --from=wayland-host /out/imbatranim-wayland-host /out/imbatranim-wayland-host
+FROM scratch AS proddeps-bin
+COPY --from=proddeps /app/node_modules /app/node_modules
+COPY --from=proddeps /app/apps/backend/node_modules /app/apps/backend/node_modules
+
+# The prebuilt parts, by the names the arguments at the top give: the stages
+# above, or local images infrastructure/image.sh made. COPY --from takes no
+# arguments, so each gets a stage name here.
+FROM ${WAYLAND_HOST} AS wayland-host-out
+FROM ${PROD_DEPS} AS proddeps-out
+
+# ---------------------------------------------------------------------------
+# prod — slim runtime: no compiler, runs as the unprivileged imbatranim user
+# ---------------------------------------------------------------------------
+FROM ${RUNTIME_BASE} AS prod
+LABEL org.opencontainers.image.title="ImbatranimOS" \
+      org.opencontainers.image.version="1.457.0"
 WORKDIR /app
 # Hoisted runtime deps + any backend-nested overrides (may be empty).
 # --chown sets ownership as the files land, so there is no second `chown -R`
@@ -228,11 +267,11 @@ WORKDIR /app
 # application code at runtime, so it does not strictly need the runtime user's
 # ownership — but writing it as imbatranim here is free (single layer) and keeps
 # the tree tidy.
-COPY --chown=imbatranim:imbatranim --from=proddeps /app/node_modules ./node_modules
-COPY --chown=imbatranim:imbatranim --from=proddeps /app/apps/backend/node_modules ./apps/backend/node_modules
+COPY --chown=imbatranim:imbatranim --from=proddeps-out /app/node_modules ./node_modules
+COPY --chown=imbatranim:imbatranim --from=proddeps-out /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --chown=imbatranim:imbatranim --from=builder /app/apps/core/dist ./public
-COPY --from=wayland-host /out/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
+COPY --from=wayland-host-out /out/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
 COPY --chown=imbatranim:imbatranim package.json ./
 COPY --chown=imbatranim:imbatranim apps/backend/package.json ./apps/backend/
 # The marketplace catalog: what may be installed. Root-owned on
@@ -251,7 +290,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.456.0
+    IMAGE_VERSION=1.457.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -280,18 +319,18 @@ CMD ["node", "--max-semi-space-size=2", "apps/backend/dist/main"]
 # via `develop.watch` — no bind mounts, no anonymous-volume list)
 # ---------------------------------------------------------------------------
 FROM deps AS dev
-# git, as in the prod stage: the Git app runs it, and so does a marketplace
+# git, as in the runtime base: the Git app runs it, and so does a marketplace
 # install. The deps stage has only the native-addon toolchain. libxkbcommon
 # and libvpx for the Wayland host. foot (with a font) and gtk3-demo are Linux apps to
 # test the host with, in the dev image only: foot asks for the OS title bar,
 # gtk3-demo draws its own.
-# dbus, shared-mime-info and bash (with its prompt file): as in the prod stage.
+# dbus, shared-mime-info and bash (with its prompt file): as in the runtime base.
 RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info bash foot font-dejavu gtk+3.0-demo \
     && rm -f /usr/libexec/dbus-daemon-launch-helper
 RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
     addgroup -g 1000 imbatranim && adduser -D -s /bin/bash -u 1000 -G imbatranim imbatranim
 COPY infrastructure/bash/ /etc/bash/
-# Linux apps under Nix, as in the prod stage (the reasons are there).
+# Linux apps under Nix, as in the runtime base (the reasons are there).
 ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
     NIX_CACHE_HOME=/nix/var/imbatranim/cache \
     NIX_CONFIG_HOME=/nix/var/imbatranim/config \

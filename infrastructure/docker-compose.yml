@@ -24,6 +24,12 @@ services:
       args:
         VITE_BASE: ${VITE_BASE:-/}
         VITE_API_URL: ${VITE_API_URL:-/api}
+        # Prebuilt bases: infrastructure/image.sh sets these to local tags. Unset, they name the
+        # Dockerfile's own stages and the build runs everything, as before.
+        RUNTIME_BASE: ${RUNTIME_BASE:-runtime-base}
+        WAYLAND_HOST: ${WAYLAND_HOST:-wayland-host-bin}
+        BUILD_DEPS: ${BUILD_DEPS:-deps}
+        PROD_DEPS: ${PROD_DEPS:-proddeps-bin}
     image: imbatranimos:1.0
     ports:
       # Bound to LOOPBACK, not 0.0.0.0: on the VPS this container sits behind

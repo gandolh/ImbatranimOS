@@ -42,3 +42,4 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 11 | Files on a large folder: synchronous stats in batches, a 20,000-entry listing 630 to 165 ms and its size 820 to 70 ms; the Linux frame path measured lean | [3](research-performance-sweep-3.md) |
 | 12 | A Terminal's flowing output goes in one frame per 5 ms: a 25 MB cat 19,854 frames to 249, 2.7 to 2.1 s; keystroke echo unchanged | [3](research-performance-sweep-3.md) |
 | 13 | A focus change no longer re-renders the desktop: 194 to 88 components a click, script 10.0 to 5.6 ms; no leaks found, the host 6-10 MiB, SQLite already at NORMAL | [3](research-performance-sweep-3.md) |
+| 14 | Scrolling a 20,000-file folder: the sort and the rows memoised, 108 to 51 ms a wheel step | [3](research-performance-sweep-3.md) |

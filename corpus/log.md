@@ -6498,3 +6498,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 [research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `fa845fb` (1.449.0) schedules the layout write from a store subscription instead of selecting `windows` in `App`, and keeps a window's app as the same element while its frame changes. With six windows a taskbar click rendered 194 components and now 88; script 10.0 to 5.6 ms, main thread 38.4 to 31.2 ms (164.6 to 136.2 at 4× CPU). Leaks, the Wayland host's memory (6-10 MiB), SQLite's syncs and the backend's synchronous calls were looked at and found lean.
 
+## [2026-11-24] done | Performance sweep, round 14: a large folder in the File Manager
+
+[research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `52cd18d` (1.451.0) memoises the File Manager's filter, sort and selected entries (`useOrderedEntries`) and makes each row a memoised `FileRow`, since the virtualizer re-renders the window on every scroll frame. Scrolling a 20,000-file folder went from 108 to 51 ms of main thread a wheel step (2,981 to 830 components), and opening it from about 290 to 210 ms. The Start menu was measured and left.
+

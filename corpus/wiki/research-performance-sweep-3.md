@@ -1,5 +1,5 @@
 ---
-summary: Rounds 11-15 of the 2026-11-23 performance sweep in full. Round 11 found the Linux window relay and the tab's frame drawing already lean (measured, left), and made Files fast on large folders - a 20,000-entry listing 630 to 165 ms and a folder's size 820 to 70 ms - by stating entries synchronously in batches instead of one promise each. Round 12 joins a Terminal's flowing output into one WebSocket frame per 5 ms - a 25 MB cat 19,854 frames to 249, 2.7 to 2.1 s - with keystroke echo unchanged. Round 13 found no leak when apps open and close and stopped a focus change re-rendering the whole desktop - 194 to 88 components a click, script 10.0 to 5.6 ms.
+summary: Rounds 11-15 of the 2026-11-23 performance sweep in full. Round 11 found the Linux window relay and the tab's frame drawing already lean (measured, left), and made Files fast on large folders - a 20,000-entry listing 630 to 165 ms and a folder's size 820 to 70 ms - by stating entries synchronously in batches instead of one promise each. Round 12 joins a Terminal's flowing output into one WebSocket frame per 5 ms - a 25 MB cat 19,854 frames to 249, 2.7 to 2.1 s - with keystroke echo unchanged. Round 13 found no leak when apps open and close and stopped a focus change re-rendering the whole desktop - 194 to 88 components a click, script 10.0 to 5.6 ms. Round 14 halved a large folder's scroll in the File Manager - 108 to 51 ms a wheel step - by memoising its sort and its rows.
 updated: 2026-11-24
 ---
 
@@ -110,3 +110,33 @@ framer-motion wrappers (which measure themselves) included.
 
 The rest of a click's main thread is the browser painting the two windows whose border and shadow change (about
 20 ms in headless Chromium's software raster); no window uses a backdrop blur.
+
+## Round 14 (2026-11-24): a large folder in the File Manager
+
+**Looked at first:** the Start menu, which every launch goes through: 31 ms of main thread to open and 10 ms a
+keystroke of search. Nothing to cut.
+
+**Scrolling a 20,000-file folder** cost 105 to 112 ms of main thread a wheel step, 82 to 91 ms of it script, and
+rendered 2,981 components a step with 24 rows in the DOM. TanStack's virtualizer re-renders the component that holds
+it on every scroll frame, and that is the File Manager itself. Each of those renders filtered and sorted the whole
+folder again (`filterHidden`, `sortEntries`, the selected entries), and re-rendered every row on screen, each five
+tooltip-wrapped buttons and an icon.
+
+- **The filter, the sort and the selected entries are memoised** in `useOrderedEntries`, a hook of their own so the
+  React Compiler's lint can check the memoisation (inside the 1,490-line component it could not).
+- **A row is a memoised `FileRow`** that reads its handlers through a ref the list keeps current, so a row that stays
+  on screen keeps its props and only the rows coming into view render. The rename field's text goes only to the row
+  being renamed.
+
+| A 20,000-file folder, median of 3 | Before | After |
+|---|---:|---:|
+| A wheel step: main thread / script | 108 / 87 ms | 51 / 33 ms |
+| A wheel step: components rendered | 2,981 | 830 |
+| A wheel step: garbage collection (20 steps) | 258 ms | 62 ms |
+| Opening the folder: main thread | about 290 ms | about 210 ms |
+
+Click, Ctrl+click, the arrow keys, F2 with typing and Escape, the context menu and the hover actions (with the
+download link) behaved the same on both builds. What a step still costs is mostly React mounting the rows that come
+into view. Moving the virtualizer out of the File Manager into the list would also spare the window's toolbar and
+tree on each frame; it was left, because the keyboard navigation reaches the virtualizer from the root. The process
+table and the log viewer already memoise their filtering.

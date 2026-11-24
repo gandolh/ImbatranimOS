@@ -17,6 +17,11 @@ alternative for later.
 - Measured 2026-11-24 for Accessories (Todo and Bookmarks): the install step peaks at 303 MB resident and the build
   at 448 MB, on the same CPU and under the same 1 GiB cap as the desktop on the VPS; the output the desktop serves is
   144 KB. Each install downloads into a shared npm cache that only grows.
+- **imbatranim-office can't be installed under the production cap.** Its `npm run build:os` peaks at 1.96 GB
+  resident (`npm ci` at 660 MB); in a `node:24.22.1-alpine` container with 1 GiB and no swap, as production runs,
+  the build is OOM-killed within seconds, and still is with V8's heap capped at 384 MB, one Rayon thread and one libuv
+  thread (2026-11-24): the memory is native, in the bundler. Built output (33 MB for the whole suite) would install
+  in a fraction of that.
 - imbatranim-apps' `verified.json` already names the commits that count as verified, and
   `npm run verified:sync` copies it into this repository, so the pin travels with an OS release.
 

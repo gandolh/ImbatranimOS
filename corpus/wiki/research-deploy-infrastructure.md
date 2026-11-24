@@ -1,5 +1,5 @@
 ---
-summary: The 2026-11-24 deploy and infrastructure research for ImbatranimOS and imbatranim-apps, ranked. The VPS builds the image from git and keeps images only as local tags (owner, 2026-11-24). BuildKit drops cache mounts unused for 48 hours, so an occasional deploy rebuilt the Rust host, every npm download and the desktop; local base images tagged by content hash survive that. Also ranked: what each deploy leaves on disk, Marketplace builds competing with the desktop, npm's ever-growing cache, the dev image, digests, and verified prebuilt app output (brief 117).
+summary: The 2026-11-24 deploy and infrastructure research for ImbatranimOS and imbatranim-apps, ranked. The VPS builds the image from git and keeps images only as local tags (owner, 2026-11-24). BuildKit drops cache mounts unused for 48 hours, so an occasional deploy rebuilt the Rust host, every npm download and the desktop; local base images tagged by content hash survive that. Also ranked: what each deploy leaves on disk, imbatranim-office's build not fitting the 1 GiB cap, service apps' dependencies, the dev image, npm's ever-growing cache, digests, and verified prebuilt app output (brief 117).
 updated: 2026-11-24
 ---
 
@@ -79,17 +79,22 @@ layers, but 1.5 GB "reclaimable" by `docker system df`).
 2. **A deploy cleans up after itself** (in the same script). It keeps two tags of each base and removes the untagged
    images earlier builds left. Owner step: if vps-deploy prunes, `docker image prune -a --filter
    label!=imbatranim.base`; a bare `-a` or `docker system prune -a` removes the bases and makes the next deploy cold.
-3. **A service app keeps only its production dependencies.** imbatranim-office runs its server from its build
-   directory, so round 15's trimming skips it and every devDependency stays on disk. Measured in a later round.
-4. **The dev image after a dependency change.** The dev stage builds on `deps`, so a changed lockfile reinstalls
-   Alpine's packages and Nix in it too. Measured in a later round.
-5. **npm's cache for Marketplace builds** (`~/.imbatranim/apps/.cache/npm`) only grows: npm never removes data
+3. **imbatranim-office can't install under the production cap.** Its build peaks at 1.96 GB resident; in a
+   `node:24.22.1-alpine` container with 1 GiB and no swap it is OOM-killed within seconds, with V8's heap capped,
+   one Rayon thread and one libuv thread too: the memory is native, in the bundler. The OS can't fix it from
+   outside. Two ways out: imbatranim-office's build uses less (one Vite build per app, in turn), or brief 117's
+   verified prebuilt output (33 MB for the suite). Owner's call.
+4. **A service app keeps only what its server runs on** (built in round 19). A descriptor's `server.install`
+   replaces the build's dependencies: imbatranim-office's build directory 964 MB to 86 MB, its server answering.
+5. **The dev image after a dependency change** (built in round 20). The dev stage builds on `runtime-base` and
+   copies `deps`' tree in last: a rebuild after a dependency change 85 to 48 s.
+6. **npm's cache for Marketplace builds** (`~/.imbatranim/apps/.cache/npm`) only grows: npm never removes data
    ([npm cache](https://docs.npmjs.com/cli/v11/commands/npm-cache)); `npm cache verify` garbage-collects what nothing
    references. Measured in a later round.
-6. **BuildKit's garbage collection on the VPS.** `builder.gc` in `daemon.json` can keep cache mounts longer; with
+7. **BuildKit's garbage collection on the VPS.** `builder.gc` in `daemon.json` can keep cache mounts longer; with
    the bases tagged, little depends on it. An owner choice, not a repository change.
-7. **Verified prebuilt app output** instead of building on the box: brief 117, at the owner's call to keep source
-   builds for now.
+8. **Verified prebuilt app output** instead of building on the box: brief 117, at the owner's call to keep source
+   builds for now; item 3 is its strongest case.
 
 **Measured and left:**
 
@@ -109,4 +114,5 @@ layers, but 1.5 GB "reclaimable" by `docker system df`).
 Its apps reach the box through the Marketplace: accessories, developer and games build from one imbatranim-apps
 commit, hollow from game-engine, imbatranim-office (a service, with a server) from its own repository. Accessories
 measured 2026-11-24: `npm ci --workspace=accessories` 5.7 s and 303 MB at peak, `npm run build:os` 1.8 s and 448 MB
-at peak, 144 KB of output. Its own pipeline (`npm run check`) already mirrors this repository's.
+at peak, 144 KB of output. imbatranim-office: `npm ci` 23 s and 660 MB at peak, `npm run build:os` 4.7 s and 1.96 GB
+at peak, 33 MB of output, 924 MB of `node_modules` (65,808 files). Its own pipeline (`npm run check`) already mirrors this repository's.

@@ -6518,3 +6518,11 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 [research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): nice 10 for Marketplace steps lowered the desktop's API p95 during an install by a third but not the Terminal echo's, and made installs 8% longer; the bar wanted both down 30%. Reverted, no commit.
 
+## [2026-11-24] done | Performance sweep, round 19: a service app keeps only what its server runs on
+
+[research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): `e72f3e1` (1.459.0) adds `server.install` to descriptors, run after the build to replace its dependencies; imbatranim-office's names `npm ci --omit=dev --workspace=server`, and its build directory went from 964 to 86 MB with the server answering. Found on the way: Office's build peaks at 1.96 GB and is OOM-killed under the production cap of 1 GiB, whatever the OS sets; ranked in [research-deploy-infrastructure.md](wiki/research-deploy-infrastructure.md) and added to brief 117.
+
+## [2026-11-24] done | Performance sweep, round 20: the dev image after a dependency change
+
+[research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): `5317467` (1.460.0) builds the dev image on `runtime-base` and copies `deps`' tree in last, so a dependency change no longer redoes Alpine's packages and Nix in it: a rebuild 85 to 48 s, the same `node_modules`, the container answering.
+

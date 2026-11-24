@@ -1,5 +1,5 @@
 ---
-summary: Rounds 16-20 of the performance sweep in full. Round 16 researched and ranked deploys and infrastructure (research-deploy-infrastructure.md), wrote brief 117, and reverted round 12's PTY join after measuring it pinned to one CPU. Round 17 made a deploy build the image's slow parts once, as local tagged bases (infrastructure/image.sh): a code-only deploy after a pruned build cache 181 to 28 s. Round 18 measured Marketplace builds at a lower CPU priority and left it.
+summary: Rounds 16-20 of the performance sweep in full. Round 16 researched and ranked deploys and infrastructure (research-deploy-infrastructure.md), wrote brief 117, and reverted round 12's PTY join after measuring it pinned to one CPU. Round 17 made a deploy build the image's slow parts once, as local tagged bases (infrastructure/image.sh): a code-only deploy after a pruned build cache 181 to 28 s. Round 18 measured Marketplace builds at a lower CPU priority and left it. Round 19 gave a service app its server's own install (imbatranim-office 964 to 86 MB) and found its build can't fit the 1 GiB cap; round 20 rebased the dev image on the runtime base (a dependency change 85 to 48 s).
 updated: 2026-11-24
 ---
 
@@ -74,3 +74,48 @@ so everything the build forked inherited both. A spec checked both values.
 At idle the API p95 was 4 to 6 ms and the echo's 2 to 5 ms: an install barely touched the desktop at the same
 priority, because the kernel's scheduler already favours the mostly idle backend. The echo didn't improve, so the
 bar fails: reverted, the OOM score with it (nothing measured it).
+
+## Round 19 (2026-11-24): a service app keeps only what its server runs on
+
+**The bar, written before measuring:** ship only if imbatranim-office's kept build directory shrinks at least 50%
+and its server starts and answers `/health` from the pruned tree.
+
+**What it was.** A service app's server runs from its build directory, so round 15's trimming skips it, and the
+whole install stays. imbatranim-office (the catalog's one service suite): `npm ci` 23 s and 660 MB at peak,
+`npm run build:os` 4.7 s and **1.96 GB** at peak, then 964 MB on disk, 924 MB of it `node_modules` (65,808 files).
+`npm prune --omit=dev` keeps the server working but saves only a quarter (692 MB): the heavy packages (Univer
+178 MB, Harbour 78 MB, pdf.js, Lucide) are production dependencies of the suite's client apps, already bundled into
+the output. Only the server workspace's own dependencies are needed: `npm ci --omit=dev --workspace=server`, 6 s,
+leaves 86 MB.
+
+**What changed.** A descriptor's server may name its own install, `server.install` (an argv, like every command
+there), run after the build passes its checks; it replaces the build's dependencies, and a failure fails the install
+with the live build kept. imbatranim-office's descriptor names `npm ci --omit=dev --workspace=server`. Installed
+through the backend from the real catalog: 86 MB and 5,810 files kept, the server started through a lease and
+answered `/health`. The e2e test installs a service fixture whose install replaces `node_modules` and one whose
+install fails; the whole marketplace e2e passed, the service-app test included.
+
+**Found on the way: Office can't install under the production cap.** In a `node:24.22.1-alpine` container with
+1 GiB and no swap, its `npm ci` passes and its `npm run build:os` is OOM-killed (exit 137), with V8's heap capped at
+384 or 512 MB, one Rayon thread and one libuv thread too. The memory is the bundler's own. It goes to the owner
+with the research ranking (item 3) and brief 117.
+
+## Round 20 (2026-11-24): the dev image after a dependency change
+
+**The bar, written before measuring:** ship only if a rebuild of the dev target after a dependency change takes at
+least 30% less wall time, and the dev container starts and answers `/health`.
+
+**What it was.** The dev stage was built on `deps`, so a changed lockfile reran `npm ci` and then Alpine's packages
+and Nix's setup on top (the Dockerfile carried a second copy of the Nix block for it).
+
+**What changed.** `dev` builds on `runtime-base` (the production image's packages, user, shell files and Nix), adds
+the toolchain and the test apps (foot, gtk3-demo), and copies `deps`' `/app` after everything slow.
+
+| The dev target, the change a new `description` in package.json | Before | After |
+|---|---:|---:|
+| First build | 157 s | 85 s (runtime-base already built) |
+| Rebuild after a dependency change, twice | 85 and 87 s | 50 and 46 s |
+
+The same `node_modules` tree (58,256 files), ownership, tools and user; the container started with the backend's
+`/health` and Vite answering.
+

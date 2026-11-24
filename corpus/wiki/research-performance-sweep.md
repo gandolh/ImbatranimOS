@@ -47,6 +47,8 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 16 | Deploys and infrastructure researched and ranked ([research-deploy-infrastructure.md](research-deploy-infrastructure.md)), brief 117 written, round 12 reverted after a pinned re-measure | [4](research-performance-sweep-4.md) |
 | 17 | A deploy builds the image's slow parts once, as local tagged bases (`infrastructure/image.sh`): a code-only deploy after a pruned cache 181 to 28 s | [4](research-performance-sweep-4.md) |
 | 18 | Marketplace builds at a lower CPU priority: measured, not built (the desktop already stays responsive) | [4](research-performance-sweep-4.md) |
+| 19 | A service app keeps only what its server runs on (`server.install`): imbatranim-office 964 to 86 MB; its build found not to fit the 1 GiB cap | [4](research-performance-sweep-4.md) |
+| 20 | The dev image builds on the runtime base: a rebuild after a dependency change 85 to 48 s | [4](research-performance-sweep-4.md) |
 
 ## What the sweep leaves for later
 

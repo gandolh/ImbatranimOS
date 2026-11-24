@@ -66,6 +66,7 @@ console.log('built');
   writeFileSync(
     join(app, "server.mjs"),
     `import { createServer } from 'http';
+import { createHash } from 'crypto';
 import { createRequire } from 'module';
 const { WebSocketServer } = createRequire(import.meta.url)(${JSON.stringify(require.resolve("ws"))});
 const server = createServer((req, res) => {
@@ -81,10 +82,21 @@ const server = createServer((req, res) => {
   }
   res.statusCode = 404; res.end();
 });
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ noServer: true });
 wss.on('connection', (ws, req) => {
   ws.send(JSON.stringify({ url: req.url, headers: req.headers }));
   ws.on('message', (m) => ws.send('echo:' + m));
+});
+server.on('upgrade', (req, socket, head) => {
+  if (req.url === '/greet') {
+    // The 101 and a first frame in one write, as a busy socket can deliver them; any frame back ends it.
+    const accept = createHash('sha1').update(req.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+    const head101 = 'HTTP/1.1 101 Switching Protocols\\r\\nUpgrade: websocket\\r\\nConnection: Upgrade\\r\\nSec-WebSocket-Accept: ' + accept + '\\r\\n\\r\\n';
+    socket.write(Buffer.concat([Buffer.from(head101), Buffer.from([0x81, 5]), Buffer.from('hello')]));
+    socket.on('data', () => socket.destroy());
+    return;
+  }
+  wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
 });
 server.listen(Number(process.env.PORT), process.env.HOST);
 `,
@@ -119,9 +131,14 @@ function rawStatus(port: number, path: string, cookie: string): Promise<number> 
   });
 }
 
+/** A WebSocket and its first message, or the status it was refused with (0 an error, -1 no message in 5 s). */
 function openWs(url: string, headers: Record<string, string>): Promise<{ ws: WebSocket; first: string } | number> {
   return new Promise((resolve) => {
     const ws = new WebSocket(url, { headers });
+    setTimeout(() => {
+      resolve(-1);
+      ws.terminate();
+    }, 5_000).unref();
     ws.once("message", (data: Buffer) => resolve({ ws, first: data.toString() }));
     ws.on("unexpected-response", (_req, res) => resolve(res.statusCode ?? 0));
     ws.on("error", () => resolve(0));
@@ -411,6 +428,16 @@ describe("the marketplace (e2e)", () => {
     expect(await echoed).toBe("echo:hi");
     opened.ws.close();
     await new Promise((r) => opened.ws.once("close", r));
+
+    // A server that greets in the same read as its 101 still reaches the desktop.
+    const greeted = await openWs(`ws://127.0.0.1:${port}/api/marketplace/apps/sim/server/greet`, {
+      cookie,
+      origin: DESKTOP,
+    });
+    if (typeof greeted === "number") throw new Error(`no greeting: ${greeted}`);
+    expect(greeted.first).toBe("hello");
+    greeted.ws.close();
+    await new Promise((r) => greeted.ws.once("close", r));
 
     await http.delete(`/api/marketplace/apps/sim/lease/${lease}`).set("Cookie", cookie).expect(204);
     // The sweep stops a server nobody holds.

@@ -130,7 +130,12 @@ export class MarketplaceWsProxy implements OnApplicationBootstrap, OnModuleDestr
       // An 'error' with no listener throws; `pipe` adds the real one.
       upstream.on("error", () => undefined);
       const opened = await new Promise<boolean>((resolve) => {
-        upstream.once("open", () => resolve(true));
+        upstream.once("open", () => {
+          // Held until `pipe` listens. A server that greets on connect can send its first frame in the same read
+          // as its 101, and the socket emits it on the next tick, before this await resumes: that frame was lost.
+          upstream.pause();
+          resolve(true);
+        });
         upstream.once("error", () => resolve(false));
         upstream.once("unexpected-response", () => resolve(false));
       });
@@ -188,6 +193,7 @@ export class MarketplaceWsProxy implements OnApplicationBootstrap, OnModuleDestr
     upstream.on("close", close);
     client.on("error", () => upstream.terminate());
     upstream.on("error", () => client.close(1011, "app server error"));
+    upstream.resume();
   }
 
   /** Close every socket whose session ended. See PtyGateway. */

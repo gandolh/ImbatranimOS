@@ -6506,3 +6506,15 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 [research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `bb946c2` (1.453.0) has a static Marketplace app's build delete its `node_modules` once its output passes the checks; an app with a server keeps them. Accessories installed through the backend: its build directory 140 MB to 8.0 MB, Todo runs. The sweep's fifteen rounds and what they leave for later are on [research-performance-sweep.md](wiki/research-performance-sweep.md).
 
+## [2026-11-24] done | Performance sweep, round 16: deploys and infrastructure researched; round 12 reverted
+
+[research-deploy-infrastructure.md](wiki/research-deploy-infrastructure.md) ranks what deploys and infrastructure could do better for ImbatranimOS and imbatranim-apps, after the owner's answers (the VPS builds from git, local tags only, source builds for Marketplace apps, build the winners). Brief 117 (verified prebuilt app output) is filed. Round 12's PTY join, measured again with the backend pinned to one CPU as brief 114 did, cost the backend 31% more on a 50 MB `cat` and was reverted (`992b178`); [research-pty-batching.md](wiki/research-pty-batching.md) has both rules' numbers. Pages: [research-performance-sweep-4.md](wiki/research-performance-sweep-4.md).
+
+## [2026-11-24] done | Performance sweep, round 17: a deploy builds the slow parts once
+
+[research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): `4217d0b` (1.457.0) splits the Dockerfile's slow parts into stages named by build arguments and adds `infrastructure/image.sh`, which keeps them as local images tagged by a content hash. A code-only deploy after the build cache was pruned went from 181 to 28 s with no Rust image needed, a cold one from 207 to 187 s; the image holds the same files and boots.
+
+## [2026-11-24] done | Performance sweep, round 18: Marketplace builds at a lower priority, measured and left
+
+[research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): nice 10 for Marketplace steps lowered the desktop's API p95 during an install by a third but not the Terminal echo's, and made installs 8% longer; the bar wanted both down 30%. Reverted, no commit.
+

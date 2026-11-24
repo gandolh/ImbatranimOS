@@ -1,5 +1,5 @@
 ---
-summary: The 2026-11-23 performance sweep, fifteen rounds on one branch and one PR, each researched and measured before and after; how its numbers are taken, one line per round with the page that holds it, and what it leaves for later. Rounds 1-5 are in research-performance-sweep-1.md, 6-10 in research-performance-sweep-2.md, 11-15 in research-performance-sweep-3.md.
+summary: The 2026-11-23 performance sweep, fifteen rounds and fifteen more from 2026-11-24 (with a ranked deploy and infrastructure research), on one branch and one PR, each researched and measured before and after; how its numbers are taken, one line per round with the page that holds it, and what it leaves for later. Rounds 1-5 are in research-performance-sweep-1.md, 6-10 in -2, 11-15 in -3, 16-20 in -4.
 updated: 2026-11-24
 ---
 
@@ -40,10 +40,13 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 9 | Notepad loads its Markdown preview and highlighter only for Markdown: its chunk 366 to 42 KB | [2](research-performance-sweep-2.md) |
 | 10 | The image's node_modules without declarations, sources, maps and docs: 49 to 26 MB, its layer 57 to 30 MB | [2](research-performance-sweep-2.md) |
 | 11 | Files on a large folder: synchronous stats in batches, a 20,000-entry listing 630 to 165 ms and its size 820 to 70 ms; the Linux frame path measured lean | [3](research-performance-sweep-3.md) |
-| 12 | A Terminal's flowing output goes in one frame per 5 ms: a 25 MB cat 19,854 frames to 249, 2.7 to 2.1 s; keystroke echo unchanged | [3](research-performance-sweep-3.md) |
+| 12 | A Terminal's flowing output in one frame per 5 ms; **reverted in round 16**: pinned to one CPU it cost the backend 31% more on a flood, as brief 114 had found | [3](research-performance-sweep-3.md) |
 | 13 | A focus change no longer re-renders the desktop: 194 to 88 components a click, script 10.0 to 5.6 ms; no leaks found, the host 6-10 MiB, SQLite already at NORMAL | [3](research-performance-sweep-3.md) |
 | 14 | Scrolling a 20,000-file folder: the sort and the rows memoised, 108 to 51 ms a wheel step | [3](research-performance-sweep-3.md) |
 | 15 | A static Marketplace app keeps what it serves: Accessories' build directory 140 to 8 MB | [3](research-performance-sweep-3.md) |
+| 16 | Deploys and infrastructure researched and ranked ([research-deploy-infrastructure.md](research-deploy-infrastructure.md)), brief 117 written, round 12 reverted after a pinned re-measure | [4](research-performance-sweep-4.md) |
+| 17 | A deploy builds the image's slow parts once, as local tagged bases (`infrastructure/image.sh`): a code-only deploy after a pruned cache 181 to 28 s | [4](research-performance-sweep-4.md) |
+| 18 | Marketplace builds at a lower CPU priority: measured, not built (the desktop already stays responsive) | [4](research-performance-sweep-4.md) |
 
 ## What the sweep leaves for later
 

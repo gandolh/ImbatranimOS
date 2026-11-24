@@ -1,5 +1,5 @@
 ---
-summary: Rounds 11-15 of the 2026-11-23 performance sweep in full. Round 11 found the Linux window relay and the tab's frame drawing already lean (measured, left), and made Files fast on large folders - a 20,000-entry listing 630 to 165 ms and a folder's size 820 to 70 ms - by stating entries synchronously in batches instead of one promise each. Round 12 joins a Terminal's flowing output into one WebSocket frame per 5 ms - a 25 MB cat 19,854 frames to 249, 2.7 to 2.1 s - with keystroke echo unchanged. Round 13 found no leak when apps open and close and stopped a focus change re-rendering the whole desktop - 194 to 88 components a click, script 10.0 to 5.6 ms. Round 14 halved a large folder's scroll in the File Manager - 108 to 51 ms a wheel step - by memoising its sort and its rows. Round 15 made a static Marketplace app keep only what it serves - Accessories' build directory 140 to 8 MB.
+summary: Rounds 11-15 of the 2026-11-23 performance sweep in full. Round 11 found the Linux window relay and the tab's frame drawing already lean (measured, left), and made Files fast on large folders - a 20,000-entry listing 630 to 165 ms and a folder's size 820 to 70 ms - by stating entries synchronously in batches instead of one promise each. Round 12 joined a Terminal's flowing output into one WebSocket frame per 5 ms, reverted in round 16: pinned to one CPU it cost the backend more, as brief 114 had found. Round 13 found no leak when apps open and close and stopped a focus change re-rendering the whole desktop - 194 to 88 components a click, script 10.0 to 5.6 ms. Round 14 halved a large folder's scroll in the File Manager - 108 to 51 ms a wheel step - by memoising its sort and its rows. Round 15 made a static Marketplace app keep only what it serves - Accessories' build directory 140 to 8 MB.
 updated: 2026-11-24
 ---
 
@@ -39,6 +39,12 @@ compressing API responses in the backend (Caddy compresses them in the deploy, a
 cost CPU). The search walk reads directory entries without a stat each, and its content grep needs real reads.
 
 ## Round 12 (2026-11-23): a Terminal's output on its way to the tab
+
+**Reverted on 2026-11-24 (round 16).** Brief 114 had measured a similar rule the day before and closed it as
+measured, not built; this round missed it. Measured again under brief 114's conditions (the backend pinned to one
+CPU), the join raised the backend's CPU on a 50 MB `cat` by 31% and fails that brief's bar, so it went back
+(`992b178`). The numbers are on [research-pty-batching.md](research-pty-batching.md); the record below is
+what round 12 measured unpinned.
 
 **What it was.** Every read of a pty went out as its own WebSocket frame. A pty hands over a few KiB per read, so
 output in bulk was thousands of small frames: a 25 MB `cat` about 20,000, each one a `send`, a TLS record through

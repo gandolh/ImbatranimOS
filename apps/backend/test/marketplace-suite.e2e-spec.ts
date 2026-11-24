@@ -2,7 +2,8 @@ import { Global, Module, ValidationPipe, type INestApplication } from "@nestjs/c
 import { ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
-import { get, type Server } from "http";
+import { createHash } from "crypto";
+import { createServer, get, type Server } from "http";
 import type { AddressInfo } from "net";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -19,6 +20,7 @@ import { IdentityModule } from "../src/modules/identity/identity.module";
 import { PtyModule } from "../src/modules/pty/pty.module";
 import { UpgradeRoutesModule } from "../src/upgrade-routes";
 import { makeSuiteRepo, suiteDescriptor, type SuiteRepo } from "./fixtures/suite-repo";
+import { tarball } from "./fixtures/tarball";
 
 /**
  * One catalog entry, several apps, end to end against a real git
@@ -58,6 +60,9 @@ function rawStatus(port: number, path: string, cookie: string): Promise<number> 
   });
 }
 
+/** The module in the published build: not what `build.mjs` writes, so a test can tell them apart. */
+const PUBLISHED_APP = "export function mount(container) {\n  container.textContent = 'published';\n}\n";
+
 describe("one catalog entry, several apps (e2e)", () => {
   let work: string;
   let prevFilesRoot: string | undefined;
@@ -69,6 +74,8 @@ describe("one catalog entry, several apps (e2e)", () => {
   let http: ReturnType<typeof request>;
   let port: number;
   let cookie: string;
+  /** Serves the published build of `pre` and `tamper`, as a release asset would. */
+  let published: Server;
 
   const write = (d: Record<string, unknown> & { id: string }) =>
     writeFileSync(join(catalog, `${d.id}.json`), JSON.stringify(d));
@@ -110,6 +117,59 @@ describe("one catalog entry, several apps (e2e)", () => {
             capabilities: [],
           },
         ],
+      }),
+    );
+    // A published build of the same commit. `pre`'s own build fails, so installing it proves the archive was
+    // used; `tamper` names another digest, so it must build from source.
+    const archive = tarball([
+      { path: "alpha/" },
+      { path: "alpha/app.mjs", body: PUBLISHED_APP },
+      { path: "beta/" },
+      { path: "beta/app.mjs", body: PUBLISHED_APP },
+    ]);
+    published = createServer((req, res) => {
+      if (req.url === "/pre.tgz") res.end(archive);
+      else res.writeHead(404).end();
+    });
+    await new Promise<void>((resolve) => published.listen(0, "127.0.0.1", resolve));
+    const at = `http://127.0.0.1:${(published.address() as AddressInfo).port}/pre.tgz`;
+    const digest = createHash("sha256").update(archive).digest("hex");
+    const prebuiltApps = (id: string) => [{ id: `${id}-one`, name: "One", entry: "alpha/app.mjs", capabilities: [] }];
+    write(
+      suiteDescriptor(repoUrl, commits.whole, {
+        id: "pre",
+        name: "Pre",
+        build: {
+          command: ["node", "-e", "process.exit(9)"],
+          output: "dist/os",
+          prebuilt: { url: at, sha256: digest, commit: commits.whole },
+        },
+        apps: prebuiltApps("pre"),
+      }),
+    );
+    write(
+      suiteDescriptor(repoUrl, commits.whole, {
+        id: "tamper",
+        name: "Tamper",
+        build: {
+          command: ["node", "build.mjs"],
+          output: "dist/os",
+          prebuilt: { url: at, sha256: "0".repeat(64), commit: commits.whole },
+        },
+        apps: prebuiltApps("tamper"),
+      }),
+    );
+    // Refused: a published build of another commit than the descriptor's.
+    write(
+      suiteDescriptor(repoUrl, commits.whole, {
+        id: "stale",
+        name: "Stale",
+        build: {
+          command: ["node", "build.mjs"],
+          output: "dist/os",
+          prebuilt: { url: at, sha256: digest, commit: commits.leavesOutBeta },
+        },
+        apps: prebuiltApps("stale"),
       }),
     );
     // A version 1 descriptor beside them.
@@ -182,6 +242,7 @@ describe("one catalog entry, several apps (e2e)", () => {
 
   afterAll(async () => {
     await app.close();
+    await new Promise<void>((resolve) => published.close(() => resolve()));
     rmSync(work, { recursive: true, force: true });
     if (prevFilesRoot === undefined) delete process.env.FILES_ROOT;
     else process.env.FILES_ROOT = prevFilesRoot;
@@ -203,7 +264,15 @@ describe("one catalog entry, several apps (e2e)", () => {
 
   it("lists one app per item, and reports an app id that is already taken", async () => {
     const { apps, problems } = await listing();
-    expect(apps.map((a) => a.id).sort()).toEqual(["sim-one", "sim-two", "solo", "suite-alpha", "suite-beta"]);
+    expect(apps.map((a) => a.id).sort()).toEqual([
+      "pre-one",
+      "sim-one",
+      "sim-two",
+      "solo",
+      "suite-alpha",
+      "suite-beta",
+      "tamper-one",
+    ]);
     const alpha = apps.find((a) => a.id === "suite-alpha")!;
     const beta = apps.find((a) => a.id === "suite-beta")!;
     expect(alpha).toMatchObject({
@@ -227,12 +296,12 @@ describe("one catalog entry, several apps (e2e)", () => {
       multiInstance: false,
       opens: [],
     });
-    expect(problems).toEqual([
-      {
-        file: "twin.json",
-        problem: "the id suite-alpha is already used by suite.json",
-      },
-    ]);
+    expect(problems).toHaveLength(2);
+    expect(problems).toContainEqual({
+      file: "twin.json",
+      problem: "the id suite-alpha is already used by suite.json",
+    });
+    expect(problems.find((p) => p.file === "stale.json")?.problem).toMatch(/another commit than source.ref/);
   });
 
   it("takes the descriptor id on its routes, never an app id", async () => {
@@ -282,6 +351,33 @@ describe("one catalog entry, several apps (e2e)", () => {
       "suite-alpha": "alpha/app.mjs",
       "suite-beta": "beta/app.mjs",
     });
+  }, 30_000);
+
+  it("installs a published build in place of building, its SHA-256 checked", async () => {
+    await install("pre");
+    const one = await listed("pre-one");
+    expect(one.job).toBeNull();
+    expect(one.installed?.missing).toBe(false);
+    const res = await http.get(`/api/${one.installed!.entryPath!}`).set("Cookie", cookie).expect(200);
+    expect(res.text).toBe(PUBLISHED_APP);
+    const log = (await http.get("/api/marketplace/apps/pre/log").set("Cookie", cookie).expect(200)).text;
+    expect(log).toContain("Unpacked the published build: 2 files");
+    expect(log).not.toContain("process.exit(9)");
+    // Nothing of the download is left behind.
+    expect(readdirSync(join(appsDir, ".cache", "tmp")).filter((n) => n.startsWith("prebuilt-"))).toEqual([]);
+    await http.delete("/api/marketplace/apps/pre").set("Cookie", cookie).expect(204);
+  }, 30_000);
+
+  it("builds from source when the published build is not the one the descriptor names", async () => {
+    await install("tamper");
+    const one = await listed("tamper-one");
+    expect(one.job).toBeNull();
+    const res = await http.get(`/api/${one.installed!.entryPath!}`).set("Cookie", cookie).expect(200);
+    expect(res.text).toContain("from '../shared.mjs'");
+    const log = (await http.get("/api/marketplace/apps/tamper/log").set("Cookie", cookie).expect(200)).text;
+    expect(log).toMatch(/The published build was not used: its SHA-256 is [0-9a-f]{64}, not the descriptor's 0{64}/);
+    expect(log).toContain("$ node build.mjs");
+    await http.delete("/api/marketplace/apps/tamper").set("Cookie", cookie).expect(204);
   }, 30_000);
 
   it("writes a version 1 row exactly as before: its entry, and no entries", async () => {

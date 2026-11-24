@@ -25,6 +25,7 @@ import { z } from "zod";
 import { loadCatalog, type Catalog, type CatalogApp, type Descriptor } from "./catalog";
 import { MarketplaceServers, type ServerSpec } from "./marketplace-servers.service";
 import { PendingInspections } from "./pending-inspections";
+import { fetchArchive, unpackArchive } from "./prebuilt";
 import { readManifestJson, manifestVersion } from "./manifest-file";
 import { NATIVE_MANIFEST_VERSION, parseNativeManifest } from "./native-manifest";
 import { isAppId, recordedBuild, recordedKitApp } from "./recorded-build";
@@ -824,12 +825,16 @@ export class MarketplaceService implements OnModuleInit {
       return;
     }
 
-    // ── build ──
+    // ── build, or unpack the published build of the same commit ──
     job.state = "building";
     const env = this.childEnv({});
+    const prebuilt = url ? undefined : d.build.prebuilt;
+    const unpacked = prebuilt ? await this.unpackPrebuilt(prebuilt, root, d.build.output, log) : false;
+    if (unpacked) await writeLog();
     if (
-      (d.build.install && !(await step("Installing dependencies", d.build.install, root, env, BUILD_TIMEOUT_MS))) ||
-      !(await step("Building", d.build.command, root, env, BUILD_TIMEOUT_MS))
+      !unpacked &&
+      ((d.build.install && !(await step("Installing dependencies", d.build.install, root, env, BUILD_TIMEOUT_MS))) ||
+        !(await step("Building", d.build.command, root, env, BUILD_TIMEOUT_MS)))
     ) {
       return;
     }
@@ -1020,6 +1025,45 @@ export class MarketplaceService implements OnModuleInit {
     return true;
   }
 
+  /**
+   * Put a descriptor's published build where its own build would have written it: download the archive, check its
+   * SHA-256 against the descriptor's, unpack it into `output` under `root`. False, with the reason in the log, when
+   * anything fails; the caller then builds from source, so a missing or changed archive costs the install its speed
+   * and nothing else.
+   */
+  private async unpackPrebuilt(
+    prebuilt: NonNullable<Descriptor["build"]["prebuilt"]>,
+    root: string,
+    output: string,
+    log: string[],
+  ): Promise<boolean> {
+    const archive = join(this.appsDir(), ".cache", "tmp", `prebuilt-${randomBytes(6).toString("hex")}.tgz`);
+    const target = join(root, output);
+    const skip = (reason: string) => {
+      log.push(`The published build was not used: ${reason}. Building from source instead.`);
+      return false;
+    };
+    log.push(`Downloading the published build: ${prebuilt.url}`);
+    try {
+      const fetched = await fetchArchive(prebuilt.url, prebuilt.sha256, archive, FETCH_TIMEOUT_MS);
+      if (!fetched.ok) return skip(fetched.reason);
+      // The output's folders come from the clone: none of them may be a link out of it.
+      if (!(await plainFolders(root, posix.dirname(output)))) return skip(`a folder on the way to ${output} is a link`);
+      await fs.rm(target, { recursive: true, force: true });
+      await fs.mkdir(dirname(target), { recursive: true });
+      const got = await unpackArchive(archive, target);
+      log.push(
+        `Unpacked the published build: ${got.files} files, ${(got.bytes / 1048576).toFixed(1)} MB, its SHA-256 the descriptor's`,
+      );
+      return true;
+    } catch (err) {
+      await fs.rm(target, { recursive: true, force: true }).catch(() => undefined);
+      return skip(err instanceof Error ? err.message : String(err));
+    } finally {
+      await fs.rm(archive, { force: true }).catch(() => undefined);
+    }
+  }
+
   // ── environments ─────────────────────────────────────────────────────────
 
   /**
@@ -1206,6 +1250,23 @@ export async function directorySize(dir: string, within: string, cap = MAX_SERVE
     }
   }
   return total;
+}
+
+/**
+ * True when every folder of `rel` under `root` that exists is a real folder, not a link or a file: the folders an
+ * unpacked archive is written through.
+ */
+async function plainFolders(root: string, rel: string): Promise<boolean> {
+  let at = root;
+  for (const part of rel === "." ? [] : rel.split("/")) {
+    at = join(at, part);
+    try {
+      if (!(await fs.lstat(at)).isDirectory()) return false;
+    } catch {
+      return true;
+    }
+  }
+  return true;
 }
 
 /**

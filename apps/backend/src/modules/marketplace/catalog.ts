@@ -143,6 +143,31 @@ const serverSchema = z.object({
     .default("/"),
 });
 
+/**
+ * A version 2 build's output, built from `source.ref` and published as an archive: installing downloads it, checks
+ * its SHA-256 against this one and unpacks it instead of running `install` and `command` on the box. A build that
+ * can't fit the box (imbatranim-office's peaks at 1.96 GB under a 1 GiB cap, 2026-11-24) installs this way. The
+ * digest sits in the descriptor the OS release reviewed, beside the commit, so an archive is trusted as far as the
+ * source is; anything else (no archive, a download that fails, another digest) builds from source as before.
+ */
+function prebuiltSchema(options: { allowLocalRepos: boolean }) {
+  return z.strictObject({
+    url: z
+      .string()
+      .url()
+      .refine((value) => {
+        const url = new URL(value);
+        return (
+          url.protocol === "https:" ||
+          (options.allowLocalRepos && url.protocol === "http:" && url.hostname === "127.0.0.1")
+        );
+      }, "must be an https:// URL"),
+    sha256: z.string().regex(/^[0-9a-f]{64}$/, "must be a lowercase hex SHA-256"),
+    /** The commit it was built from: `source.ref`, written again so a re-pin that forgets the archive fails. */
+    commit: z.string().regex(/^[0-9a-f]{40}$/, "must be a full 40-character commit id"),
+  });
+}
+
 function repoSchema(options: { allowLocalRepos: boolean }) {
   return z
     .string()
@@ -254,6 +279,7 @@ function descriptorV2Schema(options: { allowLocalRepos: boolean }) {
       install: argv.optional(),
       command: argv,
       output: outputSchema,
+      prebuilt: prebuiltSchema(options).optional(),
     }),
     server: serverSchema.optional(),
     apps: z.array(suiteAppSchema).min(1).max(16),
@@ -291,6 +317,8 @@ export interface Descriptor {
     command: string[];
     /** The served directory, inside the app's directory, normalised, no trailing `/`. */
     output: string;
+    /** The output as a published archive (version 2 only). */
+    prebuilt?: { url: string; sha256: string; commit: string };
   };
   server?: DescriptorV2["server"];
   apps: CatalogApp[];
@@ -372,6 +400,20 @@ export function descriptorSchema(options: { allowLocalRepos: boolean }) {
           code: "custom",
           path: ["server"],
           message: "a service app needs a server",
+        });
+      }
+      if (d.build.prebuilt && d.server && !d.server.install) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["server", "install"],
+          message: "a service app with a published build needs its server's own install",
+        });
+      }
+      if (d.build.prebuilt && d.build.prebuilt.commit !== d.source.ref) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["build", "prebuilt", "commit"],
+          message: "the archive was built from another commit than source.ref",
         });
       }
       if (d.type === "static" && d.server) {

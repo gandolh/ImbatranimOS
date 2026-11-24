@@ -1,4 +1,6 @@
-# syntax=docker/dockerfile:1-labs
+# syntax=docker/dockerfile:1.28.0
+# The Dockerfile frontend, pinned to an exact release (2026-11-24): a floating tag can change under a build, or fail
+# it when Docker Hub is unreachable. `COPY --parents` and `--exclude` are stable syntax from 1.20.0 on.
 # ImbatranimOS — one dual-mode image. Build context is the REPO ROOT
 # (npm workspace: one root lockfile covers apps/backend, apps/core and the
 # apps/add-ons/* packages).
@@ -259,7 +261,7 @@ FROM ${PROD_DEPS} AS proddeps-out
 # ---------------------------------------------------------------------------
 FROM ${RUNTIME_BASE} AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.470.0"
+      org.opencontainers.image.version="1.471.0"
 WORKDIR /app
 # Hoisted runtime deps + any backend-nested overrides (may be empty).
 # --chown sets ownership as the files land, so there is no second `chown -R`
@@ -290,7 +292,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.470.0
+    IMAGE_VERSION=1.471.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).

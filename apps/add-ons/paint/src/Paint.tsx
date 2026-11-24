@@ -47,6 +47,7 @@ import {
   type UndoStack,
 } from "./lib/undoStack";
 import { MAX_DIMENSION, canvasPoint, dragRect, isCroppable, type Rect } from "./lib/geometry";
+import { patchFor, patchWithin, presentFor, withinBytes, type Patch } from "./lib/patches";
 
 type Tool = "pencil" | "brush" | "line" | "rect" | "ellipse" | "fill" | "text" | "eraser" | "eyedropper" | "select";
 
@@ -56,8 +57,24 @@ const SWATCHES = ["#000000", "#666666", "#ffffff", "#0ea5e9", "#10b981", "#f59e0
 const SIZES = [1, 3, 6, 12];
 const ZOOMS = [0.5, 1, 2, 4];
 const UNDO_CAP = 30;
+/**
+ * What the undo steps may hold in all. A step keeps only the rectangle its edit changed, so strokes are small;
+ * a fill over a whole 4000×3000 photo is still 48 MB, and the oldest steps go first past this.
+ */
+const UNDO_BYTES = 256 * 1024 * 1024;
 
 type Doc = { root: string; path: string };
+
+/** `rect` of `image` as its own ImageData: an undo step's pixels. */
+function cropImage(image: ImageData, rect: Rect): ImageData {
+  const out = new ImageData(rect.width, rect.height);
+  const row = rect.width * 4;
+  for (let y = 0; y < rect.height; y++) {
+    const from = ((rect.y + y) * image.width + rect.x) * 4;
+    out.data.set(image.data.subarray(from, from + row), y * row);
+  }
+  return out;
+}
 
 function hexToRgba(hex: string): [number, number, number, number] {
   const v = hex.replace("#", "");
@@ -104,11 +121,23 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
   const [selection, setSelection] = useState<Rect | null>(null);
   const [textAt, setTextAt] = useState<{ x: number; y: number } | null>(null);
   const [textValue, setTextValue] = useState("");
-  // Undo state lives in a ref (ImageData snapshots are heavy); the toolbar
+  // Undo state lives in a ref (pixels are heavy); the toolbar
   // reads these mirrored flags — a ref must not be read during render.
-  const undoRef = useRef<UndoStack<ImageData>>(createUndoStack(UNDO_CAP));
+  const undoRef = useRef<UndoStack<Patch<ImageData>>>(createUndoStack(UNDO_CAP));
+  // The canvas as it was when the edit in progress began; `commit` turns it into a step when the edit ends.
+  const pendingRef = useRef<ImageData | null>(null);
   const [undoFlags, setUndoFlags] = useState({ undo: false, redo: false });
-  const dragRef = useRef<{ startX: number; startY: number; lastX: number; lastY: number } | null>(null);
+  // A drag in progress; for a stroke, also the box its points span.
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    lastX: number;
+    lastY: number;
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+  } | null>(null);
   const { openFile, saveFile } = useFileDialog();
   const { confirm, confirmDialog } = useConfirm();
 
@@ -120,11 +149,31 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
 
   const syncUndoFlags = () => setUndoFlags({ undo: canUndo(undoRef.current), redo: canRedo(undoRef.current) });
 
-  const snapshot = useCallback(() => {
+  /**
+   * The edit in progress ends: what it changed becomes an undo step (nothing, when it changed nothing). `within`,
+   * when the edit is known to stay inside it (a stroke), spares reading back and comparing the whole canvas: 70 ms
+   * on a 4000×3000 photo.
+   */
+  const commit = useCallback((within?: Rect) => {
+    const before = pendingRef.current;
+    if (!before) return;
+    pendingRef.current = null;
     const c = required(canvasRef.current, "the canvas");
-    undoRef.current = pushUndo(undoRef.current, ctx().getImageData(0, 0, c.width, c.height));
+    const step =
+      within && before.width === c.width && before.height === c.height
+        ? patchWithin(before, within, cropImage)
+        : patchFor(before, ctx().getImageData(0, 0, c.width, c.height), cropImage);
+    if (!step) return;
+    undoRef.current = withinBytes(pushUndo(undoRef.current, step), UNDO_BYTES);
     setUndoFlags({ undo: canUndo(undoRef.current), redo: canRedo(undoRef.current) });
   }, []);
+
+  /** An edit begins: keep the canvas as it is until `commit`. */
+  const snapshot = useCallback(() => {
+    commit();
+    const c = required(canvasRef.current, "the canvas");
+    pendingRef.current = ctx().getImageData(0, 0, c.width, c.height);
+  }, [commit]);
 
   const blank = useCallback((width: number, height: number) => {
     const c = required(canvasRef.current, "the canvas");
@@ -134,6 +183,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
     g.fillStyle = "#ffffff";
     g.fillRect(0, 0, width, height);
     setDims({ width, height });
+    pendingRef.current = null;
     undoRef.current = createUndoStack(UNDO_CAP);
     setUndoFlags({ undo: false, redo: false });
     setSelection(null);
@@ -265,6 +315,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
         ctx().putImageData(image, 0, 0);
         setDirty(true);
       }
+      commit();
       return;
     }
     if (tool === "text") {
@@ -273,7 +324,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
       return;
     }
 
-    dragRef.current = { startX: x, startY: y, lastX: x, lastY: y };
+    dragRef.current = { startX: x, startY: y, lastX: x, lastY: y, minX: x, minY: y, maxX: x, maxY: y };
     if (tool === "pencil" || tool === "brush" || tool === "eraser") {
       snapshot();
       const g = ctx();
@@ -309,6 +360,10 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
       g.stroke();
       d.lastX = x;
       d.lastY = y;
+      d.minX = Math.min(d.minX, x);
+      d.minY = Math.min(d.minY, y);
+      d.maxX = Math.max(d.maxX, x);
+      d.maxY = Math.max(d.maxY, y);
       return;
     }
     // Shape/selection preview on the overlay.
@@ -321,10 +376,23 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
     if (!d) return;
     dragRef.current = null;
     const { x, y } = point(e);
+    if (tool === "pencil" || tool === "brush" || tool === "eraser") {
+      // Round caps reach half the line's width past each point, and antialiasing a pixel more.
+      const width = tool === "pencil" ? 1 : tool === "eraser" ? Math.max(6, size * 2) : size;
+      const reach = Math.ceil(width / 2) + 2;
+      commit({
+        x: d.minX - reach,
+        y: d.minY - reach,
+        width: d.maxX - d.minX + 2 * reach + 1,
+        height: d.maxY - d.minY + 2 * reach + 1,
+      });
+      return;
+    }
     if (tool === "line" || tool === "rect" || tool === "ellipse") {
       clearOverlay();
       snapshot();
       drawShapePreview(ctx(), x, y);
+      commit();
       setDirty(true);
       return;
     }
@@ -349,6 +417,7 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
       g.font = `${12 + size * 4}px system-ui, sans-serif`;
       g.textBaseline = "top";
       g.fillText(textValue, textAt.x, textAt.y);
+      commit();
       setDirty(true);
     }
     setTextAt(null);
@@ -363,28 +432,40 @@ export function Paint({ windowId: _windowId }: { windowId: string }) {
     c.width = selection.width;
     c.height = selection.height;
     ctx().putImageData(image, 0, 0);
+    commit();
     setDims({ width: selection.width, height: selection.height });
     setSelection(null);
     clearOverlay();
     setDirty(true);
   };
 
-  const applyUndo = useCallback((direction: "undo" | "redo") => {
-    const c = required(canvasRef.current, "the canvas");
-    const present = ctx().getImageData(0, 0, c.width, c.height);
-    const result = direction === "undo" ? undoStack(undoRef.current, present) : redoStack(undoRef.current, present);
-    if (!result) return;
-    undoRef.current = result.stack;
-    // A snapshot may have different dimensions (crop/resize was undone).
-    c.width = result.state.width;
-    c.height = result.state.height;
-    ctx().putImageData(result.state, 0, 0);
-    setDims({ width: result.state.width, height: result.state.height });
-    setSelection(null);
-    clearOverlay();
-    setDirty(true);
-    syncUndoFlags();
-  }, []);
+  const applyUndo = useCallback(
+    (direction: "undo" | "redo") => {
+      commit();
+      const c = required(canvasRef.current, "the canvas");
+      const stack = undoRef.current;
+      const top = direction === "undo" ? stack.past.at(-1) : stack.future.at(-1);
+      if (!top) return;
+      // The other direction keeps the same rectangle as it is now (the whole canvas when a crop is undone).
+      const present = presentFor(top, c, (r) => ctx().getImageData(r.x, r.y, r.width, r.height));
+      const result = direction === "undo" ? undoStack(stack, present) : redoStack(stack, present);
+      if (!result) return;
+      undoRef.current = result.stack;
+      const step = result.state;
+      // A step may be of another size (a crop was undone): resizing clears the canvas, and the step is all of it.
+      if (step.canvasWidth !== c.width || step.canvasHeight !== c.height) {
+        c.width = step.canvasWidth;
+        c.height = step.canvasHeight;
+      }
+      ctx().putImageData(step.pixels, step.rect.x, step.rect.y);
+      setDims({ width: step.canvasWidth, height: step.canvasHeight });
+      setSelection(null);
+      clearOverlay();
+      setDirty(true);
+      syncUndoFlags();
+    },
+    [commit],
+  );
 
   const toBlob = (): Promise<Blob> =>
     new Promise((resolve, reject) => {

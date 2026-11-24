@@ -6,9 +6,14 @@
       "env": ["VITE_API_URL", "VITE_BASE"],
       "outputs": ["dist/**"]
     },
-    "test": {},
+    // `^typecheck` folds each workspace dependency's typecheck hash into this task's, and that hash covers the
+    // dependency's source. The add-ons read packages/ui and apps/core as source, so without it a change there
+    // replayed a cached green add-on typecheck over a broken ui (measured 2026-11-23). Tests take the same
+    // dependency rather than `^test`: it puts the upstream source in the hash without making suites wait on
+    // each other's tests.
+    "test": { "dependsOn": ["^typecheck"] },
     "test:e2e": {},
-    "typecheck": {},
+    "typecheck": { "dependsOn": ["^typecheck"] },
     "dev": {
       "cache": false,
       "persistent": true

@@ -6526,3 +6526,19 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 [research-performance-sweep-4.md](wiki/research-performance-sweep-4.md): `5317467` (1.460.0) builds the dev image on `runtime-base` and copies `deps`' tree in last, so a dependency change no longer redoes Alpine's packages and Nix in it: a rebuild 85 to 48 s, the same `node_modules`, the container answering.
 
+
+## [2026-11-24] done | Performance sweep, round 21: a lazy kit tooltip, measured and filed
+
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): a `Tooltip` that mounts Base UI only on a pointer or a focus made a wheel step in a 20,000-file folder 45.6 to 32.6 ms of main thread and the heap's growth opening it 32% smaller, but opening the folder only 7% faster against a bar of 15%. Not built; brief 118 holds it.
+
+## [2026-11-24] done | Performance sweep, round 22: Settings mounts a section when it scrolls near
+
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): `24262d9` (1.462.0) adds `DeferredSection`, so Settings' sections below the fold mount their content within 600 px of the view. Opening Settings 288 to 61 ms of main thread, script 105 to 22 ms, the backend's CPU about 560 ms to under 10; every section shows the same content when scrolled to.
+
+## [2026-11-24] done | Performance sweep, round 23: the boot's icon drag and the package index, measured and left
+
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): removing the icons' framer-motion drag changed the boot at 4× CPU by nothing beyond noise, and building the Nix package index in a worker left the API's p95 where it was (2-4 ms) while slowing later searches. Neither built.
+
+## [2026-11-24] done | Performance sweep, round 24: Firefox's spare processes, measured and filed
+
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): turning off Firefox's prelaunched content process and preloaded new-tab page through `/etc/firefox/policies/policies.json` took one window from 13 processes and 519 MiB PSS to 9 and 439 MiB. A policy makes Firefox say it is managed, so brief 119 leaves the call to the owner.

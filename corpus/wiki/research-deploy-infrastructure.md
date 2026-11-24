@@ -102,6 +102,8 @@ layers, but 1.5 GB "reclaimable" by `docker system df`).
   desktop's API p95 stayed 5 to 13 ms at the same priority; `nice` 10 lowered the API p95 about a third but not the
   Terminal echo's, and made installs 8% longer. The kernel already favours the mostly idle desktop.
 - **The build context**: 10.6 MB, sent in 0.3 to 0.4 s. Not worth a rule.
+- **Firefox's memory under the cap** (round 24). With its spare content process and hidden new-tab page off, one
+  window's PSS fell from 519 to 439 MiB; set through a policy file, which makes Firefox say it is managed. Brief 119.
 - **Pinning base images by digest**: steadier cache keys, but each Alpine or Node security rebuild would need a
   commit. With the bases tagged locally, a tag is resolved only when its part rebuilds.
 - **A shared clone for the three suites at one imbatranim-apps commit**: each install is about 5 s and 8 MB once

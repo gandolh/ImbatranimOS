@@ -1,5 +1,5 @@
 ---
-summary: The 2026-11-23 performance sweep, fifteen rounds and fifteen more from 2026-11-24 (with a ranked deploy and infrastructure research), on one branch and one PR, each researched and measured before and after; how its numbers are taken, one line per round with the page that holds it, and what it leaves for later. Rounds 1-5 are in research-performance-sweep-1.md, 6-10 in -2, 11-15 in -3, 16-20 in -4.
+summary: The 2026-11-23 performance sweep, fifteen rounds and fifteen more from 2026-11-24 (with a ranked deploy and infrastructure research), on one branch and one PR, each researched and measured before and after; how its numbers are taken, one line per round with the page that holds it, and what it leaves for later. Rounds 1-5 are in research-performance-sweep-1.md, 6-10 in -2, 11-15 in -3, 16-20 in -4, 21-25 in -5.
 updated: 2026-11-24
 ---
 
@@ -49,6 +49,10 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 18 | Marketplace builds at a lower CPU priority: measured, not built (the desktop already stays responsive) | [4](research-performance-sweep-4.md) |
 | 19 | A service app keeps only what its server runs on (`server.install`): imbatranim-office 964 to 86 MB; its build found not to fit the 1 GiB cap | [4](research-performance-sweep-4.md) |
 | 20 | The dev image builds on the runtime base: a rebuild after a dependency change 85 to 48 s | [4](research-performance-sweep-4.md) |
+| 21 | A lazy kit `Tooltip`: a wheel step in a 20,000-file folder 45.6 to 32.6 ms, opening it only −7%; measured, filed as brief 118 | [5](research-performance-sweep-5.md) |
+| 22 | Settings mounts a section's content when it scrolls near: opening it 288 to 61 ms of main thread, the backend's CPU about 560 to under 10 ms | [5](research-performance-sweep-5.md) |
+| 23 | The boot's icon drag and a worker for the Nix package index: measured, not built (no gain; no stall to remove) | [5](research-performance-sweep-5.md) |
+| 24 | Firefox's spare processes off: PSS 519 to 439 MiB; measured, filed as brief 119 (a policy file shows a "managed" notice) | [5](research-performance-sweep-5.md) |
 
 ## What the sweep leaves for later
 
@@ -65,6 +69,5 @@ The questions the owner put, answered by what was measured:
   rather than 140 (round 15). In this repository the image rebuilds only what a commit changed (round 5).
 - **Building the OS.** The ISO (`iso/`) and the prod stage (Nix) were not built here; the Docker stages were (round 5).
 - **Left, with numbers, for whoever comes next:** Monaco's inline completions (240 KiB a Code Editor open, round 13),
-  moving the File Manager's virtualizer into its list (round 14), a lazy kit `Tooltip` (each one mounts Base UI's
-  floating-ui hooks whether or not it opens, round 15), Firefox's process settings for Linux apps (round 12,
-  unmeasured), and the gate itself (`npm run check`: lint 86 s, typecheck 41 s, Prettier 14 s).
+  moving the File Manager's virtualizer into its list (round 14), a lazy kit `Tooltip` (brief 118, round 21),
+  Firefox's spare processes (brief 119, round 24), and the gate itself (`npm run check`: lint 86 s, typecheck 41 s, Prettier 14 s).

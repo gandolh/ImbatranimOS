@@ -226,7 +226,7 @@ COPY infrastructure/bash/ /etc/bash/
 # state lives in /nix (its own volume), never in the home folder: a home link
 # into /nix would make every backup fail its restore, which refuses links that
 # point outside the home. The paths are read by setup-image.sh, the
-# entrypoint, the Terminal and Nix itself. The dev stage repeats this block.
+# entrypoint, the Terminal and Nix itself. The dev stage builds on this one.
 ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
     NIX_CACHE_HOME=/nix/var/imbatranim/cache \
     NIX_CONFIG_HOME=/nix/var/imbatranim/config \
@@ -259,7 +259,7 @@ FROM ${PROD_DEPS} AS proddeps-out
 # ---------------------------------------------------------------------------
 FROM ${RUNTIME_BASE} AS prod
 LABEL org.opencontainers.image.title="ImbatranimOS" \
-      org.opencontainers.image.version="1.459.0"
+      org.opencontainers.image.version="1.460.0"
 WORKDIR /app
 # Hoisted runtime deps + any backend-nested overrides (may be empty).
 # --chown sets ownership as the files land, so there is no second `chown -R`
@@ -290,7 +290,7 @@ ENV NODE_ENV=production \
     NOTES_DIR=/home/imbatranim/notes \
     CONFIGS_DIR=/home/imbatranim/.imbatranim/configs \
     MARKETPLACE_DIR=/app/marketplace \
-    IMAGE_VERSION=1.459.0
+    IMAGE_VERSION=1.460.0
 VOLUME /home/imbatranim
 # Nix's store and profiles: Linux apps the user installs survive image
 # rebuilds, and Settings → Backup never sees them (they are not in the home).
@@ -318,31 +318,18 @@ CMD ["node", "--max-semi-space-size=2", "apps/backend/dist/main"]
 # (docker compose dev profile SYNCS source changes into this image's own FS
 # via `develop.watch` — no bind mounts, no anonymous-volume list)
 # ---------------------------------------------------------------------------
-FROM deps AS dev
-# git, as in the runtime base: the Git app runs it, and so does a marketplace
-# install. The deps stage has only the native-addon toolchain. libxkbcommon
-# and libvpx for the Wayland host. foot (with a font) and gtk3-demo are Linux apps to
-# test the host with, in the dev image only: foot asks for the OS title bar,
-# gtk3-demo draws its own.
-# dbus, shared-mime-info and bash (with its prompt file): as in the runtime base.
-RUN apk add --no-cache git libxkbcommon libvpx tini dbus shared-mime-info bash foot font-dejavu gtk+3.0-demo \
-    && rm -f /usr/libexec/dbus-daemon-launch-helper
-RUN deluser node 2>/dev/null || true; delgroup node 2>/dev/null || true; \
-    addgroup -g 1000 imbatranim && adduser -D -s /bin/bash -u 1000 -G imbatranim imbatranim
-COPY infrastructure/bash/ /etc/bash/
-# Linux apps under Nix, as in the runtime base (the reasons are there).
-ENV NIX_STATE_HOME=/nix/var/imbatranim/state \
-    NIX_CACHE_HOME=/nix/var/imbatranim/cache \
-    NIX_CONFIG_HOME=/nix/var/imbatranim/config \
-    NIX_DATA_HOME=/nix/var/imbatranim/data \
-    XDG_RUNTIME_DIR=/run/user/1000 \
-    FONTCONFIG_FILE=/etc/fonts/nix-apps.conf \
-    NIXPKGS_ALLOW_UNFREE=1
-ENV LOCALE_ARCHIVE=$NIX_STATE_HOME/profiles/imbatranim-base/lib/locale/locale-archive \
-    XDG_DATA_DIRS=$NIX_STATE_HOME/profile/share:$NIX_STATE_HOME/profiles/imbatranim-base/share:/usr/local/share:/usr/share
-COPY infrastructure/nix /tmp/nix-setup
-RUN sh /tmp/nix-setup/setup-image.sh && rm -rf /tmp/nix-setup
+FROM runtime-base AS dev
+# The runtime base (Alpine's packages, the user, the shell's files and Nix,
+# shared with the production image) and what development adds: the
+# native-addon toolchain, and foot (with a font) and gtk3-demo, Linux apps to
+# test the host with: foot asks for the OS title bar, gtk3-demo draws its own.
+RUN apk add --no-cache python3 make g++ foot font-dejavu gtk+3.0-demo
 WORKDIR /app
+# Every dependency, from deps, after everything slow above. It was the other
+# way round (this stage built on deps), so a changed lockfile reinstalled
+# Alpine's packages and Nix here too: a dependency change rebuilt the dev
+# image in 85 s (2026-11-24).
+COPY --from=deps /app ./
 COPY --from=wayland-host /out/imbatranim-wayland-host /usr/local/bin/imbatranim-wayland-host
 COPY infrastructure/entrypoint.sh /entrypoint.sh
 # The runtime writes four places under /app, and gets only those, made here:

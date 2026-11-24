@@ -31,12 +31,13 @@ import {
   useSystem,
   useUnsavedGuard,
 } from "@imbatranim/ui";
-import { DateGrid } from "./DateGrid";
+import { DateGrid, type TileSource } from "./DateGrid";
 import { listDir } from "./api/listDir";
 import type { FsEntry } from "./api/types";
 import { isImagePath, parentDir, clamp } from "./lib/imagePath";
 import { canPan, clampPan, NO_PAN, renderedSize, type Offset } from "./lib/pan";
-import { useFolderDates } from "./lib/useFolderDates";
+import { isJpeg, useFolderDates } from "./lib/useFolderDates";
+import { orientationTransform } from "./lib/exifThumbnail";
 import { canSaveInPlace, copyName, encodeMime, noSaveReason, rotatedCanvasSize } from "./lib/encode";
 
 const MIN_ZOOM = 0.1;
@@ -127,6 +128,15 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
   const currentRoot = source?.root ?? null;
   const dates = useFolderDates(system, currentRoot, siblings, datesWanted);
   const dateList = useMemo(() => dates.groups.flatMap((g) => g.items.map((i) => i.entry)), [dates.groups]);
+  // A tile shows its photo's embedded preview, turned the way the photo is; a JPEG not read yet waits for its
+  // preview rather than fetch the whole file; everything else is the file itself.
+  const tileSource = (path: string): TileSource | null => {
+    if (!currentRoot) return null;
+    const preview = dates.previews.get(path);
+    if (preview) return { src: preview.url, transform: orientationTransform(preview.orientation) };
+    if (preview === undefined && dates.reading && isJpeg(path)) return null;
+    return { src: system.fs.downloadUrl(currentRoot, path) };
+  };
   // The step list: name order, or the grid's order when a photo was opened
   // from it (kept as shown, so a regroup after the open moves no step).
   const stepList = useMemo(
@@ -669,7 +679,7 @@ export function ImageViewer({ windowId: _windowId }: { windowId: string }) {
           failed={listFailed}
           onRetry={retryList}
           currentPath={currentPath}
-          urlFor={(path) => (currentRoot ? system.fs.downloadUrl(currentRoot, path) : "")}
+          sourceFor={tileSource}
           reading={dates.reading}
           done={dates.done}
           total={dates.total}

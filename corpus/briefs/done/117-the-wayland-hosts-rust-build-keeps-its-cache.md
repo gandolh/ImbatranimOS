@@ -77,3 +77,28 @@ for the controller.
 
 - `node cli.ts imbatranim-os server` from vps-deploy. The first deploy fills the cache; the saving shows from the
   second deploy that touches the host.
+
+## Outcome (2026-11-24)
+
+**The bar was not met, so the stage stays as it is; the syntax line is pinned.** By the time this brief ran, the
+`wayland-host` stage already had both cache mounts (the target folder with its own `id`) and copied the binary to
+`/out` (round 5 of the performance sweep, merged with PR #5). Measured on the four-core cloud container, not the
+laptop, with the build cache pruned before each cold build:
+
+| The `wayland-host` stage | Cold | A one-line change in `src/`, twice | Build cache after |
+|---|---:|---:|---:|
+| Without the cache mounts | 130.2 s | 132.9 / 132.0 s | 623 MB, then +500 MB per change |
+| With them (as on `main`) | 124.5 s | 59.1 / 59.5 s | 623 MB, then 631 / 639 MB |
+
+2.1 times, under the 3 times asked for: the host crate itself (`codegen-units = 1`, thin LTO) takes about a minute
+whatever is cached. "Leave the stage as it is" now means with the mounts; they also keep the build cache flat,
+where a stage without them adds half a gigabyte for each host change, which bears on the box's full disk. The
+registry mount's `id` was not added (it was part of keeping them).
+
+**The syntax pin** (`f6014de`): `# syntax=docker/dockerfile:1.28.0`. A two-line Dockerfile with `COPY --parents`
+and `COPY --exclude` built with each stable frontend: 1.19.0 and earlier refuse `--parents`, 1.20.0 is the first
+that takes both. 1.28.0 is the newest release at least two weeks old. The full image built with it through
+`infrastructure/image.sh` (134 s) and booted; the host binary ran a Firefox window in it.
+
+`npm run check` exit 0; `bash corpus/lint.sh` OK. brief-board isn't installed in this session, so the
+`ready_for_deploy` move is the owner's. Owner step: `node cli.ts imbatranim-os server`.

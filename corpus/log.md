@@ -6574,3 +6574,19 @@ already pinned. Ships with `node cli.ts imbatranim-os server`.
 ## [2026-11-24] done | Performance sweep: main merged, the sweep's briefs renumbered 118-120
 
 `main` filed brief 117 (the Wayland host's Rust build keeps its cache) while the sweep's branch held a brief 117 of its own, never on `main`. The branch's three are renumbered before the merge: 118 (Marketplace apps from verified prebuilt output), 119 (a kit tooltip that mounts when first asked for), 120 (Firefox starts fewer processes ahead of need), with every reference on the sweep's pages and in its log entries. For brief 117: since round 5 the branch's `wayland-host` stage already builds with a cache mount on cargo's registry and one on the target folder (`id=imbatranim-wayland-host-target`), and copies the binary to `/out`; round 17 makes the host's binary a local base that a deploy rebuilds only when its sources change. Round 5 measured a host change at 147 to 67 s for the whole image. Still open in the brief: an `id` for the registry mount, the pinned syntax line, and its own 3x measurement.
+
+## [2026-11-24] done | Brief 117: the Dockerfile's syntax line pinned; the host's cache mounts stay
+
+`f6014de` (1.471.0): `# syntax=docker/dockerfile:1.28.0` (1.20.0 is the first stable frontend with `COPY --parents` and `--exclude`). The `wayland-host` stage already had its cache mounts (performance sweep, round 5); measured, a one-line change rebuilds it in 59 s against 124.5 s cold, 2.1 times and under the brief's 3 times, so the stage stays as it is. Without the mounts each change takes as long as a cold build and adds about 500 MB to the build cache.
+
+## [2026-11-24] done | Brief 120: Firefox starts fewer processes ahead of need
+
+`c045b8f` (1.472.0): the runtime base installs `/etc/firefox/policies/policies.json` with `dom.ipc.processPrelaunch.enabled` and `browser.newtab.preload` off at "default" status. Under the 1 GiB cap one window went from 13 processes and 492 / 503 MiB PSS to 9 and 434 / 416 MiB; new tabs and windows still open. The owner accepted Firefox's "managed" notice.
+
+## [2026-11-24] done | Brief 119: the kit's Tooltip mounts Base UI only while it is open
+
+`b8ece90` (1.473.0): the Tooltip keeps its child as it is and adds handlers, mounting Base UI's root and popup only while open, anchored to the child. Mounting Base UI's trigger on first use (round 21's design) would remount the child and drop a radio group from the Tab order (imbatranim-apps' pdf toolbar). A wheel step in a 20,000-file folder 42.0 to 31.7 ms, the heap growing 8.1 to 5.7 MiB opening it; the behaviour is unchanged in Apricot light, Classic dark and a phone layout.
+
+## [2026-11-24] done | Brief 118: Marketplace apps from their published build, checked by digest
+
+`6301804` (1.474.0): a version 2 descriptor's `build.prebuilt` (url, SHA-256, commit equal to `source.ref`) installs the output from an archive instead of building, and anything that doesn't match builds from source. imbatranim-apps' `npm run prebuilt -- <group>` writes the archive deterministically. Under the 1 GiB cap Accessories took 1.0 s and about 6 MB from its archive against 6.6 s and 385 MB from source, and imbatranim-office, killed by the cap when built, installed in 4.6 s. Publishing the archives and adding the blocks to the catalog are the owner's steps.

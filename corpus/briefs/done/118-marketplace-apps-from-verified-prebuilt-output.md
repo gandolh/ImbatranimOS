@@ -55,3 +55,37 @@ alternative for later.
 - [ ] A verified artifact installs, a mismatched one is refused and falls back to a source build, and an app with a
   server still builds from source.
 - [ ] `npm run check` exit 0; `bash corpus/lint.sh` OK.
+
+## Outcome (2026-11-24)
+
+**Built in both repositories** (`6301804` here; imbatranim-apps' `npm run prebuilt`), at the owner's call that day.
+Two choices differ from the decisions above:
+
+- **The digest lives in the catalog descriptor, not `verified.json`.** `verified.json` lists apps installed from a
+  URL; the catalog suites, Office among them, are pinned by their descriptors in this repository. `build.prebuilt`
+  (`url`, `sha256`, `commit`) sits beside `source.ref`, `commit` must equal it, and the same review covers both.
+- **An app with a server installs from its archive too**, and installs its server's own dependencies from source
+  (`server.install`, now required with an archive): Office is a service app, and it is the reason for the brief.
+
+The archive is a deterministic gzipped ustar (folders and regular files only); the OS unpacks it with its own
+small reader (`prebuilt.ts`) and refuses links, devices, pax or GNU headers, paths out of the output, bad checksums
+and truncated archives. Any failure is logged and the install builds from source.
+
+**The bar was met.** Under a cgroup of 1 GiB with no swap, imbatranim-apps at `776182b`, two runs each:
+
+| | From source | From the archive |
+|---|---:|---:|
+| Accessories: wall, CPU | 6.6 s, 8.8-9.5 s | 1.0 s, 0.4-0.5 s |
+| Accessories: peak RSS above idle | about 385 MB | about 6 MB |
+| imbatranim-office | killed by the cap in `build:os` (exit 137) | installed: 4.6 s, 6.6 s of CPU, 177 MB at peak |
+
+The build steps reached npm through this sandbox's proxy for the measurement only (a patched `dist`, rebuilt
+after). Accessories' archive came out with the same SHA-256 from two builds; Office's is 8.1 MB. The e2e tests
+install from an archive whose build command fails, fall back from a wrong digest and refuse a stale commit.
+
+**Owner steps:** run `npm run prebuilt -- <group>` in imbatranim-apps at the commit a descriptor pins, upload the
+archive as a release asset under the printed URL, and copy the printed block into the descriptor's `build`. The
+catalog names no archive until then, so installs build from source as before.
+
+`npm run check` exit 0 in both repositories; `bash corpus/lint.sh` OK. brief-board isn't installed in this
+session, so the `ready_for_deploy` move is the owner's.

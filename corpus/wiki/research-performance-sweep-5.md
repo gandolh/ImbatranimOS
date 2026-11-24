@@ -27,7 +27,7 @@ tooltip replaced by its child alone, set what there was to win.
 
 The lazy version rendered the child alone until a mouse `pointerenter` or a focus, then mounted Base UI's tooltip,
 controlled. In a real tab it behaved as today. Opening the folder missed the bar (the rows' own work dominates it),
-so it was not built; [brief 119](../briefs/todo/119-a-kit-tooltip-that-mounts-when-first-asked-for.md) holds the
+so it was not built; [brief 119](../briefs/done/119-a-kit-tooltip-that-mounts-when-first-asked-for.md) holds the
 design, the numbers and a bar on scrolling and heap, with the kit apps in imbatranim-apps to check first.
 
 ## Round 22 (2026-11-24): Settings mounts a section when it scrolls near
@@ -91,7 +91,7 @@ The main process holds 287 MiB of the default's PSS, the tabs 74, 44, 28 and thr
 Firefox starting a spare content process and a hidden new-tab page ahead of need. Nix's Firefox reads
 `/etc/firefox/policies/policies.json`, which is how they were set; but any active policy makes Firefox's settings say
 the browser is managed by an organization, and no bar was written before this measurement. Both make it the owner's
-call: [brief 120](../briefs/todo/120-firefox-starts-fewer-processes-ahead-of-need.md).
+call: [brief 120](../briefs/done/120-firefox-starts-fewer-processes-ahead-of-need.md).
 
 ## Round 25 (2026-11-24): npm's cache for Marketplace builds has a cap
 

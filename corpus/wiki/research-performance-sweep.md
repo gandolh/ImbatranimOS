@@ -79,7 +79,7 @@ The questions the owner put, answered by what was measured:
 - **The owner's steps:** vps-deploy runs `infrastructure/image.sh` instead of `docker compose build` (never with
   `--pull`), and any prune there takes `--filter label!=imbatranim.base`
   ([research-deploy-infrastructure.md](research-deploy-infrastructure.md)); the calls in briefs 118 (prebuilt app
-  output), 119 (a lazy kit tooltip) and 120 (Firefox's spare processes).
+  output), 119 (a lazy kit tooltip) and 120 (Firefox's spare processes), all built on 2026-11-24.
 - **Left, with numbers, for whoever comes next:** Monaco's inline completions (240 KiB a Code Editor open, round 13),
   moving the File Manager's virtualizer into its list (round 14), a lazy kit `Tooltip` (brief 119, round 21),
   Firefox's spare processes (brief 120, round 24), and Vitest's `vmThreads` pool for the desktop's tests (round 29). The

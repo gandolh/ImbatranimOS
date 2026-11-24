@@ -56,3 +56,24 @@ what Firefox's own settings page says, so it is the owner's call.
 
 - [ ] Measured again under the production cap, the bar written first.
 - [ ] `npm run check` exit 0; `bash corpus/lint.sh` OK.
+
+## Outcome (2026-11-24)
+
+**Built** (`c045b8f`), the owner having accepted the "managed by your organization" notice that day. The runtime
+base installs `infrastructure/nix/firefox-policies.json` as `/etc/firefox/policies/policies.json`, both preferences
+at "default" status.
+
+**The bar was met.** The image built with it, under the production cap (1 GiB, no swap), Firefox 159.0 from Nix
+started from the OS's Terminal on one local page, two runs each, interleaved:
+
+| | Processes | PSS | Container |
+|---|---:|---:|---:|
+| With the policy | 9 | 434 / 416 MiB | 976 / 934 MiB |
+| Without | 13 | 492 / 503 MiB | 1010 / 990 MiB |
+
+-15%. Without it the container sat 14 to 34 MiB under its cap with one window open. Ctrl+T opened a new tab and
+Ctrl+N a new window, both with the new-tab page.
+
+`npm run check` exit 0; `bash corpus/lint.sh` OK. brief-board isn't installed in this session, so the
+`ready_for_deploy` move is the owner's. Owner step: `node cli.ts imbatranim-os server`; a Firefox started before
+the deploy keeps its old processes until it restarts.

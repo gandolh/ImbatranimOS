@@ -676,7 +676,7 @@ export class ArchiveService {
         }
       };
       await Promise.all(Array.from({ length: ZIP_EXTRACT_AT_ONCE }, worker));
-      if (failure !== null) throw failure;
+      if (failure !== null) throw failure instanceof Error ? failure : new Error(String(failure));
       await this.mergeTree(stagingAbs, destAbs);
       return { dest: destVirtual, entries: fileCount, totalBytes: actualTotal };
     } finally {

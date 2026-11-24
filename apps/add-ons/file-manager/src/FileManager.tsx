@@ -37,6 +37,7 @@ import { PreviewPane } from "./components/PreviewPane";
 import { ContextMenu } from "@imbatranim/ui";
 import { FS_ROOTS } from "./types";
 import type { FsEntry } from "./types";
+import { useOrderedEntries } from "./hooks/useOrderedEntries";
 import { resolveOpenApp } from "./lib/openWith";
 import { OpenWithDialog } from "./components/OpenWithDialog";
 import { ExtractDialog, type ExtractPrompt } from "./components/ExtractDialog";
@@ -52,7 +53,7 @@ import {
 } from "./lib/archiveView";
 import { buildMenuItems } from "./lib/buildMenuItems";
 import { makeBlankFile, uniqueNewFileName, newFileOpener, type NewFileKind } from "./lib/newFileTemplates";
-import { sortEntries, filterHidden, nextSort, gridColumns, gridRowCount, TILE_HEIGHT } from "./lib/fileSort";
+import { nextSort, gridColumns, gridRowCount, TILE_HEIGHT } from "./lib/fileSort";
 import { usePreviewPaneSettings } from "./store/previewPaneStore";
 import { useFileViewSettings } from "./store/fileViewStore";
 import { parentOf, resultCountLabel, scopeLabel } from "./lib/searchPresentation";
@@ -106,6 +107,9 @@ function triggerDownload(url: string, name: string) {
   a.click();
   a.remove();
 }
+
+/** A folder not loaded yet: one array for every render, so what is derived from it stays memoised. */
+const NO_ENTRIES: FsEntry[] = [];
 
 export function FileManager({ windowId: _windowId }: { windowId: string }) {
   const system = useSystem();
@@ -706,7 +710,7 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
     }
   }
 
-  const entries = inArchive ? archiveEntries : (dirQuery.data ?? []);
+  const entries = inArchive ? archiveEntries : (dirQuery.data ?? NO_ENTRIES);
   const isLoading = inArchive ? archiveQuery.isLoading : dirQuery.isLoading;
   const isError = inArchive ? archiveQuery.isError : dirQuery.isError;
   const isFetching = inArchive ? archiveQuery.isFetching : dirQuery.isFetching;
@@ -717,9 +721,13 @@ export function FileManager({ windowId: _windowId }: { windowId: string }) {
   // independent sorts would have let arrow-key movement disagree with what is on
   // screen. `orderedEntries` is now the single order for the virtualizer, keyboard
   // nav, selection and the rendering.
-  const visibleEntries = filterHidden(entries, view.showHidden);
-  const orderedEntries = sortEntries(visibleEntries, view.sort.key, view.sort.dir);
-  const selectedEntries = orderedEntries.filter((e) => selected.has(e.path));
+  const { visibleEntries, orderedEntries, selectedEntries } = useOrderedEntries(
+    entries,
+    view.showHidden,
+    view.sort.key,
+    view.sort.dir,
+    selected,
+  );
   const hiddenCount = entries.length - visibleEntries.length;
 
   // One name for one entry, a count for many — the clipboard went multi-entry

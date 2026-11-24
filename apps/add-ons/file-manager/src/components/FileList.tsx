@@ -1,3 +1,4 @@
+import { memo, useLayoutEffect, useRef, type RefObject } from "react";
 import { Folder, Download, Pencil, Copy, Scissors, Trash2, ArrowDown, ArrowUp } from "lucide-react";
 import { cn, useSystem } from "@imbatranim/ui";
 import { Tooltip } from "@imbatranim/ui";
@@ -60,6 +61,24 @@ export function FileList({
 }: FileListProps) {
   const { fs } = useSystem();
   const sorted = entries;
+  // The latest handlers, for the rows: FileManager makes new ones on every render, and a row that took them
+  // as props would re-render with each.
+  const latest: RowHandlers = {
+    onSelect,
+    onOpen,
+    onRename,
+    onCopy,
+    onCut,
+    onDelete,
+    onContextMenu,
+    onRenameChange,
+    onRenameCommit,
+    onRenameCancel,
+  };
+  const handlers = useRef(latest);
+  useLayoutEffect(() => {
+    handlers.current = latest;
+  });
 
   // Virtual window over `sorted`. Only these rows are mounted; the gap above
   // and below is held open by two spacer <tr>s so the scroll height and the
@@ -103,108 +122,19 @@ export function FileList({
         )}
         {virtualRows.map((vr) => {
           const entry = sorted[vr.index];
-          const isSelected = selected.has(entry.path);
           const isRenaming = renamingPath === entry.path;
-
           return (
-            <tr
+            <FileRow
               key={entry.path}
-              data-index={vr.index}
-              data-entry-path={entry.path}
-              ref={virtualizer.measureElement}
-              onClick={(e) => {
-                // Stop the click from bubbling to the background container's
-                // "clear selection" handler — otherwise every row click
-                // selects then immediately deselects in the same tick.
-                e.stopPropagation();
-                onSelect(entry.path, modeFromEvent(e));
-              }}
-              onDoubleClick={() => onOpen(entry)}
-              onContextMenu={(e) => {
-                if (!onContextMenu) return;
-                e.preventDefault();
-                // Stop the bubble, exactly as onClick above does. Without it the
-                // event reached the list wrapper's background handler, which
-                // reopened the menu with `entry: null` — so right-clicking a
-                // file showed the empty-space menu (New Folder / Upload /
-                // Paste) and its Rename / Copy / Cut / Delete items were
-                // unreachable despite being implemented.
-                e.stopPropagation();
-                if (!selected.has(entry.path)) onSelect(entry.path, "replace");
-                onContextMenu(entry, e);
-              }}
-              className={cn(
-                "group/row border-outline-variant/30 cursor-pointer border-b transition-colors",
-                isSelected ? "bg-primary-container text-on-primary-container" : "hover:bg-surface-container",
-                "apricot:bg-transparent apricot:hover:bg-transparent",
-              )}
-            >
-              <td className={cn("px-2 py-1", cellFill(isSelected))}>{getFileIcon(entry)}</td>
-              <td className={cn("px-2 py-1", cellFill(isSelected))}>
-                {isRenaming ? (
-                  <input
-                    autoFocus
-                    value={renameValue}
-                    onChange={(e) => onRenameChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") onRenameCommit();
-                      if (e.key === "Escape") onRenameCancel();
-                    }}
-                    onBlur={onRenameCommit}
-                    onClick={(e) => e.stopPropagation()}
-                    className="rounded-control border-primary bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary text-control w-full border px-1 py-0 outline-none focus-visible:ring-2 focus-visible:ring-inset"
-                  />
-                ) : (
-                  <span className="select-none">{entry.name}</span>
-                )}
-              </td>
-              <td className={cn("text-on-surface-variant px-2 py-1 text-right", cellFill(isSelected))}>
-                {entry.type === "file" ? formatSize(entry.size) : "—"}
-              </td>
-              <td className={cn("text-on-surface-variant px-2 py-1 text-right", cellFill(isSelected))}>
-                {dayjs(entry.modifiedAt).format("MMM D, YYYY")}
-              </td>
-              <td className={cn("px-2 py-1", cellFill(isSelected))} onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 [tr:hover_&]:opacity-100">
-                  <Tooltip content="Rename">
-                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => onRename(entry)}>
-                      <Pencil size={11} />
-                    </Button>
-                  </Tooltip>
-                  <Tooltip content="Copy">
-                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => onCopy(entry)}>
-                      <Copy size={11} />
-                    </Button>
-                  </Tooltip>
-                  <Tooltip content="Cut">
-                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => onCut(entry)}>
-                      <Scissors size={11} />
-                    </Button>
-                  </Tooltip>
-                  {entry.type === "file" && (
-                    <Tooltip content="Download">
-                      <a
-                        href={fs.downloadUrl(root, entry.path)}
-                        download={entry.name}
-                        className="rounded-control text-on-surface hover:border-outline-variant hover:bg-surface-container focus-visible:ring-primary inline-flex h-5 w-5 cursor-pointer items-center justify-center border border-transparent outline-none focus-visible:ring-2 focus-visible:ring-inset"
-                      >
-                        <Download size={11} />
-                      </a>
-                    </Tooltip>
-                  )}
-                  <Tooltip content="Delete">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-error hover:bg-error-container h-5 w-5 p-0"
-                      onClick={() => onDelete(entry)}
-                    >
-                      <Trash2 size={11} />
-                    </Button>
-                  </Tooltip>
-                </div>
-              </td>
-            </tr>
+              entry={entry}
+              index={vr.index}
+              isSelected={selected.has(entry.path)}
+              isRenaming={isRenaming}
+              renameValue={isRenaming ? renameValue : ""}
+              measureElement={virtualizer.measureElement}
+              downloadUrl={entry.type === "file" ? fs.downloadUrl(root, entry.path) : null}
+              handlers={handlers}
+            />
           );
         })}
         {paddingBottom > 0 && (
@@ -216,6 +146,151 @@ export function FileList({
     </table>
   );
 }
+
+/** What a row calls back into, read through a ref so a row's props stay the same while it stays on screen. */
+type RowHandlers = Pick<
+  FileListProps,
+  | "onSelect"
+  | "onOpen"
+  | "onRename"
+  | "onCopy"
+  | "onCut"
+  | "onDelete"
+  | "onContextMenu"
+  | "onRenameChange"
+  | "onRenameCommit"
+  | "onRenameCancel"
+>;
+
+/**
+ * One row, memoised. The list re-renders on every scroll frame (the virtualizer moves its window), and a row
+ * is five tooltip-wrapped buttons and an icon: re-rendering the 24 on screen each frame was most of a scroll's
+ * cost in a large folder. A row that stays on screen keeps its props (its handlers come through `h`), so only
+ * the rows coming into view render.
+ */
+const FileRow = memo(function FileRow({
+  entry,
+  index,
+  isSelected,
+  isRenaming,
+  renameValue,
+  measureElement,
+  downloadUrl,
+  handlers: h,
+}: {
+  entry: FsEntry;
+  index: number;
+  isSelected: boolean;
+  isRenaming: boolean;
+  /** The rename field's text; empty for every row but the one being renamed. */
+  renameValue: string;
+  measureElement: (el: HTMLElement | null) => void;
+  /** Where the Download button points; null for a folder, which has none. */
+  downloadUrl: string | null;
+  handlers: RefObject<RowHandlers>;
+}) {
+  return (
+    <tr
+      key={entry.path}
+      data-index={index}
+      data-entry-path={entry.path}
+      ref={measureElement}
+      onClick={(e) => {
+        // Stop the click from bubbling to the background container's
+        // "clear selection" handler — otherwise every row click
+        // selects then immediately deselects in the same tick.
+        e.stopPropagation();
+        h.current.onSelect(entry.path, modeFromEvent(e));
+      }}
+      onDoubleClick={() => h.current.onOpen(entry)}
+      onContextMenu={(e) => {
+        const { onContextMenu, onSelect } = h.current;
+        if (!onContextMenu) return;
+        e.preventDefault();
+        // Stop the bubble, exactly as onClick above does. Without it the
+        // event reached the list wrapper's background handler, which
+        // reopened the menu with `entry: null` — so right-clicking a
+        // file showed the empty-space menu (New Folder / Upload /
+        // Paste) and its Rename / Copy / Cut / Delete items were
+        // unreachable despite being implemented.
+        e.stopPropagation();
+        if (!isSelected) onSelect(entry.path, "replace");
+        onContextMenu(entry, e);
+      }}
+      className={cn(
+        "group/row border-outline-variant/30 cursor-pointer border-b transition-colors",
+        isSelected ? "bg-primary-container text-on-primary-container" : "hover:bg-surface-container",
+        "apricot:bg-transparent apricot:hover:bg-transparent",
+      )}
+    >
+      <td className={cn("px-2 py-1", cellFill(isSelected))}>{getFileIcon(entry)}</td>
+      <td className={cn("px-2 py-1", cellFill(isSelected))}>
+        {isRenaming ? (
+          <input
+            autoFocus
+            value={renameValue}
+            onChange={(e) => h.current.onRenameChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") h.current.onRenameCommit();
+              if (e.key === "Escape") h.current.onRenameCancel();
+            }}
+            onBlur={() => h.current.onRenameCommit()}
+            onClick={(e) => e.stopPropagation()}
+            className="rounded-control border-primary bg-surface-container-lowest font-content text-on-surface focus-visible:ring-primary text-control w-full border px-1 py-0 outline-none focus-visible:ring-2 focus-visible:ring-inset"
+          />
+        ) : (
+          <span className="select-none">{entry.name}</span>
+        )}
+      </td>
+      <td className={cn("text-on-surface-variant px-2 py-1 text-right", cellFill(isSelected))}>
+        {entry.type === "file" ? formatSize(entry.size) : "—"}
+      </td>
+      <td className={cn("text-on-surface-variant px-2 py-1 text-right", cellFill(isSelected))}>
+        {dayjs(entry.modifiedAt).format("MMM D, YYYY")}
+      </td>
+      <td className={cn("px-2 py-1", cellFill(isSelected))} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 [tr:hover_&]:opacity-100">
+          <Tooltip content="Rename">
+            <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => h.current.onRename(entry)}>
+              <Pencil size={11} />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Copy">
+            <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => h.current.onCopy(entry)}>
+              <Copy size={11} />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Cut">
+            <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => h.current.onCut(entry)}>
+              <Scissors size={11} />
+            </Button>
+          </Tooltip>
+          {downloadUrl !== null && (
+            <Tooltip content="Download">
+              <a
+                href={downloadUrl}
+                download={entry.name}
+                className="rounded-control text-on-surface hover:border-outline-variant hover:bg-surface-container focus-visible:ring-primary inline-flex h-5 w-5 cursor-pointer items-center justify-center border border-transparent outline-none focus-visible:ring-2 focus-visible:ring-inset"
+              >
+                <Download size={11} />
+              </a>
+            </Tooltip>
+          )}
+          <Tooltip content="Delete">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-error hover:bg-error-container h-5 w-5 p-0"
+              onClick={() => h.current.onDelete(entry)}
+            >
+              <Trash2 size={11} />
+            </Button>
+          </Tooltip>
+        </div>
+      </td>
+    </tr>
+  );
+});
 
 /**
  * Apricot's row fill, on the cells: the row itself can't be rounded, so each

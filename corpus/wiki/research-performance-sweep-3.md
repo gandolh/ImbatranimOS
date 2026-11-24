@@ -1,5 +1,5 @@
 ---
-summary: Rounds 11-15 of the 2026-11-23 performance sweep in full. Round 11 found the Linux window relay and the tab's frame drawing already lean (measured, left), and made Files fast on large folders - a 20,000-entry listing 630 to 165 ms and a folder's size 820 to 70 ms - by stating entries synchronously in batches instead of one promise each. Round 12 joins a Terminal's flowing output into one WebSocket frame per 5 ms - a 25 MB cat 19,854 frames to 249, 2.7 to 2.1 s - with keystroke echo unchanged. Round 13 found no leak when apps open and close and stopped a focus change re-rendering the whole desktop - 194 to 88 components a click, script 10.0 to 5.6 ms. Round 14 halved a large folder's scroll in the File Manager - 108 to 51 ms a wheel step - by memoising its sort and its rows.
+summary: Rounds 11-15 of the 2026-11-23 performance sweep in full. Round 11 found the Linux window relay and the tab's frame drawing already lean (measured, left), and made Files fast on large folders - a 20,000-entry listing 630 to 165 ms and a folder's size 820 to 70 ms - by stating entries synchronously in batches instead of one promise each. Round 12 joins a Terminal's flowing output into one WebSocket frame per 5 ms - a 25 MB cat 19,854 frames to 249, 2.7 to 2.1 s - with keystroke echo unchanged. Round 13 found no leak when apps open and close and stopped a focus change re-rendering the whole desktop - 194 to 88 components a click, script 10.0 to 5.6 ms. Round 14 halved a large folder's scroll in the File Manager - 108 to 51 ms a wheel step - by memoising its sort and its rows. Round 15 made a static Marketplace app keep only what it serves - Accessories' build directory 140 to 8 MB.
 updated: 2026-11-24
 ---
 
@@ -140,3 +140,23 @@ download link) behaved the same on both builds. What a step still costs is mostl
 into view. Moving the virtualizer out of the File Manager into the list would also spare the window's toolbar and
 tree on each frame; it was left, because the keyboard navigation reaches the virtualizer from the root. The process
 table and the log viewer already memoise their filtering.
+
+## Round 15 (2026-11-24): what an installed Marketplace app keeps on disk
+
+The OS builds an imbatranim-apps suite on the box: it fetches the pinned commit into a new directory under
+`~/.imbatranim/apps`, runs the descriptor's install and build steps there, and serves the build's output. The
+directory stayed whole afterwards. Accessories (Todo and Bookmarks) at the catalog's commit, built by hand the way the
+OS builds it: `npm ci --workspace=accessories` in 4 s and `npm run build:os` in 1.5 s, leaving 132 MB of
+`node_modules` (5,501 files: lucide-react 40 MB, TypeScript 24 MB, rolldown 20 MB, Vite 13 MB) beside a 144 KB
+output. A static app reads none of it again: the desktop is served the output, and every install, update and rebuild
+fetches into a new directory.
+
+- **After a static app's build passes its checks, `removeDependencies` deletes every `node_modules` folder in its
+  build directory.** It never touches the output or a folder on the way to it, does not enter `.git`, and follows no
+  symlink. An app with a server runs from its build directory and keeps them. The install log says what went.
+- Installed through the backend from the real catalog: the build directory 140 MB and about 6,100 files before,
+  8.0 MB and 641 files after; Todo opens and runs from it. The e2e test now checks that the static fixture's build
+  keeps its output and loses its `node_modules`, and fails on the old code.
+
+The shared npm cache (`~/.imbatranim/apps/.cache/npm`, 30 MB after this one install) stays, so a rebuild downloads
+nothing again. The clone's sources (8 MB with `.git`) stay too: they are small, and nothing measured needed them gone.

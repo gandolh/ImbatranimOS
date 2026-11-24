@@ -1,5 +1,5 @@
 ---
-summary: The 2026-11-23 performance sweep, fifteen rounds on one branch and one PR, each researched and measured before and after; how its numbers are taken, and one line per round with the page that holds it. Rounds 1-5 are in research-performance-sweep-1.md, 6-10 in research-performance-sweep-2.md, 11-15 in research-performance-sweep-3.md.
+summary: The 2026-11-23 performance sweep, fifteen rounds on one branch and one PR, each researched and measured before and after; how its numbers are taken, one line per round with the page that holds it, and what it leaves for later. Rounds 1-5 are in research-performance-sweep-1.md, 6-10 in research-performance-sweep-2.md, 11-15 in research-performance-sweep-3.md.
 updated: 2026-11-24
 ---
 
@@ -43,3 +43,23 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 12 | A Terminal's flowing output goes in one frame per 5 ms: a 25 MB cat 19,854 frames to 249, 2.7 to 2.1 s; keystroke echo unchanged | [3](research-performance-sweep-3.md) |
 | 13 | A focus change no longer re-renders the desktop: 194 to 88 components a click, script 10.0 to 5.6 ms; no leaks found, the host 6-10 MiB, SQLite already at NORMAL | [3](research-performance-sweep-3.md) |
 | 14 | Scrolling a 20,000-file folder: the sort and the rows memoised, 108 to 51 ms a wheel step | [3](research-performance-sweep-3.md) |
+| 15 | A static Marketplace app keeps what it serves: Accessories' build directory 140 to 8 MB | [3](research-performance-sweep-3.md) |
+
+## What the sweep leaves for later
+
+The questions the owner put, answered by what was measured:
+
+- **A lighter Wayland compositor.** The host already is a small library core (smithay) with our compositor over it and
+  the browser drawing: a 3.9 MB binary, 6 MiB of memory for a session and 10 MiB with a terminal open, no CPU at rest
+  (round 8), and it sends only changed pixels (round 3) or a move of pixels the tab holds (round 4). A Wayland client
+  draws its own pixels, so the browser cannot draw its text or widgets for it; what stays open is where the tab draws.
+  Decoding and drawing a Linux window could move to a worker with an `OffscreenCanvas`, which would take the draw off
+  the desktop's main thread (about 0.3 ms a frame in software, round 11). Not built: measure it with a GPU browser
+  first.
+- **Building imbatranim-apps.** On the box a suite installs in about 5 s with a warm npm cache, and now keeps 8 MB
+  rather than 140 (round 15). In this repository the image rebuilds only what a commit changed (round 5).
+- **Building the OS.** The ISO (`iso/`) and the prod stage (Nix) were not built here; the Docker stages were (round 5).
+- **Left, with numbers, for whoever comes next:** Monaco's inline completions (240 KiB a Code Editor open, round 13),
+  moving the File Manager's virtualizer into its list (round 14), a lazy kit `Tooltip` (each one mounts Base UI's
+  floating-ui hooks whether or not it opens, round 15), Firefox's process settings for Linux apps (round 12,
+  unmeasured), and the gate itself (`npm run check`: lint 86 s, typecheck 41 s, Prettier 14 s).

@@ -6502,3 +6502,7 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 
 [research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `52cd18d` (1.451.0) memoises the File Manager's filter, sort and selected entries (`useOrderedEntries`) and makes each row a memoised `FileRow`, since the virtualizer re-renders the window on every scroll frame. Scrolling a 20,000-file folder went from 108 to 51 ms of main thread a wheel step (2,981 to 830 components), and opening it from about 290 to 210 ms. The Start menu was measured and left.
 
+## [2026-11-24] done | Performance sweep, round 15: what an installed app keeps, and the sweep closed
+
+[research-performance-sweep-3.md](wiki/research-performance-sweep-3.md): `bb946c2` (1.453.0) has a static Marketplace app's build delete its `node_modules` once its output passes the checks; an app with a server keeps them. Accessories installed through the backend: its build directory 140 MB to 8.0 MB, Todo runs. The sweep's fifteen rounds and what they leave for later are on [research-performance-sweep.md](wiki/research-performance-sweep.md).
+

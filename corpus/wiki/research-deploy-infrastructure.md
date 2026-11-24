@@ -89,8 +89,9 @@ layers, but 1.5 GB "reclaimable" by `docker system df`).
 5. **The dev image after a dependency change** (built in round 20). The dev stage builds on `runtime-base` and
    copies `deps`' tree in last: a rebuild after a dependency change 85 to 48 s.
 6. **npm's cache for Marketplace builds** (`~/.imbatranim/apps/.cache/npm`) only grows: npm never removes data
-   ([npm cache](https://docs.npmjs.com/cli/v11/commands/npm-cache)); `npm cache verify` garbage-collects what nothing
-   references. Measured in a later round.
+   ([npm cache](https://docs.npmjs.com/cli/v11/commands/npm-cache)), and `npm cache verify` collects nothing its index
+   still names, which is every version fetched. Built in round 25: emptied before a build past 256 MB (the catalog
+   needs about 180 MB; an update with dependency changes adds up to 16 MB).
 7. **BuildKit's garbage collection on the VPS.** `builder.gc` in `daemon.json` can keep cache mounts longer; with
    the bases tagged, little depends on it. An owner choice, not a repository change.
 8. **Verified prebuilt app output** instead of building on the box: brief 117, at the owner's call to keep source

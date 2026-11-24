@@ -6542,3 +6542,19 @@ The estate redesign board is a private canvas, so `design/estate-redesign/` now 
 ## [2026-11-24] done | Performance sweep, round 24: Firefox's spare processes, measured and filed
 
 [research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): turning off Firefox's prelaunched content process and preloaded new-tab page through `/etc/firefox/policies/policies.json` took one window from 13 processes and 519 MiB PSS to 9 and 439 MiB. A policy makes Firefox say it is managed, so brief 119 leaves the call to the owner.
+
+## [2026-11-24] done | Performance sweep, round 25: npm's cache for Marketplace builds has a cap
+
+[research-performance-sweep-5.md](wiki/research-performance-sweep-5.md): `b8b7a5c` (1.464.0) empties `~/.imbatranim/apps/.cache/npm` before a build once it holds more than 256 MB. Between two imbatranim-apps pins the catalog's installs needed about 180 MB and an update with dependency changes added 16 MB that `npm cache verify` keeps; an install with the cache emptied took no longer here (22.1 and 20.8 s against 23.1 and 21.5 s warm).
+
+## [2026-11-24] done | Performance sweep, round 26: the gate side by side; a WebSocket proxy that dropped greetings
+
+[research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): `140b560` (1.466.0) runs typecheck, lint, the format check and the conventions side by side and ESLint with `--concurrency=auto`, then the tests: the whole gate with turbo forced 179 and 174 s to 134 and 116 s. `7c8479e` (1.465.0) fixes why the marketplace e2e test hung in about half the gates: the proxy to a service app's WebSocket listened for the upstream's messages only after upgrading the client, and a first frame that came in the same read as the 101 was lost. The upstream is now paused until the pipe listens, and a fixture route sends a frame that way.
+
+## [2026-11-24] done | Performance sweep, round 27: the Image Viewer's date grid shows the photos' own previews
+
+[research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): `b525680` (1.467.0) takes each JPEG's Exif preview from the bytes the date read already has and shows it, turned like the photo, instead of the whole file. 32 photos: 93.6 to 4.1 MiB transferred, every tile on screen drawn 703 to 281 ms, the renderer about 830 to 380 MiB.
+
+## [2026-11-24] done | Performance sweep, rounds 28-29: validators and Vitest's pools, measured and left
+
+[research-performance-sweep-6.md](wiki/research-performance-sweep-6.md): an ETag on file downloads would save nothing in a session, since the tab reuses a photo it holds (stepping back and a second window fetch nothing). Vitest's `vmThreads` pool halves the desktop's test run (25 to 12 s) but trips on realm differences and peaks at 1.8 GB. Neither built.

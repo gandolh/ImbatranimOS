@@ -1,5 +1,5 @@
 ---
-summary: Rounds 21-25 of the performance sweep in full. Round 21 measured a lazy kit Tooltip (a wheel step in a 20,000-file folder 45.6 to 32.6 ms) and filed it as brief 118, since opening the folder missed its bar. Round 22 had Settings mount a section's content when it scrolls near (opening it 288 to 61 ms of main thread, the backend's CPU about 560 to under 10 ms). Round 23 measured the desktop icon's drag at boot and a worker for the Nix package index and left both. Round 24 measured Firefox's spare processes (PSS 519 to 439 MiB) and filed brief 119 for the owner.
+summary: Rounds 21-25 of the performance sweep in full. Round 21 measured a lazy kit Tooltip (a wheel step in a 20,000-file folder 45.6 to 32.6 ms) and filed it as brief 118, since opening the folder missed its bar. Round 22 had Settings mount a section's content when it scrolls near (opening it 288 to 61 ms of main thread, the backend's CPU about 560 to under 10 ms). Round 23 measured the desktop icon's drag at boot and a worker for the Nix package index and left both. Round 24 measured Firefox's spare processes (PSS 519 to 439 MiB) and filed brief 119 for the owner. Round 25 capped npm's cache for Marketplace builds at 256 MB (an update with new dependencies added up to 16 MB for good, which `npm cache verify` keeps).
 updated: 2026-11-24
 ---
 
@@ -92,3 +92,30 @@ Firefox starting a spare content process and a hidden new-tab page ahead of need
 `/etc/firefox/policies/policies.json`, which is how they were set; but any active policy makes Firefox's settings say
 the browser is managed by an organization, and no bar was written before this measurement. Both make it the owner's
 call: [brief 119](../briefs/todo/119-firefox-starts-fewer-processes-ahead-of-need.md).
+
+## Round 25 (2026-11-24): npm's cache for Marketplace builds has a cap
+
+**The bar, written before measuring growth:** a rule ships only if, after the catalog installs at one
+imbatranim-apps commit and updates to another, the cache holds at most 1.5× what one set of installs needs, and a
+reinstall takes no more than 20% longer than with today's cache.
+
+**What it was.** Builds share `~/.imbatranim/apps/.cache/npm`, and npm never removes a package it fetched.
+`npm cache verify` collects only content its index no longer names, and the index names every version ever fetched.
+Measured between two pins of imbatranim-apps (`40450da`, 2026-11-10, and the current `58482b5`):
+
+| | Cache after | Install |
+|---|---:|---:|
+| The three static suites at the old pin | 29 MB | about 3 s each |
+| The same at the new pin | 30 MB | about 3 s each |
+| imbatranim-office's full `npm ci`, old pin | 161 MB | 22.4 s |
+| The same at the new pin | 177 MB | 20.0 s |
+| `npm cache verify` | 177 MB (836 entries, nothing collected) | 0.3 s |
+
+So an update with dependency changes adds up to 16 MB for good, and the repository's lockfile changed a dozen times
+between 2026-10-23 and 2026-11-15.
+
+**What changed** (`b8b7a5c`). Before a build the cache is emptied once it holds more than 256 MB (about 1.5× what the
+whole catalog needs), and the build log says so. Builds run one at a time and nothing else uses the cache.
+`trimNpmCache` reuses `directorySize`, which stops counting past the cap and follows no symlink. A full install at the
+new pin with the cache emptied took 22.1 and 20.8 s, warm 23.1 and 21.5 s: extracting 65,000 files dominates, not
+fetching them (on the VPS fetching 170 MB costs more than here, a few seconds once per cap).

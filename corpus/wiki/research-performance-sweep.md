@@ -1,5 +1,5 @@
 ---
-summary: The 2026-11-23 performance sweep, fifteen rounds and fifteen more from 2026-11-24 (with a ranked deploy and infrastructure research), on one branch and one PR, each researched and measured before and after; how its numbers are taken, one line per round with the page that holds it, and what it leaves for later. Rounds 1-5 are in research-performance-sweep-1.md, 6-10 in -2, 11-15 in -3, 16-20 in -4, 21-25 in -5.
+summary: The 2026-11-23 performance sweep, fifteen rounds and fifteen more from 2026-11-24 (with a ranked deploy and infrastructure research), on one branch and one PR, each researched and measured before and after; how its numbers are taken, one line per round with the page that holds it, and what it leaves for later. Rounds 1-5 are in research-performance-sweep-1.md, 6-10 in -2, 11-15 in -3, 16-20 in -4, 21-25 in -5, 26-30 in -6.
 updated: 2026-11-24
 ---
 
@@ -53,6 +53,11 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 22 | Settings mounts a section's content when it scrolls near: opening it 288 to 61 ms of main thread, the backend's CPU about 560 to under 10 ms | [5](research-performance-sweep-5.md) |
 | 23 | The boot's icon drag and a worker for the Nix package index: measured, not built (no gain; no stall to remove) | [5](research-performance-sweep-5.md) |
 | 24 | Firefox's spare processes off: PSS 519 to 439 MiB; measured, filed as brief 119 (a policy file shows a "managed" notice) | [5](research-performance-sweep-5.md) |
+| 25 | npm's cache for Marketplace builds emptied past 256 MB: each update with new dependencies had added up to 16 MB for good | [5](research-performance-sweep-5.md) |
+| 26 | The gate runs its static steps side by side, ESLint on threads: 176 to 125 s; the e2e test that hung in half the gates was a WebSocket proxy dropping a server's first frame, fixed | [6](research-performance-sweep-6.md) |
+| 27 | The Image Viewer's date grid shows each photo's Exif preview: 93.6 to 4.1 MiB, tiles 703 to 281 ms, the renderer about 830 to 380 MiB | [6](research-performance-sweep-6.md) |
+| 28 | Validators on file downloads: measured, not built (the tab already reuses a photo it holds) | [6](research-performance-sweep-6.md) |
+| 29 | Vitest's vmThreads pool for the desktop's tests: 25 to 12 s, measured, not built (realm differences, 1.8 GB) | [6](research-performance-sweep-6.md) |
 
 ## What the sweep leaves for later
 
@@ -70,4 +75,5 @@ The questions the owner put, answered by what was measured:
 - **Building the OS.** The ISO (`iso/`) and the prod stage (Nix) were not built here; the Docker stages were (round 5).
 - **Left, with numbers, for whoever comes next:** Monaco's inline completions (240 KiB a Code Editor open, round 13),
   moving the File Manager's virtualizer into its list (round 14), a lazy kit `Tooltip` (brief 118, round 21),
-  Firefox's spare processes (brief 119, round 24), and the gate itself (`npm run check`: lint 86 s, typecheck 41 s, Prettier 14 s).
+  Firefox's spare processes (brief 119, round 24), and Vitest's `vmThreads` pool for the desktop's tests (round 29). The
+  gate itself runs its static steps side by side since round 26.

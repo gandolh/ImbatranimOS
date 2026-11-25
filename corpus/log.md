@@ -6606,4 +6606,4 @@ A major GC through `--expose-gc` after a zip job: the backend rested at 113-116 
 ## [2026-11-25] todo | Brief 123: The core build prints no warnings
 
 Filed from the owner's ask to fix the build warnings in the most active repos (more than 10 commits outside the corpus
-in two days). The core package's build warns about two chunks over 500 kB: the shell's 621 kB entry chunk and Monaco's 2.7 MB editor chunk. The entry is split with lazy imports; Monaco is split by size, or kept whole with a named limit if splitting breaks it. Checked in the running OS. Ships with node cli.ts imbatranim-os all.
+in two days). The core package's build warns about two chunks over 500 kB: the shell's 621 kB entry chunk and Monaco's 2.7 MB editor chunk. The entry is split with lazy imports; Monaco is split by size, or kept whole with a named limit if splitting breaks it. Checked in the running OS. Ships with `node cli.ts imbatranim-os server`.

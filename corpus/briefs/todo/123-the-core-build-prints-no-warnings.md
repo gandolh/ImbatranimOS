@@ -5,8 +5,8 @@
 **Builder:** Opus: it splits the shell's entry chunk and Monaco, and both are checked in the running OS.
 
 Filed 2026-11-25. The owner asked for the build warnings to be fixed in the most active repos (imbatranimOS had 53
-commits outside the corpus in the two days before). `npx turbo build --force` exits 0, and the only package that
-warns is `@imbatranim/core` (Vite 8.3.5).
+commits outside the corpus in the two days before). `npx turbo build --force` exits 0. It ran two build tasks, and
+only `@imbatranim/core` (Vite 8.3.5) printed anything, the warning below.
 
 ## Context
 
@@ -57,7 +57,7 @@ All settled. None of them is open.
 
 ## Owner steps
 
-- `node cli.ts imbatranim-os all` from vps-deploy.
+- `node cli.ts imbatranim-os server` from vps-deploy (the image builds core from source).
 
 ## Owner decisions
 

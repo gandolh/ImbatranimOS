@@ -31,7 +31,8 @@ extra stats, `copyTree` 2.1-2.2 s, `cp -a` 2.0-2.1 s).
 
 A bug found on the way: setting a folder's mode before copying into it fails for a read-only folder (0555) under any
 user but root (EACCES). The tests run as root, so the spec gained a 0555 folder, and was run as `nobody`: the early
-order failed, the late one passed. The bar was missed, so nothing shipped; brief 121 asks for the call.
+order failed, the late one passed. The bar was missed, so nothing shipped; brief 121 measured it again against a bar anchored to the floor and left
+it too (48% under `fs.cp` against 50%).
 
 ## Round 37 (2026-11-24): deleting a folder; measured, not built
 

@@ -38,3 +38,18 @@ every part of its bar but the size of the win, and the bar asked for more than t
 
 - [ ] Measured on Node 24, the bar above.
 - [ ] `npm run check` exit 0; `bash corpus/lint.sh` OK.
+
+## Outcome (2026-11-25)
+
+Measured again, not built. The call went to the recommended option (ship against the floor-anchored bar), and the
+bar, written after round 36's numbers, was missed on one of its two counts.
+
+- On Node 24, the backend as the image runs it, 5,668 files, three interleaved sets of three runs each (`fs.cp`,
+  `cp -a`, `copyTree`): backend CPU medians `fs.cp` 4.6 s (1.9-5.1), `cp -a` 2.17 s (2.06-2.37), `copyTree` 2.4 s
+  (2.2-2.6). Within 11% of `cp -a` (the bar allowed 15%), but 48% under `fs.cp` where it asked 50%. The trees were
+  the same, and /health's worst was 36 ms.
+- The first set ran `fs.cp` at 1.9 and 2.9 s, faster than `cp -a`'s own 2.07: a fast phase of this VM's disk, which
+  is what made its median low. Neither dropping those runs nor adding sets after the fact counts, so the change stays
+  out. It is a 40-line function with its spec (a read-only folder, run as root and as `nobody`), described in round 36
+  ([research-performance-sweep-8.md](../../wiki/research-performance-sweep-8.md)); on a disk without those phases, it
+  would want measuring again.

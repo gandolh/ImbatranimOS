@@ -54,7 +54,8 @@ once 115. Through the inspector:
 The memory is Buffers already dead: each small file read whole, each deflated or inflated chunk. V8 frees a Buffer's
 memory when a major GC collects its handle, and it schedules one by how fast external memory grows; once the job
 ends nothing grows, and an idle backend never runs one. Nothing leaks (it levels off and a GC takes it all), but the
-box's 1 GiB holds 70-140 MiB of garbage after any large archive job. Brief 122 asks how to hand it back.
+box's 1 GiB holds 70-140 MiB of garbage after any large archive job. Brief 122 measured a GC after each job: 130 MiB back at rest, and the next job 16% slower (a job that starts
+clean runs more GCs of its own), so it was left.
 
 ## Round 45 (2026-11-25): the closing check
 

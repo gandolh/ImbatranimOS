@@ -98,5 +98,6 @@ The questions the owner put, answered by what was measured:
 - **Left, with numbers, for whoever comes next:** Monaco's inline completions (240 KiB a Code Editor open, round 13),
   moving the File Manager's virtualizer into its list (round 14), a lazy kit `Tooltip` (brief 119, round 21),
   Firefox's spare processes (brief 120, round 24), Vitest's `vmThreads` pool for the desktop's tests (round 29), a folder
-  copy at `cp -a`'s pace (brief 121, round 36) and the dead Buffers an archive job leaves (brief 122, round 44). The
+  copy at `cp -a`'s pace (brief 121, round 36, measured again and left) and the dead Buffers an archive job
+  leaves (brief 122, round 44: freeing them costs the next job 0.35 s; allocating less is the next thing to try). The
   gate itself runs its static steps side by side since round 26.

@@ -6602,3 +6602,8 @@ Against a bar anchored to `cp -a`, on Node 24: `copyTree` 2.4 s of CPU, `cp -a` 
 ## [2026-11-25] done | Brief 122: an idle backend hands back what an archive job left (measured, not built)
 
 A major GC through `--expose-gc` after a zip job: the backend rested at 113-116 MiB instead of 240-254 after a compress, but the next compress took 16% longer (5% allowed), because a job that starts with no garbage runs more GCs of its own; collecting after 30 s quiet was worse on both counts. Allocating less when compressing is the next thing to measure.
+
+## [2026-11-25] todo | Brief 123: The core build prints no warnings
+
+Filed from the owner's ask to fix the build warnings in the most active repos (more than 10 commits outside the corpus
+in two days). The core package's build warns about two chunks over 500 kB: the shell's 621 kB entry chunk and Monaco's 2.7 MB editor chunk. The entry is split with lazy imports; Monaco is split by size, or kept whole with a named limit if splitting breaks it. Checked in the running OS. Ships with node cli.ts imbatranim-os all.

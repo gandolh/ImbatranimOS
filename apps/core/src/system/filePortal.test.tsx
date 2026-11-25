@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FileChoice, PickSaveOptions } from "@imbatranim/ui";
 
 /**
@@ -59,6 +59,12 @@ Element.prototype.getAnimations ??= () => [];
 
 let container: HTMLDivElement;
 let root: Root;
+
+// The picker is a chunk the first dialog loads; loaded here once, the dialog
+// draws it a tick after it opens, as it does in the browser after the first.
+beforeAll(async () => {
+  await import("../shared/components/files/FilePicker");
+});
 
 beforeEach(() => {
   get.mockClear();

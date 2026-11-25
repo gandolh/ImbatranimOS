@@ -6,9 +6,14 @@ import { Popover } from "@imbatranim/ui";
 import { cn } from "../../../lib/cn";
 import { api } from "../../../lib/axios";
 import { notify, useNotificationStore } from "../../store/notificationStore";
-import { NotificationPanel } from "../notifications/NotificationPanel";
+import { lazyPart } from "../lazyPart";
 import { readTrayStats } from "./trayStats";
 import { TrayVolume } from "./TrayVolume";
+
+/** The notification list is a chunk of its own, fetched once the pointer or focus reaches the bell. */
+const NotificationPanel = lazyPart("Notifications", () =>
+  import("../notifications/NotificationPanel").then((m) => m.NotificationPanel),
+);
 
 /** Warn once the volume passes this. */
 const DISK_WARN_PERCENT = 90;
@@ -79,6 +84,8 @@ function NotificationBell() {
       trigger={
         <button
           type="button"
+          onPointerEnter={NotificationPanel.preload}
+          onFocus={NotificationPanel.preload}
           aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
           className={cn(
             "relative",

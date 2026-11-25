@@ -106,11 +106,15 @@ describe("Taskbar activation", () => {
     expect(focusIntoWindowSoon).not.toHaveBeenCalled();
   });
 
-  it("launches from Start through openApp, which moves the keyboard itself", () => {
+  it("launches from Start through openApp, which moves the keyboard itself", async () => {
     // openApp gives a window it raises the keyboard (openAppKeyboard.test.tsx);
     // the taskbar adds no second move of its own.
     openApp.mockReturnValue("a");
     click("Start");
+    // Start's menu is its own chunk: it renders once that has loaded.
+    await act(async () => {
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
+    });
     click("Start: Notepad");
     expect(openApp).toHaveBeenCalledExactlyOnceWith("notepad");
     expect(focusIntoWindowSoon).not.toHaveBeenCalled();

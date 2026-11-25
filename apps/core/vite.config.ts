@@ -119,6 +119,14 @@ export default defineConfig(({ mode }) => {
   return {
     base,
     plugins: [react(), tailwindcss(), precompress()],
+    build: {
+      // Monaco, the editor in the Code Editor and the Diff tool, is a chunk of 2,736 kB (706 kB gzip), and the rest
+      // of it a second of 1,314 kB. Both load when one of those two apps opens, never with the desktop. Cut into
+      // pieces of 500 kB with a codeSplitting group, it broke (2026-11-25): its modules import each other in circles,
+      // and opening the editor ran a piece before the one defining a class it builds ("c is not a constructor"). So
+      // Monaco stays whole and the warning starts above it. The desktop's entry chunk was 427 kB that day.
+      chunkSizeWarningLimit: 2_800,
+    },
     server: {
       proxy: devProxy(base, backendPort),
       // In dev this server, not the backend, serves the desktop's page and

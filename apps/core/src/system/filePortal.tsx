@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { Dialog } from "@imbatranim/ui";
 import type { FileChoice } from "@imbatranim/ui";
-import { FilePicker } from "../shared/components/files/FilePicker";
+import { lazyPart } from "../shared/components/lazyPart";
+
+/** The picker is a chunk of its own, loaded by the first dialog an app asks for. */
+const FilePicker = lazyPart("The file dialog", () =>
+  import("../shared/components/files/FilePicker").then((m) => m.FilePicker),
+);
 
 /**
  * The OS file portal — the xdg-desktop-portal analogue.

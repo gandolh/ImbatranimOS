@@ -250,6 +250,51 @@ A version 1 descriptor is still valid, and is read as a version 2 one with a
 single app: the app's id is the descriptor's, `output` is the directory its
 entry is in, it opens nothing, and it has one window.
 
+### A published build
+
+A version 2 descriptor's `build` may name its output as a published archive,
+built from the same commit:
+
+```json
+"build": {
+  "install": ["npm", "ci"],
+  "command": ["npm", "run", "build:os"],
+  "output": "dist/os",
+  "prebuilt": {
+    "url": "https://github.com/gandolh/imbatranim-apps/releases/download/os-776182b60e71/office-776182b60e71.tgz",
+    "sha256": "a3623e7c7d533056c3385806e0e44efaeb713c9423ef957173135157e706620f",
+    "commit": "776182b60e715c30f39185ccf875e065440cbb82"
+  }
+}
+```
+
+The install still clones `source.ref`, then downloads the archive, checks its
+SHA-256 against `sha256` and unpacks it into `output` instead of running
+`install` and `command`. A build that needs more memory than the box has
+installs this way: imbatranim-office's `npm run build:os` is killed under the
+1 GiB cap, and from its archive it installs in 4.6 s at 177 MB (2026-11-24).
+Accessories: 6.6 s and about 385 MB from source, 1.0 s and 6 MB from its
+archive.
+
+- **The digest is the trust.** It sits here, in the descriptor the OS release
+  reviewed, beside the commit, so an archive is trusted as far as the source
+  is. `commit` must equal `source.ref`: a re-pin that forgets the archive is
+  refused.
+- **Anything else builds from source.** A download that fails, another digest,
+  a broken archive or a link on the way to `output`: the install log says why
+  (`The published build was not used: …`) and the install runs `install` and
+  `command` as before.
+- **The archive** is a gzipped ustar of the output's folders and regular files
+  only (no links, devices, or pax or GNU headers), at most 256 MB downloaded
+  and 1 GB unpacked. imbatranim-apps' `npm run prebuilt -- <group>` builds the
+  group at HEAD in a clean worktree and writes it byte for byte the same each
+  time, so anyone can rebuild the commit and get the digest named here.
+- **A service app** with a published build must name its server's own
+  `install` (`npm ci --omit=dev --workspace=server`): the build's
+  dependencies were never installed.
+- `url` is `https://`. With `MARKETPLACE_ALLOW_LOCAL_REPOS=true` (tests and
+  local checkouts) `http://127.0.0.1` is accepted too.
+
 ## Kit apps
 
 A kit app is a catalog app whose module exports a React component, which the

@@ -306,6 +306,55 @@ describe("descriptorSchema version 2", () => {
     expect(parsed.data?.server?.install).toEqual(["npm", "ci", "--omit=dev", "--workspace=server"]);
   });
 
+  describe("a published build", () => {
+    const prebuilt = (extra: Record<string, unknown> = {}) => ({
+      install: ["npm", "ci"],
+      command: ["npm", "run", "build:os"],
+      output: "dist/os",
+      prebuilt: {
+        url: "https://github.com/gandolh/imbatranim-apps/releases/download/os-1/office.tgz",
+        sha256: "a".repeat(64),
+        commit: SHA,
+        ...extra,
+      },
+    });
+
+    it("is read with its URL, digest and commit", () => {
+      const parsed = parse(suite({ build: prebuilt() }));
+      expect(parsed.success).toBe(true);
+      expect(parsed.data?.build.prebuilt).toEqual({
+        url: "https://github.com/gandolh/imbatranim-apps/releases/download/os-1/office.tgz",
+        sha256: "a".repeat(64),
+        commit: SHA,
+      });
+    });
+
+    it.each([
+      ["of another commit than source.ref", prebuilt({ commit: "b".repeat(40) }), /another commit/],
+      ["over plain http", prebuilt({ url: "http://example.com/office.tgz" }), /https/],
+      ["from a local address over http in production", prebuilt({ url: "http://127.0.0.1:9/office.tgz" }), /https/],
+      ["with an uppercase or short digest", prebuilt({ sha256: "A".repeat(64) }), /SHA-256/],
+      ["with a field the backend does not know", prebuilt({ size: 12 }), /size|Unrecognized/],
+    ])("refuses one %s", (_name, build, message) => {
+      const parsed = parse(suite({ build }));
+      expect(parsed.success).toBe(false);
+      expect(JSON.stringify(parsed.error?.issues)).toMatch(message);
+    });
+
+    it("needs a service app's server to install its own dependencies", () => {
+      const service = (install?: string[]) =>
+        parse(
+          suite({
+            type: "service",
+            build: prebuilt(),
+            server: { command: ["node", "s.js"], portEnv: "PORT", ...(install ? { install } : {}) },
+          }),
+        );
+      expect(JSON.stringify(service().error?.issues)).toMatch(/server's own install/);
+      expect(service(["npm", "ci", "--omit=dev", "--workspace=server"]).success).toBe(true);
+    });
+  });
+
   it("accepts extensions with dots and whole names in opens", () => {
     expect(parse(suite({}, [app({ opens: ["tar.gz", "makefile", "c++", "docx"] })])).success).toBe(true);
   });

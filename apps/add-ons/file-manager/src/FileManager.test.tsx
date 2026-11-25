@@ -61,8 +61,15 @@ const LISTING = {
 type FakeOpts = {
   intent?: unknown;
   post?: ReturnType<typeof vi.fn>;
+  get?: ReturnType<typeof vi.fn>;
   pickDirectory?: SystemHandle["fs"]["pickDirectory"];
 };
+
+const answer = async (url: string) => ({
+  data: url === "/files" ? ENTRIES : url === "/archive/list" ? LISTING : [],
+  status: 200,
+  headers: {},
+});
 
 function fakeSystem(opts: FakeOpts = {}): SystemHandle {
   const noop = () => {};
@@ -84,11 +91,7 @@ function fakeSystem(opts: FakeOpts = {}): SystemHandle {
       reopenRecent: async () => undefined,
     },
     http: {
-      get: vi.fn(async (url: string) => ({
-        data: url === "/files" ? ENTRIES : url === "/archive/list" ? LISTING : [],
-        status: 200,
-        headers: {},
-      })),
+      get: opts.get ?? vi.fn(answer),
       post: opts.post ?? vi.fn(),
       put: vi.fn(),
       patch: vi.fn(),
@@ -275,5 +278,29 @@ describe("File Manager extracting a lone compressed file", () => {
       startIn: { root: "home", path: "docs" },
     });
     expect(document.querySelector('[data-testid="extract-dest"]')!.textContent).toContain("elsewhere");
+  });
+});
+
+describe("File Manager dropping many files", () => {
+  it("sends each file and lists the folder once when all have settled, naming the one that failed", async () => {
+    const get = vi.fn(answer);
+    const post = vi.fn(async (url: string, form: FormData) => {
+      if (url !== "/files/upload") return { data: {}, status: 200, headers: {} };
+      if (form.get("path") === "two.txt") throw new Error("disk full");
+      return { data: {}, status: 200, headers: {} };
+    });
+    await renderFileManager({ get, post });
+    const listings = () => get.mock.calls.filter(([url]) => url === "/files").length;
+    const before = listings();
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const files = ["one.txt", "two.txt", "three.txt"].map((n) => new File(["x"], n, { type: "text/plain" }));
+    Object.defineProperty(input, "files", { configurable: true, value: files });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(post.mock.calls.filter(([url]) => url === "/files/upload")).toHaveLength(3);
+    expect(listings() - before).toBe(1);
+    expect(container.textContent).toContain("Failed to upload 1 file: two.txt.");
   });
 });

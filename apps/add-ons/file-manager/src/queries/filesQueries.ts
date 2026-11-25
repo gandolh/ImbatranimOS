@@ -16,6 +16,7 @@ import {
   writeContent,
 } from "../api/filesApi";
 import { listArchive } from "../api/archiveApi";
+import { settleEach } from "../lib/settleEach";
 
 export function fsListKey(root: string, path: string) {
   return ["fs-list", root, path] as const;
@@ -177,17 +178,6 @@ export function useMoveEntryMutation(root: string, currentPath: string) {
   });
 }
 
-export function useCopyEntryMutation(root: string, currentPath: string) {
-  const { http } = useSystem();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ from, to }: { from: string; to: string }) => copyEntry(http, root, from, to),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
-    },
-  });
-}
-
 export function useWriteContentMutation(root: string, currentPath: string) {
   const { http } = useSystem();
   const qc = useQueryClient();
@@ -195,6 +185,66 @@ export function useWriteContentMutation(root: string, currentPath: string) {
     mutationFn: ({ path, content }: { path: string; content: string }) => writeContent(http, root, path, content),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
+    },
+  });
+}
+
+/*
+ * A batch (a drop of many files, Delete or Paste on a selection) is one mutation: every item on its own request, a
+ * few at a time, each one's outcome reported, and the folders listed once when all have settled. One invalidation per
+ * item listed a 20,000-file folder 200 times for a 200-file drop: 26 s and 28 s of the backend's CPU (2026-11-24).
+ */
+
+/** Requests a batch keeps in flight: the connections Chromium opens to one host over HTTP/1.1. */
+const BATCH_AT_ONCE = 6;
+
+export function useUploadFilesMutation(root: string, currentPath: string) {
+  const { http } = useSystem();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (items: { path: string; file: File }[]) =>
+      settleEach(items, BATCH_AT_ONCE, ({ path, file }) => uploadFile(http, root, path, file)),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
+    },
+  });
+}
+
+export function useDeleteEntriesMutation(root: string, currentPath: string) {
+  const { http } = useSystem();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ paths, toTrash }: { paths: string[]; toTrash: boolean }) =>
+      settleEach(paths, BATCH_AT_ONCE, (p) => deleteEntry(http, root, p, toTrash)),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
+      void qc.invalidateQueries({ queryKey: trashKey });
+    },
+  });
+}
+
+export function useCopyEntriesMutation(root: string, currentPath: string) {
+  const { http } = useSystem();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (moves: { from: string; to: string }[]) =>
+      settleEach(moves, BATCH_AT_ONCE, ({ from, to }) => copyEntry(http, root, from, to)),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: fsListKey(root, currentPath) });
+    },
+  });
+}
+
+export function useMoveEntriesMutation(root: string, currentPath: string) {
+  const { http } = useSystem();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (moves: { from: string; to: string }[]) =>
+      settleEach(moves, BATCH_AT_ONCE, ({ from, to }) => moveEntry(http, root, from, to)),
+    onSettled: (_data, _error, moves) => {
+      // Both ends of every move, as a single move does, each folder once.
+      const dirs = new Set([currentPath, ...moves.flatMap(({ from, to }) => [dirOf(from), dirOf(to)])]);
+      for (const dir of dirs) void qc.invalidateQueries({ queryKey: fsListKey(root, dir) });
     },
   });
 }

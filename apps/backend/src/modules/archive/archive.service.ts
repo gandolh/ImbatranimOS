@@ -10,16 +10,17 @@ import {
   RequestTimeoutException,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { unzip, zip, type Unzipped, type AsyncZippable } from "fflate";
 import { execFile, spawn } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs/promises";
-import { constants as fsConstants, createReadStream, type Stats } from "fs";
+import { constants as fsConstants, createReadStream, createWriteStream, type Stats } from "fs";
 import { Transform, Writable } from "stream";
 import { pipeline } from "stream/promises";
-import { createGunzip } from "zlib";
+import { crc32, createGunzip, deflateRaw } from "zlib";
 import { basename, dirname, join, posix, relative, sep } from "path";
 import { randomUUID } from "crypto";
+import { openZipEntry, readZipDirectory, ZipFormatError } from "./zip-reader";
+import { DEFLATE_LEVEL, ZipWriter } from "./zip-writer";
 import { FilesService } from "../files/files.service";
 import { childEnv } from "../../child-env";
 import type {
@@ -53,6 +54,13 @@ const TAR_MAX_BUFFER = Number(process.env.ARCHIVE_TAR_MAX_BUFFER) || 32 * 1024 *
  * inflated bytes — a lying header can't slip past the total-bytes cap because it
  * is re-checked against actually-inflated bytes.
  */
+/** Files up to this size are deflated in memory, several at once; larger ones stream through on their own. */
+const ZIP_SMALL_FILE_BYTES = 2 * 1024 * 1024;
+/** How many zip entries are extracted at once. */
+const ZIP_EXTRACT_AT_ONCE = 4;
+/** How many small files are deflated ahead of the one being written. */
+const ZIP_DEFLATE_AHEAD = 4;
+const deflateRawAsync = promisify(deflateRaw);
 const MAX_ENTRIES = () => Number(process.env.ARCHIVE_MAX_ENTRIES) || 10_000;
 const MAX_TOTAL_BYTES = () => Number(process.env.ARCHIVE_MAX_TOTAL_BYTES) || 512 * 1024 * 1024;
 const MAX_ENTRY_BYTES = () => Number(process.env.ARCHIVE_MAX_ENTRY_BYTES) || 512 * 1024 * 1024;
@@ -431,56 +439,34 @@ export class ArchiveService {
     encrypted: boolean;
     truncated: boolean;
   }> {
-    const buf = await fs.readFile(archiveAbs);
-    const data = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-
-    const EOCD_SIG = 0x06054b50;
-    const CDH_SIG = 0x02014b50;
-    let eocd = -1;
-    const minPos = Math.max(0, data.length - 22 - 0xffff);
-    for (let i = data.length - 22; i >= minPos; i--) {
-      if (view.getUint32(i, true) === EOCD_SIG) {
-        eocd = i;
-        break;
-      }
+    // The tail and the central directory only: a listing never needs the entries' data.
+    let directory: Awaited<ReturnType<typeof readZipDirectory>>;
+    try {
+      directory = await readZipDirectory(archiveAbs, MAX_ENTRIES());
+    } catch (err) {
+      if (err instanceof ZipFormatError) throw new BadRequestException(err.message);
+      throw err;
     }
-    if (eocd < 0) throw new BadRequestException("Not a valid zip archive");
-
-    const declared = view.getUint16(eocd + 10, true);
-    const total = Math.min(declared, MAX_ENTRIES());
-    let cdOffset = view.getUint32(eocd + 16, true);
+    const { declared } = directory;
+    const total = directory.entries.length;
 
     const entries: ArchiveEntry[] = [];
     let encrypted = false;
-    for (let n = 0; n < total; n++) {
-      if (cdOffset + 46 > data.length || view.getUint32(cdOffset, true) !== CDH_SIG) {
-        throw new BadRequestException("Corrupt zip central directory");
-      }
-      const flags = view.getUint16(cdOffset + 8, true);
-      if ((flags & 0x1) !== 0) encrypted = true;
-      const dosTime = view.getUint16(cdOffset + 12, true);
-      const dosDate = view.getUint16(cdOffset + 14, true);
-      const compressedSize = view.getUint32(cdOffset + 20, true);
-      const uncompressed = view.getUint32(cdOffset + 24, true);
-      const nameLen = view.getUint16(cdOffset + 28, true);
-      const extraLen = view.getUint16(cdOffset + 30, true);
-      const commentLen = view.getUint16(cdOffset + 32, true);
-      const nameBytes = data.subarray(cdOffset + 46, cdOffset + 46 + nameLen);
+    for (const e of directory.entries) {
+      if ((e.flags & 0x1) !== 0) encrypted = true;
       // Bit 11 is the "names are UTF-8" flag. When it is unset the name is
       // officially CP437; decoding it as UTF-8 is what mangles a legacy Windows
       // zip. Either way the result is repaired to something the jail can reason
       // about, and the row says so — see decodeEntryName.
-      const { name, repaired } = decodeEntryName(nameBytes, (flags & 0x800) !== 0);
+      const { name, repaired } = decodeEntryName(e.nameBytes, (e.flags & 0x800) !== 0);
       entries.push({
         name,
-        size: uncompressed === 0xffffffff ? null : uncompressed,
-        compressedSize: compressedSize === 0xffffffff ? null : compressedSize,
+        size: e.size,
+        compressedSize: e.compressedSizeIsZip64 ? null : e.compressedSize,
         directory: name.endsWith("/"),
-        modified: dosDateToIso(dosDate, dosTime),
+        modified: dosDateToIso(e.dosDate, e.dosTime),
         nameRepaired: repaired,
       });
-      cdOffset += 46 + nameLen + extraLen + commentLen;
     }
     return { entries, encrypted, truncated: declared > total };
   }
@@ -563,20 +549,19 @@ export class ArchiveService {
   }
 
   /**
-   * ZIP via fflate. THE JAIL: every entry name is joined to the destination and
-   * re-validated through `resolveSafe` BEFORE a single byte is written. Names
-   * are never trusted — `../x`, `/abs/x`, or a name whose realpath escapes are
-   * hard-failed for the whole extraction. Note fflate has no notion of symlink
-   * entries; a "symlink" entry is written as an ordinary file containing the
-   * target text, so a zip cannot plant a traversing symlink at all.
+   * ZIP, streamed (`zip-reader.ts`). THE JAIL: every entry name is joined to the destination and re-validated
+   * through `resolveSafe` BEFORE a single byte is written. Names are never trusted — `../x`, `/abs/x`, or a name
+   * whose realpath escapes are hard-failed for the whole extraction. Symlink entries are not interpreted: a
+   * "symlink" entry is written as an ordinary file containing the target text, so a zip cannot plant a
+   * traversing symlink at all.
    *
    * Zip-bomb guard runs in two layers:
-   *   (1) a cheap central-directory scan ({@link inspectZip}) enforces the entry
-   *       COUNT cap and the declared-uncompressed-size cap WITHOUT inflating a
-   *       byte, so an honest bomb (headers report the true huge size) is
-   *       rejected before any work.
-   *   (2) after inflation, the ACTUAL decompressed sizes are summed and
-   *       re-checked, so a header that lies about its size can't slip past.
+   *   (1) the central directory, read off disk without inflating, enforces the entry COUNT cap and the
+   *       declared-uncompressed-size caps (absolute and as a ratio of the archive's bytes), so an honest bomb
+   *       (headers report the true huge size) is rejected before any work.
+   *   (2) while each entry streams out, its ACTUAL size and the running total are checked, so a header that lies
+   *       about its size is stopped mid-stream.
+   * The entries go to a staging folder first and are merged in only when all of them came out, as tar's are.
    */
   private async extractZip(
     root: string,
@@ -585,136 +570,118 @@ export class ArchiveService {
     archiveAbs: string,
     only?: Set<string>,
   ): Promise<ExtractResult> {
-    const buf = await fs.readFile(archiveAbs);
-    const data = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-
-    // (1) PRE-INFLATION guard: parse the ZIP central directory for entry count
-    // and DECLARED uncompressed sizes and enforce the caps BEFORE inflating a
-    // single byte — so an honest zip-bomb is rejected without doing the work.
-    // (fflate's CJS `unzipSync` ignores its `filter` option, so we parse the
-    // directory ourselves rather than trusting fflate to gate per entry.)
-    this.inspectZip(data);
-
-    // (2) Inflate, then verify ACTUAL inflated sizes against the caps (defeats a
-    // header that lies about its size). Async `unzip` (not `unzipSync`): a large
-    // archive inflates in chunks off the main thread instead of blocking all
-    // HTTP + PTY for seconds. The size/ratio caps above still gate the work.
-    let unzipped: Unzipped;
+    // (1) PRE-INFLATION guard: the central directory, read off disk (the tail and the directory, never the data),
+    // gives the entry count and the DECLARED sizes, and the caps are enforced before a byte is inflated.
+    let directory: Awaited<ReturnType<typeof readZipDirectory>>;
     try {
-      unzipped = await new Promise<Unzipped>((resolve, reject) => {
-        unzip(data, (err, out) => {
-          if (err) reject(err instanceof Error ? err : new Error(err));
-          else resolve(out);
-        });
-      });
-    } catch {
-      throw new BadRequestException("Corrupt or unreadable zip archive");
+      directory = await readZipDirectory(archiveAbs, MAX_ENTRIES() + 1);
+    } catch (err) {
+      if (err instanceof ZipFormatError) throw new BadRequestException(err.message);
+      throw err;
     }
-
-    const names = Object.keys(unzipped);
-    if (names.length > MAX_ENTRIES()) {
+    if (directory.declared > MAX_ENTRIES()) {
       throw new PayloadTooLargeException(`Archive has too many entries (max ${MAX_ENTRIES()})`);
     }
-    let actualTotal = 0;
-    for (const name of names) {
-      const size = unzipped[name].length;
-      actualTotal += size;
-      if (size >= MAX_ENTRY_BYTES() || actualTotal >= MAX_TOTAL_BYTES()) {
-        throw new PayloadTooLargeException(`Archive uncompresses past the size cap (max ${MAX_TOTAL_BYTES()} bytes)`);
+    // Bounded by a ratio of the ACTUAL archive bytes too, which is what stops a forged-header amplification.
+    const ratioCap = directory.fileSize * MAX_COMPRESSION_RATIO();
+    const entryCap = Math.min(MAX_ENTRY_BYTES(), ratioCap);
+    const totalCap = Math.min(MAX_TOTAL_BYTES(), ratioCap);
+    let declaredTotal = 0;
+    for (const e of directory.entries) {
+      const size = e.size ?? Infinity;
+      declaredTotal += size;
+      if (size >= entryCap || declaredTotal >= totalCap) {
+        throw new PayloadTooLargeException(`Archive uncompresses past the size cap (max ${totalCap} bytes)`);
       }
     }
+    // A name given twice is extracted once, its last entry winning, as fflate's map of names had it.
+    const byName = new Map(directory.entries.map((e) => [e.name, e] as const));
+    const names = [...byName.keys()];
 
-    // (3) JAIL — resolve every entry against the dest, reject the whole
-    // extraction on ANY escape, BEFORE writing anything.
+    // (2) JAIL — resolve every entry against the dest, reject the whole extraction on ANY escape, BEFORE writing.
     const absByName = new Map<string, string>();
     for (const name of names) {
       absByName.set(name, await this.resolveEntry(root, destVirtual, destAbs, name));
     }
-
     // A selected name the archive does not declare is a client inventing a path.
     if (only) {
-      const declared = new Set(names);
       for (const wanted of only) {
-        if (!declared.has(wanted)) {
+        if (!byName.has(wanted)) {
           throw new BadRequestException(`That archive does not contain an entry named ${wanted}`);
         }
       }
     }
 
-    // (4) Only now, write. Directory entries (trailing '/') become dirs.
-    // The jail check above ran over EVERY declared name, not just the chosen
-    // ones — a dangerous entry elsewhere in the archive is still a reason to
-    // refuse the whole file, so a selection cannot be used to slip past it.
-    let fileCount = 0;
-    for (const name of names) {
-      if (only && !only.has(name)) continue;
-      const abs = required(absByName.get(name), name);
-      if (name.endsWith("/")) {
-        await fs.mkdir(abs, { recursive: true });
-        continue;
-      }
-      await fs.mkdir(dirname(abs), { recursive: true });
-      await fs.writeFile(abs, unzipped[name]);
-      fileCount++;
-    }
-
-    return { dest: destVirtual, entries: fileCount, totalBytes: actualTotal };
-  }
-
-  /**
-   * Minimal ZIP central-directory scan: entry count + declared uncompressed
-   * sizes, WITHOUT inflating. Enforces the count / per-entry / total caps so an
-   * honest zip-bomb is rejected up front. A ZIP64 size marker (0xFFFFFFFF) is
-   * treated as "over cap" (our caps are far below 4 GiB anyway), never trusted
-   * as a small value. Throws PayloadTooLargeException past a cap, BadRequest on
-   * a structurally invalid archive.
-   */
-  private inspectZip(data: Uint8Array): void {
-    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-    // Locate the End Of Central Directory record: scan back for its signature
-    // (0x06054b50). The trailing comment is bounded to 64 KiB by the spec.
-    const EOCD_SIG = 0x06054b50;
-    const CDH_SIG = 0x02014b50;
-    let eocd = -1;
-    const minPos = Math.max(0, data.length - 22 - 0xffff);
-    for (let i = data.length - 22; i >= minPos; i--) {
-      if (view.getUint32(i, true) === EOCD_SIG) {
-        eocd = i;
-        break;
-      }
-    }
-    if (eocd < 0) throw new BadRequestException("Not a valid zip archive");
-
-    const totalEntries = view.getUint16(eocd + 10, true);
-    if (totalEntries > MAX_ENTRIES()) {
-      throw new PayloadTooLargeException(`Archive has too many entries (max ${MAX_ENTRIES()})`);
-    }
-    let cdOffset = view.getUint32(eocd + 16, true);
-
-    // The declared sizes drive `unzipSync`'s pre-allocation, so bound them by a
-    // ratio of the ACTUAL archive bytes (not just the absolute caps) — this is
-    // what stops a forged-header amplification DoS. `>=` (not `>`) so a value
-    // exactly at the cap is rejected too.
-    const ratioCap = data.length * MAX_COMPRESSION_RATIO();
-    const entryCap = Math.min(MAX_ENTRY_BYTES(), ratioCap);
-    const totalCap = Math.min(MAX_TOTAL_BYTES(), ratioCap);
-
-    let declaredTotal = 0;
-    for (let n = 0; n < totalEntries; n++) {
-      if (cdOffset + 46 > data.length || view.getUint32(cdOffset, true) !== CDH_SIG) {
-        throw new BadRequestException("Corrupt zip central directory");
-      }
-      const uncompressed = view.getUint32(cdOffset + 24, true);
-      const nameLen = view.getUint16(cdOffset + 28, true);
-      const extraLen = view.getUint16(cdOffset + 30, true);
-      const commentLen = view.getUint16(cdOffset + 32, true);
-      // 0xFFFFFFFF => real size lives in a ZIP64 extra field; treat as over-cap.
-      const size = uncompressed === 0xffffffff ? Infinity : uncompressed;
-      declaredTotal += size;
-      if (size >= entryCap || declaredTotal >= totalCap) {
-        throw new PayloadTooLargeException(`Archive uncompresses past the size cap (max ${totalCap} bytes)`);
-      }
-      cdOffset += 46 + nameLen + extraLen + commentLen;
+    // (3) Inflate into a fresh staging folder beside the destination, one entry at a time, streamed, counting the
+    // ACTUAL bytes against the caps (a header that lies about its size is stopped mid-stream), then (4) merge.
+    // The jail check above ran over EVERY declared name, not just the chosen ones. Inflating the whole archive in
+    // memory first took a 181 MB zip to a 1.3 GB backend (2026-11-24).
+    const tmpVirtual = join(
+      dirname(destVirtual) || ".",
+      `.archive-tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    );
+    const { abs: stagingAbs } = await this.files.resolveSafe(root, tmpVirtual);
+    await fs.mkdir(stagingAbs, { recursive: true });
+    try {
+      let fileCount = 0;
+      let actualTotal = 0;
+      const extractOne = async (name: string): Promise<void> => {
+        const rel = relative(destAbs, required(absByName.get(name), name));
+        if (!rel) return;
+        const target = join(stagingAbs, rel);
+        if (name.endsWith("/")) {
+          await fs.mkdir(target, { recursive: true });
+          return;
+        }
+        await fs.mkdir(dirname(target), { recursive: true });
+        let size = 0;
+        const counted = new Transform({
+          transform(chunk: Buffer, _encoding, done) {
+            size += chunk.length;
+            actualTotal += chunk.length;
+            if (size >= MAX_ENTRY_BYTES() || actualTotal >= MAX_TOTAL_BYTES()) {
+              done(
+                new PayloadTooLargeException(`Archive uncompresses past the size cap (max ${MAX_TOTAL_BYTES()} bytes)`),
+              );
+              return;
+            }
+            done(null, chunk);
+          },
+        });
+        try {
+          await pipeline(
+            await openZipEntry(archiveAbs, required(byName.get(name), name)),
+            counted,
+            createWriteStream(target),
+          );
+        } catch (err) {
+          if (err instanceof PayloadTooLargeException) throw err;
+          throw new BadRequestException("Corrupt or unreadable zip archive");
+        }
+        fileCount++;
+      };
+      // A few entries at once (each inflates in zlib's thread pool); the first failure stops the rest, and every
+      // worker has settled before the staging folder goes.
+      const wanted = names.filter((name) => !only || only.has(name));
+      let next = 0;
+      const failures: Error[] = [];
+      const worker = async (): Promise<void> => {
+        while (failures.length === 0 && next < wanted.length) {
+          const name = wanted[next++] as string;
+          try {
+            await extractOne(name);
+          } catch (err) {
+            failures.push(err instanceof Error ? err : new BadRequestException("Corrupt or unreadable zip archive"));
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: ZIP_EXTRACT_AT_ONCE }, worker));
+      const [failure] = failures;
+      if (failure) throw failure;
+      await this.mergeTree(stagingAbs, destAbs);
+      return { dest: destVirtual, entries: fileCount, totalBytes: actualTotal };
+    } finally {
+      await fs.rm(stagingAbs, { recursive: true, force: true });
     }
   }
 
@@ -1314,22 +1281,21 @@ export class ArchiveService {
   }
 
   private async compressZip(sources: { abs: string; rel: string }[], destAbs: string): Promise<CompressResult> {
-    const tree: AsyncZippable = {};
+    // First the list, with the caps checked, so a refused selection writes nothing; then each file is streamed
+    // into the archive, so memory holds a chunk at a time, not the selection and the archive both.
+    const files: { abs: string; name: string; mtime: Date; size: number }[] = [];
     let bytes = 0;
-    let entries = 0;
 
     const addFile = async (abs: string, name: string): Promise<void> => {
       const st = await fs.stat(abs);
       bytes += st.size;
-      entries++;
-      if (entries > MAX_ENTRIES()) {
+      files.push({ abs, name, mtime: st.mtime, size: st.size });
+      if (files.length > MAX_ENTRIES()) {
         throw new PayloadTooLargeException(`Too many files to compress (max ${MAX_ENTRIES()})`);
       }
       if (bytes > MAX_TOTAL_BYTES()) {
         throw new PayloadTooLargeException(`Selection is too large to compress (max ${MAX_TOTAL_BYTES()} bytes)`);
       }
-      const buf = await fs.readFile(abs);
-      tree[name] = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
     };
 
     const addDir = async (abs: string, prefix: string): Promise<void> => {
@@ -1352,16 +1318,42 @@ export class ArchiveService {
       else await addFile(s.abs, name);
     }
 
-    // Async `zip` (not `zipSync`): deflating a large selection runs chunked off
-    // the main thread instead of blocking all HTTP + PTY for seconds.
-    const zipped = await new Promise<Uint8Array>((resolve, reject) => {
-      zip(tree, (err, out) => {
-        if (err) reject(err instanceof Error ? err : new Error(err));
-        else resolve(out);
-      });
-    });
-    await fs.writeFile(destAbs, zipped);
-    return { dest: relative(dirname(destAbs), destAbs), entries, bytes };
+    const writer = new ZipWriter(destAbs);
+    try {
+      // Small files are deflated a few at a time in zlib's thread pool and written in order; a large one is
+      // streamed through alone, so memory holds at most a few small files' worth.
+      type File = (typeof files)[number];
+      const ahead = new Map<number, Promise<{ crc: number; size: number; deflated: Buffer }>>();
+      const prepare = async (f: File) => {
+        const raw = await fs.readFile(f.abs);
+        return { crc: crc32(raw), size: raw.length, deflated: await deflateRawAsync(raw, { level: DEFLATE_LEVEL }) };
+      };
+      let next = 0;
+      for (const [i, f] of files.entries()) {
+        for (; next < files.length && next < i + ZIP_DEFLATE_AHEAD; next++) {
+          const file = files[next];
+          if (!file || file.size > ZIP_SMALL_FILE_BYTES) continue;
+          const prepared = prepare(file);
+          // Awaited in its turn; marked handled now, so a failure while another is written ends nothing.
+          prepared.catch(() => undefined);
+          ahead.set(next, prepared);
+        }
+        const ready = ahead.get(i);
+        ahead.delete(i);
+        if (ready) {
+          const r = await ready;
+          await writer.addDeflated(f.name, f.mtime, r.crc, r.size, r.deflated);
+        } else {
+          await writer.addFile(f.name, f.abs, f.mtime);
+        }
+      }
+      await writer.finish();
+    } catch (err) {
+      writer.abort();
+      await fs.rm(destAbs, { force: true });
+      throw err;
+    }
+    return { dest: relative(dirname(destAbs), destAbs), entries: files.length, bytes };
   }
 
   private async compressTarGz(

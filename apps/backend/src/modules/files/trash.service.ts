@@ -1,8 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { basename, dirname, join, relative, sep } from "path";
+import { lstatSync, readFileSync } from "fs";
 import * as fs from "fs/promises";
 import { FilesService } from "./files.service";
 import { LogService } from "../logs/log.service";
+
+/** How many Trash items a listing reads between yields to the event loop. */
+const ITEMS_PER_TURN = 256;
 
 /**
  * Trash, following the freedesktop spec.
@@ -155,10 +159,13 @@ export class TrashService {
     const names = await fs.readdir(filesDir).catch(() => [] as string[]);
     const out: TrashEntry[] = [];
 
-    for (const id of names) {
+    // Read synchronously, a batch at a time, as a folder listing is: an awaited read and lstat per item, one after
+    // another, took 341 ms for 2,000 items (2026-11-24).
+    for (const [i, id] of names.entries()) {
+      if (i > 0 && i % ITEMS_PER_TURN === 0) await new Promise<void>((done) => setImmediate(done));
       let raw: string;
       try {
-        raw = await fs.readFile(join(infoDir, `${id}.trashinfo`), "utf8");
+        raw = readFileSync(join(infoDir, `${id}.trashinfo`), "utf8");
       } catch {
         continue; // no info file — not restorable, so not listed
       }
@@ -171,7 +178,7 @@ export class TrashService {
         originalPath = pathLine;
       }
 
-      const st = await fs.lstat(join(filesDir, id)).catch(() => null);
+      const st = lstatSync(join(filesDir, id), { throwIfNoEntry: false });
       if (!st) continue;
 
       out.push({

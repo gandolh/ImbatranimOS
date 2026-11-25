@@ -1,6 +1,6 @@
 ---
-summary: The 2026-11-23 performance sweep, fifteen rounds and fifteen more from 2026-11-24 (with a ranked deploy and infrastructure research), on one branch and one PR, each researched and measured before and after; how its numbers are taken, one line per round with the page that holds it, and what it leaves for later. Rounds 1-5 are in research-performance-sweep-1.md, 6-10 in -2, 11-15 in -3, 16-20 in -4, 21-25 in -5, 26-30 in -6.
-updated: 2026-11-24
+summary: The 2026-11-23 performance sweep, fifteen rounds, fifteen more from 2026-11-24 (with a ranked deploy and infrastructure research) and fifteen more from 2026-11-24 to 25, each researched and measured before and after; how its numbers are taken, one line per round with the page that holds it, and what it leaves for later. Rounds 1-5 are in research-performance-sweep-1.md, 6-10 in -2, 11-15 in -3, 16-20 in -4, 21-25 in -5, 26-30 in -6, 31-35 in -7, 36-40 in -8, 41-45 in -9.
+updated: 2026-11-25
 ---
 
 # The performance sweep (2026-11-23)
@@ -59,6 +59,21 @@ here what it changed and what it looked at and left, so the next round starts wh
 | 28 | Validators on file downloads: measured, not built (the tab already reuses a photo it holds) | [6](research-performance-sweep-6.md) |
 | 29 | Vitest's vmThreads pool for the desktop's tests: 25 to 12 s, measured, not built (realm differences, 1.8 GB) | [6](research-performance-sweep-6.md) |
 | 30 | The closing check: the first load 913 to 895 KiB since round 1, the wire 372 to 370 KiB, the desktop at rest 0.11% of a core; no regression | [6](research-performance-sweep-6.md) |
+| 31 | Paint's undo keeps the rectangle each edit changed: 30 strokes on a 4000×3000 photo grew the tab 1,460 to 88 MiB | [7](research-performance-sweep-7.md) |
+| 32 | Files' content search reads small files in batches and rules most out unread: a search matching nothing 1,331 to 192 ms | [7](research-performance-sweep-7.md) |
+| 33 | Compressing to zip streams the archive: the backend's peak growth +870..1,824 to +29..76 MiB, /health's worst 6 s to 11 ms | [7](research-performance-sweep-7.md) |
+| 34 | Extracting a zip streams each entry: the peak growth +695..1,152 to +17..53 MiB, /health's worst 2.2 s to 10 ms | [7](research-performance-sweep-7.md) |
+| 35 | The first load attributed (react-dom, Base UI, axios, the desktop's own code): measured, not built | [7](research-performance-sweep-7.md) |
+| 36 | Copying a folder at `cp -a`'s pace: CPU 4.8 to 2.1 s, -56% against a -60% bar the kernel's file creation put out of reach; measured, filed as brief 121 | [8](research-performance-sweep-8.md) |
+| 37 | Deleting a folder: measured, not built (`fs.rm` takes 0.45 s for 5,668 files, async) | [8](research-performance-sweep-8.md) |
+| 38 | System Monitor reads `/proc` synchronously: 15.9 to 1.6 ms of the backend's CPU a poll, 1,089 processes 147 to 17 ms | [8](research-performance-sweep-8.md) |
+| 39 | A batch in Files lists the folder once, six requests at a time: a 200-file drop into 20,000 files 25 to 1 s, and Select All and Delete no longer refused by Chromium | [8](research-performance-sweep-8.md) |
+| 40 | A 20,000-entry listing: measured, not built (`lstat`, the system call, is 106 of its 170 ms) | [8](research-performance-sweep-8.md) |
+| 41 | The Trash lists with synchronous reads: 2,000 items 345 to 25 ms | [9](research-performance-sweep-9.md) |
+| 42 | Emptying the Trash: measured, not built (2,000 items in under a second, async) | [9](research-performance-sweep-9.md) |
+| 43 | Expired sessions, Backup's sizing, a service app's server: measured or read, not built | [9](research-performance-sweep-9.md) |
+| 44 | An archive job leaves 37-121 MiB of dead Buffers an idle backend never collects; measured, filed as brief 122 | [9](research-performance-sweep-9.md) |
+| 45 | The closing check: today's desktop loads what round 27's did to a tenth of a KiB, and rests at 0.08% of a core | [9](research-performance-sweep-9.md) |
 
 ## What the sweep leaves for later
 
@@ -79,8 +94,10 @@ The questions the owner put, answered by what was measured:
 - **The owner's steps:** vps-deploy runs `infrastructure/image.sh` instead of `docker compose build` (never with
   `--pull`), and any prune there takes `--filter label!=imbatranim.base`
   ([research-deploy-infrastructure.md](research-deploy-infrastructure.md)); the calls in briefs 118 (prebuilt app
-  output), 119 (a lazy kit tooltip) and 120 (Firefox's spare processes).
+  output), 119 (a lazy kit tooltip) and 120 (Firefox's spare processes), all built on 2026-11-24.
 - **Left, with numbers, for whoever comes next:** Monaco's inline completions (240 KiB a Code Editor open, round 13),
   moving the File Manager's virtualizer into its list (round 14), a lazy kit `Tooltip` (brief 119, round 21),
-  Firefox's spare processes (brief 120, round 24), and Vitest's `vmThreads` pool for the desktop's tests (round 29). The
+  Firefox's spare processes (brief 120, round 24), Vitest's `vmThreads` pool for the desktop's tests (round 29), a folder
+  copy at `cp -a`'s pace (brief 121, round 36, measured again and left) and the dead Buffers an archive job
+  leaves (brief 122, round 44: freeing them costs the next job 0.35 s; allocating less is the next thing to try). The
   gate itself runs its static steps side by side since round 26.

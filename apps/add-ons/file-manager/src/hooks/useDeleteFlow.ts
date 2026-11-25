@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import type { FsEntry } from "../types";
-import type { useDeleteEntryMutation } from "../queries/filesQueries";
+import type { useDeleteEntriesMutation, useDeleteEntryMutation } from "../queries/filesQueries";
 
 /**
  * A pending delete is either a single targeted entry or a batch of the current
@@ -13,6 +13,8 @@ type UseDeleteFlowArgs = {
   selected: Set<string>;
   setSelected: React.Dispatch<React.SetStateAction<Set<string>>>;
   deleteMutation: ReturnType<typeof useDeleteEntryMutation>;
+  /** A selection's deletes as one batch, the folder listed once at the end. */
+  deleteManyMutation: ReturnType<typeof useDeleteEntriesMutation>;
   onError: (message: string) => void;
   /**
    * Whether deletions go to the Trash. Only the `home` root has one — `notes`
@@ -37,6 +39,7 @@ export function useDeleteFlow({
   selected,
   setSelected,
   deleteMutation,
+  deleteManyMutation,
   onError,
   trashEnabled,
   onTrashed,
@@ -65,7 +68,7 @@ export function useDeleteFlow({
     if (request?.kind === "batch") {
       const paths = Array.from(selected);
       const toTrash = trashEnabled && !permanent;
-      const results = await Promise.allSettled(paths.map((p) => deleteMutation.mutateAsync({ path: p, toTrash })));
+      const results = await deleteManyMutation.mutateAsync({ paths, toTrash });
       // Keep only the items that failed selected; drop the ones we deleted.
       const failedPaths = paths.filter((_, i) => results[i].status === "rejected");
       setSelected(new Set(failedPaths));
@@ -90,7 +93,7 @@ export function useDeleteFlow({
       }
     }
     setRequest(null);
-  }, [request, selected, deleteMutation, setSelected, onError, trashEnabled, permanent, onTrashed]);
+  }, [request, selected, deleteMutation, deleteManyMutation, setSelected, onError, trashEnabled, permanent, onTrashed]);
 
   const dialogOpen = request !== null;
   const deleteCount = request?.kind === "batch" ? selected.size : 1;
@@ -111,6 +114,6 @@ export function useDeleteFlow({
     dialogOpen,
     deleteCount,
     deleteLabel,
-    isPending: deleteMutation.isPending,
+    isPending: deleteMutation.isPending || deleteManyMutation.isPending,
   };
 }

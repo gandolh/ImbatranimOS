@@ -83,7 +83,8 @@ layers, but 1.5 GB "reclaimable" by `docker system df`).
    `node:24.22.1-alpine` container with 1 GiB and no swap it is OOM-killed within seconds, with V8's heap capped,
    one Rayon thread and one libuv thread too: the memory is native, in the bundler. The OS can't fix it from
    outside. Two ways out: imbatranim-office's build uses less (one Vite build per app, in turn), or brief 118's
-   verified prebuilt output (33 MB for the suite). Owner's call.
+   verified prebuilt output (33 MB for the suite). Built on 2026-11-24 (brief 118): from its 8.1 MB archive Office
+   installs under the cap in 4.6 s once the owner publishes it.
 4. **A service app keeps only what its server runs on** (built in round 19). A descriptor's `server.install`
    replaces the build's dependencies: imbatranim-office's build directory 964 MB to 86 MB, its server answering.
 5. **The dev image after a dependency change** (built in round 20). The dev stage builds on `runtime-base` and
@@ -94,8 +95,8 @@ layers, but 1.5 GB "reclaimable" by `docker system df`).
    needs about 180 MB; an update with dependency changes adds up to 16 MB).
 7. **BuildKit's garbage collection on the VPS.** `builder.gc` in `daemon.json` can keep cache mounts longer; with
    the bases tagged, little depends on it. An owner choice, not a repository change.
-8. **Verified prebuilt app output** instead of building on the box: brief 118, at the owner's call to keep source
-   builds for now; item 3 is its strongest case.
+8. **Verified prebuilt app output** instead of building on the box: brief 118, built on 2026-11-24 after the
+   owner's call. Accessories from its archive: 1.0 s and about 6 MB, against 6.6 s and about 385 MB from source.
 
 **Measured and left:**
 

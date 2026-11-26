@@ -1,4 +1,4 @@
-import { Suspense, memo, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/shallow";
 import { topVisibleWindowId, useWindowStore } from "../../store/windowStore";
 import { Window } from "./Window";
@@ -10,8 +10,12 @@ import { AppErrorFallback } from "./AppErrorFallback";
 import { useRegistryVersion } from "../../registry/marketplace";
 import { focusIntoNewWindowSoon } from "./focusIntoWindow";
 import { isLinuxWindow } from "../../../modules/linux-windows/kind";
-import { LinuxWindowBody } from "../../../modules/linux-windows/LinuxWindowBody";
 import { useLinuxWindowsStore } from "../../../modules/linux-windows/linuxWindowsStore";
+
+/** A Linux window's inside (its input, the phone's keyboard, the stream overlay): a chunk the first such window loads. */
+const LinuxWindowBody = lazy(() =>
+  import("../../../modules/linux-windows/LinuxWindowBody").then((m) => ({ default: m.LinuxWindowBody })),
+);
 
 // Field separator for the per-window projection key. `␟` (SYMBOL FOR UNIT
 // SEPARATOR) cannot occur in a uuid or an app-id slug, so splitting is safe.
@@ -200,8 +204,18 @@ function WindowBody({
   return (
     <>
       {isLinuxWindow(appId) ? (
-        // A Linux app's window: no add-on and no system handle, just its picture.
-        <LinuxWindowBody windowId={windowId} />
+        // A Linux app's window: no add-on and no system handle, just its picture. The
+        // boundary is for its chunk: one that fails to load offers Reload, as an app's does.
+        <AppErrorBoundary
+          key={remountKey}
+          appId={appId}
+          appName={appName}
+          fallback={(error) => <AppErrorFallback appName={appName} error={error} onReload={reload} onClose={close} />}
+        >
+          <Suspense fallback={null}>
+            <LinuxWindowBody windowId={windowId} />
+          </Suspense>
+        </AppErrorBoundary>
       ) : AppComponent ? (
         <AppErrorBoundary
           // Bumping the key remounts the boundary AND the app beneath it, which

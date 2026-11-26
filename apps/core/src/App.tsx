@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Taskbar } from "./shared/components/taskbar";
 import { Desktop } from "./shared/components/desktop";
 import { useCurrentWallpaper } from "./shared/store/wallpaperStore";
@@ -6,7 +6,6 @@ import { setMinSizeResolver, useWindowStore } from "./shared/store/windowStore";
 import { APP_REGISTRY } from "./shared/registry/registry";
 import { usePaletteStore } from "./shared/store/paletteStore";
 import { useAppearanceStore, applyAppearance, watchSystemMode } from "./shared/store/appearanceStore";
-import { CommandPalette } from "./shared/components/CommandPalette";
 import { ToastHost } from "./shared/components/notifications";
 import { BackgroundServices } from "./shared/components/BackgroundServices";
 import { LinuxWindowsService } from "./modules/linux-windows/LinuxWindowsService";
@@ -19,6 +18,12 @@ import { runStartupApps } from "./shared/lib/startup";
 import { FilePortalHost } from "./system/filePortal";
 import { OldDataNoticeHost } from "./shared/components/OldDataNotice";
 import { loadMarketplace } from "./shared/registry/marketplace";
+import { lazyPart } from "./shared/components/lazyPart";
+
+/** The command palette is a chunk of its own, loaded the first time it opens. */
+const CommandPalette = lazyPart("Search", () =>
+  import("./shared/components/CommandPalette").then((m) => m.CommandPalette),
+);
 
 export function App() {
   const wallpaper = useCurrentWallpaper();
@@ -28,6 +33,9 @@ export function App() {
   const paletteOpen = usePaletteStore((s) => s.open);
   const setPaletteOpen = usePaletteStore((s) => s.setOpen);
   const openPalette = usePaletteStore((s) => s.openPalette);
+  // Mounted from its first opening on, so a close is the dialog's own, as before.
+  const [paletteMounted, setPaletteMounted] = useState(paletteOpen);
+  if (paletteOpen && !paletteMounted) setPaletteMounted(true);
 
   // Reflect the persisted theme, mode and accent onto <html> so the CSS vars resolve.
   useEffect(() => {
@@ -262,7 +270,7 @@ export function App() {
       <ShortcutsOverlay />
       <AltTabSwitcher />
       {/* SWARM:S3 command palette mount */}
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      {paletteMounted && <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />}
       {/* SWARM:S4 layout restore boot */}
     </div>
   );

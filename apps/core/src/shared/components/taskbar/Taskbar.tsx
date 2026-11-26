@@ -7,12 +7,19 @@ import { usePaletteStore } from "../../store/paletteStore";
 import { APP_REGISTRY } from "../../registry/registry";
 import { openApp } from "../../intents/openApp";
 import { Logo } from "../brand/Logo";
-import { StartMenu } from "./StartMenu";
 import { Tray } from "./Tray";
 import { WorkspacePips } from "./WorkspacePips";
 import { TaskbarContextMenu } from "./TaskbarContextMenu";
 import { launchLinuxApp, linuxLauncherActions } from "../../../modules/linux-windows/launchers";
 import { focusIntoWindowSoon } from "../window/focusIntoWindow";
+import { lazyPart } from "../lazyPart";
+
+/**
+ * Start's menu is a chunk of its own, so the first page load does not carry it.
+ * The pointer reaching the button, or focus landing on it, fetches the chunk,
+ * so the menu is there by the time the click comes.
+ */
+const StartMenu = lazyPart("Start", () => import("./StartMenu").then((m) => m.StartMenu));
 
 // Field separator for the task-button projection; cannot occur in a uuid, slug,
 // or realistic window title. Title goes last and is rejoined so a stray one is harmless.
@@ -123,6 +130,8 @@ export function Taskbar() {
       <button
         ref={startBtnRef}
         onClick={() => setStartOpen((o) => !o)}
+        onPointerEnter={StartMenu.preload}
+        onFocus={StartMenu.preload}
         aria-haspopup="menu"
         aria-expanded={startOpen}
         aria-label="Start"
